@@ -19142,63 +19142,13 @@ var FIDS_BUILD_TAG = 'v23177';
   } catch (e) {}
 })();
 
-// ── MAP ENGINE GUARD ─────────────────────────────────────────────────────
-// The stylesheet guard's failure class, aimed at the route maps: the
-// /mapcdn/leaflet.js tag carries no version, and until v22378 the worker
-// stamped day-long cache headers on FAILED upstream fetches too — so one bad
-// response poisoned a display's copy of the map engine for 24 h, initGateMap
-// bailed on its typeof L check, and every route map on that screen vanished
-// (Nick: 'the flight routes i dont see any show up whatsoever'). Probe
-// window.L after load; when the engine is missing, re-inject it under a
-// unique query (the worker ignores queries; browser and edge treat it as a
-// new URL) and re-run the live map init so maps return without a re-render.
-// leaflet-arc is optional (plain-line fallback exists) but heals the same
-// way once L is live.
-(function () {
-  try {
-    var _engTries = 0, _arcTries = 0, _engInFlight = false;
-    function _engAlive() {
-      return typeof window.L !== 'undefined' && window.L && typeof window.L.map === 'function';
-    }
-    function _healArc() {
-      try {
-        if (!_engAlive() || !window.L.Polyline) return;
-        if (typeof window.L.Polyline.Arc === 'function' || _arcTries >= 3) return;
-        _arcTries++;
-        var a = document.createElement('script');
-        a.src = '/mapcdn/leaflet-arc.js?v=mapguard-' + Date.now();
-        document.head.appendChild(a);
-      } catch (e) {}
-    }
-    function _probe() {
-      if (_engAlive()) { _healArc(); return; }
-      // Only pages that draw maps carry the engine tag — bail elsewhere.
-      if (!document.querySelector('script[src*="/mapcdn/leaflet.js"]')) return;
-      if (_engInFlight || _engTries >= 3) return;
-      _engTries++; _engInFlight = true;
-      console.warn('[FIDS] map engine missing — re-fetching leaflet.js (attempt ' + _engTries + ')');
-      var s = document.createElement('script');
-      s.src = '/mapcdn/leaflet.js?v=mapguard-' + Date.now();
-      s.onload = function () {
-        _engInFlight = false;
-        _healArc();
-        // Bring the maps back NOW — the 10 s map tick would also catch it,
-        // but the retry hook re-frames the current gate immediately.
-        try { if (typeof window._gateMapRetry === 'function') window._gateMapRetry(); } catch (e) {}
-      };
-      s.onerror = function () { _engInFlight = false; };
-      document.head.appendChild(s);
-    }
-    if (document.readyState === 'complete') setTimeout(_probe, 3000);
-    else window.addEventListener('load', function () { setTimeout(_probe, 3000); });
-    // Screens run for days — keep a slow watch, allowing one fresh attempt
-    // per cycle while the engine is still out (network may have recovered).
-    setInterval(function () {
-      if (!_engAlive()) { _engTries = Math.min(_engTries, 2); _probe(); }
-      else _healArc();
-    }, 180000);
-  } catch (e) {}
-})();
+// v23177 — the MAP ENGINE GUARD was excised with the engine it guarded.
+// It probed window.L every 3 minutes and re-injected /mapcdn/leaflet.js on a
+// cache-poisoned display. With Leaflet removed it was INERT, not harmful —
+// its own bail (no leaflet <script> tag -> return) already disarmed it — but
+// an inert watchdog for a deleted engine is exactly the buildup this rebuild
+// exists to end. The canvas map is one ordinary script with no engine state
+// to lose; a failed load of it is a load error, not a runtime to heal.
 
 const BAGS_TICKER_MSG = {
   en: ['MANY BAGS LOOK ALIKE — PLEASE CHECK YOUR BAG TAG','LUGGAGE CARTS ARE AVAILABLE NEAR THE EXIT','REPORT DAMAGED OR MISSING BAGGAGE TO YOUR AIRLINE','PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','THANK YOU FOR FLYING WITH US — WELCOME'],
@@ -35131,7 +35081,12 @@ function _renderBigCraft(el, ctx) {
   // except enlarged'): verbatim clones of the mini-map builders rendering
   // into the big container — same tiles, phase zoom, labels, plane icon.
   try {
-    if (typeof L !== 'undefined' && typeof L.map === 'function') {
+    // v23177 — the Leaflet feature-detect that KILLED the big map after the
+    // canvas rebuild ("the big screen does not work"): with Leaflet gone the
+    // guard was false and the builders were simply never called — an empty
+    // overlay, no error anywhere. The builders are the canvas module's now
+    // and guard themselves; gate on THEM, not on the library they replaced.
+    if (typeof _bigMapClone === 'function') {
       var _bcO = ctx.oc, _bcD = ctx.dc;
       if (ctx.pos) _bigMapCloneLive(_bcO, _bcD, ctx.pos[1], ctx.pos[0]);
       else _bigMapClone(_bcO, _bcD, ctx.progress);
