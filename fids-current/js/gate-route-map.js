@@ -156,6 +156,21 @@
                  arc[i][1] + (arc[i + 1][1] - arc[i][1]) * t];
     }
 
+    // ── ONE CAMERA OWNER AT A TIME (Nick, watching: "glitching") ────────
+    // Every telemetry tick re-enters this builder. The first cut re-ran the
+    // full camera decision each time, so setView snapped the view once per
+    // poll while the glide's follow-cam was smoothly panning — two owners
+    // fighting, the exact metronome the old path's skip-guards existed to
+    // prevent. While a same-leg glide is flying this surface, a tick only
+    // RE-ANCHORS the model (startGlide keeps the drawn position and folds
+    // the error into the rate); the camera belongs to the glide.
+    if (_legMatches && GL.raf && GL.views[kind]) {
+      if (planeLL && p < 0.995) {
+        if (Math.round(m.getZoom()) !== zoom && p >= 0.12) m.setView(planeLL, zoom);
+        startGlide(kind, m, o, d, planeLL, arc, 450, dst, org, false);
+        return;
+      }
+    }
     // ONE camera decision — the invariant the Leaflet path took three
     // versions to reach, kept by construction here.
     if (p < 0.02) {
@@ -192,6 +207,7 @@
     var m = surface(kind);
     if (!m) return;
     m._fidsLive = true;
+    var _legMatches = sameLeg(GL.o, o) && sameLeg(GL.d, d);
 
     // progressive zoom by distance-from-field, with the anti-flap rules
     var distO = Math.hypot(lat - o[0], lng - o[1]);
@@ -246,6 +262,15 @@
         g.OCGateMap.bearing(route[route.length - 2], route[route.length - 1]), 1);
       delete GL.views[kind];
       if (!Object.keys(GL.views).length) stopGlide();
+      return;
+    }
+    if (_legMatches && GL.raf && GL.live && GL.views[kind]) {
+      // same leg, glide healthy: rebuild the drawn route through the new fix
+      // and hand the model the fix — no setView, no snap. The follow-cam
+      // pans when the plane drifts; that is the only camera motion.
+      if (Math.round(m.getZoom()) !== zoom) m.setView([lat, lng], zoom);
+      m.setRoute(o, d, 0, { arc: route, originCode: org, destCode: dst });
+      startGlide(kind, m, o, d, [lat, lng], route, spd, dst, org, true);
       return;
     }
     m.setView([lat, lng], zoom);
