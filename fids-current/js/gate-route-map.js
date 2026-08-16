@@ -286,7 +286,7 @@
       if (!Object.keys(GL.views).length) stopGlide();
       return;
     }
-    if (_legMatches && GL.raf && GL.live && GL.views[kind]) {
+    if (_legMatches && GL.raf && GL.views[kind]) {
       // same leg, glide healthy: rebuild the drawn route through the new fix
       // and hand the model the fix — no setView, no snap. The follow-cam
       // pans when the plane drifts; that is the only camera motion.
@@ -322,6 +322,16 @@
   g._stopGateMapGlide = stopGlide;
 
   function startGlide(kind, map, o, d, fix, route, speedKts, destIata, orgIata, isLive) {
+    // A big-slide ESTIMATE joining while the mini flies a LIVE glide must not
+    // hijack the shared model: it straightened the live-bent route to a pure
+    // great-circle in one frame, dropped GL.live (sending the next real fix
+    // down the snap path), and re-seeded the heading. Join the live glide as
+    // a viewer instead — the live model renders on both surfaces.
+    if (isLive === false && GL.live && GL.raf &&
+        sameLeg(GL.o, o) && sameLeg(GL.d, d)) {
+      GL.views[kind] = true;
+      return;
+    }
     // cumulative-distance table — position by distance, not vertex index
     var cum = [0];
     for (var i = 1; i < route.length; i++) cum.push(cum[i - 1] + nmDist(route[i - 1], route[i]));
@@ -352,7 +362,26 @@
     var gen = GL.gen = (GL.gen + 1) | 0;
     if (GL.raf) { try { g.cancelAnimationFrame(GL.raf); } catch (e) {} GL.raf = null; }
 
-    var now0 = performance.now(), p0 = p, hdg = null, lastFrame = 0, seg = 0;
+    // heading continuity: seed from the angle actually on screen so the
+    // slew limiter smooths the transition instead of being bypassed by the
+    // closure reset; position continuity: keep the drawn SPOT, not the drawn
+    // fraction — the route is re-bent through each new fix, so the same
+    // fraction of a different-length route moved the plane (a per-fix pop at
+    // approach zooms). Re-derive p from the drawn position on the NEW route.
+    if (isSame && fresh && GL.lastPos) {
+      var bp = 0, bd = Infinity;
+      for (var q = 0; q < route.length; q++) {
+        var qd = Math.hypot(route[q][0] - GL.lastPos[0], route[q][1] - GL.lastPos[1]);
+        if (qd < bd) { bd = qd; bp = cum[q]; }
+      }
+      var pKeep = bp / routeNm;
+      errP = errP + (p - pKeep);          // the difference is owed, not jumped
+      p = pKeep;
+      GL.p = p;
+    }
+    var now0 = performance.now(), p0 = p,
+        hdg = (isSame && fresh && typeof GL.hdg === 'number') ? GL.hdg : null,
+        lastFrame = 0, seg = 0;
     var cap = Math.min(Math.max(0.9, 1 - 0.05 / routeNm), 1);
     var codes = { originCode: orgIata || '', destCode: destIata || '' };
 
@@ -396,6 +425,7 @@
       var lat = route[seg][0] + (route[seg + 1][0] - route[seg][0]) * f;
       var lng = route[seg][1] + (route[seg + 1][1] - route[seg][1]) * f;
 
+      GL.lastPos = [lat, lng];
       var tgt = headingAtNm(target);
       if (hdg === null) hdg = tgt;
       else {
@@ -406,6 +436,7 @@
           hdg = (hdg + Math.max(-lim, Math.min(lim, dh)) + 360) % 360;
         }
       }
+      GL.hdg = hdg;
 
       for (var a = 0; a < alive.length; a++) {
         var m2 = alive[a][1];

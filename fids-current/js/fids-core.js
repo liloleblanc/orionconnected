@@ -3126,7 +3126,16 @@ try {
         // clear the pos/prog guards so THIS tick rebuilds it from scratch.
         try {
           var _mbW = document.getElementById('gateMapBox');
+          // v23177 — the emptiness test recognizes the CANVAS map. It checked
+          // for '.leaflet-container', which the canvas never creates, so this
+          // watchdog fired on EVERY 10s tick: it nulled a healthy map and the
+          // rebuild started with an empty tile cache — the whole basemap
+          // flashed flat blue and re-tiled, every ten seconds, forever. THE
+          // metronome behind "still glitching flickering". Found by the
+          // adversarial audit; my excision sweep looked for typeof-L guards
+          // and missed DOM-CLASS-shaped ones like this.
           if (_mbW && _mbW.offsetParent !== null && window._gateInbound
+              && !_mbW.querySelector('.oc-gate-map-canvas')
               && !_mbW.querySelector('.leaflet-container')) {
             console.log('[MAP-WATCHDOG] map container EMPTY while an inbound is tracked — rebuilding');
             try { if (typeof gateMap !== 'undefined' && gateMap) { gateMap.remove(); } } catch (e4) {}
@@ -35118,6 +35127,16 @@ function _renderBigCraft(el, ctx) {
     try {
       if (window._bigCraftOverlay !== _bcOv || !_bcOv.isConnected) return;
       var _wm = _bcOv.querySelector('#bigCraftMap');
+      // v23177 — same class of ghost as the mini watchdog above: this deadman
+      // counted Leaflet tile <img>s, which the canvas map never creates, so it
+      // executed its never-sit-dark teardown 8 SECONDS INTO EVERY VISIT — the
+      // big takeover died and hard-cut to the next slide, every ad cycle
+      // ("the big screen does not work" / "bumping"). A live canvas with any
+      // tile drawn, or any loaded tile in its cache, is not dark.
+      if (_wm && _wm.querySelector('.oc-gate-map-canvas')
+          && window._bigCraftMap && window._bigCraftMap._tileCache
+          && Object.keys(window._bigCraftMap._tileCache).some(function (k) {
+               return window._bigCraftMap._tileCache[k].ok; })) return;
       if (_wm && _wm.querySelectorAll('img.leaflet-tile-loaded').length > 0) return;
       window._bigCraftVisitStart = null;
       _bigCraftTeardown();
