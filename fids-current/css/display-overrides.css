@@ -12631,3 +12631,43 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   position: relative !important;
   z-index: 3 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23176 — PORTER GETS ITS OWN PATTERN BACK, NOT THE GLOBE
+   (Nick: "I dont see the Porter background".)
+
+   It was never missing — it was overridden. --wm-symbol correctly resolves to
+   /logos/Backgrounds/PD/porter-pattern-panel.png for PD, and the base rule
+   (gate-display.css ~3477) paints it. But the globe pin at ~1479/~2247 lists
+   g8-airline-PD explicitly and forces 3d_globe_desktop.svg over it with
+   !important. Measured on the live board: PD's ::before resolved to
+   3d_globe_desktop.svg, so Porter boards have been showing a grey globe where
+   the porter wordmark grid should be.
+
+   That pin was not careless — it existed to stop the LEGACY per-airline rules
+   tiling the globe (Porter repeat at 120%, KLM repeat-y), which is where the
+   "doubled globes" came from. The mistake was fixing that by giving everyone
+   the globe rather than by stopping the globe from being tiled. Tiling is
+   correct for Porter's asset: it IS a repeating wordmark grid, drawn to tile.
+
+   Same specificity as the pin (0,2,2 + element), later in the file, and this
+   file loads last — so it wins without another !important escalation.
+
+   NOT touched: AC and WestJet keep the v22930 kill (content:none) that removed
+   the globe from the two carriers carrying Nick's own line artwork. This rule
+   only restores PD's own asset; every other airline keeps the globe, which the
+   v22930 note records as deliberate design.
+   ═══════════════════════════════════════════════════════════════════════ */
+html .g8-wrap.g8-airline-PD .gad-map-col-v2::before {
+  background-image: var(--wm-symbol, url('../logos/Backgrounds/PD/porter-pattern-panel.png')) !important;
+  /* the grid is drawn to repeat — tile it rather than stretching one copy */
+  background-repeat: repeat !important;
+  background-position: center top !important;
+  background-size: 120% auto !important;
+  /* the artwork is navy on navy; greyscale/contrast were for the globe and
+     flatten this to mud. Let the pattern keep its own colour and sit back
+     on opacity alone. */
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  opacity: 0.30 !important;
+}
