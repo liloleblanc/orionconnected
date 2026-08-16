@@ -132,14 +132,32 @@
     this._resize();
     this._onWinResize = this._resize.bind(this);
     global.addEventListener('resize', this._onWinResize);
+    // Self-healing size: the container's layout can change after construction
+    // (panel re-tracks, fonts land, the gate re-renders around it). The old
+    // Leaflet path handled this with settle timers re-fitting on a schedule;
+    // this observes the box itself and re-measures exactly when it changes —
+    // no timers, no periodic work on the 24/7 droplet.
+    var self = this;
+    if (typeof ResizeObserver === 'function') {
+      this._ro = new ResizeObserver(function () { self._resize(); self.draw(); });
+      this._ro.observe(this.el);
+    }
     this.draw();
   }
 
   OCGateMap.prototype._resize = function () {
-    var r = this.el.getBoundingClientRect();
+    // LAYOUT size, not getBoundingClientRect. gBCR includes CSS transforms —
+    // the bigcraft takeover enters through a grow animation from scale(0.62),
+    // and a canvas constructed mid-grow measured 0.62x of its real box and
+    // drew tiny forever (Nick: "the big screen does not work"; measured
+    // 466x280 inside a 752x452 container — exactly 0.62). clientWidth/Height
+    // report the transform-independent layout box, which is final from the
+    // first frame of the animation.
+    var w = this.el.clientWidth, h = this.el.clientHeight;
+    if (!w || !h) { var r = this.el.getBoundingClientRect(); w = r.width; h = r.height; }
     var dpr = Math.min(global.devicePixelRatio || 1, 2);   // cap: a 4K board
-    this.w = Math.max(1, Math.round(r.width));             // gains nothing past 2
-    this.h = Math.max(1, Math.round(r.height));
+    this.w = Math.max(1, Math.round(w));                   // gains nothing past 2
+    this.h = Math.max(1, Math.round(h));
     this.canvas.width  = Math.round(this.w * dpr);
     this.canvas.height = Math.round(this.h * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -221,6 +239,7 @@
   OCGateMap.prototype.remove = function () {
     this._stopAnim();
     try { global.removeEventListener('resize', this._onWinResize); } catch (e) {}
+    try { if (this._ro) this._ro.disconnect(); } catch (e) {}
     try { if (this.canvas.parentNode) this.canvas.remove(); } catch (e) {}
     return this;
   };
