@@ -239,7 +239,9 @@
     // ── mount ────────────────────────────────────────────────────────
     ctrl.insertBefore(gDisplay.root, ctrl.firstChild);
     ctrl.insertBefore(gOps.root, gDisplay.root.nextSibling);
-    ctrl.appendChild(gOptions.root);
+    // Options sits right after Operations; wide sections insert before it —
+    // the whole cluster stays LEFT of the search box, matching the approved bar
+    ctrl.insertBefore(gOptions.root, gOps.root.nextSibling);
     var stw = ctrl.querySelector('.screen-type-wrap');
     if (stw) stw.style.display = 'none';   // the old bar's emptied layout shell
 
