@@ -1855,6 +1855,26 @@ function _cuPaintForm(prefs) {
 // colors') — toggle reveals the schedule; any change saves through the
 // canonical merge path. Picking Custom for either period reveals the colour
 // editor so there's something to edit.
+// v23178 — AN EXPLICIT LOOK CHOICE DISARMS THE SCHEDULE (Nick's own
+// diagnosis: "the customize menu when you go in and change it it shuts it
+// off ... if in options it works"). The day/night auto-switch re-applied its
+// scheduled theme right over a colour the user had JUST chosen — Customize
+// saved the colours and left the schedule armed; the Options path bypasses
+// the schedule, which is why only that route appeared to work. Choosing a
+// theme or editing colours now unchecks the schedule, visibly, and says so.
+function _cuDisarmSchedule(reasonLbl) {
+  try {
+    var en = document.getElementById('cuDnEnabled');
+    if (en && en.checked) {
+      en.checked = false;
+      en.dataset.painted = '1';
+      var wrap = document.getElementById('cuDnWrap');
+      if (wrap) wrap.style.display = 'none';
+      _cuFlashSaved('Auto day/night off — using your ' + (reasonLbl || 'selection'));
+    }
+  } catch (e) {}
+}
+
 function cuDayNightChanged() {
   var en = document.getElementById('cuDnEnabled');
   var wrap = document.getElementById('cuDnWrap');
@@ -2542,6 +2562,7 @@ function _cuRenderPresetGroup() {
 }
 
 function cuThemeChanged() {
+  _cuDisarmSchedule('theme');
   var sel = document.getElementById('cuThemeSelect');
   if (!sel) return;
   var v = sel.value;
@@ -2617,6 +2638,7 @@ function _cuReadColorsFromEditor() {
 }
 
 function cuColorChanged(srcId, dstId) {
+  _cuDisarmSchedule('colors');
   var src = document.getElementById(srcId);
   var dst = document.getElementById(dstId);
   if (src && dst) dst.value = src.value;
