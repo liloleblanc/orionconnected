@@ -1620,6 +1620,50 @@ function _cuPullFromServer(code, done) {
   } catch (e) { if (done) done(null); }
 }
 
+// ── THE MISSING HALF: BOARDS ACTUALLY PULL (v23177) ─────────────────────────
+// _cuPullFromServer existed and was called from NOWHERE — the push half wrote
+// to the server and no station ever read it back, so a manager's change
+// followed them to exactly zero other screens (Nick: "I dont think you moved
+// anything over to cloud ... like you said you did" — correct; it was
+// half-plumbed and reported as built).
+//
+// Every board pulls at boot and every 5 minutes after (the same cadence the
+// kiosks already poll tokens on; _ocEvery keeps hidden boards quiet). The pull
+// writes into fids_customize_<IATA> — the exact key every existing consumer
+// (font restore, style, logo size, theme) already reads — and when the server
+// copy genuinely differs from what this screen booted WITH, the board reloads
+// once to take it, guarded by a hash so it can never loop. Server wins over
+// local by design: that is the whole point of the feature.
+(function _cuCloudSync() {
+  function tick() {
+    var code = '';
+    try { code = ((typeof _acCurrentCode === 'function') ? _acCurrentCode() : '') ||
+                 ((document.getElementById('apSel') || {}).value || ''); } catch (e) {}
+    code = String(code || '').toUpperCase();
+    if (!code) return;
+    var prior = null;
+    try { prior = localStorage.getItem('fids_customize_' + code); } catch (e) {}
+    _cuPullFromServer(code, function (cfg) {
+      if (!cfg) return;                       // offline / no server copy: cache stands
+      var incoming = JSON.stringify(cfg);
+      if (incoming === prior) return;         // nothing changed — do nothing at all
+      var hashKey = 'fids_cu_applied_' + code;
+      var applied = null;
+      try { applied = sessionStorage.getItem(hashKey); } catch (e) {}
+      if (applied === incoming) return;       // already reloaded for this exact copy
+      try { sessionStorage.setItem(hashKey, incoming); } catch (e) {}
+      try { console.log('[CU-SYNC] server settings changed for ' + code + ' — reloading to apply'); } catch (e) {}
+      try { window.location.reload(); } catch (e) {}
+    });
+  }
+  // boot pull after the airport selector settles; then the 5-minute cadence
+  setTimeout(tick, 4000);
+  try {
+    if (typeof window._ocEvery === 'function') window._ocEvery(tick, 300000);
+    else setInterval(tick, 300000);
+  } catch (e) {}
+})();
+
 function _cuFlashSaved(msg) {
   try { if (typeof _acFlash === 'function') { _acFlash(msg, false); return; } } catch (e) {}
   try { if (typeof usFlash === 'function') usFlash(msg, false); } catch (e) {}
