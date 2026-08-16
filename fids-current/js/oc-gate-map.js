@@ -306,7 +306,7 @@
 
     // coastlines — drawn from geometry, no tiles
     var coast = global.WORLD_COAST;
-    if (coast && coast.length) {
+    if (!this.tiles && coast && coast.length) {
       var scale = TILE * Math.pow(2, this.zoom);
       g.lineJoin = 'round';
       for (var wrap = -1; wrap <= 1; wrap++) {          // repeat E/W so a route
@@ -326,16 +326,26 @@
       }
     }
 
-    var tilesCover = false;
-    if (this.tiles) tilesCover = this._drawTiles(g, cx, cy, W, H);
-
-    if (!tilesCover && this.halftone) this._drawHalftone(g, W, H);
+    // TILE MODE IS A COMMITMENT (Nick: "flickering"). The first cut fell
+    // back to the dark vector ground wherever a tile had not landed yet, and
+    // toggled halftone/places on the all-tiles-loaded flag — so during every
+    // pan the basemap strobed dark/light at the edges and the labels popped
+    // in and out. In tile mode the ground is OSM's own water tone, gaps just
+    // read as sea for a frame, and the vector-art layers stay OFF
+    // permanently rather than flickering against the tiles.
+    if (this.tiles) {
+      g.fillStyle = '#aad3df';                     // OSM water — gaps match
+      g.fillRect(0, 0, W, H);
+      this._drawTiles(g, cx, cy, W, H);
+    } else {
+      if (this.halftone) this._drawHalftone(g, W, H);
+    }
 
     // Place names — from data, not tiles. Rank-gated by zoom so a world view
     // shows only megacities and a final-approach view shows the local towns;
     // greedy collision culling so labels never pile into each other. Important
     // places are drawn first, so when two collide the bigger city wins.
-    if (!tilesCover && this.places && global.WORLD_PLACES) this._drawPlaces(g, cx, cy, W, H);
+    if (!this.tiles && this.places && global.WORLD_PLACES) this._drawPlaces(g, cx, cy, W, H);
 
     var R = this._route;
     if (R) {
@@ -353,13 +363,13 @@
 
       g.lineCap = 'round'; g.lineJoin = 'round';
       g.setLineDash([9, 7]); g.lineWidth = 3;           // remaining leg, dashed
-      g.strokeStyle = 'rgba(96,165,250,0.55)';
+      g.strokeStyle = this.tiles ? 'rgba(29,78,216,0.65)' : 'rgba(96,165,250,0.55)';
       g.beginPath();
       for (var j = cut; j < pts.length; j++) (j === cut ? g.moveTo : g.lineTo).apply(g, pts[j]);
       g.stroke();
 
       g.setLineDash([]); g.lineWidth = 4;               // flown leg, solid
-      g.strokeStyle = T.flown;
+      g.strokeStyle = this.tiles ? 'rgba(29,78,216,0.95)' : T.flown;
       g.beginPath();
       for (var k = 0; k <= cut; k++) (k === 0 ? g.moveTo : g.lineTo).apply(g, pts[k]);
       g.stroke();
@@ -385,9 +395,9 @@
     if (!code) return;
     g.font = '700 15px system-ui, -apple-system, sans-serif';
     g.textAlign = 'center'; g.textBaseline = 'top';
-    g.lineWidth = 4; g.strokeStyle = this.theme.labelHalo;
+    g.lineWidth = 4; g.strokeStyle = this.tiles ? 'rgba(255,255,255,0.92)' : this.theme.labelHalo;
     g.strokeText(code, p[0], p[1] + 10);                // halo keeps it legible
-    g.fillStyle = this.theme.label;                     // over land or sea
+    g.fillStyle = this.tiles ? '#0b2540' : this.theme.label;                     // over land or sea
     g.fillText(code, p[0], p[1] + 10);
   };
 

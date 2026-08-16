@@ -119,6 +119,27 @@
     var _st = '';
     try { _st = String((g._gateInbound && g._gateInbound.status) || '').toLowerCase(); } catch (e) {}
     var _legMatches = sameLeg(GL.o, o) && sameLeg(GL.d, d);
+    // ── A MID-FLIGHT LEG HOLDS ITS SURFACE (Nick: "bumping"). Two 10s
+    // controllers feed this builder and they do not agree: one estimates the
+    // INBOUND leg, the other previews the OUTBOUND with prog=-1. Alternating
+    // them rebuilt route+camera every few seconds — the audit flagged the
+    // same alternation as a metronome defect in the old system. While a
+    // glide is mid-flight on a DIFFERENT leg and freshly anchored, a
+    // competing leg does not steal the map; it takes over when the current
+    // leg lands, arrives, or goes stale.
+    // The hold expires by REQUEST STALENESS, not glide freshness. The first
+    // cut tested (Date.now() - GL.at) — but the glide's own frame loop
+    // refreshes GL.at every frame, so the hold NEVER expired: when the board
+    // moved to a new flight, the map refused the new leg and kept flying the
+    // old one (Nick, on a Halifax board: "airplane says coming form
+    // copenhagen ... showing in calgary absurd"). GL.reqAt is only stamped
+    // when a CALLER asks for the currently-held leg — alternation keeps it
+    // fresh; a genuine flight change starves it and the new leg takes the
+    // surface within seconds.
+    if (_legMatches) GL.reqAt = Date.now();
+    if (!_legMatches && GL.raf && GL.views[kind] && typeof GL.p === 'number' &&
+        GL.p > 0.03 && GL.p < 0.995 && (Date.now() - (GL.reqAt || 0)) < 25000) return;
+    if (!_legMatches && GL.views[kind]) { delete GL.views[kind]; if (!Object.keys(GL.views).length) stopGlide(); }
     if (/arriv|land/.test(_st) && look(org) && look(dst)) {
       var arcL = g.OCGateMap.gcPoints(o, d, 160);
       m.setView(d, 11);
@@ -208,6 +229,7 @@
     if (!m) return;
     m._fidsLive = true;
     var _legMatches = sameLeg(GL.o, o) && sameLeg(GL.d, d);
+    if (_legMatches) GL.reqAt = Date.now();   // see the hold note in estimate()
 
     // progressive zoom by distance-from-field, with the anti-flap rules
     var distO = Math.hypot(lat - o[0], lng - o[1]);
@@ -269,7 +291,10 @@
       // and hand the model the fix — no setView, no snap. The follow-cam
       // pans when the plane drifts; that is the only camera motion.
       if (Math.round(m.getZoom()) !== zoom) m.setView([lat, lng], zoom);
-      m.setRoute(o, d, 0, { arc: route, originCode: org, destCode: dst });
+      // carry the CURRENT progress into the redrawn route — passing 0 blanked
+      // the flown leg for one frame on every fix (a per-tick route flicker)
+      m.setRoute(o, d, (typeof GL.p === 'number' ? GL.p : 0),
+                 { arc: route, originCode: org, destCode: dst });
       startGlide(kind, m, o, d, [lat, lng], route, spd, dst, org, true);
       return;
     }
