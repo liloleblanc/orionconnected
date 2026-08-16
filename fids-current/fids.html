@@ -196,6 +196,23 @@
     } catch (e) {}
   })();
   </script>
+  <script>
+  /* v23178 — THEME-PAINT HOLD (Nick: "Still seeing old banners"). The static
+     banner paints in the DEFAULT skin the instant HTML parses; the airport's
+     real theme (cloud config, custom colours) lands seconds later — so every
+     boot flashed the old look first. Same house pattern as the gate hold:
+     stamp an attribute pre-paint, CSS keeps the banner invisible until the
+     theme applies (fids-core clears it), and an 8s failsafe guarantees
+     nothing can stay hidden. */
+  document.documentElement.setAttribute('data-fids-theme-pending', '1');
+  setTimeout(function () {
+    try { document.documentElement.removeAttribute('data-fids-theme-pending'); } catch (e) {}
+  }, 8000);
+  </script>
+  <style>
+  html[data-fids-theme-pending] .fids-banner,
+  html[data-fids-theme-pending] .ticker { visibility: hidden !important; }
+  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
@@ -865,7 +882,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/world-coast.js?v=23177"></script>
 <script src="data/world-places.js?v=23177"></script>
 <script src="js/oc-gate-map.js?v=23177n"></script>
-<script src="js/fids-core.js?v=23178g"></script>
+<script src="js/fids-core.js?v=23178j"></script>
 <!-- gate-route-map REPLACES the Leaflet map builders in fids-core: it
      loads after it and overrides the entry points. Leaflet is no longer
      loaded at all. -->
@@ -879,7 +896,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/airport-runways.js?v=23035"></script>
 <script src="js/template-renderer.js?v=1"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=23177t"></script>
+<script src="js/menu.js?v=23178j"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/menubar.js?v=23035"></script>
 <script src="js/editor-roles.js?v=1"></script>

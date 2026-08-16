@@ -24526,11 +24526,22 @@ function pullSharedAirportConfig(iata, onDone) {
         if (!cfg || typeof cfg !== 'object' || cfg.error) { if (onDone) onDone(false); return; }
         var merged = null;
         try {
-          // Merge over the local cache rather than replacing it: anything the
-          // server does not carry (a device-local choice) must survive.
           var localRaw = localStorage.getItem('fids_customize_' + code);
           var localCfg = localRaw ? JSON.parse(localRaw) : {};
-          merged = Object.assign({}, localCfg, cfg);
+          // v23178 — LAST WRITE WINS, both directions. This merge was
+          // server-field-wins unconditionally, and it runs at boot +2s — so a
+          // local save whose push failed (expired 24h login pushes nothing)
+          // was silently reverted on every boot since v23174. Measured live:
+          // hdr saved #0042aa, server's #ffffff overwrote it two seconds in
+          // (Nick: "colors again dont work"). If the LOCAL copy is newer than
+          // the server's updatedAt, local fields win and we re-push them so
+          // the newer edit propagates once a session exists.
+          if (localCfg._localAt && localCfg._localAt > (cfg.updatedAt || 0)) {
+            merged = Object.assign({}, cfg, localCfg);
+            try { if (typeof window._cuPushToServer === 'function') window._cuPushToServer(localCfg); } catch (e2) {}
+          } else {
+            merged = Object.assign({}, localCfg, cfg);
+          }
           localStorage.setItem('fids_customize_' + code, JSON.stringify(merged));
         } catch (e) {}
         if (onDone) onDone(true, merged);
@@ -24800,6 +24811,9 @@ function applyAirportConfigToBoard(iata) {
   // on body. Without this, the navy fallback CSS rules apply because no
   // theme rules match 'custom'. Built-in themes don't need this — their
   // CSS rules use [data-fids-theme="navy"] etc. selectors.
+  // v23178 — the theme is decided: release the boot paint-hold (fids.html
+  // stamps it pre-paint so the default skin never flashes before this).
+  try { document.documentElement.removeAttribute('data-fids-theme-pending'); } catch (e) {}
   if (_theme === 'custom') {
     var _cc = (_userCfg && _userCfg.customColors) || (_adminCfg && _adminCfg.customColors);
     if (_cc) {
@@ -24844,6 +24858,14 @@ function applyAirportConfigToBoard(iata) {
       // colors instead of being reset — custom colors join the texture
       // system, they don't fight it.
       var _CA = 'html:not(#_):not(#_) body[data-fids-theme="custom"]:not(#_):not(#_) ';
+      // v23178 — THE BANNER SURFACE OBEYS CUSTOM TOO (Nick: "colors again
+      // dont work" — measured: --fids-banner-bg was SET and consumed, but a
+      // hardcoded linear-gradient background-image painted over it, and the
+      // Departures block is a hardcoded red). Under a custom theme the
+      // gradient comes off and the block follows the accent.
+      var _bannerCustomCss = _CA + '.fids-banner { background-image: none !important; }'
+        + _CA + '.fids-banner .fids-banner-board { background: var(--fids-banner-accent, #d21034) !important; }'
+        + _CA + '.fids-banner .fids-banner-chevrons { display: none !important; }';
       // Resolve every ground ONCE, then run each ink through the legibility
       // floor against the ground it actually lands on. Odd and even rows are
       // separate grounds, so the row ink is emitted twice — one white row
@@ -24868,7 +24890,7 @@ function applyAirportConfigToBoard(iata) {
       // contrast. Where the floor had to substitute an ink, drop the fade so
       // the substitution isn't undone by transparency.
       var _fade = (_inkBg === _iTxt) ? '.75' : '.9';
-      _styleEl.textContent =
+      _styleEl.textContent = _bannerCustomCss +
         _CA + '#fidsTable, ' + _CA + '.bidsv2-screen { background-color:' + _gBg + ' !important; color:' + _inkBg + ' !important; }' +
         _CA + '.bidsv2-banner { background-color:' + _gHdr + ' !important; }' +
         _CA + '.bidsv2-airport-name, ' + _CA + '.bidsv2-footer-date { color:' + _inkHdr + ' !important; }' +

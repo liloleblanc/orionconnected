@@ -111,6 +111,7 @@ function closeOverlayMenu() {
 // SYNC MENU STATE WITH BOARD
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function _syncMenu() {
+  try { _cuGateByAccess(); } catch (e) {}
   // Display type pills
   ['main','gate','baggage'].forEach(function(t) {
     var btn = document.getElementById('smDisplay_' + t);
@@ -1561,6 +1562,13 @@ function _cuLoad() {
 }
 
 function _cuSave(prefs) {
+  // v23178 — the save carries its own timestamp so the puller can tell a
+  // NEWER local edit from a stale cache. Without it, "server wins" meant the
+  // +4s boot pull silently reverted every local save whose push had failed
+  // (an expired 24h login pushes NOTHING, and used to fail silently) —
+  // measured live: hdr written #0042aa, clobbered to the server's #ffffff
+  // four seconds later. Nick: "colors again dont work".
+  prefs._localAt = Date.now();
   // Local write stays — it is the offline cache and the instant-preview source.
   try { localStorage.setItem(_cuStorageKey(), JSON.stringify(prefs)); } catch (e) {}
   // …and the change now goes to the SERVER, so it follows the operator to the
@@ -1595,7 +1603,14 @@ function _cuPushToServer(prefs) {
       body: JSON.stringify(prefs)
     }).then(function (r) {
       if (r && r.ok) { try { _cuFlashSaved('Saved to all screens / Enregistré sur tous les écrans'); } catch (e) {} }
-    }, function () {});
+      else if (r && r.status === 401) {
+        try { _cuFlashSaved('Session expired — sign in again to save to all screens / Session expirée'); } catch (e) {}
+      } else {
+        try { _cuFlashSaved('Saved on this screen only — server rejected the save'); } catch (e) {}
+      }
+    }, function () {
+      try { _cuFlashSaved('Saved on this screen only — server unreachable'); } catch (e) {}
+    });
   } catch (e) {}
 }
 
@@ -1605,6 +1620,31 @@ function _cuPushToServer(prefs) {
 // save would appear to work and then not take effect anywhere else.
 // The local copy is kept as a last-known-good cache so a screen still boots
 // correctly if the backend is unreachable.
+// v23178 — COLOUR/THEME EDITING IS SIGNED-IN FUNCTIONALITY (Nick: "You were
+// supposed to take out functions of colors for regular users not signed in").
+// His role spec from day one: standard users get viewing and airport changes,
+// nothing that repaints a terminal. Signed out, the look controls disappear;
+// the rest of the menu is untouched. Re-run on every menu open so a login or
+// logout mid-session takes effect immediately.
+function _cuGateByAccess() {
+  var signedIn = false;
+  try { signedIn = !!(typeof _acGetToken === 'function' && _acGetToken()); } catch (e) {}
+  var hide = !signedIn;
+  try {
+    document.querySelectorAll('[data-sec="look-basic"], [data-sec="look-adv"]').forEach(function (el) {
+      el.style.display = hide ? 'none' : '';
+    });
+    ['cuThemeSelect', 'cuFontSelect', 'cuColorsWrap'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.style.display = hide ? 'none' : (id === 'cuColorsWrap' ? el.style.display : '');
+    });
+    if (hide) { var cw = document.getElementById('cuColorsWrap'); if (cw) cw.style.display = 'none'; }
+  } catch (e) {}
+}
+try { window._cuGateByAccess = _cuGateByAccess; } catch (e) {}
+
+window._cuPushToServer = _cuPushToServer;   // fids-core's boot pull re-pushes newer local copies through this
+
 function _cuPullFromServer(code, done) {
   code = (code || ((typeof _acCurrentCode === 'function') ? _acCurrentCode() : '')).toUpperCase();
   if (!code) { if (done) done(null); return; }
@@ -1613,6 +1653,17 @@ function _cuPullFromServer(code, done) {
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (cfg) {
         if (!cfg || typeof cfg !== 'object') { if (done) done(null); return; }
+        // v23178 — LAST WRITE WINS, not "server wins". If the local copy is
+        // NEWER than the server's (its push failed — expired login, offline),
+        // the pull must not clobber it; it re-pushes instead so the newer
+        // edit propagates once a session exists.
+        var local = null;
+        try { local = JSON.parse(localStorage.getItem('fids_customize_' + code) || 'null'); } catch (e) {}
+        if (local && local._localAt && local._localAt > (cfg.updatedAt || 0)) {
+          try { _cuPushToServer(local); } catch (e) {}
+          if (done) done(null);            // local stands; nothing to apply
+          return;
+        }
         try { localStorage.setItem('fids_customize_' + code, JSON.stringify(cfg)); } catch (e) {}
         if (done) done(cfg);
       })
