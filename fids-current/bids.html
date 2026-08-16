@@ -201,7 +201,6 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
   <link rel="stylesheet" href="css/font.css?v=327">
   <link rel="stylesheet" href="css/airport-fonts.css?v=312">
-  <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
   <link rel="stylesheet" href="css/shared.css?v=23176">
   <link rel="stylesheet" href="css/menu.css?v=23176">
   <link rel="stylesheet" href="css/fids.css?v=23176">
@@ -889,15 +888,18 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 
 <div class="ticker"><span>✈  PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES  ·  VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS  ·  ✈  UNATTENDED ITEMS WILL BE CONFISCATED BY SECURITY  ·  LES OBJETS SANS SURVEILLANCE SERONT CONFISQUÉS  ·  ✈  PROCEED TO YOUR GATE 30 MINUTES BEFORE DEPARTURE  ·  PRÉSENTEZ-VOUS À LA PORTE 30 MINUTES AVANT LE DÉPART  ·  ✈  BOARDING GATES CLOSE 15 MINUTES PRIOR TO DEPARTURE  ·  FERMETURE DES PORTES 15 MINUTES AVANT LE DÉPART  ·  ✈  REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF  ·  SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL  ·  ✈  CHECK MONITORS FOR UPDATED GATE INFORMATION  ·  CONSULTEZ LES ÉCRANS POUR TOUTE MISE À JOUR  ·  ✈</span></div>
 </div>
-
-
-<script src="/mapcdn/leaflet.js?v=22485"></script>
-<script src="/mapcdn/leaflet-arc.js?v=22485"></script>
 <script src="js/gids-layout.js?v=1"></script>
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=5"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23177b"></script>
+<script src="data/world-coast.js?v=23177"></script>
+<script src="data/world-places.js?v=23177"></script>
+<script src="js/oc-gate-map.js?v=23177"></script>
+<script src="js/fids-core.js?v=23177"></script>
+<!-- gate-route-map REPLACES the Leaflet map builders in fids-core: it
+     loads after it and overrides the entry points. Leaflet is no longer
+     loaded at all. -->
+<script src="js/gate-route-map.js?v=23177"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>

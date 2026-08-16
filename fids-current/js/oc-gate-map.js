@@ -220,7 +220,10 @@
   // therefore nothing to leak or orphan: state in, picture out.
   OCGateMap.prototype.setRoute = function (o, d, progress, opts) {
     opts = opts || {};
-    var arc = gcPoints(o, d, 160);
+    // opts.arc: a precomputed path (e.g. origin -> live fix -> runway-aligned
+    // final). The glide rebuilds its route through the aircraft's real
+    // position, so the drawn line must be able to bend through it too.
+    var arc = opts.arc || gcPoints(o, d, 160);
     this._route = { o: o, d: d, p: progress, arc: arc,
                     oCode: opts.originCode || '', dCode: opts.destCode || '' };
     if (progress > 0.005 && progress < 0.999) {
@@ -234,6 +237,26 @@
       };
     } else this._plane = null;
     if (opts.plane) this._plane = opts.plane;   // a live ADS-B fix wins
+    this.draw();
+    return this;
+  };
+
+  // Per-frame glide update: move ONLY the aircraft, keep the route as set.
+  // progress still drives the flown/remaining split so the solid line grows
+  // under the plane.
+  OCGateMap.prototype.setPlane = function (lat, lng, hdg, progress) {
+    this._plane = { lat: lat, lng: lng, hdg: hdg };
+    if (this._route && progress != null) this._route.p = progress;
+    this.draw();
+    return this;
+  };
+
+  // Single known pin — the world-view fallback for an unresolvable exotic
+  // code. One dot with its label; never a blank grey box.
+  OCGateMap.prototype.setPin = function (lat, lng, colour, code) {
+    this._route = { o: [lat, lng], d: [lat, lng], p: 0, arc: [[lat, lng], [lat, lng]],
+                    oCode: code || '', dCode: '', _pinColour: colour };
+    this._plane = null;
     this.draw();
     return this;
   };
@@ -309,8 +332,12 @@
       for (var k = 0; k <= cut; k++) (k === 0 ? g.moveTo : g.lineTo).apply(g, pts[k]);
       g.stroke();
 
-      this._dot(g, this._pt(R.o[0], R.o[1] + _wrapDeg, cx, cy), T.origin, R.oCode);
-      this._dot(g, this._pt(R.d[0], R.d[1] + _wrapDeg, cx, cy), T.dest,  R.dCode);
+      if (R._pinColour) {
+        this._dot(g, this._pt(R.o[0], R.o[1] + _wrapDeg, cx, cy), R._pinColour, R.oCode);
+      } else {
+        this._dot(g, this._pt(R.o[0], R.o[1] + _wrapDeg, cx, cy), T.origin, R.oCode);
+        this._dot(g, this._pt(R.d[0], R.d[1] + _wrapDeg, cx, cy), T.dest,  R.dCode);
+      }
     }
 
     if (this._plane) {
