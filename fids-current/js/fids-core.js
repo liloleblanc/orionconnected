@@ -11113,25 +11113,22 @@ function uxgGateHtml(ctx) {
     +     '<span class="g8-r1-gate" style="font-size:' + (function(g){var n=String(g||'').length; return n>=5?'clamp(56px,7vh,84px)':(n===4?'clamp(78px,9.5vh,110px)':'clamp(96px,13vh,138px)');})(gateVal) + ' !important;line-height:0.92 !important;">' + gateVal + '</span>'
     +   '</div>'
     + '</div>'
-    // ROW 2 - flight number + fields (full width)
-    + '<div class="g8-r2"' + (
-        _bannerSpec
-          ? ' style="background:' + _bannerSpec.r2 + ' !important;"'
-          : ''
-      ) + '>'
-    +   '<div class="g8-r2-left">'
-    +     '<div class="g8-r2-flight" style="--flight-accent:' + (typeof getAirlineAccent === 'function' ? getAirlineAccent(airlineCode) : '#fff') + ';">'
-    +       '<svg class="g8-r2-flight-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 19h20v2H2zM21.38 8.62c-.28-.83-1.18-1.28-2.01-.99L14.2 9.35 8.12 4l-1.57.54 3.47 6.15-4.12 1.42-1.8-1.44-1.13.39 2.08 3.66.24.42 1.13-.39 14.97-5.14c.83-.28 1.27-1.18.99-1.99z"/></svg>'
-    +       '<div class="g8-r2-flight-copy"><div class="g8-r2-flight-label">' + (TL('flight') || 'FLIGHT') + '</div><span>' + currentFlight.flight + '</span></div>'
-    +     '</div>'
-    +   '</div>'
-    +   '<div class="g8-r2-fields">'
-    +     '<div class="g8-r2-field"><div class="g8-r2-field-label">' + TL('estDep') + '</div><div class="g8-r2-field-val"><svg viewBox="0 0 24 24"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>' + depTimeHtml + '</div></div>'
-    +     '<div class="g8-r2-field"><div class="g8-r2-field-label">' + TL('estArr') + '</div><div class="g8-r2-field-val"><svg viewBox="0 0 24 24"><path d="M2.5 19h19v2h-19zM19.34 15.85c.8.21 1.62-.26 1.84-1.06.21-.8-.26-1.62-1.06-1.84l-5.31-1.42-2.76-9.02L10.12 2v8.28L5.15 8.95l-.93-2.32-1.45-.39v5.17l16.57 4.44z"/></svg>' + arrHtml + '</div></div>'
-    +     '<div class="g8-r2-field"><div class="g8-r2-field-label">' + TL('boarding') + '</div><div class="g8-r2-field-val"><svg viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>' + boardTimeHtml + '</div></div>'
-    +     '<div class="g8-r2-field"><div class="g8-r2-field-label">' + TL('status') + '</div><div class="g8-r2-status' + stClass + '"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>' + stLabel + '</div></div>'
-    +   '</div>'
-    + '</div>'
+    // ROW 2 — NO LONGER EMITTED (v23172).
+    // gate-display.css has carried `.g8-r2 { display:none !important }` since
+    // v218.99.12, whose own comment reads "row 2 is dead ... force-hide so any
+    // legacy emission stays invisible". The flight info moved to the left column
+    // (.v2-flightinfo-block) and this row has been redundant ever since — yet it
+    // was still BUILT on every gate render: ~28 elements composed, inserted, and
+    // then hidden by a stylesheet. Hiding the symptom instead of stopping the
+    // cause is precisely the 'stuff hidden behind' Nick can see at load.
+    //
+    // Nothing reads it: no querySelector/closest/matches anywhere targets .g8-r2.
+    // The similarly-named g8-r2-strike / g8-r2-revised are UNRELATED inline spans
+    // in the VISIBLE left column, string-matched to detect a revised time — they
+    // are untouched and still emitted.
+    //
+    // The CSS rule stays as a guard, in case a kiosk is still serving an older
+    // cached fids-core.js that emits this markup.
     // ROW 3+4 — CONDITIONAL: boarding/final/countdown = FULL WIDTH, else split layout
     + (boardActive || finalActive || showCountdown
       // ═══ BOARDING MODE: the takeover fills the screen; the delay/status
@@ -18977,7 +18974,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23175';
+var FIDS_BUILD_TAG = 'v23176';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27422,6 +27419,23 @@ _estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillO
 // invalidateSize() reports the map's size; if it has not moved since the last
 // pass there is nothing to re-fit and we leave the view alone. When it has
 // moved, we re-fit once, without animation.
+// v23172 — the big map's settle pass, mirroring _gateMapSettle for the mini.
+// Only re-fits when the CONTAINER actually changed size; an unconditional
+// re-fit on a timer is what made the view jump on every draw.
+function _bigMapSettle(o, d, p, delayMs) {
+  setTimeout(function () {
+    var m = window._bigCraftMap;
+    if (!m) return;
+    try {
+      var before = m.getSize();
+      m.invalidateSize({ animate: false });
+      var after = m.getSize();
+      if (before.x === after.x && before.y === after.y) return;   // nothing moved
+      if (p < 0.02) m.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
+    } catch (e) {}
+  }, delayMs);
+}
+
 function _gateMapSettle(o, d, p, delayMs) {
   setTimeout(function () {
     if (!gateMap) return;
@@ -34601,6 +34615,26 @@ function _restartGateAdsTimer() {
         el3.style.transition = 'none';
         el3.style.opacity = '1';
       } else {
+        // v23172 — RESTORE THE ENTRY ANIMATION ON THIS PATH.
+        // v23166 scoped gadSlideIn to a .gad-enter class on the reasoning that
+        // the JS crossfade owned the transition. It does — but ONLY on the
+        // `_old` branch above, where there are outgoing children to lift into an
+        // overlay. Nothing ever added .gad-enter, so every slide arriving
+        // through THIS branch (the big route-map takeover leaves nothing in the
+        // carousel to dissolve) lost its transition entirely and became a hard
+        // cut. Nick: "I dont even have those smooth transitions between slides
+        // anymore its a jolt." Marking the incoming children restores the ease
+        // exactly where the crossfade cannot reach, and the class is stripped on
+        // animationend so a later re-attach cannot replay it.
+        try {
+          Array.prototype.forEach.call(el3.children, function (c) {
+            c.classList.add('gad-enter');
+            c.addEventListener('animationend', function h() {
+              c.classList.remove('gad-enter');
+              c.removeEventListener('animationend', h);
+            });
+          });
+        } catch (e) {}
         // NOTHING TO DISSOLVE — FADE THE NEW SLIDE IN INSTEAD. The crossfade
         // is built by lifting the OUTGOING slide's children into an overlay,
         // which only works when the carousel actually holds them. The big
