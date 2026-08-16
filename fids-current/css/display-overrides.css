@@ -12671,3 +12671,45 @@ html .g8-wrap.g8-airline-PD .gad-map-col-v2::before {
   mix-blend-mode: normal !important;
   opacity: 0.30 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23176 — NICK'S FRONT CLOUD PLATE (add-on, nothing removed)
+   "Could this be also added and refined color wise ... more closer front ...
+    if it can help dont take away whats there its just add on"
+
+   Layered IN FRONT of everything in the illustration shelf. The five existing
+   cloud layers (bg / mid / fast / rush / fg) and the aircraft art are all
+   untouched — this only adds a nearer plane of cloud.
+
+   COLOUR REFINEMENT, done in CSS rather than by re-encoding the file. The
+   source is warm sunset cloud — sampled at 22% warm pixels, avg RGB
+   173/196/197 — against a gate sky that is cool blue. Dropped straight in it
+   would read as a peach slab. Two moves fix it:
+     · saturate(0.55)  mutes the peach without going grey
+     · mix-blend-mode: screen  lets the sky beneath show THROUGH the cloud, so
+       it takes the board's own blue instead of covering it. Screen also makes
+       the video's near-black areas transparent for free — no alpha channel
+       needed, which is why the plate can be a plain mp4.
+   Every value here is a dial: saturation, opacity and scale are meant to be
+   tuned against the live board.
+   ═══════════════════════════════════════════════════════════════════════ */
+.v2-rc-shelf-illus #gateCloudsFrontVid {
+  position: absolute !important;
+  left: -6% !important;
+  right: -6% !important;
+  bottom: -4% !important;
+  width: 112% !important;
+  height: auto !important;
+  object-fit: cover !important;
+  /* nearest layer: above the aircraft art and the existing fg clouds */
+  z-index: 6 !important;
+  pointer-events: none !important;
+  mix-blend-mode: screen !important;
+  filter: saturate(0.55) brightness(1.04) contrast(1.02) !important;
+  opacity: 0.42 !important;
+}
+
+/* A kiosk that cannot decode the plate must not leave a black box over the
+   aircraft — an empty video element is invisible under screen blending, but
+   this makes the intent explicit. */
+.v2-rc-shelf-illus #gateCloudsFrontVid:not([src]) { display: none !important; }

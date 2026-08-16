@@ -8872,6 +8872,16 @@ function _buildV2MapCol(ctx, vars) {
               ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
                 + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
         +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
+        // v23176 — Nick's own cloud plate, ADDED in front of the existing
+        // layers, not replacing them ('dont take away whats there its just
+        // add on'). Sits after #gateCloudsFg so it is the closest layer.
+        // Colour is refined in CSS rather than re-encoded: the source is warm
+        // sunset cloud (22% of pixels read warm) against the gate's cool blue
+        // sky, so it is desaturated and screen-blended to pick up the sky
+        // beneath instead of sitting on top as a peach block.
+        + '<video id="gateCloudsFrontVid" autoplay muted loop playsinline '
+        +   'aria-hidden="true" preload="auto" '
+        +   'src="/textures/gate-clouds-front.mp4?v=23176"></video>'
         + '</div>'
         + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
         +   _typeCellHtml
@@ -8898,6 +8908,16 @@ function _buildV2MapCol(ctx, vars) {
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
               + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
+        // v23176 — Nick's own cloud plate, ADDED in front of the existing
+        // layers, not replacing them ('dont take away whats there its just
+        // add on'). Sits after #gateCloudsFg so it is the closest layer.
+        // Colour is refined in CSS rather than re-encoded: the source is warm
+        // sunset cloud (22% of pixels read warm) against the gate's cool blue
+        // sky, so it is desaturated and screen-blended to pick up the sky
+        // beneath instead of sitting on top as a peach block.
+        + '<video id="gateCloudsFrontVid" autoplay muted loop playsinline '
+        +   'aria-hidden="true" preload="auto" '
+        +   'src="/textures/gate-clouds-front.mp4?v=23176"></video>'
       + '</div>'
       + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
       +   '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
