@@ -225,8 +225,16 @@
     var _q = new URLSearchParams(window.location.search);
     var _s = (_q.get('screen') || '').trim().toLowerCase();
     if (_s !== 'main') {
-      if (_s === 'gate' || _q.get('gate')) document.documentElement.setAttribute('data-fids-url-screen', 'gate');
-      else if (_s === 'baggage' || _q.get('belt') || _q.get('carousel')) document.documentElement.setAttribute('data-fids-url-screen', 'baggage');
+      // v23177 — THE PAGE IS THE INTENT (Nick: "Why do I still see old
+      // banners when it loads"). This hold used to engage only when the URL
+      // carried ?screen=gate or ?gate= — a bare gids.html?ap=..&mode=live
+      // (menu navigations, preview links) stamped nothing, so the static
+      // main-board banner and table painted for the seconds fids-core takes
+      // to boot and switch to the gate. gids.html IS the gate page; hold the
+      // board chrome unconditionally. The 8s failsafe below is unchanged —
+      // nothing can stay hidden past it.
+      if (_s === 'baggage' || _q.get('belt') || _q.get('carousel')) document.documentElement.setAttribute('data-fids-url-screen', 'baggage');
+      else document.documentElement.setAttribute('data-fids-url-screen', 'gate');
     }
     /* HARD FAILSAFE: whatever happens, this hold releases. Nothing on a
        display may stay hidden because a boot path did not complete —
