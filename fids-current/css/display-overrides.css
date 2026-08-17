@@ -12852,9 +12852,21 @@ html body .g8-bw-clocked.g8-bw-state-general .g8-bw-sep { color: #1a1206 !import
    now pins to the plate's top padding on every plate; the value centers
    itself in the space that remains (auto margins, so its internal
    stacked-line layout is untouched). */
+/* v23184 correction — align-self alone did nothing: the row grid's track is
+   CONTENT-sized (measured grid-template-rows 77.98px on the drifting plate),
+   so the whole track block centred and the strip drifted with it. The track
+   must fill the plate; then the strip pins and the value centres below it.
+   Verified live on the C43 AC boarding panel: 9.0px inset on all plates. */
+.g8-wrap .v2-fi-row {
+  align-content: stretch !important;
+  grid-template-rows: minmax(0, 1fr) 0px !important;
+}
 .g8-wrap .v2-fi-row .v2-fi-textcol {
   justify-content: flex-start !important;
   align-self: stretch !important;
+  height: auto !important;
+  padding-top: 8px !important;
+  box-sizing: border-box !important;
 }
 .g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-title { flex: 0 0 auto !important; }
 .g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-value {

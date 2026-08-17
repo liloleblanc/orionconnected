@@ -11878,12 +11878,12 @@ function gateAutofit(root) {
       // so the panel fills it and the stylesheet supplies the rail's plate
       // insets. Copying the pane height here would pin it back to the pane's
       // ~107px — this inline !important write beats any CSS rule.
-      var _acbGa = document.body.getAttribute('data-gate-airline') || '';
-      if (_acbGa === 'AC' || _acbGa === 'ACA' || _acbGa.indexOf('AIR CANADA') >= 0) {
-        acb.style.setProperty('height', '100%', 'important');
-      } else {
-        acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
-      }
+      // v23184 — ONE SIZING AUTHORITY (Nick: 'bottom right is not fixed
+      // same size'). The v22821 AC-only height:100% branch made Air Canada
+      // the single airline whose bottom plate sized by a different rule
+      // than every other carrier's — the exact per-airline variance he
+      // keeps catching. Every airline now copies the measured pane height.
+      acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
       acb.style.setProperty('flex-direction', 'column', 'important');
       acb.style.setProperty('justify-content', 'center', 'important');
     });
