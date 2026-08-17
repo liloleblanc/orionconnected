@@ -2615,6 +2615,12 @@ html .g8-final-hdr {
    'Final Call is white and tiny, chance you can even see it'). Big, heavy,
    white on the darkened accent slab. */
 html .g8-final .g8-final-hdr {
+  /* v23186 — the base sheet pins height:70px (fids.css) while this font
+     scales with the screen: at 1670x1050 the 65px text needs an 88px line
+     and hung 25px out the bottom of the fixed strip (Nick's shot, measured).
+     The strip now grows with its text; the body row absorbs the difference. */
+  height: auto !important;
+  min-height: 70px !important;
   font-size: clamp(34px, 6.2vh, 92px) !important;
   font-weight: 900 !important;
   letter-spacing: .02em !important;
