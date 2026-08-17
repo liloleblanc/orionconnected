@@ -120,3 +120,9 @@ body.fids-light-board .ocm-panel {
 /* signed-out gate, shell copy — body.oc-anon is stamped by
    _cuGateByAccess; belt-and-braces with the menu.css rule */
 body.oc-anon [data-auth] { display: none !important; }
+
+/* The airport panel opens from INSIDE a shell dropdown (btnAirport lives in
+   the Display panel) but carried z-index ~101 from the legacy bar era — it
+   rendered BEHIND the .ocm-panel (99999) that launched it, reading as
+   '+ Airport does nothing'. It is a full owner surface: it goes above. */
+body .ap-panel, body #apPanel { z-index: 100001 !important; }
