@@ -12884,3 +12884,21 @@ html body:not(#_):not(#_) .g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-value {
   margin-top: auto !important;
   margin-bottom: auto !important;
 }
+
+/* ── v23186 — THE AIRCRAFT RIDES IN ITS OWN PLATE (Nick: 'give the aircraft
+   the same rounded edge like its in a panal itself'). Same card recipe the
+   left-rail plates paint via their ::before — plate texture, 14.7px radius,
+   same rim/shadow — behind the photo shelf. Verified live on the C49 AC
+   panel before commit. */
+html body .gad-map-col-v2 .v2-rc-shelf-illus { position: relative !important; }
+html body .gad-map-col-v2 .v2-rc-shelf-illus::before {
+  content: ""; position: absolute; inset: 3px 10px;
+  background-color: rgb(11, 14, 20);
+  background-image: var(--plate-tex, none);
+  border-radius: 14.7px;
+  box-shadow: rgba(3, 8, 18, 0.55) 0px 4px 14px 0px,
+              rgba(255, 255, 255, 0.16) 0px 0px 0px 1px inset,
+              rgba(170, 178, 190, 0.55) 0px 0px 0px 1.5px;
+  z-index: 0;
+}
+html body .gad-map-col-v2 .v2-rc-shelf-illus > * { position: relative; z-index: 1; }
