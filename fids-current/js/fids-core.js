@@ -11400,6 +11400,107 @@ function gateLanguageLayout(root) {
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
   if (!root) return;
+  // ═══ PHASE A — GEOMETRY (v23190). ONE sizing authority: every box the
+  // text fitters will measure is positioned/sized HERE, inline !important,
+  // inside the same synchronous pass — never in CSS, where geometry changed
+  // boxes the fitters had already measured (the v23182-v23188 clipped-words
+  // failure: a late-parsing stylesheet moved the plates after the fits).
+  // Phase B (the fitters below) then measures the post-write truth, and
+  // _boxAssign's faKey includes the budget, so changed geometry re-fits by
+  // construction. Three triggers only (rebuild / fonts.ready / resize) —
+  // no new timers, 24/7-safe.
+  var _geo = new Map();
+  try {
+    // A.1 — STRIP LAW: one title inset on every plated row of both surfaces.
+    // The row grid's track is content-sized, so the title+value stack
+    // floated centred and each strip drifted with its value's height
+    // (measured 8.8/10.1/15.5px on the live C43 rail). The track now fills
+    // the plate and the title pins to plateInset+9 (the verified-good
+    // number on both layouts). Plateless rows (Air Canada's approved bare
+    // look) keep their own paddings — only the pinning is normalized.
+    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-row, .g8-bir-shelves .v2-flightinfo-block .v2-fi-row').forEach(function (row) {
+      if (!row.isConnected || row.clientWidth <= 1) return;
+      var tc = row.querySelector('.v2-fi-textcol'); if (!tc) return;
+      var pi = _plateInset(row);
+      row.style.setProperty('align-content', 'stretch', 'important');
+      row.style.setProperty('grid-template-rows', 'minmax(0, 1fr) 0px', 'important');
+      tc.style.setProperty('justify-content', 'flex-start', 'important');
+      tc.style.setProperty('align-self', 'stretch', 'important');
+      tc.style.setProperty('height', 'auto', 'important');
+      tc.style.setProperty('box-sizing', 'border-box', 'important');
+      var stripPad = 0;
+      if (pi) {
+        tc.style.setProperty('padding-top', (pi.t + 9) + 'px', 'important');
+        tc.style.setProperty('padding-bottom', (pi.b + 9) + 'px', 'important');
+        stripPad = 18;
+      }
+      var v0 = row.querySelector('.v2-fi-value');
+      if (v0) {
+        v0.style.setProperty('margin-top', 'auto', 'important');
+        v0.style.setProperty('margin-bottom', 'auto', 'important');
+      }
+      _geo.set(row, { pi: pi, stripPad: stripPad });
+    });
+    // A.2/A.3 — RIGHT COLUMN: every panel on the first pane's measured box
+    // (the relocated v22686 law), the photo AS a panel at the pane's card
+    // radius (Nick's annotated reference), and the photo→type gap equal to
+    // the pane→pane gap instead of the type panel floating centred
+    // (measured 32px vs 9px).
+    root.querySelectorAll('.gad-map-col-v2').forEach(function (col) {
+      var panes = col.querySelectorAll('.v2-rc-fi-pane');
+      var pane = panes[0];
+      var acb = col.querySelector('.v2-rc-acb');
+      if (!pane) return;
+      var pr = pane.getBoundingClientRect();
+      if (!(pr.width > 40 && pr.height > 20)) return;
+      var G = 9;
+      if (panes.length > 1) {
+        var g1 = panes[1].getBoundingClientRect().top - (pr.top + pr.height);
+        if (g1 > 2 && g1 < 24) G = Math.round(g1);
+      }
+      if (acb && acb.offsetParent) {
+        var hostEl = acb.parentElement;
+        var host = hostEl.getBoundingClientRect();
+        var hostPad = parseFloat(getComputedStyle(hostEl).paddingLeft) || 0;
+        acb.style.setProperty('margin', '0', 'important');
+        acb.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - host.left - hostPad)) + 'px', 'important');
+        acb.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
+        acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
+        acb.style.setProperty('flex-direction', 'column', 'important');
+        acb.style.setProperty('justify-content', 'center', 'important');
+      }
+      var photo = col.querySelector('.v2-rc-aircraft-img');
+      if (photo && photo.offsetParent) {
+        var shI = photo.parentElement;
+        var shiR = shI.getBoundingClientRect();
+        var shiPad = parseFloat(getComputedStyle(shI).paddingLeft) || 0;
+        var pRad = '';
+        try { pRad = getComputedStyle(pane, '::before').borderRadius; } catch (ePR) {}
+        if (!pRad || pRad === '0px') pRad = '8.4px';
+        photo.style.setProperty('margin', '0', 'important');
+        photo.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - shiR.left - shiPad)) + 'px', 'important');
+        photo.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
+        photo.style.setProperty('height', Math.max(40, Math.round(shiR.height - G)) + 'px', 'important');
+        photo.style.setProperty('border-radius', pRad, 'important');
+        photo.style.setProperty('overflow', 'hidden', 'important');
+        var phImg = photo.querySelector('.g8-aircraft-img');
+        if (phImg) {
+          phImg.style.setProperty('width', '100%', 'important');
+          phImg.style.setProperty('height', '100%', 'important');
+          phImg.style.setProperty('object-fit', 'cover', 'important');
+        }
+        var shT = acb ? (acb.closest('.v2-rc-shelf-type') || acb.parentElement) : null;
+        if (acb && shT) {
+          shT.style.setProperty('justify-content', 'flex-start', 'important');
+          var pb2 = photo.getBoundingClientRect();
+          var stR = shT.getBoundingClientRect();
+          var mt = Math.max(0, Math.round(G - (stR.top - (pb2.top + pb2.height))));
+          acb.style.setProperty('margin-top', mt + 'px', 'important');
+        }
+      }
+    });
+  } catch (eGeo) {}
+  // ═══ END PHASE A ═══
   // Left-rail values/titles deliberately stay out of this generic pass. This
   // function is invoked synchronously during a gate rebuild, when those new
   // shelves can still report a zero-width box; treating that as overflow
@@ -11604,6 +11705,12 @@ function gateAutofit(root) {
     // rail vs 18px strip). The chip now takes the shared CSS clamp
     // verbatim — identical on both surfaces by construction — and only
     // shrinks if that specific title genuinely overflows its own bar.
+    // v23190 — the rail text pass runs twice: once here, once after
+    // gateLanguageLayout, whose lane-stacking flips titles between one
+    // and two lines AFTER the fits (design-review hole — title heights
+    // change and the value budgets go stale). Memoized fits make the
+    // second run near-free.
+    function _railTextPass() {
     root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title, .g8-bir-shelves .v2-flightinfo-block .v2-fi-title').forEach(function (el) {
       el.style.removeProperty('font-size');
       try { delete el.dataset.faKey; } catch (e) {}
@@ -11638,8 +11745,15 @@ function gateAutofit(root) {
       var row = el.closest('.v2-fi-row'); if (!row) return;
       var tc = el.closest('.v2-fi-textcol') || el.parentElement; if (!tc) return;
       var title = row.querySelector('.v2-fi-title');
-      var _pi2 = _plateInset(row);
-      var availH = row.clientHeight - (_pi2 ? (_pi2.t + _pi2.b) : 0) - (title ? title.offsetHeight : 0) - 6;
+      // v23190 — geometry facts come from Phase A when it saw this row
+      // (same _plateInset source; plus the strip padding it added, which
+      // is real space the value no longer has). titleH is read HERE, after
+      // the title fit above — Phase A cannot know it (the stale-facts hole
+      // the design review caught).
+      var _g0 = _geo.get(row);
+      var _pi2 = _g0 ? _g0.pi : _plateInset(row);
+      var _sp2 = _g0 ? (_g0.stripPad || 0) : 0;
+      var availH = row.clientHeight - (_pi2 ? (_pi2.t + _pi2.b) : 0) - _sp2 - (title ? title.offsetHeight : 0) - 6;
       var colR = Infinity;
       var col = el.closest('.gad-aircraft-col');
       if (col) {
@@ -11648,6 +11762,27 @@ function gateAutofit(root) {
       }
       _boxAssign(el, tc.clientWidth, availH, colR);
     });
+    // v23190 — HARMONY LAW: the flight number and the times land on ONE
+    // size (six independent fits read as six accidents). A revised
+    // 'was → now' pair is excluded from choosing the number — one delayed
+    // flight must not drag the whole rail down (design-review hole) — but
+    // is capped by it so it can never sit larger than its siblings.
+    try {
+      var _h1 = [];
+      root.querySelectorAll('.gad-aircraft-col .v2-fi-value.v2-fi-time, .gad-aircraft-col .v2-fi-value.v2-fi-flight-number, .g8-bir-shelves .v2-fi-value.v2-fi-time, .g8-bir-shelves .v2-fi-value.v2-fi-flight-number').forEach(function (el) {
+        if (!el.offsetParent) return;
+        var revised = /\u2192|\u2b62|->/.test(el.textContent) || !!el.querySelector('[class*="rev"]');
+        _h1.push([el, parseFloat(getComputedStyle(el).fontSize) || 0, revised]);
+      });
+      var _hMin = Infinity;
+      _h1.forEach(function (r) { if (!r[2] && r[1] > 0 && r[1] < _hMin) _hMin = r[1]; });
+      if (isFinite(_hMin)) _h1.forEach(function (r) {
+        var want = r[2] ? Math.min(r[1], _hMin) : _hMin;
+        if (Math.abs(r[1] - want) > 0.5) r[0].style.setProperty('font-size', want + 'px', 'important');
+      });
+    } catch (eH1) {}
+    }
+    _railTextPass();
     // RIGHT CARD rows ('all spaces accounted for'): the value cell is a
     // FIXED flex box (its scroll/offset sizes never follow the font), so
     // the box IS the budget: width = the cell's own box (text-overflow
@@ -11854,48 +11989,12 @@ function gateAutofit(root) {
       var shelf = el.closest('.v2-rc-shelf-illus'); if (!shelf) return;
       _boxAssign(el, Math.floor(shelf.clientWidth * 0.88), Math.floor(shelf.clientHeight * 0.7), null, false);
     });
-    // v22686 — THE THIRD PANEL MATCHES THE OTHER TWO BY MEASUREMENT.
-    // Nick: 'same size as the other 2 and alligned' + 'The panels are not
-    // the same size either'. CSS could not deliver this: the fi-table
-    // renders ~27px narrower than its shelf's content box (measured live;
-    // clamp arithmetic never explains it because the discrepancy is the
-    // table's own layout), so any margin recipe drifts. Instead the type
-    // panel copies the FIRST PANE's real box — left edge, width, height —
-    // from getBoundingClientRect, the same measure-don't-assume law as the
-    // pattern registration and every fitter here. Runs with this fitter
-    // (every render + resize), so it self-corrects when the rail reflows.
-    root.querySelectorAll('.gad-map-col-v2').forEach(function (col) {
-      var pane = col.querySelector('.v2-rc-fi-pane');
-      var acb = col.querySelector('.v2-rc-acb');
-      if (!pane || !acb || !acb.offsetParent) return;
-      var pr = pane.getBoundingClientRect();
-      if (!(pr.width > 40 && pr.height > 20)) return;
-      var hostEl = acb.parentElement;
-      var host = hostEl.getBoundingClientRect();
-      // margins offset from the parent's CONTENT edge — inside its padding —
-      // so the padding must come off or the panel sits that far right
-      // (measured: +15px, exactly the shelf's padding-left).
-      var hostPad = parseFloat(getComputedStyle(hostEl).paddingLeft) || 0;
-      acb.style.setProperty('margin', '0', 'important');
-      acb.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - host.left - hostPad)) + 'px', 'important');
-      acb.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
-      // v22821 — on AC the bottom plate matches the LEFT RAIL rows, not the
-      // info panes (Nick: 'the bottom panels to at least match'): the shelf
-      // is rail-row-sized once the column carries the rail's bottom padding,
-      // so the panel fills it and the stylesheet supplies the rail's plate
-      // insets. Copying the pane height here would pin it back to the pane's
-      // ~107px — this inline !important write beats any CSS rule.
-      // v23184 — ONE SIZING AUTHORITY (Nick: 'bottom right is not fixed
-      // same size'). The v22821 AC-only height:100% branch made Air Canada
-      // the single airline whose bottom plate sized by a different rule
-      // than every other carrier's — the exact per-airline variance he
-      // keeps catching. Every airline now copies the measured pane height.
-      acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
-      acb.style.setProperty('flex-direction', 'column', 'important');
-      acb.style.setProperty('justify-content', 'center', 'important');
-    });
+    // (v22686 third-panel block moved into gateAutofit PHASE A in v23190 —
+    // geometry runs before every fitter, exactly once, in one place.)
+
   } catch (e) {}
   gateLanguageLayout(root);
+  try { _railTextPass(); } catch (eRT) {}
 }
 
 // ═══ BOARD AUTOFIT ═══ (Nick: 'row sizes everywhere to check and adjust',
