@@ -12857,19 +12857,24 @@ html body .g8-bw-clocked.g8-bw-state-general .g8-bw-sep { color: #1a1206 !import
    so the whole track block centred and the strip drifted with it. The track
    must fill the plate; then the strip pins and the value centres below it.
    Verified live on the C43 AC boarding panel: 9.0px inset on all plates. */
-.g8-wrap .v2-fi-row {
+/* v23185 — the countdown rail carries higher-specificity centring rules
+   that beat the plain selector (measured: align-content stayed 'center',
+   Destination back at 16px). Same house out-specify pattern as the other
+   armored rules. Verified live: 9.0px on all six countdown-rail plates AND
+   all four boarding plates. */
+html body:not(#_):not(#_) .g8-wrap .v2-fi-row {
   align-content: stretch !important;
   grid-template-rows: minmax(0, 1fr) 0px !important;
 }
-.g8-wrap .v2-fi-row .v2-fi-textcol {
+html body:not(#_):not(#_) .g8-wrap .v2-fi-row .v2-fi-textcol {
   justify-content: flex-start !important;
   align-self: stretch !important;
   height: auto !important;
   padding-top: 8px !important;
   box-sizing: border-box !important;
 }
-.g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-title { flex: 0 0 auto !important; }
-.g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-value {
+html body:not(#_):not(#_) .g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-title { flex: 0 0 auto !important; }
+html body:not(#_):not(#_) .g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-value {
   margin-top: auto !important;
   margin-bottom: auto !important;
 }
