@@ -8832,9 +8832,9 @@ function _buildV2MapCol(ctx, vars) {
       } else if (_acModel && _acReg && !_regConfirmed) {
         _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
           + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
-          + '  |  ' + _nbw(_acReg + _acRegTag);
+          + '<span class="v2-rc-acsep">  |  </span>' + _nbw(_acReg + _acRegTag);
       } else {
-        _acTypeVal = _nbw(_acModel) + (_acReg ? '  |  ' + _nbw(_acReg + _acRegTag) : '');
+        _acTypeVal = _nbw(_acModel) + (_acReg ? '<span class="v2-rc-acsep">  |  </span>' + _nbw(_acReg + _acRegTag) : '');
       }
       // Shorter label per Nick: "Aircraft / Appareil" (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
@@ -11808,6 +11808,19 @@ function gateAutofit(root) {
           heroPx = nextHeroPx;
         }
       }
+      // v23182 — Nick's separation rule ('Airbus A220-300 | C-GVDQ' wrapped
+      // with the pipe orphaned at the start of line 2): if the settled fit
+      // wraps, the divider goes and the parts stack as their own lines.
+      try {
+        var _sep = el.querySelectorAll('.v2-rc-acsep');
+        if (_sep.length) {
+          var _parts = el.querySelectorAll('span[style*="nowrap"]');
+          var _wrapped = _parts.length >= 2 &&
+            Math.abs(_parts[_parts.length - 1].offsetTop - _parts[0].offsetTop) > 4;
+          _sep.forEach(function (sp) { sp.style.display = _wrapped ? 'none' : ''; });
+          if (_wrapped) _parts.forEach(function (pp) { pp.style.display = 'block'; });
+        }
+      } catch (eSep) {}
       var opAvail = Math.max(12, Math.floor(h - el.offsetHeight - 6));
       if (op) _boxAssign(op, w, Math.min(opAvail, Math.floor(h * 0.30)), null, false, true);
       // v22866 — width can still squeeze a long type+registration line

@@ -12843,3 +12843,21 @@ html body .g8-bw-clocked.g8-bw-state-final .g8-bw-pill .g8-bw-st-val { color: #b
 html body .g8-bw-clocked.g8-bw-state-general { background: #f59e0b !important; }
 html body .g8-bw-clocked.g8-bw-state-general .g8-bw-text,
 html body .g8-bw-clocked.g8-bw-state-general .g8-bw-sep { color: #1a1206 !important; }
+
+/* ── v23182 — THE TITLE STRIPS HOLD ONE LINE (Nick: 'the gate top titles
+   the banners are still OFF again'). Measured on the live C43 AC panel:
+   Destination's strip sat 15.5px from its plate top, Status at 10.1px,
+   the other four at 8.8px — because the title+value stack is CENTERED as
+   a group, so each strip drifts with its own value's height. The strip
+   now pins to the plate's top padding on every plate; the value centers
+   itself in the space that remains (auto margins, so its internal
+   stacked-line layout is untouched). */
+.g8-wrap .v2-fi-row .v2-fi-textcol {
+  justify-content: flex-start !important;
+  align-self: stretch !important;
+}
+.g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-title { flex: 0 0 auto !important; }
+.g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-value {
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
