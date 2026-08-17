@@ -11893,39 +11893,6 @@ function gateAutofit(root) {
       acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
       acb.style.setProperty('flex-direction', 'column', 'important');
       acb.style.setProperty('justify-content', 'center', 'important');
-      // v23187 — ONE BOX, ONE RHYTHM for the whole column (Nick: 'the panels
-      // are not the same size ... Look at the spaces'). The photo joins the
-      // pane's measured box exactly like the type panel does — same left,
-      // same width — clipped to the fi pane's card radius; and the type
-      // panel top-pins so the photo→type gap matches the pane→pane gap
-      // instead of floating centred in its shelf (measured 32px vs 9px).
-      var photoW = col.querySelector('.v2-rc-aircraft-img');
-      if (photoW && photoW.offsetParent) {
-        var shI = photoW.parentElement;
-        var shiR = shI.getBoundingClientRect();
-        var shiPad = parseFloat(getComputedStyle(shI).paddingLeft) || 0;
-        photoW.style.setProperty('margin', '0', 'important');
-        photoW.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - shiR.left - shiPad)) + 'px', 'important');
-        photoW.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
-        photoW.style.setProperty('height', Math.max(40, Math.round(shiR.height - 10)) + 'px', 'important');
-        photoW.style.setProperty('border-radius', '8.4px', 'important');
-        photoW.style.setProperty('overflow', 'hidden', 'important');
-        var phImg = photoW.querySelector('.g8-aircraft-img');
-        if (phImg) {
-          phImg.style.setProperty('width', '100%', 'important');
-          phImg.style.setProperty('height', '100%', 'important');
-          phImg.style.setProperty('object-fit', 'cover', 'important');
-          phImg.style.setProperty('border-radius', '8.4px', 'important');
-        }
-        var shT = acb.closest('.v2-rc-shelf-type') || acb.parentElement;
-        if (shT) {
-          shT.style.setProperty('justify-content', 'flex-start', 'important');
-          var pb2 = photoW.getBoundingClientRect();
-          var stR = shT.getBoundingClientRect();
-          var mt = Math.max(0, Math.round(10 - (stR.top - (pb2.top + pb2.height))));
-          acb.style.setProperty('margin-top', mt + 'px', 'important');
-        }
-      }
     });
   } catch (e) {}
   gateLanguageLayout(root);

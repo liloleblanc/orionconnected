@@ -12850,55 +12850,10 @@ html body .g8-bw-clocked.g8-bw-state-general { background: #f59e0b !important; }
 html body .g8-bw-clocked.g8-bw-state-general .g8-bw-text,
 html body .g8-bw-clocked.g8-bw-state-general .g8-bw-sep { color: #1a1206 !important; }
 
-/* ── v23182 — THE TITLE STRIPS HOLD ONE LINE (Nick: 'the gate top titles
-   the banners are still OFF again'). Measured on the live C43 AC panel:
-   Destination's strip sat 15.5px from its plate top, Status at 10.1px,
-   the other four at 8.8px — because the title+value stack is CENTERED as
-   a group, so each strip drifts with its own value's height. The strip
-   now pins to the plate's top padding on every plate; the value centers
-   itself in the space that remains (auto margins, so its internal
-   stacked-line layout is untouched). */
-/* v23184 correction — align-self alone did nothing: the row grid's track is
-   CONTENT-sized (measured grid-template-rows 77.98px on the drifting plate),
-   so the whole track block centred and the strip drifted with it. The track
-   must fill the plate; then the strip pins and the value centres below it.
-   Verified live on the C43 AC boarding panel: 9.0px inset on all plates. */
-/* v23185 — the countdown rail carries higher-specificity centring rules
-   that beat the plain selector (measured: align-content stayed 'center',
-   Destination back at 16px). Same house out-specify pattern as the other
-   armored rules. Verified live: 9.0px on all six countdown-rail plates AND
-   all four boarding plates. */
-html body:not(#_):not(#_) .g8-wrap .v2-fi-row {
-  align-content: stretch !important;
-  grid-template-rows: minmax(0, 1fr) 0px !important;
-}
-html body:not(#_):not(#_) .g8-wrap .v2-fi-row .v2-fi-textcol {
-  justify-content: flex-start !important;
-  align-self: stretch !important;
-  height: auto !important;
-  padding-top: 8px !important;
-  box-sizing: border-box !important;
-}
-html body:not(#_):not(#_) .g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-title { flex: 0 0 auto !important; }
-html body:not(#_):not(#_) .g8-wrap .v2-fi-row .v2-fi-textcol > .v2-fi-value {
-  margin-top: auto !important;
-  margin-bottom: auto !important;
-}
+/* (v23182-v23185 strip-alignment CSS removed in v23188: it changed the
+   geometry the JS fitters measure, and every plate's text overflowed —
+   Nick's clipped-words screenshots. The strip alignment must be rebuilt
+   inside the fitter system, not around it.) */
 
-/* ── v23186 — THE AIRCRAFT RIDES IN ITS OWN PLATE (Nick: 'give the aircraft
-   the same rounded edge like its in a panal itself'). Same card recipe the
-   left-rail plates paint via their ::before — plate texture, 14.7px radius,
-   same rim/shadow — behind the photo shelf. Verified live on the C49 AC
-   panel before commit. */
-html body .gad-map-col-v2 .v2-rc-shelf-illus { position: relative !important; }
-html body .gad-map-col-v2 .v2-rc-shelf-illus::before {
-  content: ""; position: absolute; inset: 3px 10px;
-  background-color: rgb(11, 14, 20);
-  background-image: var(--plate-tex, none);
-  border-radius: 14.7px;
-  box-shadow: rgba(3, 8, 18, 0.55) 0px 4px 14px 0px,
-              rgba(255, 255, 255, 0.16) 0px 0px 0px 1px inset,
-              rgba(170, 178, 190, 0.55) 0px 0px 0px 1.5px;
-  z-index: 0;
-}
-html body .gad-map-col-v2 .v2-rc-shelf-illus > * { position: relative; z-index: 1; }
+
+
