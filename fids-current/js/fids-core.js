@@ -7525,6 +7525,13 @@ function _buildV2AircraftCol(ctx, vars) {
       // keepDup at its own call sites.
       var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
+      // v23187 — the airport code returns beside the city ("Kelowna (YLW)").
+      // The v22328 dest-flip refactor quietly dropped it (Nick: 'the airport
+      // code at destination'). Skipped when the code IS the display value.
+      if (_destValue && _destIataDisp && _destValue !== _destIataDisp
+          && _destValue.indexOf(_destIataDisp) === -1) {
+        _destValue += ' (' + _destIataDisp + ')';
+      }
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
       // "Revised -" to BOTH languages overflows the shelf. (Same rule as Departure.)
@@ -11886,6 +11893,39 @@ function gateAutofit(root) {
       acb.style.setProperty('height', Math.round(pr.height) + 'px', 'important');
       acb.style.setProperty('flex-direction', 'column', 'important');
       acb.style.setProperty('justify-content', 'center', 'important');
+      // v23187 — ONE BOX, ONE RHYTHM for the whole column (Nick: 'the panels
+      // are not the same size ... Look at the spaces'). The photo joins the
+      // pane's measured box exactly like the type panel does — same left,
+      // same width — clipped to the fi pane's card radius; and the type
+      // panel top-pins so the photo→type gap matches the pane→pane gap
+      // instead of floating centred in its shelf (measured 32px vs 9px).
+      var photoW = col.querySelector('.v2-rc-aircraft-img');
+      if (photoW && photoW.offsetParent) {
+        var shI = photoW.parentElement;
+        var shiR = shI.getBoundingClientRect();
+        var shiPad = parseFloat(getComputedStyle(shI).paddingLeft) || 0;
+        photoW.style.setProperty('margin', '0', 'important');
+        photoW.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - shiR.left - shiPad)) + 'px', 'important');
+        photoW.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
+        photoW.style.setProperty('height', Math.max(40, Math.round(shiR.height - 10)) + 'px', 'important');
+        photoW.style.setProperty('border-radius', '8.4px', 'important');
+        photoW.style.setProperty('overflow', 'hidden', 'important');
+        var phImg = photoW.querySelector('.g8-aircraft-img');
+        if (phImg) {
+          phImg.style.setProperty('width', '100%', 'important');
+          phImg.style.setProperty('height', '100%', 'important');
+          phImg.style.setProperty('object-fit', 'cover', 'important');
+          phImg.style.setProperty('border-radius', '8.4px', 'important');
+        }
+        var shT = acb.closest('.v2-rc-shelf-type') || acb.parentElement;
+        if (shT) {
+          shT.style.setProperty('justify-content', 'flex-start', 'important');
+          var pb2 = photoW.getBoundingClientRect();
+          var stR = shT.getBoundingClientRect();
+          var mt = Math.max(0, Math.round(10 - (stR.top - (pb2.top + pb2.height))));
+          acb.style.setProperty('margin-top', mt + 'px', 'important');
+        }
+      }
     });
   } catch (e) {}
   gateLanguageLayout(root);
