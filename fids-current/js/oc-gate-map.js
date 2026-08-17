@@ -259,10 +259,24 @@
       var f = Math.max(0, Math.min(1, progress)) * (arc.length - 1);
       var i = Math.min(Math.floor(f), arc.length - 2), t = f - i;
       var A = arc[i], B = arc[i + 1];
+      // v23189 — a duplicated vertex (arcs concatenated through the live fix
+      // share their joint point) fed bearing() two identical coordinates:
+      // atan2(0,0) = 0 = due NORTH, and the plane rendered sideways to its
+      // own track (Nick: 'sideways plane'). Walk to the next distinct point;
+      // fall back to the previous distinct one; keep the last drawn heading
+      // before ever inventing north.
+      var hb = null;
+      for (var bi = i + 1; bi < arc.length; bi++) {
+        if (Math.abs(arc[bi][0] - A[0]) > 1e-7 || Math.abs(arc[bi][1] - A[1]) > 1e-7) { hb = bearing(A, arc[bi]); break; }
+      }
+      if (hb === null) for (var ai = i - 1; ai >= 0; ai--) {
+        if (Math.abs(arc[ai][0] - A[0]) > 1e-7 || Math.abs(arc[ai][1] - A[1]) > 1e-7) { hb = bearing(arc[ai], A); break; }
+      }
+      if (hb === null) hb = (this._plane && this._plane.hdg != null) ? this._plane.hdg : 0;
       this._plane = {
         lat: A[0] + (B[0] - A[0]) * t,          // interpolated, never snapped
         lng: A[1] + (B[1] - A[1]) * t,          // to a vertex
-        hdg: (opts.heading != null) ? opts.heading : bearing(A, B)
+        hdg: (opts.heading != null) ? opts.heading : hb
       };
     } else this._plane = null;
     if (opts.plane) this._plane = opts.plane;   // a live ADS-B fix wins
