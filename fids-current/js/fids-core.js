@@ -354,6 +354,7 @@ function getAirlineAdImages(airlineCode) {
 function _fidsSaveAuthRescue(res) {
   if (!res || res.status !== 401) return false;
   try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+  try { localStorage.removeItem('fids_token'); } catch (e) {}
   try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
   return true;
 }
@@ -361,7 +362,7 @@ function _fidsSaveAuthRescue(res) {
 // Admin-only write — caller must have a valid Bearer token in
 // sessionStorage.fids_token. Returns { success, config } on success.
 async function saveMediaConfig(cfg) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = sessionStorage.getItem('fids_token') || localStorage.getItem('fids_token');
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-config', {
     method: 'PUT',
@@ -454,7 +455,7 @@ function getMediaAssignments() { return _mediaAssignCache; }
 
 // Admin: add a YouTube ref to the library. Returns the new item.
 async function addYouTubeLibraryItem(ytType, ytId, label) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = sessionStorage.getItem('fids_token') || localStorage.getItem('fids_token');
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-library/youtube', {
     method: 'POST',
@@ -472,7 +473,7 @@ async function addYouTubeLibraryItem(ytType, ytId, label) {
 
 // Admin: upload a binary file (video/image). file is a File or Blob.
 async function uploadLibraryFile(file, label, category) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = sessionStorage.getItem('fids_token') || localStorage.getItem('fids_token');
   if (!token) throw new Error('Not authenticated');
   var cat = (category && /^(ads|airport-logo|airline-logo|background)$/.test(category)) ? category : 'ads';
   var url = FIDS_API_BASE + '/api/media-library/upload'
@@ -495,7 +496,7 @@ async function uploadLibraryFile(file, label, category) {
 // Admin: update a library item's playback settings (loop, duration) or label.
 // patch body: { label?, playback?: { loop, duration } }
 async function updateLibraryItem(itemId, patch) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = sessionStorage.getItem('fids_token') || localStorage.getItem('fids_token');
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-library/' + encodeURIComponent(itemId), {
     method: 'PATCH',
@@ -513,7 +514,7 @@ async function updateLibraryItem(itemId, patch) {
 
 // Admin: delete a library item by id.
 async function deleteLibraryItem(itemId) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = sessionStorage.getItem('fids_token') || localStorage.getItem('fids_token');
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-library/' + encodeURIComponent(itemId), {
     method: 'DELETE',
@@ -530,7 +531,7 @@ async function deleteLibraryItem(itemId) {
 
 // Admin: save the airline → item id assignments map.
 async function saveMediaAssignments(cfg) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = sessionStorage.getItem('fids_token') || localStorage.getItem('fids_token');
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-assignments', {
     method: 'PUT',
@@ -1222,6 +1223,7 @@ function _saveCustomBgUrls(arr) {
 // the mode, clears the dedicated render cache only when it exists, and then
 // asks the best available renderer to repaint.
 function setDedicatedBgMode(mode) {
+  if (typeof _cuLookDenied === 'function' && _cuLookDenied()) return;
   try {
     if (typeof setGateBgMode === 'function') setGateBgMode(mode);
     // Custom backgrounds need saved image URLs — with none, the screen just

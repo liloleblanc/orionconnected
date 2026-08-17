@@ -149,6 +149,14 @@
         var lb = sec(gDisplay.panel, 'Background'); lb.setAttribute('data-auth', '1');
         bg.setAttribute('data-auth', '1');
         gDisplay.panel.appendChild(bg);
+        // fids-core owns bg's inline display (gate screens only) — the label
+        // must follow it or non-gate boards show a heading over nothing
+        var syncBgLabel = function () {
+          lb.style.display = (bg.style.display === 'none') ? 'none' : '';
+        };
+        syncBgLabel();
+        gDisplay.root.querySelector('.ocm-title').addEventListener('click', syncBgLabel);
+        gDisplay.panel.addEventListener('change', syncBgLabel);
       }
       var fs = sec(gDisplay.panel, 'Font'); fs.setAttribute('data-auth', '1');
       var fsel = document.createElement('select');
@@ -171,6 +179,11 @@
     var gOps = group({ title: 'Operations', auth: 'session' });
     move('testFlightBtn', gOps.panel);
     move('overrideBtn', gOps.panel);
+    // opening a full-width surface (override strip / test-flight modal)
+    // must not leave the dropdown open behind it
+    gOps.panel.addEventListener('click', function (e) {
+      if (e.target.closest('#overrideBtn, #testFlightBtn')) closeAll();
+    });
     link(gOps.panel, 'Refresh live data', function () { if (typeof window.fetchLive === 'function') window.fetchLive(); });
 
     // wide sections — the console's tabs, hosted in the shell's own
@@ -261,7 +274,14 @@
     document.addEventListener('keydown', function (e) {
       if (e.key !== 'Escape') return;
       var open = groups.some(function (g) { return g.root.classList.contains('open'); });
-      if (open) { closeAll(); e.stopPropagation(); e.preventDefault(); }
+      if (!open) return;
+      var dd = document.getElementById('apDropdownMenu');
+      if (dd && dd.style.display === 'block' && dd.offsetParent) {
+        dd.style.display = 'none';   // close just the suggestion list; panel stays
+      } else {
+        closeAll();
+      }
+      e.stopPropagation(); e.preventDefault();
     }, true);
 
     // ── auto-hide (approved UX: slim visitor bar, top hot-zone) ──────
@@ -277,8 +297,9 @@
       if (hideTimer) clearTimeout(hideTimer);
       hideTimer = setTimeout(function () {
         var apOpen = (function () { var p = document.getElementById('apPanel'); return p && !p.classList.contains('hidden'); })();
+        var govOpen = (function () { var p = document.getElementById('overridePanel'); return p && p.classList.contains('open'); })();
         var anyOpen = groups.some(function (g) { return g.root.classList.contains('open'); });
-        if (anyOpen || apOpen) { armHide(); return; }
+        if (anyOpen || apOpen || govOpen) { armHide(); return; }
         document.body.classList.add('ocm-hidden');
       }, HIDE_AFTER_MS);
     }

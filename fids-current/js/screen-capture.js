@@ -173,5 +173,6 @@
     if (res.error) { alert(res.error); return; }
     // Open the Designer straight onto the captured template.
     window.location.href = 'designer.html?open=' + encodeURIComponent(res.id);
-  });
+  }, true);   // capture phase — the menu shell's panels stopPropagation on
+              // bubbled clicks, which silently killed this delegate
 })();

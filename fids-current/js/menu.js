@@ -1657,11 +1657,15 @@ function _cuGateByAccess() {
   try { document.body.classList.toggle('oc-anon', hide); } catch (e) {}
   try {
     document.querySelectorAll('[data-sec="look-basic"], [data-sec="look-adv"]').forEach(function (el) {
-      el.style.display = hide ? 'none' : '';
+      if (el.id === 'cuColorsWrap') return;              // cuThemeChanged owns this one
+      if (hide) { el.style.display = 'none'; }
+      else if (el.getAttribute('data-er-hidden') !== '1') { el.style.display = ''; }
     });
     ['cuThemeSelect', 'cuFontSelect', 'cuColorsWrap'].forEach(function (id) {
       var el = document.getElementById(id);
-      if (el) el.style.display = hide ? 'none' : (id === 'cuColorsWrap' ? el.style.display : '');
+      if (!el) return;
+      if (hide) { if (id !== 'cuColorsWrap') el.style.display = 'none'; }
+      else if (id !== 'cuColorsWrap' && el.getAttribute('data-er-hidden') !== '1') { el.style.display = ''; }
     });
     if (hide) { var cw = document.getElementById('cuColorsWrap'); if (cw) cw.style.display = 'none'; }
   } catch (e) {}
@@ -1741,6 +1745,11 @@ function _cuPullFromServer(code, done) {
 })();
 
 function _cuFlashSaved(msg) {
+  // v23183 — the audit proved every save message was invisible from the
+  // menu bar: _acFlash writes #acFlash inside the admin-only Airport panel,
+  // which cannot be open while the user is in Display/Options/Customize.
+  // The viewport toast always shows; the panel flashes stay as mirrors.
+  try { if (typeof _flightToast === 'function') { _flightToast(msg); return; } } catch (e) {}
   try { if (typeof _acFlash === 'function') { _acFlash(msg, false); return; } } catch (e) {}
   try { if (typeof usFlash === 'function') usFlash(msg, false); } catch (e) {}
 }
@@ -2091,6 +2100,11 @@ function _cuRefreshCustomFontGroup() {
     } else {
       setTimeout(_cuRefreshCustomFontGroup, 0);
     }
+    // ...and again when the menu fragment actually lands — #cuFontCustomGroup
+    // does not exist until the async fetch inserts it, so the refresh above
+    // always ran against nothing and saved custom fonts vanished on reload
+    if (window._fidsMenuReady) setTimeout(_cuRefreshCustomFontGroup, 0);
+    else document.addEventListener('fids:menu-ready', function () { _cuRefreshCustomFontGroup(); });
   } catch (e) {}
 })();
 
@@ -2162,10 +2176,12 @@ function cuSubmitFontUpload() {
 }
 
 function cuDeleteCurrentFont() {
+  if (_cuLookDenied()) return;
   var sel = document.getElementById('cuFontSelect');
   if (!sel || sel.value.indexOf('custom:') !== 0) return;
   var name = sel.value.substring('custom:'.length);
   if (!confirm('Delete custom font "' + name + '"?')) return;
+  var deletedKey = sel.value;
   var customs = _cuLoadCustomFonts().filter(function(f) { return f.name !== name; });
   _cuSaveCustomFonts(customs);
   // Remove the @font-face
@@ -2176,6 +2192,18 @@ function cuDeleteCurrentFont() {
   // Reset selection to default
   sel.value = '';
   _cuApplyFont('');
+  // Scrub the stale pref DIRECTLY — cuApplyAndSave cannot: _cuReadForm omits
+  // `font` when the select is empty and the merge keeps saved keys the form
+  // does not supply, so the deleted font would come back at reload.
+  var saved = _cuLoad();
+  if (saved && saved.font === deletedKey) {
+    delete saved.font;
+    _cuSave(saved);
+    try {
+      var code = _acCurrentCode();
+      if (typeof applyAirportConfigToBoard === 'function') applyAirportConfigToBoard(code);
+    } catch (e) {}
+  }
 }
 
 // ── Display mode override (v218.6+) ──────────────────────────────────────
@@ -2238,7 +2266,17 @@ function cuApplyAndSave() {
 // Wipe local overrides for this airport so admin defaults take over
 function cuResetAll() {
   if (_cuLookDenied()) return;
-  try { localStorage.removeItem(_cuStorageKey()); } catch (e) {}
+  // v23183 — removeItem only reset THIS screen; the server copy re-painted
+  // the old look on the next pull (and on every other synced screen).
+  // Explicit nulls survive the merge, carry _localAt, and PUT to the server
+  // so the reset propagates. Airport identity (name/logo) is NOT touched —
+  // those are Airports-admin fields, not Customize overrides.
+  var cleared = {};
+  ['theme','themePresetId','customColors','presetName','font','customFonts',
+   'langs','logoPosition','logoSize','displayMode','gateBlocks','tickerMessage',
+   'hideAirlinePrefix','hideWeather','airlineStyle','dayNight'
+  ].forEach(function (k) { cleared[k] = null; });
+  _cuSave(cleared);
   _cuPaintForm({});
   try {
     var code = _acCurrentCode();
