@@ -12,12 +12,12 @@
   //
   // SECRETS ARE DELIBERATELY ABSENT. JWT_SECRET, SEED_ADMIN_PASSWORD, ADB_KEY,
   // ADB_WEBHOOK_SECRET, AEROAPI_KEY, ACCOR_KEY, NINJAS_KEY, MCO_FEED_KEY,
-  // VECTEEZY_TOKEN, VECTEEZY_RAPIDAPI_KEY and VECTEEZY_ACCOUNT_ID are Worker
-  // secrets. They persist across deploys and must never be committed. The
-  // VECTEEZY_* secrets are optional — without them /api/vecteezy/* answers 503
-  // and the rest of the worker is unaffected; when configured, prefer
-  // VECTEEZY_RAPIDAPI_KEY over VECTEEZY_ACCOUNT_ID (Vecteezy's WAF blocks
-  // Workers on the direct route — see docs/operations/vecteezy-stock.md).
+  // VECTEEZY_TOKEN and VECTEEZY_ACCOUNT_ID are Worker secrets. They persist
+  // across deploys and must never be committed. The two VECTEEZY_* secrets are
+  // optional — without them /api/vecteezy/* answers 503 and the rest of the
+  // worker is unaffected. (A VECTEEZY_RAPIDAPI_KEY secret may linger from a
+  // briefly-used, since-removed fallback route; the code ignores it — see
+  // docs/operations/vecteezy-stock.md.)
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "fids-proxy",
   "main": "fids-proxy.js",
