@@ -2602,6 +2602,27 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {}
       return new Response(payload, { status: 200, headers: { "Content-Type": "application/json", "X-Selftest-Cache": "miss", ...corsHeaders(origin) } });
     }
+    // ── Egress-IP probe ─────────────────────────────────────────────────
+    // Reports the source IP this worker's OUTBOUND requests use, as seen by
+    // two independent echo services. Exists because Vecteezy's support needs
+    // the banned address to clear it, and Worker egress IPs are not fixed.
+    // Public but harmless: returns only Cloudflare-owned egress IPs.
+    if (path === "/vecteezy/egress") {
+      const out = { ips: [] };
+      try {
+        const r = await fetch("https://www.cloudflare.com/cdn-cgi/trace");
+        const t = await r.text();
+        const m = t.match(/^ip=(.+)$/m);
+        if (m) out.ips.push({ seenBy: "cloudflare-trace", ip: m[1].trim() });
+      } catch (e) {}
+      try {
+        const r = await fetch("https://api.ipify.org?format=json");
+        const j = await r.json().catch(() => null);
+        if (j && j.ip) out.ips.push({ seenBy: "ipify", ip: j.ip });
+      } catch (e) {}
+      out.at = new Date().toISOString();
+      return jsonResponse(out, 200, origin);
+    }
     if (path === "/health") {
       return jsonResponse({ status: "ok", version: "218" }, 200, origin);
     }
