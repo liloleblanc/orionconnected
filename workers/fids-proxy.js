@@ -16,9 +16,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 //   ADB_WEBHOOK_SECRET     — optional, for ADB webhook signature checks
 //   TIO_KEY                — Tomorrow.io API key (weather)
 //   VECTEEZY_TOKEN         — optional, Vecteezy API bearer token (stock search/import)
-//   VECTEEZY_RAPIDAPI_KEY  — optional, RapidAPI key for vecteezy-api.p.rapidapi.com
-//                            (preferred route — Vecteezy's own WAF blocks Workers)
-//   VECTEEZY_ACCOUNT_ID    — optional, Vecteezy account id for the direct-API route
+//   VECTEEZY_ACCOUNT_ID    — optional, Vecteezy account id (V2 URL path segment)
 //
 // REQUIRED bindings (CORRECTED 2026-08-15 — see docs/OPERATIONS-BRIEF.md):
 //   FIDS_USERS         KV — users, airport config, airline overrides, media
@@ -740,52 +738,32 @@ __name(handlePutMediaAssignments, "handlePutMediaAssignments");
 // never cached, and import copies the actual file into R2 rather than
 // referencing their CDN.
 //
-// TWO UPSTREAM ROUTES, live-tested 2026-08-18:
-//   - Direct (api.vecteezy.com/v2/{account_id}/...): Vecteezy's own
-//     Cloudflare WAF rejects Worker subrequests outright (403, "error code:
-//     1106" — the banned-client family), with or without browser-like
-//     headers. Kept for the day their WAF allows it, but unusable today.
-//   - RapidAPI (vecteezy-api.p.rapidapi.com/v1/...): same API minus the
-//     account_id path segment (v1 swagger matches v2 field-for-field on
-//     everything this code reads). The gateway forwards our Authorization
-//     bearer straight through to Vecteezy, and Worker→RapidAPI traffic is
-//     already proven daily by the AeroDataBox proxy. BUT the gateway only
-//     exposes /v1 paths, and the account is currently V2-only ("V1 API
-//     usage is not permitted for this account").
+// SINGLE UPSTREAM: the official V2 API only (api.vecteezy.com/v2/{account_id}).
+// A RapidAPI fallback route existed briefly on 2026-08-18 but Vecteezy does
+// not support it (their gateway only fronts the retired V1, and the account
+// is V2-only), so it was removed the same day. The VECTEEZY_RAPIDAPI_KEY
+// secret, if still present on the worker, is ignored.
 //
-// Each half is blocked by a different account/WAF setting on Vecteezy's
-// side, so every request tries the routes in order and fails over ONLY on
-// those two known account-level rejections. Whichever side Vecteezy fixes
-// first starts working with no deploy and no secret changes.
+// KNOWN BLOCKER, live-tested repeatedly on 2026-08-18: Vecteezy's Cloudflare
+// WAF rejects Worker subrequests to api.vecteezy.com outright (403, "error
+// code: 1106" — the banned-client family) BEFORE auth, regardless of headers
+// (api-client UA, full browser header set, and bare-bearer all block
+// identically; cf-ray ids were captured for their support). Until Vecteezy
+// adds a firewall exception, every call below returns that 403.
 const VECTEEZY_CONTENT_TYPES = ["photo", "png", "psd", "svg", "vector", "video"];
-const VECTEEZY_RAPIDAPI_HOST = "vecteezy-api.p.rapidapi.com";
 
 function vecteezyRoutes(env) {
   const token = (env.VECTEEZY_TOKEN || "").trim();
-  const rapidKey = (env.VECTEEZY_RAPIDAPI_KEY || "").trim();
   const accountId = (env.VECTEEZY_ACCOUNT_ID || "").trim();
-  if (!token) return [];
-  const routes = [];
-  // Direct V2 first — it's the product the account is activated for.
-  if (accountId) routes.push({ name: "direct", token, base: `https://api.vecteezy.com/v2/${accountId}` });
-  if (rapidKey) routes.push({ name: "rapidapi", token, rapidKey, base: `https://${VECTEEZY_RAPIDAPI_HOST}/v1` });
-  return routes;
+  if (!token || !accountId) return [];
+  return [{ name: "direct", token, base: `https://api.vecteezy.com/v2/${accountId}` }];
 }
 __name(vecteezyRoutes, "vecteezyRoutes");
 
-// The two rejections that mean "this route is unusable for this account",
-// as opposed to a real answer (bad term, invalid token, quota, ...).
-function vecteezyRouteDead(status, body) {
-  if (status === 403 && /error code: 1106/.test(body || "")) return true;      // WAF blocks Workers
-  if (/V1 API usage is not permitted/.test(body || "")) return true;           // account is V2-only
-  return false;
-}
-__name(vecteezyRouteDead, "vecteezyRouteDead");
-
-// Fetch pathAndQuery (e.g. "/resources?term=…") against each route in order.
-// Returns { r, cfg } on success, { errStatus, errBody, cfg } otherwise —
-// where the error is the LAST real answer, or the last dead-route rejection
-// if every route is dead.
+// Fetch pathAndQuery (e.g. "/resources?term=…") against the configured route.
+// Returns { r, cfg } on success, { errStatus, errBody, cfg } otherwise.
+// (Kept route-shaped so a second upstream can be re-added without touching
+// the handlers.)
 async function vecteezyFetch(env, pathAndQuery) {
   const routes = vecteezyRoutes(env);
   if (!routes.length) return { unconfigured: true };
@@ -796,7 +774,6 @@ async function vecteezyFetch(env, pathAndQuery) {
       if (r.ok) return { r, cfg };
       const body = (await r.text().catch(() => "")).slice(0, 500);
       last = { errStatus: r.status, errBody: body, cfg };
-      if (!vecteezyRouteDead(r.status, body)) return last;
     } catch (e) {
       last = { errStatus: 0, errBody: String(e && e.message).slice(0, 200), cfg };
     }
@@ -806,16 +783,11 @@ async function vecteezyFetch(env, pathAndQuery) {
 __name(vecteezyFetch, "vecteezyFetch");
 
 function vecteezyHeaders(cfg) {
-  const h = {
+  return {
     "Authorization": `Bearer ${cfg.token}`,
     "Accept": "application/json",
     "User-Agent": "OrionConnected-FIDS/1.0 (Cloudflare Worker; +https://fids.orionconnected.com)"
   };
-  if (cfg.rapidKey) {
-    h["x-rapidapi-key"] = cfg.rapidKey;
-    h["x-rapidapi-host"] = VECTEEZY_RAPIDAPI_HOST;
-  }
-  return h;
 }
 __name(vecteezyHeaders, "vecteezyHeaders");
 
@@ -825,7 +797,7 @@ async function handleVecteezySearch(env, payload, origin, url) {
   if (!vecteezyRoutes(env).length) {
     return jsonResponse({
       error: "Vecteezy not configured",
-      hint: "set VECTEEZY_TOKEN plus VECTEEZY_ACCOUNT_ID and/or VECTEEZY_RAPIDAPI_KEY"
+      hint: "set the VECTEEZY_TOKEN and VECTEEZY_ACCOUNT_ID worker secrets"
     }, 503, origin);
   }
   const term = (url.searchParams.get("term") || "").trim();
@@ -887,7 +859,7 @@ async function handleVecteezyImport(request, env, payload, origin) {
   if (!vecteezyRoutes(env).length) {
     return jsonResponse({
       error: "Vecteezy not configured",
-      hint: "set VECTEEZY_TOKEN plus VECTEEZY_ACCOUNT_ID and/or VECTEEZY_RAPIDAPI_KEY"
+      hint: "set the VECTEEZY_TOKEN and VECTEEZY_ACCOUNT_ID worker secrets"
     }, 503, origin);
   }
   let body;
@@ -2599,48 +2571,30 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {}
       const routes = vecteezyRoutes(env);
       const report = {
-        v: 6, // v6: captures cf-ray ids so Vecteezy can find the blocks in their logs
+        v: 7, // v7: official V2 route only — the unsupported RapidAPI fallback is removed
         tokenSet: !!(env.VECTEEZY_TOKEN || "").trim(),
-        rapidKeySet: !!(env.VECTEEZY_RAPIDAPI_KEY || "").trim(),
         accountIdSet: !!(env.VECTEEZY_ACCOUNT_ID || "").trim(),
         ok: false,
         routes: []
       };
-      // Header variants for the direct route — the WAF may key on the UA.
-      const VARIANTS = {
-        apiClient: null, // vecteezyHeaders as-is
-        browser: {
-          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
-          "Accept": "application/json, text/plain, */*",
-          "Accept-Language": "en-US,en;q=0.9",
-          "Referer": "https://www.vecteezy.com/"
-        },
-        bareBearer: { "User-Agent": "", "Accept": "" } // Authorization only
-      };
       for (const cfg of routes) {
-        const variants = cfg.name === "direct" ? Object.keys(VARIANTS) : ["apiClient"];
-        for (const vName of variants) {
-          const entry = { route: cfg.name, variant: vName, upstreamStatus: null, ok: false, detail: "" };
-          try {
-            const h = { ...vecteezyHeaders(cfg) };
-            const over = VARIANTS[vName];
-            if (over) for (const k of Object.keys(over)) { if (over[k]) h[k] = over[k]; else delete h[k]; }
-            const r = await fetch(`${cfg.base}/resources?term=sky&content_type=photo&per_page=1`, { headers: h });
-            entry.upstreamStatus = r.status;
-            entry.rayId = r.headers.get("cf-ray") || null;
-            entry.at = new Date().toISOString();
-            if (r.ok) {
-              const j = await r.json().catch(() => null);
-              entry.ok = !!(j && Array.isArray(j.resources));
-            } else {
-              entry.detail = (await r.text().catch(() => "")).slice(0, 160);
-            }
-          } catch (e) {
-            entry.detail = String(e && e.message).slice(0, 160);
+        const entry = { route: cfg.name, upstreamStatus: null, ok: false, detail: "" };
+        try {
+          const r = await fetch(`${cfg.base}/resources?term=sky&content_type=photo&per_page=1`, { headers: vecteezyHeaders(cfg) });
+          entry.upstreamStatus = r.status;
+          entry.rayId = r.headers.get("cf-ray") || null;
+          entry.at = new Date().toISOString();
+          if (r.ok) {
+            const j = await r.json().catch(() => null);
+            entry.ok = !!(j && Array.isArray(j.resources));
+          } else {
+            entry.detail = (await r.text().catch(() => "")).slice(0, 160);
           }
-          report.routes.push(entry);
-          if (entry.ok) report.ok = true;
+        } catch (e) {
+          entry.detail = String(e && e.message).slice(0, 160);
         }
+        report.routes.push(entry);
+        if (entry.ok) report.ok = true;
       }
       const payload = JSON.stringify(report);
       try {

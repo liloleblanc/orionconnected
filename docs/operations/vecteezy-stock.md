@@ -17,27 +17,28 @@ by Vecteezy per-account; see <https://www.vecteezy.com/developers>.
 Worker secrets (dashboard → fids-proxy → Settings → Variables and Secrets,
 or `wrangler secret put`):
 
-- `VECTEEZY_TOKEN` — the Vecteezy API bearer token (always required)
-- `VECTEEZY_RAPIDAPI_KEY` — RapidAPI key for `vecteezy-api.p.rapidapi.com`
-  (**preferred route**; see below)
-- `VECTEEZY_ACCOUNT_ID` — numeric account id, only used by the direct route
+- `VECTEEZY_TOKEN` — the Vecteezy API bearer token
+- `VECTEEZY_ACCOUNT_ID` — numeric account id (V2 URL path segment)
 
-Until a working combination is set, `/api/vecteezy/*` answers
-`503 Vecteezy not configured` and nothing else in the worker changes. The
-menu surfaces that 503 as a readable message in the search box.
+Until both are set, `/api/vecteezy/*` answers `503 Vecteezy not configured`
+and nothing else in the worker changes. The menu surfaces that 503 as a
+readable message in the search box. (A `VECTEEZY_RAPIDAPI_KEY` secret may
+linger from a briefly-used fallback route removed the same day it was
+added — Vecteezy does not support their RapidAPI listing, which only fronts
+the retired V1 API. The code ignores that secret.)
 
-### Why RapidAPI is the preferred route
+### Known blocker: Vecteezy's firewall vs. Cloudflare Workers
 
-Live-tested 2026-08-18: Vecteezy's own Cloudflare WAF rejects Worker
-subrequests to `api.vecteezy.com` outright (403, "error code: 1106" —
-banned-client family), with or without browser-like headers, before the
-bearer token is even evaluated. The same API is published through RapidAPI
-at `vecteezy-api.p.rapidapi.com` (`/v1/...`, no account_id path segment;
-the v1 swagger matches v2 field-for-field on everything this integration
-reads), the gateway forwards our `Authorization` bearer to Vecteezy, and
-Worker→RapidAPI traffic is already proven daily by the AeroDataBox proxy.
-When `VECTEEZY_RAPIDAPI_KEY` is set the worker uses RapidAPI; otherwise it
-falls back to the direct route (kept for the day their WAF allows Workers).
+Live-tested repeatedly on 2026-08-18: Vecteezy's own Cloudflare WAF rejects
+Worker subrequests to `api.vecteezy.com` outright (403, "error code: 1106" —
+banned-client family) **before the bearer token is evaluated**, and
+identically for api-client, full-browser, and bare-bearer header sets — the
+block keys on Worker-origin network signals that cannot be changed
+client-side. The same requests from non-Cloudflare servers reach the API
+normally. Until Vecteezy adds a firewall exception for this account's
+Worker traffic (requests identify as `OrionConnected-FIDS/1.0`), every
+search/import returns that 403. `GET /vecteezy/selftest` on the worker
+reports the live status, including `cf-ray` ids their support can look up.
 
 ## Worker endpoints (both admin-JWT-gated, under `/api/`)
 
