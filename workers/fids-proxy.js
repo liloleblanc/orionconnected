@@ -454,7 +454,22 @@ async function handlePutAirport(request, env, payload, origin, code) {
   const norm = normIata(code);
   const existing = await env.FIDS_USERS.get(`airport:${norm}`);
   let cfg = existing ? JSON.parse(existing) : {};
-  const fields = ["displayName", "longName", "logo", "theme", "hideAirlinePrefix", "hideWeather", "airlineStyle"];
+  // v23174 additions — the rest of the customise surface. This list matches
+  // the worker deployed by hand on 2026-08-18 (read back from the dashboard);
+  // dropping any of these silently loses operator customizations on save.
+  const fields = [
+    "displayName", "longName", "logo", "theme", "hideAirlinePrefix", "hideWeather", "airlineStyle",
+    "customColors",   // the resolved palette (NOT a preset id)
+    "presetName",     // what the operator called it, for the console
+    "font",
+    "customFonts",
+    "langs",
+    "logoPosition",
+    "logoSize",
+    "displayMode",    // auto | light | dark
+    "gateBlocks",     // order + on/off of the gate screen blocks
+    "tickerMessage"
+  ];
   for (const f of fields) { if (body[f] !== undefined) cfg[f] = body[f]; }
   cfg.updatedAt = Date.now();
   cfg.updatedBy = payload.sub;
