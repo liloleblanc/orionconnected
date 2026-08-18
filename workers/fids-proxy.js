@@ -741,6 +741,19 @@ __name(handlePutMediaAssignments, "handlePutMediaAssignments");
 const VECTEEZY_API_BASE = "https://api.vecteezy.com";
 const VECTEEZY_CONTENT_TYPES = ["photo", "png", "psd", "svg", "vector", "video"];
 
+// Vecteezy sits behind Cloudflare and their WAF blocks bare Worker
+// subrequests (403, "error code: 1106" — the banned-client family).
+// Workers send NO User-Agent by default, which WAF rules treat as a bot;
+// identify ourselves like any server-side API client on every call.
+function vecteezyHeaders(cfg) {
+  return {
+    "Authorization": `Bearer ${cfg.token}`,
+    "Accept": "application/json",
+    "User-Agent": "OrionConnected-FIDS/1.0 (Cloudflare Worker; +https://fids.orionconnected.com)"
+  };
+}
+__name(vecteezyHeaders, "vecteezyHeaders");
+
 function vecteezyConfig(env) {
   const token = (env.VECTEEZY_TOKEN || "").trim();
   const accountId = (env.VECTEEZY_ACCOUNT_ID || "").trim();
@@ -774,7 +787,7 @@ async function handleVecteezySearch(env, payload, origin, url) {
     if (v !== null && v !== "") upstream.searchParams.set(p, v);
   }
   try {
-    const r = await fetch(upstream.toString(), { headers: { "Authorization": `Bearer ${cfg.token}` } });
+    const r = await fetch(upstream.toString(), { headers: vecteezyHeaders(cfg) });
     if (!r.ok) {
       const detail = (await r.text().catch(() => "")).slice(0, 300);
       return jsonResponse({ error: "Vecteezy search failed", status: r.status, detail }, 502, origin);
@@ -825,7 +838,7 @@ async function handleVecteezyImport(request, env, payload, origin) {
   const ALLOWED_CATEGORIES = ["ads", "airport-logo", "airline-logo", "background"];
   const category = ALLOWED_CATEGORIES.includes(body && body.category) ? body.category : "ads";
   const hintVideo = (body && body.contentTypeHint) === "video";
-  const auth = { "Authorization": `Bearer ${cfg.token}` };
+  const auth = vecteezyHeaders(cfg);
   try {
     const dlRes = await fetch(`${VECTEEZY_API_BASE}/v2/${cfg.accountId}/resources/${resId}/download`, { headers: auth });
     if (!dlRes.ok) {
@@ -850,7 +863,12 @@ async function handleVecteezyImport(request, env, payload, origin) {
       }
     }
     if (!fileUrl) return jsonResponse({ error: "Vecteezy did not return a download URL (still preparing — try again)" }, 502, origin);
-    const fileRes = await fetch(fileUrl);
+    const fileRes = await fetch(fileUrl, {
+      headers: {
+        "Accept": "*/*",
+        "User-Agent": "OrionConnected-FIDS/1.0 (Cloudflare Worker; +https://fids.orionconnected.com)"
+      }
+    });
     if (!fileRes.ok) return jsonResponse({ error: "Vecteezy file fetch failed", status: fileRes.status }, 502, origin);
     let ct = fileRes.headers.get("Content-Type") || "";
     // Download URLs are often served as octet-stream; recover the real type
