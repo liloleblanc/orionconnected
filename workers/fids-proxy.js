@@ -16,7 +16,9 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 //   ADB_WEBHOOK_SECRET     — optional, for ADB webhook signature checks
 //   TIO_KEY                — Tomorrow.io API key (weather)
 //   VECTEEZY_TOKEN         — optional, Vecteezy API bearer token (stock search/import)
-//   VECTEEZY_ACCOUNT_ID    — optional, Vecteezy API account id (goes in the URL path)
+//   VECTEEZY_RAPIDAPI_KEY  — optional, RapidAPI key for vecteezy-api.p.rapidapi.com
+//                            (preferred route — Vecteezy's own WAF blocks Workers)
+//   VECTEEZY_ACCOUNT_ID    — optional, Vecteezy account id for the direct-API route
 //
 // REQUIRED bindings (CORRECTED 2026-08-15 — see docs/OPERATIONS-BRIEF.md):
 //   FIDS_USERS         KV — users, airport config, airline overrides, media
@@ -730,37 +732,53 @@ __name(handlePutMediaAssignments, "handlePutMediaAssignments");
 
 // ── VECTEEZY stock media (https://api.vecteezy.com/api-docs/api/v2/swagger.json)
 // Search-and-import for royalty-free stock straight into the media library:
-//   GET  /api/vecteezy/search — proxy of GET /v2/{account_id}/resources
+//   GET  /api/vecteezy/search — proxy of Vecteezy's resources search
 //   POST /api/vecteezy/import — resolve a download URL, copy the file into
 //                               R2 and append a "media-library" item
-// Both admin-only. Credentials (VECTEEZY_TOKEN bearer + VECTEEZY_ACCOUNT_ID)
-// stay server-side; the browser only ever talks to this worker. Vecteezy's
-// docs say thumbnail/preview URLs must not be stored — search results are
-// therefore never cached, and import copies the actual file into R2 rather
-// than referencing their CDN.
-const VECTEEZY_API_BASE = "https://api.vecteezy.com";
+// Both admin-only; credentials stay server-side. Vecteezy's docs say
+// thumbnail/preview URLs must not be stored — search results are therefore
+// never cached, and import copies the actual file into R2 rather than
+// referencing their CDN.
+//
+// TWO UPSTREAM ROUTES, live-tested 2026-08-18:
+//   - Direct (api.vecteezy.com/v2/{account_id}/...): Vecteezy's own
+//     Cloudflare WAF rejects Worker subrequests outright (403, "error code:
+//     1106" — the banned-client family), with or without browser-like
+//     headers. Kept for the day their WAF allows it, but unusable today.
+//   - RapidAPI (vecteezy-api.p.rapidapi.com/v1/...): same API minus the
+//     account_id path segment (v1 swagger matches v2 field-for-field on
+//     everything this code reads). The gateway forwards our Authorization
+//     bearer straight through to Vecteezy, and Worker→RapidAPI traffic is
+//     already proven daily by the AeroDataBox proxy. PREFERRED whenever
+//     VECTEEZY_RAPIDAPI_KEY is set.
 const VECTEEZY_CONTENT_TYPES = ["photo", "png", "psd", "svg", "vector", "video"];
+const VECTEEZY_RAPIDAPI_HOST = "vecteezy-api.p.rapidapi.com";
 
-// Vecteezy sits behind Cloudflare and their WAF blocks bare Worker
-// subrequests (403, "error code: 1106" — the banned-client family).
-// Workers send NO User-Agent by default, which WAF rules treat as a bot;
-// identify ourselves like any server-side API client on every call.
+function vecteezyConfig(env) {
+  const token = (env.VECTEEZY_TOKEN || "").trim();
+  const rapidKey = (env.VECTEEZY_RAPIDAPI_KEY || "").trim();
+  const accountId = (env.VECTEEZY_ACCOUNT_ID || "").trim();
+  if (!token) return null;
+  if (rapidKey) return { token, rapidKey, base: `https://${VECTEEZY_RAPIDAPI_HOST}/v1` };
+  if (accountId) return { token, base: `https://api.vecteezy.com/v2/${accountId}` };
+  return null;
+}
+__name(vecteezyConfig, "vecteezyConfig");
+
 function vecteezyHeaders(cfg) {
-  return {
+  const h = {
     "Authorization": `Bearer ${cfg.token}`,
     "Accept": "application/json",
     "User-Agent": "OrionConnected-FIDS/1.0 (Cloudflare Worker; +https://fids.orionconnected.com)"
   };
+  if (cfg.rapidKey) {
+    h["x-rapidapi-key"] = cfg.rapidKey;
+    h["x-rapidapi-host"] = VECTEEZY_RAPIDAPI_HOST;
+  }
+  return h;
 }
 __name(vecteezyHeaders, "vecteezyHeaders");
 
-function vecteezyConfig(env) {
-  const token = (env.VECTEEZY_TOKEN || "").trim();
-  const accountId = (env.VECTEEZY_ACCOUNT_ID || "").trim();
-  if (!token || !accountId) return null;
-  return { token, accountId };
-}
-__name(vecteezyConfig, "vecteezyConfig");
 
 async function handleVecteezySearch(env, payload, origin, url) {
   if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
@@ -768,7 +786,7 @@ async function handleVecteezySearch(env, payload, origin, url) {
   if (!cfg) {
     return jsonResponse({
       error: "Vecteezy not configured",
-      hint: "wrangler secret put VECTEEZY_TOKEN / VECTEEZY_ACCOUNT_ID"
+      hint: "set VECTEEZY_TOKEN plus VECTEEZY_RAPIDAPI_KEY (preferred) or VECTEEZY_ACCOUNT_ID"
     }, 503, origin);
   }
   const term = (url.searchParams.get("term") || "").trim();
@@ -777,7 +795,7 @@ async function handleVecteezySearch(env, payload, origin, url) {
   if (!VECTEEZY_CONTENT_TYPES.includes(contentType)) {
     return jsonResponse({ error: `content_type must be one of: ${VECTEEZY_CONTENT_TYPES.join(", ")}` }, 400, origin);
   }
-  const upstream = new URL(`${VECTEEZY_API_BASE}/v2/${cfg.accountId}/resources`);
+  const upstream = new URL(`${cfg.base}/resources`);
   upstream.searchParams.set("term", term);
   upstream.searchParams.set("content_type", contentType);
   // Optional filters, passed through as-is. page * per_page is capped at
@@ -827,7 +845,7 @@ async function handleVecteezyImport(request, env, payload, origin) {
   if (!cfg) {
     return jsonResponse({
       error: "Vecteezy not configured",
-      hint: "wrangler secret put VECTEEZY_TOKEN / VECTEEZY_ACCOUNT_ID"
+      hint: "set VECTEEZY_TOKEN plus VECTEEZY_RAPIDAPI_KEY (preferred) or VECTEEZY_ACCOUNT_ID"
     }, 503, origin);
   }
   let body;
@@ -840,7 +858,7 @@ async function handleVecteezyImport(request, env, payload, origin) {
   const hintVideo = (body && body.contentTypeHint) === "video";
   const auth = vecteezyHeaders(cfg);
   try {
-    const dlRes = await fetch(`${VECTEEZY_API_BASE}/v2/${cfg.accountId}/resources/${resId}/download`, { headers: auth });
+    const dlRes = await fetch(`${cfg.base}/resources/${resId}/download`, { headers: auth });
     if (!dlRes.ok) {
       const detail = (await dlRes.text().catch(() => "")).slice(0, 300);
       return jsonResponse({ error: "Vecteezy download request failed", status: dlRes.status, detail }, 502, origin);
@@ -850,9 +868,17 @@ async function handleVecteezyImport(request, env, payload, origin) {
     let requiresAttribution = !!info.requires_attribution;
     let attributionUrl = info.required_attribution_url || null;
     if (!fileUrl && info.download_status_url) {
+      // The API returns an absolute status URL on api.vecteezy.com, which the
+      // WAF blocks from Workers — poll the same endpoint through cfg.base
+      // instead, preserving any query string the returned URL carried.
+      let statusUrl = `${cfg.base}/resources/${resId}/download_status`;
+      try {
+        const q = new URL(info.download_status_url).search;
+        if (q) statusUrl += q;
+      } catch (e) {}
       for (let i = 0; i < 10 && !fileUrl; i++) {
         await new Promise((r) => setTimeout(r, 1500));
-        const st = await fetch(info.download_status_url, { headers: auth });
+        const st = await fetch(statusUrl, { headers: auth });
         if (!st.ok) break;
         const sj = await st.json().catch(() => null);
         if (sj && sj.url) {
