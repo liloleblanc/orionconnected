@@ -40,23 +40,16 @@ _saved() {  # read one KEY="value" line from the saved config, if present
 # rebuild. Omit it and the board falls back to its regional default
 # (en,fr in Canada; en,es only for the airports in ES_BOARD_AIRPORTS).
 #
-# NO theme= is pinned on purpose. The stream runs Chrome with --disable-gpu
-# (headless server, no GPU), and the "mist" light theme leans on GPU-composited
-# effects that render badly there — it glitched hard on YouTube while looking
-# fine in a normal browser. The board's default theme streams cleanly. If you
-# ever want a non-default theme on the stream, test it ON THE STREAM first;
-# don't reintroduce theme=mist here.
-#
 # The two live streams:
 #   1. Moncton  (YQM) — English + French, the default below
-#   2. Orlando  (MCO) — English + Spanish, see ORLANDO_URL under "Presets"
+#   2. Miami  (MIA) — English + Spanish, see ORLANDO_URL under "Presets"
 STREAM_URL="${STREAM_URL:-$(_saved STREAM_URL)}"
 STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/rotate.html?ap=YQM&mode=live&stream=1&langs=en,fr&rotate=fids,gids,bids,gids&dwell=60}"
 
 # ── Presets ───────────────────────────────────────────────────────────────
-# Stream 2 — ORLANDO, English + Spanish (was Tampa). Use with:
-#   STREAM_URL="$ORLANDO_URL" MUSIC_URL="$ORION_RADIO" bash setup.sh
-ORLANDO_URL="https://fids.orionconnected.com/rotate.html?ap=MCO&mode=live&stream=1&langs=en,es&rotate=fids,gids,bids,gids&dwell=60"
+# Stream 2 — MIAMI, English + Spanish (was Tampa). Use with:
+#   STREAM_URL="$MIAMI_URL" MUSIC_URL="$ORION_RADIO" bash setup.sh
+ORLANDO_URL="https://fids.orionconnected.com/rotate?ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60}"
 # The station Nick uses for the stream's background audio.
 ORION_RADIO="https://audio-edge-w4d68.yul.o.radiomast.io/ref-128k-mp3-stereo"
 
