@@ -398,6 +398,8 @@ window.FIDS_MEDIA = {
   getAssignments: getMediaAssignments,
   addYouTube: addYouTubeLibraryItem,
   uploadFile: uploadLibraryFile,
+  vecteezySearch: vecteezySearchStock,
+  vecteezyImport: vecteezyImportLibraryItem,
   updateItem: updateLibraryItem,
   deleteItem: deleteLibraryItem,
   saveAssignments: saveMediaAssignments,
@@ -488,6 +490,61 @@ async function uploadLibraryFile(file, label, category) {
     throw new Error('Upload failed: HTTP ' + res.status + (err ? ' — ' + err : ''));
   }
   var json = await res.json();
+  _mediaLibCache = json.library;
+  return json.item;
+}
+
+// Admin: search Vecteezy stock through the worker proxy (credentials live
+// server-side). params: { term, contentType?, page?, perPage?, orientation? }.
+// Returns { page, lastPage, perPage, totalResources, resources: [...] }.
+async function vecteezySearchStock(params) {
+  var token = sessionStorage.getItem('fids_token');
+  if (!token) throw new Error('Not authenticated');
+  params = params || {};
+  var q = new URLSearchParams();
+  q.set('term', params.term || '');
+  q.set('content_type', params.contentType || 'video');
+  if (params.page) q.set('page', String(params.page));
+  if (params.perPage) q.set('per_page', String(params.perPage));
+  if (params.orientation) q.set('orientation', params.orientation);
+  var res = await fetch(FIDS_API_BASE + '/api/vecteezy/search?' + q.toString(), {
+    headers: { 'Authorization': 'Bearer ' + token }
+  });
+  var json = null; try { json = await res.json(); } catch (e) {}
+  if (!res.ok) {
+    var msg = (json && json.error) || ('Search failed: HTTP ' + res.status);
+    if (json && json.status) msg += ' (Vecteezy HTTP ' + json.status + ')';
+    if (json && json.detail) msg += ' — ' + String(json.detail).slice(0, 200);
+    if (json && json.details) msg += ' — ' + String(json.details).slice(0, 200);
+    if (json && json.hint) msg += ' (' + json.hint + ')';
+    throw new Error(msg);
+  }
+  return json;
+}
+
+// Admin: import a Vecteezy resource — the worker downloads the file into R2
+// and appends a normal library item ({ source: 'vecteezy', ... }).
+async function vecteezyImportLibraryItem(resourceId, label, category, contentTypeHint) {
+  var token = sessionStorage.getItem('fids_token');
+  if (!token) throw new Error('Not authenticated');
+  var res = await fetch(FIDS_API_BASE + '/api/vecteezy/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({
+      id: resourceId,
+      label: label || '',
+      category: category || 'ads',
+      contentTypeHint: contentTypeHint || ''
+    })
+  });
+  var json = null; try { json = await res.json(); } catch (e) {}
+  if (!res.ok) {
+    var msg = (json && json.error) || ('Import failed: HTTP ' + res.status);
+    if (json && json.status) msg += ' (Vecteezy HTTP ' + json.status + ')';
+    if (json && json.detail) msg += ' — ' + String(json.detail).slice(0, 200);
+    if (json && json.details) msg += ' — ' + String(json.details).slice(0, 200);
+    throw new Error(msg);
+  }
   _mediaLibCache = json.library;
   return json.item;
 }
