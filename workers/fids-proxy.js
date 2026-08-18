@@ -2532,6 +2532,57 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
 
+    // ── Vecteezy connectivity self-test ─────────────────────────────────
+    // Public but safe: reveals only which route is configured (booleans)
+    // and the upstream HTTP status of one 1-result search. No tokens, no
+    // response bodies beyond a short error snippet. Edge-cached for 60s so
+    // repeated hits can't burn API quota. Exists because the admin-gated
+    // /api/vecteezy/search can't be probed without a Console login when
+    // diagnosing WAF/auth issues from outside.
+    if (path === "/vecteezy/selftest") {
+      const cache = caches.default;
+      const cacheKey = new Request("https://vecteezy-selftest.cache/v1");
+      try {
+        const hit = await cache.match(cacheKey);
+        if (hit) {
+          const body = await hit.text();
+          return new Response(body, { status: 200, headers: { "Content-Type": "application/json", "X-Selftest-Cache": "hit", ...corsHeaders(origin) } });
+        }
+      } catch (e) {}
+      const cfg = vecteezyConfig(env);
+      const report = {
+        tokenSet: !!(env.VECTEEZY_TOKEN || "").trim(),
+        rapidKeySet: !!(env.VECTEEZY_RAPIDAPI_KEY || "").trim(),
+        accountIdSet: !!(env.VECTEEZY_ACCOUNT_ID || "").trim(),
+        mode: cfg ? (cfg.rapidKey ? "rapidapi" : "direct") : "unconfigured",
+        upstreamStatus: null,
+        ok: false,
+        detail: ""
+      };
+      if (cfg) {
+        try {
+          const u = new URL(`${cfg.base}/resources`);
+          u.searchParams.set("term", "sky");
+          u.searchParams.set("content_type", "photo");
+          u.searchParams.set("per_page", "1");
+          const r = await fetch(u.toString(), { headers: vecteezyHeaders(cfg) });
+          report.upstreamStatus = r.status;
+          if (r.ok) {
+            const j = await r.json().catch(() => null);
+            report.ok = !!(j && Array.isArray(j.resources));
+          } else {
+            report.detail = (await r.text().catch(() => "")).slice(0, 160);
+          }
+        } catch (e) {
+          report.detail = String(e && e.message).slice(0, 160);
+        }
+      }
+      const payload = JSON.stringify(report);
+      try {
+        await cache.put(cacheKey, new Response(payload, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60" } }));
+      } catch (e) {}
+      return new Response(payload, { status: 200, headers: { "Content-Type": "application/json", "X-Selftest-Cache": "miss", ...corsHeaders(origin) } });
+    }
     if (path === "/health") {
       return jsonResponse({ status: "ok", version: "218" }, 200, origin);
     }
