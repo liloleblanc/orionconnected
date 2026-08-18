@@ -749,21 +749,61 @@ __name(handlePutMediaAssignments, "handlePutMediaAssignments");
 //     account_id path segment (v1 swagger matches v2 field-for-field on
 //     everything this code reads). The gateway forwards our Authorization
 //     bearer straight through to Vecteezy, and Worker→RapidAPI traffic is
-//     already proven daily by the AeroDataBox proxy. PREFERRED whenever
-//     VECTEEZY_RAPIDAPI_KEY is set.
+//     already proven daily by the AeroDataBox proxy. BUT the gateway only
+//     exposes /v1 paths, and the account is currently V2-only ("V1 API
+//     usage is not permitted for this account").
+//
+// Each half is blocked by a different account/WAF setting on Vecteezy's
+// side, so every request tries the routes in order and fails over ONLY on
+// those two known account-level rejections. Whichever side Vecteezy fixes
+// first starts working with no deploy and no secret changes.
 const VECTEEZY_CONTENT_TYPES = ["photo", "png", "psd", "svg", "vector", "video"];
 const VECTEEZY_RAPIDAPI_HOST = "vecteezy-api.p.rapidapi.com";
 
-function vecteezyConfig(env) {
+function vecteezyRoutes(env) {
   const token = (env.VECTEEZY_TOKEN || "").trim();
   const rapidKey = (env.VECTEEZY_RAPIDAPI_KEY || "").trim();
   const accountId = (env.VECTEEZY_ACCOUNT_ID || "").trim();
-  if (!token) return null;
-  if (rapidKey) return { token, rapidKey, base: `https://${VECTEEZY_RAPIDAPI_HOST}/v1` };
-  if (accountId) return { token, base: `https://api.vecteezy.com/v2/${accountId}` };
-  return null;
+  if (!token) return [];
+  const routes = [];
+  // Direct V2 first — it's the product the account is activated for.
+  if (accountId) routes.push({ name: "direct", token, base: `https://api.vecteezy.com/v2/${accountId}` });
+  if (rapidKey) routes.push({ name: "rapidapi", token, rapidKey, base: `https://${VECTEEZY_RAPIDAPI_HOST}/v1` });
+  return routes;
 }
-__name(vecteezyConfig, "vecteezyConfig");
+__name(vecteezyRoutes, "vecteezyRoutes");
+
+// The two rejections that mean "this route is unusable for this account",
+// as opposed to a real answer (bad term, invalid token, quota, ...).
+function vecteezyRouteDead(status, body) {
+  if (status === 403 && /error code: 1106/.test(body || "")) return true;      // WAF blocks Workers
+  if (/V1 API usage is not permitted/.test(body || "")) return true;           // account is V2-only
+  return false;
+}
+__name(vecteezyRouteDead, "vecteezyRouteDead");
+
+// Fetch pathAndQuery (e.g. "/resources?term=…") against each route in order.
+// Returns { r, cfg } on success, { errStatus, errBody, cfg } otherwise —
+// where the error is the LAST real answer, or the last dead-route rejection
+// if every route is dead.
+async function vecteezyFetch(env, pathAndQuery) {
+  const routes = vecteezyRoutes(env);
+  if (!routes.length) return { unconfigured: true };
+  let last = null;
+  for (const cfg of routes) {
+    try {
+      const r = await fetch(`${cfg.base}${pathAndQuery}`, { headers: vecteezyHeaders(cfg) });
+      if (r.ok) return { r, cfg };
+      const body = (await r.text().catch(() => "")).slice(0, 500);
+      last = { errStatus: r.status, errBody: body, cfg };
+      if (!vecteezyRouteDead(r.status, body)) return last;
+    } catch (e) {
+      last = { errStatus: 0, errBody: String(e && e.message).slice(0, 200), cfg };
+    }
+  }
+  return last || { unconfigured: true };
+}
+__name(vecteezyFetch, "vecteezyFetch");
 
 function vecteezyHeaders(cfg) {
   const h = {
@@ -782,11 +822,10 @@ __name(vecteezyHeaders, "vecteezyHeaders");
 
 async function handleVecteezySearch(env, payload, origin, url) {
   if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
-  const cfg = vecteezyConfig(env);
-  if (!cfg) {
+  if (!vecteezyRoutes(env).length) {
     return jsonResponse({
       error: "Vecteezy not configured",
-      hint: "set VECTEEZY_TOKEN plus VECTEEZY_RAPIDAPI_KEY (preferred) or VECTEEZY_ACCOUNT_ID"
+      hint: "set VECTEEZY_TOKEN plus VECTEEZY_ACCOUNT_ID and/or VECTEEZY_RAPIDAPI_KEY"
     }, 503, origin);
   }
   const term = (url.searchParams.get("term") || "").trim();
@@ -795,22 +834,26 @@ async function handleVecteezySearch(env, payload, origin, url) {
   if (!VECTEEZY_CONTENT_TYPES.includes(contentType)) {
     return jsonResponse({ error: `content_type must be one of: ${VECTEEZY_CONTENT_TYPES.join(", ")}` }, 400, origin);
   }
-  const upstream = new URL(`${cfg.base}/resources`);
-  upstream.searchParams.set("term", term);
-  upstream.searchParams.set("content_type", contentType);
+  const q = new URLSearchParams();
+  q.set("term", term);
+  q.set("content_type", contentType);
   // Optional filters, passed through as-is. page * per_page is capped at
   // 10,000 by Vecteezy; bad values come back as their 4xx, not ours.
   for (const p of ["page", "per_page", "sort_by", "license_type", "orientation", "color", "duration", "ai_generated", "family_friendly"]) {
     const v = url.searchParams.get(p);
-    if (v !== null && v !== "") upstream.searchParams.set(p, v);
+    if (v !== null && v !== "") q.set(p, v);
   }
   try {
-    const r = await fetch(upstream.toString(), { headers: vecteezyHeaders(cfg) });
-    if (!r.ok) {
-      const detail = (await r.text().catch(() => "")).slice(0, 300);
-      return jsonResponse({ error: "Vecteezy search failed", status: r.status, detail }, 502, origin);
+    const res = await vecteezyFetch(env, `/resources?${q.toString()}`);
+    if (!res.r) {
+      return jsonResponse({
+        error: "Vecteezy search failed",
+        status: res.errStatus,
+        route: res.cfg ? res.cfg.name : null,
+        detail: (res.errBody || "").slice(0, 300)
+      }, 502, origin);
     }
-    const j = await r.json();
+    const j = await res.r.json();
     // Slim each resource to what the menu UI renders. Preview/thumbnail
     // URLs are short-lived — used immediately, never persisted.
     const resources = (Array.isArray(j.resources) ? j.resources : []).map((res) => ({
@@ -841,11 +884,10 @@ __name(handleVecteezySearch, "handleVecteezySearch");
 // one call and gets back a normal library item.
 async function handleVecteezyImport(request, env, payload, origin) {
   if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
-  const cfg = vecteezyConfig(env);
-  if (!cfg) {
+  if (!vecteezyRoutes(env).length) {
     return jsonResponse({
       error: "Vecteezy not configured",
-      hint: "set VECTEEZY_TOKEN plus VECTEEZY_RAPIDAPI_KEY (preferred) or VECTEEZY_ACCOUNT_ID"
+      hint: "set VECTEEZY_TOKEN plus VECTEEZY_ACCOUNT_ID and/or VECTEEZY_RAPIDAPI_KEY"
     }, 503, origin);
   }
   let body;
@@ -856,14 +898,20 @@ async function handleVecteezyImport(request, env, payload, origin) {
   const ALLOWED_CATEGORIES = ["ads", "airport-logo", "airline-logo", "background"];
   const category = ALLOWED_CATEGORIES.includes(body && body.category) ? body.category : "ads";
   const hintVideo = (body && body.contentTypeHint) === "video";
-  const auth = vecteezyHeaders(cfg);
   try {
-    const dlRes = await fetch(`${cfg.base}/resources/${resId}/download`, { headers: auth });
-    if (!dlRes.ok) {
-      const detail = (await dlRes.text().catch(() => "")).slice(0, 300);
-      return jsonResponse({ error: "Vecteezy download request failed", status: dlRes.status, detail }, 502, origin);
+    const dl = await vecteezyFetch(env, `/resources/${resId}/download`);
+    if (!dl.r) {
+      return jsonResponse({
+        error: "Vecteezy download request failed",
+        status: dl.errStatus,
+        route: dl.cfg ? dl.cfg.name : null,
+        detail: (dl.errBody || "").slice(0, 300)
+      }, 502, origin);
     }
-    const info = await dlRes.json();
+    // Stick to the route that answered for the rest of this import.
+    const cfg = dl.cfg;
+    const auth = vecteezyHeaders(cfg);
+    const info = await dl.r.json();
     let fileUrl = info.url || "";
     let requiresAttribution = !!info.requires_attribution;
     let attributionUrl = info.required_attribution_url || null;
@@ -2549,34 +2597,31 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           return new Response(body, { status: 200, headers: { "Content-Type": "application/json", "X-Selftest-Cache": "hit", ...corsHeaders(origin) } });
         }
       } catch (e) {}
-      const cfg = vecteezyConfig(env);
+      const routes = vecteezyRoutes(env);
       const report = {
-        v: 2, // bumped to force a fresh deployment so dashboard-added secrets attach
+        v: 3, // v3: probes every configured route independently
         tokenSet: !!(env.VECTEEZY_TOKEN || "").trim(),
         rapidKeySet: !!(env.VECTEEZY_RAPIDAPI_KEY || "").trim(),
         accountIdSet: !!(env.VECTEEZY_ACCOUNT_ID || "").trim(),
-        mode: cfg ? (cfg.rapidKey ? "rapidapi" : "direct") : "unconfigured",
-        upstreamStatus: null,
         ok: false,
-        detail: ""
+        routes: []
       };
-      if (cfg) {
+      for (const cfg of routes) {
+        const entry = { route: cfg.name, upstreamStatus: null, ok: false, detail: "" };
         try {
-          const u = new URL(`${cfg.base}/resources`);
-          u.searchParams.set("term", "sky");
-          u.searchParams.set("content_type", "photo");
-          u.searchParams.set("per_page", "1");
-          const r = await fetch(u.toString(), { headers: vecteezyHeaders(cfg) });
-          report.upstreamStatus = r.status;
+          const r = await fetch(`${cfg.base}/resources?term=sky&content_type=photo&per_page=1`, { headers: vecteezyHeaders(cfg) });
+          entry.upstreamStatus = r.status;
           if (r.ok) {
             const j = await r.json().catch(() => null);
-            report.ok = !!(j && Array.isArray(j.resources));
+            entry.ok = !!(j && Array.isArray(j.resources));
           } else {
-            report.detail = (await r.text().catch(() => "")).slice(0, 160);
+            entry.detail = (await r.text().catch(() => "")).slice(0, 160);
           }
         } catch (e) {
-          report.detail = String(e && e.message).slice(0, 160);
+          entry.detail = String(e && e.message).slice(0, 160);
         }
+        report.routes.push(entry);
+        if (entry.ok) report.ok = true;
       }
       const payload = JSON.stringify(report);
       try {
