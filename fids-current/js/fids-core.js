@@ -513,6 +513,9 @@ async function vecteezySearchStock(params) {
   var json = null; try { json = await res.json(); } catch (e) {}
   if (!res.ok) {
     var msg = (json && json.error) || ('Search failed: HTTP ' + res.status);
+    if (json && json.status) msg += ' (Vecteezy HTTP ' + json.status + ')';
+    if (json && json.detail) msg += ' — ' + String(json.detail).slice(0, 200);
+    if (json && json.details) msg += ' — ' + String(json.details).slice(0, 200);
     if (json && json.hint) msg += ' (' + json.hint + ')';
     throw new Error(msg);
   }
@@ -535,7 +538,13 @@ async function vecteezyImportLibraryItem(resourceId, label, category, contentTyp
     })
   });
   var json = null; try { json = await res.json(); } catch (e) {}
-  if (!res.ok) throw new Error((json && json.error) || ('Import failed: HTTP ' + res.status));
+  if (!res.ok) {
+    var msg = (json && json.error) || ('Import failed: HTTP ' + res.status);
+    if (json && json.status) msg += ' (Vecteezy HTTP ' + json.status + ')';
+    if (json && json.detail) msg += ' — ' + String(json.detail).slice(0, 200);
+    if (json && json.details) msg += ' — ' + String(json.details).slice(0, 200);
+    throw new Error(msg);
+  }
   _mediaLibCache = json.library;
   return json.item;
 }
