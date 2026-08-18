@@ -2551,6 +2551,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {}
       const cfg = vecteezyConfig(env);
       const report = {
+        v: 2, // bumped to force a fresh deployment so dashboard-added secrets attach
         tokenSet: !!(env.VECTEEZY_TOKEN || "").trim(),
         rapidKeySet: !!(env.VECTEEZY_RAPIDAPI_KEY || "").trim(),
         accountIdSet: !!(env.VECTEEZY_ACCOUNT_ID || "").trim(),
