@@ -2599,29 +2599,46 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {}
       const routes = vecteezyRoutes(env);
       const report = {
-        v: 4, // v4: redeploy to attach updated VECTEEZY_TOKEN secret
+        v: 5, // v5: probes the direct route with several header disguises
         tokenSet: !!(env.VECTEEZY_TOKEN || "").trim(),
         rapidKeySet: !!(env.VECTEEZY_RAPIDAPI_KEY || "").trim(),
         accountIdSet: !!(env.VECTEEZY_ACCOUNT_ID || "").trim(),
         ok: false,
         routes: []
       };
+      // Header variants for the direct route — the WAF may key on the UA.
+      const VARIANTS = {
+        apiClient: null, // vecteezyHeaders as-is
+        browser: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/151.0.0.0 Safari/537.36",
+          "Accept": "application/json, text/plain, */*",
+          "Accept-Language": "en-US,en;q=0.9",
+          "Referer": "https://www.vecteezy.com/"
+        },
+        bareBearer: { "User-Agent": "", "Accept": "" } // Authorization only
+      };
       for (const cfg of routes) {
-        const entry = { route: cfg.name, upstreamStatus: null, ok: false, detail: "" };
-        try {
-          const r = await fetch(`${cfg.base}/resources?term=sky&content_type=photo&per_page=1`, { headers: vecteezyHeaders(cfg) });
-          entry.upstreamStatus = r.status;
-          if (r.ok) {
-            const j = await r.json().catch(() => null);
-            entry.ok = !!(j && Array.isArray(j.resources));
-          } else {
-            entry.detail = (await r.text().catch(() => "")).slice(0, 160);
+        const variants = cfg.name === "direct" ? Object.keys(VARIANTS) : ["apiClient"];
+        for (const vName of variants) {
+          const entry = { route: cfg.name, variant: vName, upstreamStatus: null, ok: false, detail: "" };
+          try {
+            const h = { ...vecteezyHeaders(cfg) };
+            const over = VARIANTS[vName];
+            if (over) for (const k of Object.keys(over)) { if (over[k]) h[k] = over[k]; else delete h[k]; }
+            const r = await fetch(`${cfg.base}/resources?term=sky&content_type=photo&per_page=1`, { headers: h });
+            entry.upstreamStatus = r.status;
+            if (r.ok) {
+              const j = await r.json().catch(() => null);
+              entry.ok = !!(j && Array.isArray(j.resources));
+            } else {
+              entry.detail = (await r.text().catch(() => "")).slice(0, 160);
+            }
+          } catch (e) {
+            entry.detail = String(e && e.message).slice(0, 160);
           }
-        } catch (e) {
-          entry.detail = String(e && e.message).slice(0, 160);
+          report.routes.push(entry);
+          if (entry.ok) report.ok = true;
         }
-        report.routes.push(entry);
-        if (entry.ok) report.ok = true;
       }
       const payload = JSON.stringify(report);
       try {
