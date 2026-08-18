@@ -2599,7 +2599,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {}
       const routes = vecteezyRoutes(env);
       const report = {
-        v: 3, // v3: probes every configured route independently
+        v: 4, // v4: redeploy to attach updated VECTEEZY_TOKEN secret
         tokenSet: !!(env.VECTEEZY_TOKEN || "").trim(),
         rapidKeySet: !!(env.VECTEEZY_RAPIDAPI_KEY || "").trim(),
         accountIdSet: !!(env.VECTEEZY_ACCOUNT_ID || "").trim(),
