@@ -2599,7 +2599,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {}
       const routes = vecteezyRoutes(env);
       const report = {
-        v: 5, // v5: probes the direct route with several header disguises
+        v: 6, // v6: captures cf-ray ids so Vecteezy can find the blocks in their logs
         tokenSet: !!(env.VECTEEZY_TOKEN || "").trim(),
         rapidKeySet: !!(env.VECTEEZY_RAPIDAPI_KEY || "").trim(),
         accountIdSet: !!(env.VECTEEZY_ACCOUNT_ID || "").trim(),
@@ -2627,6 +2627,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
             if (over) for (const k of Object.keys(over)) { if (over[k]) h[k] = over[k]; else delete h[k]; }
             const r = await fetch(`${cfg.base}/resources?term=sky&content_type=photo&per_page=1`, { headers: h });
             entry.upstreamStatus = r.status;
+            entry.rayId = r.headers.get("cf-ray") || null;
+            entry.at = new Date().toISOString();
             if (r.ok) {
               const j = await r.json().catch(() => null);
               entry.ok = !!(j && Array.isArray(j.resources));
