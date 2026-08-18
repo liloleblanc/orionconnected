@@ -14,16 +14,30 @@ by Vecteezy per-account; see <https://www.vecteezy.com/developers>.
 
 ## Setup
 
-Two worker secrets, set from the fids-proxy deploy directory:
+Worker secrets (dashboard → fids-proxy → Settings → Variables and Secrets,
+or `wrangler secret put`):
 
-```sh
-wrangler secret put VECTEEZY_TOKEN        # bearer token from Vecteezy
-wrangler secret put VECTEEZY_ACCOUNT_ID   # numeric account id (URL path segment)
-```
+- `VECTEEZY_TOKEN` — the Vecteezy API bearer token (always required)
+- `VECTEEZY_RAPIDAPI_KEY` — RapidAPI key for `vecteezy-api.p.rapidapi.com`
+  (**preferred route**; see below)
+- `VECTEEZY_ACCOUNT_ID` — numeric account id, only used by the direct route
 
-Both are optional. Until they are set, `/api/vecteezy/*` answers
+Until a working combination is set, `/api/vecteezy/*` answers
 `503 Vecteezy not configured` and nothing else in the worker changes. The
 menu surfaces that 503 as a readable message in the search box.
+
+### Why RapidAPI is the preferred route
+
+Live-tested 2026-08-18: Vecteezy's own Cloudflare WAF rejects Worker
+subrequests to `api.vecteezy.com` outright (403, "error code: 1106" —
+banned-client family), with or without browser-like headers, before the
+bearer token is even evaluated. The same API is published through RapidAPI
+at `vecteezy-api.p.rapidapi.com` (`/v1/...`, no account_id path segment;
+the v1 swagger matches v2 field-for-field on everything this integration
+reads), the gateway forwards our `Authorization` bearer to Vecteezy, and
+Worker→RapidAPI traffic is already proven daily by the AeroDataBox proxy.
+When `VECTEEZY_RAPIDAPI_KEY` is set the worker uses RapidAPI; otherwise it
+falls back to the direct route (kept for the day their WAF allows Workers).
 
 ## Worker endpoints (both admin-JWT-gated, under `/api/`)
 
