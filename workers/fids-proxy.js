@@ -15,6 +15,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 //                             KV-set hash or re-seed by deleting the user)
 //   ADB_WEBHOOK_SECRET     — optional, for ADB webhook signature checks
 //   TIO_KEY                — Tomorrow.io API key (weather)
+//   VECTEEZY_TOKEN         — optional, Vecteezy API bearer token (stock search/import)
+//   VECTEEZY_ACCOUNT_ID    — optional, Vecteezy API account id (goes in the URL path)
 //
 // REQUIRED bindings (CORRECTED 2026-08-15 — see docs/OPERATIONS-BRIEF.md):
 //   FIDS_USERS         KV — users, airport config, airline overrides, media
@@ -710,6 +712,185 @@ async function handlePutMediaAssignments(request, env, payload, origin) {
   return jsonResponse({ success: true, config: cfg }, 200, origin);
 }
 __name(handlePutMediaAssignments, "handlePutMediaAssignments");
+
+// ── VECTEEZY stock media (https://api.vecteezy.com/api-docs/api/v2/swagger.json)
+// Search-and-import for royalty-free stock straight into the media library:
+//   GET  /api/vecteezy/search — proxy of GET /v2/{account_id}/resources
+//   POST /api/vecteezy/import — resolve a download URL, copy the file into
+//                               R2 and append a "media-library" item
+// Both admin-only. Credentials (VECTEEZY_TOKEN bearer + VECTEEZY_ACCOUNT_ID)
+// stay server-side; the browser only ever talks to this worker. Vecteezy's
+// docs say thumbnail/preview URLs must not be stored — search results are
+// therefore never cached, and import copies the actual file into R2 rather
+// than referencing their CDN.
+const VECTEEZY_API_BASE = "https://api.vecteezy.com";
+const VECTEEZY_CONTENT_TYPES = ["photo", "png", "psd", "svg", "vector", "video"];
+
+function vecteezyConfig(env) {
+  const token = (env.VECTEEZY_TOKEN || "").trim();
+  const accountId = (env.VECTEEZY_ACCOUNT_ID || "").trim();
+  if (!token || !accountId) return null;
+  return { token, accountId };
+}
+__name(vecteezyConfig, "vecteezyConfig");
+
+async function handleVecteezySearch(env, payload, origin, url) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const cfg = vecteezyConfig(env);
+  if (!cfg) {
+    return jsonResponse({
+      error: "Vecteezy not configured",
+      hint: "wrangler secret put VECTEEZY_TOKEN / VECTEEZY_ACCOUNT_ID"
+    }, 503, origin);
+  }
+  const term = (url.searchParams.get("term") || "").trim();
+  if (!term) return jsonResponse({ error: "term parameter required" }, 400, origin);
+  const contentType = url.searchParams.get("content_type") || "video";
+  if (!VECTEEZY_CONTENT_TYPES.includes(contentType)) {
+    return jsonResponse({ error: `content_type must be one of: ${VECTEEZY_CONTENT_TYPES.join(", ")}` }, 400, origin);
+  }
+  const upstream = new URL(`${VECTEEZY_API_BASE}/v2/${cfg.accountId}/resources`);
+  upstream.searchParams.set("term", term);
+  upstream.searchParams.set("content_type", contentType);
+  // Optional filters, passed through as-is. page * per_page is capped at
+  // 10,000 by Vecteezy; bad values come back as their 4xx, not ours.
+  for (const p of ["page", "per_page", "sort_by", "license_type", "orientation", "color", "duration", "ai_generated", "family_friendly"]) {
+    const v = url.searchParams.get(p);
+    if (v !== null && v !== "") upstream.searchParams.set(p, v);
+  }
+  try {
+    const r = await fetch(upstream.toString(), { headers: { "Authorization": `Bearer ${cfg.token}` } });
+    if (!r.ok) {
+      const detail = (await r.text().catch(() => "")).slice(0, 300);
+      return jsonResponse({ error: "Vecteezy search failed", status: r.status, detail }, 502, origin);
+    }
+    const j = await r.json();
+    // Slim each resource to what the menu UI renders. Preview/thumbnail
+    // URLs are short-lived — used immediately, never persisted.
+    const resources = (Array.isArray(j.resources) ? j.resources : []).map((res) => ({
+      id: res.id,
+      contentType: res.content_type,
+      title: res.title || "",
+      thumbnailUrl: res.thumbnail_url || "",
+      thumbnail2xUrl: res.thumbnail_2x_url || "",
+      previewUrl: res.preview_url || "",
+      dimensions: res.dimensions || null
+    }));
+    return jsonResponse({
+      page: j.page,
+      lastPage: j.last_page,
+      perPage: j.per_page,
+      totalResources: j.total_resources,
+      resources
+    }, 200, origin);
+  } catch (e) {
+    return jsonResponse({ error: "Vecteezy search failed", details: e.message }, 502, origin);
+  }
+}
+__name(handleVecteezySearch, "handleVecteezySearch");
+
+// Body: { id, label?, category?, contentTypeHint? }. The download endpoint
+// either returns a ready URL or a download_status_url to poll while Vecteezy
+// prepares the file — both paths are handled here so the menu makes exactly
+// one call and gets back a normal library item.
+async function handleVecteezyImport(request, env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const cfg = vecteezyConfig(env);
+  if (!cfg) {
+    return jsonResponse({
+      error: "Vecteezy not configured",
+      hint: "wrangler secret put VECTEEZY_TOKEN / VECTEEZY_ACCOUNT_ID"
+    }, 503, origin);
+  }
+  let body;
+  try { body = await request.json(); } catch (e) { body = null; }
+  const resId = body && /^\d+$/.test(String(body.id || "")) ? String(body.id) : "";
+  if (!resId) return jsonResponse({ error: "Numeric Vecteezy resource id required" }, 400, origin);
+  const label = String((body && body.label) || "").trim();
+  const ALLOWED_CATEGORIES = ["ads", "airport-logo", "airline-logo", "background"];
+  const category = ALLOWED_CATEGORIES.includes(body && body.category) ? body.category : "ads";
+  const hintVideo = (body && body.contentTypeHint) === "video";
+  const auth = { "Authorization": `Bearer ${cfg.token}` };
+  try {
+    const dlRes = await fetch(`${VECTEEZY_API_BASE}/v2/${cfg.accountId}/resources/${resId}/download`, { headers: auth });
+    if (!dlRes.ok) {
+      const detail = (await dlRes.text().catch(() => "")).slice(0, 300);
+      return jsonResponse({ error: "Vecteezy download request failed", status: dlRes.status, detail }, 502, origin);
+    }
+    const info = await dlRes.json();
+    let fileUrl = info.url || "";
+    let requiresAttribution = !!info.requires_attribution;
+    let attributionUrl = info.required_attribution_url || null;
+    if (!fileUrl && info.download_status_url) {
+      for (let i = 0; i < 10 && !fileUrl; i++) {
+        await new Promise((r) => setTimeout(r, 1500));
+        const st = await fetch(info.download_status_url, { headers: auth });
+        if (!st.ok) break;
+        const sj = await st.json().catch(() => null);
+        if (sj && sj.url) {
+          fileUrl = sj.url;
+          if (typeof sj.requires_attribution === "boolean") requiresAttribution = sj.requires_attribution;
+          if (sj.required_attribution_url) attributionUrl = sj.required_attribution_url;
+        }
+      }
+    }
+    if (!fileUrl) return jsonResponse({ error: "Vecteezy did not return a download URL (still preparing — try again)" }, 502, origin);
+    const fileRes = await fetch(fileUrl);
+    if (!fileRes.ok) return jsonResponse({ error: "Vecteezy file fetch failed", status: fileRes.status }, 502, origin);
+    let ct = fileRes.headers.get("Content-Type") || "";
+    // Download URLs are often served as octet-stream; recover the real type
+    // from the URL extension (or the client's hint) before extFromContentType
+    // falls back to "png" and mislabels a video.
+    if (!ct || /octet-stream/i.test(ct)) {
+      const extM = new URL(fileUrl).pathname.match(/\.([A-Za-z0-9]{2,5})$/);
+      const urlExt = extM ? extM[1].toLowerCase() : "";
+      const extToMime = {
+        mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime",
+        png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
+        webp: "image/webp", gif: "image/gif", svg: "image/svg+xml"
+      };
+      ct = extToMime[urlExt] || (hintVideo ? "video/mp4" : "image/jpeg");
+    }
+    const bytes = await fileRes.arrayBuffer();
+    if (bytes.byteLength === 0) return jsonResponse({ error: "Empty file from Vecteezy" }, 502, origin);
+    const isVideo = /mp4|webm|mov|quicktime/i.test(ct);
+    const maxBytes = isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+    if (bytes.byteLength > maxBytes) {
+      return jsonResponse({ error: `File too large (max ${maxBytes / 1024 / 1024}MB)` }, 413, origin);
+    }
+    const fileExt = extFromContentType(ct);
+    const id = crypto.randomUUID();
+    const r2Key = `media-library/${id}.${fileExt}`;
+    await env.FIDS_ASSETS.put(r2Key, bytes, { httpMetadata: { contentType: ct } });
+    const item = {
+      id,
+      type: isVideo ? "video" : "image",
+      category,
+      source: "vecteezy",
+      vecteezyId: Number(resId),
+      r2Key,
+      url: `${R2_PUBLIC_BASE}/${r2Key}`,
+      mimeType: ct,
+      sizeBytes: bytes.byteLength,
+      label,
+      // Free-tier content must be credited; keep what the API reported so
+      // the menu can surface the attribution link next to the item.
+      attribution: { required: requiresAttribution, url: attributionUrl },
+      uploadedAt: Date.now(),
+      uploadedBy: payload.sub || "admin"
+    };
+    const existing = await env.FIDS_USERS.get("media-library");
+    const lib = existing ? JSON.parse(existing) : { items: [] };
+    if (!Array.isArray(lib.items)) lib.items = [];
+    lib.items.push(item);
+    lib.updatedAt = Date.now();
+    await env.FIDS_USERS.put("media-library", JSON.stringify(lib));
+    return jsonResponse({ success: true, item, library: lib }, 200, origin);
+  } catch (e) {
+    return jsonResponse({ error: "Vecteezy import failed", details: e.message }, 502, origin);
+  }
+}
+__name(handleVecteezyImport, "handleVecteezyImport");
 
 async function handleUploadAirportLogo(request, env, payload, origin, code) {
   if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
@@ -1851,6 +2032,15 @@ var fids_proxy_default = {
       }
       if (path === "/api/media-assignments" && request.method === "PUT") {
         return handlePutMediaAssignments(request, env, payload, origin);
+      }
+      // ── Vecteezy stock endpoints (admin-only, credentials stay server-side) ──
+      // GET  /api/vecteezy/search?term=…&content_type=… — proxied search
+      // POST /api/vecteezy/import                        — copy a resource into the library
+      if (path === "/api/vecteezy/search" && request.method === "GET") {
+        return handleVecteezySearch(env, payload, origin, url);
+      }
+      if (path === "/api/vecteezy/import" && request.method === "POST") {
+        return handleVecteezyImport(request, env, payload, origin);
       }
       // ── Gate theme admin endpoint ──
       // Admin writes the full theme atomically. Public reads are no-auth above.

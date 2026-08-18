@@ -3049,7 +3049,8 @@ function cuDeleteActivePreset() {
       }
       var meta = it.source === 'youtube'
         ? (it.ytType === 'playlist' ? 'YouTube Playlist' : 'YouTube Video') + ' · ' + (it.ytId || '').slice(0, 14)
-        : 'Upload · ' + _bytesH(it.sizeBytes || 0);
+        : (it.source === 'vecteezy' ? 'Vecteezy' : 'Upload') + ' · ' + _bytesH(it.sizeBytes || 0);
+      if (it.source === 'vecteezy' && it.attribution && it.attribution.required) meta += ' · credit required';
       var label = it.label || '(no label)';
       var category = it.category || 'ads';
       var catLabels = { 'ads': 'Ads', 'airport-logo': 'Airport Logo', 'airline-logo': 'Airline Logo', 'background': 'Background' };
@@ -3136,6 +3137,101 @@ function cuDeleteActivePreset() {
     } catch (e) {
       if (prog) prog.style.display = 'none';
       _libFlash('Upload failed: ' + e.message, 'error');
+    }
+  };
+
+  // ── Vecteezy stock search — worker-proxied (/api/vecteezy/*), admin-only.
+  // Results render as a card list under the search box; "Add" asks the worker
+  // to download the file into R2 and append it to the library. Thumbnail URLs
+  // come fresh from each search and are never persisted (Vecteezy requires
+  // that), which is why import copies the file instead of hotlinking.
+  var _vzResults = [];
+  var _vzPage = 1;
+  var _vzLastQuery = null;
+
+  function _vzStatus(msg, isError) {
+    var el = document.getElementById('mlVzStatus');
+    if (!el) return;
+    if (!msg) { el.style.display = 'none'; return; }
+    el.style.display = '';
+    el.style.color = isError ? '#fca5a5' : '#93c5fd';
+    el.textContent = msg;
+  }
+
+  function _vzRenderResults(total) {
+    var box = document.getElementById('mlVzResults');
+    if (!box) return;
+    box.style.display = '';
+    if (!_vzResults.length) {
+      box.innerHTML = '<div style="font-size:12px;color:#6b7280;font-style:italic;padding:12px;text-align:center;">No results.</div>';
+      return;
+    }
+    var html = _vzResults.map(function(r, i) {
+      var thumb = r.thumbnailUrl
+        ? '<img src="' + _esc(r.thumbnailUrl) + '" loading="lazy" style="width:72px;height:48px;object-fit:cover;border-radius:3px;background:#374151;flex-shrink:0;" onerror="this.style.opacity=0.3">'
+        : '<div style="width:72px;height:48px;background:#374151;border-radius:3px;flex-shrink:0;"></div>';
+      var dims = r.dimensions && r.dimensions.width ? r.dimensions.width + '×' + r.dimensions.height : '';
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:#1f2937;border-radius:4px;margin-bottom:4px;">'
+        + thumb
+        + '<div style="flex:1;min-width:0;">'
+        + '<div style="font-size:12px;color:#e5e7eb;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(r.title || ('Vecteezy #' + r.id)) + '</div>'
+        + '<div style="font-size:10px;color:#6b7280;">' + _esc(r.contentType || '') + (dims ? ' · ' + dims : '') + ' · #' + _esc(String(r.id)) + '</div>'
+        + '</div>'
+        + '<button id="mlVzAdd' + i + '" onclick="mediaLibVecteezyImport(' + i + ')" style="background:#3b82f6;color:#fff;border:none;padding:4px 10px;border-radius:3px;font-size:10px;cursor:pointer;flex-shrink:0;">Add</button>'
+        + '</div>';
+    }).join('');
+    if (typeof total === 'number' && _vzResults.length < Math.min(total, 200)) {
+      html += '<button onclick="mediaLibVecteezySearch(true)" style="display:block;width:100%;background:#27272a;color:#9ca3af;border:1px solid #374151;padding:6px;border-radius:4px;font-size:11px;cursor:pointer;margin-top:2px;">Load more (' + _vzResults.length + ' of ' + total + ')</button>';
+    }
+    box.innerHTML = html;
+  }
+
+  window.mediaLibVecteezySearch = async function(loadMore) {
+    var termEl = document.getElementById('mlVzTerm');
+    var typeEl = document.getElementById('mlVzType');
+    var term = termEl ? termEl.value.trim() : '';
+    var contentType = typeEl ? typeEl.value : 'video';
+    if (loadMore && _vzLastQuery) {
+      term = _vzLastQuery.term;
+      contentType = _vzLastQuery.contentType;
+      _vzPage++;
+    } else if (!term) {
+      return _vzStatus('Type a search term first.', true);
+    } else {
+      _vzPage = 1;
+      _vzResults = [];
+      _vzLastQuery = { term: term, contentType: contentType };
+    }
+    _vzStatus('Searching…');
+    try {
+      var json = await window.FIDS_MEDIA.vecteezySearch({
+        term: term, contentType: contentType, page: _vzPage, perPage: 20
+      });
+      _vzResults = _vzResults.concat(json.resources || []);
+      _vzRenderResults(json.totalResources);
+      _vzStatus(json.totalResources ? json.totalResources + ' result' + (json.totalResources === 1 ? '' : 's') + ' on Vecteezy.' : '');
+    } catch (e) {
+      if (!loadMore) { _vzResults = []; _vzRenderResults(); }
+      _vzStatus('Search failed: ' + e.message, true);
+    }
+  };
+
+  window.mediaLibVecteezyImport = async function(idx) {
+    var r = _vzResults[idx];
+    if (!r) return;
+    var btn = document.getElementById('mlVzAdd' + idx);
+    if (btn) { btn.disabled = true; btn.textContent = 'Adding…'; btn.style.background = '#374151'; }
+    _vzStatus('Downloading "' + (r.title || ('#' + r.id)) + '" into the library — videos can take a moment…');
+    try {
+      await window.FIDS_MEDIA.vecteezyImport(r.id, r.title || '', 'ads', r.contentType === 'video' ? 'video' : '');
+      _libCache = window.FIDS_MEDIA.getLibrary();
+      _renderLibrary();
+      if (btn) { btn.textContent = 'Added ✓'; btn.style.background = '#166534'; btn.style.color = '#bbf7d0'; }
+      _vzStatus('');
+      _libFlash('Imported from Vecteezy.', 'success');
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.textContent = 'Add'; btn.style.background = '#3b82f6'; btn.style.color = '#fff'; }
+      _vzStatus('Import failed: ' + e.message, true);
     }
   };
 
