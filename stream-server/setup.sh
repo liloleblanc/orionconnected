@@ -42,14 +42,14 @@ _saved() {  # read one KEY="value" line from the saved config, if present
 #
 # The two live streams:
 #   1. Moncton  (YQM) — English + French, the default below
-#   2. Miami  (MIA) — English + Spanish, see ORLANDO_URL under "Presets"
+#   2. Miami  (MIA) — English + Spanish, see MIAMI_URL under "Presets"
 STREAM_URL="${STREAM_URL:-$(_saved STREAM_URL)}"
 STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/rotate.html?ap=YQM&mode=live&stream=1&langs=en,fr&rotate=fids,gids,bids,gids&dwell=60}"
 
 # ── Presets ───────────────────────────────────────────────────────────────
 # Stream 2 — MIAMI, English + Spanish (was Tampa). Use with:
 #   STREAM_URL="$MIAMI_URL" MUSIC_URL="$ORION_RADIO" bash setup.sh
-ORLANDO_URL="https://fids.orionconnected.com/rotate?ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60}"
+MIAMI_URL="https://fids.orionconnected.com/rotate.html?ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60"
 # The station Nick uses for the stream's background audio.
 ORION_RADIO="https://audio-edge-w4d68.yul.o.radiomast.io/ref-128k-mp3-stereo"
 
