@@ -1259,6 +1259,40 @@ __name(mcoToAdbFlight, "mcoToAdbFlight");
 // returns { departures:[...] } or { arrivals:[...] } — a drop-in for the
 // frontend's adbFetchWindow(). Returns 503 (not 500) with a clear note
 // until the feed URL is filled in, so callers can fall back gracefully.
+// ── Stream-presence probe ───────────────────────────────────────────────────
+// The YouTube boards (YQM, MCO) are rendered by a browser on a cloud server
+// that nothing can reach from outside — no SSH from here, no inbound port, no
+// agent. That server does, however, poll these live-flight endpoints roughly
+// once a minute for as long as it is up, so its traffic ARRIVING HERE is the
+// only external signal that the stream is alive.
+//
+// This records, per network operator (Cloudflare's asOrganization — not per
+// user), when board traffic was last seen. Aggregated by operator on purpose:
+// enough to tell "the Hetzner display server stopped polling three hours ago"
+// without keeping a log of who watched the board. Capped at 12 entries, 7-day
+// TTL, written via waitUntil so it never delays the board.
+async function noteBoardClient(env, request, path) {
+  try {
+    if (!env.CITY_BG_CACHE) return;
+    const cf = request.cf || {};
+    const org = String(cf.asOrganization || "unknown").slice(0, 60);
+    const map = (await env.CITY_BG_CACHE.get("streamprobe:v1", { type: "json" })) || {};
+    const now = Date.now();
+    const e = map[org] || { first: now, count: 0 };
+    e.last = now;
+    e.count = (e.count || 0) + 1;
+    e.path = path;
+    map[org] = e;
+    const keys = Object.keys(map);
+    if (keys.length > 12) {
+      keys.sort((a, b) => (map[a].last || 0) - (map[b].last || 0));
+      for (const k of keys.slice(0, keys.length - 12)) delete map[k];
+    }
+    await env.CITY_BG_CACHE.put("streamprobe:v1", JSON.stringify(map), { expirationTtl: 7 * 24 * 3600 });
+  } catch (e) {}
+}
+__name(noteBoardClient, "noteBoardClient");
+
 async function handleMcoFids(request, env, origin, direction) {
   if (!env.MCO_FEED_KEY) {
     return jsonResponse({
@@ -2602,6 +2636,26 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {}
       return new Response(payload, { status: 200, headers: { "Content-Type": "application/json", "X-Selftest-Cache": "miss", ...corsHeaders(origin) } });
     }
+    // ── Stream-presence probe ───────────────────────────────────────────
+    // Reads back what noteBoardClient() recorded: which networks are polling
+    // the live-flight endpoints, and how long ago. The YouTube streams are
+    // rendered by a browser on a cloud box with no inbound access, so its
+    // traffic arriving here is the only outside evidence that it is alive.
+    if (path === "/stream/probe") {
+      let map = {};
+      try { map = (await env.CITY_BG_CACHE.get("streamprobe:v1", { type: "json" })) || {}; } catch (e) {}
+      const now = Date.now();
+      const clients = Object.keys(map).map((org) => ({
+        network: org,
+        lastSeenSecondsAgo: map[org].last ? Math.round((now - map[org].last) / 1000) : null,
+        requests: map[org].count || 0,
+        lastPath: map[org].path || null,
+        // A datacenter operator polling every minute is a display server
+        // (the streams); consumer ISPs are ordinary viewers.
+        looksLikeServer: /hetzner|digitalocean|ovh|linode|akamai|amazon|google|microsoft|oracle|vultr|scaleway|contabo/i.test(org)
+      })).sort((a, b) => (a.lastSeenSecondsAgo ?? 1e9) - (b.lastSeenSecondsAgo ?? 1e9));
+      return jsonResponse({ at: new Date(now).toISOString(), clients }, 200, origin);
+    }
     // ── Egress-IP probe ─────────────────────────────────────────────────
     // Reports the source IP this worker's OUTBOUND requests use, as seen by
     // two independent echo services. Exists because Vecteezy's support needs
@@ -2965,6 +3019,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     }
 
     if (path.startsWith("/flights/cached/")) {
+      // Stream-presence probe — see noteBoardClient(). Fire-and-forget so the
+      // board's own request is never slowed by it.
+      try { ctx.waitUntil(noteBoardClient(env, request, path)); } catch (e) {}
       const parts = path.split("/").filter(Boolean); // ['flights','cached','CYQM']
       const icao = (parts[2] || "").toUpperCase();
       if (!icao || !/^[A-Z]{4}$/.test(icao)) {
