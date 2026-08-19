@@ -1259,6 +1259,119 @@ __name(mcoToAdbFlight, "mcoToAdbFlight");
 // returns { departures:[...] } or { arrivals:[...] } — a drop-in for the
 // frontend's adbFetchWindow(). Returns 503 (not 500) with a clear note
 // until the feed URL is filled in, so callers can fall back gracefully.
+// ── Stream agent control ────────────────────────────────────────────────────
+// Served at /stream/control. Each display server polls this every 2 minutes.
+// TO RESTART A STREAM REMOTELY: set action to "restart", set service to the
+// unit name (or "*" for every stream unit on the box), and give id a NEW
+// unique value — the id is what makes a box act exactly once, so a stale
+// command is never replayed after a reboot. Push; wrangler deploys; the boxes
+// pick it up within ~2 minutes.
+const STREAM_CONTROL = {
+  version: 1,
+  id: "2026-08-19T09:00Z-1",
+  service: "*",
+  action: "restart",
+  note: "Restart any stream unit that is not running (YQM stopped 2026-08-19)."
+};
+
+// The agent installed on each display server, served at /stream/agent.sh so a
+// box can fetch it with one line and needs no GitHub credentials — the repo is
+// private, but this worker is public and deploys from that same repo.
+const STREAM_AGENT_SH = `#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# Orion stream agent — watchdog + remote restart for the FIDS→YouTube boxes.
+#
+# Install (one line, as root):
+#   curl -fsSL https://fids-proxy.n-leblanc1984.workers.dev/stream/agent.sh | bash
+#
+# What it does, every 2 minutes:
+#   1. WATCHDOG — any enabled fids/stream service that has died gets started
+#      again. This alone fixes the common failure (Chrome OOM-killed, systemd
+#      hitting its restart limit, the unit left in 'failed').
+#   2. CONTROL — fetches /stream/control and, if it carries an id this box has
+#      not seen, applies it. Only restart/start/stop, only on units this box
+#      already has whose names match fids/stream. Nothing from the network is
+#      ever executed as a command.
+# ---------------------------------------------------------------------------
+set -uo pipefail
+CONTROL_URL="https://fids-proxy.n-leblanc1984.workers.dev/stream/control"
+AGENT_URL="https://fids-proxy.n-leblanc1984.workers.dev/stream/agent.sh"
+DIR=/opt/stream-agent
+
+if [ "\${1:-}" != "--run" ]; then
+  # ---- install mode ----
+  [ "$(id -u)" = "0" ] || { echo "run as root (sudo)"; exit 1; }
+  install -d "$DIR"
+  curl -fsSL --max-time 30 "$AGENT_URL" -o "$DIR/agent.sh" || { echo "download failed"; exit 1; }
+  chmod +x "$DIR/agent.sh"
+  cat > /etc/systemd/system/stream-agent.service <<'UNIT'
+[Unit]
+Description=Orion stream agent (watchdog + remote restart)
+After=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/opt/stream-agent/agent.sh --run
+UNIT
+  cat > /etc/systemd/system/stream-agent.timer <<'TIMER'
+[Unit]
+Description=Run the Orion stream agent every 2 minutes
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=120
+AccuracySec=15
+[Install]
+WantedBy=timers.target
+TIMER
+  systemctl daemon-reload
+  systemctl enable --now stream-agent.timer >/dev/null 2>&1
+  echo "stream-agent installed and enabled. First pass:"
+  exec "$DIR/agent.sh" --run
+fi
+
+# ---- run mode ----
+units=$(systemctl list-units --all --plain --no-legend 2>/dev/null \\
+        | awk '{print $1}' | grep '\\.service$' \\
+        | grep -Ei 'fids|stream' | grep -v '^stream-agent' || true)
+[ -n "$units" ] || { echo "no stream services found"; exit 0; }
+
+# 1. watchdog — revive anything enabled that is not running
+for u in $units; do
+  systemctl is-enabled --quiet "$u" 2>/dev/null || continue
+  if ! systemctl is-active --quiet "$u"; then
+    systemctl reset-failed "$u" >/dev/null 2>&1
+    systemctl restart "$u" && echo "watchdog: restarted $u"
+  fi
+done
+
+# 2. control — apply a command we have not applied before
+SEEN="$DIR/last-id"
+last=$(cat "$SEEN" 2>/dev/null || echo "")
+doc=$(curl -fsSL --max-time 20 "$CONTROL_URL" 2>/dev/null || echo "")
+[ -n "$doc" ] || exit 0
+field() { echo "$doc" | tr ',' '\\n' | sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -1; }
+id=$(field id); action=$(field action); target=$(field service)
+[ -n "$id" ] && [ "$id" != "$last" ] || exit 0
+
+case "$action" in
+  restart|start|stop)
+    for u in $units; do
+      if [ "$target" = "*" ] || [ "$u" = "$target" ] || [ "\${u%.service}" = "$target" ]; then
+        # 'restart' from the control doc means "make sure it is running": a
+        # healthy stream is left alone so the other board never blips.
+        if [ "$action" = "restart" ] && systemctl is-active --quiet "$u"; then
+          echo "control: $u already running, left alone"
+          continue
+        fi
+        systemctl reset-failed "$u" >/dev/null 2>&1
+        systemctl "$action" "$u" && echo "control: $action $u"
+      fi
+    done
+    ;;
+  *) echo "control: nothing to do ($action)" ;;
+esac
+echo "$id" > "$SEEN"
+`;
+
 // ── Stream-presence probe ───────────────────────────────────────────────────
 // The YouTube boards (YQM, MCO) are rendered by a browser on a cloud server
 // that nothing can reach from outside — no SSH from here, no inbound port, no
@@ -2635,6 +2748,26 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         await cache.put(cacheKey, new Response(payload, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60" } }));
       } catch (e) {}
       return new Response(payload, { status: 200, headers: { "Content-Type": "application/json", "X-Selftest-Cache": "miss", ...corsHeaders(origin) } });
+    }
+    // ── Stream agent: control doc + installer ───────────────────────────
+    // The display servers had no link to this repo — they were set up by hand
+    // and nothing on them watched anything, so a dead stream needed somebody
+    // physically at a console. These two routes close that gap using the
+    // pipeline that already works (push → wrangler → Cloudflare): the agent on
+    // each box polls /stream/control every 2 minutes and obeys it.
+    //
+    // Safety: the agent NEVER runs commands from this endpoint. It only maps
+    // an {action, service} pair onto systemctl restart/start/stop of units it
+    // already has, whose names match fids/stream. A compromised or mistaken
+    // control doc therefore cannot execute anything on the box.
+    if (path === "/stream/control") {
+      return jsonResponse(STREAM_CONTROL, 200, origin);
+    }
+    if (path === "/stream/agent.sh") {
+      return new Response(STREAM_AGENT_SH, {
+        status: 200,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", ...corsHeaders(origin) }
+      });
     }
     // ── Stream-presence probe ───────────────────────────────────────────
     // Reads back what noteBoardClient() recorded: which networks are polling
