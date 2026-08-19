@@ -156,6 +156,22 @@ export default {
     const path = url.pathname;
 
     // ── Map engine passthrough ──────────────────────────────────────────
+    // Short alias for the stream-agent installer, so it can be TYPED into a
+    // server console that refuses pastes:  curl -sL fids.orionconnected.com/a|bash
+    // The script itself lives in the fids-proxy worker (/stream/agent.sh);
+    // this only shortens the URL people have to key in by hand.
+    if (path === '/a') {
+      try {
+        const r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev/stream/agent.sh');
+        if (!r.ok) return new Response('agent fetch failed ' + r.status, { status: 502, headers: NO_STORE });
+        return new Response(r.body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE }
+        });
+      } catch (e) {
+        return new Response('agent fetch failed', { status: 502, headers: NO_STORE });
+      }
+    }
     if (path.startsWith('/mapcdn/')) {
       const file = path.slice('/mapcdn/'.length);
       const upstreams = MAP_ENGINE[file];

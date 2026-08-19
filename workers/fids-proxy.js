@@ -1274,6 +1274,23 @@ const STREAM_CONTROL = {
   note: "Restart any stream unit that is not running (YQM stopped 2026-08-19)."
 };
 
+// ── Desired per-stream settings ─────────────────────────────────────────────
+// Served as plain lines at /stream/desired ("<AP> KEY=VALUE"). The agent finds
+// the instance whose config.env carries that ap= code, writes any value that
+// differs, and restarts only the instances it actually changed.
+//
+// This is what makes setup.sh's one-folder limitation harmless: the agent
+// edits the RIGHT instance in place instead of re-running an installer that
+// only ever knows about /opt/fids-stream and would overwrite whichever stream
+// happens to live there.
+//
+// Change a stream by editing a line here and pushing — the boxes pick it up
+// within ~2 minutes. Values must not contain spaces (URLs never do).
+const STREAM_DESIRED = [
+  ["MIA", "STREAM_URL", "https://fids.orionconnected.com/rotate.html?ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60"],
+  ["MIA", "MUSIC_URL", "http://prem1.di.fm:80/nudisco_hi?69e5e3fba85f75f83ad9886d"]
+];
+
 // The agent installed on each display server, served at /stream/agent.sh so a
 // box can fetch it with one line and needs no GitHub credentials — the repo is
 // private, but this worker is public and deploys from that same repo.
@@ -1288,13 +1305,20 @@ const STREAM_AGENT_SH = `#!/usr/bin/env bash
 #   1. WATCHDOG — any enabled fids/stream service that has died gets started
 #      again. This alone fixes the common failure (Chrome OOM-killed, systemd
 #      hitting its restart limit, the unit left in 'failed').
-#   2. CONTROL — fetches /stream/control and, if it carries an id this box has
+#   2. SETTINGS — fetches /stream/desired and writes any STREAM_URL / MUSIC_URL
+#      that differs into the config.env of the instance serving that airport,
+#      then restarts only the instances it actually changed. This is how a
+#      stream's board or music gets changed now: edit the repo, not the box.
+#      It edits the right instance in place, so unlike re-running setup.sh it
+#      cannot overwrite the other stream sharing the machine.
+#   3. CONTROL — fetches /stream/control and, if it carries an id this box has
 #      not seen, applies it. Only restart/start/stop, only on units this box
 #      already has whose names match fids/stream. Nothing from the network is
 #      ever executed as a command.
 # ---------------------------------------------------------------------------
 set -uo pipefail
 CONTROL_URL="https://fids-proxy.n-leblanc1984.workers.dev/stream/control"
+DESIRED_URL="https://fids-proxy.n-leblanc1984.workers.dev/stream/desired"
 AGENT_URL="https://fids-proxy.n-leblanc1984.workers.dev/stream/agent.sh"
 DIR=/opt/stream-agent
 
@@ -1343,7 +1367,32 @@ for u in $units; do
   fi
 done
 
-# 2. control — apply a command we have not applied before
+# 2. settings — write any desired value that differs, restart only what changed
+desired=$(curl -fsSL --max-time 20 "$DESIRED_URL" 2>/dev/null || true)
+changed=""
+while read -r ap kv; do
+  case "$ap" in ""|"#"*) continue;; esac
+  key=\${kv%%=*}; val=\${kv#*=}
+  [ -n "$key" ] && [ -n "$val" ] && [ "$key" != "$kv" ] || continue
+  for c in $(find /opt -name config.env 2>/dev/null); do
+    grep -q "ap=$ap" "$c" || continue
+    line=$(printf '%s="%s"' "$key" "$val")
+    grep -qxF "$line" "$c" && continue
+    tmp=$(mktemp)
+    grep -v "^$key=" "$c" > "$tmp"
+    printf '%s\\n' "$line" >> "$tmp"
+    cat "$tmp" > "$c"   # via cat so the file keeps its 600 permissions
+    rm -f "$tmp"
+    svc=$(basename "$(dirname "$c")")
+    case " $changed " in *" $svc "*) ;; *) changed="$changed $svc";; esac
+    echo "settings: updated $key for $ap"
+  done
+done < <(printf '%s\\n' "$desired")
+for s in $changed; do
+  systemctl restart "$s" >/dev/null 2>&1 && echo "settings: restarted $s"
+done
+
+# 3. control — apply a command we have not applied before
 SEEN="$DIR/last-id"
 last=$(cat "$SEEN" 2>/dev/null || echo "")
 doc=$(curl -fsSL --max-time 20 "$CONTROL_URL" 2>/dev/null || echo "")
@@ -2762,6 +2811,13 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // control doc therefore cannot execute anything on the box.
     if (path === "/stream/control") {
       return jsonResponse(STREAM_CONTROL, 200, origin);
+    }
+    if (path === "/stream/desired") {
+      const body = STREAM_DESIRED.map((r) => `${r[0]} ${r[1]}=${r[2]}`).join("\n") + "\n";
+      return new Response(body, {
+        status: 200,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", ...corsHeaders(origin) }
+      });
     }
     if (path === "/stream/agent.sh") {
       return new Response(STREAM_AGENT_SH, {
