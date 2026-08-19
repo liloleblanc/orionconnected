@@ -1359,11 +1359,12 @@ units=$(systemctl list-units --all --plain --no-legend 2>/dev/null \\
 [ -n "$units" ] || { echo "no stream services found"; exit 0; }
 
 # 1. watchdog — revive anything enabled that is not running
+revived=""
 for u in $units; do
   systemctl is-enabled --quiet "$u" 2>/dev/null || continue
   if ! systemctl is-active --quiet "$u"; then
     systemctl reset-failed "$u" >/dev/null 2>&1
-    systemctl restart "$u" && echo "watchdog: restarted $u"
+    systemctl restart "$u" && { echo "watchdog: restarted $u"; revived="$revived $u"; }
   fi
 done
 
@@ -1407,6 +1408,9 @@ case "$action" in
       if [ "$target" = "*" ] || [ "$u" = "$target" ] || [ "\${u%.service}" = "$target" ]; then
         # 'restart' from the control doc means "make sure it is running": a
         # healthy stream is left alone so the other board never blips.
+        # Never touch a unit the watchdog just revived in this same pass —
+        # otherwise a dead stream would be restarted twice within a second.
+        case " $revived " in *" $u "*) echo "control: $u just revived, left alone"; continue;; esac
         if [ "$action" = "restart" ] && systemctl is-active --quiet "$u"; then
           echo "control: $u already running, left alone"
           continue
