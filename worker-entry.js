@@ -490,6 +490,29 @@ export default {
       }
     }
 
+    // ── A LOST QUESTION MARK STILL FINDS THE BOARD ─────────────────────
+    // The stream boxes are configured through a web console that silently
+    // drops or substitutes characters, and '?' is one of the casualties: a
+    // board URL typed as rotate.html?ap=YQM… reaches the server as
+    // rotate.html/ap=YQM…, which is a path that has never existed. Chrome
+    // renders the 404, the capture shows a white page, and every component
+    // reports healthy — the failure is indistinguishable from a broken board
+    // unless you happen to read the address in the screenshot.
+    //
+    // The last segment of such a path is unmistakably a query string: it
+    // carries '=' and the path has no real query of its own. Rather than 404,
+    // put the '?' back and redirect. These URLs are already dead, so nothing
+    // that works today changes behaviour — and a display cannot be taken off
+    // air by one missing keystroke.
+    if (!url.search && /\/[^/]*=[^/]*$/.test(path)) {
+      const cut = path.lastIndexOf('/');
+      const page = path.slice(0, cut);
+      const query = path.slice(cut + 1);
+      if (page && query.indexOf('=') !== -1) {
+        return Response.redirect(url.origin + page + '?' + query, 302);
+      }
+    }
+
     // ── Everything else → static assets ────────────────────────────────
     if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
       const res = await env.ASSETS.fetch(request);
