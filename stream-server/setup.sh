@@ -100,7 +100,7 @@ fi
 export DEBIAN_FRONTEND=noninteractive
 echo "Installing packages (Chrome, ffmpeg, Xvfb, fonts)…"
 apt-get update -y
-apt-get install -y wget ca-certificates ffmpeg xvfb fonts-liberation \
+apt-get install -y wget curl ca-certificates ffmpeg xvfb fonts-liberation \
   fonts-dejavu-core xdg-utils
 
 # Google Chrome stable — more reliable headless than the chromium snap.
@@ -245,6 +245,20 @@ shopt -s nullglob nocaseglob
 MUSIC_FILES=("$MUSIC_DIR"/*.mp3 "$MUSIC_DIR"/*.m4a "$MUSIC_DIR"/*.aac \
              "$MUSIC_DIR"/*.wav "$MUSIC_DIR"/*.flac "$MUSIC_DIR"/*.ogg)
 shopt -u nullglob nocaseglob
+# A STATION THAT IS DOWN MUST NOT TAKE THE STREAM DOWN. ffmpeg treats an
+# unreachable audio input as fatal: it exits, systemd restarts it, and the
+# whole board is off air in a loop that never mentions music. That is exactly
+# how a mistyped station URL — one where a '?' had become a '/' — blanked a
+# stream for hours while every component reported healthy. So ask the station
+# for one byte first. If it will not answer in 10 seconds we fall through to
+# files, then to silence: a stream with no music is a working stream, and a
+# stream that cannot start is not.
+if [ -n "${MUSIC_URL:-}" ] \
+   && ! curl -fsS --max-time 10 -r 0-0 -o /dev/null "$MUSIC_URL" 2>/dev/null; then
+  echo "Music: '$MUSIC_URL' did not answer — ignoring it and carrying on."
+  echo "       (check the address; a missing '?' before the key is the usual cause)"
+  MUSIC_URL=""
+fi
 if [ -n "${MUSIC_URL:-}" ]; then
   echo "Music: live audio stream — $MUSIC_URL"
   # -reconnect* → survive brief drops; -nostdin so a stalled input can't hang.
