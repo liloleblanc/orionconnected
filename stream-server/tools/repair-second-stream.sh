@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# MIAMI / SECOND-STREAM REPAIR — served so it can be typed by hand:
+# MIAMI / SECOND-STREAM REPAIR — served by the worker at /t.sh so it can be
 #     wget fids.orionconnected.com/t.sh
 #     bash t.sh
 #
