@@ -3204,13 +3204,13 @@ function updateDedicatedTimeOnly() {
     // screens even FIDS and BIDS') — shared helpers for label / dual time /
     // bilingual date, plus the analog hands.
     if (banClock) banClock.textContent = _ocClockTime1(now, tz);
-    if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
+    if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz, ['en', 'fr']);
     var _bLbl = document.getElementById('bidsBannerLabel');
     if (_bLbl) {
       var _bci2 = String(iata || '').toUpperCase();
       var _bCity = (typeof CITY !== 'undefined' && CITY[_bci2]) || ((AP[_bci2] || {}).city) || _bci2;
       try { if (typeof normalizeDisplayCity === 'function') _bCity = normalizeDisplayCity(_bCity, _bci2); } catch (e) {}
-      _bLbl.innerHTML = _ocClockLabel(_bCity);
+      _bLbl.innerHTML = _ocClockLabel(_bCity, ['en', 'fr']);
     }
     try {
       var _bh = document.getElementById('bidsClHour'), _bm = document.getElementById('bidsClMin');
@@ -11140,7 +11140,6 @@ function uxgGateHtml(ctx) {
           } catch(e) { /* fall through to next-flight display */ }
           return '<div style="flex:1;display:flex;align-items:center;justify-content:center;padding:0 28px;">' + nextHtml + '</div>';
         })()
-    +   '<div class="g8-r5-clock" id="dedicatedBannerClock">' + timeStr + '</div>'
     + '</div>'
     + '</div>';
 }
@@ -13096,9 +13095,6 @@ const gView = document.getElementById('gateView');
             +   _nextInfo
             + '</div>'
             // Bottom clock
-            + '<div style="display:flex;align-items:center;justify-content:center;padding:24px 48px;border-top:1px solid rgba(255,255,255,0.06);">'
-            +   '<div style="font-size:clamp(40px,4vw,64px);font-weight:800;color:rgba(255,255,255,0.12);font-variant-numeric:tabular-nums;" id="dedicatedBannerClock">' + timeStr + '</div>'
-            + '</div>'
             + '</div>';
           return;
         }
@@ -14183,6 +14179,27 @@ const gView = document.getElementById('gateView');
       }
     } catch (e) {}
 
+    // Baggage language surfaces are constrained to EN/FR so baggage halls
+    // stay consistent while the main-board language carousel continues to run.
+    var _bidsLangs = (function () {
+      var out = [];
+      if (Array.isArray(langs)) {
+        for (var i = 0; i < langs.length; i++) {
+          var l = String(langs[i] || '').toLowerCase();
+          if ((l === 'en' || l === 'fr') && out.indexOf(l) === -1) out.push(l);
+        }
+      }
+      if (out.indexOf('en') === -1) out.push('en');
+      if (out.indexOf('fr') === -1) out.push('fr');
+      try {
+        if (typeof frFirstAirport === 'function' && frFirstAirport(iata)) {
+          out = ['fr', 'en'];
+        }
+      } catch (e) {}
+      return out.slice(0, 2);
+    })();
+    var _bidsLangPrimary = _bidsLangs[0] || 'en';
+
     // Bilingual column titles — 'Flight | Vol' etc. (Nick), never a
     // rotating single language, '#' clutter dropped so titles fit one line.
     // v22962 — headers follow `langs` (the airport picker chose the second
@@ -14190,7 +14207,7 @@ const gView = document.getElementById('gateView');
     // found; Nick's paste had EN/FR headers over Spanish values).
     function _bidsHdr(key) {
       var o = (typeof LS !== 'undefined' && LS[key]) || {};
-      var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+      var picked = _bidsLangs.slice(0, 2);
       var out = [], seen = {};
       for (var i = 0; i < picked.length; i++) {
         var w = String(o[picked[i]] || (i === 0 ? (o.en || key) : '')).replace(/\s*#\s*$/, '');
@@ -14223,9 +14240,8 @@ const gView = document.getElementById('gateView');
           try { _lg = window._fidsResolvedAirportLogo || localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
           // Single language, rotating with the board's language cycle —
           // exactly like the FIDS board label ('Departures' / 'Départs').
-          var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
-                          de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
-          var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
+          var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages' };
+          var _ttl = _ttlMap[_bidsLangPrimary] || _ttlMap.en;
           // Clock matches the FIDS board exactly (Nick: 'the same on all
           // screens even FIDS and BIDS'): analog (right) + 3-line digital
           // (label / big dual time / bilingual date) via the shared helpers.
@@ -14245,10 +14261,10 @@ const gView = document.getElementById('gateView');
             +   '</svg>'
             +   '<div class="fids-banner-time-text">'
             +     '<div class="fids-banner-digirow">'
-            +       '<div class="fids-banner-tlabel" id="bidsBannerLabel">' + _ocClockLabel(_bidsCity) + '</div>'
+            +       '<div class="fids-banner-tlabel" id="bidsBannerLabel">' + _ocClockLabel(_bidsCity, ['en', 'fr']) + '</div>'
             +       '<div class="fids-banner-time" id="dedicatedBannerClock">' + _ocClockTime1(now, _bidsTz) + '</div>'
             +     '</div>'
-            +     '<div class="fids-banner-date" id="bidsBannerDate">' + _ocClockDate(now, _bidsTz) + '</div>'
+            +     '<div class="fids-banner-date" id="bidsBannerDate">' + _ocClockDate(now, _bidsTz, ['en', 'fr']) + '</div>'
             +   '</div>'
             + '</div>'
             + '<div class="fids-airport-pill' + (_lg ? ' has-logo' : '') + '">'
@@ -14271,7 +14287,7 @@ const gView = document.getElementById('gateView');
           <div class="bidsv2-chevrons"></div>
 
           <div class="bidsv2-carousel-block">
-            <div class="bidsv2-carousel-label">${TL('carousel')}</div>
+            <div class="bidsv2-carousel-label">${_bidsHdr('carousel')}</div>
             <div class="bidsv2-carousel-number">${(function(){
               const _m = String(subScreenVal || '').match(/^(\w+)-(.+)$/);
               return _m ? _m[2] : (subScreenVal || '—');
@@ -14287,7 +14303,7 @@ const gView = document.getElementById('gateView');
               <div class="bidsv2-col-status">${_bidsHdr('status')}</div>
             </div>
             ${_pageFlights.length ? _pageFlights.map((f) => {
-              const stTxt = SL(f.status);
+              const stTxt = ((SS[f.status] || {})[_bidsLangPrimary] || (SS[f.status] || {}).en || String(f.status || '').toUpperCase());
               // Normalize like the FIDS board does — raw string equality
               // missed 'landed'/'late'/'early' variants, so Early stayed
               // white and states colored on one screen but not the other.
@@ -14295,7 +14311,7 @@ const gView = document.getElementById('gateView');
               const isArr = _bStKey === 'arrived';
               const isDelayed = _bStKey === 'delayed';
               const isEarly = _bStKey === 'early';
-              const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, lang) : normalizeDisplayCity(f.origin || '—', f._locIata);
+              const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, _bidsLangPrimary) : normalizeDisplayCity(f.origin || '—', f._locIata);
               const airlineName = (f._airlineName || f.airline || '').toString().toUpperCase();
               const logoHtml = mkLogo(f.airline, f._airlineName);
               const statusClass = isArr ? 'bidsv2-status-arrived' : (isDelayed ? 'bidsv2-status-delayed' : (isEarly ? 'bidsv2-status-early' : 'bidsv2-status-other'));
@@ -14344,8 +14360,8 @@ const gView = document.getElementById('gateView');
              marquee; the track is doubled so the wrap is seamless. -->
         <div class="bidsv2-bottom-band bidsv2-ticker" aria-hidden="true">
           ${(function(){
-            const _a = BAGS_TICKER_MSG[langs[0]] || BAGS_TICKER_MSG.en;
-            const _b = (langs[1] && BAGS_TICKER_MSG[langs[1]] && langs[1] !== langs[0]) ? BAGS_TICKER_MSG[langs[1]] : null;
+            const _a = BAGS_TICKER_MSG[_bidsLangs[0]] || BAGS_TICKER_MSG.en;
+            const _b = (_bidsLangs[1] && BAGS_TICKER_MSG[_bidsLangs[1]] && _bidsLangs[1] !== _bidsLangs[0]) ? BAGS_TICKER_MSG[_bidsLangs[1]] : null;
             const _txt = _a.map(function(m, i){
               return '✈︎  ' + m + (_b ? '  ·  ' + _b[i] : '');
             }).join('   ·   ') + '   ·   ';
@@ -24995,18 +25011,39 @@ function _boardFilterChipHtml() {
 //   6:26PM | 18 h 26
 //   Thursday, July 23rd | Jeudi, le 23 juillet
 function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
-function _ocClockLabel(city) {
+function _ocClockPickedLangs(forced) {
+  var picked = (Array.isArray(forced) && forced.length)
+    ? forced.slice()
+    : ((typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr']);
+  var out = [], seen = {};
+  for (var i = 0; i < picked.length && out.length < 2; i++) {
+    var l = String(picked[i] || '').toLowerCase();
+    if (!/^[a-z]{2}$/.test(l) || seen[l]) continue;
+    seen[l] = 1;
+    out.push(l);
+  }
+  if (!out.length) out = ['en', 'fr'];
+  return out;
+}
+function _ocClockLabel(city, forcedLangs) {
   // Two stacked rows (Nick, gate layout on FIDS/BIDS too): 'Time in <City>'
   // over 'Heure à <City>'. Used only by the FIDS/BIDS banner clocks; the gate
   // builds its own label inline.
-  // v22963 — follows `langs` (Nick: 'FIDS Time in Orlando / Heure à
-  // Orlando'). The GATE clock was converted in v22954; this is the shared
-  // FIDS/BIDS one, which still hardcoded the pair.
+  var labels = (typeof _GATE_LBL !== 'undefined' && _GATE_LBL.timeIn) ? _GATE_LBL.timeIn : { en: 'Time in', fr: 'Heure à' };
+  var picked = _ocClockPickedLangs(forcedLangs);
   var _fFirst = false;
   try { _fFirst = (typeof frFirstAirport === 'function') && frFirstAirport((document.getElementById('apSel') || {}).value || ''); } catch (e) {}
-  return _gateLbl('timeIn', _fFirst, function (w, i) {
-    return '<span class="cl-l' + (i + 1) + '">' + w + ' ' + city + '</span>';
-  }, '');
+  if (!forcedLangs && _fFirst) {
+    var _fi = picked.indexOf('fr');
+    if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
+  }
+  var out = [];
+  for (var i = 0; i < picked.length && out.length < 2; i++) {
+    var w = labels[picked[i]] || labels.en || 'Time in';
+    out.push('<span class="cl-l' + (out.length + 1) + '">' + w + ' ' + city + '</span>');
+  }
+  if (!out.length) out.push('<span class="cl-l1">' + ((labels.en || 'Time in') + ' ' + city) + '</span>');
+  return out.join('');
 }
 // Single 12h time '10:29PM' (Nick: 'one time format') — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
@@ -25026,7 +25063,7 @@ function _ocClockTime(now, tz) {
   // Nick: '7:03PM | 19h 03'.
   return en + ' | ' + String(parseInt(H, 10)) + 'h ' + M;
 }
-function _ocClockDate(now, tz) {
+function _ocClockDate(now, tz, forcedLangs) {
   // v22959 — the banner date follows the SELECTED languages (Nick: 'The date
   // on top still doesnt work'). This hardcoded en-US + fr-CA — the sixth
   // fixed-language surface found. Intl does the words; the per-language
@@ -25048,10 +25085,10 @@ function _ocClockDate(now, tz) {
       return d.charAt(0).toUpperCase() + d.slice(1);
     } catch (e) { return now.toLocaleDateString('en-US', eo); }
   }
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+  var picked = _ocClockPickedLangs(forcedLangs);
   try {
     var _ap = (document.getElementById('apSel') || {}).value || '';
-    if (typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
+    if (!forcedLangs && typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
       var _fi = picked.indexOf('fr');
       if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
     }

@@ -12631,3 +12631,114 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   position: relative !important;
   z-index: 3 !important;
 }
+
+/* v23174 — FIDS/BIDS polish pass: panel symmetry, single-clock surfaces,
+   aircraft-panel parity, logo normalization, and low-jitter visual tuning. */
+
+/* BIDS: enforce symmetrical grid rhythm and baseline alignment across header/rows. */
+#baggageView .bidsv2-list-header,
+#baggageView .bidsv2-flight-row {
+  grid-template-columns: minmax(0, 2.4fr) minmax(0, 2.4fr) minmax(0, 1fr) minmax(0, 1.2fr) !important;
+  gap: clamp(14px, 1.2vw, 24px) !important;
+  padding-left: clamp(16px, 1.3vw, 24px) !important;
+  padding-right: clamp(16px, 1.3vw, 24px) !important;
+}
+#baggageView .bidsv2-list-header {
+  padding-top: 0 !important;
+  padding-bottom: clamp(8px, .8vh, 12px) !important;
+  align-items: end !important;
+}
+#baggageView .bidsv2-list-header > div {
+  display: flex !important;
+  align-items: flex-end !important;
+  min-height: 2.2em !important;
+  line-height: 1.1 !important;
+  white-space: normal !important;
+  text-wrap: balance;
+}
+#baggageView .bidsv2-flight-row {
+  align-items: center !important;
+  line-height: 1.1 !important;
+}
+#baggageView .bidsv2-col-flight,
+#baggageView .bidsv2-col-from,
+#baggageView .bidsv2-col-time,
+#baggageView .bidsv2-col-status {
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+}
+#baggageView .bidsv2-flight-meta {
+  gap: 4px !important;
+}
+#baggageView .bidsv2-airline-name,
+#baggageView .bidsv2-airline-wordmark,
+#baggageView .bidsv2-flight-num,
+#baggageView .bidsv2-col-from,
+#baggageView .bidsv2-col-time,
+#baggageView .bidsv2-col-status {
+  line-height: 1.08 !important;
+}
+
+/* BIDS: keep the carousel panel vertically aligned with the flight list header rhythm. */
+#baggageView .bidsv2-body {
+  grid-template-columns: minmax(340px, 38%) minmax(0, 62%) !important;
+}
+#baggageView .bidsv2-carousel-block {
+  margin-top: clamp(24px, 2.3vh, 32px) !important;
+  margin-bottom: clamp(24px, 2.3vh, 32px) !important;
+}
+#baggageView .bidsv2-carousel-terminal {
+  line-height: 1.08 !important;
+}
+
+/* Single clock location: suppress legacy content-panel clocks on gate surfaces. */
+#gateView .g8-r5-clock,
+#gateView #dedicatedEmptyTime {
+  display: none !important;
+}
+
+/* Aircraft panel styling parity with adjacent panel system. */
+#gateView .g8-wrap .gad-aircraft-col,
+#gateView .g8-wrap .gad-media-col,
+#gateView .g8-wrap .gad-map-col-v2 {
+  border: 1px solid rgba(15, 34, 56, 0.14) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 24px rgba(10, 31, 55, 0.10) !important;
+  overflow: hidden !important;
+}
+#gateView .g8-wrap .gad-aircraft-col {
+  background: #eef1f6 !important;
+}
+
+/* Delta orb cleanup (visual only; scoped to DL). */
+html body[data-gate-airline="DL"] #gateView .g8-wrap .g8-r1-emblem {
+  border-radius: 50% !important;
+  background: #ffffff !important;
+  padding: 4px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.20) !important;
+}
+
+/* Aircraft visual-motion smoothing without layout changes. */
+#gateView .gad-aircraft-col .v2-livery-block img,
+#gateView .gad-map-col-v2 .v2-map-aircraft-img img {
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Gate-header airline logo normalization (AA + peers), preserve aspect ratio. */
+#gateView .g8-wrap .g8-r1-logoslot .g8-r1-logo,
+#gateView .g8-wrap .g8-r1-logoslot img.g8-r1-logo {
+  max-height: clamp(84px, 10.5vh, 128px) !important;
+  max-width: min(38vw, 640px) !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+html body[data-gate-airline="AA"] #gateView .g8-wrap .g8-r1-logoslot .g8-r1-logo,
+html body[data-gate-airline="AA"] #gateView .g8-wrap .g8-r1-logoslot img.g8-r1-logo {
+  transform: scale(1.12) !important;
+  transform-origin: center center !important;
+}
