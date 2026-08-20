@@ -22,9 +22,18 @@ set -euo pipefail
 # key) so a plain `bash setup.sh` keeps your existing setup. Precedence per
 # setting: env var you pass  >  saved value  >  default. To change one thing,
 # just prepend it, e.g.  VIDEO_BITRATE=8000k bash setup.sh.
+#
+# STREAM_DIR is where THIS stream lives. A box can host more than one stream
+# (Moncton in /opt/fids-stream, the second in /opt/fids-stream-tpa); each needs
+# its own directory, config.env, systemd unit, X display and Chrome profile.
+# Install or repair a second stream with:
+#     STREAM_DIR=/opt/fids-stream-tpa STREAM_URL="$MIAMI_URL" bash setup.sh
+STREAM_DIR="${STREAM_DIR:-/opt/fids-stream}"
+SERVICE="$(basename "$STREAM_DIR")"        # e.g. fids-stream / fids-stream-tpa
+
 _saved() {  # read one KEY="value" line from the saved config, if present
-  [ -f /opt/fids-stream/config.env ] || return 0
-  sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}$/\1/p" /opt/fids-stream/config.env | head -1
+  [ -f "$STREAM_DIR/config.env" ] || return 0
+  sed -n "s/^$1=\"\{0,1\}\([^\"]*\)\"\{0,1\}$/\1/p" "$STREAM_DIR/config.env" | head -1
 }
 
 # The board to stream. rotate.html is the in-place rotator: it preloads all
@@ -105,10 +114,10 @@ CHROME_BIN="$(command -v google-chrome)"
 echo "Chrome: $CHROME_BIN"
 
 # ── 3. Config + launcher ────────────────────────────────────────────────────
-install -d /opt/fids-stream
-install -d /opt/fids-stream/music   # drop licensed audio files here for music
+install -d "$STREAM_DIR"
+install -d "$STREAM_DIR/music"   # drop licensed audio files here for music
 
-cat > /opt/fids-stream/config.env <<CFG
+cat > "$STREAM_DIR/config.env" <<CFG
 STREAM_URL="$STREAM_URL"
 YT_KEY="$YT_KEY"
 CHROME_BIN="$CHROME_BIN"
@@ -118,17 +127,77 @@ FRAMERATE="$FRAMERATE"
 VIDEO_BITRATE="$VIDEO_BITRATE"
 MUSIC_URL="$MUSIC_URL"
 CFG
-chmod 600 /opt/fids-stream/config.env   # keeps the stream key private
+chmod 600 "$STREAM_DIR/config.env"   # keeps the stream key private
 
 # Quoted heredoc — nothing expands here; values come from config.env at runtime.
-cat > /opt/fids-stream/run.sh <<'RUN'
+cat > "$STREAM_DIR/run.sh" <<'RUN'
 #!/usr/bin/env bash
 set -euo pipefail
-source /opt/fids-stream/config.env
-export DISPLAY=:99
+
+# ── WHICH STREAM AM I ───────────────────────────────────────────────────────
+# Resolve our OWN directory rather than a hardcoded /opt/fids-stream. Sourcing
+# that path by name is right for the only stream on a one-stream box and wrong
+# the moment a second exists: /opt/fids-stream-tpa/run.sh then read MONCTON's
+# config, so it rendered the wrong airport AND pushed Moncton's stream key.
+# Two ffmpeg processes on one key is a duplicate ingest — YouTube drops the
+# connection, ffmpeg exits, systemd restarts it, forever. That is what a
+# "restarting every few seconds" loop looks like from the outside.
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+STREAM_NAME="$(basename "$SELF_DIR")"
+
+if [ ! -f "$SELF_DIR/config.env" ]; then
+  echo "FATAL: no config.env in $SELF_DIR — nothing to stream. Re-run setup.sh." >&2
+  exit 78   # EX_CONFIG
+fi
+source "$SELF_DIR/config.env"
+
+# ── PREFLIGHT: FAIL LOUDLY, NOT IN A LOOP ───────────────────────────────────
+# Each of these used to surface as an opaque ffmpeg error far down the journal,
+# or — with `set -u` and a key missing entirely — an unbound-variable crash two
+# seconds after boot, indistinguishable from a network blip while systemd
+# restarted every 5s. Checking first means `journalctl -u <unit> -n 20` opens
+# on the actual reason, in words an operator can act on.
+: "${STREAM_URL:=}"; : "${YT_KEY:=}"; : "${CHROME_BIN:=}"
+: "${WIDTH:=1280}"; : "${HEIGHT:=720}"; : "${FRAMERATE:=20}"; : "${VIDEO_BITRATE:=3500k}"
+
+_fatal() { echo "FATAL[$STREAM_NAME]: $1" >&2; echo "  fix: $2" >&2; exit 78; }
+
+[ -n "$YT_KEY" ] || _fatal \
+  "YT_KEY is empty or missing in $SELF_DIR/config.env — YouTube cannot be reached." \
+  "set it, then restart: YouTube Studio -> Go Live -> Stream -> Stream key"
+# Keys are dash-grouped alphanumerics (xxxx-xxxx-xxxx-xxxx-xxxx). A WARNING
+# only — the format belongs to YouTube, and a live stream must never be blocked
+# by our guess about it.
+case "$YT_KEY" in
+  *-*) : ;;
+  *) echo "WARN[$STREAM_NAME]: YT_KEY has no dashes — may not be a stream key. Continuing." >&2 ;;
+esac
+[ -n "$STREAM_URL" ] || _fatal \
+  "STREAM_URL is empty or missing in $SELF_DIR/config.env — no board to render." \
+  "add STREAM_URL= to that file, then: systemctl restart $STREAM_NAME"
+[ -n "$CHROME_BIN" ] && [ -x "$CHROME_BIN" ] || _fatal \
+  "Chrome not found at '${CHROME_BIN:-(unset)}'." \
+  "re-run setup.sh on this server to reinstall Google Chrome"
+
+# One masked line naming exactly what this unit is about to do — enough to spot
+# a wrong airport, a stale key, or the SAME key on two units at a glance. Last
+# four characters only, so the log stays safe to screenshot.
+echo "[$STREAM_NAME] board=$STREAM_URL"
+echo "[$STREAM_NAME] ${WIDTH}x${HEIGHT}@${FRAMERATE} ${VIDEO_BITRATE} -> YouTube key …${YT_KEY: -4}"
+
+# ── DISPLAY + PROFILE, PER STREAM ───────────────────────────────────────────
+# Both were hardcoded (:99, /opt/fids-stream/chrome-profile), so a second stream
+# collided with the first: Xvfb refuses a display already in use, and two
+# Chromes sharing one user-data-dir clobber each other. Derive both from the
+# directory name. The canonical /opt/fids-stream keeps :99 exactly as before, so
+# a one-stream box behaves identically to every build before this one.
+DISPLAY_NUM=99
+[ "$STREAM_NAME" = "fids-stream" ] || DISPLAY_NUM=$((99 + $(printf '%s' "$STREAM_NAME" | cksum | cut -d' ' -f1) % 50 + 1))
+export DISPLAY=":$DISPLAY_NUM"
+PROFILE_DIR="$SELF_DIR/chrome-profile"
 
 # Virtual framebuffer at the configured size
-Xvfb :99 -screen 0 "${WIDTH}x${HEIGHT}x24" -nolisten tcp &
+Xvfb "$DISPLAY" -screen 0 "${WIDTH}x${HEIGHT}x24" -nolisten tcp &
 XVFB_PID=$!
 sleep 2
 
@@ -145,13 +214,13 @@ sleep 2
 # Deleting the cache directories does the whole job the stale-deploy fix needed
 # and leaves the design alone. --disk-cache-size=1 below already keeps the disk
 # cache at nothing; this clears whatever a previous run left behind.
-rm -rf /opt/fids-stream/chrome-profile/Default/Cache \
-       /opt/fids-stream/chrome-profile/Default/"Code Cache" \
-       /opt/fids-stream/chrome-profile/GPUCache \
-       /opt/fids-stream/chrome-profile/ShaderCache 2>/dev/null || true
+rm -rf "$PROFILE_DIR/Default/Cache" \
+       "$PROFILE_DIR/Default/Code Cache" \
+       "$PROFILE_DIR/GPUCache" \
+       "$PROFILE_DIR/ShaderCache" 2>/dev/null || true
 "$CHROME_BIN" \
   --kiosk --no-sandbox --no-first-run --no-default-browser-check \
-  --user-data-dir=/opt/fids-stream/chrome-profile --disk-cache-size=1 \
+  --user-data-dir="$PROFILE_DIR" --disk-cache-size=1 \
   --disable-infobars --disable-session-crashed-bubble \
   --disable-features=Translate --autoplay-policy=no-user-gesture-required \
   --disable-gpu --disable-software-rasterizer --disable-dev-shm-usage \
@@ -169,8 +238,8 @@ sleep 8   # let the board load its fonts + first data
 #   Library, a stream-safe/royalty-free service, a track you own, etc.).
 #   Copyrighted music — including most internet radio — gets caught by YouTube
 #   Content ID and the stream is muted or the channel struck.
-MUSIC_DIR=/opt/fids-stream/music
-PLAYLIST=/opt/fids-stream/playlist.txt
+MUSIC_DIR="$SELF_DIR/music"
+PLAYLIST="$SELF_DIR/playlist.txt"
 # nullglob → unmatched patterns vanish (no literal '*.wav'); nocaseglob → .MP3 too
 shopt -s nullglob nocaseglob
 MUSIC_FILES=("$MUSIC_DIR"/*.mp3 "$MUSIC_DIR"/*.m4a "$MUSIC_DIR"/*.aac \
@@ -190,8 +259,8 @@ elif [ "${#MUSIC_FILES[@]}" -gt 0 ]; then
   # (tolerant re-encode) removes every seam, so the live loop can't choke.
   # Cached: only rebuilt when a track is added/changed. If the bake fails for
   # any reason, we fall back to silence so the STREAM never goes down.
-  MIXED=/opt/fids-stream/music.m4a
-  WORK=/opt/fids-stream/_musicwork
+  MIXED="$SELF_DIR/music.m4a"
+  WORK="$SELF_DIR/_musicwork"
   STAMP="$WORK/.normalized"
   # Step 1 (cached): normalize EACH track on its own to identical AAC/44.1k/stereo.
   # One-at-a-time (not via a mixed concat) means a weird or half-downloaded file
@@ -266,17 +335,17 @@ ffmpeg -loglevel warning \
 # ffmpeg exited → tear down so systemd restarts from a clean slate
 kill "$CHROME_PID" "$XVFB_PID" 2>/dev/null || true
 RUN
-chmod +x /opt/fids-stream/run.sh
+chmod +x "$STREAM_DIR/run.sh"
 
 # ── 4. systemd service ──────────────────────────────────────────────────────
-cat > /etc/systemd/system/fids-stream.service <<'SVC'
+cat > "/etc/systemd/system/$SERVICE.service" <<SVC
 [Unit]
 Description=Orion FIDS -> YouTube Live
 After=network-online.target
 Wants=network-online.target
 
 [Service]
-ExecStart=/opt/fids-stream/run.sh
+ExecStart=$STREAM_DIR/run.sh
 Restart=always
 RestartSec=5
 User=root
@@ -289,19 +358,19 @@ WantedBy=multi-user.target
 SVC
 
 systemctl daemon-reload
-systemctl enable fids-stream.service
+systemctl enable "$SERVICE.service"
 # restart (not just 'enable --now') so RE-RUNNING this installer actually
 # applies the new run.sh — '--now' alone won't touch an already-running service.
-systemctl restart fids-stream.service
+systemctl restart "$SERVICE.service"
 
 echo
 echo "✅ Streaming. YouTube Studio should show the feed 'live' within a minute."
 echo
-echo "  Watch logs:   journalctl -u fids-stream -f"
-echo "  Restart:      systemctl restart fids-stream"
-echo "  Stop:         systemctl stop fids-stream"
-echo "  Change board: edit /opt/fids-stream/config.env, then restart"
-echo "  Music (files):  put licensed audio in /opt/fids-stream/music/, restart"
+echo "  Watch logs:   journalctl -u $SERVICE -f"
+echo "  Restart:      systemctl restart $SERVICE"
+echo "  Stop:         systemctl stop $SERVICE"
+echo "  Change board: edit $STREAM_DIR/config.env, then restart"
+echo "  Music (files):  put licensed audio in $STREAM_DIR/music/, restart"
 echo "  Music (stream): MUSIC_URL=\"https://…/stream.mp3\" bash setup.sh"
 echo "                  (direct audio stream only; both must be music you're"
 echo "                   licensed to rebroadcast — YouTube Content ID mutes/"
