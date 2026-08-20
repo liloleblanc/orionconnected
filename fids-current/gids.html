@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- v23159 — BOOT THEME RESOLVES BEFORE FIRST PAINT (Nick: 'when it comes on
+  <!-- v23159 — BOOT THEME RESOLVES BEFORE FIRST PAINT (We: 'when it comes on
        it blinks like 4 or 5 times'). The loader's palette in shared.css is the
        LIGHT one by default and only flips on [data-theme="dark"]. The script
        that set that attribute lived further down, inside <body>, ABOVE the
@@ -43,7 +43,7 @@
          and a white flash before they arrive is the same defect by another
          route. Matches --ld-bg-1 for each theme in css/shared.css. */
       r.style.background = _learned || 'rgb(13,77,139)';
-      /* v23159 — A ROTATION HOP IS NOT A COLD BOOT (Nick: 'transitions flashes
+      /* v23159 — A ROTATION HOP IS NOT A COLD BOOT (We: 'transitions flashes
          it's not just start it's all the time now'). ?rotate= navigates with
          location.href, so every dwell period the display throws the page away
          and replays the whole boot — welcome screen included. Measured: the
@@ -126,7 +126,7 @@
       var next = (idx < 0) ? list[0] : list[(idx + 1) % list.length];
       if (!next || next === norm) return;
       /* v23159 — THE DWELL STARTS WHEN THE BOARD IS READY, NOT WHEN THE PAGE
-         LOADS (Nick: 'if it means to slow it down to catch up then fine').
+         LOADS (We: 'if it means to slow it down to catch up then fine').
          The board needs several seconds to fetch and paint, so counting from
          page load spent part of every dwell showing a screen that was still
          filling in — and on a short dwell it could rotate away before the
@@ -165,7 +165,7 @@
   <link rel="stylesheet" href="css/display-overrides.css?v=23166">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
-     after the feed lands (Nick: 'the old svreen shows up once in a while',
+     after the feed lands (We: 'the old svreen shows up once in a while',
      with a shot of a gate URL showing the Departures banner over an empty
      body). The boot restore can only switch screenType once data arrives —
      seconds on a big airport — so this stamps the intent NOW and the CSS
@@ -205,7 +205,7 @@
 </style>
 <style id="fids-preflash-guard">
 /* v23172 — DO NOT PAINT THE MAIN-BOARD CHROME ON A GATE/BAGGAGE SCREEN.
-   (Nick: "there is stuff hidden I can see it when I load like banners that
+   (We: "there is stuff hidden I can see it when I load like banners that
    were from a while back are still hidden behind")
 
    This page ships the FULL main-board markup — the departures banner, the
@@ -231,7 +231,7 @@ html:not([data-screen-ready]) .content-area { display: none !important; }
 <body data-page="gids">
 <!--
 v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
-   (Nick: 'i just dont want flashes and glitches' / 'they just keep building on
+   (We: 'i just dont want flashes and glitches' / 'they just keep building on
    top of everything and taking easy shortcuts'.)
 
    What stood here read `fids_console_theme` — the CONSOLE's light/dark
@@ -293,7 +293,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
     #fidsLoader .ocb{ position:absolute; inset:0; display:flex; z-index:1; }
     /* ── Brand rail ─────────────────────────────────────────── */
     #fidsLoader .ocb-rail{
-      flex:0 0 clamp(240px, 20vw, 340px); box-sizing:border-box;
+      flex:0 0 clamp(240px, 20vw, 440px); box-sizing:border-box;
       background:linear-gradient(165deg,#313130 0%,#1c1c1b 100%);
       display:flex; flex-direction:column; justify-content:center;
       gap:clamp(24px,3.4vh,44px); padding:clamp(30px,4vh,56px) clamp(26px,2.2vw,40px);
@@ -548,7 +548,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 
   <!-- Time + date, top-right corner. Analog clock (left) + 3-line digital
        block matching the gate banner: label / big time / bilingual date
-       (Nick, Jul 2026). -->
+       (We, Jul 2026). -->
   <div class="fids-banner-time-block">
     <svg class="fids-banner-analog" id="clockAnalog" viewBox="0 0 100 100" aria-hidden="true">
       <circle class="cl-face" cx="50" cy="50" r="46"></circle>
@@ -662,15 +662,15 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 
 <!-- Test Flight Modal -->
 <div id="testFlightModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
-  <div style="background:#1e1e21;border:1px solid #3f3f46;border-radius:8px;padding:32px;width:480px;max-width:94vw;color:#fff;">
+  <div style="background:#1e1e21;border:1px solid #3f3f46;border-radius:4px;padding:32px;width:480px;max-width:94vw;color:#fff;">
     <div style="font-size:18px;font-weight:900;letter-spacing:3px;color:#eab308;margin-bottom:20px;">✚ TEST FLIGHT / VOL TEST</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
       <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">GATE</label>
-        <input id="tfGate" value="A3" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+        <input id="tfGate" value="A3" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:4px;font-size:14px;font-weight:700;border-radius:1px;"></div>
       <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">AIRLINE (IATA)</label>
-        <input id="tfAirline" value="AC" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+        <input id="tfAirline" value="AC" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:4px;font-size:14px;font-weight:700;border-radius:1px;"></div>
       <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">FLIGHT #</label>
-        <input id="tfFlight" value="AC 1234" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
+        <input id="tfFlight" value="AC 1234" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:4px;font-size:14px;font-weight:700;border-radius:1px;"></div>
       <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">DESTINATION</label>
         <input id="tfDest" value="TORONTO" style="width:100%;background:#27272a;color:#fff;border:1px solid #52525b;padding:8px;font-size:14px;font-weight:700;border-radius:4px;"></div>
       <div><label style="font-size:10px;font-weight:700;letter-spacing:2px;color:rgba(255,255,255,0.4);display:block;margin-bottom:4px;">DEST IATA CODE</label>
@@ -910,12 +910,12 @@ window.addEventListener("DOMContentLoaded", async function() {
 
     var params = new URLSearchParams(window.location.search);
     var ap = params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM';
-    // v22832 — never silently demo (Nick); ?mode=demo is the only door.
+    // v22832 — never silently demo (We); ?mode=demo is the only door.
     // v23170 — AND BEING SIGNED IN IMPLIES LIVE. fids_mode is written once by
     // the entry page (enterDemo() stamps 'demo') and then remembered for the
     // life of that TAB, so a single visit to the demo could outrank a later
     // admin login and quietly serve sample flights to someone who had signed in
-    // (Nick: "I will be logged in as admin and then all of a sudden it will
+    // (We: "I will be logged in as admin and then all of a sudden it will
     // fall to the demo"). An explicit ?mode= in the URL still wins — that is a
     // deliberate request — but a stored 'demo' no longer outranks a real
     // session.
