@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 #
+# MIAMI / SECOND-STREAM REPAIR — served by the worker at /t.sh so it can be
+#     wget fids.orionconnected.com/t.sh
+#     bash t.sh
+#
+# Same installer as s.sh, aimed at /opt/fids-stream-tpa and the MIA board.
+# It asks for this stream's own YouTube key and refuses one already in use by
+# the other stream. It does not touch /opt/fids-stream, so a working Moncton
+# stream keeps running untouched.
+#
 # Orion FIDS → YouTube Live — one-shot installer for an Ubuntu server (Hetzner Cloud).
 #
 # What it does: installs Google Chrome + ffmpeg + a virtual display, then sets
@@ -28,7 +37,7 @@ set -euo pipefail
 # its own directory, config.env, systemd unit, X display and Chrome profile.
 # Install or repair a second stream with:
 #     STREAM_DIR=/opt/fids-stream-tpa STREAM_URL="$MIAMI_URL" bash setup.sh
-STREAM_DIR="${STREAM_DIR:-/opt/fids-stream}"
+STREAM_DIR="${STREAM_DIR:-/opt/fids-stream-tpa}"
 SERVICE="$(basename "$STREAM_DIR")"        # e.g. fids-stream / fids-stream-tpa
 
 _saved() {  # read one KEY="value" line from the saved config, if present
@@ -53,7 +62,7 @@ _saved() {  # read one KEY="value" line from the saved config, if present
 #   1. Moncton  (YQM) — English + French, the default below
 #   2. Miami  (MIA) — English + Spanish, see MIAMI_URL under "Presets"
 STREAM_URL="${STREAM_URL:-$(_saved STREAM_URL)}"
-STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/rotate.html?ap=YQM&mode=live&stream=1&langs=en,fr&rotate=fids,gids,bids,gids&dwell=60}"
+STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/rotate.html?ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60}"
 
 # ── Presets ───────────────────────────────────────────────────────────────
 # Stream 2 — MIAMI, English + Spanish (was Tampa). Use with:
@@ -87,14 +96,46 @@ echo
 # ── 1. Stream key ───────────────────────────────────────────────────────────
 # Re-running to apply an update? Reuse the key already on disk so you don't
 # have to paste it again.
+# This stream needs its OWN key. Two ffmpeg processes on one key is a duplicate
+# ingest: YouTube drops the connection, ffmpeg exits, systemd restarts it, and
+# the stream loops forever without ever saying why. So ask outright, show what
+# is already saved, and refuse a key that belongs to another stream on this box.
+_OTHER_KEY=""
+for _c in /opt/*/config.env; do
+  [ "$_c" = "$STREAM_DIR/config.env" ] && continue
+  [ -f "$_c" ] || continue
+  _k="$(sed -n 's/^YT_KEY="\{0,1\}\([^"]*\)"\{0,1\}$/\1/p' "$_c" | head -1)"
+  [ -n "$_k" ] && _OTHER_KEY="$_k"
+done
+
+_HAVE="$(_saved YT_KEY)"
 if [ -z "${YT_KEY:-}" ]; then
-  YT_KEY="$(_saved YT_KEY)"
-  [ -n "$YT_KEY" ] && echo "Reusing the stream key already saved on this server."
+  echo
+  echo "This is the SECOND stream ($STREAM_DIR) — it needs its own YouTube key."
+  echo "Get one: YouTube Studio -> Create -> Go Live -> Stream -> Stream key."
+  if [ -n "$_HAVE" ]; then
+    if [ "$_HAVE" = "$_OTHER_KEY" ]; then
+      echo "The key saved here is the SAME as the other stream's — that is the"
+      echo "duplicate-ingest fault. A different key is required."
+      _HAVE=""
+    else
+      echo "A key ending ...${_HAVE: -4} is already saved here."
+      echo "Press ENTER to keep it, or type a new one."
+    fi
+  fi
+  echo
+  read -rp "YouTube stream key: " YT_KEY
+  [ -z "$YT_KEY" ] && YT_KEY="$_HAVE"
 fi
-if [ -z "${YT_KEY:-}" ]; then
-  read -rp "Paste your YouTube stream key: " YT_KEY
+[ -n "$YT_KEY" ] || { echo "No stream key given — nothing changed."; exit 1; }
+if [ -n "$_OTHER_KEY" ] && [ "$YT_KEY" = "$_OTHER_KEY" ]; then
+  echo
+  echo "That key already belongs to the other stream on this server."
+  echo "Both would fight over one YouTube ingest and neither would stay up."
+  echo "Create a second key in YouTube Studio (Stream key -> Create new), then"
+  echo "run this again. Nothing was changed."
+  exit 1
 fi
-[ -n "$YT_KEY" ] || { echo "No stream key given — aborting."; exit 1; }
 
 # ── 2. Dependencies ─────────────────────────────────────────────────────────
 export DEBIAN_FRONTEND=noninteractive

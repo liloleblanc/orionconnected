@@ -1,0 +1,11 @@
+# Shell scripts must be committed with LF endings, always.
+#
+# stream-server/setup.sh was once committed with CRLF. Every server that
+# downloaded it got `set -euo pipefail\r` on line one, which bash rejects with
+# "invalid option name: pipefail" — an error that names the wrong thing and
+# looks like a corrupt download. Diagnosing that on a console with no
+# copy/paste, during an outage, cost hours.
+#
+# eol=lf normalises on commit, so a checkout from Windows or an editor that
+# rewrites endings can no longer put a CR into anything meant to be executed.
+*.sh text eol=lf

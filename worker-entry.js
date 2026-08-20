@@ -172,6 +172,40 @@ export default {
         return new Response('agent fetch failed', { status: 502, headers: NO_STORE });
       }
     }
+    // Short aliases for the two stream installers — same reasoning as /a above.
+    // These get TYPED into the Hetzner web console, which drops characters on
+    // long lines, so the raw.githubusercontent URL is unusable by hand:
+    //     wget fids.orionconnected.com/t
+    //     bash t
+    //   /s → rebuild the FIRST stream  (/opt/fids-stream)
+    //   /t → rebuild the SECOND stream (/opt/fids-stream-tpa)
+    // Served straight from the repository, so there is one source of truth and
+    // nothing shell-shaped has to live in the public asset directory — which
+    // tests/repository-cleanliness.test.js forbids outright.
+    const STREAM_INSTALLERS = {
+      '/s': 'stream-server/setup.sh',
+      '/t': 'stream-server/tools/repair-second-stream.sh',
+    };
+    if (STREAM_INSTALLERS[path]) {
+      const src = 'https://raw.githubusercontent.com/liloleblanc/orionconnected/main/'
+                + STREAM_INSTALLERS[path];
+      try {
+        const r = await fetch(src);
+        if (!r.ok) return new Response('installer fetch failed ' + r.status, { status: 502, headers: NO_STORE });
+        // Normalise line endings on the way out. A single stray CR makes line
+        // one read `set -euo pipefail\r`, and bash rejects it with "invalid
+        // option name: pipefail" — which reads like a corrupt download and cost
+        // hours to identify on a console with no copy/paste. Whatever the file
+        // is committed as, what leaves here runs.
+        const body = (await r.text()).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        return new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE }
+        });
+      } catch (e) {
+        return new Response('installer fetch failed', { status: 502, headers: NO_STORE });
+      }
+    }
     if (path.startsWith('/mapcdn/')) {
       const file = path.slice('/mapcdn/'.length);
       const upstreams = MAP_ENGINE[file];
