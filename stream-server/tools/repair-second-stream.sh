@@ -124,7 +124,7 @@ if [ -z "${YT_KEY:-}" ]; then
     fi
   fi
   echo
-  read -rp "YouTube stream key: " YT_KEY
+  read -rsp "YouTube stream key: " YT_KEY; echo
   [ -z "$YT_KEY" ] && YT_KEY="$_HAVE"
 fi
 [ -n "$YT_KEY" ] || { echo "No stream key given — nothing changed."; exit 1; }
@@ -364,7 +364,7 @@ fi
 #                 showing as a pointer stuck in the middle of the stream).
 #  -shortest is deliberately omitted so the (looped) music never ends the run.
 ffmpeg -loglevel warning \
-  -f x11grab -draw_mouse 0 -thread_queue_size 1024 -video_size "${WIDTH}x${HEIGHT}" -framerate "$FRAMERATE" -i :99 \
+  -f x11grab -draw_mouse 0 -thread_queue_size 1024 -video_size "${WIDTH}x${HEIGHT}" -framerate "$FRAMERATE" -i "$DISPLAY" \
   "${AUDIO_IN[@]}" \
   -map 0:v:0 -map 1:a:0 \
   -c:v libx264 -preset ultrafast -pix_fmt yuv420p \
