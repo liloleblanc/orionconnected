@@ -34,7 +34,7 @@ encodes it, systemd keeps it alive forever.
 ## What gets installed
 
 - **Google Chrome** (headless kiosk) rendering
-  `fids.orionconnected.com/fids.html?...&stream=1&theme=mist`
+  `fids.orionconnected.com/fids.html?...&stream=1`
 - **Xvfb** — a virtual 1920×1080 display for Chrome to draw into
 - **ffmpeg** — grabs that display + a silent audio track → YouTube RTMP
 - **fids-stream.service** — systemd unit; starts on boot, restarts on crash
@@ -51,8 +51,11 @@ systemctl stop fids-stream          # stop the stream
 edit `STREAM_URL` in `/opt/fids-stream/config.env`, then
 `systemctl restart fids-stream`.
 
-- Baggage board: `.../bids.html?ap=YQM&mode=live&stream=1&theme=mist`
-- Darker theme: swap `theme=mist` for `theme=tus-teal-deep`
+- Baggage board: `.../bids.html?ap=YQM&mode=live&stream=1`
+- Theme: leave it default — it streams cleanly. **Do not use `theme=mist` on the
+  stream:** it relies on GPU effects the headless server can't render, so it
+  glitches badly on YouTube even though it looks fine in a normal browser. If you
+  want a different theme, test it on the actual stream first.
 - Sharper text: raise `VIDEO_BITRATE` in `config.env` to `6000k`
 - Languages: `&langs=en,es` — see below
 
@@ -60,8 +63,8 @@ edit `STREAM_URL` in `/opt/fids-stream/config.env`, then
 
 | # | Airport | Languages | `STREAM_URL` |
 |---|---------|-----------|--------------|
-| 1 | Moncton `YQM` | English + French | `.../rotate.html?ap=YQM&mode=live&stream=1&theme=mist&langs=en,fr&rotate=fids,gids,bids,gids&dwell=60` |
-| 2 | **Orlando `MCO`** | **English + Spanish** | `.../rotate.html?ap=MCO&mode=live&stream=1&theme=mist&langs=en,es&rotate=fids,gids,bids,gids&dwell=60` |
+| 1 | Moncton `YQM` | English + French | `.../rotate.html?ap=YQM&mode=live&stream=1&langs=en,fr&rotate=fids,gids,bids,gids&dwell=60` |
+| 2 | **Orlando `MCO`** | **English + Spanish** | `.../rotate.html?ap=MCO&mode=live&stream=1&langs=en,es&rotate=fids,gids,bids,gids&dwell=60` |
 
 Stream 2 used to run Tampa (`TPA`); it's Orlando now. Both airports have a
 native feed, so this is purely a URL change — no code or feed work.
@@ -95,7 +98,7 @@ sudo systemctl restart fids-stream
 Or in one shot, without hand-editing:
 
 ```bash
-STREAM_URL="https://fids.orionconnected.com/rotate.html?ap=MCO&mode=live&stream=1&theme=mist&langs=en,es&rotate=fids,gids,bids,gids&dwell=60" \
+STREAM_URL="https://fids.orionconnected.com/rotate.html?ap=MCO&mode=live&stream=1&langs=en,es&rotate=fids,gids,bids,gids&dwell=60" \
 MUSIC_URL="https://audio-edge-w4d68.yul.o.radiomast.io/ref-128k-mp3-stereo" \
 sudo -E bash setup.sh
 ```
