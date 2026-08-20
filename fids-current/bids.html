@@ -1,6 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- v23159 — BOOT THEME RESOLVES BEFORE FIRST PAINT (Nick: 'when it comes on
+       it blinks like 4 or 5 times'). The loader's palette in shared.css is the
+       LIGHT one by default and only flips on [data-theme="dark"]. The script
+       that set that attribute lived further down, inside <body>, ABOVE the
+       #fidsLoader markup — so getElementById() returned null, the attribute
+       only landed on DOMContentLoaded, and the screen painted white first and
+       snapped to dark a beat later. Overnight (19:00-06:00, when the theme
+       resolves to dark) that flash happened on every single boot.
+       Resolving it here, in <head>, on <html>, means the very first painted
+       frame is already the right colour. The old in-body script is kept as a
+       no-op safety net for any cached page that still has it. -->
+  <script>
+  (function () {
+    try {
+      var t = localStorage.getItem('fids_console_theme');
+      if (t !== 'light' && t !== 'dark') {
+        var h = new Date().getHours();
+        t = (h >= 6 && h < 19) ? 'light' : 'dark';
+      }
+      var r = document.documentElement;
+      /* v23163 — A SCREEN WITH NO MEMORY MUST NOT GUESS WHITE. The theme above
+         is the CONSOLE preference, and with nothing saved it falls back to the
+         hour: light between 06:00 and 19:00. The board it is about to cover is
+         rgb(13,77,139) at every hour of the day, so on a display booting cold
+         in daylight that guess put a full white screen up for the ten seconds
+         the board takes to fill, then cut to blue. Measured on production:
+         brightness 201 held from 3.7s to 14.0s.
+         The board's ground is knowable, so it is the fallback now rather than
+         the clock. fids_boot_ground still overrides it the moment a real board
+         has reported its own colour, which is what makes this correct for a
+         light board too. */
+      var _learned = null;
+      try {
+        var _g = localStorage.getItem('fids_boot_ground');
+        if (_g && /\d+\s*,\s*\d+\s*,\s*\d+/.test(_g)) _learned = _g;
+      } catch (e) {}
+      if (!_learned) t = 'dark';
+      r.setAttribute('data-theme', t);
+      /* Paint the ground immediately too: stylesheets below still have to load,
+         and a white flash before they arrive is the same defect by another
+         route. Matches --ld-bg-1 for each theme in css/shared.css. */
+      r.style.background = _learned || 'rgb(13,77,139)';
+      /* v23159 — A ROTATION HOP IS NOT A COLD BOOT (Nick: 'transitions flashes
+         it's not just start it's all the time now'). ?rotate= navigates with
+         location.href, so every dwell period the display throws the page away
+         and replays the whole boot — welcome screen included. Measured: the
+         board needs ~11s to populate, so a 30s dwell spends roughly a third of
+         every cycle showing the loader instead of flights, and travellers see
+         it. The screen is already awake on a hop; it does not need welcoming
+         again. The flag is set by the rotate script immediately before it
+         navigates, and consumed here on arrival. */
+      try {
+        if (sessionStorage.getItem('fids_rot_hop') === '1') {
+          sessionStorage.removeItem('fids_rot_hop');
+          r.setAttribute('data-boot-hop', '1');
+        }
+      } catch (e) {}
+      /* v23159 — THE BOOT GROUND IS LEARNED FROM THE BOARD, NOT GUESSED.
+         The loader's palette came from fids_console_theme, which is a separate
+         setting from the board's own theme — so a light console preference put
+         a WHITE screen in front of a board whose real ground is rgb(13,77,139).
+         No amount of painting it sooner fixes a colour that is simply wrong.
+         The board records its ground when it finishes painting (see
+         _fidsHideLoader below); this reads it back on the next load so the very
+         first frame is already the board's own colour. First-ever boot on a
+         fresh display falls back to the theme guess above and is correct from
+         the second boot onward. */
+      try {
+        var g = localStorage.getItem('fids_boot_ground');
+        var m = g && g.match(/(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/);
+        if (m) {
+          r.style.background = g;
+          r.style.setProperty('--boot-ground', g);
+          r.setAttribute('data-boot-ground', '1');
+          /* Text on the loader has to survive whatever that colour is, so the
+             theme follows the ground's luminance rather than the clock. */
+          var lum = (0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3]) / 255;
+          r.setAttribute('data-theme', lum > 0.55 ? 'light' : 'dark');
+        }
+      } catch (e) {}
+    } catch (e) {}
+  })();
+  </script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -42,9 +125,27 @@
       var idx = list.indexOf(norm);
       var next = (idx < 0) ? list[0] : list[(idx + 1) % list.length];
       if (!next || next === norm) return;
-      window.setTimeout(function(){
-        window.location.href = next + window.location.search;
-      }, dwell * 1000);
+      /* v23159 — THE DWELL STARTS WHEN THE BOARD IS READY, NOT WHEN THE PAGE
+         LOADS (Nick: 'if it means to slow it down to catch up then fine').
+         The board needs several seconds to fetch and paint, so counting from
+         page load spent part of every dwell showing a screen that was still
+         filling in — and on a short dwell it could rotate away before the
+         flights ever arrived. Now each screen gets its full dwell of finished
+         board. The cap means a screen that never becomes ready still rotates
+         rather than sitting there forever. */
+      var _armed = false;
+      function _armRotation() {
+        if (_armed) return;
+        _armed = true;
+        window.setTimeout(function(){
+          /* Tell the arriving page this is a rotation, not a cold boot, so it
+             skips the welcome screen. See the head script above. */
+          try { sessionStorage.setItem('fids_rot_hop', '1'); } catch (e) {}
+          window.location.href = next + window.location.search;
+        }, dwell * 1000);
+      }
+      window.addEventListener('fids:ready', _armRotation, { once: true });
+      window.setTimeout(_armRotation, 20000);
     } catch (e) {}
   })();
   </script>
@@ -84,14 +185,14 @@
   <link rel="stylesheet" href="css/font.css?v=327">
   <link rel="stylesheet" href="css/airport-fonts.css?v=312">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
-  <link rel="stylesheet" href="css/shared.css?v=21899-21">
-  <link rel="stylesheet" href="css/menu.css?v=21899-22">
+  <link rel="stylesheet" href="css/shared.css?v=23166">
+  <link rel="stylesheet" href="css/menu.css?v=23173">
   <link rel="stylesheet" href="css/fids.css?v=22852">
   <link rel="stylesheet" href="css/flight-display.css?v=22852">
   <link rel="stylesheet" href="css/baggage-display.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23157">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23166">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (Nick: 'the old svreen shows up once in a while',
@@ -129,28 +230,53 @@
   #gateView > div, #baggageView > div { min-height:0 !important; height:auto !important; }
 }
 </style>
+<style id="fids-preflash-guard">
+/* v23172 — DO NOT PAINT THE MAIN-BOARD CHROME ON A GATE/BAGGAGE SCREEN.
+   (Nick: "there is stuff hidden I can see it when I load like banners that
+   were from a while back are still hidden behind")
+
+   This page ships the FULL main-board markup — the departures banner, the
+   column headers and the baggage ticker — because one page serves every screen
+   type. Those elements are visible in the markup, and script hides them once it
+   knows this is a gate/baggage screen. So on every single load they PAINT FIRST
+   and are removed a frame or two later: the "Time in Moncton" banner and the
+   Airline/Flight#/Gate header row appearing over the gate screen at boot.
+
+   Hiding them outright is not an option — the screen type can be switched to
+   the main board from the console, and then they are wanted.
+
+   So they are suppressed only for the window in which the answer is not known
+   yet. The moment script has applied the screen type it stamps
+   data-screen-ready on <html> and this rule stops applying, leaving whatever
+   was decided. Inline in <head> so it binds before any stylesheet arrives —
+   an external rule can itself be late enough to flash. */
+html:not([data-screen-ready]) #fidsBanner,
+html:not([data-screen-ready]) .ticker,
+html:not([data-screen-ready]) .content-area { display: none !important; }
+</style>
 </head>
 <body data-page="bids">
-<script>
-/* v218.99.19 — Apply console theme to boot loader immediately (no FOUC) */
-(function() {
-  try {
-    var t = localStorage.getItem('fids_console_theme');
-    if (t !== 'light' && t !== 'dark') {
-      var h = new Date().getHours();
-      t = (h >= 6 && h < 19) ? 'light' : 'dark';
-    }
-    document.addEventListener('DOMContentLoaded', function() {
-      var el = document.getElementById('fidsLoader');
-      if (el) el.setAttribute('data-theme', t);
-    });
-    /* Also set as early as possible — if the element already exists by the
-       time this runs */
-    var early = document.getElementById('fidsLoader');
-    if (early) early.setAttribute('data-theme', t);
-  } catch (e) {}
-})();
-</script>
+<!--
+v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
+   (Nick: 'i just dont want flashes and glitches' / 'they just keep building on
+   top of everything and taking easy shortcuts'.)
+
+   What stood here read `fids_console_theme` — the CONSOLE's light/dark
+   preference, which has nothing to do with the board's own theme — fell back to
+   the hour of day, and stamped the result onto #fidsLoader as data-theme.
+
+   The <head> script above had ALREADY decided this correctly, and by a much
+   better rule: it reads the ground colour the board itself recorded on its last
+   paint (fids_boot_ground) and derives the loader theme from that colour's
+   luminance. This ran afterwards and overwrote that answer on the loader
+   element with the console guess. On a board pinned to a light theme, a dark
+   console preference — or simply any boot after 19:00 — put a DARK loader in
+   front of a light board, which is a full-screen inversion at every boot, and
+   the kiosks boot on every deploy.
+
+   Nothing replaces it: the head script covers this case properly and on its
+   own. Its comment claiming this block was a harmless no-op was wrong.
+-->
 <!-- Transition loader -->
 <!-- ══════════════════════════════════════════════════════════════════
      OrionConnected boot loader — B.A.G.S. (Baggage Arrival Gateway Screen)
@@ -440,20 +566,9 @@
   </div>
 </div>
 
-<div class="hdr">
-  <div class="hdr-left">
-    <img id="legacy_hdrAirlineLogo" style="display:none;height:52px;margin-right:14px;" alt="">
-    <div class="hdr-board" id="legacy_hdrBoard">Arrivées</div>
-  </div>
-  <div class="hdr-center">
-    <div class="hdr-apname" id="legacy_hdrApName">Greater Moncton Roméo LeBlanc International Airport</div>
-    <div class="hdr-temp" id="legacy_hdrTemp"><div class="hdr-fc-day"><span class="fc-label">ACTUELLEMENT</span>  <span class="hdr-fc-now">34°F</span></div><div class="hdr-fc-day"><span class="fc-label">AVR 9 - JEU</span>  <span class="fc-temp">46°F/28°F</span></div><div class="hdr-fc-day"><span class="fc-label">AVR 10 - VEN</span>  <span class="fc-temp">54°F/32°F</span></div></div>
-  </div>
-  <div class="hdr-right">
-    <div class="hdr-clock" id="legacyHdrClock">11:41:30</div>
-    <div class="hdr-date" id="legacyHdrClockDate">WEDNESDAY, APR 8, 2026</div>
-  </div>
-</div>
+<!-- v23167 — the retired .hdr header block is removed. It was still shipped on
+     every load but permanently invisible: flight-display.css:484 sets
+     `.hdr { display: none !important; }`. The chevron banner replaced it. -->
 
 <div class="fids-banner" id="fidsBanner">
   <div class="fids-banner-chevrons" aria-hidden="true"></div>
@@ -765,7 +880,7 @@
 <script src="js/fids-v2.js?v=320"></script>
 <script src="data/airline-colors.js?v=5"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/fids-core.js?v=23158"></script>
+<script src="js/fids-core.js?v=23173"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
@@ -774,10 +889,9 @@
 <script src="js/airport-runways.js?v=23035"></script>
 <script src="js/template-renderer.js?v=1"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=23125"></script>
+<script src="js/menu.js?v=23170"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/menubar.js?v=23035"></script>
-<script src="js/console-menu.js?v=3"></script>
 <script src="js/editor-roles.js?v=1"></script>
 <script>
 window.addEventListener("DOMContentLoaded", async function() {
@@ -797,9 +911,21 @@ window.addEventListener("DOMContentLoaded", async function() {
       // then fade. (One rAF schedules after render; two guarantees paint.)
       requestAnimationFrame(function() {
         requestAnimationFrame(function() {
+          /* v23159 — the board has painted, so two things are true and worth
+             recording. Its ground colour is now knowable, and the screen is
+             genuinely ready. The first is stored for the next boot to paint
+             into; the second is announced so the rotation timer can start its
+             dwell from a full screen instead of from a loading one. */
+          try {
+            var bg = getComputedStyle(document.body).backgroundColor;
+            if (bg && !/rgba\(0,\s*0,\s*0,\s*0\)|transparent/.test(bg)) {
+              localStorage.setItem('fids_boot_ground', bg);
+            }
+          } catch (e) {}
+          try { window.dispatchEvent(new Event('fids:ready')); } catch (e) {}
           el.classList.add('is-hidden');
           // Remove from layout after fade finishes (CSS transition is 0.5s + 0.1s delay)
-          setTimeout(function() { el.classList.add('is-gone'); }, 800);
+          setTimeout(function() { el.classList.add('is-gone'); }, 1500);  /* v23159 — matches the 0.1s delay + 1.2s fade in shared.css */
         });
       });
     }
@@ -808,7 +934,19 @@ window.addEventListener("DOMContentLoaded", async function() {
 
     var params = new URLSearchParams(window.location.search);
     var ap = params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM';
-    var startMode = params.get('mode') || sessionStorage.getItem('fids_mode') || 'live'; // v22832 — never silently demo (Nick); ?mode=demo is the only door
+    // v22832 — never silently demo (Nick); ?mode=demo is the only door.
+    // v23170 — AND BEING SIGNED IN IMPLIES LIVE. fids_mode is written once by
+    // the entry page (enterDemo() stamps 'demo') and then remembered for the
+    // life of that TAB, so a single visit to the demo could outrank a later
+    // admin login and quietly serve sample flights to someone who had signed in
+    // (Nick: "I will be logged in as admin and then all of a sudden it will
+    // fall to the demo"). An explicit ?mode= in the URL still wins — that is a
+    // deliberate request — but a stored 'demo' no longer outranks a real
+    // session.
+    var _urlMode = params.get('mode');
+    var _signedIn = false;
+    try { _signedIn = !!(localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token')); } catch (e) {}
+    var startMode = _urlMode || (_signedIn ? 'live' : (sessionStorage.getItem('fids_mode') || 'live'));
     var requestedBelt = params.get('belt') || params.get('carousel') || '';
 
     var apSel = document.getElementById('apSel');
@@ -825,6 +963,10 @@ window.addEventListener("DOMContentLoaded", async function() {
     if (requestedBelt) {
       try { subScreenVal = String(requestedBelt).toUpperCase(); } catch (e) {}
     }
+
+    // The screen type is settled by this point — release the pre-flash
+    // guard in <head> so anything genuinely wanted can paint (v23172).
+    try { document.documentElement.setAttribute('data-screen-ready', '1'); } catch (e) {}
 
     if (startMode === 'live') {
       LIVE_MODE = true;

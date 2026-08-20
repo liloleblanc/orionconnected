@@ -36,32 +36,24 @@ const MAP_ENGINE = {
     'https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js',
     'https://cdn.jsdelivr.net/npm/leaflet-arc/bin/leaflet-arc.min.js',
   ],
-  // MapLibre GL JS v5 — WebGL engine with globe projection + 3D tilt, used by
-  // the 3D route-map prototype. Same-origin passthrough so locked-down gate
-  // display networks (which block public CDNs) can still load it.
-  'maplibre-gl.js': [
-    'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.js',
-    'https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.js',
-  ],
-  'maplibre-gl.css': [
-    'https://unpkg.com/maplibre-gl@5.6.1/dist/maplibre-gl.css',
-    'https://cdn.jsdelivr.net/npm/maplibre-gl@5.6.1/dist/maplibre-gl.css',
-  ],
-  // three.js r128 (UMD global THREE) — renders the 3D plane model in a
-  // MapLibre custom layer.
-  'three.min.js': [
-    'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
-    'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js',
-  ],
-  // glTF loader (UMD, attaches THREE.GLTFLoader) + a real airliner model.
-  'gltf-loader.js': [
-    'https://unpkg.com/three@0.128.0/examples/js/loaders/GLTFLoader.js',
-    'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js',
-  ],
-  'plane.glb': [
-    'https://raw.githubusercontent.com/CesiumGS/cesium/main/Apps/SampleData/models/CesiumAir/Cesium_Air.glb',
-    'https://cdn.jsdelivr.net/gh/CesiumGS/cesium@main/Apps/SampleData/models/CesiumAir/Cesium_Air.glb',
-  ],
+  // v23167 — THE 3D ENGINE STACK IS GONE (Nick: "It never was installed
+  // properly", "Remove anything not serving seriously").
+  //
+  // This used to proxy MapLibre GL v5, three.js r128, GLTFLoader and a
+  // Cesium airliner .glb "used by the 3D route-map prototype". That prototype
+  // was never installed: js/map3d.js was deleted from the repo, no page ever
+  // loaded it, and the model it wanted (/models/a320neo.glb) never existed at
+  // all. window.GateMap3D was therefore permanently undefined, so the four
+  // guards in fids-core.js that called it silently evaluated false forever —
+  // they are removed in the same commit.
+  //
+  // What was left was a route to four third-party downloads that nothing on
+  // any board could ask for. Not merely unused: an unused fetch path is still
+  // surface area, and it read as if 3D were a supported feature.
+  //
+  // If 3D is ever revisited, note the constraint that killed it: the streaming
+  // droplet has 2 vCPUs and no GPU, so WebGL there falls back to software
+  // rendering and would be slower than the 2D board it replaced.
 };
 
 // Failure responses must NEVER carry cache headers. Until v22378 every branch
@@ -164,6 +156,56 @@ export default {
     const path = url.pathname;
 
     // ── Map engine passthrough ──────────────────────────────────────────
+    // Short alias for the stream-agent installer, so it can be TYPED into a
+    // server console that refuses pastes:  curl -sL fids.orionconnected.com/a|bash
+    // The script itself lives in the fids-proxy worker (/stream/agent.sh);
+    // this only shortens the URL people have to key in by hand.
+    if (path === '/a') {
+      try {
+        const r = await fetch('https://fids-proxy.n-leblanc1984.workers.dev/stream/agent.sh');
+        if (!r.ok) return new Response('agent fetch failed ' + r.status, { status: 502, headers: NO_STORE });
+        return new Response(r.body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE }
+        });
+      } catch (e) {
+        return new Response('agent fetch failed', { status: 502, headers: NO_STORE });
+      }
+    }
+    // Short aliases for the two stream installers — same reasoning as /a above.
+    // These get TYPED into the Hetzner web console, which drops characters on
+    // long lines, so the raw.githubusercontent URL is unusable by hand:
+    //     wget fids.orionconnected.com/t
+    //     bash t
+    //   /s → rebuild the FIRST stream  (/opt/fids-stream)
+    //   /t → rebuild the SECOND stream (/opt/fids-stream-tpa)
+    // Served straight from the repository, so there is one source of truth and
+    // nothing shell-shaped has to live in the public asset directory — which
+    // tests/repository-cleanliness.test.js forbids outright.
+    const STREAM_INSTALLERS = {
+      '/s': 'stream-server/setup.sh',
+      '/t': 'stream-server/tools/repair-second-stream.sh',
+    };
+    if (STREAM_INSTALLERS[path]) {
+      const src = 'https://raw.githubusercontent.com/liloleblanc/orionconnected/main/'
+                + STREAM_INSTALLERS[path];
+      try {
+        const r = await fetch(src);
+        if (!r.ok) return new Response('installer fetch failed ' + r.status, { status: 502, headers: NO_STORE });
+        // Normalise line endings on the way out. A single stray CR makes line
+        // one read `set -euo pipefail\r`, and bash rejects it with "invalid
+        // option name: pipefail" — which reads like a corrupt download and cost
+        // hours to identify on a console with no copy/paste. Whatever the file
+        // is committed as, what leaves here runs.
+        const body = (await r.text()).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        return new Response(body, {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain; charset=utf-8', ...NO_STORE }
+        });
+      } catch (e) {
+        return new Response('installer fetch failed', { status: 502, headers: NO_STORE });
+      }
+    }
     if (path.startsWith('/mapcdn/')) {
       const file = path.slice('/mapcdn/'.length);
       const upstreams = MAP_ENGINE[file];
@@ -445,6 +487,29 @@ export default {
         });
       } catch (e) {
         return new Response('Tile fetch failed', { status: 502, headers: NO_STORE });
+      }
+    }
+
+    // ── A LOST QUESTION MARK STILL FINDS THE BOARD ─────────────────────
+    // The stream boxes are configured through a web console that silently
+    // drops or substitutes characters, and '?' is one of the casualties: a
+    // board URL typed as rotate.html?ap=YQM… reaches the server as
+    // rotate.html/ap=YQM…, which is a path that has never existed. Chrome
+    // renders the 404, the capture shows a white page, and every component
+    // reports healthy — the failure is indistinguishable from a broken board
+    // unless you happen to read the address in the screenshot.
+    //
+    // The last segment of such a path is unmistakably a query string: it
+    // carries '=' and the path has no real query of its own. Rather than 404,
+    // put the '?' back and redirect. These URLs are already dead, so nothing
+    // that works today changes behaviour — and a display cannot be taken off
+    // air by one missing keystroke.
+    if (!url.search && /\/[^/]*=[^/]*$/.test(path)) {
+      const cut = path.lastIndexOf('/');
+      const page = path.slice(0, cut);
+      const query = path.slice(cut + 1);
+      if (page && query.indexOf('=') !== -1) {
+        return Response.redirect(url.origin + page + '?' + query, 302);
       }
     }
 

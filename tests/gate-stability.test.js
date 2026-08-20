@@ -28,11 +28,19 @@ test('aircraft enrichment uses the flight operating date and persists the type',
 });
 
 test('all display entry points load the date-context helper before core', () => {
+  // The core cache-buster is read from fids-core.js itself rather than pinned
+  // as a literal: the pinned form broke on every release bump and taught
+  // nothing when it did. Matching the HTML against the live tag also catches
+  // the real failure mode — a bumped FIDS_BUILD_TAG whose ?v= busters were
+  // not bumped with it, which would strand every deployed screen on cache.
+  const buildTag = (core.match(/var FIDS_BUILD_TAG = 'v(\d+)'/) || [])[1];
+  assert.ok(buildTag, 'fids-core.js must declare FIDS_BUILD_TAG');
   for (const file of ['fids.html', 'gids.html', 'bids.html']) {
     const html = fs.readFileSync(path.join(root, file), 'utf8');
-    const helper = html.indexOf('js/gate-date-context.js?v=23157');
-    const main = html.indexOf('js/fids-core.js?v=23157');
+    const helper = html.indexOf('js/gate-date-context.js?v=');
+    const main = html.indexOf(`js/fids-core.js?v=${buildTag}`);
     assert.ok(helper >= 0, `${file} is missing the date helper`);
+    assert.ok(main >= 0, `${file} must bust fids-core.js at the current build tag v${buildTag}`);
     assert.ok(main > helper, `${file} must load the date helper before core`);
   }
 });

@@ -659,6 +659,27 @@
           </div>
         </details>
 
+        <details style="background:#1f2937;padding:10px;border-radius:6px;margin-top:8px;">
+          <summary style="cursor:pointer;font-size:12px;font-weight:600;color:#e5e7eb;">+ Search Vecteezy Stock</summary>
+          <div style="margin-top:10px;">
+            <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap;">
+              <input id="mlVzTerm" type="text" placeholder="Search royalty-free stock (e.g. 'airport timelapse')" onkeydown="if(event.key==='Enter')mediaLibVecteezySearch()" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:4px;font-size:12px;flex:1 1 100%;min-width:0;">
+              <select id="mlVzType" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:4px;font-size:12px;flex:1;">
+                <option value="video">Videos</option>
+                <option value="photo">Photos</option>
+                <option value="png">PNGs</option>
+                <option value="vector">Vectors</option>
+              </select>
+              <button onclick="mediaLibVecteezySearch()" class="sm-btn sm-btn-primary sm-btn-sm">Search</button>
+            </div>
+            <div style="font-size:10px;color:#6b7280;margin-bottom:6px;">
+              Searches Vecteezy through the FIDS worker. "Add" downloads the file into the Media Library (category: Ads — recategorize via Edit).
+            </div>
+            <div id="mlVzResults" style="display:none;max-height:320px;overflow-y:auto;background:#0f1419;border:1px solid #1f2937;border-radius:6px;padding:6px;"></div>
+            <div id="mlVzStatus" style="display:none;margin-top:6px;font-size:11px;color:#93c5fd;"></div>
+          </div>
+        </details>
+
         <div id="mlLibFlash" style="display:none;margin-top:10px;padding:8px 10px;border-radius:4px;font-size:12px;"></div>
       </div>
 

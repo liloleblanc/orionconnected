@@ -15,11 +15,45 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 //                             KV-set hash or re-seed by deleting the user)
 //   ADB_WEBHOOK_SECRET     — optional, for ADB webhook signature checks
 //   TIO_KEY                — Tomorrow.io API key (weather)
+//   VECTEEZY_TOKEN         — optional, Vecteezy API bearer token (stock search/import)
+//   VECTEEZY_ACCOUNT_ID    — optional, Vecteezy account id (V2 URL path segment)
 //
-// REQUIRED bindings:
-//   FIDS_USERS, FIDS_AIRPORT_CONFIG, CITY_BG_CACHE, FIDS_MEDIA — KV namespaces
-//   FIDS_ASSETS                                                — R2 bucket
-//   AI                                                         — Workers AI
+// REQUIRED bindings (CORRECTED 2026-08-15 — see docs/OPERATIONS-BRIEF.md):
+//   FIDS_USERS         KV — users, airport config, airline overrides, media
+//   FIDS_LIVE_FLIGHTS  KV — webhook flight cache (36h TTL)
+//   CITY_BG_CACHE      KV — AI backgrounds + destination info
+//   FIDS_ASSETS        R2 — logos and uploaded media
+//   AI                    — Workers AI
+//
+// The previous version of this comment listed FIDS_AIRPORT_CONFIG and
+// FIDS_MEDIA, NEITHER OF WHICH EXISTS — the code never references them, and
+// everything goes into FIDS_USERS. It also omitted FIDS_LIVE_FLIGHTS, which IS
+// used. Deploying from that list bound two phantom namespaces and missed a real
+// one, which is part of why this worker had no committed deploy config for so
+// long. The authoritative config is now workers/wrangler.fids-proxy.jsonc.
+//
+// TIO_KEY is also listed below but no longer used — weather comes from
+// open-meteo, which needs no key.
+
+// ── PASSWORDS ─────────────────────────────────────────────────────────────
+// v23169. What was here was a bare SHA-256 of the password: no salt, no
+// iterations. SHA-256 is built to be FAST, which is precisely wrong for a
+// password — it is brute-forceable at enormous rates on commodity hardware —
+// and with no salt, two accounts sharing a password share a hash, so cracking
+// one reveals every other. That was tolerable with four internal accounts. It
+// is not tolerable once airline and airport staff have logins, which is the
+// direction this system is going.
+//
+// Now PBKDF2-SHA256 with a random 16-byte salt per user. Iterations are stored
+// ALONGSIDE the hash rather than hardcoded at the comparison site, so the count
+// can be raised later without invalidating existing passwords.
+//
+// NOBODY IS LOCKED OUT. Legacy records are still verified with the old scheme,
+// and a successful legacy login transparently re-hashes and saves in the new
+// format — so accounts migrate as people sign in, with no forced reset and no
+// admin intervention. hashPassword() is kept solely to verify those legacy
+// records and must never be used to CREATE one again.
+const PBKDF2_ITERATIONS = 210000;
 
 async function hashPassword(password) {
   const encoder = new TextEncoder();
@@ -28,6 +62,62 @@ async function hashPassword(password) {
   return btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
 }
 __name(hashPassword, "hashPassword");
+
+function randomSaltB64() {
+  const s = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...s));
+}
+__name(randomSaltB64, "randomSaltB64");
+
+async function pbkdf2Hash(password, saltB64, iterations) {
+  const salt = Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0));
+  const key = await crypto.subtle.importKey(
+    "raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations, hash: "SHA-256" }, key, 256
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(bits)));
+}
+__name(pbkdf2Hash, "pbkdf2Hash");
+
+// Build the stored credential for a NEW or CHANGED password.
+async function makePasswordRecord(password) {
+  const salt = randomSaltB64();
+  return {
+    alg: "pbkdf2-sha256",
+    salt,
+    iterations: PBKDF2_ITERATIONS,
+    hash: await pbkdf2Hash(password, salt, PBKDF2_ITERATIONS)
+  };
+}
+__name(makePasswordRecord, "makePasswordRecord");
+
+// Length-independent, value-independent comparison. A plain !== leaks how many
+// leading characters matched via timing; irrelevant for most attackers but free
+// to avoid.
+function safeEqual(a, b) {
+  const x = String(a || ""), y = String(b || "");
+  let diff = x.length ^ y.length;
+  const n = Math.max(x.length, y.length);
+  for (let i = 0; i < n; i++) diff |= (x.charCodeAt(i) || 0) ^ (y.charCodeAt(i) || 0);
+  return diff === 0;
+}
+__name(safeEqual, "safeEqual");
+
+// Returns "ok" (modern hash matched), "upgrade" (legacy hash matched — caller
+// should re-save in the new format), or "no".
+async function verifyPassword(user, password) {
+  if (user && user.password && user.password.alg === "pbkdf2-sha256") {
+    const h = await pbkdf2Hash(password, user.password.salt, user.password.iterations);
+    return safeEqual(h, user.password.hash) ? "ok" : "no";
+  }
+  if (user && user.passwordHash) {
+    return safeEqual(await hashPassword(password), user.passwordHash) ? "upgrade" : "no";
+  }
+  return "no";
+}
+__name(verifyPassword, "verifyPassword");
 async function createJwt(payload, secret) {
   const header = { alg: "HS256", typ: "JWT" };
   const now = Math.floor(Date.now() / 1e3);
@@ -135,7 +225,7 @@ async function seedAdmin(env) {
   const existing = await getUser(env, "admin");
   if (!existing) {
     await saveUser(env, "admin", {
-      passwordHash: await hashPassword(env.SEED_ADMIN_PASSWORD || crypto.randomUUID()),
+      password: await makePasswordRecord(env.SEED_ADMIN_PASSWORD || crypto.randomUUID()),
       role: "admin",
       displayName: "Administrator",
       createdAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -153,9 +243,19 @@ async function handleLogin(request, env, origin) {
   if (!user) {
     return jsonResponse({ error: "Invalid credentials" }, 401, origin);
   }
-  const hash = await hashPassword(password);
-  if (hash !== user.passwordHash) {
+  const verdict = await verifyPassword(user, password);
+  if (verdict === "no") {
     return jsonResponse({ error: "Invalid credentials" }, 401, origin);
+  }
+  // v23169 — a correct password stored under the old unsalted SHA-256 scheme is
+  // re-hashed with PBKDF2 and saved here. Accounts migrate as people sign in;
+  // nobody is reset, and the legacy field is removed so it cannot be used again.
+  if (verdict === "upgrade") {
+    try {
+      user.password = await makePasswordRecord(password);
+      delete user.passwordHash;
+      await saveUser(env, username.toLowerCase(), user);
+    } catch (e) { /* login still succeeds — the upgrade retries next sign-in */ }
   }
   const token = await createJwt({
     sub: username.toLowerCase(),
@@ -197,7 +297,7 @@ async function handleCreateUser(request, env, payload, origin) {
     return jsonResponse({ error: "User already exists" }, 409, origin);
   }
   await saveUser(env, username.toLowerCase(), {
-    passwordHash: await hashPassword(password),
+    password: await makePasswordRecord(password),
     role,
     displayName: displayName || username,
     createdAt: (/* @__PURE__ */ new Date()).toISOString()
@@ -218,7 +318,8 @@ async function handleUpdateUser(request, env, payload, origin, username) {
   }
   const updates = await request.json();
   if (updates.password) {
-    user.passwordHash = await hashPassword(updates.password);
+    user.password = await makePasswordRecord(updates.password);
+    delete user.passwordHash;   // v23169 — never leave the weak hash behind
   }
   if (updates.role) {
     const validRoles = ["admin", "operator", "viewer"];
@@ -277,6 +378,25 @@ const R2_PUBLIC_BASE = "https://pub-e392224bda1a4096843ed05df504ca91.r2.dev";
 
 function isAdmin(payload) { return payload && payload.role === "admin"; }
 __name(isAdmin, "isAdmin");
+// ── OPS GUARD ─────────────────────────────────────────────────────────────
+// Destructive maintenance routes live OUTSIDE the `/api/` auth gate, because
+// that gate is a path-prefix opt-in rather than default-deny. Four of them were
+// reachable with no credentials at all: the cache wipe, the credit refill, the
+// webhook delete and the cached-flight delete. Two neighbours in the same block
+// (/webhook/flight and /subscriptions/create-yqm) already gate on
+// ADB_WEBHOOK_SECRET, so this reuses that established pattern rather than
+// inventing a second scheme.
+// NOTE: this is a stopgap for the specific destructive routes. The structural
+// fix is to make the router default-deny with an explicit public allowlist, so
+// that a route added outside /api/ is not public by construction.
+function requireOpsSecret(url, env, origin) {
+  const expected = (env.ADB_WEBHOOK_SECRET || "").trim();
+  if (!expected) return jsonResponse({ error: "Ops secret not configured" }, 500, origin);
+  const provided = (url.searchParams.get("secret") || "").trim();
+  if (provided !== expected) return jsonResponse({ error: "Unauthorized" }, 401, origin);
+  return null;
+}
+__name(isAdmin, "isAdmin");
 
 function normIata(code) { return (code || "").toUpperCase().trim().slice(0, 4); }
 __name(normIata, "normIata");
@@ -334,7 +454,22 @@ async function handlePutAirport(request, env, payload, origin, code) {
   const norm = normIata(code);
   const existing = await env.FIDS_USERS.get(`airport:${norm}`);
   let cfg = existing ? JSON.parse(existing) : {};
-  const fields = ["displayName", "longName", "logo", "theme", "hideAirlinePrefix", "hideWeather", "airlineStyle"];
+  // v23174 additions — the rest of the customise surface. This list matches
+  // the worker deployed by hand on 2026-08-18 (read back from the dashboard);
+  // dropping any of these silently loses operator customizations on save.
+  const fields = [
+    "displayName", "longName", "logo", "theme", "hideAirlinePrefix", "hideWeather", "airlineStyle",
+    "customColors",   // the resolved palette (NOT a preset id)
+    "presetName",     // what the operator called it, for the console
+    "font",
+    "customFonts",
+    "langs",
+    "logoPosition",
+    "logoSize",
+    "displayMode",    // auto | light | dark
+    "gateBlocks",     // order + on/off of the gate screen blocks
+    "tickerMessage"
+  ];
   for (const f of fields) { if (body[f] !== undefined) cfg[f] = body[f]; }
   cfg.updatedAt = Date.now();
   cfg.updatedBy = payload.sub;
@@ -592,6 +727,249 @@ async function handlePutMediaAssignments(request, env, payload, origin) {
   return jsonResponse({ success: true, config: cfg }, 200, origin);
 }
 __name(handlePutMediaAssignments, "handlePutMediaAssignments");
+
+// ── VECTEEZY stock media (https://api.vecteezy.com/api-docs/api/v2/swagger.json)
+// Search-and-import for royalty-free stock straight into the media library:
+//   GET  /api/vecteezy/search — proxy of Vecteezy's resources search
+//   POST /api/vecteezy/import — resolve a download URL, copy the file into
+//                               R2 and append a "media-library" item
+// Both admin-only; credentials stay server-side. Vecteezy's docs say
+// thumbnail/preview URLs must not be stored — search results are therefore
+// never cached, and import copies the actual file into R2 rather than
+// referencing their CDN.
+//
+// SINGLE UPSTREAM: the official V2 API only (api.vecteezy.com/v2/{account_id}).
+// A RapidAPI fallback route existed briefly on 2026-08-18 but Vecteezy does
+// not support it (their gateway only fronts the retired V1, and the account
+// is V2-only), so it was removed the same day. The VECTEEZY_RAPIDAPI_KEY
+// secret, if still present on the worker, is ignored.
+//
+// KNOWN BLOCKER, live-tested repeatedly on 2026-08-18: Vecteezy's Cloudflare
+// WAF rejects Worker subrequests to api.vecteezy.com outright (403, "error
+// code: 1106" — the banned-client family) BEFORE auth, regardless of headers
+// (api-client UA, full browser header set, and bare-bearer all block
+// identically; cf-ray ids were captured for their support). Until Vecteezy
+// adds a firewall exception, every call below returns that 403.
+const VECTEEZY_CONTENT_TYPES = ["photo", "png", "psd", "svg", "vector", "video"];
+
+function vecteezyRoutes(env) {
+  const token = (env.VECTEEZY_TOKEN || "").trim();
+  const accountId = (env.VECTEEZY_ACCOUNT_ID || "").trim();
+  if (!token || !accountId) return [];
+  return [{ name: "direct", token, base: `https://api.vecteezy.com/v2/${accountId}` }];
+}
+__name(vecteezyRoutes, "vecteezyRoutes");
+
+// Fetch pathAndQuery (e.g. "/resources?term=…") against the configured route.
+// Returns { r, cfg } on success, { errStatus, errBody, cfg } otherwise.
+// (Kept route-shaped so a second upstream can be re-added without touching
+// the handlers.)
+async function vecteezyFetch(env, pathAndQuery) {
+  const routes = vecteezyRoutes(env);
+  if (!routes.length) return { unconfigured: true };
+  let last = null;
+  for (const cfg of routes) {
+    try {
+      const r = await fetch(`${cfg.base}${pathAndQuery}`, { headers: vecteezyHeaders(cfg) });
+      if (r.ok) return { r, cfg };
+      const body = (await r.text().catch(() => "")).slice(0, 500);
+      last = { errStatus: r.status, errBody: body, cfg };
+    } catch (e) {
+      last = { errStatus: 0, errBody: String(e && e.message).slice(0, 200), cfg };
+    }
+  }
+  return last || { unconfigured: true };
+}
+__name(vecteezyFetch, "vecteezyFetch");
+
+function vecteezyHeaders(cfg) {
+  return {
+    "Authorization": `Bearer ${cfg.token}`,
+    "Accept": "application/json",
+    "User-Agent": "OrionConnected-FIDS/1.0 (Cloudflare Worker; +https://fids.orionconnected.com)"
+  };
+}
+__name(vecteezyHeaders, "vecteezyHeaders");
+
+
+async function handleVecteezySearch(env, payload, origin, url) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  if (!vecteezyRoutes(env).length) {
+    return jsonResponse({
+      error: "Vecteezy not configured",
+      hint: "set the VECTEEZY_TOKEN and VECTEEZY_ACCOUNT_ID worker secrets"
+    }, 503, origin);
+  }
+  const term = (url.searchParams.get("term") || "").trim();
+  if (!term) return jsonResponse({ error: "term parameter required" }, 400, origin);
+  const contentType = url.searchParams.get("content_type") || "video";
+  if (!VECTEEZY_CONTENT_TYPES.includes(contentType)) {
+    return jsonResponse({ error: `content_type must be one of: ${VECTEEZY_CONTENT_TYPES.join(", ")}` }, 400, origin);
+  }
+  const q = new URLSearchParams();
+  q.set("term", term);
+  q.set("content_type", contentType);
+  // Optional filters, passed through as-is. page * per_page is capped at
+  // 10,000 by Vecteezy; bad values come back as their 4xx, not ours.
+  for (const p of ["page", "per_page", "sort_by", "license_type", "orientation", "color", "duration", "ai_generated", "family_friendly"]) {
+    const v = url.searchParams.get(p);
+    if (v !== null && v !== "") q.set(p, v);
+  }
+  try {
+    const res = await vecteezyFetch(env, `/resources?${q.toString()}`);
+    if (!res.r) {
+      return jsonResponse({
+        error: "Vecteezy search failed",
+        status: res.errStatus,
+        route: res.cfg ? res.cfg.name : null,
+        detail: (res.errBody || "").slice(0, 300)
+      }, 502, origin);
+    }
+    const j = await res.r.json();
+    // Slim each resource to what the menu UI renders. Preview/thumbnail
+    // URLs are short-lived — used immediately, never persisted.
+    const resources = (Array.isArray(j.resources) ? j.resources : []).map((res) => ({
+      id: res.id,
+      contentType: res.content_type,
+      title: res.title || "",
+      thumbnailUrl: res.thumbnail_url || "",
+      thumbnail2xUrl: res.thumbnail_2x_url || "",
+      previewUrl: res.preview_url || "",
+      dimensions: res.dimensions || null
+    }));
+    return jsonResponse({
+      page: j.page,
+      lastPage: j.last_page,
+      perPage: j.per_page,
+      totalResources: j.total_resources,
+      resources
+    }, 200, origin);
+  } catch (e) {
+    return jsonResponse({ error: "Vecteezy search failed", details: e.message }, 502, origin);
+  }
+}
+__name(handleVecteezySearch, "handleVecteezySearch");
+
+// Body: { id, label?, category?, contentTypeHint? }. The download endpoint
+// either returns a ready URL or a download_status_url to poll while Vecteezy
+// prepares the file — both paths are handled here so the menu makes exactly
+// one call and gets back a normal library item.
+async function handleVecteezyImport(request, env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  if (!vecteezyRoutes(env).length) {
+    return jsonResponse({
+      error: "Vecteezy not configured",
+      hint: "set the VECTEEZY_TOKEN and VECTEEZY_ACCOUNT_ID worker secrets"
+    }, 503, origin);
+  }
+  let body;
+  try { body = await request.json(); } catch (e) { body = null; }
+  const resId = body && /^\d+$/.test(String(body.id || "")) ? String(body.id) : "";
+  if (!resId) return jsonResponse({ error: "Numeric Vecteezy resource id required" }, 400, origin);
+  const label = String((body && body.label) || "").trim();
+  const ALLOWED_CATEGORIES = ["ads", "airport-logo", "airline-logo", "background"];
+  const category = ALLOWED_CATEGORIES.includes(body && body.category) ? body.category : "ads";
+  const hintVideo = (body && body.contentTypeHint) === "video";
+  try {
+    const dl = await vecteezyFetch(env, `/resources/${resId}/download`);
+    if (!dl.r) {
+      return jsonResponse({
+        error: "Vecteezy download request failed",
+        status: dl.errStatus,
+        route: dl.cfg ? dl.cfg.name : null,
+        detail: (dl.errBody || "").slice(0, 300)
+      }, 502, origin);
+    }
+    // Stick to the route that answered for the rest of this import.
+    const cfg = dl.cfg;
+    const auth = vecteezyHeaders(cfg);
+    const info = await dl.r.json();
+    let fileUrl = info.url || "";
+    let requiresAttribution = !!info.requires_attribution;
+    let attributionUrl = info.required_attribution_url || null;
+    if (!fileUrl && info.download_status_url) {
+      // The API returns an absolute status URL on api.vecteezy.com, which the
+      // WAF blocks from Workers — poll the same endpoint through cfg.base
+      // instead, preserving any query string the returned URL carried.
+      let statusUrl = `${cfg.base}/resources/${resId}/download_status`;
+      try {
+        const q = new URL(info.download_status_url).search;
+        if (q) statusUrl += q;
+      } catch (e) {}
+      for (let i = 0; i < 10 && !fileUrl; i++) {
+        await new Promise((r) => setTimeout(r, 1500));
+        const st = await fetch(statusUrl, { headers: auth });
+        if (!st.ok) break;
+        const sj = await st.json().catch(() => null);
+        if (sj && sj.url) {
+          fileUrl = sj.url;
+          if (typeof sj.requires_attribution === "boolean") requiresAttribution = sj.requires_attribution;
+          if (sj.required_attribution_url) attributionUrl = sj.required_attribution_url;
+        }
+      }
+    }
+    if (!fileUrl) return jsonResponse({ error: "Vecteezy did not return a download URL (still preparing — try again)" }, 502, origin);
+    const fileRes = await fetch(fileUrl, {
+      headers: {
+        "Accept": "*/*",
+        "User-Agent": "OrionConnected-FIDS/1.0 (Cloudflare Worker; +https://fids.orionconnected.com)"
+      }
+    });
+    if (!fileRes.ok) return jsonResponse({ error: "Vecteezy file fetch failed", status: fileRes.status }, 502, origin);
+    let ct = fileRes.headers.get("Content-Type") || "";
+    // Download URLs are often served as octet-stream; recover the real type
+    // from the URL extension (or the client's hint) before extFromContentType
+    // falls back to "png" and mislabels a video.
+    if (!ct || /octet-stream/i.test(ct)) {
+      const extM = new URL(fileUrl).pathname.match(/\.([A-Za-z0-9]{2,5})$/);
+      const urlExt = extM ? extM[1].toLowerCase() : "";
+      const extToMime = {
+        mp4: "video/mp4", webm: "video/webm", mov: "video/quicktime",
+        png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg",
+        webp: "image/webp", gif: "image/gif", svg: "image/svg+xml"
+      };
+      ct = extToMime[urlExt] || (hintVideo ? "video/mp4" : "image/jpeg");
+    }
+    const bytes = await fileRes.arrayBuffer();
+    if (bytes.byteLength === 0) return jsonResponse({ error: "Empty file from Vecteezy" }, 502, origin);
+    const isVideo = /mp4|webm|mov|quicktime/i.test(ct);
+    const maxBytes = isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+    if (bytes.byteLength > maxBytes) {
+      return jsonResponse({ error: `File too large (max ${maxBytes / 1024 / 1024}MB)` }, 413, origin);
+    }
+    const fileExt = extFromContentType(ct);
+    const id = crypto.randomUUID();
+    const r2Key = `media-library/${id}.${fileExt}`;
+    await env.FIDS_ASSETS.put(r2Key, bytes, { httpMetadata: { contentType: ct } });
+    const item = {
+      id,
+      type: isVideo ? "video" : "image",
+      category,
+      source: "vecteezy",
+      vecteezyId: Number(resId),
+      r2Key,
+      url: `${R2_PUBLIC_BASE}/${r2Key}`,
+      mimeType: ct,
+      sizeBytes: bytes.byteLength,
+      label,
+      // Free-tier content must be credited; keep what the API reported so
+      // the menu can surface the attribution link next to the item.
+      attribution: { required: requiresAttribution, url: attributionUrl },
+      uploadedAt: Date.now(),
+      uploadedBy: payload.sub || "admin"
+    };
+    const existing = await env.FIDS_USERS.get("media-library");
+    const lib = existing ? JSON.parse(existing) : { items: [] };
+    if (!Array.isArray(lib.items)) lib.items = [];
+    lib.items.push(item);
+    lib.updatedAt = Date.now();
+    await env.FIDS_USERS.put("media-library", JSON.stringify(lib));
+    return jsonResponse({ success: true, item, library: lib }, 200, origin);
+  } catch (e) {
+    return jsonResponse({ error: "Vecteezy import failed", details: e.message }, 502, origin);
+  }
+}
+__name(handleVecteezyImport, "handleVecteezyImport");
 
 async function handleUploadAirportLogo(request, env, payload, origin, code) {
   if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
@@ -881,6 +1259,206 @@ __name(mcoToAdbFlight, "mcoToAdbFlight");
 // returns { departures:[...] } or { arrivals:[...] } — a drop-in for the
 // frontend's adbFetchWindow(). Returns 503 (not 500) with a clear note
 // until the feed URL is filled in, so callers can fall back gracefully.
+// ── Stream agent control ────────────────────────────────────────────────────
+// Served at /stream/control. Each display server polls this every 2 minutes.
+// TO RESTART A STREAM REMOTELY: set action to "restart", set service to the
+// unit name (or "*" for every stream unit on the box), and give id a NEW
+// unique value — the id is what makes a box act exactly once, so a stale
+// command is never replayed after a reboot. Push; wrangler deploys; the boxes
+// pick it up within ~2 minutes.
+const STREAM_CONTROL = {
+  version: 1,
+  id: "2026-08-19T09:00Z-1",
+  service: "*",
+  action: "restart",
+  note: "Restart any stream unit that is not running (YQM stopped 2026-08-19)."
+};
+
+// ── Desired per-stream settings ─────────────────────────────────────────────
+// Served as plain lines at /stream/desired ("<AP> KEY=VALUE"). The agent finds
+// the instance whose config.env carries that ap= code, writes any value that
+// differs, and restarts only the instances it actually changed.
+//
+// This is what makes setup.sh's one-folder limitation harmless: the agent
+// edits the RIGHT instance in place instead of re-running an installer that
+// only ever knows about /opt/fids-stream and would overwrite whichever stream
+// happens to live there.
+//
+// Change a stream by editing a line here and pushing — the boxes pick it up
+// within ~2 minutes. Values must not contain spaces (URLs never do).
+const STREAM_DESIRED = [
+  ["MIA", "STREAM_URL", "https://fids.orionconnected.com/rotate.html?ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60"],
+  ["MIA", "MUSIC_URL", "http://prem1.di.fm:80/nudisco_hi?69e5e3fba85f75f83ad9886d"]
+];
+
+// The agent installed on each display server, served at /stream/agent.sh so a
+// box can fetch it with one line and needs no GitHub credentials — the repo is
+// private, but this worker is public and deploys from that same repo.
+const STREAM_AGENT_SH = `#!/usr/bin/env bash
+# ---------------------------------------------------------------------------
+# Orion stream agent — watchdog + remote restart for the FIDS→YouTube boxes.
+#
+# Install (one line, as root):
+#   curl -fsSL https://fids-proxy.n-leblanc1984.workers.dev/stream/agent.sh | bash
+#
+# What it does, every 2 minutes:
+#   1. WATCHDOG — any enabled fids/stream service that has died gets started
+#      again. This alone fixes the common failure (Chrome OOM-killed, systemd
+#      hitting its restart limit, the unit left in 'failed').
+#   2. SETTINGS — fetches /stream/desired and writes any STREAM_URL / MUSIC_URL
+#      that differs into the config.env of the instance serving that airport,
+#      then restarts only the instances it actually changed. This is how a
+#      stream's board or music gets changed now: edit the repo, not the box.
+#      It edits the right instance in place, so unlike re-running setup.sh it
+#      cannot overwrite the other stream sharing the machine.
+#   3. CONTROL — fetches /stream/control and, if it carries an id this box has
+#      not seen, applies it. Only restart/start/stop, only on units this box
+#      already has whose names match fids/stream. Nothing from the network is
+#      ever executed as a command.
+# ---------------------------------------------------------------------------
+set -uo pipefail
+CONTROL_URL="https://fids-proxy.n-leblanc1984.workers.dev/stream/control"
+DESIRED_URL="https://fids-proxy.n-leblanc1984.workers.dev/stream/desired"
+AGENT_URL="https://fids-proxy.n-leblanc1984.workers.dev/stream/agent.sh"
+DIR=/opt/stream-agent
+
+if [ "\${1:-}" != "--run" ]; then
+  # ---- install mode ----
+  [ "$(id -u)" = "0" ] || { echo "run as root (sudo)"; exit 1; }
+  install -d "$DIR"
+  curl -fsSL --max-time 30 "$AGENT_URL" -o "$DIR/agent.sh" || { echo "download failed"; exit 1; }
+  chmod +x "$DIR/agent.sh"
+  cat > /etc/systemd/system/stream-agent.service <<'UNIT'
+[Unit]
+Description=Orion stream agent (watchdog + remote restart)
+After=network-online.target
+[Service]
+Type=oneshot
+ExecStart=/opt/stream-agent/agent.sh --run
+UNIT
+  cat > /etc/systemd/system/stream-agent.timer <<'TIMER'
+[Unit]
+Description=Run the Orion stream agent every 2 minutes
+[Timer]
+OnBootSec=60
+OnUnitActiveSec=120
+AccuracySec=15
+[Install]
+WantedBy=timers.target
+TIMER
+  systemctl daemon-reload
+  systemctl enable --now stream-agent.timer >/dev/null 2>&1
+  echo "stream-agent installed and enabled. First pass:"
+  exec "$DIR/agent.sh" --run
+fi
+
+# ---- run mode ----
+units=$(systemctl list-units --all --plain --no-legend 2>/dev/null \\
+        | awk '{print $1}' | grep '\\.service$' \\
+        | grep -Ei 'fids|stream' | grep -v '^stream-agent' || true)
+[ -n "$units" ] || { echo "no stream services found"; exit 0; }
+
+# 1. watchdog — revive anything enabled that is not running
+revived=""
+for u in $units; do
+  systemctl is-enabled --quiet "$u" 2>/dev/null || continue
+  if ! systemctl is-active --quiet "$u"; then
+    systemctl reset-failed "$u" >/dev/null 2>&1
+    systemctl restart "$u" && { echo "watchdog: restarted $u"; revived="$revived $u"; }
+  fi
+done
+
+# 2. settings — write any desired value that differs, restart only what changed
+desired=$(curl -fsSL --max-time 20 "$DESIRED_URL" 2>/dev/null || true)
+changed=""
+while read -r ap kv; do
+  case "$ap" in ""|"#"*) continue;; esac
+  key=\${kv%%=*}; val=\${kv#*=}
+  [ -n "$key" ] && [ -n "$val" ] && [ "$key" != "$kv" ] || continue
+  for c in $(find /opt -name config.env 2>/dev/null); do
+    grep -q "ap=$ap" "$c" || continue
+    line=$(printf '%s="%s"' "$key" "$val")
+    grep -qxF "$line" "$c" && continue
+    tmp=$(mktemp)
+    grep -v "^$key=" "$c" > "$tmp"
+    printf '%s\\n' "$line" >> "$tmp"
+    cat "$tmp" > "$c"   # via cat so the file keeps its 600 permissions
+    rm -f "$tmp"
+    svc=$(basename "$(dirname "$c")")
+    case " $changed " in *" $svc "*) ;; *) changed="$changed $svc";; esac
+    echo "settings: updated $key for $ap"
+  done
+done < <(printf '%s\\n' "$desired")
+for s in $changed; do
+  systemctl restart "$s" >/dev/null 2>&1 && echo "settings: restarted $s"
+done
+
+# 3. control — apply a command we have not applied before
+SEEN="$DIR/last-id"
+last=$(cat "$SEEN" 2>/dev/null || echo "")
+doc=$(curl -fsSL --max-time 20 "$CONTROL_URL" 2>/dev/null || echo "")
+[ -n "$doc" ] || exit 0
+field() { echo "$doc" | tr ',' '\\n' | sed -n 's/.*"'"$1"'"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/p' | head -1; }
+id=$(field id); action=$(field action); target=$(field service)
+[ -n "$id" ] && [ "$id" != "$last" ] || exit 0
+
+case "$action" in
+  restart|start|stop)
+    for u in $units; do
+      if [ "$target" = "*" ] || [ "$u" = "$target" ] || [ "\${u%.service}" = "$target" ]; then
+        # 'restart' from the control doc means "make sure it is running": a
+        # healthy stream is left alone so the other board never blips.
+        # Never touch a unit the watchdog just revived in this same pass —
+        # otherwise a dead stream would be restarted twice within a second.
+        case " $revived " in *" $u "*) echo "control: $u just revived, left alone"; continue;; esac
+        if [ "$action" = "restart" ] && systemctl is-active --quiet "$u"; then
+          echo "control: $u already running, left alone"
+          continue
+        fi
+        systemctl reset-failed "$u" >/dev/null 2>&1
+        systemctl "$action" "$u" && echo "control: $action $u"
+      fi
+    done
+    ;;
+  *) echo "control: nothing to do ($action)" ;;
+esac
+echo "$id" > "$SEEN"
+`;
+
+// ── Stream-presence probe ───────────────────────────────────────────────────
+// The YouTube boards (YQM, MCO) are rendered by a browser on a cloud server
+// that nothing can reach from outside — no SSH from here, no inbound port, no
+// agent. That server does, however, poll these live-flight endpoints roughly
+// once a minute for as long as it is up, so its traffic ARRIVING HERE is the
+// only external signal that the stream is alive.
+//
+// This records, per network operator (Cloudflare's asOrganization — not per
+// user), when board traffic was last seen. Aggregated by operator on purpose:
+// enough to tell "the Hetzner display server stopped polling three hours ago"
+// without keeping a log of who watched the board. Capped at 12 entries, 7-day
+// TTL, written via waitUntil so it never delays the board.
+async function noteBoardClient(env, request, path) {
+  try {
+    if (!env.CITY_BG_CACHE) return;
+    const cf = request.cf || {};
+    const org = String(cf.asOrganization || "unknown").slice(0, 60);
+    const map = (await env.CITY_BG_CACHE.get("streamprobe:v1", { type: "json" })) || {};
+    const now = Date.now();
+    const e = map[org] || { first: now, count: 0 };
+    e.last = now;
+    e.count = (e.count || 0) + 1;
+    e.path = path;
+    map[org] = e;
+    const keys = Object.keys(map);
+    if (keys.length > 12) {
+      keys.sort((a, b) => (map[a].last || 0) - (map[b].last || 0));
+      for (const k of keys.slice(0, keys.length - 12)) delete map[k];
+    }
+    await env.CITY_BG_CACHE.put("streamprobe:v1", JSON.stringify(map), { expirationTtl: 7 * 24 * 3600 });
+  } catch (e) {}
+}
+__name(noteBoardClient, "noteBoardClient");
+
 async function handleMcoFids(request, env, origin, direction) {
   if (!env.MCO_FEED_KEY) {
     return jsonResponse({
@@ -1661,6 +2239,12 @@ var fids_proxy_default = {
       }
     }
 
+    // ⚠️ THIS GATE IS OPT-IN, NOT DEFAULT-DENY. It only protects paths under
+    // /auth/users or /api/. ANY route registered outside those prefixes is
+    // PUBLIC BY CONSTRUCTION — which is how six destructive endpoints ended up
+    // reachable with no credentials (fixed v23169; see docs/OPERATIONS-BRIEF.md).
+    // Put new admin routes UNDER /api/ so they inherit this, or guard them
+    // explicitly with requireOpsSecret(). Do not assume anything is protected.
     if (path.startsWith("/auth/users") || path.startsWith("/api/")) {
       const authHeader = request.headers.get("Authorization");
       if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -1727,6 +2311,15 @@ var fids_proxy_default = {
       }
       if (path === "/api/media-assignments" && request.method === "PUT") {
         return handlePutMediaAssignments(request, env, payload, origin);
+      }
+      // ── Vecteezy stock endpoints (admin-only, credentials stay server-side) ──
+      // GET  /api/vecteezy/search?term=…&content_type=… — proxied search
+      // POST /api/vecteezy/import                        — copy a resource into the library
+      if (path === "/api/vecteezy/search" && request.method === "GET") {
+        return handleVecteezySearch(env, payload, origin, url);
+      }
+      if (path === "/api/vecteezy/import" && request.method === "POST") {
+        return handleVecteezyImport(request, env, payload, origin);
       }
       // ── Gate theme admin endpoint ──
       // Admin writes the full theme atomically. Public reads are no-auth above.
@@ -2057,6 +2650,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
     if (path === "/admin/clear-cache" && request.method === "GET") {
+      // v23169 — was reachable with no credentials: the cache wipe — a GET with destructive side effects, so a crawler or link preview could fire it.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       try {
         let deleted = 0;
         let cursor = undefined;
@@ -2074,6 +2669,206 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       } catch (e) {
         return jsonResponse({ error: "Cache clear failed", details: e.message }, 500, origin);
       }
+    }
+    // ── ADS-B LIVE POSITIONS (proxied + cached) ───────────────────────────
+    // GET /adsb/hex/{icao24} | /adsb/reg/{tail} | /adsb/callsign/{cs}
+    //
+    // WHY THIS EXISTS. The boards used to call the ADS-B feed DIRECTLY from the
+    // browser. Two things broke that: the provider now returns 403 to
+    // unregistered callers, and it sends no Access-Control-Allow-Origin, so the
+    // browser blocks the response regardless. Every downstream feature went
+    // quiet at once — the map fell back to clock estimates, the runway-aligned
+    // final never drew (it needs a live fix within 25nm), "landed" never fired
+    // (a ground fix within 6nm), and _liveTrack was never set so the aircraft
+    // icon pointed at the destination instead of along its track.
+    //
+    // Fetching server-side fixes both: same-origin, so CORS is irrelevant, and
+    // any credential stays here instead of shipping to every kiosk.
+    //
+    // IT ALSO CHANGES THE COST SHAPE, which matters for getting approved at
+    // all. Called from the browser, query volume scales with the number of
+    // VIEWERS — ten people watching the stream is ten times the queries for the
+    // same aircraft. Cached here, it is one upstream call per aircraft per
+    // ADSB_TTL regardless of audience.
+    //
+    // The upstream is a FIXED constant chosen from a small allowlist and the
+    // subject is pattern-checked, so this cannot be turned into an open proxy
+    // (same SSRF discipline as /maptiles, /logoimg, /miafids).
+    if (path.startsWith("/adsb/")) {
+      const ADSB_TTL = 20;                       // seconds; positions age fast
+      const PROVIDERS = {
+        "airplanes.live": "https://api.airplanes.live/v2",
+        "adsb.fi":        "https://opendata.adsb.fi/api/v2",
+        "adsb.lol":       "https://api.adsb.lol/v2"
+      };
+      const provider = (env.ADSB_PROVIDER || "airplanes.live").trim();
+      const base = PROVIDERS[provider];
+      if (!base) {
+        return jsonResponse({ error: "Unknown ADSB_PROVIDER", provider, allowed: Object.keys(PROVIDERS) }, 500, origin);
+      }
+      const m = path.match(/^\/adsb\/(hex|reg|callsign)\/([A-Za-z0-9-]{1,12})$/);
+      if (!m) {
+        return jsonResponse({ error: "Use /adsb/hex/:icao24, /adsb/reg/:tail or /adsb/callsign/:cs" }, 400, origin);
+      }
+      const kind = m[1];
+      const subject = m[2].toUpperCase();
+      const upstream = `${base}/${kind}/${encodeURIComponent(subject)}`;
+
+      // Shared edge cache — this is the bit that makes audience size irrelevant.
+      const cacheKey = new Request(`https://adsb-cache/${provider}/${kind}/${subject}`);
+      const cache = caches.default;
+      try {
+        const hit = await cache.match(cacheKey);
+        if (hit) {
+          const body = await hit.text();
+          return new Response(body, { status: 200, headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+            "X-Adsb-Cache": "hit", ...corsHeaders(origin) } });
+        }
+      } catch (e) {}
+
+      try {
+        const headers = { "Accept": "application/json", "User-Agent": "OrionConnected-FIDS/1.0 (airport flight information displays)" };
+        // Only set if the chosen provider needs one. Absent = anonymous, which
+        // is how the free community feeds normally work.
+        if (env.ADSB_KEY) headers["auth"] = env.ADSB_KEY;
+        const r = await fetch(upstream, { headers });
+        if (!r.ok) {
+          // Deliberately NOT cached — a 403/429 must not pin a dead answer for
+          // everyone. Shaped like a success with no aircraft so the board's
+          // existing "no fix" path handles it without a special case.
+          return jsonResponse({ ac: [], _upstreamStatus: r.status, _provider: provider }, 200, origin);
+        }
+        const payload = await r.text();
+        try {
+          await cache.put(cacheKey, new Response(payload, { headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+        } catch (e) {}
+        return new Response(payload, { status: 200, headers: {
+          "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+          "X-Adsb-Cache": "miss", ...corsHeaders(origin) } });
+      } catch (e) {
+        return jsonResponse({ ac: [], _error: String(e && e.message).slice(0, 120) }, 200, origin);
+      }
+    }
+
+    // ── Vecteezy connectivity self-test ─────────────────────────────────
+    // Public but safe: reveals only which route is configured (booleans)
+    // and the upstream HTTP status of one 1-result search. No tokens, no
+    // response bodies beyond a short error snippet. Edge-cached for 60s so
+    // repeated hits can't burn API quota. Exists because the admin-gated
+    // /api/vecteezy/search can't be probed without a Console login when
+    // diagnosing WAF/auth issues from outside.
+    if (path === "/vecteezy/selftest") {
+      const cache = caches.default;
+      const cacheKey = new Request("https://vecteezy-selftest.cache/v1");
+      try {
+        const hit = await cache.match(cacheKey);
+        if (hit) {
+          const body = await hit.text();
+          return new Response(body, { status: 200, headers: { "Content-Type": "application/json", "X-Selftest-Cache": "hit", ...corsHeaders(origin) } });
+        }
+      } catch (e) {}
+      const routes = vecteezyRoutes(env);
+      const report = {
+        v: 7, // v7: official V2 route only — the unsupported RapidAPI fallback is removed
+        tokenSet: !!(env.VECTEEZY_TOKEN || "").trim(),
+        accountIdSet: !!(env.VECTEEZY_ACCOUNT_ID || "").trim(),
+        ok: false,
+        routes: []
+      };
+      for (const cfg of routes) {
+        const entry = { route: cfg.name, upstreamStatus: null, ok: false, detail: "" };
+        try {
+          const r = await fetch(`${cfg.base}/resources?term=sky&content_type=photo&per_page=1`, { headers: vecteezyHeaders(cfg) });
+          entry.upstreamStatus = r.status;
+          entry.rayId = r.headers.get("cf-ray") || null;
+          entry.at = new Date().toISOString();
+          if (r.ok) {
+            const j = await r.json().catch(() => null);
+            entry.ok = !!(j && Array.isArray(j.resources));
+          } else {
+            entry.detail = (await r.text().catch(() => "")).slice(0, 160);
+          }
+        } catch (e) {
+          entry.detail = String(e && e.message).slice(0, 160);
+        }
+        report.routes.push(entry);
+        if (entry.ok) report.ok = true;
+      }
+      const payload = JSON.stringify(report);
+      try {
+        await cache.put(cacheKey, new Response(payload, { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=60" } }));
+      } catch (e) {}
+      return new Response(payload, { status: 200, headers: { "Content-Type": "application/json", "X-Selftest-Cache": "miss", ...corsHeaders(origin) } });
+    }
+    // ── Stream agent: control doc + installer ───────────────────────────
+    // The display servers had no link to this repo — they were set up by hand
+    // and nothing on them watched anything, so a dead stream needed somebody
+    // physically at a console. These two routes close that gap using the
+    // pipeline that already works (push → wrangler → Cloudflare): the agent on
+    // each box polls /stream/control every 2 minutes and obeys it.
+    //
+    // Safety: the agent NEVER runs commands from this endpoint. It only maps
+    // an {action, service} pair onto systemctl restart/start/stop of units it
+    // already has, whose names match fids/stream. A compromised or mistaken
+    // control doc therefore cannot execute anything on the box.
+    if (path === "/stream/control") {
+      return jsonResponse(STREAM_CONTROL, 200, origin);
+    }
+    if (path === "/stream/desired") {
+      const body = STREAM_DESIRED.map((r) => `${r[0]} ${r[1]}=${r[2]}`).join("\n") + "\n";
+      return new Response(body, {
+        status: 200,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", ...corsHeaders(origin) }
+      });
+    }
+    if (path === "/stream/agent.sh") {
+      return new Response(STREAM_AGENT_SH, {
+        status: 200,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store", ...corsHeaders(origin) }
+      });
+    }
+    // ── Stream-presence probe ───────────────────────────────────────────
+    // Reads back what noteBoardClient() recorded: which networks are polling
+    // the live-flight endpoints, and how long ago. The YouTube streams are
+    // rendered by a browser on a cloud box with no inbound access, so its
+    // traffic arriving here is the only outside evidence that it is alive.
+    if (path === "/stream/probe") {
+      let map = {};
+      try { map = (await env.CITY_BG_CACHE.get("streamprobe:v1", { type: "json" })) || {}; } catch (e) {}
+      const now = Date.now();
+      const clients = Object.keys(map).map((org) => ({
+        network: org,
+        lastSeenSecondsAgo: map[org].last ? Math.round((now - map[org].last) / 1000) : null,
+        requests: map[org].count || 0,
+        lastPath: map[org].path || null,
+        // A datacenter operator polling every minute is a display server
+        // (the streams); consumer ISPs are ordinary viewers.
+        looksLikeServer: /hetzner|digitalocean|ovh|linode|akamai|amazon|google|microsoft|oracle|vultr|scaleway|contabo/i.test(org)
+      })).sort((a, b) => (a.lastSeenSecondsAgo ?? 1e9) - (b.lastSeenSecondsAgo ?? 1e9));
+      return jsonResponse({ at: new Date(now).toISOString(), clients }, 200, origin);
+    }
+    // ── Egress-IP probe ─────────────────────────────────────────────────
+    // Reports the source IP this worker's OUTBOUND requests use, as seen by
+    // two independent echo services. Exists because Vecteezy's support needs
+    // the banned address to clear it, and Worker egress IPs are not fixed.
+    // Public but harmless: returns only Cloudflare-owned egress IPs.
+    if (path === "/vecteezy/egress") {
+      const out = { ips: [] };
+      try {
+        const r = await fetch("https://www.cloudflare.com/cdn-cgi/trace");
+        const t = await r.text();
+        const m = t.match(/^ip=(.+)$/m);
+        if (m) out.ips.push({ seenBy: "cloudflare-trace", ip: m[1].trim() });
+      } catch (e) {}
+      try {
+        const r = await fetch("https://api.ipify.org?format=json");
+        const j = await r.json().catch(() => null);
+        if (j && j.ip) out.ips.push({ seenBy: "ipify", ip: j.ip });
+      } catch (e) {}
+      out.at = new Date().toISOString();
+      return jsonResponse(out, 200, origin);
     }
     if (path === "/health") {
       return jsonResponse({ status: "ok", version: "218" }, 200, origin);
@@ -2105,6 +2900,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // user is not on the latest (post-2026) version of their plan and needs
     // to re-subscribe. Use this BEFORE building webhook integration.
     if (path === "/subscriptions/balance" || path === "/subscriptions/balance/debug") {
+      // v23169 — ops-only, and no board calls it: exposes the AeroDataBox account credit balance, and in debug mode the raw upstream headers.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/balance`;
       const debugMode = path.endsWith("/debug");
       try {
@@ -2144,6 +2941,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // Lists current webhook subscriptions. Should return [] if none are
     // active (still confirms the endpoint is accessible on your plan).
     if (path === "/subscriptions/webhooks" || path === "/subscriptions/webhook") {
+      // v23169 — ops-only, and no board calls it: lists the webhook subscriptions feeding the boards, including their ids.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/webhook`;
       try {
         const response = await fetch(adbUrl, {
@@ -2172,6 +2971,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // 1 API unit = 1 credit. Use sparingly — 5000 credits is plenty for
     // YQM-only operation for a couple weeks.
     if (path === "/subscriptions/refill" && request.method === "POST") {
+      // v23169 — was reachable with no credentials: the credit refill — spends real money.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       let credits = url.searchParams.get("credits");
       if (!credits) {
         try {
@@ -2249,6 +3050,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // ── DELETE a webhook subscription by ID ────────────────────────────────
     // DELETE /subscriptions/webhook/:id — removes subscription. Free.
     if (path.startsWith("/subscriptions/webhook/") && request.method === "DELETE") {
+      // v23169 — was reachable with no credentials: deleting the subscription that feeds live flights to the boards.
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const subId = path.replace("/subscriptions/webhook/", "");
       if (!subId || subId.includes("/")) {
         return jsonResponse({ error: "Invalid subscription ID" }, 400, origin);
@@ -2382,6 +3185,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // airport from KV. Useful for clearing test data or forcing a refresh
     // from the next webhook push.
     if (path.startsWith("/flights/cached/") && request.method === "DELETE") {
+      // v23169 — was reachable with no credentials: clearing cached flights (the boards only GET this path, so they are unaffected).
+      { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const parts = path.split("/").filter(Boolean);
       const icao = (parts[2] || "").toUpperCase();
       if (!icao || !/^[A-Z]{4}$/.test(icao)) {
@@ -2407,6 +3212,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     }
 
     if (path.startsWith("/flights/cached/")) {
+      // Stream-presence probe — see noteBoardClient(). Fire-and-forget so the
+      // board's own request is never slowed by it.
+      try { ctx.waitUntil(noteBoardClient(env, request, path)); } catch (e) {}
       const parts = path.split("/").filter(Boolean); // ['flights','cached','CYQM']
       const icao = (parts[2] || "").toUpperCase();
       if (!icao || !/^[A-Z]{4}$/.test(icao)) {

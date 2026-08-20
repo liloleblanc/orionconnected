@@ -12,15 +12,36 @@
                  background: #0b1a2b; cursor: none; }
     /* Each board lives in its own iframe, loaded ONCE and kept alive. We only
        toggle which one is visible — no reloads, no re-splash, no drift. */
+    /* v23166 — A DELIBERATE FADE THROUGH BLACK, IN BOTH DIRECTIONS.
+       (Nick: 'i just dont want flashes and glitches' / 'transitions could simply
+       be less or fade it more fade to black then onwards'.)
+
+       What this used to do was NOT a cross-fade, despite the name. `visibility`
+       was not in the transition list, so the moment a board lost .oc-active its
+       visibility flipped to hidden INSTANTLY while its opacity was still 1 — the
+       outgoing board did not fade at all, it vanished in one frame. The incoming
+       board then rose from opacity 0 over .45s. Measured live on v23165 mid-
+       switch: `fids.html: opacity 1, visibility hidden` — proof the board was
+       already gone before its fade had moved. So every switch was a hard cut to
+       bare #0b1a2b followed by a fade-up: a dark BLINK, four times a cycle, and
+       worst against the light mist boards.
+
+       Now the fade is symmetric and intentional. Deferring `visibility` by the
+       fade duration keeps the outgoing board PAINTED while it fades out, so it
+       leaves the screen as smoothly as the next one arrives, and the switch
+       reads as one considered fade to black rather than a snap. */
     .oc-frame {
       position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0;
       margin: 0; padding: 0; display: block;
       opacity: 0; visibility: hidden; pointer-events: none;
-      transition: opacity .45s ease;
+      /* leaving: fade out fully, THEN stop painting */
+      transition: opacity var(--oc-fade, .6s) ease, visibility 0s linear var(--oc-fade, .6s);
       z-index: 1;
     }
     .oc-frame.oc-active {
       opacity: 1; visibility: visible; pointer-events: auto; z-index: 2;
+      /* arriving: start painting immediately, then fade in */
+      transition: opacity var(--oc-fade, .6s) ease, visibility 0s linear 0s;
     }
   </style>
 </head>
@@ -42,6 +63,20 @@
       var dwell = parseInt(q.get('dwell') || q.get('every') || '60', 10);
       if (!(dwell > 0)) dwell = 60;
 
+      // v23166 — FADE LENGTH IS TUNABLE FROM THE URL, so the look can be judged
+      // on the real screen instead of guessed at in CSS. ?fade=SECONDS sets each
+      // half of the transition (out, then in); ?hold=SECONDS is the rest on black
+      // between them. Defaults are a calm 0.6s out / 0.2s black / 0.6s in — slow
+      // enough to read as intentional, which is the opposite of a flash.
+      // The CSS reads --oc-fade, so both halves stay in step automatically.
+      var fadeSec = parseFloat(q.get('fade') || '0.6');
+      if (!(fadeSec >= 0 && fadeSec <= 5)) fadeSec = 0.6;
+      var holdSec = parseFloat(q.get('hold') || '0.2');
+      if (!(holdSec >= 0 && holdSec <= 5)) holdSec = 0.2;
+      var FADE_MS = Math.round(fadeSec * 1000);
+      var HOLD_MS = Math.round(holdSec * 1000);
+      document.documentElement.style.setProperty('--oc-fade', fadeSec + 's');
+
       var MAP = {
         fids: 'fids.html', departures: 'fids.html', dep: 'fids.html', flights: 'fids.html',
         gids: 'gids.html', gates: 'gids.html', gate: 'gids.html',
@@ -57,6 +92,7 @@
       // Params passed to each board: everything EXCEPT the rotator's own controls
       // (so the boards don't try to rotate themselves).
       q.delete('rotate'); q.delete('dwell'); q.delete('every');
+      q.delete('fade'); q.delete('hold');   // rotator-only controls, v23166
       var childQ = q.toString();
       var childSuffix = childQ ? ('?' + childQ) : '';
 
@@ -103,16 +139,65 @@
       var maxMs = Math.max(minMs * 3, minMs + 120000);
       var slotStart = Date.now();
 
-      // The actual switch: cheap class toggle (cross-fade) + active/inactive ping.
+      // v23166 — THE SWITCH IS SEQUENCED: OUT TO BLACK, THEN IN.
+      // (Nick: 'transitions could simply be less or fade it more fade to black
+      // then onwards ... i just dont want flashes and glitches'.)
+      //
+      // Both classes used to be toggled in the same frame. Combined with the
+      // visibility bug in the CSS above, that made the outgoing board disappear
+      // instantly — a blink. Even with the CSS fixed, toggling both at once
+      // gives two overlapping fades, and for the middle of that overlap BOTH
+      // boards are semi-transparent, so the page ground still shows through and
+      // the change still dips.
+      //
+      // Sequencing removes the overlap entirely: the current board fades all the
+      // way out, the screen rests on black, and only then does the next board
+      // fade up. Nothing is ever half-transparent over anything else, so there
+      // is no dip to be seen — just one deliberate fade, which is what was asked
+      // for. It also means the incoming board gets the whole fade-out to finish
+      // its own catch-up work off-screen before anyone can see it.
+      // THIS RUNS 24/7 UNATTENDED, SO THE SECOND HALF MUST NOT DEPEND ON A
+      // setTimeout (Nick: 'just remember about the stream and that it is running
+      // 24/7'). These boards are same-origin iframes sharing ONE main thread —
+      // that is exactly how the rotation got stuck before, when the gate's
+      // render loop starved the parent's timer and the switch never came (which
+      // is why the dwell clock was moved into a Web Worker). If the fade-in
+      // timer were starved the same way now, the stream would sit on BLACK,
+      // which is far worse than the blink this replaces.
+      //
+      // So the reveal is recorded as a DUE TIME, not a callback. The timer is
+      // just the fast path; the worker heartbeat below re-checks every second
+      // and performs any reveal that is overdue. Both routes call the same
+      // idempotent function, so whichever arrives first wins and the other is a
+      // no-op. A starved timer now costs at most one extra second of black
+      // instead of ending the rotation.
+      var pendingShow = null;   // {frame, dueAt} — a reveal that has not happened yet
+
+      function showNow() {
+        if (!pendingShow) return;
+        var f = pendingShow.frame;
+        pendingShow = null;
+        if (!f.classList.contains('oc-active')) {
+          f.classList.add('oc-active');
+          ocTell(f, true);
+        }
+        slotStart = Date.now();          // the dwell starts when it is VISIBLE
+      }
+
       function advance() {
+        if (pendingShow) return;         // a switch is already in flight
         var cur = frameFor[seq[idx]];
         idx = (idx + 1) % seq.length;
         var nxt = frameFor[seq[idx]];
-        if (nxt !== cur) {
-          nxt.classList.add('oc-active'); cur.classList.remove('oc-active');
-          ocTell(cur, false); ocTell(nxt, true);
-        }
         slotStart = Date.now();
+        if (nxt === cur) return;
+        // 1. fade the current board out; tell it immediately so it can pause its
+        //    janitors while it is on its way off screen.
+        cur.classList.remove('oc-active');
+        ocTell(cur, false);
+        // 2. once it is fully out (screen is black), bring the next one up.
+        pendingShow = { frame: nxt, dueAt: Date.now() + FADE_MS + HOLD_MS };
+        setTimeout(showNow, FADE_MS + HOLD_MS);
       }
 
       // A gate ad just finished. If we're on the gate and past the minimum, switch
@@ -121,6 +206,7 @@
       window.addEventListener('message', function (ev) {
         var d = ev && ev.data;
         if (!d || !d.ocGateBoundary) return;
+        if (pendingShow) return;   // a switch is already in flight (v23166)
         if (seq[idx] === GATE && (Date.now() - slotStart) >= minMs) advance();
       });
 
@@ -129,6 +215,14 @@
       // main thread makes the cheap decision. Non-gate boards advance at dwell;
       // the gate advance is boundary-driven above, with maxMs as a safety net.
       function beat() {
+        // WATCHDOG FIRST (v23166). The worker runs on its own thread, so this
+        // tick arrives even when the boards have the main thread pinned. If a
+        // reveal is overdue — its setTimeout was starved, or the host throttled
+        // it — perform it here. This is the guarantee that the 24/7 stream can
+        // never come to rest on a black screen: the worst case is that black
+        // lasts a fraction of a second longer than intended.
+        if (pendingShow && Date.now() >= pendingShow.dueAt) showNow();
+        if (pendingShow) return;   // mid-transition: don't stack another switch
         var elapsed = Date.now() - slotStart;
         if (seq[idx] === GATE) {
           if (elapsed >= maxMs) advance();

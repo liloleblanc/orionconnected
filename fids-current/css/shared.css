@@ -156,9 +156,21 @@ body {
     linear-gradient(155deg, var(--ld-bg-1) 0%, var(--ld-bg-2) 100%);
   opacity: 1;
   pointer-events: auto;
-  transition: opacity 0.5s ease 0.1s;
+  /* v23159 — a slower, gentler hand-off (Nick: 'the transitions don't have to
+     be so fast either they can fade slower'). Now that the loader sits on the
+     board's own ground, this reads as the screen settling rather than one
+     thing being swapped for another. The .is-gone timeout in each page's
+     _fidsHideLoader() is matched to it. */
+  transition: opacity 1.2s ease 0.1s;
 }
-#fidsLoader[data-theme="dark"] {
+/* v23159 — the dark palette is also reachable from <html>, which is where the
+   head script now stamps the resolved theme before first paint. The original
+   selector only matched the attribute ON the loader, and nothing could set
+   that until the element existed — which is what produced the white-then-dark
+   flash on every overnight boot. Both selectors are kept so a cached page that
+   still stamps the loader directly behaves exactly as before. */
+#fidsLoader[data-theme="dark"],
+html[data-theme="dark"] #fidsLoader {
   --ld-bg-1: #070b14;
   --ld-bg-2: #0f1424;
   --ld-bg-radial-1: rgba(251, 191, 36, 0.06);
@@ -171,6 +183,26 @@ body {
   --ld-border:      rgba(255, 255, 255, 0.08);
   --ld-grain-dot:   rgba(255, 255, 255, 0.018);
 }
+/* v23159 — NO WELCOME SCREEN ON A ROTATION HOP. ?rotate= navigates the whole
+   document every dwell period, so replaying the boot loader each time is what
+   made the boards flash continuously rather than only at startup. Measured: the
+   board needs ~11s to populate, so a 30s dwell spent roughly a third of every
+   cycle showing the loader instead of flights. The arriving page stamps
+   data-boot-hop on <html> when it recognises the navigation as a rotation, and
+   the loader simply never paints. A cold boot is unaffected. */
+html[data-boot-hop="1"] #fidsLoader { display: none !important; }
+
+/* v23159 — the loader sits on the board's OWN ground once the board has told us
+   what that is. The stock palettes are a guess from the clock; the board at YQM
+   is rgb(13,77,139), which is neither of them, so the loader was a different
+   colour from the screen it covered and the handover read as a flash. The value
+   is recorded by _fidsHideLoader() the first time the board paints and replayed
+   here on every subsequent load. Ink still comes from the theme, which the head
+   script now derives from this colour's luminance rather than the hour. */
+html[data-boot-ground="1"] #fidsLoader {
+  background: var(--boot-ground) !important;
+}
+
 #fidsLoader::before {
   content: '';
   position: absolute;

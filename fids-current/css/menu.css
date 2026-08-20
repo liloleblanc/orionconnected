@@ -949,3 +949,88 @@ body:not(.sidebar-open) #fidsBoard {
   color: rgba(255, 255, 255, 0.7);
   flex-shrink: 0;
 }
+
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   v23172 — THE CONSOLE IS ISOLATED FROM BOARD STYLING
+   (Nick: "you cant even see what you are choosing and I am sure the colors
+   are screwed and half dont work for theming")
+
+   The console is INJECTED INTO A BOARD PAGE, so the board's own stylesheets
+   apply to it — and they win, because they are more specific than the
+   console's own classes:
+
+       fids.css   .ctrl label   (0,1,1)   beats   menu.css  .sm-label  (0,1,0)
+       fids.css   .ctrl input   (0,1,1)   beats   menu.css  .sm-input  (0,1,0)
+
+   Those board rules are correct FOR THE BOARD — white text, dark inputs, on a
+   dark board. Applied to the console, which is a LIGHT panel, they produced
+   exactly what was reported: labels painted rgba(255,255,255,0.6) on a white
+   background (invisible — measured on the live board, contrast 0.0), and dark
+   input boxes floating on a light panel. Every colour row in Customize
+   rendered as a swatch and a hex field with no visible name, so there was no
+   way to tell which colour you were editing.
+
+   Nothing was missing from the markup: all seven labels are present with the
+   correct text (Accent, Header BG, Header Text, Board BG, Row Odd, Row Even,
+   Row Text). They were simply painted the same colour as the panel.
+
+   The console already ships a complete light/dark token set (--console-*) and
+   a [data-theme="dark"] variant. It only ever needed to outrank the board, so
+   these rules are scoped to #overlayMenu — an ID (1,0,x) beats any .ctrl rule
+   without a single !important, and without touching board styling.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+#overlayMenu label {
+  color: var(--console-text-2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Colour rows: give the name a fixed column so the seven rows align and the
+   label can never be squeezed out by the swatch and hex field beside it. */
+#overlayMenu .sm-color-row label {
+  flex: 0 0 96px;
+  min-width: 96px;
+  color: var(--console-text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+#overlayMenu input,
+#overlayMenu select,
+#overlayMenu textarea {
+  background: var(--console-card);
+  color: var(--console-text);
+  border: 1px solid var(--console-border-hi);
+  border-radius: 8px;
+}
+
+/* The colour swatch is a control, not a text field — it must keep its size and
+   show the colour rather than inheriting the card background. */
+#overlayMenu input[type="color"] {
+  background: transparent;
+  padding: 0;
+  width: 36px;
+  min-width: 36px;
+  height: 32px;
+}
+
+#overlayMenu select option {
+  background: var(--console-card);
+  color: var(--console-text);
+}
+
+#overlayMenu input::placeholder,
+#overlayMenu textarea::placeholder {
+  color: var(--console-text-muted);
+}
+
+/* Checkboxes carry their meaning in the text beside them. On the board's white
+   rule that text was invisible, which is why DISPLAY OPTIONS looked like two
+   unlabelled boxes. */
+#overlayMenu input[type="checkbox"] + span,
+#overlayMenu label > input[type="checkbox"] ~ * {
+  color: var(--console-text);
+}

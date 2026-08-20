@@ -233,7 +233,13 @@ const counters = await evaluate('window.__gateStability');
 
 console.log(JSON.stringify({ url: page.url, samples: 3, elements: first.measurements.length, counters }, null, 2));
 
-assert.equal(first.build, 'v23157');
+// The expected tag comes from the source of truth, not a pinned literal that
+// goes stale on every release.
+const expectedBuild = (await import('node:fs')).readFileSync(
+  new URL('../fids-current/js/fids-core.js', import.meta.url), 'utf8'
+).match(/var FIDS_BUILD_TAG = '(v\d+)'/)?.[1];
+assert.ok(expectedBuild, 'fids-core.js must declare FIDS_BUILD_TAG');
+assert.equal(first.build, expectedBuild);
 assert.equal(first.fitHeartbeatCleared, true);
 assert.equal(first.resizeHandlerActive, true);
 if (forcedStatus) assert.ok(first.boardingNumberCount > 0, `Forced ${forcedStatus} did not render boarding numbers`);
