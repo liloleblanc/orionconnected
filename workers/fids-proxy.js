@@ -1259,6 +1259,32 @@ __name(mcoToAdbFlight, "mcoToAdbFlight");
 // returns { departures:[...] } or { arrivals:[...] } — a drop-in for the
 // frontend's adbFetchWindow(). Returns 503 (not 500) with a clear note
 // until the feed URL is filled in, so callers can fall back gracefully.
+// ── Silent audio for a stream that must not carry music ─────────────────────
+// ffmpeg treats an unreachable audio input as fatal, so a stream configured
+// with a dead station URL dies on every start and never reaches YouTube. The
+// agent below can WRITE a setting but not clear one, which leaves no remote way
+// to say "no music" — and a box without console access then has no route back.
+//
+// This is that route: five minutes of real silence, generated here so nothing
+// copyrighted is ever in the audio path. ffmpeg is started with
+// -reconnect_at_eof, so it re-fetches when the file ends and plays on. Cached
+// for a day, so the reconnects cost nothing.
+function silentWav(seconds) {
+  const rate = 8000, channels = 1, bits = 16;
+  const byteRate = (rate * channels * bits) / 8;
+  const dataSize = byteRate * seconds;
+  const buf = new Uint8Array(44 + dataSize);   // zero-filled: 16-bit PCM zero IS silence
+  const dv = new DataView(buf.buffer);
+  const tag = (off, str) => { for (let i = 0; i < str.length; i++) buf[off + i] = str.charCodeAt(i); };
+  tag(0, "RIFF");  dv.setUint32(4, 36 + dataSize, true);  tag(8, "WAVE");
+  tag(12, "fmt "); dv.setUint32(16, 16, true);            dv.setUint16(20, 1, true);
+  dv.setUint16(22, channels, true);                        dv.setUint32(24, rate, true);
+  dv.setUint32(28, byteRate, true);                        dv.setUint16(32, (channels * bits) / 8, true);
+  dv.setUint16(34, bits, true);
+  tag(36, "data"); dv.setUint32(40, dataSize, true);
+  return buf;
+}
+
 // ── Stream agent control ────────────────────────────────────────────────────
 // Served at /stream/control. Each display server polls this every 2 minutes.
 // TO RESTART A STREAM REMOTELY: set action to "restart", set service to the
@@ -1288,7 +1314,23 @@ const STREAM_CONTROL = {
 // within ~2 minutes. Values must not contain spaces (URLs never do).
 const STREAM_DESIRED = [
   ["MIA", "STREAM_URL", "https://fids.orionconnected.com/rotate.html?ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60"],
-  ["MIA", "MUSIC_URL", "http://prem1.di.fm:80/nudisco_hi?69e5e3fba85f75f83ad9886d"]
+  // NO STATION AUDIO ON ANY BOARD.
+  // A subscription radio stream was rebroadcast here and YouTube's Content ID
+  // matched it: the live stream was interrupted and the video removed under the
+  // third-party content policy. Rebroadcast is not something a listening
+  // subscription grants, so no station belongs in this list.
+  //
+  // The address that was here was also malformed — the key rode after a '/'
+  // instead of a '?' — so it answered 404, and ffmpeg treats a dead audio input
+  // as fatal: the board crash-looped for hours and never reached YouTube at all.
+  //
+  // Silence is served by this worker (see silentWav above), which cannot 404 and
+  // cannot be claimed. A board that wants music should keep licensed files in
+  // its own music/ directory; those play whenever MUSIC_URL is empty, and they
+  // never leave the machine.
+  ["MIA", "MUSIC_URL", "https://fids-proxy.n-leblanc1984.workers.dev/stream/silence.wav"],
+  ["MCO", "MUSIC_URL", "https://fids-proxy.n-leblanc1984.workers.dev/stream/silence.wav"],
+  ["YQM", "MUSIC_URL", "https://fids-proxy.n-leblanc1984.workers.dev/stream/silence.wav"]
 ];
 
 // The agent installed on each display server, served at /stream/agent.sh so a
@@ -2834,6 +2876,12 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // the live-flight endpoints, and how long ago. The YouTube streams are
     // rendered by a browser on a cloud box with no inbound access, so its
     // traffic arriving here is the only outside evidence that it is alive.
+    if (path === "/stream/silence.wav") {
+      return new Response(silentWav(300), {
+        status: 200,
+        headers: { "Content-Type": "audio/wav", "Cache-Control": "public, max-age=86400" }
+      });
+    }
     if (path === "/stream/probe") {
       let map = {};
       try { map = (await env.CITY_BG_CACHE.get("streamprobe:v1", { type: "json" })) || {}; } catch (e) {}
