@@ -492,10 +492,16 @@ function smActivatePreset(id) {
   // NOT let a saved custom preset override it by injecting the #dynamicTheme
   // block (body{background:…!important}) — that leak forced the BAGGAGE screen
   // dark (#544f4f) on ?theme=mist. Enforce the pin and bail.
+  // v23182 — same correction as setTheme() in fids-core.js. This function is
+  // fired unprompted 300ms after every board load (see the setTimeout below),
+  // so it is the second of the two things that wiped a cloud-saved palette off
+  // a ?theme=mist stream URL. The legacy #dynamicTheme leak still goes; a
+  // resolved custom palette stays.
   try {
     var _pin = (new URLSearchParams(window.location.search).get('theme') || '').trim().toLowerCase();
     if (/^(mist|tus-teal|tus-teal-deep)$/.test(_pin)) {
       var _dt = document.getElementById('dynamicTheme'); if (_dt) _dt.remove();
+      if ((document.body.dataset.fidsTheme || '') === 'custom') return;
       var _cr = document.getElementById('_fidsCustomThemeRules'); if (_cr) _cr.remove();
       document.body.dataset.fidsTheme = _pin;
       ['--fids-banner-bg','--fids-banner-text','--fids-banner-accent',

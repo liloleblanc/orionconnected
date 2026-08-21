@@ -19284,11 +19284,19 @@ function setTheme(name) {
   // re-inject a #dynamicTheme block (body{background:…!important}) that shadows
   // it — that leak forced the BAGGAGE screen dark (#544f4f) on ?theme=mist even
   // though the board resolved to mist. Enforce the pin and bail.
+  // v23182 — the leak this guards against is the LEGACY #dynamicTheme block, so
+  // that one still goes unconditionally. What must not go with it is a resolved
+  // custom palette: applyAirportConfigToBoard has already stamped
+  // body.dataset.fidsTheme, so when it reads 'custom' the airport's own colours
+  // won the resolution above and this pin is only a boot default. Stripping
+  // #_fidsCustomThemeRules and the eight --fids-* variables here is what wiped
+  // YQM's saved palette ~0.3s after every load on the ?theme=mist stream URLs.
   try {
     var _pin = (new URLSearchParams(window.location.search).get('theme') || '').trim().toLowerCase();
     if (/^(mist|tus-teal|tus-teal-deep)$/.test(_pin)) {
-      currentTheme = _pin;
       var _dt = document.getElementById('dynamicTheme'); if (_dt) _dt.remove();
+      if ((document.body.dataset.fidsTheme || '') === 'custom') return;
+      currentTheme = _pin;
       var _cr = document.getElementById('_fidsCustomThemeRules'); if (_cr) _cr.remove();
       document.body.dataset.fidsTheme = _pin;
       ['--fids-banner-bg','--fids-banner-text','--fids-banner-accent',
@@ -24499,8 +24507,15 @@ function applyAirportConfigToBoard(iata) {
     // the theme in the menu on those screens did nothing, forever. The pin
     // still gives a wiped kiosk a deterministic look; the moment an operator
     // SAVES a theme on the device, that choice outranks the pin.
+    // v23182 — and a theme saved on the AIRPORT counts as a saved choice too.
+    // v23125 only consulted _userCfg, which is this browser's localStorage. A
+    // stream box boots a clean profile every time, so _userCfg is always empty
+    // there and the pin won again — which is why YQM's cloud palette
+    // (theme:"custom" + customColors, confirmed live in KV) never reached the
+    // screen. The airport module is the thing being saved to the cloud; it has
+    // to outrank a URL default the same way a local save does.
     var _urlTheme = new URLSearchParams(location.search).get('theme');
-    var _savedThemeChoice = _userCfg && _userCfg.theme;
+    var _savedThemeChoice = (_userCfg && _userCfg.theme) || (_adminCfg && _adminCfg.theme);
     if (_urlTheme && _ALLOWED_THEMES[_urlTheme] && !_savedThemeChoice) _theme = _urlTheme;
   } catch (e) {}
   // Logo position is nested under .logo.position in admin KV but flat in user prefs
