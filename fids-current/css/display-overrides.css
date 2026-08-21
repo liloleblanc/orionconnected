@@ -12976,3 +12976,74 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    show, two when there is — the six slots stay exactly filled either way. */
 html body .g8-wrap .gad-map-col-v2.gad-map-col-telem > .v2-rc-shelf-map { grid-row: span 2 !important; }
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem { grid-row: span 1 !important; min-height: 0 !important; }
+
+/* v23190 — THE RIGHT RAIL'S PANELS WEAR A HEADER BAR, LIKE THE LEFT RAIL'S.
+   Nick's target: every panel is a full-width bar naming it, with label/value
+   rows beneath. The right rail had been putting the label on the LEFT of each
+   row instead, so the two rails read as two different systems even once their
+   sizes agreed — "the formatting has not been applied", "not one panel was
+   where it needed to be". This is the same bar the left rail has always worn:
+   light ground, dark ink, across the top of the panel. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  flex: 0 0 auto !important;
+  padding: clamp(2px,0.45vh,6px) clamp(6px,0.6vw,12px) !important;
+  margin: 0 0 clamp(2px,0.4vh,5px) 0 !important;
+  background: rgba(233,236,241,0.93) !important;
+  color: #16233c !important;
+  -webkit-text-fill-color: #16233c !important;
+  font-weight: 800 !important;
+  line-height: 1.05 !important;
+  text-align: center !important;
+  border-radius: 0.7vh !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr * {
+  color: #16233c !important;
+  -webkit-text-fill-color: #16233c !important;
+  background: transparent !important;
+  font-weight: 800 !important;
+}
+/* The status panel's bar carries the status colour as its GROUND, the way the
+   drawing inks "Delayed | Retard" amber across the top of that panel. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-delayed,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-diverted,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-cancelled {
+  background: #f5a623 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-early,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-ontime,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-arrived {
+  background: #7bd389 !important;
+}
+/* The flight number is this panel's hero, the way the number is on the left
+   rail's own Flight panel. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-hero {
+  justify-content: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-hero {
+  width: 100% !important;
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+/* _gateLblSpans emits the two languages as bare adjacent <span>s with no
+   separator — inside .v2-rc-fi-tlbl they stack, so none is needed there, but on
+   a one-line header bar they ran together as "FlightVol". The bar supplies the
+   rule the drawing shows: "Flight | Vol". */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr > span + span::before {
+  content: "|" !important;
+  margin: 0 0.42em !important;
+  opacity: 0.5 !important;
+  font-weight: 700 !important;
+}
+/* Any separator the status text carries of its own needs the same air, or it
+   reads as "Delayed|En retard". */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr .v2-rc-fi-sep,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr .v2-fi-sep {
+  margin: 0 0.42em !important;
+  opacity: 0.5 !important;
+}

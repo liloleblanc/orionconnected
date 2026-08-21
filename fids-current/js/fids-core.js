@@ -8028,12 +8028,20 @@ function _buildV2MapCol(ctx, vars) {
           // Nick's approved sketch: 'Arrival 5:28PM    Revised 5:27PM' —
           // one line, two pairs; revised inked green earlier/amber later.
           var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-early' : 'v2-rc-status-delayed';
+          // v23190 — TWO ROWS, REVISED FIRST. Nick's target has the status
+          // panel reading top to bottom as: the status itself on a full-width
+          // bar, then "Revised | Revisé 5:30pm", then "Arrival | Arrivée
+          // 5:20pm". The old four-cell single line put both pairs side by side,
+          // which is not the grammar the rest of the board uses — every other
+          // panel is one label, one value, one row.
           _ibArrRowHtml =
-              '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
-            +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
+              '<div class="v2-rc-fi-trow">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('revised', _frF) + '</div>'
             +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
+            + '</div>'
+            + '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+            +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
+            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
             + '</div>';
         } else {
           _ibArrRowHtml =
@@ -8050,10 +8058,16 @@ function _buildV2MapCol(ctx, vars) {
       // Arrival/Status, each drawn as its own panel.
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
+        // v23190 — EVERY PANEL IS A HEADER BAR PLUS ROWS. That is the grammar
+        // the left rail has always used and the one Nick's target uses on the
+        // right: a full-width bar naming the panel, then label/value rows
+        // beneath it. The flight pane is headed "Flight | Vol" with the number
+        // as its hero; the status pane is headed by the STATUS itself, carrying
+        // the status colour, with Revised and Arrival as its rows.
         +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('flight', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
+        +     '<div class="v2-rc-fi-phdr">' + _gateLblSpans('flight', _frF) + '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-hero">'
+        +       '<div class="v2-rc-fi-tval v2-rc-fi-hero">' + (_ibFltCompact || '—') + '</div>'
         +     '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('from', _frF) + '</div>'
@@ -8061,11 +8075,8 @@ function _buildV2MapCol(ctx, vars) {
         +     '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
+        +     '<div class="v2-rc-fi-phdr v2-rc-phdr-' + _stCls + ' v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +     (_ibArrRowHtml || '')
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
-        +     '</div>'
         +   '</div>'
         + '</div></div>';
 
@@ -18947,7 +18958,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23189';
+var FIDS_BUILD_TAG = 'v23190';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
