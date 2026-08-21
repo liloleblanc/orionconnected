@@ -12716,7 +12716,7 @@ html body .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
    (it is drawn inside the map plate), but an older cached fids-core.js paired
    with this stylesheet must not drop a shelf into an implicit seventh row. */
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: span 3 !important; min-height: 0 !important; }
-html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: span 3 !important; min-height: 0 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: span 2 !important; min-height: 0 !important; }
 /* Three plates over six modules, not four. The aircraft type is no longer its
    own shelf — fids-core.js now emits it as .v2-rc-acb-cap inside the
    illustration plate, the way the drawing captions the photo — so the
@@ -12725,7 +12725,7 @@ html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: span 3 !impo
    the column tore apart, so the markup carries it now and the grid just counts
    to six. */
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
-  grid-row: span 3 !important; min-height: 0 !important; position: relative !important;
+  grid-row: span 1 !important; min-height: 0 !important; position: relative !important;
 }
 /* The caption is a HEADER BAR, not a wash over the photo. In the drawing the
    aircraft plate wears "Embraer-195 | C-FTOD" on a light strip across its top,
@@ -12755,7 +12755,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      fills its panel, so an auto-height bar and a height-seeking fitter chase
      each other. One module of the plate's two is the strip; the photo keeps
      the rest. */
-  height: clamp(30px, 5.4vh, 50px) !important;
+  height: clamp(20px, 3.2vh, 34px) !important;
   min-height: 0 !important;
   text-align: center !important;
   pointer-events: none !important;
@@ -12811,39 +12811,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   padding-bottom: 0 !important;
 }
 
-/* v23183 — THE INBOUND CARD LIVES INSIDE THE MAP PLATE NOW.
-   It used to be the rail's middle shelf. With the rail rebuilt as two
-   half-height plates there is no middle shelf to be, and the information is
-   about the inbound aircraft — the same subject as the map it now sits on, and
-   the same treatment already given to the plate title and the speed/altitude
-   telemetry. fids-core strips its .v2-rc-shelf classes on the way in, so it
-   arrives as .v2-rc-fi-inmap and is laid out here as a bottom strip rather
-   than as a grid child. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-inmap {
-  position: absolute !important;
-  left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important;
-  z-index: 4 !important;
-  height: auto !important; min-height: 0 !important;
-  margin: 0 !important;
-  padding: clamp(4px,0.8vh,10px) clamp(6px,0.7vw,12px) !important;
-  background: linear-gradient(to top, rgba(6,14,26,0.92) 0%, rgba(6,14,26,0.78) 62%, rgba(6,14,26,0) 100%) !important;
-  border: none !important;
-  border-radius: 0 !important;
-  pointer-events: none !important;
-}
-/* The map's own bottom furniture steps out of the strip's way. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map .v2-map-area {
-  position: relative !important;
-}
-/* …and the map area has to fill its plate, or the strip anchors to the area's
-   bottom (measured 578) instead of the plate's (610) and floats clear of the
-   edge. */
+/* v23184 — the map plate must fill its three slots. It did not, so anything
+   anchored to its bottom edge sat 32px short of the plate. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map .v2-map-area {
   height: 100% !important;
   min-height: 0 !important;
-}
-/* The brand hold that stands in for a missing map lifts clear of the strip so
-   the two never overlap on a board whose tiles have not loaded. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
-  bottom: 42% !important;
+  position: relative !important;
 }

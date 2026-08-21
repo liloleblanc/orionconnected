@@ -8946,20 +8946,6 @@ function _buildV2MapCol(ctx, vars) {
     ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
     : '<span class="v2-rc-map-life-code">' + (_mapLifeCode || '&#9992;') + '</span>';
-  // v23183 — SIX SLOTS A SIDE, AND THREE SLOTS MAKE ONE BIG SLOT.
-  // Nick's rule, in his words: "the left in size matches the right, 6 slots
-  // each side interchangeable, if you want 3 slots to have 1 big slot that is
-  // half your screen height." Three shelves cannot be built out of 3-slot
-  // units in a 6-slot column — 6/3 is two — so the rail is two half-height
-  // plates, which is also the "one less panel" he has asked for repeatedly.
-  // The inbound card stops being its own shelf and moves inside the map plate,
-  // exactly the pattern already established there for the title and the
-  // speed/altitude telemetry ("both INSIDE the map, per Nick — not separate
-  // shelves"). Its shelf classes are stripped on the way in so it is laid out
-  // as an overlay strip and not as a grid child.
-  var _fiInMap = _inboundCard
-    ? _inboundCard.replace(/^<div class="v2-rc-shelf v2-rc-shelf-fi[^"]*"/, '<div class="v2-rc-fi-inmap"')
-    : '';
   var _mapBox =
       '<div class="v2-rc-shelf v2-rc-shelf-map">'
     +   '<div class="v2-map-area">'
@@ -8967,7 +8953,6 @@ function _buildV2MapCol(ctx, vars) {
     +     '<div class="v2-rc-map-life" aria-hidden="true">' + _mapLifeHtml + '</div>'
     +     '<div class="v2-rc-maptitle">' + _gateLbl('yourAc', _frF, function(w,i){ return i ? '<span class="v2-rc-maptitle2">'+w+'</span>' : w; }, ' <span class="v2-rc-maptitle-sep">|</span> ') + '</div>'
     +     _telemBar
-    +     _fiInMap
     +   '</div>'
     + '</div>';
 
@@ -8983,9 +8968,12 @@ function _buildV2MapCol(ctx, vars) {
     map:         _mapBox,
     aircraft:    _aircraftBlock
   };
-  // v23183 — two entries, not three: the inbound card is now drawn inside the
-  // map plate (see _fiInMap above), so the rail is map(3 slots) + aircraft(3).
-  var _rcDefaultOrder = ['map', 'aircraft'];
+  // v23184 — the order the drawing has, top to bottom: the map, then the
+  // aircraft plate with its caption, then the flight-info card. Counted off
+  // the drawing against its own left rail (6 panels, 98->718, ~103px a slot):
+  // map 88->410 is 3 slots, the aircraft photo 418->508 is 1, and the two
+  // flight-info panes 518->612 and 620->718 are 1 each. 3+1+2 = 6.
+  var _rcDefaultOrder = ['map', 'aircraft', 'inboundCard'];
 
   // v218.99.21 — apply customized layout order if set
   var _rcOrderToUse = _rcDefaultOrder;
@@ -18944,7 +18932,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23183';
+var FIDS_BUILD_TAG = 'v23184';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
