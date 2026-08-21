@@ -9851,7 +9851,13 @@ function uxgGateHtml(ctx) {
       // still white OMG WOW'). Same colour art as the map slot uses.
       var _CD_MARK = {
         'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
+        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+        // v23198 — WestJet's countdown centrepiece was the dark navy leaf on
+        // the takeover's dark ground: near-invisible (Nick, on the render:
+        // 'this is shit'). Same fix Delta got in v23130 — the COLOUR art the
+        // map slot already uses.
+        'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
       };
       var _src = _CD_MARK[String(airlineCode || '').toUpperCase()]
         || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
@@ -19014,7 +19020,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23197';
+var FIDS_BUILD_TAG = 'v23198';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

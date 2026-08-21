@@ -13369,3 +13369,27 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-size: clamp(8px, 1.15vh, 13px) !important;
   line-height: 1.1 !important;
 }
+
+/* v23198 — THE COUNTDOWN USES THE SCREEN IT TAKES OVER.
+   The pre-boarding takeover owned the whole board and spent it on two small
+   lines and an emblem adrift in an empty field. The body now spreads across
+   the takeover's height and the type scales to the width it was given. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-cd-body.g8-cd-mock {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-evenly !important;
+  min-height: 0 !important;
+  padding: 1vh 2vw !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-cd-body.g8-cd-mock .g8-cd-label {
+  font-size: clamp(28px, 6.2vh, 84px) !important;
+  line-height: 1.12 !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-cd-body.g8-cd-mock .g8-cd-mark,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-cd-body.g8-cd-mock .g8-cd-mark-still {
+  width: clamp(120px, 26vh, 300px) !important;
+  height: clamp(120px, 26vh, 300px) !important;
+}
