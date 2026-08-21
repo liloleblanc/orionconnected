@@ -12885,3 +12885,49 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   inset: 0 !important;
   margin: 0 !important;
 }
+
+/* v23188 — THE TWO BOTTOM PANELS ARE TWO CARDS, NOT TWO BARE PANES.
+   Nick: "2 bottom panels are not the same width, the formatting has not been
+   applied whatsoever." Measured on the deployed board, the two panes were in
+   fact the same width — 388.7 each, delta 0.00 — so the complaint is not the
+   width of the panes, it is that they are not panels at all: radius 4px, no
+   ground, sitting inside one 2-slot card, 20px narrower than every other card
+   because of the shelf's 10px side padding. In the drawing they are two
+   separate panels, one slot each, formatted exactly like every other panel.
+   The shelf stops being a card and becomes a plain 2-slot container; each pane
+   becomes the card. (Doing it this way rather than emitting a second shelf:
+   fids-core carries a documented v22591 regression where a second shelf child
+   spilled the rail into a phantom side column. Nothing needs to move in the
+   markup to get two panels out of this.) */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  background: transparent !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  /* A 6px top border lives on this shelf — a divider from when it was the
+     rail's middle plate. Measured: shelf top 775.52, table top 781.52. As a
+     plain container it must contribute nothing, or the two panes come out
+     133.2 instead of the 136.2 that makes them one slot each. */
+  border: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi .v2-rc-fi-table {
+  display: flex !important;
+  flex-direction: column !important;
+  /* 1.8vh is the 19.44px gutter every other pair of cards already sits on —
+     two card margins of 9.72px meeting. Using it here makes each pane exactly
+     one slot: (291.8 - 19.44) / 2 = 136.2, the same as a left card. */
+  gap: 1.8vh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi .v2-rc-fi-pane {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  width: auto !important;
+  margin: 0 !important;
+  border-radius: 1.4vh !important;
+  background-color: rgba(10, 26, 48, 0.55) !important;
+  overflow: hidden !important;
+}
