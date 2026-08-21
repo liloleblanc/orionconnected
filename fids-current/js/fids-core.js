@@ -7415,7 +7415,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _a = _s.split('\u0001');
         return [_a[0] || '', _a[1] || ''];
       }
-      function _shelf(icon, en, second, val, valCls) {
+      function _shelf(icon, en, second, val, valCls, rowCls) {
         // v223 — Nick's exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
         // Québec airports: French first on every pair (Nick).
@@ -7425,7 +7425,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _sec = _p2 /* v23158 keepDup: EN/FR share 'Destination' — print the pair anyway */
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
-        return '<div class="v2-fi-row">'
+        return '<div class="v2-fi-row' + (rowCls ? ' ' + rowCls : '') + '">'
           + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
           +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
@@ -7559,7 +7559,13 @@ function _buildV2AircraftCol(ctx, vars) {
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
-        + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
+        // v23195 — the STATUS shelf's row carries the status class, so its
+        // banner can take the status colour the way Nick's target shows it:
+        // "Status | Statut" on an amber bar while the flight is delayed. Only
+        // the value used to carry the class, and a title bar cannot be
+        // selected from its sibling's class without :has(), which the kiosk
+        // browsers drop silently.
+        + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls, 'v2-fi-rowst-' + (_fiStCls || '').trim())
         + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
@@ -18997,7 +19003,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23194';
+var FIDS_BUILD_TAG = 'v23195';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

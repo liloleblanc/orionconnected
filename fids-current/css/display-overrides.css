@@ -13243,3 +13243,36 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   line-height: inherit !important;
   white-space: nowrap !important;
 }
+
+/* v23195 — TWO ACCENTS FROM THE TARGET THE BUILD WAS MISSING.
+
+   1. The left STATUS banner takes the status colour. In Nick's screenshot the
+      "Status | Statut" bar is amber while the flight is delayed; the build
+      kept it teal. Warning statuses tint the banner; on-time and friends keep
+      the teal (the Porter drawing shows a normal banner over a green On Time,
+      so the tint is for warnings only). fids-core now stamps the row with
+      v2-fi-rowst-<status>. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-delayed .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-diverted .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-cancelled .v2-fi-title {
+  background: #f5a623 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-delayed .v2-fi-title *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-diverted .v2-fi-title *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-cancelled .v2-fi-title *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-delayed .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-diverted .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-cancelled .v2-fi-title {
+  color: #14213a !important;
+  -webkit-text-fill-color: #14213a !important;
+}
+
+/* 2. The airport code is gold — "Calgary | YYC" in the target, "Toronto |
+      YTZ" in the drawing, both with the code accented. The markup already
+      ships .v2-rc-iata for exactly this ("Cleveland | CLE … different
+      colour") and a later white-forcing rule crushed it. The gold is Nick's
+      own: the hdrText #fca825 from his saved YQM palette. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-iata {
+  color: #fca825 !important;
+  -webkit-text-fill-color: #fca825 !important;
+}
