@@ -12818,3 +12818,36 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   min-height: 0 !important;
   position: relative !important;
 }
+
+/* v23185 — THE RIGHT RAIL GETS THE LEFT RAIL'S CARD, NOT JUST ITS SLOT.
+   Nick: "your panels are not the same size there is differences, your aircraft
+   is not in a panel and the formatting as provided does not match." All three
+   are one cause. The slots were made to agree in v23184, but a slot is not a
+   panel: on the left the painted card is .v2-fi-row::before, inset from its
+   slot and rounded — measured live at 1920x1080 as inset 9.72px top/bottom,
+   13.44px left/right, radius 15.12px — while every right shelf sat at
+   margin:0, radius:0 and filled its slot corner to corner. Two panels of the
+   same slot therefore rendered at different visible sizes, and the aircraft
+   photo had no card around it at all; it just bled to the column edges.
+   Those measurements as viewport units — 9.72/1080 = 0.9vh, 13.44/1920 = 0.7vw,
+   15.12/1080 = 1.4vh — so the two rails stay matched at any board size rather
+   than only at the one they were measured on. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
+  margin: 0.9vh 0.7vw !important;
+  border-radius: 1.4vh !important;
+  /* The photo and the map are the card now, so they have to be clipped to its
+     corners — without this the image squares off the rounding it sits inside. */
+  overflow: hidden !important;
+}
+/* The aircraft plate is a card in the drawing: a bordered frame holding the
+   caption bar and the photo beneath it. It had no ground of its own, so give
+   it one behind the image. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  background-color: rgba(10, 26, 48, 0.55) !important;
+}
+/* The caption bar is inside a rounded card now, so its top corners follow it
+   or it overhangs the curve. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  border-top-left-radius: 1.4vh !important;
+  border-top-right-radius: 1.4vh !important;
+}
