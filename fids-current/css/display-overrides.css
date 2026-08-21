@@ -13312,3 +13312,60 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-phdr-mid {
   margin-top: 0.4vh !important;
 }
+
+/* v23197 — THE MERGED PANEL IS ONE SLOT, THE SAME SIZE AS A LEFT PANEL.
+   Nick: "I SAID ONE PANEL THE SAME SIZE AS THE OTHER SIDE." v23196 merged the
+   two panels but left the card spanning two slots. It spans ONE now — the
+   identical 136.2-at-1080 panel every left card is — and the aircraft plate
+   takes the freed slot, since the top of the rail is spoken for ("most top
+   looks fine"). Rail: map+strip 3, aircraft 2, merged card 1 — six exactly.
+   Inside one slot the card carries banner + flight + status band + one times
+   line, so everything is drawn compact. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  grid-row: span 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  grid-row: span 2 !important;
+}
+/* Compact interior: the banner keeps the left rail's bar; everything under it
+   shrinks to fit the slot. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-phdr {
+  height: clamp(16px, 2.5vh, 30px) !important;
+  font-size: clamp(10px, 1.5vh, 18px) !important;
+  margin-bottom: 0.2vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fromrow {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack .v2-rc-fi-hero {
+  font-size: clamp(12px, 1.9vh, 22px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvcity {
+  font-size: clamp(10px, 1.6vh, 18px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-phdr-mid {
+  margin-top: 0.2vh !important;
+}
+/* The one-line times pair: label value label value across the row. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-times2 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5vw !important;
+  min-height: 0 !important;
+  padding-top: 0.2vh !important;
+  padding-bottom: 0.4vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-times2 .v2-rc-fi-tval {
+  font-size: clamp(11px, 1.8vh, 20px) !important;
+}
+/* The merged card's stacked bilingual labels get a hair smaller so the last
+   row's second language is never kissed by the card edge. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-tlbl,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-tlbl span {
+  font-size: clamp(8px, 1.15vh, 13px) !important;
+  line-height: 1.1 !important;
+}

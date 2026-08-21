@@ -8044,12 +8044,14 @@ function _buildV2MapCol(ctx, vars) {
           // exactly as the left rail's own times do; the right rail alone was
           // writing "5:30 PM".
           var _railT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
+          // v23197 — ONE LINE for the pair, the way the Porter drawing writes
+          // "6:45am | 6:15am": the merged panel is one slot now and two time
+          // rows do not fit a slot that also holds the banner, the flight and
+          // the status band.
           _ibArrRowHtml =
-              '<div class="v2-rc-fi-trow">'
+              '<div class="v2-rc-fi-trow v2-rc-fi-trow-last v2-rc-fi-times2">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('revised', _frF) + '</div>'
             +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _railT(_ibArrRevStr) + '</div>'
-            + '</div>'
-            + '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
             +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></div>'
             + '</div>';
@@ -8311,26 +8313,30 @@ function _buildV2MapCol(ctx, vars) {
       // (a second shelf child breaks the rail grid): pane 1 = Flight /
       // Destination, pane 2 = Departure / Status. Departure TIME stays
       // (Nick: 'who told you to remove the time').
+      // v23197 — SAME MERGED ONE-SLOT CARD AS THE INBOUND BUILDER. This
+      // departure variant kept the old 2-pane layout after the merge, so the
+      // moment the inbound landed and this builder took over, two panes of
+      // content crammed into the one-slot card and overflowed it (caught on a
+      // render, not by luck: WS812 arrived mid-verification). One banner, the
+      // flight over the destination, the status band, one departure-time
+      // line. The departure TIME stays (Nick: 'who told you to remove the
+      // time').
+      var _dRailT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
-        +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('flight', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +   '<div class="v2-rc-fi-pane v2-rc-fi-pane-merged">'
+        +     '<div class="v2-rc-fi-phdr">' + _gateLblSpans('flight', _frF) + '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-fromrow">'
         +       '<div class="v2-rc-fi-tlbl"><span>Destination</span></div>'
-        +       '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-fi-fvstack">'
+        +         '<div class="v2-rc-fi-hero">' + (_dFltCompact || '—') + '</div>'
+        +         '<div class="v2-rc-fi-fvcity">' + _dCityCode + '</div>'
+        +       '</div>'
         +     '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
+        +     '<div class="v2-rc-fi-phdr v2-rc-phdr-mid v2-rc-phdr-' + _dStCls + ' v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last v2-rc-fi-times2">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('departure', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dDepStr || '—') + '</span></div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dRailT(_dDepStr) || '—') + '</span></div>'
         +     '</div>'
         +   '</div>'
         + '</div></div>';
@@ -19008,7 +19014,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23196';
+var FIDS_BUILD_TAG = 'v23197';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
