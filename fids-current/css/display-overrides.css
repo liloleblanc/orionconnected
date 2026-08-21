@@ -13047,3 +13047,44 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   margin: 0 0.42em !important;
   opacity: 0.5 !important;
 }
+
+/* v23192 — the telemetry strip is DOCKED at the bottom of the map card.
+   Measured off Nick's target screenshot (right rail 130->850, slot pitch
+   ~120): map + strip together are the three-slot block, the strip ~40px of
+   dark ground BELOW the tiles inside the same bordered card. v23189's separate
+   telem panel and its gutter are retired — the map card always spans 3 and
+   flexes column: tiles above, strip below, nothing overlapping. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-map-area {
+  /* Un-does the v23186 inset:0 pin for the docked layout: the area is a flex
+     child again so the strip below it gets real room instead of being
+     overlapped by an absolutely-pinned map. */
+  position: relative !important;
+  inset: auto !important;
+  flex: 1 1 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-rc-mapstats {
+  position: static !important;
+  inset: auto !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  height: clamp(34px, 5vh, 52px) !important;
+  margin: 0 !important;
+  padding: 0 clamp(6px,0.6vw,12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: rgba(6, 14, 26, 0.92) !important;
+  border-radius: 0 !important;
+}
+/* The separate telem shelf is retired; if an older cached fids-core still
+   emits one, it must not take a slot of its own. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem { display: none !important; }
+html body .g8-wrap .gad-map-col-v2.gad-map-col-telem > .v2-rc-shelf-map { grid-row: span 3 !important; }

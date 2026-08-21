@@ -8957,25 +8957,26 @@ function _buildV2MapCol(ctx, vars) {
     ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
     : '<span class="v2-rc-map-life-code">' + (_mapLifeCode || '&#9992;') + '</span>';
+  // v23192 — THE STRIP IS DOCKED UNDER THE MAP, MEASURED OFF NICK'S TARGET.
+  // His screenshot's right rail, read off its pixels (130 -> 850, slot pitch
+  // ~120): map WITH the telemetry strip fused to its bottom 130 -> 490 = three
+  // slots; aircraft 1; Flight 1; Status 1. The strip is ~40px of dark ground
+  // BELOW the tiles, inside the same bordered block — not a full panel of its
+  // own (v23189 made it one and that cost the map a slot and added a gutter
+  // his design does not have), and not floating over the tiles either (the
+  // pre-v23189 wash, "within the maps space"). Emitted as a sibling of
+  // .v2-map-area inside the map card; the card flexes column so the map area
+  // yields exactly the strip's height and no tile sits under it.
   var _mapBox =
-      '<div class="v2-rc-shelf v2-rc-shelf-map">'
+      '<div class="v2-rc-shelf v2-rc-shelf-map' + (_telemBar ? ' v2-rc-map-has-telem' : '') + '">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
     +     '<div class="v2-rc-map-life" aria-hidden="true">' + _mapLifeHtml + '</div>'
     +     '<div class="v2-rc-maptitle">' + _gateLbl('yourAc', _frF, function(w,i){ return i ? '<span class="v2-rc-maptitle2">'+w+'</span>' : w; }, ' <span class="v2-rc-maptitle-sep">|</span> ') + '</div>'
     +   '</div>'
+    +   _telemBar
     + '</div>';
-
-  // v23189 — SPEED/ALTITUDE IS ITS OWN PANEL, NOT A WASH OVER THE MAP.
-  // Nick: "the altimiter is terrible it should be in not within the maps
-  // space." It was drawn inside .v2-map-area, overlaying the bottom of the map
-  // plate. It becomes a panel of its own on the rail, one slot like the others.
-  // Only when there is real telemetry to show — the bar is empty on the ground,
-  // and an empty shelf would leave a hole in the grid — so the rail is told
-  // which case it is in and the map takes the freed slot back when it is not.
-  var _telemBlock = _telemBar
-    ? '<div class="v2-rc-shelf v2-rc-shelf-telem">' + _telemBar + '</div>'
-    : '';
+  var _telemBlock = '';
 
   // v218.99.7 — assemble right column. Theme system removed in v218.99.9,
   // so we just iterate the default order: inbound card on top, map in
@@ -18958,7 +18959,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23190';
+var FIDS_BUILD_TAG = 'v23192';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
