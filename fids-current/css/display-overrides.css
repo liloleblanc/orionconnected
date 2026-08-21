@@ -13199,3 +13199,47 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   line-height: 1.08 !important;
   font-weight: 700 !important;
 }
+
+/* v23194 — THE RIGHT BANNER IS THE LEFT BANNER, BY MEASUREMENT.
+   Nick: "the banners dont match however left and right need to match … the
+   spaces the size dont even match." Measured at 1681x850:
+     left  banner: h=27.9, flush to the card top (0.9), spans edge to edge,
+                   radius 7px 7px 0 0 (a tab: rounded top, square bottom),
+                   2px WHITE underline, font 15.85px/800, one line
+     right banners: h=46.6 and 30.3 — not even equal to EACH OTHER (the
+                   bilingual spans in the Flight banner wrap to two lines),
+                   floated 3.4 down and 11.8 in from the pane edges, fully
+                   rounded, no underline
+   Every one of those deltas is closed here: the pane's own padding is removed
+   so the banner can reach the card's edges the way the left one does, the
+   rows get that padding back for themselves, and the bar takes the left
+   banner's geometry in the same viewport units (27.9/850 = 3.28vh, font
+   15.85/850 = 1.87vh, radius 7/850 = 0.82vh, title-to-value gap 7/1080 =
+   0.65vh). The spans are pinned inline so both banners are one line tall —
+   identical to each other and to the left rail's. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow {
+  padding-left: clamp(8px,1.53vh,18px) !important;
+  padding-right: clamp(8px,1.53vh,18px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  width: 100% !important;
+  height: clamp(20px, 3.28vh, 38px) !important;
+  min-height: 0 !important;
+  margin: 0 0 clamp(3px,0.65vh,8px) 0 !important;
+  padding: 0 clamp(10px,1.98vh,22px) !important;
+  border-radius: clamp(5px,0.82vh,10px) clamp(5px,0.82vh,10px) 0 0 !important;
+  border-bottom: 2px solid #ffffff !important;
+  font-size: clamp(11px,1.87vh,22px) !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr span {
+  display: inline !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  white-space: nowrap !important;
+}
