@@ -12931,3 +12931,48 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   background-color: rgba(10, 26, 48, 0.55) !important;
   overflow: hidden !important;
 }
+
+/* v23189 — A PANEL'S CONTENTS SIT INSIDE THE PANEL.
+   Nick: "nothing is alligned to look symetricla, everythign is different
+   sizes." Measured on a left panel at 1920x1080:
+     card            l= 16.4  r= 425.2
+     .v2-fi-iconcol  l=  3.0            13.4px OUTSIDE the card's left edge
+     .v2-fi-textcol  r= 438.6           13.4px OUTSIDE the card's right edge
+   The painted card is .v2-fi-row::before, inset 13.44px from the row. The row's
+   own children were never inset with it, so they were laid out against the SLOT
+   while the card sat inside it — the icon hung off one side and the text off
+   the other, and no two panels' contents lined up with their own edges. Giving
+   the row the same inset as its card puts the contents inside it. 0.9vh/0.7vw
+   are the same units the cards use, so they stay locked together at any size. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  /* Horizontal only. The same measurement shows the contents were already
+     within the card vertically — icon 180.8->261.6 and text 153.5->288.8 inside
+     a card of 153.1->289.3 — so only the sides were overhanging. Adding the
+     vertical inset as well took 19.44px away from the text fitter's budget and
+     clipped the second line of a two-line bilingual status ("En Retard"). */
+  padding: 0 0.7vw !important;
+}
+
+/* v23189 — the telemetry panel, now that it is a panel.
+   .v2-rc-mapstats was styled to float over the bottom of the map; on its own
+   card it has to fill it instead. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem {
+  background-color: rgba(10, 26, 48, 0.55) !important;
+  display: flex !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem .v2-rc-mapstats {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+/* Three slots when the aircraft is on the ground and there is no telemetry to
+   show, two when there is — the six slots stay exactly filled either way. */
+html body .g8-wrap .gad-map-col-v2.gad-map-col-telem > .v2-rc-shelf-map { grid-row: span 2 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem { grid-row: span 1 !important; min-height: 0 !important; }

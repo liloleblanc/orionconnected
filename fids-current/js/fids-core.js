@@ -8952,9 +8952,19 @@ function _buildV2MapCol(ctx, vars) {
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
     +     '<div class="v2-rc-map-life" aria-hidden="true">' + _mapLifeHtml + '</div>'
     +     '<div class="v2-rc-maptitle">' + _gateLbl('yourAc', _frF, function(w,i){ return i ? '<span class="v2-rc-maptitle2">'+w+'</span>' : w; }, ' <span class="v2-rc-maptitle-sep">|</span> ') + '</div>'
-    +     _telemBar
     +   '</div>'
     + '</div>';
+
+  // v23189 — SPEED/ALTITUDE IS ITS OWN PANEL, NOT A WASH OVER THE MAP.
+  // Nick: "the altimiter is terrible it should be in not within the maps
+  // space." It was drawn inside .v2-map-area, overlaying the bottom of the map
+  // plate. It becomes a panel of its own on the rail, one slot like the others.
+  // Only when there is real telemetry to show — the bar is empty on the ground,
+  // and an empty shelf would leave a hole in the grid — so the rail is told
+  // which case it is in and the map takes the freed slot back when it is not.
+  var _telemBlock = _telemBar
+    ? '<div class="v2-rc-shelf v2-rc-shelf-telem">' + _telemBar + '</div>'
+    : '';
 
   // v218.99.7 — assemble right column. Theme system removed in v218.99.9,
   // so we just iterate the default order: inbound card on top, map in
@@ -8966,6 +8976,7 @@ function _buildV2MapCol(ctx, vars) {
   var _rcBlockMap = {
     inboundCard: _inboundCard,
     map:         _mapBox,
+    telem:       _telemBlock,
     aircraft:    _aircraftBlock
   };
   // v23184 — the order the drawing has, top to bottom: the map, then the
@@ -8973,7 +8984,7 @@ function _buildV2MapCol(ctx, vars) {
   // the drawing against its own left rail (6 panels, 98->718, ~103px a slot):
   // map 88->410 is 3 slots, the aircraft photo 418->508 is 1, and the two
   // flight-info panes 518->612 and 620->718 are 1 each. 3+1+2 = 6.
-  var _rcDefaultOrder = ['map', 'aircraft', 'inboundCard'];
+  var _rcDefaultOrder = ['map', 'telem', 'aircraft', 'inboundCard'];
 
   // v218.99.21 — apply customized layout order if set
   var _rcOrderToUse = _rcDefaultOrder;
@@ -8993,8 +9004,12 @@ function _buildV2MapCol(ctx, vars) {
   // and row 4 (flight info) needs a bigger track when the Arrival row makes
   // the table 4 rows — :has() is silently dropped on the kiosk browsers.
   var _railFi4 = _rcHtml.indexOf('v2-rc-shelf-fi4') >= 0 ? ' gad-map-col-fi4' : '';
+  // v23189 — tells the stylesheet whether the telemetry panel is on the rail
+  // this render. With it the map takes 2 slots and telemetry the third; without
+  // it the map takes all 3 back, so the six slots are always exactly filled.
+  var _railTelem = _telemBlock ? ' gad-map-col-telem' : '';
   return ''
-    + '<div class="gad-map-col-v2' + _railFi4 + '" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
+    + '<div class="gad-map-col-v2' + _railFi4 + _railTelem + '" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
     +   _rcHtml
     + '</div>';
 }
@@ -18932,7 +18947,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23188';
+var FIDS_BUILD_TAG = 'v23189';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
