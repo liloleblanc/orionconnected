@@ -12805,8 +12805,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    stays a right-column feature — puts both content boxes at 115 -> 717. The
    6px padding has to go with it or the left column loses six pixels twice. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
-  border-top: 3px solid transparent !important;
-  border-bottom: 3px solid transparent !important;
+  /* v23187 — all FOUR sides, not two. v23182 matched only top and bottom,
+     because only the vertical edges were being chased then. The accent border
+     is on all four sides of .gad-map-col-v2, so the right column's CONTENT box
+     was 6px narrower than the left's, and with both rails using the same 13.44
+     card margin every right card came out 6.0px narrower than every left card
+     — measured 414.7 against 408.7. Nick: "not one panel is the same size",
+     and he was right: the heights matched but no right panel could ever match
+     a left one. Matching the sides puts both content boxes at 435.6. */
+  border: 3px solid transparent !important;
   padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
