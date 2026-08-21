@@ -8881,10 +8881,14 @@ function _buildV2MapCol(ctx, vars) {
               ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
                 + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
         +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
-        + '</div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
-        +   _typeCellHtml
-        + '</div></div>';
+        // v23181 — ONE PLATE FOR THE AIRCRAFT, NOT TWO. The type used to be its
+        // own shelf below the photo, which is the extra panel on the right rail:
+        // Nick's drawing captions the photo ("Embraer-195 | C-FTOD") inside the
+        // same bordered plate. Emitting it here as an overlay caption removes a
+        // panel without losing the text. Kept as a sibling of the image so the
+        // existing .v2-rc-acb rules still find it.
+        +   '<div class="v2-rc-acb v2-rc-acb-cap">' + _typeCellHtml + '</div>'
+        + '</div>';
     }
   } catch (e) {}
   // Last-resort geometry guard: even a malformed enrichment field must not
@@ -8907,10 +8911,10 @@ function _buildV2MapCol(ctx, vars) {
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
               + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
-      + '</div>'
-      + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
-      +   '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
-      + '</div></div>';
+      +   '<div class="v2-rc-acb v2-rc-acb-cap">'
+      +     '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
+      +   '</div>'
+      + '</div>';
   }
 
   // Map area — now the TOP half of the right column, with the "Your Aircraft"
