@@ -11008,10 +11008,16 @@ function uxgGateHtml(ctx) {
             var _tbL = ['', ''];
             _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
+              // v23181 — A SIMPLE CLOCK. The tab stacked four lines: 'Time in
+              // <City>', the clock, 'Heure à <City>', then the date. Nick has
+              // asked repeatedly for just the time and the date, and his mockup
+              // shows exactly two lines. The city is already named by the gate
+              // badge beside it, so the labels only repeated what the screen
+              // says a few centimetres away. _tbL is still built above — the
+              // words stay translated and available — it is simply not rendered
+              // here any more.
               + '<div class="octb octb-tab octb-stack">'
-              +   _tbL[0]
               +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
-              +   _tbL[1]
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
               + '</div>'
               + '</div>';

@@ -3875,6 +3875,8 @@ html .octb-attached .octb-tab::after {
   background: rgba(214,218,226,0.26) !important;
 }
 
+
+
 /* Moncton's Acadian banner carries a flag STAR right by the title — keep its
    baggage icon at the original small size so the enlarged bag (used everywhere
    else) doesn't cover it (Nick: 'the baggage in Moncton was fine, now it's
@@ -12631,3 +12633,49 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   position: relative !important;
   z-index: 3 !important;
 }
+
+
+/* ── v23181 — THE CLOCK SITS ON THE BANNER, NOT IN A TAB ────────────────────
+   The rules above build the time into a card: a translucent plate
+   (.octb-tab.octb-stack resolves to color-mix(var(--banner-bg) 58%, black)),
+   a rounded top, a white left streak, a drop shadow and an ::after strip that
+   fills the wedge where the card meets the gate badge. Together they read as a
+   separate object pasted onto the banner.
+
+   Nick's mockup has no card: the banner runs straight behind the time and the
+   date, and they simply occupy the space between the airline mark and the gate.
+
+   This must sit at the END of the file and carry .octb-stack in the selector —
+   a first attempt used `html .octb-tab` higher up and lost to
+   `html .octb-tab.octb-stack` below it, which is why nothing appeared to
+   change. The rules above are left intact so the card grammar remains
+   available to any screen that still wants it. */
+html .octb.octb-tab,
+html .octb.octb-tab.octb-stack,
+html .octb-attached .octb.octb-tab.octb-stack {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-left: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+html .octb-attached .octb-tab.octb-stack::after,
+html .octb-attached .octb-tab::after { display: none !important; content: none !important; }
+
+/* v23181 — AND THE TIME READS AGAINST WHATEVER BANNER IT IS ON.
+   With the card gone the clock sits directly on the airline's banner, and the
+   banner is not always dark: Porter's is cream, WestJet's is deep blue. The
+   clock and date were pinned to #ffffff back when they always had a shaded
+   plate behind them to sit on — white on cream is unreadable without it.
+   tagGidsHeaderBrightness_v21862 already measures the header's luminance every
+   1.2s and marks the body, so the colour simply follows that instead of being
+   fixed. Dark banners are unchanged. */
+html body.g8-header-is-light .octb-clock { color: #1d2b45 !important; }
+html body.g8-header-is-light .octb-date  { color: rgba(29,43,69,0.82) !important; }
+html body.g8-header-is-light .octb-en,
+html body.g8-header-is-light .octb-fr    { color: rgba(29,43,69,0.75) !important; }
+
