@@ -12711,24 +12711,8 @@ html body .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
 }
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: span 2 !important; min-height: 0 !important; }
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: span 2 !important; min-height: 0 !important; }
-/* Three plates over six modules, not four. The aircraft type is no longer its
-   own shelf — fids-core.js now emits it as .v2-rc-acb-cap inside the
-   illustration plate, the way the drawing captions the photo — so the
-   illustration takes both bottom modules and the right rail holds map(2) +
-   flight info(2) + aircraft(2). An earlier attempt did this by stacking two
-   grid items in the same rows; they fought for width and the column tore
-   apart, so the markup carries it now and the grid just counts to six. */
-html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
-  grid-row: span 2 !important; min-height: 0 !important; position: relative !important;
-}
-html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
-  position: absolute !important;
-  left: 0 !important; right: 0 !important; top: 0 !important;
-  z-index: 3 !important;
-  padding: clamp(3px,0.7vh,9px) clamp(8px,1vw,15px) !important;
-  background: linear-gradient(180deg, rgba(8,12,19,0.80) 0%, rgba(8,12,19,0.52) 65%, rgba(8,12,19,0) 100%) !important;
-  pointer-events: none !important;
-}
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: span 1 !important; min-height: 0 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: span 1 !important; min-height: 0 !important; }
 html body .g8-wrap .gad-aircraft-col > .v2-flightinfo-block { height: 100% !important; }
 
 /* v23181 — and the column header goes with it.
@@ -12736,7 +12720,7 @@ html body .g8-wrap .gad-aircraft-col > .v2-flightinfo-block { height: 100% !impo
    plate beneath it started at 148 instead of 112 and ended at 276 instead of
    313 — the only two edges still refusing to meet the left column. Nick's
    drawing has no such label: the right side is one clean plate to its own
-   edges, and the aircraft type is already named on the bottom module.
+   edges, and the aircraft type is already named on the bottom module. */
    The :not(#_) chain is this file's existing idiom for out-ranking an earlier
    rule, and it is needed here: .v2-rc-maptitle is already claimed at line ~9050
    with ten of them and at ~12130 with four, both of which out-specify a plain
