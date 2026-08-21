@@ -12851,3 +12851,30 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   border-top-left-radius: 1.4vh !important;
   border-top-right-radius: 1.4vh !important;
 }
+
+/* v23186 — THE MAP CARD HAS NO DEAD BAND AT ITS TOP.
+   Measured on the deployed board: the card ran 153.1 -> 600.5 but .v2-map-area
+   sat at 171.6 -> 582 and the brand hold inside it at 221.2 -> 581, leaving
+   49.6px of empty ground across the top of the card. That gap is the space the
+   column header "Your Aircraft | Votre Avion" used to occupy — it was hidden in
+   v23181 but the room it reserved was never given back, and the v23184 attempt
+   at height:100% lost to the margin that actually causes the inset. The drawing
+   has the map filling its plate to all four corners. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
+  padding: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map .v2-map-area {
+  position: absolute !important;
+  inset: 0 !important;
+  height: auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+/* The brand hold that stands in while the map is centred fills the same plate,
+   so a board with no map still shows a full card and not a floating emblem. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  inset: 0 !important;
+  margin: 0 !important;
+}
