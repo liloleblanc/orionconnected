@@ -8034,20 +8034,25 @@ function _buildV2MapCol(ctx, vars) {
           // 5:20pm". The old four-cell single line put both pairs side by side,
           // which is not the grammar the rest of the board uses — every other
           // panel is one label, one value, one row.
+          // v23193 — times in the target read 5:30pm, lowercase and unspaced,
+          // exactly as the left rail's own times do; the right rail alone was
+          // writing "5:30 PM".
+          var _railT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('revised', _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
+            +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _railT(_ibArrRevStr) + '</div>'
             + '</div>'
             + '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
+            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></div>'
             + '</div>';
         } else {
+          var _railT2 = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval">' + _ibArrSchedStr + '</div>'
+            +   '<div class="v2-rc-fi-tval">' + _railT2(_ibArrSchedStr) + '</div>'
             + '</div>';
         }
       }
@@ -8064,14 +8069,18 @@ function _buildV2MapCol(ctx, vars) {
         // beneath it. The flight pane is headed "Flight | Vol" with the number
         // as its hero; the status pane is headed by the STATUS itself, carrying
         // the status colour, with Revised and Arrival as its rows.
+        // v23193 — the text sits the way the target lays it: "From/De" is a
+        // small stacked label on the LEFT, and the flight number over the
+        // city|code stack to its right — not a full-width hero line with a
+        // separate From row under it.
         +   '<div class="v2-rc-fi-pane">'
         +     '<div class="v2-rc-fi-phdr">' + _gateLblSpans('flight', _frF) + '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-hero">'
-        +       '<div class="v2-rc-fi-tval v2-rc-fi-hero">' + (_ibFltCompact || '—') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last v2-rc-fi-fromrow">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('from', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
+        +       '<div class="v2-rc-fi-tval v2-rc-fi-fvstack">'
+        +         '<div class="v2-rc-fi-hero">' + (_ibFltCompact || '—') + '</div>'
+        +         '<div class="v2-rc-fi-fvcity">' + _ibCityCode + '</div>'
+        +       '</div>'
         +     '</div>'
         +   '</div>'
         +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
@@ -8082,15 +8091,44 @@ function _buildV2MapCol(ctx, vars) {
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
+      // v23193 — REBUILT TO NICK'S TARGET, cell by cell ("your altimter DID
+      // NOT EVEN CHANGE" — v23192 moved the old markup and left its content
+      // untouched, and he was right). His strip reads:
+      //   Speed          Altitude          Distance
+      //   850 km/h       38,750            2785 km
+      //                  Feet | Pieds
+      // — the unit is km/h not kph, the altitude unit is the bilingual
+      // "Feet | Pieds" pair not "ft", there are no French sub-labels under the
+      // English ones, and there is a THIRD stat: the remaining distance,
+      // great-circled from the live fix to this airport. The fix carries
+      // lat/lng (see _gateStickyFix) and AIRPORT_COORDS carries the field, so
+      // the number is computed, not invented; the cell simply stays out when
+      // either end is unknown.
       if (_liveSpd !== null || _liveAlt !== null) {
+        var _distKm = null;
+        try {
+          if (_sfix && typeof _sfix.lat === 'number' && typeof _sfix.lng === 'number'
+              && typeof AIRPORT_COORDS !== 'undefined' && AIRPORT_COORDS[_destIata]) {
+            var _dc = AIRPORT_COORDS[_destIata];
+            var _dLa = (_dc[0] - _sfix.lat) * Math.PI / 180, _dLo = (_dc[1] - _sfix.lng) * Math.PI / 180;
+            var _ha = Math.sin(_dLa / 2) * Math.sin(_dLa / 2)
+                    + Math.cos(_sfix.lat * Math.PI / 180) * Math.cos(_dc[0] * Math.PI / 180)
+                    * Math.sin(_dLo / 2) * Math.sin(_dLo / 2);
+            _distKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(_ha), Math.sqrt(1 - _ha)));
+          }
+        } catch (e) {}
+        var _altUnit2 = 'Feet | ' + ({fr:'Pieds',es:'Pies'}[_lang2] || 'Pieds');
         _telemBar =
             '<div class="v2-rc-mapstats">'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div>'
-          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">' + _spdUnit + '</span></div>'
-          +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Vitesse',es:'Velocidad'}[_lang2] || 'Vitesse') + '</div></div>'
+          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">km/h</span></div></div>'
           +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div>'
-          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">' + _altUnit + '</span></div>'
-          +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Altitude',es:'Altitud'}[_lang2] || 'Altitude') + '</div></div>'
+          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + '</div>'
+          +     '<div class="v2-rc-ms-unitline">' + _altUnit2 + '</div></div>'
+          +   (_distKm !== null
+              ? '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Distance</div>'
+                + '<div class="v2-rc-ms-val">' + _distKm.toLocaleString() + ' <span class="v2-rc-ms-unit">km</span></div></div>'
+              : '')
           + '</div>';
       }
 
@@ -18959,7 +18997,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23192';
+var FIDS_BUILD_TAG = 'v23193';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
