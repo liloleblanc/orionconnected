@@ -12679,3 +12679,48 @@ html body.g8-header-is-light .octb-date  { color: rgba(29,43,69,0.82) !important
 html body.g8-header-is-light .octb-en,
 html body.g8-header-is-light .octb-fr    { color: rgba(29,43,69,0.75) !important; }
 
+/* ── v23181 — LEFT AND RIGHT ARE THE SAME SIX MODULES ───────────────────────
+   Nick's drawing puts the two outer columns on one rhythm: equal modules,
+   mirrored across the middle console, "like modules that slide in and out".
+   Measured, they were not close. The left column is six panels of ~100px with
+   edges at 112/212/313/413/513/614/714; the right column's shelves were
+   241 / 161 / 100 / 100, so its edges landed at 356 and 516 — meeting nothing
+   on the left.
+
+   The right column is already display:grid (which is why the shelves' flex
+   values above have no effect on it), so one explicit six-row track and a span
+   per shelf puts every edge on the same line as the left:
+
+       aircraft/map shelf  2 modules
+       flight info shelf   2 modules
+       illustration        1 module
+       aircraft type       1 module
+
+   The left block is stretched to the full column height for the same reason —
+   it was ending 6px short at 714 against the column's 720, which would have
+   drifted the two sides apart by a pixel per row. Both sides now derive their
+   module height from the identical container, so they cannot disagree. */
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
+  /* .gad-map-col-fi4 must be named here: gate-display.css loads AFTER this
+     file and sets `repeat(3,.8fr) 1.6fr repeat(2,1fr)` on that exact class —
+     the 80/80/80/160/100/100 tracks measured on the live board. A selector
+     without it loses on specificity and nothing changes. */
+  grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
+  row-gap: 0 !important;
+}
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: span 2 !important; min-height: 0 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: span 2 !important; min-height: 0 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: span 1 !important; min-height: 0 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: span 1 !important; min-height: 0 !important; }
+html body .g8-wrap .gad-aircraft-col > .v2-flightinfo-block { height: 100% !important; }
+
+/* v23181 — and the column header goes with it.
+   "Your Aircraft | Votre Avion" sat above the top shelf at 36px tall, so the
+   plate beneath it started at 148 instead of 112 and ended at 276 instead of
+   313 — the only two edges still refusing to meet the left column. Nick's
+   drawing has no such label: the right side is one clean plate to its own
+   edges, and the aircraft type is already named on the bottom module. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body .g8-wrap .gad-map-col-v2 .v2-col-hdr { display: none !important; }
+
