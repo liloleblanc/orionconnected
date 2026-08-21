@@ -12721,6 +12721,10 @@ html body .g8-wrap .gad-aircraft-col > .v2-flightinfo-block { height: 100% !impo
    313 — the only two edges still refusing to meet the left column. Nick's
    drawing has no such label: the right side is one clean plate to its own
    edges, and the aircraft type is already named on the bottom module. */
-html body .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
-html body .g8-wrap .gad-map-col-v2 .v2-col-hdr { display: none !important; }
+   The :not(#_) chain is this file's existing idiom for out-ranking an earlier
+   rule, and it is needed here: .v2-rc-maptitle is already claimed at line ~9050
+   with ten of them and at ~12130 with four, both of which out-specify a plain
+   `html body …` selector regardless of order. Twelve clears both. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-col-hdr { display: none !important; }
 
