@@ -12721,13 +12721,53 @@ html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: span 2 !impo
 html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
   grid-row: span 2 !important; min-height: 0 !important; position: relative !important;
 }
-html body .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+/* The caption is a HEADER BAR, not a wash over the photo. In the drawing the
+   aircraft plate wears "Embraer-195 | C-FTOD" on a light strip across its top,
+   with the photo beneath — the same grammar as the label bars on the left
+   column's panels. A first cut faded it over the bottom of the image, which
+   reads as a watermark rather than a plate heading. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  /* The twelve :not(#_) are load-bearing: an existing rule pins every child of
+     .v2-rc-shelf-illus to position:relative with its own escalated selector, so
+     a plainer one here is overruled and the caption falls to the bottom of the
+     plate instead of sitting across its top. */
   position: absolute !important;
-  left: 0 !important; right: 0 !important; top: 0 !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: auto !important;
   z-index: 3 !important;
-  padding: clamp(3px,0.7vh,9px) clamp(8px,1vw,15px) !important;
-  background: linear-gradient(180deg, rgba(8,12,19,0.80) 0%, rgba(8,12,19,0.52) 65%, rgba(8,12,19,0) 100%) !important;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: clamp(6px,0.9vw,16px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: clamp(3px,0.7vh,8px) clamp(8px,1vw,14px) !important;
+  background: rgba(233,236,241,0.93) !important;
+  background-image: none !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(15,23,40,0.18) !important;
+  border-radius: 0 !important;
+  /* A definite height, not auto: _fitTypePanel grows the type line until it
+     fills its panel, so an auto-height bar and a height-seeking fitter chase
+     each other. One module of the plate's two is the strip; the photo keeps
+     the rest. */
+  height: clamp(30px, 5.4vh, 50px) !important;
+  min-height: 0 !important;
+  text-align: center !important;
   pointer-events: none !important;
+}
+/* Children only. An earlier cut put `background: transparent` on a group that
+   named .v2-rc-acb-cap itself as well as its children — same specificity,
+   later in the file, so it beat the light strip set immediately above and the
+   bar rendered as bare teal plate. The strip is set once, above; everything
+   inside it stays unpainted so the strip shows through. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap * {
+  background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap * {
+  color: #16233c !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #16233c !important;
 }
 html body .g8-wrap .gad-aircraft-col > .v2-flightinfo-block { height: 100% !important; }
 
@@ -12744,3 +12784,23 @@ html body .g8-wrap .gad-aircraft-col > .v2-flightinfo-block { height: 100% !impo
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-col-hdr { display: none !important; }
 
+
+/* v23182 — THE TWO COLUMNS NOW SHARE THEIR EDGES.
+   Measured on the live board at 1280x720, before this rule:
+     left  rows  112.0 -> 714.0, six modules of 100.33
+     right plates 115.0 -> 717.0, three plates of 200.66
+   The module heights already agreed to the pixel; every edge was simply three
+   pixels apart, and the three pixels are `border: 3px solid var(--airline-accent)`
+   on .gad-map-col-v2 (gate-display.css). That border eats into the right
+   column's content box top and bottom; the left column has no border at all
+   and carries a 6px bottom padding instead, so its rows start three pixels
+   high and end three pixels high.
+   Giving the left column the same 3px band — transparent, so the accent frame
+   stays a right-column feature — puts both content boxes at 115 -> 717. The
+   6px padding has to go with it or the left column loses six pixels twice. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+  border-top: 3px solid transparent !important;
+  border-bottom: 3px solid transparent !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}

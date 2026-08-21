@@ -8885,9 +8885,14 @@ function _buildV2MapCol(ctx, vars) {
         // own shelf below the photo, which is the extra panel on the right rail:
         // Nick's drawing captions the photo ("Embraer-195 | C-FTOD") inside the
         // same bordered plate. Emitting it here as an overlay caption removes a
-        // panel without losing the text. Kept as a sibling of the image so the
-        // existing .v2-rc-acb rules still find it.
-        +   '<div class="v2-rc-acb v2-rc-acb-cap">' + _typeCellHtml + '</div>'
+        // panel without losing the text.
+        // It must NOT carry .v2-rc-acb: the v22686 fitter below copies the
+        // flight-info pane's box onto that class with inline !important, which
+        // is right for a standalone bottom panel and wrong for a caption strip
+        // — it was stretching the bar to the pane's 268x88 and no stylesheet
+        // rule can outrank an inline !important. _fitTypePanel knows the new
+        // class, so the text still sizes itself to the bar.
+        +   '<div class="v2-rc-acb-cap">' + _typeCellHtml + '</div>'
         + '</div>';
     }
   } catch (e) {}
@@ -8911,7 +8916,7 @@ function _buildV2MapCol(ctx, vars) {
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
               + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
-      +   '<div class="v2-rc-acb v2-rc-acb-cap">'
+      +   '<div class="v2-rc-acb-cap">'
       +     '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
       +   '</div>'
       + '</div>';
@@ -11590,8 +11595,8 @@ function gateAutofit(root) {
     // is unchanged between the passes and would otherwise short-circuit the
     // correction — which is why this never self-healed on the 5s heartbeat.
     function _fitTypePanel(el) {
-      var panel = el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
-      if (!panel || panel.clientHeight < 24) return;
+      var panel = el.closest('.v2-rc-acb-cap') || el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
+      if (!panel || panel.clientHeight < 18) return;
       el.style.setProperty('white-space', 'normal', 'important');
       var scs = window.getComputedStyle(panel);
       var panelPadLeft = parseFloat(scs.paddingLeft) || 0;
@@ -18922,7 +18927,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23181';
+var FIDS_BUILD_TAG = 'v23182';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
