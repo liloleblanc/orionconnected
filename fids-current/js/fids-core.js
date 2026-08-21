@@ -8079,18 +8079,23 @@ function _buildV2MapCol(ctx, vars) {
         // small stacked label on the LEFT, and the flight number over the
         // city|code stack to its right — not a full-width hero line with a
         // separate From row under it.
-        +   '<div class="v2-rc-fi-pane">'
+        // v23196 — ONE PANEL, MERGED (Nick: "I think i want to merge the 2
+        // panels toegether in 1 small one do that and arrange thigns most top
+        // looks fine"). The Flight and Status panes stop being two cards and
+        // become one: the "Flight | Vol" banner, the From/De row, then the
+        // status band mid-card, then the Revised/Arrival rows — all in a
+        // single .v2-rc-fi-pane so the v23188 pane-is-the-card styling draws
+        // exactly one card across the container's two slots.
+        +   '<div class="v2-rc-fi-pane v2-rc-fi-pane-merged">'
         +     '<div class="v2-rc-fi-phdr">' + _gateLblSpans('flight', _frF) + '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last v2-rc-fi-fromrow">'
+        +     '<div class="v2-rc-fi-trow v2-rc-fi-fromrow">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('from', _frF) + '</div>'
         +       '<div class="v2-rc-fi-tval v2-rc-fi-fvstack">'
         +         '<div class="v2-rc-fi-hero">' + (_ibFltCompact || '—') + '</div>'
         +         '<div class="v2-rc-fi-fvcity">' + _ibCityCode + '</div>'
         +       '</div>'
         +     '</div>'
-        +   '</div>'
-        +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
-        +     '<div class="v2-rc-fi-phdr v2-rc-phdr-' + _stCls + ' v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+        +     '<div class="v2-rc-fi-phdr v2-rc-phdr-mid v2-rc-phdr-' + _stCls + ' v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +     (_ibArrRowHtml || '')
         +   '</div>'
         + '</div></div>';
@@ -19003,7 +19008,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23195';
+var FIDS_BUILD_TAG = 'v23196';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

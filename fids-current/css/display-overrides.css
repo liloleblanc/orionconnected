@@ -13276,3 +13276,39 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: #fca825 !important;
   -webkit-text-fill-color: #fca825 !important;
 }
+
+/* v23196 — THE BANNER IS THE LEFT BANNER'S PAINT, PROPERTY FOR PROPERTY.
+   Nick: "it still does not look like the left the banners dont match." He is
+   right — v23194 matched height and tab-shape and missed the rest. The left
+   bar's full computed paint, read off the live board:
+     text-align LEFT (not centred), padding-x 16.8px, inset from the card's
+     right edge 13.5px (NOT full-bleed), width 245 of a 357 card, a white
+     inset highlight along its top (rgba(255,255,255,.28) 0 1px 0 inset),
+     2px white underline, radius 7px 7px 0 0, letter-spacing -0.08px.
+   Every one of those now applies to the right bar, in the same units
+   (13.5/850 = 1.59vh, 16.8/850 = 1.98vh). The bar floats inset within the
+   card with the card's ground visible around it — the thing that actually
+   distinguishes the left banner from the full-bleed strip I had. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  width: auto !important;
+  align-self: stretch !important;
+  margin: 0.1vh 1.59vh 0.4vh 1.59vh !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  padding: 0 1.98vh !important;
+  box-shadow: rgba(255, 255, 255, 0.28) 0px 1px 0px 0px inset !important;
+  letter-spacing: -0.08px !important;
+}
+/* The merged card (v23196): one pane spans the container's two slots; the
+   status band sits mid-card wearing the same bar, pushed clear of the
+   From/De row. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged {
+  display: flex !important;
+  flex-direction: column !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fromrow {
+  flex: 1 1 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-phdr-mid {
+  margin-top: 0.4vh !important;
+}
