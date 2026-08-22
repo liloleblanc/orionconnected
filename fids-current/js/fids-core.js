@@ -9948,7 +9948,11 @@ function uxgGateHtml(ctx) {
         } catch (e) { return _bwStKey; }
       };
       var _bwSide = function (lang, cls) {
-        var _lbl = (_GATE_LBL.currentTime && _GATE_LBL.currentTime[lang]) || _GATE_LBL.currentTime.en;
+        // v23211 — NO CLOCK IN THE STRIP (Nick: 'the clock was supposed to
+        // be removed and added at the top simple clock'): the flanks carry
+        // the status pair only, the middle banner takes the width the two
+        // clocks gave up, and the simple time+date tab returns to the top
+        // banner (the takeover's no-clock CSS is lifted alongside).
         var _stHtml = '';
         if (_bwAbn) {
           var _stLbl = (_GATE_LBL.status && _GATE_LBL.status[lang]) || 'Status';
@@ -9957,15 +9961,7 @@ function uxgGateHtml(ctx) {
             + '<span class="g8-bw-st-val">' + _bwStWord(lang) + '</span>'
             + '</div>';
         }
-        var _clk = '<div class="g8-bw-clock">'
-          + '<span class="g8-bw-clk-lbl">' + _lbl + '</span>'
-          + '<span class="g8-bw-clk-val v2-fi-clock-val" data-tz="' + String(_bwTz || '') + '" data-bwlang="' + lang + '">'
-          +   _fidsClockForLang(new Date(), _bwTz, lang)
-          + '</span></div>';
-        // status sits INBOARD of the clock on both ends (clock stays at the edge)
-        return '<div class="g8-bw-end ' + cls + '">'
-          + (cls === 'g8-bw-end-l' ? _clk + _stHtml : _stHtml + _clk)
-          + '</div>';
+        return '<div class="g8-bw-end ' + cls + '">' + _stHtml + '</div>';
       };
       _bwClock = _bwSide(_bwL1, 'g8-bw-end-l') + '::MID::' + _bwSide(_bwL2, 'g8-bw-end-r');
     } catch (e) { _bwClock = '::MID::'; }
@@ -19234,7 +19230,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23210';
+var FIDS_BUILD_TAG = 'v23211';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

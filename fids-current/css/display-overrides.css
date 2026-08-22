@@ -13903,3 +13903,29 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-lbl {
   border-bottom-color: var(--accent-lane, var(--airline-accent, rgb(0,178,169))) !important;
 }
+
+/* ── v23211 — TAKEOVER: SIMPLE CLOCK AT THE TOP, STATUS-ONLY STRIP (Nick:
+   'the clock was supposed to be removed and added at the top simple clock'
+   + 'the delayed time should all be yellow' + 'Make the banner wider?').
+   The takeover's no-clock rule is lifted so the two-line time+date tab
+   (v23181's 'A SIMPLE CLOCK') shows again during boarding; the strip's
+   flanks are status-only now (fids-core stopped emitting the clocks), so
+   the middle banner stretches into the room they gave up. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-takeover .g8-r1-timebox,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-takeover .octb-wrap {
+  display: flex !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked .g8-bw-mid {
+  flex: 1 1 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked .g8-bw-end {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+/* Delayed reads YELLOW here like everywhere else on the board — the same
+   warn yellow the revised times wear — with a whisper of shadow so it
+   holds on the white band. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked [class*="g8-bw-st-delayed"] .g8-bw-st-val {
+  color: var(--plate-warn, #fbbf24) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
