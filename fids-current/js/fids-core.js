@@ -11872,6 +11872,20 @@ function gateAutofit(root) {
     // is unchanged between the passes and would otherwise short-circuit the
     // correction — which is why this never self-healed on the 5s heartbeat.
     function _fitTypePanel(el) {
+      // v23210 — the gate rail's caption is a side-by-side ROW since v23203
+      // (type left, Operated-By right). This fitter's model is the OLD
+      // stacked panel: it forced the type to the FULL band width and fitted
+      // its font against room the flex row never gives it — and the inline
+      // !important writes beat the stylesheet, so 'De Havilland Das' clipped
+      // mid-word on the live board while the CSS wrap sat overridden. In the
+      // row band the stylesheet clamps own the type; here we only clear any
+      // stale inline writes from an earlier pass and step aside.
+      if (el.closest && el.closest('.v2-rc-acb-cap')) {
+        ['font-size', 'white-space', 'margin-left', 'width', 'padding-left'].forEach(function (p) {
+          try { el.style.removeProperty(p); } catch (e2) {}
+        });
+        return;
+      }
       var panel = el.closest('.v2-rc-acb-cap') || el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
       if (!panel || panel.clientHeight < 18) return;
       el.style.setProperty('white-space', 'normal', 'important');
@@ -19220,7 +19234,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23209';
+var FIDS_BUILD_TAG = 'v23210';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
