@@ -17363,6 +17363,29 @@ async function _fetchOpenMeteoWx(iata) {
   } catch (e) { return null; }
 }
 
+// v23217 — WALL-TIME → UTC (Nick: 'Numbers don't add up something was
+// fucked' — the hourly strip showed every temperature exactly the UTC
+// offset early: 4 AM wearing 8 AM's 14°C on Ottawa). The proxy's
+// /weather/forecast is open-meteo with timezone=auto, so its time strings
+// are the DESTINATION's wall clock with no zone marker; new Date() read
+// them in whatever zone the kiosk happens to run (UTC on the stream
+// boxes). Convert a wall-time string in a named zone to the true instant.
+function _fidsWallTsToUtc(iso, tz) {
+  try {
+    var s = String(iso || '');
+    if (/Z$|[+-]\d\d:?\d\d$/.test(s)) return Date.parse(s);    // already zoned
+    if (!tz) return Date.parse(s);                             // best effort
+    var guess = Date.parse(s.length === 16 ? s + ':00Z' : s + 'Z');
+    if (isNaN(guess)) return Date.parse(s);
+    var f = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+    var p = {};
+    f.formatToParts(new Date(guess)).forEach(function (x) { p[x.type] = x.value; });
+    var asUtc = Date.UTC(+p.year, +p.month - 1, +p.day, (+p.hour === 24 ? 0 : +p.hour), +p.minute);
+    return guess - (asUtc - guess);   // subtract the zone's offset at that instant
+  } catch (e) { return Date.parse(iso); }
+}
+
 async function fetchTomorrowWeather(iata) {
   if (!COORDS[iata]) { console.warn('[TIO] No coords for', iata); return null; }
   const now = Date.now();
@@ -17430,9 +17453,13 @@ async function fetchTomorrowWeather(iata) {
       })
       .then(fcData => {
         if (!fcData || !fcData.timelines) return;
+        // v23217 — proxy times are destination WALL TIME (open-meteo
+        // timezone=auto); parse them in the destination's zone, never the
+        // kiosk's (see _fidsWallTsToUtc).
+        var _fcTz = (typeof AP !== 'undefined' && AP[iata] && AP[iata].tz) || '';
         TOMORROW_WX[iata].hourly = (fcData.timelines.hourly || []).map(h => ({
           time: h.time,
-          ts: new Date(h.time).getTime(),
+          ts: _fidsWallTsToUtc(h.time, _fcTz),
           temp: h.values?.temperature,
           feelsLike: h.values?.temperatureApparent,
           code: h.values?.weatherCode,
@@ -19230,7 +19257,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23216';
+var FIDS_BUILD_TAG = 'v23217';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
