@@ -8120,11 +8120,29 @@ function _buildV2MapCol(ctx, vars) {
                   ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   : '<span class="ac-ico ac-ico-flight"></span>')
         +     '</div></div>'
+        // v23207 — THREE ROWS, per Nick's sketch (with his screenshot: 'half
+        // the words are missing … Times and Status needs to be 2 lines for 3
+        // rows in total'):
+        //   AC1986 · Early | En Avance
+        //   Revised | Revisé: 11:56pm | 12:15am
+        //   From | De: Toronto | YYZ
+        // Full words, no ellipsis — the times get their own line so nothing
+        // is eaten.
         +     '<div class="v2-fi-textcol">'
-        +       '<div class="v2-fi-title">' + _mcTitle + '</div>'
+        // v23207 — the banner CHANGES COLOUR when a change is imminent
+        // (Nick): amber for delayed/cancelled/diverted, green for an early
+        // revision — the same semantics as the left rail's status banner.
+        +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_stCls || '') ? ' v2-fi-title-warn' : ((_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) ? ' v2-fi-title-good' : '')) + '">' + _mcTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> ' + _ibCityCode + '</div>'
-        +         '<div class="v2-fi-mline2 v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + (_mcTimes ? ' <span class="v2-rc-bar">\u00b7</span> ' + _mcTimes : '') + '</div>'
+        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</span></div>'
+        +         (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr
+                    ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span><span class="v2-fi-mcolon">:</span> '
+                      + '<span class="v2-rc-status-' + (_stCls || 'delayed') + '">' + _railT(_ibArrRevStr) + '</span>'
+                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span></div>'
+                    : (_ibArrSchedStr
+                        ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _railT(_ibArrSchedStr) + '</div>'
+                        : ''))
+        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _ibCityCode + '</div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -8391,10 +8409,11 @@ function _buildV2MapCol(ctx, vars) {
                   : '<span class="ac-ico ac-ico-flight"></span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
-        +       '<div class="v2-fi-title">' + _mdTitle + '</div>'
+        +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_dStCls || '') || _dDepDelayed ? ' v2-fi-title-warn' : '') + '">' + _mdTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> ' + _dCityCode + '</div>'
-        +         '<div class="v2-fi-mline2 v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + (_dDepStr ? ' <span class="v2-rc-bar">\u00b7</span> ' + (_dRailT(_dDepStr) || '') : '') + '</div>'
+        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</span></div>'
+        +         (_dDepStr ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_dRailT(_dDepStr) || '') + '</div>' : '')
+        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('destination', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -8986,7 +9005,12 @@ function _buildV2MapCol(ctx, vars) {
       // the operator's logo.
       try {
         if (_opCode && _inboundCard && _inboundCard.indexOf('v2-fi-orb') !== -1) {
-          var _orbFix = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode])
+          // v23207 — the operator's own WORDMARK art first (Nick: 'Rouge
+          // logo' — the themed roundel read as plain AC), the emblem and the
+          // themed mark as fallbacks; the white filter makes any of them a
+          // silhouette on the coloured ground.
+          var _orbFix = ((typeof operatorLogoUrl === 'function') ? (operatorLogoUrl(_opCode) || '') : '')
+            || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode])
             || ((typeof operatorLogoUrlThemed === 'function') ? (operatorLogoUrlThemed(_opCode, true) || '') : '');
           if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
           // v23205 — the orb GROUND follows the operator's carrier colour too
@@ -19137,7 +19161,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23206';
+var FIDS_BUILD_TAG = 'v23207';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
