@@ -13990,3 +13990,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   display: none !important;
   content: none !important;
 }
+/* v23213 — BIGGER clock digits (Nick: 'Bigger numbers please'), and the
+   chip's accent DEEPENED a step (Nick: 'bit red it's too bright') — the
+   same darkening for every carrier, so AC's red goes richer instead of
+   neon while KE's navy barely moves. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-clock {
+  font-size: clamp(38px, 6.6vh, 92px) !important;
+  color: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #33404E)) 80%, #000 20%) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date {
+  background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #33404E)) 80%, #000 20%) !important;
+}
