@@ -8069,41 +8069,41 @@ function _buildV2MapCol(ctx, vars) {
       // phantom side column (v22591 regression). The 2-PANEL pattern Nick
       // asked for lives INSIDE the shelf: pane 1 = Flight/From, pane 2 =
       // Arrival/Status, each drawn as its own panel.
+      // v23201 — THE LEFT MODULE, VERBATIM (Nick: 'they are like modules …
+      // interchangeable', repeated since the first mockup; and the boarding
+      // strip already proved the pattern at v23115b: 'copy the exact current
+      // left info panel' — same classes, same structure, so every style he
+      // has approved, and whatever he changes next, applies here WITHOUT a
+      // parallel copy). Every banner-mismatch round this month was the
+      // parallel copy chasing the real module one property at a time; this
+      // ends it by construction. The .g8-bir-shelves wrapper is the sanctioned
+      // reuse hook — every left-rail selector reads
+      // :is(.gad-aircraft-col,.g8-bir-shelves).
+      var _mcCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
+      var _mcAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mcCode] && AIRLINE_BRAND[_mcCode].accent) || '#D82F2E';
+      var _mcBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mcAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      var _mcTitle = _gateLbl('flight', _frF, function (w, i2) { return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '');
+      var _mcTimes = '';
+      if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
+        _mcTimes = '<span class="v2-rc-status-delayed">' + _railT(_ibArrRevStr) + '</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>';
+      } else if (_ibArrSchedStr) {
+        _mcTimes = _railT(_ibArrSchedStr);
+      }
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
-        // v23190 — EVERY PANEL IS A HEADER BAR PLUS ROWS. That is the grammar
-        // the left rail has always used and the one Nick's target uses on the
-        // right: a full-width bar naming the panel, then label/value rows
-        // beneath it. The flight pane is headed "Flight | Vol" with the number
-        // as its hero; the status pane is headed by the STATUS itself, carrying
-        // the status colour, with Revised and Arrival as its rows.
-        // v23193 — the text sits the way the target lays it: "From/De" is a
-        // small stacked label on the LEFT, and the flight number over the
-        // city|code stack to its right — not a full-width hero line with a
-        // separate From row under it.
-        // v23196 — ONE PANEL, MERGED (Nick: "I think i want to merge the 2
-        // panels toegether in 1 small one do that and arrange thigns most top
-        // looks fine"). The Flight and Status panes stop being two cards and
-        // become one: the "Flight | Vol" banner, the From/De row, then the
-        // status band mid-card, then the Revised/Arrival rows — all in a
-        // single .v2-rc-fi-pane so the v23188 pane-is-the-card styling draws
-        // exactly one card across the container's two slots.
-        +   '<div class="v2-rc-fi-pane v2-rc-fi-pane-merged">'
-        +     '<div class="v2-rc-fi-phdr">' + _gateLblSpans('flight', _frF) + '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-fromrow">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('from', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-fi-fvstack">'
-        +         '<div class="v2-rc-fi-hero">' + (_ibFltCompact || '—') + '</div>'
-        +         '<div class="v2-rc-fi-fvcity">' + _ibCityCode + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
+        + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
+        +   '<div class="v2-fi-row">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mcBadge + '"><span class="ac-ico ac-ico-flight"></span></div></div>'
+        +     '<div class="v2-fi-textcol">'
+        +       '<div class="v2-fi-title">' + _mcTitle + '</div>'
+        +       '<div class="v2-fi-value">'
+        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> ' + _ibCityCode + '</div>'
+        +         '<div class="v2-fi-mline2 v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + (_mcTimes ? ' <span class="v2-rc-bar">\u00b7</span> ' + _mcTimes : '') + '</div>'
         +       '</div>'
         +     '</div>'
-        // v23199 — match the left panel: one banner per card. The status is a
-        // COLOURED TEXT LINE, the way the left rail writes "Delayed En Retard"
-        // in amber under its banner — not a second banner mid-card.
-        +     '<div class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
-        +     (_ibArrRowHtml || '')
         +   '</div>'
-        + '</div></div>';
+        + '</div></div>'
+        + '</div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
@@ -8324,25 +8324,27 @@ function _buildV2MapCol(ctx, vars) {
       // flight over the destination, the status band, one departure-time
       // line. The departure TIME stays (Nick: 'who told you to remove the
       // time').
+      // v23201 — the left module verbatim here too (see the inbound builder).
       var _dRailT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
+      var _mdCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
+      var _mdAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mdCode] && AIRLINE_BRAND[_mdCode].accent) || '#D82F2E';
+      var _mdBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mdAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      var _mdTitle = _gateLbl('flight', _frF, function (w, i3) { return i3 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '');
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
-        +   '<div class="v2-rc-fi-pane v2-rc-fi-pane-merged">'
-        +     '<div class="v2-rc-fi-phdr">' + _gateLblSpans('flight', _frF) + '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-fromrow">'
-        +       '<div class="v2-rc-fi-tlbl"><span>Destination</span></div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-fi-fvstack">'
-        +         '<div class="v2-rc-fi-hero">' + (_dFltCompact || '—') + '</div>'
-        +         '<div class="v2-rc-fi-fvcity">' + _dCityCode + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
+        + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
+        +   '<div class="v2-fi-row">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mdBadge + '"><span class="ac-ico ac-ico-flight"></span></div></div>'
+        +     '<div class="v2-fi-textcol">'
+        +       '<div class="v2-fi-title">' + _mdTitle + '</div>'
+        +       '<div class="v2-fi-value">'
+        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> ' + _dCityCode + '</div>'
+        +         '<div class="v2-fi-mline2 v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + (_dDepStr ? ' <span class="v2-rc-bar">\u00b7</span> ' + (_dRailT(_dDepStr) || '') : '') + '</div>'
         +       '</div>'
         +     '</div>'
-        +     '<div class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last v2-rc-fi-times2">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('departure', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dRailT(_dDepStr) || '—') + '</span></div>'
-        +     '</div>'
         +   '</div>'
-        + '</div></div>';
+        + '</div></div>'
+        + '</div>';
     } catch (e) {}
   }
 
@@ -19029,7 +19031,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23200';
+var FIDS_BUILD_TAG = 'v23201';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

@@ -13550,3 +13550,55 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   max-height: clamp(12px,2.2vh,24px) !important;
   width: auto !important;
 }
+
+/* v23201 — THE MERGED PANEL IS THE LEFT MODULE, VERBATIM.
+   fids-core now emits the left rail's own component (.v2-fi-row inside a
+   .g8-bir-shelves wrapper — the sanctioned reuse hook every left-rail selector
+   already reads) instead of a parallel copy chasing it property by property.
+   The shelf steps out of the way entirely: no margins, no card paint of its
+   own — the module's ::before plate IS the panel, so its box, banner, red
+   line, icon roundel and per-airline skin are the left panel's by
+   construction. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  display: block !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft .g8-bir-shelves,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft .v2-flightinfo-block,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft .v2-fi-row {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft .v2-fi-row {
+  display: grid !important;
+  position: relative !important;
+}
+/* The value's two stacked lines inside the module. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline1 {
+  font-size: clamp(14px, 2.5vh, 30px) !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline2 {
+  font-size: clamp(11px, 1.9vh, 22px) !important;
+  line-height: 1.1 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline2 .v2-rc-tval-old span {
+  text-decoration: line-through !important;
+  opacity: 0.65 !important;
+}
