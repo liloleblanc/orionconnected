@@ -3648,6 +3648,24 @@ var OPERATOR_LOGOS_THEMED = {
   'PB':  { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
   'PVL': { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' }
 };
+// v23208 — WORDMARK-ONLY art for the Operated-By caption (Nick: 'the
+// wordmark without emblem goes at operated by' — 'this is all airlines').
+// Lettering alone, natural colour ('collor or black'): the emblem belongs in
+// the orb by the aircraft ('whoever operates that aircraft gets the logo'),
+// never here. Operators without a lettering-only file fall through to their
+// standard art, then to the bold name.
+var OPERATOR_WORDMARKS = {
+  'RV':  '/logos/airlines/canadian/rouge.svg',
+  'ROU': '/logos/airlines/canadian/rouge.svg',
+  'QK':  '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
+  'JZA': '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
+  'PB':  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
+  'PVL': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg'
+};
+function operatorWordmarkUrl(opCode) {
+  if (!opCode) return null;
+  return OPERATOR_WORDMARKS[String(opCode).trim().toUpperCase()] || null;
+}
 function operatorLogoUrlThemed(opCode, isDark) {
   if (!opCode) return null;
   var c = String(opCode).trim().toUpperCase();
@@ -6888,7 +6906,12 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
-        'RV':  '/logos/airlines/canadian/AC.TO.svg',
+        // v23208 — Rouge's OWN roundel, not the parent AC leaf ('Rouge logo';
+        // 'whoever operates that aircraft gets the logo'). The orb takes this
+        // emblem; Rouge's script wordmark lives in OPERATOR_WORDMARKS for the
+        // Operated-By caption only.
+        'RV':  '/logos/airlines/canadian/rouge-icon.png',
+        'ROU': '/logos/airlines/canadian/rouge-icon.png',
         // v23049 — BACK TO THE WHITE MONO LEAF. v23047 pointed this at the
         // colour leaf, which also repainted the round rail orb; Nick: 'the orb
         // had white leave it white'. This map feeds the orb, so it stays mono
@@ -8093,8 +8116,10 @@ function _buildV2MapCol(ctx, vars) {
       var _mcOrbSrc = '';
       try {
         var _orbCode_mcOrb = _mcOrbOp || _mcCode;
-        _mcOrbSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_orbCode_mcOrb]) || '';
-        if (!_mcOrbSrc && _mcOrbOp && typeof operatorLogoUrlThemed === 'function') _mcOrbSrc = operatorLogoUrlThemed(_mcOrbOp, true) || '';
+        // v23208 — emblem only, never a lockup with lettering (the themed
+        // operator art carries the wordmark): operator's emblem, else the
+        // marketing carrier's.
+        _mcOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mcOrb] || window._AIRLINE_EMBLEM_FILES[_mcCode])) || '';
       } catch (e) {}
       // v23203 — 'unless the orb is white then its color': a light orb
       // ground keeps the colour logo; only a dark ground takes the white
@@ -8118,7 +8143,10 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mcBadge + '">'
         +       (_mcOrbSrc
                   ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
-                  : '<span class="ac-ico ac-ico-flight"></span>')
+                  // v23208 — no emblem art on file → the carrier's LETTERS on
+                  // the accent circle (the map hold's look), never a generic
+                  // glyph: a KE board drew a passengers icon in the orb.
+                  : '<span class="v2-fi-orb-code">' + (_mcOrbOp || _mcCode || '') + '</span>')
         +     '</div></div>'
         // v23207 — THREE ROWS, per Nick's sketch (with his screenshot: 'half
         // the words are missing … Times and Status needs to be 2 lines for 3
@@ -8260,6 +8288,20 @@ function _buildV2MapCol(ctx, vars) {
       // A revised (delayed) departure carries the g8-r2-revised marker — colour
       // that time ORANGE on this card to match the delayed status (Nick).
       var _dDepDelayed = String(vars.depTimeHtml || '').indexOf('g8-r2-revised') !== -1;
+      var _dDepEarly = String(vars.depTimeHtml || '').indexOf('g8-rev-early') !== -1;
+      // v23208 — the ORIGINAL scheduled departure, from the g8-r2-strike span
+      // (_dStrip keeps only the revised value). The module's time row shows
+      // 'Revised | Révisé: new | struck-old' exactly like the inbound card
+      // (Nick: 'DepartureDépart: 10:50am NO this is Revised | Revisé').
+      var _dDepSchedStr = '';
+      try {
+        var _sOld = String(vars.depTimeHtml || ''), _kOld = _sOld.indexOf('g8-r2-strike');
+        if (_kOld !== -1) {
+          var _gOld = _sOld.indexOf('>', _kOld);
+          var _lOld = (_gOld !== -1) ? _sOld.indexOf('<', _gOld + 1) : -1;
+          if (_gOld !== -1 && _lOld !== -1) _dDepSchedStr = _sOld.slice(_gOld + 1, _lOld).trim();
+        }
+      } catch (e) {}
 
       // "Departing in" countdown
       var _dMins = _dDepTs ? Math.round((_dDepTs - Date.now()) / 60000) : 0;
@@ -8387,8 +8429,9 @@ function _buildV2MapCol(ctx, vars) {
       var _mdOrbSrc = '';
       try {
         var _orbCode_mdOrb = _mdOrbOp || _mdCode;
-        _mdOrbSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_orbCode_mdOrb]) || '';
-        if (!_mdOrbSrc && _mdOrbOp && typeof operatorLogoUrlThemed === 'function') _mdOrbSrc = operatorLogoUrlThemed(_mdOrbOp, true) || '';
+        // v23208 — emblem only, never a lockup with lettering (see the
+        // inbound builder).
+        _mdOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mdOrb] || window._AIRLINE_EMBLEM_FILES[_mdCode])) || '';
       } catch (e) {}
       // v23203 — 'unless the orb is white then its color': a light orb
       // ground keeps the colour logo; only a dark ground takes the white
@@ -8406,14 +8449,28 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mdBadge + '">'
         +       (_mdOrbSrc
                   ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
-                  : '<span class="ac-ico ac-ico-flight"></span>')
+                  // v23208 — lettered-roundel fallback (see inbound builder).
+                  : '<span class="v2-fi-orb-code">' + (_mdOrbOp || _mdCode || '') + '</span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
-        +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_dStCls || '') || _dDepDelayed ? ' v2-fi-title-warn' : '') + '">' + _mdTitle + '</div>'
+        // v23208 \u2014 a revision that moves the departure EARLIER banners green,
+        // not amber; only delay-family changes warn (mirrors the inbound).
+        +       '<div class="v2-fi-title' + ((/delayed|cancelled|diverted/.test(_dStCls || '') || (_dDepDelayed && !_dDepEarly)) ? ' v2-fi-title-warn' : (_dDepDelayed && _dDepEarly ? ' v2-fi-title-good' : '')) + '">' + _mdTitle + '</div>'
         +       '<div class="v2-fi-value">'
         +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</span></div>'
-        +         (_dDepStr ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_dRailT(_dDepStr) || '') + '</div>' : '')
-        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('destination', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
+        // v23208 \u2014 the time row reads 'Revised | R\u00e9vis\u00e9: new | struck-old'
+        // whenever a revision exists, exactly like the inbound card (Nick:
+        // 'DepartureD\u00e9part: 10:50am NO this is Revised | Revis\u00e9'); the plain
+        // 'Departure | D\u00e9part' label only when nothing was revised.
+        +         (_dDepDelayed && _dDepStr && _dDepSchedStr && _dDepSchedStr !== _dDepStr
+                    ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span><span class="v2-fi-mcolon">:</span> '
+                      + '<span class="v2-rc-status-' + (_dDepEarly ? 'early' : (_dStCls || 'delayed')) + '">' + (_dRailT(_dDepStr) || '') + '</span>'
+                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _dRailT(_dDepSchedStr) + '</span></span></div>'
+                    : (_dDepStr ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_dRailT(_dDepStr) || '') + '</div>' : ''))
+        // v23208 \u2014 'To | \u00c0', not a bare colon: the 'destination' key never
+        // existed in _GATE_LBL, so the label rendered empty (Nick: ': Ottawa
+        // | YOW NO this is terrible To | \u00c0:').
+        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('to', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -8971,12 +9028,14 @@ function _buildV2MapCol(ctx, vars) {
         var _opNm6 = _cf._opName
           || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
         _opNm6 = String(_opNm6).replace(/[<>"']/g, '');
-        var _opLogo6 = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
         // v23206 — THE WORDMARK BY ITSELF, colour or black — no chip, no
         // roundel, no white filter (Nick: 'wordmark by itself no logo …
-        // collor or black'). operatorLogoUrl serves the operator's natural
-        // colour art, which is the variant made for light grounds like this
-        // bar; the onerror fallback is the operator's name in bold ink.
+        // collor or black'). v23208 — lettering-ONLY art ('the wordmark
+        // without emblem goes at operated by'): OPERATOR_WORDMARKS first,
+        // since operatorLogoUrl can serve a lockup that still carries the
+        // emblem; the onerror fallback is the operator's name in bold ink.
+        var _opLogo6 = ((typeof operatorWordmarkUrl === 'function') ? operatorWordmarkUrl(_opCode) : null)
+          || ((typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null);
         _opByVal = _opLogo6
           ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
             + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
@@ -9005,13 +9064,13 @@ function _buildV2MapCol(ctx, vars) {
       // the operator's logo.
       try {
         if (_opCode && _inboundCard && _inboundCard.indexOf('v2-fi-orb') !== -1) {
-          // v23207 — the operator's own WORDMARK art first (Nick: 'Rouge
-          // logo' — the themed roundel read as plain AC), the emblem and the
-          // themed mark as fallbacks; the white filter makes any of them a
-          // silhouette on the coloured ground.
-          var _orbFix = ((typeof operatorLogoUrl === 'function') ? (operatorLogoUrl(_opCode) || '') : '')
-            || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode])
-            || ((typeof operatorLogoUrlThemed === 'function') ? (operatorLogoUrlThemed(_opCode, true) || '') : '');
+          // v23208 — EMBLEM ONLY in the orb (Nick: 'the orb does not have
+          // wordmark … its the emblem only', all airlines — 'whoever operates
+          // that aircraft gets the logo'). v23207 preferred operatorLogoUrl
+          // here, which for PAL served the full lockup WITH lettering into
+          // the orb. No wordmark fallbacks: an operator without emblem art
+          // keeps the marketing carrier's emblem the builder already baked.
+          var _orbFix = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode]) || '';
           if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
           // v23205 — the orb GROUND follows the operator's carrier colour too
           // (Nick: 'your orb by the plane should follow the carrier colors —
@@ -19161,7 +19220,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23207';
+var FIDS_BUILD_TAG = 'v23208';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27444,6 +27503,18 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     });
     return;
   }
+  // v23208 — DATELINE LEGS (KE76 YVR→ICN): the raw endpoint lngs sit 249°
+  // apart, so fitBounds framed the whole world the LONG way round and the
+  // arc (drawn dateline-unwrapped by _gcAddArc) ran off-window — a world
+  // map with no route and no plane (Nick: 'The map the aircraft everythign
+  // has started gitching agian'). Unwrap the destination lng to within 180°
+  // of the origin: trig is 2π-periodic so the great-circle math is
+  // identical, and bounds, phase centres, pins and arc all land on one
+  // continuous window (the basemap tiles repeat across world copies).
+  // Copies first — _lookupAirport can return shared arrays.
+  o = [o[0], o[1]]; d = [d[0], d[1]];
+  while (d[1] - o[1] > 180) d[1] -= 360;
+  while (d[1] - o[1] < -180) d[1] += 360;
   // v23099 — REUSE the map instance on the same route (the discipline the
   // live path already had). Every call used to remove() + recreate map and
   // tile layer, so each gate re-render repainted from Leaflet's grey ground
@@ -36942,6 +37013,12 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
     });
     return;
   }
+  // v23208 — same dateline unwrap as the mini estimate map (see
+  // initGateMap): without it a YVR→ICN leg framed the whole world and the
+  // route rendered off-window.
+  o = [o[0], o[1]]; d = [d[0], d[1]];
+  while (d[1] - o[1] > 180) d[1] -= 360;
+  while (d[1] - o[1] < -180) d[1] += 360;
   try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);
   /* (fade helper defined once, below at its first use in source order) */
   // Calculate total route distance for zoom scaling

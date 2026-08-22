@@ -13653,9 +13653,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
   background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
-  /* v23207 — the red bar above the Operated-By is gone (Nick: 'remove that
-     red bar above the immidiate operated by'). */
-  border-top: none !important;
+  /* v23208 — the LONG separator between the clouds and the caption STAYS
+     (Nick: 'the long one seprating the clouds from the text goes back' —
+     v23207 removed it here, the wrong line). The red bar he meant is the
+     SHORT accent rule above the Operated-By block, killed at the end of
+     this file. */
+  border-top: 2px solid #ffffff !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.55) !important;
 }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap,
@@ -13780,4 +13783,60 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-title.v2-fi-title-good * {
   color: #14213a !important;
   -webkit-text-fill-color: #14213a !important;
+}
+
+/* ── v23208 — THE SHORT RED LINE GOES, THE LONG ONE STAYS (Nick: 'The red
+   line goes away the short one then the long one seprating the clouds from
+   the text goes back'). The short line is the 2px accent rule an older
+   layout drew above the Operated-By block (it now paints INSIDE the caption
+   bar, a stray red dash over the band); the long one is the caption's own
+   full-width top border against the photo, restored above. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby {
+  border-top: none !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+/* v23208 — the wordmark is lettering, wide by nature (PAL runs ~6:1), and at
+   the caption's full height it starved the aircraft type down to 'De Ha…'.
+   Cap its width; the type cell keeps its words. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
+  /* EXPLICIT height, never auto — auto + a width cap on this shrink-to-fit
+     flex item resolves the sizing circle to 0x0 (same trap v23099 documents
+     above; this pass re-hit it and the wordmark vanished). */
+  height: clamp(14px, 2.2vh, 24px) !important;
+  max-height: clamp(14px, 2.2vh, 24px) !important;
+  max-width: clamp(52px, 6.2vw, 112px) !important;
+  width: auto !important;
+  object-fit: contain !important;
+}
+/* v23208 — 'use all youre space': the caption band is two label-lines tall,
+   yet the aircraft type sat on ONE clipped line ('De Havilland Das…') while
+   28px of side padding and 10px gaps went unused. Reclaim the padding, and
+   let the type WRAP onto the band's second line — every word shows, nothing
+   ellipsizes. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  padding-left: clamp(6px, 0.55vw, 11px) !important;
+  padding-right: clamp(6px, 0.55vw, 11px) !important;
+  gap: clamp(4px, 0.4vw, 8px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-actype {
+  white-space: normal !important;
+  text-overflow: clip !important;
+  overflow: hidden !important;
+  max-height: 100% !important;
+  line-height: 1.15 !important;
+  flex: 1 1 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby {
+  gap: 0.25vw !important;
+  flex: 0 0 auto !important;
+}
+/* v23208 — the orb's no-art fallback is the carrier's LETTERS, styled like
+   the map hold's roundel (a KE board drew a generic passengers glyph). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-orbwrap .v2-fi-orb-code {
+  font-weight: 800 !important;
+  font-size: clamp(13px, 1.9vh, 25px) !important;
+  letter-spacing: 0.02em !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
 }
