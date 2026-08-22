@@ -10180,7 +10180,14 @@ function uxgGateHtml(ctx) {
     function _birStripRev(html) {
       var s = String(html || '');
       if (s.indexOf('g8-r2-revised') === -1) return html;
-      return s.replace(/<[^>]*g8-r2-strike[^>]*>[\s\S]*?<\/[^>]+>/g, '').trim();
+      // DOM removal, not regex tag surgery — the regex form trips CodeQL's
+      // incomplete-sanitization rule, and the DOM does it exactly.
+      try {
+        var d = document.createElement('div');
+        d.innerHTML = s;
+        d.querySelectorAll('.g8-r2-strike').forEach(function (n) { n.remove(); });
+        return d.innerHTML.trim();
+      } catch (e) { return html; }
     }
     function _birRevCls(html) {
       var s = String(html || '');
