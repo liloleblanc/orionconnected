@@ -36,6 +36,22 @@
       + 'body.fids-light-board .mbar-link{color:#31435a;}'
       + 'body.fids-light-board .mbar-link:hover{background:rgba(13,36,64,.07);color:#0d2440;}'
       + 'body.fids-light-board .mbar-sec{color:#6b7c92;}'
+      // v23215 — THE RE-PARENTED CONSOLE CONTENT GOES DARK-INK ON LIGHT
+      // BOARDS (Nick: 'the menu is not legible either — it's hidden behind
+      // same colors text, for a lot of it'). The wide panels host the old
+      // sidebar's sections, whose text was styled WHITE for the dark
+      // sidebar; on a light board the panel is white — measured on mist:
+      // 'Teal', 'Mist (light)', 'Use airport default' all rgb(255,255,255)
+      // on rgb(255,255,255). Every text node and form control in a light
+      // panel takes readable navy ink.
+      + 'body.fids-light-board .mbar-panel .sm-tab-content,'
+      + 'body.fids-light-board .mbar-panel .sm-tab-content *{color:#16283C !important;}'
+      + 'body.fids-light-board .mbar-panel select,'
+      + 'body.fids-light-board .mbar-panel option,'
+      + 'body.fids-light-board .mbar-panel input,'
+      + 'body.fids-light-board .mbar-panel textarea{color:#16283C !important;background:#ffffff !important;border-color:#C7D2DD !important;}'
+      + 'body.fids-light-board .mbar-panel .sm-sec-title,'
+      + 'body.fids-light-board .mbar-panel .mbar-sec{color:#6b7c92 !important;}'
       + '.mbar-panel select.mbar-theme{min-height:32px;border-radius:7px;}'
       // Full sections re-parented from the retired console — wide scrollable panels
       + '.mbar-panel.mbar-wide{width:470px;max-width:min(94vw,540px);max-height:74vh;overflow-y:auto;overscroll-behavior:contain;}'

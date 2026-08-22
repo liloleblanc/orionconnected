@@ -519,7 +519,7 @@ function smActivatePreset(id, _bootRestore) {
   _setActivePresetId(id);
 
   if (preset.builtin && typeof setTheme === 'function') {
-    setTheme(id);
+    setTheme(id, _bootRestore);   // v23215 — replay calls never persist
   } else {
     // Use explicit preset values
     document.body.dataset.fidsTheme = 'custom';
@@ -647,7 +647,13 @@ function smActivatePreset(id, _bootRestore) {
   if (_bootRestore) return;
   try {
     var _gpPrefs = _cuLoad() || {};
-    if (preset.builtin) { _gpPrefs.theme = id; delete _gpPrefs.themePresetId; delete _gpPrefs.customColors; }
+    if (preset.builtin) {
+      // Only the BOARD themes are valid cloud theme values; the legacy demo
+      // themes (gold/midnight/…) stay device-local — pushing their ids would
+      // land a name applyAirportConfigToBoard rejects on every other screen.
+      if (!/^(tus-teal|tus-teal-deep|mist)$/.test(id)) return;
+      _gpPrefs.theme = id; delete _gpPrefs.themePresetId; delete _gpPrefs.customColors;
+    }
     else {
       _gpPrefs.theme = 'custom'; _gpPrefs.themePresetId = id;
       var _gpc = preset.colors || preset;
@@ -2157,6 +2163,21 @@ function cuResetAll() {
     }
   };
 })();
+
+// v23215 — persist hook for setTheme's board-theme branch: a theme picked
+// anywhere (menu quick pick, scenes) lands in the per-airport prefs and
+// writes through to the cloud, so applyAirportConfigToBoard KEEPS the
+// choice instead of reverting to the airport config on its next cycle.
+window._fidsPersistTheme = function (name) {
+  try {
+    var prefs = _cuLoad() || {};
+    prefs.theme = name;
+    delete prefs.themePresetId;
+    delete prefs.customColors;
+    _cuSave(prefs);
+    _cuCloudPush(_acCurrentCode(), prefs);
+  } catch (e) {}
+};
 
 // Expose the read function so fids-core.js can merge prefs at render time
 window.FIDS_CUSTOMIZE = {

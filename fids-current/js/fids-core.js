@@ -19230,7 +19230,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23214';
+var FIDS_BUILD_TAG = 'v23215';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -19581,7 +19581,32 @@ const THEME_LOGOS = {
   airfrance: 'https://www.gstatic.com/flights/airline_logos/70px/AF.png',
 };
 
-function setTheme(name) {
+function setTheme(name, _noPersist) {
+  // v23215 — THE BOARD THEMES FINALLY WORK FROM THE PICKER (Nick: 'teal
+  // never ever works it turns out white all white'). tus-teal /
+  // tus-teal-deep / mist are CSS-rule themes driven by
+  // body[data-fids-theme]; they have NEVER existed in the legacy THEMES map
+  // below, so picking one here fell through `THEMES[name] || THEMES.gold`
+  // and injected gold's LIGHT palette as #dynamicTheme over an unchanged
+  // dataset — the all-white board, every time, for years. They now activate
+  // the way the resolver does (dataset + clean slate), the choice is
+  // PERSISTED so applyAirportConfigToBoard keeps it instead of reverting to
+  // the airport config on the next cycle, and the persist hook pushes it to
+  // the cloud so every screen follows. _noPersist marks replay/boot calls.
+  if (/^(tus-teal|tus-teal-deep|mist)$/.test(String(name || ''))) {
+    currentTheme = name;
+    try { var _dtM = document.getElementById('dynamicTheme'); if (_dtM) _dtM.remove(); } catch (e) {}
+    try { var _crM = document.getElementById('_fidsCustomThemeRules'); if (_crM) _crM.remove(); } catch (e) {}
+    document.body.dataset.fidsTheme = name;
+    ['--fids-banner-bg', '--fids-banner-text', '--fids-banner-accent',
+     '--fids-bg', '--fids-text', '--fids-stripe', '--fids-divider', '--fids-row-odd']
+      .forEach(function (k) { try { document.body.style.removeProperty(k); } catch (e) {} });
+    if (!_noPersist) {
+      try { if (typeof window._fidsPersistTheme === 'function') window._fidsPersistTheme(name); } catch (e) {}
+    }
+    try { if (typeof render === 'function') setTimeout(function () { try { render(); } catch (e) {} }, 60); } catch (e) {}
+    return;
+  }
   // A pinned URL theme (kiosk/stream, e.g. ?theme=mist) is authoritative and is
   // driven by the CSS theme rules. Never let a saved custom/legacy preset
   // re-inject a #dynamicTheme block (body{background:…!important}) that shadows

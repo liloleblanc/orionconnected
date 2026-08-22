@@ -14001,3 +14001,19 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date {
   background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #33404E)) 80%, #000 20%) !important;
 }
+
+/* ── v23215 — DARK INK ON THE LIGHT SILK BANNER (Nick: 'teal never ever
+   works it turns out white all white' — half of that was the board banner:
+   the brushed-silver silk skin kept the WHITE clock/label ink of the dark
+   skins, so 'Time in Halifax / 5:10AM' washed out on every light-banner
+   airport whatever the theme did). The Acadian flag skin keeps white ink —
+   its clock sits on the dark field. */
+body[data-fids-banner="silk"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time-block,
+body[data-fids-banner="silk"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time-block *,
+body[data-fids-banner="silk"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time,
+body[data-fids-banner="silk"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-date,
+body[data-fids-banner="silk"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time-text {
+  color: #14213a !important;
+  -webkit-text-fill-color: #14213a !important;
+  text-shadow: none !important;
+}
