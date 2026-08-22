@@ -13661,3 +13661,38 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
   color: #14171B !important;
   -webkit-text-fill-color: #14171B !important;
 }
+
+/* v23204 — the aircraft rides CENTRED in the plate above its bar (it was
+   bottom-anchored, showing mostly tail), and the bar grows to fit the
+   aircraft text and the operator logo (Nick: 'centered more middle or
+   higher … your banner for the aircraft needs to adjust to the aircraft and
+   logo so bigger'). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img {
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important;
+  bottom: clamp(26px, 4.4vh, 48px) !important;
+  height: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  height: clamp(26px, 4.4vh, 48px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-actype {
+  font-size: clamp(11px, 1.9vh, 22px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-lline {
+  font-size: clamp(9px, 1.25vh, 15px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
+  max-height: clamp(16px, 3vh, 34px) !important;
+}

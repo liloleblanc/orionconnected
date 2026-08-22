@@ -8117,7 +8117,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mcBadge + '">'
         +       (_mcOrbSrc
-                  ? '<img src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   : '<span class="ac-ico ac-ico-flight"></span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
@@ -8387,7 +8387,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mdBadge + '">'
         +       (_mdOrbSrc
-                  ? '<img src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   : '<span class="ac-ico ac-ico-flight"></span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
@@ -8972,6 +8972,20 @@ function _buildV2MapCol(ctx, vars) {
       // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
       // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
       var _pendingAircraftText = _gateLbl('acPending', _frF8, _nbw, ' <span class="v2-rc-fi-sep">|</span> ');
+      // v23204 — THE ORB BY THE AIRCRAFT IS THE OPERATOR'S (Nick: 'ITs
+      // operated under the AC name however operated by PAL that one by the
+      // Aircraft should be PAL'). The merged module builds BEFORE this block
+      // resolves the true operator (flight-number bands, Express matrix, PAL
+      // registrations), so the module bakes the marketing carrier's mark.
+      // Now that the operator is known, re-point the module's tagged orb at
+      // the operator's logo.
+      try {
+        if (_opCode && _inboundCard && _inboundCard.indexOf('v2-fi-orb') !== -1) {
+          var _orbFix = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode])
+            || ((typeof operatorLogoUrlThemed === 'function') ? (operatorLogoUrlThemed(_opCode, true) || '') : '');
+          if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
+        }
+      } catch (e) {}
       var _typeCellHtml =
           '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || _pendingAircraftText) + '</div>'
         + (_opByVal
@@ -19102,7 +19116,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23203';
+var FIDS_BUILD_TAG = 'v23204';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
