@@ -3648,6 +3648,24 @@ var OPERATOR_LOGOS_THEMED = {
   'PB':  { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
   'PVL': { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' }
 };
+// v23208 — WORDMARK-ONLY art for the Operated-By caption (Nick: 'the
+// wordmark without emblem goes at operated by' — 'this is all airlines').
+// Lettering alone, natural colour ('collor or black'): the emblem belongs in
+// the orb by the aircraft ('whoever operates that aircraft gets the logo'),
+// never here. Operators without a lettering-only file fall through to their
+// standard art, then to the bold name.
+var OPERATOR_WORDMARKS = {
+  'RV':  '/logos/airlines/canadian/rouge.svg',
+  'ROU': '/logos/airlines/canadian/rouge.svg',
+  'QK':  '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
+  'JZA': '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
+  'PB':  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
+  'PVL': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg'
+};
+function operatorWordmarkUrl(opCode) {
+  if (!opCode) return null;
+  return OPERATOR_WORDMARKS[String(opCode).trim().toUpperCase()] || null;
+}
 function operatorLogoUrlThemed(opCode, isDark) {
   if (!opCode) return null;
   var c = String(opCode).trim().toUpperCase();
@@ -6888,7 +6906,12 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
         'QK':  '/logos/airlines/canadian/AC.TO.svg',
-        'RV':  '/logos/airlines/canadian/AC.TO.svg',
+        // v23208 — Rouge's OWN roundel, not the parent AC leaf ('Rouge logo';
+        // 'whoever operates that aircraft gets the logo'). The orb takes this
+        // emblem; Rouge's script wordmark lives in OPERATOR_WORDMARKS for the
+        // Operated-By caption only.
+        'RV':  '/logos/airlines/canadian/rouge-icon.png',
+        'ROU': '/logos/airlines/canadian/rouge-icon.png',
         // v23049 — BACK TO THE WHITE MONO LEAF. v23047 pointed this at the
         // colour leaf, which also repainted the round rail orb; Nick: 'the orb
         // had white leave it white'. This map feeds the orb, so it stays mono
@@ -7415,7 +7438,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _a = _s.split('\u0001');
         return [_a[0] || '', _a[1] || ''];
       }
-      function _shelf(icon, en, second, val, valCls) {
+      function _shelf(icon, en, second, val, valCls, rowCls) {
         // v223 — Nick's exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
         // Québec airports: French first on every pair (Nick).
@@ -7425,7 +7448,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _sec = _p2 /* v23158 keepDup: EN/FR share 'Destination' — print the pair anyway */
           ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _p2 + '</span>'
           : '';
-        return '<div class="v2-fi-row">'
+        return '<div class="v2-fi-row' + (rowCls ? ' ' + rowCls : '') + '">'
           + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
           +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
@@ -7559,7 +7582,13 @@ function _buildV2AircraftCol(ctx, vars) {
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
         + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
-        + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls)
+        // v23195 — the STATUS shelf's row carries the status class, so its
+        // banner can take the status colour the way Nick's target shows it:
+        // "Status | Statut" on an amber bar while the flight is delayed. Only
+        // the value used to carry the class, and a title bar cannot be
+        // selected from its sibling's class without :has(), which the kiosk
+        // browsers drop silently.
+        + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls, 'v2-fi-rowst-' + (_fiStCls || '').trim())
         + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time')
         + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
@@ -8028,18 +8057,33 @@ function _buildV2MapCol(ctx, vars) {
           // Nick's approved sketch: 'Arrival 5:28PM    Revised 5:27PM' —
           // one line, two pairs; revised inked green earlier/amber later.
           var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-early' : 'v2-rc-status-delayed';
+          // v23190 — TWO ROWS, REVISED FIRST. Nick's target has the status
+          // panel reading top to bottom as: the status itself on a full-width
+          // bar, then "Revised | Revisé 5:30pm", then "Arrival | Arrivée
+          // 5:20pm". The old four-cell single line put both pairs side by side,
+          // which is not the grammar the rest of the board uses — every other
+          // panel is one label, one value, one row.
+          // v23193 — times in the target read 5:30pm, lowercase and unspaced,
+          // exactly as the left rail's own times do; the right rail alone was
+          // writing "5:30 PM".
+          var _railT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
+          // v23197 — ONE LINE for the pair, the way the Porter drawing writes
+          // "6:45am | 6:15am": the merged panel is one slot now and two time
+          // rows do not fit a slot that also holds the banner, the flight and
+          // the status band.
           _ibArrRowHtml =
-              '<div class="v2-rc-fi-trow v2-rc-fi-trow-rev2">'
-            +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _ibArrSchedStr + '</span></div>'
+              '<div class="v2-rc-fi-trow v2-rc-fi-trow-last v2-rc-fi-times2">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('revised', _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _ibArrRevStr + '</div>'
+            +   '<div class="v2-rc-fi-tval ' + _ibRevCls + '">' + _railT(_ibArrRevStr) + '</div>'
+            +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
+            +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></div>'
             + '</div>';
         } else {
+          var _railT2 = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval">' + _ibArrSchedStr + '</div>'
+            +   '<div class="v2-rc-fi-tval">' + _railT2(_ibArrSchedStr) + '</div>'
             + '</div>';
         }
       }
@@ -8048,38 +8092,134 @@ function _buildV2MapCol(ctx, vars) {
       // phantom side column (v22591 regression). The 2-PANEL pattern Nick
       // asked for lives INSIDE the shelf: pane 1 = Flight/From, pane 2 =
       // Arrival/Status, each drawn as its own panel.
+      // v23201 — THE LEFT MODULE, VERBATIM (Nick: 'they are like modules …
+      // interchangeable', repeated since the first mockup; and the boarding
+      // strip already proved the pattern at v23115b: 'copy the exact current
+      // left info panel' — same classes, same structure, so every style he
+      // has approved, and whatever he changes next, applies here WITHOUT a
+      // parallel copy). Every banner-mismatch round this month was the
+      // parallel copy chasing the real module one property at a time; this
+      // ends it by construction. The .g8-bir-shelves wrapper is the sanctioned
+      // reuse hook — every left-rail selector reads
+      // :is(.gad-aircraft-col,.g8-bir-shelves).
+      var _mcCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
+      var _mcAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mcCode] && AIRLINE_BRAND[_mcCode].accent) || '#D82F2E';
+      var _mcBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mcAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // v23203 — the orb carries the OPERATOR's logo when another carrier
+      // flies the leg (Nick: 'either the airline or the operator in this
+      // case PAL — logo only white — and still have operated by PAL'),
+      // else the airline's; forced to a white silhouette either way.
+      var _mcOrbOp = '';
+      try { var _oRaw_mcOrb = String((vars.currentFlight && vars.currentFlight._opCode) || '').trim().toUpperCase();
+        _mcOrbOp = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_oRaw_mcOrb]) ? CALLSIGN_TO_IATA[_oRaw_mcOrb] : _oRaw_mcOrb;
+        if (_mcOrbOp === _mcCode) _mcOrbOp = ''; } catch (e) {}
+      var _mcOrbSrc = '';
+      try {
+        var _orbCode_mcOrb = _mcOrbOp || _mcCode;
+        // v23208 — emblem only, never a lockup with lettering (the themed
+        // operator art carries the wordmark): operator's emblem, else the
+        // marketing carrier's.
+        _mcOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mcOrb] || window._AIRLINE_EMBLEM_FILES[_mcCode])) || '';
+      } catch (e) {}
+      // v23203 — 'unless the orb is white then its color': a light orb
+      // ground keeps the colour logo; only a dark ground takes the white
+      // silhouette. Judged from the brand accent's luminance.
+      var _mcOrbWhite = true;
+      try { var _h_mcOrb = String(_mcAccFb).replace('#','');
+        if (_h_mcOrb.length === 3) _h_mcOrb = _h_mcOrb.replace(/./g, function(c){return c+c;});
+        var _r_mcOrb = parseInt(_h_mcOrb.substr(0,2),16), _g_mcOrb = parseInt(_h_mcOrb.substr(2,2),16), _b_mcOrb = parseInt(_h_mcOrb.substr(4,2),16);
+        if ((0.2126*_r_mcOrb + 0.7152*_g_mcOrb + 0.0722*_b_mcOrb) > 186) _mcOrbWhite = false; } catch (e) {}
+      var _mcTitle = _gateLbl('flight', _frF, function (w, i2) { return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '');
+      var _mcTimes = '';
+      if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
+        _mcTimes = '<span class="v2-rc-status-delayed">' + _railT(_ibArrRevStr) + '</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>';
+      } else if (_ibArrSchedStr) {
+        _mcTimes = _railT(_ibArrSchedStr);
+      }
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi' + (_ibArrRowHtml ? ' v2-rc-shelf-fi4' : '') + '"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
-        +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('flight', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval">' + (_ibFltCompact || '—') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('from', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval">' + _ibCityCode + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
+        + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
+        +   '<div class="v2-fi-row">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mcBadge + '">'
+        +       (_mcOrbSrc
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  // v23208 — no emblem art on file → the carrier's LETTERS on
+                  // the accent circle (the map hold's look), never a generic
+                  // glyph: a KE board drew a passengers icon in the orb.
+                  : '<span class="v2-fi-orb-code">' + (_mcOrbOp || _mcCode || '') + '</span>')
+        +     '</div></div>'
+        // v23207 — THREE ROWS, per Nick's sketch (with his screenshot: 'half
+        // the words are missing … Times and Status needs to be 2 lines for 3
+        // rows in total'):
+        //   AC1986 · Early | En Avance
+        //   Revised | Revisé: 11:56pm | 12:15am
+        //   From | De: Toronto | YYZ
+        // Full words, no ellipsis — the times get their own line so nothing
+        // is eaten.
+        +     '<div class="v2-fi-textcol">'
+        // v23207 — the banner CHANGES COLOUR when a change is imminent
+        // (Nick): amber for delayed/cancelled/diverted, green for an early
+        // revision — the same semantics as the left rail's status banner.
+        +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_stCls || '') ? ' v2-fi-title-warn' : ((_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) ? ' v2-fi-title-good' : '')) + '">' + _mcTitle + '</div>'
+        +       '<div class="v2-fi-value">'
+        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</span></div>'
+        +         (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr
+                    ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span><span class="v2-fi-mcolon">:</span> '
+                      + '<span class="v2-rc-status-' + (_stCls || 'delayed') + '">' + _railT(_ibArrRevStr) + '</span>'
+                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span></div>'
+                    : (_ibArrSchedStr
+                        ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _railT(_ibArrSchedStr) + '</div>'
+                        : ''))
+        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _ibCityCode + '</div>'
+        +       '</div>'
         +     '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-pane' + (_ibArrRowHtml ? '' : ' v2-rc-fi-pane-1') + '">'
-        +     (_ibArrRowHtml || '')
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
-        +     '</div>'
-        +   '</div>'
-        + '</div></div>';
+        + '</div></div>'
+        + '</div>';
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
+      // v23193 — REBUILT TO NICK'S TARGET, cell by cell ("your altimter DID
+      // NOT EVEN CHANGE" — v23192 moved the old markup and left its content
+      // untouched, and he was right). His strip reads:
+      //   Speed          Altitude          Distance
+      //   850 km/h       38,750            2785 km
+      //                  Feet | Pieds
+      // — the unit is km/h not kph, the altitude unit is the bilingual
+      // "Feet | Pieds" pair not "ft", there are no French sub-labels under the
+      // English ones, and there is a THIRD stat: the remaining distance,
+      // great-circled from the live fix to this airport. The fix carries
+      // lat/lng (see _gateStickyFix) and AIRPORT_COORDS carries the field, so
+      // the number is computed, not invented; the cell simply stays out when
+      // either end is unknown.
       if (_liveSpd !== null || _liveAlt !== null) {
+        var _distKm = null;
+        try {
+          if (_sfix && typeof _sfix.lat === 'number' && typeof _sfix.lng === 'number'
+              && typeof AIRPORT_COORDS !== 'undefined' && AIRPORT_COORDS[_destIata]) {
+            var _dc = AIRPORT_COORDS[_destIata];
+            var _dLa = (_dc[0] - _sfix.lat) * Math.PI / 180, _dLo = (_dc[1] - _sfix.lng) * Math.PI / 180;
+            var _ha = Math.sin(_dLa / 2) * Math.sin(_dLa / 2)
+                    + Math.cos(_sfix.lat * Math.PI / 180) * Math.cos(_dc[0] * Math.PI / 180)
+                    * Math.sin(_dLo / 2) * Math.sin(_dLo / 2);
+            _distKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(_ha), Math.sqrt(1 - _ha)));
+          }
+        } catch (e) {}
+        // v23202 — labels and the altitude unit follow the CHOSEN languages
+        // via _gateLbl, like every other label on the board. A single-language
+        // board gets single-language labels; a bilingual one gets the pair.
+        var _msL = function (k) { return _gateLbl(k, _frF, function (w) { return w; }, ' | ', true); };
         _telemBar =
             '<div class="v2-rc-mapstats">'
-          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div>'
-          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">' + _spdUnit + '</span></div>'
-          +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Vitesse',es:'Velocidad'}[_lang2] || 'Vitesse') + '</div></div>'
-          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div>'
-          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">' + _altUnit + '</span></div>'
-          +     '<div class="v2-rc-ms-lbl2">' + ({fr:'Altitude',es:'Altitud'}[_lang2] || 'Altitude') + '</div></div>'
+          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('speed') + '</div>'
+          +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">km/h</span></div></div>'
+          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('altitude') + '</div>'
+          +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + '</div>'
+          +     '<div class="v2-rc-ms-unitline">' + _msL('feetUnit') + '</div></div>'
+          +   (_distKm !== null
+              ? '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('distance') + '</div>'
+                + '<div class="v2-rc-ms-val">' + _distKm.toLocaleString() + ' <span class="v2-rc-ms-unit">km</span></div></div>'
+              : '')
           + '</div>';
       }
 
@@ -8148,6 +8288,20 @@ function _buildV2MapCol(ctx, vars) {
       // A revised (delayed) departure carries the g8-r2-revised marker — colour
       // that time ORANGE on this card to match the delayed status (Nick).
       var _dDepDelayed = String(vars.depTimeHtml || '').indexOf('g8-r2-revised') !== -1;
+      var _dDepEarly = String(vars.depTimeHtml || '').indexOf('g8-rev-early') !== -1;
+      // v23208 — the ORIGINAL scheduled departure, from the g8-r2-strike span
+      // (_dStrip keeps only the revised value). The module's time row shows
+      // 'Revised | Révisé: new | struck-old' exactly like the inbound card
+      // (Nick: 'DepartureDépart: 10:50am NO this is Revised | Revisé').
+      var _dDepSchedStr = '';
+      try {
+        var _sOld = String(vars.depTimeHtml || ''), _kOld = _sOld.indexOf('g8-r2-strike');
+        if (_kOld !== -1) {
+          var _gOld = _sOld.indexOf('>', _kOld);
+          var _lOld = (_gOld !== -1) ? _sOld.indexOf('<', _gOld + 1) : -1;
+          if (_gOld !== -1 && _lOld !== -1) _dDepSchedStr = _sOld.slice(_gOld + 1, _lOld).trim();
+        }
+      } catch (e) {}
 
       // "Departing in" countdown
       var _dMins = _dDepTs ? Math.round((_dDepTs - Date.now()) / 60000) : 0;
@@ -8251,29 +8405,77 @@ function _buildV2MapCol(ctx, vars) {
       // (a second shelf child breaks the rail grid): pane 1 = Flight /
       // Destination, pane 2 = Departure / Status. Departure TIME stays
       // (Nick: 'who told you to remove the time').
+      // v23197 — SAME MERGED ONE-SLOT CARD AS THE INBOUND BUILDER. This
+      // departure variant kept the old 2-pane layout after the merge, so the
+      // moment the inbound landed and this builder took over, two panes of
+      // content crammed into the one-slot card and overflowed it (caught on a
+      // render, not by luck: WS812 arrived mid-verification). One banner, the
+      // flight over the destination, the status band, one departure-time
+      // line. The departure TIME stays (Nick: 'who told you to remove the
+      // time').
+      // v23201 — the left module verbatim here too (see the inbound builder).
+      var _dRailT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
+      var _mdCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
+      var _mdAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mdCode] && AIRLINE_BRAND[_mdCode].accent) || '#D82F2E';
+      var _mdBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mdAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // v23203 — the orb carries the OPERATOR's logo when another carrier
+      // flies the leg (Nick: 'either the airline or the operator in this
+      // case PAL — logo only white — and still have operated by PAL'),
+      // else the airline's; forced to a white silhouette either way.
+      var _mdOrbOp = '';
+      try { var _oRaw_mdOrb = String((vars.currentFlight && vars.currentFlight._opCode) || '').trim().toUpperCase();
+        _mdOrbOp = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_oRaw_mdOrb]) ? CALLSIGN_TO_IATA[_oRaw_mdOrb] : _oRaw_mdOrb;
+        if (_mdOrbOp === _mdCode) _mdOrbOp = ''; } catch (e) {}
+      var _mdOrbSrc = '';
+      try {
+        var _orbCode_mdOrb = _mdOrbOp || _mdCode;
+        // v23208 — emblem only, never a lockup with lettering (see the
+        // inbound builder).
+        _mdOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mdOrb] || window._AIRLINE_EMBLEM_FILES[_mdCode])) || '';
+      } catch (e) {}
+      // v23203 — 'unless the orb is white then its color': a light orb
+      // ground keeps the colour logo; only a dark ground takes the white
+      // silhouette. Judged from the brand accent's luminance.
+      var _mdOrbWhite = true;
+      try { var _h_mdOrb = String(_mdAccFb).replace('#','');
+        if (_h_mdOrb.length === 3) _h_mdOrb = _h_mdOrb.replace(/./g, function(c){return c+c;});
+        var _r_mdOrb = parseInt(_h_mdOrb.substr(0,2),16), _g_mdOrb = parseInt(_h_mdOrb.substr(2,2),16), _b_mdOrb = parseInt(_h_mdOrb.substr(4,2),16);
+        if ((0.2126*_r_mdOrb + 0.7152*_g_mdOrb + 0.0722*_b_mdOrb) > 186) _mdOrbWhite = false; } catch (e) {}
+      var _mdTitle = _gateLbl('flight', _frF, function (w, i3) { return i3 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '');
       _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4"><div class="v2-rc-fi v2-rc-fi-table v2-rc-fi-2pane">'
-        +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('flight', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval">' + (_dFltCompact || '—') + '</div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl"><span>Destination</span></div>'
-        +       '<div class="v2-rc-fi-tval">' + _dCityCode + '</div>'
+          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
+        + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
+        +   '<div class="v2-fi-row">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mdBadge + '">'
+        +       (_mdOrbSrc
+                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  // v23208 — lettered-roundel fallback (see inbound builder).
+                  : '<span class="v2-fi-orb-code">' + (_mdOrbOp || _mdCode || '') + '</span>')
+        +     '</div></div>'
+        +     '<div class="v2-fi-textcol">'
+        // v23208 \u2014 a revision that moves the departure EARLIER banners green,
+        // not amber; only delay-family changes warn (mirrors the inbound).
+        +       '<div class="v2-fi-title' + ((/delayed|cancelled|diverted/.test(_dStCls || '') || (_dDepDelayed && !_dDepEarly)) ? ' v2-fi-title-warn' : (_dDepDelayed && _dDepEarly ? ' v2-fi-title-good' : '')) + '">' + _mdTitle + '</div>'
+        +       '<div class="v2-fi-value">'
+        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</span></div>'
+        // v23208 \u2014 the time row reads 'Revised | R\u00e9vis\u00e9: new | struck-old'
+        // whenever a revision exists, exactly like the inbound card (Nick:
+        // 'DepartureD\u00e9part: 10:50am NO this is Revised | Revis\u00e9'); the plain
+        // 'Departure | D\u00e9part' label only when nothing was revised.
+        +         (_dDepDelayed && _dDepStr && _dDepSchedStr && _dDepSchedStr !== _dDepStr
+                    ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span><span class="v2-fi-mcolon">:</span> '
+                      + '<span class="v2-rc-status-' + (_dDepEarly ? 'early' : (_dStCls || 'delayed')) + '">' + (_dRailT(_dDepStr) || '') + '</span>'
+                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _dRailT(_dDepSchedStr) + '</span></span></div>'
+                    : (_dDepStr ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_dRailT(_dDepStr) || '') + '</div>' : ''))
+        // v23208 \u2014 'To | \u00c0', not a bare colon: the 'destination' key never
+        // existed in _GATE_LBL, so the label rendered empty (Nick: ': Ottawa
+        // | YOW NO this is terrible To | \u00c0:').
+        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('to', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
+        +       '</div>'
         +     '</div>'
         +   '</div>'
-        +   '<div class="v2-rc-fi-pane">'
-        +     '<div class="v2-rc-fi-trow">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('departure', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dDepStr || '—') + '</span></div>'
-        +     '</div>'
-        +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last">'
-        +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('status', _frF) + '</div>'
-        +       '<div class="v2-rc-fi-tval v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
-        +     '</div>'
-        +   '</div>'
-        + '</div></div>';
+        + '</div></div>'
+        + '</div>';
     } catch (e) {}
   }
 
@@ -8826,7 +9028,14 @@ function _buildV2MapCol(ctx, vars) {
         var _opNm6 = _cf._opName
           || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
         _opNm6 = String(_opNm6).replace(/[<>"']/g, '');
-        var _opLogo6 = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
+        // v23206 — THE WORDMARK BY ITSELF, colour or black — no chip, no
+        // roundel, no white filter (Nick: 'wordmark by itself no logo …
+        // collor or black'). v23208 — lettering-ONLY art ('the wordmark
+        // without emblem goes at operated by'): OPERATOR_WORDMARKS first,
+        // since operatorLogoUrl can serve a lockup that still carries the
+        // emblem; the onerror fallback is the operator's name in bold ink.
+        var _opLogo6 = ((typeof operatorWordmarkUrl === 'function') ? operatorWordmarkUrl(_opCode) : null)
+          || ((typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null);
         _opByVal = _opLogo6
           ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
             + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
@@ -8846,6 +9055,41 @@ function _buildV2MapCol(ctx, vars) {
       // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
       // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
       var _pendingAircraftText = _gateLbl('acPending', _frF8, _nbw, ' <span class="v2-rc-fi-sep">|</span> ');
+      // v23204 — THE ORB BY THE AIRCRAFT IS THE OPERATOR'S (Nick: 'ITs
+      // operated under the AC name however operated by PAL that one by the
+      // Aircraft should be PAL'). The merged module builds BEFORE this block
+      // resolves the true operator (flight-number bands, Express matrix, PAL
+      // registrations), so the module bakes the marketing carrier's mark.
+      // Now that the operator is known, re-point the module's tagged orb at
+      // the operator's logo.
+      try {
+        if (_opCode && _inboundCard && _inboundCard.indexOf('v2-fi-orb') !== -1) {
+          // v23208 — EMBLEM ONLY in the orb (Nick: 'the orb does not have
+          // wordmark … its the emblem only', all airlines — 'whoever operates
+          // that aircraft gets the logo'). v23207 preferred operatorLogoUrl
+          // here, which for PAL served the full lockup WITH lettering into
+          // the orb. No wordmark fallbacks: an operator without emblem art
+          // keeps the marketing carrier's emblem the builder already baked.
+          var _orbFix = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode]) || '';
+          if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
+          // v23205 — the orb GROUND follows the operator's carrier colour too
+          // (Nick: 'your orb by the plane should follow the carrier colors —
+          // yellow in this case'): PAL's brand accent behind PAL's mark, not
+          // the marketing carrier's red. The white-vs-colour logo rule reruns
+          // against the operator's ground.
+          var _opAcc = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_opCode] && AIRLINE_BRAND[_opCode].accent) || '';
+          if (_opAcc) {
+            _inboundCard = _inboundCard.replace(/(v2-fi-orbwrap" style="[^"]*?)background:var\(--airline-accent,[^)]*\)/, '$1background:' + _opAcc);
+            var _oh = _opAcc.replace('#',''); if (_oh.length === 3) _oh = _oh.replace(/./g, function (c) { return c + c; });
+            var _olum = 0.2126*parseInt(_oh.substr(0,2),16) + 0.7152*parseInt(_oh.substr(2,2),16) + 0.0722*parseInt(_oh.substr(4,2),16);
+            if (_olum > 186) {
+              _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
+            } else if (_inboundCard.indexOf('filter:brightness(0) invert(1)') === -1) {
+              _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src="[^"]*" alt="" style="width:100%;height:100%;object-fit:contain;)/, '$1filter:brightness(0) invert(1);');
+            }
+          }
+        }
+      } catch (e) {}
       var _typeCellHtml =
           '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || _pendingAircraftText) + '</div>'
         + (_opByVal
@@ -8881,10 +9125,19 @@ function _buildV2MapCol(ctx, vars) {
               ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
                 + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
         +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
-        + '</div>'
-        + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
-        +   _typeCellHtml
-        + '</div></div>';
+        // v23181 — ONE PLATE FOR THE AIRCRAFT, NOT TWO. The type used to be its
+        // own shelf below the photo, which is the extra panel on the right rail:
+        // Nick's drawing captions the photo ("Embraer-195 | C-FTOD") inside the
+        // same bordered plate. Emitting it here as an overlay caption removes a
+        // panel without losing the text.
+        // It must NOT carry .v2-rc-acb: the v22686 fitter below copies the
+        // flight-info pane's box onto that class with inline !important, which
+        // is right for a standalone bottom panel and wrong for a caption strip
+        // — it was stretching the bar to the pane's 268x88 and no stylesheet
+        // rule can outrank an inline !important. _fitTypePanel knows the new
+        // class, so the text still sizes itself to the bar.
+        +   '<div class="v2-rc-acb-cap">' + _typeCellHtml + '</div>'
+        + '</div>';
     }
   } catch (e) {}
   // Last-resort geometry guard: even a malformed enrichment field must not
@@ -8907,10 +9160,10 @@ function _buildV2MapCol(ctx, vars) {
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
               + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
-      + '</div>'
-      + '<div class="v2-rc-shelf v2-rc-shelf-type"><div class="v2-rc-acb">'
-      +   '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
-      + '</div></div>';
+      +   '<div class="v2-rc-acb-cap">'
+      +     '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
+      +   '</div>'
+      + '</div>';
   }
 
   // Map area — now the TOP half of the right column, with the "Your Aircraft"
@@ -8937,15 +9190,26 @@ function _buildV2MapCol(ctx, vars) {
     ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
     : '<span class="v2-rc-map-life-code">' + (_mapLifeCode || '&#9992;') + '</span>';
+  // v23192 — THE STRIP IS DOCKED UNDER THE MAP, MEASURED OFF NICK'S TARGET.
+  // His screenshot's right rail, read off its pixels (130 -> 850, slot pitch
+  // ~120): map WITH the telemetry strip fused to its bottom 130 -> 490 = three
+  // slots; aircraft 1; Flight 1; Status 1. The strip is ~40px of dark ground
+  // BELOW the tiles, inside the same bordered block — not a full panel of its
+  // own (v23189 made it one and that cost the map a slot and added a gutter
+  // his design does not have), and not floating over the tiles either (the
+  // pre-v23189 wash, "within the maps space"). Emitted as a sibling of
+  // .v2-map-area inside the map card; the card flexes column so the map area
+  // yields exactly the strip's height and no tile sits under it.
   var _mapBox =
-      '<div class="v2-rc-shelf v2-rc-shelf-map">'
+      '<div class="v2-rc-shelf v2-rc-shelf-map' + (_telemBar ? ' v2-rc-map-has-telem' : '') + '">'
     +   '<div class="v2-map-area">'
     +     '<div class="g8-inb-map" id="gateMapBox"></div>'
     +     '<div class="v2-rc-map-life" aria-hidden="true">' + _mapLifeHtml + '</div>'
     +     '<div class="v2-rc-maptitle">' + _gateLbl('yourAc', _frF, function(w,i){ return i ? '<span class="v2-rc-maptitle2">'+w+'</span>' : w; }, ' <span class="v2-rc-maptitle-sep">|</span> ') + '</div>'
-    +     _telemBar
     +   '</div>'
+    +   _telemBar
     + '</div>';
+  var _telemBlock = '';
 
   // v218.99.7 — assemble right column. Theme system removed in v218.99.9,
   // so we just iterate the default order: inbound card on top, map in
@@ -8957,9 +9221,15 @@ function _buildV2MapCol(ctx, vars) {
   var _rcBlockMap = {
     inboundCard: _inboundCard,
     map:         _mapBox,
+    telem:       _telemBlock,
     aircraft:    _aircraftBlock
   };
-  var _rcDefaultOrder = ['map', 'inboundCard', 'aircraft'];
+  // v23184 — the order the drawing has, top to bottom: the map, then the
+  // aircraft plate with its caption, then the flight-info card. Counted off
+  // the drawing against its own left rail (6 panels, 98->718, ~103px a slot):
+  // map 88->410 is 3 slots, the aircraft photo 418->508 is 1, and the two
+  // flight-info panes 518->612 and 620->718 are 1 each. 3+1+2 = 6.
+  var _rcDefaultOrder = ['map', 'telem', 'aircraft', 'inboundCard'];
 
   // v218.99.21 — apply customized layout order if set
   var _rcOrderToUse = _rcDefaultOrder;
@@ -8979,8 +9249,12 @@ function _buildV2MapCol(ctx, vars) {
   // and row 4 (flight info) needs a bigger track when the Arrival row makes
   // the table 4 rows — :has() is silently dropped on the kiosk browsers.
   var _railFi4 = _rcHtml.indexOf('v2-rc-shelf-fi4') >= 0 ? ' gad-map-col-fi4' : '';
+  // v23189 — tells the stylesheet whether the telemetry panel is on the rail
+  // this render. With it the map takes 2 slots and telemetry the third; without
+  // it the map takes all 3 back, so the six slots are always exactly filled.
+  var _railTelem = _telemBlock ? ' gad-map-col-telem' : '';
   return ''
-    + '<div class="gad-map-col-v2' + _railFi4 + '" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
+    + '<div class="gad-map-col-v2' + _railFi4 + _railTelem + '" style="display:flex;flex-direction:column;flex:0 0 25%;min-width:0;">'
     +   _rcHtml
     + '</div>';
 }
@@ -9674,7 +9948,11 @@ function uxgGateHtml(ctx) {
         } catch (e) { return _bwStKey; }
       };
       var _bwSide = function (lang, cls) {
-        var _lbl = (_GATE_LBL.currentTime && _GATE_LBL.currentTime[lang]) || _GATE_LBL.currentTime.en;
+        // v23211 — NO CLOCK IN THE STRIP (Nick: 'the clock was supposed to
+        // be removed and added at the top simple clock'): the flanks carry
+        // the status pair only, the middle banner takes the width the two
+        // clocks gave up, and the simple time+date tab returns to the top
+        // banner (the takeover's no-clock CSS is lifted alongside).
         var _stHtml = '';
         if (_bwAbn) {
           var _stLbl = (_GATE_LBL.status && _GATE_LBL.status[lang]) || 'Status';
@@ -9683,15 +9961,7 @@ function uxgGateHtml(ctx) {
             + '<span class="g8-bw-st-val">' + _bwStWord(lang) + '</span>'
             + '</div>';
         }
-        var _clk = '<div class="g8-bw-clock">'
-          + '<span class="g8-bw-clk-lbl">' + _lbl + '</span>'
-          + '<span class="g8-bw-clk-val v2-fi-clock-val" data-tz="' + String(_bwTz || '') + '" data-bwlang="' + lang + '">'
-          +   _fidsClockForLang(new Date(), _bwTz, lang)
-          + '</span></div>';
-        // status sits INBOARD of the clock on both ends (clock stays at the edge)
-        return '<div class="g8-bw-end ' + cls + '">'
-          + (cls === 'g8-bw-end-l' ? _clk + _stHtml : _stHtml + _clk)
-          + '</div>';
+        return '<div class="g8-bw-end ' + cls + '">' + _stHtml + '</div>';
       };
       _bwClock = _bwSide(_bwL1, 'g8-bw-end-l') + '::MID::' + _bwSide(_bwL2, 'g8-bw-end-r');
     } catch (e) { _bwClock = '::MID::'; }
@@ -9755,7 +10025,13 @@ function uxgGateHtml(ctx) {
       // still white OMG WOW'). Same colour art as the map slot uses.
       var _CD_MARK = {
         'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
+        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+        // v23198 — WestJet's countdown centrepiece was the dark navy leaf on
+        // the takeover's dark ground: near-invisible (Nick, on the render:
+        // 'this is shit'). Same fix Delta got in v23130 — the COLOUR art the
+        // map slot already uses.
+        'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
       };
       var _src = _CD_MARK[String(airlineCode || '').toUpperCase()]
         || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || _sym;
@@ -11008,10 +11284,16 @@ function uxgGateHtml(ctx) {
             var _tbL = ['', ''];
             _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
+              // v23181 — A SIMPLE CLOCK. The tab stacked four lines: 'Time in
+              // <City>', the clock, 'Heure à <City>', then the date. Nick has
+              // asked repeatedly for just the time and the date, and his mockup
+              // shows exactly two lines. The city is already named by the gate
+              // badge beside it, so the labels only repeated what the screen
+              // says a few centimetres away. _tbL is still built above — the
+              // words stay translated and available — it is simply not rendered
+              // here any more.
               + '<div class="octb octb-tab octb-stack">'
-              +   _tbL[0]
               +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
-              +   _tbL[1]
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
               + '</div>'
               + '</div>';
@@ -11458,6 +11740,12 @@ function gateAutofit(root) {
     // the box IS the budget: width = the cell's own box (text-overflow
     // catches width), height cap = a single-line fraction of the cell.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-fi-trow').forEach(function (row) {
+      // v23199 — NOT inside the merged one-slot card. Its rows are sized by
+      // the stylesheet's clamps; this fitter budgeted against the roomier
+      // two-pane geometry and its inline !important sizes outran the slot —
+      // the hero overlapped the Destination label and the last row kissed the
+      // card edge on the AC rotation.
+      if (row.closest && row.closest('.v2-rc-fi-pane-merged')) return;
       // ALL value cells in the row — the revised row is two label|value
       // pairs on one line (Nick's sketch), each time at full row height.
       row.querySelectorAll('.v2-rc-fi-tval').forEach(function (val) {
@@ -11580,8 +11868,22 @@ function gateAutofit(root) {
     // is unchanged between the passes and would otherwise short-circuit the
     // correction — which is why this never self-healed on the 5s heartbeat.
     function _fitTypePanel(el) {
-      var panel = el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
-      if (!panel || panel.clientHeight < 24) return;
+      // v23210 — the gate rail's caption is a side-by-side ROW since v23203
+      // (type left, Operated-By right). This fitter's model is the OLD
+      // stacked panel: it forced the type to the FULL band width and fitted
+      // its font against room the flex row never gives it — and the inline
+      // !important writes beat the stylesheet, so 'De Havilland Das' clipped
+      // mid-word on the live board while the CSS wrap sat overridden. In the
+      // row band the stylesheet clamps own the type; here we only clear any
+      // stale inline writes from an earlier pass and step aside.
+      if (el.closest && el.closest('.v2-rc-acb-cap')) {
+        ['font-size', 'white-space', 'margin-left', 'width', 'padding-left'].forEach(function (p) {
+          try { el.style.removeProperty(p); } catch (e2) {}
+        });
+        return;
+      }
+      var panel = el.closest('.v2-rc-acb-cap') || el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
+      if (!panel || panel.clientHeight < 18) return;
       el.style.setProperty('white-space', 'normal', 'important');
       var scs = window.getComputedStyle(panel);
       var panelPadLeft = parseFloat(scs.paddingLeft) || 0;
@@ -18085,6 +18387,14 @@ const LS = {
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
   boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  // v23202 — the altimeter's labels follow the CHOSEN languages like every
+  // other label on the board (Nick: 'ALL NEEDAS TO REFLECTS LANGUAGES
+  // CHOSEN'); they were hard-coded English with a hard-coded French unit.
+  speed: { en:'Speed', fr:'Vitesse', es:'Velocidad', de:'Geschwindigkeit', it:'Velocità', pt:'Velocidade', ja:'速度', zh:'速度', ar:'السرعة' },
+  altitude: { en:'Altitude', fr:'Altitude', es:'Altitud', de:'Flughöhe', it:'Altitudine', pt:'Altitude', ja:'高度', zh:'高度', ar:'الارتفاع' },
+  distance: { en:'Distance', fr:'Distance', es:'Distancia', de:'Entfernung', it:'Distanza', pt:'Distância', ja:'距離', zh:'距离', ar:'المسافة' },
+  feetUnit: { en:'Feet', fr:'Pieds', es:'Pies', de:'Fuß', it:'Piedi', pt:'Pés', ja:'フィート', zh:'英尺', ar:'قدم' },
+  estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
   // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
   // where the full 'MINUTES' would not fit next to a digit that size.
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -18731,6 +19041,14 @@ var _GATE_LBL = {
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
   boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  // v23202 — the altimeter's labels follow the CHOSEN languages like every
+  // other label on the board (Nick: 'ALL NEEDAS TO REFLECTS LANGUAGES
+  // CHOSEN'); they were hard-coded English with a hard-coded French unit.
+  speed: { en:'Speed', fr:'Vitesse', es:'Velocidad', de:'Geschwindigkeit', it:'Velocità', pt:'Velocidade', ja:'速度', zh:'速度', ar:'السرعة' },
+  altitude: { en:'Altitude', fr:'Altitude', es:'Altitud', de:'Flughöhe', it:'Altitudine', pt:'Altitude', ja:'高度', zh:'高度', ar:'الارتفاع' },
+  distance: { en:'Distance', fr:'Distance', es:'Distancia', de:'Entfernung', it:'Distanza', pt:'Distância', ja:'距離', zh:'距离', ar:'المسافة' },
+  feetUnit: { en:'Feet', fr:'Pieds', es:'Pies', de:'Fuß', it:'Piedi', pt:'Pés', ja:'フィート', zh:'英尺', ar:'قدم' },
+  estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
   nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -18912,7 +19230,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23173';
+var FIDS_BUILD_TAG = 'v23213';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -19269,11 +19587,19 @@ function setTheme(name) {
   // re-inject a #dynamicTheme block (body{background:…!important}) that shadows
   // it — that leak forced the BAGGAGE screen dark (#544f4f) on ?theme=mist even
   // though the board resolved to mist. Enforce the pin and bail.
+  // v23182 — the leak this guards against is the LEGACY #dynamicTheme block, so
+  // that one still goes unconditionally. What must not go with it is a resolved
+  // custom palette: applyAirportConfigToBoard has already stamped
+  // body.dataset.fidsTheme, so when it reads 'custom' the airport's own colours
+  // won the resolution above and this pin is only a boot default. Stripping
+  // #_fidsCustomThemeRules and the eight --fids-* variables here is what wiped
+  // YQM's saved palette ~0.3s after every load on the ?theme=mist stream URLs.
   try {
     var _pin = (new URLSearchParams(window.location.search).get('theme') || '').trim().toLowerCase();
     if (/^(mist|tus-teal|tus-teal-deep)$/.test(_pin)) {
-      currentTheme = _pin;
       var _dt = document.getElementById('dynamicTheme'); if (_dt) _dt.remove();
+      if ((document.body.dataset.fidsTheme || '') === 'custom') return;
+      currentTheme = _pin;
       var _cr = document.getElementById('_fidsCustomThemeRules'); if (_cr) _cr.remove();
       document.body.dataset.fidsTheme = _pin;
       ['--fids-banner-bg','--fids-banner-text','--fids-banner-accent',
@@ -24484,8 +24810,15 @@ function applyAirportConfigToBoard(iata) {
     // the theme in the menu on those screens did nothing, forever. The pin
     // still gives a wiped kiosk a deterministic look; the moment an operator
     // SAVES a theme on the device, that choice outranks the pin.
+    // v23182 — and a theme saved on the AIRPORT counts as a saved choice too.
+    // v23125 only consulted _userCfg, which is this browser's localStorage. A
+    // stream box boots a clean profile every time, so _userCfg is always empty
+    // there and the pin won again — which is why YQM's cloud palette
+    // (theme:"custom" + customColors, confirmed live in KV) never reached the
+    // screen. The airport module is the thing being saved to the cloud; it has
+    // to outrank a URL default the same way a local save does.
     var _urlTheme = new URLSearchParams(location.search).get('theme');
-    var _savedThemeChoice = _userCfg && _userCfg.theme;
+    var _savedThemeChoice = (_userCfg && _userCfg.theme) || (_adminCfg && _adminCfg.theme);
     if (_urlTheme && _ALLOWED_THEMES[_urlTheme] && !_savedThemeChoice) _theme = _urlTheme;
   } catch (e) {}
   // Logo position is nested under .logo.position in admin KV but flat in user prefs
@@ -27180,6 +27513,18 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     });
     return;
   }
+  // v23208 — DATELINE LEGS (KE76 YVR→ICN): the raw endpoint lngs sit 249°
+  // apart, so fitBounds framed the whole world the LONG way round and the
+  // arc (drawn dateline-unwrapped by _gcAddArc) ran off-window — a world
+  // map with no route and no plane (Nick: 'The map the aircraft everythign
+  // has started gitching agian'). Unwrap the destination lng to within 180°
+  // of the origin: trig is 2π-periodic so the great-circle math is
+  // identical, and bounds, phase centres, pins and arc all land on one
+  // continuous window (the basemap tiles repeat across world copies).
+  // Copies first — _lookupAirport can return shared arrays.
+  o = [o[0], o[1]]; d = [d[0], d[1]];
+  while (d[1] - o[1] > 180) d[1] -= 360;
+  while (d[1] - o[1] < -180) d[1] += 360;
   // v23099 — REUSE the map instance on the same route (the discipline the
   // live path already had). Every call used to remove() + recreate map and
   // tile layer, so each gate re-render repainted from Leaflet's grey ground
@@ -36154,7 +36499,13 @@ function _renderBigCraft(el, ctx) {
       '<div class="bigcraft-wrap bigcraft-wrap--maponly">'
     +   '<div class="bigcraft-mapcol">'
     +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
-    +     (ctx.estimated ? '<div class="bigcraft-est">Estimated position · Position estimée</div>' : '')
+    +     (ctx.estimated ? '<div class="bigcraft-est">' + (function(){
+            // v23202 — the badge follows the CHOSEN languages like everything
+            // else; it was hard-coded EN/FR and read 'Position estimée' on an
+            // en,es board.
+            try { return _gateLbl('estPos', false, function(w){return w;}, ' \u00b7 ', true); }
+            catch(e){ return 'Estimated position'; }
+          })() + '</div>' : '')
     +   '</div>'
     + '</div>';
   _bcWrapEl.appendChild(_bcOv);
@@ -36672,6 +37023,12 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
     });
     return;
   }
+  // v23208 — same dateline unwrap as the mini estimate map (see
+  // initGateMap): without it a YVR→ICN leg framed the whole world and the
+  // route rendered off-window.
+  o = [o[0], o[1]]; d = [d[0], d[1]];
+  while (d[1] - o[1] > 180) d[1] -= 360;
+  while (d[1] - o[1] < -180) d[1] += 360;
   try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);
   /* (fade helper defined once, below at its first use in source order) */
   // Calculate total route distance for zoom scaling

@@ -3875,6 +3875,8 @@ html .octb-attached .octb-tab::after {
   background: rgba(214,218,226,0.26) !important;
 }
 
+
+
 /* Moncton's Acadian banner carries a flag STAR right by the title — keep its
    baggage icon at the original small size so the enlarged bag (used everywhere
    else) doesn't cover it (Nick: 'the baggage in Moncton was fine, now it's
@@ -12630,4 +12632,1372 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   text-shadow: 0 0 10px rgba(255,255,255,0.35) !important;
   position: relative !important;
   z-index: 3 !important;
+}
+
+
+/* ── v23181 — THE CLOCK SITS ON THE BANNER, NOT IN A TAB ────────────────────
+   The rules above build the time into a card: a translucent plate
+   (.octb-tab.octb-stack resolves to color-mix(var(--banner-bg) 58%, black)),
+   a rounded top, a white left streak, a drop shadow and an ::after strip that
+   fills the wedge where the card meets the gate badge. Together they read as a
+   separate object pasted onto the banner.
+
+   Nick's mockup has no card: the banner runs straight behind the time and the
+   date, and they simply occupy the space between the airline mark and the gate.
+
+   This must sit at the END of the file and carry .octb-stack in the selector —
+   a first attempt used `html .octb-tab` higher up and lost to
+   `html .octb-tab.octb-stack` below it, which is why nothing appeared to
+   change. The rules above are left intact so the card grammar remains
+   available to any screen that still wants it. */
+html .octb.octb-tab,
+html .octb.octb-tab.octb-stack,
+html .octb-attached .octb.octb-tab.octb-stack {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-left: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  min-width: 0 !important;
+  width: 100% !important;
+}
+html .octb-attached .octb-tab.octb-stack::after,
+html .octb-attached .octb-tab::after { display: none !important; content: none !important; }
+
+/* v23181 — AND THE TIME READS AGAINST WHATEVER BANNER IT IS ON.
+   With the card gone the clock sits directly on the airline's banner, and the
+   banner is not always dark: Porter's is cream, WestJet's is deep blue. The
+   clock and date were pinned to #ffffff back when they always had a shaded
+   plate behind them to sit on — white on cream is unreadable without it.
+   tagGidsHeaderBrightness_v21862 already measures the header's luminance every
+   1.2s and marks the body, so the colour simply follows that instead of being
+   fixed. Dark banners are unchanged. */
+html body.g8-header-is-light .octb-clock { color: #1d2b45 !important; }
+html body.g8-header-is-light .octb-date  { color: rgba(29,43,69,0.82) !important; }
+html body.g8-header-is-light .octb-en,
+html body.g8-header-is-light .octb-fr    { color: rgba(29,43,69,0.75) !important; }
+
+/* ── v23181 — LEFT AND RIGHT ARE THE SAME SIX MODULES ───────────────────────
+   Nick's drawing puts the two outer columns on one rhythm: equal modules,
+   mirrored across the middle console, "like modules that slide in and out".
+   Measured, they were not close. The left column is six panels of ~100px with
+   edges at 112/212/313/413/513/614/714; the right column's shelves were
+   241 / 161 / 100 / 100, so its edges landed at 356 and 516 — meeting nothing
+   on the left.
+
+   The right column is already display:grid (which is why the shelves' flex
+   values above have no effect on it), so one explicit six-row track and a span
+   per shelf puts every edge on the same line as the left:
+
+       aircraft/map shelf  2 modules
+       flight info shelf   2 modules
+       illustration        1 module
+       aircraft type       1 module
+
+   The left block is stretched to the full column height for the same reason —
+   it was ending 6px short at 714 against the column's 720, which would have
+   drifted the two sides apart by a pixel per row. Both sides now derive their
+   module height from the identical container, so they cannot disagree. */
+html body .g8-wrap .gad-map-col-v2,
+html body .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
+  /* .gad-map-col-fi4 must be named here: gate-display.css loads AFTER this
+     file and sets `repeat(3,.8fr) 1.6fr repeat(2,1fr)` on that exact class —
+     the 80/80/80/160/100/100 tracks measured on the live board. A selector
+     without it loses on specificity and nothing changes. */
+  grid-template-rows: repeat(6, minmax(0, 1fr)) !important;
+  row-gap: 0 !important;
+}
+/* v23183 — three slots per plate, so each plate is half the column. Six slots
+   divided by two plates is three apiece; there is no way to build three plates
+   out of 3-slot units, which is why the rail is two. .v2-rc-shelf-fi keeps a
+   span here only as a safety net: fids-core no longer emits it as a grid child
+   (it is drawn inside the map plate), but an older cached fids-core.js paired
+   with this stylesheet must not drop a shelf into an implicit seventh row. */
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map   { grid-row: span 3 !important; min-height: 0 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi    { grid-row: span 2 !important; min-height: 0 !important; }
+/* Three plates over six modules, not four. The aircraft type is no longer its
+   own shelf — fids-core.js now emits it as .v2-rc-acb-cap inside the
+   illustration plate, the way the drawing captions the photo — so the
+   illustration plate takes the bottom half of the rail. An earlier attempt did
+   this by stacking two grid items in the same rows; they fought for width and
+   the column tore apart, so the markup carries it now and the grid just counts
+   to six. */
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  grid-row: span 1 !important; min-height: 0 !important; position: relative !important;
+}
+/* The caption is a HEADER BAR, not a wash over the photo. In the drawing the
+   aircraft plate wears "Embraer-195 | C-FTOD" on a light strip across its top,
+   with the photo beneath — the same grammar as the label bars on the left
+   column's panels. A first cut faded it over the bottom of the image, which
+   reads as a watermark rather than a plate heading. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  /* The twelve :not(#_) are load-bearing: an existing rule pins every child of
+     .v2-rc-shelf-illus to position:relative with its own escalated selector, so
+     a plainer one here is overruled and the caption falls to the bottom of the
+     plate instead of sitting across its top. */
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important; bottom: auto !important;
+  z-index: 3 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  gap: clamp(6px,0.9vw,16px) !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: clamp(3px,0.7vh,8px) clamp(8px,1vw,14px) !important;
+  background: rgba(233,236,241,0.93) !important;
+  background-image: none !important;
+  border: none !important;
+  border-bottom: 1px solid rgba(15,23,40,0.18) !important;
+  border-radius: 0 !important;
+  /* A definite height, not auto: _fitTypePanel grows the type line until it
+     fills its panel, so an auto-height bar and a height-seeking fitter chase
+     each other. One module of the plate's two is the strip; the photo keeps
+     the rest. */
+  height: clamp(20px, 3.2vh, 34px) !important;
+  min-height: 0 !important;
+  text-align: center !important;
+  pointer-events: none !important;
+}
+/* Children only. An earlier cut put `background: transparent` on a group that
+   named .v2-rc-acb-cap itself as well as its children — same specificity,
+   later in the file, so it beat the light strip set immediately above and the
+   bar rendered as bare teal plate. The strip is set once, above; everything
+   inside it stays unpainted so the strip shows through. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap * {
+  background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap * {
+  color: #16233c !important;
+  font-weight: 800 !important;
+  text-shadow: none !important;
+  -webkit-text-fill-color: #16233c !important;
+}
+html body .g8-wrap .gad-aircraft-col > .v2-flightinfo-block { height: 100% !important; }
+
+/* v23181 — and the column header goes with it.
+   "Your Aircraft | Votre Avion" sat above the top shelf at 36px tall, so the
+   plate beneath it started at 148 instead of 112 and ended at 276 instead of
+   313 — the only two edges still refusing to meet the left column. Nick's
+   drawing has no such label: the right side is one clean plate to its own
+   edges, and the aircraft type is already named on the bottom module.
+   The :not(#_) chain is this file's existing idiom for out-ranking an earlier
+   rule, and it is needed here: .v2-rc-maptitle is already claimed at line ~9050
+   with ten of them and at ~12130 with four, both of which out-specify a plain
+   `html body …` selector regardless of order. Twelve clears both. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-col-hdr { display: none !important; }
+
+
+/* v23182 — THE TWO COLUMNS NOW SHARE THEIR EDGES.
+   Measured on the live board at 1280x720, before this rule:
+     left  rows  112.0 -> 714.0, six modules of 100.33
+     right plates 115.0 -> 717.0, three plates of 200.66
+   The module heights already agreed to the pixel; every edge was simply three
+   pixels apart, and the three pixels are `border: 3px solid var(--airline-accent)`
+   on .gad-map-col-v2 (gate-display.css). That border eats into the right
+   column's content box top and bottom; the left column has no border at all
+   and carries a 6px bottom padding instead, so its rows start three pixels
+   high and end three pixels high.
+   Giving the left column the same 3px band — transparent, so the accent frame
+   stays a right-column feature — puts both content boxes at 115 -> 717. The
+   6px padding has to go with it or the left column loses six pixels twice. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
+  /* v23187 — all FOUR sides, not two. v23182 matched only top and bottom,
+     because only the vertical edges were being chased then. The accent border
+     is on all four sides of .gad-map-col-v2, so the right column's CONTENT box
+     was 6px narrower than the left's, and with both rails using the same 13.44
+     card margin every right card came out 6.0px narrower than every left card
+     — measured 414.7 against 408.7. Nick: "not one panel is the same size",
+     and he was right: the heights matched but no right panel could ever match
+     a left one. Matching the sides puts both content boxes at 435.6. */
+  border: 3px solid transparent !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* v23184 — the map plate must fill its three slots. It did not, so anything
+   anchored to its bottom edge sat 32px short of the plate. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map .v2-map-area {
+  height: 100% !important;
+  min-height: 0 !important;
+  position: relative !important;
+}
+
+/* v23185 — THE RIGHT RAIL GETS THE LEFT RAIL'S CARD, NOT JUST ITS SLOT.
+   Nick: "your panels are not the same size there is differences, your aircraft
+   is not in a panel and the formatting as provided does not match." All three
+   are one cause. The slots were made to agree in v23184, but a slot is not a
+   panel: on the left the painted card is .v2-fi-row::before, inset from its
+   slot and rounded — measured live at 1920x1080 as inset 9.72px top/bottom,
+   13.44px left/right, radius 15.12px — while every right shelf sat at
+   margin:0, radius:0 and filled its slot corner to corner. Two panels of the
+   same slot therefore rendered at different visible sizes, and the aircraft
+   photo had no card around it at all; it just bled to the column edges.
+   Those measurements as viewport units — 9.72/1080 = 0.9vh, 13.44/1920 = 0.7vw,
+   15.12/1080 = 1.4vh — so the two rails stay matched at any board size rather
+   than only at the one they were measured on. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf {
+  margin: 0.9vh 0.7vw !important;
+  border-radius: 1.4vh !important;
+  /* The photo and the map are the card now, so they have to be clipped to its
+     corners — without this the image squares off the rounding it sits inside. */
+  overflow: hidden !important;
+}
+/* The aircraft plate is a card in the drawing: a bordered frame holding the
+   caption bar and the photo beneath it. It had no ground of its own, so give
+   it one behind the image. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  background-color: rgba(10, 26, 48, 0.55) !important;
+}
+/* The caption bar is inside a rounded card now, so its top corners follow it
+   or it overhangs the curve. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  border-top-left-radius: 1.4vh !important;
+  border-top-right-radius: 1.4vh !important;
+}
+
+/* v23186 — THE MAP CARD HAS NO DEAD BAND AT ITS TOP.
+   Measured on the deployed board: the card ran 153.1 -> 600.5 but .v2-map-area
+   sat at 171.6 -> 582 and the brand hold inside it at 221.2 -> 581, leaving
+   49.6px of empty ground across the top of the card. That gap is the space the
+   column header "Your Aircraft | Votre Avion" used to occupy — it was hidden in
+   v23181 but the room it reserved was never given back, and the v23184 attempt
+   at height:100% lost to the margin that actually causes the inset. The drawing
+   has the map filling its plate to all four corners. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
+  padding: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-map .v2-map-area {
+  position: absolute !important;
+  inset: 0 !important;
+  height: auto !important;
+  width: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+/* The brand hold that stands in while the map is centred fills the same plate,
+   so a board with no map still shows a full card and not a floating emblem. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-map-life {
+  inset: 0 !important;
+  margin: 0 !important;
+}
+
+/* v23188 — THE TWO BOTTOM PANELS ARE TWO CARDS, NOT TWO BARE PANES.
+   Nick: "2 bottom panels are not the same width, the formatting has not been
+   applied whatsoever." Measured on the deployed board, the two panes were in
+   fact the same width — 388.7 each, delta 0.00 — so the complaint is not the
+   width of the panes, it is that they are not panels at all: radius 4px, no
+   ground, sitting inside one 2-slot card, 20px narrower than every other card
+   because of the shelf's 10px side padding. In the drawing they are two
+   separate panels, one slot each, formatted exactly like every other panel.
+   The shelf stops being a card and becomes a plain 2-slot container; each pane
+   becomes the card. (Doing it this way rather than emitting a second shelf:
+   fids-core carries a documented v22591 regression where a second shelf child
+   spilled the rail into a phantom side column. Nothing needs to move in the
+   markup to get two panels out of this.) */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  background: transparent !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  padding: 0 !important;
+  /* A 6px top border lives on this shelf — a divider from when it was the
+     rail's middle plate. Measured: shelf top 775.52, table top 781.52. As a
+     plain container it must contribute nothing, or the two panes come out
+     133.2 instead of the 136.2 that makes them one slot each. */
+  border: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi .v2-rc-fi-table {
+  display: flex !important;
+  flex-direction: column !important;
+  /* 1.8vh is the 19.44px gutter every other pair of cards already sits on —
+     two card margins of 9.72px meeting. Using it here makes each pane exactly
+     one slot: (291.8 - 19.44) / 2 = 136.2, the same as a left card. */
+  gap: 1.8vh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100% !important;
+  width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi .v2-rc-fi-pane {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  width: auto !important;
+  margin: 0 !important;
+  border-radius: 1.4vh !important;
+  background-color: rgba(10, 26, 48, 0.55) !important;
+  overflow: hidden !important;
+}
+
+/* v23189 — A PANEL'S CONTENTS SIT INSIDE THE PANEL.
+   Nick: "nothing is alligned to look symetricla, everythign is different
+   sizes." Measured on a left panel at 1920x1080:
+     card            l= 16.4  r= 425.2
+     .v2-fi-iconcol  l=  3.0            13.4px OUTSIDE the card's left edge
+     .v2-fi-textcol  r= 438.6           13.4px OUTSIDE the card's right edge
+   The painted card is .v2-fi-row::before, inset 13.44px from the row. The row's
+   own children were never inset with it, so they were laid out against the SLOT
+   while the card sat inside it — the icon hung off one side and the text off
+   the other, and no two panels' contents lined up with their own edges. Giving
+   the row the same inset as its card puts the contents inside it. 0.9vh/0.7vw
+   are the same units the cards use, so they stay locked together at any size. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row {
+  /* Horizontal only. The same measurement shows the contents were already
+     within the card vertically — icon 180.8->261.6 and text 153.5->288.8 inside
+     a card of 153.1->289.3 — so only the sides were overhanging. Adding the
+     vertical inset as well took 19.44px away from the text fitter's budget and
+     clipped the second line of a two-line bilingual status ("En Retard"). */
+  padding: 0 0.7vw !important;
+}
+
+/* v23189 — the telemetry panel, now that it is a panel.
+   .v2-rc-mapstats was styled to float over the bottom of the map; on its own
+   card it has to fill it instead. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem {
+  background-color: rgba(10, 26, 48, 0.55) !important;
+  display: flex !important;
+  align-items: stretch !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem .v2-rc-mapstats {
+  position: static !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+/* Three slots when the aircraft is on the ground and there is no telemetry to
+   show, two when there is — the six slots stay exactly filled either way. */
+html body .g8-wrap .gad-map-col-v2.gad-map-col-telem > .v2-rc-shelf-map { grid-row: span 2 !important; }
+html body .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem { grid-row: span 1 !important; min-height: 0 !important; }
+
+/* v23190 — THE RIGHT RAIL'S PANELS WEAR A HEADER BAR, LIKE THE LEFT RAIL'S.
+   Nick's target: every panel is a full-width bar naming it, with label/value
+   rows beneath. The right rail had been putting the label on the LEFT of each
+   row instead, so the two rails read as two different systems even once their
+   sizes agreed — "the formatting has not been applied", "not one panel was
+   where it needed to be". This is the same bar the left rail has always worn:
+   light ground, dark ink, across the top of the panel. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  flex: 0 0 auto !important;
+  padding: clamp(2px,0.45vh,6px) clamp(6px,0.6vw,12px) !important;
+  margin: 0 0 clamp(2px,0.4vh,5px) 0 !important;
+  background: rgba(233,236,241,0.93) !important;
+  color: #16233c !important;
+  -webkit-text-fill-color: #16233c !important;
+  font-weight: 800 !important;
+  line-height: 1.05 !important;
+  text-align: center !important;
+  border-radius: 0.7vh !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr * {
+  color: #16233c !important;
+  -webkit-text-fill-color: #16233c !important;
+  background: transparent !important;
+  font-weight: 800 !important;
+}
+/* The status panel's bar carries the status colour as its GROUND, the way the
+   drawing inks "Delayed | Retard" amber across the top of that panel. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-delayed,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-diverted,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-cancelled {
+  background: #f5a623 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-early,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-ontime,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-arrived {
+  background: #7bd389 !important;
+}
+/* The flight number is this panel's hero, the way the number is on the left
+   rail's own Flight panel. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-hero {
+  justify-content: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-hero {
+  width: 100% !important;
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+/* _gateLblSpans emits the two languages as bare adjacent <span>s with no
+   separator — inside .v2-rc-fi-tlbl they stack, so none is needed there, but on
+   a one-line header bar they ran together as "FlightVol". The bar supplies the
+   rule the drawing shows: "Flight | Vol". */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr > span + span::before {
+  content: "|" !important;
+  margin: 0 0.42em !important;
+  opacity: 0.5 !important;
+  font-weight: 700 !important;
+}
+/* Any separator the status text carries of its own needs the same air, or it
+   reads as "Delayed|En retard". */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr .v2-rc-fi-sep,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr .v2-fi-sep {
+  margin: 0 0.42em !important;
+  opacity: 0.5 !important;
+}
+
+/* v23192 — the telemetry strip is DOCKED at the bottom of the map card.
+   Measured off Nick's target screenshot (right rail 130->850, slot pitch
+   ~120): map + strip together are the three-slot block, the strip ~40px of
+   dark ground BELOW the tiles inside the same bordered card. v23189's separate
+   telem panel and its gutter are retired — the map card always spans 3 and
+   flexes column: tiles above, strip below, nothing overlapping. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-map-area {
+  /* Un-does the v23186 inset:0 pin for the docked layout: the area is a flex
+     child again so the strip below it gets real room instead of being
+     overlapped by an absolutely-pinned map. */
+  position: relative !important;
+  inset: auto !important;
+  flex: 1 1 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-rc-mapstats {
+  position: static !important;
+  inset: auto !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  height: clamp(34px, 5vh, 52px) !important;
+  margin: 0 !important;
+  padding: 0 clamp(6px,0.6vw,12px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  background: rgba(6, 14, 26, 0.92) !important;
+  border-radius: 0 !important;
+}
+/* The separate telem shelf is retired; if an older cached fids-core still
+   emits one, it must not take a slot of its own. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-telem { display: none !important; }
+html body .g8-wrap .gad-map-col-v2.gad-map-col-telem > .v2-rc-shelf-map { grid-row: span 3 !important; }
+
+/* v23193 — THE BANNERS MATCH THE BOARD'S OWN BANNERS.
+   Nick: "the banners are not the same." Measured on the left rail: its label
+   bar (.v2-fi-title) paints rgb(0,178,169) with white text. v23190 gave the
+   right rail's header bars a light near-white ground with dark ink — a
+   treatment from the hand drawing, not from the board — so the two rails wore
+   two different banners. Same teal, same white, both rails now. The status
+   banner keeps its semantic ground (amber/green) and carries dark ink there,
+   which is also exactly what his target shows. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  /* v23199 — the LEFT banner's ground is per-airline: the generic rule paints
+     var(--accent-lane, --airline-accent) and the AC family overrides it with
+     the warm gray-beige (v23135). The hard-coded WestJet teal here matched
+     only WestJet — the AC rotation exposed a teal bar over silver left
+     banners. Same variable now, so every carrier's right banner follows its
+     left one automatically. */
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-delayed,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-diverted,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-cancelled {
+  background: #f5a623 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-early,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-ontime,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-arrived {
+  background: #7bd389 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-delayed,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-delayed *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-diverted,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-diverted *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-cancelled,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-cancelled *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-early,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-early *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-ontime,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-ontime *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-arrived,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr.v2-rc-phdr-arrived * {
+  color: #14213a !important;
+  -webkit-text-fill-color: #14213a !important;
+}
+
+/* v23193 — the flight pane's text sits like the target's: From/De small at
+   the left, the number stacked over the city|code to its right. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-fromrow {
+  display: flex !important;
+  align-items: center !important;
+  flex: 1 1 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-fvstack {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-fvstack .v2-rc-fi-hero { width: auto !important; }
+
+/* v23193 — the strip's cells, per the target: white label with a thin teal
+   underline, the value beneath, the altitude's bilingual unit as a small line
+   of its own, distance right-most. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-mstat {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 clamp(3px,0.3vw,8px) !important;
+  text-align: left !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-lbl {
+  color: #fff !important;
+  border-bottom: 2px solid rgb(0,178,169) !important;
+  display: inline-block !important;
+  padding-bottom: 1px !important;
+  font-weight: 700 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-unitline {
+  color: rgba(255,255,255,0.85) !important;
+  font-size: clamp(8px,0.9vh,12px) !important;
+  line-height: 1 !important;
+}
+/* v23193b — the strip earned a third cell and an unit line, so its old 5vh
+   clipped the values ("882 km/h" cut mid-glyph, measured in the render); and
+   the flight pane's two-line stack overran its card. Both get sized to fit
+   instead of clipped. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-rc-mapstats {
+  height: clamp(44px, 6.6vh, 66px) !important;
+  align-items: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-lbl {
+  font-size: clamp(9px,1.2vh,14px) !important;
+  line-height: 1.1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-val {
+  font-size: clamp(12px,1.9vh,20px) !important;
+  line-height: 1.1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-fromrow {
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-fvstack .v2-rc-fi-hero {
+  font-size: clamp(15px,2.6vh,30px) !important;
+  line-height: 1.08 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-fvcity {
+  font-size: clamp(12px,2.1vh,24px) !important;
+  line-height: 1.08 !important;
+  font-weight: 700 !important;
+}
+
+/* v23194 — THE RIGHT BANNER IS THE LEFT BANNER, BY MEASUREMENT.
+   Nick: "the banners dont match however left and right need to match … the
+   spaces the size dont even match." Measured at 1681x850:
+     left  banner: h=27.9, flush to the card top (0.9), spans edge to edge,
+                   radius 7px 7px 0 0 (a tab: rounded top, square bottom),
+                   2px WHITE underline, font 15.85px/800, one line
+     right banners: h=46.6 and 30.3 — not even equal to EACH OTHER (the
+                   bilingual spans in the Flight banner wrap to two lines),
+                   floated 3.4 down and 11.8 in from the pane edges, fully
+                   rounded, no underline
+   Every one of those deltas is closed here: the pane's own padding is removed
+   so the banner can reach the card's edges the way the left one does, the
+   rows get that padding back for themselves, and the bar takes the left
+   banner's geometry in the same viewport units (27.9/850 = 3.28vh, font
+   15.85/850 = 1.87vh, radius 7/850 = 0.82vh, title-to-value gap 7/1080 =
+   0.65vh). The spans are pinned inline so both banners are one line tall —
+   identical to each other and to the left rail's. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane {
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane .v2-rc-fi-trow {
+  padding-left: clamp(8px,1.53vh,18px) !important;
+  padding-right: clamp(8px,1.53vh,18px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  width: 100% !important;
+  height: clamp(20px, 3.28vh, 38px) !important;
+  min-height: 0 !important;
+  margin: 0 0 clamp(3px,0.65vh,8px) 0 !important;
+  padding: 0 clamp(10px,1.98vh,22px) !important;
+  border-radius: clamp(5px,0.82vh,10px) clamp(5px,0.82vh,10px) 0 0 !important;
+  border-bottom: 2px solid #ffffff !important;
+  font-size: clamp(11px,1.87vh,22px) !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr span {
+  display: inline !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  white-space: nowrap !important;
+}
+
+/* v23195 — TWO ACCENTS FROM THE TARGET THE BUILD WAS MISSING.
+
+   1. The left STATUS banner takes the status colour. In Nick's screenshot the
+      "Status | Statut" bar is amber while the flight is delayed; the build
+      kept it teal. Warning statuses tint the banner; on-time and friends keep
+      the teal (the Porter drawing shows a normal banner over a green On Time,
+      so the tint is for warnings only). fids-core now stamps the row with
+      v2-fi-rowst-<status>. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-delayed .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-diverted .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-cancelled .v2-fi-title {
+  background: #f5a623 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-delayed .v2-fi-title *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-diverted .v2-fi-title *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-cancelled .v2-fi-title *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-delayed .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-diverted .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-row.v2-fi-rowst-cancelled .v2-fi-title {
+  color: #14213a !important;
+  -webkit-text-fill-color: #14213a !important;
+}
+
+/* 2. The airport code is gold — "Calgary | YYC" in the target, "Toronto |
+      YTZ" in the drawing, both with the code accented. The markup already
+      ships .v2-rc-iata for exactly this ("Cleveland | CLE … different
+      colour") and a later white-forcing rule crushed it. The gold is Nick's
+      own: the hdrText #fca825 from his saved YQM palette. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-iata {
+  color: #fca825 !important;
+  -webkit-text-fill-color: #fca825 !important;
+}
+
+/* v23196 — THE BANNER IS THE LEFT BANNER'S PAINT, PROPERTY FOR PROPERTY.
+   Nick: "it still does not look like the left the banners dont match." He is
+   right — v23194 matched height and tab-shape and missed the rest. The left
+   bar's full computed paint, read off the live board:
+     text-align LEFT (not centred), padding-x 16.8px, inset from the card's
+     right edge 13.5px (NOT full-bleed), width 245 of a 357 card, a white
+     inset highlight along its top (rgba(255,255,255,.28) 0 1px 0 inset),
+     2px white underline, radius 7px 7px 0 0, letter-spacing -0.08px.
+   Every one of those now applies to the right bar, in the same units
+   (13.5/850 = 1.59vh, 16.8/850 = 1.98vh). The bar floats inset within the
+   card with the card's ground visible around it — the thing that actually
+   distinguishes the left banner from the full-bleed strip I had. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  width: auto !important;
+  align-self: stretch !important;
+  margin: 0.1vh 1.59vh 0.4vh 1.59vh !important;
+  justify-content: flex-start !important;
+  text-align: left !important;
+  padding: 0 1.98vh !important;
+  box-shadow: rgba(255, 255, 255, 0.28) 0px 1px 0px 0px inset !important;
+  letter-spacing: -0.08px !important;
+}
+/* The merged card (v23196): one pane spans the container's two slots; the
+   status band sits mid-card wearing the same bar, pushed clear of the
+   From/De row. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged {
+  display: flex !important;
+  flex-direction: column !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fromrow {
+  flex: 1 1 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-phdr-mid {
+  margin-top: 0.4vh !important;
+}
+
+/* v23197 — THE MERGED PANEL IS ONE SLOT, THE SAME SIZE AS A LEFT PANEL.
+   Nick: "I SAID ONE PANEL THE SAME SIZE AS THE OTHER SIDE." v23196 merged the
+   two panels but left the card spanning two slots. It spans ONE now — the
+   identical 136.2-at-1080 panel every left card is — and the aircraft plate
+   takes the freed slot, since the top of the rail is spoken for ("most top
+   looks fine"). Rail: map+strip 3, aircraft 2, merged card 1 — six exactly.
+   Inside one slot the card carries banner + flight + status band + one times
+   line, so everything is drawn compact. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi {
+  grid-row: span 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  grid-row: span 2 !important;
+}
+/* Compact interior: the banner keeps the left rail's bar; everything under it
+   shrinks to fit the slot. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-phdr {
+  height: clamp(16px, 2.5vh, 30px) !important;
+  font-size: clamp(10px, 1.5vh, 18px) !important;
+  margin-bottom: 0.2vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fromrow {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack .v2-rc-fi-hero {
+  font-size: clamp(12px, 1.9vh, 22px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvcity {
+  font-size: clamp(10px, 1.6vh, 18px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-phdr-mid {
+  margin-top: 0.2vh !important;
+}
+/* The one-line times pair: label value label value across the row. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-times2 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5vw !important;
+  min-height: 0 !important;
+  padding-top: 0.2vh !important;
+  padding-bottom: 0.4vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-times2 .v2-rc-fi-tval {
+  font-size: clamp(11px, 1.8vh, 20px) !important;
+}
+/* The merged card's stacked bilingual labels get a hair smaller so the last
+   row's second language is never kissed by the card edge. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-tlbl,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-tlbl span {
+  font-size: clamp(8px, 1.15vh, 13px) !important;
+  line-height: 1.1 !important;
+}
+
+/* v23198 — THE COUNTDOWN USES THE SCREEN IT TAKES OVER.
+   The pre-boarding takeover owned the whole board and spent it on two small
+   lines and an emblem adrift in an empty field. The body now spreads across
+   the takeover's height and the type scales to the width it was given. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-cd-body.g8-cd-mock {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: space-evenly !important;
+  min-height: 0 !important;
+  padding: 1vh 2vw !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-cd-body.g8-cd-mock .g8-cd-label {
+  font-size: clamp(28px, 6.2vh, 84px) !important;
+  line-height: 1.12 !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-cd-body.g8-cd-mock .g8-cd-mark,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-cd-body.g8-cd-mock .g8-cd-mark-still {
+  width: clamp(120px, 26vh, 300px) !important;
+  height: clamp(120px, 26vh, 300px) !important;
+}
+
+/* v23199 — THE MERGED PANEL'S INSIDES MATCH THE LEFT PANEL'S.
+   Nick: "match the left panel." A left panel is one banner and big bold
+   values under it — never two banners. The merged card's mid status band read
+   as a second banner, and its values were half the weight of the left rail's.
+   The status is a coloured TEXT line now (the left rail's own grammar:
+   "Delayed En Retard" in amber under the banner) and the values take the left
+   values' scale. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline {
+  display: block !important;
+  padding: 0 1.98vh !important;
+  font-size: clamp(11px, 1.9vh, 22px) !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fromrow {
+  justify-content: flex-start !important;
+  padding-left: 1.98vh !important;
+  padding-right: 1.98vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack {
+  align-items: flex-start !important;
+  text-align: left !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack .v2-rc-fi-hero {
+  /* v23199c — the one-slot budget, added up: banner 2.5vh + from stack + status
+     line + times line must clear ~12.5vh. The first cut's 2.7vh hero pushed the
+     city line through the row divider on the AC rotation; these totals fit. */
+  font-size: clamp(13px, 2.2vh, 26px) !important;
+  line-height: 1.05 !important;
+  text-align: left !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvcity {
+  font-size: clamp(10px, 1.75vh, 20px) !important;
+  line-height: 1.05 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-times2 {
+  justify-content: flex-start !important;
+  gap: 1vw !important;
+  padding-left: 1.98vh !important;
+  padding-right: 1.98vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-times2 .v2-rc-fi-tval {
+  font-size: clamp(11px, 1.9vh, 22px) !important;
+  font-weight: 800 !important;
+}
+
+/* v23199 — AC family: the right banner takes the same warm gray-beige and
+   dark ink the left banners wear (v23135), instead of the generic accent. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr * {
+  color: #14171B !important;
+  -webkit-text-fill-color: #14171B !important;
+  text-shadow: none !important;
+}
+/* The status text line wears the left rail's own status palette. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline { color: #ffffff !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-ontime,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-early,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-arrived { color: #34d399 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-delayed,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-diverted { color: #fbbf24 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-cancelled { color: #f87171 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-boarding { color: #93c5fd !important; }
+/* One-slot fit: tight lines, no dead vertical padding. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack { gap: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-trow { min-height: 0 !important; }
+
+/* v23200 — THE RED LINE, THE BANNER START, AND THE CARRIER IN THE PLATE.
+   Nick: "still not matching red line missing for sure the banner starts 3/4
+   in towards right restribute make it visible … bottom bigger to fit the
+   carrier and top will have the 3 showings i sent earlier."
+
+   1. THE RED LINE. The left banners carry the airline-accent underline
+      (border-bottom var(--airline-accent) — gate-display's own rule); the
+      right banner carried the white one measured on WestJet, so on AC the red
+      line was missing. The AC family gets the accent line; WestJet keeps the
+      white one it was approved with. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+}
+/*  2. THE BANNER TEXT STARTS AT THE BAR'S LEFT — it was drifting toward the
+      middle, which reads as starting 3/4 in once the pipe splits it. Pinned
+      hard left with the same padding the left banners use. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-phdr {
+  display: block !important;
+  text-align: left !important;
+  padding-left: 1.98vh !important;
+  padding-right: 1.98vh !important;
+}
+/*  3. THE BOTTOM FITS THE CARRIER. On an operated flight the caption bar's
+      Operated-By row was stacking BELOW the one-line bar and washing over the
+      photo ("Operated By: / Exploité par:" floating over the aircraft). The
+      bar is one line with the type+reg at its left and the operator at its
+      right, so the photo below gets the plate's full remaining height — the
+      carrier fits. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: clamp(4px,0.6vw,12px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4vw !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  font-size: clamp(8px,1.15vh,13px) !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby img {
+  max-height: clamp(12px,2vh,22px) !important;
+  width: auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-actype {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+/* The Operated-By escaped the bar: measured 49.9px tall inside the 27.2px
+   cap, so it hung out of the bar and over the photo, clipped mid-word. Its
+   two stacked label lines and the operator logo now size to the bar, and the
+   bar clips as a backstop, so the photo below is clean — the carrier fits. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby {
+  max-height: 100% !important;
+  white-space: normal !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-lline {
+  display: block !important;
+  font-size: clamp(7px,0.95vh,11px) !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
+  max-height: clamp(12px,2.2vh,24px) !important;
+  width: auto !important;
+}
+
+/* v23201 — THE MERGED PANEL IS THE LEFT MODULE, VERBATIM.
+   fids-core now emits the left rail's own component (.v2-fi-row inside a
+   .g8-bir-shelves wrapper — the sanctioned reuse hook every left-rail selector
+   already reads) instead of a parallel copy chasing it property by property.
+   The shelf steps out of the way entirely: no margins, no card paint of its
+   own — the module's ::before plate IS the panel, so its box, banner, red
+   line, icon roundel and per-airline skin are the left panel's by
+   construction. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft {
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  display: block !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft .g8-bir-shelves,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft .v2-flightinfo-block,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft .v2-fi-row {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-asleft .v2-fi-row {
+  display: grid !important;
+  position: relative !important;
+}
+/* The value's two stacked lines inside the module. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline1 {
+  font-size: clamp(14px, 2.5vh, 30px) !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline2 {
+  font-size: clamp(11px, 1.9vh, 22px) !important;
+  line-height: 1.1 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline2 .v2-rc-tval-old span {
+  text-decoration: line-through !important;
+  opacity: 0.65 !important;
+}
+
+/* v23203 — AIRCRAFT UP, ITS INFO AT THE BOTTOM; ALTIMETER UP.
+   Nick: "aircraft higher please the aircraft info at the bottom many times i
+   say this now and altimeter up." Two placements of mine, corrected:
+   1. The aircraft plate's caption (type | reg, and the operator) moves to the
+      BOTTOM of the plate, so the photo rides higher — v23181 put the bar
+      across the top from my own reading of the drawing, and he has now said
+      "at the bottom" more than once.
+   2. The altimeter strip docks at the TOP of the map card instead of its
+      bottom. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  top: auto !important;
+  bottom: 0 !important;
+  border-bottom: none !important;
+  border-top: 1px solid rgba(15,23,40,0.18) !important;
+  border-radius: 0 !important;
+  border-bottom-left-radius: 1.4vh !important;
+  border-bottom-right-radius: 1.4vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-rc-mapstats {
+  order: -1 !important;
+}
+/* The module's banner floats 16.2px below its plate top while the left's sits
+   at 3.4 — the row grid centres its content and the module's stack is shorter
+   than a left panel's, so the leftover air lands on top. Pin the content to
+   the start and seat the banner at the left's own offset. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-row {
+  align-content: start !important;
+  align-items: start !important;
+  padding-top: calc(0.9vh + 3.4px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-iconcol {
+  align-self: center !important;
+}
+/* v23203 — "We need to see the logos and the banners need match the rest."
+   The aircraft plate's caption wears the SAME banner as every other panel —
+   the per-airline accent ground with white ink (silver with dark ink for the
+   AC family), the accent line on its plate edge — instead of its own pale
+   strip. It sits at the plate's bottom, so the tab points down and the accent
+   line rides its top. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  border-top: 2px solid #ffffff !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+  /* v23208 — the LONG separator between the clouds and the caption STAYS
+     (Nick: 'the long one seprating the clouds from the text goes back' —
+     v23207 removed it here, the wrong line). The red bar he meant is the
+     SHORT accent rule above the Operated-By block, killed at the end of
+     this file. */
+  border-top: 2px solid #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap * {
+  color: #14171B !important;
+  -webkit-text-fill-color: #14171B !important;
+}
+
+/* v23204 — the aircraft rides CENTRED in the plate above its bar (it was
+   bottom-anchored, showing mostly tail), and the bar grows to fit the
+   aircraft text and the operator logo (Nick: 'centered more middle or
+   higher … your banner for the aircraft needs to adjust to the aircraft and
+   logo so bigger'). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img {
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important;
+  bottom: clamp(26px, 4.4vh, 48px) !important;
+  height: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img img {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  height: clamp(26px, 4.4vh, 48px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-actype {
+  font-size: clamp(11px, 1.9vh, 22px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-lline {
+  font-size: clamp(9px, 1.25vh, 15px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
+  max-height: clamp(16px, 3vh, 34px) !important;
+}
+
+/* v23205 — the clouds ride WITH the centred aircraft (they stayed anchored
+   low when the photo moved up), and the Operated-By logo in the bar is
+   actually visible: it gets its own room instead of being the first thing
+   the ellipsis eats, and it scales with the bar. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus #gateCloudsBg,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus #gateCloudsFg {
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important;
+  bottom: clamp(26px, 4.4vh, 48px) !important;
+  height: auto !important;
+  background-position: center center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
+  max-height: clamp(18px, 3.4vh, 38px) !important;
+  width: auto !important;
+  display: inline-block !important;
+}
+/* v23206 — the Operated-By WORDMARK by itself, colour (or the bold name in
+   ink when no art exists) — sized to the bar, no chip, no filter. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-opby-logo {
+  max-height: clamp(16px, 3vh, 34px) !important;
+  width: auto !important;
+  filter: none !important;
+  display: inline-block !important;
+}
+
+
+
+/* v23207 — the module's three rows: full words, no ellipsis, times on their
+   own line. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline1 {
+  font-size: clamp(12px, 2vh, 24px) !important;
+  line-height: 1.12 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline2,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 {
+  font-size: clamp(10px, 1.65vh, 19px) !important;
+  line-height: 1.15 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  font-weight: 700 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline2 span,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 span {
+  display: inline !important;
+  font-size: inherit !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline1 .v2-rc-fi-stline {
+  display: inline !important;
+  padding: 0 !important;
+  font-size: inherit !important;
+}
+/* The bilingual label pair in the module's rows gets its pipe — the bare
+   spans fused as "RevisedRévisé" / "FromDe". */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mlbl > span + span::before {
+  content: "|" !important;
+  margin: 0 0.32em !important;
+  opacity: 0.55 !important;
+}
+/* v23207 — the module banner signals an imminent change: amber for
+   delayed/cancelled/diverted, green for an early revision; dark ink on both. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-title.v2-fi-title-warn {
+  background: #f5a623 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-title.v2-fi-title-good {
+  background: #7bd389 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-title.v2-fi-title-warn,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-title.v2-fi-title-warn *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-title.v2-fi-title-good,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-title.v2-fi-title-good * {
+  color: #14213a !important;
+  -webkit-text-fill-color: #14213a !important;
+}
+
+/* ── v23208 — THE SHORT RED LINE GOES, THE LONG ONE STAYS (Nick: 'The red
+   line goes away the short one then the long one seprating the clouds from
+   the text goes back'). The short line is the 2px accent rule an older
+   layout drew above the Operated-By block (it now paints INSIDE the caption
+   bar, a stray red dash over the band); the long one is the caption's own
+   full-width top border against the photo, restored above. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-opby {
+  border-top: none !important;
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+/* v23208 — the wordmark is lettering, wide by nature (PAL runs ~6:1), and at
+   the caption's full height it starved the aircraft type down to 'De Ha…'.
+   Cap its width; the type cell keeps its words. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
+  /* EXPLICIT height, never auto — auto + a width cap on this shrink-to-fit
+     flex item resolves the sizing circle to 0x0 (same trap v23099 documents
+     above; this pass re-hit it and the wordmark vanished). */
+  height: clamp(14px, 2.2vh, 24px) !important;
+  max-height: clamp(14px, 2.2vh, 24px) !important;
+  max-width: clamp(52px, 6.2vw, 112px) !important;
+  width: auto !important;
+  object-fit: contain !important;
+}
+/* v23208 — 'use all youre space': the caption band is two label-lines tall,
+   yet the aircraft type sat on ONE clipped line ('De Havilland Das…') while
+   28px of side padding and 10px gaps went unused. Reclaim the padding, and
+   let the type WRAP onto the band's second line — every word shows, nothing
+   ellipsizes. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  padding-left: clamp(6px, 0.55vw, 11px) !important;
+  padding-right: clamp(6px, 0.55vw, 11px) !important;
+  gap: clamp(4px, 0.4vw, 8px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-actype {
+  white-space: normal !important;
+  text-overflow: clip !important;
+  overflow: hidden !important;
+  max-height: 100% !important;
+  line-height: 1.15 !important;
+  flex: 1 1 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby {
+  gap: 0.25vw !important;
+  flex: 0 0 auto !important;
+}
+/* v23208 — the orb's no-art fallback is the carrier's LETTERS, styled like
+   the map hold's roundel (a KE board drew a generic passengers glyph). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-orbwrap .v2-fi-orb-code {
+  font-weight: 800 !important;
+  font-size: clamp(13px, 1.9vh, 25px) !important;
+  letter-spacing: 0.02em !important;
+  color: #ffffff !important;
+  line-height: 1 !important;
+}
+
+/* ── v23209 — THE ALTIMETER IS ITS OWN PANEL ABOVE THE AIRCRAFT (Nick:
+   'altimter needs to go above aircraft take your space youre not listneing
+   it does in a simlar panel as air airfafct info'). v23203 pinned the strip
+   to the TOP of the map card (order:-1); it now sits at the card's BOTTOM —
+   directly above the aircraft panel — wearing the same plate ground the
+   other cards wear, a full-height band with a crisp separator, and every
+   cell gets an equal share of the full width so no word clips ('Distance |
+   Distanc' was cut in his C40 shot). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-rc-mapstats {
+  order: 0 !important;
+  height: clamp(52px, 8vh, 84px) !important;
+  max-height: clamp(52px, 8vh, 84px) !important;
+  padding: clamp(4px,0.5vh,8px) clamp(6px,0.5vw,12px) !important;
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex, none) !important;
+  background-position: center !important;
+  background-size: auto !important;
+  background-repeat: repeat !important;
+  background-blend-mode: var(--plate-blend, normal) !important;
+  border-top: 2px solid rgba(255,255,255,0.22) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-mstat {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-lbl {
+  font-size: clamp(8px,1.05vh,13px) !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-val {
+  font-size: clamp(14px,2.3vh,26px) !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+/* v23209 — the caption's two-line case gets clean room: 'Canadair CRJ 900 |
+   C-GJU7' wrapped and the reg clipped at the band's bottom edge. The band
+   grows a step and the photo above yields the same step (the two clamps are
+   a coupled pair); tighter vertical padding buys the second line. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  height: clamp(30px, 5vh, 54px) !important;
+  padding-top: clamp(2px, 0.35vh, 5px) !important;
+  padding-bottom: clamp(2px, 0.35vh, 5px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus #gateCloudsBg,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus #gateCloudsFg {
+  bottom: clamp(30px, 5vh, 54px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-actype {
+  font-size: clamp(9px, 1.2vh, 14px) !important;
+  line-height: 1.12 !important;
+}
+/* v23209 — the strip's label underline follows the carrier, not WestJet's
+   teal on every board. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-lbl {
+  border-bottom-color: var(--accent-lane, var(--airline-accent, rgb(0,178,169))) !important;
+}
+
+/* ── v23211 — TAKEOVER: SIMPLE CLOCK AT THE TOP, STATUS-ONLY STRIP (Nick:
+   'the clock was supposed to be removed and added at the top simple clock'
+   + 'the delayed time should all be yellow' + 'Make the banner wider?').
+   The takeover's no-clock rule is lifted so the two-line time+date tab
+   (v23181's 'A SIMPLE CLOCK') shows again during boarding; the strip's
+   flanks are status-only now (fids-core stopped emitting the clocks), so
+   the middle banner stretches into the room they gave up. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-takeover .g8-r1-timebox,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-takeover .octb-wrap {
+  display: flex !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked .g8-bw-mid {
+  flex: 1 1 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked .g8-bw-end {
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+/* Delayed reads YELLOW here like everywhere else on the board — the same
+   warn yellow the revised times wear — with a whisper of shadow so it
+   holds on the white band. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked [class*="g8-bw-st-delayed"] .g8-bw-st-val {
+  color: var(--plate-warn, #fbbf24) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* ── v23212 — THE HEADER CLOCK PER NICK'S MOCK ('For the time can you do
+   this with airline accent of course'): the big time in the AIRLINE ACCENT
+   over a light chip, and the bilingual date on a SOLID ACCENT BAR in white
+   — right-aligned exactly as drawn. accent-lane so a too-light brand
+   colour arrives pre-darkened for the white date text. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb.octb-tab {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: flex-end !important;
+  gap: 0 !important;
+  background: linear-gradient(180deg, #FAF7F1, #EFEAE0) !important;
+  border-radius: 0 0 12px 12px !important;
+  padding: clamp(4px, 0.7vh, 9px) 0 0 !important;
+  overflow: hidden !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-clock {
+  color: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  font-weight: 900 !important;
+  font-size: clamp(30px, 4.8vh, 66px) !important;
+  line-height: 0.95 !important;
+  letter-spacing: 0.01em !important;
+  white-space: nowrap !important;
+  padding: 0 clamp(10px, 1vw, 20px) !important;
+  text-shadow: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date {
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: clamp(11px, 1.7vh, 22px) !important;
+  line-height: 1.3 !important;
+  padding: clamp(2px, 0.35vh, 5px) clamp(10px, 1vw, 20px) !important;
+  margin: clamp(3px, 0.5vh, 7px) 0 0 !important;
+  align-self: stretch !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date .cl-sep {
+  opacity: 0.75 !important;
+}
+/* v23212 — the chip hugs its CONTENT at the top of the band (the mock's
+   time sits directly on its date bar; the full-height chip was splitting
+   them to opposite edges). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox.octb-wrap {
+  align-items: flex-start !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb.octb-tab {
+  height: auto !important;
+  min-height: 0 !important;
+  justify-content: flex-start !important;
+}
+/* v23212 — the old dark scrim (::before, #050505 at .62, from the white-text
+   tab era) sat over the chip's light ground and turned the cream murky grey.
+   The mock's chip is light with accent ink — the scrim goes. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-tab.octb-stack::before {
+  display: none !important;
+  content: none !important;
+}
+/* v23213 — BIGGER clock digits (Nick: 'Bigger numbers please'), and the
+   chip's accent DEEPENED a step (Nick: 'bit red it's too bright') — the
+   same darkening for every carrier, so AC's red goes richer instead of
+   neon while KE's navy barely moves. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-clock {
+  font-size: clamp(38px, 6.6vh, 92px) !important;
+  color: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #33404E)) 80%, #000 20%) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date {
+  background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #33404E)) 80%, #000 20%) !important;
 }
