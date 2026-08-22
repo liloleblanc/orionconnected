@@ -13472,3 +13472,81 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* One-slot fit: tight lines, no dead vertical padding. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack { gap: 0 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-trow { min-height: 0 !important; }
+
+/* v23200 — THE RED LINE, THE BANNER START, AND THE CARRIER IN THE PLATE.
+   Nick: "still not matching red line missing for sure the banner starts 3/4
+   in towards right restribute make it visible … bottom bigger to fit the
+   carrier and top will have the 3 showings i sent earlier."
+
+   1. THE RED LINE. The left banners carry the airline-accent underline
+      (border-bottom var(--airline-accent) — gate-display's own rule); the
+      right banner carried the white one measured on WestJet, so on AC the red
+      line was missing. The AC family gets the accent line; WestJet keeps the
+      white one it was approved with. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  border-bottom: 2px solid var(--airline-accent, #D82F2E) !important;
+}
+/*  2. THE BANNER TEXT STARTS AT THE BAR'S LEFT — it was drifting toward the
+      middle, which reads as starting 3/4 in once the pipe splits it. Pinned
+      hard left with the same padding the left banners use. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-phdr {
+  display: block !important;
+  text-align: left !important;
+  padding-left: 1.98vh !important;
+  padding-right: 1.98vh !important;
+}
+/*  3. THE BOTTOM FITS THE CARRIER. On an operated flight the caption bar's
+      Operated-By row was stacking BELOW the one-line bar and washing over the
+      photo ("Operated By: / Exploité par:" floating over the aircraft). The
+      bar is one line with the type+reg at its left and the operator at its
+      right, so the photo below gets the plate's full remaining height — the
+      carrier fits. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: clamp(4px,0.6vw,12px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.4vw !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  font-size: clamp(8px,1.15vh,13px) !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby img {
+  max-height: clamp(12px,2vh,22px) !important;
+  width: auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-actype {
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+/* The Operated-By escaped the bar: measured 49.9px tall inside the 27.2px
+   cap, so it hung out of the bar and over the photo, clipped mid-word. Its
+   two stacked label lines and the operator logo now size to the bar, and the
+   bar clips as a backstop, so the photo below is clean — the carrier fits. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby {
+  max-height: 100% !important;
+  white-space: normal !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-lline {
+  display: block !important;
+  font-size: clamp(7px,0.95vh,11px) !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
+  max-height: clamp(12px,2.2vh,24px) !important;
+  width: auto !important;
+}
