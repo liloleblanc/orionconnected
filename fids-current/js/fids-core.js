@@ -8953,6 +8953,11 @@ function _buildV2MapCol(ctx, vars) {
           || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
         _opNm6 = String(_opNm6).replace(/[<>"']/g, '');
         var _opLogo6 = (typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null;
+        // v23206 — THE WORDMARK BY ITSELF, colour or black — no chip, no
+        // roundel, no white filter (Nick: 'wordmark by itself no logo …
+        // collor or black'). operatorLogoUrl serves the operator's natural
+        // colour art, which is the variant made for light grounds like this
+        // bar; the onerror fallback is the operator's name in bold ink.
         _opByVal = _opLogo6
           ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
             + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
@@ -19132,7 +19137,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23205';
+var FIDS_BUILD_TAG = 'v23206';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

@@ -13718,3 +13718,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   width: auto !important;
   display: inline-block !important;
 }
+/* v23206 — the Operated-By WORDMARK by itself, colour (or the bold name in
+   ink when no art exists) — sized to the bar, no chip, no filter. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-opby-logo {
+  max-height: clamp(16px, 3vh, 34px) !important;
+  width: auto !important;
+  filter: none !important;
+  display: inline-block !important;
+}
+
