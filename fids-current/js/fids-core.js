@@ -14633,7 +14633,7 @@ const gView = document.getElementById('gateView');
                   </div>
                 </div>
                 <div class="bidsv2-col-from">${cityDisplay}</div>
-                <div class="bidsv2-col-time">${f.time}</div>
+                <div class="bidsv2-col-time">${_bidsTimeForLang(f.time)}</div>
                 <div class="bidsv2-col-status ${statusClass}">${stTxt}</div>
               </div>`;
             }).join('') : `<div class="bidsv2-empty">${TL('noAssigned')}</div>`}
@@ -19104,6 +19104,33 @@ function _fidsClockForLang(now, tz, lang) {
   } catch (e) { return ''; }
 }
 
+// v23218 — the flight TIMES follow the chosen language on the BAGGAGE board
+// too (Nick: 'the baggage — make sure language is connected there too. Not
+// the clock — the flight times'). Same split _fidsClockForLang uses: English
+// reads 10:25am; the 24-hour languages keep the feed's HH:MM. Driven by the
+// FIRST board language, with the French-first-airport reorder applied.
+// Anything that is not a bare HH:MM passes through untouched.
+function _bidsTimeForLang(t) {
+  try {
+    var s = String(t || '').trim();
+    var m = s.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return t;
+    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+    try {
+      var _ap = (document.getElementById('apSel') || {}).value || '';
+      if (typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
+        var _fi = picked.indexOf('fr');
+        if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
+      }
+    } catch (e0) {}
+    var _24 = { fr: 1, de: 1, it: 1, pt: 1, es: 1, ja: 1, zh: 1 };
+    if (_24[picked[0]]) return s;
+    var h = +m[1], mm = m[2], mer = h >= 12 ? 'pm' : 'am';
+    h = h % 12; if (h === 0) h = 12;
+    return h + ':' + mm + mer;
+  } catch (e) { return t; }
+}
+
 // Returns the selected languages' words for `key`, at most two, de-duplicated.
 // frFirst only reorders — it is the French-first-airport flag and has never
 // been a language choice. sep/wrap let each call site keep its own markup.
@@ -19257,7 +19284,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23217';
+var FIDS_BUILD_TAG = 'v23218';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
