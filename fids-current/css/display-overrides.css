@@ -13696,3 +13696,25 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
   max-height: clamp(16px, 3vh, 34px) !important;
 }
+
+/* v23205 — the clouds ride WITH the centred aircraft (they stayed anchored
+   low when the photo moved up), and the Operated-By logo in the bar is
+   actually visible: it gets its own room instead of being the first thing
+   the ellipsis eats, and it scales with the bar. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus #gateCloudsBg,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus #gateCloudsFg {
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; top: 0 !important;
+  bottom: clamp(26px, 4.4vh, 48px) !important;
+  height: auto !important;
+  background-position: center center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby {
+  flex: 0 0 auto !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-val img {
+  max-height: clamp(18px, 3.4vh, 38px) !important;
+  width: auto !important;
+  display: inline-block !important;
+}

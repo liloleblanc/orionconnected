@@ -8115,7 +8115,7 @@ function _buildV2MapCol(ctx, vars) {
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mcBadge + '">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mcBadge + '">'
         +       (_mcOrbSrc
                   ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   : '<span class="ac-ico ac-ico-flight"></span>')
@@ -8385,7 +8385,7 @@ function _buildV2MapCol(ctx, vars) {
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mdBadge + '">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mdBadge + '">'
         +       (_mdOrbSrc
                   ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   : '<span class="ac-ico ac-ico-flight"></span>')
@@ -8984,6 +8984,22 @@ function _buildV2MapCol(ctx, vars) {
           var _orbFix = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode])
             || ((typeof operatorLogoUrlThemed === 'function') ? (operatorLogoUrlThemed(_opCode, true) || '') : '');
           if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
+          // v23205 — the orb GROUND follows the operator's carrier colour too
+          // (Nick: 'your orb by the plane should follow the carrier colors —
+          // yellow in this case'): PAL's brand accent behind PAL's mark, not
+          // the marketing carrier's red. The white-vs-colour logo rule reruns
+          // against the operator's ground.
+          var _opAcc = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_opCode] && AIRLINE_BRAND[_opCode].accent) || '';
+          if (_opAcc) {
+            _inboundCard = _inboundCard.replace(/(v2-fi-orbwrap" style="[^"]*?)background:var\(--airline-accent,[^)]*\)/, '$1background:' + _opAcc);
+            var _oh = _opAcc.replace('#',''); if (_oh.length === 3) _oh = _oh.replace(/./g, function (c) { return c + c; });
+            var _olum = 0.2126*parseInt(_oh.substr(0,2),16) + 0.7152*parseInt(_oh.substr(2,2),16) + 0.0722*parseInt(_oh.substr(4,2),16);
+            if (_olum > 186) {
+              _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
+            } else if (_inboundCard.indexOf('filter:brightness(0) invert(1)') === -1) {
+              _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src="[^"]*" alt="" style="width:100%;height:100%;object-fit:contain;)/, '$1filter:brightness(0) invert(1);');
+            }
+          }
         }
       } catch (e) {}
       var _typeCellHtml =
@@ -19116,7 +19132,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23204';
+var FIDS_BUILD_TAG = 'v23205';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
