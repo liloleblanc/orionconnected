@@ -487,7 +487,7 @@ function smRenderPresets() {
   list.innerHTML = html;
 }
 
-function smActivatePreset(id) {
+function smActivatePreset(id, _bootRestore) {
   // A pinned URL theme (kiosk/stream, e.g. ?theme=mist) is authoritative. Do
   // NOT let a saved custom preset override it by injecting the #dynamicTheme
   // block (body{background:…!important}) — that leak forced the BAGGAGE screen
@@ -637,6 +637,31 @@ function smActivatePreset(id) {
     }
   }
   smRenderPresets();
+  // v23214 — a preset picked from the GRID reaches every screen too, not
+  // just this device: mirror the choice into the per-airport Customize
+  // prefs and write through to the cloud (same channel the Customize tab
+  // now uses). Builtin presets travel as their theme name; a custom preset
+  // travels as its RESOLVED colours via _cuCloudPush. NEVER on the boot
+  // restore — a device replaying its stored preset at load must not stamp
+  // a fresh save over a newer airport-wide choice.
+  if (_bootRestore) return;
+  try {
+    var _gpPrefs = _cuLoad() || {};
+    if (preset.builtin) { _gpPrefs.theme = id; delete _gpPrefs.themePresetId; delete _gpPrefs.customColors; }
+    else {
+      _gpPrefs.theme = 'custom'; _gpPrefs.themePresetId = id;
+      var _gpc = preset.colors || preset;
+      _gpPrefs.customColors = {
+        accent: _gpc.accent || '#eab308', hdr: _gpc.hdr || '#27272a',
+        hdrText: _gpc.hdrText || '#ffffff', bg: _gpc.bg || '#0c0c0e',
+        rowOdd: _gpc.rowOdd || _gpc.bg || '#0c0c0e',
+        rowEven: _gpc.rowEven || _gpc.bg || '#111827',
+        text: _gpc.text || '#ffffff'
+      };
+    }
+    _cuSave(_gpPrefs);
+    _cuCloudPush(_acCurrentCode(), _gpPrefs);
+  } catch (e) {}
 }
 
 // Color utility helpers
@@ -803,9 +828,24 @@ function smDeletePresetById(id) {
 
   setTimeout(function() {
     var activeId = _getActivePresetId();
-    if (activeId && activeId !== 'gold') {
-      smActivatePreset(activeId);
-    }
+    if (!activeId || activeId === 'gold') return;
+    var _replay = function () { smActivatePreset(activeId, true); };  // no cloud write
+    // v23214 — the airport's CLOUD theme outranks this device's legacy
+    // preset replay: when the airport config carries a theme choice,
+    // applyAirportConfigToBoard owns the look and the replay would only
+    // paint a stale #dynamicTheme over it. Replay only once the config
+    // fetch confirms the cloud has no theme saved.
+    try {
+      var _code = (typeof _acCurrentCode === 'function') ? _acCurrentCode() : '';
+      if (_code && typeof loadAirportConfig === 'function') {
+        loadAirportConfig(_code).then(function (cfg) {
+          if (cfg && cfg.theme) return;
+          _replay();
+        }).catch(_replay);
+        return;
+      }
+    } catch (e) {}
+    _replay();
   }, 300);
 })();
 
@@ -1557,7 +1597,77 @@ function _cuLoad() {
 }
 
 function _cuSave(prefs) {
+  // v23214 — stamp WHEN this device saved. The cloud config carries its own
+  // updatedAt; the board compares the two so a newer airport-wide save wins
+  // over this device's older local copy (see applyAirportConfigToBoard).
+  try { prefs.savedAt = Date.now(); } catch (e) {}
   try { localStorage.setItem(_cuStorageKey(), JSON.stringify(prefs)); } catch (e) {}
+}
+
+// v23214 — SETTINGS SAVE GLOBALLY (Nick: 'Settings don't save globally …
+// it should save on cloudflare and colors should work properly'). The
+// Customize panel only ever wrote localStorage, so a theme picked on one
+// device never reached the other screens — the cloud channel existed (the
+// worker whitelists theme/customColors/font/… since v23174) but nothing
+// here used it. Every Customize save now writes through to the airport
+// config when the operator is signed in; a preset id is resolved to its
+// REAL colours first because the cloud stores palettes, not ids. Fields the
+// worker does not carry (dayNight scheduling) stay device-local. Best
+// effort and debounced — a failed push never blocks the local save.
+var _cuCloudTimer = null;
+function _cuCloudPush(code, prefs) {
+  try {
+    if (!_acGetToken()) return;                    // not signed in → local only
+    if (_cuCloudTimer) clearTimeout(_cuCloudTimer);
+    _cuCloudTimer = setTimeout(function () {
+      _cuCloudTimer = null;
+      var body = {};
+      ['theme', 'customColors', 'font', 'logoPosition', 'logoSize',
+       'hideAirlinePrefix', 'hideWeather', 'airlineStyle', 'displayMode']
+        .forEach(function (k) { if (prefs[k] !== undefined) body[k] = prefs[k]; });
+      // A custom theme saved as a preset ID must travel as its colours.
+      if (prefs.theme === 'custom' && !body.customColors && prefs.themePresetId) {
+        try {
+          var _lists = ['fids_presets', 'fids_user_presets'];
+          for (var _li = 0; _li < _lists.length && !body.customColors; _li++) {
+            var _pl = JSON.parse(localStorage.getItem(_lists[_li]) || '[]');
+            for (var _pi = 0; _pi < _pl.length; _pi++) {
+              if (_pl[_pi] && _pl[_pi].id === prefs.themePresetId) {
+                var _pc = _pl[_pi].colors || _pl[_pi];
+                body.customColors = {
+                  accent: _pc.accent || '#eab308', hdr: _pc.hdr || '#27272a',
+                  hdrText: _pc.hdrText || '#ffffff', bg: _pc.bg || '#0c0c0e',
+                  rowOdd: _pc.rowOdd || _pc.bg || '#0c0c0e',
+                  rowEven: _pc.rowEven || _pc.bg || '#111827',
+                  text: _pc.text || '#ffffff'
+                };
+                if (_pl[_pi].name) body.presetName = _pl[_pi].name;
+                break;
+              }
+            }
+          }
+        } catch (e) {}
+      }
+      if (!Object.keys(body).length) return;
+      _acFetch(_AC_WORKER_URL + '/api/airport-config/' + encodeURIComponent(code), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      }).then(function (res) { return res.ok ? res.json() : null; })
+        .then(function (out) {
+          if (!out || !out.config || !out.config.updatedAt) return;
+          // Align this device's stamp with the cloud's so the newer-wins
+          // comparison treats them as the same save, not a conflict.
+          try {
+            var cur = JSON.parse(localStorage.getItem('fids_customize_' + code) || '{}') || {};
+            cur.savedAt = +out.config.updatedAt;
+            localStorage.setItem('fids_customize_' + code, JSON.stringify(cur));
+          } catch (e) {}
+          try { console.log('[FIDS Customize] Saved to cloud for ' + code); } catch (e) {}
+        })
+        .catch(function (e) { try { console.warn('[FIDS Customize] Cloud save failed:', e && e.message); } catch (e2) {} });
+    }, 900);
+  } catch (e) {}
 }
 
 // Read the form into a prefs object (only fields the user actually set are stored)
@@ -2014,6 +2124,9 @@ function cuApplyAndSave() {
   // Explicitly choosing "Use airport default" is the ONE case that clears it.
   if (_cuThemeExplicitDefault) { prefs.theme = ''; delete prefs.themePresetId; _cuThemeExplicitDefault = false; }
   _cuSave(prefs);
+  // v23214 — and through to the cloud, so every screen of this airport gets
+  // the same look (see _cuCloudPush).
+  try { _cuCloudPush(_acCurrentCode(), prefs); } catch (e) {}
   // Tell the FIDS to re-merge admin defaults + local prefs
   try {
     var code = _acCurrentCode();

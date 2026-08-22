@@ -19230,7 +19230,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23213';
+var FIDS_BUILD_TAG = 'v23214';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -24683,6 +24683,35 @@ function applyAirportConfigToBoard(iata) {
       _userCfg = _rawUserPrefs ? JSON.parse(_rawUserPrefs) : null;
     } catch (e) {}
   }
+  // v23214 — THE CLOUD IS THE GLOBAL TRUTH (Nick: 'Settings don't save
+  // globally … it should save on cloudflare and colors should work
+  // properly'). The Customize panel and preset grid now WRITE THROUGH to
+  // the airport config; here the other half: when the cloud carries a
+  // NEWER save than this device's local prefs, the cloud's appearance
+  // fields win — otherwise every device that ever customized kept
+  // shadowing the airport-wide choice with its stale local copy forever.
+  // The superseded local fields are cleared and the local stamp aligned,
+  // so the panel paints what the screen actually shows; device-only
+  // extras the cloud does not carry (dayNight scheduling) stay local.
+  try {
+    if (_adminCfg && _adminCfg.updatedAt && _userCfg
+        && (+_userCfg.savedAt || 0) < +_adminCfg.updatedAt) {
+      var _cloudOwned = ['theme', 'themePresetId', 'customColors', 'font',
+        'logoPosition', 'logoSize', 'hideAirlinePrefix', 'hideWeather',
+        'airlineStyle', 'displayMode'];
+      var _shed = false;
+      for (var _coI = 0; _coI < _cloudOwned.length; _coI++) {
+        if (_userCfg[_cloudOwned[_coI]] !== undefined) { delete _userCfg[_cloudOwned[_coI]]; _shed = true; }
+      }
+      if (_shed) {
+        _userCfg.savedAt = +_adminCfg.updatedAt;
+        try {
+          localStorage.setItem('fids_customize_' + String(iata || '').toUpperCase(), JSON.stringify(_userCfg));
+          console.log('[FIDS Theme] Newer cloud config adopted for ' + iata + ' (cloud updatedAt ' + _adminCfg.updatedAt + ')');
+        } catch (e1) {}
+      }
+    }
+  } catch (e) {}
   // If the Customize dropdown saved a preset id but not a full color object,
   // hydrate customColors from the saved preset library. Supports both the new
   // fids_presets format ({colors:{...}}) and the older fids_user_presets format
@@ -24927,6 +24956,16 @@ function applyAirportConfigToBoard(iata) {
   // CSS rules use [data-fids-theme="navy"] etc. selectors.
   if (_theme === 'custom') {
     var _cc = (_userCfg && _userCfg.customColors) || (_adminCfg && _adminCfg.customColors);
+    // v23214 — a CLOUD-sourced palette must not sit under a stale legacy
+    // #dynamicTheme block (injected by an old grid activation on this
+    // device): its !important body rules out-cascade every later cloud
+    // change, so the screen sticks on the old colours however many times
+    // the airport theme is saved. When the palette comes from the cloud,
+    // the vars + _fidsCustomThemeRules own the paint. A device showing its
+    // OWN local palette keeps its block — same colours, no visual change.
+    if (_cc && !(_userCfg && _userCfg.customColors)) {
+      try { var _dtStale = document.getElementById('dynamicTheme'); if (_dtStale) _dtStale.remove(); } catch (e) {}
+    }
     if (_cc) {
       var st = document.body.style;
       if (_cc.hdr)     st.setProperty('--fids-banner-bg',     _cc.hdr,     'important');
