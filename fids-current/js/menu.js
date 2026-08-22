@@ -2575,6 +2575,8 @@ function _cuLoadPresetIntoEditor(p) {
   });
   var nameEl = document.getElementById('cuPresetName');
   if (nameEl) nameEl.value = p.name || '';
+  // v23220 — audit the loaded palette immediately, not only on first edit.
+  try { _cuContrastAudit(_cuReadColorsFromEditor()); } catch (e) {}
 }
 
 function _cuReadColorsFromEditor() {
@@ -2646,12 +2648,74 @@ function _cuApplyCustomColors(c) {
     'body[data-fids-theme="custom"] .bidsv2-screen { background:' + _bg + ' !important; color:' + _kBg + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-banner { background:' + _hd + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-airport-name, body[data-fids-theme="custom"] .bidsv2-footer-date { color:' + _cuInk(c.hdrText || '#ffffff', _hd) + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-logo, body[data-fids-theme="custom"] .bidsv2-status-arrived { color:' + _cuInk(c.accent || '#eab308', _hd) + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-logo { color:' + _cuInk(c.accent || '#eab308', _hd) + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) { background:' + _od + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-flight-row { background:' + _ev + ' !important; }' +
     'body[data-fids-theme="custom"] .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-airline-name { color:' + _kEven + ' !important; }' +
-    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-airline-name { color:' + _kOdd + ' !important; }';
+    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-flight-num, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-from, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-time, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-col-status, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-airline-name { color:' + _kOdd + ' !important; }' +
+    // v23220 — Arrived/Early stay SEMANTIC GREEN in the live preview too
+    // (same rule the board applies in fids-core): a red accent must never
+    // make Arrived read as a cancellation. Bright or deep green per ground,
+    // emitted last so source order beats the generic column-ink tie.
+    'body[data-fids-theme="custom"] .bidsv2-flight-row .bidsv2-status-arrived, body[data-fids-theme="custom"] .bidsv2-flight-row .bidsv2-status-early { color:' + _cuGreen(_ev) + ' !important; }' +
+    'body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-status-arrived, body[data-fids-theme="custom"] .bidsv2-flight-row:nth-child(odd) .bidsv2-status-early { color:' + _cuGreen(_od) + ' !important; }';
   document.head.appendChild(css);
+  try { _cuContrastAudit(c); } catch (e) {}
+}
+
+// v23220 — semantic status green picked per ground, same pair fids-core uses
+// (#34d399 bright for dark rows / #0E7A3C deep for light rows).
+function _cuGreen(ground) {
+  try {
+    var K = window._fidsContrast;
+    if (K && K('#34d399', ground) !== null) {
+      return (K('#34d399', ground) >= K('#0E7A3C', ground)) ? '#34d399' : '#0E7A3C';
+    }
+  } catch (e) {}
+  return '#34d399';
+}
+
+// v23220 — LIVE LEGIBILITY AUDIT (the UXmatters colour-theory article Nick
+// asked implemented, then approved for the menu). The board has always run
+// picked colours through the 3:1 legibility floor and silently substituted
+// black/white where a pair failed — which read as "my colour didn't work".
+// This makes the floor visible at pick time: every text/ground pair the
+// board actually paints is measured with the same _fidsContrast, and any
+// pair below the floor gets a warning naming the substitution before it
+// happens on the glass.
+function _cuContrastAudit(c) {
+  var wrap = document.getElementById('cuColorsWrap');
+  if (!wrap || !c) return;
+  var box = document.getElementById('cuContrastAudit');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'cuContrastAudit';
+    box.style.cssText = 'margin-top:10px;padding:8px 10px;border-radius:8px;font-size:12px;line-height:1.5;background:rgba(127,127,127,0.14);';
+    wrap.appendChild(box);
+  }
+  var K = function (fg, bg) { try { return window._fidsContrast ? window._fidsContrast(fg, bg) : null; } catch (e) { return null; } };
+  var pairs = [
+    ['Row Text', c.text, 'Odd Rows', c.rowOdd],
+    ['Row Text', c.text, 'Even Rows', c.rowEven],
+    ['Row Text', c.text, 'Board BG', c.bg],
+    ['Header Text', c.hdrText, 'Header BG', c.hdr],
+    ['Accent', c.accent, 'Header BG', c.hdr]
+  ];
+  var bad = [];
+  pairs.forEach(function (p) {
+    if (!p[1] || !p[3]) return;
+    var k = K(p[1], p[3]);
+    if (k !== null && k < 3) {
+      var sub = '';
+      try { sub = window._fidsInk ? window._fidsInk(p[1], p[3]) : ''; } catch (e) {}
+      var subName = (sub === '#ffffff') ? 'white' : (sub === '#111111') ? 'black' : 'a legible ink';
+      bad.push('⚠ ' + p[0] + ' on ' + p[2] + ' — ' + (Math.round(k * 10) / 10)
+        + ':1 is below the 3:1 floor; the board paints ' + subName + ' there instead.');
+    }
+  });
+  box.innerHTML = bad.length
+    ? bad.map(function (l) { return '<div style="margin:2px 0;">' + l + '</div>'; }).join('')
+    : '<div style="opacity:.75;">✓ All colour pairs clear the legibility floor.</div>';
 }
 
 function _cuClearCustomColors() {
