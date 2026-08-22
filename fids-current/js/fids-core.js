@@ -19230,7 +19230,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23213';
+var FIDS_BUILD_TAG = 'v23216';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -19581,7 +19581,32 @@ const THEME_LOGOS = {
   airfrance: 'https://www.gstatic.com/flights/airline_logos/70px/AF.png',
 };
 
-function setTheme(name) {
+function setTheme(name, _noPersist) {
+  // v23215 — THE BOARD THEMES FINALLY WORK FROM THE PICKER (Nick: 'teal
+  // never ever works it turns out white all white'). tus-teal /
+  // tus-teal-deep / mist are CSS-rule themes driven by
+  // body[data-fids-theme]; they have NEVER existed in the legacy THEMES map
+  // below, so picking one here fell through `THEMES[name] || THEMES.gold`
+  // and injected gold's LIGHT palette as #dynamicTheme over an unchanged
+  // dataset — the all-white board, every time, for years. They now activate
+  // the way the resolver does (dataset + clean slate), the choice is
+  // PERSISTED so applyAirportConfigToBoard keeps it instead of reverting to
+  // the airport config on the next cycle, and the persist hook pushes it to
+  // the cloud so every screen follows. _noPersist marks replay/boot calls.
+  if (/^(tus-teal|tus-teal-deep|mist)$/.test(String(name || ''))) {
+    currentTheme = name;
+    try { var _dtM = document.getElementById('dynamicTheme'); if (_dtM) _dtM.remove(); } catch (e) {}
+    try { var _crM = document.getElementById('_fidsCustomThemeRules'); if (_crM) _crM.remove(); } catch (e) {}
+    document.body.dataset.fidsTheme = name;
+    ['--fids-banner-bg', '--fids-banner-text', '--fids-banner-accent',
+     '--fids-bg', '--fids-text', '--fids-stripe', '--fids-divider', '--fids-row-odd']
+      .forEach(function (k) { try { document.body.style.removeProperty(k); } catch (e) {} });
+    if (!_noPersist) {
+      try { if (typeof window._fidsPersistTheme === 'function') window._fidsPersistTheme(name); } catch (e) {}
+    }
+    try { if (typeof render === 'function') setTimeout(function () { try { render(); } catch (e) {} }, 60); } catch (e) {}
+    return;
+  }
   // A pinned URL theme (kiosk/stream, e.g. ?theme=mist) is authoritative and is
   // driven by the CSS theme rules. Never let a saved custom/legacy preset
   // re-inject a #dynamicTheme block (body{background:…!important}) that shadows
@@ -24683,6 +24708,35 @@ function applyAirportConfigToBoard(iata) {
       _userCfg = _rawUserPrefs ? JSON.parse(_rawUserPrefs) : null;
     } catch (e) {}
   }
+  // v23214 — THE CLOUD IS THE GLOBAL TRUTH (Nick: 'Settings don't save
+  // globally … it should save on cloudflare and colors should work
+  // properly'). The Customize panel and preset grid now WRITE THROUGH to
+  // the airport config; here the other half: when the cloud carries a
+  // NEWER save than this device's local prefs, the cloud's appearance
+  // fields win — otherwise every device that ever customized kept
+  // shadowing the airport-wide choice with its stale local copy forever.
+  // The superseded local fields are cleared and the local stamp aligned,
+  // so the panel paints what the screen actually shows; device-only
+  // extras the cloud does not carry (dayNight scheduling) stay local.
+  try {
+    if (_adminCfg && _adminCfg.updatedAt && _userCfg
+        && (+_userCfg.savedAt || 0) < +_adminCfg.updatedAt) {
+      var _cloudOwned = ['theme', 'themePresetId', 'customColors', 'font',
+        'logoPosition', 'logoSize', 'hideAirlinePrefix', 'hideWeather',
+        'airlineStyle', 'displayMode'];
+      var _shed = false;
+      for (var _coI = 0; _coI < _cloudOwned.length; _coI++) {
+        if (_userCfg[_cloudOwned[_coI]] !== undefined) { delete _userCfg[_cloudOwned[_coI]]; _shed = true; }
+      }
+      if (_shed) {
+        _userCfg.savedAt = +_adminCfg.updatedAt;
+        try {
+          localStorage.setItem('fids_customize_' + String(iata || '').toUpperCase(), JSON.stringify(_userCfg));
+          console.log('[FIDS Theme] Newer cloud config adopted for ' + iata + ' (cloud updatedAt ' + _adminCfg.updatedAt + ')');
+        } catch (e1) {}
+      }
+    }
+  } catch (e) {}
   // If the Customize dropdown saved a preset id but not a full color object,
   // hydrate customColors from the saved preset library. Supports both the new
   // fids_presets format ({colors:{...}}) and the older fids_user_presets format
@@ -24927,6 +24981,16 @@ function applyAirportConfigToBoard(iata) {
   // CSS rules use [data-fids-theme="navy"] etc. selectors.
   if (_theme === 'custom') {
     var _cc = (_userCfg && _userCfg.customColors) || (_adminCfg && _adminCfg.customColors);
+    // v23214 — a CLOUD-sourced palette must not sit under a stale legacy
+    // #dynamicTheme block (injected by an old grid activation on this
+    // device): its !important body rules out-cascade every later cloud
+    // change, so the screen sticks on the old colours however many times
+    // the airport theme is saved. When the palette comes from the cloud,
+    // the vars + _fidsCustomThemeRules own the paint. A device showing its
+    // OWN local palette keeps its block — same colours, no visual change.
+    if (_cc && !(_userCfg && _userCfg.customColors)) {
+      try { var _dtStale = document.getElementById('dynamicTheme'); if (_dtStale) _dtStale.remove(); } catch (e) {}
+    }
     if (_cc) {
       var st = document.body.style;
       if (_cc.hdr)     st.setProperty('--fids-banner-bg',     _cc.hdr,     'important');
@@ -35391,6 +35455,39 @@ if (typeof window !== 'undefined') {
   document.addEventListener('DOMContentLoaded', tagGidsHeaderBrightness_v21862);
   _ocEvery(tagGidsHeaderBrightness_v21862, 1200);
 }
+
+// ── v23216 — RESUME WATCHDOG (Nick's phone: 'Nothing is loading at all' —
+// screenshot of a board whose LIVE clock read 11:40 a.m. on a 4:56 a.m.
+// phone, rows blank). iOS Safari freezes background tabs; a tab restored
+// hours later shows the board exactly as it was and its timers may never
+// come back. The heartbeat below is stamped every 30s while the page runs;
+// timers do not tick in the freezer, so on pageshow / visibility-resume a
+// stamp older than 3 minutes means the page slept — reload for a clean
+// boot. A once-per-minute guard prevents any possibility of a reload loop.
+(function _fidsResumeWatchdog() {
+  try {
+    if (typeof window === 'undefined') return;
+    window._fidsHeartbeat = Date.now();
+    setInterval(function () { window._fidsHeartbeat = Date.now(); }, 30000);
+    function _stale() { return (Date.now() - (window._fidsHeartbeat || 0)) > 3 * 60 * 1000; }
+    function _maybeReload(why) {
+      try {
+        if (!_stale()) return;
+        if (document.visibilityState && document.visibilityState !== 'visible') return;
+        var last = 0;
+        try { last = +sessionStorage.getItem('_fidsResumeReloadAt') || 0; } catch (e) {}
+        if (Date.now() - last < 60000) return;
+        try { sessionStorage.setItem('_fidsResumeReloadAt', String(Date.now())); } catch (e) {}
+        try { console.log('[FIDS] resume watchdog reload (' + why + '): heartbeat was ' + Math.round((Date.now() - window._fidsHeartbeat) / 60000) + ' min stale'); } catch (e) {}
+        location.reload();
+      } catch (e) {}
+    }
+    window.addEventListener('pageshow', function (e) { if (e && e.persisted) _maybeReload('pageshow'); });
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') _maybeReload('visibility');
+    });
+  } catch (e) {}
+})();
 
 
 // v218.64: alliance logos should read clearly on gate screens.
