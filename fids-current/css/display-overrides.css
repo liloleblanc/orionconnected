@@ -13840,3 +13840,66 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: #ffffff !important;
   line-height: 1 !important;
 }
+
+/* ── v23209 — THE ALTIMETER IS ITS OWN PANEL ABOVE THE AIRCRAFT (Nick:
+   'altimter needs to go above aircraft take your space youre not listneing
+   it does in a simlar panel as air airfafct info'). v23203 pinned the strip
+   to the TOP of the map card (order:-1); it now sits at the card's BOTTOM —
+   directly above the aircraft panel — wearing the same plate ground the
+   other cards wear, a full-height band with a crisp separator, and every
+   cell gets an equal share of the full width so no word clips ('Distance |
+   Distanc' was cut in his C40 shot). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-rc-mapstats {
+  order: 0 !important;
+  height: clamp(52px, 8vh, 84px) !important;
+  max-height: clamp(52px, 8vh, 84px) !important;
+  padding: clamp(4px,0.5vh,8px) clamp(6px,0.5vw,12px) !important;
+  background-color: var(--plate-base, #0b0e14) !important;
+  background-image: var(--plate-tex, none) !important;
+  background-position: center !important;
+  background-size: auto !important;
+  background-repeat: repeat !important;
+  background-blend-mode: var(--plate-blend, normal) !important;
+  border-top: 2px solid rgba(255,255,255,0.22) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-mstat {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-lbl {
+  font-size: clamp(8px,1.05vh,13px) !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-val {
+  font-size: clamp(14px,2.3vh,26px) !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+}
+/* v23209 — the caption's two-line case gets clean room: 'Canadair CRJ 900 |
+   C-GJU7' wrapped and the reg clipped at the band's bottom edge. The band
+   grows a step and the photo above yields the same step (the two clamps are
+   a coupled pair); tighter vertical padding buys the second line. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  height: clamp(30px, 5vh, 54px) !important;
+  padding-top: clamp(2px, 0.35vh, 5px) !important;
+  padding-bottom: clamp(2px, 0.35vh, 5px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus #gateCloudsBg,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus #gateCloudsFg {
+  bottom: clamp(30px, 5vh, 54px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-acb-actype {
+  font-size: clamp(9px, 1.2vh, 14px) !important;
+  line-height: 1.12 !important;
+}
+/* v23209 — the strip's label underline follows the carrier, not WestJet's
+   teal on every board. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-mapstats .v2-rc-ms-lbl {
+  border-bottom-color: var(--accent-lane, var(--airline-accent, rgb(0,178,169))) !important;
+}
