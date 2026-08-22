@@ -8082,6 +8082,28 @@ function _buildV2MapCol(ctx, vars) {
       var _mcCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
       var _mcAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mcCode] && AIRLINE_BRAND[_mcCode].accent) || '#D82F2E';
       var _mcBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mcAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // v23203 — the orb carries the OPERATOR's logo when another carrier
+      // flies the leg (Nick: 'either the airline or the operator in this
+      // case PAL — logo only white — and still have operated by PAL'),
+      // else the airline's; forced to a white silhouette either way.
+      var _mcOrbOp = '';
+      try { var _oRaw_mcOrb = String((vars.currentFlight && vars.currentFlight._opCode) || '').trim().toUpperCase();
+        _mcOrbOp = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_oRaw_mcOrb]) ? CALLSIGN_TO_IATA[_oRaw_mcOrb] : _oRaw_mcOrb;
+        if (_mcOrbOp === _mcCode) _mcOrbOp = ''; } catch (e) {}
+      var _mcOrbSrc = '';
+      try {
+        var _orbCode_mcOrb = _mcOrbOp || _mcCode;
+        _mcOrbSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_orbCode_mcOrb]) || '';
+        if (!_mcOrbSrc && _mcOrbOp && typeof operatorLogoUrlThemed === 'function') _mcOrbSrc = operatorLogoUrlThemed(_mcOrbOp, true) || '';
+      } catch (e) {}
+      // v23203 — 'unless the orb is white then its color': a light orb
+      // ground keeps the colour logo; only a dark ground takes the white
+      // silhouette. Judged from the brand accent's luminance.
+      var _mcOrbWhite = true;
+      try { var _h_mcOrb = String(_mcAccFb).replace('#','');
+        if (_h_mcOrb.length === 3) _h_mcOrb = _h_mcOrb.replace(/./g, function(c){return c+c;});
+        var _r_mcOrb = parseInt(_h_mcOrb.substr(0,2),16), _g_mcOrb = parseInt(_h_mcOrb.substr(2,2),16), _b_mcOrb = parseInt(_h_mcOrb.substr(4,2),16);
+        if ((0.2126*_r_mcOrb + 0.7152*_g_mcOrb + 0.0722*_b_mcOrb) > 186) _mcOrbWhite = false; } catch (e) {}
       var _mcTitle = _gateLbl('flight', _frF, function (w, i2) { return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '');
       var _mcTimes = '';
       if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
@@ -8093,7 +8115,11 @@ function _buildV2MapCol(ctx, vars) {
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mcBadge + '"><span class="ac-ico ac-ico-flight"></span></div></div>'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mcBadge + '">'
+        +       (_mcOrbSrc
+                  ? '<img src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  : '<span class="ac-ico ac-ico-flight"></span>')
+        +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
         +       '<div class="v2-fi-title">' + _mcTitle + '</div>'
         +       '<div class="v2-fi-value">'
@@ -8332,12 +8358,38 @@ function _buildV2MapCol(ctx, vars) {
       var _mdCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
       var _mdAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mdCode] && AIRLINE_BRAND[_mdCode].accent) || '#D82F2E';
       var _mdBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mdAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // v23203 — the orb carries the OPERATOR's logo when another carrier
+      // flies the leg (Nick: 'either the airline or the operator in this
+      // case PAL — logo only white — and still have operated by PAL'),
+      // else the airline's; forced to a white silhouette either way.
+      var _mdOrbOp = '';
+      try { var _oRaw_mdOrb = String((vars.currentFlight && vars.currentFlight._opCode) || '').trim().toUpperCase();
+        _mdOrbOp = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_oRaw_mdOrb]) ? CALLSIGN_TO_IATA[_oRaw_mdOrb] : _oRaw_mdOrb;
+        if (_mdOrbOp === _mdCode) _mdOrbOp = ''; } catch (e) {}
+      var _mdOrbSrc = '';
+      try {
+        var _orbCode_mdOrb = _mdOrbOp || _mdCode;
+        _mdOrbSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_orbCode_mdOrb]) || '';
+        if (!_mdOrbSrc && _mdOrbOp && typeof operatorLogoUrlThemed === 'function') _mdOrbSrc = operatorLogoUrlThemed(_mdOrbOp, true) || '';
+      } catch (e) {}
+      // v23203 — 'unless the orb is white then its color': a light orb
+      // ground keeps the colour logo; only a dark ground takes the white
+      // silhouette. Judged from the brand accent's luminance.
+      var _mdOrbWhite = true;
+      try { var _h_mdOrb = String(_mdAccFb).replace('#','');
+        if (_h_mdOrb.length === 3) _h_mdOrb = _h_mdOrb.replace(/./g, function(c){return c+c;});
+        var _r_mdOrb = parseInt(_h_mdOrb.substr(0,2),16), _g_mdOrb = parseInt(_h_mdOrb.substr(2,2),16), _b_mdOrb = parseInt(_h_mdOrb.substr(4,2),16);
+        if ((0.2126*_r_mdOrb + 0.7152*_g_mdOrb + 0.0722*_b_mdOrb) > 186) _mdOrbWhite = false; } catch (e) {}
       var _mdTitle = _gateLbl('flight', _frF, function (w, i3) { return i3 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '');
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mdBadge + '"><span class="ac-ico ac-ico-flight"></span></div></div>'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _mdBadge + '">'
+        +       (_mdOrbSrc
+                  ? '<img src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  : '<span class="ac-ico ac-ico-flight"></span>')
+        +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
         +       '<div class="v2-fi-title">' + _mdTitle + '</div>'
         +       '<div class="v2-fi-value">'
@@ -19050,7 +19102,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23202';
+var FIDS_BUILD_TAG = 'v23203';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

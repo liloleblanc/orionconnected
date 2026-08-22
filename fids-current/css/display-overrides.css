@@ -13602,3 +13602,62 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   text-decoration: line-through !important;
   opacity: 0.65 !important;
 }
+
+/* v23203 — AIRCRAFT UP, ITS INFO AT THE BOTTOM; ALTIMETER UP.
+   Nick: "aircraft higher please the aircraft info at the bottom many times i
+   say this now and altimeter up." Two placements of mine, corrected:
+   1. The aircraft plate's caption (type | reg, and the operator) moves to the
+      BOTTOM of the plate, so the photo rides higher — v23181 put the bar
+      across the top from my own reading of the drawing, and he has now said
+      "at the bottom" more than once.
+   2. The altimeter strip docks at the TOP of the map card instead of its
+      bottom. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  top: auto !important;
+  bottom: 0 !important;
+  border-bottom: none !important;
+  border-top: 1px solid rgba(15,23,40,0.18) !important;
+  border-radius: 0 !important;
+  border-bottom-left-radius: 1.4vh !important;
+  border-bottom-right-radius: 1.4vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map .v2-rc-mapstats {
+  order: -1 !important;
+}
+/* The module's banner floats 16.2px below its plate top while the left's sits
+   at 3.4 — the row grid centres its content and the module's stack is shorter
+   than a left panel's, so the leftover air lands on top. Pin the content to
+   the start and seat the banner at the left's own offset. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-row {
+  align-content: start !important;
+  align-items: start !important;
+  padding-top: calc(0.9vh + 3.4px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-iconcol {
+  align-self: center !important;
+}
+/* v23203 — "We need to see the logos and the banners need match the rest."
+   The aircraft plate's caption wears the SAME banner as every other panel —
+   the per-airline accent ground with white ink (silver with dark ink for the
+   AC family), the accent line on its plate edge — instead of its own pale
+   strip. It sits at the plate's bottom, so the tab points down and the accent
+   line rides its top. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
+  border-top: 2px solid #ffffff !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap * {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+  border-top: 2px solid var(--airline-accent, #D82F2E) !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap * {
+  color: #14171B !important;
+  -webkit-text-fill-color: #14171B !important;
+}
