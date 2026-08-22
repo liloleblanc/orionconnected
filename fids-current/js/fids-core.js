@@ -8133,16 +8133,19 @@ function _buildV2MapCol(ctx, vars) {
             _distKm = Math.round(6371 * 2 * Math.atan2(Math.sqrt(_ha), Math.sqrt(1 - _ha)));
           }
         } catch (e) {}
-        var _altUnit2 = 'Feet | ' + ({fr:'Pieds',es:'Pies'}[_lang2] || 'Pieds');
+        // v23202 — labels and the altitude unit follow the CHOSEN languages
+        // via _gateLbl, like every other label on the board. A single-language
+        // board gets single-language labels; a bilingual one gets the pair.
+        var _msL = function (k) { return _gateLbl(k, _frF, function (w) { return w; }, ' | ', true); };
         _telemBar =
             '<div class="v2-rc-mapstats">'
-          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Speed</div>'
+          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('speed') + '</div>'
           +     '<div class="v2-rc-ms-val">' + (_spdKph !== null ? ('<span data-gtelem="spd-kph">' + _spdKph.toLocaleString() + '</span>') : '—') + ' <span class="v2-rc-ms-unit">km/h</span></div></div>'
-          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Altitude</div>'
+          +   '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('altitude') + '</div>'
           +     '<div class="v2-rc-ms-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>') : '—') + '</div>'
-          +     '<div class="v2-rc-ms-unitline">' + _altUnit2 + '</div></div>'
+          +     '<div class="v2-rc-ms-unitline">' + _msL('feetUnit') + '</div></div>'
           +   (_distKm !== null
-              ? '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">Distance</div>'
+              ? '<div class="v2-rc-mstat"><div class="v2-rc-ms-lbl">' + _msL('distance') + '</div>'
                 + '<div class="v2-rc-ms-val">' + _distKm.toLocaleString() + ' <span class="v2-rc-ms-unit">km</span></div></div>'
               : '')
           + '</div>';
@@ -18204,6 +18207,14 @@ const LS = {
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
   boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  // v23202 — the altimeter's labels follow the CHOSEN languages like every
+  // other label on the board (Nick: 'ALL NEEDAS TO REFLECTS LANGUAGES
+  // CHOSEN'); they were hard-coded English with a hard-coded French unit.
+  speed: { en:'Speed', fr:'Vitesse', es:'Velocidad', de:'Geschwindigkeit', it:'Velocità', pt:'Velocidade', ja:'速度', zh:'速度', ar:'السرعة' },
+  altitude: { en:'Altitude', fr:'Altitude', es:'Altitud', de:'Flughöhe', it:'Altitudine', pt:'Altitude', ja:'高度', zh:'高度', ar:'الارتفاع' },
+  distance: { en:'Distance', fr:'Distance', es:'Distancia', de:'Entfernung', it:'Distanza', pt:'Distância', ja:'距離', zh:'距离', ar:'المسافة' },
+  feetUnit: { en:'Feet', fr:'Pieds', es:'Pies', de:'Fuß', it:'Piedi', pt:'Pés', ja:'フィート', zh:'英尺', ar:'قدم' },
+  estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
   // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
   // where the full 'MINUTES' would not fit next to a digit that size.
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -18850,6 +18861,14 @@ var _GATE_LBL = {
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
   // own gate signage says. Title Case kept per Nick's design.
   boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  // v23202 — the altimeter's labels follow the CHOSEN languages like every
+  // other label on the board (Nick: 'ALL NEEDAS TO REFLECTS LANGUAGES
+  // CHOSEN'); they were hard-coded English with a hard-coded French unit.
+  speed: { en:'Speed', fr:'Vitesse', es:'Velocidad', de:'Geschwindigkeit', it:'Velocità', pt:'Velocidade', ja:'速度', zh:'速度', ar:'السرعة' },
+  altitude: { en:'Altitude', fr:'Altitude', es:'Altitud', de:'Flughöhe', it:'Altitudine', pt:'Altitude', ja:'高度', zh:'高度', ar:'الارتفاع' },
+  distance: { en:'Distance', fr:'Distance', es:'Distancia', de:'Entfernung', it:'Distanza', pt:'Distância', ja:'距離', zh:'距离', ar:'المسافة' },
+  feetUnit: { en:'Feet', fr:'Pieds', es:'Pies', de:'Fuß', it:'Piedi', pt:'Pés', ja:'フィート', zh:'英尺', ar:'قدم' },
+  estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
   nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
@@ -19031,7 +19050,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23201';
+var FIDS_BUILD_TAG = 'v23202';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -36288,7 +36307,13 @@ function _renderBigCraft(el, ctx) {
       '<div class="bigcraft-wrap bigcraft-wrap--maponly">'
     +   '<div class="bigcraft-mapcol">'
     +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
-    +     (ctx.estimated ? '<div class="bigcraft-est">Estimated position · Position estimée</div>' : '')
+    +     (ctx.estimated ? '<div class="bigcraft-est">' + (function(){
+            // v23202 — the badge follows the CHOSEN languages like everything
+            // else; it was hard-coded EN/FR and read 'Position estimée' on an
+            // en,es board.
+            try { return _gateLbl('estPos', false, function(w){return w;}, ' \u00b7 ', true); }
+            catch(e){ return 'Estimated position'; }
+          })() + '</div>' : '')
     +   '</div>'
     + '</div>';
   _bcWrapEl.appendChild(_bcOv);
