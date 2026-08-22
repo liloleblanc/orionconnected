@@ -19230,7 +19230,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23215';
+var FIDS_BUILD_TAG = 'v23216';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -35455,6 +35455,39 @@ if (typeof window !== 'undefined') {
   document.addEventListener('DOMContentLoaded', tagGidsHeaderBrightness_v21862);
   _ocEvery(tagGidsHeaderBrightness_v21862, 1200);
 }
+
+// ── v23216 — RESUME WATCHDOG (Nick's phone: 'Nothing is loading at all' —
+// screenshot of a board whose LIVE clock read 11:40 a.m. on a 4:56 a.m.
+// phone, rows blank). iOS Safari freezes background tabs; a tab restored
+// hours later shows the board exactly as it was and its timers may never
+// come back. The heartbeat below is stamped every 30s while the page runs;
+// timers do not tick in the freezer, so on pageshow / visibility-resume a
+// stamp older than 3 minutes means the page slept — reload for a clean
+// boot. A once-per-minute guard prevents any possibility of a reload loop.
+(function _fidsResumeWatchdog() {
+  try {
+    if (typeof window === 'undefined') return;
+    window._fidsHeartbeat = Date.now();
+    setInterval(function () { window._fidsHeartbeat = Date.now(); }, 30000);
+    function _stale() { return (Date.now() - (window._fidsHeartbeat || 0)) > 3 * 60 * 1000; }
+    function _maybeReload(why) {
+      try {
+        if (!_stale()) return;
+        if (document.visibilityState && document.visibilityState !== 'visible') return;
+        var last = 0;
+        try { last = +sessionStorage.getItem('_fidsResumeReloadAt') || 0; } catch (e) {}
+        if (Date.now() - last < 60000) return;
+        try { sessionStorage.setItem('_fidsResumeReloadAt', String(Date.now())); } catch (e) {}
+        try { console.log('[FIDS] resume watchdog reload (' + why + '): heartbeat was ' + Math.round((Date.now() - window._fidsHeartbeat) / 60000) + ' min stale'); } catch (e) {}
+        location.reload();
+      } catch (e) {}
+    }
+    window.addEventListener('pageshow', function (e) { if (e && e.persisted) _maybeReload('pageshow'); });
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') _maybeReload('visibility');
+    });
+  } catch (e) {}
+})();
 
 
 // v218.64: alliance logos should read clearly on gate screens.
