@@ -18029,6 +18029,24 @@ function wordmarkVariant() {
       var lv = _rowLum(tds[ti]);
       if (lv !== null) { lums.push(lv); parities[par] = 1; }
     }
+    // v23220 — BAGGAGE ROWS MEASURE TOO (Nick: 'implemented globally
+    // including the airport colors'). bids.html has no #fidsTable, so this
+    // measurement always came up empty there and fell to the theme-name
+    // list — a light CLOUD/custom palette on the baggage screen never set
+    // fids-light-board, so none of the light-board adaptations (deep status
+    // inks, header ink, wordmark art) fired. Same two-parity zebra sampling,
+    // state-tinted rows skipped for the same reason as above.
+    if (!lums.length) {
+      var brows = document.querySelectorAll('.bidsv2-flight-row:not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted)');
+      var bparities = {};
+      for (var bi = 0; bi < brows.length && lums.length < 2; bi++) {
+        var bel = brows[bi];
+        var bpar = (Array.prototype.indexOf.call(bel.parentElement.children, bel)) % 2;
+        if (bparities[bpar]) continue;
+        var blv = _rowLum(bel);
+        if (blv !== null) { lums.push(blv); bparities[bpar] = 1; }
+      }
+    }
     if (!lums.length) {
       var fb = _rowLum(document.querySelector('#fidsTable tbody tr td')
              || document.querySelector('#fidsTable') || document.body);
@@ -19318,7 +19336,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23219';
+var FIDS_BUILD_TAG = 'v23220';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
