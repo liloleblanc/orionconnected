@@ -13098,7 +13098,13 @@ html body .g8-wrap .gad-map-col-v2.gad-map-col-telem > .v2-rc-shelf-map { grid-r
    banner keeps its semantic ground (amber/green) and carries dark ink there,
    which is also exactly what his target shows. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
-  background: rgb(0, 178, 169) !important;
+  /* v23199 — the LEFT banner's ground is per-airline: the generic rule paints
+     var(--accent-lane, --airline-accent) and the AC family overrides it with
+     the warm gray-beige (v23135). The hard-coded WestJet teal here matched
+     only WestJet — the AC rotation exposed a teal bar over silver left
+     banners. Same variable now, so every carrier's right banner follows its
+     left one automatically. */
+  background: var(--accent-lane, var(--airline-accent, #33404E)) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
 }
@@ -13393,3 +13399,76 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   width: clamp(120px, 26vh, 300px) !important;
   height: clamp(120px, 26vh, 300px) !important;
 }
+
+/* v23199 — THE MERGED PANEL'S INSIDES MATCH THE LEFT PANEL'S.
+   Nick: "match the left panel." A left panel is one banner and big bold
+   values under it — never two banners. The merged card's mid status band read
+   as a second banner, and its values were half the weight of the left rail's.
+   The status is a coloured TEXT line now (the left rail's own grammar:
+   "Delayed En Retard" in amber under the banner) and the values take the left
+   values' scale. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline {
+  display: block !important;
+  padding: 0 1.98vh !important;
+  font-size: clamp(11px, 1.9vh, 22px) !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  text-align: left !important;
+  background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fromrow {
+  justify-content: flex-start !important;
+  padding-left: 1.98vh !important;
+  padding-right: 1.98vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack {
+  align-items: flex-start !important;
+  text-align: left !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack .v2-rc-fi-hero {
+  /* v23199c — the one-slot budget, added up: banner 2.5vh + from stack + status
+     line + times line must clear ~12.5vh. The first cut's 2.7vh hero pushed the
+     city line through the row divider on the AC rotation; these totals fit. */
+  font-size: clamp(13px, 2.2vh, 26px) !important;
+  line-height: 1.05 !important;
+  text-align: left !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvcity {
+  font-size: clamp(10px, 1.75vh, 20px) !important;
+  line-height: 1.05 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-times2 {
+  justify-content: flex-start !important;
+  gap: 1vw !important;
+  padding-left: 1.98vh !important;
+  padding-right: 1.98vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-times2 .v2-rc-fi-tval {
+  font-size: clamp(11px, 1.9vh, 22px) !important;
+  font-weight: 800 !important;
+}
+
+/* v23199 — AC family: the right banner takes the same warm gray-beige and
+   dark ink the left banners wear (v23135), instead of the generic accent. */
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr {
+  background: linear-gradient(180deg, #CFCBC2, #B6B1A7) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+}
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr,
+html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline="QK"],[data-gate-airline="RV"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-phdr * {
+  color: #14171B !important;
+  -webkit-text-fill-color: #14171B !important;
+  text-shadow: none !important;
+}
+/* The status text line wears the left rail's own status palette. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline { color: #ffffff !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-ontime,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-early,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-arrived { color: #34d399 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-delayed,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-diverted { color: #fbbf24 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-cancelled { color: #f87171 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline.v2-rc-status-boarding { color: #93c5fd !important; }
+/* One-slot fit: tight lines, no dead vertical padding. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-fvstack { gap: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-fi-pane-merged .v2-rc-fi-trow { min-height: 0 !important; }

@@ -8097,7 +8097,10 @@ function _buildV2MapCol(ctx, vars) {
         +         '<div class="v2-rc-fi-fvcity">' + _ibCityCode + '</div>'
         +       '</div>'
         +     '</div>'
-        +     '<div class="v2-rc-fi-phdr v2-rc-phdr-mid v2-rc-phdr-' + _stCls + ' v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
+        // v23199 — match the left panel: one banner per card. The status is a
+        // COLOURED TEXT LINE, the way the left rail writes "Delayed En Retard"
+        // in amber under its banner — not a second banner mid-card.
+        +     '<div class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</div>'
         +     (_ibArrRowHtml || '')
         +   '</div>'
         + '</div></div>';
@@ -8333,7 +8336,7 @@ function _buildV2MapCol(ctx, vars) {
         +         '<div class="v2-rc-fi-fvcity">' + _dCityCode + '</div>'
         +       '</div>'
         +     '</div>'
-        +     '<div class="v2-rc-fi-phdr v2-rc-phdr-mid v2-rc-phdr-' + _dStCls + ' v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
+        +     '<div class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</div>'
         +     '<div class="v2-rc-fi-trow v2-rc-fi-trow-last v2-rc-fi-times2">'
         +       '<div class="v2-rc-fi-tlbl">' + _gateLblSpans('departure', _frF) + '</div>'
         +       '<div class="v2-rc-fi-tval v2-rc-fi-departure"' + (_dDepDelayed ? ' style="color:#e0820a"' : '') + '><span class="v2-rc-deptime">' + (_dRailT(_dDepStr) || '—') + '</span></div>'
@@ -11566,6 +11569,12 @@ function gateAutofit(root) {
     // the box IS the budget: width = the cell's own box (text-overflow
     // catches width), height cap = a single-line fraction of the cell.
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-fi-trow').forEach(function (row) {
+      // v23199 — NOT inside the merged one-slot card. Its rows are sized by
+      // the stylesheet's clamps; this fitter budgeted against the roomier
+      // two-pane geometry and its inline !important sizes outran the slot —
+      // the hero overlapped the Destination label and the last row kissed the
+      // card edge on the AC rotation.
+      if (row.closest && row.closest('.v2-rc-fi-pane-merged')) return;
       // ALL value cells in the row — the revised row is two label|value
       // pairs on one line (Nick's sketch), each time at full row height.
       row.querySelectorAll('.v2-rc-fi-tval').forEach(function (val) {
@@ -19020,7 +19029,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23198';
+var FIDS_BUILD_TAG = 'v23199';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
