@@ -14017,3 +14017,26 @@ body[data-fids-banner="silk"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):no
   -webkit-text-fill-color: #14213a !important;
   text-shadow: none !important;
 }
+
+/* ── v23219 — REVISED TIMES READ AS ONE COLOUR, AND THEIR TOPPERS FLIP
+   (Nick, MIA G11: 'the times are displayed half yellow for delayed half
+   normal which is not good' + 'Every topper banner above the time NEEDS to
+   be the proper color when a change occors if 3 panels change times 3
+   panels above need a change of banner color').
+   The builder now strips the struck original from the boarding-strip cells
+   (the struck half was the 'half normal') and stamps every time panel whose
+   value carries a revision with v2-fi-rowrev-{delayed|early}. The banner
+   takes the same amber/green pair the Status banner (v23195) and the module
+   banners (v23207) already wear, dark ink on both — the UXmatters rule:
+   one colour, one meaning, on a solid high-contrast ground. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row.v2-fi-rowrev-delayed .v2-fi-title {
+  background: #f5a623 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row.v2-fi-rowrev-early .v2-fi-title {
+  background: #7bd389 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row:is(.v2-fi-rowrev-delayed,.v2-fi-rowrev-early) .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row:is(.v2-fi-rowrev-delayed,.v2-fi-rowrev-early) .v2-fi-title * {
+  color: #14213a !important;
+  -webkit-text-fill-color: #14213a !important;
+}

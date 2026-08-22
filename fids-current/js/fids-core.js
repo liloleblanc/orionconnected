@@ -7394,6 +7394,17 @@ function _buildV2AircraftCol(ctx, vars) {
         if (!html || html.indexOf('g8-r2-revised') === -1) return html;
         return html.replace(/<[^>]*g8-r2-strike[^>]*>[\s\S]*?<\/[^>]+>/g, '').trim();
       }
+      // v23219 — a REVISED time panel flips its own title banner (Nick, MIA
+      // G11: 'Every topper banner above the time NEEDS to be the proper color
+      // when a change occors if 3 panels change times 3 panels above need a
+      // change of banner color'): amber for a delay, green for an early
+      // revision — the same pair the Status banner (v23195) and the module
+      // banners (v23207) already wear.
+      function _revRowCls(html) {
+        var s = String(html || '');
+        if (s.indexOf('g8-r2-revised') === -1) return '';
+        return s.indexOf('g8-rev-early') !== -1 ? 'v2-fi-rowrev-early' : 'v2-fi-rowrev-delayed';
+      }
 
       var _depLabel = _label('Scheduled Departure', 'Revised Departure', _fiDep);
       var _arrLabel = _label('Estimated Arrival',   'Revised Arrival',   _fiArr);
@@ -7589,9 +7600,9 @@ function _buildV2AircraftCol(ctx, vars) {
         // selected from its sibling's class without :has(), which the kiosk
         // browsers drop silently.
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls, 'v2-fi-rowst-' + (_fiStCls || '').trim())
-        + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time')
-        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time')
+        + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd))
+        + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time', _revRowCls(_fiDep))
+        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr))
         + '</div>';
     }
   } catch (e) {}
@@ -10160,6 +10171,22 @@ function uxgGateHtml(ctx) {
         return '<span class="g8-bir-mer">' + p.toLowerCase() + 'm</span>';
       });
     }
+    // v23219 — Nick (MIA G11): 'the times are displayed half yellow for
+    // delayed half normal which is not good'. This strip kept the struck
+    // original beside the amber revision — that struck half is the 'half
+    // normal'. The left rail has always shown the revision alone; same rule
+    // here, and the cell stamps v2-fi-rowrev-* so its title banner takes the
+    // revision colour (amber late / green early) like the left rail's.
+    function _birStripRev(html) {
+      var s = String(html || '');
+      if (s.indexOf('g8-r2-revised') === -1) return html;
+      return s.replace(/<[^>]*g8-r2-strike[^>]*>[\s\S]*?<\/[^>]+>/g, '').trim();
+    }
+    function _birRevCls(html) {
+      var s = String(html || '');
+      if (s.indexOf('g8-r2-revised') === -1) return '';
+      return s.indexOf('g8-rev-early') !== -1 ? 'v2-fi-rowrev-early' : 'v2-fi-rowrev-delayed';
+    }
     // Flight cell carries the airline RONDELLE (same emblem set as the
     // rail) instead of the generic glyph (Nick).
     // The horizontal (boarding) badge is a gate flight badge — it wears the
@@ -10222,8 +10249,8 @@ function uxgGateHtml(ctx) {
     return '<div class="g8-board-info-row g8-bir-shelves"><div class="v2-flightinfo-block">'
       + _birFlightShelf
       + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), '', _bDest, true)
-      + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(boardTimeHtml), true)
-      + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(depTimeHtml), true)
+      + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(boardTimeHtml)), true, _birRevCls(boardTimeHtml))
+      + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(depTimeHtml)), true, _birRevCls(depTimeHtml))
       // v23115b — ALWAYS four shelves. The abnormal state (delayed /
       // cancelled / diverted) reads from the WHITE STRIP now — a Status pair
       // sits beside each clock (Nick's sketch: 'Current Time 12:11PM  Status
@@ -19284,7 +19311,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23218';
+var FIDS_BUILD_TAG = 'v23219';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -25107,6 +25134,19 @@ function applyAirportConfigToBoard(iata) {
       var _inkTh   = _fidsInk(_iHdrT, _gBg);
       var _inkCrsl = _fidsInk(_gBg,   _gOdd);   // carousel block paints bg-colour text on a rowOdd ground
       var _inkAcc  = _fidsInk(_iAcc,  _gHdr);
+      // v23219 — STATUS COLOURS STAY SEMANTIC ON CUSTOM PALETTES (UXmatters
+      // colour-theory article Nick asked implemented: one colour = one
+      // meaning, and every status ink must clear the value-contrast floor).
+      // Arrived/Early were painted in the ACCENT here — a red accent made
+      // 'Arrived' read as a cancellation. They are GREEN on every built-in
+      // theme, so they stay green here too; each ground picks whichever
+      // green variant (bright dark-board / deep light-board) measures the
+      // higher contrast on the row it actually lands on.
+      var _pickSt  = function (bright, deep, ground) {
+        return (_fidsContrast(bright, ground) >= _fidsContrast(deep, ground)) ? bright : deep;
+      };
+      var _okOdd   = _pickSt('#34d399', '#0E7A3C', _gOdd);
+      var _okEven  = _pickSt('#34d399', '#0E7A3C', _gEven);
       // The muted secondary line carries opacity .75, which costs real
       // contrast. Where the floor had to substitute an ink, drop the fade so
       // the substitution isn't undone by transparency.
@@ -25115,7 +25155,7 @@ function applyAirportConfigToBoard(iata) {
         _CA + '#fidsTable, ' + _CA + '.bidsv2-screen { background-color:' + _gBg + ' !important; color:' + _inkBg + ' !important; }' +
         _CA + '.bidsv2-banner { background-color:' + _gHdr + ' !important; }' +
         _CA + '.bidsv2-airport-name, ' + _CA + '.bidsv2-footer-date { color:' + _inkHdr + ' !important; }' +
-        _CA + '.bidsv2-logo, ' + _CA + '.bidsv2-status-arrived { color:' + _inkAcc + ' !important; }' +
+        _CA + '.bidsv2-logo { color:' + _inkAcc + ' !important; }' +
         _CA + '.bidsv2-carousel-block { background-color:' + _gOdd + ' !important; }' +
         _CA + '.bidsv2-carousel-label, ' + _CA + '.bidsv2-carousel-number, ' + _CA + '.bidsv2-clock { color:' + _inkCrsl + ' !important; }' +
         _CA + '.bidsv2-list-header, ' + _CA + '.bidsv2-airline-name, ' + _CA + '.bidsv2-flight-row' + _nsB + ' .bidsv2-status-other, ' + _CA + '.bidsv2-footer-msg { color:' + _inkBg + ' !important; opacity:' + _fade + '; }' +
@@ -25127,7 +25167,12 @@ function applyAirportConfigToBoard(iata) {
         _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) { background-color:' + _gEven + ' !important; }' +
         _CA + '#fidsTable thead th { background-color:' + _gBg + ' !important; color:' + _inkTh + ' !important; }' +
         _CA + '#fidsTable tbody tr' + _nsF + ' td { color:' + _inkOdd + ' !important; }' +
-        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) td { color:' + _inkEven + ' !important; }';
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) td { color:' + _inkEven + ' !important; }' +
+        // v23219 — Arrived/Early stay SEMANTIC GREEN per ground (see _pickSt
+        // above). Emitted LAST: they tie the generic column-ink rules on
+        // specificity, and only source order lets the green win.
+        _CA + '.bidsv2-flight-row' + _nsB + ' :is(.bidsv2-status-arrived,.bidsv2-status-early) { color:' + _okEven + ' !important; }' +
+        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) :is(.bidsv2-status-arrived,.bidsv2-status-early) { color:' + _okOdd + ' !important; }';
       document.head.appendChild(_styleEl);
       // --fids-text feeds rules outside this block (ticker, footer, chips), so
       // it takes the floored ink too — otherwise the raw pick leaks back in.
