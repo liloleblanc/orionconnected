@@ -372,6 +372,7 @@
   <button class="cta" onclick="closeFullAd()">Explore offers</button>
 </div>
 
+<script src="js/shared-names.js?v=23230"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -481,9 +482,24 @@ const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto',YTZ:'Toronto',YUL:'Mo
 // Fill any gaps from the airport catalogue so no destination ever shows as a
 // bare IATA code when we already know its name.
 for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=AIRPORTS[_ck].n; }
+// v23230 — THE APP SPEAKS THE BOARD'S LANGUAGE (Nick: 'The mobile version …
+// not following the same rules for some reason as main'). The board's full
+// CITY (2,400+ airports) and AIRLINE_NAME (190 carriers) maps arrive via
+// js/shared-names.js, generated from fids-core; the app's curated entries
+// win where both define a name, the shared maps fill the rest of the world —
+// GYE renders Guayaquil, LIM Lima, VS Virgin Atlantic, H2 Sky Airline.
+// The board stores city names UPPERCASE and title-cases at render; the app
+// renders map values directly, so the merge title-cases here ("NEW ORLEANS"
+// → "New Orleans", "ST. JOHN'S" → "St. John's" — the apostrophe never
+// triggers a capital).
+function _tcCity(s){return String(s).toLowerCase().replace(/(^|[\s\-\/(\.])[a-zà-ÿ]/g,function(m){return m.toUpperCase();});}
+if(window.FIDS_SHARED_CITY){for(var _sk in FIDS_SHARED_CITY){if(!CITY[_sk])CITY[_sk]=_tcCity(FIDS_SHARED_CITY[_sk]);}}
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
   B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet',
   JV:'Bearskin',WT:'Wasaya',NSA:'North Star Air'};
+// v23230 — the board's full carrier catalogue backfills the rest (see the
+// CITY merge above): every code the big board can name, the app names too.
+if(window.FIDS_SHARED_AIRLINE){for(var _sa in FIDS_SHARED_AIRLINE){if(!AIRLINE[_sa])AIRLINE[_sa]=FIDS_SHARED_AIRLINE[_sa];}}
 
 const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':'Airbus A320neo','32Q':'Airbus A321neo','32B':'Airbus A321neo',
   '223':'Airbus A220-300','221':'Airbus A220-100','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9','73H':'Boeing 737-800','738':'Boeing 737-800',
@@ -777,7 +793,9 @@ function adbToCard(f,dir){
   // show Departed, don't keep saying Boarding (e.g. AC7995 after pushback).
   if(dir==='dep' && (state==='boarding'||state==='gateclosed'||state==='final'||state==='scheduled')){
     var _effD=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
-    if(_effD && (Date.now()-_effD)>10*60000) state='outgate';
+    // v23230 — the boards flip to closed/departed at (revised) departure
+    // +2 min (v23228); the app follows the same clock rule, not its own.
+    if(_effD && (Date.now()-_effD)>2*60000) state='outgate';
   }
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
   if(!op) op=inferOperator(code,num);
@@ -864,6 +882,7 @@ async function fetchDir(dir){
 }
 async function load(){
   if(document.hidden)return;
+  window._appLastLoadAt=Date.now();   // v23230 — staleness stamp for the resume watchdog
   const hint=document.getElementById('hint'), isArr=DIR==='arr', word=isArr?'arrivals':'departures';
   try{
     const mapped=await fetchDir(DIR);
@@ -1112,6 +1131,26 @@ let BOOT_GATE='';
 })();
 // Refresh whichever view is showing (every 3 min).
 setInterval(()=>{ if(curView==='bag')loadBags(); else load(); },180000);
+// v23230 — iOS RESUME WATCHDOG, same rule the boards carry (Nick's 20:05
+// screenshot: cards frozen at 18:20 — iOS suspends a background tab's
+// timers, and a frozen WebKit context never fires them again). A heartbeat
+// proves the JS context is alive; on pageshow/visibilitychange, data older
+// than 3 minutes reloads immediately, and a heartbeat gap that says the
+// context slept through its timers hard-reloads the page (60s loop guard).
+window._appHeartbeat=Date.now();
+setInterval(()=>{window._appHeartbeat=Date.now();},30000);
+function _appMaybeCatchUp(){
+  try{
+    var now=Date.now(), gap=now-(window._appHeartbeat||now), stale=now-(window._appLastLoadAt||0);
+    if(gap>3*60000){
+      var last=+(sessionStorage.getItem('_appResumeReloadAt')||0);
+      if(now-last>60000){ sessionStorage.setItem('_appResumeReloadAt',String(now)); location.reload(); return; }
+    }
+    if(stale>3*60000){ if(curView==='bag')loadBags(); else load(); }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden)_appMaybeCatchUp(); });
+window.addEventListener('pageshow',(e)=>{ if(e&&e.persisted)_appMaybeCatchUp(); });
 rotateBanner();
 setInterval(rotateBanner,10000);  // banner cycles offers
 setTimeout(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},9000);   // first ad appears early

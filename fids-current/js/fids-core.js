@@ -17937,6 +17937,7 @@ const AIRLINE_NAME = {
   'JJ':'LATAM BRASIL','AD':'AZUL',         'LA':'LATAM',       'JA':'JETSMART',    'AR':'AEROLINEAS',
   'CM':'COPA',        'AV':'AVIANCA',      'MX':'BREEZE',      'AM':'AEROMEXICO',  'XN':'MEXICANA',  'G3':'GOL',
   'Y4':'VOLARIS',     '2T':'BERMUDAIR',    'VB':'VIVAAEROBUS', 'UP':'BAHAMASAIR',  '4C':'LATAM',
+  'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows Nick's app shot rendered as raw codes */
   '4T':'BEOND',       'LR':'LACSA',        'BM':'BMI',
   'UP':'BAHAMASAIR',  'BG':'BIMAN',        'DO':'SKY HIGH',
   'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
@@ -19496,7 +19497,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23229';
+var FIDS_BUILD_TAG = 'v23230';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
