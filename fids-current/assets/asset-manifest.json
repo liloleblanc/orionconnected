@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2513,
+    "total": 2514,
     "by_category": {
       "ad": 10,
-      "airline": 1318,
+      "airline": 1319,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -11994,6 +11994,17 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/us-major/delta-glossy-orb.png",
+      "file": "delta-glossy-orb.png",
+      "category": "airline",
+      "subcategory": "us-major",
+      "group": "Airlines — US major",
+      "name": "delta glossy orb",
+      "iata": "",
+      "country": "",
+      "ext": "png"
     },
     {
       "path": "/logos/airlines/us-major/delta-hotels-monochrome-black.svg",
