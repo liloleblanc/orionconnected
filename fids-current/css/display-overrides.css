@@ -14200,3 +14200,23 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: inherit !important;
   text-shadow: none !important;
 }
+
+/* ── v23229 — THE TITLE BANNERS ALL SHARE THE SAME EDGES (Nick, three
+   times: 'Banners are not fixed', with his Porter rail shot: six pills,
+   six different widths). Every shelf title pill shrink-wrapped its own
+   text, so the right edges landed wherever the words ended — 'Destination'
+   short, 'Boarding | Embarquement' nearly full — and the rail read as
+   scattered. The pill now spans the full text column on EVERY panel — one
+   left edge, one right edge, all banners identical — and the words stay
+   centred inside. Applies to the rail, the boarding strip, and the
+   right-rail cards, which are the same module. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-row .v2-fi-title {
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+  align-self: stretch !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}

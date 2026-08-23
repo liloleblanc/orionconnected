@@ -7571,7 +7571,14 @@ function _buildV2AircraftCol(ctx, vars) {
       // still show both: 'Destination | Destino' is untouched. The boarding
       // sign's deliberate 'Zones | Zones' symmetry (v23130) keeps its own
       // keepDup at its own call sites.
-      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ');
+      // v23229 — the code rides the Destination banner too (Nick: 'Destination
+      // is also supposed to have the airport code it doesnt'), the same
+      // pattern as the Arrival banner: the destination IATA prefixes the word
+      // in every selected language; the dedup still collapses EN/FR sharing
+      // 'Destination' to one prefixed word.
+      var _destLabel = _gateLbl('dest', _frF, function (w) {
+        return (_destIataDisp ? _destIataDisp + ' ' : '') + w;
+      }, ' <span class="v2-fi-sep">|</span> ');
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -19489,7 +19496,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23228';
+var FIDS_BUILD_TAG = 'v23229';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
