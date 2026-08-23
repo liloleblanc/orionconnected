@@ -14124,3 +14124,66 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   max-width: 74% !important;
   max-height: 76% !important;
 }
+
+/* ── v23226 — THE CLOUDS STOP LOOKING FAKE (Nick: 'some of the clouds look
+   fake i dont know if its because its now bigger or whatnot but adjustments
+   need to be made they may be too high they may need lowered including the
+   aircraft').
+   Measured on the live panel: the back plate was squeezed 1600px→1000px
+   (0.63×) and the mid cumulus band 1800px→700px (0.39×) — the puffs render
+   horizontally crushed into mushy blobs, and the mid band starts at 34% of
+   the panel so the 'cloud wall' begins at the aircraft's eyeline. With the
+   aircraft now at 74% there is finally room to fix both:
+   - each layer draws at (near-)natural width, so the puffs keep their real
+     shapes; the slide distance always equals the tile width, so the loops
+     stay seamless by construction, at the same px/s as before;
+   - the mid deck drops to the lower third (top 48%), where a cruising
+     aircraft's cloud deck belongs, a step sheerer;
+   - the aircraft rides a touch lower so it sits just above the deck instead
+     of floating high in empty blue. */
+@keyframes g8SkyBackWide { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1600px,0,0); } }
+@keyframes g8SkyMidWide  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1250px,0,0); } }
+html body.gate-acsky:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
+html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
+  width: calc(100% + 1600px) !important;
+  background-size: 1600px 100% !important;
+  animation: g8SkyBackWide 400s linear infinite !important;
+  animation-delay: var(--g8-back-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+}
+html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after {
+  width: calc(100% + 1250px) !important;
+  top: 48% !important; bottom: -8% !important;
+  background-size: 1250px 100% !important;
+  opacity: .6 !important;
+  animation: g8SkyMidWide 230s linear infinite !important;
+  animation-delay: var(--g8-mid-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img {
+  padding-top: 16% !important;
+  box-sizing: border-box !important;
+}
+
+/* ── v23226 — ONE BOTTOM LINE ACROSS THE TOP BAND (Nick, twice: 'Banners
+   still need adjustments they are not alligned'). Measured: the cream clock
+   chip hugs its content (v23212) and ends ~35px above the banner's bottom
+   edge, so the band's bottom reads as three different lines — banner, chip,
+   gate tab. The chip now runs the full band height: the time centres in the
+   free space and the date bar sits ON the band's bottom edge, flush with
+   the banner and the gate tab either side. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox.octb-wrap {
+  align-items: stretch !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb.octb-tab {
+  height: 100% !important;
+  justify-content: flex-start !important;
+  border-radius: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-clock {
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date {
+  margin-top: 0 !important;
+}
