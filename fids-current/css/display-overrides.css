@@ -14187,3 +14187,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date {
   margin-top: 0 !important;
 }
+
+/* ── v23227 — THE MERIDIEM FOLLOWS ITS TIME (Nick: 'still not beeen
+   corrected … 2 colors' — the strip showed 7:01 amber with a white pm).
+   The plate-ink rule paints every .g8-bir-mer white/plate-ink directly, so
+   it beats the amber that .g8-r2-revised only passes down by inheritance —
+   the digits matched at the span, the meridiem lost inside it. A revised
+   time is ONE value: its meridiem inherits the span's colour, stated here
+   above every ink rule's tier. Covers the early-green direction and the
+   struck original (where still shown) the same way. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves, .g8-bir-cell, .g8-board-info-row) :is(.g8-r2-revised, .g8-r2-strike) .g8-bir-mer {
+  color: inherit !important;
+  text-shadow: none !important;
+}
