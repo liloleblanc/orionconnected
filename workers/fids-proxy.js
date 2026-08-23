@@ -2769,29 +2769,37 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         }
       } catch (e) {}
 
-      try {
-        const headers = { "Accept": "application/json", "User-Agent": "OrionConnected-FIDS/1.0 (airport flight information displays)" };
-        // Only set if the chosen provider needs one. Absent = anonymous, which
-        // is how the free community feeds normally work.
-        if (env.ADSB_KEY) headers["auth"] = env.ADSB_KEY;
-        const r = await fetch(upstream, { headers });
-        if (!r.ok) {
-          // Deliberately NOT cached — a 403/429 must not pin a dead answer for
-          // everyone. Shaped like a success with no aircraft so the board's
-          // existing "no fix" path handles it without a special case.
-          return jsonResponse({ ac: [], _upstreamStatus: r.status, _provider: provider }, 200, origin);
-        }
-        const payload = await r.text();
+      // v23222 — PROVIDER FAILOVER (Nick: 'The flight is no longer tracked on
+      // the map'). airplanes.live has 403'd unregistered callers since
+      // 2026-08-15; with a single fixed provider every board silently fell
+      // back to stale clock-estimated positions — wrong spots, wrong headings
+      // ('the planes go backwards'). The configured provider is tried first,
+      // then the other allowed feeds in the ring; the first healthy answer
+      // wins and is cached. A dead upstream costs one extra hop, never the
+      // whole feature. All three feeds speak the same readsb /v2 shape.
+      const ring = [provider].concat(Object.keys(PROVIDERS).filter((p) => p !== provider));
+      let lastStatus = 0;
+      for (const prov of ring) {
         try {
-          await cache.put(cacheKey, new Response(payload, { headers: {
-            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
-        } catch (e) {}
-        return new Response(payload, { status: 200, headers: {
-          "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
-          "X-Adsb-Cache": "miss", ...corsHeaders(origin) } });
-      } catch (e) {
-        return jsonResponse({ ac: [], _error: String(e && e.message).slice(0, 120) }, 200, origin);
+          const headers = { "Accept": "application/json", "User-Agent": "OrionConnected-FIDS/1.0 (airport flight information displays)" };
+          // Only set for the provider the key belongs to. Absent = anonymous,
+          // which is how the free community feeds normally work.
+          if (env.ADSB_KEY && prov === "airplanes.live") headers["auth"] = env.ADSB_KEY;
+          const r = await fetch(`${PROVIDERS[prov]}/${kind}/${encodeURIComponent(subject)}`, { headers });
+          if (!r.ok) { lastStatus = r.status; continue; }
+          const payload = await r.text();
+          try {
+            await cache.put(cacheKey, new Response(payload, { headers: {
+              "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+          } catch (e) {}
+          return new Response(payload, { status: 200, headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+            "X-Adsb-Cache": "miss", "X-Adsb-Provider": prov, ...corsHeaders(origin) } });
+        } catch (e) { /* network error → try the next feed */ }
       }
+      // Every feed failed — NOT cached, shaped like a success with no
+      // aircraft so the board's existing "no fix" path handles it.
+      return jsonResponse({ ac: [], _upstreamStatus: lastStatus, _provider: ring.join(",") }, 200, origin);
     }
 
     // ── Vecteezy connectivity self-test ─────────────────────────────────

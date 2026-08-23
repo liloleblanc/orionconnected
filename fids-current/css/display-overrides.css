@@ -14040,3 +14040,36 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: #14213a !important;
   -webkit-text-fill-color: #14213a !important;
 }
+
+/* ── v23222 — MELT THE RADAR CELLS FOR REAL (Nick: 'The map clouds look
+   terrible its squares'). The 1.2px pane blur from v23103 cannot dissolve
+   z7 cells upscaled to mid-zoom — the hard cell grid and coverage seams
+   still read as rectangles. A real blur radius turns them into weather
+   shapes; the pane blurs as ONE composite so tile seams melt with the
+   cells. The close-zoom ceiling (maxZoom 11, fids-core) handles the
+   street-level wash the blur can't. */
+.g8-wx-radar-pane {
+  filter: blur(6px) saturate(0.92) !important;
+}
+
+/* ── v23222 — THE TOP-ROW BLOCKS FIT THEIR BAND (Nick: 'The banners need
+   adjustments they dohnt all lign up at the top' — his AC shot has the
+   clock's top pixels sheared off). The banner is a FIXED 116px band, but
+   the clock text inside it scales with vh: on a tall display 6.6vh grows
+   past what the band can hold, the bottom-anchored chip overflows upward,
+   and the time clips at the top — which reads as the blocks not lining
+   up. The text now caps in band terms, so every top block renders whole
+   and flush at every viewport. Digits stay at today's size on standard
+   boards; only the impossible overgrowth is capped. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-clock {
+  font-size: clamp(38px, 6.6vh, 62px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date {
+  font-size: clamp(11px, 1.7vh, 19px) !important;
+}
+/* The skewed default timebox variant has the same vh-vs-fixed-band race
+   (label 2vh + time 6vh inside the same 116px). Same cap, scoped away
+   from the octb chip which has its own above. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .v2-fi-clock-val:not(.octb-clock) {
+  font-size: clamp(40px, 6vh, 72px) !important;
+}
