@@ -1620,10 +1620,29 @@ function _cuSave(prefs) {
 // REAL colours first because the cloud stores palettes, not ids. Fields the
 // worker does not carry (dayNight scheduling) stay device-local. Best
 // effort and debounced — a failed push never blocks the local save.
+// v23221 — the cloud-sync OUTCOME is visible (Nick: 'the themes dont carry
+// over other than the computer its made on it needs to be global'). When no
+// one was signed in the push below returned in silence, and a theme that
+// looked saved lived on one device only. The note under the Theme picker
+// now says which of the two happened.
+function _cuSyncNote(kind) {
+  var el = document.getElementById('cuCloudSyncNote');
+  if (!el) return;
+  var m = {
+    local:  ['#fbbf24', '⚠ Not signed in — this look is saved on THIS device only. Sign in (Login) and save again to apply it to every screen at this airport.'],
+    saved:  ['#34d399', '✓ Saved to the airport cloud — every screen picks it up within ~10 seconds.'],
+    failed: ['#f87171', '⚠ Cloud save failed — the look is on this device only for now. Check the connection or sign-in and try again.']
+  }[kind];
+  if (!m) { el.style.display = 'none'; return; }
+  el.style.color = m[0];
+  el.textContent = m[1];
+  el.style.display = '';
+}
+
 var _cuCloudTimer = null;
 function _cuCloudPush(code, prefs) {
   try {
-    if (!_acGetToken()) return;                    // not signed in → local only
+    if (!_acGetToken()) { _cuSyncNote('local'); return; }   // not signed in → local only
     if (_cuCloudTimer) clearTimeout(_cuCloudTimer);
     _cuCloudTimer = setTimeout(function () {
       _cuCloudTimer = null;
@@ -1661,7 +1680,8 @@ function _cuCloudPush(code, prefs) {
         body: JSON.stringify(body)
       }).then(function (res) { return res.ok ? res.json() : null; })
         .then(function (out) {
-          if (!out || !out.config || !out.config.updatedAt) return;
+          if (!out || !out.config || !out.config.updatedAt) { _cuSyncNote('failed'); return; }
+          _cuSyncNote('saved');
           // Align this device's stamp with the cloud's so the newer-wins
           // comparison treats them as the same save, not a conflict.
           try {

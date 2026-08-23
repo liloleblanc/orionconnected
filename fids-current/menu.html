@@ -191,6 +191,11 @@
         <optgroup label="Saved presets" id="cuPresetGroup"></optgroup>
       </select>
 
+      <!-- v23221 — cloud sync status (Nick: 'it needs to be global'): says
+           whether this look reached the airport's cloud settings or stayed
+           device-local because no one is signed in. Driven by _cuCloudPush. -->
+      <div id="cuCloudSyncNote" data-sec="look-basic" style="display:none;margin:-8px 0 14px;font-size:12px;line-height:1.5;"></div>
+
       <!-- ─── 1a. DAY & NIGHT ─── -->
       <div data-sec="look-basic" style="margin-bottom:14px;">
         <div class="sm-label">Day &amp; night</div>
