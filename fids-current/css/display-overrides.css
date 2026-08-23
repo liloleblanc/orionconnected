@@ -14073,3 +14073,23 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .v2-fi-clock-val:not(.octb-clock) {
   font-size: clamp(40px, 6vh, 72px) !important;
 }
+
+/* ── v23223 — WHAT'S STILL TO COME ON THE BOARDING SIGN (Nick: 'theres
+   nothing that says zones coming up'). A small bilingual line under the
+   called number in the zones/rows column: 'Coming up | À venir: 5 • 6'.
+   Dimmed against the called zone so the big number stays the sign;
+   disappears when the last zone is called. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board .g8-board-coming {
+  font-size: clamp(13px, 1.8vh, 24px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.02em;
+  text-align: center;
+  margin-top: clamp(2px, 0.4vh, 6px);
+  white-space: nowrap;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board .g8-board-coming .g8-board-coming-z {
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}

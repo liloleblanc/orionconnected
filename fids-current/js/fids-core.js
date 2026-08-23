@@ -10347,11 +10347,20 @@ function uxgGateHtml(ctx) {
   // (Zone 1 \u2192 Lane 1), quarter RED (Zone 2 \u2192 Lane 2) \u2014 priority, shown
   // at ALL times \u2014 and the right HALF as the called-zones sign ("Zones"
   // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
-  function _acLanesBodyHtml(zonesVal) {
+  // v23223 \u2014 the sign says what is still to come (Nick: 'theres nothing
+  // that says zones coming up'): a small bilingual line under the called
+  // number listing the remaining zones (or Porter's next row band).
+  function _comingLineHtml(comingVal) {
+    if (!comingVal) return '';
+    return '<div class="g8-board-coming">'
+      + _gateLbl('comingUp', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ')
+      + ': <span class="g8-board-coming-z">' + comingVal + '</span></div>';
+  }
+  function _acLanesBodyHtml(zonesVal, comingVal) {
     return '<div class="g8-board-body g8-lanes3">'
       + '<div class="g8-board-col now g8-q1"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num">1</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
       + '<div class="g8-board-col next g8-q2"><div class="g8-board-grp-label">' + _gateLbl('priority', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num">2</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
-      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(zonesVal) + '">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
+      + '<div class="g8-board-col next g8-zones"><div class="g8-board-grp-label">' + _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true) + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(zonesVal) + '">' + zonesVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div>' + _comingLineHtml(comingVal) + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
 
@@ -10359,12 +10368,12 @@ function uxgGateHtml(ctx) {
   // rest' + 'Porter Reserve is priority'). LEFT half = the Porter Reserve
   // priority queue on Lanes 1\u20222 (always shown while boarding); RIGHT half =
   // the row band being called for everyone else on Lanes 3\u20224.
-  function _pdLanesBodyHtml(rowsVal) {
+  function _pdLanesBodyHtml(rowsVal, comingVal) {
     var _prioT = _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
     var _rowsLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">Porter Reserve</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
-      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
+      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div>' + _comingLineHtml(comingVal) + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
 
@@ -10373,7 +10382,7 @@ function uxgGateHtml(ctx) {
   if (boardActive) {
     var lateBoarding = minsToDep <= 18;
     var _grpLbl = TL('groupLabel');
-    var nowVal, nextVal, _acZonesVal = '';
+    var nowVal, nextVal, _acZonesVal = '', _comingVal = '';
     if (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK') {
       // Air Canada family boards by ZONE (Nick, per AC's published policy):
       // priority Zones 1•2 first, then general boarding Zone 3, then Zones
@@ -10402,6 +10411,12 @@ function uxgGateHtml(ctx) {
       else if (minsToDep > 8) _zStep = 5;
       else _zStep = 6;
       _acZonesVal = String(_zStep);
+      // v23223 — the zones still to be called (Nick: 'theres nothing that
+      // says zones coming up'). Express tops out at 4, mainline at 6.
+      var _zMaxAC = _acExpress ? 4 : 6;
+      var _zRestAC = [];
+      for (var _zi = _zStep + 1; _zi <= _zMaxAC; _zi++) _zRestAC.push(_zi);
+      _comingVal = _zRestAC.join(' • ');
     } else if (airlineCode === 'WS' || airlineCode === 'WR') {
       // WestJet \u2014 SAME lane-sign model as the AC gate sign (Nick, more than
       // once: 'zones 1 and 2 is 2 lanes ALL THE TIME, it's priority; zones
@@ -10420,6 +10435,10 @@ function uxgGateHtml(ctx) {
       else if (minsToDep > 8) _wzStep = 7;
       else _wzStep = 8;
       _acZonesVal = String(_wzStep);
+      // v23223 — zones still to come (WestJet calls through Zone 8).
+      var _zRestWS = [];
+      for (var _wzi = _wzStep + 1; _wzi <= 8; _wzi++) _zRestWS.push(_wzi);
+      _comingVal = _zRestWS.join(' • ');
     } else if (airlineCode === 'PD') {
       // Porter boards by ROW NUMBER, back to front (Nick). Row count by
       // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
@@ -10432,6 +10451,8 @@ function uxgGateHtml(ctx) {
       } else {
         nowVal = (_pdRows - _pdBand + 1) + '\u2013' + _pdRows;
         nextVal = (_pdRows - 2 * _pdBand + 1) + '\u2013' + (_pdRows - _pdBand);
+        // v23223 \u2014 the next row band is the 'coming up' on Porter's sign.
+        _comingVal = nextVal;
       }
     } else {
       var zones = getZoneCount(airlineCode, equipRaw);
@@ -10452,9 +10473,9 @@ function uxgGateHtml(ctx) {
       + _boardInfoRowHtml('boarding')
       + _boardWelcomeStripHtml('boarding')
       + (_acLanes
-          ? _acLanesBodyHtml(_acZonesVal)
+          ? _acLanesBodyHtml(_acZonesVal, _comingVal)
           : airlineCode === 'PD'
-          ? _pdLanesBodyHtml(nowVal)
+          ? _pdLanesBodyHtml(nowVal, _comingVal)
           : _bHdr
             + '<div class="g8-board-body">'
             + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(nowVal) + '">' + nowVal + '</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
@@ -19183,6 +19204,9 @@ var _GATE_LBL = {
   timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
   zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
+  // v23223 — the boarding sign says what is still to come (Nick: 'theres
+  // nothing that says zones coming up').
+  comingUp:  { en:'Coming up',     fr:'À venir',        es:'Próximas',     de:'Als Nächstes', it:'In arrivo',  pt:'A seguir',   ja:'次',        zh:'即将',   ar:'قادم' },
   finalCall: { en:'FINAL BOARDING CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終搭乗案内', zh:'最后登机广播', ar:'النداء الأخير للصعود' },
   gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'ゲート閉鎖', zh:'登机口已关闭', ar:'البوابة مغلقة' },
   useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },
@@ -19413,7 +19437,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23222';
+var FIDS_BUILD_TAG = 'v23223';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
