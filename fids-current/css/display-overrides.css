@@ -14109,3 +14109,18 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   white-space: normal !important;
   text-align: center !important;
 }
+
+/* ── v23225 — THE AIRCRAFT GETS AIR AROUND IT (Nick, with his AF reference
+   video: 'The airplane does not look like this when travelling in the
+   clouds it looks off it needs adjustments … its not about this one in
+   particular its the layout'). The photo filled the panel wall-to-wall, so
+   the aircraft read as pasted artwork rather than something travelling
+   THROUGH a sky. The reference composes the aircraft at roughly 60% of the
+   frame with sky visible on every side; same proportion here — the
+   three-layer sky and the belly cloud band finally have room to read as
+   near and far instead of being hidden behind the fuselage. The float-bob
+   and layer speeds are untouched. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img img {
+  max-width: 74% !important;
+  max-height: 76% !important;
+}

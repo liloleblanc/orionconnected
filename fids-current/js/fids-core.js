@@ -6988,12 +6988,14 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
 // the first/top round Flight icon on the gate display — never in the main FIDS
 // all-flights airline cell (which has its own IATA_TO_* logo system).
 var GATE_TOP_ROUND_EMBLEM_FILES = {
-  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350'
-  // DL-glossy removed (Nick, Aug 7: 'They should all match … as long as they
-  // are all consistent') — the glossy orb was the one multi-tone chip in a
-  // row of red accent orbs with white glyphs. With no override the Flight
-  // badge falls back to AIRLINE_EMBLEM_FILES' monochrome-white widget on the
-  // same red orb as every other icon on the rail.
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
+  // v23225 — DL glossy is BACK, with Nick's own supplied art (his zip:
+  // 'The Delta emblem was not changed to look like this … The emblem is
+  // titled[tilted] thats what i mean'). Unlike the Aug 7 removal — that
+  // orb was the one LIGHT chip in a row of red accent orbs — this sphere
+  // is Delta red with the tilted white widget, so it sits in the red row
+  // it belongs to. Same full-bleed native treatment as United's globe.
+  'DL': '/logos/airlines/us-major/delta-glossy-orb.png?v=23225'
 };
 
 function _buildV2AircraftCol(ctx, vars) {
@@ -7350,7 +7352,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // and unbadged. DL now takes the COLOR_ON_WHITE path below: the same
         // round glossy accent orb (Delta red) as every other icon, white
         // widget centered inside.
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true };  // supplied full-colour art keeps its native colours
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true };  // supplied full-colour art keeps its native colours (DL v23225: Nick's glossy sphere is the badge)
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -10282,7 +10284,10 @@ function uxgGateHtml(ctx) {
     // circles (Nick: 'Delta icon does not match any others') — the strip
     // badge goes back to the standard treatment; the glossy art stays on
     // the other surfaces.
-    if (airlineCode === 'DL') _birRound = null;
+    // v23225 — the null is LIFTED: Nick's new glossy sphere is Delta red
+    // with the tilted white widget ('The Delta emblem was not changed to
+    // look like this'), so it matches the accent-orb row the old white
+    // sphere clashed with.
     var _birEmblemPath = _birRound || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
     // MX: tile-brand treatment (Nick: 'circle same color as the icon, the
     // middle fits within') — navy circle in the tile's own colour, check
@@ -19471,7 +19476,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23224';
+var FIDS_BUILD_TAG = 'v23225';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
