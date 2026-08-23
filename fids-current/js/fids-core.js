@@ -7639,7 +7639,14 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls, 'v2-fi-rowst-' + (_fiStCls || '').trim())
         + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd))
         + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time', _revRowCls(_fiDep))
-        + _shelf(_badge(_svgArrive), _railPair('arrival')[0], _railPair('arrival')[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr))
+        + (function () {
+            // v23222 — the Arrival banner names WHERE the arrival happens
+            // (Nick: 'The Arrival banner needs to be changed (left side) to
+            // the destination so example YYZ Arrival | YYZ Arrivee').
+            var _arrP = _railPair('arrival');
+            if (_destIataDisp) _arrP = _arrP.map(function (w) { return w ? _destIataDisp + ' ' + w : w; });
+            return _shelf(_badge(_svgArrive), _arrP[0], _arrP[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr));
+          })()
         + '</div>';
     }
   } catch (e) {}
@@ -8177,7 +8184,16 @@ function _buildV2MapCol(ctx, vars) {
         if (_h_mcOrb.length === 3) _h_mcOrb = _h_mcOrb.replace(/./g, function(c){return c+c;});
         var _r_mcOrb = parseInt(_h_mcOrb.substr(0,2),16), _g_mcOrb = parseInt(_h_mcOrb.substr(2,2),16), _b_mcOrb = parseInt(_h_mcOrb.substr(4,2),16);
         if ((0.2126*_r_mcOrb + 0.7152*_g_mcOrb + 0.0722*_b_mcOrb) > 186) _mcOrbWhite = false; } catch (e) {}
-      var _mcTitle = _gateLbl('flight', _frF, function (w, i2) { return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '');
+      // v23222 — the inbound card's banner names the event, not the noun
+      // (Nick: 'the Flight/Vol becomes YQM Arrival | YQM Arrivee'): this
+      // aircraft is arriving HERE, so the local airport code prefixes the
+      // Arrival pair in both languages. The shared shrink-fitter already
+      // sizes the longer title to the banner.
+      var _mcApIata = String((vars && vars.iata) || '').toUpperCase();
+      var _mcTitle = _gateLbl((_stKey === 'arrived') ? 'arrived' : 'arrival', _frF, function (w, i2) {
+        var t = (_mcApIata ? _mcApIata + ' ' : '') + w;
+        return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + t + '</span>' : '<span class="v2-fi-lbl-en">' + t + '</span>';
+      }, '');
       var _mcTimes = '';
       if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
         _mcTimes = '<span class="v2-rc-status-delayed">' + _railT(_ibArrRevStr) + '</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>';
@@ -8190,7 +8206,12 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mcBadge + '">'
         +       (_mcOrbSrc
-                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  // v23222 — BITMAP ROUNDELS STAY NATIVE (Nick's G4 shot:
+                  // 'Rouge here is a sqwuare empty'). rouge-icon.png is a
+                  // solid colour roundel; invert(1) turned it into a blank
+                  // white disc. Only vector silhouettes take the white
+                  // treatment — .png art is colour art by construction.
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — no emblem art on file → the carrier's LETTERS on
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
@@ -8496,7 +8517,8 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mdBadge + '">'
         +       (_mdOrbSrc
-                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  // v23222 — same bitmap-native rule as the inbound card.
+                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite && !/\.png(\?|$)/i.test(_mdOrbSrc) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — lettered-roundel fallback (see inbound builder).
                   : '<span class="v2-fi-orb-code">' + (_mdOrbOp || _mdCode || '') + '</span>')
         +     '</div></div>'
@@ -9120,6 +9142,13 @@ function _buildV2MapCol(ctx, vars) {
           // keeps the marketing carrier's emblem the builder already baked.
           var _orbFix = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode]) || '';
           if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
+          // v23222 — a bitmap roundel swapped in here must ALSO drop any
+          // invert the builder baked for the original vector art (Rouge's
+          // disc went blank white on the red orb otherwise).
+          var _orbFixPng = /\.png(\?|$)/i.test(_orbFix);
+          if (_orbFixPng) {
+            _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
+          }
           // v23205 — the orb GROUND follows the operator's carrier colour too
           // (Nick: 'your orb by the plane should follow the carrier colors —
           // yellow in this case'): PAL's brand accent behind PAL's mark, not
@@ -9132,7 +9161,8 @@ function _buildV2MapCol(ctx, vars) {
             var _olum = 0.2126*parseInt(_oh.substr(0,2),16) + 0.7152*parseInt(_oh.substr(2,2),16) + 0.0722*parseInt(_oh.substr(4,2),16);
             if (_olum > 186) {
               _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
-            } else if (_inboundCard.indexOf('filter:brightness(0) invert(1)') === -1) {
+            } else if (_inboundCard.indexOf('filter:brightness(0) invert(1)') === -1
+                       && !/class="v2-fi-orb" src="[^"]*\.png[^"]*"/i.test(_inboundCard)) {
               _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src="[^"]*" alt="" style="width:100%;height:100%;object-fit:contain;)/, '$1filter:brightness(0) invert(1);');
             }
           }
@@ -9458,7 +9488,17 @@ function uxgGateHtml(ctx) {
     // left plates can colour it like the status word (amber late, green
     // early). Nick: 'the appropriate time has to change colours accordingly'.
     var _revDirCls = (stKey === 'early') ? ' g8-rev-early' : '';
-    depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised' + _revDirCls + '">' + (_to12h(_revDepHHMM) || '\u2014') + '</span>';
+    // v23222 \u2014 NO REVISED ESTIMATE \u2260 NO TIME (Nick's WS813 shot: 'No
+    // departure times listed' \u2014 the Departure shelf showed a bare dash).
+    // A delayed flight whose feed carries no new time was built as
+    // strike(6:15pm)+revised(\u2014); the shelves strip the strike and the
+    // scheduled time vanished with it. Keep the scheduled time plain when
+    // there is nothing to revise it TO \u2014 the amber Delayed status already
+    // says it will move.
+    var _revDepDisp = _to12h(_revDepHHMM);
+    if (_revDepDisp) {
+      depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised' + _revDirCls + '">' + _revDepDisp + '</span>';
+    }
   }
 
   // Arr time display
@@ -19373,7 +19413,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23221';
+var FIDS_BUILD_TAG = 'v23222';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27608,7 +27648,11 @@ function _wxRadarAdd(m) {
       // squares'): at z<=5 RainViewer cells are sub-blur speckle covering
       // the whole map. The overlay only appears once the view is close
       // enough for weather shapes to mean something.
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.5, minZoom: 6, maxNativeZoom: 7, maxZoom: 19 }).addTo(m);
+      // v23222 — RADAR HAS A CLOSE-ZOOM CEILING TOO (Nick: 'The map clouds
+      // look terrible its squares'). Beyond z11 the z7 cells are stretched
+      // 16×+ — the Toronto close-up was one giant blocky wash. Past the
+      // ceiling the radar simply hides; the street/airport view stays clean.
+      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.5, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
     } catch (e) {}
   };
   if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
