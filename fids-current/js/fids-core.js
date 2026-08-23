@@ -275,6 +275,43 @@ function bootstrapAirportConfig(code) {
   loadAirlineOverrides(norm);
 }
 
+// v23221 — CLOUD SETTINGS FOLLOW THE BOARD, NOT JUST THE BOOT (Nick: 'the
+// themes dont carry over other than the computer its made on it needs to be
+// global'). loadAirportConfig caches for the life of the page, so an
+// always-on display only ever saw the config that existed when its tab
+// loaded — a theme saved on another computer never arrived until someone
+// walked over and reloaded the kiosk. This refresher re-reads the airport
+// config every TEN SECONDS (Nick: 'if the youtube live mix is live and i
+// change the theme on another computer it should technically within a few
+// seconds be the same on youtube') and, ONLY when the cloud copy's
+// updatedAt actually moved, swaps the cache and re-applies the board
+// config through the same newer-wins gate the boot path uses. The config
+// JSON is under a kilobyte, so the streaming kiosk pays ~6 tiny requests a
+// minute for a theme that follows the admin within one tick.
+async function refreshAirportConfig(code) {
+  const norm = _normAirportCode(code);
+  if (!norm) return;
+  try {
+    const res = await fetch(FIDS_API_BASE + '/api/airport-config/' + norm, { cache: 'no-cache' });
+    if (!res.ok) return;                        // keep what we have on any failure
+    const cfg = await res.json();
+    const prev = _airportConfigCache[norm];
+    if (prev && cfg && prev.updatedAt === cfg.updatedAt) return;   // nothing new
+    _airportConfigCache[norm] = cfg;
+    try { window.dispatchEvent(new CustomEvent('fids-airport-config-ready', { detail: { code: norm, config: cfg } })); } catch (e) {}
+    if (typeof applyAirportConfigToBoard === 'function') applyAirportConfigToBoard(norm);
+    console.log('[FIDS] airport config refreshed for ' + norm + ' (updatedAt ' + (cfg && cfg.updatedAt) + ')');
+  } catch (e) {}
+}
+try {
+  window._fidsCfgPoll = window._fidsCfgPoll || setInterval(function () {
+    try {
+      var _code = (document.getElementById('apSel') || {}).value || '';
+      if (_code) refreshAirportConfig(_code);
+    } catch (e) {}
+  }, 10000);
+} catch (e) {}
+
 // Expose to window for admin UI + debugging from DevTools console
 window.FIDS_AIRPORT = {
   get: getAirportConfig,
@@ -19336,7 +19373,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23220';
+var FIDS_BUILD_TAG = 'v23221';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
