@@ -9668,7 +9668,17 @@ function uxgGateHtml(ctx) {
   // aircraft/media/map layout (with the small "will board in X" strip) now
   // stays up until then.
   var showCountdown = minsToDep <= (_boardLeadShown + 10) && minsToDep > _boardLeadShown;
-  var isGateClosedStatus = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed');
+  var isGateClosedStatus = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed')
+    // v23228 — GATE CLOSED BY THE CLOCK TOO (Nick's 7:33 shot: FINAL
+    // BOARDING CALL still up three minutes past a 7:30 departure). The
+    // handoff waited on the FEED's status flip, which can arrive late or
+    // never; a gate more than two minutes past its (revised) departure
+    // with no contrary status reads as closed. Cancelled/diverted keep
+    // their own signs, and a revised departure moves this deadline with
+    // it — minsToDep is already revised-aware.
+    || (typeof minsToDep === 'number' && isFinite(minsToDep) && minsToDep <= -2
+        && minsToDep > -720
+        && stKey !== 'cancelled' && stKey !== 'diverted');
   var isFinalCallStatus = (stKey === 'final' || stKey === 'finalcall' || stKey === 'final-call');
   var inbDelayed = inboundFlight && (inboundFlight.status === 'delayed' || (inboundFlight.upd && inboundFlight._revTs && inboundFlight._revTs > inboundFlight._sortTs));
   if (_ovMsg) {
@@ -10517,7 +10527,10 @@ function uxgGateHtml(ctx) {
   // Build final call HTML
   var finalHtml = '';
   if (finalActive) {
-    var isGateClosed = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed');
+    // v23228 — ONE definition of closed: the sign builder re-derived from
+    // stKey alone, so the clock fallback above would flip the takeover to
+    // final without ever changing its header. Reuse the flag.
+    var isGateClosed = isGateClosedStatus;
     // v23130 — the header is a bilingual pair like every other sign line
     // (Nick: 'all needs to be in the 2 languages'). Each language is one
     // nowrap span; the pipe sits between; a narrow band stacks whole lines.
@@ -19476,7 +19489,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23227';
+var FIDS_BUILD_TAG = 'v23228';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
