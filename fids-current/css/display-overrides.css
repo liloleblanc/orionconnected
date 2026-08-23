@@ -14093,3 +14093,19 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-weight: 900;
   letter-spacing: 0.06em;
 }
+
+/* ── v23224 — PAL OPEN-FLOW BOARDING SIGN (PAL's published process: no
+   zones, no rows on the Dash-8 fleet — pre-boarding, then one general
+   call). One full-width panel; the phase reads as text in the number
+   slot, so it sizes for words, not a single digit. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board .g8-lanes-pb .g8-board-col.g8-pb-flow,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-final .g8-lanes-pb .g8-board-col.g8-pb-flow {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pb .g8-pb-flow .g8-board-grp-num.g8-grp-txt {
+  font-size: clamp(28px, 5.2vh, 72px) !important;
+  line-height: 1.08 !important;
+  white-space: normal !important;
+  text-align: center !important;
+}

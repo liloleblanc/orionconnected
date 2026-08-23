@@ -10377,6 +10377,27 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
+  // v23224 — PAL AIRLINES OPEN-FLOW SIGN (Nick, with PAL's published
+  // process: no zones, no rows on their Dash-8 fleet — pre-boarding for
+  // those needing assistance, then ONE general call for everyone). One
+  // full-width panel naming the current phase; during pre-boarding the
+  // coming-up line points at the general call, during general boarding the
+  // sub-line reads 'All passengers | Tous les passagers'. Scoped to
+  // PB-coded flights only — AC-marketed flights on PAL metal follow AC's
+  // zone policy like the rest of the Express fleet.
+  function _pbFlowBodyHtml(preActive) {
+    var _phaseT = _gateLbl(preActive ? 'preboard' : 'genboard', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
+    var _subT = preActive
+      ? _comingLineHtml(_gateLbl('genboard', _frF, function (w) { return w; }, ' | '))
+      : '<div class="g8-board-coming"><span class="g8-board-coming-z">' + _gateLbl('allPax', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ') + '</span></div>';
+    return '<div class="g8-board-body g8-lanes-pb">'
+      + '<div class="g8-board-col now g8-pb-flow"><div class="g8-board-grp-label">' + _gateLbl('boarding', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ') + '</div>'
+      + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _phaseT + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div>'
+      + _subT
+      + '<div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
+      + '</div>';
+  }
+
   // Build boarding panel HTML
   var boardHtml = '';
   if (boardActive) {
@@ -10476,6 +10497,10 @@ function uxgGateHtml(ctx) {
           ? _acLanesBodyHtml(_acZonesVal, _comingVal)
           : airlineCode === 'PD'
           ? _pdLanesBodyHtml(nowVal, _comingVal)
+          // v23224 — PAL's open-flow sign: pre-boarding for the first
+          // stretch of the window, then the one general call.
+          : airlineCode === 'PB'
+          ? _pbFlowBodyHtml(minsToDep > 20)
           : _bHdr
             + '<div class="g8-board-body">'
             + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(nowVal) + '">' + nowVal + '</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
@@ -10536,6 +10561,10 @@ function uxgGateHtml(ctx) {
              moncton does not load'). The rows value is the 'All | Tous'
              label _fcNext already computed for PD above. */
           ? _pdLanesBodyHtml(_fcNext)
+          // v23224 — PAL final call is the general call for everyone: the
+          // open-flow sign, never the priority/zones halves.
+          : airlineCode === 'PB'
+          ? _pbFlowBodyHtml(false)
           // v23127 — STANDARD SIGN (Nick: 'most airlines have wrong boarding
           // format all together... 1 and 2 is priority and 3 and 4 is
           // everyone else'). Two halves like Porter's: left = Priority on
@@ -19207,6 +19236,11 @@ var _GATE_LBL = {
   // v23223 — the boarding sign says what is still to come (Nick: 'theres
   // nothing that says zones coming up').
   comingUp:  { en:'Coming up',     fr:'À venir',        es:'Próximas',     de:'Als Nächstes', it:'In arrivo',  pt:'A seguir',   ja:'次',        zh:'即将',   ar:'قادم' },
+  // v23224 — PAL Airlines boards OPEN-FLOW (their published process: no
+  // zones, no rows — pre-boarding, then one general call).
+  preboard:  { en:'Pre-boarding',  fr:'Pré-embarquement', es:'Preembarque', de:'Vorab-Einstieg', it:'Preimbarco', pt:'Pré-embarque', ja:'優先搭乗', zh:'优先登机', ar:'صعود مسبق' },
+  genboard:  { en:'General boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'صعود عام' },
+  allPax:    { en:'All passengers', fr:'Tous les passagers', es:'Todos los pasajeros', de:'Alle Passagiere', it:'Tutti i passeggeri', pt:'Todos os passageiros', ja:'全てのお客様', zh:'所有乘客', ar:'جميع الركاب' },
   finalCall: { en:'FINAL BOARDING CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終搭乗案内', zh:'最后登机广播', ar:'النداء الأخير للصعود' },
   gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'ゲート閉鎖', zh:'登机口已关闭', ar:'البوابة مغلقة' },
   useLane:   { en:'Use Lane',      fr:'Utilisez la voie', es:'Use carril',  de:'Spur nutzen', it:'Usa corsia',  pt:'Use faixa',  ja:'レーン',    zh:'通道',   ar:'استخدم الممر' },
@@ -19437,7 +19471,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23223';
+var FIDS_BUILD_TAG = 'v23224';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
