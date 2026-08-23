@@ -14073,3 +14073,117 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .v2-fi-clock-val:not(.octb-clock) {
   font-size: clamp(40px, 6vh, 72px) !important;
 }
+
+/* ── v23223 — WHAT'S STILL TO COME ON THE BOARDING SIGN (Nick: 'theres
+   nothing that says zones coming up'). A small bilingual line under the
+   called number in the zones/rows column: 'Coming up | À venir: 5 • 6'.
+   Dimmed against the called zone so the big number stays the sign;
+   disappears when the last zone is called. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board .g8-board-coming {
+  font-size: clamp(13px, 1.8vh, 24px);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.72);
+  letter-spacing: 0.02em;
+  text-align: center;
+  margin-top: clamp(2px, 0.4vh, 6px);
+  white-space: nowrap;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board .g8-board-coming .g8-board-coming-z {
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+/* ── v23224 — PAL OPEN-FLOW BOARDING SIGN (PAL's published process: no
+   zones, no rows on the Dash-8 fleet — pre-boarding, then one general
+   call). One full-width panel; the phase reads as text in the number
+   slot, so it sizes for words, not a single digit. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board .g8-lanes-pb .g8-board-col.g8-pb-flow,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-final .g8-lanes-pb .g8-board-col.g8-pb-flow {
+  flex: 1 1 100% !important;
+  width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pb .g8-pb-flow .g8-board-grp-num.g8-grp-txt {
+  font-size: clamp(28px, 5.2vh, 72px) !important;
+  line-height: 1.08 !important;
+  white-space: normal !important;
+  text-align: center !important;
+}
+
+/* ── v23225 — THE AIRCRAFT GETS AIR AROUND IT (Nick, with his AF reference
+   video: 'The airplane does not look like this when travelling in the
+   clouds it looks off it needs adjustments … its not about this one in
+   particular its the layout'). The photo filled the panel wall-to-wall, so
+   the aircraft read as pasted artwork rather than something travelling
+   THROUGH a sky. The reference composes the aircraft at roughly 60% of the
+   frame with sky visible on every side; same proportion here — the
+   three-layer sky and the belly cloud band finally have room to read as
+   near and far instead of being hidden behind the fuselage. The float-bob
+   and layer speeds are untouched. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img img {
+  max-width: 74% !important;
+  max-height: 76% !important;
+}
+
+/* ── v23226 — THE CLOUDS STOP LOOKING FAKE (Nick: 'some of the clouds look
+   fake i dont know if its because its now bigger or whatnot but adjustments
+   need to be made they may be too high they may need lowered including the
+   aircraft').
+   Measured on the live panel: the back plate was squeezed 1600px→1000px
+   (0.63×) and the mid cumulus band 1800px→700px (0.39×) — the puffs render
+   horizontally crushed into mushy blobs, and the mid band starts at 34% of
+   the panel so the 'cloud wall' begins at the aircraft's eyeline. With the
+   aircraft now at 74% there is finally room to fix both:
+   - each layer draws at (near-)natural width, so the puffs keep their real
+     shapes; the slide distance always equals the tile width, so the loops
+     stay seamless by construction, at the same px/s as before;
+   - the mid deck drops to the lower third (top 48%), where a cruising
+     aircraft's cloud deck belongs, a step sheerer;
+   - the aircraft rides a touch lower so it sits just above the deck instead
+     of floating high in empty blue. */
+@keyframes g8SkyBackWide { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1600px,0,0); } }
+@keyframes g8SkyMidWide  { from { transform: translate3d(0,0,0); } to { transform: translate3d(-1250px,0,0); } }
+html body.gate-acsky:not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus > #gateCloudsBg,
+html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg {
+  width: calc(100% + 1600px) !important;
+  background-size: 1600px 100% !important;
+  animation: g8SkyBackWide 400s linear infinite !important;
+  animation-delay: var(--g8-back-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+}
+html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus > #gateCloudsBg::after {
+  width: calc(100% + 1250px) !important;
+  top: 48% !important; bottom: -8% !important;
+  background-size: 1250px 100% !important;
+  opacity: .6 !important;
+  animation: g8SkyMidWide 230s linear infinite !important;
+  animation-delay: var(--g8-mid-delay, 0s) !important;
+  animation-direction: var(--g8-dir, reverse) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img {
+  padding-top: 16% !important;
+  box-sizing: border-box !important;
+}
+
+/* ── v23226 — ONE BOTTOM LINE ACROSS THE TOP BAND (Nick, twice: 'Banners
+   still need adjustments they are not alligned'). Measured: the cream clock
+   chip hugs its content (v23212) and ends ~35px above the banner's bottom
+   edge, so the band's bottom reads as three different lines — banner, chip,
+   gate tab. The chip now runs the full band height: the time centres in the
+   free space and the date bar sits ON the band's bottom edge, flush with
+   the banner and the gate tab either side. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox.octb-wrap {
+  align-items: stretch !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb.octb-tab {
+  height: 100% !important;
+  justify-content: flex-start !important;
+  border-radius: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-clock {
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-date {
+  margin-top: 0 !important;
+}
