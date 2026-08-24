@@ -14207,15 +14207,22 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    text, so the right edges landed wherever the words ended — 'Destination'
    short, 'Boarding | Embarquement' nearly full — and the rail read as
    scattered. The pill now spans the full text column on EVERY panel — one
-   left edge, one right edge, all banners identical — and the words stay
-   centred inside. Applies to the rail, the boarding strip, and the
-   right-rail cards, which are the same module. */
+   left edge, one right edge, all banners identical. Applies to the rail,
+   the boarding strip, and the right-rail cards, which are the same module.
+
+   v23237 — AND THE WORDS SHARE ONE LEFT EDGE TOO (Nick, on the gate rail:
+   'the words should be aligned left not centered'). Centred labels of
+   different lengths each started at their own x — 'Flight | Vol' indented
+   deep, 'Boarding | Embarquement' nearly flush — so even identical pill
+   boxes read as ragged. Left-aligned on a fixed padding, every label now
+   starts at the same x on every panel. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-row .v2-fi-title {
   display: block !important;
   width: 100% !important;
   max-width: none !important;
   box-sizing: border-box !important;
-  text-align: center !important;
+  text-align: left !important;
+  padding-left: 14px !important;
   align-self: stretch !important;
   margin-left: 0 !important;
   margin-right: 0 !important;
