@@ -1037,7 +1037,13 @@ function goLive() {
 const LIVE_USER = '';
 const LIVE_PASS = '';
 
-let LIVE_MODE = false;
+// v23239 — THE DEMO IS GONE (Nick: 'You’re using the demo which should be
+// gone again cheating'). Boards run LIVE always: the feed router reaches the
+// public authority feeds and the proxy with no login, so an unauthenticated
+// screen has no reason to paint fabricated flights. Login still gates the
+// operations tools, not the data; a failed live fetch shows the honest
+// reconnecting/empty state — never fake flights.
+let LIVE_MODE = true;
 // 'airline', 'photo', or 'custom'.
 //
 // 'photo', 'airline', or 'custom'. Airline brand scenes are OPT-IN from the
@@ -1644,7 +1650,7 @@ function _restoreApLangs() {
     if (!_apL) return;
     var _savedL = localStorage.getItem('fids_langs_' + _apL.toUpperCase());
     if (!_savedL) return;
-    var _arrL = _savedL.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 2);
+    var _arrL = _savedL.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 9);
     if (!_arrL.length || _arrL.join(',') === langs.join(',')) return;
     langs = _arrL;
     langIdx = 0;
@@ -6947,8 +6953,12 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // 'whoever operates that aircraft gets the logo'). The orb takes this
         // emblem; Rouge's script wordmark lives in OPERATOR_WORDMARKS for the
         // Operated-By caption only.
-        'RV':  '/logos/airlines/canadian/rouge-icon.png',
-        'ROU': '/logos/airlines/canadian/rouge-icon.png',
+        // v23238 — the roundel art is a FULL-BLEED WHITE SQUARE png (opaque
+        // corners, ring touching the edges), so the orb painted as a white
+        // tile on the inbound card (Nick: 'Unacceptable'). rouge-roundel.png
+        // is the same art behind a circular alpha mask — a round emblem.
+        'RV':  '/logos/airlines/canadian/rouge-roundel.png?v=23238',
+        'ROU': '/logos/airlines/canadian/rouge-roundel.png?v=23238',
         // v23049 — BACK TO THE WHITE MONO LEAF. v23047 pointed this at the
         // colour leaf, which also repainted the round rail orb; Nick: 'the orb
         // had white leave it white'. This map feeds the orb, so it stays mono
@@ -7619,7 +7629,7 @@ function _buildV2AircraftCol(ctx, vars) {
           var _enTC = _fidsTitleCase(_ss.en); // Title Case the EN
           // Status STACKED — EN over FR (per Nick).
           // v22956 — stacked in the SELECTED languages, not hard EN/FR.
-          var _stPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+          var _stPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
           if (_frF) { var _sfi = _stPick.indexOf('fr'); if (_sfi > 0) { _stPick.splice(_sfi, 1); _stPick.unshift('fr'); } }
           var _stW = [], _stSeen = {};
           for (var _swi = 0; _swi < _stPick.length && _stW.length < 2; _swi++) {
@@ -8065,7 +8075,7 @@ function _buildV2MapCol(ctx, vars) {
       var _stFr = (_stWords && _stWords.fr) || _stEn;
       var _stShow = (function () {
         var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-          ? langs : ['en', 'fr'];
+          ? langs.slice(0, 2) : ['en', 'fr'];
         var seen = Object.create(null), parts = [];
         for (var _li = 0; _li < picked.length && parts.length < 2; _li++) {
           // _ST_SHORT only carries en/fr/es — for every other selected
@@ -8433,7 +8443,7 @@ function _buildV2MapCol(ctx, vars) {
       // illegibility to cope.
       function _stByLangs(obj, fallback) {
         var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-          ? langs : ['en', 'fr'];
+          ? langs.slice(0, 2) : ['en', 'fr'];
         var seen = Object.create(null), parts = [];
         for (var _li = 0; _li < picked.length && parts.length < 2; _li++) {
           var w = obj && obj[picked[_li]];
@@ -10023,7 +10033,7 @@ function uxgGateHtml(ctx) {
     var _bwClock = '';
     try {
       var _bwTz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
-      var _bwLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+      var _bwLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
       if (_frF) { var _bfi = _bwLangs.indexOf('fr'); if (_bfi > 0) { _bwLangs.splice(_bfi, 1); _bwLangs.unshift('fr'); } }
       var _bwL1 = _bwLangs[0] || 'en';
       var _bwL2 = _bwLangs[1] || _bwL1;                 // one language \u2192 repeat
@@ -10195,7 +10205,7 @@ function uxgGateHtml(ctx) {
     // stack, words from the selected languages, de-duplicated.
     var _stTxt = '';
     if (_stP) {
-      var _svPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+      var _svPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
       if (_frF) { var _svf = _svPick.indexOf('fr'); if (_svf > 0) { _svPick.splice(_svf, 1); _svPick.unshift('fr'); } }
       var _svW = [], _svSeen = {};
       for (var _svi = 0; _svi < _svPick.length && _svW.length < 2; _svi++) {
@@ -19133,8 +19143,16 @@ function startLangRotation() {
   lang = langs[0];
   if (langs.length <= 1) return;
   langRotateTimer = setInterval(function () {
-    if (screenType !== 'main') return;                                   // gate/bags: simultaneous
-    if (typeof pageTimer !== 'undefined' && pageTimer) return;           // rotate mode owns it
+    // v23236 — the BAGGAGE screen rotates too. v22964 scoped this timer to
+    // the main board on the claim that "gate/bags" are bilingual-simultaneous;
+    // that is true only of the GATE. BIDS renders its headers and statuses in
+    // ONE language (`lang`), and with tick_carousel also returning early off
+    // the main board, nothing ever advanced it — a baggage screen froze in
+    // whatever language boot left behind (Nick: "Why is baggage no longer in
+    // multi languages"). Gate stays simultaneous; main still defers to its
+    // paging clock.
+    if (screenType === 'gate') return;                                   // gate: simultaneous
+    if (screenType === 'main' && typeof pageTimer !== 'undefined' && pageTimer) return; // paging clock owns main
     langIdx = (langIdx + 1) % langs.length;
     lang = langs[langIdx];
     updateTicker();
@@ -19179,8 +19197,13 @@ function toggleLang(l) {
     // force the fitter to shrink the status into illegibility to cope.
     // Picking a third replaces the OLDEST rather than being ignored, so the
     // button always does something visible instead of silently refusing.
+    // v23239 — UP TO ALL NINE (Nick: 'Make sure we’re going by the 9
+    // languages??? Whatever is assigned'). The v22946 two-language ceiling
+    // protected the gate’s side-by-side cells; those cells now bound
+    // themselves to the first two selected, so the assignment itself can
+    // carry the full set and the slide clock walks every one of them.
     langs.push(l);
-    while (langs.length > 2) langs.shift();
+    while (langs.length > 9) langs.shift();
     if (langIdx >= langs.length) langIdx = 0;
   }
   lang = langs[langIdx];
@@ -19328,7 +19351,7 @@ function _bidsTimeForLang(t) {
     var s = String(t || '').trim();
     var m = s.match(/^(\d{1,2}):(\d{2})$/);
     if (!m) return t;
-    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
     try {
       var _ap = (document.getElementById('apSel') || {}).value || '';
       if (typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
@@ -19360,7 +19383,7 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
   var o = _GATE_LBL[key];
   if (!o) return '';
   var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-    ? langs.slice() : ['en', 'fr'];
+    ? langs.slice(0, 2) : ['en', 'fr'];
   if (frFirst) {
     var _fi = picked.indexOf('fr');
     if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
@@ -19395,7 +19418,7 @@ function _gateLaneLbl(nums, plural, frFirst) {
   var o = _GATE_LBL[plural ? 'useLanes' : 'useLane'];
   if (!o) return '';
   var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-    ? langs.slice() : ['en', 'fr'];
+    ? langs.slice(0, 2) : ['en', 'fr'];
   if (frFirst) {
     var _fi = picked.indexOf('fr');
     if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
@@ -19497,7 +19520,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23233';
+var FIDS_BUILD_TAG = 'v23239';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -23690,7 +23713,7 @@ function applyAirportConfigToBoard(iata) {
     if (_lraw) {
       var _picked = [];
       String(_lraw).toLowerCase().split(/[,+\s]+/).forEach(function (tok) {
-        if (_picked.length >= 2) return;
+        if (_picked.length >= 9) return;
         var _i = _URL_LANG_OK.indexOf(tok);
         if (_i >= 0 && _picked.indexOf(_URL_LANG_OK[_i]) < 0) _picked.push(_URL_LANG_OK[_i]);
       });
@@ -23703,7 +23726,7 @@ function applyAirportConfigToBoard(iata) {
     try {
       var _sv = localStorage.getItem('fids_langs_' + String(iata || '').toUpperCase());
       if (_sv) {
-        _savedSet = _sv.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 2);
+        _savedSet = _sv.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 9);
         if (!_savedSet.length) _savedSet = null;
       }
     } catch (e2) {}
@@ -24346,7 +24369,7 @@ function _ocClockDate(now, tz) {
       return d.charAt(0).toUpperCase() + d.slice(1);
     } catch (e) { return now.toLocaleDateString('en-US', eo); }
   }
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice() : ['en', 'fr'];
+  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
   try {
     var _ap = (document.getElementById('apSel') || {}).value || '';
     if (typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
@@ -24462,29 +24485,34 @@ function advancePage() {
   }
 }
 
+var _slideIdx = 0;
 function tick_carousel() {
   if (screenType !== 'main') return;
   var _ap = (document.getElementById('apSel') || {}).value || '';
-  var _primary = (langs && langs[0]) || 'en';
-  var _second  = (langs && langs[1]) || _primary;
   var _metric  = boardMetricFor(_ap);
-  if (langPhase === 'primary') {
-    lang = _primary;
-    tempUnit = 'C';
-    render();
-    langPhase = 'second';
-  } else {
-    lang = _second;
-    tempUnit = _metric ? 'C' : 'F';
-    render();
-    langPhase = 'primary';
-    advancePage();
-  }
+  // v23239 — A SLIDE PER ASSIGNED LANGUAGE, however many are assigned
+  // (Nick: 'The multi languages is supposed to run on different slides per
+  // language … Make sure we’re going by the 9 languages??? Whatever is
+  // assigned'). The old clock hard-coded a primary/second pair, so a board
+  // assigned three or more languages never showed the ones past langs[1].
+  // The clock now walks langs[] in order — one full slide per language —
+  // and advances the page after the last one. The first slide keeps °C;
+  // later slides show °F where the C/F flip applies, so a two-language
+  // Canadian board behaves exactly as before.
+  var _n = Math.max(1, (langs || []).length);
+  if (_slideIdx >= _n) _slideIdx = 0;
+  lang = (langs && langs[_slideIdx]) || 'en';
+  langPhase = (_slideIdx === 0) ? 'primary' : 'second';
+  tempUnit = (_slideIdx === 0) ? 'C' : (_metric ? 'C' : 'F');
+  render();
+  _slideIdx++;
+  if (_slideIdx >= _n) { _slideIdx = 0; advancePage(); }
 }
 
 function startPaging() {
   if (pageTimer) clearInterval(pageTimer);
   langPhase = 'primary';
+  _slideIdx = 0;
   lang = (langs && langs[0]) || 'en';
   pageTimer = setInterval(tick_carousel, LANG_DWELL_MS);
 }
@@ -35450,7 +35478,7 @@ function _renderBigCraft(el, ctx) {
   var stShow = (function () {
     if (!ss) return inb.status || '—';
     var _cap = _fidsTitleCase;
-    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en', 'fr'];
+    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
     var seen = Object.create(null), parts = [];
     for (var i = 0; i < picked.length && parts.length < 2; i++) {
       var w = ss[picked[i]];
