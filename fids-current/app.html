@@ -17,6 +17,7 @@
     --green:#16a34a; --amber:#d97706; --red:#dc2626;
     --nav-h:62px; --radius:18px;
     --shadow:0 1px 2px rgba(16,21,29,.04), 0 6px 20px rgba(16,21,29,.06);
+    --topbar:rgba(255,255,255,.86);
   }
   /* ── Dark palette (forced, or auto via system) ─────────────── */
   :root[data-theme="dark"]{
@@ -26,6 +27,7 @@
     --accent:#5b8dff; --accent-ink:#bcd0ff; --accent-soft:rgba(91,141,255,.16);
     --green:#37c98b; --amber:#e0a23c; --red:#e8584f;
     --shadow:0 8px 30px rgba(0,0,0,.45);
+    --topbar:rgba(10,13,19,.82);
   }
   @media (prefers-color-scheme: dark){
     :root[data-theme="auto"]{
@@ -35,6 +37,7 @@
       --accent:#5b8dff; --accent-ink:#bcd0ff; --accent-soft:rgba(91,141,255,.16);
       --green:#37c98b; --amber:#e0a23c; --red:#e8584f;
       --shadow:0 8px 30px rgba(0,0,0,.45);
+      --topbar:rgba(10,13,19,.82);
     }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -57,7 +60,7 @@
     position:sticky;top:0;z-index:20;
     display:flex;align-items:center;justify-content:space-between;gap:12px;
     padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
-    background:rgba(255,255,255,.86); backdrop-filter:blur(14px);
+    background:var(--topbar); backdrop-filter:blur(14px);
     border-bottom:1px solid var(--line);
   }
   .brand{display:flex;align-items:center;gap:12px;min-width:0;position:relative;}
@@ -171,7 +174,23 @@
   .fcard.dark .chip.gate .ic{color:#fff;}
   .fcard.dark .st.ontime{color:#4ade80;} .fcard.dark .st.delayed,.fcard.dark .st.early{color:#fde047;}
   .fcard.dark .st.cancelled{color:#fca5a5;} .fcard.dark .st.boarding{color:#fff;}
-  .fcard.light .chip{background:var(--soft);}
+  /* v23232 — a light bubble (AA/DL white spheres) carries its OWN dark ink,
+     never the page theme's: in dark mode --txt is near-white, which painted
+     Tampa/20:53 white-on-white (Nick's MIA screenshot — "Colors"). Every text
+     token on a light card is pinned explicitly, mirroring how .fcard.dark pins
+     white, so the phone theme can never leak onto a card. */
+  .fcard.light .city,.fcard.light .time .hh{color:#0d1220;}
+  .fcard.light .sub{color:rgba(13,18,32,.6);} .fcard.light .sub b{color:#0d1220;}
+  .fcard.light .time .lbl{color:rgba(13,18,32,.48);}
+  .fcard.light .time .arr{color:rgba(13,18,32,.6);}
+  .fcard.light .chip{background:#eef1f6;border-color:#dde3ea;color:#4a5364;}
+  .fcard.light .chip .ic{color:#4a5364;} .fcard.light .chip .k{color:#69727f;}
+  .fcard.light .chip.gate{background:#e8edf5;border-color:#d5dce8;color:#10151d;}
+  .fcard.light .chip.gate .ic{color:#10151d;}
+  .fcard.light .st.ontime{color:#15803d;} .fcard.light .st.delayed,.fcard.light .st.early{color:#b45309;}
+  .fcard.light .st.cancelled{color:#b91c1c;} .fcard.light .st.boarding{color:#1559c0;}
+  .fcard.light .bubwm-txt{color:#0d1220;}
+  .fcard.light .belt-no{color:#0d1220;} .fcard.light .belt-tbd,.fcard.light .belt-lbl{color:rgba(13,18,32,.5);}
   .empty{padding:64px 24px;text-align:center;color:var(--muted);}
   /* ── Departures / Arrivals segmented toggle ───────── */
   .seg-wrap{padding:14px 18px 2px;}
@@ -497,6 +516,9 @@ for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=AIRPORTS[_ck].n; }
 // → "New Orleans", "ST. JOHN'S" → "St. John's" — the apostrophe never
 // triggers a capital).
 function _tcCity(s){return String(s).toLowerCase().replace(/(^|[\s\-\/(\.])[a-zà-ÿ]/g,function(m){return m.toUpperCase();});}
+// Display name for a flight's other end: CITY map first, then the feed's own
+// airport name (v23232), then the bare code.
+function cityOf(f){return CITY[f.cityIata]||(f.cityName?_tcCity(f.cityName):'')||f.cityIata||'—';}
 if(window.FIDS_SHARED_CITY){for(var _sk in FIDS_SHARED_CITY){if(!CITY[_sk])CITY[_sk]=_tcCity(FIDS_SHARED_CITY[_sk]);}}
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
   B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet',
@@ -578,6 +600,14 @@ function wmUrls(code){
 // Airline brand accent colours (same values the main system uses).
 const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL:'#E31837',
   UA:'#0033A0',WN:'#304CB2',B6:'#00205B',F8:'#2BA84A',F9:'#026845',PB:'#FCA404'};
+// v23232 — regionals that fly under exactly one mainline brand present AS that
+// brand, the big board's own rule (its name map: Jazz/Rouge → AIR CANADA,
+// Envoy/PSA/Piedmont → AMERICAN, Endeavor → DELTA). Nick's MIA screenshot had
+// MQ3435 on a generic dark card saying "AMERICAN" beside white American cards.
+// Multi-mainline operators (SkyWest OO, Mesa YV, GoJet G7, Republic YX) keep
+// their own identity — the board keeps them too.
+const REGIONAL_FAM={QK:'AC',RV:'AC',ZX:'AC','9M':'AC','9L':'AC',SP:'PB',MQ:'AA',OH:'AA',PT:'AA','9E':'DL'};
+const REGIONAL_OP={QK:'Jazz',RV:'Air Canada Rouge',ZX:'Air Georgian','9M':'Central Mountain Air','9L':'Provincial',SP:'PAL Airlines',MQ:'Envoy Air',OH:'PSA Airlines',PT:'Piedmont Airlines','9E':'Endeavor Air'};
 // Wordmark ink for LIGHT theme — each airline's brand colour. Air Canada's
 // wordmark is black by design, so it stays black. (Dark theme uses the white
 // wordmark file instead.)
@@ -705,14 +735,14 @@ function render(){
   const q=(document.getElementById('q').value||'').trim().toLowerCase();
   const cards=document.getElementById('cards');
   let list=FLIGHTS;
-  if(q)list=list.filter(f=>{const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
+  if(q)list=list.filter(f=>{const city=(cityOf(f)||'').toLowerCase();
     return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
   const isArr=DIR==='arr', tLbl=isArr?'Arrives':'Departs';
   if(!list.length){cards.innerHTML='<div class="empty">'+svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>')
     +'<div>'+(q?'No flights match “'+esc(q)+'”':('No '+(isArr?'arrivals':'departures')+' right now'))+'</div></div>';RENDERED=[];return;}
   RENDERED=list;
   cards.innerHTML=list.map((f,i)=>{
-    const s=statusOf(f),city=CITY[f.cityIata]||f.cityIata||'—',al=AIRLINE[f.airline]||f.airline;
+    const s=statusOf(f),city=cityOf(f),al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
     const via=(f.via&&f.via.length)?' · via '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
     const belt=(isArr&&f.belt)?'<span class="chip gate">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')+'<span class="k">Belt</span> '+esc(f.belt)+'</span>':'';
@@ -781,7 +811,10 @@ function adbToCard(f,dir){
   const other=dir==='arr'?dep:arr;       // the origin (arr) / destination (dep)
   const num=(f.number||'').replace(/\s+/g,'').toUpperCase();
   if(!num)return null;
-  const code=(((f.airline&&f.airline.iata)||num.replace(/[0-9].*/,''))||'').toUpperCase();
+  const opCode=(((f.airline&&f.airline.iata)||num.replace(/[0-9].*/,''))||'').toUpperCase();
+  // v23232 — single-mainline feeders brand as their mainline (board rule);
+  // the operating carrier's name moves to the "Operated by" line instead.
+  const code=REGIONAL_FAM[opCode]||opCode;
   const raw=String(f.status||'').toLowerCase();
   const sc=(here.scheduledTime&&(here.scheduledTime.utc||here.scheduledTime.local))||'';
   const rv=(here.revisedTime&&(here.revisedTime.utc||here.revisedTime.local))||'';
@@ -815,6 +848,7 @@ function adbToCard(f,dir){
     if(_effD && (Date.now()-_effD)>2*60000) state='outgate';
   }
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
+  if(!op&&opCode!==code) op=REGIONAL_OP[opCode]||'';
   if(!op) op=inferOperator(code,num);
   // Other-end time (destination arrival for a departure, origin departure for an
   // arrival) + total flight time from the two legs' UTC stamps.
@@ -825,6 +859,9 @@ function adbToCard(f,dir){
   return{
     airline:code, flight:num, dir:dir,
     cityIata:(((other.airport&&(other.airport.iata||(other.airport.icao||'').slice(1)))||'')).toUpperCase(),
+    // v23232 — the feed's own airport name backs the CITY map, so a code the
+    // map lacks shows its real place name instead of a bare code or "—".
+    cityName:(other.airport&&(other.airport.municipalityName||other.airport.shortName||other.airport.name))||'',
     schedTime:adbHHMM(here.scheduledTime&&here.scheduledTime.local),
     estTime:adbHHMM(here.revisedTime&&here.revisedTime.local)||adbHHMM(here.scheduledTime&&here.scheduledTime.local),
     otherTime:otherTime, durMin:durMin,
@@ -947,12 +984,12 @@ function renderBags(){
   const q=(document.getElementById('bagQ').value||'').trim().toLowerCase();
   const wrap=document.getElementById('bagCards');
   let list=ARRIVALS.slice();
-  if(q)list=list.filter(f=>{const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
+  if(q)list=list.filter(f=>{const city=(cityOf(f)||'').toLowerCase();
     return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
   if(!list.length){wrap.innerHTML='<div class="empty">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')
     +'<div>'+(q?'No arrivals match “'+esc(q)+'”':'No arrivals right now')+'</div></div>';return;}
   wrap.innerHTML=list.map(f=>{
-    const s=statusOf(f),city=CITY[f.cityIata]||f.cityIata||'—',al=AIRLINE[f.airline]||f.airline;
+    const s=statusOf(f),city=cityOf(f),al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
     const beltBig=f.belt?'<div class="belt-no">'+esc(f.belt)+'</div><div class="belt-lbl">Belt</div>'
                         :'<div class="belt-tbd">TBD</div><div class="belt-lbl">Belt</div>';
@@ -1024,7 +1061,7 @@ function opLogoHtml(name){
 }
 function openFlight(i){
   const f=RENDERED[i]; if(!f)return;
-  const s=statusOf(f), city=CITY[f.cityIata]||f.cityIata||'—', al=AIRLINE[f.airline]||f.airline;
+  const s=statusOf(f), city=cityOf(f), al=AIRLINE[f.airline]||f.airline;
   const sched=(f.schedTime||'').slice(0,5), est=(f.estTime||'').slice(0,5);
   const isArr=f.dir==='arr';
   const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?('Operated by '+f.operatedBy):'';
