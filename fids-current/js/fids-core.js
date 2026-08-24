@@ -7586,9 +7586,17 @@ function _buildV2AircraftCol(ctx, vars) {
       // pattern as the Arrival banner: the destination IATA prefixes the word
       // in every selected language; the dedup still collapses EN/FR sharing
       // 'Destination' to one prefixed word.
-      var _destLabel = _gateLbl('dest', _frF, function (w) {
-        return (_destIataDisp ? _destIataDisp + ' ' : '') + w;
-      }, ' <span class="v2-fi-sep">|</span> ');
+      // v23240 — the code rides ONCE, at the END, accent-coloured (Nick:
+      // 'Change to Destination | Second language | YYY (all the codes are to
+      // be a different color and accent)'). Words come from the 9-language
+      // tables for the assigned pair; EN/FR sharing 'Destination' still
+      // collapse to one word (v23165), so the banner reads
+      // 'Destination | YYY' or 'Destination | Destino | YYY'.
+      var _codeSeg = function (c) {
+        return c ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + c + '</span>' : '';
+      };
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
+        + _codeSeg(_destIataDisp);
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -7659,12 +7667,14 @@ function _buildV2AircraftCol(ctx, vars) {
         + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd))
         + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time', _revRowCls(_fiDep))
         + (function () {
-            // v23222 — the Arrival banner names WHERE the arrival happens
-            // (Nick: 'The Arrival banner needs to be changed (left side) to
-            // the destination so example YYZ Arrival | YYZ Arrivee').
+            // v23240 — the code rides once at the END, accent-coloured
+            // ('Arrival | Arrivee YYY same for thise color in the YYY'),
+            // replacing the v23222 per-word prefix.
             var _arrP = _railPair('arrival');
-            if (_destIataDisp) _arrP = _arrP.map(function (w) { return w ? _destIataDisp + ' ' + w : w; });
-            return _shelf(_badge(_svgArrive), _arrP[0], _arrP[1], (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr));
+            var _arrT = _arrP[0]
+              + (_arrP[1] ? ' <span class="v2-fi-sep">|</span> ' + _arrP[1] : '')
+              + _codeSeg(_destIataDisp);
+            return _shelf(_badge(_svgArrive), _arrT, '', (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr));
           })()
         + '</div>';
     }
@@ -8209,10 +8219,12 @@ function _buildV2MapCol(ctx, vars) {
       // Arrival pair in both languages. The shared shrink-fitter already
       // sizes the longer title to the banner.
       var _mcApIata = String((vars && vars.iata) || '').toUpperCase();
+      // v23240 — the code rides once at the END, accent-coloured (same
+      // pattern as the rail's Destination/Arrival banners).
       var _mcTitle = _gateLbl((_stKey === 'arrived') ? 'arrived' : 'arrival', _frF, function (w, i2) {
-        var t = (_mcApIata ? _mcApIata + ' ' : '') + w;
-        return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + t + '</span>' : '<span class="v2-fi-lbl-en">' + t + '</span>';
-      }, '');
+        return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>';
+      }, '')
+        + (_mcApIata ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _mcApIata + '</span>' : '');
       var _mcTimes = '';
       if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
         _mcTimes = '<span class="v2-rc-status-delayed">' + _railT(_ibArrRevStr) + '</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>';
@@ -8529,7 +8541,14 @@ function _buildV2MapCol(ctx, vars) {
         if (_h_mdOrb.length === 3) _h_mdOrb = _h_mdOrb.replace(/./g, function(c){return c+c;});
         var _r_mdOrb = parseInt(_h_mdOrb.substr(0,2),16), _g_mdOrb = parseInt(_h_mdOrb.substr(2,2),16), _b_mdOrb = parseInt(_h_mdOrb.substr(4,2),16);
         if ((0.2126*_r_mdOrb + 0.7152*_g_mdOrb + 0.0722*_b_mdOrb) > 186) _mdOrbWhite = false; } catch (e) {}
-      var _mdTitle = _gateLbl('flight', _frF, function (w, i3) { return i3 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '');
+      // v23240 — this card summarizes the DEPARTURE, so its banner names the
+      // event, not the noun (Nick: 'I do not like the name Flight | Vol on
+      // the right'): 'Departure | Départ | YYY' with the destination code
+      // once at the end, accent-coloured, words from the assigned languages.
+      var _mdDestCode = String(_dDest || '').toUpperCase();
+      if (!/^[A-Z]{3,4}$/.test(_mdDestCode)) _mdDestCode = '';
+      var _mdTitle = _gateLbl('departure', _frF, function (w, i3) { return i3 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '')
+        + (_mdDestCode ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _mdDestCode + '</span>' : '');
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
@@ -19520,7 +19539,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23239';
+var FIDS_BUILD_TAG = 'v23240';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
