@@ -6947,8 +6947,12 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // 'whoever operates that aircraft gets the logo'). The orb takes this
         // emblem; Rouge's script wordmark lives in OPERATOR_WORDMARKS for the
         // Operated-By caption only.
-        'RV':  '/logos/airlines/canadian/rouge-icon.png',
-        'ROU': '/logos/airlines/canadian/rouge-icon.png',
+        // v23238 — the roundel art is a FULL-BLEED WHITE SQUARE png (opaque
+        // corners, ring touching the edges), so the orb painted as a white
+        // tile on the inbound card (Nick: 'Unacceptable'). rouge-roundel.png
+        // is the same art behind a circular alpha mask — a round emblem.
+        'RV':  '/logos/airlines/canadian/rouge-roundel.png?v=23238',
+        'ROU': '/logos/airlines/canadian/rouge-roundel.png?v=23238',
         // v23049 — BACK TO THE WHITE MONO LEAF. v23047 pointed this at the
         // colour leaf, which also repainted the round rail orb; Nick: 'the orb
         // had white leave it white'. This map feeds the orb, so it stays mono
@@ -19505,7 +19509,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23237';
+var FIDS_BUILD_TAG = 'v23238';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
