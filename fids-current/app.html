@@ -391,8 +391,8 @@
   <button class="cta" onclick="closeFullAd()">Explore offers</button>
 </div>
 
-<script src="js/shared-names.js?v=23231"></script>
-<script src="js/feed-router.js?v=23231"></script>
+<script src="js/shared-names.js?v=23233"></script>
+<script src="js/feed-router.js?v=23233"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -533,7 +533,22 @@ const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':
   'DH4':'De Havilland Dash 8-400','DH8D':'De Havilland Dash 8-400','DH3':'De Havilland Dash 8-300',
   'CR9':'Mitsubishi CRJ-900','CR7':'Mitsubishi CRJ-700','CR2':'Bombardier CRJ-200','CR5':'Mitsubishi CRJ-550',
   'E75':'Embraer E175','E90':'Embraer E190','E95':'Embraer E195',
-  'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop'};
+  'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop',
+  // v23233 — ICAO-style codes the MIA WebFIDS feed sends raw (B38M on Nick's
+  // AC1649 screenshot), plus its house 737-800 shorthand.
+  'B38M':'Boeing 737 MAX 8','B39M':'Boeing 737 MAX 9','B37M':'Boeing 737 MAX 7',
+  'B737':'Boeing 737-700','B738':'Boeing 737-800','B739':'Boeing 737-900','7378W':'Boeing 737-800',
+  'A19N':'Airbus A319neo','A20N':'Airbus A320neo','A21N':'Airbus A321neo',
+  'A319':'Airbus A319','A320':'Airbus A320','A321':'Airbus A321',
+  'A332':'Airbus A330-200','A333':'Airbus A330-300','A339':'Airbus A330-900neo',
+  'A359':'Airbus A350-900','A35K':'Airbus A350-1000','A388':'Airbus A380',
+  'B744':'Boeing 747-400','B748':'Boeing 747-8','B752':'Boeing 757-200','B763':'Boeing 767-300',
+  'B772':'Boeing 777-200','B77L':'Boeing 777-200LR','B77W':'Boeing 777-300ER','B773':'Boeing 777-300',
+  'B788':'Boeing 787-8','B789':'Boeing 787-9','B78X':'Boeing 787-10',
+  'E170':'Embraer E170','E175':'Embraer E175','E75L':'Embraer E175','E75S':'Embraer E175',
+  'E190':'Embraer E190','E195':'Embraer E195','E290':'Embraer E190-E2','E295':'Embraer E195-E2',
+  'CRJ2':'Bombardier CRJ-200','CRJ7':'Mitsubishi CRJ-700','CRJ9':'Mitsubishi CRJ-900','CRJX':'Mitsubishi CRJ-1000',
+  'AT72':'ATR 72','AT76':'ATR 72-600','AT45':'ATR 42','AT46':'ATR 42-600'};
 // Display name for an aircraft. Handles both our short codes (from SAMPLE) AND
 // the raw model strings the live AeroDataBox feed returns (e.g. "Bombardier
 // CRJ-900", "De Havilland Canada DHC-8-400"), normalising the two families the

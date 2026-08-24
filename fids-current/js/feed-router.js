@@ -176,7 +176,9 @@ function yqmToAdbFlight(f, direction) {
     ...(revised ? { revisedTime: revised } : {}),
     airline, quality: ['Live']
   };
-  const otherSide = { airport: other, scheduledTime: sched, airline, quality: ['Live'] };
+  // v23233 — no fabricated far-side time: the feed only knows the local
+  // movement clock, and echoing it painted every card "Arr == Dep".
+  const otherSide = { airport: other, airline, quality: ['Live'] };
   return {
     number,
     callSign: null,
@@ -307,7 +309,9 @@ function tpaToAdbFlight(f) {
     ...(revised ? { revisedTime: revised } : {}),
     airline, quality: ['Live']
   };
-  const otherSide = { airport: other, scheduledTime: sched, airline, quality: ['Live'] };
+  // v23233 — no fabricated far-side time: the feed only knows the local
+  // movement clock, and echoing it painted every card "Arr == Dep".
+  const otherSide = { airport: other, airline, quality: ['Live'] };
   return {
     number, callSign: null,
     status: tpaStatus(f.status && f.status.code, f.status && f.status.content),
@@ -372,7 +376,9 @@ function yyzToAdbFlight(f) {
     ...(revised ? { revisedTime: revised } : {}),
     airline, quality: ['Live']
   };
-  const otherSide = { airport: other, scheduledTime: sched, ...(revised ? { revisedTime: revised } : {}), airline, quality: ['Live'] };
+  // v23233 — no fabricated far-side time: the feed only knows the local
+  // movement clock, and echoing it painted every card "Arr == Dep".
+  const otherSide = { airport: other, airline, quality: ['Live'] };
   const out = {
     number, callSign: (f.id || null),
     status: yyzStatus(f.status),
@@ -458,7 +464,9 @@ function yulToAdbFlight(f) {
     ...(revised ? { revisedTime: revised } : {}),
     airline, quality: ['Live']
   };
-  const otherSide = { airport: other, scheduledTime: sched, ...(revised ? { revisedTime: revised } : {}), airline, quality: ['Live'] };
+  // v23233 — no fabricated far-side time: the feed only knows the local
+  // movement clock, and echoing it painted every card "Arr == Dep".
+  const otherSide = { airport: other, airline, quality: ['Live'] };
   return {
     number, callSign: null,
     status: yulStatus(f.OperationalStatusDescription),
@@ -517,7 +525,9 @@ function yhuToAdbFlight(f) {
     ...(revised ? { revisedTime: revised } : {}),
     airline, quality: ['Live']
   };
-  const otherSide = { airport: other, scheduledTime: sched, ...(revised ? { revisedTime: revised } : {}), airline, quality: ['Live'] };
+  // v23233 — no fabricated far-side time: the feed only knows the local
+  // movement clock, and echoing it painted every card "Arr == Dep".
+  const otherSide = { airport: other, airline, quality: ['Live'] };
   const out = {
     number, callSign: null,
     status: yhuStatus(props.status || props.remarkDescription),
@@ -585,7 +595,9 @@ function ytzToAdbFlight(f) {
   // Gates ride in from the worker's AeroAPI enrichment when the key is
   // configured (Billy Bishop's own board has none; FlightAware carries them).
   const homeSide = { airport: home, terminal: null, gate: String(f.gate || '').trim() || null, scheduledTime: sched, airline, quality: ['Live'] };
-  const otherSide = { airport: other, scheduledTime: sched, airline, quality: ['Live'] };
+  // v23233 — no fabricated far-side time: the feed only knows the local
+  // movement clock, and echoing it painted every card "Arr == Dep".
+  const otherSide = { airport: other, airline, quality: ['Live'] };
   return {
     number, callSign: null,
     status: ytzStatus(f.status),
@@ -660,7 +672,9 @@ function panynjToAdbFlight(f, direction, ap) {
     ...(revised ? { revisedTime: revised } : {}),
     airline, quality: ['Live']
   };
-  const otherSide = { airport: other, scheduledTime: sched, ...(revised ? { revisedTime: revised } : {}), airline, quality: ['Live'] };
+  // v23233 — no fabricated far-side time: the feed only knows the local
+  // movement clock, and echoing it painted every card "Arr == Dep".
+  const otherSide = { airport: other, airline, quality: ['Live'] };
   return {
     number, callSign: null,
     status: panynjStatus(f.status, isDep),
@@ -782,7 +796,9 @@ function miaToAdbFlight(f, direction) {
     ...(revised ? { revisedTime: revised } : {}),
     airline, quality: ['Live']
   };
-  const otherSide = { airport: other, scheduledTime: sched, airline, quality: ['Live'] };
+  // v23233 — no fabricated far-side time: the feed only knows the local
+  // movement clock, and echoing it painted every card "Arr == Dep".
+  const otherSide = { airport: other, airline, quality: ['Live'] };
 
   const out = {
     number, callSign: null,
