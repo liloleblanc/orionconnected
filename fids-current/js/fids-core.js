@@ -19133,8 +19133,16 @@ function startLangRotation() {
   lang = langs[0];
   if (langs.length <= 1) return;
   langRotateTimer = setInterval(function () {
-    if (screenType !== 'main') return;                                   // gate/bags: simultaneous
-    if (typeof pageTimer !== 'undefined' && pageTimer) return;           // rotate mode owns it
+    // v23236 — the BAGGAGE screen rotates too. v22964 scoped this timer to
+    // the main board on the claim that "gate/bags" are bilingual-simultaneous;
+    // that is true only of the GATE. BIDS renders its headers and statuses in
+    // ONE language (`lang`), and with tick_carousel also returning early off
+    // the main board, nothing ever advanced it — a baggage screen froze in
+    // whatever language boot left behind (Nick: "Why is baggage no longer in
+    // multi languages"). Gate stays simultaneous; main still defers to its
+    // paging clock.
+    if (screenType === 'gate') return;                                   // gate: simultaneous
+    if (screenType === 'main' && typeof pageTimer !== 'undefined' && pageTimer) return; // paging clock owns main
     langIdx = (langIdx + 1) % langs.length;
     lang = langs[langIdx];
     updateTicker();
@@ -19497,7 +19505,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23233';
+var FIDS_BUILD_TAG = 'v23236';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
