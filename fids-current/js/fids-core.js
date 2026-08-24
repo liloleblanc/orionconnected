@@ -11916,6 +11916,28 @@ function gateAutofit(root) {
         el.style.setProperty('font-size', (_f - 1) + 'px', 'important');
       }
     });
+    // v23241 — THE CODE ACCENT IS PICKED PER BANNER GROUND (Nick's AC gate:
+    // 'Does this look like an accent color to you' — the hdrText gold was
+    // hardcoded and vanished on Air Canada's silver banners). Bright gold on
+    // dark banners, deep amber on light ones, judged by the measured banner
+    // background through the same 3:1 floor as every other ink.
+    root.querySelectorAll('.gad-aircraft-col .v2-fi-title .v2-fi-code, .g8-bir-shelves .v2-fi-title .v2-fi-code').forEach(function (el) {
+      try {
+        var bg = '', n = el.parentElement;
+        while (n && n !== document.body) {
+          var c = getComputedStyle(n).backgroundColor;
+          if (c && c !== 'rgba(0, 0, 0, 0)' && !/,\s*0\)$/.test(c)) { bg = c; break; }
+          n = n.parentElement;
+        }
+        var bright = '#fca825', deep = '#8a5200', pick = bright;
+        if (bg && typeof _fidsContrast === 'function') {
+          var cb = _fidsContrast(bright, bg) || 0, cd = _fidsContrast(deep, bg) || 0;
+          pick = (cb >= 3) ? bright : (cd > cb ? deep : bright);
+        }
+        el.style.setProperty('color', pick, 'important');
+        el.style.setProperty('-webkit-text-fill-color', pick, 'important');
+      } catch (e) {}
+    });
     // HARMONIZE (Nick: 'the exact same') — after the fit, every title takes
     // the smallest size any title landed on, so there is ONE number across
     // rail and strip, always, and it cannot drift between rebuilds.
@@ -19539,7 +19561,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23240';
+var FIDS_BUILD_TAG = 'v23241';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -24016,7 +24038,27 @@ function applyAirportConfigToBoard(iata) {
         // above). Emitted LAST: they tie the generic column-ink rules on
         // specificity, and only source order lets the green win.
         _CA + '.bidsv2-flight-row' + _nsB + ' :is(.bidsv2-status-arrived,.bidsv2-status-early) { color:' + _okEven + ' !important; }' +
-        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) :is(.bidsv2-status-arrived,.bidsv2-status-early) { color:' + _okOdd + ' !important; }';
+        _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) :is(.bidsv2-status-arrived,.bidsv2-status-early) { color:' + _okOdd + ' !important; }' +
+        // v23241 — SPAN-LEVEL INKS GO THROUGH THE FLOOR TOO (Nick's YYZ
+        // board: temps in the mist theme's slate on his navy rows — 'fuck
+        // all has been done about color'). The generic td ink only reaches
+        // spans by inheritance, and any DIRECT span rule beats inheritance;
+        // the built-in theme's lingering .wx-temp/.td-status rules were
+        // exactly that. Those are removed below, and the custom palette now
+        // states every span ink itself, contrast-picked per row ground.
+        _CA + '#fidsTable tbody tr' + _nsF + ' :is(.wx-temp, .td-airline, .fids-airline-name, .td-gate, .td-wx .fids-cell-weather span:not(.fids-wx-cell)) { color:' + _inkOdd + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) :is(.wx-temp, .td-airline, .fids-airline-name, .td-gate, .td-wx .fids-cell-weather span:not(.fids-wx-cell)) { color:' + _inkEven + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' .td-status:is(.fids-status-now,.fids-status-delayed,.fids-status-final) { color:' + _pickSt('#fbbf24', '#b45309', _gOdd) + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) .td-status:is(.fids-status-now,.fids-status-delayed,.fids-status-final) { color:' + _pickSt('#fbbf24', '#b45309', _gEven) + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' .td-status.fids-status-early { color:' + _okOdd + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) .td-status.fids-status-early { color:' + _okEven + ' !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ' :is(.td-status.fids-status-departed,.td-status.fids-status-arrived,.td-status.fids-status-gate-closed) { color:' + _inkOdd + ' !important; opacity:.7 !important; }' +
+        _CA + '#fidsTable tbody tr' + _nsF + ':nth-child(even) :is(.td-status.fids-status-departed,.td-status.fids-status-arrived,.td-status.fids-status-gate-closed) { color:' + _inkEven + ' !important; opacity:.7 !important; }';
+      // The built-in theme's #dynamicTheme block stays behind when a custom
+      // palette takes over, and its direct span rules (.wx-temp, .td-status
+      // colours from mist/gold) beat the custom td ink by targeting the span
+      // itself. A custom board owns every ink above — the leftover goes.
+      try { var _dtStale = document.getElementById('dynamicTheme'); if (_dtStale) _dtStale.remove(); } catch (e) {}
       document.head.appendChild(_styleEl);
       // --fids-text feeds rules outside this block (ticker, footer, chips), so
       // it takes the floored ink too — otherwise the raw pick leaks back in.
