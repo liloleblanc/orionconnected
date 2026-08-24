@@ -372,7 +372,8 @@
   <button class="cta" onclick="closeFullAd()">Explore offers</button>
 </div>
 
-<script src="js/shared-names.js?v=23230"></script>
+<script src="js/shared-names.js?v=23231"></script>
+<script src="js/feed-router.js?v=23231"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -470,6 +471,9 @@ const AIRPORTS={
 };
 const REGION_LABEL={CA:'Canada',US:'United States',INT:'Sun & International'};
 const AP_NAME={}; for(var _ak in AIRPORTS) AP_NAME[_ak]=AIRPORTS[_ak].n;
+// v23230 — the shared feed router (js/feed-router.js) reads the boards'
+// global `AP` map for airport timezones; publish ours in that shape.
+window.AP={}; for(var _tk in AIRPORTS) window.AP[_tk]={tz:AIRPORTS[_tk].tz};
 const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHU:'Montréal (St-Hubert)',YHZ:'Halifax',YYT:"St. John's",
   YDF:'Deer Lake',YOW:'Ottawa',YQB:'Québec City',YWK:'Wabush',YYY:'Mont-Joli',YBG:'Bagotville',YFC:'Fredericton',
   YSJ:'Saint John',YQY:'Sydney',YZX:'Greenwood',YGP:'Gaspé',YGR:'Îles-de-la-Madeleine',YQM:'Moncton',
@@ -536,7 +540,7 @@ function acName(code){
   if(/737[\s-]*MAX[\s-]*7|^(BOEING\s*)?737-?7$/i.test(bt))return 'Boeing 737 MAX 7';
   return t;
 }
-let AP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
+let CURAP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
 // Shown only when live data is unavailable (e.g. OAG trial over quota), so the
 // app still demonstrates fully instead of going blank. Clearly labelled.
 const SAMPLE=[
@@ -562,8 +566,14 @@ const WORDMARK={
 // Returns [lightThemeUrl (dark ink), darkThemeUrl (white ink)], or null if none.
 function wmUrls(code){
   if(code==='F8') return ['/logos/airlines/canadian/flair.svg','/logos/airlines/canadian/flair.svg']; // no light/dark pair
-  const b=WORDMARK[code]; if(!b) return null;
-  return ['/logos/airlines/'+b+'-wordmark-dark.svg','/logos/airlines/'+b+'-wordmark-light.svg'];
+  const b=WORDMARK[code];
+  if(b) return ['/logos/airlines/'+b+'-wordmark-dark.svg','/logos/airlines/'+b+'-wordmark-light.svg'];
+  // v23230 — the boards' full wordmark catalogue backs the app's curated
+  // set (Nick: 'The airlines are not showing proper logos'): 47 carriers,
+  // resolved from fids-core's own maps against the real art on disk —
+  // Virgin Atlantic, KLM, Icelandair, Air Inuit all render their marks.
+  const sw=window.FIDS_SHARED_WORDMARK&&FIDS_SHARED_WORDMARK[code];
+  return sw?[sw[0],sw[1]]:null;
 }
 // Airline brand accent colours (same values the main system uses).
 const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL:'#E31837',
@@ -726,7 +736,10 @@ function render(){
 // the board) so the full day of every airline shows, not just the next few
 // near-term flights (which at a small airport are often all one carrier).
 // SAMPLE is only a last-resort fallback when the live feed is unreachable.
-const ADB_BASE='https://fids-proxy.n-leblanc1984.workers.dev';
+// v23230 — ADB_BASE now comes from js/feed-router.js (the boards' value);
+// the webhook-overlay fetch below rewrites it to the proxy the same way
+// the router's own callers do.
+const APP_PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const TZ={}; for(var _tk in AIRPORTS) TZ[_tk]=AIRPORTS[_tk].tz;
 // Airports with a real-time AeroDataBox webhook feed (push, fresher than the
 // scrape). Their cached records overlay the scrape so status/gate is live —
@@ -759,6 +772,10 @@ function inferOperator(code,num){
   return '';
 }
 function adbToCard(f,dir){
+  // v23230 — the boards drop codeshare duplicates and keep the operating
+  // flight (fids-core's rule, verbatim); the router feed includes them now,
+  // so the app applies the same filter or every AA flight shows three times.
+  if(String((f&&f.codeshareStatus)||'').toLowerCase()==='iscodeshared')return null;
   const dep=f.departure||{}, arr=f.arrival||{};
   const here=dir==='arr'?arr:dep;        // movement at THIS airport
   const other=dir==='arr'?dep:arr;       // the origin (arr) / destination (dep)
@@ -828,32 +845,27 @@ function _rawKey(f){
 // Fetch one direction across two back-to-back 12h windows. For airports with a
 // webhook (YQM/CYQM), overlay the fresher real-time records on the scrape.
 async function fetchDir(dir){
-  const tz=TZ[AP]||'America/Toronto', now=new Date(), apiDir=dir==='arr'?'Arrival':'Departure';
-  const wins=[[-3,9],[9,21]].map(([a,b])=>[adbFmt(new Date(now.getTime()+a*3600000),tz),adbFmt(new Date(now.getTime()+b*3600000),tz)]);
-  let raw=[], ok=0, errs=0;
-  for(let i=0;i<wins.length;i++){
-    const [from,to]=wins[i];
-    if(i)await new Promise(r=>setTimeout(r,700));   // small gap — stay under ADB rate limit
-    const path='/flights/airports/iata/'+encodeURIComponent(AP)+'/'+from+'/'+to
-      +'?withLeg=true&direction='+apiDir+'&withCancelled=true&withCodeshared=false'
-      +'&withCargo=false&withPrivate=false&withLocation=true';
-    try{
-      const r=await fetch(ADB_BASE+path,{cache:'no-store'});
-      if(!r.ok)throw new Error('ADB '+r.status);
-      const d=await r.json();
-      raw=raw.concat((dir==='arr'?(d&&d.arrivals):(d&&d.departures))||[]);   // keep RAW rows
-      ok++;
-    }catch(e){ errs++; }
-  }
-  if(!ok&&errs)throw new Error('ADB all windows failed');   // only fall back when nothing loaded
+  // v23230 — THE SAME DATA LAYER AS THE BOARDS (Nick: 'the gates are no
+  // wired so the connection is not made you didn't fix you you built over
+  // it'). The app used to run its own raw AeroDataBox windows and never
+  // saw the per-airport authority feeds the boards use — which is exactly
+  // where the gates live (YQM's cyqm feed carries TerminalGate; MCO's
+  // GOAA feed carries gate/terminal/belt; YUL, TPA, YYZ, YTZ, YHU and the
+  // PANYNJ airports likewise). fetchDir now calls the boards' own
+  // adbFetch() from js/feed-router.js — native feed first, ADB windows as
+  // the fallback, identical rows, identical gates.
+  const apiDir=dir==='arr'?'Arrival':'Departure';
+  const res=await adbFetch(CURAP,apiDir);
+  let raw=(dir==='arr'?(res&&res.arrivals):(res&&res.departures))||[];
+  if(!raw.length&&!res)throw new Error('feed router returned nothing');
   // De-dupe raw rows before overlay.
   const seenR=new Set();
   raw=raw.filter(f=>{const k=_rawKey(f);if(seenR.has(k))return false;seenR.add(k);return true;});
   // ── WEBHOOK OVERLAY (real-time, more direct) for YQM ──
-  const icao=CACHED_ICAO[AP];
+  const icao=CACHED_ICAO[CURAP];
   if(icao && raw.length){
     try{
-      const cr=await fetch(ADB_BASE+'/flights/cached/'+icao+'?direction='+(dir==='arr'?'arr':'dep'),{cache:'no-store'});
+      const cr=await fetch(APP_PROXY+'/flights/cached/'+icao+'?direction='+(dir==='arr'?'arr':'dep'),{cache:'no-store'});
       if(cr.ok){
         const cj=await cr.json();
         if(cj && Array.isArray(cj.flights) && cj.flights.length){
@@ -961,7 +973,7 @@ async function loadBrand(code){
   }catch(e){document.getElementById('apLogo').textContent=code;}
 }
 function setAirport(code,_boot){
-  AP=code;
+  CURAP=code;
   // Same-system state: share the tab key the boards use (fids_airport) plus a
   // durable app key, and keep ?ap= in the URL so the address bar is always a
   // shareable link to exactly this view — any device opening it lands here.
@@ -1030,7 +1042,7 @@ function openFlight(i){
     +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
     +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
   // Route endpoints: for an arrival, origin city → here; for a departure, here → destination.
-  const epHere='<div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>';
+  const epHere='<div class="ep"><div class="city">'+esc(AP_NAME[CURAP]||CURAP)+'</div><div class="code">'+esc(CURAP)+'</div></div>';
   const epOther='<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero">'+heroWordmark(f.airline)

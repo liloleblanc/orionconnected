@@ -859,3 +859,196 @@ window.FIDS_SHARED_AIRLINE = {
   'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
   'PX':'AIR NIUGINI', 'KO':'ACE CARGO',
 };
+
+// The boards' wordmark art per carrier — [forLightBg(dark ink), forDarkBg(light ink)],
+// resolved from fids-core's IATA_TO_WORDMARK + LOGO_SUBFOLDER against the real files.
+window.FIDS_SHARED_WORDMARK = {
+"AC": [
+"/logos/airlines/canadian/air-canada-wordmark-dark.svg",
+"/logos/airlines/canadian/air-canada-wordmark-light.svg"
+],
+"WS": [
+"/logos/airlines/canadian/westjet-wordmark-dark.svg",
+"/logos/airlines/canadian/westjet-wordmark-light.svg"
+],
+"PD": [
+"/logos/airlines/canadian/porter-wordmark-dark.svg",
+"/logos/airlines/canadian/porter-wordmark-light.svg"
+],
+"TS": [
+"/logos/airlines/canadian/transat-wordmark-dark.svg",
+"/logos/airlines/canadian/transat-wordmark-light.svg"
+],
+"PB": [
+"/logos/airlines/canadian-regional/pal-airlines-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg"
+],
+"JV": [
+"/logos/airlines/canadian-regional/bearskin-wordmark-light.svg",
+"/logos/airlines/canadian-regional/bearskin-wordmark-light.svg"
+],
+"WT": [
+"/logos/airlines/canadian-regional/wasaya-wordmark-light.svg",
+"/logos/airlines/canadian-regional/wasaya-wordmark-light.svg"
+],
+"NSA": [
+"/logos/airlines/canadian-regional/north-star-wordmark-light.svg",
+"/logos/airlines/canadian-regional/north-star-wordmark-light.svg"
+],
+"F8": [
+"/logos/airlines/canadian/flair-wordmark-light.svg",
+"/logos/airlines/canadian/flair-wordmark-light.svg"
+],
+"QK": [
+"/logos/airlines/canadian-regional/jazz-wordmark-dark.svg",
+"/logos/airlines/canadian-regional/jazz-wordmark-light.svg"
+],
+"RV": [
+"/logos/airlines/canadian/air-canada-wordmark-dark.svg",
+"/logos/airlines/canadian/air-canada-wordmark-light.svg"
+],
+"AA": [
+"/logos/airlines/us-major/american-wordmark-dark.svg",
+"/logos/airlines/us-major/american-wordmark-light.svg"
+],
+"UA": [
+"/logos/airlines/us-major/united-wordmark-dark.svg",
+"/logos/airlines/us-major/united-wordmark-light.svg"
+],
+"DL": [
+"/logos/airlines/us-major/delta-wordmark-dark.svg",
+"/logos/airlines/us-major/delta-wordmark-light.svg"
+],
+"WN": [
+"/logos/airlines/us-major/southwest-wordmark-dark.svg",
+"/logos/airlines/us-major/southwest-wordmark-light.svg"
+],
+"B6": [
+"/logos/airlines/us-major/jetblue-wordmark-dark.svg",
+"/logos/airlines/us-major/jetblue-wordmark-light.svg"
+],
+"F9": [
+"/logos/airlines/us-major/frontier-wordmark-dark.svg",
+"/logos/airlines/us-major/frontier-wordmark-light.svg"
+],
+"XP": [
+"/logos/airlines/us-major/avelo-wordmark-dark.svg",
+"/logos/airlines/us-major/avelo-wordmark-light.svg"
+],
+"LL": [
+"/logos/airlines/european/level-wordmark-dark.svg",
+"/logos/airlines/european/level-wordmark-light.svg"
+],
+"AS": [
+"/logos/airlines/us-major/alaska-airlines-wordmark-dark.svg",
+"/logos/airlines/us-major/alaska-airlines-wordmark-light.svg"
+],
+"HA": [
+"/logos/airlines/us-major/hawaiian-wordmark-dark.svg",
+"/logos/airlines/us-major/hawaiian-wordmark-light.svg"
+],
+"SY": [
+"/logos/airlines/us-major/sun-country-wordmark-dark.svg",
+"/logos/airlines/us-major/sun-country-wordmark-light.svg"
+],
+"OO": [
+"/logos/airlines/us-regional/skywest-airlines-wordmark-dark.svg",
+"/logos/airlines/us-regional/skywest-airlines-wordmark-light.svg"
+],
+"PT": [
+"/logos/airlines/us-regional/piedmont-wordmark-dark.svg",
+"/logos/airlines/us-regional/piedmont-wordmark-light.svg"
+],
+"YX": [
+"/logos/airlines/us-regional/republic-wordmark-dark.svg",
+"/logos/airlines/us-regional/republic-wordmark-light.svg"
+],
+"9X": [
+"/logos/airlines/us-major/mokulele-wordmark-dark.svg",
+"/logos/airlines/us-major/mokulele-wordmark-light.svg"
+],
+"BA": [
+"/logos/airlines/european/british-airways-wordmark-dark.svg",
+"/logos/airlines/european/british-airways-wordmark-light.svg"
+],
+"AF": [
+"/logos/airlines/european/air-france-wordmark-dark.svg",
+"/logos/airlines/european/air-france-wordmark-light.svg"
+],
+"KL": [
+"/logos/airlines/european/klm-wordmark-dark.svg",
+"/logos/airlines/european/klm-wordmark-light.svg"
+],
+"LO": [
+"/logos/airlines/european/lot-wordmark-dark.svg",
+"/logos/airlines/european/lot-wordmark-light.svg"
+],
+"VS": [
+"/logos/airlines/european/virgin-atlantic-wordmark-dark.svg",
+"/logos/airlines/european/virgin-atlantic-wordmark-light.svg"
+],
+"4Y": [
+"/logos/airlines/european/discover-airlines-wordmark-dark.svg",
+"/logos/airlines/european/discover-airlines-wordmark-light.svg"
+],
+"MX": [
+"/logos/airlines/us-major/breeze-airways-wordmark-dark.svg",
+"/logos/airlines/us-major/breeze-airways-wordmark-light.svg"
+],
+"AV": [
+"/logos/airlines/asian-other/avianca-wordmark-dark.svg",
+"/logos/airlines/asian-other/avianca-wordmark-light.svg"
+],
+"OB": [
+"/logos/airlines/asian-other/boliviana-wordmark-dark.svg",
+"/logos/airlines/asian-other/boliviana-wordmark-light.svg"
+],
+"AM": [
+"/logos/airlines/asian-other/aeromexico-wordmark-dark.svg",
+"/logos/airlines/asian-other/aeromexico-wordmark-light.svg"
+],
+"CM": [
+"/logos/airlines/asian-other/copa-wordmark-dark.svg",
+"/logos/airlines/asian-other/copa-wordmark-light.svg"
+],
+"UP": [
+"/logos/airlines/asian-other/bahamasair-wordmark-dark.svg",
+"/logos/airlines/asian-other/bahamasair-wordmark-light.svg"
+],
+"LA": [
+"/logos/airlines/asian-other/latam-wordmark-dark.svg",
+"/logos/airlines/asian-other/latam-wordmark-light.svg"
+],
+"Y4": [
+"/logos/airlines/asian-other/volaris-wordmark-dark.svg",
+"/logos/airlines/asian-other/volaris-wordmark-light.svg"
+],
+"VB": [
+"/logos/airlines/asian-other/vivaaerobus-wordmark-dark.svg",
+"/logos/airlines/asian-other/vivaaerobus-wordmark-light.svg"
+],
+"G3": [
+"/logos/airlines/asian-other/gol-wordmark-dark.svg",
+"/logos/airlines/asian-other/gol-wordmark-light.svg"
+],
+"AT": [
+"/logos/airlines/alliances/royal-air-maroc-wordmark-dark.svg",
+"/logos/airlines/alliances/royal-air-maroc-wordmark-light.svg"
+],
+"FI": [
+"/logos/airlines/european/icelandair-wordmark-dark.svg",
+"/logos/airlines/european/icelandair-wordmark-light.svg"
+],
+"WL": [
+"/logos/airlines/us-regional/world-atlantic-wordmark-dark.png",
+"/logos/airlines/us-regional/world-atlantic-wordmark-light.png"
+],
+"BW": [
+"/logos/airlines/asian-other/caribbean-wordmark-color.png",
+"/logos/airlines/asian-other/caribbean-wordmark-light.png"
+],
+"3H": [
+"/logos/airlines/canadian-regional/airinuit-monochrome-black.svg",
+"/logos/airlines/canadian-regional/airinuit-monochrome-white.svg"
+]
+};
