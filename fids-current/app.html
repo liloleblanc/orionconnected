@@ -192,6 +192,7 @@
   .fcard.light .bubwm-txt{color:#0d1220;}
   .fcard.light .belt-no{color:#0d1220;} .fcard.light .belt-tbd,.fcard.light .belt-lbl{color:rgba(13,18,32,.5);}
   .empty{padding:64px 24px;text-align:center;color:var(--muted);}
+  .me-btn.lang-btn{font-family:inherit;font-weight:800;font-size:11.5px;letter-spacing:.05em;color:var(--muted);}
   /* ── Departures / Arrivals segmented toggle ───────── */
   .seg-wrap{padding:14px 18px 2px;}
   .seg{display:flex;background:var(--soft);border:1px solid var(--line);border-radius:13px;padding:4px;gap:4px;}
@@ -310,6 +311,7 @@
     <select id="apSelect" aria-label="Choose airport" onchange="setAirport(this.value)"></select>
   </div>
   <div style="display:flex;gap:10px;align-items:center;flex:none;">
+    <button class="me-btn lang-btn" id="langBtn" title="Language / Langue / Idioma" onclick="cycleLang()">EN</button>
     <button class="me-btn" id="themeBtn" title="Theme" onclick="cycleTheme()"><span id="themeIc"></span></button>
     <button class="me-btn" title="Sign in" onclick="personalize()">
       <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0 1 14 0"/></svg>
@@ -344,7 +346,7 @@
 
 <div class="view" id="view-explore">
   <div class="soon"><div class="badge"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.2 13.2 8.5 15.5 10.8 10.8 15.5 8.5"/></svg></div>
-    <div class="h">Explore the airport</div><div class="p">Find shops, food, lounges and washrooms — and how to get to them.</div><div class="tag">Coming soon</div></div>
+    <div class="h" id="expH">Explore the airport</div><div class="p" id="expP">Find shops, food, lounges and washrooms — and how to get to them.</div><div class="tag" id="expT">Coming soon</div></div>
 </div>
 <div class="view" id="view-bag">
   <div class="search-wrap">
@@ -358,25 +360,25 @@
 </div>
 <div class="view" id="view-trip">
   <div class="soon"><div class="badge"><svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg></div>
-    <div class="h">Your trip</div><div class="p">Save your flight and boarding pass for quick access. Sign in to unlock.</div><div class="tag">Members</div></div>
+    <div class="h" id="tripH">Your trip</div><div class="p" id="tripP">Save your flight and boarding pass for quick access. Sign in to unlock.</div><div class="tag" id="tripT">Members</div></div>
 </div>
 
 <nav class="nav">
   <button class="active" data-v="flights" onclick="go('flights')">
-    <svg class="ic" viewBox="0 0 24 24"><path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/></svg>Flights</button>
+    <svg class="ic" viewBox="0 0 24 24"><path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/></svg><span id="navFlights">Flights</span></button>
   <button data-v="explore" onclick="go('explore')">
-    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.2 13.2 8.5 15.5 10.8 10.8 15.5 8.5"/></svg>Explore</button>
+    <svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="15.5 8.5 13.2 13.2 8.5 15.5 10.8 10.8 15.5 8.5"/></svg><span id="navExplore">Explore</span></button>
   <button data-v="bag" onclick="go('bag')">
-    <svg class="ic" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>Baggage</button>
+    <svg class="ic" viewBox="0 0 24 24"><rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg><span id="navBag">Baggage</span></button>
   <button data-v="trip" onclick="go('trip')">
-    <svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg>Trip</button>
+    <svg class="ic" viewBox="0 0 24 24"><path d="M3 8a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2 2 2 0 0 0 0 4 2 2 0 0 1-2 2H5a2 2 0 0 1-2-2 2 2 0 0 0 0-4z"/></svg><span id="navTrip">Trip</span></button>
 </nav>
 
 <!-- Flight detail -->
 <div class="detail" id="detail">
   <div class="dt-top">
     <button class="back" onclick="closeFlight()"><svg class="ic" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <div class="ttl">Flight details</div>
+    <div class="ttl" id="dtTtl">Flight details</div>
   </div>
   <div id="detailBody"></div>
 </div>
@@ -391,8 +393,8 @@
   <button class="cta" onclick="closeFullAd()">Explore offers</button>
 </div>
 
-<script src="js/shared-names.js?v=23231"></script>
-<script src="js/feed-router.js?v=23231"></script>
+<script src="js/shared-names.js?v=23233"></script>
+<script src="js/feed-router.js?v=23233"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -522,7 +524,7 @@ function cityOf(f){return CITY[f.cityIata]||(f.cityName?_tcCity(f.cityName):'')|
 if(window.FIDS_SHARED_CITY){for(var _sk in FIDS_SHARED_CITY){if(!CITY[_sk])CITY[_sk]=_tcCity(FIDS_SHARED_CITY[_sk]);}}
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
   B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet',
-  JV:'Bearskin',WT:'Wasaya',NSA:'North Star Air'};
+  JV:'Bearskin',WT:'Wasaya',NSA:'North Star Air',UX:'Air Europa'};
 // v23230 — the board's full carrier catalogue backfills the rest (see the
 // CITY merge above): every code the big board can name, the app names too.
 if(window.FIDS_SHARED_AIRLINE){for(var _sa in FIDS_SHARED_AIRLINE){if(!AIRLINE[_sa])AIRLINE[_sa]=FIDS_SHARED_AIRLINE[_sa];}}
@@ -533,7 +535,22 @@ const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':
   'DH4':'De Havilland Dash 8-400','DH8D':'De Havilland Dash 8-400','DH3':'De Havilland Dash 8-300',
   'CR9':'Mitsubishi CRJ-900','CR7':'Mitsubishi CRJ-700','CR2':'Bombardier CRJ-200','CR5':'Mitsubishi CRJ-550',
   'E75':'Embraer E175','E90':'Embraer E190','E95':'Embraer E195',
-  'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop'};
+  'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop',
+  // v23233 — ICAO-style codes the MIA WebFIDS feed sends raw (B38M on Nick's
+  // AC1649 screenshot), plus its house 737-800 shorthand.
+  'B38M':'Boeing 737 MAX 8','B39M':'Boeing 737 MAX 9','B37M':'Boeing 737 MAX 7',
+  'B737':'Boeing 737-700','B738':'Boeing 737-800','B739':'Boeing 737-900','7378W':'Boeing 737-800','B7878':'Boeing 787-8','B7879':'Boeing 787-9','B777':'Boeing 777','B767':'Boeing 767','B757':'Boeing 757','B747':'Boeing 747',
+  'A19N':'Airbus A319neo','A20N':'Airbus A320neo','A21N':'Airbus A321neo',
+  'A319':'Airbus A319','A320':'Airbus A320','A321':'Airbus A321',
+  'A332':'Airbus A330-200','A333':'Airbus A330-300','A339':'Airbus A330-900neo',
+  'A359':'Airbus A350-900','A35K':'Airbus A350-1000','A388':'Airbus A380',
+  'B744':'Boeing 747-400','B748':'Boeing 747-8','B752':'Boeing 757-200','B763':'Boeing 767-300',
+  'B772':'Boeing 777-200','B77L':'Boeing 777-200LR','B77W':'Boeing 777-300ER','B773':'Boeing 777-300',
+  'B788':'Boeing 787-8','B789':'Boeing 787-9','B78X':'Boeing 787-10',
+  'E170':'Embraer E170','E175':'Embraer E175','E75L':'Embraer E175','E75S':'Embraer E175',
+  'E190':'Embraer E190','E195':'Embraer E195','E290':'Embraer E190-E2','E295':'Embraer E195-E2',
+  'CRJ2':'Bombardier CRJ-200','CRJ7':'Mitsubishi CRJ-700','CRJ9':'Mitsubishi CRJ-900','CRJX':'Mitsubishi CRJ-1000',
+  'AT72':'ATR 72','AT76':'ATR 72-600','AT45':'ATR 42','AT46':'ATR 42-600'};
 // Display name for an aircraft. Handles both our short codes (from SAMPLE) AND
 // the raw model strings the live AeroDataBox feed returns (e.g. "Bombardier
 // CRJ-900", "De Havilland Canada DHC-8-400"), normalising the two families the
@@ -574,6 +591,84 @@ const SAMPLE=[
   {airline:'AC',flight:'AC1518',cityIata:'YUL',schedTime:'17:20',estTime:'17:20',gate:'1',aircraft:'CR9',reg:'C-FFEN',state:'scheduled',timeliness:'onTime'},
   {airline:'WS',flight:'WS3422',cityIata:'YYZ',schedTime:'18:05',estTime:'18:05',gate:'4',aircraft:'7M8',reg:'C-GWSV',state:'scheduled',timeliness:'onTime',operatedBy:'WestJet Encore'}
 ];
+// ── LANGUAGE (v23234) — English / Français / Español ─────────────────
+// Nick: "Is there no choices for language" — the boards are bilingual;
+// the app now is too. Default follows the phone (auto); the globe-style
+// button in the top bar cycles EN → FR → ES and the choice persists.
+const I18N={
+en:{dep:'Departures',arr:'Arrivals',findFlight:'Find your flight — number or city',findArr:'Find your arrival — flight or city',
+ liveDep:'Live departures',liveArr:'Live arrivals',flightsN:'flights',noDep:'No departures right now',noArr:'No arrivals right now',
+ noMatch:'No flights match',noArrMatch:'No arrivals match',reconn:'reconnecting…',reconnB:'Reconnecting…',
+ bagHint:'Arriving flights & baggage belts',bagOffline:'Baggage info offline',
+ departs:'Departs',arrives:'Arrives',arrShort:'Arr',depShort:'Dep',gate:'Gate',belt:'Belt',tbd:'TBD',terminal:'Terminal',via:'Via',
+ estimated:'Estimated',flightTime:'Flight time',bagBelt:'Baggage belt',depOrigin:'Departs origin',aircraft:'Aircraft',reg:'Reg',
+ operatedBy:'Operated by',details:'Flight details',tabFlights:'Flights',tabExplore:'Explore',tabBag:'Baggage',tabTrip:'Trip',
+ exploreH:'Explore the airport',exploreP:'Find shops, food, lounges and washrooms — and how to get to them.',soon:'Coming soon',
+ tripH:'Your trip',tripP:'Save your flight and boarding pass for quick access. Sign in to unlock.',members:'Members',
+ stOnTime:'On time',stDelayed:'Delayed',stEarly:'Early',stCancelled:'Cancelled',stDeparted:'Departed',stArrived:'Arrived',
+ stBoarding:'Boarding',stFinal:'Final call',stClosed:'Gate closed'},
+fr:{dep:'Départs',arr:'Arrivées',findFlight:'Trouvez votre vol — numéro ou ville',findArr:'Trouvez votre arrivée — vol ou ville',
+ liveDep:'Départs en direct',liveArr:'Arrivées en direct',flightsN:'vols',noDep:'Aucun départ pour le moment',noArr:'Aucune arrivée pour le moment',
+ noMatch:'Aucun vol ne correspond à',noArrMatch:'Aucune arrivée ne correspond à',reconn:'reconnexion…',reconnB:'Reconnexion…',
+ bagHint:'Vols à l’arrivée et carrousels',bagOffline:'Info bagages hors ligne',
+ departs:'Départ',arrives:'Arrivée',arrShort:'Arr',depShort:'Dép',gate:'Porte',belt:'Carrousel',tbd:'À conf.',terminal:'Aérogare',via:'Via',
+ estimated:'Estimé',flightTime:'Durée du vol',bagBelt:'Carrousel à bagages',depOrigin:'Départ de l’origine',aircraft:'Appareil',reg:'Imm.',
+ operatedBy:'Exploité par',details:'Détails du vol',tabFlights:'Vols',tabExplore:'Explorer',tabBag:'Bagages',tabTrip:'Voyage',
+ exploreH:'Explorez l’aéroport',exploreP:'Boutiques, restos, salons et toilettes — et comment s’y rendre.',soon:'Bientôt',
+ tripH:'Votre voyage',tripP:'Gardez votre vol et votre carte d’embarquement à portée de main. Connectez-vous.',members:'Membres',
+ stOnTime:'À l’heure',stDelayed:'Retardé',stEarly:'En avance',stCancelled:'Annulé',stDeparted:'Parti',stArrived:'Arrivé',
+ stBoarding:'Embarquement',stFinal:'Dernier appel',stClosed:'Porte fermée'},
+es:{dep:'Salidas',arr:'Llegadas',findFlight:'Busca tu vuelo — número o ciudad',findArr:'Busca tu llegada — vuelo o ciudad',
+ liveDep:'Salidas en vivo',liveArr:'Llegadas en vivo',flightsN:'vuelos',noDep:'No hay salidas por ahora',noArr:'No hay llegadas por ahora',
+ noMatch:'Ningún vuelo coincide con',noArrMatch:'Ninguna llegada coincide con',reconn:'reconectando…',reconnB:'Reconectando…',
+ bagHint:'Vuelos que llegan y bandas de equipaje',bagOffline:'Info de equipaje sin conexión',
+ departs:'Sale',arrives:'Llega',arrShort:'Lleg',depShort:'Sal',gate:'Puerta',belt:'Banda',tbd:'Por conf.',terminal:'Terminal',via:'Vía',
+ estimated:'Estimado',flightTime:'Duración',bagBelt:'Banda de equipaje',depOrigin:'Sale del origen',aircraft:'Avión',reg:'Mat.',
+ operatedBy:'Operado por',details:'Detalles del vuelo',tabFlights:'Vuelos',tabExplore:'Explorar',tabBag:'Equipaje',tabTrip:'Viaje',
+ exploreH:'Explora el aeropuerto',exploreP:'Tiendas, comida, salas y baños — y cómo llegar.',soon:'Próximamente',
+ tripH:'Tu viaje',tripP:'Guarda tu vuelo y tu pase de abordar. Inicia sesión.',members:'Miembros',
+ stOnTime:'A tiempo',stDelayed:'Demorado',stEarly:'Adelantado',stCancelled:'Cancelado',stDeparted:'Salió',stArrived:'Llegó',
+ stBoarding:'Abordando',stFinal:'Última llamada',stClosed:'Puerta cerrada'}
+};
+let LANG=(function(){try{return localStorage.getItem('app_lang')||'auto';}catch(e){return 'auto';}})();
+function langRes(){
+  if(LANG!=='auto'&&I18N[LANG])return LANG;
+  const n=String((navigator.languages&&navigator.languages[0])||navigator.language||'en').toLowerCase();
+  if(n.indexOf('fr')===0)return 'fr';
+  if(n.indexOf('es')===0)return 'es';
+  return 'en';
+}
+function T(k){const d=I18N[langRes()]||I18N.en;return d[k]!==undefined?d[k]:(I18N.en[k]!==undefined?I18N.en[k]:k);}
+function cycleLang(){
+  const order=['en','fr','es'];
+  LANG=order[(order.indexOf(langRes())+1)%order.length];
+  try{localStorage.setItem('app_lang',LANG);}catch(e){}
+  applyLang();
+}
+function applyLang(){
+  const L=langRes();
+  try{document.documentElement.lang=L;}catch(e){}
+  const set=function(id,txt){const el=document.getElementById(id);if(el)el.textContent=txt;};
+  set('langBtn',L.toUpperCase());
+  set('segDep',T('dep'));set('segArr',T('arr'));
+  set('apDir',(typeof DIR!=='undefined'&&DIR==='arr')?T('arr'):T('dep'));
+  set('navFlights',T('tabFlights'));set('navExplore',T('tabExplore'));set('navBag',T('tabBag'));set('navTrip',T('tabTrip'));
+  set('expH',T('exploreH'));set('expP',T('exploreP'));set('expT',T('soon'));
+  set('tripH',T('tripH'));set('tripP',T('tripP'));set('tripT',T('members'));
+  set('dtTtl',T('details'));
+  const q=document.getElementById('q');if(q)q.placeholder=T('findFlight');
+  const bq=document.getElementById('bagQ');if(bq)bq.placeholder=T('findArr');
+  set('bagHint',T('bagHint'));
+  try{
+    const hint=document.getElementById('hint');
+    if(hint&&typeof FLIGHTS!=='undefined'){
+      const w=(typeof DIR!=='undefined'&&DIR==='arr')?T('liveArr'):T('liveDep');
+      hint.textContent=FLIGHTS.length?(w+' · '+FLIGHTS.length+' '+T('flightsN')):((typeof DIR!=='undefined'&&DIR==='arr')?T('noArr'):T('noDep'));
+    }
+  }catch(e){}
+  try{render();}catch(e){}
+  try{if(typeof renderBags==='function'&&typeof ARRIVALS!=='undefined'&&ARRIVALS.length)renderBags();}catch(e){}
+}
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 // Real colour airline logos — same source the main board uses.
@@ -720,16 +815,16 @@ function liveryImg(airline,raw,operatedBy){
 function fmtDur(m){if(!m||m<=0)return '';const h=Math.floor(m/60),mm=m%60;return (h?h+'h':'')+(h&&mm?' ':'')+(mm?mm+'m':'');}
 function statusOf(f){
   const st=(f.state||'').toLowerCase();
-  if(st==='canceled'||st==='cancelled')return{t:'Cancelled',c:'cancelled'};
-  if(st==='outgate'||st==='inair')return{t:'Departed',c:'ontime'};
-  if(st==='ingate'||st==='landed')return{t:'Arrived',c:'ontime'};
-  if(st==='boarding')return{t:'Boarding',c:'boarding'};
-  if(st==='final')return{t:'Final call',c:'boarding'};
-  if(st==='gateclosed')return{t:'Gate closed',c:'boarding'};
+  if(st==='canceled'||st==='cancelled')return{t:T('stCancelled'),c:'cancelled'};
+  if(st==='outgate'||st==='inair')return{t:T('stDeparted'),c:'ontime'};
+  if(st==='ingate'||st==='landed')return{t:T('stArrived'),c:'ontime'};
+  if(st==='boarding')return{t:T('stBoarding'),c:'boarding'};
+  if(st==='final')return{t:T('stFinal'),c:'boarding'};
+  if(st==='gateclosed')return{t:T('stClosed'),c:'boarding'};
   const tl=(f.timeliness||'').toLowerCase();
-  if(tl==='delayed')return{t:'Delayed',c:'delayed'};
-  if(tl==='early')return{t:'Early',c:'early'};
-  return{t:'On time',c:'ontime'};
+  if(tl==='delayed')return{t:T('stDelayed'),c:'delayed'};
+  if(tl==='early')return{t:T('stEarly'),c:'early'};
+  return{t:T('stOnTime'),c:'ontime'};
 }
 function render(){
   const q=(document.getElementById('q').value||'').trim().toLowerCase();
@@ -737,20 +832,20 @@ function render(){
   let list=FLIGHTS;
   if(q)list=list.filter(f=>{const city=(cityOf(f)||'').toLowerCase();
     return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
-  const isArr=DIR==='arr', tLbl=isArr?'Arrives':'Departs';
+  const isArr=DIR==='arr', tLbl=isArr?T('arrives'):T('departs');
   if(!list.length){cards.innerHTML='<div class="empty">'+svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>')
-    +'<div>'+(q?'No flights match “'+esc(q)+'”':('No '+(isArr?'arrivals':'departures')+' right now'))+'</div></div>';RENDERED=[];return;}
+    +'<div>'+(q?T('noMatch')+' “'+esc(q)+'”':(isArr?T('noArr'):T('noDep')))+'</div></div>';RENDERED=[];return;}
   RENDERED=list;
   cards.innerHTML=list.map((f,i)=>{
     const s=statusOf(f),city=cityOf(f),al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
     const via=(f.via&&f.via.length)?' · via '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
-    const belt=(isArr&&f.belt)?'<span class="chip gate">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')+'<span class="k">Belt</span> '+esc(f.belt)+'</span>':'';
-    const gate=(!isArr&&f.gate)?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">Gate</span> '+esc(f.gate)+'</span>':'';
+    const belt=(isArr&&f.belt)?'<span class="chip gate">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')+'<span class="k">'+T('belt')+'</span> '+esc(f.belt)+'</span>':'';
+    const gate=(!isArr&&f.gate)?'<span class="chip gate">'+svg('<path d="M3 21h18M5 21V7l8-4v18M13 21V9l6 3v9"/>')+'<span class="k">'+T('gate')+'</span> '+esc(f.gate)+'</span>':'';
     const ac=f.aircraft?'<span class="chip">'+svg('<path d="M21 15.5 14 11V4.5a2 2 0 0 0-4 0V11l-7 4.5V17l7-2v4l-2 1.3v1.2l4-1 4 1v-1.2L14 19v-4l7 2z"/>')+esc(acName(f.aircraft))+'</span>':'';
     // Arrival time (for a departure) / origin departure time (for an arrival),
     // shown under the main time on each card.
-    const otherLine=f.otherTime?'<div class="arr">'+(isArr?'Dep ':'Arr ')+esc((f.otherTime||'').slice(0,5))+'</div>':'';
+    const otherLine=f.otherTime?'<div class="arr">'+(isArr?T('depShort'):T('arrShort'))+' '+esc((f.otherTime||'').slice(0,5))+'</div>':'';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
@@ -811,7 +906,15 @@ function adbToCard(f,dir){
   const other=dir==='arr'?dep:arr;       // the origin (arr) / destination (dep)
   const num=(f.number||'').replace(/\s+/g,'').toUpperCase();
   if(!num)return null;
-  const opCode=(((f.airline&&f.airline.iata)||num.replace(/[0-9].*/,''))||'').toUpperCase();
+  let opCode=(((f.airline&&f.airline.iata)||'')).toUpperCase();
+  // v23235 — MIA's WebFIDS splits "F9 1204" as carrier "F" + number "91204",
+  // so a bare letter (or nothing) lands here and Frontier branded as "F"
+  // (Nick's screenshot). Re-derive from the flight number, preferring the
+  // two-char prefix whenever it names a carrier we know (F9, 9E, B6…).
+  if(opCode.length<2){
+    const _p2=(num.match(/^([A-Z0-9]{2})[0-9]/)||[])[1];
+    opCode=(_p2&&(AIRLINE[_p2]||BRAND[_p2]||REGIONAL_FAM[_p2]||wmUrls(_p2)))?_p2:(num.replace(/[0-9].*/,'')||opCode);
+  }
   // v23232 — single-mainline feeders brand as their mainline (board rule);
   // the operating carrier's name moves to the "Operated by" line instead.
   const code=REGIONAL_FAM[opCode]||opCode;
@@ -936,13 +1039,13 @@ async function load(){
   try{
     const mapped=await fetchDir(DIR);
     if(isArr) ARRIVALS=mapped;
-    if(mapped.length){ FLIGHTS=mapped; hint.textContent='Live '+word+' · '+mapped.length+' flights'; }
-    else{ FLIGHTS=[]; hint.textContent='No '+word+' right now'; }   // honest empty — never fake flights
+    if(mapped.length){ FLIGHTS=mapped; hint.textContent=(isArr?T('liveArr'):T('liveDep'))+' · '+mapped.length+' '+T('flightsN'); }
+    else{ FLIGHTS=[]; hint.textContent=isArr?T('noArr'):T('noDep'); }   // honest empty — never fake flights
   }catch(e){
     // Transient failure (e.g. a redeploy or network blip): keep whatever was
     // last shown and quietly reconnect. Never swap in the demo flights — that
     // looked alarming to passengers.
-    hint.textContent=FLIGHTS.length?('Live '+word+' · reconnecting…'):'Reconnecting…';
+    hint.textContent=FLIGHTS.length?((isArr?T('liveArr'):T('liveDep'))+' · '+T('reconn')):T('reconnB');
   }
   render();
   // Deep link: a board handoff carrying ?gate=95 opens that gate's next
@@ -965,7 +1068,7 @@ function setDir(dir){
   DIR=dir;
   document.getElementById('segDep').classList.toggle('active',dir==='dep');
   document.getElementById('segArr').classList.toggle('active',dir==='arr');
-  document.getElementById('apDir').textContent=dir==='arr'?'Arrivals':'Departures';
+  document.getElementById('apDir').textContent=dir==='arr'?T('arr'):T('dep');
   FLIGHTS=[];render();load();
 }
 // ── BAGGAGE ───────────────────────────────────────────────────────────
@@ -976,8 +1079,8 @@ async function loadBags(){
   const hint=document.getElementById('bagHint');
   try{
     ARRIVALS=await fetchDir('arr');
-    hint.textContent=ARRIVALS.length?('Live arrivals · '+ARRIVALS.length+' flights'):'No live arrivals right now';
-  }catch(e){ hint.textContent='Baggage info offline'; }
+    hint.textContent=ARRIVALS.length?(T('liveArr')+' · '+ARRIVALS.length+' '+T('flightsN')):T('noArr');
+  }catch(e){ hint.textContent=T('bagOffline'); }
   renderBags();
 }
 function renderBags(){
@@ -987,12 +1090,12 @@ function renderBags(){
   if(q)list=list.filter(f=>{const city=(cityOf(f)||'').toLowerCase();
     return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
   if(!list.length){wrap.innerHTML='<div class="empty">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')
-    +'<div>'+(q?'No arrivals match “'+esc(q)+'”':'No arrivals right now')+'</div></div>';return;}
+    +'<div>'+(q?T('noArrMatch')+' “'+esc(q)+'”':T('noArr'))+'</div></div>';return;}
   wrap.innerHTML=list.map(f=>{
     const s=statusOf(f),city=cityOf(f),al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
-    const beltBig=f.belt?'<div class="belt-no">'+esc(f.belt)+'</div><div class="belt-lbl">Belt</div>'
-                        :'<div class="belt-tbd">TBD</div><div class="belt-lbl">Belt</div>';
+    const beltBig=f.belt?'<div class="belt-no">'+esc(f.belt)+'</div><div class="belt-lbl">'+T('belt')+'</div>'
+                        :'<div class="belt-tbd">'+T('tbd')+'</div><div class="belt-lbl">'+T('belt')+'</div>';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'">'+cardMark(f.airline,!BUB_LIGHT[f.airline])
       +'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div><span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
       +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+' · arr '+esc(sched)+'</div></div>'
@@ -1064,27 +1167,27 @@ function openFlight(i){
   const s=statusOf(f), city=cityOf(f), al=AIRLINE[f.airline]||f.airline;
   const sched=(f.schedTime||'').slice(0,5), est=(f.estTime||'').slice(0,5);
   const isArr=f.dir==='arr';
-  const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?('Operated by '+f.operatedBy):'';
+  const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?(T('operatedBy')+' '+f.operatedBy):'';
   function cell(k,v,sub){return '<div class="dt-cell"><div class="k">'+k+'</div><div class="v">'+esc(v)+'</div>'+(sub?'<div class="sub">'+esc(sub)+'</div>':'')+'</div>';}
   let cells='';
-  cells+=cell(isArr?'Arrives':'Departs',sched||'—');
-  if(est&&est!==sched) cells+=cell('Estimated',est);
-  if(f.otherTime) cells+=cell(isArr?'Departs origin':'Arrives',(f.otherTime||'').slice(0,5));
-  var _dur=fmtDur(f.durMin); if(_dur) cells+=cell('Flight time',_dur);
-  if(isArr) cells+=cell('Baggage belt',f.belt||'TBD');
-  else cells+=cell('Gate',f.gate||'—');
-  if(f.terminal) cells+=cell('Terminal',f.terminal);
-  if(f.via&&f.via.length) cells+=cell('Via',f.via.map(c=>CITY[c]||c).join(', '));
+  cells+=cell(isArr?T('arrives'):T('departs'),sched||'—');
+  if(est&&est!==sched) cells+=cell(T('estimated'),est);
+  if(f.otherTime) cells+=cell(isArr?T('depOrigin'):T('arrives'),(f.otherTime||'').slice(0,5));
+  var _dur=fmtDur(f.durMin); if(_dur) cells+=cell(T('flightTime'),_dur);
+  if(isArr) cells+=cell(T('bagBelt'),f.belt||T('tbd'));
+  else cells+=cell(T('gate'),f.gate||'—');
+  if(f.terminal) cells+=cell(T('terminal'),f.terminal);
+  if(f.via&&f.via.length) cells+=cell(T('via'),f.via.map(c=>CITY[c]||c).join(', '));
   const plane='<div class="dt-cell wide"><div class="planeic">'+svg(PLANE_SVG)+'</div>'
-    +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
-    +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
+    +'<div><div class="k">'+T('aircraft')+'</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
+    +(f.reg?'<div class="sub">'+T('reg')+' '+esc(f.reg)+'</div>':'')+'</div></div>';
   // Route endpoints: for an arrival, origin city → here; for a departure, here → destination.
   const epHere='<div class="ep"><div class="city">'+esc(AP_NAME[CURAP]||CURAP)+'</div><div class="code">'+esc(CURAP)+'</div></div>';
   const epOther='<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero">'+heroWordmark(f.airline)
     +'<div class="flt">'+esc(f.flight)+'</div>'
-    +(opLine?'<div class="al-op">Operated by '+(opLogoHtml(f.operatedBy)||esc(f.operatedBy))+'</div>':'')
+    +(opLine?'<div class="al-op">'+T('operatedBy')+' '+(opLogoHtml(f.operatedBy)||esc(f.operatedBy))+'</div>':'')
     +liveryImg(f.airline,f.aircraft,f.operatedBy)+'</div>'
     +'<div class="dt-route">'+(isArr?epOther:epHere)
     +'<div class="line"><span class="pl">'+svg(PLANE_SVG)+'</span></div>'
@@ -1135,6 +1238,7 @@ function cycleTheme(){
   applyTheme(t);
 }
 applyTheme((function(){try{return localStorage.getItem('app_theme')||'auto';}catch(e){return 'auto';}})());
+applyLang();   // v23234 — localize static chrome before first paint
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
   const t=localStorage.getItem('app_theme')||'auto'; if(t==='auto')applyTheme('auto');
 });}catch(e){}
