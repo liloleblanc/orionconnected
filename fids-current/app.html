@@ -524,7 +524,7 @@ function cityOf(f){return CITY[f.cityIata]||(f.cityName?_tcCity(f.cityName):'')|
 if(window.FIDS_SHARED_CITY){for(var _sk in FIDS_SHARED_CITY){if(!CITY[_sk])CITY[_sk]=_tcCity(FIDS_SHARED_CITY[_sk]);}}
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
   B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet',
-  JV:'Bearskin',WT:'Wasaya',NSA:'North Star Air'};
+  JV:'Bearskin',WT:'Wasaya',NSA:'North Star Air',UX:'Air Europa'};
 // v23230 — the board's full carrier catalogue backfills the rest (see the
 // CITY merge above): every code the big board can name, the app names too.
 if(window.FIDS_SHARED_AIRLINE){for(var _sa in FIDS_SHARED_AIRLINE){if(!AIRLINE[_sa])AIRLINE[_sa]=FIDS_SHARED_AIRLINE[_sa];}}
@@ -539,7 +539,7 @@ const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':
   // v23233 — ICAO-style codes the MIA WebFIDS feed sends raw (B38M on Nick's
   // AC1649 screenshot), plus its house 737-800 shorthand.
   'B38M':'Boeing 737 MAX 8','B39M':'Boeing 737 MAX 9','B37M':'Boeing 737 MAX 7',
-  'B737':'Boeing 737-700','B738':'Boeing 737-800','B739':'Boeing 737-900','7378W':'Boeing 737-800',
+  'B737':'Boeing 737-700','B738':'Boeing 737-800','B739':'Boeing 737-900','7378W':'Boeing 737-800','B7878':'Boeing 787-8','B7879':'Boeing 787-9','B777':'Boeing 777','B767':'Boeing 767','B757':'Boeing 757','B747':'Boeing 747',
   'A19N':'Airbus A319neo','A20N':'Airbus A320neo','A21N':'Airbus A321neo',
   'A319':'Airbus A319','A320':'Airbus A320','A321':'Airbus A321',
   'A332':'Airbus A330-200','A333':'Airbus A330-300','A339':'Airbus A330-900neo',
@@ -906,7 +906,15 @@ function adbToCard(f,dir){
   const other=dir==='arr'?dep:arr;       // the origin (arr) / destination (dep)
   const num=(f.number||'').replace(/\s+/g,'').toUpperCase();
   if(!num)return null;
-  const opCode=(((f.airline&&f.airline.iata)||num.replace(/[0-9].*/,''))||'').toUpperCase();
+  let opCode=(((f.airline&&f.airline.iata)||'')).toUpperCase();
+  // v23235 — MIA's WebFIDS splits "F9 1204" as carrier "F" + number "91204",
+  // so a bare letter (or nothing) lands here and Frontier branded as "F"
+  // (Nick's screenshot). Re-derive from the flight number, preferring the
+  // two-char prefix whenever it names a carrier we know (F9, 9E, B6…).
+  if(opCode.length<2){
+    const _p2=(num.match(/^([A-Z0-9]{2})[0-9]/)||[])[1];
+    opCode=(_p2&&(AIRLINE[_p2]||BRAND[_p2]||REGIONAL_FAM[_p2]||wmUrls(_p2)))?_p2:(num.replace(/[0-9].*/,'')||opCode);
+  }
   // v23232 — single-mainline feeders brand as their mainline (board rule);
   // the operating carrier's name moves to the "Operated by" line instead.
   const code=REGIONAL_FAM[opCode]||opCode;
