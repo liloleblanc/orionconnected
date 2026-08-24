@@ -17,6 +17,7 @@
     --green:#16a34a; --amber:#d97706; --red:#dc2626;
     --nav-h:62px; --radius:18px;
     --shadow:0 1px 2px rgba(16,21,29,.04), 0 6px 20px rgba(16,21,29,.06);
+    --topbar:rgba(255,255,255,.86);
   }
   /* ── Dark palette (forced, or auto via system) ─────────────── */
   :root[data-theme="dark"]{
@@ -26,6 +27,7 @@
     --accent:#5b8dff; --accent-ink:#bcd0ff; --accent-soft:rgba(91,141,255,.16);
     --green:#37c98b; --amber:#e0a23c; --red:#e8584f;
     --shadow:0 8px 30px rgba(0,0,0,.45);
+    --topbar:rgba(10,13,19,.82);
   }
   @media (prefers-color-scheme: dark){
     :root[data-theme="auto"]{
@@ -35,6 +37,7 @@
       --accent:#5b8dff; --accent-ink:#bcd0ff; --accent-soft:rgba(91,141,255,.16);
       --green:#37c98b; --amber:#e0a23c; --red:#e8584f;
       --shadow:0 8px 30px rgba(0,0,0,.45);
+      --topbar:rgba(10,13,19,.82);
     }
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -57,7 +60,7 @@
     position:sticky;top:0;z-index:20;
     display:flex;align-items:center;justify-content:space-between;gap:12px;
     padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
-    background:rgba(255,255,255,.86); backdrop-filter:blur(14px);
+    background:var(--topbar); backdrop-filter:blur(14px);
     border-bottom:1px solid var(--line);
   }
   .brand{display:flex;align-items:center;gap:12px;min-width:0;position:relative;}
@@ -171,7 +174,23 @@
   .fcard.dark .chip.gate .ic{color:#fff;}
   .fcard.dark .st.ontime{color:#4ade80;} .fcard.dark .st.delayed,.fcard.dark .st.early{color:#fde047;}
   .fcard.dark .st.cancelled{color:#fca5a5;} .fcard.dark .st.boarding{color:#fff;}
-  .fcard.light .chip{background:var(--soft);}
+  /* v23232 — a light bubble (AA/DL white spheres) carries its OWN dark ink,
+     never the page theme's: in dark mode --txt is near-white, which painted
+     Tampa/20:53 white-on-white (Nick's MIA screenshot — "Colors"). Every text
+     token on a light card is pinned explicitly, mirroring how .fcard.dark pins
+     white, so the phone theme can never leak onto a card. */
+  .fcard.light .city,.fcard.light .time .hh{color:#0d1220;}
+  .fcard.light .sub{color:rgba(13,18,32,.6);} .fcard.light .sub b{color:#0d1220;}
+  .fcard.light .time .lbl{color:rgba(13,18,32,.48);}
+  .fcard.light .time .arr{color:rgba(13,18,32,.6);}
+  .fcard.light .chip{background:#eef1f6;border-color:#dde3ea;color:#4a5364;}
+  .fcard.light .chip .ic{color:#4a5364;} .fcard.light .chip .k{color:#69727f;}
+  .fcard.light .chip.gate{background:#e8edf5;border-color:#d5dce8;color:#10151d;}
+  .fcard.light .chip.gate .ic{color:#10151d;}
+  .fcard.light .st.ontime{color:#15803d;} .fcard.light .st.delayed,.fcard.light .st.early{color:#b45309;}
+  .fcard.light .st.cancelled{color:#b91c1c;} .fcard.light .st.boarding{color:#1559c0;}
+  .fcard.light .bubwm-txt{color:#0d1220;}
+  .fcard.light .belt-no{color:#0d1220;} .fcard.light .belt-tbd,.fcard.light .belt-lbl{color:rgba(13,18,32,.5);}
   .empty{padding:64px 24px;text-align:center;color:var(--muted);}
   /* ── Departures / Arrivals segmented toggle ───────── */
   .seg-wrap{padding:14px 18px 2px;}
@@ -372,6 +391,8 @@
   <button class="cta" onclick="closeFullAd()">Explore offers</button>
 </div>
 
+<script src="js/shared-names.js?v=23231"></script>
+<script src="js/feed-router.js?v=23231"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -469,6 +490,9 @@ const AIRPORTS={
 };
 const REGION_LABEL={CA:'Canada',US:'United States',INT:'Sun & International'};
 const AP_NAME={}; for(var _ak in AIRPORTS) AP_NAME[_ak]=AIRPORTS[_ak].n;
+// v23230 — the shared feed router (js/feed-router.js) reads the boards'
+// global `AP` map for airport timezones; publish ours in that shape.
+window.AP={}; for(var _tk in AIRPORTS) window.AP[_tk]={tz:AIRPORTS[_tk].tz};
 const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHU:'Montréal (St-Hubert)',YHZ:'Halifax',YYT:"St. John's",
   YDF:'Deer Lake',YOW:'Ottawa',YQB:'Québec City',YWK:'Wabush',YYY:'Mont-Joli',YBG:'Bagotville',YFC:'Fredericton',
   YSJ:'Saint John',YQY:'Sydney',YZX:'Greenwood',YGP:'Gaspé',YGR:'Îles-de-la-Madeleine',YQM:'Moncton',
@@ -481,9 +505,27 @@ const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto',YTZ:'Toronto',YUL:'Mo
 // Fill any gaps from the airport catalogue so no destination ever shows as a
 // bare IATA code when we already know its name.
 for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=AIRPORTS[_ck].n; }
+// v23230 — THE APP SPEAKS THE BOARD'S LANGUAGE (Nick: 'The mobile version …
+// not following the same rules for some reason as main'). The board's full
+// CITY (2,400+ airports) and AIRLINE_NAME (190 carriers) maps arrive via
+// js/shared-names.js, generated from fids-core; the app's curated entries
+// win where both define a name, the shared maps fill the rest of the world —
+// GYE renders Guayaquil, LIM Lima, VS Virgin Atlantic, H2 Sky Airline.
+// The board stores city names UPPERCASE and title-cases at render; the app
+// renders map values directly, so the merge title-cases here ("NEW ORLEANS"
+// → "New Orleans", "ST. JOHN'S" → "St. John's" — the apostrophe never
+// triggers a capital).
+function _tcCity(s){return String(s).toLowerCase().replace(/(^|[\s\-\/(\.])[a-zà-ÿ]/g,function(m){return m.toUpperCase();});}
+// Display name for a flight's other end: CITY map first, then the feed's own
+// airport name (v23232), then the bare code.
+function cityOf(f){return CITY[f.cityIata]||(f.cityName?_tcCity(f.cityName):'')||f.cityIata||'—';}
+if(window.FIDS_SHARED_CITY){for(var _sk in FIDS_SHARED_CITY){if(!CITY[_sk])CITY[_sk]=_tcCity(FIDS_SHARED_CITY[_sk]);}}
 const AIRLINE={AC:'Air Canada',PD:'Porter',WS:'WestJet',TS:'Air Transat',PB:'PAL Airlines',F8:'Flair',
   B6:'jetBlue',DL:'Delta',AA:'American',UA:'United',WN:'Southwest',F9:'Frontier',MX:'Breeze',W8:'Cargojet',
   JV:'Bearskin',WT:'Wasaya',NSA:'North Star Air'};
+// v23230 — the board's full carrier catalogue backfills the rest (see the
+// CITY merge above): every code the big board can name, the app names too.
+if(window.FIDS_SHARED_AIRLINE){for(var _sa in FIDS_SHARED_AIRLINE){if(!AIRLINE[_sa])AIRLINE[_sa]=FIDS_SHARED_AIRLINE[_sa];}}
 
 const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':'Airbus A320neo','32Q':'Airbus A321neo','32B':'Airbus A321neo',
   '223':'Airbus A220-300','221':'Airbus A220-100','7M8':'Boeing 737 MAX 8','7M9':'Boeing 737 MAX 9','73H':'Boeing 737-800','738':'Boeing 737-800',
@@ -520,7 +562,7 @@ function acName(code){
   if(/737[\s-]*MAX[\s-]*7|^(BOEING\s*)?737-?7$/i.test(bt))return 'Boeing 737 MAX 7';
   return t;
 }
-let AP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
+let CURAP='YQM',FLIGHTS=[],RENDERED=[],curView='flights';
 // Shown only when live data is unavailable (e.g. OAG trial over quota), so the
 // app still demonstrates fully instead of going blank. Clearly labelled.
 const SAMPLE=[
@@ -546,12 +588,26 @@ const WORDMARK={
 // Returns [lightThemeUrl (dark ink), darkThemeUrl (white ink)], or null if none.
 function wmUrls(code){
   if(code==='F8') return ['/logos/airlines/canadian/flair.svg','/logos/airlines/canadian/flair.svg']; // no light/dark pair
-  const b=WORDMARK[code]; if(!b) return null;
-  return ['/logos/airlines/'+b+'-wordmark-dark.svg','/logos/airlines/'+b+'-wordmark-light.svg'];
+  const b=WORDMARK[code];
+  if(b) return ['/logos/airlines/'+b+'-wordmark-dark.svg','/logos/airlines/'+b+'-wordmark-light.svg'];
+  // v23230 — the boards' full wordmark catalogue backs the app's curated
+  // set (Nick: 'The airlines are not showing proper logos'): 47 carriers,
+  // resolved from fids-core's own maps against the real art on disk —
+  // Virgin Atlantic, KLM, Icelandair, Air Inuit all render their marks.
+  const sw=window.FIDS_SHARED_WORDMARK&&FIDS_SHARED_WORDMARK[code];
+  return sw?[sw[0],sw[1]]:null;
 }
 // Airline brand accent colours (same values the main system uses).
 const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL:'#E31837',
   UA:'#0033A0',WN:'#304CB2',B6:'#00205B',F8:'#2BA84A',F9:'#026845',PB:'#FCA404'};
+// v23232 — regionals that fly under exactly one mainline brand present AS that
+// brand, the big board's own rule (its name map: Jazz/Rouge → AIR CANADA,
+// Envoy/PSA/Piedmont → AMERICAN, Endeavor → DELTA). Nick's MIA screenshot had
+// MQ3435 on a generic dark card saying "AMERICAN" beside white American cards.
+// Multi-mainline operators (SkyWest OO, Mesa YV, GoJet G7, Republic YX) keep
+// their own identity — the board keeps them too.
+const REGIONAL_FAM={QK:'AC',RV:'AC',ZX:'AC','9M':'AC','9L':'AC',SP:'PB',MQ:'AA',OH:'AA',PT:'AA','9E':'DL'};
+const REGIONAL_OP={QK:'Jazz',RV:'Air Canada Rouge',ZX:'Air Georgian','9M':'Central Mountain Air','9L':'Provincial',SP:'PAL Airlines',MQ:'Envoy Air',OH:'PSA Airlines',PT:'Piedmont Airlines','9E':'Endeavor Air'};
 // Wordmark ink for LIGHT theme — each airline's brand colour. Air Canada's
 // wordmark is black by design, so it stays black. (Dark theme uses the white
 // wordmark file instead.)
@@ -679,14 +735,14 @@ function render(){
   const q=(document.getElementById('q').value||'').trim().toLowerCase();
   const cards=document.getElementById('cards');
   let list=FLIGHTS;
-  if(q)list=list.filter(f=>{const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
+  if(q)list=list.filter(f=>{const city=(cityOf(f)||'').toLowerCase();
     return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
   const isArr=DIR==='arr', tLbl=isArr?'Arrives':'Departs';
   if(!list.length){cards.innerHTML='<div class="empty">'+svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>')
     +'<div>'+(q?'No flights match “'+esc(q)+'”':('No '+(isArr?'arrivals':'departures')+' right now'))+'</div></div>';RENDERED=[];return;}
   RENDERED=list;
   cards.innerHTML=list.map((f,i)=>{
-    const s=statusOf(f),city=CITY[f.cityIata]||f.cityIata||'—',al=AIRLINE[f.airline]||f.airline;
+    const s=statusOf(f),city=cityOf(f),al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
     const via=(f.via&&f.via.length)?' · via '+esc(f.via.map(c=>CITY[c]||c).join(', ')):'';
     const belt=(isArr&&f.belt)?'<span class="chip gate">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')+'<span class="k">Belt</span> '+esc(f.belt)+'</span>':'';
@@ -710,7 +766,10 @@ function render(){
 // the board) so the full day of every airline shows, not just the next few
 // near-term flights (which at a small airport are often all one carrier).
 // SAMPLE is only a last-resort fallback when the live feed is unreachable.
-const ADB_BASE='https://fids-proxy.n-leblanc1984.workers.dev';
+// v23230 — ADB_BASE now comes from js/feed-router.js (the boards' value);
+// the webhook-overlay fetch below rewrites it to the proxy the same way
+// the router's own callers do.
+const APP_PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const TZ={}; for(var _tk in AIRPORTS) TZ[_tk]=AIRPORTS[_tk].tz;
 // Airports with a real-time AeroDataBox webhook feed (push, fresher than the
 // scrape). Their cached records overlay the scrape so status/gate is live —
@@ -743,12 +802,19 @@ function inferOperator(code,num){
   return '';
 }
 function adbToCard(f,dir){
+  // v23230 — the boards drop codeshare duplicates and keep the operating
+  // flight (fids-core's rule, verbatim); the router feed includes them now,
+  // so the app applies the same filter or every AA flight shows three times.
+  if(String((f&&f.codeshareStatus)||'').toLowerCase()==='iscodeshared')return null;
   const dep=f.departure||{}, arr=f.arrival||{};
   const here=dir==='arr'?arr:dep;        // movement at THIS airport
   const other=dir==='arr'?dep:arr;       // the origin (arr) / destination (dep)
   const num=(f.number||'').replace(/\s+/g,'').toUpperCase();
   if(!num)return null;
-  const code=(((f.airline&&f.airline.iata)||num.replace(/[0-9].*/,''))||'').toUpperCase();
+  const opCode=(((f.airline&&f.airline.iata)||num.replace(/[0-9].*/,''))||'').toUpperCase();
+  // v23232 — single-mainline feeders brand as their mainline (board rule);
+  // the operating carrier's name moves to the "Operated by" line instead.
+  const code=REGIONAL_FAM[opCode]||opCode;
   const raw=String(f.status||'').toLowerCase();
   const sc=(here.scheduledTime&&(here.scheduledTime.utc||here.scheduledTime.local))||'';
   const rv=(here.revisedTime&&(here.revisedTime.utc||here.revisedTime.local))||'';
@@ -777,9 +843,12 @@ function adbToCard(f,dir){
   // show Departed, don't keep saying Boarding (e.g. AC7995 after pushback).
   if(dir==='dep' && (state==='boarding'||state==='gateclosed'||state==='final'||state==='scheduled')){
     var _effD=(rv?new Date(rv.replace(' ','T')).getTime():0)||new Date(String(sc).replace(' ','T')).getTime();
-    if(_effD && (Date.now()-_effD)>10*60000) state='outgate';
+    // v23230 — the boards flip to closed/departed at (revised) departure
+    // +2 min (v23228); the app follows the same clock rule, not its own.
+    if(_effD && (Date.now()-_effD)>2*60000) state='outgate';
   }
   let op=(here.airline&&here.airline.iata&&here.airline.iata.toUpperCase()!==code)?(here.airline.name||''):'';
+  if(!op&&opCode!==code) op=REGIONAL_OP[opCode]||'';
   if(!op) op=inferOperator(code,num);
   // Other-end time (destination arrival for a departure, origin departure for an
   // arrival) + total flight time from the two legs' UTC stamps.
@@ -790,6 +859,9 @@ function adbToCard(f,dir){
   return{
     airline:code, flight:num, dir:dir,
     cityIata:(((other.airport&&(other.airport.iata||(other.airport.icao||'').slice(1)))||'')).toUpperCase(),
+    // v23232 — the feed's own airport name backs the CITY map, so a code the
+    // map lacks shows its real place name instead of a bare code or "—".
+    cityName:(other.airport&&(other.airport.municipalityName||other.airport.shortName||other.airport.name))||'',
     schedTime:adbHHMM(here.scheduledTime&&here.scheduledTime.local),
     estTime:adbHHMM(here.revisedTime&&here.revisedTime.local)||adbHHMM(here.scheduledTime&&here.scheduledTime.local),
     otherTime:otherTime, durMin:durMin,
@@ -810,32 +882,27 @@ function _rawKey(f){
 // Fetch one direction across two back-to-back 12h windows. For airports with a
 // webhook (YQM/CYQM), overlay the fresher real-time records on the scrape.
 async function fetchDir(dir){
-  const tz=TZ[AP]||'America/Toronto', now=new Date(), apiDir=dir==='arr'?'Arrival':'Departure';
-  const wins=[[-3,9],[9,21]].map(([a,b])=>[adbFmt(new Date(now.getTime()+a*3600000),tz),adbFmt(new Date(now.getTime()+b*3600000),tz)]);
-  let raw=[], ok=0, errs=0;
-  for(let i=0;i<wins.length;i++){
-    const [from,to]=wins[i];
-    if(i)await new Promise(r=>setTimeout(r,700));   // small gap — stay under ADB rate limit
-    const path='/flights/airports/iata/'+encodeURIComponent(AP)+'/'+from+'/'+to
-      +'?withLeg=true&direction='+apiDir+'&withCancelled=true&withCodeshared=false'
-      +'&withCargo=false&withPrivate=false&withLocation=true';
-    try{
-      const r=await fetch(ADB_BASE+path,{cache:'no-store'});
-      if(!r.ok)throw new Error('ADB '+r.status);
-      const d=await r.json();
-      raw=raw.concat((dir==='arr'?(d&&d.arrivals):(d&&d.departures))||[]);   // keep RAW rows
-      ok++;
-    }catch(e){ errs++; }
-  }
-  if(!ok&&errs)throw new Error('ADB all windows failed');   // only fall back when nothing loaded
+  // v23230 — THE SAME DATA LAYER AS THE BOARDS (Nick: 'the gates are no
+  // wired so the connection is not made you didn't fix you you built over
+  // it'). The app used to run its own raw AeroDataBox windows and never
+  // saw the per-airport authority feeds the boards use — which is exactly
+  // where the gates live (YQM's cyqm feed carries TerminalGate; MCO's
+  // GOAA feed carries gate/terminal/belt; YUL, TPA, YYZ, YTZ, YHU and the
+  // PANYNJ airports likewise). fetchDir now calls the boards' own
+  // adbFetch() from js/feed-router.js — native feed first, ADB windows as
+  // the fallback, identical rows, identical gates.
+  const apiDir=dir==='arr'?'Arrival':'Departure';
+  const res=await adbFetch(CURAP,apiDir);
+  let raw=(dir==='arr'?(res&&res.arrivals):(res&&res.departures))||[];
+  if(!raw.length&&!res)throw new Error('feed router returned nothing');
   // De-dupe raw rows before overlay.
   const seenR=new Set();
   raw=raw.filter(f=>{const k=_rawKey(f);if(seenR.has(k))return false;seenR.add(k);return true;});
   // ── WEBHOOK OVERLAY (real-time, more direct) for YQM ──
-  const icao=CACHED_ICAO[AP];
+  const icao=CACHED_ICAO[CURAP];
   if(icao && raw.length){
     try{
-      const cr=await fetch(ADB_BASE+'/flights/cached/'+icao+'?direction='+(dir==='arr'?'arr':'dep'),{cache:'no-store'});
+      const cr=await fetch(APP_PROXY+'/flights/cached/'+icao+'?direction='+(dir==='arr'?'arr':'dep'),{cache:'no-store'});
       if(cr.ok){
         const cj=await cr.json();
         if(cj && Array.isArray(cj.flights) && cj.flights.length){
@@ -864,6 +931,7 @@ async function fetchDir(dir){
 }
 async function load(){
   if(document.hidden)return;
+  window._appLastLoadAt=Date.now();   // v23230 — staleness stamp for the resume watchdog
   const hint=document.getElementById('hint'), isArr=DIR==='arr', word=isArr?'arrivals':'departures';
   try{
     const mapped=await fetchDir(DIR);
@@ -916,12 +984,12 @@ function renderBags(){
   const q=(document.getElementById('bagQ').value||'').trim().toLowerCase();
   const wrap=document.getElementById('bagCards');
   let list=ARRIVALS.slice();
-  if(q)list=list.filter(f=>{const city=(CITY[f.cityIata]||f.cityIata||'').toLowerCase();
+  if(q)list=list.filter(f=>{const city=(cityOf(f)||'').toLowerCase();
     return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
   if(!list.length){wrap.innerHTML='<div class="empty">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')
     +'<div>'+(q?'No arrivals match “'+esc(q)+'”':'No arrivals right now')+'</div></div>';return;}
   wrap.innerHTML=list.map(f=>{
-    const s=statusOf(f),city=CITY[f.cityIata]||f.cityIata||'—',al=AIRLINE[f.airline]||f.airline;
+    const s=statusOf(f),city=cityOf(f),al=AIRLINE[f.airline]||f.airline;
     const sched=(f.schedTime||'').slice(0,5);
     const beltBig=f.belt?'<div class="belt-no">'+esc(f.belt)+'</div><div class="belt-lbl">Belt</div>'
                         :'<div class="belt-tbd">TBD</div><div class="belt-lbl">Belt</div>';
@@ -942,7 +1010,7 @@ async function loadBrand(code){
   }catch(e){document.getElementById('apLogo').textContent=code;}
 }
 function setAirport(code,_boot){
-  AP=code;
+  CURAP=code;
   // Same-system state: share the tab key the boards use (fids_airport) plus a
   // durable app key, and keep ?ap= in the URL so the address bar is always a
   // shareable link to exactly this view — any device opening it lands here.
@@ -993,7 +1061,7 @@ function opLogoHtml(name){
 }
 function openFlight(i){
   const f=RENDERED[i]; if(!f)return;
-  const s=statusOf(f), city=CITY[f.cityIata]||f.cityIata||'—', al=AIRLINE[f.airline]||f.airline;
+  const s=statusOf(f), city=cityOf(f), al=AIRLINE[f.airline]||f.airline;
   const sched=(f.schedTime||'').slice(0,5), est=(f.estTime||'').slice(0,5);
   const isArr=f.dir==='arr';
   const opLine=(f.operatedBy&&f.operatedBy.toUpperCase()!==al.toUpperCase())?('Operated by '+f.operatedBy):'';
@@ -1011,7 +1079,7 @@ function openFlight(i){
     +'<div><div class="k">Aircraft</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
     +(f.reg?'<div class="sub">Reg '+esc(f.reg)+'</div>':'')+'</div></div>';
   // Route endpoints: for an arrival, origin city → here; for a departure, here → destination.
-  const epHere='<div class="ep"><div class="city">'+esc(AP_NAME[AP]||AP)+'</div><div class="code">'+esc(AP)+'</div></div>';
+  const epHere='<div class="ep"><div class="city">'+esc(AP_NAME[CURAP]||CURAP)+'</div><div class="code">'+esc(CURAP)+'</div></div>';
   const epOther='<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div>';
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero">'+heroWordmark(f.airline)
@@ -1112,6 +1180,26 @@ let BOOT_GATE='';
 })();
 // Refresh whichever view is showing (every 3 min).
 setInterval(()=>{ if(curView==='bag')loadBags(); else load(); },180000);
+// v23230 — iOS RESUME WATCHDOG, same rule the boards carry (Nick's 20:05
+// screenshot: cards frozen at 18:20 — iOS suspends a background tab's
+// timers, and a frozen WebKit context never fires them again). A heartbeat
+// proves the JS context is alive; on pageshow/visibilitychange, data older
+// than 3 minutes reloads immediately, and a heartbeat gap that says the
+// context slept through its timers hard-reloads the page (60s loop guard).
+window._appHeartbeat=Date.now();
+setInterval(()=>{window._appHeartbeat=Date.now();},30000);
+function _appMaybeCatchUp(){
+  try{
+    var now=Date.now(), gap=now-(window._appHeartbeat||now), stale=now-(window._appLastLoadAt||0);
+    if(gap>3*60000){
+      var last=+(sessionStorage.getItem('_appResumeReloadAt')||0);
+      if(now-last>60000){ sessionStorage.setItem('_appResumeReloadAt',String(now)); location.reload(); return; }
+    }
+    if(stale>3*60000){ if(curView==='bag')loadBags(); else load(); }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden)_appMaybeCatchUp(); });
+window.addEventListener('pageshow',(e)=>{ if(e&&e.persisted)_appMaybeCatchUp(); });
 rotateBanner();
 setInterval(rotateBanner,10000);  // banner cycles offers
 setTimeout(()=>{if(curView==='flights'&&!document.hidden)showFullAd();},9000);   // first ad appears early
