@@ -4759,20 +4759,22 @@ function makeSofitelLockupInlineSvg(propertyName) {
     .trim();
   if (!clean) clean = String(propertyName).trim();
   var name = String(clean.toUpperCase()).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  // Proportions measured from Nick's official Sofitel LA lockup (relative to the
-  // SOFITEL wordmark: ~14.6u tall, spanning 0–190):
-  //   • name  = FULL wordmark width, ~34% of the wordmark height, ~0.42 gap below it
-  //   • emblem = ~21% of wordmark width, ~0.94 gap below the name, centred
-  // font-size targets ~5u cap-height, easing down only for very long names so the
-  // glyph run still fits inside the 188u width before textLength spaces it out.
+  // v23246 — NO EMBLEM, WORDMARK OVER NAME ONLY (Nick's MIA D20 shot: 'The
+  // Sofitel logo is way too big can we get rid of the icon from the logo and
+  // simply have Sofitel New York but proportional?', with the official
+  // Sofitel New York lockup as the reference). Geometry measured off that
+  // reference, in units of the SOFITEL wordmark (~14.6u tall, spanning
+  // 0–190): the name sits a 0.69-wordmark-height gap below it, caps at
+  // ~0.61 of the wordmark height, tracked out to ~49% of the wordmark width
+  // and centred. Long property names ease the size down and take the width
+  // they need (up to ~170u) instead of cramming.
   var len = Math.max(1, clean.length);
-  var fsz = Math.min(6.9, 280 / len);
-  // Full brand lockup: SOFITEL wordmark (paths) / property name (FF Good Pro
-  // Extended, stretched to the wordmark width) / the Sofitel emblem below.
-  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 66" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
+  var _est = len * 0.62;                        // ≈ natural caps width in em
+  var fsz = Math.min(12.5, 170 / _est);         // reference size, eased for long names
+  var _tl = Math.max(93, Math.min(170, Math.round(_est * fsz)));
+  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 41" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
     + '<g fill="#FFFFFF">' + _SOFITEL_WORDMARK_G + '</g>'
-    + '<text x="95" y="25.8" text-anchor="middle" textLength="188" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
-    + '<image href="/logos/hotels/sofitel/sofitel-emblem-white.svg" xlink:href="/logos/hotels/sofitel/sofitel-emblem-white.svg" x="74.5" y="39.6" width="41" height="21" preserveAspectRatio="xMidYMid meet"/>'
+    + '<text x="95" y="33.6" text-anchor="middle" textLength="' + _tl + '" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
     + '</svg>';
 }
 
@@ -6944,6 +6946,14 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
   'AC': '/logos/motion/AC-rondelle-swing.mp4'
 };
 
+// v23246 — CARD ORBS THAT KEEP THEIR COLOUR ART (Nick's MIA D20 shot: 'the
+// icon for Aa at the bottom right should be color'). The merged-module orbs
+// judge white-vs-colour purely from the accent luminance, which white-washed
+// AA's red+blue flight symbol on its mid-blue orb — while the left rail
+// already renders AA in colour via its own COLOR_ON_WHITE set. One shared
+// list for the card builders (and the operator re-point pass) so both ends
+// of the screen agree.
+window._CARD_COLOR_EMBLEMS = { 'AA': true };
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
@@ -8242,7 +8252,7 @@ function _buildV2MapCol(ctx, vars) {
                   // solid colour roundel; invert(1) turned it into a blank
                   // white disc. Only vector silhouettes take the white
                   // treatment — .png art is colour art by construction.
-                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbOp || _mcCode]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — no emblem art on file → the carrier's LETTERS on
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
@@ -8556,7 +8566,7 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mdBadge + '">'
         +       (_mdOrbSrc
                   // v23222 — same bitmap-native rule as the inbound card.
-                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite && !/\.png(\?|$)/i.test(_mdOrbSrc) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite && !/\.png(\?|$)/i.test(_mdOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mdOrbOp || _mdCode]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — lettered-roundel fallback (see inbound builder).
                   : '<span class="v2-fi-orb-code">' + (_mdOrbOp || _mdCode || '') + '</span>')
         +     '</div></div>'
@@ -9184,7 +9194,9 @@ function _buildV2MapCol(ctx, vars) {
           // invert the builder baked for the original vector art (Rouge's
           // disc went blank white on the red orb otherwise).
           var _orbFixPng = /\.png(\?|$)/i.test(_orbFix);
-          if (_orbFixPng) {
+          // v23246 — colour-emblem operators (see _CARD_COLOR_EMBLEMS) drop
+          // any baked invert the same way bitmap roundels do.
+          if (_orbFixPng || (window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_opCode])) {
             _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
           }
           // v23205 — the orb GROUND follows the operator's carrier colour too
@@ -9200,6 +9212,7 @@ function _buildV2MapCol(ctx, vars) {
             if (_olum > 186) {
               _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
             } else if (_inboundCard.indexOf('filter:brightness(0) invert(1)') === -1
+                       && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_opCode])
                        && !/class="v2-fi-orb" src="[^"]*\.png[^"]*"/i.test(_inboundCard)) {
               _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src="[^"]*" alt="" style="width:100%;height:100%;object-fit:contain;)/, '$1filter:brightness(0) invert(1);');
             }
@@ -12050,6 +12063,38 @@ function gateAutofit(root) {
       // narrow cell's width does the real limiting.
       row.querySelectorAll('.v2-rc-fi-tlbl').forEach(function (lbl) {
         _boxAssign(lbl, lbl.clientWidth, Math.floor((row.clientHeight - 6) * 0.44), null, true);
+      });
+    });
+    // v23246 — THE MERGED MODULE'S LINES FILL THE CARD (Nick's MIA D20 shot:
+    // 'The text in the same panel needs to fill out to the borders'). The
+    // three stacked lines rendered at the stylesheet's fixed clamps and left
+    // half the card empty. The clamps stay as the BASE; all three then grow
+    // by ONE shared factor until the longest line spans the text column and
+    // the stack still fits the row — hierarchy preserved, nothing clipped.
+    // Reset-then-set inside one synchronous pass: repeat runs re-measure from
+    // the same base and land on the same sizes (no oscillation).
+    root.querySelectorAll('.gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-value').forEach(function (val) {
+      var lines = [].slice.call(val.querySelectorAll('.v2-fi-mline1, .v2-fi-mline2, .v2-fi-mline3'));
+      if (!lines.length) return;
+      var tc = val.closest('.v2-fi-textcol'); if (!tc) return;
+      lines.forEach(function (ln) { ln.style.removeProperty('font-size'); });
+      var availW = Math.floor(tc.clientWidth) - 2;
+      if (availW < 60) return;
+      var row2 = val.closest('.v2-fi-row');
+      var title2 = row2 ? row2.querySelector('.v2-fi-title') : null;
+      var availH = row2 ? (row2.clientHeight - (title2 ? title2.offsetHeight : 0) - 8) : 0;
+      var f = Infinity, sumH = 0;
+      lines.forEach(function (ln) {
+        var w = ln.scrollWidth; sumH += ln.offsetHeight;
+        if (w > 8) f = Math.min(f, availW / w);
+      });
+      if (!isFinite(f)) return;
+      if (availH > 20 && sumH > 0) f = Math.min(f, availH / sumH);
+      f = Math.min(f, 1.9);
+      if (f <= 1.02) return;   // already at the borders — the clamps stand
+      lines.forEach(function (ln) {
+        var base = parseFloat(getComputedStyle(ln).fontSize) || 0; if (!base) return;
+        ln.style.setProperty('font-size', (Math.floor(base * f * 10) / 10) + 'px', 'important');
       });
     });
     // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL (Nick: 'FIX THE NUMBERS
@@ -19618,7 +19663,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23245';
+var FIDS_BUILD_TAG = 'v23246';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

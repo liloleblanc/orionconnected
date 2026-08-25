@@ -14383,3 +14383,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
   border-color: var(--airline-accent, #D82F2E) !important;
 }
+
+/* ── v23246 — THE BANNER WORDMARK GETS ITS ROOM BACK (Nick's MIA D20 shot:
+   'the American logo on top is not proportional it needs fixed'). Measured
+   on the live AA gate: Oneworld.svg carries width="1200" height="800"
+   attributes, so as a flex item its base size is 1200px — clamped by
+   max-width to ~614px, four times the sphere it actually draws. The slot's
+   flex-shrink then split the deficit and crushed the AIRLINE WORDMARK to
+   186px (art letterboxed to ~27px lettering inside its 106px box), which is
+   exactly the disproportion in his photo — plus the phantom gap before the
+   sphere. The mark gets an explicit box matching its drawn aspect
+   (viewBox 260x300 at the ~104px silk height → ~90px wide) and stops
+   flexing; the wordmark takes the space its own caps were always due.
+   min-width included: the v-era anti-pop reserve pinned min-width to
+   clamp(160px, 22vw, 400px), and min-width outranks both width and
+   max-width — the reserve stays (fixed box, no decode pop), just sized to
+   the artwork instead of four times it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-oneworld {
+  width: clamp(76px, 12vh, 92px) !important;
+  min-width: clamp(76px, 12vh, 92px) !important;
+  max-width: clamp(76px, 12vh, 92px) !important;
+  flex: 0 0 auto !important;
+  object-fit: contain !important;
+}
