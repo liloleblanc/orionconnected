@@ -3703,11 +3703,75 @@ var OPERATOR_WORDMARKS = {
   'QK':  '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
   'JZA': '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
   'PB':  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
-  'PVL': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg'
+  'PVL': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
+  // v23261 — the US regionals join the wordmark rule (Nick's UA3513 shot:
+  // 'Operated By:' rendered with nothing beside it — Republic's navy
+  // lettering, and SkyWest's square colour logo, are invisible on United's
+  // navy caption strip). Base pick is the dark-ink lettering (right for the
+  // default light strip); _opbyContrastFix swaps in the white lettering
+  // wherever the strip actually measures dark.
+  'YX':  '/logos/airlines/us-regional/republic-wordmark-dark.svg',
+  'RPA': '/logos/airlines/us-regional/republic-wordmark-dark.svg',
+  'OO':  '/logos/airlines/us-regional/skywest-airlines-wordmark-dark.svg',
+  'SKW': '/logos/airlines/us-regional/skywest-airlines-wordmark-dark.svg',
+  'PT':  '/logos/airlines/us-regional/piedmont-wordmark-dark.svg',
+  'PDT': '/logos/airlines/us-regional/piedmont-wordmark-dark.svg'
 };
 function operatorWordmarkUrl(opCode) {
   if (!opCode) return null;
   return OPERATOR_WORDMARKS[String(opCode).trim().toUpperCase()] || null;
+}
+// v23261 — per-theme Operated-By art. The caption strip's background is
+// painted by per-airline CSS the string builder can't see (United's is navy,
+// most others' is the light grey bar), so the builder bakes the base mark and
+// this pass — run from gateAutofit once the DOM exists — measures the strip
+// it actually landed on and swaps to the variant that reads there. Operators
+// without a pair get a generic white-lettering filter on dark grounds
+// (vector art only; bitmaps stay native, same rule as the orbs).
+var OPBY_WORDMARKS_THEMED = {
+  'YX':  { onDark:'/logos/airlines/us-regional/republic-wordmark-light.svg',       onLight:'/logos/airlines/us-regional/republic-wordmark-dark.svg' },
+  'RPA': { onDark:'/logos/airlines/us-regional/republic-wordmark-light.svg',       onLight:'/logos/airlines/us-regional/republic-wordmark-dark.svg' },
+  'OO':  { onDark:'/logos/airlines/us-regional/skywest-airlines-wordmark-light.svg', onLight:'/logos/airlines/us-regional/skywest-airlines-wordmark-dark.svg' },
+  'SKW': { onDark:'/logos/airlines/us-regional/skywest-airlines-wordmark-light.svg', onLight:'/logos/airlines/us-regional/skywest-airlines-wordmark-dark.svg' },
+  'PT':  { onDark:'/logos/airlines/us-regional/piedmont-wordmark-light.svg',       onLight:'/logos/airlines/us-regional/piedmont-wordmark-dark.svg' },
+  'PDT': { onDark:'/logos/airlines/us-regional/piedmont-wordmark-light.svg',       onLight:'/logos/airlines/us-regional/piedmont-wordmark-dark.svg' },
+  'YV':  { onDark:'/logos/airlines/us-regional/mesa-airlines.svg',                 onLight:'/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg' },
+  'ASH': { onDark:'/logos/airlines/us-regional/mesa-airlines.svg',                 onLight:'/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg' },
+  '9E':  { onDark:'/logos/airlines/us-regional/endeavor-air-monochrome-white.svg', onLight:'/logos/airlines/us-regional/endeavor-air.svg' },
+  'EDV': { onDark:'/logos/airlines/us-regional/endeavor-air-monochrome-white.svg', onLight:'/logos/airlines/us-regional/endeavor-air.svg' },
+  'OH':  { onDark:'/logos/airlines/us-regional/psa-airlines-monochrome-white.svg', onLight:'/logos/airlines/us-regional/psa-airlines.svg' },
+  'PSA': { onDark:'/logos/airlines/us-regional/psa-airlines-monochrome-white.svg', onLight:'/logos/airlines/us-regional/psa-airlines.svg' },
+  'QX':  { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air.svg' },
+  'QXE': { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air.svg' }
+};
+function _opbyContrastFix(root) {
+  try {
+    var imgs = (root || document).querySelectorAll('img.v2-rc-opby-logo[data-op]');
+    for (var i = 0; i < imgs.length; i++) {
+      var im = imgs[i];
+      var op = String(im.getAttribute('data-op') || '').toUpperCase();
+      // Effective ground: the nearest painted ancestor (the strip itself is
+      // usually transparent so the plate behind it shows through).
+      var e = im, bg = '';
+      while (e && e.nodeType === 1) {
+        var c = getComputedStyle(e).backgroundColor;
+        if (c && c !== 'transparent' && !/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0\s*\)$/.test(c)) { bg = c; break; }
+        e = e.parentElement;
+      }
+      var m = bg.match(/(\d+)[^\d]+(\d+)[^\d]+(\d+)/);
+      var dark = m ? ((0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3]) < 140) : false;
+      var pair = OPBY_WORDMARKS_THEMED[op];
+      if (pair) {
+        var want = dark ? pair.onDark : pair.onLight;
+        if (im.getAttribute('src') !== want) im.setAttribute('src', want);
+        im.style.filter = '';
+      } else if (dark && !/\.png(\?|$)/i.test(im.src)) {
+        im.style.filter = 'brightness(0) invert(1)';
+      } else {
+        im.style.filter = '';
+      }
+    }
+  } catch (e2) {}
 }
 function operatorLogoUrlThemed(opCode, isDark) {
   if (!opCode) return null;
@@ -6974,7 +7038,7 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
 // already renders AA in colour via its own COLOR_ON_WHITE set. One shared
 // list for the card builders (and the operator re-point pass) so both ends
 // of the screen agree.
-window._CARD_COLOR_EMBLEMS = { 'AA': true };
+window._CARD_COLOR_EMBLEMS = { 'AA': true, 'UA': true };
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
@@ -8244,6 +8308,13 @@ function _buildV2MapCol(ctx, vars) {
         // marketing carrier's.
         _mcOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mcOrb] || window._AIRLINE_EMBLEM_FILES[_mcCode])) || '';
       } catch (e) {}
+      // v23261 — the colour-emblem exemption keys on whose ART actually landed
+      // in the orb, not on the resolved operator: a UA Express leg resolves
+      // _mcOrbOp to SkyWest/Republic, but neither has emblem art, so the orb
+      // still holds United's globe — and the globe must render in colour
+      // (Nick's UA3513 shot: the card orb went white-silhouette while the
+      // rail's stayed colour; 'make sure the first orb is used only').
+      var _mcOrbArt = (_mcOrbOp && window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mcOrbOp]) ? _mcOrbOp : _mcCode;
       // v23203 — 'unless the orb is white then its color': a light orb
       // ground keeps the colour logo; only a dark ground takes the white
       // silhouette. Judged from the brand accent's luminance.
@@ -8281,7 +8352,7 @@ function _buildV2MapCol(ctx, vars) {
                   // solid colour roundel; invert(1) turned it into a blank
                   // white disc. Only vector silhouettes take the white
                   // treatment — .png art is colour art by construction.
-                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbOp || _mcCode]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbArt]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — no emblem art on file → the carrier's LETTERS on
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
@@ -8579,6 +8650,8 @@ function _buildV2MapCol(ctx, vars) {
         // inbound builder).
         _mdOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mdOrb] || window._AIRLINE_EMBLEM_FILES[_mdCode])) || '';
       } catch (e) {}
+      // v23261 — art-code exemption, same as the inbound builder.
+      var _mdOrbArt = (_mdOrbOp && window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mdOrbOp]) ? _mdOrbOp : _mdCode;
       // v23203 — 'unless the orb is white then its color': a light orb
       // ground keeps the colour logo; only a dark ground takes the white
       // silhouette. Judged from the brand accent's luminance.
@@ -8602,7 +8675,7 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mdBadge + '">'
         +       (_mdOrbSrc
                   // v23222 — same bitmap-native rule as the inbound card.
-                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite && !/\.png(\?|$)/i.test(_mdOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mdOrbOp || _mdCode]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite && !/\.png(\?|$)/i.test(_mdOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mdOrbArt]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — lettered-roundel fallback (see inbound builder).
                   : '<span class="v2-fi-orb-code">' + (_mdOrbOp || _mdCode || '') + '</span>')
         +     '</div></div>'
@@ -9187,8 +9260,10 @@ function _buildV2MapCol(ctx, vars) {
         // emblem; the onerror fallback is the operator's name in bold ink.
         var _opLogo6 = ((typeof operatorWordmarkUrl === 'function') ? operatorWordmarkUrl(_opCode) : null)
           || ((typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null);
+        // v23261 — data-op lets the post-render contrast pass re-pick the
+        // themed wordmark once the strip's real background is measurable.
         _opByVal = _opLogo6
-          ? '<img class="v2-rc-opby-logo" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
+          ? '<img class="v2-rc-opby-logo" data-op="' + _opCode + '" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
             + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
           : '<b>' + _opNm6 + '</b>';
       }
@@ -9229,7 +9304,12 @@ function _buildV2MapCol(ctx, vars) {
           var _orbFixPng = /\.png(\?|$)/i.test(_orbFix);
           // v23246 — colour-emblem operators (see _CARD_COLOR_EMBLEMS) drop
           // any baked invert the same way bitmap roundels do.
-          if (_orbFixPng || (window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_opCode])) {
+          // v23261 — keyed on whose ART is in the orb: when the operator has
+          // no emblem file the marketing carrier's mark stays, and ITS
+          // colour exemption governs (a UA globe left in place by a SkyWest
+          // leg must not be re-silhouetted by the operator repaint).
+          var _orbArtCode = _orbFix ? _opCode : _mktCode6;
+          if (_orbFixPng || (window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_orbArtCode])) {
             _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
           }
           // v23205 — the orb GROUND follows the operator's carrier colour too
@@ -9251,7 +9331,7 @@ function _buildV2MapCol(ctx, vars) {
             if (_olum > 186) {
               _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
             } else if (_inboundCard.indexOf('filter:brightness(0) invert(1)') === -1
-                       && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_opCode])
+                       && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_orbArtCode])
                        && !/class="v2-fi-orb" src="[^"]*\.png[^"]*"/i.test(_inboundCard)) {
               _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src="[^"]*" alt="" style="width:100%;height:100%;object-fit:contain;)/, '$1filter:brightness(0) invert(1);');
             }
@@ -10887,6 +10967,15 @@ function uxgGateHtml(ctx) {
                           : _ALLIANCE_TO_US[airlineCode];
       if (_effectiveMkt) {
         var _resolved = _inferRegional(_effectiveMkt, _flightNum);
+        // v23261 — the tail number outranks the flight-number bands: every
+        // Republic Airways airframe registers N###YX (their initials), and
+        // the reg prints right beside the Operated-By badge, so a confirmed
+        // 'YX' tail pins Republic no matter which band the number fell in
+        // (UA3414 EWR-YUL lands in the SkyWest band, but N762YX is Republic
+        // metal — Nick's own photo shows both on one strip).
+        if (/^N\d+YX$/i.test(String(currentFlight._reg || ''))) {
+          _resolved = { iata:'YX', name:'Republic Airways' };
+        }
         if (_resolved) {
           _opCode = _resolved.iata;
           _opName = _resolved.name;
@@ -11768,6 +11857,10 @@ function gateLanguageLayout(root) {
 // Used for gate screen where city names can be long (e.g. "New York Kennedy").
 function gateAutofit(root) {
   if (!root) return;
+  // v23261 — the Operated-By mark can only be contrast-checked once it is in
+  // the DOM on its real strip; this pass rides every autofit invocation
+  // (initial paint, font settle, resize) so repaints stay corrected.
+  try { _opbyContrastFix(root); } catch (e0) {}
   // Left-rail values/titles deliberately stay out of this generic pass. This
   // function is invoked synchronously during a gate rebuild, when those new
   // shelves can still report a zero-width box; treating that as overflow
@@ -19794,7 +19887,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23260';
+var FIDS_BUILD_TAG = 'v23261';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
