@@ -14164,6 +14164,18 @@ const gView = document.getElementById('gateView');
         window._gateInbound = null;
         window._gateInboundDirect = null;
         window._gateInboundLivePos = null;
+        // v23263 — the MAP subject dies with the flight it belonged to. The
+        // pos/prog guards and the camera's subject key all survived a gate
+        // switch, so the previous gate's route could out-stare the new
+        // gate's own data (Nick's gate 46 wearing a YHZ→LGA line). Clear
+        // them and drop the map itself; the new render rebuilds it from
+        // this flight's inbound within the same tick cascade.
+        window._lastMapPosKey = null;
+        window._lastMapProgKey = null;
+        try { window._fidsGateRoute = null; } catch (eMR) {}
+        try { if (typeof _gateMapCamera !== 'undefined' && _gateMapCamera) { _gateMapCamera.reg = null; _gateMapCamera.lastProgKey = null; } } catch (eMC) {}
+        try { if (typeof gateMap !== 'undefined' && gateMap) { gateMap.remove(); } } catch (eMG) {}
+        try { gateMap = null; } catch (eMG2) {}
         // New flight → wipe the live-telemetry animator so the previous plane's
         // gliding speed/altitude don't bleed into the new one.
         window._gateTelemAnim = { spd:null, alt:null, realSpd:null, realAlt:null, realTs:0, realSecToArr:null, shimmerPh:0 };
@@ -14407,7 +14419,12 @@ const gView = document.getElementById('gateView');
             }
             if (_estProg > 0) {
               // Bucket the key so the glyph advances every ~2% of the route.
-              var progKey = 'inb-est-' + Math.round(_estProg * 50);
+              // v23263 — the key carries the LEG, not just the bucket (Nick's
+              // gate 46: a YHZ→LGA route left standing on a Houston gate).
+              // Two different flights can land on the same progress bucket,
+              // and a bare 'inb-est-40' matching across a gate switch is
+              // exactly the guard failing to notice the subject changed.
+              var progKey = 'inb-est-' + (inb._locIata || '?') + '>' + apIata + '-' + Math.round(_estProg * 50);
               if (!gateMap || window._lastMapProgKey !== progKey) {
                 window._lastMapProgKey = progKey;
                 initGateMap(inb._locIata, apIata, _estProg);
@@ -14415,7 +14432,11 @@ const gView = document.getElementById('gateView');
             } else {
               // Pins only — a plane icon needs live coords or a feed-confirmed
               // airborne estimate, never a bare clock.
-              var pinKey = (inb.status === 'arrived' || inb.status === 'landed') ? 'arr-pins' : 'inb-pins';
+              // v23263 — leg identity here too: 'arr-pins' equalling
+              // 'arr-pins' across a gate switch kept the old gate's map.
+              var pinKey = (inb.status === 'arrived' || inb.status === 'landed')
+                ? 'arr-pins-' + apIata + '>' + (dstIata || '?')
+                : 'inb-pins-' + (inb._locIata || '?') + '>' + apIata;
               if (!gateMap || window._lastMapProgKey !== pinKey) {
                 window._lastMapProgKey = pinKey;
                 if (inb.status === 'arrived' || inb.status === 'landed') {
@@ -14427,7 +14448,16 @@ const gView = document.getElementById('gateView');
             }
           }
         } else {
-          if (!gateMap && dstIata) initGateMap(apIata, dstIata, -1);
+          // v23263 — `!gateMap` alone kept whatever map was already standing:
+          // switch gates while the new gate's inbound is unresolved and the
+          // OLD gate's route stayed painted indefinitely (Nick's gate 46
+          // wearing DL5324's YHZ→LGA line). The outbound preview now claims
+          // the map through the same keyed guard as every other state.
+          var outKey = 'out-pins-' + apIata + '>' + (dstIata || '?');
+          if (dstIata && (!gateMap || window._lastMapProgKey !== outKey)) {
+            window._lastMapProgKey = outKey;
+            initGateMap(apIata, dstIata, -1);
+          }
         }
       }
       setTimeout(tryInitMap, 500);
@@ -19887,7 +19917,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23261';
+var FIDS_BUILD_TAG = 'v23263';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
