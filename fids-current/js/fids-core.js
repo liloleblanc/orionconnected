@@ -11456,7 +11456,17 @@ function uxgGateHtml(ctx) {
             })()
           : '')
       ) + '>'
-    +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
+    +   '<div class="g8-r1-logoslot">' + (function () {
+          // v23252 — ONEWORLD COMPOSES LIKE THE OFFICIAL CO-BRAND LOCKUP
+          // (Nick's reference sheet: ball | thin divider | airline mark —
+          // ball FIRST). Star Alliance / SkyTeam keep the approved
+          // wordmark-then-mark order ('the star alone … at the END by air
+          // canada').
+          if (_allianceKey === 'oneworld' && starHtml && r1LogoHtml) {
+            return starHtml + '<span class="g8-r1-alliance-div" aria-hidden="true"></span>' + r1LogoHtml;
+          }
+          return r1LogoHtml + starHtml;
+        })() + '</div>'
     +   _apBandTop
     // TIME TAB (Nick: 'the gate needs the time — another tab exactly as the
     // ones existing, time a different color'): a skewed box in the SAME
@@ -19732,7 +19742,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23251';
+var FIDS_BUILD_TAG = 'v23252';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

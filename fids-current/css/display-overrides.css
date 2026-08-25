@@ -14428,6 +14428,23 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   max-width: clamp(96px, 14vh, 108px) !important;
   flex: 0 0 auto !important;
   object-fit: contain !important;
+  /* v23252 — the ball leads the lockup now (official co-brand order), so
+     the 26px lead-in margin the trailing marks wear comes off. */
+  margin-left: 0 !important;
+}
+
+/* ── v23252 — THE ONEWORLD DIVIDER BAR (Nick's official co-brand reference:
+   ball | thin line | airline mark). Proportions from the sheet: 2px line at
+   0.74x the ball, a third-of-a-ball air on each side, all centred. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-alliance-div {
+  display: inline-block !important;
+  width: 2px !important;
+  height: clamp(60px, 10.2vh, 78px) !important;
+  background: rgba(255,255,255,0.85) !important;
+  border-radius: 1px !important;
+  margin: 0 clamp(22px, 3vh, 34px) !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
 }
 
 /* ── v23251 — THE BANNER WORDMARK GROWS INTO A WIDER SLOT (Nick, watching
