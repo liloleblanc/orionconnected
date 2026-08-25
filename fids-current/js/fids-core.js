@@ -7014,6 +7014,11 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
         'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
         // International
+        // v23250 — LATAM had no orb emblem, so its rail/card orbs drew the
+        // generic plane glyph. The spark (cut from the LAN tile art, no navy
+        // square) takes the standard treatment: white silhouette on the
+        // accent orb like every other carrier's mark.
+        'LA':  '/logos/airlines/asian-other/latam-spark.svg',
         'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
         'AF':  '/logos/airlines/european/air-france-emblem.svg?v=2',   // rebuilt Jul 2026 — official accent path, centered (old file was a clipped sliver)
         'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
@@ -18652,6 +18657,13 @@ const IATA_TO_EMBLEM = {
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
   'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
   'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe
+  // v23250 — LATAM had no emblem file, so the banner's pair path fell to the
+  // LAN square TILE: a navy rounded plate that read as an app icon beside the
+  // wordmark (Nick's MIA J5 shot: 'unacceptable it's not what I asked for').
+  // The spark is the tile's own coral+white brandmark cut free of the navy
+  // square — native colours, no plate — and latam-wordmark-light is letters
+  // only, so the pair composes the official spark+LATAM lockup.
+  'LA': '/logos/airlines/asian-other/latam-spark.svg',         // LATAM spark (coral + white)
 };
 
 
@@ -19716,7 +19728,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23249';
+var FIDS_BUILD_TAG = 'v23250';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
