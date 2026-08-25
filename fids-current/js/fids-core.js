@@ -11938,6 +11938,26 @@ function gateAutofit(root) {
         el.style.setProperty('-webkit-text-fill-color', pick, 'important');
       } catch (e) {}
     });
+    // v23242 — THE NOSE-UP TRIM IS PER AIRCRAFT (Nick: 'i think tahts too
+    // much it may be dependant per aircraft / the CRJ 900 was def having an
+    // issue'). A slender fuselage exaggerates any applied angle — the Jazz
+    // CRJ900 art is 5.9:1 while a Dash 8 is ~4:1 — so the trim magnitude is
+    // read off the art's own proportions: long thin jets take less. The sign
+    // follows the facing class so the nose is always the end that rises.
+    root.querySelectorAll('.v2-rc-shelf-illus .v2-rc-aircraft-img img').forEach(function (im) {
+      function _setPitch() {
+        try {
+          if (!im.naturalWidth || !im.naturalHeight) return;
+          var wrap = im.closest('.v2-rc-aircraft-img'); if (!wrap) return;
+          var shelf = im.closest('.v2-rc-shelf-illus');
+          var left = !!(shelf && shelf.classList.contains('g8-plane-faces-left'));
+          var slender = (im.naturalWidth / im.naturalHeight) > 5;
+          var mag = slender ? 1.2 : 1.8;
+          wrap.style.setProperty('--ac-pitch', (left ? mag : -mag) + 'deg');
+        } catch (e) {}
+      }
+      if (im.complete) _setPitch(); else im.addEventListener('load', _setPitch, { once: true });
+    });
     // HARMONIZE (Nick: 'the exact same') — after the fit, every title takes
     // the smallest size any title landed on, so there is ONE number across
     // rail and strip, always, and it cannot drift between rebuilds.
@@ -19561,7 +19581,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23241';
+var FIDS_BUILD_TAG = 'v23243';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
