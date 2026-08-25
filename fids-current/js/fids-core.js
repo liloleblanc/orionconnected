@@ -8254,13 +8254,13 @@ function _buildV2MapCol(ctx, vars) {
       // aircraft is arriving HERE, so the local airport code prefixes the
       // Arrival pair in both languages. The shared shrink-fitter already
       // sizes the longer title to the banner.
-      var _mcApIata = String((vars && vars.iata) || '').toUpperCase();
-      // v23240 — the code rides once at the END, accent-coloured (same
-      // pattern as the rail's Destination/Arrival banners).
-      var _mcTitle = _gateLbl((_stKey === 'arrived') ? 'arrived' : 'arrival', _frF, function (w, i2) {
+      // v23257 — the banner reads like the airport PA (Nick: 'Above simply
+      // put … arriving From | En Provenance de'): 'Arriving From | En
+      // provenance de' while en route, 'Arrived From | Arrivé de' once
+      // landed. The origin itself lives on line 1, so no code in the banner.
+      var _mcTitle = _gateLbl((_stKey === 'arrived') ? 'arrivedFrom' : 'arrivingFrom', _frF, function (w, i2) {
         return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>';
-      }, '')
-        + (_mcApIata ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _mcApIata + '</span>' : '');
+      }, '');
       var _mcTimes = '';
       if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
         _mcTimes = '<span class="v2-rc-status-delayed">' + _railT(_ibArrRevStr) + '</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>';
@@ -8298,15 +8298,22 @@ function _buildV2MapCol(ctx, vars) {
         // revision — the same semantics as the left rail's status banner.
         +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_stCls || '') ? ' v2-fi-title-warn' : ((_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) ? ' v2-fi-title-good' : '')) + '">' + _mcTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</span></div>'
+        // v23257 \u2014 the banner carries 'Arriving From | En provenance de', so
+        // line 1 is flight and city ONLY (Nick: 'Then have flight and city
+        // only / ac7992 etc'):
+        //   AC7992 \u00b7 Montreal | YUL
+        //   10:48am | 10:25am  Revised | R\u00e9vis\u00e9   (times first, label after)
+        //   Delayed | En retard                   (status on its own line)
+        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> ' + _ibCityCode + '</div>'
         +         (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr
-                    ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span><span class="v2-fi-mcolon">:</span> '
+                    ? '<div class="v2-fi-mline2">'
                       + '<span class="v2-rc-status-' + (_stCls || 'delayed') + '">' + _railT(_ibArrRevStr) + '</span>'
-                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span></div>'
+                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>'
+                      + ' <span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span></div>'
                     : (_ibArrSchedStr
-                        ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _railT(_ibArrSchedStr) + '</div>'
+                        ? '<div class="v2-fi-mline2">' + _railT(_ibArrSchedStr) + ' <span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span></div>'
                         : ''))
-        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _ibCityCode + '</div>'
+        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</span></div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -8601,20 +8608,17 @@ function _buildV2MapCol(ctx, vars) {
         // not amber; only delay-family changes warn (mirrors the inbound).
         +       '<div class="v2-fi-title' + ((/delayed|cancelled|diverted/.test(_dStCls || '') || (_dDepDelayed && !_dDepEarly)) ? ' v2-fi-title-warn' : (_dDepDelayed && _dDepEarly ? ' v2-fi-title-good' : '')) + '">' + _mdTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</span></div>'
-        // v23208 \u2014 the time row reads 'Revised | R\u00e9vis\u00e9: new | struck-old'
-        // whenever a revision exists, exactly like the inbound card (Nick:
-        // 'DepartureD\u00e9part: 10:50am NO this is Revised | Revis\u00e9'); the plain
-        // 'Departure | D\u00e9part' label only when nothing was revised.
+        // v23256 \u2014 LINES REARRANGED per Nick's sketch, mirroring the inbound
+        // card: flight + destination up top, times first with the label
+        // after, status alone on the last line.
+        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-fi-mlbl">' + _gateLblSpans('to', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
         +         (_dDepDelayed && _dDepStr && _dDepSchedStr && _dDepSchedStr !== _dDepStr
-                    ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span><span class="v2-fi-mcolon">:</span> '
+                    ? '<div class="v2-fi-mline2">'
                       + '<span class="v2-rc-status-' + (_dDepEarly ? 'early' : (_dStCls || 'delayed')) + '">' + (_dRailT(_dDepStr) || '') + '</span>'
-                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _dRailT(_dDepSchedStr) + '</span></span></div>'
-                    : (_dDepStr ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_dRailT(_dDepStr) || '') + '</div>' : ''))
-        // v23208 \u2014 'To | \u00c0', not a bare colon: the 'destination' key never
-        // existed in _GATE_LBL, so the label rendered empty (Nick: ': Ottawa
-        // | YOW NO this is terrible To | \u00c0:').
-        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('to', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
+                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _dRailT(_dDepSchedStr) + '</span></span>'
+                      + ' <span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span></div>'
+                    : (_dDepStr ? '<div class="v2-fi-mline2">' + (_dRailT(_dDepStr) || '') + ' <span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span></div>' : ''))
+        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</span></div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -12127,26 +12131,58 @@ function gateAutofit(root) {
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-value').forEach(function (val) {
       var lines = [].slice.call(val.querySelectorAll('.v2-fi-mline1, .v2-fi-mline2, .v2-fi-mline3'));
       if (!lines.length) return;
-      var tc = val.closest('.v2-fi-textcol'); if (!tc) return;
       lines.forEach(function (ln) { ln.style.removeProperty('font-size'); });
-      var availW = Math.floor(tc.clientWidth) - 2;
+      // v23256 — the budget is the VALUE CELL's own content width: it is the
+      // element that carries overflow:hidden, and it is NARROWER than the
+      // textcol (whose clientWidth includes its 15px padding) — measuring
+      // the textcol passed lines the value cell then clipped (Nick's photo:
+      // 'YUL' losing its L). A 6px gutter keeps it snug, not grazing.
+      var availW = Math.floor(val.clientWidth) - 6;
       if (availW < 60) return;
+      // v23258 — TRUE CONTENT WIDTH, via a Range (Nick: 'Fill the space
+      // please'). scrollWidth is floored at the element's own box width, so
+      // a short line in a full-width grid cell measured as 'already full'
+      // and the grow pass bailed — the card sat half-empty at base sizes.
+      var _lnW = function (ln) {
+        try {
+          var rg = document.createRange();
+          rg.selectNodeContents(ln);
+          var w = rg.getBoundingClientRect().width;
+          return (w && isFinite(w)) ? w : ln.scrollWidth;
+        } catch (e) { return ln.scrollWidth; }
+      };
       var row2 = val.closest('.v2-fi-row');
       var title2 = row2 ? row2.querySelector('.v2-fi-title') : null;
       var availH = row2 ? (row2.clientHeight - (title2 ? title2.offsetHeight : 0) - 8) : 0;
       var f = Infinity, sumH = 0;
       lines.forEach(function (ln) {
-        var w = ln.scrollWidth; sumH += ln.offsetHeight;
+        var w = _lnW(ln); sumH += ln.offsetHeight;
         if (w > 8) f = Math.min(f, availW / w);
       });
       if (!isFinite(f)) return;
       if (availH > 20 && sumH > 0) f = Math.min(f, availH / sumH);
       f = Math.min(f, 1.9);
-      if (f <= 1.02) return;   // already at the borders — the clamps stand
-      lines.forEach(function (ln) {
+      if (f > 1.02) lines.forEach(function (ln) {
         var base = parseFloat(getComputedStyle(ln).fontSize) || 0; if (!base) return;
         ln.style.setProperty('font-size', (Math.floor(base * f * 10) / 10) + 'px', 'important');
       });
+      // v23256 — VERIFY AFTER APPLYING. Text width does not scale perfectly
+      // linearly with font-size (hinting, spacing, bold runs), so the
+      // projected factor could land a long delayed-status line a few percent
+      // past the card edge — and these lines wear overflow:visible, so the
+      // excess SPILLED (Nick's photo: 'En retard' and the struck old time
+      // ran off the card). Re-measure (true content width) and shrink until
+      // every line sits inside the gutter target; runs whether or not the
+      // grow branch fired, so a line overflowing at base size is pulled in.
+      for (var _fit = 0; _fit < 3; _fit++) {
+        var _over = 1;
+        lines.forEach(function (ln) { var w = _lnW(ln); if (w > availW) _over = Math.max(_over, w / availW); });
+        if (_over <= 1.005) break;
+        lines.forEach(function (ln) {
+          var cur = parseFloat(ln.style.fontSize) || parseFloat(getComputedStyle(ln).fontSize) || 0; if (!cur) return;
+          ln.style.setProperty('font-size', (Math.floor(cur / _over * 10) / 10) + 'px', 'important');
+        });
+      }
     });
     // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL (Nick: 'FIX THE NUMBERS
     // BOARDING IS ATTROCIOUS'). His shot: an AC express final call whose
@@ -19492,6 +19528,11 @@ var _GATE_LBL = {
   departure: { en:'Departure',     fr:'Départ',         es:'Salida',       de:'Abflug',      it:'Partenza',    pt:'Partida',    ja:'出発',      zh:'出发',   ar:'المغادرة' },
   arrival:   { en:'Arrival',       fr:'Arrivée',        es:'Llegada',      de:'Ankunft',     it:'Arrivo',      pt:'Chegada',    ja:'到着',      zh:'到达',   ar:'الوصول' },
   arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Angekommen',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصل' },
+  // v23257 — the inbound card's banner names the movement, airport-PA style
+  // (Nick: 'Above simply put … arriving From | En Provenance de … Or Arrivé
+  // de'). The en-route and landed variants.
+  arrivingFrom: { en:'Arriving From', fr:'En provenance de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
+  arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
   boarding:  { en:'Boarding',      fr:'Embarquement',   es:'Embarque',     de:'Boarding',    it:'Imbarco',     pt:'Embarque',   ja:'搭乗',      zh:'登机',   ar:'الصعود' },
   revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'مُعدل' },
   gate:      { en:'Gate',          fr:'Porte',          es:'Puerta',       de:'Gate',        it:'Gate',        pt:'Portão',     ja:'ゲート',    zh:'登机口', ar:'البوابة' },
@@ -19744,7 +19785,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23253';
+var FIDS_BUILD_TAG = 'v23258';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
