@@ -4772,9 +4772,11 @@ function makeSofitelLockupInlineSvg(propertyName) {
   var _est = len * 0.62;                        // ≈ natural caps width in em
   var fsz = Math.min(12.5, 170 / _est);         // reference size, eased for long names
   var _tl = Math.max(93, Math.min(170, Math.round(_est * fsz)));
-  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 40" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
+  // v23253 — a touch more air under the wordmark (Nick: 'maybe more space a
+  // bit not much between Sofitel and New York'): baseline 32.4 → 34.
+  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 42" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
     + '<g fill="#FFFFFF">' + _SOFITEL_WORDMARK_G + '</g>'
-    + '<text x="95" y="32.4" text-anchor="middle" textLength="' + _tl + '" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
+    + '<text x="95" y="34" text-anchor="middle" textLength="' + _tl + '" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
     + '</svg>';
 }
 
@@ -19742,7 +19744,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23252';
+var FIDS_BUILD_TAG = 'v23253';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
