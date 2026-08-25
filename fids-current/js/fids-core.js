@@ -6979,17 +6979,20 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
-        'QK':  '/logos/airlines/canadian/AC.TO.svg',
-        // v23208 — Rouge's OWN roundel, not the parent AC leaf ('Rouge logo';
-        // 'whoever operates that aircraft gets the logo'). The orb takes this
-        // emblem; Rouge's script wordmark lives in OPERATOR_WORDMARKS for the
-        // Operated-By caption only.
-        // v23238 — the roundel art is a FULL-BLEED WHITE SQUARE png (opaque
-        // corners, ring touching the edges), so the orb painted as a white
-        // tile on the inbound card (Nick: 'Unacceptable'). rouge-roundel.png
-        // is the same art behind a circular alpha mask — a round emblem.
-        'RV':  '/logos/airlines/canadian/rouge-roundel.png?v=23238',
-        'ROU': '/logos/airlines/canadian/rouge-roundel.png?v=23238',
+        // v23259 — JAZZ WEARS ITS OWN J (Nick: 'The Logo for Jazz should not
+        // be AC it should be the J only'). jazz-j.svg is the brush-script J
+        // cut from jazz.svg: its detached cap stroke plus the connected
+        // 'Ja' path clipped at the measured ligature waist (x=53.8) — the
+        // cut lands on the thin joining stroke and reads as a natural
+        // terminal at orb size.
+        'QK':  '/logos/airlines/canadian-regional/jazz-j.svg',
+        // v23259 — 'and same for rouge the r': the script r cut from
+        // rouge.svg. The r's arm and the o's shoulder overlap in x, so the
+        // clip is a measured half-unit staircase along the gap between the
+        // two glyphs — full arm taper kept, no crumb of the o. Replaces the
+        // v23238 roundel.
+        'RV':  '/logos/airlines/canadian/rouge-r.svg',
+        'ROU': '/logos/airlines/canadian/rouge-r.svg',
         // v23049 — BACK TO THE WHITE MONO LEAF. v23047 pointed this at the
         // colour leaf, which also repainted the round rail orb; Nick: 'the orb
         // had white leave it white'. This map feeds the orb, so it stays mono
@@ -19785,7 +19788,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23258';
+var FIDS_BUILD_TAG = 'v23259';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

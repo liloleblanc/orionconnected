@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2517,
+    "total": 2519,
     "by_category": {
       "ad": 10,
-      "airline": 1322,
+      "airline": 1324,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -4824,6 +4824,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian/rouge-r.svg",
+      "file": "rouge-r.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "rouge r",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian/rouge-roundel.png",
       "file": "rouge-roundel.png",
       "category": "airline",
@@ -5589,6 +5600,17 @@
       "subcategory": "canadian-regional",
       "group": "Airlines — Canadian regional",
       "name": "firstair",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/jazz-j.svg",
+      "file": "jazz-j.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "jazz j",
       "iata": "",
       "country": "",
       "ext": "svg"
