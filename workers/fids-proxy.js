@@ -2847,23 +2847,16 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                 "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
                 "X-Adsb-Cache": "miss", "X-Adsb-Provider": "aerodatabox", ...corsHeaders(origin) } });
             }
-            // ADB answered but knows no live fix. For hex/reg that is an
-            // authoritative empty — those are exact airframe identifiers, so
-            // cache it briefly and DON'T burn the community ring on it. For
-            // CALLSIGN it is not: ADB's callsign index lags the flown
-            // callsign (measured: AC7992's live leg flies as JZA7992 while
-            // /flights/callsign/ACA7992 still returns yesterday's arrived
-            // leg), so a callsign miss falls through to the ring.
-            if (kind !== "callsign") {
-              const _adbEmpty = JSON.stringify({ ac: [], _provider: "aerodatabox" });
-              try {
-                await cache.put(cacheKey, new Response(_adbEmpty, { headers: {
-                  "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_NEG_TTL}` } }));
-              } catch (e) {}
-              return new Response(_adbEmpty, { status: 200, headers: {
-                "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_NEG_TTL}`,
-                "X-Adsb-Cache": "neg", "X-Adsb-Provider": "aerodatabox", ...corsHeaders(origin) } });
-            }
+            // ADB answered but knows no live fix. v23255 treated a hex/reg
+            // miss as authoritative and neg-cached it without consulting the
+            // community ring. v23262 withdraws that: Nick's AC2081 (LHR→YHZ,
+            // reg C-FSIL confirmed on the very panel that had no altimeter)
+            // was airborne over Nova Scotia — squarely inside community
+            // coverage — while ADB carried no location block for the leg at
+            // all, so "authoritative" empty really meant "ADB can't see this
+            // one". EVERY kind now falls through to the ring; the all-failed
+            // tail below still neg-caches when the ring strikes out too, so
+            // a genuinely untracked airframe costs the same as before.
           }
           // Non-OK from ADB (quota, 5xx) → fall through to the community ring.
         } catch (e) { /* network error → community ring */ }
