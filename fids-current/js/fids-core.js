@@ -12139,12 +12139,24 @@ function gateAutofit(root) {
       // 'YUL' losing its L). A 6px gutter keeps it snug, not grazing.
       var availW = Math.floor(val.clientWidth) - 6;
       if (availW < 60) return;
+      // v23258 — TRUE CONTENT WIDTH, via a Range (Nick: 'Fill the space
+      // please'). scrollWidth is floored at the element's own box width, so
+      // a short line in a full-width grid cell measured as 'already full'
+      // and the grow pass bailed — the card sat half-empty at base sizes.
+      var _lnW = function (ln) {
+        try {
+          var rg = document.createRange();
+          rg.selectNodeContents(ln);
+          var w = rg.getBoundingClientRect().width;
+          return (w && isFinite(w)) ? w : ln.scrollWidth;
+        } catch (e) { return ln.scrollWidth; }
+      };
       var row2 = val.closest('.v2-fi-row');
       var title2 = row2 ? row2.querySelector('.v2-fi-title') : null;
       var availH = row2 ? (row2.clientHeight - (title2 ? title2.offsetHeight : 0) - 8) : 0;
       var f = Infinity, sumH = 0;
       lines.forEach(function (ln) {
-        var w = ln.scrollWidth; sumH += ln.offsetHeight;
+        var w = _lnW(ln); sumH += ln.offsetHeight;
         if (w > 8) f = Math.min(f, availW / w);
       });
       if (!isFinite(f)) return;
@@ -12159,18 +12171,13 @@ function gateAutofit(root) {
       // projected factor could land a long delayed-status line a few percent
       // past the card edge — and these lines wear overflow:visible, so the
       // excess SPILLED (Nick's photo: 'En retard' and the struck old time
-      // ran off the card). Re-measure and shrink until every line fits; runs
-      // whether or not the grow branch fired, so a line that overflows at
-      // its own base size is pulled in too.
-      // The clip edge, not the gutter target: scrollWidth is floored at the
-      // line's own box width, so comparing against availW would 'detect'
-      // overflow on lines that already fit and shrink them for nothing.
-      var _clipW = Math.floor(val.clientWidth);
+      // ran off the card). Re-measure (true content width) and shrink until
+      // every line sits inside the gutter target; runs whether or not the
+      // grow branch fired, so a line overflowing at base size is pulled in.
       for (var _fit = 0; _fit < 3; _fit++) {
         var _over = 1;
-        lines.forEach(function (ln) { var w = ln.scrollWidth; if (w > _clipW) _over = Math.max(_over, w / _clipW); });
+        lines.forEach(function (ln) { var w = _lnW(ln); if (w > availW) _over = Math.max(_over, w / availW); });
         if (_over <= 1.005) break;
-        _over *= 1.02;   // land inside the edge, not on it
         lines.forEach(function (ln) {
           var cur = parseFloat(ln.style.fontSize) || parseFloat(getComputedStyle(ln).fontSize) || 0; if (!cur) return;
           ln.style.setProperty('font-size', (Math.floor(cur / _over * 10) / 10) + 'px', 'important');
@@ -19778,7 +19785,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23257';
+var FIDS_BUILD_TAG = 'v23258';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
