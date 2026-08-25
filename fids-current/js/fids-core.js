@@ -4772,9 +4772,9 @@ function makeSofitelLockupInlineSvg(propertyName) {
   var _est = len * 0.62;                        // ≈ natural caps width in em
   var fsz = Math.min(12.5, 170 / _est);         // reference size, eased for long names
   var _tl = Math.max(93, Math.min(170, Math.round(_est * fsz)));
-  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 41" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
+  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 40" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
     + '<g fill="#FFFFFF">' + _SOFITEL_WORDMARK_G + '</g>'
-    + '<text x="95" y="33.6" text-anchor="middle" textLength="' + _tl + '" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
+    + '<text x="95" y="32.4" text-anchor="middle" textLength="' + _tl + '" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
     + '</svg>';
 }
 
