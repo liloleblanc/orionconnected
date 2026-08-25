@@ -14371,3 +14371,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 :is(.v2-map-area, .g8-inb-map) {
   border-radius: inherit !important;
 }
+
+/* ── v23243 — THE LEFT PANELS CARRY THE SAME ACCENT CONTOUR AS THE RIGHT
+   (Nick: 'you see how the right has a red contour or accent contour all
+   around the left needs the same'). Each rail plate (.v2-fi-row::before,
+   the painted card) takes a ring in the airline accent — the same variable
+   the right column's framing draws from — so an AC gate rings red, and any
+   themed gate rings its own accent. The plate is an inset absolute layer,
+   so the ring adds no layout shift. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row::before {
+  border: clamp(2px, 0.35vh, 4px) solid var(--airline-accent, #D82F2E) !important;
+  box-sizing: border-box !important;
+}
