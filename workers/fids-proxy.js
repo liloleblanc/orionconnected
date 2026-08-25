@@ -2869,13 +2869,25 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // while any one aircraft still resolves from a consistent feed (which
       // also keeps its answers steady between polls). Failover order after
       // the start is unchanged.
-      const _provNames = Object.keys(PROVIDERS);
+      // v23264 — AIRPLANES.LIVE IS INVITATION-ONLY NOW. On 2026-08-25 they
+      // mailed all API users: the free API is down for good ("commercial and
+      // corporate abuse, compounded by bot abuse", hosting egress blown in 4
+      // days, 2B requests/week). Access is now feeder-IP or paid sponsorship.
+      // Calling it anonymously is a guaranteed 403 that costs us a round-trip
+      // of latency on every miss AND adds to the exact load they asked people
+      // to stop generating. It stays OUT of the ring until ADSB_KEY exists;
+      // set that secret and it returns to the front automatically.
+      const _provNames = Object.keys(PROVIDERS)
+        .filter((p) => p !== "airplanes.live" || !!env.ADSB_KEY);
       let _h = 0;
       for (let i = 0; i < subject.length; i++) _h = (_h * 31 + subject.charCodeAt(i)) >>> 0;
       const _start = _h % _provNames.length;
       const _rotated = _provNames.slice(_start).concat(_provNames.slice(0, _start));
-      // A pinned ADSB_PROVIDER (explicit env choice) still leads its ring.
-      const ring = env.ADSB_PROVIDER
+      // A pinned ADSB_PROVIDER (explicit env choice) still leads its ring —
+      // but v23264's keyless-airplanes.live exclusion outranks the pin, or a
+      // stale ADSB_PROVIDER="airplanes.live" would reinstate the guaranteed
+      // 403 the filter above exists to prevent.
+      const ring = (env.ADSB_PROVIDER && _provNames.includes(provider))
         ? [provider].concat(_provNames.filter((p) => p !== provider))
         : _rotated;
       let lastStatus = 0;
