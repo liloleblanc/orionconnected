@@ -13776,9 +13776,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   display: inline !important;
   font-size: inherit !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline1 .v2-rc-fi-stline {
+/* v23257b — the status line moved to mline3 (Nick's rearrangement), and this
+   padding reset was scoped to mline1 only, so 'Delayed | En retard' kept its
+   pill inset and sat indented (Nick: 'Make sure Delayed is aligned with
+   others left'). Cover the status span in ANY of the module's lines. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 :is(.v2-fi-mline1, .v2-fi-mline2, .v2-fi-mline3) .v2-rc-fi-stline {
   display: inline !important;
   padding: 0 !important;
+  margin: 0 !important;
   font-size: inherit !important;
 }
 /* The bilingual label pair in the module's rows gets its pipe — the bare
