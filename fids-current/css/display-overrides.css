@@ -14311,28 +14311,41 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    gentle pitch (translate + rotate in one transform — the wrapper carries
    it, the img keeps its sizing), so it reads as flying, not hovering. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img img {
-  max-width: 88% !important;
-  max-height: 84% !important;
+  /* v23242 — bigger still (Nick: 'may need to be bigger too'). */
+  max-width: 94% !important;
+  max-height: 88% !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img {
-  /* The bottom part: anchor the aircraft toward the cloud deck instead of
-     centring it above a dead band (measured 97px of empty sky under the
-     belly). A small bottom pad keeps the float's low point off the caption
-     bar. */
-  padding-top: 4% !important;
-  padding-bottom: 14px !important;
+  /* v23242 — the aircraft rides low but CLEAR of the caption bar (Nick:
+     'too close to the bottom remember there is a bottom banner that takes
+     space'). Measured: the float's low point came within 9px of the bar.
+     The bottom pad is sized so the low point keeps ~20px+ of air. */
+  padding-top: 0 !important;
+  padding-bottom: clamp(28px, 4.2vh, 48px) !important;
   align-items: flex-end !important;
 }
-@keyframes g8AcFloatV2 {
-  0%, 100% { transform: translateY(calc(var(--ac-float, 26px) * -0.5)) rotate(-0.7deg); }
-  50%      { transform: translateY(calc(var(--ac-float, 26px) *  0.5)) rotate(0.5deg); }
+/* v23242 — STEADY NOSE-UP, NO PITCHING (Nick: 'it looks like they are
+   diving … they may need to be slightly angled up not much just a bit —
+   nose up'). The v23240 pitch VARIED through the bob and read as diving.
+   The attitude is now CONSTANT — a gentle climb trim held through the
+   whole float — and flips with the art's facing so the nose is always the
+   end that rises. Translate-only bob otherwise, ease-in-out, v23060
+   amplitudes. */
+@keyframes g8AcFloatV3 {
+  0%, 100% { transform: translateY(calc(var(--ac-float, 26px) * -0.5)) rotate(var(--ac-pitch, 0deg)); }
+  50%      { transform: translateY(calc(var(--ac-float, 26px) *  0.5)) rotate(var(--ac-pitch, 0deg)); }
 }
 html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img {
-  animation: g8AcFloatV2 8s ease-in-out infinite !important;
+  animation: g8AcFloatV3 9s ease-in-out infinite !important;
+  transform-origin: 50% 55%;
+  --ac-pitch: -1.8deg;   /* fallback; the per-art pass refines by slenderness */
 }
-html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 13px; }
+html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-left .v2-rc-aircraft-img {
+  --ac-pitch: 1.8deg;    /* fallback; the per-art pass refines by slenderness */
+}
+html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 11px; }
 @media (min-height: 900px) {
-  html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 16px; }
+  html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 14px; }
 }
 
 /* ── v23241 — THE RIGHT CARDS' BANNER TOUCHES THE CARD TOP TOO (Nick:
@@ -14343,4 +14356,18 @@ html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 1
    the banner's own 11px column inset is the whole gap, same as the rail. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-flightinfo-block > .v2-fi-row {
   padding-top: 0 !important;
+}
+
+/* ── v23242 — THE MAP PANEL'S CORNERS ROUND LIKE ITS SHELF (Nick: 'the plane
+   panel needs to be rounded edges and so does the map'). Measured: the shelf
+   carries 15px radius but the inner .v2-map-area and the leaflet container
+   render at 0 — square corners poking through wherever the shelf doesn't
+   clip. Shelf clips, inners inherit; the aircraft shelf gets the same
+   treatment for its inner layers. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 :is(.v2-rc-shelf-map, .v2-rc-shelf-illus) {
+  border-radius: clamp(12px, 1.6vh, 18px) !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 :is(.v2-map-area, .g8-inb-map) {
+  border-radius: inherit !important;
 }
