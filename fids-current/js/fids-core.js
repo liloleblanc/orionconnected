@@ -11938,6 +11938,43 @@ function gateAutofit(root) {
         el.style.setProperty('-webkit-text-fill-color', pick, 'important');
       } catch (e) {}
     });
+    // v23245 — THE CONTOUR IS VISIBLE FOR EVERY AIRLINE (Nick: 'That's it
+    // now for all airlines please'). The frame is border-color:
+    // var(--airline-accent) on both columns, and an airline whose accent
+    // matches its own backdrop erased it — measured on the PAL gate: navy
+    // rgb(31,56,118) on a navy body, 1.03:1, invisible on BOTH columns.
+    // The frame color now goes through the same floor as every other ink:
+    // the accent when it clears 2:1 against the gate body, else the
+    // airline's brighter tokens, else the hdrText gold, else a silver —
+    // applied to BOTH columns together so left and right always match.
+    try {
+      var _fcL = root.querySelector('.gad-aircraft-col') || document.querySelector('.gad-aircraft-col');
+      var _fcR = root.querySelector('.gad-map-col-v2') || document.querySelector('.gad-map-col-v2');
+      if (_fcL && _fcR && typeof _fidsContrast === 'function') {
+        var _fcBg = getComputedStyle(document.body).backgroundColor;
+        var _fcCur = getComputedStyle(_fcR).borderTopColor;
+        var _fcPick = null;
+        if ((_fidsContrast(_fcCur, _fcBg) || 0) < 2) {
+          var _fcCands = [];
+          var _fcCs = getComputedStyle(document.body);
+          ['--airline-accent3', '--airline-r2'].forEach(function (v) {
+            var x = (_fcCs.getPropertyValue(v) || '').trim(); if (x) _fcCands.push(x);
+          });
+          _fcCands.push('#fca825', 'rgba(255,255,255,0.55)');
+          for (var _fci = 0; _fci < _fcCands.length; _fci++) {
+            if ((_fidsContrast(_fcCands[_fci], _fcBg) || 0) >= 2) { _fcPick = _fcCands[_fci]; break; }
+          }
+        }
+        // Set only — NEVER remove. Removing when the measured colour cleared
+        // the floor un-did this pass's own earlier substitution, flipping the
+        // frame between the invisible accent and the fallback on alternate
+        // autofit passes (caught in verification — the exact flash class Nick
+        // flagged). A colour that clears the floor is left exactly as it is.
+        if (_fcPick) [_fcL, _fcR].forEach(function (el) {
+          el.style.setProperty('border-color', _fcPick, 'important');
+        });
+      }
+    } catch (e) {}
     // v23242 — THE NOSE-UP TRIM IS PER AIRCRAFT (Nick: 'i think tahts too
     // much it may be dependant per aircraft / the CRJ 900 was def having an
     // issue'). A slender fuselage exaggerates any applied angle — the Jazz
@@ -19581,7 +19618,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23244';
+var FIDS_BUILD_TAG = 'v23245';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
