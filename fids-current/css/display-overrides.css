@@ -12586,9 +12586,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   z-index: 3 !important;
 }
 
-/* FR label — same bar, hard against the bottom edge */
+/* Second-language label — same bar, hard against the bottom edge.
+   v23247 — the word comes from the board's OWN second assigned language via
+   --crsl-l2 (stamped by the bidsv2 template); the literal 'CARROUSEL' is only
+   the fallback for un-stamped markup. A board with no distinct second
+   language stamps --crsl-l2-disp:none and the bar disappears (Nick's MIA
+   shot: hardcoded French on an EN/ES airport — 'the dual language is not
+   properly working'). */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::after {
-  content: 'CARROUSEL' !important;
+  content: var(--crsl-l2, 'CARROUSEL') !important;
+  display: var(--crsl-l2-disp, block) !important;
   position: absolute !important;
   left: auto !important;
   right: 42% !important;
@@ -12632,6 +12639,18 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   text-shadow: 0 0 10px rgba(255,255,255,0.35) !important;
   position: relative !important;
   z-index: 3 !important;
+}
+/* v23247 — MULTI-DIGIT BELTS FIT THE WEDGE (measured on MIA belt 10: the
+   fixed 52vh numeral with the 42% right inset ran off the panel's left edge
+   and the clip-path sliced the leading digit — the board read 'belt 0').
+   The numeral eases down with its own length; data-len is stamped by the
+   template. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number[data-len="2"] {
+  font-size: 33vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number[data-len="3"],
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number[data-len="4"] {
+  font-size: 22vh !important;
 }
 
 
@@ -14338,10 +14357,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img {
   animation: g8AcFloatV3 9s ease-in-out infinite !important;
   transform-origin: 50% 55%;
-  --ac-pitch: -1.8deg;   /* fallback; the per-art pass refines by slenderness */
+  --ac-pitch: -1.3deg;   /* fallback; the per-art pass refines by slenderness (v23249 eased) */
 }
 html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-left .v2-rc-aircraft-img {
-  --ac-pitch: 1.8deg;    /* fallback; the per-art pass refines by slenderness */
+  --ac-pitch: 1.3deg;    /* fallback; the per-art pass refines by slenderness (v23249 eased) */
 }
 html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 11px; }
 @media (min-height: 900px) {
@@ -14382,4 +14401,58 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    rail, geometry untouched (the band was already there). */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col {
   border-color: var(--airline-accent, #D82F2E) !important;
+}
+
+/* ── v23246 — THE BANNER WORDMARK GETS ITS ROOM BACK (Nick's MIA D20 shot:
+   'the American logo on top is not proportional it needs fixed'). Measured
+   on the live AA gate: Oneworld.svg carries width="1200" height="800"
+   attributes, so as a flex item its base size is 1200px — clamped by
+   max-width to ~614px, four times the sphere it actually draws. The slot's
+   flex-shrink then split the deficit and crushed the AIRLINE WORDMARK to
+   186px (art letterboxed to ~27px lettering inside its 106px box), which is
+   exactly the disproportion in his photo — plus the phantom gap before the
+   sphere. The mark gets an explicit box matching its drawn aspect
+   (viewBox 260x300 at the ~104px silk height → ~90px wide) and stops
+   flexing; the wordmark takes the space its own caps were always due.
+   min-width included: the v-era anti-pop reserve pinned min-width to
+   clamp(160px, 22vw, 400px), and min-width outranks both width and
+   max-width — the reserve stays (fixed box, no decode pop), just sized to
+   the artwork instead of four times it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-oneworld {
+  /* v23251 — Nick: 'so can one world [be bigger] … wider than [the]
+     American [symbol] by a bit'. The art is now the CROPPED ball
+     (Oneworld-ball.svg), so this box is the ball's real size — ~104px,
+     a shade wider than the AA flight symbol beside it. */
+  width: clamp(96px, 14vh, 108px) !important;
+  min-width: clamp(96px, 14vh, 108px) !important;
+  max-width: clamp(96px, 14vh, 108px) !important;
+  flex: 0 0 auto !important;
+  object-fit: contain !important;
+  /* v23252 — the ball leads the lockup now (official co-brand order), so
+     the 26px lead-in margin the trailing marks wear comes off. */
+  margin-left: 0 !important;
+}
+
+/* ── v23252 — THE ONEWORLD DIVIDER BAR (Nick's official co-brand reference:
+   ball | thin line | airline mark). Proportions from the sheet: 2px line at
+   0.74x the ball, a third-of-a-ball air on each side, all centred. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-alliance-div {
+  display: inline-block !important;
+  width: 2px !important;
+  height: clamp(60px, 10.2vh, 78px) !important;
+  background: rgba(255,255,255,0.85) !important;
+  border-radius: 1px !important;
+  margin: 0 clamp(22px, 3vh, 34px) !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+}
+
+/* ── v23251 — THE BANNER WORDMARK GROWS INTO A WIDER SLOT (Nick, watching
+   the YouTube stream: 'I think American logo can be bigger'). The AA lockup
+   is WIDTH-limited (6.5:1 aspect — the 36% silk slot capped its art at
+   ~494px → ~76px lettering). Four more points of slot lets the art reach
+   ~585px before the timebox; carriers whose marks already fit (AC's ~530px)
+   simply stop shrinking and gain nothing, so nothing else moves. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-silk .g8-r1-logoslot {
+  max-width: 40% !important;
 }

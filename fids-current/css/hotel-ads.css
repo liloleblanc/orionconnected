@@ -1375,11 +1375,16 @@
    ad panel — i.e. 'no logo showing'. Scope the override with :has() so only the
    inline case relaxes the height. */
 .axr[data-brand-code="SOF"] .axr-logo:has(.sof-inline-lockup) { height: auto !important; align-items: center !important; }
+/* v23246 — the lockup lost its emblem (wordmark over name only, per Nick's
+   official Sofitel New York reference: 'The Sofitel logo is way too big …
+   simply have Sofitel New York but proportional'), so the panel-filling
+   94%/640px envelope tuned for the tall three-part art now oversizes a wide
+   two-line mark. Sized down to read as a logo, not a billboard. */
 .axr[data-brand-code="SOF"] .axr-logo .sof-inline-lockup {
   height: auto !important;
-  width: min(94%, 640px) !important;
-  max-width: min(94%, 640px) !important;
-  max-height: clamp(140px, 27vh, 240px) !important;
+  width: min(72%, 480px) !important;
+  max-width: min(72%, 480px) !important;
+  max-height: clamp(80px, 15vh, 130px) !important;
 }
 
 /* Fairmont TITLE font — The Seasons (Nick), the elegant high-contrast serif

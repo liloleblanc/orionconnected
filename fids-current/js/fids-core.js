@@ -4759,20 +4759,24 @@ function makeSofitelLockupInlineSvg(propertyName) {
     .trim();
   if (!clean) clean = String(propertyName).trim();
   var name = String(clean.toUpperCase()).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  // Proportions measured from Nick's official Sofitel LA lockup (relative to the
-  // SOFITEL wordmark: ~14.6u tall, spanning 0–190):
-  //   • name  = FULL wordmark width, ~34% of the wordmark height, ~0.42 gap below it
-  //   • emblem = ~21% of wordmark width, ~0.94 gap below the name, centred
-  // font-size targets ~5u cap-height, easing down only for very long names so the
-  // glyph run still fits inside the 188u width before textLength spaces it out.
+  // v23246 — NO EMBLEM, WORDMARK OVER NAME ONLY (Nick's MIA D20 shot: 'The
+  // Sofitel logo is way too big can we get rid of the icon from the logo and
+  // simply have Sofitel New York but proportional?', with the official
+  // Sofitel New York lockup as the reference). Geometry measured off that
+  // reference, in units of the SOFITEL wordmark (~14.6u tall, spanning
+  // 0–190): the name sits a 0.69-wordmark-height gap below it, caps at
+  // ~0.61 of the wordmark height, tracked out to ~49% of the wordmark width
+  // and centred. Long property names ease the size down and take the width
+  // they need (up to ~170u) instead of cramming.
   var len = Math.max(1, clean.length);
-  var fsz = Math.min(6.9, 280 / len);
-  // Full brand lockup: SOFITEL wordmark (paths) / property name (FF Good Pro
-  // Extended, stretched to the wordmark width) / the Sofitel emblem below.
-  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 66" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
+  var _est = len * 0.62;                        // ≈ natural caps width in em
+  var fsz = Math.min(12.5, 170 / _est);         // reference size, eased for long names
+  var _tl = Math.max(93, Math.min(170, Math.round(_est * fsz)));
+  // v23253 — a touch more air under the wordmark (Nick: 'maybe more space a
+  // bit not much between Sofitel and New York'): baseline 32.4 → 34.
+  return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 42" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
     + '<g fill="#FFFFFF">' + _SOFITEL_WORDMARK_G + '</g>'
-    + '<text x="95" y="25.8" text-anchor="middle" textLength="188" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
-    + '<image href="/logos/hotels/sofitel/sofitel-emblem-white.svg" xlink:href="/logos/hotels/sofitel/sofitel-emblem-white.svg" x="74.5" y="39.6" width="41" height="21" preserveAspectRatio="xMidYMid meet"/>'
+    + '<text x="95" y="34" text-anchor="middle" textLength="' + _tl + '" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
     + '</svg>';
 }
 
@@ -6275,7 +6279,26 @@ var PLANE_FACING = {
   '313.png':'L', '319.png':'L', '320.png':'L', '321.png':'L', '32A.png':'L', '32B.png':'L',
   '32D.png':'L', '32N.png':'L', '32Q.png':'L', '332.png':'L', '333.png':'L', '338.png':'L',
   '339.png':'L', '340.png':'L', '342.png':'L', '343.png':'L', '345.png':'L', '346.png':'L',
-  '351.png':'L', '359.png':'L', '388.png':'L', '3H/732.png':'R', '3H/733.png':'R', '3H/738.png':'R',
+  '351.png':'L', '359.png':'L', '388.png':'L',
+  // v23248 — the 35 livery files that had NO facing entry (Nick's MIA F5
+  // shot: the Frontier A320neo rendered nose-DOWN — 'this airplane does not
+  // look normal'). With the facing unknown at build time, the nose-trim pass
+  // read the missing class as faces-right and applied the wrong sign, so the
+  // plane dived. Facings verified against the artwork (F9/AA/DL/UA/MX face
+  // left; the whole AF and KL sets face right — including KL/737.png, whose
+  // left-edge tail sits past the runtime heuristic's 18% window and was
+  // misread even at load).
+  'AA/E7W.png':'L', 'DL/321.png':'L', 'F9/319.png':'L', 'F9/32A.png':'L',
+  'F9/32B.png':'L', 'F9/32N.png':'L', 'MX/223.png':'L', 'MX/E90.png':'L',
+  'UA/739.png':'L', 'UA/E7W.png':'L',
+  'AF/223.png':'R', 'AF/318.png':'R', 'AF/319.png':'R', 'AF/320.png':'R',
+  'AF/321.png':'R', 'AF/332.png':'R', 'AF/359.png':'R', 'AF/772.png':'R',
+  'AF/77W.png':'R', 'AF/789.png':'R', 'AF/E70.png':'R', 'AF/E90.png':'R',
+  'KL/29E.png':'R', 'KL/32Q.png':'R', 'KL/332.png':'R', 'KL/333.png':'R',
+  'KL/737.png':'R', 'KL/739.png':'R', 'KL/73H.png':'R', 'KL/772.png':'R',
+  'KL/77W.png':'R', 'KL/789.png':'R', 'KL/78X.png':'R', 'KL/E75.png':'R',
+  'KL/E90.png':'R',
+  '3H/732.png':'R', '3H/733.png':'R', '3H/738.png':'R',
   '3H/BEK.png':'R', '3H/DH1.png':'R', '3H/DH3.png':'R', '3H/DHT.png':'R', '5T/733.png':'R', '5T/734.png':'R',
   '5T/73C.png':'R', '5T/73P.png':'R', '5T/AT7.png':'R', '5T/ATR.png':'R', '717.png':'L', '730.png':'L',
   '732.png':'L', '733.png':'L', '734.png':'L', '735.png':'L', '736.png':'L', '737.png':'L',
@@ -6944,6 +6967,14 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
   'AC': '/logos/motion/AC-rondelle-swing.mp4'
 };
 
+// v23246 — CARD ORBS THAT KEEP THEIR COLOUR ART (Nick's MIA D20 shot: 'the
+// icon for Aa at the bottom right should be color'). The merged-module orbs
+// judge white-vs-colour purely from the accent luminance, which white-washed
+// AA's red+blue flight symbol on its mid-blue orb — while the left rail
+// already renders AA in colour via its own COLOR_ON_WHITE set. One shared
+// list for the card builders (and the operator re-point pass) so both ends
+// of the screen agree.
+window._CARD_COLOR_EMBLEMS = { 'AA': true };
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
@@ -6985,6 +7016,11 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
         'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
         // International
+        // v23250 — LATAM had no orb emblem, so its rail/card orbs drew the
+        // generic plane glyph. The spark (cut from the LAN tile art, no navy
+        // square) takes the standard treatment: white silhouette on the
+        // accent orb like every other carrier's mark.
+        'LA':  '/logos/airlines/asian-other/latam-spark.svg',
         'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
         'AF':  '/logos/airlines/european/air-france-emblem.svg?v=2',   // rebuilt Jul 2026 — official accent path, centered (old file was a clipped sliver)
         'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
@@ -8242,7 +8278,7 @@ function _buildV2MapCol(ctx, vars) {
                   // solid colour roundel; invert(1) turned it into a blank
                   // white disc. Only vector silhouettes take the white
                   // treatment — .png art is colour art by construction.
-                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbOp || _mcCode]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — no emblem art on file → the carrier's LETTERS on
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
@@ -8556,7 +8592,7 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mdBadge + '">'
         +       (_mdOrbSrc
                   // v23222 — same bitmap-native rule as the inbound card.
-                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite && !/\.png(\?|$)/i.test(_mdOrbSrc) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite && !/\.png(\?|$)/i.test(_mdOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mdOrbOp || _mdCode]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — lettered-roundel fallback (see inbound builder).
                   : '<span class="v2-fi-orb-code">' + (_mdOrbOp || _mdCode || '') + '</span>')
         +     '</div></div>'
@@ -9184,7 +9220,9 @@ function _buildV2MapCol(ctx, vars) {
           // invert the builder baked for the original vector art (Rouge's
           // disc went blank white on the red orb otherwise).
           var _orbFixPng = /\.png(\?|$)/i.test(_orbFix);
-          if (_orbFixPng) {
+          // v23246 — colour-emblem operators (see _CARD_COLOR_EMBLEMS) drop
+          // any baked invert the same way bitmap roundels do.
+          if (_orbFixPng || (window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_opCode])) {
             _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
           }
           // v23205 — the orb GROUND follows the operator's carrier colour too
@@ -9200,6 +9238,7 @@ function _buildV2MapCol(ctx, vars) {
             if (_olum > 186) {
               _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
             } else if (_inboundCard.indexOf('filter:brightness(0) invert(1)') === -1
+                       && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_opCode])
                        && !/class="v2-fi-orb" src="[^"]*\.png[^"]*"/i.test(_inboundCard)) {
               _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src="[^"]*" alt="" style="width:100%;height:100%;object-fit:contain;)/, '$1filter:brightness(0) invert(1);');
             }
@@ -9944,7 +9983,11 @@ function uxgGateHtml(ctx) {
     // wordmark on the silk band. The welcome strip swaps it for the bare
     // chrome symbol (star-3d-symbol.webp) below.
     'star':     '/logos/airlines/alliances/star-3d-tile.jpg',
-    'oneworld': '/logos/airlines/alliances/Oneworld.svg',
+    // v23251 — the CROPPED ball (viewBox tightened to the sphere's ink). The
+    // original canvas is ~60% empty padding, so the ball painted at less than
+    // half its box and read tiny beside the wordmark (Nick: 'so can one
+    // world' get bigger).
+    'oneworld': '/logos/airlines/alliances/Oneworld-ball.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
   var starHtml = '';
@@ -11415,7 +11458,17 @@ function uxgGateHtml(ctx) {
             })()
           : '')
       ) + '>'
-    +   '<div class="g8-r1-logoslot">' + r1LogoHtml + starHtml + '</div>'
+    +   '<div class="g8-r1-logoslot">' + (function () {
+          // v23252 — ONEWORLD COMPOSES LIKE THE OFFICIAL CO-BRAND LOCKUP
+          // (Nick's reference sheet: ball | thin divider | airline mark —
+          // ball FIRST). Star Alliance / SkyTeam keep the approved
+          // wordmark-then-mark order ('the star alone … at the END by air
+          // canada').
+          if (_allianceKey === 'oneworld' && starHtml && r1LogoHtml) {
+            return starHtml + '<span class="g8-r1-alliance-div" aria-hidden="true"></span>' + r1LogoHtml;
+          }
+          return r1LogoHtml + starHtml;
+        })() + '</div>'
     +   _apBandTop
     // TIME TAB (Nick: 'the gate needs the time — another tab exactly as the
     // ones existing, time a different color'): a skewed box in the SAME
@@ -11987,9 +12040,20 @@ function gateAutofit(root) {
           if (!im.naturalWidth || !im.naturalHeight) return;
           var wrap = im.closest('.v2-rc-aircraft-img'); if (!wrap) return;
           var shelf = im.closest('.v2-rc-shelf-illus');
+          // v23248 — resolve the facing BEFORE choosing the trim's sign. The
+          // build-time class was empty for any art missing from PLANE_FACING
+          // (the F9 fleet), so this pass read faces-right and pitched the
+          // plane nose-DOWN (Nick's MIA F5 shot). _detectPlaneFacing is
+          // idempotent: known srcs return from the map, unknown ones get the
+          // canvas heuristic — either way the class is current when read.
+          try { if (typeof window._detectPlaneFacing === 'function') window._detectPlaneFacing(im); } catch (e2) {}
           var left = !!(shelf && shelf.classList.contains('g8-plane-faces-left'));
           var slender = (im.naturalWidth / im.naturalHeight) > 5;
-          var mag = slender ? 1.2 : 1.8;
+          // v23249 — trim eased 1.8/1.2 → 1.3/1.0 (Nick's MIA D1 shot: 'the
+          // other one is stalling' — 1.8° on the big A321 plates read as too
+          // steep once the diving planes were levelled; his original ask was
+          // 'slightly angled up, not much just a bit').
+          var mag = slender ? 1.0 : 1.3;
           wrap.style.setProperty('--ac-pitch', (left ? mag : -mag) + 'deg');
         } catch (e) {}
       }
@@ -12050,6 +12114,38 @@ function gateAutofit(root) {
       // narrow cell's width does the real limiting.
       row.querySelectorAll('.v2-rc-fi-tlbl').forEach(function (lbl) {
         _boxAssign(lbl, lbl.clientWidth, Math.floor((row.clientHeight - 6) * 0.44), null, true);
+      });
+    });
+    // v23246 — THE MERGED MODULE'S LINES FILL THE CARD (Nick's MIA D20 shot:
+    // 'The text in the same panel needs to fill out to the borders'). The
+    // three stacked lines rendered at the stylesheet's fixed clamps and left
+    // half the card empty. The clamps stay as the BASE; all three then grow
+    // by ONE shared factor until the longest line spans the text column and
+    // the stack still fits the row — hierarchy preserved, nothing clipped.
+    // Reset-then-set inside one synchronous pass: repeat runs re-measure from
+    // the same base and land on the same sizes (no oscillation).
+    root.querySelectorAll('.gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-value').forEach(function (val) {
+      var lines = [].slice.call(val.querySelectorAll('.v2-fi-mline1, .v2-fi-mline2, .v2-fi-mline3'));
+      if (!lines.length) return;
+      var tc = val.closest('.v2-fi-textcol'); if (!tc) return;
+      lines.forEach(function (ln) { ln.style.removeProperty('font-size'); });
+      var availW = Math.floor(tc.clientWidth) - 2;
+      if (availW < 60) return;
+      var row2 = val.closest('.v2-fi-row');
+      var title2 = row2 ? row2.querySelector('.v2-fi-title') : null;
+      var availH = row2 ? (row2.clientHeight - (title2 ? title2.offsetHeight : 0) - 8) : 0;
+      var f = Infinity, sumH = 0;
+      lines.forEach(function (ln) {
+        var w = ln.scrollWidth; sumH += ln.offsetHeight;
+        if (w > 8) f = Math.min(f, availW / w);
+      });
+      if (!isFinite(f)) return;
+      if (availH > 20 && sumH > 0) f = Math.min(f, availH / sumH);
+      f = Math.min(f, 1.9);
+      if (f <= 1.02) return;   // already at the borders — the clamps stand
+      lines.forEach(function (ln) {
+        var base = parseFloat(getComputedStyle(ln).fontSize) || 0; if (!base) return;
+        ln.style.setProperty('font-size', (Math.floor(base * f * 10) / 10) + 'px', 'important');
       });
     });
     // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL (Nick: 'FIX THE NUMBERS
@@ -14866,14 +14962,33 @@ const gView = document.getElementById('gateView');
           <!-- Decorative chevron layers behind the carousel block -->
           <div class="bidsv2-chevrons"></div>
 
-          <div class="bidsv2-carousel-block">
-            <div class="bidsv2-carousel-label">${TL('carousel')}</div>
-            <div class="bidsv2-carousel-number">${(function(){
+          ${(function(){
+            // v23247 — THE BELT PANEL'S TWO BARS ARE THE BOARD'S OWN LANGUAGES
+            // (Nick's MIA shot: 'the dual language is not properly working' —
+            // top bar CARRUSEL from the rotating slide, bottom bar CARROUSEL
+            // hardcoded French in the CSS ::after, a YQM-era EN/FR assumption
+            // stamped onto an EN/ES airport). Same contract as the column
+            // headers: bar 1 = langs[0], bar 2 = langs[1], static across the
+            // language slides; no second language (or same word) → no second
+            // bar. The words reach the ::after through --crsl-l2.
+            var _crslO = (typeof LS !== 'undefined' && LS['carousel']) || {};
+            var _crslLs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en', 'fr'];
+            var _crslW1 = String(_crslO[_crslLs[0]] || _crslO.en || 'Carousel');
+            var _crslW2 = _crslLs.length > 1 ? String(_crslO[_crslLs[1]] || '') : '';
+            if (_crslW2 && _crslW2.toLowerCase() === _crslW1.toLowerCase()) _crslW2 = '';
+            var _crslVars = _crslW2
+              ? "--crsl-l2:'" + _crslW2.toUpperCase().replace(/'/g, '') + "';"
+              : '--crsl-l2-disp:none;';
+            var _crslNum = (function(){
               const _m = String(subScreenVal || '').match(/^(\w+)-(.+)$/);
               return _m ? _m[2] : (subScreenVal || '—');
-            })()}</div>
-            ${_mcoBagTerm ? `<div class="bidsv2-carousel-terminal">Terminal ${_mcoBagTerm}</div>` : ''}
-          </div>
+            })();
+            return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
+              + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
+              + '<div class="bidsv2-carousel-number" data-len="' + String(_crslNum).length + '">' + _crslNum + '</div>'
+              + (_mcoBagTerm ? '<div class="bidsv2-carousel-terminal">Terminal ' + _mcoBagTerm + '</div>' : '')
+              + '</div>';
+          })()}
 
           <div class="bidsv2-flight-list">
             <div class="bidsv2-list-header">
@@ -18558,6 +18673,13 @@ const IATA_TO_EMBLEM = {
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
   'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
   'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe
+  // v23250 — LATAM had no emblem file, so the banner's pair path fell to the
+  // LAN square TILE: a navy rounded plate that read as an app icon beside the
+  // wordmark (Nick's MIA J5 shot: 'unacceptable it's not what I asked for').
+  // The spark is the tile's own coral+white brandmark cut free of the navy
+  // square — native colours, no plate — and latam-wordmark-light is letters
+  // only, so the pair composes the official spark+LATAM lockup.
+  'LA': '/logos/airlines/asian-other/latam-spark.svg',         // LATAM spark (coral + white)
 };
 
 
@@ -18884,7 +19006,11 @@ const ES_BOARD_AIRPORTS = new Set([
 // Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
 // drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
 const BOARD_LANG_DEFAULTS = {
-  MCO: ['en', 'es']
+  MCO: ['en', 'es'],
+  // v23247 — Miami runs English+Spanish (Nick's boards are assigned en/es;
+  // without a baked default a profile-wiped display fell back to the Canada
+  // en/fr pair — French 'Carrousel' on a Miami baggage screen).
+  MIA: ['en', 'es']
 };
 function boardLangsFor(iata) {
   var _k = String(iata || '').toUpperCase();
@@ -19618,7 +19744,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23245';
+var FIDS_BUILD_TAG = 'v23253';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
