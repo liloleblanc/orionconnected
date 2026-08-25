@@ -44,7 +44,10 @@ test('only supported production pages sit at the public root', () => {
     .sort();
   assert.deepEqual(pages, [
     'app.html', 'bids.html', 'designer.html', 'fids.html', 'gids.html',
-    'index.html', 'menu.html', 'picker.html', 'rotate.html'
+    'index.html', 'menu.html', 'picker.html', 'rotate.html',
+    // v23265 — the multi-airport tour: rotate.html's scene rotation plus an
+    // airport layer and an arrival card between them.
+    'tour.html'
   ].sort());
 });
 

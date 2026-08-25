@@ -15431,6 +15431,14 @@ const AP = {
   YQT:{ name:'Thunder Bay International Airport',                       tz:'America/Toronto'     },
   YZF:{ name:'Yellowknife Airport',                                  tz:'America/Yellowknife'},
 };
+// v23265 — EXPORTED for sibling pages in the same origin. AP is declared with
+// `const`, which creates a script-scope binding and NOT a window property, so
+// a parent page holding this board in an iframe could read every `var`-declared
+// table here but not this one. tour.html needs the name and tz to announce the
+// airport it is arriving at, and the alternative — its own copy of the table —
+// would drift the moment an airport is added here. Same convention as
+// _AIRLINE_EMBLEM_FILES and _adsbAreaCached above.
+try { if (typeof window !== 'undefined') window.AP = AP; } catch (e) {}
 
 // ── CITY NAMES ────────────────────────────────────────────────────────────
 const CITY = {
@@ -19917,7 +19925,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23263';
+var FIDS_BUILD_TAG = 'v23265';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

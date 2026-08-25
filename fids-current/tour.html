@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orion Airport Tour</title>
+  <link rel="stylesheet" href="css/airport-fonts.css">
+  <style>
+    html, body { margin: 0; height: 100%; width: 100%; overflow: hidden;
+                 background: #0b1a2b; cursor: none; }
+
+    /* Boards live in iframes and are only ever shown/hidden by class — the same
+       arrangement rotate.html uses, and for the same reason: switching a class
+       cannot reload a board or restart its splash. The one thing this page adds
+       is that an iframe's src DOES change when the tour moves to a new airport,
+       because a board reads ?ap= once at init and has no in-place airport swap.
+       That reload is always performed underneath the arrival card, so it is
+       never visible — see startAirport(). */
+    .oc-frame {
+      position: fixed; inset: 0; width: 100vw; height: 100vh; border: 0;
+      margin: 0; padding: 0; display: block;
+      opacity: 0; visibility: hidden; pointer-events: none;
+      /* leaving: fade out fully, THEN stop painting (deferring visibility keeps
+         the outgoing board on screen for its whole fade instead of cutting it) */
+      transition: opacity var(--oc-fade, .6s) ease, visibility 0s linear var(--oc-fade, .6s);
+      z-index: 1;
+    }
+    .oc-frame.oc-active {
+      opacity: 1; visibility: visible; pointer-events: auto; z-index: 2;
+      transition: opacity var(--oc-fade, .6s) ease, visibility 0s linear 0s;
+    }
+
+    /* ── The arrival card ────────────────────────────────────────────────────
+       Sits above every board so it can cover a reload completely. Its ground is
+       the same #0b1a2b the boards fade through, so card and boards dissolve into
+       each other rather than stepping through a different colour. */
+    #tourCard {
+      position: fixed; inset: 0; z-index: 10;
+      display: flex; align-items: center; justify-content: center;
+      background:
+        radial-gradient(120% 90% at 50% 40%, #14324f 0%, #0b1a2b 62%, #071320 100%);
+      opacity: 0; visibility: hidden;
+      transition: opacity var(--oc-fade, .6s) ease, visibility 0s linear var(--oc-fade, .6s);
+      font-family: 'Airport', 'AC Nord Text', system-ui, -apple-system, sans-serif;
+      color: #eaf2fb;
+      text-align: center;
+      -webkit-font-smoothing: antialiased;
+    }
+    #tourCard.on {
+      opacity: 1; visibility: visible;
+      transition: opacity var(--oc-fade, .6s) ease, visibility 0s linear 0s;
+    }
+    .tc-inner { transform: translateY(0); padding: 0 6vw; max-width: 92vw; }
+    /* Each line eases up as the card arrives. Staggered so the eye lands on the
+       code first, which is the thing being announced. */
+    #tourCard.on .tc-kicker { animation: tcRise .7s ease .05s both; }
+    #tourCard.on .tc-code   { animation: tcRise .7s ease .15s both; }
+    #tourCard.on .tc-name   { animation: tcRise .7s ease .28s both; }
+    #tourCard.on .tc-meta   { animation: tcRise .7s ease .40s both; }
+    @keyframes tcRise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+    .tc-kicker {
+      font-weight: 500; letter-spacing: .34em; text-transform: uppercase;
+      font-size: clamp(13px, 1.5vw, 24px);
+      color: #7fb2e0;
+      margin-bottom: clamp(10px, 1.6vh, 22px);
+    }
+    .tc-kicker .tc-sep { opacity: .45; margin: 0 .7em; }
+    .tc-code {
+      font-weight: 700; letter-spacing: .06em;
+      font-size: clamp(78px, 15vw, 260px);
+      line-height: .96;
+      margin: 0 0 clamp(8px, 1.4vh, 20px);
+      text-shadow: 0 6px 34px rgba(0, 0, 0, .55);
+    }
+    .tc-name {
+      font-weight: 400;
+      font-size: clamp(19px, 2.7vw, 46px);
+      line-height: 1.2;
+      color: #dcebfa;
+      margin-bottom: clamp(14px, 2.2vh, 30px);
+      min-height: 1.2em;   /* reserve the line so a late-arriving name can't shift the card */
+    }
+    .tc-meta {
+      font-weight: 300; letter-spacing: .16em; text-transform: uppercase;
+      font-size: clamp(12px, 1.25vw, 20px);
+      color: #8fb6d8;
+    }
+    .tc-meta .tc-sep { opacity: .45; margin: 0 .6em; }
+    /* A thin progress hairline: how far through this airport's slot we are.
+       Reads as intent rather than decoration on a 24/7 stream. */
+    .tc-rule {
+      margin: clamp(18px, 3vh, 40px) auto 0; height: 2px; width: min(38vw, 460px);
+      background: rgba(127, 178, 224, .22); border-radius: 2px; overflow: hidden;
+    }
+    .tc-rule i { display: block; height: 100%; width: 0; background: #7fb2e0; border-radius: 2px; }
+    #tourCard.on .tc-rule i { animation: tcSweep var(--tc-announce, 7s) linear both; }
+    @keyframes tcSweep { from { width: 0; } to { width: 100%; } }
+  </style>
+</head>
+<body>
+  <div id="tourCard" aria-live="polite">
+    <div class="tc-inner">
+      <div class="tc-kicker"><span id="tcK1">Now Arriving</span><span class="tc-sep">|</span><span id="tcK2">Arrivée à</span></div>
+      <div class="tc-code" id="tcCode">—</div>
+      <div class="tc-name" id="tcName"></div>
+      <div class="tc-meta"><span id="tcTime"></span><span class="tc-sep" id="tcMetaSep"></span><span id="tcTz"></span></div>
+      <div class="tc-rule"><i></i></div>
+    </div>
+  </div>
+
+  <script>
+  /* Orion airport tour.
+
+     URL:
+       tour.html?tour=YQM,YHZ,YUL,LGA&apdwell=300&rotate=fids,gids,bids&dwell=60
+
+       tour     ordered airport codes (aliases: airports, aps). Repeats allowed.
+       apdwell  seconds per AIRPORT (default 300 = 5 min). A MINIMUM, not a cut:
+                the tour leaves for the next airport at the first scene boundary
+                at or after it, so a board is never chopped mid-scene.
+       rotate   ordered scenes within each airport (default fids,gids,bids)
+       dwell    seconds per SCENE (default 60)
+       announce seconds the arrival card holds (default 7)
+       fade     seconds for each half of a transition (default 0.6)
+       hold     seconds of rest on black between halves (default 0.2)
+
+     Every other param (mode, theme, stream, …) is forwarded to each board. `ap`
+     is NOT forwarded — the tour owns it — and gate/belt pins are dropped too,
+     since a gate number means nothing once the tour moves to another airport.
+
+     This is rotate.html plus an airport layer. The hard-won parts of that file
+     are kept deliberately and for the reasons its comments give: sequenced
+     fades so nothing is ever half-transparent over anything else, a Web Worker
+     clock so a busy board cannot starve the rotation, and every reveal recorded
+     as a DUE TIME so a starved timer costs a moment of black rather than
+     ending the stream on it. This runs 24/7 unattended; it must not be able to
+     come to rest. */
+  (function () {
+    try {
+      var q = new URLSearchParams(window.location.search);
+
+      // ── Airports ────────────────────────────────────────────────────────
+      var tourRaw = (q.get('tour') || q.get('airports') || q.get('aps') || 'YQM,YHZ,YUL').trim();
+      var tour = tourRaw.split(',')
+        .map(function (s) { return String(s || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, ''); })
+        .filter(function (s) { return s.length >= 3 && s.length <= 4; });
+      // Collapse accidental back-to-back repeats so the tour never "arrives"
+      // at the airport it is already showing.
+      tour = tour.filter(function (c, i) { return i === 0 || c !== tour[i - 1]; });
+      if (!tour.length) tour = ['YQM'];
+
+      var apDwell = parseInt(q.get('apdwell') || q.get('airportdwell') || '300', 10);
+      if (!(apDwell > 0)) apDwell = 300;
+
+      // ── Scenes ──────────────────────────────────────────────────────────
+      var rot = (q.get('rotate') || 'fids,gids,bids').trim();
+      var dwell = parseInt(q.get('dwell') || q.get('every') || '60', 10);
+      if (!(dwell > 0)) dwell = 60;
+
+      var fadeSec = parseFloat(q.get('fade') || '0.6');
+      if (!(fadeSec >= 0 && fadeSec <= 5)) fadeSec = 0.6;
+      var holdSec = parseFloat(q.get('hold') || '0.2');
+      if (!(holdSec >= 0 && holdSec <= 5)) holdSec = 0.2;
+      var annSec = parseFloat(q.get('announce') || '7');
+      if (!(annSec >= 2 && annSec <= 30)) annSec = 7;
+
+      var FADE_MS = Math.round(fadeSec * 1000);
+      var HOLD_MS = Math.round(holdSec * 1000);
+      var ANN_MS  = Math.round(annSec * 1000);
+      // How long the card will wait past its minimum for the first board to
+      // finish loading. Past this it reveals anyway: a board still painting is
+      // a far better outcome than a stream parked on a card.
+      var LOAD_CAP_MS = 18000;
+
+      document.documentElement.style.setProperty('--oc-fade', fadeSec + 's');
+      document.documentElement.style.setProperty('--tc-announce', annSec + 's');
+
+      var MAP = {
+        fids: 'fids.html', departures: 'fids.html', dep: 'fids.html', flights: 'fids.html',
+        gids: 'gids.html', gates: 'gids.html', gate: 'gids.html',
+        bids: 'bids.html', bags: 'bids.html', bag: 'bids.html', baggage: 'bids.html'
+      };
+      var seq = rot.split(',').map(function (s) { return MAP[s.trim().toLowerCase()]; }).filter(Boolean);
+      seq = seq.filter(function (p, i) { return i === 0 || p !== seq[i - 1]; });
+      if (seq.length === 0) seq = ['fids.html'];
+
+      // ── Params handed to the boards ─────────────────────────────────────
+      ['tour', 'airports', 'aps', 'apdwell', 'airportdwell',
+       'rotate', 'dwell', 'every', 'fade', 'hold', 'announce',
+       'ap',                                   // the tour sets this per airport
+       'gate', 'belt', 'carousel', 'sub'       // airport-specific pins: meaningless across a tour
+      ].forEach(function (k) { q.delete(k); });
+      var childTail = q.toString();
+      childTail = childTail ? ('&' + childTail) : '';
+
+      function childUrl(page, code) { return page + '?ap=' + encodeURIComponent(code) + childTail; }
+
+      // ── Frames ──────────────────────────────────────────────────────────
+      function ocTell(frame, on) {
+        try { frame.contentWindow.postMessage({ oc: on ? 'active' : 'inactive' }, '*'); } catch (e) {}
+      }
+
+      var frameFor = {}, frameReady = {};
+      var uniquePages = seq.filter(function (p, i) { return seq.indexOf(p) === i; });
+      uniquePages.forEach(function (page) {
+        var f = document.createElement('iframe');
+        f.className = 'oc-frame';
+        f.setAttribute('scrolling', 'no');
+        f.setAttribute('allow', 'autoplay');
+        f.addEventListener('load', function () {
+          frameReady[page] = true;
+          ocTell(f, f.classList.contains('oc-active'));
+        });
+        document.body.appendChild(f);
+        frameFor[page] = f;
+        frameReady[page] = false;
+      });
+
+      // ── Airport names ───────────────────────────────────────────────────
+      // Read from a board's own AP table rather than duplicating it here: the
+      // frames are same-origin, and AP is a static const available as soon as
+      // fids-core.js has parsed — well before its data arrives. Names are
+      // cached on first sight, so after the first airport this is instant, and
+      // on later arrivals the OUTGOING board (still loaded) can name the
+      // incoming airport before its own frame has even started loading.
+      var nameCache = {}, tzCache = {};
+      function readAp(code) {
+        if (nameCache[code]) return true;
+        for (var p in frameFor) {
+          try {
+            var w = frameFor[p].contentWindow;
+            var rec = w && w.AP && w.AP[code];
+            if (rec && rec.name) { nameCache[code] = rec.name; tzCache[code] = rec.tz || ''; return true; }
+          } catch (e) { /* not loaded yet */ }
+        }
+        return false;
+      }
+
+      // Is this board fit to be revealed? The iframe `load` event is the wrong
+      // question: it waits on every subresource, and a gate board is still
+      // streaming advert video long after it is visually complete — measured
+      // here, `load` had not fired 18s in, so the card sat holding a board that
+      // was ready. The board publishes its own answer: _initialFetchDone flips
+      // when its first data fetch lands, which is precisely "there is something
+      // real to show". `load` is kept as a second route so a board that somehow
+      // never sets the flag still gets revealed.
+      function frameShowable(page) {
+        if (frameReady[page]) return true;
+        try {
+          var w = frameFor[page].contentWindow;
+          if (w && w._initialFetchDone === true) return true;
+        } catch (e) { /* still navigating */ }
+        return false;
+      }
+
+      var cardEl  = document.getElementById('tourCard');
+      var elCode  = document.getElementById('tcCode');
+      var elName  = document.getElementById('tcName');
+      var elTime  = document.getElementById('tcTime');
+      var elTz    = document.getElementById('tcTz');
+      var elSep   = document.getElementById('tcMetaSep');
+
+      function paintCard(code) {
+        elCode.textContent = code;
+        readAp(code);
+        elName.textContent = nameCache[code] || '';
+        var tz = tzCache[code] || '';
+        if (tz) {
+          var t = '';
+          try {
+            t = new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+          } catch (e) { t = ''; }
+          elTime.textContent = t;
+          elTz.textContent = t ? 'Local Time | Heure Locale' : '';
+          elSep.textContent = t ? '|' : '';
+        } else {
+          elTime.textContent = ''; elTz.textContent = ''; elSep.textContent = '';
+        }
+      }
+
+      // ── State ───────────────────────────────────────────────────────────
+      // PHASE walks: card-in → card-load → card-hold → scene → (card-in …)
+      var PHASE = 'card-in';
+      var apIdx = 0, idx = 0;
+      var phaseDueAt = 0;      // when the current phase may end
+      var phaseCapAt = 0;      // hard ceiling for phases that also wait on loading
+      var slotStart = 0;       // this scene became visible
+      var airportStart = 0;    // this airport's first scene became visible
+      var pendingShow = null;  // {frame, dueAt} — a reveal not yet performed
+
+      var GATE = 'gids.html';
+      var minMs = dwell * 1000;
+      var maxMs = Math.max(minMs * 3, minMs + 120000);
+      var apMinMs = apDwell * 1000;
+
+      function hideAllFrames() {
+        uniquePages.forEach(function (page) {
+          var f = frameFor[page];
+          if (f.classList.contains('oc-active')) { f.classList.remove('oc-active'); ocTell(f, false); }
+        });
+      }
+
+      function startAirport(i) {
+        apIdx = i;
+        idx = 0;
+        pendingShow = null;
+        var code = tour[apIdx];
+        paintCard(code);
+        // Restart the card's entrance animations even when it is already up
+        // (single-airport tours, or a re-arrival at the same code).
+        cardEl.classList.remove('on');
+        void cardEl.offsetWidth;      // reflow: without it the browser coalesces
+                                      // the remove/add and no animation replays
+        cardEl.classList.add('on');
+        PHASE = 'card-in';
+        phaseDueAt = Date.now() + FADE_MS;
+      }
+
+      // The card is fully opaque: swap the boards underneath it. Nothing here
+      // is visible, which is the whole reason the reload happens at this point
+      // rather than while the card is still fading in.
+      function loadAirportFrames() {
+        var code = tour[apIdx];
+        hideAllFrames();
+        uniquePages.forEach(function (page) {
+          frameReady[page] = false;
+          frameFor[page].src = childUrl(page, code);
+        });
+        PHASE = 'card-hold';
+        phaseDueAt = Date.now() + ANN_MS;
+        phaseCapAt = Date.now() + ANN_MS + LOAD_CAP_MS;
+      }
+
+      // Reveal the first scene UNDER the card, then take the card away — so the
+      // board is already painted when it becomes visible and the arrival reads
+      // as one dissolve rather than a cut to a half-built screen.
+      function revealFirstScene() {
+        var f = frameFor[seq[0]];
+        idx = 0;
+        f.classList.add('oc-active');
+        ocTell(f, true);
+        cardEl.classList.remove('on');
+        PHASE = 'scene';
+        slotStart = Date.now();
+        airportStart = Date.now();
+      }
+
+      function showNow() {
+        if (!pendingShow) return;
+        var f = pendingShow.frame;
+        pendingShow = null;
+        if (!f.classList.contains('oc-active')) { f.classList.add('oc-active'); ocTell(f, true); }
+        slotStart = Date.now();       // the dwell starts when it is VISIBLE
+      }
+
+      function nextAirport() {
+        if (tour.length < 2) { airportStart = Date.now(); return; }
+        startAirport((apIdx + 1) % tour.length);
+      }
+
+      function advanceScene() {
+        if (PHASE !== 'scene' || pendingShow) return;
+        // The airport's time is judged HERE, at a scene boundary, so leaving for
+        // the next airport can never chop a board mid-scene. apdwell is
+        // therefore a floor: the actual stay rounds up to whole scenes.
+        if (tour.length > 1 && (Date.now() - airportStart) >= apMinMs) { nextAirport(); return; }
+        var cur = frameFor[seq[idx]];
+        idx = (idx + 1) % seq.length;
+        var nxt = frameFor[seq[idx]];
+        slotStart = Date.now();
+        if (nxt === cur) return;
+        cur.classList.remove('oc-active');
+        ocTell(cur, false);
+        pendingShow = { frame: nxt, dueAt: Date.now() + FADE_MS + HOLD_MS };
+        setTimeout(showNow, FADE_MS + HOLD_MS);
+      }
+
+      // A gate ad just finished. Switching only on these boundaries is what
+      // keeps the gate board from being cut mid-advert; boundaries before the
+      // minimum are ignored.
+      window.addEventListener('message', function (ev) {
+        var d = ev && ev.data;
+        if (!d || !d.ocGateBoundary) return;
+        if (PHASE !== 'scene' || pendingShow) return;
+        if (seq[idx] === GATE && (Date.now() - slotStart) >= minMs) advanceScene();
+      });
+
+      // ── The clock ───────────────────────────────────────────────────────
+      // On its own thread, because a board rendering flat out can and did starve
+      // the main thread's timers. Every transition is expressed as a due time
+      // and re-checked here, so a starved setTimeout costs at most one extra
+      // second rather than stranding the stream.
+      function beat() {
+        var now = Date.now();
+
+        if (PHASE === 'card-in') {
+          if (now >= phaseDueAt) loadAirportFrames();
+          return;
+        }
+        if (PHASE === 'card-hold') {
+          // Keep repainting: the name and local time resolve the moment a board
+          // has parsed, which for the very first airport is after the card is
+          // already up.
+          paintCard(tour[apIdx]);
+          if ((now >= phaseDueAt && frameShowable(seq[0])) || now >= phaseCapAt) revealFirstScene();
+          return;
+        }
+
+        // PHASE === 'scene'
+        if (pendingShow && now >= pendingShow.dueAt) showNow();
+        if (pendingShow) return;
+        var elapsed = now - slotStart;
+        if (seq[idx] === GATE) {
+          if (elapsed >= maxMs) advanceScene();
+        } else if (elapsed >= minMs) {
+          advanceScene();
+        }
+      }
+
+      startAirport(0);
+
+      var driven = false;
+      try {
+        var _wsrc = 'setInterval(function(){postMessage(1);}, 1000);';
+        var _w = new Worker(URL.createObjectURL(new Blob([_wsrc], { type: 'application/javascript' })));
+        _w.onmessage = beat;
+        driven = true;
+      } catch (e) { /* fall through to setInterval */ }
+      if (!driven) { window.setInterval(beat, 1000); }
+    } catch (e) { /* a failure here leaves the card up rather than a blank page */ }
+  })();
+  </script>
+</body>
+</html>
