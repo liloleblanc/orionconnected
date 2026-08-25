@@ -14911,14 +14911,33 @@ const gView = document.getElementById('gateView');
           <!-- Decorative chevron layers behind the carousel block -->
           <div class="bidsv2-chevrons"></div>
 
-          <div class="bidsv2-carousel-block">
-            <div class="bidsv2-carousel-label">${TL('carousel')}</div>
-            <div class="bidsv2-carousel-number">${(function(){
+          ${(function(){
+            // v23247 — THE BELT PANEL'S TWO BARS ARE THE BOARD'S OWN LANGUAGES
+            // (Nick's MIA shot: 'the dual language is not properly working' —
+            // top bar CARRUSEL from the rotating slide, bottom bar CARROUSEL
+            // hardcoded French in the CSS ::after, a YQM-era EN/FR assumption
+            // stamped onto an EN/ES airport). Same contract as the column
+            // headers: bar 1 = langs[0], bar 2 = langs[1], static across the
+            // language slides; no second language (or same word) → no second
+            // bar. The words reach the ::after through --crsl-l2.
+            var _crslO = (typeof LS !== 'undefined' && LS['carousel']) || {};
+            var _crslLs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en', 'fr'];
+            var _crslW1 = String(_crslO[_crslLs[0]] || _crslO.en || 'Carousel');
+            var _crslW2 = _crslLs.length > 1 ? String(_crslO[_crslLs[1]] || '') : '';
+            if (_crslW2 && _crslW2.toLowerCase() === _crslW1.toLowerCase()) _crslW2 = '';
+            var _crslVars = _crslW2
+              ? "--crsl-l2:'" + _crslW2.toUpperCase().replace(/'/g, '') + "';"
+              : '--crsl-l2-disp:none;';
+            var _crslNum = (function(){
               const _m = String(subScreenVal || '').match(/^(\w+)-(.+)$/);
               return _m ? _m[2] : (subScreenVal || '—');
-            })()}</div>
-            ${_mcoBagTerm ? `<div class="bidsv2-carousel-terminal">Terminal ${_mcoBagTerm}</div>` : ''}
-          </div>
+            })();
+            return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
+              + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
+              + '<div class="bidsv2-carousel-number" data-len="' + String(_crslNum).length + '">' + _crslNum + '</div>'
+              + (_mcoBagTerm ? '<div class="bidsv2-carousel-terminal">Terminal ' + _mcoBagTerm + '</div>' : '')
+              + '</div>';
+          })()}
 
           <div class="bidsv2-flight-list">
             <div class="bidsv2-list-header">
@@ -18929,7 +18948,11 @@ const ES_BOARD_AIRPORTS = new Set([
 // Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
 // drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
 const BOARD_LANG_DEFAULTS = {
-  MCO: ['en', 'es']
+  MCO: ['en', 'es'],
+  // v23247 — Miami runs English+Spanish (Nick's boards are assigned en/es;
+  // without a baked default a profile-wiped display fell back to the Canada
+  // en/fr pair — French 'Carrousel' on a Miami baggage screen).
+  MIA: ['en', 'es']
 };
 function boardLangsFor(iata) {
   var _k = String(iata || '').toUpperCase();
@@ -19663,7 +19686,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23246';
+var FIDS_BUILD_TAG = 'v23247';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

@@ -12586,9 +12586,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   z-index: 3 !important;
 }
 
-/* FR label — same bar, hard against the bottom edge */
+/* Second-language label — same bar, hard against the bottom edge.
+   v23247 — the word comes from the board's OWN second assigned language via
+   --crsl-l2 (stamped by the bidsv2 template); the literal 'CARROUSEL' is only
+   the fallback for un-stamped markup. A board with no distinct second
+   language stamps --crsl-l2-disp:none and the bar disappears (Nick's MIA
+   shot: hardcoded French on an EN/ES airport — 'the dual language is not
+   properly working'). */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::after {
-  content: 'CARROUSEL' !important;
+  content: var(--crsl-l2, 'CARROUSEL') !important;
+  display: var(--crsl-l2-disp, block) !important;
   position: absolute !important;
   left: auto !important;
   right: 42% !important;
@@ -12632,6 +12639,18 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   text-shadow: 0 0 10px rgba(255,255,255,0.35) !important;
   position: relative !important;
   z-index: 3 !important;
+}
+/* v23247 — MULTI-DIGIT BELTS FIT THE WEDGE (measured on MIA belt 10: the
+   fixed 52vh numeral with the 42% right inset ran off the panel's left edge
+   and the clip-path sliced the leading digit — the board read 'belt 0').
+   The numeral eases down with its own length; data-len is stamped by the
+   template. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number[data-len="2"] {
+  font-size: 33vh !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number[data-len="3"],
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-number[data-len="4"] {
+  font-size: 22vh !important;
 }
 
 
