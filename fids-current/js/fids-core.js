@@ -12028,7 +12028,11 @@ function gateAutofit(root) {
           try { if (typeof window._detectPlaneFacing === 'function') window._detectPlaneFacing(im); } catch (e2) {}
           var left = !!(shelf && shelf.classList.contains('g8-plane-faces-left'));
           var slender = (im.naturalWidth / im.naturalHeight) > 5;
-          var mag = slender ? 1.2 : 1.8;
+          // v23249 — trim eased 1.8/1.2 → 1.3/1.0 (Nick's MIA D1 shot: 'the
+          // other one is stalling' — 1.8° on the big A321 plates read as too
+          // steep once the diving planes were levelled; his original ask was
+          // 'slightly angled up, not much just a bit').
+          var mag = slender ? 1.0 : 1.3;
           wrap.style.setProperty('--ac-pitch', (left ? mag : -mag) + 'deg');
         } catch (e) {}
       }
@@ -19712,7 +19716,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23248';
+var FIDS_BUILD_TAG = 'v23249';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

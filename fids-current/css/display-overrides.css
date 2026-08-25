@@ -14357,10 +14357,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img {
   animation: g8AcFloatV3 9s ease-in-out infinite !important;
   transform-origin: 50% 55%;
-  --ac-pitch: -1.8deg;   /* fallback; the per-art pass refines by slenderness */
+  --ac-pitch: -1.3deg;   /* fallback; the per-art pass refines by slenderness (v23249 eased) */
 }
 html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus.g8-plane-faces-left .v2-rc-aircraft-img {
-  --ac-pitch: 1.8deg;    /* fallback; the per-art pass refines by slenderness */
+  --ac-pitch: 1.3deg;    /* fallback; the per-art pass refines by slenderness (v23249 eased) */
 }
 html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 11px; }
 @media (min-height: 900px) {
