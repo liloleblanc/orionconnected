@@ -8298,15 +8298,21 @@ function _buildV2MapCol(ctx, vars) {
         // revision — the same semantics as the left rail's status banner.
         +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_stCls || '') ? ' v2-fi-title-warn' : ((_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) ? ' v2-fi-title-good' : '')) + '">' + _mcTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</span></div>'
+        // v23256 \u2014 LINES REARRANGED per Nick's sketch ('rearrangement of the
+        // words [so] that makes sense'):
+        //   AC7992 \u00b7 From | De: Montreal | YUL
+        //   10:48am | 10:25am  Revised | R\u00e9vis\u00e9   (times first, label after)
+        //   Delayed | En retard                   (status on its own line)
+        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _ibCityCode + '</div>'
         +         (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr
-                    ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span><span class="v2-fi-mcolon">:</span> '
+                    ? '<div class="v2-fi-mline2">'
                       + '<span class="v2-rc-status-' + (_stCls || 'delayed') + '">' + _railT(_ibArrRevStr) + '</span>'
-                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span></div>'
+                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>'
+                      + ' <span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span></div>'
                     : (_ibArrSchedStr
-                        ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _railT(_ibArrSchedStr) + '</div>'
+                        ? '<div class="v2-fi-mline2">' + _railT(_ibArrSchedStr) + ' <span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span></div>'
                         : ''))
-        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _ibCityCode + '</div>'
+        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</span></div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -8601,20 +8607,17 @@ function _buildV2MapCol(ctx, vars) {
         // not amber; only delay-family changes warn (mirrors the inbound).
         +       '<div class="v2-fi-title' + ((/delayed|cancelled|diverted/.test(_dStCls || '') || (_dDepDelayed && !_dDepEarly)) ? ' v2-fi-title-warn' : (_dDepDelayed && _dDepEarly ? ' v2-fi-title-good' : '')) + '">' + _mdTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</span></div>'
-        // v23208 \u2014 the time row reads 'Revised | R\u00e9vis\u00e9: new | struck-old'
-        // whenever a revision exists, exactly like the inbound card (Nick:
-        // 'DepartureD\u00e9part: 10:50am NO this is Revised | Revis\u00e9'); the plain
-        // 'Departure | D\u00e9part' label only when nothing was revised.
+        // v23256 \u2014 LINES REARRANGED per Nick's sketch, mirroring the inbound
+        // card: flight + destination up top, times first with the label
+        // after, status alone on the last line.
+        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-fi-mlbl">' + _gateLblSpans('to', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
         +         (_dDepDelayed && _dDepStr && _dDepSchedStr && _dDepSchedStr !== _dDepStr
-                    ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span><span class="v2-fi-mcolon">:</span> '
+                    ? '<div class="v2-fi-mline2">'
                       + '<span class="v2-rc-status-' + (_dDepEarly ? 'early' : (_dStCls || 'delayed')) + '">' + (_dRailT(_dDepStr) || '') + '</span>'
-                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _dRailT(_dDepSchedStr) + '</span></span></div>'
-                    : (_dDepStr ? '<div class="v2-fi-mline2"><span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_dRailT(_dDepStr) || '') + '</div>' : ''))
-        // v23208 \u2014 'To | \u00c0', not a bare colon: the 'destination' key never
-        // existed in _GATE_LBL, so the label rendered empty (Nick: ': Ottawa
-        // | YOW NO this is terrible To | \u00c0:').
-        +         '<div class="v2-fi-mline3"><span class="v2-fi-mlbl">' + _gateLblSpans('to', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
+                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _dRailT(_dDepSchedStr) + '</span></span>'
+                      + ' <span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span></div>'
+                    : (_dDepStr ? '<div class="v2-fi-mline2">' + (_dRailT(_dDepStr) || '') + ' <span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span></div>' : ''))
+        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</span></div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -12127,11 +12130,13 @@ function gateAutofit(root) {
     root.querySelectorAll('.gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-value').forEach(function (val) {
       var lines = [].slice.call(val.querySelectorAll('.v2-fi-mline1, .v2-fi-mline2, .v2-fi-mline3'));
       if (!lines.length) return;
-      var tc = val.closest('.v2-fi-textcol'); if (!tc) return;
       lines.forEach(function (ln) { ln.style.removeProperty('font-size'); });
-      // v23256 — a real gutter, not 2px (Nick's delayed-card photo: 'it
-      // needs to fit snug in the box without it spilling').
-      var availW = Math.floor(tc.clientWidth) - 12;
+      // v23256 — the budget is the VALUE CELL's own content width: it is the
+      // element that carries overflow:hidden, and it is NARROWER than the
+      // textcol (whose clientWidth includes its 15px padding) — measuring
+      // the textcol passed lines the value cell then clipped (Nick's photo:
+      // 'YUL' losing its L). A 6px gutter keeps it snug, not grazing.
+      var availW = Math.floor(val.clientWidth) - 6;
       if (availW < 60) return;
       var row2 = val.closest('.v2-fi-row');
       var title2 = row2 ? row2.querySelector('.v2-fi-title') : null;
@@ -12156,10 +12161,15 @@ function gateAutofit(root) {
       // ran off the card). Re-measure and shrink until every line fits; runs
       // whether or not the grow branch fired, so a line that overflows at
       // its own base size is pulled in too.
+      // The clip edge, not the gutter target: scrollWidth is floored at the
+      // line's own box width, so comparing against availW would 'detect'
+      // overflow on lines that already fit and shrink them for nothing.
+      var _clipW = Math.floor(val.clientWidth);
       for (var _fit = 0; _fit < 3; _fit++) {
         var _over = 1;
-        lines.forEach(function (ln) { var w = ln.scrollWidth; if (w > availW) _over = Math.max(_over, w / availW); });
+        lines.forEach(function (ln) { var w = ln.scrollWidth; if (w > _clipW) _over = Math.max(_over, w / _clipW); });
         if (_over <= 1.005) break;
+        _over *= 1.02;   // land inside the edge, not on it
         lines.forEach(function (ln) {
           var cur = parseFloat(ln.style.fontSize) || parseFloat(getComputedStyle(ln).fontSize) || 0; if (!cur) return;
           ln.style.setProperty('font-size', (Math.floor(cur / _over * 10) / 10) + 'px', 'important');
