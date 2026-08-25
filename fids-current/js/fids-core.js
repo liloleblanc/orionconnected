@@ -12129,7 +12129,9 @@ function gateAutofit(root) {
       if (!lines.length) return;
       var tc = val.closest('.v2-fi-textcol'); if (!tc) return;
       lines.forEach(function (ln) { ln.style.removeProperty('font-size'); });
-      var availW = Math.floor(tc.clientWidth) - 2;
+      // v23256 — a real gutter, not 2px (Nick's delayed-card photo: 'it
+      // needs to fit snug in the box without it spilling').
+      var availW = Math.floor(tc.clientWidth) - 12;
       if (availW < 60) return;
       var row2 = val.closest('.v2-fi-row');
       var title2 = row2 ? row2.querySelector('.v2-fi-title') : null;
@@ -12142,11 +12144,27 @@ function gateAutofit(root) {
       if (!isFinite(f)) return;
       if (availH > 20 && sumH > 0) f = Math.min(f, availH / sumH);
       f = Math.min(f, 1.9);
-      if (f <= 1.02) return;   // already at the borders — the clamps stand
-      lines.forEach(function (ln) {
+      if (f > 1.02) lines.forEach(function (ln) {
         var base = parseFloat(getComputedStyle(ln).fontSize) || 0; if (!base) return;
         ln.style.setProperty('font-size', (Math.floor(base * f * 10) / 10) + 'px', 'important');
       });
+      // v23256 — VERIFY AFTER APPLYING. Text width does not scale perfectly
+      // linearly with font-size (hinting, spacing, bold runs), so the
+      // projected factor could land a long delayed-status line a few percent
+      // past the card edge — and these lines wear overflow:visible, so the
+      // excess SPILLED (Nick's photo: 'En retard' and the struck old time
+      // ran off the card). Re-measure and shrink until every line fits; runs
+      // whether or not the grow branch fired, so a line that overflows at
+      // its own base size is pulled in too.
+      for (var _fit = 0; _fit < 3; _fit++) {
+        var _over = 1;
+        lines.forEach(function (ln) { var w = ln.scrollWidth; if (w > availW) _over = Math.max(_over, w / availW); });
+        if (_over <= 1.005) break;
+        lines.forEach(function (ln) {
+          var cur = parseFloat(ln.style.fontSize) || parseFloat(getComputedStyle(ln).fontSize) || 0; if (!cur) return;
+          ln.style.setProperty('font-size', (Math.floor(cur / _over * 10) / 10) + 'px', 'important');
+        });
+      }
     });
     // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL (Nick: 'FIX THE NUMBERS
     // BOARDING IS ATTROCIOUS'). His shot: an AC express final call whose
@@ -19744,7 +19762,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23253';
+var FIDS_BUILD_TAG = 'v23256';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
