@@ -14419,9 +14419,23 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    max-width — the reserve stays (fixed box, no decode pop), just sized to
    the artwork instead of four times it. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-star.g8-r1-alliance-oneworld {
-  width: clamp(76px, 12vh, 92px) !important;
-  min-width: clamp(76px, 12vh, 92px) !important;
-  max-width: clamp(76px, 12vh, 92px) !important;
+  /* v23251 — Nick: 'so can one world [be bigger] … wider than [the]
+     American [symbol] by a bit'. The art is now the CROPPED ball
+     (Oneworld-ball.svg), so this box is the ball's real size — ~104px,
+     a shade wider than the AA flight symbol beside it. */
+  width: clamp(96px, 14vh, 108px) !important;
+  min-width: clamp(96px, 14vh, 108px) !important;
+  max-width: clamp(96px, 14vh, 108px) !important;
   flex: 0 0 auto !important;
   object-fit: contain !important;
+}
+
+/* ── v23251 — THE BANNER WORDMARK GROWS INTO A WIDER SLOT (Nick, watching
+   the YouTube stream: 'I think American logo can be bigger'). The AA lockup
+   is WIDTH-limited (6.5:1 aspect — the 36% silk slot capped its art at
+   ~494px → ~76px lettering). Four more points of slot lets the art reach
+   ~585px before the timebox; carriers whose marks already fit (AC's ~530px)
+   simply stop shrinking and gain nothing, so nothing else moves. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-silk .g8-r1-logoslot {
+  max-width: 40% !important;
 }
