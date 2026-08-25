@@ -2737,7 +2737,17 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // subject is pattern-checked, so this cannot be turned into an open proxy
     // (same SSRF discipline as /maptiles, /logoimg, /miafids).
     if (path.startsWith("/adsb/")) {
-      const ADSB_TTL = 20;                       // seconds; positions age fast
+      // v23254 — 40s, up from 20. The boards refresh telemetry on a 45s
+      // clock, so a 20s edge TTL meant nearly every poll was a cache MISS
+      // that hit the community feeds; doubling the TTL halves our request
+      // volume against per-IP throttles for no visible staleness.
+      const ADSB_TTL = 40;                       // seconds; positions age fast
+      // How long an all-providers-failed answer is remembered. Without this,
+      // every board poll re-hammered feeds that were ALREADY rate-limiting
+      // us (Nick, morning of 2026-08-25: all three upstreams 429 — no
+      // altimeter, no reg, no inbound panel), which keeps the throttle
+      // pinned. Short on purpose: recovery is only ever this far away.
+      const ADSB_NEG_TTL = 30;
       const PROVIDERS = {
         "airplanes.live": "https://api.airplanes.live/v2",
         "adsb.fi":        "https://opendata.adsb.fi/api/v2",
@@ -2777,7 +2787,23 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // then the other allowed feeds in the ring; the first healthy answer
       // wins and is cached. A dead upstream costs one extra hop, never the
       // whole feature. All three feeds speak the same readsb /v2 shape.
-      const ring = [provider].concat(Object.keys(PROVIDERS).filter((p) => p !== provider));
+      // v23254 — SPREAD THE LOAD ACROSS THE RING. Every request used to try
+      // the configured provider first, so one feed absorbed our entire
+      // volume (and rate-limited us), then the cascade moved the SAME full
+      // volume onto the next feed. Rotating the starting provider by a hash
+      // of the subject splits traffic three ways — each feed sees a third —
+      // while any one aircraft still resolves from a consistent feed (which
+      // also keeps its answers steady between polls). Failover order after
+      // the start is unchanged.
+      const _provNames = Object.keys(PROVIDERS);
+      let _h = 0;
+      for (let i = 0; i < subject.length; i++) _h = (_h * 31 + subject.charCodeAt(i)) >>> 0;
+      const _start = _h % _provNames.length;
+      const _rotated = _provNames.slice(_start).concat(_provNames.slice(0, _start));
+      // A pinned ADSB_PROVIDER (explicit env choice) still leads its ring.
+      const ring = env.ADSB_PROVIDER
+        ? [provider].concat(_provNames.filter((p) => p !== provider))
+        : _rotated;
       let lastStatus = 0;
       for (const prov of ring) {
         try {
@@ -2797,9 +2823,19 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
             "X-Adsb-Cache": "miss", "X-Adsb-Provider": prov, ...corsHeaders(origin) } });
         } catch (e) { /* network error → try the next feed */ }
       }
-      // Every feed failed — NOT cached, shaped like a success with no
-      // aircraft so the board's existing "no fix" path handles it.
-      return jsonResponse({ ac: [], _upstreamStatus: lastStatus, _provider: ring.join(",") }, 200, origin);
+      // Every feed failed — shaped like a success with no aircraft so the
+      // board's existing "no fix" path handles it. v23254: the failure IS
+      // cached now, briefly (ADSB_NEG_TTL) — an uncached miss meant every
+      // board poll re-hit feeds that were already rate-limiting us, keeping
+      // the 429s alive. The stampede stops; recovery costs at most 30s.
+      const _negBody = JSON.stringify({ ac: [], _upstreamStatus: lastStatus, _provider: ring.join(",") });
+      try {
+        await cache.put(cacheKey, new Response(_negBody, { headers: {
+          "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_NEG_TTL}` } }));
+      } catch (e) {}
+      return new Response(_negBody, { status: 200, headers: {
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_NEG_TTL}`,
+        "X-Adsb-Cache": "neg", ...corsHeaders(origin) } });
     }
 
     // ── Vecteezy connectivity self-test ─────────────────────────────────
