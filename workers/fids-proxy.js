@@ -2787,6 +2787,87 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // then the other allowed feeds in the ring; the first healthy answer
       // wins and is cached. A dead upstream costs one extra hop, never the
       // whole feature. All three feeds speak the same readsb /v2 shape.
+      // v23255 — AERODATABOX IS THE POSITION SOURCE (Nick: 'I never got the
+      // email done please use aerodatabox for now' — the airplanes.live key
+      // was never registered, and the anonymous community feeds throttle our
+      // shared egress). ADB's flight lookups carry a live `location` block
+      // (lat/lon, pressureAltitude.feet, groundSpeed.kt, trueTrack.deg,
+      // vsiFpm, reportedAtUtc) on EnRoute legs, fetched with the SAME paid
+      // key the schedule data already uses — our own quota, nobody else's
+      // rate limit. The answer is reshaped to the readsb `{ac:[...]}` form
+      // the boards already parse, so nothing client-side changes. The
+      // community ring below stays as the fallback (and takes over entirely
+      // with ADSB_SOURCE="community" or when ADB_KEY is absent).
+      const _ADB_KINDS = { hex: "icao24", reg: "reg", callsign: "callsign" };
+      const _adbFirst = ((env.ADSB_SOURCE || "adb").trim() !== "community") && !!env.ADB_KEY;
+      if (_adbFirst && _ADB_KINDS[kind]) {
+        try {
+          const _adbR = await fetch(
+            `https://aerodatabox.p.rapidapi.com/flights/${_ADB_KINDS[kind]}/${encodeURIComponent(subject)}?withLocation=true&withAircraftImage=false`,
+            { headers: { "X-RapidAPI-Key": env.ADB_KEY, "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com" } }
+          );
+          if (_adbR.ok) {
+            const _adbJ = await _adbR.json().catch(() => null);
+            const _legs = Array.isArray(_adbJ) ? _adbJ : (_adbJ ? [_adbJ] : []);
+            // The live leg: has a location fix, freshest report wins, and an
+            // EnRoute leg beats a stale fix left on an Arrived one.
+            const _withLoc = _legs.filter((f) => f && f.location && typeof f.location.lat === "number" && typeof f.location.lon === "number");
+            const _pool = _withLoc.filter((f) => f.status === "EnRoute").length ? _withLoc.filter((f) => f.status === "EnRoute") : _withLoc;
+            let _best = null, _bestAt = -1;
+            for (const f of _pool) {
+              const _at = Date.parse(String(f.location.reportedAtUtc || "").replace(" ", "T") + (String(f.location.reportedAtUtc || "").endsWith("Z") ? "" : ":00Z")) || 0;
+              if (_at > _bestAt) { _bestAt = _at; _best = f; }
+            }
+            // A fix older than 30 min is a museum piece, not a position.
+            const _ageS = _bestAt > 0 ? Math.max(0, Math.round((Date.now() - _bestAt) / 1000)) : null;
+            if (_best && (_ageS === null || _ageS < 1800)) {
+              const L = _best.location, A = _best.aircraft || {};
+              const _altFt = (L.pressureAltitude && typeof L.pressureAltitude.feet === "number" && L.pressureAltitude.feet > 0)
+                ? Math.round(L.pressureAltitude.feet)
+                : ((L.altitude && typeof L.altitude.feet === "number" && L.altitude.feet > 0) ? Math.round(L.altitude.feet) : null);
+              const _ac = {
+                hex: String(A.modeS || "").toLowerCase() || void 0,
+                flight: _best.callSign || void 0,
+                r: A.reg || void 0,
+                t: A.model || void 0,
+                desc: A.model || void 0,
+                lat: L.lat, lon: L.lon,
+                alt_baro: _altFt !== null ? _altFt : void 0,
+                gs: (L.groundSpeed && typeof L.groundSpeed.kt === "number") ? Math.round(L.groundSpeed.kt) : void 0,
+                track: (L.trueTrack && typeof L.trueTrack.deg === "number") ? L.trueTrack.deg : void 0,
+                baro_rate: (typeof L.vsiFpm === "number") ? L.vsiFpm : void 0,
+                seen_pos: _ageS !== null ? _ageS : void 0
+              };
+              const _adbBody = JSON.stringify({ ac: [_ac], _provider: "aerodatabox" });
+              try {
+                await cache.put(cacheKey, new Response(_adbBody, { headers: {
+                  "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+              } catch (e) {}
+              return new Response(_adbBody, { status: 200, headers: {
+                "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+                "X-Adsb-Cache": "miss", "X-Adsb-Provider": "aerodatabox", ...corsHeaders(origin) } });
+            }
+            // ADB answered but knows no live fix. For hex/reg that is an
+            // authoritative empty — those are exact airframe identifiers, so
+            // cache it briefly and DON'T burn the community ring on it. For
+            // CALLSIGN it is not: ADB's callsign index lags the flown
+            // callsign (measured: AC7992's live leg flies as JZA7992 while
+            // /flights/callsign/ACA7992 still returns yesterday's arrived
+            // leg), so a callsign miss falls through to the ring.
+            if (kind !== "callsign") {
+              const _adbEmpty = JSON.stringify({ ac: [], _provider: "aerodatabox" });
+              try {
+                await cache.put(cacheKey, new Response(_adbEmpty, { headers: {
+                  "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_NEG_TTL}` } }));
+              } catch (e) {}
+              return new Response(_adbEmpty, { status: 200, headers: {
+                "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_NEG_TTL}`,
+                "X-Adsb-Cache": "neg", "X-Adsb-Provider": "aerodatabox", ...corsHeaders(origin) } });
+            }
+          }
+          // Non-OK from ADB (quota, 5xx) → fall through to the community ring.
+        } catch (e) { /* network error → community ring */ }
+      }
       // v23254 — SPREAD THE LOAD ACROSS THE RING. Every request used to try
       // the configured provider first, so one feed absorbed our entire
       // volume (and rate-limited us), then the cascade moved the SAME full
