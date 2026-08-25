@@ -9237,7 +9237,13 @@ function _buildV2MapCol(ctx, vars) {
           // yellow in this case'): PAL's brand accent behind PAL's mark, not
           // the marketing carrier's red. The white-vs-colour logo rule reruns
           // against the operator's ground.
-          var _opAcc = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_opCode] && AIRLINE_BRAND[_opCode].accent) || '';
+          // v23260 — PER-OPERATOR ORB GROUND, bottom-right card only (Nick:
+          // 'red background for jazz and that burgundy for rouge / Again
+          // this is only for bottom right'). The colours are the brands'
+          // own script inks: jazz.svg paints #ce3728, rouge.svg #A21C37.
+          var _CARD_ORB_GROUND = { 'QK': '#ce3728', 'RV': '#A21C37', 'ROU': '#A21C37' };
+          var _opAcc = _CARD_ORB_GROUND[_opCode]
+            || (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_opCode] && AIRLINE_BRAND[_opCode].accent) || '';
           if (_opAcc) {
             _inboundCard = _inboundCard.replace(/(v2-fi-orbwrap" style="[^"]*?)background:var\(--airline-accent,[^)]*\)/, '$1background:' + _opAcc);
             var _oh = _opAcc.replace('#',''); if (_oh.length === 3) _oh = _oh.replace(/./g, function (c) { return c + c; });
@@ -19788,7 +19794,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23259';
+var FIDS_BUILD_TAG = 'v23260';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
