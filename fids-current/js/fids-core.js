@@ -6277,7 +6277,26 @@ var PLANE_FACING = {
   '313.png':'L', '319.png':'L', '320.png':'L', '321.png':'L', '32A.png':'L', '32B.png':'L',
   '32D.png':'L', '32N.png':'L', '32Q.png':'L', '332.png':'L', '333.png':'L', '338.png':'L',
   '339.png':'L', '340.png':'L', '342.png':'L', '343.png':'L', '345.png':'L', '346.png':'L',
-  '351.png':'L', '359.png':'L', '388.png':'L', '3H/732.png':'R', '3H/733.png':'R', '3H/738.png':'R',
+  '351.png':'L', '359.png':'L', '388.png':'L',
+  // v23248 — the 35 livery files that had NO facing entry (Nick's MIA F5
+  // shot: the Frontier A320neo rendered nose-DOWN — 'this airplane does not
+  // look normal'). With the facing unknown at build time, the nose-trim pass
+  // read the missing class as faces-right and applied the wrong sign, so the
+  // plane dived. Facings verified against the artwork (F9/AA/DL/UA/MX face
+  // left; the whole AF and KL sets face right — including KL/737.png, whose
+  // left-edge tail sits past the runtime heuristic's 18% window and was
+  // misread even at load).
+  'AA/E7W.png':'L', 'DL/321.png':'L', 'F9/319.png':'L', 'F9/32A.png':'L',
+  'F9/32B.png':'L', 'F9/32N.png':'L', 'MX/223.png':'L', 'MX/E90.png':'L',
+  'UA/739.png':'L', 'UA/E7W.png':'L',
+  'AF/223.png':'R', 'AF/318.png':'R', 'AF/319.png':'R', 'AF/320.png':'R',
+  'AF/321.png':'R', 'AF/332.png':'R', 'AF/359.png':'R', 'AF/772.png':'R',
+  'AF/77W.png':'R', 'AF/789.png':'R', 'AF/E70.png':'R', 'AF/E90.png':'R',
+  'KL/29E.png':'R', 'KL/32Q.png':'R', 'KL/332.png':'R', 'KL/333.png':'R',
+  'KL/737.png':'R', 'KL/739.png':'R', 'KL/73H.png':'R', 'KL/772.png':'R',
+  'KL/77W.png':'R', 'KL/789.png':'R', 'KL/78X.png':'R', 'KL/E75.png':'R',
+  'KL/E90.png':'R',
+  '3H/732.png':'R', '3H/733.png':'R', '3H/738.png':'R',
   '3H/BEK.png':'R', '3H/DH1.png':'R', '3H/DH3.png':'R', '3H/DHT.png':'R', '5T/733.png':'R', '5T/734.png':'R',
   '5T/73C.png':'R', '5T/73P.png':'R', '5T/AT7.png':'R', '5T/ATR.png':'R', '717.png':'L', '730.png':'L',
   '732.png':'L', '733.png':'L', '734.png':'L', '735.png':'L', '736.png':'L', '737.png':'L',
@@ -12000,6 +12019,13 @@ function gateAutofit(root) {
           if (!im.naturalWidth || !im.naturalHeight) return;
           var wrap = im.closest('.v2-rc-aircraft-img'); if (!wrap) return;
           var shelf = im.closest('.v2-rc-shelf-illus');
+          // v23248 — resolve the facing BEFORE choosing the trim's sign. The
+          // build-time class was empty for any art missing from PLANE_FACING
+          // (the F9 fleet), so this pass read faces-right and pitched the
+          // plane nose-DOWN (Nick's MIA F5 shot). _detectPlaneFacing is
+          // idempotent: known srcs return from the map, unknown ones get the
+          // canvas heuristic — either way the class is current when read.
+          try { if (typeof window._detectPlaneFacing === 'function') window._detectPlaneFacing(im); } catch (e2) {}
           var left = !!(shelf && shelf.classList.contains('g8-plane-faces-left'));
           var slender = (im.naturalWidth / im.naturalHeight) > 5;
           var mag = slender ? 1.2 : 1.8;
@@ -19686,7 +19712,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23247';
+var FIDS_BUILD_TAG = 'v23248';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
