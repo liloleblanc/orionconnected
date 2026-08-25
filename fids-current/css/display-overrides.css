@@ -14334,3 +14334,13 @@ html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 1
 @media (min-height: 900px) {
   html body.gate-acsky:not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus { --ac-float: 16px; }
 }
+
+/* ── v23241 — THE RIGHT CARDS' BANNER TOUCHES THE CARD TOP TOO (Nick:
+   'Banner on the right Departure is still not aligned to the top FFS').
+   The rail fix stretched the text column inside the row, but the right
+   cards' rows carry their own ~13px top padding above that — the banner
+   floated below the card edge by padding + inset. The row padding goes;
+   the banner's own 11px column inset is the whole gap, same as the rail. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-asleft .v2-flightinfo-block > .v2-fi-row {
+  padding-top: 0 !important;
+}
