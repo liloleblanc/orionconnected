@@ -3697,6 +3697,18 @@ var OPERATOR_LOGOS_THEMED = {
 // the orb by the aircraft ('whoever operates that aircraft gets the logo'),
 // never here. Operators without a lettering-only file fall through to their
 // standard art, then to the bold name.
+// v23266 — French property names for Sofitel lockups. When Montréal used the
+// brand-team art it carried its own FR file ('MONTREAL LE CARRE DORE'); now
+// that every property is generated, the French name has to come from
+// somewhere or FR boards would inherit the English one. Keyed on the property
+// name with the 'Sofitel ' prefix stripped, lowercased.
+var SOFITEL_PROPERTY_NAME_FR = {
+  'montreal golden mile':  'Montréal Le Carré Doré',
+  'montréal golden mile':  'Montréal Le Carré Doré',
+  'montreal':              'Montréal',
+  'montréal':              'Montréal'
+};
+
 var OPERATOR_WORDMARKS = {
   'RV':  '/logos/airlines/canadian/rouge.svg',
   'ROU': '/logos/airlines/canadian/rouge.svg',
@@ -4833,9 +4845,20 @@ function makeSofitelLockupInlineSvg(propertyName) {
   // and centred. Long property names ease the size down and take the width
   // they need (up to ~170u) instead of cramming.
   var len = Math.max(1, clean.length);
-  var _est = len * 0.62;                        // ≈ natural caps width in em
+  // v23266 — MEASURED, NOT GUESSED. This assumed 0.62 em per character; the
+  // real advance width of sofitel-name-outer.otf, measured across five
+  // property names in the browser, is ~0.745 (NEW YORK 0.777, MONTREAL GOLDEN
+  // MILE 0.738, QUEBEC LE CHATEAU FRONTENAC 0.730). Underestimating by 20%
+  // meant a long name was given a font-size too big to fit, and textLength
+  // then CLAMPED it back — squeezing the letters together, so long properties
+  // rendered in what looked like a different, condensed typeface next to the
+  // airy 'SOFITEL NEW YORK' reference. Now the size eases down until the name
+  // fits at its NATURAL spacing, and textLength only ever tracks a short name
+  // OUT to the reference width. Nothing is ever compressed.
+  var _est = len * 0.745;                       // natural caps width in em
   var fsz = Math.min(12.5, 170 / _est);         // reference size, eased for long names
-  var _tl = Math.max(93, Math.min(170, Math.round(_est * fsz)));
+  var _nat = _est * fsz;                        // natural width at that size
+  var _tl = (_nat < 93) ? 93 : Math.round(_nat);
   // v23253 — a touch more air under the wordmark (Nick: 'maybe more space a
   // bit not much between Sofitel and New York'): baseline 32.4 → 34.
   return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 42" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
@@ -14409,9 +14432,14 @@ const gView = document.getElementById('gateView');
                   var _mlMini = (typeof fidsMlFlightTimeMins === 'function')
                     ? fidsMlFlightTimeMins(inb._locIata, apIata, _mlMiniType) : null;
                   if (_mlMini) _durMini = _mlMini * 60000;
-                  var _pMini = (Date.now() - (_arrTMini - _durMini)) / _durMini;
+                  var _tMini = (Date.now() - (_arrTMini - _durMini)) / _durMini;
+                  // v23266 — through the taxi-aware profile before it becomes a
+                  // position: the raw time fraction put an aircraft still on the
+                  // ground at Montréal a fifth of the way to Moncton.
+                  var _pMini = (typeof _estAirborneFrac === 'function')
+                    ? _estAirborneFrac(_tMini, _durMini) : _tMini;
                   if (_pMini >= 0.02 && _pMini <= 0.98) _estProg = _pMini;
-                  try { console.log('[MINIMAP-EST]', { st: inb.status, revTs: !!inb._revTs, upd: inb.upd || '', air: _stAirMini, p: +(_pMini || 0).toFixed(3) }); } catch (e) {}
+                  try { console.log('[MINIMAP-EST]', { st: inb.status, revTs: !!inb._revTs, upd: inb.upd || '', air: _stAirMini, t: +(_tMini || 0).toFixed(3), p: +(_pMini || 0).toFixed(3) }); } catch (e) {}
                 } else {
                   try { console.log('[MINIMAP-EST] skipped', { st: inb.status, air: _stAirMini, arrTs: !!_arrTMini, oc: !!_ocMini, dc: !!_dcMini, loc: inb._locIata }); } catch (e) {}
                 }
@@ -19925,7 +19953,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23265';
+var FIDS_BUILD_TAG = 'v23267';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -26860,6 +26888,39 @@ function _gateHeading(fallbackBearing) {
   return fallbackBearing;
 }
 
+// v23266 — GATE-TO-GATE TIME IS NOT FLOWN DISTANCE.
+// Both estimate maps took the elapsed fraction of the scheduled block and used
+// it directly as a fraction of the great-circle route. A flight does not start
+// covering distance at pushback: it taxis, and it taxis again at the far end.
+// Nick's JZA7992 (YUL→YQM, 2026-08-26): pushback 09:00, SIXTEEN minutes of
+// taxi, wheels-up 09:16. At 09:17 FlightAware had it at 800 ft beside Montréal
+// — and the board drew it over Maine, because 17 of an 81-minute block is 21%
+// and 21% of that route lands in Maine. The times on the card were right; the
+// glyph was a lie, which is worse than no glyph.
+//
+// So elapsed time is mapped through a taxi-aware profile: the aircraft holds at
+// the origin through taxi-out, covers the route across the airborne window, and
+// holds at the destination through taxi-in. Taxi allowances scale with the
+// block so a 40-minute hop is not handed a jet-bridge-to-jet-bridge 18 minutes.
+// Checked against that flight: 8% instead of 21%, i.e. just off Montréal, which
+// is where it was.
+function _estAirborneFrac(timeFrac, durMs) {
+  var t = Number(timeFrac);
+  if (!isFinite(t)) return 0;
+  if (t <= 0) return 0;
+  if (t >= 1) return 1;
+  var dur = Number(durMs);
+  if (!isFinite(dur) || dur <= 0) return Math.max(0, Math.min(1, t));
+  var outMs = Math.min(12 * 60000, dur * 0.18);   // taxi-out, capped at 12 min
+  var inMs  = Math.min(6 * 60000,  dur * 0.09);   // taxi-in,  capped at 6 min
+  var a = outMs / dur, b = 1 - (inMs / dur);
+  if (!(b > a)) return Math.max(0, Math.min(1, t));   // degenerate: no room to fly
+  if (t <= a) return 0;
+  if (t >= b) return 1;
+  return (t - a) / (b - a);
+}
+try { if (typeof window !== 'undefined') window._estAirborneFrac = _estAirborneFrac; } catch (e) {}
+
 function _mapPlaneIcon() {
   try {
     // v23107 — LOOK EVERYWHERE THE TYPE ACTUALLY LIVES (Nick, PD472: the
@@ -30501,22 +30562,32 @@ function _processAccorData(data, destIata, langKey) {
         // CLEANED name so we don't bake "EMBLEMS COLLECTION" into the lockup.
         _propertyLockupPath = makeEmblemsLockupSvgDataUri(_emiLockupKey || hotelName);
       }
-    } else if (brand === 'SOF' && hotelName && /montr[eé]al/i.test(hotelName)) {
-      // Sofitel Montréal — brand-team lockups Nick supplied. EN on English
-      // boards, FR on French boards (option B), keyed on _ckLang (the pass's
-      // language, not the live display index). The art is white-fill and
-      // accorLockupCarriesName() is taught it bakes the property name.
-      _propertyLockupPath = (_ckLang === 'fr')
-        ? '/logos/hotels/sofitel/sofitel-montreal-fr.svg'
-        : '/logos/hotels/sofitel/sofitel-montreal-en.svg';
     } else if (brand === 'SOF' && hotelName && typeof makeSofitelLockupSvgDataUri === 'function') {
-      // Every OTHER Sofitel property renders the same way as Montréal — real
-      // SOFITEL wordmark + property name in Rebelton Extended (Nick's font).
+      // v23266 — MONTRÉAL IS NO LONGER EXEMPT (Nick: 'the Sofitel logos were
+      // supposed to be changed … Sofitel Golden Mile in Montreal … it wasnt
+      // changed'). It used to serve the brand-team files sofitel-montreal-
+      // en/fr.svg, which still carry the interlocking emblem — the very thing
+      // v23246 removed everywhere else ('get rid of the icon from the logo and
+      // simply have Sofitel New York but proportional'). Keeping one property
+      // on the old art made it the odd one out on his own boards.
+      // The bilingual property name that art carried is preserved below, so
+      // French boards keep 'Le Carré Doré' rather than inheriting the English
+      // 'Golden Mile' — with real accents, since the embedded property font
+      // (sofitel-name-outer.otf) was checked and carries É/È/Ê/À/Â/Ô/Ç.
+      var _sofName = hotelName;
+      try {
+        if (_ckLang === 'fr' && typeof SOFITEL_PROPERTY_NAME_FR !== 'undefined') {
+          var _sofKey = String(hotelName).toLowerCase().replace(/^sofitel\s+/, '').trim();
+          if (SOFITEL_PROPERTY_NAME_FR[_sofKey]) _sofName = SOFITEL_PROPERTY_NAME_FR[_sofKey];
+        }
+      } catch (e) {}
+      // EVERY Sofitel property renders the same way — real SOFITEL wordmark +
+      // property name in Rebelton Extended (Nick's font), no emblem.
       // The data-URI keeps accorLockupCarriesName() working (name suppression);
       // the INLINE variant is what actually renders, so the name paints in the
       // real Rebelton font (a font can't load inside an <img>-rendered SVG).
-      _propertyLockupPath = makeSofitelLockupSvgDataUri(hotelName);
-      if (typeof makeSofitelLockupInlineSvg === 'function') _sofitelInlineSvg = makeSofitelLockupInlineSvg(hotelName);
+      _propertyLockupPath = makeSofitelLockupSvgDataUri(_sofName);
+      if (typeof makeSofitelLockupInlineSvg === 'function') _sofitelInlineSvg = makeSofitelLockupInlineSvg(_sofName);
     }
 
     // DIAGNOSTIC: only log Accor hotels that DIDN'T get a lockup — that
@@ -32897,7 +32968,14 @@ function _map3dFlightCtx(allowEstimated) {
       } catch (e) {}
       var depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal)
                 : (arrTs ? arrTs - Math.max(3600000, _estDurMs || 7200000) : 0);
-      if (depTs && arrTs > depTs) prog = Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
+      // v23266 — same taxi-aware profile as the mini map. These two maps must
+      // agree: the comment above records what happened last time they read the
+      // same journey differently.
+      if (depTs && arrTs > depTs) {
+        var _tBig = Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
+        prog = (typeof _estAirborneFrac === 'function')
+          ? _estAirborneFrac(_tBig, arrTs - depTs) : _tBig;
+      }
       else prog = 0;
     }
     // Phantom guard: a time-progress glyph only for a flight the FEED says is
