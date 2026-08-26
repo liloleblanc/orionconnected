@@ -3277,9 +3277,30 @@ try {
         //
         // If this gate has an inbound and the box holds no Leaflet container,
         // clear the pos/prog guards so THIS tick rebuilds it from scratch.
+        //
+        // v23271 — BUT ONLY WHILE THE AIRCRAFT IS STILL COMING.
+        //
+        // window._gateInbound stays populated after the inbound lands — it is
+        // how the gate knows which airframe is parked there. The renderer
+        // already knows better: fidsInboundHasArrived() drops the inbound
+        // panel and its map the moment the flight is 'arrived', because a
+        // landed aeroplane has no route left to draw.
+        //
+        // This watchdog did not ask. So on any gate whose inbound had already
+        // arrived it fired every 10 seconds, tore down gateMap, cleared the
+        // guards and demanded a rebuild that the renderer immediately declined
+        // for the same correct reason — then fired again 10 seconds later.
+        // Measured on the live Moncton gate 3 board with PD2373 'arrived': the
+        // rebuild log every tick and 15 subtree replacements in 30 seconds.
+        // That standoff is Nick's 'lots of glitching and flashing'.
+        //
+        // Asking the same question the renderer asks ends it: no arriving
+        // aircraft, nothing to insist on.
         try {
           var _mbW = document.getElementById('gateMapBox');
-          if (_mbW && _mbW.offsetParent !== null && window._gateInbound
+          var _inbW = window._gateInbound;
+          if (_inbW && fidsInboundHasArrived(_inbW, Date.now())) _inbW = null;
+          if (_mbW && _mbW.offsetParent !== null && _inbW
               && !_mbW.querySelector('.leaflet-container')) {
             console.log('[MAP-WATCHDOG] map container EMPTY while an inbound is tracked — rebuilding');
             try { if (typeof gateMap !== 'undefined' && gateMap) { gateMap.remove(); } } catch (e4) {}
@@ -20025,7 +20046,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23270';
+var FIDS_BUILD_TAG = 'v23271';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
