@@ -20128,7 +20128,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23273';
+var FIDS_BUILD_TAG = 'v23274';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -32625,8 +32625,14 @@ function buildAccorSceneAd(ad) {
   // the later frames are the lobby and the public rooms. So the intro takes
   // the front of the series and the scene page reaches past it — for Royal
   // York that is the exterior at 00 and the lobby at 03.
-  var exterior = photos[0] || '';
-  var interior = photos[3] || photos[2] || photos[1] || photos[0] || '';
+  // Accor serves each frame at several sizes and the list hands us the
+  // biggest — 2048x1536 for a column under 1000px wide. That is four times
+  // the pixels needed and it is why the card sat black while it decoded
+  // (Nick: 'it took a whole 20 seconds on a black screen'). Ask for the
+  // 1024x768 rendition of the same frame.
+  function _fit(u) { return String(u || '').replace(/_(\d{3,4})x(\d{3,4})\.jpg$/i, '_1024x768.jpg'); }
+  var exterior = _fit(photos[0] || '');
+  var interior = _fit(photos[3] || photos[2] || photos[1] || photos[0] || '');
 
   // ── Identity ─────────────────────────────────────────────────────────
   var lockInline = ad._sofitelInlineSvg || ad._fairmontInlineSvg || '';
@@ -32634,8 +32640,12 @@ function buildAccorSceneAd(ad) {
   var hasLockup = !!(lockInline || lockPath);
   var nameFull = ad.nameFull || ad.headline || '';
   var brandMark = ad.logo || '';
-  var tint = (typeof ACCOR_BRAND_COLORS !== 'undefined'
-    && ACCOR_BRAND_COLORS[String(ad.brand || '').toUpperCase()]) || ad.brandColor || '#b08a4a';
+  // Brand identity comes from the per-brand CSS palette, keyed off the
+  // data-brand-code on the article (Nick: 'keep the brand identity and
+  // colors'). That table is the better-curated of the two: Novotel's accent
+  // there is its real blue #3D63FF, where ACCOR_BRAND_COLORS in JS still has
+  // an olive #6B8E23. So --ash-tint resolves from --all-gold in CSS and this
+  // stays a fallback for a brand the stylesheet does not know.
 
   function identity(big) {
     if (lockInline) return '<div class="ash-lockup' + (big ? ' ash-lockup-lg' : '') + '">' + lockInline + '</div>';
@@ -32705,7 +32715,14 @@ function buildAccorSceneAd(ad) {
   // names and are thoroughly debugged. Restyling is a new class (.ash-*)
   // layered on top; re-implementing the timing would be throwing away work
   // that already survived contact with the boards.
-  var pIntro = '<div class="axr-page ash-page ash-intro"' + (exterior ? ' style="background-image:url(' + esc(exterior) + ')"' : '') + '>'
+  // axr-page-on FROM THE START. .axr-page is opacity:0 until the rotator's
+  // poller adopts the element, so the card mounted invisible and the board
+  // showed the bare panel behind it — Nick: 'the first screen is black or
+  // blue entirely then intro'. Worse, that dead time is spent out of the
+  // slide's dwell, which is why the last page then 'cuts out'. Painting the
+  // intro immediately costs nothing: the rotator takes over on its next tick
+  // and toggles this class as usual.
+  var pIntro = '<div class="axr-page axr-page-on ash-page ash-intro"' + (exterior ? ' style="background-image:url(' + esc(exterior) + ')"' : '') + '>'
     + '<div class="ash-scrim ash-scrim-intro"></div>'
     + '<div class="ash-introbox">' + identity(true) + '</div>'
     + '</div>';
@@ -32716,8 +32733,11 @@ function buildAccorSceneAd(ad) {
     + body
     + '</div>';
 
+  // The article carries the exterior too, so the first thing painted is the
+  // hotel rather than .axr's flat brand colour.
+  var _artBg = exterior ? ' style="background-image:url(' + esc(exterior) + ')"' : '';
   return '<article class="axr ash" data-ad-brand="accor" data-brand-code="' + esc(String(ad.brand || '').toUpperCase()) + '"'
-    + ' data-hotel-id="' + esc(String(ad.hotelId || '')) + '" style="--ash-tint:' + esc(tint) + '">'
+    + ' data-hotel-id="' + esc(String(ad.hotelId || '')) + '"' + _artBg + '>'
     + '<section class="axr-pages ash-pages">' + pIntro + pScene + '</section>'
     + '</article>';
 }
@@ -33930,12 +33950,11 @@ function _getGateAdDwellMs(slide) {
   }
   if (slide.type === 'ad') {
     var ad = slide.data || {};
-    // Accor hotel ads (real photo, brand lockup) — longest dwell. The deck
-    // is 3 base pages + up to 3 room pages (10s each), so size the dwell to
-    // the ACTUAL page count or the carousel advances mid-deck and chops the
-    // first room page after ~1s. The slide is already rendered when this
-    // runs, so count the live .axr-page panels; fall back to the detail
-    // cache, then to the base 3.
+    // Accor hotel ads — longest dwell. The scene card is two pages (identity
+    // over the exterior, then the hotel's own words over an interior) at 10s
+    // each, so size the dwell to the ACTUAL page count or the carousel
+    // advances past the end and leaves the panel blank. Count the live
+    // .axr-page panels when the slide is already rendered; otherwise two.
     if (ad.isAccorHotel) {
       var _axN = 0;
       try {
@@ -33953,18 +33972,20 @@ function _getGateAdDwellMs(slide) {
           _axN++;
         }
       } catch (e) {}
-      if (!_axN && ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
-        try {
-          var _axL = 'en';
-          if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _axL = langs[langIdx || 0];
-          else if (typeof lang !== 'undefined' && lang) _axL = lang;
-          var _axD = ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId + '|' + _axL] || ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId] || null;
-          if (_axD && Array.isArray(_axD.rooms)) {
-            _axN = 3 + Math.min(3, _axD.rooms.filter(function (r) { return r && r.name; }).length);
-          }
-        } catch (e) {}
-      }
-      if (!_axN) _axN = 3;
+      // v23274 — THE SCENE CARD IS ALWAYS TWO PAGES.
+      //
+      // This used to estimate the page count from the DETAIL CACHE'S ROOM
+      // LIST — '3 base pages + up to 3 room pages' — because the old deck
+      // grew a page per room. The scene card renders no rooms at all, so for
+      // Royal York's 21 rooms that estimate returned 6 and the dwell ran 61
+      // seconds over a two-page card: the rotator advanced past the end and
+      // the panel went blank, which is what Nick watched — 'when it goes into
+      // the 3rd screen it cuts out'.
+      //
+      // Counting the live pages above is still the truth when the card is on
+      // screen. When it is not — the dwell is computed before the first paint
+      // — the answer is simply two, not a guess built from rooms nobody shows.
+      if (!_axN) _axN = 2;
       return _axN * 10000 + 1000; // full dwell per page + fade buffer
     }
     // Generic hotel ads (Hilton, etc. — large logo + city sub)
