@@ -1134,33 +1134,81 @@ async function adbFetch(iata, direction) {
     }
   }
   // ── YQM: Moncton's own cyqm.ca feed instead of AeroDataBox ──────────
+  //
+  // v23270 — RETRY, THEN LAST-GOOD. NEVER SILENTLY SWAP SOURCES.
+  //
+  // cyqm.ca sits behind a WordPress security plugin that answers a share of
+  // requests with an HTML 403 page ('WP Remote Firewall — Blocked because of
+  // Malicious Activities') instead of JSON. Measured here over 26 requests,
+  // with and without a browser User-Agent: ~30% blocked, scattered rather
+  // than bursty, and identical either way — so it is not bot detection we can
+  // dress around, and it hits Nick's boards exactly as it hits us.
+  //
+  // Every one of those used to drop the WHOLE Moncton list onto the ADB
+  // scrape for that cycle, and the two sources do not agree: measured on the
+  // live board, cyqm gave 9 departures where ADB gave 12, ADB carries
+  // revisedTime and an aircraft type where cyqm carries neither. So roughly
+  // every third poll reshaped the board — which is what kept knocking the
+  // pinned gate screens off their gate (see _fidsPinnedSub in fids-core).
+  //
+  // Three attempts kill ~97% of the blocks on their own (0.3³). Whatever
+  // still gets through falls to this feed's OWN last-good list — the same
+  // rule Orlando already follows, for the same reason: a slightly stale list
+  // from the right source beats a fresh list from a different one. ADB
+  // remains the cold-start floor, for a display that has never seen cyqm.
   if (iata === 'YQM') {
     const seg = direction === 'Departure' ? 'departures' : 'arrivals';
     const yqmUrl = `https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/${seg}`;
-    try {
-      const r = await fetch(yqmUrl, { headers: { 'Accept': 'application/json' } });
-      if (r.ok) {
-        const raw = await r.json();
-        const rows = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
-        const list = rows.map(f => yqmToAdbFlight(f, direction)).filter(Boolean);
-        console.log(`[FIDS] YQM cyqm.ca feed ${direction}: ${list.length} flights`);
-        if (list.length) {
-          // The CYQM webhook subscription was wired but BYPASSED the moment
-          // the native feed adopted (Nick: 'are we still using webhooks').
-          // Pushes carry the reg — the exact field neither cyqm.ca nor
-          // ADB's by-number endpoint served for PD2293 (console: 'Direct
-          // inbound resolved: PD2293 reg: (pending)' while the portal
-          // showed C-GKQE). Merge ONLY the airframe identity back in.
-          try { await _yqmCacheAircraftMerge(list, direction, 'CYQM'); } catch (e2) {}
-          return direction === 'Departure' ? { departures: list } : { arrivals: list };
+    const _yqmLastGood = () => {
+      if (window._yqmLastGood && window._yqmLastGood[seg]) return window._yqmLastGood[seg];
+      try {
+        const ls = JSON.parse(localStorage.getItem('fids_yqm_lastgood_' + seg) || 'null');
+        if (ls && ls.out && (Date.now() - ls.ts) < 180 * 60000) {
+          console.warn(`[FIDS] YQM cyqm.ca blocked — serving last-good ${seg} (${Math.round((Date.now() - ls.ts) / 60000)}min old)`);
+          return ls.out;
         }
-        console.warn('[FIDS] YQM cyqm.ca feed empty — falling back to ADB scrape');
-      } else {
-        console.warn(`[FIDS] YQM cyqm.ca feed HTTP ${r.status} — falling back to ADB scrape`);
+      } catch (e) {}
+      return null;
+    };
+    let _lastWhy = '';
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const r = await fetch(yqmUrl, { headers: { 'Accept': 'application/json' } });
+        if (!r.ok) { _lastWhy = `HTTP ${r.status}`; }
+        else {
+          const raw = await r.json();
+          const rows = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
+          const list = rows.map(f => yqmToAdbFlight(f, direction)).filter(Boolean);
+          console.log(`[FIDS] YQM cyqm.ca feed ${direction}: ${list.length} flights (attempt ${attempt})`);
+          if (list.length) {
+            // The CYQM webhook subscription was wired but BYPASSED the moment
+            // the native feed adopted (Nick: 'are we still using webhooks').
+            // Pushes carry the reg — the exact field neither cyqm.ca nor
+            // ADB's by-number endpoint served for PD2293 (console: 'Direct
+            // inbound resolved: PD2293 reg: (pending)' while the portal
+            // showed C-GKQE). Merge ONLY the airframe identity back in.
+            try { await _yqmCacheAircraftMerge(list, direction, 'CYQM'); } catch (e2) {}
+            const out = direction === 'Departure' ? { departures: list } : { arrivals: list };
+            window._yqmLastGood = window._yqmLastGood || {};
+            window._yqmLastGood[seg] = out;
+            // Persist so a display that reboots into a blocked cycle still
+            // opens on Moncton's own list rather than a different source.
+            try { localStorage.setItem('fids_yqm_lastgood_' + seg, JSON.stringify({ ts: Date.now(), out })); } catch (e3) {}
+            return out;
+          }
+          _lastWhy = 'empty';
+        }
+      } catch (e) {
+        // A blocked response is served as HTML, so this is usually the JSON
+        // parser rather than the network.
+        _lastWhy = e.message;
       }
-    } catch (e) {
-      console.warn(`[FIDS] YQM cyqm.ca feed: ${e.message} — falling back to ADB scrape`);
+      if (attempt < 3) await new Promise(rs => setTimeout(rs, 1200));
     }
+    console.warn(`[FIDS] YQM cyqm.ca feed ${direction}: ${_lastWhy} after 3 attempts`);
+    const _stale = _yqmLastGood();
+    if (_stale) return _stale;
+    console.warn('[FIDS] YQM: no cyqm.ca list ever seen — falling back to ADB scrape');
   }
   // ── MCO: native GOAA feed instead of the ADB scrape ─────────────────
   // Orlando isn't an ADB airport for us — the worker proxies MCO's own

@@ -1736,12 +1736,47 @@ function changeScreenType(val) {
 
 function changeSubScreen(val) {
   try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: (typeof screenType !== 'undefined' ? screenType : 'main'), s: val })); } catch (e) {}
-  // Sanitize the gate/belt value (it comes from a DOM <select>.value, a CodeQL
-  // "DOM text reinterpreted as HTML" source) before it flows into the gate
-  // innerHTML. Gates/belts are alphanumeric — strip anything else (incl. < > & ").
-  subScreenVal = String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-]/g, '');
+  subScreenVal = _fidsSafeSub(val);
   _fidsSyncUrl((typeof screenType !== 'undefined' ? screenType : 'main'), subScreenVal);
   render();
+}
+
+// Anything that becomes subScreenVal must pass through here first.
+//
+// subScreenVal is interpolated into the gate and baggage innerHTML in several
+// places, so every source of it is a CodeQL "DOM text reinterpreted as HTML"
+// source: a <select>.value, and — since v23270 — the ?gate=/?belt= query
+// string, which is attacker-supplied in a way a select option never was.
+// Gates and belts are alphanumeric; strip everything else, < > & " included.
+function _fidsSafeSub(val) {
+  return String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-]/g, '');
+}
+
+// v23270 — WHICH SUB-SCREEN WAS THIS DISPLAY OPENED TO?
+//
+// ?gate= / ?belt= / ?carousel= / ?sub= name one gate or one belt. That is the
+// operator's choice and it outlives any single data refresh — it is the whole
+// reason the screen is hanging on that wall. An explicit ?gatecycle= /
+// ?beltcycle= / ?bagcycle= asks for a WALK instead, so it clears the pin.
+function _fidsPinnedSub(kind) {
+  try {
+    var q = new URLSearchParams(window.location.search);
+    var cyc, v;
+    if (kind === 'gate') {
+      cyc = q.get('gatecycle');
+      v = q.get('gate') || q.get('sub');
+    } else if (kind === 'baggage') {
+      cyc = q.get('beltcycle') || q.get('bagcycle');
+      v = q.get('belt') || q.get('carousel') || q.get('sub');
+    } else {
+      return null;
+    }
+    if (cyc != null && cyc !== '' && cyc !== '0') return null;
+    // Sanitized AT THE SOURCE: this value reaches subScreenVal and the gate
+    // innerHTML, and unlike a <select> option it comes straight off the URL.
+    v = _fidsSafeSub(v == null ? '' : String(v).trim());
+    return v ? v : null;
+  } catch (e) { return null; }
 }
 
 function updateSubScreens() {
@@ -1771,6 +1806,41 @@ function updateSubScreens() {
     useGate = false;
   } else {
     locations = [...new Set(flights.map(f => f.gate).filter(g => g && g !== '—'))].sort();
+  }
+  // v23270 — A PINNED DISPLAY NEVER DRIFTS OFF ITS OWN GATE.
+  //
+  // This list is rebuilt from the feed on EVERY refresh, and the selection at
+  // the bottom of this function only survived while the old value happened to
+  // still be in it (the auto-cycle comment says as much: 'subScreenVal
+  // survives data refreshes as long as the gate still has flights'). The
+  // moment a gate's last upcoming departure left the feed, the board silently
+  // became locations[0] — a DIFFERENT gate — and never came back, because on
+  // the next refresh oldVal was that other gate, which does exist.
+  //
+  // Measured at Moncton: Porter has roughly one departure a day at gate 3, and
+  // the cyqm.ca feed 403s on about a third of polls, so the departure list
+  // keeps changing shape underneath this. Gate 3 kept losing itself (Nick: 'I
+  // have a porter flight gate 3 and not catching it half the time'), and the
+  // rendered board showed 'Awaiting Next Flight' over a blank gate tile.
+  //
+  // A screen opened with ?gate=/?belt=/?sub= was asked for ONE gate. If that
+  // gate has nothing right now, the honest answer is its own empty state —
+  // never somebody else's flight. Only an explicit ?gatecycle=/?bagcycle=
+  // (which clears the pin, see _fidsPinnedSub) may walk it elsewhere.
+  var _pinned = null;
+  var _pinWant = _fidsPinnedSub(screenType);
+  if (_pinWant != null) {
+    var _norm = s => String(s).toUpperCase().replace(/[\s-]/g, '');
+    _pinned = locations.find(l => String(l) === _pinWant || _norm(l) === _norm(_pinWant)) || null;
+    // Not in the feed this cycle. A GATE board still shows its own gate —
+    // carry it as the sole option. Belt keys can be terminal-composed
+    // ('1-4' for belt 4), so a belt pin is only honoured when it resolves to
+    // a real key; inventing one would title the screen after a belt that
+    // does not exist in this hall.
+    if (_pinned == null && !isBag) {
+      locations = [...locations, _pinWant];
+      _pinned = _pinWant;
+    }
   }
   if (!locations.length) {
     // No belt/gate data. On a BAGGAGE board, falling back to flight numbers
@@ -1805,6 +1875,7 @@ function updateSubScreens() {
     else opt.textContent = loc;
     subSel.appendChild(opt);
   });
+  if (_pinned != null) { subSel.value = _pinned; subScreenVal = _pinned; return; }
   if (locations.includes(oldVal)) { subSel.value = oldVal; subScreenVal = oldVal; }
   else { subSel.value = locations[0]; subScreenVal = locations[0]; }
 }
@@ -19954,7 +20025,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23268';
+var FIDS_BUILD_TAG = 'v23270';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -23517,6 +23588,49 @@ function _fidsDedupeRows(rows, mode) {
   }
   return out;
 }
+// v23270 — HOW BUSY IS THIS AIRPORT, MEASURED INDEPENDENTLY OF THE ANSWER.
+//
+// Counts movements in the next 12 hours straight off the RAW feed. A fixed
+// horizon, so the number cannot be moved by LOOKAHEAD_HRS — which is the whole
+// point, see the oscillation this replaced in fetchLive. Reading the raw feed
+// also makes it the same answer whichever source served the poll: cyqm.ca
+// publishes two days of Moncton, ADB's scrape a rolling day, and the old
+// count of the trimmed lists made those look like different airports.
+function _fidsBusyCount(depRaw, arrRaw) {
+  var nowTs = Date.now(), horizon = 12 * 3600000, n = 0;
+  function scan(list, mode) {
+    for (var i = 0; i < (list || []).length; i++) {
+      var f = list[i] || {};
+      var side = mode === 'dep' ? f.departure : f.arrival;
+      var sL = side && side.scheduledTime && (side.scheduledTime.local || side.scheduledTime.utc);
+      if (!sL) continue;
+      var ts = adbTs(sL);
+      if (!ts) continue;
+      if (nowTs - ts > DEPART_TRAIL_HRS * 3600000) continue;
+      if (ts - nowTs > horizon) continue;
+      n++;
+    }
+  }
+  scan(depRaw && depRaw.departures, 'dep');
+  scan(arrRaw && arrRaw.arrivals, 'arr');
+  return n;
+}
+
+function _fidsSetLookahead(depRaw, arrRaw) {
+  var n = _fidsBusyCount(depRaw, arrRaw);
+  if (n < 20) {
+    LOOKAHEAD_HRS = 24;
+    console.log('[FIDS] Small airport (' + n + ' flights/12h) — lookahead set to 24h');
+  } else if (n < 50) {
+    LOOKAHEAD_HRS = 18;
+    console.log('[FIDS] Medium airport (' + n + ' flights/12h) — lookahead set to 18h');
+  } else {
+    LOOKAHEAD_HRS = 12;
+    console.log('[FIDS] Large airport (' + n + ' flights/12h) — lookahead set to 12h');
+  }
+  return n;
+}
+
 function mapADB(raw, mode) {
   const nowTs=Date.now(), list=mode==='dep'?(raw.departures||[]):(raw.arrivals||[]);
   return _fidsDedupeRows(list.map(f => {
@@ -23921,6 +24035,10 @@ async function fetchLive() {
       await new Promise(r => setTimeout(r, 1500));
       arrRaw = await adbFetch(iata, 'Arrival');
     }
+    // Settle the lookahead BEFORE the cut, not after it — mapADB is what
+    // applies LOOKAHEAD_HRS, so deciding it afterwards left every cold start
+    // rendering one cycle behind. See the note on the assignment below.
+    _fidsSetLookahead(depRaw, arrRaw);
     data.dep = mapADB(depRaw, 'dep');
     data.arr = mapADB(arrRaw, 'arr');
     // [BELT SUMMARY v218.18] Quick breakdown of belt assignments.
@@ -23941,18 +24059,28 @@ async function fetchLive() {
     // Track gate assignments so we can detect changes between refreshes
     // and surface them as alerts on affected screens.
     try { trackGateChanges(data.dep.concat(data.arr)); } catch(e) { console.warn('[FIDS] gate tracking:', e.message); }
-    // Dynamic lookahead based on airport size
-    var totalFlights = data.dep.length + data.arr.length;
-    if (totalFlights < 20) {
-      LOOKAHEAD_HRS = 24;
-      console.log('[FIDS] Small airport (' + totalFlights + ' flights) — lookahead set to 24h');
-    } else if (totalFlights < 50) {
-      LOOKAHEAD_HRS = 18;
-      console.log('[FIDS] Medium airport (' + totalFlights + ' flights) — lookahead set to 18h');
-    } else {
-      LOOKAHEAD_HRS = 12;
-      console.log('[FIDS] Large airport (' + totalFlights + ' flights) — lookahead set to 12h');
-    }
+    // Dynamic lookahead based on airport size.
+    //
+    // v23270 — MEASURE THE AIRPORT, NOT THE LAST DECISION.
+    //
+    // This counted data.dep/data.arr — the lists mapADB had ALREADY cut to
+    // LOOKAHEAD_HRS — and then set LOOKAHEAD_HRS from that count. The window
+    // fed the measurement that set the window, so any airport sitting near a
+    // threshold oscillated forever: cut at 24h → 20+ flights → 'medium' → 18h
+    // → cut at 18h → under 20 → 'small' → 24h → and round again. Measured on
+    // the live Moncton board with the feed returning an identical 17
+    // departures on every single poll, data.dep alternated 8 → 12 → 8 → 12,
+    // once per refresh, indefinitely.
+    //
+    // A board that changes shape on every refresh is also a board whose gate
+    // list changes on every refresh, and a gate with one departure a day
+    // lives out at the far end that keeps being cut — which is how gate 3
+    // kept losing its Porter flight on alternate polls (Nick: 'not catching
+    // it half the time' — half, literally).
+    //
+    // _fidsBusyCount reads the RAW feed against a fixed 12-hour horizon: the
+    // same question, an answer that cannot be moved by what it sets. Applied
+    // above, before mapADB does the cutting.
     currentPage = 0;
     mode = 'dep';
     setState('loading', false);
@@ -35889,7 +36017,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var _sel0 = document.getElementById('screenTypeSel');
         if (_sel0) _sel0.value = st.t;
         changeScreenType(st.t);
-        if (st.s) { try { subScreenVal = st.s; } catch (e0) {} }
+        // st.s is the raw ?gate=/?belt= value (or a localStorage copy of one).
+        // It renders before the feed lands, so it must be sanitized here too —
+        // this was the one assignment that reached subScreenVal unfiltered.
+        if (st.s) { try { subScreenVal = _fidsSafeSub(st.s); } catch (e0) {} }
         try { if (typeof render === 'function') render(); } catch (e1) {}
       }
     } catch (e) {}
