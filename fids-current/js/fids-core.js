@@ -20128,7 +20128,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23272';
+var FIDS_BUILD_TAG = 'v23273';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -30690,6 +30690,33 @@ function _processAccorData(data, destIata, langKey) {
         if (u && photos.indexOf(u)===-1) photos.push(u);
       });
     }
+    // v23273 — CLAIM THE PHOTOS ACCOR SAYS IT HAS.
+    //
+    // The list endpoint reports h.media.count but only ever ships two entries:
+    // Fairmont Royal York comes back as {count: 6, medias: Array(2)}. The
+    // missing four are on the CDN under the same name with the index advanced
+    // — a551_ho_00_p … a551_ho_05_p — and they are the ones worth having: 00
+    // and 01 are the building, the later ones are the lobby and the public
+    // rooms (Nick: 'It would be nice to see the inside the lobby maybe
+    // restaurant pictures'). Verified against the CDN: 00–05 answer 200 for
+    // A551, 06+ answer 404, so count is honest and the pattern holds.
+    //
+    // Only the `_ho_` (hotel) series is ever built this way. Room photography
+    // lives under `_ro…_` on the accommodations endpoint and is never touched.
+    // A URL that turns out not to exist simply fails to load behind the page
+    // it would have decorated.
+    try {
+      var _n = parseInt((h.media && h.media.count) || 0, 10) || 0;
+      if (_n > photos.length && photos[0]) {
+        var _pat = String(photos[0]).match(/^(.*_ho_)(\d{2})(_p_.*)$/);
+        if (_pat) {
+          for (var _i = 0; _i < _n && photos.length < _n; _i++) {
+            var _u = _pat[1] + (_i < 10 ? '0' + _i : String(_i)) + _pat[3];
+            if (photos.indexOf(_u) === -1) photos.push(_u);
+          }
+        }
+      }
+    } catch (e) {}
     photos = photos.slice(0, 6);
 
     // DEBUG: log first hotel's photo resolution
@@ -30900,6 +30927,11 @@ function _processAccorData(data, destIata, langKey) {
         if (typeof h.address === 'string') return h.address;
         return city || '';
       })(),
+      // v23273 — the raw address object, kept whole. The scene card needs the
+      // postcode and country to derive an arrondissement (Accor ships no
+      // district field), and the flattened strings above have thrown both away.
+      _addrRaw: ((h.localization && h.localization.address)
+                 || (h.address && typeof h.address === 'object' ? h.address : null)) || null,
       // Full mailing address — '45 The Esplanade, M5E 1W2 Toronto, Canada'
       fullAddress: (function() {
         var src = (h.localization && h.localization.address) || h.address;
@@ -32343,6 +32375,294 @@ function _accorFrName(name) {
     .replace(/\bAirport\b/g, 'Aéroport');
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// v23273 — THE HOTEL AD, REWRITTEN. Two pages, both languages, no inventory.
+//
+// Nick: 'make them simple only show what the hotel offers so not the rooms
+// … in the languages the airport is in so the 2 if 2 languages at the same
+// time same screen', then 'Im more looking for descriptions of painting a
+// scene', 'i dont need to see the hotel has a coffee machine', and 'It could
+// start simply with the hotel name logo and the outside then go in details'.
+//
+// What that replaces: a three-page deck of amenity chips, star counts, guest
+// scores, review counts, addresses, distances, dining bullet lists and room
+// cards — most of which existed only to be suppressed again when the feed
+// asserted something untrue (breakfast that isn't included, in-room kettles
+// sold as 'restaurants', COVID notices as ad copy).
+//
+// What it is now: the property's own photography and the property's own
+// words. Nothing on this card is written by us — we choose which of the
+// hotel's real sentences to show, and never compose new ones about a real
+// business.
+//
+// Page 1  identity: the property lockup (which already carries the name), or
+//         the name in type with the chain's mark, over the exterior.
+// Page 2  the scene: the hotel's description in BOTH of the board's chosen
+//         languages side by side, one meaningful fact each, over an interior.
+// ═══════════════════════════════════════════════════════════════════════
+
+// The two languages THIS airport is set to — not a hardcoded EN/FR (Nick:
+// 'that are chosen'). `langs` is the board's live pair; boardLangsFor is the
+// per-airport default behind it.
+function _accorBoardLangs() {
+  try {
+    if (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length >= 2) return langs.slice(0, 2);
+  } catch (e) {}
+  try {
+    var ap = document.getElementById('apSel');
+    var ia = ap ? String(ap.value || '').toUpperCase() : '';
+    if (ia && typeof boardLangsFor === 'function') return boardLangsFor(ia).slice(0, 2);
+  } catch (e) {}
+  return ['en', 'fr'];
+}
+
+// The same hotel as it was loaded in another language. Accor localizes per
+// request and we cache per language, so a second language is a cache lookup,
+// not a second render. Returns null until that language's list has landed —
+// the card then shows the one language it has rather than blocking.
+function _accorAdForLang(hotelId, destIata, wantLang) {
+  if (!hotelId || !destIata) return null;
+  try {
+    var c = ACCOR_HOTEL_CACHE[destIata + '|' + wantLang];
+    if (!c || !c.hotels) return null;
+    for (var i = 0; i < c.hotels.length; i++) {
+      if (String(c.hotels[i].hotelId) === String(hotelId)) return c.hotels[i];
+    }
+  } catch (e) {}
+  return null;
+}
+
+// Copy that has no business on a departures wall. COVID/hygiene boilerplate
+// was rendering as a hotel's blurb (Nick: 'This cant happen'); renovation and
+// closure notices are operational, not invitations — Novotel Paris opens its
+// description with 'Our restaurant is currently being renovated'; and a
+// breakfast claim is never shown at all, because the feed asserts
+// COMPLIMENTARY_BREAKFAST for properties that do not include it (Nick, more
+// than once: 'it's false advertisement, it needs removed').
+var _ACCOR_REJECT_RX = /covid|coronavirus|pand[ée]mi|sanitai?r|hygi[eè]n|propagation|all ?safe|\bvirus\b|renovat|r[ée]novation|refurbish|travaux|temporarily clos|ferm[ée] temporair|currently clos|breakfast|d[ée]jeuner/i;
+// A year alone is not staleness — it is usually the best line on the card
+// ('Since 1929, Fairmont Royal York has welcomed millions of travellers…',
+// which a blanket year filter threw away on the first build of this). What
+// goes stale is an ANNOUNCEMENT whose date has passed: the French feed still
+// advertises suites 'pour débuter janvier 2019'. So a sentence is stale only
+// when it both announces something and names a year already gone.
+var _ACCOR_ANNOUNCE_RX = /\b(opening|opens|arriving|coming|launch|new (?:rooms|suites|wing|restaurant)|from\s+(?:january|february|march|april|may|june|july|august|september|october|november|december)|d[ée]but|[àa] partir de|ouvrira|ouverture|nouvelles?\s+(?:chambres|suites))\b/i;
+function _accorIsStale(sentence) {
+  var s = String(sentence || '');
+  var m = s.match(/\b(19|20)\d{2}\b/g);
+  if (!m) return false;
+  if (!_ACCOR_ANNOUNCE_RX.test(s)) return false;      // history, not a promise
+  var thisYear = new Date().getFullYear();
+  for (var i = 0; i < m.length; i++) if (parseInt(m[i], 10) >= thisYear) return false;
+  return true;                                        // every year named is past
+}
+
+// Split prose into sentences and keep the ones that actually paint a scene.
+// Abbreviations are not sentence ends — 'the St. Lawrence Market' was once
+// cut to '…from the St.' (Nick).
+function _accorScenePick(raw, maxChars) {
+  var t = String(raw || '').replace(/\s+/g, ' ').trim();
+  if (!t) return '';
+  t = t.replace(/\bVene z\b/g, 'Venez');          // Accor's own typo, their FR copy
+  var abbr = /(\b(?:St|Ste|Mt|Dr|Mr|Mrs|Ms|Ave|Blvd|Rd|Hwy|No|Nos|vs|etc|approx|Ft|Pt)|\b[A-Z])$/;
+  var sents = [], start = 0;
+  for (var i = 0; i < t.length; i++) {
+    if (t.charAt(i) !== '.' && t.charAt(i) !== '!' && t.charAt(i) !== '?') continue;
+    if (abbr.test(t.slice(start, i))) continue;
+    sents.push(t.slice(start, i + 1).trim());
+    start = i + 1;
+  }
+  var tail = t.slice(start).trim();
+  // A trailing fragment with no full stop is a truncated feed value ('…
+  // moderne, chaleureux est idéal pour un week-end romantique ou un'). Drop it.
+  if (tail && /[.!?]$/.test(tail)) sents.push(tail);
+  var keep = [], used = 0;
+  for (var s = 0; s < sents.length; s++) {
+    var sen = sents[s];
+    if (_ACCOR_REJECT_RX.test(sen)) continue;
+    if (_accorIsStale(sen)) continue;
+    if (sen.length < 25) continue;                 // a stub, not a sentence
+    if (used && used + 1 + sen.length > maxChars) break;
+    keep.push(sen);
+    used += (used ? 1 : 0) + sen.length;
+    if (used >= maxChars * 0.6) break;             // two good sentences is plenty
+  }
+  return keep.join(' ');
+}
+
+// One fact worth reading, from the hotel's own 'advantages'. This is where the
+// real detail lives ('Home to Library Bar, awarded Canada's Best Hotel Bar')
+// as opposed to the amenity inventory, where the coffee machine lives.
+function _accorSceneFact(adObj, alreadyShown) {
+  var list = (adObj && Array.isArray(adObj.advantages)) ? adObj.advantages : [];
+  var seen = String(alreadyShown || '').toLowerCase();
+  for (var i = 0; i < list.length; i++) {
+    var a = String(list[i] || '').replace(/\s+/g, ' ').trim();
+    if (!a || a.length < 18 || a.length > 96) continue;
+    if (_ACCOR_REJECT_RX.test(a) || _accorIsStale(a)) continue;
+    if (seen.indexOf(a.slice(0, 24).toLowerCase()) !== -1) continue;
+    return a.replace(/[.\s]+$/, '');
+  }
+  return '';
+}
+
+// Paris, Lyon and Marseille number their arrondissements, and the postcode
+// carries the number (75001 → 1st). Accor sends no district field at all —
+// measured, 0 of 35 sampled hotels had one — so this is the only factual
+// source for 'what area is it in'. Everywhere else returns null and the line
+// falls back to the city, or to nothing when the name already says it.
+function _accorArrondissement(zip, countryCode) {
+  var z = String(zip || '').replace(/\s+/g, '');
+  if (String(countryCode || '').toUpperCase() !== 'FR' || !/^\d{5}$/.test(z)) return null;
+  var p = parseInt(z, 10), n = null;
+  if (p >= 75001 && p <= 75020) n = p - 75000;        // Paris
+  else if (p >= 69001 && p <= 69009) n = p - 69000;   // Lyon
+  else if (p >= 13001 && p <= 13016) n = p - 13000;   // Marseille
+  return n;
+}
+
+var _ACCOR_ARR_ORD = {
+  en: function (n) { var s = ['th','st','nd','rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]) + ' Arrondissement'; },
+  fr: function (n) { return n + (n === 1 ? 'er' : 'e') + ' Arrondissement'; },
+  es: function (n) { return 'Distrito ' + n; },
+  de: function (n) { return n + '. Arrondissement'; },
+  it: function (n) { return n + '° Arrondissement'; },
+  pt: function (n) { return n + '.º Arrondissement'; },
+  ja: function (n) { return '第' + n + '区'; },
+  zh: function (n) { return '第' + n + '区'; },
+  ar: function (n) { return 'الدائرة ' + n; }
+};
+
+function buildAccorSceneAd(ad) {
+  function esc(v) { return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+
+  var L = _accorBoardLangs();
+  var LA = L[0], LB = L[1] || (LA === 'en' ? 'fr' : 'en');
+  var destIata = ad._destIata || '';
+
+  // Make sure the second language is on its way. Cached and deduped upstream,
+  // so this is a no-op once it has landed.
+  try {
+    if (destIata && typeof fetchAccorHotels === 'function') {
+      var _prev = window._accorAdForcedLang;
+      [LA, LB].forEach(function (lg) { window._accorAdForcedLang = lg; fetchAccorHotels(destIata); });
+      window._accorAdForcedLang = _prev;
+    }
+  } catch (e) {}
+
+  var adA = (ad._adLang === LA) ? ad : (_accorAdForLang(ad.hotelId, destIata, LA) || ad);
+  var adB = (ad._adLang === LB) ? ad : _accorAdForLang(ad.hotelId, destIata, LB);
+
+  // ── Photography: PUBLIC SPACES ONLY ──────────────────────────────────
+  // Accor names its media by kind: `_ho_` is the hotel itself — exterior,
+  // lobby, restaurant, pool — while room photography lives under `_ro…_` on a
+  // different endpoint entirely. Filtering on that one token is the whole of
+  // 'not the rooms' (Nick: 'It would be nice to see the inside the lobby maybe
+  // restaurant pictures or what they offer').
+  var photos = (Array.isArray(ad.photos) ? ad.photos : []).filter(function (u) {
+    return u && !/_ro[a-z0-9]*_\d+_/i.test(String(u));
+  });
+  // Accor orders the `_ho_` series building-first: 00 and 01 are the facade,
+  // the later frames are the lobby and the public rooms. So the intro takes
+  // the front of the series and the scene page reaches past it — for Royal
+  // York that is the exterior at 00 and the lobby at 03.
+  var exterior = photos[0] || '';
+  var interior = photos[3] || photos[2] || photos[1] || photos[0] || '';
+
+  // ── Identity ─────────────────────────────────────────────────────────
+  var lockInline = ad._sofitelInlineSvg || ad._fairmontInlineSvg || '';
+  var lockPath = ad._propertyLockup || '';
+  var hasLockup = !!(lockInline || lockPath);
+  var nameFull = ad.nameFull || ad.headline || '';
+  var brandMark = ad.logo || '';
+  var tint = (typeof ACCOR_BRAND_COLORS !== 'undefined'
+    && ACCOR_BRAND_COLORS[String(ad.brand || '').toUpperCase()]) || ad.brandColor || '#b08a4a';
+
+  function identity(big) {
+    if (lockInline) return '<div class="ash-lockup' + (big ? ' ash-lockup-lg' : '') + '">' + lockInline + '</div>';
+    if (lockPath) return '<img class="ash-lockup' + (big ? ' ash-lockup-lg' : '') + '" src="' + esc(lockPath) + '" alt="' + esc(nameFull) + '">';
+    // No lockup on file — the name in type, with the chain's mark in the
+    // opposite corner so the brand is still read at a glance (Nick: 'or if
+    // not available in font only with the Brand logo somewhere on the screen').
+    return '<div class="ash-name' + (big ? ' ash-name-lg' : '') + '">'
+      + '<div class="ash-name-n">' + esc(nameFull) + '</div>'
+      + (subLine ? '<div class="ash-name-s">' + subLine + '</div>' : '')
+      + '</div>'
+      + (brandMark ? '<img class="ash-brandmark" src="' + esc(brandMark) + '" alt="">' : '');
+  }
+
+  // ── Sub-line: the area, in both chosen languages ─────────────────────
+  var subLine = '';
+  (function () {
+    var zip = '', cc = '', city = String(ad.address || '').trim();
+    try {
+      var raw = ad._addrRaw || null;
+      if (raw) { zip = raw.zipCode || ''; cc = raw.countryCode || ''; }
+    } catch (e) {}
+    var n = _accorArrondissement(zip, cc);
+    var a, b;
+    if (n != null) {
+      a = (_ACCOR_ARR_ORD[LA] || _ACCOR_ARR_ORD.en)(n);
+      b = (_ACCOR_ARR_ORD[LB] || _ACCOR_ARR_ORD.en)(n);
+    } else {
+      // No arrondissement. The city is only worth saying when the hotel's own
+      // name does not already say it — 'Novotel Toronto Centre' over
+      // 'TORONTO' is a wasted line.
+      if (!city) return;
+      if (String(nameFull).toLowerCase().indexOf(city.toLowerCase()) !== -1) return;
+      a = b = city;
+    }
+    subLine = (String(a).toLowerCase() === String(b).toLowerCase())
+      ? esc(a)
+      : esc(a) + '<b>|</b>' + esc(b);
+  })();
+
+  // ── The scene, in both languages ─────────────────────────────────────
+  var textA = _accorScenePick(adA && adA.description, 330);
+  var textB = adB ? _accorScenePick(adB.description, 330) : '';
+  if (!textA) textA = _accorScenePick(adA && adA.destinationDescription, 330);
+  if (!textB && adB) textB = _accorScenePick(adB.destinationDescription, 330);
+  var factA = _accorSceneFact(adA, textA);
+  var factB = adB ? _accorSceneFact(adB, textB) : '';
+
+  function column(text, fact) {
+    if (!text && !fact) return '<div class="ash-col"></div>';
+    return '<div class="ash-col">'
+      + (text ? '<p>' + esc(text) + '</p>' : '')
+      + (fact ? '<div class="ash-fact"><i>◆</i><span>' + esc(fact) + '</span></div>' : '')
+      + '</div>';
+  }
+
+  // Only pair the columns when there really are two languages of copy. A
+  // lone column centred beats an empty half-card while the second language
+  // is still loading.
+  var body = textB
+    ? '<div class="ash-cols">' + column(textA, factA) + '<div class="ash-div"></div>' + column(textB, factB) + '</div>'
+    : '<div class="ash-cols ash-cols-one">' + column(textA, factA) + '</div>';
+
+  // The page classes are the RETIRED deck's (.axr-pages / .axr-page). That is
+  // deliberate: the crossfade rotator, its resume-on-repaint state and the
+  // carousel's 'hold this slide, it has unseen pages' logic all key off those
+  // names and are thoroughly debugged. Restyling is a new class (.ash-*)
+  // layered on top; re-implementing the timing would be throwing away work
+  // that already survived contact with the boards.
+  var pIntro = '<div class="axr-page ash-page ash-intro"' + (exterior ? ' style="background-image:url(' + esc(exterior) + ')"' : '') + '>'
+    + '<div class="ash-scrim ash-scrim-intro"></div>'
+    + '<div class="ash-introbox">' + identity(true) + '</div>'
+    + '</div>';
+
+  var pScene = '<div class="axr-page ash-page ash-scene"' + (interior ? ' style="background-image:url(' + esc(interior) + ')"' : '') + '>'
+    + '<div class="ash-scrim"></div>'
+    + '<div class="ash-head">' + identity(false) + '</div>'
+    + body
+    + '</div>';
+
+  return '<article class="axr ash" data-ad-brand="accor" data-brand-code="' + esc(String(ad.brand || '').toUpperCase()) + '"'
+    + ' data-hotel-id="' + esc(String(ad.hotelId || '')) + '" style="--ash-tint:' + esc(tint) + '">'
+    + '<section class="axr-pages ash-pages">' + pIntro + pScene + '</section>'
+    + '</article>';
+}
+
 function buildAccorAdOnlyV6(ad) {
   function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
   function first(){ for(var i=0;i<arguments.length;i++){ var a=arguments[i]; if(a!==undefined&&a!==null&&String(a).trim()!=='') return a; } return ''; }
@@ -33708,7 +34028,7 @@ function renderGateAd(index) {
   var html = '';
   var _isAccorSlide = !!(slide && slide.data && slide.data.isAccorHotel);
   _setGateStaticAdArt(el, !!(slide && slide.data && !_isAccorSlide));
-  if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
+  if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorSceneAd === 'function') {
     try {
       // ONE consistent language — the board's own language (Nick: 'the Accor
       // ads seriously go from one french then english, it's all over the
@@ -33717,11 +34037,16 @@ function renderGateAd(index) {
       // or an FR board (Canada runs paired EN/FR screens), so following the
       // board language keeps each screen consistent while both languages still
       // appear across the pair. No per-slide flip.
+      // v23273 — the card now carries BOTH of the board's chosen languages at
+      // once, so there is no per-slide language to force at all: the old
+      // EN/FR flip, and the board-language rule that replaced it, are both
+      // moot. Cleared so the per-language cache lookups start from a known
+      // state (buildAccorSceneAd sets it per fetch and restores it).
       window._accorAdForcedLang = null;
-      window._adDiag = 'accor:board';
-      html = buildAccorAdOnlyV6(slide.data);
+      window._adDiag = 'accor:scene';
+      html = buildAccorSceneAd(slide.data);
     } catch (e) {
-      console.error('[ACCOR-AD6-FAILED]', e);
+      console.error('[ACCOR-SCENE-FAILED]', e);
       html = buildGateAdHtml(slide.data);
     }
   } else {

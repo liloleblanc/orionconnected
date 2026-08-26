@@ -1581,3 +1581,60 @@
 .gad-media-col #gateAdCarousel .axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.95) !important; }
 .gad-media-col #gateAdCarousel .axr .axr-fai-feats span{ font-size:calc(var(--axr-name) * 0.78) !important; }
 .gad-media-col #gateAdCarousel .axr .axr-blurb{ font-size:calc(var(--axr-name) * 0.74) !important; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23273 — THE SCENE CARD (.ash)
+   Two pages: identity over the exterior, then the hotel's own words over an
+   interior. Brand identity is carried by --ash-tint (the property's own
+   Accor brand colour) — Nick: 'keep the brand identity and colors'.
+   The 1583 lines of .axr rules above belong to the retired three-page deck
+   and are removed with it.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* The article also carries .axr so the existing page rotator finds it; these
+   rules undo that class's grid layout and type scale, and win on source order
+   (equal specificity, declared later). */
+.ash { position: relative; width: 100%; height: 100%; overflow: hidden; color: #fff;
+       display: block; grid-template-rows: none; }
+.ash-pages { position: absolute; inset: 0; }
+/* Opacity and the crossfade come from .axr-page / .axr-page-on — not repeated
+   here, so there is exactly one owner of the transition. */
+.ash-page { background-size: cover; background-position: center; }
+
+.ash-scrim { position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.84) 0%, rgba(0,0,0,.44) 30%, rgba(0,0,0,.92) 100%); }
+.ash-scrim-intro {
+  background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.12) 38%, rgba(0,0,0,.82) 100%); }
+
+/* ── Identity ───────────────────────────────────────────────────────── */
+.ash-introbox { position: absolute; inset: 0; display: flex; flex-direction: column;
+                align-items: center; justify-content: center; text-align: center; gap: 2.2%; }
+.ash-head { position: absolute; top: 6%; left: 4.5%; right: 4.5%;
+            display: flex; align-items: flex-start; justify-content: space-between; gap: 3%; }
+
+.ash-lockup { height: 7.2vh; max-width: 46%; object-fit: contain;
+              filter: drop-shadow(0 3px 16px rgba(0,0,0,.85)); }
+.ash-lockup-lg { height: 16vh; max-width: 62%; }
+.ash-lockup svg { height: 100%; width: auto; display: block; }
+
+.ash-name-n { font: 300 clamp(22px, 3.3vh, 46px)/1.06 Georgia, "Times New Roman", serif;
+              letter-spacing: .012em; text-shadow: 0 2px 14px rgba(0,0,0,.9); }
+.ash-name-lg .ash-name-n { font-size: clamp(30px, 6vh, 74px); }
+.ash-name-s { font: 600 clamp(11px, 1.5vh, 17px)/1 system-ui, sans-serif; letter-spacing: .2em;
+              text-transform: uppercase; color: rgba(255,255,255,.64); margin-top: .9vh; }
+.ash-name-s b { color: rgba(255,255,255,.32); font-weight: 600; margin: 0 .5em; }
+.ash-brandmark { height: 4.6vh; max-width: 22%; object-fit: contain; opacity: .95;
+                 filter: drop-shadow(0 2px 10px rgba(0,0,0,.8)); flex: 0 0 auto; }
+.ash-introbox .ash-brandmark { position: absolute; bottom: 7%; right: 5%; }
+
+/* ── The scene: two languages, no headings ──────────────────────────── */
+.ash-cols { position: absolute; left: 4.5%; right: 4.5%; bottom: 7%;
+            display: grid; grid-template-columns: 1fr 1px 1fr; gap: 3%; align-items: start; }
+.ash-cols-one { grid-template-columns: minmax(0, 74%); justify-content: center; }
+.ash-div { align-self: stretch; background:
+  linear-gradient(180deg, transparent, rgba(255,255,255,.26) 14%, rgba(255,255,255,.26) 86%, transparent); }
+
+.ash-col p { font: 400 clamp(14px, 2.35vh, 27px)/1.44 Georgia, "Times New Roman", serif;
+             color: rgba(255,255,255,.96); text-shadow: 0 2px 12px rgba(0,0,0,.92); margin: 0; }
+.ash-fact { margin-top: 1.8vh; display: flex; gap: .55em;
+            font: 600 clamp(11px, 1.72vh, 20px)/1.34 system-ui, sans-serif; color: rgba(255,255,255,.74); }
+.ash-fact i { color: var(--ash-tint); font-style: normal; flex: 0 0 auto; }
