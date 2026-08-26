@@ -1736,12 +1736,20 @@ function changeScreenType(val) {
 
 function changeSubScreen(val) {
   try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: (typeof screenType !== 'undefined' ? screenType : 'main'), s: val })); } catch (e) {}
-  // Sanitize the gate/belt value (it comes from a DOM <select>.value, a CodeQL
-  // "DOM text reinterpreted as HTML" source) before it flows into the gate
-  // innerHTML. Gates/belts are alphanumeric — strip anything else (incl. < > & ").
-  subScreenVal = String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-]/g, '');
+  subScreenVal = _fidsSafeSub(val);
   _fidsSyncUrl((typeof screenType !== 'undefined' ? screenType : 'main'), subScreenVal);
   render();
+}
+
+// Anything that becomes subScreenVal must pass through here first.
+//
+// subScreenVal is interpolated into the gate and baggage innerHTML in several
+// places, so every source of it is a CodeQL "DOM text reinterpreted as HTML"
+// source: a <select>.value, and — since v23270 — the ?gate=/?belt= query
+// string, which is attacker-supplied in a way a select option never was.
+// Gates and belts are alphanumeric; strip everything else, < > & " included.
+function _fidsSafeSub(val) {
+  return String(val == null ? '' : val).replace(/[^A-Za-z0-9 ./\-]/g, '');
 }
 
 // v23270 — WHICH SUB-SCREEN WAS THIS DISPLAY OPENED TO?
@@ -1764,7 +1772,9 @@ function _fidsPinnedSub(kind) {
       return null;
     }
     if (cyc != null && cyc !== '' && cyc !== '0') return null;
-    v = v == null ? '' : String(v).trim();
+    // Sanitized AT THE SOURCE: this value reaches subScreenVal and the gate
+    // innerHTML, and unlike a <select> option it comes straight off the URL.
+    v = _fidsSafeSub(v == null ? '' : String(v).trim());
     return v ? v : null;
   } catch (e) { return null; }
 }
@@ -36007,7 +36017,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var _sel0 = document.getElementById('screenTypeSel');
         if (_sel0) _sel0.value = st.t;
         changeScreenType(st.t);
-        if (st.s) { try { subScreenVal = st.s; } catch (e0) {} }
+        // st.s is the raw ?gate=/?belt= value (or a localStorage copy of one).
+        // It renders before the feed lands, so it must be sanitized here too —
+        // this was the one assignment that reached subScreenVal unfiltered.
+        if (st.s) { try { subScreenVal = _fidsSafeSub(st.s); } catch (e0) {} }
         try { if (typeof render === 'function') render(); } catch (e1) {}
       }
     } catch (e) {}
