@@ -144,10 +144,72 @@
     try { return typeof window._ocIdle === 'function' && window._ocIdle(); } catch (e) { return false; }
   }
 
+  // v23267 — AND A FLOOR ON HOW OFTEN IT MAY RUN.
+  //
+  // v23166 stopped this watching 'style', which killed the font-fitter storm.
+  // What it left behind still watched childList + class over the WHOLE
+  // document, and on a gate board that is not quiet either: Leaflet adds and
+  // removes tile elements and rewrites marker classes continuously while the
+  // aircraft glides, so the pass was still being scheduled every animation
+  // frame. Measured on the live board at v23266, in steady state with nothing
+  // changing on screen: ~230 getBoundingClientRect calls per second, 93% of
+  // them from this file, one 100ms+ forced-layout task per second and frame
+  // stalls to match. That is the bump Nick can see but cannot quite point at.
+  //
+  // An advert's pixels do not move because a map tile loaded. Two guards:
+  // relevance (below) rejects mutations that cannot affect an advert, and this
+  // floor coalesces whatever survives. 200ms is far below the eye's threshold
+  // for a surround inset settling, and the 1s interval remains the backstop.
+  var MIN_GAP_MS = 200;
+  var lastRun = 0;
+  var trailing = 0;
+
+  function runPass() {
+    trailing = 0;
+    lastRun = Date.now();
+    updateAdvertSafeZones();
+  }
+
   function scheduleUpdate() {
     if (scheduled || isOffScreen()) return;
+    var since = Date.now() - lastRun;
+    if (since < MIN_GAP_MS) {
+      // Too soon: leave one trailing pass armed so the last change in a burst
+      // is still measured, and drop the rest of the burst.
+      if (!trailing) trailing = window.setTimeout(function () {
+        trailing = 0;
+        if (isOffScreen()) return;
+        scheduled = true;
+        window.requestAnimationFrame(function () { scheduled = false; runPass(); });
+      }, MIN_GAP_MS - since);
+      return;
+    }
     scheduled = true;
-    window.requestAnimationFrame(updateAdvertSafeZones);
+    window.requestAnimationFrame(function () { scheduled = false; runPass(); });
+  }
+
+  // Does this batch of mutations plausibly change where an advert's pixels
+  // land? Only the ad column's own subtree can, plus the arrival of a carousel
+  // or a piece of media anywhere (the column is built after this file loads).
+  // Everything else — map tiles, marker classes, telemetry, the clock — is
+  // rejected without touching layout: closest()/matches() are selector work,
+  // not measurement.
+  function relevantMutations(muts) {
+    for (var i = 0; i < muts.length; i++) {
+      var m = muts[i];
+      var el = m.target && m.target.nodeType === 1 ? m.target : (m.target && m.target.parentElement);
+      if (el && el.closest && el.closest('.gad-media-col')) return true;
+      var added = m.addedNodes;
+      if (added && added.length) {
+        for (var j = 0; j < added.length; j++) {
+          var n = added[j];
+          if (!n || n.nodeType !== 1) continue;
+          if (n.matches && n.matches('.gad-media-col, #gateAdCarousel, img, video')) return true;
+          if (n.querySelector && n.querySelector('.gad-media-col, #gateAdCarousel')) return true;
+        }
+      }
+    }
+    return false;
   }
 
   document.addEventListener('load', function (event) {
@@ -171,7 +233,12 @@
   // for a slide change, class for state, the capture-phase load listener for a
   // decoded image, resize for the window, and the 1s interval as a backstop for
   // anything that settles late.
-  new MutationObserver(scheduleUpdate).observe(document.documentElement, {
+  // v23267 — the same signals, but only when they belong to an advert. The
+  // observer still spans the document because the ad column does not exist
+  // when this file runs; relevantMutations() is what makes that affordable.
+  new MutationObserver(function (muts) {
+    if (relevantMutations(muts)) scheduleUpdate();
+  }).observe(document.documentElement, {
     childList: true,
     subtree: true,
     attributes: true,
