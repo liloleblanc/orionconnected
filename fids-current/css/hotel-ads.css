@@ -306,3 +306,63 @@ img.ash-lockup { display: block; object-fit: contain; }
 .ash-scene-facts .ash-fact { margin-top: 0; margin-bottom: 2.2vh;
   font-size: clamp(13px, 2.1vh, 24px); color: rgba(255,255,255,.94); }
 .ash-scene-facts .ash-fact:last-child { margin-bottom: 0; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23275b — THE BRAND FACES, PUT BACK.
+   Stripping the retired .axr rules took these @font-face declarations with
+   them, and the rules that point the GENERATED inline lockups at them. Those
+   lockups are how Sofitel and Fairmont properties get their name set in the
+   real brand face instead of a fallback serif — Nick: 'we had fonts for
+   Fairmont for Sofitel'. Nothing here is new; it is the original, restored.
+   ═══════════════════════════════════════════════════════════════════════ */
+@font-face{ font-family:'ac-icons'; src:url('../fonts/ac-icons/icomoon.woff') format('woff');
+  font-weight:normal; font-style:normal; font-display:block; }
+@font-face {
+  font-family: 'SofitelName';
+  src: url('/fonts/sofitel-name-outer.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'FairmontName';
+  src: url('/fonts/fairmont-title-theseasons.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'FairmontBody';
+  src: url('/fonts/fairmont-body-montserrat.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'FairmontLogoName';
+  src: url('/fonts/fairmont-name-franklin.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+.axr .fai-inline-lockup text { font-family:'FairmontLogoName','Franklin Gothic Book','ITC Franklin Gothic','Franklin Gothic Medium',Arial,sans-serif !important; }
+.axr .sof-inline-lockup text { font-family:'SofitelName',sans-serif !important; }
+/* The inline lockups are rendered by the scene card too, so the selectors
+   reach both class names. */
+.ash .fai-inline-lockup text { font-family:'FairmontLogoName','Franklin Gothic Book','ITC Franklin Gothic','Franklin Gothic Medium',Arial,sans-serif !important; }
+.ash .sof-inline-lockup text { font-family:'SofitelName',sans-serif !important; }
+
+/* Per-brand typography for the scene card, carried over from the retired
+   deck's own brand rules: Fairmont sets names in The Seasons and body copy in
+   its own text face; everything else keeps the board's AC Nord. */
+.ash[data-brand-code="FAI"] .ash-name-n {
+  font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important;
+  font-weight:400; letter-spacing:.05em; text-transform:uppercase; line-height:1.26; }
+.ash[data-brand-code="FAI"] .ash-col p,
+.ash[data-brand-code="FAI"] .ash-fact,
+.ash[data-brand-code="FAI"] .ash-name-s {
+  font-family:'FairmontBody','AC Nord Text','Helvetica Neue',Arial,sans-serif !important;
+  font-weight:400; }
+.ash[data-brand-code="SOF"] .ash-name-n {
+  font-family:'SofitelName','AC Nord Display',sans-serif !important; letter-spacing:.04em; }
