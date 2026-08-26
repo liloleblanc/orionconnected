@@ -3694,7 +3694,12 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     const FLOOR = 1000;     // top up once the balance drops below this
     const CEILING = 5000;   // and bring it back to here — never higher
     if (!env.ADB_KEY) { console.log("[BALANCE] no ADB_KEY — skipped"); return; }
-    try {
+    // The balance work lives in its own function so that its early exits end
+    // only IT. Written inline, every `return` below would also skip the
+    // subscription check that follows — and the most likely early exit ("credits
+    // are fine") is exactly the run where a dead subscription must still be
+    // reported. A healthy balance is not evidence of a healthy subscription.
+    const checkBalance = async () => {
       const r = await fetch(`${ADB}/subscriptions/balance`, { headers: H });
       const body = await r.text();
       if (!r.ok) { console.log(`[BALANCE] read failed ${r.status}: ${body.slice(0, 160)}`); return; }
@@ -3718,8 +3723,38 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       console.log(rr.ok
         ? `[BALANCE] refilled ${want} credits (${bal} -> ~${CEILING})`
         : `[BALANCE] refill failed ${rr.status}: ${rb.slice(0, 200)}`);
+    };
+    try { await checkBalance(); } catch (e) { console.log(`[BALANCE] error: ${e && e.message}`); }
+
+    // v23269b — CREDITS ARE ONLY HALF OF "STILL WORKING".
+    // A subscription can be switched off by the provider independently of its
+    // balance — one failed delivery is enough, per the runbook's own note on
+    // maxDeliveryRetries. Refilling credits does NOT revive a disabled one, so
+    // a worker that only watched the balance would report healthy while no
+    // notification had arrived for weeks. Check the subscription itself too.
+    //
+    // Reporting, not resurrecting: re-creating a subscription is a spending
+    // decision with a duplicate-subscription failure mode, so it stays a
+    // deliberate human act. This makes the state visible instead of silent.
+    try {
+      const sr = await fetch(`${ADB}/subscriptions/webhook`, { headers: H });
+      const sb = await sr.text();
+      if (!sr.ok) { console.log(`[WEBHOOK] status read failed ${sr.status}: ${sb.slice(0, 160)}`); return; }
+      const list = JSON.parse(sb);
+      const subs = Array.isArray(list) ? list : [list];
+      if (!subs.length) { console.log("[WEBHOOK] NO SUBSCRIPTIONS — push updates are not running"); return; }
+      for (const s of subs) {
+        const subj = s && s.subject ? `${s.subject.type}/${s.subject.id}` : "?";
+        if (s && s.isActive) {
+          console.log(`[WEBHOOK] active: ${subj} (${s.id}) expires ${s.expiresOnUtc || "n/a"}`);
+        } else {
+          // Loud on purpose: this is the failure that looks like nothing.
+          console.log(`[WEBHOOK] INACTIVE: ${subj} (${s && s.id}) — push updates are NOT arriving. `
+            + `notices: ${JSON.stringify((s && s.notices) || []).slice(0, 240)}`);
+        }
+      }
     } catch (e) {
-      console.log(`[BALANCE] error: ${e && e.message}`);
+      console.log(`[WEBHOOK] check error: ${e && e.message}`);
     }
   }
 };
