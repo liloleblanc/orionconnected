@@ -32399,7 +32399,15 @@ function buildAccorAdOnlyV6(ad) {
   // the board's OTHER language (_L2) beside it. Nothing is announced — no
   // 'ENGLISH'/'FRANÇAIS' headings — the two columns and the rule between them
   // are the only separator (Nick: 'You dont need to announce English or french').
+  // The airport decides the pair. Prefer the one stamped on the record at
+  // fetch time; fall back to the gate's own destination so a card assembled
+  // from anywhere still asks the right board which two languages it runs —
+  // without it an unstamped record would default to en/fr and print French
+  // distances on a Spanish board.
   var _adIata = String(ad._destIata || '').toUpperCase();
+  if (!_adIata) {
+    try { _adIata = String((window._gateCurrentFlight || {})._locIata || '').toUpperCase(); } catch (e) {}
+  }
   var _L1 = accorLang();
   var _L2 = '';
   try {
