@@ -183,6 +183,14 @@
   color: rgba(255,255,255,0.85);
   margin-top: 6px;
 }
+/* v23272 — the aircraft is down and on the stand. Green rather than the
+   in-flight teal, and stated rather than murmured: this is the line the
+   passenger at the gate is looking for. */
+.gad-aircraft-col .v2-inbound.is-arrived {
+  background: rgba(74,222,128,0.10);
+  border-top-color: rgba(74,222,128,0.55);
+}
+.gad-aircraft-col .v2-inbound.is-arrived .v2-inbound-lbl { color: rgba(134,239,172,0.95); }
 
 /* ── Equipment Type (BOTTOM) ── */
 .gad-aircraft-col .v2-eq-block {

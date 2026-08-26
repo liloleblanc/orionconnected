@@ -3277,9 +3277,30 @@ try {
         //
         // If this gate has an inbound and the box holds no Leaflet container,
         // clear the pos/prog guards so THIS tick rebuilds it from scratch.
+        //
+        // v23271 — BUT ONLY WHILE THE AIRCRAFT IS STILL COMING.
+        //
+        // window._gateInbound stays populated after the inbound lands — it is
+        // how the gate knows which airframe is parked there. The renderer
+        // already knows better: fidsInboundHasArrived() drops the inbound
+        // panel and its map the moment the flight is 'arrived', because a
+        // landed aeroplane has no route left to draw.
+        //
+        // This watchdog did not ask. So on any gate whose inbound had already
+        // arrived it fired every 10 seconds, tore down gateMap, cleared the
+        // guards and demanded a rebuild that the renderer immediately declined
+        // for the same correct reason — then fired again 10 seconds later.
+        // Measured on the live Moncton gate 3 board with PD2373 'arrived': the
+        // rebuild log every tick and 15 subtree replacements in 30 seconds.
+        // That standoff is Nick's 'lots of glitching and flashing'.
+        //
+        // Asking the same question the renderer asks ends it: no arriving
+        // aircraft, nothing to insist on.
         try {
           var _mbW = document.getElementById('gateMapBox');
-          if (_mbW && _mbW.offsetParent !== null && window._gateInbound
+          var _inbW = window._gateInbound;
+          if (_inbW && fidsInboundHasArrived(_inbW, Date.now())) _inbW = null;
+          if (_mbW && _mbW.offsetParent !== null && _inbW
               && !_mbW.querySelector('.leaflet-container')) {
             console.log('[MAP-WATCHDOG] map container EMPTY while an inbound is tracked — rebuilding');
             try { if (typeof gateMap !== 'undefined' && gateMap) { gateMap.remove(); } } catch (e4) {}
@@ -7378,11 +7399,36 @@ function _buildV2AircraftCol(ctx, vars) {
     var _inbFlightTxt = inboundFlight.flight || '';
     var _inbMain = _fromDisplay || _inbFlightTxt || '';
     if (_inbFlightTxt && _fromDisplay) _inbMain = _fromDisplay + ' · ' + _inbFlightTxt;
+    // v23272 — SAY IT LANDED (Nick: 'all i want is the aircraft arrived').
+    //
+    // This block used to be unreachable once the inbound touched down, and
+    // when it was reachable it only ever said 'coming from' with a countdown.
+    // Both are wrong for an aeroplane already on the stand: the countdown has
+    // nothing left to count, and 'coming from' is no longer true. The banner
+    // beside it already switches Arriving From | Arrived From on exactly this
+    // test (v23257), so reuse its labels rather than inventing a second
+    // vocabulary for the same fact.
+    var _pair = function (key) {
+      return _gateLbl(key, false, function (w, i2) {
+        return i2 ? '<span class="v2-fi-sep"> | </span>' + w : w;
+      }, '');
+    };
+    var _inbArrivedV2 = false;
+    try { _inbArrivedV2 = !!fidsInboundHasArrived(inboundFlight, Date.now()); } catch (e) {}
+    // On the stand, or still rolling? ADB's 'arrived' is on-block and
+    // _actualArrTime is the gate time; a bare 'landed', or ADS-B reporting
+    // wheels-on-ground before the status catches up, is only touchdown.
+    var _inbSt2 = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+    var _inbOnStand = _inbArrivedV2 && (_inbSt2 === 'arrived' || !!inboundFlight._actualArrTime);
     _inbLine =
-        '<div class="v2-inbound">'
-      +   '<div class="v2-inbound-lbl">This flight is coming from</div>'
+        '<div class="v2-inbound' + (_inbArrivedV2 ? ' is-arrived' : '') + '">'
+      +   '<div class="v2-inbound-lbl">'
+      +     _pair(_inbArrivedV2 ? (_inbOnStand ? 'acArrivedGate' : 'acArrived') : 'arrivingFrom')
+      +   '</div>'
       +   '<div class="v2-inbound-flt">' + (_inbMain || '—') + '</div>'
-      +   (_etaStr ? '<div class="v2-inbound-time">Time left for arrival: ' + _etaStr + '</div>' : '')
+      +   (_inbArrivedV2
+            ? ''
+            : (_etaStr ? '<div class="v2-inbound-time">' + _pair('timeToArr') + ': ' + _etaStr + '</div>' : ''))
       + '</div>';
   }
 
@@ -8426,7 +8472,25 @@ function _buildV2MapCol(ctx, vars) {
       // put … arriving From | En Provenance de'): 'Arriving From | En
       // provenance de' while en route, 'Arrived From | Arrivé de' once
       // landed. The origin itself lives on line 1, so no code in the banner.
-      var _mcTitle = _gateLbl((_stKey === 'arrived') ? 'arrivedFrom' : 'arrivingFrom', _frF, function (w, i2) {
+      // v23272 — once it is down, SAY SO, in the words a passenger uses
+      // (Nick: 'Once the aircraft arrives it should say your aircraft has
+      // arrived once at the gate it should say your aircraft has arrived at
+      // the gate simple done'). 'Arrived From' names the movement; it does
+      // not answer the question the person waiting is actually asking.
+      //
+      // Two states, because they are not the same news: ADB's 'arrived' is
+      // ON-BLOCK and _actualArrTime is the gate time, so that is at-the-gate;
+      // a bare 'landed', or ADS-B reporting wheels down before the status
+      // catches up, is touchdown and still taxiing.
+      var _mcOnStand = false;
+      try {
+        var _mcRawSt = String(_ib.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+        _mcOnStand = (_mcRawSt === 'arrived' || !!_ib._actualArrTime);
+      } catch (e) {}
+      var _mcTitleKey = (_stKey === 'arrived')
+        ? (_mcOnStand ? 'acArrivedGate' : 'acArrived')
+        : 'arrivingFrom';
+      var _mcTitle = _gateLbl(_mcTitleKey, _frF, function (w, i2) {
         return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>';
       }, '');
       var _mcTimes = '';
@@ -9985,11 +10049,27 @@ function uxgGateHtml(ctx) {
 
   // Inbound info
   var inbPanelHtml = '';
-  // Inbound panel — only show when aircraft is still en-route or about to depart.
-  // Once it has actually landed/arrived at this airport, the aircraft is at the
-  // gate — no longer "incoming" — so the panel should disappear.
+  // v23272 — A LANDED AIRCRAFT IS NEWS, NOT NOTHING.
+  //
+  // This used to blank the panel the moment the inbound arrived, on the
+  // reasoning that it is "no longer incoming". But the passenger standing at
+  // the gate has exactly one question, and the answer had just gone blank
+  // (Nick: 'if the aircraft arrived it should say something that the aircraft
+  // has arrived and is now at the gate ... its about the incoming aircraft
+  // here'). The panel already renders an arrived state in full — the arrived
+  // badge, the 'Arrived at' row — it was simply never reached.
+  //
+  // So an arrived inbound now keeps the panel, with the label switched from
+  // 'Your Aircraft Is Arriving From' to 'Arrived From' and a plain line saying
+  // it is at the gate. Bounded to 12 hours since touchdown so a gate-fallback
+  // match on some flight that landed this morning cannot claim to be the
+  // aircraft for tomorrow's departure.
   var _inbAlreadyArrived = fidsInboundHasArrived(inboundFlight, Date.now());
-  var _inbOperating = inboundFlight && !_inbAlreadyArrived && (
+  var _inbArrTs = inboundFlight ? (inboundFlight._revTs || inboundFlight._sortTs || 0) : 0;
+  var _inbAtGate = !!(inboundFlight && _inbAlreadyArrived
+    && (!_inbArrTs || (Date.now() - _inbArrTs) < 12 * 3600000));
+  var _inbOperating = inboundFlight && (_inbAtGate || !_inbAlreadyArrived) && (
+    _inbAtGate ||
     inboundFlight.status === 'active' ||
     inboundFlight.status === 'en-route' ||
     inboundFlight.status === 'delayed' ||
@@ -10009,7 +10089,15 @@ function uxgGateHtml(ctx) {
     var inFlight = inboundFlight.flight || '';
     var inEquip = inboundFlight._aircraft ? formatAircraft(inboundFlight._aircraft || inboundFlight._aircraftCode || '') : equipName;
     var inReg = inboundFlight._reg || '';
-    var inArrived = (inboundFlight.status === 'landed' || inboundFlight.status === 'arrived');
+    // v23272 — honour the clock-inferred arrival too, not just a published
+    // 'landed'/'arrived' status, so the arrived rows below match the decision
+    // _inbAtGate already made from the same evidence.
+    var inArrived = _inbAtGate
+      || (inboundFlight.status === 'landed' || inboundFlight.status === 'arrived');
+    // Same on-stand test as the v2 rail: 'arrived' is on-block, a bare
+    // 'landed' is only touchdown.
+    var _inbStG8 = String(inboundFlight.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+    var _inbOnStandG8 = inArrived && (_inbStG8 === 'arrived' || !!inboundFlight._actualArrTime);
     var inDelayed = inboundFlight.upd && (inboundFlight.status === 'delayed');
 
     // Inbound departure time - convert to destination airport timezone
@@ -10064,7 +10152,7 @@ function uxgGateHtml(ctx) {
 
     var _apNameInb = (AP[iata]||{}).name || iata;
     inbPanelHtml = '<div class="g8-inb" style="flex-direction:column;overflow:hidden;"><div class="g8-inb-left" style="flex:1;width:100%;overflow:hidden;">'
-      + '<div class="g8-inb-label">' + TL('yourAircraft') + '</div>'
+      + '<div class="g8-inb-label">' + TL(inArrived ? (_inbOnStandG8 ? 'acArrivedGate' : 'acArrived') : 'yourAircraft') + '</div>'
       + '<div class="g8-inb-city">' + inCity + '</div>'
       + '<div class="g8-inb-flight">' + inFlight + '</div>'
       + inStBadge
@@ -10077,7 +10165,7 @@ function uxgGateHtml(ctx) {
     var _inbStText = inArrived ? SL(inboundFlight.status) : SL(inboundFlight.status);
     var _inbStColor = inArrived ? '#10b981' : (inDelayed ? '#f59e0b' : '#60a5fa');
     window._gateInbCompact = '<div style="display:flex;flex-direction:column;gap:2px;overflow:hidden;">'
-      + '<div style="font-size:11px;font-weight:700;letter-spacing:0.3px;color:rgba(255,255,255,0.5);">' + TL('yourAircraft') + '</div>'
+      + '<div style="font-size:11px;font-weight:700;letter-spacing:0.3px;color:rgba(255,255,255,0.5);">' + TL(inArrived ? (_inbOnStandG8 ? 'acArrivedGate' : 'acArrived') : 'yourAircraft') + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
       +   '<span style="font-size:18px;font-weight:800;color:#fff;line-height:1.1;">' + inCity + '</span>'
       +   '<span style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);">' + inFlight + '</span>'
@@ -10087,6 +10175,7 @@ function uxgGateHtml(ctx) {
       +   (_inbDepStr ? '<span>Dep ' + _inbDepStr + '</span>' : '')
       +   (_inbArrRevStr ? '<span>Arr <s style="opacity:0.4;">' + _inbArrStr + '</s> <span style="color:#f59e0b;font-weight:700;">' + _inbArrRevStr + '</span></span>' : (_inbArrStr ? '<span>Arr ' + _inbArrStr + (inboundFlight && inboundFlight.dateTag && inboundFlight.dateTag !== currentFlight.dateTag ? ' <sup style="font-size:10px;">+1</sup>' : '') + '</span>' : ''))
       + '</div>'
+      + (inArrived ? '<div style="font-size:13px;font-weight:700;color:#10b981;">' + TL(_inbOnStandG8 ? 'acArrivedGate' : 'acArrived') + '</div>' : '')
       + '</div>';
   } else {
     // No inbound - welcome message
@@ -19107,6 +19196,10 @@ const LS = {
   arrivedAt: { en:'Arrived at',fr:'Arrivé à',es:'Llegó a las',de:'Gelandet um',it:'Arrivato alle',pt:'Chegou às',ja:'到着',zh:'已到达',ar:'وصل في' },
   equipToday:{ en:'Equipment Today:',fr:"Appareil aujourd'hui :",es:'Aeronave hoy:',de:'Flugzeug heute:',it:'Aeromobile oggi:',pt:'Aeronave hoje:',ja:'本日の機材:',zh:'今日机型:',ar:':الطائرة اليوم' },
   yourAircraft:{ en:'Your Aircraft Is Arriving From',fr:'Votre appareil arrive de',es:'Su aeronave llega desde',de:'Ihr Flugzeug kommt aus',it:'Il vostro aereo arriva da',pt:'A sua aeronave chega de',ja:'ご搭乗機の出発地',zh:'您的飞机来自',ar:'طائرتكم قادمة من' },
+  // v23272 — the same panel once the aircraft is down. 'Is Arriving From'
+  // becomes a lie the moment it lands, so the label changes with it.
+  acArrived:     { en:'Your aircraft has arrived',fr:'Votre appareil est arrivé',es:'Su aeronave ha llegado',de:'Ihr Flugzeug ist angekommen',it:'Il vostro aereo è arrivato',pt:'A sua aeronave chegou',ja:'ご搭乗機が到着しました',zh:'您的飞机已到达',ar:'وصلت طائرتكم' },
+  acArrivedGate: { en:'Your aircraft has arrived at the gate',fr:'Votre appareil est arrivé à la porte',es:'Su aeronave ha llegado a la puerta',de:'Ihr Flugzeug ist am Gate angekommen',it:'Il vostro aereo è arrivato al gate',pt:'A sua aeronave chegou ao portão',ja:'ご搭乗機がゲートに到着しました',zh:'您的飞机已抵达登机口',ar:'وصلت طائرتكم إلى البوابة' },
   welcomeTo: { en:'Welcome to',fr:'Bienvenue à',es:'Bienvenido a',de:'Willkommen in',it:'Benvenuti a',pt:'Bem-vindo a',ja:'ようこそ',zh:'欢迎来到',ar:'مرحباً بكم في' },
   nextDep:   { en:'Next departure from this gate',fr:'Prochain départ de cette porte',es:'Próxima salida desde esta puerta',de:'Nächster Abflug von diesem Gate',it:'Prossima partenza da questo gate',pt:'Próxima partida deste portão',ja:'このゲートからの次の出発',zh:'本登机口下一航班',ar:'المغادرة التالية من هذه البوابة' },
   boardNow:  { en:'Boarding now',fr:'Embarquement en cours',es:'Embarcando ahora',de:'Jetzt Boarding',it:'Imbarco in corso',pt:'Embarque agora',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
@@ -19773,6 +19866,16 @@ var _GATE_LBL = {
   // de'). The en-route and landed variants.
   arrivingFrom: { en:'Arriving From', fr:'En provenance de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
   arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
+  // v23272 — the line that replaces the countdown once the aircraft is down.
+  // v23272 — two states, not one (Nick: 'Once the aircraft arrives it should
+  // say your aircraft has arrived once at the gate it should say your
+  // aircraft has arrived at the gate'). Down on the runway and still taxiing
+  // is not the same news as parked on the stand.
+  acArrived:     { en:'Your aircraft has arrived', fr:'Votre appareil est arrivé', es:'Su aeronave ha llegado', de:'Ihr Flugzeug ist angekommen', it:'Il vostro aereo è arrivato', pt:'A sua aeronave chegou', ja:'ご搭乗機が到着しました', zh:'您的飞机已到达', ar:'وصلت طائرتكم' },
+  acArrivedGate: { en:'Your aircraft has arrived at the gate', fr:'Votre appareil est arrivé à la porte', es:'Su aeronave ha llegado a la puerta', de:'Ihr Flugzeug ist am Gate angekommen', it:'Il vostro aereo è arrivato al gate', pt:'A sua aeronave chegou ao portão', ja:'ご搭乗機がゲートに到着しました', zh:'您的飞机已抵达登机口', ar:'وصلت طائرتكم إلى البوابة' },
+  // Was hardcoded English ('Time left for arrival:') in the v2 inbound block,
+  // on a board whose every other label is bilingual.
+  timeToArr: { en:'Time to arrival', fr:'Temps avant l’arrivée', es:'Tiempo hasta la llegada', de:'Zeit bis zur Ankunft', it:'Tempo all’arrivo', pt:'Tempo até à chegada', ja:'到着まで', zh:'距到达时间', ar:'الوقت حتى الوصول' },
   boarding:  { en:'Boarding',      fr:'Embarquement',   es:'Embarque',     de:'Boarding',    it:'Imbarco',     pt:'Embarque',   ja:'搭乗',      zh:'登机',   ar:'الصعود' },
   revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'مُعدل' },
   gate:      { en:'Gate',          fr:'Porte',          es:'Puerta',       de:'Gate',        it:'Gate',        pt:'Portão',     ja:'ゲート',    zh:'登机口', ar:'البوابة' },
@@ -20025,7 +20128,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23270';
+var FIDS_BUILD_TAG = 'v23272';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
