@@ -20128,7 +20128,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23274';
+var FIDS_BUILD_TAG = 'v23275';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -32549,9 +32549,24 @@ function _accorScenePick(raw, maxChars) {
   return keep.join(' ');
 }
 
-// One fact worth reading, from the hotel's own 'advantages'. This is where the
-// real detail lives ('Home to Library Bar, awarded Canada's Best Hotel Bar')
-// as opposed to the amenity inventory, where the coffee machine lives.
+// The facts worth reading, from the hotel's own 'advantages'. This is where
+// the real detail lives ('Home to Library Bar, awarded Canada's Best Hotel
+// Bar') as opposed to the amenity inventory, where the coffee machine lives.
+function _accorSceneFacts(adObj, alreadyShown, max) {
+  var list = (adObj && Array.isArray(adObj.advantages)) ? adObj.advantages : [];
+  var seen = String(alreadyShown || '').toLowerCase();
+  var out = [];
+  for (var i = 0; i < list.length && out.length < (max || 4); i++) {
+    var a = String(list[i] || '').replace(/\s+/g, ' ').trim();
+    if (!a || a.length < 18 || a.length > 96) continue;
+    if (_ACCOR_REJECT_RX.test(a) || _accorIsStale(a)) continue;
+    if (seen.indexOf(a.slice(0, 24).toLowerCase()) !== -1) continue;
+    out.push(a.replace(/[.\s]+$/, ''));
+  }
+  return out;
+}
+
+// One fact worth reading — kept for callers that want a single line.
 function _accorSceneFact(adObj, alreadyShown) {
   var list = (adObj && Array.isArray(adObj.advantages)) ? adObj.advantages : [];
   var seen = String(alreadyShown || '').toLowerCase();
@@ -32633,6 +32648,14 @@ function buildAccorSceneAd(ad) {
   function _fit(u) { return String(u || '').replace(/_(\d{3,4})x(\d{3,4})\.jpg$/i, '_1024x768.jpg'); }
   var exterior = _fit(photos[0] || '');
   var interior = _fit(photos[3] || photos[2] || photos[1] || photos[0] || '');
+  // Each page after the intro takes its own frame from the hotel series, so a
+  // four-page card is four different views of the property rather than the
+  // same photo four times. Wraps when the hotel has fewer frames than pages.
+  function _scenePhoto(n) {
+    if (!photos.length) return '';
+    var order = [3, 2, 4, 1, 5, 0];
+    return _fit(photos[order[n % order.length]] || photos[n % photos.length] || photos[0]);
+  }
 
   // ── Identity ─────────────────────────────────────────────────────────
   var lockInline = ad._sofitelInlineSvg || ad._fairmontInlineSvg || '';
@@ -32691,23 +32714,28 @@ function buildAccorSceneAd(ad) {
   var textB = adB ? _accorScenePick(adB.description, 330) : '';
   if (!textA) textA = _accorScenePick(adA && adA.destinationDescription, 330);
   if (!textB && adB) textB = _accorScenePick(adB.destinationDescription, 330);
-  var factA = _accorSceneFact(adA, textA);
-  var factB = adB ? _accorSceneFact(adB, textB) : '';
+  // Facts, plural. Two per page keeps a page readable at ten feet, and the
+  // deck runs three or four pages instead of two (Nick: 'There should be a
+  // minimum 3 to4 slides'). Fewer words per page, more of the hotel seen.
+  var factsA = _accorSceneFacts(adA, textA, 4);
+  var factsB = adB ? _accorSceneFacts(adB, textB, 4) : [];
 
-  function column(text, fact) {
-    if (!text && !fact) return '<div class="ash-col"></div>';
-    return '<div class="ash-col">'
-      + (text ? '<p>' + esc(text) + '</p>' : '')
-      + (fact ? '<div class="ash-fact"><i>◆</i><span>' + esc(fact) + '</span></div>' : '')
-      + '</div>';
+  function colProse(text) {
+    return '<div class="ash-col">' + (text ? '<p>' + esc(text) + '</p>' : '') + '</div>';
   }
-
-  // Only pair the columns when there really are two languages of copy. A
-  // lone column centred beats an empty half-card while the second language
-  // is still loading.
-  var body = textB
-    ? '<div class="ash-cols">' + column(textA, factA) + '<div class="ash-div"></div>' + column(textB, factB) + '</div>'
-    : '<div class="ash-cols ash-cols-one">' + column(textA, factA) + '</div>';
+  function colFacts(list) {
+    if (!list || !list.length) return '<div class="ash-col"></div>';
+    return '<div class="ash-col">' + list.map(function (f) {
+      return '<div class="ash-fact"><i>◆</i><span>' + esc(f) + '</span></div>';
+    }).join('') + '</div>';
+  }
+  // Pair the columns only when there really are two languages of copy. A lone
+  // column centred beats an empty half-card while the second language loads.
+  function pair(a, b, hasB) {
+    return hasB
+      ? '<div class="ash-cols">' + a + '<div class="ash-div"></div>' + b + '</div>'
+      : '<div class="ash-cols ash-cols-one">' + a + '</div>';
+  }
 
   // The page classes are the RETIRED deck's (.axr-pages / .axr-page). That is
   // deliberate: the crossfade rotator, its resume-on-repaint state and the
@@ -32722,23 +32750,46 @@ function buildAccorSceneAd(ad) {
   // slide's dwell, which is why the last page then 'cuts out'. Painting the
   // intro immediately costs nothing: the rotator takes over on its next tick
   // and toggles this class as usual.
-  var pIntro = '<div class="axr-page axr-page-on ash-page ash-intro"' + (exterior ? ' style="background-image:url(' + esc(exterior) + ')"' : '') + '>'
+  function scenePage(bg, inner, extraCls) {
+    return '<div class="axr-page ash-page ash-scene' + (extraCls || '') + '"'
+      + (bg ? ' style="background-image:url(' + esc(bg) + ')"' : '') + '>'
+      + '<div class="ash-scrim"></div>'
+      + '<div class="ash-head">' + identity(false) + '</div>'
+      + inner
+      + '</div>';
+  }
+
+  var pages = [];
+  // 1 — identity over the outside.
+  pages.push('<div class="axr-page axr-page-on ash-page ash-intro"'
+    + (exterior ? ' style="background-image:url(' + esc(exterior) + ')"' : '') + '>'
     + '<div class="ash-scrim ash-scrim-intro"></div>'
     + '<div class="ash-introbox">' + identity(true) + '</div>'
-    + '</div>';
-
-  var pScene = '<div class="axr-page ash-page ash-scene"' + (interior ? ' style="background-image:url(' + esc(interior) + ')"' : '') + '>'
-    + '<div class="ash-scrim"></div>'
-    + '<div class="ash-head">' + identity(false) + '</div>'
-    + body
-    + '</div>';
+    + '</div>');
+  // 2 — the description, in both languages, over an interior.
+  if (textA || textB) pages.push(scenePage(interior, pair(colProse(textA), colProse(textB), !!textB)));
+  // 3+ — the facts, two to a page, each page on its own photo.
+  for (var fi = 0; fi < factsA.length && pages.length < 4; fi += 2) {
+    var chunkA = factsA.slice(fi, fi + 2);
+    var chunkB = factsB.slice(fi, fi + 2);
+    if (!chunkA.length && !chunkB.length) break;
+    pages.push(scenePage(_scenePhoto(pages.length),
+      pair(colFacts(chunkA), colFacts(chunkB), !!chunkB.length), ' ash-scene-facts'));
+  }
+  // A two-page card is thin. If the hotel gave us nothing to fill a third,
+  // its own destination copy does — it is still the hotel's own words.
+  if (pages.length < 3) {
+    var dA = _accorScenePick(adA && adA.destinationDescription, 330);
+    var dB = adB ? _accorScenePick(adB.destinationDescription, 330) : '';
+    if (dA && dA !== textA) pages.push(scenePage(_scenePhoto(pages.length), pair(colProse(dA), colProse(dB), !!dB)));
+  }
 
   // The article carries the exterior too, so the first thing painted is the
   // hotel rather than .axr's flat brand colour.
   var _artBg = exterior ? ' style="background-image:url(' + esc(exterior) + ')"' : '';
   return '<article class="axr ash" data-ad-brand="accor" data-brand-code="' + esc(String(ad.brand || '').toUpperCase()) + '"'
     + ' data-hotel-id="' + esc(String(ad.hotelId || '')) + '"' + _artBg + '>'
-    + '<section class="axr-pages ash-pages">' + pIntro + pScene + '</section>'
+    + '<section class="axr-pages ash-pages">' + pages.join('') + '</section>'
     + '</article>';
 }
 
@@ -33984,8 +34035,9 @@ function _getGateAdDwellMs(slide) {
       //
       // Counting the live pages above is still the truth when the card is on
       // screen. When it is not — the dwell is computed before the first paint
-      // — the answer is simply two, not a guess built from rooms nobody shows.
-      if (!_axN) _axN = 2;
+      // — three is the deck's floor, not a guess built from rooms nobody
+      // shows. A four-page card corrects itself on the next repaint.
+      if (!_axN) _axN = 3;
       return _axN * 10000 + 1000; // full dwell per page + fade buffer
     }
     // Generic hotel ads (Hilton, etc. — large logo + city sub)

@@ -225,19 +225,7 @@
 /* BKF — BreakFree (modern) */
 .axr[data-brand-code="BKF"]{ --all-blue:#102A3A; --axr-tint:#102A3A; --all-gold:#27AAE1;
   --axr-goldgrad:linear-gradient(42deg,#27AAE1 0%,#5DBFE8 100%); }
-   That is an ID selector, so it outranks anything scoped to .axr no matter how
-   many !importants are on it — and page 1 is the only page whose hotel name is
-   an <h1>. Result: the name rendered at 60px on the first page and 32.6px on
-   every other one (Nick: 'Toronto Centre on the first page is SUPER HUGE and
-   then its TINY'). The element is a <div> now, and these ID-scoped rules make
-   sure no other headline rule in the gate CSS can reach into the card either.
-   ════════════════════════════════════════════════════════════════════════ */
-.gad-media-col #gateAdCarousel .axr .axr-name,
-.gad-media-col #gateAdCarousel .axr .axr-page-ctx:not(.axr-room-name),
-.gad-media-col #gateAdCarousel .axr .axr-room-hotel{
-  font-size:calc(var(--axr-name) * 1.15) !important;
-  line-height:1.16 !important;
-}
+
 
 /* ═══════════════════════════════════════════════════════════════════════
    v23273 — THE SCENE CARD (.ash)
@@ -274,10 +262,19 @@
 .ash-head { position: absolute; top: 6%; left: 4.5%; right: 4.5%;
             display: flex; align-items: flex-start; justify-content: space-between; gap: 3%; }
 
-.ash-lockup { height: 7.2vh; max-width: 46%; object-fit: contain;
+/* The lockup is sometimes an <img> and sometimes an inline <svg> (Sofitel and
+   Fairmont generate theirs so the property name paints in the real face). An
+   inline SVG scales to its own aspect and blew straight through the wrapper's
+   cap, so the mark overflowed the card instead of sitting in the middle of
+   it. Cap BOTH axes on whatever ends up inside. */
+.ash-lockup { height: 15%; max-width: 46%; display: flex;
+              align-items: center; justify-content: flex-start;
               filter: drop-shadow(0 3px 16px rgba(0,0,0,.85)); }
-.ash-lockup-lg { height: 16vh; max-width: 62%; }
-.ash-lockup svg { height: 100%; width: auto; display: block; }
+.ash-lockup-lg { height: 26%; max-width: 66%; justify-content: center; }
+.ash-lockup > svg, .ash-lockup > img, .ash-lockup svg {
+  max-height: 100%; max-width: 100%; height: auto; width: auto;
+  object-fit: contain; display: block; }
+img.ash-lockup { display: block; object-fit: contain; }
 
 .ash-name-n { font: 300 clamp(22px, 3.3vh, 46px)/1.06 var(--axr-display);
               letter-spacing: .012em; text-shadow: 0 2px 14px rgba(0,0,0,.9); }
@@ -301,3 +298,11 @@
 .ash-fact { margin-top: 1.8vh; display: flex; gap: .55em;
             font: 600 clamp(11px, 1.72vh, 20px)/1.34 var(--axr-body); color: rgba(255,255,255,.74); }
 .ash-fact i { color: var(--all-gold, #C9A227); font-style: normal; flex: 0 0 auto; }
+
+/* v23274b — the facts pages. Two lines to a page, set larger than the prose
+   because there is less of it: a page a passenger can take in while walking
+   past, rather than a paragraph to stand and read. */
+.ash-scene-facts .ash-cols { bottom: 10%; }
+.ash-scene-facts .ash-fact { margin-top: 0; margin-bottom: 2.2vh;
+  font-size: clamp(13px, 2.1vh, 24px); color: rgba(255,255,255,.94); }
+.ash-scene-facts .ash-fact:last-child { margin-bottom: 0; }
