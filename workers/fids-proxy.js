@@ -3669,6 +3669,58 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
     return jsonResponse({ error: "Not found" }, 404, origin);
+  },
+
+  // v23269 — THE WEBHOOK BALANCE TOPS ITSELF UP.
+  //
+  // Flight-alert credits are consumed one per flight item per push and are
+  // NOT replenished by the plan: when they run out, notifications simply stop.
+  // Nothing announces that. The last refill was June 2026, so the subscription
+  // has most likely been silently dead for weeks — which is precisely the
+  // failure this guards against, on a display that runs unattended.
+  //
+  // The refill has always existed as a manual, ops-secret-gated POST. That is
+  // the wrong shape for something that must never lapse: it depends on someone
+  // remembering, holding a secret, and noticing an absence. Running it on a
+  // schedule inside the worker removes all three — and needs no secret at all,
+  // because the worker already holds ADB_KEY.
+  //
+  // Deliberately conservative: it only ever tops up to CEILING, never beyond,
+  // so a bug here cannot drain the quota. Credits convert 1:1 from the plan's
+  // API units, so the standing cost is a few thousand units a month.
+  async scheduled(event, env, ctx) {
+    const ADB = "https://aerodatabox.p.rapidapi.com";
+    const H = { "X-RapidAPI-Key": env.ADB_KEY, "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com" };
+    const FLOOR = 1000;     // top up once the balance drops below this
+    const CEILING = 5000;   // and bring it back to here — never higher
+    if (!env.ADB_KEY) { console.log("[BALANCE] no ADB_KEY — skipped"); return; }
+    try {
+      const r = await fetch(`${ADB}/subscriptions/balance`, { headers: H });
+      const body = await r.text();
+      if (!r.ok) { console.log(`[BALANCE] read failed ${r.status}: ${body.slice(0, 160)}`); return; }
+      let bal = null;
+      try {
+        const j = JSON.parse(body);
+        // Field name has moved between API versions; accept the known spellings
+        // rather than trust one and silently read undefined.
+        bal = [j.creditsRemaining, j.credits, j.balance, j.remaining]
+          .find((v) => typeof v === "number");
+      } catch (e) {}
+      if (typeof bal !== "number") { console.log(`[BALANCE] unreadable: ${body.slice(0, 160)}`); return; }
+      if (bal >= FLOOR) { console.log(`[BALANCE] ${bal} credits — above floor ${FLOOR}, no action`); return; }
+      const want = CEILING - bal;
+      const rr = await fetch(`${ADB}/subscriptions/balance/refill`, {
+        method: "POST",
+        headers: { ...H, "Content-Type": "application/json" },
+        body: JSON.stringify({ credits: want })
+      });
+      const rb = await rr.text();
+      console.log(rr.ok
+        ? `[BALANCE] refilled ${want} credits (${bal} -> ~${CEILING})`
+        : `[BALANCE] refill failed ${rr.status}: ${rb.slice(0, 200)}`);
+    } catch (e) {
+      console.log(`[BALANCE] error: ${e && e.message}`);
+    }
   }
 };
 export {
