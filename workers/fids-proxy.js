@@ -3505,7 +3505,19 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       return handlePanynjFids(request, env, origin, ap, direction);
     }
 
-    if (path.startsWith("/airports/") || path.startsWith("/flights/") || path.startsWith("/aircrafts/")) {
+    // v23268 — /health/ joins the passthrough.
+    //
+    // /health/services/airports/{icao}/feeds answers the question no other
+    // endpoint does: is THIS airport's data feed healthy right now. That is
+    // exactly what we cannot currently tell when Miami starts erroring — we
+    // see failures and cannot distinguish our problem from theirs. It costs
+    // nothing (free tier). It was unreachable only because this allowlist
+    // never had a rule for it, so the request died at our own edge.
+    //
+    // (/airlines/ already has its own handler further up — the fleet endpoint
+    // reaches ADB through that one, it just needs a pageSize parameter.)
+    if (path.startsWith("/airports/") || path.startsWith("/flights/")
+        || path.startsWith("/aircrafts/") || path.startsWith("/health/")) {
       const adbUrl = `https://aerodatabox.p.rapidapi.com${path}${url.search}`;
       try {
         const response = await fetch(adbUrl, {

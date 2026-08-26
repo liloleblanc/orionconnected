@@ -14432,14 +14432,15 @@ const gView = document.getElementById('gateView');
                   var _mlMini = (typeof fidsMlFlightTimeMins === 'function')
                     ? fidsMlFlightTimeMins(inb._locIata, apIata, _mlMiniType) : null;
                   if (_mlMini) _durMini = _mlMini * 60000;
-                  var _tMini = (Date.now() - (_arrTMini - _durMini)) / _durMini;
-                  // v23266 — through the taxi-aware profile before it becomes a
-                  // position: the raw time fraction put an aircraft still on the
-                  // ground at Montréal a fifth of the way to Moncton.
-                  var _pMini = (typeof _estAirborneFrac === 'function')
-                    ? _estAirborneFrac(_tMini, _durMini) : _tMini;
+                  // v23268 — the real wheels-up when ADB gives us one; the
+                  // taxi-out estimate only when it does not.
+                  var _wuMini = 0;
+                  try { if (inb._actualDepTime) _wuMini = adbTs(inb._actualDepTime) || 0; } catch (e) {}
+                  var _pMini = (typeof _estRouteFrac === 'function')
+                    ? _estRouteFrac(Date.now(), _arrTMini, _durMini, _wuMini)
+                    : (Date.now() - (_arrTMini - _durMini)) / _durMini;
                   if (_pMini >= 0.02 && _pMini <= 0.98) _estProg = _pMini;
-                  try { console.log('[MINIMAP-EST]', { st: inb.status, revTs: !!inb._revTs, upd: inb.upd || '', air: _stAirMini, t: +(_tMini || 0).toFixed(3), p: +(_pMini || 0).toFixed(3) }); } catch (e) {}
+                  try { console.log('[MINIMAP-EST]', { st: inb.status, revTs: !!inb._revTs, upd: inb.upd || '', air: _stAirMini, wheelsUp: !!_wuMini, p: +(_pMini || 0).toFixed(3) }); } catch (e) {}
                 } else {
                   try { console.log('[MINIMAP-EST] skipped', { st: inb.status, air: _stAirMini, arrTs: !!_arrTMini, oc: !!_ocMini, dc: !!_dcMini, loc: inb._locIata }); } catch (e) {}
                 }
@@ -19953,7 +19954,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23267';
+var FIDS_BUILD_TAG = 'v23268';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -26904,22 +26905,39 @@ function _gateHeading(fallbackBearing) {
 // block so a 40-minute hop is not handed a jet-bridge-to-jet-bridge 18 minutes.
 // Checked against that flight: 8% instead of 21%, i.e. just off Montréal, which
 // is where it was.
-function _estAirborneFrac(timeFrac, durMs) {
-  var t = Number(timeFrac);
-  if (!isFinite(t)) return 0;
-  if (t <= 0) return 0;
-  if (t >= 1) return 1;
-  var dur = Number(durMs);
-  if (!isFinite(dur) || dur <= 0) return Math.max(0, Math.min(1, t));
-  var outMs = Math.min(12 * 60000, dur * 0.18);   // taxi-out, capped at 12 min
-  var inMs  = Math.min(6 * 60000,  dur * 0.09);   // taxi-in,  capped at 6 min
-  var a = outMs / dur, b = 1 - (inMs / dur);
-  if (!(b > a)) return Math.max(0, Math.min(1, t));   // degenerate: no room to fly
-  if (t <= a) return 0;
-  if (t >= b) return 1;
-  return (t - a) / (b - a);
+// v23268 — AND WHEN THE PROVIDER KNOWS THE REAL WHEELS-UP, STOP GUESSING.
+// v23266 estimated taxi-out because the alternative was a straight time
+// fraction. But every ADB row already carries departure.runwayTime — the
+// actual moment the aircraft left the ground — as _actualDepTime. We fetch it,
+// store it, and the map was inventing a 12-minute allowance beside it. On the
+// flight Nick photographed, pushback was 12:00Z and wheels-up 12:16Z: the real
+// taxi was sixteen minutes and the number was sitting in the response.
+//
+// Absolute times rather than a fraction, so the measured start can be used
+// directly. Estimated taxi-out survives only as the fallback for rows with no
+// runwayTime (a scheduled flight that has not pushed back yet, or a feed that
+// does not carry it).
+function _estRouteFrac(nowMs, arrMs, durMs, wheelsUpMs) {
+  var dur = Number(durMs), arr = Number(arrMs), now = Number(nowMs);
+  if (!isFinite(dur) || dur <= 0 || !isFinite(arr) || !isFinite(now)) return 0;
+  var depMs = arr - dur;
+  var airEnd = arr - Math.min(6 * 60000, dur * 0.09);   // hold at the gate through taxi-in
+  var airStart;
+  var wu = Number(wheelsUpMs);
+  // Trust a wheels-up only if it belongs to THIS leg: after a plausible
+  // pushback, before the touchdown window. A stale record from an earlier day
+  // would otherwise drag the glyph to the far end of the route.
+  if (isFinite(wu) && wu > 0 && wu < airEnd && wu > depMs - 3 * 3600000) {
+    airStart = wu;
+  } else {
+    airStart = depMs + Math.min(12 * 60000, dur * 0.18);
+  }
+  if (!(airEnd > airStart)) return Math.max(0, Math.min(1, (now - depMs) / dur));
+  if (now <= airStart) return 0;
+  if (now >= airEnd) return 1;
+  return (now - airStart) / (airEnd - airStart);
 }
-try { if (typeof window !== 'undefined') window._estAirborneFrac = _estAirborneFrac; } catch (e) {}
+try { if (typeof window !== 'undefined') window._estRouteFrac = _estRouteFrac; } catch (e) {}
 
 function _mapPlaneIcon() {
   try {
@@ -32972,9 +32990,11 @@ function _map3dFlightCtx(allowEstimated) {
       // agree: the comment above records what happened last time they read the
       // same journey differently.
       if (depTs && arrTs > depTs) {
-        var _tBig = Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
-        prog = (typeof _estAirborneFrac === 'function')
-          ? _estAirborneFrac(_tBig, arrTs - depTs) : _tBig;
+        var _wuBig = 0;
+        try { if (inb._actualDepTime) _wuBig = adbTs(inb._actualDepTime) || 0; } catch (e) {}
+        prog = (typeof _estRouteFrac === 'function')
+          ? _estRouteFrac(Date.now(), arrTs, arrTs - depTs, _wuBig)
+          : Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
       }
       else prog = 0;
     }
