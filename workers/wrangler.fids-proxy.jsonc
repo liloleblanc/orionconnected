@@ -40,5 +40,14 @@
 
   "ai": { "binding": "AI" },
 
+  // v23269 — twice a day, the worker checks its flight-alert credit balance
+  // and tops it up if it has fallen below the floor (see `scheduled()` in
+  // fids-proxy.js). Credits burn per notification and are not replenished by
+  // the plan, so without this they run out and push updates stop with no
+  // announcement — which is what happened after the June 2026 refill.
+  // Twice daily is ample: YQM burns tens to low hundreds of credits a day
+  // against a 5000 ceiling, so even a missed run cannot exhaust it.
+  "triggers": { "crons": ["17 5,17 * * *"] },
+
   "observability": { "enabled": true }
 }
