@@ -14483,67 +14483,50 @@ html[data-screen-type="baggage"] .content-area,
 html[data-screen-type="baggage"] .hdr,
 html[data-screen-type="baggage"] .view-selector { display: none !important; }
 
-/* ── v23290 — THE AIRPORT CODE WEARS THE SCREEN'S ACCENT ────────────────
-   Nick: 'color the airport codes with accents so Toronto | YYZ the YYZ
-   colored to accent the screen ... this is on all screens'.
-
-   v23292 — THE FIRST CUT DID NOT LOOK AT WHAT THE ROW IS PAINTED. It used
-   var(--airline-accent), the per-row CARRIER colour, on every row. A status
-   row is not neutral: Delayed is amber, Cancelled is red, Departed is muted
-   grey. jetBlue's blue on a red Cancelled row, or Southwest's navy on amber,
-   is unreadable — and it changed row to row, so nothing matched (Nick: 'these
-   dont even match youre not even taking in consideration colors and dark vs
-   light').
-
-   Two rules now, and neither can pick an unreadable colour:
-     - NEUTRAL rows take the board's OWN accent, one colour for the whole
-       screen rather than a different one per airline. That accent is chosen
-       per airport against the board's own chrome, so it is already known to
-       read on it.
-     - STATUS rows (delayed / cancelled / diverted / final / departed /
-       arrived / gate-closed / early) take currentColor — the ink the row
-       already computed for itself against its own background. It cannot
-       mismatch, because it IS the row's colour.
-   Where the board sets no accent of its own, the neutral rows inherit
-   currentColor too, so the fallback is the legible grey that shipped before
-   rather than a borrowed carrier colour. */
-:root { --fids-code-accent: var(--fids-silk-accent, currentColor); }
-/* Neutral rows — the board's single accent. */
-html[data-city-code-accent="on"] #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed):not(.row-early) .dest-iata,
+/* ── v23290/v23292/v23294 — THE CODE'S COLOUR IS SET IN JS, NOT HERE ────
+   Three CSS attempts at this each failed, because CSS cannot measure the
+   contrast of an accent against whatever a row happens to be painted. The
+   colour is now computed per row by applyCodeAccents() in fids-core.js, which
+   reads the real painted background and fits the SCREEN's accent to it. What
+   stays here is only what does not depend on the ground: the code is heavier
+   than the city name beside it, and the separator is quieter than both.
+   setCityCodeAccent(false) / ?citycode=off still switches the whole thing off,
+   and the JS pass returns early when it does, leaving the inherited grey. */
+html[data-city-code-accent="on"] #fidsTable .dest-iata,
 html[data-city-code-accent="on"] .bidsv2-col-from .dest-iata,
 html[data-city-code-accent="on"] .g8-city-code {
-  color: var(--fids-code-accent) !important;
   opacity: 1 !important;
   font-weight: 800 !important;
 }
-html[data-city-code-accent="on"] #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed):not(.row-early) .dest-iata-sep,
-html[data-city-code-accent="on"] .bidsv2-col-from .dest-iata-sep {
-  color: var(--fids-code-accent) !important;
-  opacity: 0.45 !important;
+
+/* ── v23294 — NOTHING CLIPS ON THE PORTRAIT BOARD ──────────────────────
+   Nick: 'Nothing should be clipping'. A sweep of every FIDS cell across
+   en/fr/es/de/it/pt found the landscape sizes (1920x1080, 1366x768) clean,
+   and two genuine overflows in PORTRAIT — both measured, not estimated:
+
+   1. The weather cell wanted 122px in a 113px box, on every row in every
+      language. Its content is a 38px icon + a 10px gap + the temperature;
+      closing the gap to 4px and trimming the icon to 34px returns 10px,
+      one more than the 9px it was over. The icon stays the largest element
+      in the cell, so the reading is unchanged.
+   2. The airline header clipped on the longest translation — German's
+      'Fluggesellschaft' needed 131px in a 121px column, while French's
+      'Ligne aérienne' fit at exactly 121. The header is nowrap and a single
+      German compound cannot break, so the type comes down instead. Applied
+      to the cell AND its children: the th itself computes font-size 0 and
+      the text lives in a child, so a rule on the th alone does nothing. */
+html.fids-portrait #fidsTable .td-wx .fids-cell-weather { gap: 4px !important; }
+html.fids-portrait #fidsTable .td-wx .fids-cell-weather .fids-wx-cell,
+html.fids-portrait #fidsTable .td-wx .fids-cell-weather img {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
 }
-/* Status rows — the row's own ink, which is already correct for its ground.
-   Still set apart from the city name by weight and letter-spacing, so the
-   code reads as a code without needing a colour of its own. */
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-delayed .dest-iata,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-cancelled .dest-iata,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-diverted .dest-iata,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-final .dest-iata,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-departed .dest-iata,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-arrived .dest-iata,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-gate-closed .dest-iata,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-early .dest-iata {
-  color: currentColor !important;
-  opacity: 0.88 !important;
-  font-weight: 800 !important;
-}
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-delayed .dest-iata-sep,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-cancelled .dest-iata-sep,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-diverted .dest-iata-sep,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-final .dest-iata-sep,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-departed .dest-iata-sep,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-arrived .dest-iata-sep,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-gate-closed .dest-iata-sep,
-html[data-city-code-accent="on"] #fidsTable tbody tr.row-early .dest-iata-sep {
-  color: currentColor !important;
-  opacity: 0.45 !important;
+/* The header rule must NOT be scoped to thead: .col-airline is carried by BOTH
+   a <col> in the colgroup and the <th>, and the th is not always inside a
+   thead element. Scoping to thead matched the wrong one and changed nothing. */
+html.fids-portrait #fidsTable th,
+html.fids-portrait #fidsTable th * {
+  font-size: 12px !important;
+  letter-spacing: 0 !important;
 }
