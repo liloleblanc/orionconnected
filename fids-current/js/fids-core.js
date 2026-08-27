@@ -1536,6 +1536,37 @@ if (!LIVE_MODE) {
 // ── AIRPORTS ──────────────────────────────────────────────────────────────
 // Screen type state
 let screenType = 'main';
+
+// ── BOARD CHROME IS DELETED WHEN THE GATE TAKES OVER ─────────────────────
+// Nick, repeatedly, at the top of his voice: the FIDS departures banner was
+// still on screen behind the gate header after the gate had loaded. 'IT
+// DOESNT BELONG THERE IT NEEDS TO BE DELETED ... I DONT WANT TO SEE IT ...
+// it needs to flow from one screen to another, that is why there is a
+// loading screen — dont sweep it, delete it.'
+//
+// Hiding it was never going to hold. Three separate places fight over the
+// same element: the screen-mode switch sets display:none for gate/baggage,
+// two view-restore paths set display:'' with no mode check at all, and a
+// 5-second watchdog re-shows it and will force it visible at the !important
+// level if it finds it collapsed. Whichever ran last won, and on the gate it
+// was one of the show paths.
+//
+// So the element goes, not its visibility. gids.html ships board markup
+// because the page can render either screen, but once it is a gate the board
+// chrome is never coming back within this page load — a mode change reloads.
+// Removed from the DOM, every show path and the watchdog find nothing and
+// no-op, permanently.
+function _deleteBoardChromeForGate() {
+  try {
+    ['#fidsBanner', '.ticker', '#fidsTable', '.hdr', '.view-selector'].forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+    });
+  } catch (e) {}
+}
+if (typeof window !== 'undefined') window._deleteBoardChromeForGate = _deleteBoardChromeForGate;
+
 let subScreenVal = '';
 
 // Default row/logo density: without a saved pref the body attribute was
@@ -1966,6 +1997,7 @@ function submitTestFlight() {
 
   // Switch to gate screen for this gate
   screenType = 'gate';
+  _deleteBoardChromeForGate();   // the board's chrome is removed, not hidden
   document.getElementById('screenTypeSel').value = 'gate';
   document.getElementById('subScreenSel').style.display = 'inline-block';
   document.getElementById('testFlightBtn').style.display = 'inline-block';
@@ -13557,7 +13589,13 @@ function _applyBannerStyle(iata, screen) {
 }
 
 function renderDedicatedScreen() {
-  if (screenType === 'gate') { document.body.classList.add('uxg-gate-mode'); }
+  if (screenType === 'gate') {
+    document.body.classList.add('uxg-gate-mode');
+    // Also here, not only on the switch above: a board loaded straight into
+    // gate mode (gids.html?gate=4) never runs that path, and that is the case
+    // in Nick's recording. Idempotent — removing what is already gone no-ops.
+    _deleteBoardChromeForGate();
+  }
   // Light/dark board flag on DEDICATED screens too — it only ran in the main
   // board's renderer, so every light-board rule (Revised dashes, adaptive
   // headers, status inks) silently skipped gate/baggage screens (Nick:
@@ -20170,7 +20208,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23285';
+var FIDS_BUILD_TAG = 'v23286';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
