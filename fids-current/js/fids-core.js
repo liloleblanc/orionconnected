@@ -11373,7 +11373,13 @@ function uxgGateHtml(ctx) {
     'PB': { h: 128, w: 470 },
     'TS': { h: 156, w: 690 },   // v22989 - Nick: 'the top logo is too small as well'
     'NZ': { h: 120, w: 540 },
-    'BA': { h: 120, w: 540 },
+    // v23292 — BA also sat at the WIDEST declared box of its peer group (540
+    // vs 500-520) while carrying the WIDEST artwork: BA-long.svg is 241.995 x
+    // 37.833, a 6.40:1 lockup against the ~5:1 of the carriers sized beside
+    // it. Same box therefore rendered a visibly longer mark. Brought down and
+    // made aspect-true so it reads at the size of its neighbours (Nick: 'its
+    // simply too big', 'the logo has to be reduced').
+    'BA': { h: 110, w: 500 },
     'AF': { h: 118, w: 520 },
     'KL': { h: 118, w: 520 },
     'LH': { h: 118, w: 520 },
@@ -20331,7 +20337,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23291';
+var FIDS_BUILD_TAG = 'v23292';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -22370,7 +22376,15 @@ const FILTER_OUT = new Set([
   'TJ','GPD',  // Tradewind Aviation (Part 135 premium charter, Northeast/Caribbean)
   'JRE',       // Jet Rescue Air Ambulance (Mexican medical evacuation charter)
   // ── Seaplane / niche regionals ──
-  'H3','YHS',  // Harbour Air Seaplanes
+  // v23292 — Harbour Air files as 'YB' in this feed, NOT the H3/YHS it was
+  // blocked under, so 26 of its flights were sitting on the YVR board:
+  // Nanaimo (ZNA), Victoria Harbour (YWH), Ganges (YGG), Tofino (YTP) and
+  // Sechelt. Those all leave from the Vancouver Harbour Flight Centre
+  // downtown, not from YVR, so a traveller at the airport can do nothing with
+  // them (Nick: 'those flights are out of Vancouver harbour they should not
+  // show it at YVR or YYJ'). H3/YHS stay — a feed that uses the published
+  // codes must be blocked too.
+  'H3','YHS','YB',  // Harbour Air Seaplanes
   // ── Cargo subsidiaries / freight ──
   'KF',        // Air Cargo Carriers
   'CF','CGA',  // City Airline / cargo

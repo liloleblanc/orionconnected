@@ -2642,6 +2642,19 @@ html body .g8-wrap .g8-r1-logoslot {
   overflow: hidden !important;
 }
 html body .g8-wrap .g8-r1-logoslot > img:first-child { flex: 0 1 auto; min-width: 0; }
+/* v23292 — EVERY child of the slot must be allowed to shrink, not just the
+   first. The slot is overflow:hidden, and a flex item's default min-width:auto
+   resolves to an IMAGE'S INTRINSIC WIDTH — so any lockup that is not the first
+   child cannot shrink and is cut off at the slot edge instead.
+   That is exactly what oneworld carriers hit: their approved lockup order puts
+   the alliance ball FIRST (v23252), which makes the airline's own mark the
+   second child. Star Alliance and SkyTeam put the wordmark first, so they were
+   never affected — which is why this showed up as 'BA is too big since you
+   added the ONE world logo its overflowing' (Nick) and nowhere else.
+   With min-width:0 the mark shrinks and object-fit:contain letterboxes it,
+   so it gets smaller instead of losing its end. */
+html body .g8-wrap .g8-r1-logoslot > * { min-width: 0 !important; }
+html body .g8-wrap .g8-r1-logoslot > img { flex: 0 1 auto !important; }
 html body .g8-wrap .g8-r1-star {
   width: auto !important;
   min-width: 0 !important;
@@ -11915,7 +11928,10 @@ html body:not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star {
 html body:not(#_):not(#_):not(#_) .g8-wrap img.g8-r1-star.g8-r1-alliance-oneworld {
   height: clamp(88px, 14vh, 104px) !important;
   min-height: clamp(88px, 14vh, 104px) !important;
-  min-width: clamp(160px, 22vw, 400px) !important;
+  /* v23292 — this min-width was a DECODE RESERVE (stop the tile popping in at
+     0px). At 160px+ it also made the ball unshrinkable, which is half of why
+     the carrier lockup got squeezed. The reserve is kept as a max-width-capped
+     width above; the floor goes, so the ball can yield in a tight slot. */
 }
 /* The star tile's own rules (the 3x:not .g8-r1-alliance-star pair above)
    pin min-width:0, which outranked the reserve and left the tile at 0px
@@ -14351,10 +14367,25 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      American [symbol] by a bit'. The art is now the CROPPED ball
      (Oneworld-ball.svg), so this box is the ball's real size — ~104px,
      a shade wider than the AA flight symbol beside it. */
+  /* v23292 — THE BALL YIELDS BEFORE THE AIRLINE'S OWN MARK DOES.
+     Pinned at flex:0 0 auto with a fixed 108px, the ball took its full width
+     out of every slot no matter how little there was — and since v23252 puts
+     it FIRST, everything left over had to be found from the carrier's own
+     lockup. On a narrow gate slot (measured: 317px at YVR) the ball ate 108 of
+     it and BA's lockup was cut off at the slot edge (Nick: 'BA its simply too
+     big since you added the ONE world logo its overflowing').
+     The cap is now the SMALLER of its designed size and a quarter of the slot.
+     Where there is room — a 737px slot measured at YQM — a quarter is 184px,
+     more than 108, so the ball is untouched and nothing about a roomy gate
+     changes. Only the tight case rebalances, and it rebalances toward the
+     airline, which is the mark that matters. */
   width: clamp(96px, 14vh, 108px) !important;
-  min-width: clamp(96px, 14vh, 108px) !important;
-  max-width: clamp(96px, 14vh, 108px) !important;
-  flex: 0 0 auto !important;
+  /* A FLOOR, not zero: where the slot has room the ball keeps essentially its
+     designed size (Nick, earlier: 'make the oneworld logo larger'). It only
+     gives ground when a quarter of the slot is less than that. */
+  min-width: min(clamp(80px, 11vh, 96px), 25%) !important;
+  max-width: min(clamp(96px, 14vh, 108px), 25%) !important;
+  flex: 0 1 auto !important;
   object-fit: contain !important;
   /* v23252 — the ball leads the lockup now (official co-brand order), so
      the 26px lead-in margin the trailing marks wear comes off. */
@@ -14454,29 +14485,65 @@ html[data-screen-type="baggage"] .view-selector { display: none !important; }
 
 /* ── v23290 — THE AIRPORT CODE WEARS THE SCREEN'S ACCENT ────────────────
    Nick: 'color the airport codes with accents so Toronto | YYZ the YYZ
-   colored to accent the screen ... this is on all screens'. The code takes
-   whichever accent that screen already owns — the board's banner accent, the
-   carrier accent on a gate — so it can never drift from the rest of the
-   screen, and it falls back to the inherited ink where neither is set.
-   The muting the code carried as plain grey comes off: at 0.78 opacity an
-   accent reads as a wash rather than a colour. setCityCodeAccent(false)
-   (or ?citycode=off) flips the attribute and every rule here stops applying,
-   leaving exactly the grey code that shipped before. */
-html[data-city-code-accent="on"] #fidsTable .dest-iata,
+   colored to accent the screen ... this is on all screens'.
+
+   v23292 — THE FIRST CUT DID NOT LOOK AT WHAT THE ROW IS PAINTED. It used
+   var(--airline-accent), the per-row CARRIER colour, on every row. A status
+   row is not neutral: Delayed is amber, Cancelled is red, Departed is muted
+   grey. jetBlue's blue on a red Cancelled row, or Southwest's navy on amber,
+   is unreadable — and it changed row to row, so nothing matched (Nick: 'these
+   dont even match youre not even taking in consideration colors and dark vs
+   light').
+
+   Two rules now, and neither can pick an unreadable colour:
+     - NEUTRAL rows take the board's OWN accent, one colour for the whole
+       screen rather than a different one per airline. That accent is chosen
+       per airport against the board's own chrome, so it is already known to
+       read on it.
+     - STATUS rows (delayed / cancelled / diverted / final / departed /
+       arrived / gate-closed / early) take currentColor — the ink the row
+       already computed for itself against its own background. It cannot
+       mismatch, because it IS the row's colour.
+   Where the board sets no accent of its own, the neutral rows inherit
+   currentColor too, so the fallback is the legible grey that shipped before
+   rather than a borrowed carrier colour. */
+:root { --fids-code-accent: var(--fids-silk-accent, currentColor); }
+/* Neutral rows — the board's single accent. */
+html[data-city-code-accent="on"] #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed):not(.row-early) .dest-iata,
 html[data-city-code-accent="on"] .bidsv2-col-from .dest-iata,
 html[data-city-code-accent="on"] .g8-city-code {
-  color: var(--fids-silk-accent, var(--airline-accent, currentColor)) !important;
+  color: var(--fids-code-accent) !important;
   opacity: 1 !important;
   font-weight: 800 !important;
 }
-html[data-city-code-accent="on"] #fidsTable .dest-iata-sep,
+html[data-city-code-accent="on"] #fidsTable tbody tr:not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed):not(.row-early) .dest-iata-sep,
 html[data-city-code-accent="on"] .bidsv2-col-from .dest-iata-sep {
-  color: var(--fids-silk-accent, var(--airline-accent, currentColor)) !important;
+  color: var(--fids-code-accent) !important;
   opacity: 0.45 !important;
 }
-/* The cream board mutes the code further; with an accent on it that reads as
-   washed out, so the theme's extra damping lifts when the accent is on. */
-html[data-city-code-accent="on"] body[data-fids-theme="cream"] #fidsTable .dest-iata,
-html[data-city-code-accent="on"] body[data-fids-theme="cream"] #fidsTable .dest-iata-sep {
-  opacity: 1 !important;
+/* Status rows — the row's own ink, which is already correct for its ground.
+   Still set apart from the city name by weight and letter-spacing, so the
+   code reads as a code without needing a colour of its own. */
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-delayed .dest-iata,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-cancelled .dest-iata,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-diverted .dest-iata,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-final .dest-iata,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-departed .dest-iata,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-arrived .dest-iata,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-gate-closed .dest-iata,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-early .dest-iata {
+  color: currentColor !important;
+  opacity: 0.88 !important;
+  font-weight: 800 !important;
+}
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-delayed .dest-iata-sep,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-cancelled .dest-iata-sep,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-diverted .dest-iata-sep,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-final .dest-iata-sep,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-departed .dest-iata-sep,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-arrived .dest-iata-sep,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-gate-closed .dest-iata-sep,
+html[data-city-code-accent="on"] #fidsTable tbody tr.row-early .dest-iata-sep {
+  color: currentColor !important;
+  opacity: 0.45 !important;
 }
