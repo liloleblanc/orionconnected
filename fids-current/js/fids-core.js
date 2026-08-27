@@ -20131,7 +20131,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23279';
+var FIDS_BUILD_TAG = 'v23280';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -30297,6 +30297,75 @@ function _accorHotelAirportDistance(h, destIata) {
 var ACCOR_HOTEL_DETAIL_CACHE = {};
 var ACCOR_DETAIL_TTL = 6 * 60 * 60 * 1000;  // 6 hours
 
+// ── PUBLIC-SPACE PHOTOGRAPHY ─────────────────────────────────────────────
+// Accor's list endpoint returns only the first TWO photographs of a property
+// even when its own media.count says there are ten. The rest exist, at
+// incremented indices on the same stem, and they are the ones worth showing —
+// the exterior, the lobby, the restaurant. Without them the card ran out of
+// hotel photography after page one and fell back to BEDROOM shots from the
+// accommodations endpoint for pages two and three, which is the opposite of
+// what a card about what the hotel offers should lead with (and on Novotel
+// Toronto Centre it put white copy over a white duvet).
+//
+// count is NOT trustworthy as an index bound. Measured across 17 properties in
+// four cities: it is exact for most, UNDERSTATES for Novotel Toronto Vaughan
+// (says 3, five exist), and OVERSTATES for Novotel Miami Brickell (says 9,
+// 404s at 8), Pullman Miami Airport (says 5, 404s at 4) and Sofitel Montréal
+// Golden Mile. A 404 hero paints nothing and the page comes up black — the
+// exact failure Nick has already been shown once. So every candidate is
+// LOADED before it is allowed near the card, and only what actually resolves
+// is cached. Until that finishes the card behaves exactly as it does today.
+var ACCOR_PUBLIC_PHOTOS = {};        // hotelId → { ts, urls: [] }
+var ACCOR_PUBLIC_PHOTO_MAX = 8;      // more than any deck can show
+var ACCOR_PHOTO_PROBE_MS = 12000;    // a hung load must not strand the cache
+
+// .../photos/<stem>_ho_<NN>_p_<size>.<ext> → the same stem at every index.
+// The size suffix is copied from the seed so this never changes the
+// resolution policy, only how many frames are available.
+function _accorPublicPhotoUrls(seedUrl, count) {
+  var m = String(seedUrl || '').match(/^(.*\/)([A-Za-z0-9]+)_ho_(\d+)(_p_[^./]*\.\w+)$/);
+  if (!m) return [];
+  var n = Math.max(0, Math.min(ACCOR_PUBLIC_PHOTO_MAX, parseInt(count, 10) || 0));
+  var out = [];
+  for (var i = 0; i < n; i++) {
+    out.push(m[1] + m[2] + '_ho_' + (i < 10 ? '0' + i : String(i)) + m[4]);
+  }
+  return out;
+}
+
+// Load every candidate and keep the ones that resolve. The download is not
+// wasted — these are the frames the hero will use, so this doubles as a
+// preload and the card paints them from cache.
+function _accorVerifyPublicPhotos(hotelId, seedUrl, count) {
+  if (!hotelId || typeof Image === 'undefined') return;
+  var key = String(hotelId);
+  var have = ACCOR_PUBLIC_PHOTOS[key];
+  if (have && (Date.now() - have.ts) < ACCOR_DETAIL_TTL) return;
+  if (window['_accorPhotoPending_' + key]) return;
+  var cands = _accorPublicPhotoUrls(seedUrl, count);
+  if (cands.length < 2) return;   // nothing beyond what we already have
+  window['_accorPhotoPending_' + key] = true;
+  var results = new Array(cands.length), done = 0, settled = false;
+  function finish() {
+    if (settled) return;
+    settled = true;
+    delete window['_accorPhotoPending_' + key];
+    var urls = results.filter(Boolean);
+    ACCOR_PUBLIC_PHOTOS[key] = { ts: Date.now(), urls: urls };
+    try { console.log('[ACCOR-PHOTOS]', key, urls.length + '/' + cands.length, 'public-space frames verified'); } catch (e) {}
+  }
+  function one(i, url) {
+    var img = new Image();
+    img.onload = function () { results[i] = url; if (++done >= cands.length) finish(); };
+    img.onerror = function () { results[i] = null; if (++done >= cands.length) finish(); };
+    img.src = url;
+  }
+  for (var i = 0; i < cands.length; i++) one(i, cands[i]);
+  // Sofitel Montréal's probe neither loaded nor errored — it simply hung. Bank
+  // whatever resolved rather than leaving the property with no cache forever.
+  setTimeout(finish, ACCOR_PHOTO_PROBE_MS);
+}
+
 function fetchAccorHotelDetail(hotelId, langWanted) {
   if (!hotelId) return;
   // Per Accor docs: Accept-Language header drives localization. Cache is
@@ -30696,6 +30765,12 @@ function _processAccorData(data, destIata, langKey) {
       });
     }
     photos = photos.slice(0, 6);
+    // Start verifying the property's other public-space frames now, while the
+    // list is landing — the Accor slide is many seconds away, so by the time
+    // the card is built the lobby and restaurant shots are usually ready.
+    try {
+      if (h.id && h.media) _accorVerifyPublicPhotos(String(h.id), photos[0] || photoUrl, h.media.count);
+    } catch (e) {}
 
     // DEBUG: log first hotel's photo resolution
     if (h.name && !window._accorPhotoLogged) {
@@ -32474,6 +32549,21 @@ function buildAccorAdOnlyV6(ad) {
       try { fetchAccorHotelDetail(ad.hotelId, accorLang()); } catch (e) {}
     }
   }
+  // THE HOTEL LEADS, NOT ITS BEDROOMS. Verified public-space photography goes
+  // in front of everything the accommodations endpoint returned, so the pages
+  // carry the exterior, the lobby and the restaurant. Room shots stay on as
+  // the tail — a property with only one or two public frames still fills its
+  // pages rather than going black. Nothing here can 404: every URL in this
+  // list was loaded successfully before it was cached.
+  try {
+    var _pubC = ACCOR_PUBLIC_PHOTOS[String(ad.hotelId || '')];
+    var _pub = (_pubC && Array.isArray(_pubC.urls)) ? _pubC.urls : [];
+    if (_pub.length) {
+      var _lead = _pub.slice();
+      _photoSet.forEach(function (u) { if (u && _lead.indexOf(u) === -1) _lead.push(u); });
+      _photoSet = _lead;
+    }
+  } catch (e) {}
   _photoSet = _photoSet.slice(0, 6);
   var _photosAttr = (_photoSet.length > 1) ? " data-photos='" + esc(JSON.stringify(_photoSet)) + "'" : '';
 
