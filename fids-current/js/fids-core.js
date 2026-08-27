@@ -1242,6 +1242,67 @@ function setAirlineBgPick(val) {
   }
 }
 
+// Wrap the trailing airport code of a 'City | YYZ' string so it can be
+// styled on its own. Returns escaped-safe HTML built from a value that is
+// already a display string; the city half is emitted unchanged, as the
+// callers did before. No code on the string -> returned untouched.
+function cityCodeSplitHtml(disp) {
+  var str = String(disp == null ? '' : disp);
+  try {
+    var m = str.match(_CITY_CODE_TAIL);
+    if (!m) return str;
+    var code = (m[1] || m[2] || '').toUpperCase();
+    if (!code) return str;
+    return _stripCityCode(str)
+      + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + code + '</span>';
+  } catch (e) { return str; }
+}
+if (typeof window !== 'undefined') window.cityCodeSplitHtml = cityCodeSplitHtml;
+
+// ── v23290 — THE AIRPORT CODE WEARS THE SCREEN'S ACCENT ────────────────
+// Nick: 'color the airport codes with accents so Toronto | YYZ the YYZ
+// colored to accent the screen ... this is on all screens ... or let us have
+// the option to color it'. On by default; the switch persists per display, so
+// a board that wants the quieter grey code can have it.
+// The colour itself is CSS — the code takes whichever accent that screen
+// already owns (the board's banner accent, or the carrier accent on a gate),
+// so it can never drift from the rest of the screen.
+var CITY_CODE_ACCENT = true;
+function setCityCodeAccent(on) {
+  CITY_CODE_ACCENT = !!on;
+  try { localStorage.setItem('fids_city_code_accent', CITY_CODE_ACCENT ? '1' : '0'); } catch (e) {}
+  _applyCityCodeAccent();
+  var el = document.getElementById('cityCodeAccentBtn');
+  if (el) {
+    el.classList.toggle('active', CITY_CODE_ACCENT);
+    el.textContent = CITY_CODE_ACCENT ? 'CODE ACCENT: ON' : 'CODE ACCENT: OFF';
+  }
+}
+function _applyCityCodeAccent() {
+  try {
+    document.documentElement.setAttribute('data-city-code-accent', CITY_CODE_ACCENT ? 'on' : 'off');
+  } catch (e) {}
+}
+(function () {
+  try {
+    var v = null;
+    try { v = localStorage.getItem('fids_city_code_accent'); } catch (e) {}
+    // ?citycode=off / =on beats the stored preference, so a single link can
+    // dress a display without touching its storage.
+    try {
+      var q = new URLSearchParams(window.location.search).get('citycode');
+      if (q === 'off' || q === '0') v = '0';
+      else if (q === 'on' || q === '1') v = '1';
+    } catch (e) {}
+    CITY_CODE_ACCENT = (v !== '0');
+    _applyCityCodeAccent();
+  } catch (e) {}
+})();
+if (typeof window !== 'undefined') {
+  window.setCityCodeAccent = setCityCodeAccent;
+  window._applyCityCodeAccent = _applyCityCodeAccent;
+}
+
 function setGateBgMode(m) {
   if (['photo','airline','custom'].indexOf(m) === -1) return;
   GATE_BG_MODE = m;
@@ -1556,16 +1617,28 @@ let screenType = 'main';
 // chrome is never coming back within this page load — a mode change reloads.
 // Removed from the DOM, every show path and the watchdog find nothing and
 // no-op, permanently.
-function _deleteBoardChromeForGate() {
+// v23289 — REMOVING THE NODES WAS WRONG. The paragraph above assumed a mode
+// change reloads the page. It does not: changeScreenType() swaps the screen
+// in place and RESTORES the board chrome by clearing its inline display. With
+// the elements deleted there was nothing to restore, so the first switch to
+// GATE permanently destroyed the board — FIDS and BIDS came back blank and the
+// gate selector was gone with the rest of it (Nick: 'It only happens when on
+// Gate ... until you get to GATE then it wont move').
+//
+// The requirement was never destruction, it was AUTHORITY: the banner must not
+// reappear on a gate screen no matter which show path runs. A state attribute
+// on <html> gives exactly that. The stylesheet rule keyed on it carries
+// !important, so it outranks every `el.style.display = ''` in the codebase,
+// while the elements stay in the document and the board can come back.
+function _applyScreenChrome() {
   try {
-    ['#fidsBanner', '.ticker', '#fidsTable', '.hdr', '.view-selector'].forEach(function (sel) {
-      document.querySelectorAll(sel).forEach(function (el) {
-        if (el && el.parentNode) el.parentNode.removeChild(el);
-      });
-    });
+    var st = (typeof screenType !== 'undefined') ? screenType : 'main';
+    var root = document.documentElement;
+    if (st === 'gate' || st === 'baggage') root.setAttribute('data-screen-type', st);
+    else root.removeAttribute('data-screen-type');
   } catch (e) {}
 }
-if (typeof window !== 'undefined') window._deleteBoardChromeForGate = _deleteBoardChromeForGate;
+if (typeof window !== 'undefined') window._applyScreenChrome = _applyScreenChrome;
 
 let subScreenVal = '';
 
@@ -1751,6 +1824,7 @@ function changeScreenType(val) {
     const _bn2 = document.getElementById('fidsBanner');   if (_bn2) _bn2.style.display = '';
     const vs = document.querySelector('.view-selector');
     if (vs) vs.style.display = '';
+    _applyScreenChrome();   // back on the board — release the gate's chrome lock
     render();
   } else {
     subSel.style.display = 'inline-block';
@@ -2021,7 +2095,7 @@ function submitTestFlight() {
 
   // Switch to gate screen for this gate
   screenType = 'gate';
-  _deleteBoardChromeForGate();   // the board's chrome is removed, not hidden
+  _applyScreenChrome();   // board chrome is hidden by state, never removed
   document.getElementById('screenTypeSel').value = 'gate';
   document.getElementById('subScreenSel').style.display = 'inline-block';
   document.getElementById('testFlightBtn').style.display = 'inline-block';
@@ -3672,6 +3746,15 @@ const AIRLINE_BRAND = {
   // airline, and the accent that paints every orb IS the light teal blue.
   'TS': { bg1:'#0B3C63', bg2:'#062741', bg3:'#12557F', accent:'#00B3F0', name:'Air Transat' },
   'PD': { bg1:'#002244', bg2:'#001122', bg3:'#003355', accent:'#1a3a6b', name:'Porter Airlines' },
+  // v23291 — Pacific Coastal (IATA 8P / ICAO PCO / callsign PASCO), the YVR
+  // regional. It had NO entry anywhere, so its rows and gates fell through
+  // to the generic navy with no name. Its identity is a WORDMARK — there is
+  // no separate symbol — which is exactly what Nick asked for ('Pacific
+  // Coastal uses word mark as the Logo emblem'): with no logo file to
+  // resolve, the banner's existing text path renders the name itself.
+  // Brand colours from the airline's own identity: midnight blue over its
+  // orange.
+  '8P': { bg1:'#0C3473', bg2:'#071F45', bg3:'#12468F', accent:'#0C3473', name:'Pacific Coastal' },
   'PB': { bg1:'#0a2a4a', bg2:'#06203a', bg3:'#0e335a', accent:'#e37222', name:'PAL Airlines' },
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
@@ -5383,6 +5466,7 @@ function wwayUrl(code, w, h) {
 
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
+  '8P':'#0C3473',   // Pacific Coastal — its midnight blue, not the generic navy
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
@@ -5425,7 +5509,14 @@ var AIRLINE_DOMAIN = {
   'SA':'flysaa.com','ET':'ethiopianairlines.com',
 };
 
-var _g8LogoCache = {};
+// v23291 — WORDMARK-ONLY CARRIERS START HERE, not after a failed image.
+// A carrier whose identity IS its lettering has no emblem file to resolve, so
+// the banner would request an image, watch it 404, and only then fall back to
+// text — a broken-image beat on every render. Seeding the cache sends those
+// carriers straight to their wordmark (Nick: 'Pacific Coastal uses word mark
+// as the Logo emblem'). Add a code here only when the airline genuinely has no
+// symbol, never to paper over a missing file.
+var _g8LogoCache = { '8P': 'text' };
 function g8LogoFail(img) {
   var code = img.getAttribute('data-code') || '';
   var fb = img.getAttribute('data-fb');
@@ -13634,8 +13725,8 @@ function renderDedicatedScreen() {
     document.body.classList.add('uxg-gate-mode');
     // Also here, not only on the switch above: a board loaded straight into
     // gate mode (gids.html?gate=4) never runs that path, and that is the case
-    // in Nick's recording. Idempotent — removing what is already gone no-ops.
-    _deleteBoardChromeForGate();
+    // in Nick's recording.
+    _applyScreenChrome();
   }
   // Light/dark board flag on DEDICATED screens too — it only ran in the main
   // board's renderer, so every light-board rule (Revised dashes, adaptive
@@ -15467,7 +15558,7 @@ const gView = document.getElementById('gateView');
                     <div class="bidsv2-flight-num">${_flightDisp}</div>
                   </div>
                 </div>
-                <div class="bidsv2-col-from">${cityDisplay}</div>
+                <div class="bidsv2-col-from">${cityCodeSplitHtml(cityDisplay)}</div>
                 <div class="bidsv2-col-time">${_bidsTimeForLang(f.time)}</div>
                 <div class="bidsv2-col-status ${statusClass}">${stTxt}</div>
               </div>`;
@@ -18453,6 +18544,7 @@ const CALLSIGN_TO_IATA = {
   // ── Other Canadian ──
   'POE':'PD', 'TSC':'TS', 'FLE':'F8', 'PVL':'PB',
   'CAV':'MO', 'PAG':'YP', 'AIE':'3H', 'PSC':'BQ',
+  'PCO':'8P',   // Pacific Coastal — callsign PASCO
   // ── United States mainline ──
   'UAL':'UA', 'AAL':'AA', 'DAL':'DL', 'SWA':'WN',
   // NKS (Spirit) removed — ceased operations May 2 2026
@@ -18547,6 +18639,7 @@ const AIRLINE_NAME = {
   '3H':'Air Inuit', 'YN':'Air Creebec', 'S4':'Azores Airlines',
   'JV':'Bearskin Airlines', 'WT':'Wasaya Airways', 'YP':'Perimeter Aviation',
   'MO':'Calm Air', '5T':'Canadian North', '4N':'Air North', 'BQ':'Pascan',
+  '8P':'Pacific Coastal',
   'AC':'AIR CANADA',  'WS':'WESTJET', 'WG':'SUNWING',     'PD':'PORTER',      'F8':'FLAIR',
   'TS':'AIR TRANSAT', 'PB':'PAL AIRLINES','MO':'CALM AIR',
   'YP':'PERIMETER',   '3H':'AIR INUIT',   'BQ':'PASCAN',      '7F':'FIRST AIR',
@@ -20238,7 +20331,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23288';
+var FIDS_BUILD_TAG = 'v23291';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -20977,6 +21070,7 @@ function render() {
   const _bn = document.getElementById('fidsBanner');   if (_bn) _bn.style.display = '';
   const vsEl = document.querySelector('.view-selector');
   if (vsEl) vsEl.style.display = '';
+  _applyScreenChrome();   // back on the board — release the gate's chrome lock
 
   const tbody = document.getElementById('tbody');
   const tbl   = document.getElementById('fidsTable');
