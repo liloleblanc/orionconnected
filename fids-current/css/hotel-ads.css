@@ -77,11 +77,12 @@
 /* Footer co-brand: the property's wordmark, a hairline, then the ALL
    signature — the pair centred together. */
 .axr-all.axr-all-cobrand{ gap:clamp(14px,1.7vw,28px); }
-/* Sized against the ALL mark beside it (clamp(40px,5.4vh,58px)) rather than
-   smaller for its own sake — several brand scripts carry a lot of internal
-   whitespace and read a size down from their box. */
-.axr-all .axr-all-brand{ height:clamp(30px,4.1vh,44px); display:flex; align-items:center; }
-.axr-all .axr-all-brand img{ height:100%; width:auto; display:block; opacity:.96;
+/* Sized to read WITH the ALL mark beside it (clamp(40px,5.4vh,58px)), not
+   under it — several brand scripts carry a lot of internal whitespace and sit
+   a size down from their box, so near-parity is what actually looks equal. */
+.axr-all .axr-all-brand{ height:clamp(38px,5.1vh,55px); display:flex; align-items:center; }
+.axr-all .axr-all-brand img, .axr-all .axr-all-brand svg{
+  height:100%; width:auto; max-width:min(30vw,340px); display:block; opacity:.96;
   filter:drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
 .axr-all .axr-all-sep{ width:1px; height:clamp(18px,2.4vh,28px);
   background:rgba(255,255,255,.3); flex:0 0 auto; }

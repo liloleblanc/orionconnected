@@ -30000,6 +30000,51 @@ function _accorCacheFor(iata) {
 // clips to the first few letters at footer size — the 'Fair' beside the ALL
 // mark Nick photographed. Generated from the files actually on disk, so the
 // repo's own reference test catches any path that stops resolving.
+// Ink bounds for the footer brand marks. 34 of the 41 sit in a generic
+// 0 0 70 40 box with the wordmark floating inside it — Mondrian's ink is 13%
+// of its height, Fairmont's 42% — so sizing the box does nothing and the mark
+// reads tiny beside ALL however large the box gets (Nick: 'should be a bit
+// bigger the logo down by ALL'). Measured with getBBox against every file and
+// padded 3%; marks whose artwork already fills its box are left alone rather
+// than re-cropped. Applied through the existing lockup cropper, which inlines
+// the SVG and swaps the viewBox.
+var ACCOR_BRAND_MARK_CROP = {
+  '21cmuseumhotels':'21.19 7.19 28.62 25.62',
+  '25hours':'6.38 9.38 57.24 21.58',
+  'adagio':'11.68 8.68 46.64 21.93',
+  'angsana':'6.38 14.38 57.24 10.24',
+  'artseries':'6.38 13.38 57.24 13.97',
+  'banyantree':'6.38 15.38 57.24 9.19',
+  'breakfree':'9.57 14.57 50.63 10.42',
+  'delano':'-10.2 -4.22 360.4 46.95',
+  'emblems':'6.64 11.15 56.71 17.74',
+  'faena':'6.38 13.38 57.24 13.49',
+  'fairmont':'6.38 10.38 57.27 19.91',
+  'grandmercure':'6.39 14.38 57.23 11.47',
+  'greet':'15.92 12.92 38.16 14.44',
+  'handwrittencollection':'6.38 11.38 57.24 17.24',
+  'hotelf1':'6.38 14.38 57.18 11.15',
+  'ibis':'23.34 13.34 23.2 13.33',
+  'ibisbudget':'22.28 10.28 25.44 19.43',
+  'ibisstyles':'21.23 10.22 27.66 19.59',
+  'jo&joe':'10.62 14.62 48.77 11.56',
+  'mamashelter':'16.96 11.96 36.57 16.09',
+  'mantis':'10.62 13.62 48.74 12.78',
+  'mantra':'10.62 12.62 48.77 14.08',
+  'mercure':'11.5 177.32 477 79.46',
+  'mondrian':'6.38 15.38 57.24 8.55',
+  'movenpick':'6.38 10.38 57.24 18.33',
+  'novotel':'6.38 15.38 57.24 9.82',
+  'orientexpress':'6.38 6.38 57.24 26.24',
+  'peppers':'6.38 14.38 57.24 11.24',
+  'rixos':'6.38 12.38 57.24 14.25',
+  'sofitellegend':'10.6 11.6 49.47 16.81',
+  'swissotel':'9.57 12.56 51.05 14.9',
+  'thehoxton':'6.38 13.38 57.24 12.13',
+  'thesebel':'18.03 13.03 34.1 13.93',
+  'tribe':'17 9 35.33 22'
+};
+
 var ACCOR_BRAND_MARKS = {
   '21cmuseumhotels':'/logos/hotels/accor-luxury/21cmuseum-monochrome-white.svg',
   '25hours':'/logos/hotels/accor-midscale/25th-monochrome-white.svg',
@@ -30054,6 +30099,18 @@ function _accorBrandMark(brandWord, brandRaw, brandCode) {
       || ACCOR_BRAND_MARKS[k(byCode)]
       || ACCOR_BRAND_MARKS[k(brandRaw)]
       || '';
+}
+// Same resolution order, so a mark and its crop can never come from different
+// brands. Empty string when the artwork already fills its box.
+function _accorBrandMarkCrop(brandWord, brandRaw, brandCode) {
+  function k(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9&]/g, ''); }
+  var byCode = '';
+  try { byCode = (typeof ACCOR_BRAND_NAMES !== 'undefined' && ACCOR_BRAND_NAMES[String(brandCode || '').toUpperCase()]) || ''; } catch (e) {}
+  var keys = [k(brandWord), k(byCode), k(brandRaw)];
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i] && ACCOR_BRAND_MARKS[keys[i]]) return ACCOR_BRAND_MARK_CROP[keys[i]] || '';
+  }
+  return '';
 }
 
 // Accor brand colors
@@ -33261,8 +33318,14 @@ function buildAccorAdOnlyV6(ad) {
   // full-height slot and clips to its first few letters at footer size, which
   // is the 'Fair' beside the ALL mark Nick photographed.
   var _brandMark = _accorBrandMark(brandWord, brandRaw, ad.brand);
+  // axr-all-svg + data-crop hands the mark to the existing lockup cropper,
+  // which inlines the SVG and swaps in the ink bounds — without it most of
+  // these marks float in a 70x40 box and read tiny however large the box is.
+  var _brandCrop = '';
+  try { _brandCrop = _accorBrandMarkCrop(brandWord, brandRaw, ad.brand); } catch (e) {}
   var _footerBrand = _brandMark
-    ? '<span class="axr-all-brand"><img src="' + esc(_brandMark) + '" alt="' + esc(brandWord || brandRaw || 'Hotel') + '"></span>'
+    ? '<span class="axr-all-brand"><img class="axr-all-svg" src="' + esc(_brandMark)
+      + '" data-crop="' + esc(_brandCrop) + '" alt="' + esc(brandWord || brandRaw || 'Hotel') + '"></span>'
       + '<span class="axr-all-sep"></span>'
     : '';
   var _footerHtml = '<footer class="axr-all axr-all-simple' + (_footerBrand ? ' axr-all-cobrand' : '') + '">'
