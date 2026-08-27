@@ -19260,7 +19260,10 @@ const LS = {
   familyFriendly:   { en:'Family-friendly',   fr:'Idéal en famille', es:'Apto para familias',de:'Familienfreundlich',    it:'Adatto alle famiglie',pt:'Para famílias',   ja:'ファミリー向け', zh:'适合家庭', ar:'مناسب للعائلات' },
   ecoCertified:     { en:'Ecocertified',      fr:'Écocertifié',      es:'Ecocertificado',   de:'Öko-zertifiziert',      it:'Ecocertificato',     pt:'Ecocertificado',   ja:'環境認証',      zh:'生态认证', ar:'معتمد بيئيًا' },
   scanToUnlockAll:  { en:'Scan to unlock<br>limitless experiences<br>with ALL.', fr:'Scannez pour débloquer<br>des expériences illimitées<br>avec ALL.', es:'Escanea para desbloquear<br>experiencias ilimitadas<br>con ALL.', de:'Scannen Sie für grenzenlose<br>Erlebnisse mit ALL.', it:'Scansiona per esperienze<br>illimitate con ALL.', pt:'Digitalize para experiências<br>ilimitadas com ALL.', ja:'スキャンしてALLで無限の<br>体験を解き放とう。', zh:'扫码解锁ALL无限体验', ar:'امسح لاستكشاف<br>تجارب لا محدودة مع ALL.' },
-  scanToDiscover:   { en:'Scan to discover', fr:'Scanner pour le', es:'Escanea para descubrir', de:'Zum Entdecken scannen', it:'Scansiona per scoprire', pt:'Digitalize para descobrir', ja:'スキャンして発見', zh:'扫码探索', ar:'امسح للاكتشاف' },
+  // 'Scanner pour le' was an unfinished sentence. It has always been wrong, but
+  // the bilingual card prints it directly beside the English, where a dangling
+  // article is impossible to miss.
+  scanToDiscover:   { en:'Scan to discover', fr:'Scanner pour découvrir', es:'Escanea para descubrir', de:'Zum Entdecken scannen', it:'Scansiona per scoprire', pt:'Digitalize para descobrir', ja:'スキャンして発見', zh:'扫码探索', ar:'امسح للاكتشاف' },
   memberOf:         { en:'Member of',         fr:'Membre de',        es:'Miembro de',       de:'Mitglied von',          it:'Membro di',          pt:'Membro de',        ja:'会員：',         zh:'会员：', ar:'عضو في' },
   limitlessLoyaltyProgramme: { en:'The Limitless Loyalty Programme', fr:'Le programme de fidélité illimité', es:'El programa de fidelidad ilimitado', de:'Das grenzenlose Treueprogramm', it:'Il programma fedeltà illimitato', pt:'O programa de fidelidade ilimitado', ja:'リミットレス・ロイヤルティ・プログラム', zh:'无限忠诚计划', ar:'برنامج الولاء اللامحدود' },
   accorTagline:     { en:'ACCOR · LIVE LIMITLESS', fr:'ACCOR · VIVRE SANS LIMITES', es:'ACCOR · LIVE LIMITLESS', de:'ACCOR · LIVE LIMITLESS', it:'ACCOR · LIVE LIMITLESS', pt:'ACCOR · LIVE LIMITLESS', ja:'ACCOR · LIVE LIMITLESS', zh:'ACCOR · LIVE LIMITLESS', ar:'ACCOR · LIVE LIMITLESS' },
@@ -20128,7 +20131,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23272';
+var FIDS_BUILD_TAG = 'v23281';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -29991,6 +29994,125 @@ function _accorCacheFor(iata) {
       || null;
 }
 
+// Brand-level wordmarks, one per brand — NOT property lockups. The footer
+// signs every card 'brand mark | ALL' the way fairmont.com does (Nick), and a
+// property lockup cannot be used there: drawn for a full-height slot, it
+// clips to the first few letters at footer size — the 'Fair' beside the ALL
+// mark Nick photographed. Generated from the files actually on disk, so the
+// repo's own reference test catches any path that stops resolving.
+// Ink bounds for the footer brand marks. 34 of the 41 sit in a generic
+// 0 0 70 40 box with the wordmark floating inside it — Mondrian's ink is 13%
+// of its height, Fairmont's 42% — so sizing the box does nothing and the mark
+// reads tiny beside ALL however large the box gets (Nick: 'should be a bit
+// bigger the logo down by ALL'). Measured with getBBox against every file and
+// padded 3%; marks whose artwork already fills its box are left alone rather
+// than re-cropped. Applied through the existing lockup cropper, which inlines
+// the SVG and swaps the viewBox.
+var ACCOR_BRAND_MARK_CROP = {
+  '21cmuseumhotels':'21.19 7.19 28.62 25.62',
+  '25hours':'6.38 9.38 57.24 21.58',
+  'adagio':'11.68 8.68 46.64 21.93',
+  'angsana':'6.38 14.38 57.24 10.24',
+  'artseries':'6.38 13.38 57.24 13.97',
+  'banyantree':'6.38 15.38 57.24 9.19',
+  'breakfree':'9.57 14.57 50.63 10.42',
+  'delano':'-10.2 -4.22 360.4 46.95',
+  'emblems':'6.64 11.15 56.71 17.74',
+  'faena':'6.38 13.38 57.24 13.49',
+  'fairmont':'6.38 10.38 57.27 19.91',
+  'grandmercure':'6.39 14.38 57.23 11.47',
+  'greet':'15.92 12.92 38.16 14.44',
+  'handwrittencollection':'6.38 11.38 57.24 17.24',
+  'hotelf1':'6.38 14.38 57.18 11.15',
+  'ibis':'23.34 13.34 23.2 13.33',
+  'ibisbudget':'22.28 10.28 25.44 19.43',
+  'ibisstyles':'21.23 10.22 27.66 19.59',
+  'jo&joe':'10.62 14.62 48.77 11.56',
+  'mamashelter':'16.96 11.96 36.57 16.09',
+  'mantis':'10.62 13.62 48.74 12.78',
+  'mantra':'10.62 12.62 48.77 14.08',
+  'mercure':'11.5 177.32 477 79.46',
+  'mondrian':'6.38 15.38 57.24 8.55',
+  'movenpick':'6.38 10.38 57.24 18.33',
+  'novotel':'6.38 15.38 57.24 9.82',
+  'orientexpress':'6.38 6.38 57.24 26.24',
+  'peppers':'6.38 14.38 57.24 11.24',
+  'rixos':'6.38 12.38 57.24 14.25',
+  'sofitellegend':'10.6 11.6 49.47 16.81',
+  'swissotel':'9.57 12.56 51.05 14.9',
+  'thehoxton':'6.38 13.38 57.24 12.13',
+  'thesebel':'18.03 13.03 34.1 13.93',
+  'tribe':'17 9 35.33 22'
+};
+
+var ACCOR_BRAND_MARKS = {
+  '21cmuseumhotels':'/logos/hotels/accor-luxury/21cmuseum-monochrome-white.svg',
+  '25hours':'/logos/hotels/accor-midscale/25th-monochrome-white.svg',
+  'adagio':'/logos/hotels/accor-midscale/adagiooriginal-monochrome-white.svg',
+  'angsana':'/logos/hotels/accor-premium/angsana-monochrome-white.svg',
+  'artseries':'/logos/hotels/accor-premium/artseries-monochrome-white.svg',
+  'banyantree':'/logos/hotels/accor-luxury/banyan-monochrome-white.svg',
+  'breakfree':'/logos/hotels/accor-midscale/BreakFree-monochrome-white.svg',
+  'delano':'/logos/hotels/accor-luxury/delano-monochrome-white.svg',
+  'emblems':'/logos/hotels/accor-luxury/emblems-monochrome-white.svg',
+  'faena':'/logos/hotels/accor-luxury/faena-monochrome-white.svg',
+  'fairmont':'/logos/hotels/accor-luxury/fairmont-monochrome-white.svg',
+  'grandmercure':'/logos/hotels/accor-midscale/grandmercure-monochrome-white.svg',
+  'greet':'/logos/hotels/accor-economy/greet-monochrome-white.svg',
+  'handwrittencollection':'/logos/hotels/accor-midscale/handwritten-monochrome-white.svg',
+  'hotelf1':'/logos/hotels/accor-economy/hotelF1-monochrome-white.svg',
+  'hyde':'/logos/hotels/accor-luxury/hyde-monochrome-white.svg',
+  'ibis':'/logos/hotels/accor-economy/ibis-monochrome-white.svg',
+  'ibisbudget':'/logos/hotels/accor-economy/ibisbudget-monochrome-white.svg',
+  'ibisstyles':'/logos/hotels/accor-economy/ibisstyles-monochrome-white.svg',
+  'jo&joe':'/logos/hotels/accor-economy/jo&joe-monochrome-white.svg',
+  'mamashelter':'/logos/hotels/accor-midscale/mamashelter-monochrome-white.svg',
+  'mantis':'/logos/hotels/accor-luxury/mantis-monochrome-white.svg',
+  'mantra':'/logos/hotels/accor-midscale/mantra-monochrome-white.svg',
+  'mercure':'/logos/hotels/accor-midscale/mercure-monochrome-white.svg',
+  'mgallery':'/logos/hotels/accor-premium/mgallery-monochrome-white.svg',
+  'mondrian':'/logos/hotels/accor-luxury/mondrian-monochrome-white.svg',
+  'morgansoriginals':'/logos/hotels/accor-midscale/morgansoriginals-monochrome-white.svg',
+  'movenpick':'/logos/hotels/accor-premium/movenpick-monochrome-white.svg',
+  'novotel':'/logos/hotels/accor-midscale/novotel-monochrome-white.svg',
+  'orientexpress':'/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg',
+  'peppers':'/logos/hotels/accor-midscale/peppers-monochrome-white.svg',
+  'pullman':'/logos/hotels/accor-premium/pullman-monochrome-white.svg',
+  'raffles':'/logos/hotels/accor-luxury/raffles-monochrome-white.svg',
+  'rixos':'/logos/hotels/accor-luxury/rixos-monochrome-white.svg',
+  'sls':'/logos/hotels/accor-luxury/SLS-monochrome-white.svg',
+  'sofitel':'/logos/hotels/sofitel/sofitel-monochrome-white.svg',
+  'sofitellegend':'/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg',
+  'swissotel':'/logos/hotels/accor-premium/swissotel-monochrome-white.svg',
+  'thehoxton':'/logos/hotels/accor-midscale/thehoxton-monochrome-white.svg',
+  'thesebel':'/logos/hotels/accor-midscale/thesebel-monochrome-white.svg',
+  'tribe':'/logos/hotels/accor-midscale/tribe-monochrome-white.svg'
+};
+function _accorBrandMark(brandWord, brandRaw, brandCode) {
+  function k(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9&]/g, ''); }
+  // The brand CODE is the canonical identifier and the only one guaranteed to
+  // be present \u2014 brandWord is inferred from the property name and comes back
+  // empty whenever the name does not spell the brand out.
+  var byCode = '';
+  try { byCode = (typeof ACCOR_BRAND_NAMES !== 'undefined' && ACCOR_BRAND_NAMES[String(brandCode || '').toUpperCase()]) || ''; } catch (e) {}
+  return ACCOR_BRAND_MARKS[k(brandWord)]
+      || ACCOR_BRAND_MARKS[k(byCode)]
+      || ACCOR_BRAND_MARKS[k(brandRaw)]
+      || '';
+}
+// Same resolution order, so a mark and its crop can never come from different
+// brands. Empty string when the artwork already fills its box.
+function _accorBrandMarkCrop(brandWord, brandRaw, brandCode) {
+  function k(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9&]/g, ''); }
+  var byCode = '';
+  try { byCode = (typeof ACCOR_BRAND_NAMES !== 'undefined' && ACCOR_BRAND_NAMES[String(brandCode || '').toUpperCase()]) || ''; } catch (e) {}
+  var keys = [k(brandWord), k(byCode), k(brandRaw)];
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i] && ACCOR_BRAND_MARKS[keys[i]]) return ACCOR_BRAND_MARK_CROP[keys[i]] || '';
+  }
+  return '';
+}
+
 // Accor brand colors
 var ACCOR_BRAND_COLORS = {
   'FAI':'#B88D5B','SOF':'#1a1a2e','PUL':'#2d2d3f','MGH':'#8B0000','NOV':'#6B8E23',
@@ -30132,10 +30254,12 @@ function stripHotelLocationTail(name, city, brandCode) {
   return head;
 }
 
-function fetchAccorHotels(destIata) {
+function fetchAccorHotels(destIata, langOverride) {
   if (!destIata) return;
-  // Language for THIS fetch (the current board rotation language).
-  var _listLang = _accorLangNow();
+  // Language for THIS fetch. Normally the current board rotation language;
+  // `langOverride` lets the caller warm the OTHER board language too, because
+  // the card now prints both at once and can only do that if both are cached.
+  var _listLang = String(langOverride || '') || _accorLangNow();
   var _ck = destIata + '|' + _listLang;
   var cached = ACCOR_HOTEL_CACHE[_ck];
   if (cached && (Date.now() - cached.ts < ACCOR_CACHE_TTL)) return;
@@ -30150,7 +30274,7 @@ function fetchAccorHotels(destIata) {
         if (gd && gd.results && gd.results.length) {
           COORDS[destIata] = [gd.results[0].latitude, gd.results[0].longitude];
           console.log('[ACCOR] Geocoded', destIata, 'to', COORDS[destIata]);
-          fetchAccorHotels(destIata); // Retry now that we have coords
+          fetchAccorHotels(destIata, _listLang); // Retry now that we have coords
         }
       })
       .catch(function(){ console.warn('[ACCOR] Geocoding failed for', destIata); });
@@ -30291,6 +30415,156 @@ function _accorHotelAirportDistance(h, destIata) {
 // ─────────────────────────────────────────────────────────────────
 var ACCOR_HOTEL_DETAIL_CACHE = {};
 var ACCOR_DETAIL_TTL = 6 * 60 * 60 * 1000;  // 6 hours
+
+// ── PUBLIC-SPACE PHOTOGRAPHY ─────────────────────────────────────────────
+// Accor's list endpoint returns only the first TWO photographs of a property
+// even when its own media.count says there are ten. The rest exist, at
+// incremented indices on the same stem, and they are the ones worth showing —
+// the exterior, the lobby, the restaurant. Without them the card ran out of
+// hotel photography after page one and fell back to BEDROOM shots from the
+// accommodations endpoint for pages two and three, which is the opposite of
+// what a card about what the hotel offers should lead with (and on Novotel
+// Toronto Centre it put white copy over a white duvet).
+//
+// count is NOT trustworthy as an index bound. Measured across 17 properties in
+// four cities: it is exact for most, UNDERSTATES for Novotel Toronto Vaughan
+// (says 3, five exist), and OVERSTATES for Novotel Miami Brickell (says 9,
+// 404s at 8), Pullman Miami Airport (says 5, 404s at 4) and Sofitel Montréal
+// Golden Mile. A 404 hero paints nothing and the page comes up black — the
+// exact failure Nick has already been shown once. So every candidate is
+// LOADED before it is allowed near the card, and only what actually resolves
+// is cached. Until that finishes the card behaves exactly as it does today.
+var ACCOR_PUBLIC_PHOTOS = {};        // hotelId → { ts, urls: [] }
+var ACCOR_PUBLIC_PHOTO_MAX = 8;      // more than any deck can show
+var ACCOR_PHOTO_PROBE_MS = 12000;    // a hung load must not strand the cache
+
+// .../photos/<stem>_ho_<NN>_p_<size>.<ext> → the same stem at every index.
+// The size suffix is copied from the seed so this never changes the
+// resolution policy, only how many frames are available.
+function _accorPublicPhotoUrls(seedUrl, count) {
+  var m = String(seedUrl || '').match(/^(.*\/)([A-Za-z0-9]+)_ho_(\d+)(_p_[^./]*\.\w+)$/);
+  if (!m) return [];
+  var n = Math.max(0, Math.min(ACCOR_PUBLIC_PHOTO_MAX, parseInt(count, 10) || 0));
+  var out = [];
+  for (var i = 0; i < n; i++) {
+    out.push(m[1] + m[2] + '_ho_' + (i < 10 ? '0' + i : String(i)) + m[4]);
+  }
+  return out;
+}
+
+// Load every candidate and keep the ones that resolve. The download is not
+// wasted — these are the frames the hero will use, so this doubles as a
+// preload and the card paints them from cache.
+function _accorVerifyPublicPhotos(hotelId, seedUrl, count) {
+  if (!hotelId || typeof Image === 'undefined') return;
+  var key = String(hotelId);
+  var have = ACCOR_PUBLIC_PHOTOS[key];
+  if (have && (Date.now() - have.ts) < ACCOR_DETAIL_TTL) return;
+  if (window['_accorPhotoPending_' + key]) return;
+  var cands = _accorPublicPhotoUrls(seedUrl, count);
+  if (cands.length < 2) return;   // nothing beyond what we already have
+  window['_accorPhotoPending_' + key] = true;
+  var results = new Array(cands.length), done = 0, settled = false;
+  function finish() {
+    if (settled) return;
+    settled = true;
+    delete window['_accorPhotoPending_' + key];
+    var urls = results.filter(Boolean);
+    ACCOR_PUBLIC_PHOTOS[key] = { ts: Date.now(), urls: urls };
+    try { console.log('[ACCOR-PHOTOS]', key, urls.length + '/' + cands.length, 'public-space frames verified'); } catch (e) {}
+  }
+  function one(i, url) {
+    var img = new Image();
+    img.onload = function () { results[i] = url; if (++done >= cands.length) finish(); };
+    img.onerror = function () { results[i] = null; if (++done >= cands.length) finish(); };
+    img.src = url;
+  }
+  for (var i = 0; i < cands.length; i++) one(i, cands[i]);
+  // Sofitel Montréal's probe neither loaded nor errored — it simply hung. Bank
+  // whatever resolved rather than leaving the property with no cache forever.
+  setTimeout(finish, ACCOR_PHOTO_PROBE_MS);
+}
+
+// ── THE SECOND LANGUAGE, PER PROPERTY ────────────────────────────────────
+// Accor returns a DIFFERENT SET OF HOTELS depending on the language asked
+// for. Measured on Montréal: the English list comes back with 4 properties,
+// the French list with 3, and Fairmont The Queen Elizabeth is in the English
+// one only. Pairing the two columns by looking the hotel up in the other
+// language's list therefore finds nothing for it, the prose collapses to one
+// column, and the card runs English-only on a bilingual board — exactly what
+// Nick caught, while the Sofitel beside it (present in both lists) was fine.
+//
+// The single-hotel endpoint has no such gap: /hotels/<id> returns the
+// property's own description, destinationDescription and advantages in
+// whatever language is asked for. So a property missing from the other
+// list is fetched on its own rather than written off.
+var ACCOR_HOTEL_TEXT_CACHE = {};   // hotelId|lang → { ts, description, … }
+
+function fetchAccorHotelText(hotelId, langWanted) {
+  if (!hotelId || !langWanted) return;
+  var key = hotelId + '|' + langWanted;
+  var cached = ACCOR_HOTEL_TEXT_CACHE[key];
+  if (cached && (Date.now() - cached.ts) < ACCOR_DETAIL_TTL) return;
+  if (window['_accorTextPending_' + key]) return;
+  window['_accorTextPending_' + key] = true;
+  var url = 'https://fids-proxy.n-leblanc1984.workers.dev/accor/catalog/v1/hotels/'
+          + encodeURIComponent(hotelId) + '?language=' + encodeURIComponent(langWanted);
+  fetch(url, { headers: { 'Accept-Language': _accorAcceptLang(langWanted) } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      delete window['_accorTextPending_' + key];
+      var h = (d && (d.hotel || d)) || null;
+      if (!h || !h.id) return;
+      ACCOR_HOTEL_TEXT_CACHE[key] = {
+        ts: Date.now(),
+        hotelId: hotelId,
+        _adLang: langWanted,
+        description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'),
+        destinationDescription: h.destinationDescription || '',
+        advantages: Array.isArray(h.advantages) ? h.advantages : []
+      };
+      try { console.log('[ACCOR-TEXT]', key, 'fetched on its own (absent from that language\'s list)'); } catch (e) {}
+    })
+    .catch(function () { delete window['_accorTextPending_' + key]; });
+}
+if (typeof window !== 'undefined') window.fetchAccorHotelText = fetchAccorHotelText;
+
+// Reconcile the board's two language lists once both are cached. Accor's
+// result set CHANGES with the language — Montréal returns 4 properties in
+// English and 3 in French — so a hotel can be in one list and not the other,
+// in EITHER direction. Fairmont The Queen Elizabeth is in the English list
+// only, which is how it reached a bilingual board with no French on it.
+// Every gap, both ways, gets its copy fetched from the property's own
+// endpoint, which has no such gap. Fires as each list lands and does nothing
+// once cached, so the pair converges without anyone waiting on a render.
+function _accorReconcileLanguages(iata) {
+  if (!iata) return;
+  var key = String(iata).toUpperCase();
+  var pair;
+  try { pair = (typeof boardLangsFor === 'function') ? boardLangsFor(key) : ['en', 'fr']; } catch (e) { return; }
+  if (!pair || pair.length < 2) return;
+  var lists = {};
+  for (var i = 0; i < pair.length; i++) {
+    var c = ACCOR_HOTEL_CACHE[key + '|' + pair[i]];
+    if (!c || !Array.isArray(c.hotels)) return;   // both must be in to compare
+    lists[pair[i]] = c.hotels;
+  }
+  for (var a = 0; a < pair.length; a++) {
+    for (var b = 0; b < pair.length; b++) {
+      if (a === b) continue;
+      var from = lists[pair[a]], to = lists[pair[b]], want = pair[b];
+      for (var h = 0; h < from.length; h++) {
+        var id = String(from[h].hotelId || '');
+        if (!id) continue;
+        var found = false;
+        for (var t = 0; t < to.length; t++) {
+          if (String(to[t].hotelId) === id) { found = true; break; }
+        }
+        if (!found) fetchAccorHotelText(id, want);
+      }
+    }
+  }
+}
 
 function fetchAccorHotelDetail(hotelId, langWanted) {
   if (!hotelId) return;
@@ -30691,6 +30965,12 @@ function _processAccorData(data, destIata, langKey) {
       });
     }
     photos = photos.slice(0, 6);
+    // Start verifying the property's other public-space frames now, while the
+    // list is landing — the Accor slide is many seconds away, so by the time
+    // the card is built the lobby and restaurant shots are usually ready.
+    try {
+      if (h.id && h.media) _accorVerifyPublicPhotos(String(h.id), photos[0] || photoUrl, h.media.count);
+    } catch (e) {}
 
     // DEBUG: log first hotel's photo resolution
     if (h.name && !window._accorPhotoLogged) {
@@ -30873,6 +31153,12 @@ function _processAccorData(data, destIata, langKey) {
       // instead of staying French. (Nick: 'some hotel ads are half french
       // half english'.)
       _adLang: _ckLang,
+      // The airport this list was fetched for. The card needs it to look up
+      // the board's language PAIR and to find this same hotel in the OTHER
+      // language's cache, so both languages can render on one screen (Nick:
+      // 'in the languages the airport is in — so the 2, if 2 languages, at the
+      // same time, same screen').
+      _destIata: destIata,
       _propertyLockup: _propertyLockupPath,
       _sofitelInlineSvg: _sofitelInlineSvg,
       _fairmontInlineSvg: _fairmontInlineSvg,
@@ -30988,6 +31274,7 @@ function _processAccorData(data, destIata, langKey) {
   }
   console.log('[ACCOR]', destIata, ': filtered', beforeFilter, '→', hotels.length, 'hotels (≤' + DOWNTOWN_THRESHOLD_KM + 'km from downtown, unknowns kept)');
   ACCOR_HOTEL_CACHE[destIata + '|' + _ckLang] = { hotels: hotels, ts: Date.now() };
+  try { _accorReconcileLanguages(destIata); } catch (e) {}
   console.log('[ACCOR] Loaded', hotels.length, 'hotels near', destIata, '(' + _ckLang + ')');
   // ── LANGUAGE PROOF (for Accor) ──────────────────────────────────────────
   // Shows EXACTLY what language Accor returned for what we requested. If we
@@ -31203,8 +31490,16 @@ function getGateAds() {
     destCity = _fidsTitleCase(destCity.toLowerCase());
   } catch(e) {}
 
-  // Trigger Accor hotel fetch for this destination (non-blocking, cached)
-  if (destIata) fetchAccorHotels(destIata);
+  // Trigger Accor hotel fetch for this destination (non-blocking, cached).
+  // BOTH of the board's languages, not just the one showing: the hotel card
+  // prints the two side by side, so the second language has to be in cache
+  // before the card is built or it renders in one language only.
+  if (destIata) {
+    fetchAccorHotels(destIata);
+    try {
+      (boardLangsFor(destIata) || []).forEach(function (L) { fetchAccorHotels(destIata, L); });
+    } catch (e) {}
+  }
 
   // Get cached Accor hotels as ads (current language preferred, any as fallback)
   var accorAds = [];
@@ -32374,6 +32669,57 @@ function buildAccorAdOnlyV6(ad) {
   function localized(obj,base){ var l=accorLang(); return first(obj[base+'_'+l],obj[base+l.toUpperCase()],obj[base+'-'+l],obj[base],''); }
   function bgUrl(bg){ var m=String(bg||'').match(/url\((['"]?)(.*?)\1\)/i); return (m&&m[2])?m[2]:''; }
 
+  // ── BILINGUAL (Nick: 'have them bilingual … in the languages the airport is
+  // in, so the 2 if 2 languages at the same time same screen') ──────────────
+  // The card is built in the language its content arrived in (_L1) and carries
+  // the board's OTHER language (_L2) beside it. Nothing is announced — no
+  // 'ENGLISH'/'FRANÇAIS' headings — the two columns and the rule between them
+  // are the only separator (Nick: 'You dont need to announce English or french').
+  // The airport decides the pair. Prefer the one stamped on the record at
+  // fetch time; fall back to the gate's own destination so a card assembled
+  // from anywhere still asks the right board which two languages it runs —
+  // without it an unstamped record would default to en/fr and print French
+  // distances on a Spanish board.
+  var _adIata = String(ad._destIata || '').toUpperCase();
+  if (!_adIata) {
+    try { _adIata = String((window._gateCurrentFlight || {})._locIata || '').toUpperCase(); } catch (e) {}
+  }
+  var _L1 = accorLang();
+  var _L2 = '';
+  try {
+    var _pair = (typeof boardLangsFor === 'function') ? boardLangsFor(_adIata) : ['en','fr'];
+    for (var _pi = 0; _pi < _pair.length; _pi++) { if (_pair[_pi] !== _L1) { _L2 = _pair[_pi]; break; } }
+  } catch (e) { _L2 = (_L1 === 'fr') ? 'en' : 'fr'; }
+  // This same hotel as Accor returned it in the second language. Accor only
+  // localizes on the Accept-Language header, so this is a genuinely different
+  // record — not our own translation of the first one.
+  var _ad2 = null;
+  if (_L2 && _adIata && ad.hotelId) {
+    try {
+      var _c2 = ACCOR_HOTEL_CACHE[_adIata + '|' + _L2];
+      if (_c2 && Array.isArray(_c2.hotels)) {
+        for (var _hi = 0; _hi < _c2.hotels.length; _hi++) {
+          if (String(_c2.hotels[_hi].hotelId) === String(ad.hotelId)) { _ad2 = _c2.hotels[_hi]; break; }
+        }
+        // IN THE LIST FOR ONE LANGUAGE AND NOT THE OTHER. Accor's result set
+        // changes with the language: Montréal returns 4 properties in English
+        // and 3 in French, and Fairmont The Queen Elizabeth is in the English
+        // one only. Written off, it renders English on a bilingual board while
+        // the Sofitel next to it — in both lists — reads fine. The property's
+        // own endpoint has no such gap, so ask it directly.
+        if (!_ad2) {
+          var _t2 = ACCOR_HOTEL_TEXT_CACHE[ad.hotelId + '|' + _L2];
+          if (_t2) _ad2 = _t2;
+          else if (typeof fetchAccorHotelText === 'function') fetchAccorHotelText(ad.hotelId, _L2);
+        }
+      } else if (typeof fetchAccorHotels === 'function') {
+        // Not loaded yet — ask for it so the next pass has both languages.
+        // This pass renders the one language it has rather than nothing.
+        fetchAccorHotels(_adIata, _L2);
+      }
+    } catch (e) {}
+  }
+
   var brandRaw   = first(ad.brandLabel, ad.brandName, ad.hotelBrand, ad.chain, ad.brand, ad.logoBrand, '');
   var hotelName  = first(ad.headline, ad.name, ad.hotelName, ad.propertyName, 'Accor Hotel');
   var brandLower = lower(brandRaw + ' ' + hotelName);
@@ -32415,6 +32761,21 @@ function buildAccorAdOnlyV6(ad) {
       try { fetchAccorHotelDetail(ad.hotelId, accorLang()); } catch (e) {}
     }
   }
+  // THE HOTEL LEADS, NOT ITS BEDROOMS. Verified public-space photography goes
+  // in front of everything the accommodations endpoint returned, so the pages
+  // carry the exterior, the lobby and the restaurant. Room shots stay on as
+  // the tail — a property with only one or two public frames still fills its
+  // pages rather than going black. Nothing here can 404: every URL in this
+  // list was loaded successfully before it was cached.
+  try {
+    var _pubC = ACCOR_PUBLIC_PHOTOS[String(ad.hotelId || '')];
+    var _pub = (_pubC && Array.isArray(_pubC.urls)) ? _pubC.urls : [];
+    if (_pub.length) {
+      var _lead = _pub.slice();
+      _photoSet.forEach(function (u) { if (u && _lead.indexOf(u) === -1) _lead.push(u); });
+      _photoSet = _lead;
+    }
+  } catch (e) {}
   _photoSet = _photoSet.slice(0, 6);
   var _photosAttr = (_photoSet.length > 1) ? " data-photos='" + esc(JSON.stringify(_photoSet)) + "'" : '';
 
@@ -32485,17 +32846,27 @@ function buildAccorAdOnlyV6(ad) {
   var lockupHasName = accorLockupCarriesName(logo);
   var showName=!!displayName && !lockupHasName;
 
-  var amenities=[];
-  if(Array.isArray(ad.badges)) amenities=ad.badges;
-  else if(Array.isArray(ad.amenities)) amenities=ad.amenities;
-  else if(Array.isArray(ad.features)) amenities=ad.features;
-  else if(Array.isArray(ad.advantages)) amenities=ad.advantages;
-  amenities=amenities.map(function(x){ if(typeof x==='string') return x; return first(x&&x.label,x&&x.name,x&&x.title,x&&x.code,''); }).filter(Boolean).slice(0,4);
-  if(!amenities.length){ var lAmen=accorLang(); var fb={ en:['Restaurant','Wi‑Fi','Comfort rooms'],fr:['Restaurant','Wi‑Fi','Chambres confortables'],es:['Restaurante','Wi‑Fi','Habitaciones confortables'],de:['Restaurant','WLAN','Komfortzimmer'],it:['Ristorante','Wi‑Fi','Camere confortevoli'],pt:['Restaurante','Wi‑Fi','Quartos confortáveis'],ja:['レストラン','Wi‑Fi','快適な客室'],zh:['餐厅','Wi‑Fi','舒适客房'],ar:['مطعم','واي فاي','غرف مريحة'] }; amenities=fb[lAmen]||fb.en; }
+  // Per-AD so the second language's record can be read the same way.
+  function _amenOf(adX, L){
+    var a=[];
+    if(Array.isArray(adX.badges)) a=adX.badges;
+    else if(Array.isArray(adX.amenities)) a=adX.amenities;
+    else if(Array.isArray(adX.features)) a=adX.features;
+    else if(Array.isArray(adX.advantages)) a=adX.advantages;
+    a=a.map(function(x){ if(typeof x==='string') return x; return first(x&&x.label,x&&x.name,x&&x.title,x&&x.code,''); }).filter(Boolean).slice(0,4);
+    if(!a.length){ var fb={ en:['Restaurant','Wi‑Fi','Comfort rooms'],fr:['Restaurant','Wi‑Fi','Chambres confortables'],es:['Restaurante','Wi‑Fi','Habitaciones confortables'],de:['Restaurant','WLAN','Komfortzimmer'],it:['Ristorante','Wi‑Fi','Camere confortevoli'],pt:['Restaurante','Wi‑Fi','Quartos confortáveis'],ja:['レストラン','Wi‑Fi','快適な客室'],zh:['餐厅','Wi‑Fi','舒适客房'],ar:['مطعم','واي فاي','غرف مريحة'] }; a=fb[L]||fb.en; }
+    return a;
+  }
+  var amenities=_amenOf(ad, accorLang());
 
   var starCount=Math.max(0,Math.min(5,Math.round(stars||0)));
   var starsHtml=starCount>0?'<span class="axr-stars">'+Array(starCount+1).join('★')+'</span>':'';
-  var reviewsLabel=({en:'reviews',fr:'avis',es:'reseñas',de:'Bewertungen',it:'recensioni',pt:'avaliações',ja:'件のレビュー',zh:'条评论',ar:'تقييمات'}[accorLang()]||'reviews');
+  var _REVIEWS_W={en:'reviews',fr:'avis',es:'reseñas',de:'Bewertungen',it:'recensioni',pt:'avaliações',ja:'件のレビュー',zh:'条评论',ar:'تقييمات'};
+  function _reviewsW(L){ return _REVIEWS_W[L] || _REVIEWS_W.en; }
+  // The score is a number in any language; only the word after it changes, so
+  // the two words share one row rather than duplicating the figure.
+  var reviewsLabel=_reviewsW(accorLang());
+  if (_L2 && _reviewsW(_L2) !== reviewsLabel) reviewsLabel += ' · ' + _reviewsW(_L2);
   // Never let an object reach the card: an upstream shape change would print
   // '[object Object]/5' on a paying advertiser's slide.
   if (rating && typeof rating === 'object') {
@@ -32539,11 +32910,22 @@ function buildAccorAdOnlyV6(ad) {
   // The bubble copy is a fixed size and wraps to two lines instead.
   // Fairmont-style accent (Nick): first word italic sentence-case, the rest
   // renders CAPS via the brand's bubble CSS — like 'SAVOR SAN JUAN flavor'.
-  var _scanTxt = safeTL('scanToDiscover','Scan to discover');
-  var _scanSp = _scanTxt.indexOf(' ');
-  var _scanHtml = (_scanSp > 0)
-    ? '<i class="axr-scan-accent">' + esc(_scanTxt.slice(0, _scanSp)) + '</i> ' + esc(_scanTxt.slice(_scanSp + 1))
-    : esc(_scanTxt);
+  function _scanFor(L){
+    try { var o = (typeof LS !== 'undefined' && LS.scanToDiscover) ? LS.scanToDiscover : null; if (o && o[L]) return o[L]; } catch(e){}
+    return 'Scan to discover';
+  }
+  function _scanMark(t){
+    var sp = String(t).indexOf(' ');
+    return (sp > 0)
+      ? '<i class="axr-scan-accent">' + esc(String(t).slice(0, sp)) + '</i> ' + esc(String(t).slice(sp + 1))
+      : esc(t);
+  }
+  var _scanT1 = _scanFor(accorLang());
+  var _scanT2 = _L2 ? _scanFor(_L2) : '';
+  // The property name is the same words in both languages — it is printed once,
+  // under the two invitations, not duplicated.
+  var _scanHtml = _scanMark(_scanT1)
+    + ((_scanT2 && _scanT2 !== _scanT1) ? '<span class="axr-bi-line">' + _scanMark(_scanT2) + '</span>' : '');
   var _qrCaption = _scanHtml + '<br><span class="axr-bub-name">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en');
@@ -32563,28 +32945,39 @@ function buildAccorAdOnlyV6(ad) {
   // Location distance lines — distance from the destination AIRPORT and from
   // DOWNTOWN, localized. Each shown only when we have the figure.
   var _lgD = accorLang();
-  var _airTpl = ({
+  var _AIR_TPL = {
     en:'%k from airport', fr:'à %k de l’aéroport', es:'a %k del aeropuerto',
     de:'%k vom Flughafen', it:'a %k dall’aeroporto', pt:'a %k do aeroporto',
     ja:'空港から%k', zh:'距机场%k', ar:'%k من المطار'
-  })[_lgD] || '%k from airport';
-  var _dtTpl = ({
+  };
+  var _DT_TPL = {
     en:'%k from %c centre', fr:'à %k du centre de %c', es:'a %k del centro de %c',
     de:'%k vom Zentrum %c', it:'a %k dal centro di %c', pt:'a %k do centro de %c',
     ja:'%c中心部から%k', zh:'距%c市中心%k', ar:'%k من وسط %c'
-  })[_lgD] || '%k from %c centre';
-  function _locRow(txt){ return '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span>' + esc(txt) + '</div>'; }
-  var _locLineHtml = '';
-  var _da = ad.distanceAirport, _dc = ad.distanceCity;
-  if (_da && _da.kmStr) _locLineHtml += _locRow(_airTpl.replace('%k', _da.kmStr));
-  if (_dc && _dc.kmStr && _dc.cityName) _locLineHtml += _locRow(_dtTpl.replace('%k', _dc.kmStr).replace('%c', _dc.cityName));
+  };
   // Fallback distance had NO context ("0.9 km" … to what?) — say what it's from.
-  var _dtShort = ({
+  var _DT_SHORT = {
     en:'%k from downtown', fr:'à %k du centre-ville', es:'a %k del centro',
     de:'%k vom Stadtzentrum', it:'a %k dal centro', pt:'a %k do centro',
     ja:'中心部から%k', zh:'距市中心%k', ar:'%k من وسط المدينة'
-  })[_lgD] || '%k from downtown';
-  if (!_locLineHtml && ad.distance) _locLineHtml = _locRow(_dtShort.replace('%k', ad.distance));
+  };
+  // One row per FACT, both languages inside it. A second .axr-loc-line per
+  // language would be read by the stylesheet as the next fact and get the
+  // city-centre glyph, so the languages share the row and the pin.
+  function _locRow(t1, t2){
+    return '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span><span>' + esc(t1) + '</span>'
+      + ((t2 && t2 !== t1) ? '<b class="axr-bi-sep"></b><span>' + esc(t2) + '</span>' : '')
+      + '</div>';
+  }
+  function _tpl(map, L, km, city){
+    var s = map[L] || map.en;
+    return s.replace('%k', km).replace('%c', city || '');
+  }
+  var _locLineHtml = '';
+  var _da = ad.distanceAirport, _dc = ad.distanceCity;
+  if (_da && _da.kmStr) _locLineHtml += _locRow(_tpl(_AIR_TPL, _lgD, _da.kmStr), _L2 ? _tpl(_AIR_TPL, _L2, _da.kmStr) : '');
+  if (_dc && _dc.kmStr && _dc.cityName) _locLineHtml += _locRow(_tpl(_DT_TPL, _lgD, _dc.kmStr, _dc.cityName), _L2 ? _tpl(_DT_TPL, _L2, _dc.kmStr, _dc.cityName) : '');
+  if (!_locLineHtml && ad.distance) _locLineHtml = _locRow(_tpl(_DT_SHORT, _lgD, ad.distance), _L2 ? _tpl(_DT_SHORT, _L2, ad.distance) : '');
   // city is shown standalone only when we don't have the full street address
   var _showCity = address && !_fullAddr;
   var subHtml=(_showCity||starsHtml||ratingHtml)?'<div class="axr-sub">'+(_showCity?'<span class="axr-addr">'+esc(address)+'</span>':'')+starsHtml+ratingHtml+'</div>':'';
@@ -32605,6 +32998,15 @@ function buildAccorAdOnlyV6(ad) {
     try { if (typeof fetchAccorHotelDetail === 'function') fetchAccorHotelDetail(ad.hotelId, accorLang()); } catch (e) {}
     _detail = null;
   }
+  // Same record in the board's second language, for the second column.
+  var _detail2 = null;
+  if (_L2 && ad.hotelId) {
+    try {
+      var _d2 = ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId + '|' + _L2] || null;
+      if (_d2 && (!_d2.lang || _d2.lang === _L2)) _detail2 = _d2;
+      else if (typeof fetchAccorHotelDetail === 'function') fetchAccorHotelDetail(ad.hotelId, _L2);
+    } catch (e) {}
+  }
   function _dedupe(arr){ var seen={}, out=[]; (arr||[]).forEach(function(x){ var k=String(x||'').toLowerCase().trim(); if (x && !seen[k]) { seen[k]=1; out.push(x); } }); return out; }
   // Curate, don't just take the first six: the room-level feed leads with
   // fixtures nobody chooses a hotel for (Nick: the card was selling 'Iron' and
@@ -32618,18 +33020,22 @@ function buildAccorAdOnlyV6(ad) {
   // can't be trusted for this, so breakfast is stripped from every amenity /
   // dining / prose surface of the ad.
   var _isBreakfast = function (a) { return /breakfast|d[ée]jeuner/i.test(String(a || '')); };
-  var _amenAll = _dedupe([].concat(
-      (_detail && _detail.topAmenities && _detail.topAmenities.length) ? _detail.topAmenities : amenities,
-      (_detail && _detail.facilities) ? _detail.facilities : []
-  )).filter(function (a) { return !_isBreakfast(a); });
-  var _amenSell = [], _amenMid = [], _amenDull = [];
-  _amenAll.forEach(function (a) {
-    var s = String(a || '');
-    if (_amenSellRx.test(s)) _amenSell.push(a);
-    else if (_amenDullRx.test(s)) _amenDull.push(a);
-    else _amenMid.push(a);
-  });
-  var _amenList = _amenSell.concat(_amenMid, _amenDull).slice(0, 6);
+  function _rankAmen(adX, detailX, L) {
+    var all = _dedupe([].concat(
+        (detailX && detailX.topAmenities && detailX.topAmenities.length) ? detailX.topAmenities : _amenOf(adX, L),
+        (detailX && detailX.facilities) ? detailX.facilities : []
+    )).filter(function (a) { return !_isBreakfast(a); });
+    var sell = [], mid = [], dull = [];
+    all.forEach(function (a) {
+      var s = String(a || '');
+      if (_amenSellRx.test(s)) sell.push(a);
+      else if (_amenDullRx.test(s)) dull.push(a);
+      else mid.push(a);
+    });
+    return { sell: sell, list: sell.concat(mid, dull).slice(0, 6) };
+  }
+  var _amenRank = _rankAmen(ad, _detail, accorLang());
+  var _amenSell = _amenRank.sell, _amenList = _amenRank.list;
   // REAL hotel dining (Nick: page 3 was showing in-room kettles/fridges):
   // prose 'advantages' that mention dining first, then hotel-level dining
   // amenities and program labels. In-room food&bev only as a last resort.
@@ -32671,7 +33077,8 @@ function buildAccorAdOnlyV6(ad) {
   // Hygiene/pandemic boilerplate is NEVER ad copy (Nick: the COVID notice
   // rendering as the hotel's blurb — 'This cant happen').
   var _covidRx = /covid|coronavirus|pand[ée]mi|sanitai?r|hygi[eè]n|propagation|all ?safe|\bvirus\b/i;
-  var _blurb = [ad.description, ad.destinationDescription].filter(function (t) {
+  function _mkBlurb(adX) {
+  var _blurb = [adX.description, adX.destinationDescription].filter(function (t) {
     return t && !_covidRx.test(String(t));
   })[0] || '';
   if (_blurb) {
@@ -32701,16 +33108,45 @@ function buildAccorAdOnlyV6(ad) {
         if ('.!?'.indexOf(_cut[_si]) !== -1 && _cut[_si + 1] === ' ' && _validSentEnd(_cut, _si)) { _sentEnd = _si; break; }
       }
       if (/[.!?]$/.test(_cut) && _validSentEnd(_cut, _cut.length - 1)) _sentEnd = Math.max(_sentEnd, _cut.length - 1);
-      _blurb = (_sentEnd > 0) ? _cut.slice(0, _sentEnd + 1).trim() : '';
+      if (_sentEnd > 0) { _blurb = _cut.slice(0, _sentEnd + 1).trim(); }
+      else {
+        // NO SENTENCE END INSIDE THE WINDOW — until now that silently deleted
+        // the whole paragraph, which a bilingual card makes obvious: Royal
+        // York's English column faced an empty French one. Accor's non-English
+        // copy for this property opens with the property, then hangs the
+        // attraction list off it — French with a colon ('…de la ville : Tour
+        // CN, aquarium Ripley…'), Spanish with a comma ('…centro de Toronto,
+        // junto a las principales atracciones como la Torre CN…'). Both leave
+        // a complete main clause in front of the break, so stop there: colon
+        // or semicolon first, then a comma far enough in to have said
+        // something. This is not the mid-sentence chop Nick banned — it only
+        // ever runs where the alternative is printing nothing at all.
+        var _clause = -1, _ci;
+        for (_ci = 40; _ci < _cut.length; _ci++) {
+          if (':;'.indexOf(_cut[_ci]) !== -1) { _clause = _ci; break; }
+        }
+        if (_clause < 0) {
+          for (_ci = 60; _ci < _cut.length; _ci++) {
+            if (_cut[_ci] === ',') { _clause = _ci; break; }
+          }
+        }
+        // Closed with a full stop so it reads as the finished sentence it is,
+        // not as copy that ran out of room.
+        _blurb = (_clause > 0) ? _cut.slice(0, _clause).replace(/[\s,;:–—-]+$/, '').trim() + '.' : '';
+      }
     }
   }
+  return _blurb;
+  }
+  var _blurb  = _mkBlurb(ad);
+  var _blurbB = _ad2 ? _mkBlurb(_ad2) : '';
   // A SECOND paragraph for page 3, from a different source than page 2's — the
   // destination text (what's around the hotel), or the next sentence of the
   // hotel's own copy. Without it page 3 was a logo, a name and a QR code and
   // nothing else once the in-room fixtures were banned from the dining list
   // (Nick: 'theres barely any info at all on some of these').
-  var _blurb2 = '';
-  (function () {
+  function _mkBlurb2(adX, blurbX, allowDest) {
+    var _blurb2 = '';
     function _sent1(txt, skipFirst) {
       var s = String(txt || '').replace(/\s+/g, ' ').trim();
       if (!s || _covidRx.test(s)) return '';
@@ -32723,13 +33159,31 @@ function buildAccorAdOnlyV6(ad) {
       if (!skipFirst) return s.slice(0, ends[0] + 1).trim();
       if (ends.length < 2) return '';
       var second = s.slice(ends[0] + 1, ends[1] + 1).trim();
-      return (second.length <= 190) ? second : '';
+      // A bilingual column is half as wide, so the same sentence needs more
+      // lines — the clamp was raised to match. The budget goes up with it, or
+      // the cap silently deletes the second paragraph in BOTH languages
+      // (Royal York's 'Since 1929, Fairmont Royal York has welcomed millions
+      // of travelers…' is 211 characters and was the page's only copy).
+      return (second.length <= (_ad2 ? 215 : 190)) ? second : '';
     }
-    var _dest = _sent1(ad.destinationDescription, false);
-    if (_dest && _dest !== _blurb) { _blurb2 = _dest; return; }
-    var _next = _sent1(ad.description, true);
-    if (_next && _next !== _blurb) _blurb2 = _next;
-  })();
+    if (allowDest) {
+      var _dest = _sent1(adX.destinationDescription, false);
+      if (_dest && _dest !== blurbX) return _dest;
+    }
+    var _next = _sent1(adX.description, true);
+    if (_next && _next !== blurbX) _blurb2 = _next;
+    return _blurb2;
+  }
+  // Accor does NOT translate destinationDescription: the French record for
+  // Royal York returns the English text verbatim (measured against the live
+  // API — the two strings are byte-identical). Printing it in the French
+  // column would put English under a French one, so the destination text is
+  // only used when the two records genuinely differ. The hotel's own
+  // description IS translated, so page 3 falls through to its next sentence.
+  var _destTranslated = !_ad2 || !!(ad.destinationDescription && _ad2.destinationDescription
+    && String(ad.destinationDescription).trim() !== String(_ad2.destinationDescription).trim());
+  var _blurb2  = _mkBlurb2(ad,  _blurb,  _destTranslated);
+  var _blurb2B = _ad2 ? _mkBlurb2(_ad2, _blurbB, _destTranslated) : '';
 
   var _acL = accorLang();
   var _kHotel  = ({en:'The hotel',fr:"L'hôtel",es:'El hotel',de:'Das Hotel',it:"L'hotel",pt:'O hotel',ja:'ホテル',zh:'酒店',ar:'الفندق'})[_acL] || 'The hotel';
@@ -32768,14 +33222,34 @@ function buildAccorAdOnlyV6(ad) {
   // repeating it as the page context printed the name twice (Nick). Pages
   // with a lockup logo get no extra name line.
   var _ctxName   = lockupHasName ? '' : '<div class="axr-page-ctx">'+esc(displayName)+'</div>';
+  // IDENTITY (Nick). A property that already has its proper logo — Fairmont,
+  // Sofitel, and every other property-lockup brand — DOES NOT CHANGE: the
+  // artwork stays where and how it was. Everything else stops showing its
+  // brand wordmark up here and simply writes the name on one line, 'Novotel
+  // Toronto Centre', with the wordmark moved to the footer beside ALL.
+  //
+  // The test is whether the property HAS a lockup, not whether the lockup's
+  // artwork happens to contain the name. Keying it on the name detection was
+  // wrong twice over: a Fairmont whose lockup had not resolved yet fell to the
+  // text treatment and then had its property lockup pushed into the footer,
+  // where it clipped to 'Fair' beside the ALL mark; and Sofitel took the text
+  // path outright. Both are brands Nick said must not change.
+  var _hasPropertyLockup = !!(ad._propertyLockup || _inlineLockup);
+  var _useTextId = !_hasPropertyLockup && !lockupHasName;
+  function _idRow(nameHtml) {
+    // Lockup brands: exactly the markup they had — artwork, then the name line
+    // if their artwork does not already carry it.
+    if (!_useTextId) return logoHtml + (nameHtml || '');
+    return '<div class="axr-idtext">' + esc(_fullName) + '</div>';
+  }
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
   var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
 
   // Page 1 — LOCATION: logo, name, address, distance, stars
   var _page1 = '<div class="axr-page axr-page-on">'
     + _heroImg(_ph0) + '<div class="axr-hero-grad"></div>'
-    + '<div class="axr-hotel">' + logoHtml
-    +   (showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '')
+    + '<div class="axr-hotel">'
+    +   _idRow(showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '')
     +   _addrLineHtml + _locLineHtml + _starsRow
     + '</div></div>';
   // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com (Nick:
@@ -32810,13 +33284,20 @@ function buildAccorAdOnlyV6(ad) {
     s = s.replace(/[\s.;,:–—-]+$/, '').trim();
     return s;
   };
-  var _advs = (Array.isArray(ad.advantages) ? ad.advantages : [])
-    .map(_cleanAdv)
-    .filter(function (a) {
+  // Returns {i, t} so the two languages can be paired by their ORIGINAL feed
+  // position. Accor's advantage lists run parallel between languages, but the
+  // per-language filters below drop different rows (a French line can be one
+  // character over the 60-char limit where its English twin is not), so
+  // pairing by position AFTER filtering would set an English claim beside an
+  // unrelated French one.
+  function _mkAdvs(adX, sellX) {
+  var _advs = (Array.isArray(adX.advantages) ? adX.advantages : [])
+    .map(function (a, i) { return { i: i, t: _cleanAdv(a) }; })
+    .filter(function (o) {
+      var a = o.t;
       return a && a.length >= 3 && a.length <= 60
         && !_covidRx.test(a) && !_dullAdvRx.test(a) && !_adminOnlyRx.test(a);
-    })
-    .slice(0, 3);
+    });
   if (!_advs.length) {
     // No advantages from the feed → the hotel's own SELLABLE facilities, which
     // _amenSell has already separated from the in-room fixtures. Only the pure
@@ -32825,23 +33306,67 @@ function buildAccorAdOnlyV6(ad) {
     // wants, and cutting it left cards with almost nothing on them (Nick:
     // 'theres barely any info at all on some of these').
     var _dullRx = _dullAdvRx;
-    _advs = (Array.isArray(_amenSell) ? _amenSell : [])
-      .map(function (a) { return String(a || '').trim(); })
-      .filter(function (a) { return a && a.length <= 42 && !_dullRx.test(a) && !_covidRx.test(a); })
-      .slice(0, 3);
+    // Negative keys so a facilities-derived list is only ever paired with the
+    // other language's facilities list, never with its advantages list.
+    _advs = (Array.isArray(sellX) ? sellX : [])
+      .map(function (a, i) { return { i: -1 - i, t: String(a || '').trim() }; })
+      .filter(function (o) { return o.t && o.t.length <= 42 && !_dullRx.test(o.t) && !_covidRx.test(o.t); });
   }
-  if (_advs.length) {
-    _featsHtml = '<div class="axr-fai-feats">' + _advs.map(function (a) {
-      return '<span>' + esc(a) + '</span>';
-    }).join('') + '</div>';
+  return _advs;
+  }
+  function _featsOf(advs) {
+    return advs.length
+      ? '<div class="axr-fai-feats">' + advs.map(function (a) { return '<span>' + esc(a) + '</span>'; }).join('') + '</div>'
+      : '';
+  }
+  var _amenRank2 = _ad2 ? _rankAmen(_ad2, _detail2, _L2) : null;
+  var _advsAll  = _mkAdvs(ad, _amenSell);
+  var _advsAllB = _ad2 ? _mkAdvs(_ad2, _amenRank2 ? _amenRank2.sell : []) : [];
+  var _advs = [], _advsB = [];
+  if (_ad2) {
+    var _bByIdx = {};
+    _advsAllB.forEach(function (o) { _bByIdx[o.i] = o.t; });
+    _advsAll.forEach(function (o) {
+      if (_advs.length >= 3) return;
+      if (Object.prototype.hasOwnProperty.call(_bByIdx, o.i)) { _advs.push(o.t); _advsB.push(_bByIdx[o.i]); }
+    });
+  } else {
+    _advs = _advsAll.slice(0, 3).map(function (o) { return o.t; });
+  }
+  // BOTH COLUMNS CARRY THE SAME KINDS. Without this the card put an English
+  // sentence beside a lone French amenity word ('RESTAURANT') — measured on
+  // Royal York. A row renders only when both languages have it.
+  if (_ad2) {
+    if (!_blurb  || !_blurbB)  { _blurb  = ''; _blurbB  = ''; }
+    if (!_blurb2 || !_blurb2B) { _blurb2 = ''; _blurb2B = ''; }
+  }
+  _featsHtml = _featsOf(_advs);
+  var _featsHtmlB = _featsOf(_advsB);
+  // The two languages, side by side, with a hairline between them and nothing
+  // announcing which is which (Nick: 'You dont need to announce English or
+  // french'). Falls back to a single full-width column when the second
+  // language hasn't loaded yet or the two records carry the same words, so
+  // the card is never half empty.
+  function _biAttr(L){ return ' lang="' + esc(L) + '"' + ((L === 'ar') ? ' dir="rtl"' : ''); }
+  function _biCols(a, b) {
+    if (!a && !b) return '';
+    if (!a) { return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_L2) + '>' + b + '</div></div>'; }
+    if (!b || b === a) return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lgD) + '>' + a + '</div></div>';
+    return '<div class="axr-bi">'
+      + '<div class="axr-bi-col"' + _biAttr(_lgD) + '>' + a + '</div>'
+      + '<div class="axr-bi-rule"></div>'
+      + '<div class="axr-bi-col"' + _biAttr(_L2) + '>' + b + '</div>'
+      + '</div>';
   }
   // No advantages AND no prose → there is nothing to say on this page, so it
   // is dropped from the deck rather than shown as a bare logo + name.
-  var _page2 = (!_featsHtml && !_blurb) ? '' : '<div class="axr-page">'
+  var _p2a = _featsHtml  + (_blurb  ? '<p class="axr-blurb">'+esc(_blurb)+'</p>'  : '');
+  var _p2b = _featsHtmlB + (_blurbB ? '<p class="axr-blurb">'+esc(_blurbB)+'</p>' : '');
+  var _page2 = (!_p2a && !_p2b) ? '' : '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
-    + logoHtml + _ctxName
-    +   _featsHtml + (_blurb ? '<p class="axr-blurb">'+esc(_blurb)+'</p>' : '')
+    + _idRow(_ctxName)
+    +   _biCols(_p2a, _p2b)
     + '</div></div>';
   // Page 3 — THE DESTINATION: what's around the hotel, its real dining, the
   // guest score, and the QR. It must always carry something beyond the logo:
@@ -32855,79 +33380,56 @@ function buildAccorAdOnlyV6(ad) {
         return '<span>' + esc(r) + '</span>';
       }).join('') + '</div>'
     : '';
-  var _p3Body = (_blurb2 ? '<p class="axr-blurb">' + esc(_blurb2) + '</p>' : '')
-    + _restInline + _ratingRow;
-  if (!_blurb2 && !_restList.length && !_ratingRow) _p3Body = _addrLineHtml + _locLineHtml + _starsRow;
+  // Restaurant names are proper nouns — the same words in both languages, so
+  // they are printed once, under the two columns, not duplicated.
+  var _p3Body = _biCols(
+      (_blurb2  ? '<p class="axr-blurb">' + esc(_blurb2)  + '</p>' : ''),
+      (_blurb2B ? '<p class="axr-blurb">' + esc(_blurb2B) + '</p>' : '')
+    ) + _restInline + _ratingRow;
+  if (!_blurb2 && !_blurb2B && !_restList.length && !_ratingRow) _p3Body = _addrLineHtml + _locLineHtml + _starsRow;
   var _page3 = '<div class="axr-page">'
     + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
     + bubbleHtml
     + '<div class="axr-hotel">'
-    + logoHtml + _ctxName
+    + _idRow(_ctxName)
     +   _p3Body
     + '</div></div>';
 
-  // ROOM PAGES (Nick: '2 to 3 different room options, show 10 seconds maybe,
-  // and description and amenities and pictures') — each room class gets its
-  // own page in the same design grammar: its photo as the hero, its name as
-  // the page heading, its own amenities and description.
-  var _roomsHtml = '';
-  try {
-    var _rooms = (_detail && Array.isArray(_detail.rooms)) ? _detail.rooms.filter(function (r) { return r && r.name; }) : [];
-    // Decide the copy FIRST, then decide which rooms earn a page. Filtering on
-    // the raw description was wrong: a long description with no sentence break
-    // is trimmed to nothing at render time, so rooms counted as 'has copy'
-    // still produced a bare title (Novotel Montréal showed two such pages in a
-    // row). Rooms with real copy lead; a bare one is only used to top the deck
-    // up to two pages, never three.
-    var _roomCards = _rooms.map(function (r) {
-      var _d = String(r.desc || '');
-      if (_covidRx.test(_d)) _d = '';
-      if (_d.length > 170) {
-        // FIRST complete sentence or nothing — never a fragment, never more
-        // than the visual box can hold (Nick: 'the ads cut out words').
-        var _pe = _d.slice(0, 240).search(/[.!?](\s|$)/);
-        _d = (_pe > 40) ? _d.slice(0, _pe + 1) : '';
-      }
-      return { r: r, rd: _d.trim() };
-    });
-    // No copy, no page. Novotel Montréal's three rooms all trim to nothing, so
-    // topping the deck up with them just produced pages carrying a room name
-    // and a bed count — filler on an advertisement. Fewer, fuller pages.
-    _roomCards = _roomCards.filter(function (c) { return c.rd.length > 25; });
-    _roomsHtml = _roomCards.slice(0, 3).map(function (c) {
-      var r = c.r, _rd = c.rd;
-      // Split the long feed name into TITLE + DETAILS lines (Nick: 'ROOM
-      // NAME / DETAILS, two sentences') — first comma/period ends the title.
-      var _rn = String(r.name || '').trim();
-      var _rSp = _rn.search(/[,.]|\s[–·-]\s/);
-      var _rTitle = (_rSp > 3) ? _rn.slice(0, _rSp).trim() : _rn;
-      var _rSub = (_rSp > 3) ? _rn.slice(_rSp + 1).replace(/^[\s,.·–-]+/, '').trim() : '';
-      return '<div class="axr-page">'
-        + _heroImg(r.photo || _ph1) + '<div class="axr-hero-grad"></div>'
-        + '<div class="axr-hotel">'
-        + logoHtml
-        // Brands whose logo is just the wordmark (Novotel etc.) carry the
-        // property name under it (Nick); property lockups (Fairmont…)
-        // already have the name inside the artwork.
-        +   (lockupHasName ? '' : '<div class="axr-room-hotel">' + esc(displayName) + '</div>')
-        +   '<div class="axr-page-ctx axr-room-name">' + esc(_rTitle) + '</div>'
-        +   (_rSub ? '<div class="axr-room-details">' + esc(_rSub) + '</div>' : '')
-        // Room pages carry NO amenity list — title, subtitle, one paragraph,
-        // like the brand sites (Nick: 'All hotels should be this way').
-        +   (_rd ? '<p class="axr-blurb">' + esc(_rd) + '</p>' : '')
-        + '</div></div>';
-    }).join('');
-  } catch (e) { _roomsHtml = ''; }
+  // NO ROOM PAGES. Nick: 'remove the rooms and do as I asked' — the card is
+  // about what the HOTEL offers, not its bedroom inventory. The room photos
+  // still feed the hero rotation (he kept those: 'you can still show the
+  // pictures of rooms if its a part of the main display'); only the per-room
+  // pages are gone.
 
-  // Footer — just the ALL mark, centered (per Nick: "ALL only, centered").
-  var _footerHtml = '<footer class="axr-all axr-all-simple">'
+  // Footer — the ALL mark, centered. For brands whose wordmark came out of the
+  // identity slot it now sits here beside ALL (Nick: 'the Novotel logo can go
+  // with the ALL logo at the bottom, that is approved'). Lockup brands keep
+  // the footer they had: ALL alone.
+  // EVERY brand signs the footer, Fairmont and Sofitel included — 'brand mark
+  // | ALL', the way fairmont.com signs its own pages (Nick). Always the
+  // BRAND-level wordmark, never the property lockup: a lockup is drawn for a
+  // full-height slot and clips to its first few letters at footer size, which
+  // is the 'Fair' beside the ALL mark Nick photographed.
+  var _brandMark = _accorBrandMark(brandWord, brandRaw, ad.brand);
+  // axr-all-svg + data-crop hands the mark to the existing lockup cropper,
+  // which inlines the SVG and swaps in the ink bounds — without it most of
+  // these marks float in a 70x40 box and read tiny however large the box is.
+  var _brandCrop = '';
+  try { _brandCrop = _accorBrandMarkCrop(brandWord, brandRaw, ad.brand); } catch (e) {}
+  var _footerBrand = _brandMark
+    ? '<span class="axr-all-brand"><img class="axr-all-svg" src="' + esc(_brandMark)
+      + '" data-crop="' + esc(_brandCrop) + '" alt="' + esc(brandWord || brandRaw || 'Hotel') + '"></span>'
+      + '<span class="axr-all-sep"></span>'
+    : '';
+  var _footerHtml = '<footer class="axr-all axr-all-simple' + (_footerBrand ? ' axr-all-cobrand' : '') + '">'
+    + _footerBrand
     + '<span class="axr-all-mark"><img src="/logos/hotels/accor-corporate/all-mark-white.svg" alt="ALL"></span>'
     + '</footer>';
 
   return ''
     + '<article class="axr axr-'+esc(tier)+'" data-ad-brand="accor" data-brand-tier="'+esc(tier)+'" data-brand-code="'+esc(String(ad.brand||'').toUpperCase())+'" data-hotel-id="'+esc(String(ad.hotelId||_fullName||''))+'" style="--axr-tint:'+tint+'">'
     +   '<section class="axr-hero axr-pages">'
-    +     _page1 + _page2 + _page3 + _roomsHtml
+    +     _page1 + _page2 + _page3
     +   '</section>'
     +   _footerHtml
     + '</article>';
@@ -33729,12 +34231,12 @@ function renderGateAd(index) {
   }
 
   // The key must change when the CONTENT does. An 80-character prefix is
-  // identical for every Accor card of the same tier, so the repaint that
-  // carried a hotel's freshly-loaded room pages was discarded as a no-op: the
-  // deck stayed three pages long while the dwell logic reasoned about six, and
-  // the rooms only ever appeared the NEXT time that hotel came round. Length
-  // plus a longer prefix separates a 3-page deck from a 6-page one and one
-  // hotel from another.
+  // identical for every Accor card of the same tier, so a repaint carrying
+  // freshly-loaded copy was discarded as a no-op and only appeared the NEXT
+  // time that hotel came round. Length plus a longer prefix separates a
+  // two-page deck from a three-page one, and one hotel from another — it also
+  // separates a card built in one language alone from the same card once the
+  // board's second language has landed and both columns can be drawn.
   var newKey = slot + '|' + (html ? (html.length + '|' + html.substring(0, 220)) : '');
   // `&& el.firstChild` — the memo says "this slide is already painted", so
   // skipping is only safe while something is actually ON the panel. The
@@ -34125,11 +34627,10 @@ function _getGateAdDwellMs(slide) {
   if (slide.type === 'ad') {
     var ad = slide.data || {};
     // Accor hotel ads (real photo, brand lockup) — longest dwell. The deck
-    // is 3 base pages + up to 3 room pages (10s each), so size the dwell to
-    // the ACTUAL page count or the carousel advances mid-deck and chops the
-    // first room page after ~1s. The slide is already rendered when this
-    // runs, so count the live .axr-page panels; fall back to the detail
-    // cache, then to the base 3.
+    // is up to 3 pages (10s each), so size the dwell to the ACTUAL page count
+    // or the carousel advances mid-deck and chops the last page after ~1s.
+    // The slide is already rendered when this runs, so count the live
+    // .axr-page panels; fall back to 3.
     if (ad.isAccorHotel) {
       var _axN = 0;
       try {
@@ -34147,17 +34648,9 @@ function _getGateAdDwellMs(slide) {
           _axN++;
         }
       } catch (e) {}
-      if (!_axN && ad.hotelId && typeof ACCOR_HOTEL_DETAIL_CACHE !== 'undefined') {
-        try {
-          var _axL = 'en';
-          if (typeof langs !== 'undefined' && langs && langs[langIdx || 0]) _axL = langs[langIdx || 0];
-          else if (typeof lang !== 'undefined' && lang) _axL = lang;
-          var _axD = ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId + '|' + _axL] || ACCOR_HOTEL_DETAIL_CACHE[ad.hotelId] || null;
-          if (_axD && Array.isArray(_axD.rooms)) {
-            _axN = 3 + Math.min(3, _axD.rooms.filter(function (r) { return r && r.name; }).length);
-          }
-        } catch (e) {}
-      }
+      // The room-cache estimate is gone with the room pages: the deck is the
+      // three base pages, and page 2 drops itself when the hotel has no copy,
+      // so the live count above is the only figure that can be wrong-by-one.
       if (!_axN) _axN = 3;
       return _axN * 10000 + 1000; // full dwell per page + fade buffer
     }

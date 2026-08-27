@@ -60,6 +60,61 @@
   line-height:1.46; opacity:.94; max-width:88%; letter-spacing:.01em;
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 .axr-sub-rating{ margin-top:calc(var(--axr-info) * 0.3); }
+/* ── IDENTITY ROW ─────────────────────────────────────────────────────────
+   Nick: the wordmark and the hotel name on one line, wordmark smaller. Only
+   brands whose logo is a bare wordmark (Novotel, Mercure, Pullman, ibis…)
+   render this row; a property lockup carries the name inside its artwork and
+   never enters it, so Fairmont and Sofitel are untouched. The wordmark scales
+   to the row rather than to the block, which is what shrinks it. */
+   Brands with a proper property lockup — Fairmont, Sofitel, anything whose
+   artwork carries the property name — never reach this and are untouched.
+   Everything else writes its name instead of showing its wordmark, one line,
+   'Novotel Toronto Centre'. The wordmark moves to the footer beside ALL. */
+.axr .axr-idtext{ font-family:var(--axr-display); font-weight:700;
+  font-size:var(--axr-logo); line-height:1.06; letter-spacing:-.008em;
+  color:#fff; margin:0; flex:0 0 auto; max-width:100%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Footer co-brand: the property's wordmark, a hairline, then the ALL
+   signature — the pair centred together. */
+.axr-all.axr-all-cobrand{ gap:clamp(14px,1.7vw,28px); }
+/* Sized to read WITH the ALL mark beside it (clamp(40px,5.4vh,58px)), not
+   under it — several brand scripts carry a lot of internal whitespace and sit
+   a size down from their box, so near-parity is what actually looks equal. */
+.axr-all .axr-all-brand{ height:clamp(38px,5.1vh,55px); display:flex; align-items:center; }
+.axr-all .axr-all-brand img, .axr-all .axr-all-brand svg{
+  height:100%; width:auto; max-width:min(30vw,340px); display:block; opacity:.96;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
+.axr-all .axr-all-sep{ width:1px; height:clamp(18px,2.4vh,28px);
+  background:rgba(255,255,255,.3); flex:0 0 auto; }
+/* ── BILINGUAL COLUMNS ───────────────────────────────────────────────────
+   Nick: 'have them bilingual … in the languages the airport is in, so the 2
+   if 2 languages at the same time same screen'. Nothing announces which is
+   which — the hairline between them is the only separator ('You dont need to
+   announce English or french'). Collapses to one full-width column when the
+   second language hasn't loaded, so the card is never half empty. */
+.axr-bi{ display:grid; grid-template-columns:1fr 1px 1fr; gap:clamp(18px,2vw,34px);
+  align-items:start; min-height:0; }
+.axr-bi.axr-bi-1{ grid-template-columns:1fr; gap:0; }
+.axr-bi-col{ min-width:0; }
+.axr-bi-rule{ align-self:stretch; width:1px; border-radius:1px;
+  background:linear-gradient(180deg, transparent, rgba(255,255,255,.26) 14%,
+                                     rgba(255,255,255,.26) 86%, transparent); }
+/* Inside a column the copy already has half the panel — the 88% cap the
+   single-column layout uses would narrow it a second time. A column runs about
+   31 characters to the line against 60 at full width (measured on the live
+   card at 410px), so copy that fitted the 4-line clamp before now needs 6–7;
+   without this the paragraph is chopped mid-word instead of merely being
+   narrower. The block still caps against .axr-hotel's max-height.
+   Justification also goes: at 60 characters to the line it is invisible, at 31
+   it opens rivers of white space across a four-word line ('quelques  pas  des
+   principales'). */
+.axr-bi .axr-blurb{ max-width:100%; -webkit-line-clamp:7; text-align:start; }
+.axr-bi .axr-fai-feats span{ line-height:1.5; }
+/* A short line (a distance, the QR invitation) carries its second language
+   inline behind a thin rule rather than claiming a whole column. */
+.axr-bi-sep{ display:inline-block; flex:0 0 auto; width:1px; height:.95em;
+  vertical-align:-.12em; margin:0 .62em; background:rgba(255,255,255,.34); }
+.axr-bi-line{ display:block; }
 /* Footer — ALL mark only, centered, over a gradient-gold hairline */
 .axr-all.axr-all-simple{ justify-content:center !important; background:var(--all-blue) !important;
   border-top:none !important; position:relative; }
@@ -165,7 +220,8 @@
 .axr-hotel::before,
 .axr-logo, .axr-name, .axr-sub,
 .axr-page-ctx, .axr-room-hotel, .axr-room-name{ flex:0 0 auto; }
-.axr-hotel .axr-list, .axr-hotel .axr-blurb{ flex:0 1 auto; min-height:0; overflow:hidden; }
+.axr-hotel .axr-list, .axr-hotel .axr-blurb,
+.axr-hotel .axr-bi{ flex:0 1 auto; min-height:0; overflow:hidden; }
 /* Accent grounding bar above the content block — gradient gold, brand-tinted
    brands override --axr-goldgrad via their accent (generated section). */
 .axr-hotel::before{ content:""; width:clamp(36px,3.4vw,56px); height:3px; border-radius:2px;

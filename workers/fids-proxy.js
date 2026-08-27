@@ -3640,10 +3640,35 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     if (path.startsWith("/accor/")) {
       const accorPath = path.replace("/accor", "");
       const accorUrl = `https://api.accor.com${accorPath}${url.search}`;
-      // Forward the caller's Accept-Language so Accor returns localized
-      // (e.g. French) descriptions/amenities. Without this it always
-      // defaults to English — Canada requires both languages equally.
-      const acceptLang = request.headers.get("Accept-Language") || "en";
+      // v23273 — DERIVE Accept-Language FROM ?language=, DO NOT JUST FORWARD.
+      //
+      // Accor localizes on the Accept-Language HEADER ONLY. Measured against
+      // the live API: `?language=fr` alone returns English on both the list
+      // and the single-hotel endpoints; the same request with an fr header
+      // returns French. And Accept-Language is a FORBIDDEN HEADER NAME in the
+      // browser — a page's fetch() cannot set it, the browser silently drops
+      // it and substitutes the viewer's own locale.
+      //
+      // So the board asked for French, could not say so in the one place that
+      // counts, and cached English under its French key. That is the whole of
+      // the recurring 'ads half french half english' (Nick, repeatedly): the
+      // French request was never French.
+      //
+      // The query param is the only language signal a page CAN control, so it
+      // is now authoritative here, with the forwarded header as the fallback
+      // for non-browser callers.
+      const _langParam = (url.searchParams.get("language") || "").trim().toLowerCase();
+      const _ACCEPT_BY_LANG = {
+        fr: "fr-CA,fr;q=0.9,en;q=0.3", en: "en-CA,en;q=0.9",
+        es: "es-ES,es;q=0.9,en;q=0.3", de: "de-DE,de;q=0.9,en;q=0.3",
+        it: "it-IT,it;q=0.9,en;q=0.3", pt: "pt-PT,pt;q=0.9,en;q=0.3",
+        ja: "ja-JP,ja;q=0.9,en;q=0.3", zh: "zh-CN,zh;q=0.9,en;q=0.3",
+        ar: "ar-SA,ar;q=0.9,en;q=0.3"
+      };
+      const acceptLang = (/^[a-z]{2}$/.test(_langParam) && _ACCEPT_BY_LANG[_langParam])
+        || (_langParam ? `${_langParam},en;q=0.3` : null)
+        || request.headers.get("Accept-Language")
+        || "en";
       try {
         const response = await fetch(accorUrl, {
           headers: {
