@@ -60,6 +60,31 @@
   line-height:1.46; opacity:.94; max-width:88%; letter-spacing:.01em;
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 .axr-sub-rating{ margin-top:calc(var(--axr-info) * 0.3); }
+/* ── IDENTITY ROW ─────────────────────────────────────────────────────────
+   Nick: the wordmark and the hotel name on one line, wordmark smaller. Only
+   brands whose logo is a bare wordmark (Novotel, Mercure, Pullman, ibis…)
+   render this row; a property lockup carries the name inside its artwork and
+   never enters it, so Fairmont and Sofitel are untouched. The wordmark scales
+   to the row rather than to the block, which is what shrinks it. */
+   Brands with a proper property lockup — Fairmont, Sofitel, anything whose
+   artwork carries the property name — never reach this and are untouched.
+   Everything else writes its name instead of showing its wordmark, one line,
+   'Novotel Toronto Centre'. The wordmark moves to the footer beside ALL. */
+.axr .axr-idtext{ font-family:var(--axr-display); font-weight:700;
+  font-size:var(--axr-logo); line-height:1.06; letter-spacing:-.008em;
+  color:#fff; margin:0; flex:0 0 auto; max-width:100%;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* Footer co-brand: the property's wordmark, a hairline, then the ALL
+   signature — the pair centred together. */
+.axr-all.axr-all-cobrand{ gap:clamp(14px,1.7vw,28px); }
+/* Sized against the ALL mark beside it (clamp(40px,5.4vh,58px)) rather than
+   smaller for its own sake — several brand scripts carry a lot of internal
+   whitespace and read a size down from their box. */
+.axr-all .axr-all-brand{ height:clamp(30px,4.1vh,44px); display:flex; align-items:center; }
+.axr-all .axr-all-brand img{ height:100%; width:auto; display:block; opacity:.96;
+  filter:drop-shadow(0 1px 3px rgba(0,0,0,.4)); }
+.axr-all .axr-all-sep{ width:1px; height:clamp(18px,2.4vh,28px);
+  background:rgba(255,255,255,.3); flex:0 0 auto; }
 /* ── BILINGUAL COLUMNS ───────────────────────────────────────────────────
    Nick: 'have them bilingual … in the languages the airport is in, so the 2
    if 2 languages at the same time same screen'. Nothing announces which is

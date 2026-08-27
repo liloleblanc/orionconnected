@@ -29994,6 +29994,68 @@ function _accorCacheFor(iata) {
       || null;
 }
 
+// Brand-level wordmarks, one per brand — NOT property lockups. The footer
+// signs every card 'brand mark | ALL' the way fairmont.com does (Nick), and a
+// property lockup cannot be used there: drawn for a full-height slot, it
+// clips to the first few letters at footer size — the 'Fair' beside the ALL
+// mark Nick photographed. Generated from the files actually on disk, so the
+// repo's own reference test catches any path that stops resolving.
+var ACCOR_BRAND_MARKS = {
+  '21cmuseumhotels':'/logos/hotels/accor-luxury/21cmuseum-monochrome-white.svg',
+  '25hours':'/logos/hotels/accor-midscale/25th-monochrome-white.svg',
+  'adagio':'/logos/hotels/accor-midscale/adagiooriginal-monochrome-white.svg',
+  'angsana':'/logos/hotels/accor-premium/angsana-monochrome-white.svg',
+  'artseries':'/logos/hotels/accor-premium/artseries-monochrome-white.svg',
+  'banyantree':'/logos/hotels/accor-luxury/banyan-monochrome-white.svg',
+  'breakfree':'/logos/hotels/accor-midscale/BreakFree-monochrome-white.svg',
+  'delano':'/logos/hotels/accor-luxury/delano-monochrome-white.svg',
+  'emblems':'/logos/hotels/accor-luxury/emblems-monochrome-white.svg',
+  'faena':'/logos/hotels/accor-luxury/faena-monochrome-white.svg',
+  'fairmont':'/logos/hotels/accor-luxury/fairmont-monochrome-white.svg',
+  'grandmercure':'/logos/hotels/accor-midscale/grandmercure-monochrome-white.svg',
+  'greet':'/logos/hotels/accor-economy/greet-monochrome-white.svg',
+  'handwrittencollection':'/logos/hotels/accor-midscale/handwritten-monochrome-white.svg',
+  'hotelf1':'/logos/hotels/accor-economy/hotelF1-monochrome-white.svg',
+  'hyde':'/logos/hotels/accor-luxury/hyde-monochrome-white.svg',
+  'ibis':'/logos/hotels/accor-economy/ibis-monochrome-white.svg',
+  'ibisbudget':'/logos/hotels/accor-economy/ibisbudget-monochrome-white.svg',
+  'ibisstyles':'/logos/hotels/accor-economy/ibisstyles-monochrome-white.svg',
+  'jo&joe':'/logos/hotels/accor-economy/jo&joe-monochrome-white.svg',
+  'mamashelter':'/logos/hotels/accor-midscale/mamashelter-monochrome-white.svg',
+  'mantis':'/logos/hotels/accor-luxury/mantis-monochrome-white.svg',
+  'mantra':'/logos/hotels/accor-midscale/mantra-monochrome-white.svg',
+  'mercure':'/logos/hotels/accor-midscale/mercure-monochrome-white.svg',
+  'mgallery':'/logos/hotels/accor-premium/mgallery-monochrome-white.svg',
+  'mondrian':'/logos/hotels/accor-luxury/mondrian-monochrome-white.svg',
+  'morgansoriginals':'/logos/hotels/accor-midscale/morgansoriginals-monochrome-white.svg',
+  'movenpick':'/logos/hotels/accor-premium/movenpick-monochrome-white.svg',
+  'novotel':'/logos/hotels/accor-midscale/novotel-monochrome-white.svg',
+  'orientexpress':'/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg',
+  'peppers':'/logos/hotels/accor-midscale/peppers-monochrome-white.svg',
+  'pullman':'/logos/hotels/accor-premium/pullman-monochrome-white.svg',
+  'raffles':'/logos/hotels/accor-luxury/raffles-monochrome-white.svg',
+  'rixos':'/logos/hotels/accor-luxury/rixos-monochrome-white.svg',
+  'sls':'/logos/hotels/accor-luxury/SLS-monochrome-white.svg',
+  'sofitel':'/logos/hotels/sofitel/sofitel-monochrome-white.svg',
+  'sofitellegend':'/logos/hotels/accor-luxury/sofitellegend-monochrome-white.svg',
+  'swissotel':'/logos/hotels/accor-premium/swissotel-monochrome-white.svg',
+  'thehoxton':'/logos/hotels/accor-midscale/thehoxton-monochrome-white.svg',
+  'thesebel':'/logos/hotels/accor-midscale/thesebel-monochrome-white.svg',
+  'tribe':'/logos/hotels/accor-midscale/tribe-monochrome-white.svg'
+};
+function _accorBrandMark(brandWord, brandRaw, brandCode) {
+  function k(s){ return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9&]/g, ''); }
+  // The brand CODE is the canonical identifier and the only one guaranteed to
+  // be present \u2014 brandWord is inferred from the property name and comes back
+  // empty whenever the name does not spell the brand out.
+  var byCode = '';
+  try { byCode = (typeof ACCOR_BRAND_NAMES !== 'undefined' && ACCOR_BRAND_NAMES[String(brandCode || '').toUpperCase()]) || ''; } catch (e) {}
+  return ACCOR_BRAND_MARKS[k(brandWord)]
+      || ACCOR_BRAND_MARKS[k(byCode)]
+      || ACCOR_BRAND_MARKS[k(brandRaw)]
+      || '';
+}
+
 // Accor brand colors
 var ACCOR_BRAND_COLORS = {
   'FAI':'#B88D5B','SOF':'#1a1a2e','PUL':'#2d2d3f','MGH':'#8B0000','NOV':'#6B8E23',
@@ -33010,14 +33072,34 @@ function buildAccorAdOnlyV6(ad) {
   // repeating it as the page context printed the name twice (Nick). Pages
   // with a lockup logo get no extra name line.
   var _ctxName   = lockupHasName ? '' : '<div class="axr-page-ctx">'+esc(displayName)+'</div>';
+  // IDENTITY (Nick). A property that already has its proper logo — Fairmont,
+  // Sofitel, and every other property-lockup brand — DOES NOT CHANGE: the
+  // artwork stays where and how it was. Everything else stops showing its
+  // brand wordmark up here and simply writes the name on one line, 'Novotel
+  // Toronto Centre', with the wordmark moved to the footer beside ALL.
+  //
+  // The test is whether the property HAS a lockup, not whether the lockup's
+  // artwork happens to contain the name. Keying it on the name detection was
+  // wrong twice over: a Fairmont whose lockup had not resolved yet fell to the
+  // text treatment and then had its property lockup pushed into the footer,
+  // where it clipped to 'Fair' beside the ALL mark; and Sofitel took the text
+  // path outright. Both are brands Nick said must not change.
+  var _hasPropertyLockup = !!(ad._propertyLockup || _inlineLockup);
+  var _useTextId = !_hasPropertyLockup && !lockupHasName;
+  function _idRow(nameHtml) {
+    // Lockup brands: exactly the markup they had — artwork, then the name line
+    // if their artwork does not already carry it.
+    if (!_useTextId) return logoHtml + (nameHtml || '');
+    return '<div class="axr-idtext">' + esc(_fullName) + '</div>';
+  }
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
   var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
 
   // Page 1 — LOCATION: logo, name, address, distance, stars
   var _page1 = '<div class="axr-page axr-page-on">'
     + _heroImg(_ph0) + '<div class="axr-hero-grad"></div>'
-    + '<div class="axr-hotel">' + logoHtml
-    +   (showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '')
+    + '<div class="axr-hotel">'
+    +   _idRow(showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '')
     +   _addrLineHtml + _locLineHtml + _starsRow
     + '</div></div>';
   // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com (Nick:
@@ -33133,7 +33215,7 @@ function buildAccorAdOnlyV6(ad) {
   var _page2 = (!_p2a && !_p2b) ? '' : '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
-    + logoHtml + _ctxName
+    + _idRow(_ctxName)
     +   _biCols(_p2a, _p2b)
     + '</div></div>';
   // Page 3 — THE DESTINATION: what's around the hotel, its real dining, the
@@ -33159,7 +33241,7 @@ function buildAccorAdOnlyV6(ad) {
     + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
     + bubbleHtml
     + '<div class="axr-hotel">'
-    + logoHtml + _ctxName
+    + _idRow(_ctxName)
     +   _p3Body
     + '</div></div>';
 
@@ -33169,8 +33251,22 @@ function buildAccorAdOnlyV6(ad) {
   // pictures of rooms if its a part of the main display'); only the per-room
   // pages are gone.
 
-  // Footer — just the ALL mark, centered (per Nick: "ALL only, centered").
-  var _footerHtml = '<footer class="axr-all axr-all-simple">'
+  // Footer — the ALL mark, centered. For brands whose wordmark came out of the
+  // identity slot it now sits here beside ALL (Nick: 'the Novotel logo can go
+  // with the ALL logo at the bottom, that is approved'). Lockup brands keep
+  // the footer they had: ALL alone.
+  // EVERY brand signs the footer, Fairmont and Sofitel included — 'brand mark
+  // | ALL', the way fairmont.com signs its own pages (Nick). Always the
+  // BRAND-level wordmark, never the property lockup: a lockup is drawn for a
+  // full-height slot and clips to its first few letters at footer size, which
+  // is the 'Fair' beside the ALL mark Nick photographed.
+  var _brandMark = _accorBrandMark(brandWord, brandRaw, ad.brand);
+  var _footerBrand = _brandMark
+    ? '<span class="axr-all-brand"><img src="' + esc(_brandMark) + '" alt="' + esc(brandWord || brandRaw || 'Hotel') + '"></span>'
+      + '<span class="axr-all-sep"></span>'
+    : '';
+  var _footerHtml = '<footer class="axr-all axr-all-simple' + (_footerBrand ? ' axr-all-cobrand' : '') + '">'
+    + _footerBrand
     + '<span class="axr-all-mark"><img src="/logos/hotels/accor-corporate/all-mark-white.svg" alt="ALL"></span>'
     + '</footer>';
 
