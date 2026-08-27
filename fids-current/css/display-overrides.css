@@ -117,8 +117,18 @@ body[data-fids-airline-style="emblem"] #fidsTable .td-airline .fids-airline-name
 }
 .bidsv2-flight-meta { min-width: 0 !important; justify-content: center !important; }
 .bidsv2-airline-name,
+/* Nick: 'whenever there is a code in front for the airline it cuts off' —
+   AC7992 against a bare 7992. Measured on the rendered board at four kiosk
+   resolutions: the number self-clipped 4px VERTICALLY at every one of them,
+   and 9px horizontally in portrait.
+   line-height 1.05 built a 29px line box for glyphs that need 33px in AC Nord,
+   so the descenders were shaved on every board regardless of width — that is
+   the part that showed up even where the column was wide enough. The tracking
+   was the other half: 1px across six characters is 6px of the 9px that
+   overflowed in portrait, spent making an already-tight cell tighter. */
 .bidsv2-flight-num {
-  line-height: 1.05 !important;
+  line-height: 1.28 !important;
+  letter-spacing: 0.35px !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
@@ -14460,4 +14470,29 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    simply stop shrinking and gain nothing, so nothing else moves. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-silk .g8-r1-logoslot {
   max-width: 40% !important;
+}
+
+/* ── PORTRAIT BOARDS ─────────────────────────────────────────────────────
+   Measured at 1080x1920, the resolution portrait kiosks actually run: the
+   flight number needed 109px in a 100px cell (8.3% over) and the column
+   heading 123px in 111px (9.8%). The row grid is four ~174px columns and the
+   flight cell spends 58px of its share on the airline block plus a 16px gap,
+   leaving 100px for 'AC7992'. Landscape has the room and is left alone —
+   scoped on aspect ratio rather than width so a 1366px landscape board does
+   not get shrunk for a problem it does not have. */
+@media (max-aspect-ratio: 1/1) {
+  .bidsv2-col-flight {
+    grid-template-columns: 50px minmax(0, 1fr) !important;
+    gap: 10px !important;
+    letter-spacing: 0.4px !important;
+  }
+  .bidsv2-airline-block {
+    width: 50px !important; height: 50px !important;
+    min-width: 50px !important; min-height: 50px !important;
+  }
+  .bidsv2-flight-num { font-size: 25px !important; }
+  /* Same squeeze on the origin column: 'Montreal | YUL' ran 6px past its
+     cell. The city name is the part worth keeping whole, so the type comes
+     down rather than the name being ellipsised. */
+  .bidsv2-col-from { font-size: 21px !important; letter-spacing: 0.3px !important; }
 }
