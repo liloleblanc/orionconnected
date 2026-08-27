@@ -14430,3 +14430,24 @@ html body.g8-header-is-light .octb-apsep { color: #1d2b45 !important; opacity: 0
    code follows the same scale rather than its own clamp. */
 html .octb-tab.octb-stack .octb-ap { font-size: min(3.1vh, 44px, 19cqh) !important; }
 html .octb-tab.octb-stack .octb-apsep { font-size: min(2.6vh, 37px, 16cqh) !important; }
+
+/* ── v23289 — THE GATE'S CHROME LOCK ────────────────────────────────────
+   A gate or baggage screen must never show the board's banner, ticker,
+   table, header or view selector — whichever show path ran last (Nick:
+   'the old screen banner still appears'). Earlier this was done by deleting
+   the elements, which permanently destroyed the board: a switch back to FIDS
+   or BIDS had nothing to render into and came up blank. The elements stay;
+   this rule outranks the inline `style.display = ''` those show paths write,
+   and _applyScreenChrome() clears the attribute the moment the board is the
+   screen again. gids.html carries the same rule inline in <head> so a gate
+   boot never paints the banner even for one frame. */
+html[data-screen-type="gate"] #fidsBanner,
+html[data-screen-type="gate"] .ticker,
+html[data-screen-type="gate"] .content-area,
+html[data-screen-type="gate"] .hdr,
+html[data-screen-type="gate"] .view-selector,
+html[data-screen-type="baggage"] #fidsBanner,
+html[data-screen-type="baggage"] .ticker,
+html[data-screen-type="baggage"] .content-area,
+html[data-screen-type="baggage"] .hdr,
+html[data-screen-type="baggage"] .view-selector { display: none !important; }

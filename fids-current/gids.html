@@ -162,7 +162,7 @@
   <link rel="stylesheet" href="css/baggage-display.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23287">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23289">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (We: 'the old svreen shows up once in a while',
@@ -226,6 +226,24 @@
 html:not([data-screen-ready]) #fidsBanner,
 html:not([data-screen-ready]) .ticker,
 html:not([data-screen-ready]) .content-area { display: none !important; }
+/* v23289 — THE GUARD ABOVE LIFTS TOO EARLY. It releases the moment the screen
+   TYPE is settled, which is several frames before the gate has actually
+   rendered — so on a gate boot the board banner painted in that gap and the
+   first thing on screen was the old departures banner (Nick: 'First screen I
+   saw while it loaded was the old banner'). data-screen-type is stamped in the
+   SAME breath as data-screen-ready, from the type that was just decided, and
+   for a gate or baggage screen it never lifts. The runtime deletion of these
+   nodes still happens; this is what covers the frames before it runs. */
+html[data-screen-type="gate"] #fidsBanner,
+html[data-screen-type="gate"] .ticker,
+html[data-screen-type="gate"] .content-area,
+html[data-screen-type="gate"] .hdr,
+html[data-screen-type="gate"] .view-selector,
+html[data-screen-type="baggage"] #fidsBanner,
+html[data-screen-type="baggage"] .ticker,
+html[data-screen-type="baggage"] .content-area,
+html[data-screen-type="baggage"] .hdr,
+html[data-screen-type="baggage"] .view-selector { display: none !important; }
 </style>
 </head>
 <body data-page="gids">
@@ -843,7 +861,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23288"></script>
+<script src="js/fids-core.js?v=23289"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -932,6 +950,12 @@ window.addEventListener("DOMContentLoaded", async function() {
     // The screen type is settled by this point — release the pre-flash
     // guard in <head> so anything genuinely wanted can paint (v23172).
     try { document.documentElement.setAttribute('data-screen-ready', '1'); } catch (e) {}
+    // v23289 — stamp the SETTLED screen type in the same breath, so the
+    // chrome lock is in force from the first painted frame. Releasing
+    // data-screen-ready alone let the board banner paint in the frames
+    // before the gate rendered (Nick: 'First screen I saw while it loaded
+    // was the old banner').
+    try { if (typeof _applyScreenChrome === 'function') _applyScreenChrome(); } catch (e) {}
 
     if (startMode === 'live') {
       LIVE_MODE = true;

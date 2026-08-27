@@ -1556,16 +1556,28 @@ let screenType = 'main';
 // chrome is never coming back within this page load — a mode change reloads.
 // Removed from the DOM, every show path and the watchdog find nothing and
 // no-op, permanently.
-function _deleteBoardChromeForGate() {
+// v23289 — REMOVING THE NODES WAS WRONG. The paragraph above assumed a mode
+// change reloads the page. It does not: changeScreenType() swaps the screen
+// in place and RESTORES the board chrome by clearing its inline display. With
+// the elements deleted there was nothing to restore, so the first switch to
+// GATE permanently destroyed the board — FIDS and BIDS came back blank and the
+// gate selector was gone with the rest of it (Nick: 'It only happens when on
+// Gate ... until you get to GATE then it wont move').
+//
+// The requirement was never destruction, it was AUTHORITY: the banner must not
+// reappear on a gate screen no matter which show path runs. A state attribute
+// on <html> gives exactly that. The stylesheet rule keyed on it carries
+// !important, so it outranks every `el.style.display = ''` in the codebase,
+// while the elements stay in the document and the board can come back.
+function _applyScreenChrome() {
   try {
-    ['#fidsBanner', '.ticker', '#fidsTable', '.hdr', '.view-selector'].forEach(function (sel) {
-      document.querySelectorAll(sel).forEach(function (el) {
-        if (el && el.parentNode) el.parentNode.removeChild(el);
-      });
-    });
+    var st = (typeof screenType !== 'undefined') ? screenType : 'main';
+    var root = document.documentElement;
+    if (st === 'gate' || st === 'baggage') root.setAttribute('data-screen-type', st);
+    else root.removeAttribute('data-screen-type');
   } catch (e) {}
 }
-if (typeof window !== 'undefined') window._deleteBoardChromeForGate = _deleteBoardChromeForGate;
+if (typeof window !== 'undefined') window._applyScreenChrome = _applyScreenChrome;
 
 let subScreenVal = '';
 
@@ -1751,6 +1763,7 @@ function changeScreenType(val) {
     const _bn2 = document.getElementById('fidsBanner');   if (_bn2) _bn2.style.display = '';
     const vs = document.querySelector('.view-selector');
     if (vs) vs.style.display = '';
+    _applyScreenChrome();   // back on the board — release the gate's chrome lock
     render();
   } else {
     subSel.style.display = 'inline-block';
@@ -2021,7 +2034,7 @@ function submitTestFlight() {
 
   // Switch to gate screen for this gate
   screenType = 'gate';
-  _deleteBoardChromeForGate();   // the board's chrome is removed, not hidden
+  _applyScreenChrome();   // board chrome is hidden by state, never removed
   document.getElementById('screenTypeSel').value = 'gate';
   document.getElementById('subScreenSel').style.display = 'inline-block';
   document.getElementById('testFlightBtn').style.display = 'inline-block';
@@ -13634,8 +13647,8 @@ function renderDedicatedScreen() {
     document.body.classList.add('uxg-gate-mode');
     // Also here, not only on the switch above: a board loaded straight into
     // gate mode (gids.html?gate=4) never runs that path, and that is the case
-    // in Nick's recording. Idempotent — removing what is already gone no-ops.
-    _deleteBoardChromeForGate();
+    // in Nick's recording.
+    _applyScreenChrome();
   }
   // Light/dark board flag on DEDICATED screens too — it only ran in the main
   // board's renderer, so every light-board rule (Revised dashes, adaptive
@@ -20238,7 +20251,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23288';
+var FIDS_BUILD_TAG = 'v23289';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -20977,6 +20990,7 @@ function render() {
   const _bn = document.getElementById('fidsBanner');   if (_bn) _bn.style.display = '';
   const vsEl = document.querySelector('.view-selector');
   if (vsEl) vsEl.style.display = '';
+  _applyScreenChrome();   // back on the board — release the gate's chrome lock
 
   const tbody = document.getElementById('tbody');
   const tbl   = document.getElementById('fidsTable');

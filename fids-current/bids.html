@@ -192,7 +192,7 @@
   <link rel="stylesheet" href="css/baggage-display.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23287">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23289">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (Nick: 'the old svreen shows up once in a while',
@@ -868,7 +868,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=5"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23288"></script>
+<script src="js/fids-core.js?v=23289"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
@@ -955,6 +955,12 @@ window.addEventListener("DOMContentLoaded", async function() {
     // The screen type is settled by this point — release the pre-flash
     // guard in <head> so anything genuinely wanted can paint (v23172).
     try { document.documentElement.setAttribute('data-screen-ready', '1'); } catch (e) {}
+    // v23289 — stamp the SETTLED screen type in the same breath, so the
+    // chrome lock is in force from the first painted frame. Releasing
+    // data-screen-ready alone let the board banner paint in the frames
+    // before the gate rendered (Nick: 'First screen I saw while it loaded
+    // was the old banner').
+    try { if (typeof _applyScreenChrome === 'function') _applyScreenChrome(); } catch (e) {}
 
     if (startMode === 'live') {
       LIVE_MODE = true;
