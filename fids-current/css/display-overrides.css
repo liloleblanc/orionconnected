@@ -14544,3 +14544,35 @@ html.fids-portrait #fidsTable th * {
 .leaflet-pane[class*="wxradar"] img.leaflet-tile {
   mix-blend-mode: normal !important;
 }
+
+/* ── v23297 — THE AIRPORT CODE MATCHES THE CLOCK, EVERY LOCATION ────────
+   Nick: 'the YQM ... should be as big as the time and that goes for all
+   locations'. It shipped a size down on the reasoning that the time is what
+   reads across a hall; his call is that the code carries equal weight, since
+   it says WHOSE time this is. The clock comes down ~12% so the pair still
+   fits the band, and the code comes up to meet it — one size for both, in
+   every timebox variant, so no airport can drift. The separator stays
+   smaller: it is punctuation, not information. */
+html:not(#_) .octb-ap,
+html:not(#_) .octb-clock {
+  font-size: clamp(20px, 2.9vh, 38px) !important;
+}
+html:not(#_) .octb-tab .octb-ap,
+html:not(#_) .octb-tab .octb-clock {
+  font-size: clamp(27px, 4.2vh, 58px) !important;
+}
+html:not(#_) .octb-tab.octb-stack .octb-ap,
+html:not(#_) .octb-tab.octb-stack .octb-clock {
+  font-size: min(5.1vh, 72px, 32cqh) !important;
+}
+html:not(#_) .octb-apsep {
+  font-size: clamp(16px, 2.4vh, 34px) !important;
+  opacity: .5 !important;
+}
+/* The deepened-accent block that recolours .octb-clock also sizes it, at a
+   higher specificity than the rules above; the code has to be re-stated at
+   that same weight or the pair splits apart again on the silk tab. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-clock,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-ap {
+  font-size: clamp(34px, 5.8vh, 56px) !important;
+}
