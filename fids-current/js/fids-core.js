@@ -8329,17 +8329,25 @@ function _buildV2MapCol(ctx, vars) {
   // The panel now keeps the inbound card and lets its wording carry through
   // arrived -> at the gate.
   var _arrivedSwitch = false;
+  var _noInboundYet = false;
   try {
     var _ibSw = vars.inboundFlight;
     if (_ibSw) {
       // (no post-arrival switch — see above)
     } else {
-      // NO inbound tracked at all (early-morning departures, feeds without
-      // aircraft rotation): the panel used to render near-EMPTY — no card,
-      // no aircraft info (Nick: 'theres no aircraft info'). Show the same
-      // DEPARTURE card that already takes over post-arrival: this flight,
-      // destination, times, status — with the aircraft block below it.
-      _arrivedSwitch = true;
+      // v23295 — NO inbound tracked. This used to flip to the DEPARTURE card,
+      // and that is the bug Nick reported three times ('Im still seeing
+      // fucking departures on the bottom right panel'). The panel is the
+      // incoming aircraft's, so a departure has no business on it in any
+      // state — the departure is already on the other side of the screen.
+      // v23284 removed the post-arrival switch but kept THIS one, so nothing
+      // changed on a gate whose inbound is not tracked, which is most of them
+      // early in the day.
+      // The fallback existed because the panel went near-empty. The honest
+      // answer to 'which aircraft is coming' when nothing is tracked is to say
+      // so — not to answer a different question.
+      _arrivedSwitch = false;
+      _noInboundYet = true;
     }
   } catch (e) {}
   try {
@@ -8943,6 +8951,22 @@ function _buildV2MapCol(ctx, vars) {
   // Shown in place of the incoming-aircraft card once the inbound has been on
   // the ground ~5 min. Same shelf layout, but for the OUTBOUND flight: this
   // airport → destination, with a "Departing in" countdown.
+  if (_noInboundYet && !_inboundCard) {
+    _inboundCard =
+        '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
+      + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
+      +   '<div class="v2-fi-row"><div class="v2-fi-textcol">'
+      +     '<div class="v2-fi-label">' + _gateLbl('arrivingFrom', _frF, function (w, i9) {
+              return i9 ? '<span class="v2-fi-sep"> | </span>' + w : w; }, '') + '</div>'
+      // v23295 — .v2-fi-value renders empty here (it expects a structure this
+      // card does not build), so the awaiting line reuses .v2-fi-label, which
+      // is the element proven to paint in this shelf. Verified by reading the
+      // panel back out of the rendered page, not by assuming.
+      +     '<div class="v2-fi-label" style="opacity:.85;font-weight:700;">' + _gateLbl('awaitAircraft', _frF, function (w, i9) {
+              return i9 ? '<span class="v2-fi-sep"> | </span>' + w : w; }, '') + '</div>'
+      +   '</div></div>'
+      + '</div></div></div>';
+  }
   if (_arrivedSwitch) {
     try {
       var _dcf = vars.currentFlight || {};
@@ -20256,6 +20280,11 @@ var _GATE_LBL = {
   // (Nick: 'Above simply put … arriving From | En Provenance de … Or Arrivé
   // de'). The en-route and landed variants.
   arrivingFrom: { en:'Arriving From', fr:'En provenance de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
+  // v23295 — _gateLbl() reads _GATE_LBL, NOT LS; a key added to LS resolves to
+  // an empty string and the line silently vanishes, which is what happened on
+  // the first two attempts at this card. It belongs here, beside arrivingFrom,
+  // because the bottom-right panel pairs the two when no inbound is tracked.
+  awaitAircraft: { en:'Aircraft to be assigned', fr:'Appareil à confirmer', es:'Aeronave por asignar', de:'Flugzeug wird zugewiesen', it:'Aeromobile da assegnare', pt:'Aeronave a confirmar', ja:'機材未定', zh:'待定机型', ar:'الطائرة قيد التحديد' },
   arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
   // v23272 — the line that replaces the countdown once the aircraft is down.
   // v23272 — two states, not one (Nick: 'Once the aircraft arrives it should
@@ -20519,7 +20548,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23295';
+var FIDS_BUILD_TAG = 'v23296';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
