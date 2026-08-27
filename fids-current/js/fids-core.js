@@ -20131,7 +20131,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23280';
+var FIDS_BUILD_TAG = 'v23281';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -30485,6 +30485,87 @@ function _accorVerifyPublicPhotos(hotelId, seedUrl, count) {
   setTimeout(finish, ACCOR_PHOTO_PROBE_MS);
 }
 
+// ── THE SECOND LANGUAGE, PER PROPERTY ────────────────────────────────────
+// Accor returns a DIFFERENT SET OF HOTELS depending on the language asked
+// for. Measured on Montréal: the English list comes back with 4 properties,
+// the French list with 3, and Fairmont The Queen Elizabeth is in the English
+// one only. Pairing the two columns by looking the hotel up in the other
+// language's list therefore finds nothing for it, the prose collapses to one
+// column, and the card runs English-only on a bilingual board — exactly what
+// Nick caught, while the Sofitel beside it (present in both lists) was fine.
+//
+// The single-hotel endpoint has no such gap: /hotels/<id> returns the
+// property's own description, destinationDescription and advantages in
+// whatever language is asked for. So a property missing from the other
+// list is fetched on its own rather than written off.
+var ACCOR_HOTEL_TEXT_CACHE = {};   // hotelId|lang → { ts, description, … }
+
+function fetchAccorHotelText(hotelId, langWanted) {
+  if (!hotelId || !langWanted) return;
+  var key = hotelId + '|' + langWanted;
+  var cached = ACCOR_HOTEL_TEXT_CACHE[key];
+  if (cached && (Date.now() - cached.ts) < ACCOR_DETAIL_TTL) return;
+  if (window['_accorTextPending_' + key]) return;
+  window['_accorTextPending_' + key] = true;
+  var url = 'https://fids-proxy.n-leblanc1984.workers.dev/accor/catalog/v1/hotels/'
+          + encodeURIComponent(hotelId) + '?language=' + encodeURIComponent(langWanted);
+  fetch(url, { headers: { 'Accept-Language': _accorAcceptLang(langWanted) } })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      delete window['_accorTextPending_' + key];
+      var h = (d && (d.hotel || d)) || null;
+      if (!h || !h.id) return;
+      ACCOR_HOTEL_TEXT_CACHE[key] = {
+        ts: Date.now(),
+        hotelId: hotelId,
+        _adLang: langWanted,
+        description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'),
+        destinationDescription: h.destinationDescription || '',
+        advantages: Array.isArray(h.advantages) ? h.advantages : []
+      };
+      try { console.log('[ACCOR-TEXT]', key, 'fetched on its own (absent from that language\'s list)'); } catch (e) {}
+    })
+    .catch(function () { delete window['_accorTextPending_' + key]; });
+}
+if (typeof window !== 'undefined') window.fetchAccorHotelText = fetchAccorHotelText;
+
+// Reconcile the board's two language lists once both are cached. Accor's
+// result set CHANGES with the language — Montréal returns 4 properties in
+// English and 3 in French — so a hotel can be in one list and not the other,
+// in EITHER direction. Fairmont The Queen Elizabeth is in the English list
+// only, which is how it reached a bilingual board with no French on it.
+// Every gap, both ways, gets its copy fetched from the property's own
+// endpoint, which has no such gap. Fires as each list lands and does nothing
+// once cached, so the pair converges without anyone waiting on a render.
+function _accorReconcileLanguages(iata) {
+  if (!iata) return;
+  var key = String(iata).toUpperCase();
+  var pair;
+  try { pair = (typeof boardLangsFor === 'function') ? boardLangsFor(key) : ['en', 'fr']; } catch (e) { return; }
+  if (!pair || pair.length < 2) return;
+  var lists = {};
+  for (var i = 0; i < pair.length; i++) {
+    var c = ACCOR_HOTEL_CACHE[key + '|' + pair[i]];
+    if (!c || !Array.isArray(c.hotels)) return;   // both must be in to compare
+    lists[pair[i]] = c.hotels;
+  }
+  for (var a = 0; a < pair.length; a++) {
+    for (var b = 0; b < pair.length; b++) {
+      if (a === b) continue;
+      var from = lists[pair[a]], to = lists[pair[b]], want = pair[b];
+      for (var h = 0; h < from.length; h++) {
+        var id = String(from[h].hotelId || '');
+        if (!id) continue;
+        var found = false;
+        for (var t = 0; t < to.length; t++) {
+          if (String(to[t].hotelId) === id) { found = true; break; }
+        }
+        if (!found) fetchAccorHotelText(id, want);
+      }
+    }
+  }
+}
+
 function fetchAccorHotelDetail(hotelId, langWanted) {
   if (!hotelId) return;
   // Per Accor docs: Accept-Language header drives localization. Cache is
@@ -31193,6 +31274,7 @@ function _processAccorData(data, destIata, langKey) {
   }
   console.log('[ACCOR]', destIata, ': filtered', beforeFilter, '→', hotels.length, 'hotels (≤' + DOWNTOWN_THRESHOLD_KM + 'km from downtown, unknowns kept)');
   ACCOR_HOTEL_CACHE[destIata + '|' + _ckLang] = { hotels: hotels, ts: Date.now() };
+  try { _accorReconcileLanguages(destIata); } catch (e) {}
   console.log('[ACCOR] Loaded', hotels.length, 'hotels near', destIata, '(' + _ckLang + ')');
   // ── LANGUAGE PROOF (for Accor) ──────────────────────────────────────────
   // Shows EXACTLY what language Accor returned for what we requested. If we
@@ -32618,6 +32700,17 @@ function buildAccorAdOnlyV6(ad) {
       if (_c2 && Array.isArray(_c2.hotels)) {
         for (var _hi = 0; _hi < _c2.hotels.length; _hi++) {
           if (String(_c2.hotels[_hi].hotelId) === String(ad.hotelId)) { _ad2 = _c2.hotels[_hi]; break; }
+        }
+        // IN THE LIST FOR ONE LANGUAGE AND NOT THE OTHER. Accor's result set
+        // changes with the language: Montréal returns 4 properties in English
+        // and 3 in French, and Fairmont The Queen Elizabeth is in the English
+        // one only. Written off, it renders English on a bilingual board while
+        // the Sofitel next to it — in both lists — reads fine. The property's
+        // own endpoint has no such gap, so ask it directly.
+        if (!_ad2) {
+          var _t2 = ACCOR_HOTEL_TEXT_CACHE[ad.hotelId + '|' + _L2];
+          if (_t2) _ad2 = _t2;
+          else if (typeof fetchAccorHotelText === 'function') fetchAccorHotelText(ad.hotelId, _L2);
         }
       } else if (typeof fetchAccorHotels === 'function') {
         // Not loaded yet — ask for it so the next pass has both languages.
