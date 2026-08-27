@@ -27469,7 +27469,14 @@ function _wxRadarAdd(m) {
       // look terrible its squares'). Beyond z11 the z7 cells are stretched
       // 16×+ — the Toronto close-up was one giant blocky wash. Past the
       // ceiling the radar simply hides; the street/airport view stays clean.
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.5, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
+      // v23296 — the radar was invisible (Nick: 'the clouds are so faint for
+      // the weather you cant see FUCK ALL'). Two causes stacked: it was drawn
+      // at HALF opacity, and Leaflet 1.9 blends every tile with plus-lighter,
+      // which is ADDITIVE — radar's pale blues and greens added onto a
+      // near-black basemap barely move the pixels. Opacity up, and the radar
+      // pane is taken off the additive blend in CSS so its colours paint as
+      // themselves.
+      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.92, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
     } catch (e) {}
   };
   if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }

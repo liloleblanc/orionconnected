@@ -14530,3 +14530,17 @@ html.fids-portrait #fidsTable th * {
   font-size: 12px !important;
   letter-spacing: 0 !important;
 }
+
+/* ── v23296 — THE WEATHER RADAR IS ACTUALLY VISIBLE ────────────────────
+   Leaflet 1.9 sets mix-blend-mode: plus-lighter on every .leaflet-tile. That
+   is right for the basemap, and wrong for the radar overlay: additive blending
+   of pale radar colours onto a near-black map barely changes the pixels, so
+   the cloud and precipitation returns read as a faint haze (Nick: 'the clouds
+   are so faint for the weather you cant see FUCK ALL'). The radar has its own
+   pane, so it can be taken off the additive blend without touching the map
+   underneath. Paired with the opacity raise in fids-core.js. */
+.leaflet-container .leaflet-pane.leaflet-wxradar-pane img.leaflet-tile,
+.leaflet-container .leaflet-wxradar-pane img.leaflet-tile,
+.leaflet-pane[class*="wxradar"] img.leaflet-tile {
+  mix-blend-mode: normal !important;
+}
