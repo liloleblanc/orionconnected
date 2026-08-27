@@ -4132,7 +4132,16 @@ var WATERMARK_OVERRIDE = {
   'F8': '/logos/airlines/canadian/flair-mark-white.png',   // brand "flair ●" mark — white wordmark + green dot (matches the gate banner; reads on the dark sky)
   'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',
   // European
-  'BA': '/logos/airlines/european/british-airways-wordmark-light.svg',
+  // v23293 — Nick's own supplied artwork (British_Airwayslogo.eps, converted):
+  // the OFFICIAL STACKED lockup, 'BRITISH' over 'AIRWAYS' under the
+  // speedmarque ('i think it woiuld be best to have the name british with
+  // airways underneath'). It is 168.96 x 68.35 = 2.47:1 against the one-line
+  // BA-long.svg's 6.40:1, so it occupies well under half the banner width —
+  // which is the real answer to 'its simply too big'. The -white variant is
+  // BA's own reversed treatment: the speedmarque keeps its red, the blue goes
+  // white so it reads on the dark banner. The '-white' suffix also makes
+  // getLogoTreatment() classify it no_filter, so nothing re-inverts it.
+  'BA': '/logos/airlines/european/british-airways-stacked-white.svg',
   'AF': '/logos/airlines/european/air-france-wordmark-light.svg',
   'KL': '/logos/airlines/european/klm-wordmark-light.svg',
   'LH': '/logos/airlines/european/Lufthansa_Logo_2018.svg',            // Lufthansa is yellow + blue, only invisible on the very dark sky tones
@@ -11373,13 +11382,12 @@ function uxgGateHtml(ctx) {
     'PB': { h: 128, w: 470 },
     'TS': { h: 156, w: 690 },   // v22989 - Nick: 'the top logo is too small as well'
     'NZ': { h: 120, w: 540 },
-    // v23292 — BA also sat at the WIDEST declared box of its peer group (540
-    // vs 500-520) while carrying the WIDEST artwork: BA-long.svg is 241.995 x
-    // 37.833, a 6.40:1 lockup against the ~5:1 of the carriers sized beside
-    // it. Same box therefore rendered a visibly longer mark. Brought down and
-    // made aspect-true so it reads at the size of its neighbours (Nick: 'its
-    // simply too big', 'the logo has to be reduced').
-    'BA': { h: 110, w: 500 },
+    // v23293 — sized for the STACKED lockup (2.47:1), not the one-line mark.
+    // Two lines of lettering means it can stand taller in the band while
+    // taking a fraction of the width: at this box it renders ~270px wide
+    // against the ~614px the one-line lockup was reaching, which is what put
+    // it under the clock tab.
+    'BA': { h: 132, w: 340 },
     'AF': { h: 118, w: 520 },
     'KL': { h: 118, w: 520 },
     'LH': { h: 118, w: 520 },
@@ -11449,6 +11457,19 @@ function uxgGateHtml(ctx) {
     // wordmark + green dot), NOT the full "flair airlines" lockup (that's
     // reserved for advertisements). The mark is already white, so no whiten.
     'F8': { src: '/logos/airlines/canadian/flair-mark-white.png', whiten: false, h: 100, w: 480 },
+    // v23293 — BA is a TWO-ROW lockup now (Nick's own supplied artwork:
+    // 'BRITISH' over 'AIRWAYS' under the speedmarque). It has to be pinned
+    // here rather than in BANNER_SIZE_OVERRIDE, because the IATA_TO_WORDMARK
+    // branch below hardcodes _sz = { h: 102, w: 480 } for every carrier with a
+    // wordmark base and ignores that table entirely — which is why BA kept
+    // rendering 614px wide (32vw on the silk banner) no matter what the size
+    // table said, reaching x=956 with the clock tab starting at x=960. That
+    // 4px gap is the collision. Landing here also skips the wordmark branch,
+    // since it is gated on !_useOverrideFile.
+    // whiten:false — the art is BA's reversed lockup and already carries its
+    // own red and white; the invert filter would flatten it to a silhouette.
+    'BA': { src: '/logos/airlines/european/british-airways-stacked-white.svg', whiten: false, h: 132, w: 340 },
+    'BAW': { src: '/logos/airlines/european/british-airways-stacked-white.svg', whiten: false, h: 132, w: 340 },
     // Regional carriers — white monochrome marks on file, straight onto the dark banner
     '5T': '/logos/airlines/canadian-regional/canadian-north-monochrome-white.svg',
     '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
@@ -20337,7 +20358,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23292';
+var FIDS_BUILD_TAG = 'v23293';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -34967,6 +34988,15 @@ function _buildGateAdSlideList() {
       // white logo put the color logo'). The teal/navy leaf reads on the
       // navy welcome card.
       var _FB_WELCOME_LOGO = {
+        // v23293 — BA's mark was reaching the welcome card as a blank white
+        // silhouette: the speedmarque file is colour art, so the white-force
+        // filter flattened it (Nick: 'the emblem needs color everywhere').
+        // The stacked reversed lockup keeps the speedmarque's RED and takes
+        // only the blue to white, which is BA's own treatment on a dark
+        // ground — colour that actually reads on the navy card rather than
+        // colour that disappears into it.
+        'BA': '/logos/airlines/european/british-airways-stacked-white.svg',
+        'BAW': '/logos/airlines/european/british-airways-stacked-white.svg',
         'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg',
         'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
         'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
