@@ -1536,6 +1536,37 @@ if (!LIVE_MODE) {
 // ── AIRPORTS ──────────────────────────────────────────────────────────────
 // Screen type state
 let screenType = 'main';
+
+// ── BOARD CHROME IS DELETED WHEN THE GATE TAKES OVER ─────────────────────
+// Nick, repeatedly, at the top of his voice: the FIDS departures banner was
+// still on screen behind the gate header after the gate had loaded. 'IT
+// DOESNT BELONG THERE IT NEEDS TO BE DELETED ... I DONT WANT TO SEE IT ...
+// it needs to flow from one screen to another, that is why there is a
+// loading screen — dont sweep it, delete it.'
+//
+// Hiding it was never going to hold. Three separate places fight over the
+// same element: the screen-mode switch sets display:none for gate/baggage,
+// two view-restore paths set display:'' with no mode check at all, and a
+// 5-second watchdog re-shows it and will force it visible at the !important
+// level if it finds it collapsed. Whichever ran last won, and on the gate it
+// was one of the show paths.
+//
+// So the element goes, not its visibility. gids.html ships board markup
+// because the page can render either screen, but once it is a gate the board
+// chrome is never coming back within this page load — a mode change reloads.
+// Removed from the DOM, every show path and the watchdog find nothing and
+// no-op, permanently.
+function _deleteBoardChromeForGate() {
+  try {
+    ['#fidsBanner', '.ticker', '#fidsTable', '.hdr', '.view-selector'].forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+      });
+    });
+  } catch (e) {}
+}
+if (typeof window !== 'undefined') window._deleteBoardChromeForGate = _deleteBoardChromeForGate;
+
 let subScreenVal = '';
 
 // Default row/logo density: without a saved pref the body attribute was
@@ -1877,7 +1908,31 @@ function updateSubScreens() {
   });
   if (_pinned != null) { subSel.value = _pinned; subScreenVal = _pinned; return; }
   if (locations.includes(oldVal)) { subSel.value = oldVal; subScreenVal = oldVal; }
-  else { subSel.value = locations[0]; subScreenVal = locations[0]; }
+  else {
+    // A CYCLING display must not always open on the same gate. `locations` is
+    // sorted, so locations[0] is the lowest gate number — which is why every
+    // rotation was seen starting at the bottom of the list and walking up
+    // (Nick: 'rotation starts from the lowest number gate up ... this should be
+    // random not in order'). The per-cycle pick is already random; only this
+    // FIRST gate was ordered. A pinned or operator-driven screen keeps the
+    // deterministic first entry — the dropdown must open on a predictable one.
+    var _start = 0;
+    if (useGate && _gateWalkActive()) _start = Math.floor(Math.random() * locations.length);
+    subSel.value = locations[_start]; subScreenVal = locations[_start];
+  }
+}
+
+// True when this display walks gates on its own (the rotator iframe, or an
+// explicit ?gatecycle=N). Kept beside the cycle IIFE's own rule so the two
+// can never disagree about which screens rotate.
+function _gateWalkActive() {
+  try {
+    var q = new URLSearchParams(window.location.search);
+    var raw = q.get('gatecycle');
+    if (raw != null && raw !== '') return !(raw === '0' || parseInt(raw, 10) === 0);
+    if (q.get('gate') || q.get('belt')) return false;   // pinned to one gate
+    return window.self !== window.top;                  // inside the rotator
+  } catch (e) { return false; }
 }
 
 // ── TEST FLIGHT ENTRY ─────────────────────────────────────────────────────
@@ -1966,6 +2021,7 @@ function submitTestFlight() {
 
   // Switch to gate screen for this gate
   screenType = 'gate';
+  _deleteBoardChromeForGate();   // the board's chrome is removed, not hidden
   document.getElementById('screenTypeSel').value = 'gate';
   document.getElementById('subScreenSel').style.display = 'inline-block';
   document.getElementById('testFlightBtn').style.display = 'inline-block';
@@ -3340,28 +3396,6 @@ function updateDedicatedTimeOnly() {
     // bilingual date, plus the analog hands.
     if (banClock) banClock.textContent = _ocClockTime1(now, tz);
     if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
-    var _bLbl = document.getElementById('bidsBannerLabel');
-    if (_bLbl) {
-      var _bci2 = String(iata || '').toUpperCase();
-      var _bCity = (typeof CITY !== 'undefined' && CITY[_bci2]) || ((AP[_bci2] || {}).city) || _bci2;
-      try { if (typeof normalizeDisplayCity === 'function') _bCity = normalizeDisplayCity(_bCity, _bci2); } catch (e) {}
-      _bLbl.innerHTML = _ocClockLabel(_bCity);
-    }
-    try {
-      var _bh = document.getElementById('bidsClHour'), _bm = document.getElementById('bidsClMin');
-      if (_bh && _bm) {
-        var _bpo = { hour: 'numeric', minute: 'numeric', hour12: false };
-        if (tz) _bpo.timeZone = tz;
-        var _bpp = new Intl.DateTimeFormat('en-US', _bpo).formatToParts(now);
-        var _bH = 0, _bM = 0;
-        for (var _bpi = 0; _bpi < _bpp.length; _bpi++) {
-          if (_bpp[_bpi].type === 'hour') _bH = parseInt(_bpp[_bpi].value, 10) % 12;
-          else if (_bpp[_bpi].type === 'minute') _bM = parseInt(_bpp[_bpi].value, 10);
-        }
-        _bh.setAttribute('transform', 'rotate(' + (_bH * 30 + _bM * 0.5) + ' 50 50)');
-        _bm.setAttribute('transform', 'rotate(' + (_bM * 6) + ' 50 50)');
-      }
-    } catch (e) {}
   } else {
     if (banClock) banClock.textContent = timeStr;
     if (bidsDate) bidsDate.textContent = _bilingualDate(now, tz);
@@ -5349,8 +5383,11 @@ function wwayUrl(code, w, h) {
 
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
+  // WestJet's own regional brands were resolving to the generic navy —
+  // an accent that is nobody's colour. They wear WestJet's teal.
+  'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
-  'AS':'#01426A','B6':'#003876','TS':'#002868',
+  'AS':'#01426A','B6':'#003876','TS':'#00B3F0',
   'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
   // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
   // operator at Miami (Nick: 'Thios airline is supposed to be added and its
@@ -5443,6 +5480,18 @@ function frFirstAirport(iata) {
   return /^(YUL|YQB|YHU|YMX|YMY|YBG|YVO|YZV|YUY|YGP|YGL|YGW|YKQ|YPX|YVP|YHR|YNA|YBC|YTF|AKV|YIK|YZG|YQC|YHA|YKG|XGR)$/.test(String(iata || '').toUpperCase());
 }
 
+// Legible ink for a LIGHT carrier accent, without muddying it. Prefers the
+// carrier's own dark brand colour over any mix toward black.
+function _accentInk(code, accent) {
+  try {
+    var b = (typeof AIRLINE_BRAND !== 'undefined') && AIRLINE_BRAND[String(code || '').toUpperCase()];
+    if (b) {
+      var dark = b.bg1 || b.bg2 || b.bg3;
+      if (dark && typeof _hexIsLight === 'function' && !_hexIsLight(dark)) return dark;
+    }
+  } catch (e) {}
+  return 'color-mix(in srgb, ' + accent + ' 62%, #0B0F14)';
+}
 function getAirlineAccent(code) {
   var c = String(code || '').toUpperCase();
   // AIRLINE_BRAND carries accents for carriers the accent map never got
@@ -6880,7 +6929,7 @@ function renderMobileGateHtml(ctx) {
       if (_onStand) _etaStr = TL('atGateLbl');
       else if (_minsToArr > 0 && _minsToArr < 1440)
         _etaStr = _minsToArr >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(_minsToArr/60) + 'h ' + (_minsToArr%60) + 'm') : (TL('arrivesIn') + ' ' + _minsToArr + ' min');
-      var _fromDisplay = _fromCity ? (_fromCity + (_fromIata ? ' (' + _fromIata + ')' : '')) : (_fromIata || (_inb.flight || ''));
+      var _fromDisplay = _fromCity ? (_fromCity + (_fromIata ? ' | ' + _fromIata : '')) : (_fromIata || (_inb.flight || ''));
       // MOBILE = SAME PROGRAMMING (Nick: 'you did not connect mobile'):
       // the live route MAP (same #gateMapBox the shared map engine + 10 s
       // tick target) and the live Speed/Altitude line (same data-gtelem spans
@@ -7226,6 +7275,30 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
   'DL': '/logos/airlines/us-major/delta-glossy-orb.png?v=23225'
 };
 
+// v23288 — ONE ORB EMBLEM PER CARRIER, EVERYWHERE ON THE GATE.
+// Nick: 'United logo for bottom right needs to match the other united emblem
+// orb logo' and 'all airlines need to have an orb with their emblem on it'.
+// Two problems, one cause: each orb builder resolved its own art, so United
+// wore the glossy globe in the top round icon and the flat white globe in the
+// bottom-right card; and AIRLINE_EMBLEM_FILES is a hand-kept list, so any
+// carrier missing from it got a bare coloured disc with nothing on it.
+// This resolver is the single source for every ROUND gate orb:
+//   1. the gate's own round-icon art, so the top and bottom orbs match
+//   2. the shared emblem set
+//   3. /logos/symbols/airlines/, which ships 75 carrier symbols the emblem
+//      set does not — that is what fills the empty discs
+// It deliberately does NOT feed the main FIDS all-flights airline cell, which
+// keeps its own IATA_TO_* lockup system. Every call site renders the result
+// with onerror, so a carrier with no art anywhere lands exactly where it does
+// today: an empty orb, not a broken image.
+function _airlineOrbEmblem(code) {
+  var c = String(code || '').trim().toUpperCase();
+  if (!c) return '';
+  if (GATE_TOP_ROUND_EMBLEM_FILES[c]) return GATE_TOP_ROUND_EMBLEM_FILES[c];
+  if (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[c]) return window._AIRLINE_EMBLEM_FILES[c];
+  return /^[A-Z0-9]{2}$/.test(c) ? '/logos/symbols/airlines/' + c + '.svg' : '';
+}
+
 function _buildV2AircraftCol(ctx, vars) {
   var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
   var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
@@ -7394,7 +7467,7 @@ function _buildV2AircraftCol(ctx, vars) {
         : _minsToArr + ' min';
     }
     var _fromDisplay = '';
-    if (_fromCity) _fromDisplay = _fromCity + (_fromIata ? ' (' + _fromIata + ')' : '');
+    if (_fromCity) _fromDisplay = _fromCity + (_fromIata ? ' | ' + _fromIata : '');
     else if (_fromIata) _fromDisplay = _fromIata;
     var _inbFlightTxt = inboundFlight.flight || '';
     var _inbMain = _fromDisplay || _inbFlightTxt || '';
@@ -7986,18 +8059,19 @@ function _buildV2MapCol(ctx, vars) {
   // no "—" placeholders).
   var _inboundCard = '';
   var _telemBar = '';
-  // Once the incoming aircraft has actually arrived AND ~5 minutes have passed,
-  // the "incoming aircraft" panel is no longer relevant — the plane is at the
-  // gate. Switch the right panel to the DEPARTURE (outbound) flight info. (On a
-  // tight turnaround the boarding screen takes over first; this only matters
-  // when there's a gap between arrival and boarding.)
+  // THE RIGHT PANEL IS THE INCOMING AIRCRAFT'S, START TO FINISH. Nick: 'It
+  // should always display the incoming flight info, we should know where this
+  // flight comes from. Once it arrives it arrived, it is landed, then it is at
+  // the gate.' It used to flip to the DEPARTURE five minutes after arrival,
+  // which is why the departure banner kept coming back on a panel that was
+  // supposed to have finished with departures — they are on the other side.
+  // The panel now keeps the inbound card and lets its wording carry through
+  // arrived -> at the gate.
   var _arrivedSwitch = false;
   try {
     var _ibSw = vars.inboundFlight;
     if (_ibSw) {
-      var _swArrTs = (_ibSw._revTs && _ibSw._revTs > _ibSw._sortTs) ? _ibSw._revTs : (_ibSw._sortTs || 0);
-      // Switch once 5 min have elapsed past the (revised) arrival time.
-      if (_swArrTs && (Date.now() - _swArrTs) >= 5 * 60000) _arrivedSwitch = true;
+      // (no post-arrival switch — see above)
     } else {
       // NO inbound tracked at all (early-morning departures, feeds without
       // aircraft rotation): the panel used to render near-EMPTY — no card,
@@ -8185,7 +8259,7 @@ function _buildV2MapCol(ctx, vars) {
         else _origCity = _ib.origin || '';
         if (typeof tc === 'function') _origCity = tc(_origCity);
       } catch (e) { _origCity = _ib.origin || ''; }
-      var _origDisplay = _origCity + (_origIata ? ' (' + _origIata + ')' : '');
+      var _origDisplay = _origCity + (_origIata ? ' | ' + _origIata : '');
 
       // Inbound dep time (in destination tz)
       var _ibDepStr = '';
@@ -8446,7 +8520,10 @@ function _buildV2MapCol(ctx, vars) {
         // v23208 — emblem only, never a lockup with lettering (the themed
         // operator art carries the wordmark): operator's emblem, else the
         // marketing carrier's.
-        _mcOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mcOrb] || window._AIRLINE_EMBLEM_FILES[_mcCode])) || '';
+        // v23288 — through the shared orb resolver: the gate's round-icon
+        // art first (so this orb matches the one up top), then the emblem
+        // set, then the carrier-symbol library.
+        _mcOrbSrc = _airlineOrbEmblem(_orbCode_mcOrb) || _airlineOrbEmblem(_mcCode);
       } catch (e) {}
       // v23261 — the colour-emblem exemption keys on whose ART actually landed
       // in the orb, not on the resolved operator: a UA Express leg resolves
@@ -8454,7 +8531,7 @@ function _buildV2MapCol(ctx, vars) {
       // still holds United's globe — and the globe must render in colour
       // (Nick's UA3513 shot: the card orb went white-silhouette while the
       // rail's stayed colour; 'make sure the first orb is used only').
-      var _mcOrbArt = (_mcOrbOp && window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mcOrbOp]) ? _mcOrbOp : _mcCode;
+      var _mcOrbArt = (_mcOrbOp && _airlineOrbEmblem(_mcOrbOp)) ? _mcOrbOp : _mcCode;
       // v23203 — 'unless the orb is white then its color': a light orb
       // ground keeps the colour logo; only a dark ground takes the white
       // silhouette. Judged from the brand accent's luminance.
@@ -8806,10 +8883,13 @@ function _buildV2MapCol(ctx, vars) {
         var _orbCode_mdOrb = _mdOrbOp || _mdCode;
         // v23208 — emblem only, never a lockup with lettering (see the
         // inbound builder).
-        _mdOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mdOrb] || window._AIRLINE_EMBLEM_FILES[_mdCode])) || '';
+        // v23288 — through the shared orb resolver: the gate's round-icon
+        // art first (so this orb matches the one up top), then the emblem
+        // set, then the carrier-symbol library.
+        _mdOrbSrc = _airlineOrbEmblem(_orbCode_mdOrb) || _airlineOrbEmblem(_mdCode);
       } catch (e) {}
       // v23261 — art-code exemption, same as the inbound builder.
-      var _mdOrbArt = (_mdOrbOp && window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mdOrbOp]) ? _mdOrbOp : _mdCode;
+      var _mdOrbArt = (_mdOrbOp && _airlineOrbEmblem(_mdOrbOp)) ? _mdOrbOp : _mdCode;
       // v23203 — 'unless the orb is white then its color': a light orb
       // ground keeps the colour logo; only a dark ground takes the white
       // silhouette. Judged from the brand accent's luminance.
@@ -10158,34 +10238,10 @@ function uxgGateHtml(ctx) {
       + inStBadge
       + '<div class="g8-inb-times">' + inDepHtml + inArrHtml + '</div>'
       + '</div></div>';
-    // Also build a compact version for the bottom-right box
-    var _inbDepStr = inDepTime || '';
-    var _inbArrStr = inSchedArr || '';
-    var _inbArrRevStr = (inDelayed && inboundFlight.upd) ? inboundFlight.upd : '';
-    var _inbStText = inArrived ? SL(inboundFlight.status) : SL(inboundFlight.status);
-    var _inbStColor = inArrived ? '#10b981' : (inDelayed ? '#f59e0b' : '#60a5fa');
-    window._gateInbCompact = '<div style="display:flex;flex-direction:column;gap:2px;overflow:hidden;">'
-      + '<div style="font-size:11px;font-weight:700;letter-spacing:0.3px;color:rgba(255,255,255,0.5);">' + TL(inArrived ? (_inbOnStandG8 ? 'acArrivedGate' : 'acArrived') : 'yourAircraft') + '</div>'
-      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-      +   '<span style="font-size:18px;font-weight:800;color:#fff;line-height:1.1;">' + inCity + '</span>'
-      +   '<span style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);">' + inFlight + '</span>'
-      +   '<span style="font-size:11px;font-weight:700;color:' + _inbStColor + ';background:' + _inbStColor + '22;padding:2px 8px;border-radius:4px;">' + _inbStText + '</span>'
-      + '</div>'
-      + '<div style="display:flex;gap:12px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.8);">'
-      +   (_inbDepStr ? '<span>Dep ' + _inbDepStr + '</span>' : '')
-      +   (_inbArrRevStr ? '<span>Arr <s style="opacity:0.4;">' + _inbArrStr + '</s> <span style="color:#f59e0b;font-weight:700;">' + _inbArrRevStr + '</span></span>' : (_inbArrStr ? '<span>Arr ' + _inbArrStr + (inboundFlight && inboundFlight.dateTag && inboundFlight.dateTag !== currentFlight.dateTag ? ' <sup style="font-size:10px;">+1</sup>' : '') + '</span>' : ''))
-      + '</div>'
-      + (inArrived ? '<div style="font-size:13px;font-weight:700;color:#10b981;">' + TL(_inbOnStandG8 ? 'acArrivedGate' : 'acArrived') + '</div>' : '')
-      + '</div>';
-  } else {
-    // No inbound - welcome message
-    var welcomeCity = cityCode(locIata || iata);
-    inbPanelHtml = '<div class="g8-inb g8-welcome" style="flex:1;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,rgba(15,23,42,0.5) 0%,rgba(30,41,59,0.35) 50%,rgba(15,23,42,0.5) 100%);">'
-      + '<div style="text-align:center;padding:40px;">'
-      + '<div style="font-size:clamp(28px,3vw,42px);font-weight:600;color:rgba(255,255,255,0.55);letter-spacing:0.04em;margin-bottom:12px;">' + TL('welcomeTo') + '</div>'
-      + '<div style="font-size:clamp(52px,7vw,96px);font-weight:900;color:#fff;letter-spacing:-0.02em;line-height:1.1;">' + welcomeCity + '</div>'
-      + '</div></div>';
-    window._gateInbCompact = null;
+    // (The compact bottom-right variant that used to be built here was
+    //  assigned and nulled but never rendered by anything — dead since it was
+    //  written, and a trap: it carried the correct arrived wording, so it read
+    //  like the live surface. Deleted.)
   }
 
   // Build welcome panel (always shown top-left in idle) — city photo clipped to this area only
@@ -11704,8 +11760,17 @@ function uxgGateHtml(ctx) {
        // hue so the title/code stay legible on the LIGHT info cards (Nick,
        // pointing at Flair: 'we cant see this'). --airline-accent-ink is the
        // same treatment for the airport-code colour.
-       + ';--airline-r2:' + (function (h) { return _hexIsLight(h) ? ('color-mix(in srgb, ' + h + ' 42%, #0a1f12)') : h; })((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
-       + ';--airline-accent-ink:' + (_hexIsLight(accent) ? ('color-mix(in srgb, ' + accent + ' 42%, #0a1f12)') : accent)
+       + ';--airline-r2:' + (function (h) { return _hexIsLight(h) ? _accentInk(airlineCode, h) : h; })((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
+       // WAS: color-mix(accent 42%, #0a1f12). Darkening an accent by mixing it
+       // toward black IS brown when the accent is warm — Southwest gold
+       // #F9B612 came out #6e5e12 and Sunwing amber #F7941D came out #6e5017,
+       // and #0a1f12 is itself green-black so it dragged the hue too. That is
+       // the brown Nick is looking at, and no choice of black fixes it.
+       // A light accent now falls back to the CARRIER'S OWN dark brand shade,
+       // so the code stays legible on the light card and stays their colour
+       // (Nick: 'they are accents that need to match ... not brown, its not
+       // their colors'). Neutral near-black only where a carrier has no dark.
+       + ';--airline-accent-ink:' + (_hexIsLight(accent) ? _accentInk(airlineCode, accent) : accent)
        // Lane/takeover surfaces need white lettering — pre-darken accents
        // that are too light for it (Flair lime, Southwest yellow).
        + ';--accent-lane:' + (_hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent)
@@ -11846,7 +11911,13 @@ function uxgGateHtml(ctx) {
               // words stay translated and available — it is simply not rendered
               // here any more.
               + '<div class="octb octb-tab octb-stack">'
-              +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
+              // v23287 — the airport code rides with the time on EVERY gate,
+              // 'YHZ | 11:00PM' (Nick). YQM already carried its code inside the
+              // gate tab; this puts every airport's beside the clock instead.
+              +   '<span class="octb-clockrow">'
+              +     (iata ? '<span class="octb-ap">' + _e(String(iata).toUpperCase()) + '</span><span class="octb-apsep">|</span>' : '')
+              +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
+              +   '</span>'
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
               + '</div>'
               + '</div>';
@@ -11855,9 +11926,12 @@ function uxgGateHtml(ctx) {
             ? 'calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 54px)'
             : 'calc(var(--gate-rcw, 25%) - 30px)';
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
-            + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
-            +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">'
-            +     _gateLbl('time', _frF, function(w){ return w; }, ' <span style="opacity:.6">|</span> ') + '</span>'
+            // v23287 — 'YHZ | 11:00PM' (Nick). The stacked 'Time | Heure'
+            // caption is gone: the row now reads as the airport's local clock
+            // because the airport code is standing right beside the time.
+            + '<span style="transform:skewX(24deg);display:flex;align-items:baseline;gap:.34em;line-height:1.05;">'
+            +   (iata ? '<span style="font-size:clamp(20px,2.8vh,40px);font-weight:900;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">' + _e(String(iata).toUpperCase()) + '</span>'
+            +           '<span style="font-size:clamp(18px,2.4vh,34px);font-weight:700;color:' + _tbInkSoft + ';opacity:.55;">|</span>' : '')
             +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
@@ -13556,7 +13630,13 @@ function _applyBannerStyle(iata, screen) {
 }
 
 function renderDedicatedScreen() {
-  if (screenType === 'gate') { document.body.classList.add('uxg-gate-mode'); }
+  if (screenType === 'gate') {
+    document.body.classList.add('uxg-gate-mode');
+    // Also here, not only on the switch above: a board loaded straight into
+    // gate mode (gids.html?gate=4) never runs that path, and that is the case
+    // in Nick's recording. Idempotent — removing what is already gone no-ops.
+    _deleteBoardChromeForGate();
+  }
   // Light/dark board flag on DEDICATED screens too — it only ran in the main
   // board's renderer, so every light-board rule (Revised dashes, adaptive
   // headers, status inks) silently skipped gate/baggage screens (Nick:
@@ -15275,26 +15355,15 @@ const gView = document.getElementById('gateView');
           var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
                           de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
           var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
-          // Clock matches the FIDS board exactly (Nick: 'the same on all
-          // screens even FIDS and BIDS'): analog (right) + 3-line digital
-          // (label / big dual time / bilingual date) via the shared helpers.
+          // Clock matches the GATE exactly (Nick: 'Simplify the FIDS and BIDS
+          // clock similar to the Gate Minus the airport code'): the time over
+          // the bilingual date, via the shared helpers.
           var _bidsTz = (AP[iata] || {}).tz || null;
-          var _bci = String(iata || '').toUpperCase();
-          var _bidsCity = (typeof CITY !== 'undefined' && CITY[_bci]) || ((AP[_bci] || {}).city) || _bci;
-          try { if (typeof normalizeDisplayCity === 'function') _bidsCity = normalizeDisplayCity(_bidsCity, _bci); } catch (e) {}
           return '<div class="fids-banner bidsv2-fids-banner">'
             + '<div class="fids-banner-chevrons" aria-hidden="true"></div>'
             + '<div class="fids-banner-time-block">'
-            +   '<svg class="fids-banner-analog" id="bidsClockAnalog" viewBox="0 0 100 100" aria-hidden="true">'
-            +     '<circle class="cl-face" cx="50" cy="50" r="46"></circle>'
-            +     '<g class="cl-ticks"><line x1="50" y1="6" x2="50" y2="13"></line><line x1="94" y1="50" x2="87" y2="50"></line><line x1="50" y1="94" x2="50" y2="87"></line><line x1="6" y1="50" x2="13" y2="50"></line></g>'
-            +     '<line class="cl-hand cl-hour" id="bidsClHour" x1="50" y1="50" x2="50" y2="29"></line>'
-            +     '<line class="cl-hand cl-min" id="bidsClMin" x1="50" y1="50" x2="50" y2="17"></line>'
-            +     '<circle class="cl-pin" cx="50" cy="50" r="3.4"></circle>'
-            +   '</svg>'
             +   '<div class="fids-banner-time-text">'
             +     '<div class="fids-banner-digirow">'
-            +       '<div class="fids-banner-tlabel" id="bidsBannerLabel">' + _ocClockLabel(_bidsCity) + '</div>'
             +       '<div class="fids-banner-time" id="dedicatedBannerClock">' + _ocClockTime1(now, _bidsTz) + '</div>'
             +     '</div>'
             +     '<div class="fids-banner-date" id="bidsBannerDate">' + _ocClockDate(now, _bidsTz) + '</div>'
@@ -19468,6 +19537,14 @@ function _isRealApCode(code) {
 function normalizeDisplayCity(raw, iata) {
   var s = String(raw || '').replace(/\s+/g, ' ').trim();
   if (!s || s === '—') return s;
+  // This function runs on its OWN OUTPUT, and everything below — the strip,
+  // the dedupe, the code-recovery when no iata was passed — was written for
+  // the parenthesised shape the feed sends. Given 'Montreal | YUL' it removed
+  // the code and left the dangling separator ('Montreal |'), which cityCode
+  // then re-suffixed into 'Montreal | | YUL' on the live board. Rather than
+  // teach six parsers a second format, the pipe form is folded back to the
+  // one they already understand; the new separator is applied on the way out.
+  s = s.replace(/\s*\|\s*([A-Za-z]{2,4})\s*$/, ' ($1)');
 
   var code = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
 
@@ -19620,7 +19697,13 @@ function formatCityIata(raw, iata, langOverride) {
     var _guess = _iataFromCityName(city);
     if (_guess) code = _guess;
   }
-  return code ? (city + ' (' + code + ')') : city;
+  // IDEMPOTENT. This runs on strings that have already been through it —
+  // and the dedupe/strip checks above only recognise the PARENTHESISED shape
+  // the feed sends, so a name already ending '| YUL' sailed past them and got
+  // the code appended a second time ('Montreal | | YUL' on the live board).
+  // Strip whatever code tail is there, in either form, then append once.
+  city = _stripCityCode(city) || city;
+  return code ? (city + ' | ' + code) : city;
 }
 
 // cityCode(iata, [overrideCity], [langOverride]) — returns "Chicago (MDW)" format
@@ -19643,6 +19726,27 @@ function formatCityIata(raw, iata, langOverride) {
 // coords and data-iata logic; only the code CHIP shown to travellers changes.
 // YHU (Montréal Saint-Hubert) shows as the Montréal metro code MET.
 var AIRPORT_DISPLAY_IATA = { YHU: 'MET' };
+// ── CITY | CODE ──────────────────────────────────────────────────────────
+// Nick: 'ALL FIDS and BIDS listings for airports need to show as Moncton |
+// YQM … I don't want to see anywhere no longer Moncton (YQM)'. The display
+// format changes here, in the two helpers and the three inline sites that
+// build it — but the parentheses do NOT disappear from the codebase, because
+// the UPSTREAM FEED sends city names as 'Toronto (YYZ)' and the normalizers
+// still have to strip that. Those are input parsers and are left alone.
+//
+// The three places that read our own OUTPUT back go through these, so they
+// accept either form: the new pipe, and the old parentheses for anything
+// still cached or feed-shaped.
+var _CITY_CODE_TAIL = /\s*(?:\|\s*([A-Za-z]{2,4})|\(\s*([A-Za-z]{2,4})\s*\))\s*$/;
+function _stripCityCode(s) {
+  return String(s == null ? '' : s).replace(_CITY_CODE_TAIL, '').trim();
+}
+function _cityHasCode(s, code) {
+  var m = String(s == null ? '' : s).match(_CITY_CODE_TAIL);
+  if (!m) return false;
+  var got = (m[1] || m[2] || '').toUpperCase();
+  return !!got && got === String(code || '').toUpperCase();
+}
 function _dispIata(code) {
   var c = String(code || '').toUpperCase().trim();
   return AIRPORT_DISPLAY_IATA[c] || code;
@@ -19668,7 +19772,10 @@ function cityCode(iata, overrideCity, langOverride) {
   if (!city) city = airportCityNameSafe_v21877(code, langOverride);
   if (!city) return _dispIata(code);
 
-  return normalizeDisplayCity(city, code) + ' (' + _dispIata(code) + ')';
+  // normalizeDisplayCity already appends the code, so appending again here is
+  // the same double. Take its output as-is when it carries the right one.
+  var _nd = normalizeDisplayCity(city, code);
+  return _cityHasCode(_nd, _dispIata(code)) ? _nd : (_stripCityCode(_nd) + ' | ' + _dispIata(code));
 }
 
 // TL() returns current rotation language only
@@ -20131,7 +20238,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23281';
+var FIDS_BUILD_TAG = 'v23288';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -20959,7 +21066,7 @@ function render() {
     // into loc/city fields. Normalize again directly before rendering rows.
     if (f._locIata && typeof normalizeDisplayCity === 'function') {
       cityDisp = normalizeDisplayCity(cityDisp, f._locIata);
-      if (!String(cityDisp).toUpperCase().includes('(' + String(f._locIata).toUpperCase() + ')')) {
+      if (!_cityHasCode(cityDisp, f._locIata)) {
         cityDisp = cityCode(f._locIata, cityDisp, lang);
       }
     }
@@ -21128,7 +21235,7 @@ function render() {
         const _fi = _destFlipStops(_rowStops, 'ia');
         if (_fc) {
           return '<td class="td-dest">' + _fc
-            + (_fi ? ' <span class="dest-iata">(' + _fi + ')</span>' : '') + '</td>';
+            + (_fi ? ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _fi + '</span>' : '') + '</td>';
         }
       }
       // v218.14: cityCode() now returns "City (IATA)" format directly,
@@ -21139,9 +21246,11 @@ function render() {
       // fall back to appending it from f._locIata.
       const _iata = f._locIata || (isDep ? f.dest : f.origin) || '';
       const _iataUp = String(_iata).toUpperCase().trim();
-      // Match " (XXX)" at end where XXX is 2-4 uppercase letters
-      const _parensMatch = cityDisp.match(/^(.*?)\s+\(([A-Z]{2,4})\)\s*$/);
-      const _cityPlain = _parensMatch ? _parensMatch[1] : String(cityDisp).replace(/\s+\([A-Z]{2,4}\)\s*$/, '');
+      // The code already on the string, in either form — the new 'City | YQM'
+      // or the parenthesised shape the feed still uses.
+      const _tail = String(cityDisp).match(_CITY_CODE_TAIL);
+      const _tailCode = _tail ? (_tail[1] || _tail[2] || '') : '';
+      const _cityPlain = _stripCityCode(cityDisp);
       const _isLongDest = String(_cityPlain).trim().length >= 18;
       let _label;
       if (_isLongDest) {
@@ -21149,13 +21258,14 @@ function render() {
         // IATA code — it added little and was the part getting cut to "(V…".
         // The full city name now shows clean, with a slightly smaller font.
         _label = _cityPlain;
-      } else if (_parensMatch) {
-        // cityDisp already has the parens format — split and style the IATA
-        _label = _parensMatch[1] + ' <span class="dest-iata">(' + _parensMatch[2] + ')</span>';
+      } else if (_tailCode) {
+        // Split the code off and style it — as a separator, never parentheses
+        // (Nick: 'I don't want to see anywhere no longer Moncton (YQM)').
+        _label = _cityPlain + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _tailCode.toUpperCase() + '</span>';
       } else if (_iataUp && _iataUp.length >= 2 && _iataUp.length <= 4
                  && !cityDisp.toUpperCase().includes(_iataUp)) {
-        // No parens in cityDisp and we have a valid IATA to append
-        _label = cityDisp + ' <span class="dest-iata">(' + _iataUp + ')</span>';
+        // No code on the string yet and we have a valid IATA to append
+        _label = cityDisp + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _iataUp + '</span>';
       } else {
         // City name only (no IATA to add, or IATA already inline)
         _label = cityDisp;
@@ -23909,7 +24019,7 @@ function mapADB(raw, mode) {
     // and list the route in flying order, final stop last, comma-joined so
     // the board flips leg by leg.
     if (f._mcoViaStop) {
-      const _finalCity = String(locName).replace(/\s*\([A-Z]{2,4}\)\s*$/, '');
+      const _finalCity = _stripCityCode(locName);
       const _viaCities = String(f._mcoViaStop).split(',').map(s => s.trim()).filter(Boolean)
         .map(v => (/^[A-Z]{3}$/.test(v) && typeof CITY !== 'undefined' && CITY[v]) ? CITY[v] : v);
       // Title-case ALL-CAPS entries (CITY values shout) so the gate rail
@@ -25004,19 +25114,6 @@ function _boardFilterChipHtml() {
 //   6:26PM | 18 h 26
 //   Thursday, July 23rd | Jeudi, le 23 juillet
 function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
-function _ocClockLabel(city) {
-  // Two stacked rows (Nick, gate layout on FIDS/BIDS too): 'Time in <City>'
-  // over 'Heure à <City>'. Used only by the FIDS/BIDS banner clocks; the gate
-  // builds its own label inline.
-  // v22963 — follows `langs` (Nick: 'FIDS Time in Orlando / Heure à
-  // Orlando'). The GATE clock was converted in v22954; this is the shared
-  // FIDS/BIDS one, which still hardcoded the pair.
-  var _fFirst = false;
-  try { _fFirst = (typeof frFirstAirport === 'function') && frFirstAirport((document.getElementById('apSel') || {}).value || ''); } catch (e) {}
-  return _gateLbl('timeIn', _fFirst, function (w, i) {
-    return '<span class="cl-l' + (i + 1) + '">' + w + ' ' + city + '</span>';
-  }, '');
-}
 // Single 12h time '10:29PM' (Nick: 'one time format') — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
 function _ocClockTime1(now, tz) {
@@ -25090,28 +25187,13 @@ function tick() {
   var _ci = String(iata || '').toUpperCase();
   var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || ((AP[_ci] || {}).city) || _ci;
   if (typeof normalizeDisplayCity === 'function') _city = normalizeDisplayCity(_city, _ci);
-  var _lbl = document.getElementById('clockLabel');
-  if (_lbl) _lbl.innerHTML = _ocClockLabel(_city);
+  // v23287 — the FIDS/BIDS banner clock is now the GATE clock: the time over
+  // the bilingual date, nothing else (Nick: 'Simplify the FIDS and BIDS clock
+  // similar to the Gate Minus the airport code'). The analog dial and the
+  // '<City> Local Time | Heure Locale à <City>' label are DELETED — markup,
+  // driver and styling — not hidden.
   document.getElementById('clock').textContent = _ocClockTime1(now, tz);
   document.getElementById('clockDate').innerHTML = _ocClockDate(now, tz);
-
-  // Analog clock (Nick: 'analog clock to the left of digital') — hands in the
-  // airport's local time. Hour + minute only (no per-second jump).
-  try {
-    var _hEl = document.getElementById('clHour'), _mEl = document.getElementById('clMin');
-    if (_hEl && _mEl) {
-      var _po = { hour: 'numeric', minute: 'numeric', hour12: false };
-      if (tz) _po.timeZone = tz;
-      var _pp = new Intl.DateTimeFormat('en-US', _po).formatToParts(now);
-      var _h = 0, _m = 0;
-      for (var _pi = 0; _pi < _pp.length; _pi++) {
-        if (_pp[_pi].type === 'hour') _h = parseInt(_pp[_pi].value, 10) % 12;
-        else if (_pp[_pi].type === 'minute') _m = parseInt(_pp[_pi].value, 10);
-      }
-      _hEl.setAttribute('transform', 'rotate(' + (_h * 30 + _m * 0.5) + ' 50 50)');
-      _mEl.setAttribute('transform', 'rotate(' + (_m * 6) + ' 50 50)');
-    }
-  } catch (e) {}
 }
 
 // ── AUTO PAGING CAROUSEL ─────────────────────────────────────────────────
