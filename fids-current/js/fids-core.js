@@ -7275,6 +7275,30 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
   'DL': '/logos/airlines/us-major/delta-glossy-orb.png?v=23225'
 };
 
+// v23288 — ONE ORB EMBLEM PER CARRIER, EVERYWHERE ON THE GATE.
+// Nick: 'United logo for bottom right needs to match the other united emblem
+// orb logo' and 'all airlines need to have an orb with their emblem on it'.
+// Two problems, one cause: each orb builder resolved its own art, so United
+// wore the glossy globe in the top round icon and the flat white globe in the
+// bottom-right card; and AIRLINE_EMBLEM_FILES is a hand-kept list, so any
+// carrier missing from it got a bare coloured disc with nothing on it.
+// This resolver is the single source for every ROUND gate orb:
+//   1. the gate's own round-icon art, so the top and bottom orbs match
+//   2. the shared emblem set
+//   3. /logos/symbols/airlines/, which ships 75 carrier symbols the emblem
+//      set does not — that is what fills the empty discs
+// It deliberately does NOT feed the main FIDS all-flights airline cell, which
+// keeps its own IATA_TO_* lockup system. Every call site renders the result
+// with onerror, so a carrier with no art anywhere lands exactly where it does
+// today: an empty orb, not a broken image.
+function _airlineOrbEmblem(code) {
+  var c = String(code || '').trim().toUpperCase();
+  if (!c) return '';
+  if (GATE_TOP_ROUND_EMBLEM_FILES[c]) return GATE_TOP_ROUND_EMBLEM_FILES[c];
+  if (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[c]) return window._AIRLINE_EMBLEM_FILES[c];
+  return /^[A-Z0-9]{2}$/.test(c) ? '/logos/symbols/airlines/' + c + '.svg' : '';
+}
+
 function _buildV2AircraftCol(ctx, vars) {
   var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
   var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
@@ -8496,7 +8520,10 @@ function _buildV2MapCol(ctx, vars) {
         // v23208 — emblem only, never a lockup with lettering (the themed
         // operator art carries the wordmark): operator's emblem, else the
         // marketing carrier's.
-        _mcOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mcOrb] || window._AIRLINE_EMBLEM_FILES[_mcCode])) || '';
+        // v23288 — through the shared orb resolver: the gate's round-icon
+        // art first (so this orb matches the one up top), then the emblem
+        // set, then the carrier-symbol library.
+        _mcOrbSrc = _airlineOrbEmblem(_orbCode_mcOrb) || _airlineOrbEmblem(_mcCode);
       } catch (e) {}
       // v23261 — the colour-emblem exemption keys on whose ART actually landed
       // in the orb, not on the resolved operator: a UA Express leg resolves
@@ -8504,7 +8531,7 @@ function _buildV2MapCol(ctx, vars) {
       // still holds United's globe — and the globe must render in colour
       // (Nick's UA3513 shot: the card orb went white-silhouette while the
       // rail's stayed colour; 'make sure the first orb is used only').
-      var _mcOrbArt = (_mcOrbOp && window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mcOrbOp]) ? _mcOrbOp : _mcCode;
+      var _mcOrbArt = (_mcOrbOp && _airlineOrbEmblem(_mcOrbOp)) ? _mcOrbOp : _mcCode;
       // v23203 — 'unless the orb is white then its color': a light orb
       // ground keeps the colour logo; only a dark ground takes the white
       // silhouette. Judged from the brand accent's luminance.
@@ -8856,10 +8883,13 @@ function _buildV2MapCol(ctx, vars) {
         var _orbCode_mdOrb = _mdOrbOp || _mdCode;
         // v23208 — emblem only, never a lockup with lettering (see the
         // inbound builder).
-        _mdOrbSrc = (window._AIRLINE_EMBLEM_FILES && (window._AIRLINE_EMBLEM_FILES[_orbCode_mdOrb] || window._AIRLINE_EMBLEM_FILES[_mdCode])) || '';
+        // v23288 — through the shared orb resolver: the gate's round-icon
+        // art first (so this orb matches the one up top), then the emblem
+        // set, then the carrier-symbol library.
+        _mdOrbSrc = _airlineOrbEmblem(_orbCode_mdOrb) || _airlineOrbEmblem(_mdCode);
       } catch (e) {}
       // v23261 — art-code exemption, same as the inbound builder.
-      var _mdOrbArt = (_mdOrbOp && window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mdOrbOp]) ? _mdOrbOp : _mdCode;
+      var _mdOrbArt = (_mdOrbOp && _airlineOrbEmblem(_mdOrbOp)) ? _mdOrbOp : _mdCode;
       // v23203 — 'unless the orb is white then its color': a light orb
       // ground keeps the colour logo; only a dark ground takes the white
       // silhouette. Judged from the brand accent's luminance.
@@ -20208,7 +20238,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23287';
+var FIDS_BUILD_TAG = 'v23288';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
