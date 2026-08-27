@@ -1908,7 +1908,31 @@ function updateSubScreens() {
   });
   if (_pinned != null) { subSel.value = _pinned; subScreenVal = _pinned; return; }
   if (locations.includes(oldVal)) { subSel.value = oldVal; subScreenVal = oldVal; }
-  else { subSel.value = locations[0]; subScreenVal = locations[0]; }
+  else {
+    // A CYCLING display must not always open on the same gate. `locations` is
+    // sorted, so locations[0] is the lowest gate number — which is why every
+    // rotation was seen starting at the bottom of the list and walking up
+    // (Nick: 'rotation starts from the lowest number gate up ... this should be
+    // random not in order'). The per-cycle pick is already random; only this
+    // FIRST gate was ordered. A pinned or operator-driven screen keeps the
+    // deterministic first entry — the dropdown must open on a predictable one.
+    var _start = 0;
+    if (useGate && _gateWalkActive()) _start = Math.floor(Math.random() * locations.length);
+    subSel.value = locations[_start]; subScreenVal = locations[_start];
+  }
+}
+
+// True when this display walks gates on its own (the rotator iframe, or an
+// explicit ?gatecycle=N). Kept beside the cycle IIFE's own rule so the two
+// can never disagree about which screens rotate.
+function _gateWalkActive() {
+  try {
+    var q = new URLSearchParams(window.location.search);
+    var raw = q.get('gatecycle');
+    if (raw != null && raw !== '') return !(raw === '0' || parseInt(raw, 10) === 0);
+    if (q.get('gate') || q.get('belt')) return false;   // pinned to one gate
+    return window.self !== window.top;                  // inside the rotator
+  } catch (e) { return false; }
 }
 
 // ── TEST FLIGHT ENTRY ─────────────────────────────────────────────────────
@@ -3372,28 +3396,6 @@ function updateDedicatedTimeOnly() {
     // bilingual date, plus the analog hands.
     if (banClock) banClock.textContent = _ocClockTime1(now, tz);
     if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
-    var _bLbl = document.getElementById('bidsBannerLabel');
-    if (_bLbl) {
-      var _bci2 = String(iata || '').toUpperCase();
-      var _bCity = (typeof CITY !== 'undefined' && CITY[_bci2]) || ((AP[_bci2] || {}).city) || _bci2;
-      try { if (typeof normalizeDisplayCity === 'function') _bCity = normalizeDisplayCity(_bCity, _bci2); } catch (e) {}
-      _bLbl.innerHTML = _ocClockLabel(_bCity);
-    }
-    try {
-      var _bh = document.getElementById('bidsClHour'), _bm = document.getElementById('bidsClMin');
-      if (_bh && _bm) {
-        var _bpo = { hour: 'numeric', minute: 'numeric', hour12: false };
-        if (tz) _bpo.timeZone = tz;
-        var _bpp = new Intl.DateTimeFormat('en-US', _bpo).formatToParts(now);
-        var _bH = 0, _bM = 0;
-        for (var _bpi = 0; _bpi < _bpp.length; _bpi++) {
-          if (_bpp[_bpi].type === 'hour') _bH = parseInt(_bpp[_bpi].value, 10) % 12;
-          else if (_bpp[_bpi].type === 'minute') _bM = parseInt(_bpp[_bpi].value, 10);
-        }
-        _bh.setAttribute('transform', 'rotate(' + (_bH * 30 + _bM * 0.5) + ' 50 50)');
-        _bm.setAttribute('transform', 'rotate(' + (_bM * 6) + ' 50 50)');
-      }
-    } catch (e) {}
   } else {
     if (banClock) banClock.textContent = timeStr;
     if (bidsDate) bidsDate.textContent = _bilingualDate(now, tz);
@@ -11879,7 +11881,13 @@ function uxgGateHtml(ctx) {
               // words stay translated and available — it is simply not rendered
               // here any more.
               + '<div class="octb octb-tab octb-stack">'
-              +   '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
+              // v23287 — the airport code rides with the time on EVERY gate,
+              // 'YHZ | 11:00PM' (Nick). YQM already carried its code inside the
+              // gate tab; this puts every airport's beside the clock instead.
+              +   '<span class="octb-clockrow">'
+              +     (iata ? '<span class="octb-ap">' + _e(String(iata).toUpperCase()) + '</span><span class="octb-apsep">|</span>' : '')
+              +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
+              +   '</span>'
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
               + '</div>'
               + '</div>';
@@ -11888,9 +11896,12 @@ function uxgGateHtml(ctx) {
             ? 'calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 54px)'
             : 'calc(var(--gate-rcw, 25%) - 30px)';
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
-            + '<span style="transform:skewX(24deg);display:flex;flex-direction:column;align-items:center;line-height:1.05;">'
-            +   '<span style="font-size:clamp(15px,2vh,27px);font-weight:800;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">'
-            +     _gateLbl('time', _frF, function(w){ return w; }, ' <span style="opacity:.6">|</span> ') + '</span>'
+            // v23287 — 'YHZ | 11:00PM' (Nick). The stacked 'Time | Heure'
+            // caption is gone: the row now reads as the airport's local clock
+            // because the airport code is standing right beside the time.
+            + '<span style="transform:skewX(24deg);display:flex;align-items:baseline;gap:.34em;line-height:1.05;">'
+            +   (iata ? '<span style="font-size:clamp(20px,2.8vh,40px);font-weight:900;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">' + _e(String(iata).toUpperCase()) + '</span>'
+            +           '<span style="font-size:clamp(18px,2.4vh,34px);font-weight:700;color:' + _tbInkSoft + ';opacity:.55;">|</span>' : '')
             +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
             + '</div>';
@@ -15314,26 +15325,15 @@ const gView = document.getElementById('gateView');
           var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
                           de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
           var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
-          // Clock matches the FIDS board exactly (Nick: 'the same on all
-          // screens even FIDS and BIDS'): analog (right) + 3-line digital
-          // (label / big dual time / bilingual date) via the shared helpers.
+          // Clock matches the GATE exactly (Nick: 'Simplify the FIDS and BIDS
+          // clock similar to the Gate Minus the airport code'): the time over
+          // the bilingual date, via the shared helpers.
           var _bidsTz = (AP[iata] || {}).tz || null;
-          var _bci = String(iata || '').toUpperCase();
-          var _bidsCity = (typeof CITY !== 'undefined' && CITY[_bci]) || ((AP[_bci] || {}).city) || _bci;
-          try { if (typeof normalizeDisplayCity === 'function') _bidsCity = normalizeDisplayCity(_bidsCity, _bci); } catch (e) {}
           return '<div class="fids-banner bidsv2-fids-banner">'
             + '<div class="fids-banner-chevrons" aria-hidden="true"></div>'
             + '<div class="fids-banner-time-block">'
-            +   '<svg class="fids-banner-analog" id="bidsClockAnalog" viewBox="0 0 100 100" aria-hidden="true">'
-            +     '<circle class="cl-face" cx="50" cy="50" r="46"></circle>'
-            +     '<g class="cl-ticks"><line x1="50" y1="6" x2="50" y2="13"></line><line x1="94" y1="50" x2="87" y2="50"></line><line x1="50" y1="94" x2="50" y2="87"></line><line x1="6" y1="50" x2="13" y2="50"></line></g>'
-            +     '<line class="cl-hand cl-hour" id="bidsClHour" x1="50" y1="50" x2="50" y2="29"></line>'
-            +     '<line class="cl-hand cl-min" id="bidsClMin" x1="50" y1="50" x2="50" y2="17"></line>'
-            +     '<circle class="cl-pin" cx="50" cy="50" r="3.4"></circle>'
-            +   '</svg>'
             +   '<div class="fids-banner-time-text">'
             +     '<div class="fids-banner-digirow">'
-            +       '<div class="fids-banner-tlabel" id="bidsBannerLabel">' + _ocClockLabel(_bidsCity) + '</div>'
             +       '<div class="fids-banner-time" id="dedicatedBannerClock">' + _ocClockTime1(now, _bidsTz) + '</div>'
             +     '</div>'
             +     '<div class="fids-banner-date" id="bidsBannerDate">' + _ocClockDate(now, _bidsTz) + '</div>'
@@ -20208,7 +20208,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23286';
+var FIDS_BUILD_TAG = 'v23287';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -25084,19 +25084,6 @@ function _boardFilterChipHtml() {
 //   6:26PM | 18 h 26
 //   Thursday, July 23rd | Jeudi, le 23 juillet
 function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
-function _ocClockLabel(city) {
-  // Two stacked rows (Nick, gate layout on FIDS/BIDS too): 'Time in <City>'
-  // over 'Heure à <City>'. Used only by the FIDS/BIDS banner clocks; the gate
-  // builds its own label inline.
-  // v22963 — follows `langs` (Nick: 'FIDS Time in Orlando / Heure à
-  // Orlando'). The GATE clock was converted in v22954; this is the shared
-  // FIDS/BIDS one, which still hardcoded the pair.
-  var _fFirst = false;
-  try { _fFirst = (typeof frFirstAirport === 'function') && frFirstAirport((document.getElementById('apSel') || {}).value || ''); } catch (e) {}
-  return _gateLbl('timeIn', _fFirst, function (w, i) {
-    return '<span class="cl-l' + (i + 1) + '">' + w + ' ' + city + '</span>';
-  }, '');
-}
 // Single 12h time '10:29PM' (Nick: 'one time format') — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
 function _ocClockTime1(now, tz) {
@@ -25170,28 +25157,13 @@ function tick() {
   var _ci = String(iata || '').toUpperCase();
   var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || ((AP[_ci] || {}).city) || _ci;
   if (typeof normalizeDisplayCity === 'function') _city = normalizeDisplayCity(_city, _ci);
-  var _lbl = document.getElementById('clockLabel');
-  if (_lbl) _lbl.innerHTML = _ocClockLabel(_city);
+  // v23287 — the FIDS/BIDS banner clock is now the GATE clock: the time over
+  // the bilingual date, nothing else (Nick: 'Simplify the FIDS and BIDS clock
+  // similar to the Gate Minus the airport code'). The analog dial and the
+  // '<City> Local Time | Heure Locale à <City>' label are DELETED — markup,
+  // driver and styling — not hidden.
   document.getElementById('clock').textContent = _ocClockTime1(now, tz);
   document.getElementById('clockDate').innerHTML = _ocClockDate(now, tz);
-
-  // Analog clock (Nick: 'analog clock to the left of digital') — hands in the
-  // airport's local time. Hour + minute only (no per-second jump).
-  try {
-    var _hEl = document.getElementById('clHour'), _mEl = document.getElementById('clMin');
-    if (_hEl && _mEl) {
-      var _po = { hour: 'numeric', minute: 'numeric', hour12: false };
-      if (tz) _po.timeZone = tz;
-      var _pp = new Intl.DateTimeFormat('en-US', _po).formatToParts(now);
-      var _h = 0, _m = 0;
-      for (var _pi = 0; _pi < _pp.length; _pi++) {
-        if (_pp[_pi].type === 'hour') _h = parseInt(_pp[_pi].value, 10) % 12;
-        else if (_pp[_pi].type === 'minute') _m = parseInt(_pp[_pi].value, 10);
-      }
-      _hEl.setAttribute('transform', 'rotate(' + (_h * 30 + _m * 0.5) + ' 50 50)');
-      _mEl.setAttribute('transform', 'rotate(' + (_m * 6) + ' 50 50)');
-    }
-  } catch (e) {}
 }
 
 // ── AUTO PAGING CAROUSEL ─────────────────────────────────────────────────

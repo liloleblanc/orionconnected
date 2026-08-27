@@ -188,11 +188,11 @@
   <link rel="stylesheet" href="css/shared.css?v=23166">
   <link rel="stylesheet" href="css/menu.css?v=23173">
   <link rel="stylesheet" href="css/fids.css?v=22852">
-  <link rel="stylesheet" href="css/flight-display.css?v=22852">
+  <link rel="stylesheet" href="css/flight-display.css?v=23287">
   <link rel="stylesheet" href="css/baggage-display.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23283">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23287">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (Nick: 'the old svreen shows up once in a while',
@@ -547,21 +547,8 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
        block matching the gate banner: label / big time / bilingual date
        (Nick, Jul 2026). -->
   <div class="fids-banner-time-block">
-    <svg class="fids-banner-analog" id="clockAnalog" viewBox="0 0 100 100" aria-hidden="true">
-      <circle class="cl-face" cx="50" cy="50" r="46"></circle>
-      <g class="cl-ticks">
-        <line x1="50" y1="6" x2="50" y2="13"></line>
-        <line x1="94" y1="50" x2="87" y2="50"></line>
-        <line x1="50" y1="94" x2="50" y2="87"></line>
-        <line x1="6" y1="50" x2="13" y2="50"></line>
-      </g>
-      <line class="cl-hand cl-hour" id="clHour" x1="50" y1="50" x2="50" y2="29"></line>
-      <line class="cl-hand cl-min" id="clMin" x1="50" y1="50" x2="50" y2="17"></line>
-      <circle class="cl-pin" cx="50" cy="50" r="3.4"></circle>
-    </svg>
     <div class="fids-banner-time-text">
       <div class="fids-banner-digirow">
-        <div class="fids-banner-tlabel" id="clockLabel"></div>
         <div class="fids-banner-time" id="clock">--:--</div>
       </div>
       <div class="fids-banner-date" id="clockDate"></div>
@@ -851,7 +838,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23286"></script>
+<script src="js/fids-core.js?v=23287"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>

@@ -270,6 +270,16 @@ body[data-fids-mode="arr"] .fids-board-icon .fids-icon-arr { display: block; }
   min-width: 420px;
   text-align: right;
 }
+/* The label is two words in two languages. The silk banner stacks them on
+   their own lines (see display-overrides.css); every other banner theme left
+   them inline with nothing between, which paints them run together as one
+   word — 'DeparturesDeparts'. A middot separates them, the same way TLbi()
+   joins a bilingual pair everywhere else on the board. */
+.fids-board-label .fbl-fr::before {
+  content: ' \00b7 ';
+  opacity: 0.72;
+  font-weight: 600;
+}
 @media (max-width: 1600px) {
   .fids-board-label { font-size: 60px; min-width: 350px; text-align: right; }
 }
@@ -998,9 +1008,7 @@ body[data-fids-theme="cream"] .fids-banner {
 }
 body[data-fids-theme="cream"] .fids-board-label,
 body[data-fids-theme="cream"] .fids-banner-time,
-body[data-fids-theme="cream"] .fids-banner-date,
-body[data-fids-theme="cream"] .fids-banner-tlabel,
-body[data-fids-theme="cream"] .fids-banner-analog {
+body[data-fids-theme="cream"] .fids-banner-date{
   color: #0a2236 !important;
 }
 body[data-fids-theme="cream"] #fidsTable {
@@ -1417,9 +1425,7 @@ body[data-fids-theme="paper"] .fids-banner {
 }
 body[data-fids-theme="paper"] .fids-board-label,
 body[data-fids-theme="paper"] .fids-banner-time,
-body[data-fids-theme="paper"] .fids-banner-date,
-body[data-fids-theme="paper"] .fids-banner-tlabel,
-body[data-fids-theme="paper"] .fids-banner-analog {
+body[data-fids-theme="paper"] .fids-banner-date{
   color: #18181b !important;
 }
 body[data-fids-theme="paper"] #fidsTable { background: #faf7f2 !important; }
@@ -2320,32 +2326,24 @@ body[data-fids-theme="cream"] .fids-banner { background: #ffffff !important; }
 /* Banner text colors per theme so the airport name/time stay readable */
 body[data-fids-theme="grey"]  .fids-banner-time,
 body[data-fids-theme="grey"]  .fids-banner-date,
-body[data-fids-theme="grey"]  .fids-banner-tlabel,
-body[data-fids-theme="grey"]  .fids-banner-analog,
 body[data-fids-theme="grey"]  .fids-board-label,
 body[data-fids-theme="grey"]  .fids-airport-name,
 body[data-fids-theme="grey"]  .fids-airport-iata { color: #ffffff !important; }
 
 body[data-fids-theme="amber"] .fids-banner-time,
 body[data-fids-theme="amber"] .fids-banner-date,
-body[data-fids-theme="amber"] .fids-banner-tlabel,
-body[data-fids-theme="amber"] .fids-banner-analog,
 body[data-fids-theme="amber"] .fids-board-label,
 body[data-fids-theme="amber"] .fids-airport-name,
 body[data-fids-theme="amber"] .fids-airport-iata { color: #fef3c7 !important; }
 
 body[data-fids-theme="green"] .fids-banner-time,
 body[data-fids-theme="green"] .fids-banner-date,
-body[data-fids-theme="green"] .fids-banner-tlabel,
-body[data-fids-theme="green"] .fids-banner-analog,
 body[data-fids-theme="green"] .fids-board-label,
 body[data-fids-theme="green"] .fids-airport-name,
 body[data-fids-theme="green"] .fids-airport-iata { color: #d1fae5 !important; }
 
 body[data-fids-theme="navy"] .fids-banner-time,
 body[data-fids-theme="navy"] .fids-banner-date,
-body[data-fids-theme="navy"] .fids-banner-tlabel,
-body[data-fids-theme="navy"] .fids-banner-analog,
 body[data-fids-theme="navy"] .fids-board-label,
 body[data-fids-theme="navy"] .fids-airport-name,
 body[data-fids-theme="navy"] .fids-airport-iata { color: #ffffff !important; }
@@ -2379,8 +2377,6 @@ body[data-fids-theme="cream"] #fidsTable thead th {
 }
 body[data-fids-theme="cream"] .fids-banner-time,
 body[data-fids-theme="cream"] .fids-banner-date,
-body[data-fids-theme="cream"] .fids-banner-tlabel,
-body[data-fids-theme="cream"] .fids-banner-analog,
 body[data-fids-theme="cream"] .fids-board-label,
 body[data-fids-theme="cream"] .fids-airport-name,
 body[data-fids-theme="cream"] .fids-airport-iata { color: #0a2236 !important; }
@@ -3166,8 +3162,6 @@ body[data-fids-theme="tus-teal"] .fids-banner {
 }
 body[data-fids-theme="tus-teal"] .fids-banner-time,
 body[data-fids-theme="tus-teal"] .fids-banner-date,
-body[data-fids-theme="tus-teal"] .fids-banner-tlabel,
-body[data-fids-theme="tus-teal"] .fids-banner-analog,
 body[data-fids-theme="tus-teal"] .fids-board-label,
 body[data-fids-theme="tus-teal"] .fids-airport-name,
 body[data-fids-theme="tus-teal"] .fids-airport-iata,
@@ -3184,8 +3178,6 @@ body[data-fids-theme="midnight"] #fidsTable { background: #000000 !important; }
 body[data-fids-theme="midnight"] .fids-banner { background: #050505 !important; }
 body[data-fids-theme="midnight"] .fids-banner-time,
 body[data-fids-theme="midnight"] .fids-banner-date,
-body[data-fids-theme="midnight"] .fids-banner-tlabel,
-body[data-fids-theme="midnight"] .fids-banner-analog,
 body[data-fids-theme="midnight"] .fids-board-label,
 body[data-fids-theme="midnight"] .fids-airport-name,
 body[data-fids-theme="midnight"] .fids-airport-iata,
@@ -3202,8 +3194,6 @@ body[data-fids-theme="charcoal"] #fidsTable { background: #1c1917 !important; }
 body[data-fids-theme="charcoal"] .fids-banner { background: #292524 !important; }
 body[data-fids-theme="charcoal"] .fids-banner-time,
 body[data-fids-theme="charcoal"] .fids-banner-date,
-body[data-fids-theme="charcoal"] .fids-banner-tlabel,
-body[data-fids-theme="charcoal"] .fids-banner-analog,
 body[data-fids-theme="charcoal"] .fids-board-label,
 body[data-fids-theme="charcoal"] .fids-airport-name,
 body[data-fids-theme="charcoal"] .fids-airport-iata,
@@ -3220,8 +3210,6 @@ body[data-fids-theme="burgundy"] #fidsTable { background: #2a0a14 !important; }
 body[data-fids-theme="burgundy"] .fids-banner { background: #4a0e1f !important; }
 body[data-fids-theme="burgundy"] .fids-banner-time,
 body[data-fids-theme="burgundy"] .fids-banner-date,
-body[data-fids-theme="burgundy"] .fids-banner-tlabel,
-body[data-fids-theme="burgundy"] .fids-banner-analog,
 body[data-fids-theme="burgundy"] .fids-board-label,
 body[data-fids-theme="burgundy"] .fids-airport-name,
 body[data-fids-theme="burgundy"] .fids-airport-iata,
@@ -3238,8 +3226,6 @@ body[data-fids-theme="forest"] #fidsTable { background: #0a1f1c !important; }
 body[data-fids-theme="forest"] .fids-banner { background: #134e4a !important; }
 body[data-fids-theme="forest"] .fids-banner-time,
 body[data-fids-theme="forest"] .fids-banner-date,
-body[data-fids-theme="forest"] .fids-banner-tlabel,
-body[data-fids-theme="forest"] .fids-banner-analog,
 body[data-fids-theme="forest"] .fids-board-label,
 body[data-fids-theme="forest"] .fids-airport-name,
 body[data-fids-theme="forest"] .fids-airport-iata,
@@ -3259,8 +3245,6 @@ body[data-fids-theme="paper"] .fids-banner {
 }
 body[data-fids-theme="paper"] .fids-banner-time,
 body[data-fids-theme="paper"] .fids-banner-date,
-body[data-fids-theme="paper"] .fids-banner-tlabel,
-body[data-fids-theme="paper"] .fids-banner-analog,
 body[data-fids-theme="paper"] .fids-board-label,
 body[data-fids-theme="paper"] .fids-airport-name,
 body[data-fids-theme="paper"] .fids-airport-iata,
@@ -3283,8 +3267,6 @@ body[data-fids-theme="terminal"] #fidsTable { background: #000000 !important; fo
 body[data-fids-theme="terminal"] .fids-banner { background: #001a00 !important; }
 body[data-fids-theme="terminal"] .fids-banner-time,
 body[data-fids-theme="terminal"] .fids-banner-date,
-body[data-fids-theme="terminal"] .fids-banner-tlabel,
-body[data-fids-theme="terminal"] .fids-banner-analog,
 body[data-fids-theme="terminal"] .fids-board-label,
 body[data-fids-theme="terminal"] .fids-airport-name,
 body[data-fids-theme="terminal"] .fids-airport-iata,
@@ -3304,8 +3286,6 @@ body[data-fids-theme="sky"] .fids-banner {
 }
 body[data-fids-theme="sky"] .fids-banner-time,
 body[data-fids-theme="sky"] .fids-banner-date,
-body[data-fids-theme="sky"] .fids-banner-tlabel,
-body[data-fids-theme="sky"] .fids-banner-analog,
 body[data-fids-theme="sky"] .fids-board-label,
 body[data-fids-theme="sky"] .fids-airport-name,
 body[data-fids-theme="sky"] .fids-airport-iata,
@@ -3331,8 +3311,6 @@ body[data-fids-theme="sunset"] .fids-banner {
 }
 body[data-fids-theme="sunset"] .fids-banner-time,
 body[data-fids-theme="sunset"] .fids-banner-date,
-body[data-fids-theme="sunset"] .fids-banner-tlabel,
-body[data-fids-theme="sunset"] .fids-banner-analog,
 body[data-fids-theme="sunset"] .fids-board-label,
 body[data-fids-theme="sunset"] .fids-airport-name,
 body[data-fids-theme="sunset"] .fids-airport-iata,

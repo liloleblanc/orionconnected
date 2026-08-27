@@ -2482,45 +2482,7 @@ html body .fids-banner .fids-banner-time-text {
   align-items: flex-end !important;
   justify-content: center !important;
 }
-html body .fids-banner .fids-banner-analog {
-  height: clamp(52px, 7vh, 96px) !important;
-  width: clamp(52px, 7vh, 96px) !important;
-  flex: 0 0 auto !important;
-  display: block !important;
-  order: 2 !important;   /* Nick: analog clock on the RIGHT of the digital */
-}
 html body .fids-banner .fids-banner-time-text { order: 1 !important; }
-/* Colour comes from the per-theme rules (which now also target -tlabel and
-   -analog), so the clock follows each theme's banner-text colour instead of
-   the unreliable --fids-banner-text var (Nick: 'white on white anywhere but
-   Moncton'). Analog strokes use currentColor = that theme colour. */
-html body .fids-banner .fids-banner-analog .cl-face {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 3;
-  opacity: 0.9;
-}
-html body .fids-banner .fids-banner-analog .cl-ticks line {
-  stroke: currentColor;
-  stroke-width: 3;
-  opacity: 0.65;
-}
-html body .fids-banner .fids-banner-analog .cl-hand {
-  stroke: currentColor;
-  stroke-linecap: round;
-}
-html body .fids-banner .fids-banner-analog .cl-hour { stroke-width: 5; }
-html body .fids-banner .fids-banner-analog .cl-min { stroke-width: 3.5; }
-html body .fids-banner .fids-banner-analog .cl-pin { fill: currentColor; }
-html body .fids-banner .fids-banner-tlabel {
-  font-size: clamp(12px, 1.35vh, 20px) !important;
-  font-weight: 800 !important;
-  letter-spacing: 0.02em !important;
-  opacity: 0.74 !important;
-  white-space: nowrap !important;
-  line-height: 1.05 !important;
-  margin-bottom: 1px !important;
-}
 html body .fids-banner .fids-banner-time {
   font-size: clamp(34px, 4.4vh, 60px) !important;
   font-weight: 900 !important;
@@ -2537,10 +2499,6 @@ html body .fids-banner .fids-banner-date {
   text-transform: none !important;
 }
 html body .fids-banner .fids-banner-time-block .cl-sep { opacity: 0.4; font-weight: 500; }
-/* Two-row bilingual label on FIDS/BIDS (Nick, gate layout): 'Time in <City>'
-   over 'Heure à <City>' — no box, just the text beside the analog clock. */
-html .cl-l1, html .cl-l2 { display: block !important; line-height: 1.08 !important; }
-html .cl-l2 { opacity: 0.82 !important; }
 /* Label BESIDE the time (Nick's sketch: 'Time in Orlando / Heure à Orlando  10:29PM'
    then the date below). Keeps the block short enough that the label never gets
    clipped above the time. */
@@ -2549,9 +2507,6 @@ html body .fids-banner .fids-banner-digirow {
   align-items: center !important;
   justify-content: flex-end !important;
   gap: clamp(8px, 0.8vw, 18px) !important;
-}
-html body .fids-banner .fids-banner-digirow .fids-banner-tlabel {
-  text-align: right !important; margin-bottom: 0 !important; white-space: nowrap !important;
 }
 
 /* Baggage banner: same title/icon treatment as the FIDS board, but keep the
@@ -3604,8 +3559,6 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body[data-fids-banner="silk"] .fids-banner-time { color: #0d2440 !important; }
   body[data-fids-banner="silk"] .fids-banner-date { color: rgba(13, 36, 64, 0.66) !important; }
-  body[data-fids-banner="silk"] .fids-banner-tlabel,
-  body[data-fids-banner="silk"] .fids-banner-analog { color: #0d2440 !important; }
   body[data-fids-banner="silk"] .fids-banner-board .fids-board-label {
     color: #ffffff !important;
     font-size: clamp(40px, 2.9vw, 56px) !important;
@@ -3627,8 +3580,6 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
   body[data-fids-banner="silk-acadian"] .fids-banner-time { color: #ffffff !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-date { color: rgba(255, 255, 255, 0.85) !important; }
-  body[data-fids-banner="silk-acadian"] .fids-banner-tlabel,
-  body[data-fids-banner="silk-acadian"] .fids-banner-analog { color: #ffffff !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-board { background: transparent !important; }
   body[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label,
   body.fids-ap-YQM[data-fids-banner="silk-acadian"] .fids-banner-board .fids-board-label {
@@ -3742,6 +3693,11 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
     line-height: 1.04 !important;
     opacity: 1 !important;
   }
+  /* Stacked on its own line, the second language needs no separator. */
+  body[data-fids-banner="silk"] .fids-board-label .fbl-fr::before,
+  body[data-fids-banner="silk-acadian"] .fids-board-label .fbl-fr::before {
+    content: none !important;
+  }
 }
 
 /* ── v22409 — flight-info TITLE vs DATA read as two colours (Nick: 'Title
@@ -3838,6 +3794,15 @@ html .octb-fr { font-size: clamp(10px,1.35vh,16px) !important; font-weight: 700 
 html .octb-clock { font-size: clamp(22px,3.2vh,42px) !important; font-weight: 900 !important; color: #ffffff !important; white-space: nowrap !important; line-height: 1.0 !important; }
 html .octb-date { font-size: clamp(9px,1.2vh,14px) !important; font-weight: 700 !important; color: rgba(255,255,255,0.80) !important; white-space: nowrap !important; text-align: center !important; margin-top: 2px !important; }
 html .octb-date .cl-sep { opacity: .5 !important; }
+/* v23287 — 'YHZ | 11:00PM': the airport's code sits on the clock line so a
+   traveller can tell whose local time this is without hunting for the code
+   somewhere else on the screen (Nick). The code is deliberately a size down
+   from the time — the time is what people read across a hall. */
+html .octb-clockrow { display: flex !important; align-items: baseline !important; justify-content: center !important; gap: .3em !important; }
+html .octb-ap { font-size: clamp(15px,2.1vh,30px) !important; font-weight: 900 !important; color: #ffffff !important; letter-spacing: .05em !important; white-space: nowrap !important; }
+html .octb-apsep { font-size: clamp(13px,1.8vh,25px) !important; font-weight: 700 !important; color: rgba(255,255,255,0.55) !important; }
+html .octb-tab .octb-ap { font-size: clamp(19px,3.1vh,45px) !important; }
+html .octb-tab .octb-apsep { font-size: clamp(16px,2.6vh,38px) !important; }
 /* Single local-time TAB (Nick: 'with a tab'): full banner height, rounded top
    corners, flush bottom, soft border + shadow — the gate-tab grammar. Sized a
    touch larger now that it's the only panel. */
@@ -5184,10 +5149,8 @@ html body .g8-r1-apmark img {
   /* One ink for the whole time block, chosen by what the tail actually is:
      white where it is a saturated logo colour... */
   html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-time,
-  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
   html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-date,
-  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep,
-  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-analog {
+  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep{
     color: #ffffff !important;
     opacity: 1 !important;
   }
@@ -5211,10 +5174,8 @@ html body .g8-r1-apmark img {
    chosen; the sizing is a separate change and his call. */
 @media (min-width: 701px) {
   html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-time,
-  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
   html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date,
-  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep,
-  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-analog {
+  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep{
     color: #1C2A39 !important;
     opacity: 1 !important;
   }
@@ -5233,14 +5194,7 @@ html body .g8-r1-apmark img {
    asked before for the bilingual pairs to be the same size as each other
    with no difference between the English and the French. */
 @media (min-width: 701px) {
-  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel,
-  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel .cl-l1,
-  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-tlabel .cl-l2 {
-    font-size: 19px !important;
-    line-height: 1.06 !important;
-    font-weight: 800 !important;
-  }
-  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-date {
+    html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-date {
     font-size: 19px !important;
     font-weight: 700 !important;
     margin-top: 3px !important;
@@ -5965,10 +5919,8 @@ html:not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted .bidsv2-airline
       var(--fids-band-4) 68%, var(--fids-band-4) 100%) !important;
   }
   html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-time,
-  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
   html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-date,
   html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-date .cl-sep,
-  html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-banner-analog,
   html body[data-fids-banner="silk"][data-fids-band-palette="1"]:not(#_) .bidsv2-fids-banner .fids-board-label {
     color: #ffffff !important;
     opacity: 1 !important;
@@ -6061,16 +6013,6 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
    white and half not, which is the 'not consistent everywhere' Nick keeps
    seeing across screens. */
 @media (min-width: 701px) {
-  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel,
-  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel .cl-l1,
-  html:not(#_) body:not(#_) .fids-banner .fids-banner-tlabel .cl-l2,
-  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
-  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel .cl-l1,
-  html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-tlabel .cl-l2 {
-    font-size: clamp(18px, 2.0vh, 30px) !important;
-    line-height: 1.08 !important;
-    font-weight: 800 !important;
-  }
   html:not(#_) body:not(#_) .fids-banner .fids-banner-date,
   html:not(#_) body:not(#_) .bidsv2-fids-banner .fids-banner-date {
     font-size: clamp(18px, 2.0vh, 30px) !important;
@@ -6084,10 +6026,8 @@ html:not(#_) body.fids-light-board:not(#_) .bidsv2-list-header {
     line-height: 1 !important;
   }
   html:not(#_) body[data-fids-banner="silk"]:not(#_) .fids-banner .fids-banner-time-block *,
-  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-tlabel,
   html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-date,
-  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-time,
-  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-analog {
+  html:not(#_) body[data-fids-banner="silk"]:not(#_) .bidsv2-fids-banner .fids-banner-time{
     color: #ffffff !important;
     opacity: 1 !important;
   }
@@ -6634,10 +6574,7 @@ html body[data-fids-banner="silk-acadian"] .fids-banner {
     #001A4D 0%, #003DA5 30%, #EDF1F6 46%, #EDF1F6 54%, #B50E2C 70%, #6E081A 100%) !important;
 }
 html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-time,
-html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-tlabel,
-html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-date,
-html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-analog,
-html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-analog * {
+html:not(#_) body[data-fids-banner="silk-acadian"] .fids-banner-date{
   color: #ffffff !important;
 }
 
@@ -6656,7 +6593,6 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before {
    v22633's exactly (same specificity, later in file wins). */
 @media (min-width: 701px) {
   html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-time,
-  html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-tlabel,
   html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date,
   html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-time-block .fids-banner-date .cl-sep {
     color: #ffffff !important;
@@ -6664,27 +6600,6 @@ html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner::before {
   }
 }
 
-/* ── v22703: GOLD CLOCK (Nick: 'should the clock go deep yellow and the
-   numbers deep navy blue?'). The analog face fills with the star's gold and
-   its ticks, hands and pin take Nick's navy — the clock becomes a little
-   Stella Maris echo on the red end of the flag. The digital digits stay
-   white: navy digits on the deep red measure ~2:1 and would vanish; the
-   gold-and-navy lives in the clock where it reads at any size. */
-html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-face {
-  fill: #FAC120 !important;
-  stroke: #1C2A39 !important;
-  opacity: 1 !important;
-}
-html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-ticks line {
-  stroke: #1C2A39 !important;
-  opacity: .85 !important;
-}
-html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-hand {
-  stroke: #1C2A39 !important;
-}
-html body[data-fids-banner="silk-acadian"]:not(#_) .fids-banner-analog .cl-pin {
-  fill: #1C2A39 !important;
-}
 
 /* ── v22704: TRIANGLES ON THE ROWS (Nick's 61716702 upload: 'try this for
    rows instead'). His art is a halftone size-GRADIENT — used raw, every row
@@ -7894,9 +7809,7 @@ html.fids-portrait #fidsTable td { padding-left: 10px !important; padding-right:
    time block, logo and clock all collided at 1080 wide). Compact single
    row: no analog clock, smaller digits and logo, tighter padding. */
 html.fids-portrait .fids-banner { padding: 0 16px !important; }
-html.fids-portrait .fids-banner-analog { display: none !important; }
 html.fids-portrait .fids-banner-time { font-size: clamp(24px, 3vw, 34px) !important; }
-html.fids-portrait .fids-banner-tlabel { font-size: 13px !important; }
 html.fids-portrait .fids-banner-date { font-size: 14px !important; }
 html.fids-portrait .fids-airport-logo-img { height: 52px !important; }
 html.fids-portrait .fids-airport-logo { padding: 6px 10px !important; }
@@ -14496,3 +14409,24 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      down rather than the name being ellipsised. */
   .bidsv2-col-from { font-size: 21px !important; letter-spacing: 0.3px !important; }
 }
+
+
+/* ── v23287 — THE GATE'S AIRPORT CODE TAKES THE CLOCK'S OWN INK ─────────
+   .octb-clock is recoloured several times downstream (the deepened carrier
+   accent on the light silk tab; dark navy on a light header). The code
+   standing beside it has to move with it or it reads as a stray white word
+   on a light tab. These carry the same specificity as those rules and come
+   last, so the pair always matches whatever the clock ended up being. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-ap {
+  color: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #33404E)) 80%, #000 20%) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-apsep {
+  color: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #33404E)) 80%, #000 20%) !important;
+  opacity: 0.45 !important;
+}
+html body.g8-header-is-light .octb-ap { color: #1d2b45 !important; }
+html body.g8-header-is-light .octb-apsep { color: #1d2b45 !important; opacity: 0.45 !important; }
+/* In the stacked tab the clock is sized in viewport/container units, so the
+   code follows the same scale rather than its own clamp. */
+html .octb-tab.octb-stack .octb-ap { font-size: min(3.1vh, 44px, 19cqh) !important; }
+html .octb-tab.octb-stack .octb-apsep { font-size: min(2.6vh, 37px, 16cqh) !important; }
