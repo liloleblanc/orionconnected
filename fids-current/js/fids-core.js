@@ -1996,6 +1996,162 @@ function updateSubScreens() {
   }
 }
 
+// ── v23294 — THE AIRPORT CODE'S ACCENT IS COMPUTED, NOT HOPED FOR ──────
+// Three attempts at this in CSS all failed, each in its own way:
+//   v23290 used the per-row CARRIER accent, so jetBlue blue landed on the red
+//          Cancelled rows and nothing matched row to row.
+//   v23292 used currentColor on status rows and the board accent elsewhere.
+//          That fixed contrast and destroyed the accent: on a WestJet row the
+//          row's own ink IS the darkened carrier colour, so the code inherited
+//          the brown, and on a board with no accent set currentColor makes the
+//          code identical to the city name beside it (Nick: 'my Codes went
+//          back to brown for Westjet none for the main').
+// CSS cannot measure contrast, so it was always going to be a guess. This
+// measures. For each code it reads the background actually painted behind it,
+// takes the SCREEN's accent (one colour per board, never per carrier, so it
+// can never go brown on one row and blue on the next), and walks that accent's
+// LIGHTNESS — hue and saturation untouched — until it clears 4.5:1 against
+// that row. It also refuses to land on the city name's own colour: an accent
+// you cannot distinguish from the text beside it is not an accent.
+var CODE_ACCENT_MIN_CONTRAST = 4.5;
+function _caHexToRgb(h) {
+  h = String(h || '').trim().replace('#', '');
+  if (h.length === 3) h = h.replace(/./g, function (c) { return c + c; });
+  if (!/^[0-9a-f]{6}$/i.test(h)) return null;
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+}
+function _caParse(c) {
+  var m = String(c || '').match(/-?[\d.]+/g);
+  if (!m || m.length < 3) return null;
+  if (m.length >= 4 && parseFloat(m[3]) === 0) return null;   // fully transparent
+  return [+m[0], +m[1], +m[2]];
+}
+function _caLum(rgb) {
+  var a = rgb.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+  return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+}
+function _caContrast(a, b) {
+  var l1 = _caLum(a), l2 = _caLum(b), hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+  return (hi + 0.05) / (lo + 0.05);
+}
+function _caRgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), h = 0, s = 0, l = (mx + mn) / 2;
+  if (mx !== mn) {
+    var d = mx - mn;
+    s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    if (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function _caHslToRgb(h, s, l) {
+  function f(p, q, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q - p) * 6 * t;
+    if (t < 1 / 2) return q;
+    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  if (s === 0) { var v = Math.round(l * 255); return [v, v, v]; }
+  var q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+  return [Math.round(f(p, q, h + 1 / 3) * 255), Math.round(f(p, q, h) * 255), Math.round(f(p, q, h - 1 / 3) * 255)];
+}
+// The background actually painted behind an element — the first ancestor with
+// a non-transparent background. A row's stripe or status colour lives on the
+// <tr>, not the cell, so reading the cell alone reports transparent.
+function _caBgBehind(el) {
+  var n = el;
+  while (n && n !== document.documentElement) {
+    var c = _caParse(getComputedStyle(n).backgroundColor);
+    if (c) return c;
+    n = n.parentElement;
+  }
+  return [11, 18, 32];
+}
+// The SCREEN's accent: the board's own banner accent where the airport has
+// one, else the airline accent as a last resort, else a neutral blue. Read
+// once per pass, so every code on the board is the same hue.
+function _caScreenAccent() {
+  var tries = [];
+  try {
+    var cs = getComputedStyle(document.body);
+    tries.push(cs.getPropertyValue('--fids-silk-accent'));
+    tries.push(cs.getPropertyValue('--fids-code-accent'));
+  } catch (e) {}
+  try {
+    var ap = (document.getElementById('apSel') || {}).value || '';
+    if (typeof BANNER_ACCENT !== 'undefined' && BANNER_ACCENT[ap]) tries.push(BANNER_ACCENT[ap]);
+  } catch (e) {}
+  for (var i = 0; i < tries.length; i++) {
+    var rgb = _caHexToRgb(String(tries[i] || '').trim()) || _caParse(tries[i]);
+    if (rgb) return rgb;
+  }
+  return [56, 132, 255];   // a clean blue — never brown, never the row's ink
+}
+// Walk lightness (hue and saturation held) until the accent clears the row.
+function _caFit(accent, bg, avoid) {
+  var hsl = _caRgbToHsl(accent[0], accent[1], accent[2]);
+  var best = null, bestC = 0;
+  // Scan the FULL lightness range, not one direction from the accent. A single
+  // direction fails on the Cancelled rows: their ground is a deep red, which
+  // reads as 'dark', so brightening was the only move — straight into the row's
+  // near-white ink, where the distinctness guard blocks every good candidate
+  // and it settles around 3.7:1. Deepening the accent instead clears the red
+  // easily and is nowhere near white. Scanning both ways finds that.
+  for (var step = 0; step <= 46; step++) {
+    var l = 0.04 + step * 0.02;
+    if (l > 0.98) break;
+    var rgb = _caHslToRgb(hsl[0], hsl[1], l);
+    var c = _caContrast(rgb, bg);
+    // Never land on the surrounding text's own colour — that reads as no
+    // accent at all, which is exactly what v23292 shipped.
+    var tooCloseToInk = avoid && (Math.abs(rgb[0] - avoid[0]) + Math.abs(rgb[1] - avoid[1]) + Math.abs(rgb[2] - avoid[2])) < 90;
+    if (tooCloseToInk) continue;
+    if (c > bestC) { bestC = c; best = rgb; }
+  }
+  // Last resort: some grounds cannot be cleared by ANY lightness of a given
+  // hue — a mid-toned red defeats every blue. Rather than ship a code at
+  // 3.9:1, drop the saturation and take a neutral, which always maximises
+  // contrast. Keeping the hue is a preference; being readable is not.
+  if (bestC < CODE_ACCENT_MIN_CONTRAST) {
+    for (var g = 0; g <= 255; g += 5) {
+      var n = [g, g, g];
+      var nc = _caContrast(n, bg);
+      var nClose = avoid && (Math.abs(g - avoid[0]) + Math.abs(g - avoid[1]) + Math.abs(g - avoid[2])) < 90;
+      if (nClose) continue;
+      if (nc > bestC) { bestC = nc; best = n; }
+    }
+  }
+  return best || accent;
+}
+function applyCodeAccents() {
+  try {
+    if (document.documentElement.getAttribute('data-city-code-accent') === 'off') return;
+    var nodes = document.querySelectorAll('.dest-iata, .g8-city-code');
+    if (!nodes.length) return;
+    var accent = _caScreenAccent();
+    nodes.forEach(function (el) {
+      var bg = _caBgBehind(el);
+      var ink = _caParse(getComputedStyle(el.parentElement || el).color) || null;
+      var rgb = _caFit(accent, bg, ink);
+      var css = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
+      if (el.getAttribute('data-ca') !== css) {
+        el.style.setProperty('color', css, 'important');
+        el.setAttribute('data-ca', css);
+        var sep = el.previousElementSibling;
+        if (sep && sep.classList && sep.classList.contains('dest-iata-sep')) {
+          sep.style.setProperty('color', css, 'important');
+          sep.style.setProperty('opacity', '0.45', 'important');
+        }
+      }
+    });
+  } catch (e) {}
+}
+if (typeof window !== 'undefined') window.applyCodeAccents = applyCodeAccents;
+
 // True when this display walks gates on its own (the rotator iframe, or an
 // explicit ?gatecycle=N). Kept beside the cycle IIFE's own rule so the two
 // can never disagree about which screens rotate.
@@ -20358,7 +20514,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23293';
+var FIDS_BUILD_TAG = 'v23294';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -35744,6 +35900,7 @@ if (typeof window !== 'undefined') {
   window.normalizeCityIataTextNodes = normalizeCityIataTextNodes;
   document.addEventListener('DOMContentLoaded', function(){ normalizeCityIataTextNodes(document); });
   _ocEvery(function(){ normalizeCityIataTextNodes(document); }, 2000);
+  _ocEvery(function(){ applyCodeAccents(); }, 1200);
 }
 
 
