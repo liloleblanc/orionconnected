@@ -1242,6 +1242,67 @@ function setAirlineBgPick(val) {
   }
 }
 
+// Wrap the trailing airport code of a 'City | YYZ' string so it can be
+// styled on its own. Returns escaped-safe HTML built from a value that is
+// already a display string; the city half is emitted unchanged, as the
+// callers did before. No code on the string -> returned untouched.
+function cityCodeSplitHtml(disp) {
+  var str = String(disp == null ? '' : disp);
+  try {
+    var m = str.match(_CITY_CODE_TAIL);
+    if (!m) return str;
+    var code = (m[1] || m[2] || '').toUpperCase();
+    if (!code) return str;
+    return _stripCityCode(str)
+      + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + code + '</span>';
+  } catch (e) { return str; }
+}
+if (typeof window !== 'undefined') window.cityCodeSplitHtml = cityCodeSplitHtml;
+
+// ── v23290 — THE AIRPORT CODE WEARS THE SCREEN'S ACCENT ────────────────
+// Nick: 'color the airport codes with accents so Toronto | YYZ the YYZ
+// colored to accent the screen ... this is on all screens ... or let us have
+// the option to color it'. On by default; the switch persists per display, so
+// a board that wants the quieter grey code can have it.
+// The colour itself is CSS — the code takes whichever accent that screen
+// already owns (the board's banner accent, or the carrier accent on a gate),
+// so it can never drift from the rest of the screen.
+var CITY_CODE_ACCENT = true;
+function setCityCodeAccent(on) {
+  CITY_CODE_ACCENT = !!on;
+  try { localStorage.setItem('fids_city_code_accent', CITY_CODE_ACCENT ? '1' : '0'); } catch (e) {}
+  _applyCityCodeAccent();
+  var el = document.getElementById('cityCodeAccentBtn');
+  if (el) {
+    el.classList.toggle('active', CITY_CODE_ACCENT);
+    el.textContent = CITY_CODE_ACCENT ? 'CODE ACCENT: ON' : 'CODE ACCENT: OFF';
+  }
+}
+function _applyCityCodeAccent() {
+  try {
+    document.documentElement.setAttribute('data-city-code-accent', CITY_CODE_ACCENT ? 'on' : 'off');
+  } catch (e) {}
+}
+(function () {
+  try {
+    var v = null;
+    try { v = localStorage.getItem('fids_city_code_accent'); } catch (e) {}
+    // ?citycode=off / =on beats the stored preference, so a single link can
+    // dress a display without touching its storage.
+    try {
+      var q = new URLSearchParams(window.location.search).get('citycode');
+      if (q === 'off' || q === '0') v = '0';
+      else if (q === 'on' || q === '1') v = '1';
+    } catch (e) {}
+    CITY_CODE_ACCENT = (v !== '0');
+    _applyCityCodeAccent();
+  } catch (e) {}
+})();
+if (typeof window !== 'undefined') {
+  window.setCityCodeAccent = setCityCodeAccent;
+  window._applyCityCodeAccent = _applyCityCodeAccent;
+}
+
 function setGateBgMode(m) {
   if (['photo','airline','custom'].indexOf(m) === -1) return;
   GATE_BG_MODE = m;
@@ -15480,7 +15541,7 @@ const gView = document.getElementById('gateView');
                     <div class="bidsv2-flight-num">${_flightDisp}</div>
                   </div>
                 </div>
-                <div class="bidsv2-col-from">${cityDisplay}</div>
+                <div class="bidsv2-col-from">${cityCodeSplitHtml(cityDisplay)}</div>
                 <div class="bidsv2-col-time">${_bidsTimeForLang(f.time)}</div>
                 <div class="bidsv2-col-status ${statusClass}">${stTxt}</div>
               </div>`;
@@ -20251,7 +20312,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23289';
+var FIDS_BUILD_TAG = 'v23290';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a

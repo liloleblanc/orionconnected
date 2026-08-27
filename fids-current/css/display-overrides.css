@@ -14451,3 +14451,32 @@ html[data-screen-type="baggage"] .ticker,
 html[data-screen-type="baggage"] .content-area,
 html[data-screen-type="baggage"] .hdr,
 html[data-screen-type="baggage"] .view-selector { display: none !important; }
+
+/* ── v23290 — THE AIRPORT CODE WEARS THE SCREEN'S ACCENT ────────────────
+   Nick: 'color the airport codes with accents so Toronto | YYZ the YYZ
+   colored to accent the screen ... this is on all screens'. The code takes
+   whichever accent that screen already owns — the board's banner accent, the
+   carrier accent on a gate — so it can never drift from the rest of the
+   screen, and it falls back to the inherited ink where neither is set.
+   The muting the code carried as plain grey comes off: at 0.78 opacity an
+   accent reads as a wash rather than a colour. setCityCodeAccent(false)
+   (or ?citycode=off) flips the attribute and every rule here stops applying,
+   leaving exactly the grey code that shipped before. */
+html[data-city-code-accent="on"] #fidsTable .dest-iata,
+html[data-city-code-accent="on"] .bidsv2-col-from .dest-iata,
+html[data-city-code-accent="on"] .g8-city-code {
+  color: var(--fids-silk-accent, var(--airline-accent, currentColor)) !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+}
+html[data-city-code-accent="on"] #fidsTable .dest-iata-sep,
+html[data-city-code-accent="on"] .bidsv2-col-from .dest-iata-sep {
+  color: var(--fids-silk-accent, var(--airline-accent, currentColor)) !important;
+  opacity: 0.45 !important;
+}
+/* The cream board mutes the code further; with an accent on it that reads as
+   washed out, so the theme's extra damping lifts when the accent is on. */
+html[data-city-code-accent="on"] body[data-fids-theme="cream"] #fidsTable .dest-iata,
+html[data-city-code-accent="on"] body[data-fids-theme="cream"] #fidsTable .dest-iata-sep {
+  opacity: 1 !important;
+}
