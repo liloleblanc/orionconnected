@@ -2130,7 +2130,12 @@ function _caFit(accent, bg, avoid) {
 function applyCodeAccents() {
   try {
     if (document.documentElement.getAttribute('data-city-code-accent') === 'off') return;
-    var nodes = document.querySelectorAll('.dest-iata, .g8-city-code');
+    // v23295 — .g8-city-code matches NOTHING on the gate screen. The gate's
+    // codes are built by _codeSeg() as .v2-fi-code.v2-rc-iata, so targeting
+    // only the board's class is why the gate accents never changed however
+    // many times this was reported fixed (Nick: 'the accents have not
+    // changed'). Verified by counting the elements on a live gate.
+    var nodes = document.querySelectorAll('.dest-iata, .g8-city-code, .v2-fi-code, .v2-rc-iata');
     if (!nodes.length) return;
     var accent = _caScreenAccent();
     nodes.forEach(function (el) {
@@ -20514,7 +20519,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23294';
+var FIDS_BUILD_TAG = 'v23295';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
