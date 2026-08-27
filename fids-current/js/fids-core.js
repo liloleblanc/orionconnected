@@ -6880,7 +6880,7 @@ function renderMobileGateHtml(ctx) {
       if (_onStand) _etaStr = TL('atGateLbl');
       else if (_minsToArr > 0 && _minsToArr < 1440)
         _etaStr = _minsToArr >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(_minsToArr/60) + 'h ' + (_minsToArr%60) + 'm') : (TL('arrivesIn') + ' ' + _minsToArr + ' min');
-      var _fromDisplay = _fromCity ? (_fromCity + (_fromIata ? ' (' + _fromIata + ')' : '')) : (_fromIata || (_inb.flight || ''));
+      var _fromDisplay = _fromCity ? (_fromCity + (_fromIata ? ' | ' + _fromIata : '')) : (_fromIata || (_inb.flight || ''));
       // MOBILE = SAME PROGRAMMING (Nick: 'you did not connect mobile'):
       // the live route MAP (same #gateMapBox the shared map engine + 10 s
       // tick target) and the live Speed/Altitude line (same data-gtelem spans
@@ -7394,7 +7394,7 @@ function _buildV2AircraftCol(ctx, vars) {
         : _minsToArr + ' min';
     }
     var _fromDisplay = '';
-    if (_fromCity) _fromDisplay = _fromCity + (_fromIata ? ' (' + _fromIata + ')' : '');
+    if (_fromCity) _fromDisplay = _fromCity + (_fromIata ? ' | ' + _fromIata : '');
     else if (_fromIata) _fromDisplay = _fromIata;
     var _inbFlightTxt = inboundFlight.flight || '';
     var _inbMain = _fromDisplay || _inbFlightTxt || '';
@@ -8185,7 +8185,7 @@ function _buildV2MapCol(ctx, vars) {
         else _origCity = _ib.origin || '';
         if (typeof tc === 'function') _origCity = tc(_origCity);
       } catch (e) { _origCity = _ib.origin || ''; }
-      var _origDisplay = _origCity + (_origIata ? ' (' + _origIata + ')' : '');
+      var _origDisplay = _origCity + (_origIata ? ' | ' + _origIata : '');
 
       // Inbound dep time (in destination tz)
       var _ibDepStr = '';
@@ -19468,6 +19468,14 @@ function _isRealApCode(code) {
 function normalizeDisplayCity(raw, iata) {
   var s = String(raw || '').replace(/\s+/g, ' ').trim();
   if (!s || s === '—') return s;
+  // This function runs on its OWN OUTPUT, and everything below — the strip,
+  // the dedupe, the code-recovery when no iata was passed — was written for
+  // the parenthesised shape the feed sends. Given 'Montreal | YUL' it removed
+  // the code and left the dangling separator ('Montreal |'), which cityCode
+  // then re-suffixed into 'Montreal | | YUL' on the live board. Rather than
+  // teach six parsers a second format, the pipe form is folded back to the
+  // one they already understand; the new separator is applied on the way out.
+  s = s.replace(/\s*\|\s*([A-Za-z]{2,4})\s*$/, ' ($1)');
 
   var code = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
 
@@ -19620,7 +19628,13 @@ function formatCityIata(raw, iata, langOverride) {
     var _guess = _iataFromCityName(city);
     if (_guess) code = _guess;
   }
-  return code ? (city + ' (' + code + ')') : city;
+  // IDEMPOTENT. This runs on strings that have already been through it —
+  // and the dedupe/strip checks above only recognise the PARENTHESISED shape
+  // the feed sends, so a name already ending '| YUL' sailed past them and got
+  // the code appended a second time ('Montreal | | YUL' on the live board).
+  // Strip whatever code tail is there, in either form, then append once.
+  city = _stripCityCode(city) || city;
+  return code ? (city + ' | ' + code) : city;
 }
 
 // cityCode(iata, [overrideCity], [langOverride]) — returns "Chicago (MDW)" format
@@ -19643,6 +19657,27 @@ function formatCityIata(raw, iata, langOverride) {
 // coords and data-iata logic; only the code CHIP shown to travellers changes.
 // YHU (Montréal Saint-Hubert) shows as the Montréal metro code MET.
 var AIRPORT_DISPLAY_IATA = { YHU: 'MET' };
+// ── CITY | CODE ──────────────────────────────────────────────────────────
+// Nick: 'ALL FIDS and BIDS listings for airports need to show as Moncton |
+// YQM … I don't want to see anywhere no longer Moncton (YQM)'. The display
+// format changes here, in the two helpers and the three inline sites that
+// build it — but the parentheses do NOT disappear from the codebase, because
+// the UPSTREAM FEED sends city names as 'Toronto (YYZ)' and the normalizers
+// still have to strip that. Those are input parsers and are left alone.
+//
+// The three places that read our own OUTPUT back go through these, so they
+// accept either form: the new pipe, and the old parentheses for anything
+// still cached or feed-shaped.
+var _CITY_CODE_TAIL = /\s*(?:\|\s*([A-Za-z]{2,4})|\(\s*([A-Za-z]{2,4})\s*\))\s*$/;
+function _stripCityCode(s) {
+  return String(s == null ? '' : s).replace(_CITY_CODE_TAIL, '').trim();
+}
+function _cityHasCode(s, code) {
+  var m = String(s == null ? '' : s).match(_CITY_CODE_TAIL);
+  if (!m) return false;
+  var got = (m[1] || m[2] || '').toUpperCase();
+  return !!got && got === String(code || '').toUpperCase();
+}
 function _dispIata(code) {
   var c = String(code || '').toUpperCase().trim();
   return AIRPORT_DISPLAY_IATA[c] || code;
@@ -19668,7 +19703,10 @@ function cityCode(iata, overrideCity, langOverride) {
   if (!city) city = airportCityNameSafe_v21877(code, langOverride);
   if (!city) return _dispIata(code);
 
-  return normalizeDisplayCity(city, code) + ' (' + _dispIata(code) + ')';
+  // normalizeDisplayCity already appends the code, so appending again here is
+  // the same double. Take its output as-is when it carries the right one.
+  var _nd = normalizeDisplayCity(city, code);
+  return _cityHasCode(_nd, _dispIata(code)) ? _nd : (_stripCityCode(_nd) + ' | ' + _dispIata(code));
 }
 
 // TL() returns current rotation language only
@@ -20131,7 +20169,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23281';
+var FIDS_BUILD_TAG = 'v23282';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -20959,7 +20997,7 @@ function render() {
     // into loc/city fields. Normalize again directly before rendering rows.
     if (f._locIata && typeof normalizeDisplayCity === 'function') {
       cityDisp = normalizeDisplayCity(cityDisp, f._locIata);
-      if (!String(cityDisp).toUpperCase().includes('(' + String(f._locIata).toUpperCase() + ')')) {
+      if (!_cityHasCode(cityDisp, f._locIata)) {
         cityDisp = cityCode(f._locIata, cityDisp, lang);
       }
     }
@@ -21128,7 +21166,7 @@ function render() {
         const _fi = _destFlipStops(_rowStops, 'ia');
         if (_fc) {
           return '<td class="td-dest">' + _fc
-            + (_fi ? ' <span class="dest-iata">(' + _fi + ')</span>' : '') + '</td>';
+            + (_fi ? ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _fi + '</span>' : '') + '</td>';
         }
       }
       // v218.14: cityCode() now returns "City (IATA)" format directly,
@@ -21139,9 +21177,11 @@ function render() {
       // fall back to appending it from f._locIata.
       const _iata = f._locIata || (isDep ? f.dest : f.origin) || '';
       const _iataUp = String(_iata).toUpperCase().trim();
-      // Match " (XXX)" at end where XXX is 2-4 uppercase letters
-      const _parensMatch = cityDisp.match(/^(.*?)\s+\(([A-Z]{2,4})\)\s*$/);
-      const _cityPlain = _parensMatch ? _parensMatch[1] : String(cityDisp).replace(/\s+\([A-Z]{2,4}\)\s*$/, '');
+      // The code already on the string, in either form — the new 'City | YQM'
+      // or the parenthesised shape the feed still uses.
+      const _tail = String(cityDisp).match(_CITY_CODE_TAIL);
+      const _tailCode = _tail ? (_tail[1] || _tail[2] || '') : '';
+      const _cityPlain = _stripCityCode(cityDisp);
       const _isLongDest = String(_cityPlain).trim().length >= 18;
       let _label;
       if (_isLongDest) {
@@ -21149,13 +21189,14 @@ function render() {
         // IATA code — it added little and was the part getting cut to "(V…".
         // The full city name now shows clean, with a slightly smaller font.
         _label = _cityPlain;
-      } else if (_parensMatch) {
-        // cityDisp already has the parens format — split and style the IATA
-        _label = _parensMatch[1] + ' <span class="dest-iata">(' + _parensMatch[2] + ')</span>';
+      } else if (_tailCode) {
+        // Split the code off and style it — as a separator, never parentheses
+        // (Nick: 'I don't want to see anywhere no longer Moncton (YQM)').
+        _label = _cityPlain + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _tailCode.toUpperCase() + '</span>';
       } else if (_iataUp && _iataUp.length >= 2 && _iataUp.length <= 4
                  && !cityDisp.toUpperCase().includes(_iataUp)) {
-        // No parens in cityDisp and we have a valid IATA to append
-        _label = cityDisp + ' <span class="dest-iata">(' + _iataUp + ')</span>';
+        // No code on the string yet and we have a valid IATA to append
+        _label = cityDisp + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _iataUp + '</span>';
       } else {
         // City name only (no IATA to add, or IATA already inline)
         _label = cityDisp;
@@ -23909,7 +23950,7 @@ function mapADB(raw, mode) {
     // and list the route in flying order, final stop last, comma-joined so
     // the board flips leg by leg.
     if (f._mcoViaStop) {
-      const _finalCity = String(locName).replace(/\s*\([A-Z]{2,4}\)\s*$/, '');
+      const _finalCity = _stripCityCode(locName);
       const _viaCities = String(f._mcoViaStop).split(',').map(s => s.trim()).filter(Boolean)
         .map(v => (/^[A-Z]{3}$/.test(v) && typeof CITY !== 'undefined' && CITY[v]) ? CITY[v] : v);
       // Title-case ALL-CAPS entries (CITY values shout) so the gate rail
