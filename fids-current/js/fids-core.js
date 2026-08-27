@@ -5349,8 +5349,11 @@ function wwayUrl(code, w, h) {
 
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
+  // WestJet's own regional brands were resolving to the generic navy —
+  // an accent that is nobody's colour. They wear WestJet's teal.
+  'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
-  'AS':'#01426A','B6':'#003876','TS':'#002868',
+  'AS':'#01426A','B6':'#003876','TS':'#00B3F0',
   'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
   // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
   // operator at Miami (Nick: 'Thios airline is supposed to be added and its
@@ -5443,6 +5446,18 @@ function frFirstAirport(iata) {
   return /^(YUL|YQB|YHU|YMX|YMY|YBG|YVO|YZV|YUY|YGP|YGL|YGW|YKQ|YPX|YVP|YHR|YNA|YBC|YTF|AKV|YIK|YZG|YQC|YHA|YKG|XGR)$/.test(String(iata || '').toUpperCase());
 }
 
+// Legible ink for a LIGHT carrier accent, without muddying it. Prefers the
+// carrier's own dark brand colour over any mix toward black.
+function _accentInk(code, accent) {
+  try {
+    var b = (typeof AIRLINE_BRAND !== 'undefined') && AIRLINE_BRAND[String(code || '').toUpperCase()];
+    if (b) {
+      var dark = b.bg1 || b.bg2 || b.bg3;
+      if (dark && typeof _hexIsLight === 'function' && !_hexIsLight(dark)) return dark;
+    }
+  } catch (e) {}
+  return 'color-mix(in srgb, ' + accent + ' 62%, #0B0F14)';
+}
 function getAirlineAccent(code) {
   var c = String(code || '').toUpperCase();
   // AIRLINE_BRAND carries accents for carriers the accent map never got
@@ -11681,8 +11696,17 @@ function uxgGateHtml(ctx) {
        // hue so the title/code stay legible on the LIGHT info cards (Nick,
        // pointing at Flair: 'we cant see this'). --airline-accent-ink is the
        // same treatment for the airport-code colour.
-       + ';--airline-r2:' + (function (h) { return _hexIsLight(h) ? ('color-mix(in srgb, ' + h + ' 42%, #0a1f12)') : h; })((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
-       + ';--airline-accent-ink:' + (_hexIsLight(accent) ? ('color-mix(in srgb, ' + accent + ' 42%, #0a1f12)') : accent)
+       + ';--airline-r2:' + (function (h) { return _hexIsLight(h) ? _accentInk(airlineCode, h) : h; })((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
+       // WAS: color-mix(accent 42%, #0a1f12). Darkening an accent by mixing it
+       // toward black IS brown when the accent is warm — Southwest gold
+       // #F9B612 came out #6e5e12 and Sunwing amber #F7941D came out #6e5017,
+       // and #0a1f12 is itself green-black so it dragged the hue too. That is
+       // the brown Nick is looking at, and no choice of black fixes it.
+       // A light accent now falls back to the CARRIER'S OWN dark brand shade,
+       // so the code stays legible on the light card and stays their colour
+       // (Nick: 'they are accents that need to match ... not brown, its not
+       // their colors'). Neutral near-black only where a carrier has no dark.
+       + ';--airline-accent-ink:' + (_hexIsLight(accent) ? _accentInk(airlineCode, accent) : accent)
        // Lane/takeover surfaces need white lettering — pre-darken accents
        // that are too light for it (Flair lime, Southwest yellow).
        + ';--accent-lane:' + (_hexIsLight(accent) ? 'color-mix(in srgb, ' + accent + ' 55%, #141a14)' : accent)
@@ -20146,7 +20170,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23284';
+var FIDS_BUILD_TAG = 'v23285';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
