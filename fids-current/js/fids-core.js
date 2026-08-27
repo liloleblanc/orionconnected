@@ -7986,18 +7986,19 @@ function _buildV2MapCol(ctx, vars) {
   // no "—" placeholders).
   var _inboundCard = '';
   var _telemBar = '';
-  // Once the incoming aircraft has actually arrived AND ~5 minutes have passed,
-  // the "incoming aircraft" panel is no longer relevant — the plane is at the
-  // gate. Switch the right panel to the DEPARTURE (outbound) flight info. (On a
-  // tight turnaround the boarding screen takes over first; this only matters
-  // when there's a gap between arrival and boarding.)
+  // THE RIGHT PANEL IS THE INCOMING AIRCRAFT'S, START TO FINISH. Nick: 'It
+  // should always display the incoming flight info, we should know where this
+  // flight comes from. Once it arrives it arrived, it is landed, then it is at
+  // the gate.' It used to flip to the DEPARTURE five minutes after arrival,
+  // which is why the departure banner kept coming back on a panel that was
+  // supposed to have finished with departures — they are on the other side.
+  // The panel now keeps the inbound card and lets its wording carry through
+  // arrived -> at the gate.
   var _arrivedSwitch = false;
   try {
     var _ibSw = vars.inboundFlight;
     if (_ibSw) {
-      var _swArrTs = (_ibSw._revTs && _ibSw._revTs > _ibSw._sortTs) ? _ibSw._revTs : (_ibSw._sortTs || 0);
-      // Switch once 5 min have elapsed past the (revised) arrival time.
-      if (_swArrTs && (Date.now() - _swArrTs) >= 5 * 60000) _arrivedSwitch = true;
+      // (no post-arrival switch — see above)
     } else {
       // NO inbound tracked at all (early-morning departures, feeds without
       // aircraft rotation): the panel used to render near-EMPTY — no card,
@@ -10158,34 +10159,10 @@ function uxgGateHtml(ctx) {
       + inStBadge
       + '<div class="g8-inb-times">' + inDepHtml + inArrHtml + '</div>'
       + '</div></div>';
-    // Also build a compact version for the bottom-right box
-    var _inbDepStr = inDepTime || '';
-    var _inbArrStr = inSchedArr || '';
-    var _inbArrRevStr = (inDelayed && inboundFlight.upd) ? inboundFlight.upd : '';
-    var _inbStText = inArrived ? SL(inboundFlight.status) : SL(inboundFlight.status);
-    var _inbStColor = inArrived ? '#10b981' : (inDelayed ? '#f59e0b' : '#60a5fa');
-    window._gateInbCompact = '<div style="display:flex;flex-direction:column;gap:2px;overflow:hidden;">'
-      + '<div style="font-size:11px;font-weight:700;letter-spacing:0.3px;color:rgba(255,255,255,0.5);">' + TL(inArrived ? (_inbOnStandG8 ? 'acArrivedGate' : 'acArrived') : 'yourAircraft') + '</div>'
-      + '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">'
-      +   '<span style="font-size:18px;font-weight:800;color:#fff;line-height:1.1;">' + inCity + '</span>'
-      +   '<span style="font-size:13px;font-weight:700;color:rgba(255,255,255,0.6);">' + inFlight + '</span>'
-      +   '<span style="font-size:11px;font-weight:700;color:' + _inbStColor + ';background:' + _inbStColor + '22;padding:2px 8px;border-radius:4px;">' + _inbStText + '</span>'
-      + '</div>'
-      + '<div style="display:flex;gap:12px;font-size:14px;font-weight:600;color:rgba(255,255,255,0.8);">'
-      +   (_inbDepStr ? '<span>Dep ' + _inbDepStr + '</span>' : '')
-      +   (_inbArrRevStr ? '<span>Arr <s style="opacity:0.4;">' + _inbArrStr + '</s> <span style="color:#f59e0b;font-weight:700;">' + _inbArrRevStr + '</span></span>' : (_inbArrStr ? '<span>Arr ' + _inbArrStr + (inboundFlight && inboundFlight.dateTag && inboundFlight.dateTag !== currentFlight.dateTag ? ' <sup style="font-size:10px;">+1</sup>' : '') + '</span>' : ''))
-      + '</div>'
-      + (inArrived ? '<div style="font-size:13px;font-weight:700;color:#10b981;">' + TL(_inbOnStandG8 ? 'acArrivedGate' : 'acArrived') + '</div>' : '')
-      + '</div>';
-  } else {
-    // No inbound - welcome message
-    var welcomeCity = cityCode(locIata || iata);
-    inbPanelHtml = '<div class="g8-inb g8-welcome" style="flex:1;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,rgba(15,23,42,0.5) 0%,rgba(30,41,59,0.35) 50%,rgba(15,23,42,0.5) 100%);">'
-      + '<div style="text-align:center;padding:40px;">'
-      + '<div style="font-size:clamp(28px,3vw,42px);font-weight:600;color:rgba(255,255,255,0.55);letter-spacing:0.04em;margin-bottom:12px;">' + TL('welcomeTo') + '</div>'
-      + '<div style="font-size:clamp(52px,7vw,96px);font-weight:900;color:#fff;letter-spacing:-0.02em;line-height:1.1;">' + welcomeCity + '</div>'
-      + '</div></div>';
-    window._gateInbCompact = null;
+    // (The compact bottom-right variant that used to be built here was
+    //  assigned and nulled but never rendered by anything — dead since it was
+    //  written, and a trap: it carried the correct arrived wording, so it read
+    //  like the live surface. Deleted.)
   }
 
   // Build welcome panel (always shown top-left in idle) — city photo clipped to this area only
@@ -20169,7 +20146,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23283';
+var FIDS_BUILD_TAG = 'v23284';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
