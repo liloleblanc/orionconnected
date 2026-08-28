@@ -19588,6 +19588,33 @@ function boardLangsFor(iata) {
   if (BOARD_LANG_DEFAULTS[_k]) return BOARD_LANG_DEFAULTS[_k].slice();
   return ES_BOARD_AIRPORTS.has(_k) ? ['en','es'] : ['en','fr'];
 }
+// v23306 — THE LANGUAGES BELONG TO THE BOARD, NOT TO THE DESTINATION.
+//
+// The Accor hotel card is for a hotel in the city the flight is going TO, so
+// the destination IATA is the right cache key. It is NOT the right language
+// key, and three call sites used it as both. Measured on a Miami gate with a
+// Los Angeles flight: langs was correctly ['en','es'], but the card asked
+// boardLangsFor('LAX') -> ['en','fr'] and fetched language=en + language=fr.
+// The cache ended up holding LAX|en and LAX|fr and not one word of Spanish,
+// so a Miami screen ran a French Sofitel ad (Nick: 'Miami airport Sofitel ad
+// English French for Los Angeles like nooo what are you doing') — and with no
+// record in the board's second language the bilingual half had nothing to
+// draw, which is why it came out as a page and a half rather than three.
+//
+// A screen speaks the language of the airport it is standing in, whatever the
+// flight's destination. `langs` already carries that, including the ?langs=
+// URL param, the saved set and the per-airport config, so it is read first
+// and boardLangsFor() is only the floor.
+function _boardLangPair() {
+  try {
+    if (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) {
+      // A board pinned to ONE language keeps one — a monolingual board should
+      // render a monolingual card, not have a second language invented for it.
+      return langs.slice(0, 2);
+    }
+  } catch (e) {}
+  return ['en', 'fr'];
+}
 // Metric (Celsius) for Spanish-language stations; Canada keeps the C/F flip.
 function boardMetricFor(iata) {
   return ES_BOARD_AIRPORTS.has(String(iata || '').toUpperCase());
@@ -20378,7 +20405,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23305';
+var FIDS_BUILD_TAG = 'v23306';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -30078,7 +30105,16 @@ function playDestinationVideo(slot, match) {
     } catch(e) { console.warn('[AC-VIDEO] play failed:', e); _hideDestinationVideoOverlay(); }
     // Update "last played" so next attempt alternates language.
     try { localStorage.setItem('fids_last_video_lang', match.lang); } catch(e) {}
-    _nextVideoLang = (match.lang === 'fr') ? 'en' : 'fr';
+    // v23306 — alternate within the BOARD's pair. This was `(match.lang ===
+    // 'fr') ? 'en' : 'fr'`, so a Miami board flipped between English and
+    // French and never once asked for Spanish — the same destination-over-
+    // board mistake the Accor card had.
+    try {
+      var _vPair = _boardLangPair();
+      _nextVideoLang = _vPair.length > 1
+        ? (_vPair[(_vPair.indexOf(match.lang) + 1) % _vPair.length] || _vPair[0])
+        : (_vPair[0] || 'en');
+    } catch (e) { _nextVideoLang = (match.lang === 'fr') ? 'en' : 'fr'; }
   });
 }
 
@@ -30787,7 +30823,9 @@ function _accorReconcileLanguages(iata) {
   if (!iata) return;
   var key = String(iata).toUpperCase();
   var pair;
-  try { pair = (typeof boardLangsFor === 'function') ? boardLangsFor(key) : ['en', 'fr']; } catch (e) { return; }
+  // v23306 — reconcile the pair the BOARD speaks; `key` stays the destination
+  // cache key, but it never decided the languages.
+  try { pair = _boardLangPair(); } catch (e) { return; }
   if (!pair || pair.length < 2) return;
   var lists = {};
   for (var i = 0; i < pair.length; i++) {
@@ -31743,7 +31781,8 @@ function getGateAds() {
   if (destIata) {
     fetchAccorHotels(destIata);
     try {
-      (boardLangsFor(destIata) || []).forEach(function (L) { fetchAccorHotels(destIata, L); });
+      // v23306 — the BOARD's languages, not the destination's (see _boardLangPair).
+      (_boardLangPair() || []).forEach(function (L) { fetchAccorHotels(destIata, L); });
     } catch (e) {}
   }
 
@@ -32908,7 +32947,12 @@ function buildAccorAdOnlyV6(ad) {
     // Bind LABELS to the language THIS ad's content was actually built in, so a
     // slide is never half-French/half-English. Fall back to the forced deck
     // language only when the ad wasn't stamped. (Nick.)
-    if (ad && (ad._adLang === 'fr' || ad._adLang === 'en')) return ad._adLang;
+    // v23306 — this used to test `=== 'fr' || === 'en'` literally, so a slide
+    // stamped 'es' fell straight through to the deck language and the label
+    // binding it exists to guarantee was lost on every Spanish board. Any
+    // two-letter stamp counts; the point is that the labels follow the
+    // language the CONTENT was built in, whichever one that is.
+    if (ad && typeof ad._adLang === 'string' && /^[a-z]{2}$/.test(ad._adLang)) return ad._adLang;
     try { if (typeof _accorLangNow === 'function') return _accorLangNow(); } catch(e){}
     return (typeof lang!=='undefined'&&lang)?lang:'en';
   }
@@ -32933,9 +32977,17 @@ function buildAccorAdOnlyV6(ad) {
   var _L1 = accorLang();
   var _L2 = '';
   try {
-    var _pair = (typeof boardLangsFor === 'function') ? boardLangsFor(_adIata) : ['en','fr'];
+    // v23306 — board languages (see _boardLangPair); _adIata keys the cache only.
+    var _pair = _boardLangPair();
     for (var _pi = 0; _pi < _pair.length; _pi++) { if (_pair[_pi] !== _L1) { _L2 = _pair[_pi]; break; } }
-  } catch (e) { _L2 = (_L1 === 'fr') ? 'en' : 'fr'; }
+  } catch (e) {
+    // v23306 — the old fallback was `(_L1 === 'fr') ? 'en' : 'fr'`, which hands
+    // a Spanish board French. Fall back within the board's OWN pair.
+    try {
+      var _fbPair = _boardLangPair();
+      for (var _fi = 0; _fi < _fbPair.length; _fi++) { if (_fbPair[_fi] !== _L1) { _L2 = _fbPair[_fi]; break; } }
+    } catch (e2) { _L2 = ''; }
+  }
   // This same hotel as Accor returned it in the second language. Accor only
   // localizes on the Accept-Language header, so this is a genuinely different
   // record — not our own translation of the first one.
@@ -33289,14 +33341,28 @@ function buildAccorAdOnlyV6(ad) {
   var _dineAdv = (Array.isArray(ad.advantages) ? ad.advantages : []).filter(function (a) { return _dineRx.test(String(a)) && !_isBreakfast(a); });
   var _amenFree = Array.isArray(ad.amenityFree) ? ad.amenityFree : [];
   var _lblsAd = Array.isArray(ad.labels) ? ad.labels : [];
-  var _dfr = accorLang() === 'fr';
+  // v23306 — these four lines are OURS, not Accor's, so they have to be
+  // translated here. They were a two-way `accorLang() === 'fr'` flip, so every
+  // language that is not French got the ENGLISH string: a Miami board printed
+  // 'On-site restaurant' and 'Room service' in its Spanish column. Same
+  // standing rule as every other string on the boards — all nine languages.
+  var _dineT = function (key) {
+    var T = {
+      restaurant:  { en:'On-site restaurant', fr:'Restaurant sur place', es:'Restaurante en el hotel', de:'Restaurant im Haus', it:'Ristorante interno', pt:'Restaurante no local', ja:'館内レストラン', zh:'酒店餐厅', ar:'مطعم داخل الفندق' },
+      bar:         { en:'Bar & lounge', fr:'Bar-salon', es:'Bar y salón', de:'Bar & Lounge', it:'Bar e lounge', pt:'Bar e lounge', ja:'バー・ラウンジ', zh:'酒吧及休息室', ar:'بار وصالة' },
+      roomService: { en:'Room service', fr:'Service aux chambres', es:'Servicio de habitaciones', de:'Zimmerservice', it:'Servizio in camera', pt:'Serviço de quartos', ja:'ルームサービス', zh:'客房服务', ar:'خدمة الغرف' },
+      diningOffer: { en:'Dining offers for guests', fr:'Offres restauration pour les clients', es:'Ofertas gastronómicas para huéspedes', de:'Gastronomie-Angebote für Gäste', it:'Offerte ristorazione per gli ospiti', pt:'Ofertas de restauração para hóspedes', ja:'ご宿泊者向けダイニング特典', zh:'住客餐饮优惠', ar:'عروض المطاعم للنزلاء' }
+    }[key] || {};
+    var L = accorLang();
+    return T[L] || T.en || '';
+  };
   var _dineAmen = [];
-  if (_amenFree.indexOf('restaurant') !== -1) _dineAmen.push(_dfr ? 'Restaurant sur place' : 'On-site restaurant');
-  if (_amenFree.indexOf('bar') !== -1) _dineAmen.push(_dfr ? 'Bar-salon' : 'Bar & lounge');
+  if (_amenFree.indexOf('restaurant') !== -1) _dineAmen.push(_dineT('restaurant'));
+  if (_amenFree.indexOf('bar') !== -1) _dineAmen.push(_dineT('bar'));
   // Breakfast claims REMOVED — the API asserts COMPLIMENTARY_BREAKFAST /
   // 'breakfast' for hotels that don't include it (Fairmont). No breakfast line.
-  if (_amenFree.indexOf('room_service') !== -1) _dineAmen.push(_dfr ? 'Service aux chambres' : 'Room service');
-  if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dfr ? 'Offres restauration pour les clients' : 'Dining offers for guests');
+  if (_amenFree.indexOf('room_service') !== -1) _dineAmen.push(_dineT('roomService'));
+  if (_lblsAd.indexOf('DINING_OFFER') !== -1) _dineAmen.push(_dineT('diningOffer'));
   // REAL restaurant names only. The derived phrases ('Restaurant sur place',
   // 'Bar-salon', 'Service aux chambres', 'Offres restauration pour les
   // clients') are our own wording spun out of amenity flags, and rendered as a
