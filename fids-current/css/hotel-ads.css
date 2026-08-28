@@ -1637,3 +1637,33 @@
 .gad-media-col #gateAdCarousel .axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.95) !important; }
 .gad-media-col #gateAdCarousel .axr .axr-fai-feats span{ font-size:calc(var(--axr-name) * 0.78) !important; }
 .gad-media-col #gateAdCarousel .axr .axr-blurb{ font-size:calc(var(--axr-name) * 0.74) !important; }
+
+/* ── v23298 — THE PROPERTY NAME IS THE BIGGEST THING ON THE CARD ────────
+   Measured on the Novotel Toronto Centre card: the name rendered at 16px —
+   the SAME size as the body copy and SMALLER than the address line at 23px
+   (Nick: 'Hotel name is the same size as the text terrible'). .axr-idtext
+   already asks for var(--axr-logo) and already sets nowrap + ellipsis, so
+   neither the size nor the wrapping rule was the problem: a per-brand
+   [data-brand-code] block outranks it and was resetting both the size and the
+   family — which is also why the name came out in AC Nord TEXT while every
+   other display element on the same card correctly used AC Nord DISPLAY
+   (Nick: 'It is not the assigned font ... its not there').
+
+   Sized off the viewport rather than --axr-logo, because that variable is what
+   the per-brand blocks are overriding. nowrap + ellipsis are restated so a
+   long name can never break mid-property ('Novotel Vaughan / Centre' on two
+   lines — Nick: 'big NONO'); it steps to an ellipsis instead, and the name
+   line owns the full card width so that almost never triggers. */
+.axr .axr-idtext,
+.axr[data-brand-code] .axr-idtext,
+.axr[data-brand-code] .axr-hotel .axr-idtext {
+  font-family: var(--axr-display) !important;
+  font-size: clamp(28px, 2.4vw, 46px) !important;
+  font-weight: 700 !important;
+  line-height: 1.08 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+  display: block !important;
+}
