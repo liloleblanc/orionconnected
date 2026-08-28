@@ -8951,24 +8951,18 @@ function _buildV2MapCol(ctx, vars) {
   // Shown in place of the incoming-aircraft card once the inbound has been on
   // the ground ~5 min. Same shelf layout, but for the OUTBOUND flight: this
   // airport → destination, with a "Departing in" countdown.
-  if (_noInboundYet && !_inboundCard) {
-    _inboundCard =
-        '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
-      + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
-      // v23301 — DO NOT REUSE .v2-fi-label HERE. That class is built for short
-      // one-word captions in a narrow column: it is nowrap with an ellipsis, so
-      // 'Arriving From | En provenance de' and 'Aircraft to be assigned |
-      // Appareil a confirmer' were cut to 'Arrivi...' and 'Aircra...' — a card
-      // saying nothing at all. This card owns its own class and its own
-      // wrapping, so the full sentence always lands whatever the shelf width.
-      +   '<div class="v2-fi-row"><div class="v2-fi-textcol g8-noinb">'
-      +     '<div class="g8-noinb-lbl">' + _gateLbl('arrivingFrom', _frF, function (w, i9) {
-              return i9 ? '<span class="v2-fi-sep"> | </span>' + w : w; }, '') + '</div>'
-      +     '<div class="g8-noinb-val">' + _gateLbl('awaitAircraft', _frF, function (w, i9) {
-              return i9 ? '<span class="v2-fi-sep"> | </span>' + w : w; }, '') + '</div>'
-      +   '</div></div>'
-      + '</div></div></div>';
-  }
+  // v23302 — NO CARD HERE AT ALL WHEN THERE IS NO INBOUND.
+  // Two attempts at filling this slot both failed on the same fact: the panel
+  // is a NARROW column. Reusing .v2-fi-label truncated the sentence to
+  // 'Arrivi...' / 'Aircra...'; giving it its own wrapping type turned it into
+  // seven ragged lines with the last word cut off the bottom. A bilingual
+  // sentence does not fit a column this narrow, and no amount of type styling
+  // changes that.
+  // The slot does not need text: the aircraft block directly above it already
+  // names the aircraft, so leaving this empty loses nothing and shows nothing
+  // broken. What matters is what is NOT here — the departure card, which is
+  // the thing Nick asked three times to be rid of and which stays gone
+  // because _arrivedSwitch is false.
   if (_arrivedSwitch) {
     try {
       var _dcf = vars.currentFlight || {};
@@ -20286,7 +20280,6 @@ var _GATE_LBL = {
   // an empty string and the line silently vanishes, which is what happened on
   // the first two attempts at this card. It belongs here, beside arrivingFrom,
   // because the bottom-right panel pairs the two when no inbound is tracked.
-  awaitAircraft: { en:'Aircraft to be assigned', fr:'Appareil à confirmer', es:'Aeronave por asignar', de:'Flugzeug wird zugewiesen', it:'Aeromobile da assegnare', pt:'Aeronave a confirmar', ja:'機材未定', zh:'待定机型', ar:'الطائرة قيد التحديد' },
   arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
   // v23272 — the line that replaces the countdown once the aircraft is down.
   // v23272 — two states, not one (Nick: 'Once the aircraft arrives it should
@@ -20550,7 +20543,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23301';
+var FIDS_BUILD_TAG = 'v23302';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
