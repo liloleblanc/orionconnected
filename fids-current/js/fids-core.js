@@ -8734,6 +8734,19 @@ function _buildV2MapCol(ctx, vars) {
       // NEEDS TO BE AS 2 PANELS' — every row keeps its OWN full line
       // exactly as before; only the SHELF PANELS regroup: Flight+From
       // share one textured panel, Arrival+Status share the other.
+      // v23309 — THE BUG BEHIND THE WHOLE EMPTY-PANEL SAGA.
+      // _railT was declared with `var` two blocks deeper, inside
+      // `if (_ibArrSchedStr) { if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {`
+      // — so it was only ASSIGNED when a flight was delayed. `var` hoists the
+      // name but not the assignment, so on every ON-TIME flight _railT was
+      // undefined and the call at the _mcTimes line threw
+      // "_railT is not a function". The main builder's catch was empty, so the
+      // card silently never built and the panel fell through to the backstop.
+      // That is why gate 4 (delayed) always rendered a real card in testing
+      // while gate 3 (on time) never did — a difference I saw repeatedly and
+      // misread as an inner guard bailing.
+      // Declared here, once, above every use.
+      var _railT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
       var _ibArrRowHtml = '';
       if (_ibArrSchedStr) {
         // Label follows the selected languages like every other row —
@@ -8752,7 +8765,6 @@ function _buildV2MapCol(ctx, vars) {
           // v23193 — times in the target read 5:30pm, lowercase and unspaced,
           // exactly as the left rail's own times do; the right rail alone was
           // writing "5:30 PM".
-          var _railT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
           // v23197 — ONE LINE for the pair, the way the Porter drawing writes
           // "6:45am | 6:15am": the merged panel is one slot now and two time
           // rows do not fit a slot that also holds the banner, the flight and
@@ -8765,11 +8777,10 @@ function _buildV2MapCol(ctx, vars) {
             +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></div>'
             + '</div>';
         } else {
-          var _railT2 = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval">' + _railT2(_ibArrSchedStr) + '</div>'
+            +   '<div class="v2-rc-fi-tval">' + _railT(_ibArrSchedStr) + '</div>'
             + '</div>';
         }
       }
@@ -12534,7 +12545,27 @@ function gateAutofit(root) {
           if (c && c !== 'rgba(0, 0, 0, 0)' && !/,\s*0\)$/.test(c)) { bg = c; break; }
           n = n.parentElement;
         }
-        var bright = '#fca825', deep = '#8a5200', pick = bright;
+        // v23309 — THIS is where the brown came from. `deep` was '#8a5200' =
+        // rgb(138,82,0): hue 36, saturation 1.0, lightness 0.27 — brown by any
+        // measure, and byte-for-byte the colour measured on the YYC/YUL code in
+        // the card title. It is picked whenever the bright gold misses the 3:1
+        // floor, which is exactly what happens on a light or teal banner.
+        //
+        // v23304's _caIsBrown guard could never fix this: that guard lives in
+        // _caFit, on the applyCodeAccents path, and THIS is a separate painter
+        // that writes color with !important. The measured proof was sitting in
+        // the probe output the whole time — those title codes carried
+        // data-ca=null, meaning the accent pass had never touched them. I read
+        // "0 brown" off the body codes and reported the brown as fixed three
+        // times while the element Nick was actually pointing at was painted
+        // here, untouched.
+        //
+        // A darkened gold IS brown; there is no shade of it that isn't. So the
+        // dark option is no longer a gold at all — it is the deep navy the rest
+        // of the board already uses as its light-mode ink (.bidsv2 / light-board
+        // rules use #16283C), which clears contrast on light grounds and sits
+        // far outside the brown band (hue 213).
+        var bright = '#fca825', deep = '#16283C', pick = bright;
         if (bg && typeof _fidsContrast === 'function') {
           var cb = _fidsContrast(bright, bg) || 0, cd = _fidsContrast(deep, bg) || 0;
           pick = (cb >= 3) ? bright : (cd > cb ? deep : bright);
@@ -20480,7 +20511,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23308';
+var FIDS_BUILD_TAG = 'v23309';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
