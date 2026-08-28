@@ -14187,7 +14187,21 @@ const gView = document.getElementById('gateView');
       // ══════════════════════════════════════════════════════════════════
       const airlineCode2 = currentFlight.airline || '';
       const _depTs = currentFlight._sortTs || Date.now();
-      const _6hBefore = _depTs - 6*3600000;
+      // v23303 — THE AIRCRAFT THAT STAYED OVERNIGHT IS STILL THE INBOUND.
+      // A 6-hour lookback cannot see a plane that came in last night and is
+      // operating this morning's departure, which is exactly the case on an
+      // early departure. Measured on YQM gate 3: PD2294 leaves on a Dash
+      // 8-400, PD2381 arrived on the same type at the same gate and is sitting
+      // there with status 'arrived' — and the ONLY filter rejecting it was
+      // this window. The panel then had no incoming flight to show, which is
+      // what the departure-card fallback was bolted on to paper over (Nick:
+      // 'I asked for the incoming flight info NOT NOTHING').
+      // 20 hours covers a remain-overnight without reaching back to the
+      // previous day's rotation. Everything else still applies — same gate,
+      // same airline family, same aircraft type, not departed, arriving before
+      // this flight leaves — and the sort still prefers the MOST RECENT match,
+      // so a closer inbound always wins over the overnight one.
+      const _6hBefore = _depTs - 20*3600000;
       const _gateVal = currentFlight.gate || subScreenVal || '';
 
       // Gate-based placeholder — only used if reg lookup hasn't returned yet
@@ -20543,7 +20557,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23302';
+var FIDS_BUILD_TAG = 'v23303';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
