@@ -3871,6 +3871,15 @@ function _equipSaneForCarrier(mktCode, opCode, reg, acStr) {
     if (s.trim()) {
       if (c === 'RV' && !/319|320|321|32N|32Q|32S|32A|32B/.test(s)) return false;
       if ((c === 'PD' || c === 'P3') && !/DH8|DH4|DHC|DASH|Q400|E19|195|E29|290|EMBRAER/.test(s)) return false;
+      // v23310 — FLAIR FLIES THE MAX 8, NOTHING ELSE (Nick: 'a 737-800 with
+      // Flair doesnt exist'). This function is the guard against exactly that
+      // — history/guessed equipment that cannot belong to the carrier — but it
+      // only ever carried rules for Rouge and Porter, so 'Boeing 737-800 |
+      // C-FLEJ' passed unchallenged: the tail is C-F..., which satisfies the
+      // Canadian-registry test, and no fleet rule existed to catch the type.
+      // Matched on MAX/7M8/38M rather than '737-8', because '737-800' contains
+      // that string and would defeat the test it is meant to fail.
+      if (c === 'F8' && !/7M8|38M|MAX/.test(s)) return false;
     }
     return true;
   } catch (e) { return true; }
@@ -14150,6 +14159,23 @@ const gView = document.getElementById('gateView');
       const _gateMatchFallback = (data.arr || []).filter(f =>
         f.gate === _gateVal &&
         f.status !== 'departed' &&
+        // v23310 — A CANCELLED FLIGHT NEVER ARRIVES, SO IT IS NEVER THE
+        // INCOMING AIRCRAFT. This filter excluded 'departed' and nothing else,
+        // so a cancelled arrival was fully eligible to be adopted as the
+        // airframe for the next departure — and the ENTIRE right rail is built
+        // from that one object, so the map drew its route, the plate showed its
+        // type, and the card printed its cancelled status. Measured on YQM
+        // gate 2 (Nick: 'its literally fake info … nothing matches anymore'):
+        // PB925 to Wabush was pairing with PB923 from Deer Lake, CANCELLED, and
+        // the rail drew YQM->YDF for a flight going to YWK.
+        // v23303 is what made it reachable: widening the window 6h -> 20h for
+        // overnight aircraft is the only reason an 11:00am cancellation could
+        // be picked up for a 6:40pm departure, seven and a half hours later.
+        // Diverted is excluded on the same logic — it is not landing here.
+        (function () {
+          var _s = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+          return _s !== 'cancelled' && _s !== 'canceled' && _s !== 'diverted';
+        })() &&
         f.flight !== currentFlight.flight &&
         f._sortTs <= _depTs &&
         f._sortTs >= _6hBefore &&
@@ -20511,7 +20537,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23309';
+var FIDS_BUILD_TAG = 'v23310';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
