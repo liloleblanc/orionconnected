@@ -8961,7 +8961,15 @@ function _buildV2MapCol(ctx, vars) {
       }
 
     }
-  } catch (e) {}
+  } catch (e) {
+    // v23308 — this catch was SILENT, and that silence has now hidden two
+    // separate bugs: the backstop's esc() ReferenceError, and whatever throws
+    // here on the WestJet gate Nick photographed (WS812 from Calgary), where
+    // the feed had the flight in full yet the real card never built and the
+    // panel fell through to the backstop. A swallowed exception that changes
+    // what renders should say so.
+    try { console.warn('[FIDS] inbound card build failed:', (e && e.message) || e, (e && e.stack || '').split('\n')[1] || ''); } catch (e2) {}
+  }
 
   // ─── PANEL BACKSTOP — NEVER BLANK ────────────────────────
   // v23305 — this slot used to hold a 257-line DEPARTURE card behind an
@@ -9037,11 +9045,48 @@ function _buildV2MapCol(ctx, vars) {
       var _niCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_niCodeRaw]) ? CALLSIGN_TO_IATA[_niCodeRaw] : _niCodeRaw;
       var _niOrbSrc = '';
       try { _niOrbSrc = _airlineOrbEmblem(_niCode) || ''; } catch (e) {}
+      // v23308 — THE ORB IS A CIRCLE WITH A SIZE. This wrapper carried a bare
+      // `background:` and nothing else — no width, no height, no border-radius
+      // — so it rendered as an empty rounded SQUARE the size of whatever the
+      // base class gave it (Nick's WestJet shot: a blank teal box). The real
+      // inbound card builds _mcBadge with the full geometry; the backstop has
+      // to use the same string or it is not the same orb. The accent fallback
+      // is the carrier's own brand colour too, not a hardcoded navy, so a gate
+      // whose --airline-accent fails to resolve still matches its neighbours.
+      var _niAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_niCode] && AIRLINE_BRAND[_niCode].accent) || '#D82F2E';
+      var _niBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _niAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // v23308 — the status line only says "to be confirmed" when something
+      // ACTUALLY is. Nick's shot printed it under 'WS812 · From: Calgary YYC':
+      // 'what is to be confirmed we know the fing plane is coming from
+      // Calgary'. He is right — the line was written for the case where the
+      // board knows nothing, and then rendered unconditionally, contradicting
+      // the line directly above it. Now: show the arrival time when the feed
+      // gave one; when the flight and origin are known but the time is not,
+      // say nothing rather than something meaningless; keep the placeholder
+      // only for the genuinely-empty case it was written for.
+      var _niKnown = !!(_niFlt || _niFrom);
+      var _niTs = _niIb ? (_niIb._revTs || _niIb._sortTs || 0) : 0;
+      var _niTimeStr = '';
+      if (_niTs) {
+        try {
+          _niTimeStr = new Date(_niTs).toLocaleTimeString('en-US', {
+            timeZone: vars.tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: true
+          });
+        } catch (e) { _niTimeStr = ''; }
+      }
+      var _niStatusLine = '';
+      if (_niTimeStr) {
+        _niStatusLine = '<div class="v2-fi-mline3">' + _niEsc(_niTimeStr)
+          + ' <span class="v2-fi-mlbl">' + _gateLblSpans('arrival', _frF) + '</span></div>';
+      } else if (!_niKnown) {
+        _niStatusLine = '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline">'
+          + _gateLblSpans('toBeConfirmed', _frF) + '</span></div>';
+      }
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="background:var(--airline-accent,#1b3a63)">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _niBadge + '">'
         +       (_niOrbSrc
                   ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="this.remove()">'
                   : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
@@ -9050,7 +9095,7 @@ function _buildV2MapCol(ctx, vars) {
         +       '<div class="v2-fi-title">' + _niTitle + '</div>'
         +       '<div class="v2-fi-value">'
         +         '<div class="v2-fi-mline1">' + (_niFlt ? _niEsc(_niFlt) : '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_niFrom || '\u2014') + '</div>'
-        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline">' + _gateLblSpans('toBeConfirmed', _frF) + '</span></div>'
+        +         _niStatusLine
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -20435,7 +20480,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23307';
+var FIDS_BUILD_TAG = 'v23308';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
