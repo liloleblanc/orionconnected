@@ -20593,7 +20593,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23315';
+var FIDS_BUILD_TAG = 'v23316';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -33934,7 +33934,17 @@ function buildAccorAdOnlyV6(ad) {
   function _biCols(a, b) {
     if (!a && !b) return '';
     if (a && b && _biMismatch(a, b)) {
-      var _keep = _visibleLen(a) >= _visibleLen(b) ? a : b;
+      // v23316 — WHEN ONLY ONE COLUMN CAN SHOW, IT IS THE DECK'S OWN LANGUAGE.
+      // v23299 kept whichever side was LONGER, which makes the surviving
+      // language effectively random per page: measured on Nick's YQM gate 4
+      // recording, one pass of the Royal York card ran page 1 bilingual,
+      // page 2 FRENCH-ONLY (the FR location paragraph outweighed the EN one)
+      // and page 3 ENGLISH-ONLY (the EN marketing blurb outweighed the FR).
+      // Three pages, three language policies, one ad. The deck language (a)
+      // wins whenever it carries real content — the same 24-visible-char
+      // floor _biMismatch itself uses — and the other side is only shown
+      // when the deck's side is effectively empty, which beats blank.
+      var _keep = (_visibleLen(a) >= 24) ? a : b;
       var _lang = (_keep === a) ? _lgD : _L2;
       return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lang) + '>' + _keep + '</div></div>';
     }
