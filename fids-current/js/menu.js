@@ -3310,7 +3310,7 @@ function cuDeleteActivePreset() {
         +   '<div style="font-size:12px;color:#e5e7eb;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">' + _esc(label) + '</div>'
         +   catBadge
         + '</div>'
-        + '<div style="font-size:10px;color:#6b7280;">' + _esc(meta) + (pbSummary ? ' · ' + _esc(pbSummary) : '') + '</div>'
+        + '<div style="font-size:10px;color:#9ca3af;">' + _esc(meta) + (pbSummary ? ' · ' + _esc(pbSummary) : '') + '</div>'
         + '</div>'
         + (_bulkMode ? '' : '<button onclick="mediaLibEdit(\'' + _esc(it.id) + '\')" style="background:#374151;color:#9ca3af;border:none;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer;">Edit</button>')
         + (_bulkMode ? '' : '<button onclick="mediaLibDelete(\'' + _esc(it.id) + '\')" style="background:#7f1d1d;color:#fca5a5;border:none;padding:3px 8px;border-radius:3px;font-size:10px;cursor:pointer;">Delete</button>')
