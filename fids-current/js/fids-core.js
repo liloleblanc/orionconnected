@@ -9743,7 +9743,8 @@ function _buildV2MapCol(ctx, vars) {
           // here, which for PAL served the full lockup WITH lettering into
           // the orb. No wordmark fallbacks: an operator without emblem art
           // keeps the marketing carrier's emblem the builder already baked.
-          var _orbFix = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode]) || '';
+            // v23312 — through the shared resolver, like every other orb.
+            var _orbFix = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_opCode) : '') || '';
           if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
           // v23222 — a bitmap roundel swapped in here must ALSO drop any
           // invert the builder baked for the original vector art (Rouge's
@@ -9794,9 +9795,11 @@ function _buildV2MapCol(ctx, vars) {
       // while a lookup finishes. Never guess a model; hold the airline mark in
       // the space instead of floating a raw "image pending" warning over it.
       var _holdCode = String(vars.airlineCode || '').trim().toUpperCase();
-      var _holdSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_holdCode]) || '';
+        // v23312 — through the shared resolver, like every other orb; same new onerror.
+        var _holdSrc = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_holdCode) : '') || '';
       var _holdMark = _holdSrc
-        ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="">'
+          ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="" onerror="this.style.display=&quot;none&quot;;if(this.nextElementSibling)this.nextElementSibling.style.display=&quot;&quot;;">'
+            + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_holdCode || '\u2014') + '</span>'
         : '<span class="v2-rc-aircraft-hold-code">' + (_holdCode || '—') + '</span>';
       var _aircraftHoldHtml = '<div class="v2-rc-aircraft-hold">' + _holdMark
         + '<span class="v2-rc-aircraft-hold-text">'
@@ -9839,9 +9842,14 @@ function _buildV2MapCol(ctx, vars) {
   // remove the two fixed shelves from the six-row right rail.
   if (!_aircraftBlock) {
     var _fallbackCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
-    var _fallbackSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_fallbackCode]) || '';
+    // v23312 — through the shared resolver, like every other orb. The onerror
+    // is NEW and required: the resolver returns a symbols path for any
+    // two-character code, so without it a carrier with no art anywhere would
+    // go from a lettered chip to a broken-image icon.
+    var _fallbackSrc = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_fallbackCode) : '') || '';
     var _fallbackMark = _fallbackSrc
-      ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="">'
+        ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="" onerror="this.style.display=&quot;none&quot;;if(this.nextElementSibling)this.nextElementSibling.style.display=&quot;&quot;;">'
+          + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_fallbackCode || '\u2014') + '</span>'
       : '<span class="v2-rc-aircraft-hold-code">' + (_fallbackCode || '—') + '</span>';
     var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark
       + '<span class="v2-rc-aircraft-hold-text">'
@@ -9879,8 +9887,14 @@ function _buildV2MapCol(ctx, vars) {
     'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
     'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
   };
+  // v23312 — through the shared resolver. Nick's Cathay gate C30: this orb
+  // rendered a lettered 'CX' chip while the inbound card beside it wore the
+  // real brushwing, because this site stopped at _AIRLINE_EMBLEM_FILES (25
+  // carriers) and never reached /logos/symbols/airlines/, where CX.svg has
+  // been sitting all along. 'why change 1 orb and not the other' — because
+  // v23307 fixed two call sites and I never enumerated the rest.
   var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
-    || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
+    || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_mapLifeCode) : '') || '';
   var _mapLifeHtml = _mapLifeSrc
     ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
@@ -20563,7 +20577,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23311';
+var FIDS_BUILD_TAG = 'v23312';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
