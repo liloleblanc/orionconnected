@@ -9441,6 +9441,32 @@ function _buildV2MapCol(ctx, vars) {
         // paint rather than fabricating Rouge art that doesn't exist.
         _regTrueImg = _rcRouge ? _rougeLiveryEq(_rcRouge) : '';
       }
+      // v23311 — THE PLATE MUST NOT CONTRADICT THE LABEL, FOR ANY CARRIER.
+      // Nick: 'dont assume its oh one airline no its ALL'. The reg-true type
+      // is a REGISTRY lookup on the tail, and it took precedence over the very
+      // code the label was built from — so whenever the two disagreed the
+      // panel named one aircraft and drew another, and usually drew nothing at
+      // all because the contradicting file does not exist. Measured on YQM
+      // gate 1: label 'Boeing 737 MAX 8', plate aircraft/F8/738.png, broken.
+      //
+      // v23310 only stopped an impossible TYPE reaching the label; this is the
+      // same class of fault one layer down, on the IMAGE, and the only carrier
+      // guarded against it was Air Canada, by the hardcoded 737->MAX pin ten
+      // lines above. That is why it read as 'all of them'.
+      //
+      // Two general rules, replacing the AC special case rather than joining
+      // it: an airframe the carrier cannot fly is discarded outright, and a
+      // reg-true type that survives is used for the picture ONLY when it means
+      // the same aircraft the label names. Otherwise the label's own code
+      // draws the plate, so the two always agree — Nick's standing rule ('it
+      // shouldnt say airbus 321 and show a 320 … the root of this needs to be
+      // fixed'). A genuine substitution still shows through, because in that
+      // case the label has already moved with it.
+      if (_regTrueImg && typeof _equipSaneForCarrier === 'function') {
+        try {
+          if (!_equipSaneForCarrier(vars.airlineCode, _opCode, '', String(_regTrueImg))) _regTrueImg = '';
+        } catch (e) {}
+      }
       var _imgEq = _regTrueImg || _liveryEq;
       // Fallback (Nick: 'it should fall back to a picture of the scheduled
       // aircraft on paper'): no reg/equip CODE resolved, but the schedule
@@ -19188,7 +19214,7 @@ const LOGO_SUBFOLDER = {
   'fairmont-hotel-macdonald.svg':'hotels/accor-luxury', 'fairmont-hotel-vancouver.svg':'hotels/accor-luxury', 'fairmont-jasper-park-lodge.svg':'hotels/accor-luxury', 'fairmont-le-chateau-frontenac.svg':'airlines/canadian',
   'fairmont-le-chateau-montebello.svg':'hotels/accor-luxury', 'fairmont-le-manoir-richelieu.svg':'hotels/accor-luxury', 'fairmont-pacific-rim.svg':'hotels/accor-luxury', 'fairmont-palliser.svg':'hotels/accor-luxury',
   'fairmont-queen-elizabeth.svg':'hotels/accor-luxury', 'fairmont-royal-york.svg':'hotels/accor-luxury', 'fairmont-tremblant.svg':'hotels/accor-luxury', 'fairmont-vancouver-airport.svg':'hotels/accor-luxury',
-  'fairmont-waterfront.svg':'hotels/accor-luxury', 'fairmont.png':'hotels/accor-luxury', 'fairmont.svg':'hotels/accor-luxury', 'flair-wordmark-light.svg':'airlines/canadian', 'flair.svg':'airlines/canadian', 'flying-blue.png':'airlines/alliances', 'flying-blue940X360px.webp':'airlines/alliances',
+  'fairmont-waterfront.svg':'hotels/accor-luxury', 'fairmont.png':'hotels/accor-luxury', 'fairmont.svg':'hotels/accor-luxury', 'flair-wordmark-dark.svg':'airlines/canadian', 'flair-wordmark-light.svg':'airlines/canadian', 'icelandair-wordmark-dark.svg':'airlines/european', 'icelandair-wordmark-light.svg':'airlines/european', 'flair.svg':'airlines/canadian', 'flying-blue.png':'airlines/alliances', 'flying-blue940X360px.webp':'airlines/alliances',
   'four-seasons.png':'hotels/other-chains', 'golden-tulip.jpg':'hotels/wyndham', 'grand-hyatt-white.png':'hotels/hyatt', 'grand-hyatt.png':'hotels/hyatt',
   'grand-mercure.png':'hotels/accor-premium', 'grand-mercure.svg':'hotels/accor-premium', 'great-wolf-lodge.png':'hotels/wyndham', 'greet.svg':'hotels/accor-midscale',
   'hampton-inn-white.png':'hotels/hilton', 'hampton-inn.png':'hotels/hilton', 'hampton-white.png':'hotels/hilton', 'hampton.png':'hotels/hilton',
@@ -20537,7 +20563,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23310';
+var FIDS_BUILD_TAG = 'v23311';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
