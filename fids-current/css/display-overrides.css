@@ -2424,7 +2424,11 @@ html.fids-stream body {
    per brand book everywhere, stream included. */
 html.fids-stream body,
 html.fids-stream body *:not(.ac-ico):not([class*="ac-ico"]):not(.axr):not(.axr *) {
-  font-family: 'AC Nord Display Bold', 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
+  /* v23299 — 'AC Nord Display Bold' is not a declared family anywhere in the
+     project: font.css declares 'AC Nord Display' at weights 400/500/700/800.
+     A name that resolves to nothing is dead weight at the head of the stack,
+     so the first thing the browser can actually use now leads it. */
+  font-family: 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
 }
 html.fids-stream .ac-ico,
 html.fids-stream [class*="ac-ico"],
@@ -14530,3 +14534,51 @@ html.fids-portrait #fidsTable th * {
   font-size: 12px !important;
   letter-spacing: 0 !important;
 }
+
+/* ── v23296 — THE WEATHER RADAR IS ACTUALLY VISIBLE ────────────────────
+   Leaflet 1.9 sets mix-blend-mode: plus-lighter on every .leaflet-tile. That
+   is right for the basemap, and wrong for the radar overlay: additive blending
+   of pale radar colours onto a near-black map barely changes the pixels, so
+   the cloud and precipitation returns read as a faint haze (Nick: 'the clouds
+   are so faint for the weather you cant see FUCK ALL'). The radar has its own
+   pane, so it can be taken off the additive blend without touching the map
+   underneath. Paired with the opacity raise in fids-core.js. */
+.leaflet-container .leaflet-pane.leaflet-wxradar-pane img.leaflet-tile,
+.leaflet-container .leaflet-wxradar-pane img.leaflet-tile,
+.leaflet-pane[class*="wxradar"] img.leaflet-tile {
+  mix-blend-mode: normal !important;
+}
+
+/* ── v23297 — THE AIRPORT CODE MATCHES THE CLOCK, EVERY LOCATION ────────
+   Nick: 'the YQM ... should be as big as the time and that goes for all
+   locations'. It shipped a size down on the reasoning that the time is what
+   reads across a hall; his call is that the code carries equal weight, since
+   it says WHOSE time this is. The clock comes down ~12% so the pair still
+   fits the band, and the code comes up to meet it — one size for both, in
+   every timebox variant, so no airport can drift. The separator stays
+   smaller: it is punctuation, not information. */
+html:not(#_) .octb-ap,
+html:not(#_) .octb-clock {
+  font-size: clamp(20px, 2.9vh, 38px) !important;
+}
+html:not(#_) .octb-tab .octb-ap,
+html:not(#_) .octb-tab .octb-clock {
+  font-size: clamp(27px, 4.2vh, 58px) !important;
+}
+html:not(#_) .octb-tab.octb-stack .octb-ap,
+html:not(#_) .octb-tab.octb-stack .octb-clock {
+  font-size: min(5.1vh, 72px, 32cqh) !important;
+}
+html:not(#_) .octb-apsep {
+  font-size: clamp(16px, 2.4vh, 34px) !important;
+  opacity: .5 !important;
+}
+/* The deepened-accent block that recolours .octb-clock also sizes it, at a
+   higher specificity than the rules above; the code has to be re-stated at
+   that same weight or the pair splits apart again on the silk tab. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-clock,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-ap {
+  font-size: clamp(34px, 5.8vh, 56px) !important;
+}
+
+/* v23302 — the no-inbound card and its type are removed; see fids-core.js. */

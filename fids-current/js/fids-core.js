@@ -2130,7 +2130,12 @@ function _caFit(accent, bg, avoid) {
 function applyCodeAccents() {
   try {
     if (document.documentElement.getAttribute('data-city-code-accent') === 'off') return;
-    var nodes = document.querySelectorAll('.dest-iata, .g8-city-code');
+    // v23295 — .g8-city-code matches NOTHING on the gate screen. The gate's
+    // codes are built by _codeSeg() as .v2-fi-code.v2-rc-iata, so targeting
+    // only the board's class is why the gate accents never changed however
+    // many times this was reported fixed (Nick: 'the accents have not
+    // changed'). Verified by counting the elements on a live gate.
+    var nodes = document.querySelectorAll('.dest-iata, .g8-city-code, .v2-fi-code, .v2-rc-iata');
     if (!nodes.length) return;
     var accent = _caScreenAccent();
     nodes.forEach(function (el) {
@@ -8324,17 +8329,25 @@ function _buildV2MapCol(ctx, vars) {
   // The panel now keeps the inbound card and lets its wording carry through
   // arrived -> at the gate.
   var _arrivedSwitch = false;
+  var _noInboundYet = false;
   try {
     var _ibSw = vars.inboundFlight;
     if (_ibSw) {
       // (no post-arrival switch — see above)
     } else {
-      // NO inbound tracked at all (early-morning departures, feeds without
-      // aircraft rotation): the panel used to render near-EMPTY — no card,
-      // no aircraft info (Nick: 'theres no aircraft info'). Show the same
-      // DEPARTURE card that already takes over post-arrival: this flight,
-      // destination, times, status — with the aircraft block below it.
-      _arrivedSwitch = true;
+      // v23295 — NO inbound tracked. This used to flip to the DEPARTURE card,
+      // and that is the bug Nick reported three times ('Im still seeing
+      // fucking departures on the bottom right panel'). The panel is the
+      // incoming aircraft's, so a departure has no business on it in any
+      // state — the departure is already on the other side of the screen.
+      // v23284 removed the post-arrival switch but kept THIS one, so nothing
+      // changed on a gate whose inbound is not tracked, which is most of them
+      // early in the day.
+      // The fallback existed because the panel went near-empty. The honest
+      // answer to 'which aircraft is coming' when nothing is tracked is to say
+      // so — not to answer a different question.
+      _arrivedSwitch = false;
+      _noInboundYet = true;
     }
   } catch (e) {}
   try {
@@ -8938,6 +8951,18 @@ function _buildV2MapCol(ctx, vars) {
   // Shown in place of the incoming-aircraft card once the inbound has been on
   // the ground ~5 min. Same shelf layout, but for the OUTBOUND flight: this
   // airport → destination, with a "Departing in" countdown.
+  // v23302 — NO CARD HERE AT ALL WHEN THERE IS NO INBOUND.
+  // Two attempts at filling this slot both failed on the same fact: the panel
+  // is a NARROW column. Reusing .v2-fi-label truncated the sentence to
+  // 'Arrivi...' / 'Aircra...'; giving it its own wrapping type turned it into
+  // seven ragged lines with the last word cut off the bottom. A bilingual
+  // sentence does not fit a column this narrow, and no amount of type styling
+  // changes that.
+  // The slot does not need text: the aircraft block directly above it already
+  // names the aircraft, so leaving this empty loses nothing and shows nothing
+  // broken. What matters is what is NOT here — the departure card, which is
+  // the thing Nick asked three times to be rid of and which stays gone
+  // because _arrivedSwitch is false.
   if (_arrivedSwitch) {
     try {
       var _dcf = vars.currentFlight || {};
@@ -14162,7 +14187,21 @@ const gView = document.getElementById('gateView');
       // ══════════════════════════════════════════════════════════════════
       const airlineCode2 = currentFlight.airline || '';
       const _depTs = currentFlight._sortTs || Date.now();
-      const _6hBefore = _depTs - 6*3600000;
+      // v23303 — THE AIRCRAFT THAT STAYED OVERNIGHT IS STILL THE INBOUND.
+      // A 6-hour lookback cannot see a plane that came in last night and is
+      // operating this morning's departure, which is exactly the case on an
+      // early departure. Measured on YQM gate 3: PD2294 leaves on a Dash
+      // 8-400, PD2381 arrived on the same type at the same gate and is sitting
+      // there with status 'arrived' — and the ONLY filter rejecting it was
+      // this window. The panel then had no incoming flight to show, which is
+      // what the departure-card fallback was bolted on to paper over (Nick:
+      // 'I asked for the incoming flight info NOT NOTHING').
+      // 20 hours covers a remain-overnight without reaching back to the
+      // previous day's rotation. Everything else still applies — same gate,
+      // same airline family, same aircraft type, not departed, arriving before
+      // this flight leaves — and the sort still prefers the MOST RECENT match,
+      // so a closer inbound always wins over the overnight one.
+      const _6hBefore = _depTs - 20*3600000;
       const _gateVal = currentFlight.gate || subScreenVal || '';
 
       // Gate-based placeholder — only used if reg lookup hasn't returned yet
@@ -20251,6 +20290,10 @@ var _GATE_LBL = {
   // (Nick: 'Above simply put … arriving From | En Provenance de … Or Arrivé
   // de'). The en-route and landed variants.
   arrivingFrom: { en:'Arriving From', fr:'En provenance de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
+  // v23295 — _gateLbl() reads _GATE_LBL, NOT LS; a key added to LS resolves to
+  // an empty string and the line silently vanishes, which is what happened on
+  // the first two attempts at this card. It belongs here, beside arrivingFrom,
+  // because the bottom-right panel pairs the two when no inbound is tracked.
   arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
   // v23272 — the line that replaces the countdown once the aircraft is down.
   // v23272 — two states, not one (Nick: 'Once the aircraft arrives it should
@@ -20514,7 +20557,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23294';
+var FIDS_BUILD_TAG = 'v23303';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27435,7 +27478,22 @@ function _wxRadarAdd(m) {
       // look terrible its squares'). Beyond z11 the z7 cells are stretched
       // 16×+ — the Toronto close-up was one giant blocky wash. Past the
       // ceiling the radar simply hides; the street/airport view stays clean.
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.5, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
+      // v23296 — the radar was invisible (Nick: 'the clouds are so faint for
+      // the weather you cant see FUCK ALL'). Two causes stacked: it was drawn
+      // at HALF opacity, and Leaflet 1.9 blends every tile with plus-lighter,
+      // which is ADDITIVE — radar's pale blues and greens added onto a
+      // near-black basemap barely move the pixels. Opacity up, and the radar
+      // pane is taken off the additive blend in CSS so its colours paint as
+      // themselves.
+      // v23299 — 0.92 was MY over-correction in v23296b and it is what made the
+      // radar look blurry (Nick: 'the weather is so blurry', 'never was like
+      // this'). The tiles are native zoom 7 shown on a map at zoom 9: a 4x
+      // enlargement that was simply invisible at the old 0.5 additive blend.
+      // Turning it opaque did not add blur, it revealed it. Sharpness is
+      // capped by the source, so the honest fix is to sit between the two —
+      // clearly readable as weather, without the upscaled blocks dominating
+      // the map. A genuinely sharp radar needs a higher-zoom source.
+      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.68, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
     } catch (e) {}
   };
   if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
@@ -33715,8 +33773,51 @@ function buildAccorAdOnlyV6(ad) {
   // language hasn't loaded yet or the two records carry the same words, so
   // the card is never half empty.
   function _biAttr(L){ return ' lang="' + esc(L) + '"' + ((L === 'ar') ? ' dir="rtl"' : ''); }
+  // v23299 — TWO COLUMNS ONLY WHEN THEY ARE THE SAME THING IN TWO LANGUAGES.
+  // Accor does not return matched pairs: for Fairmont Royal York the English
+  // field carries a one-line tagline ('Welcome to a new era of luxury.') while
+  // the French carries a location paragraph ('Le Fairmont Royal York est situé
+  // en centre-ville de Toronto…'). Printed side by side they read as a
+  // mistake, because they ARE two different facts (Nick: 'the english and
+  // french don't match totally different').
+  // A translation of the same sentence is close in length; different fields
+  // are not. When the two diverge past that, the pair is dropped and the
+  // fuller of the two is shown alone, full width — one true statement beats
+  // two that contradict each other. The threshold is deliberately loose so
+  // ordinary French expansion (~15-25% longer than English) still pairs.
+  // Visible-character count, WITHOUT stripping tags. A regex tag-strip is the
+  // classic incomplete-sanitization pattern (CodeQL flagged the first cut of
+  // this as high severity): one pass over `<[^>]*>` leaves `<scr<script>ipt>`
+  // behind. Nothing here is being sanitized for output — the result is only
+  // ever a number used to compare two lengths — so the honest thing is to
+  // count rather than to strip, which removes the unsafe shape entirely.
+  function _visibleLen(html) {
+    var str = String(html == null ? '' : html), n = 0, inTag = false;
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charAt(i);
+      if (c === '<') { inTag = true; continue; }
+      if (c === '>') { inTag = false; continue; }
+      if (inTag) continue;
+      if (c !== ' ' && c !== '\t' && c !== '\n' && c !== '\r') n++;
+    }
+    return n;
+  }
+  function _biMismatch(a, b) {
+    try {
+      var la = _visibleLen(a), lb = _visibleLen(b);
+      if (!la || !lb) return false;
+      if (la < 24 || lb < 24) return false;   // too short to judge
+      var lo = Math.min(la, lb), hi = Math.max(la, lb);
+      return (hi / lo) > 2.0;
+    } catch (e) { return false; }
+  }
   function _biCols(a, b) {
     if (!a && !b) return '';
+    if (a && b && _biMismatch(a, b)) {
+      var _keep = _visibleLen(a) >= _visibleLen(b) ? a : b;
+      var _lang = (_keep === a) ? _lgD : _L2;
+      return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lang) + '>' + _keep + '</div></div>';
+    }
     if (!a) { return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_L2) + '>' + b + '</div></div>'; }
     if (!b || b === a) return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lgD) + '>' + a + '</div></div>';
     return '<div class="axr-bi">'
@@ -33729,6 +33830,14 @@ function buildAccorAdOnlyV6(ad) {
   // is dropped from the deck rather than shown as a bare logo + name.
   var _p2a = _featsHtml  + (_blurb  ? '<p class="axr-blurb">'+esc(_blurb)+'</p>'  : '');
   var _p2b = _featsHtmlB + (_blurbB ? '<p class="axr-blurb">'+esc(_blurbB)+'</p>' : '');
+  // v23299 — the deck must never fall to two pages (Nick: 'Why is there only
+  // 2 screens unacceptable'). When Accor returns no advantages and no prose
+  // for a property, this page used to be DROPPED, which is how a card that is
+  // supposed to run three or four scenes silently became two. It now falls
+  // back to facts every hotel has — the address, the distance line and the
+  // stars — which is the same fallback page 3 already uses when its own
+  // content is missing. A page with real information on it beats no page.
+  if (!_p2a && !_p2b) { _p2a = _addrLineHtml + _locLineHtml + _starsRow; }
   var _page2 = (!_p2a && !_p2b) ? '' : '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
