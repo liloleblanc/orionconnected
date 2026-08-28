@@ -3871,6 +3871,15 @@ function _equipSaneForCarrier(mktCode, opCode, reg, acStr) {
     if (s.trim()) {
       if (c === 'RV' && !/319|320|321|32N|32Q|32S|32A|32B/.test(s)) return false;
       if ((c === 'PD' || c === 'P3') && !/DH8|DH4|DHC|DASH|Q400|E19|195|E29|290|EMBRAER/.test(s)) return false;
+      // v23310 — FLAIR FLIES THE MAX 8, NOTHING ELSE (Nick: 'a 737-800 with
+      // Flair doesnt exist'). This function is the guard against exactly that
+      // — history/guessed equipment that cannot belong to the carrier — but it
+      // only ever carried rules for Rouge and Porter, so 'Boeing 737-800 |
+      // C-FLEJ' passed unchallenged: the tail is C-F..., which satisfies the
+      // Canadian-registry test, and no fleet rule existed to catch the type.
+      // Matched on MAX/7M8/38M rather than '737-8', because '737-800' contains
+      // that string and would defeat the test it is meant to fail.
+      if (c === 'F8' && !/7M8|38M|MAX/.test(s)) return false;
     }
     return true;
   } catch (e) { return true; }
@@ -7933,7 +7942,20 @@ function _buildV2AircraftCol(ctx, vars) {
         if (code === 'F8') {
           return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;background:#7AFF94;"></div>';
         }
-        var path = (_tileBrand && _tileBrand.icon) || GATE_TOP_ROUND_EMBLEM_FILES[code] || AIRLINE_EMBLEM_FILES[code];
+        // v23307 — THROUGH THE SHARED RESOLVER. v23288 introduced
+        // _airlineOrbEmblem() and called it "the single source for every ROUND
+        // gate orb", but only wired it into the bottom-right card. This builder
+        // and the boarding badge kept their own two-tier lookup with NO
+        // /logos/symbols/airlines/ tier — so a carrier that exists only as one
+        // of the 75 symbol files (BA, TS, WN, LH, AF, KL … most of the list)
+        // got its emblem in the bottom-right card and a GENERIC PLANE up top.
+        // The two orbs on one gate showed different things, which is exactly
+        // what "orbs were supposed to match airline emblems" means and exactly
+        // what was marked done. Precedence is unchanged — the resolver checks
+        // GATE_TOP_ROUND first, then the emblem set — it only adds the third
+        // tier, and the img's onerror still lands on the generic plane when a
+        // carrier has no art anywhere.
+        var path = (_tileBrand && _tileBrand.icon) || _airlineOrbEmblem(code);
         // v218.99.69 — Airlines whose emblem files are full-color tiles
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
@@ -8721,6 +8743,19 @@ function _buildV2MapCol(ctx, vars) {
       // NEEDS TO BE AS 2 PANELS' — every row keeps its OWN full line
       // exactly as before; only the SHELF PANELS regroup: Flight+From
       // share one textured panel, Arrival+Status share the other.
+      // v23309 — THE BUG BEHIND THE WHOLE EMPTY-PANEL SAGA.
+      // _railT was declared with `var` two blocks deeper, inside
+      // `if (_ibArrSchedStr) { if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {`
+      // — so it was only ASSIGNED when a flight was delayed. `var` hoists the
+      // name but not the assignment, so on every ON-TIME flight _railT was
+      // undefined and the call at the _mcTimes line threw
+      // "_railT is not a function". The main builder's catch was empty, so the
+      // card silently never built and the panel fell through to the backstop.
+      // That is why gate 4 (delayed) always rendered a real card in testing
+      // while gate 3 (on time) never did — a difference I saw repeatedly and
+      // misread as an inner guard bailing.
+      // Declared here, once, above every use.
+      var _railT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
       var _ibArrRowHtml = '';
       if (_ibArrSchedStr) {
         // Label follows the selected languages like every other row —
@@ -8739,7 +8774,6 @@ function _buildV2MapCol(ctx, vars) {
           // v23193 — times in the target read 5:30pm, lowercase and unspaced,
           // exactly as the left rail's own times do; the right rail alone was
           // writing "5:30 PM".
-          var _railT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
           // v23197 — ONE LINE for the pair, the way the Porter drawing writes
           // "6:45am | 6:15am": the merged panel is one slot now and two time
           // rows do not fit a slot that also holds the banner, the flight and
@@ -8752,11 +8786,10 @@ function _buildV2MapCol(ctx, vars) {
             +   '<div class="v2-rc-fi-tval v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></div>'
             + '</div>';
         } else {
-          var _railT2 = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
           _ibArrRowHtml =
               '<div class="v2-rc-fi-trow">'
             +   '<div class="v2-rc-fi-tlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</div>'
-            +   '<div class="v2-rc-fi-tval">' + _railT2(_ibArrSchedStr) + '</div>'
+            +   '<div class="v2-rc-fi-tval">' + _railT(_ibArrSchedStr) + '</div>'
             + '</div>';
         }
       }
@@ -8948,7 +8981,15 @@ function _buildV2MapCol(ctx, vars) {
       }
 
     }
-  } catch (e) {}
+  } catch (e) {
+    // v23308 — this catch was SILENT, and that silence has now hidden two
+    // separate bugs: the backstop's esc() ReferenceError, and whatever throws
+    // here on the WestJet gate Nick photographed (WS812 from Calgary), where
+    // the feed had the flight in full yet the real card never built and the
+    // panel fell through to the backstop. A swallowed exception that changes
+    // what renders should say so.
+    try { console.warn('[FIDS] inbound card build failed:', (e && e.message) || e, (e && e.stack || '').split('\n')[1] || ''); } catch (e2) {}
+  }
 
   // ─── PANEL BACKSTOP — NEVER BLANK ────────────────────────
   // v23305 — this slot used to hold a 257-line DEPARTURE card behind an
@@ -9013,22 +9054,68 @@ function _buildV2MapCol(ctx, vars) {
       // The orb is emitted in the same shape the inbound card uses so the
       // operator-emblem and accent post-pass further down repaints it, rather
       // than a second resolver living here.
+      // v23307 — resolve the carrier HERE. This read `_opCode`, which is
+      // declared with `var` further down this same function, so hoisting made
+      // it exist and be `undefined` at this point: _airlineOrbEmblem('')
+      // returned '', the card fell to the lettered chip, and the chip's text
+      // was empty too. Measured on YQM gate 3 — Porter, which HAS an emblem
+      // registered — the card orb rendered as nothing while the top orb wore
+      // porter-p.svg. Same derivation the builder below uses.
+      var _niCodeRaw = String((_niIb && _niIb._opCode) || (vars.currentFlight && vars.currentFlight._opCode) || vars.airlineCode || '').trim().toUpperCase();
+      var _niCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_niCodeRaw]) ? CALLSIGN_TO_IATA[_niCodeRaw] : _niCodeRaw;
       var _niOrbSrc = '';
-      try { _niOrbSrc = _airlineOrbEmblem(_opCode) || ''; } catch (e) {}
+      try { _niOrbSrc = _airlineOrbEmblem(_niCode) || ''; } catch (e) {}
+      // v23308 — THE ORB IS A CIRCLE WITH A SIZE. This wrapper carried a bare
+      // `background:` and nothing else — no width, no height, no border-radius
+      // — so it rendered as an empty rounded SQUARE the size of whatever the
+      // base class gave it (Nick's WestJet shot: a blank teal box). The real
+      // inbound card builds _mcBadge with the full geometry; the backstop has
+      // to use the same string or it is not the same orb. The accent fallback
+      // is the carrier's own brand colour too, not a hardcoded navy, so a gate
+      // whose --airline-accent fails to resolve still matches its neighbours.
+      var _niAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_niCode] && AIRLINE_BRAND[_niCode].accent) || '#D82F2E';
+      var _niBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _niAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // v23308 — the status line only says "to be confirmed" when something
+      // ACTUALLY is. Nick's shot printed it under 'WS812 · From: Calgary YYC':
+      // 'what is to be confirmed we know the fing plane is coming from
+      // Calgary'. He is right — the line was written for the case where the
+      // board knows nothing, and then rendered unconditionally, contradicting
+      // the line directly above it. Now: show the arrival time when the feed
+      // gave one; when the flight and origin are known but the time is not,
+      // say nothing rather than something meaningless; keep the placeholder
+      // only for the genuinely-empty case it was written for.
+      var _niKnown = !!(_niFlt || _niFrom);
+      var _niTs = _niIb ? (_niIb._revTs || _niIb._sortTs || 0) : 0;
+      var _niTimeStr = '';
+      if (_niTs) {
+        try {
+          _niTimeStr = new Date(_niTs).toLocaleTimeString('en-US', {
+            timeZone: vars.tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: true
+          });
+        } catch (e) { _niTimeStr = ''; }
+      }
+      var _niStatusLine = '';
+      if (_niTimeStr) {
+        _niStatusLine = '<div class="v2-fi-mline3">' + _niEsc(_niTimeStr)
+          + ' <span class="v2-fi-mlbl">' + _gateLblSpans('arrival', _frF) + '</span></div>';
+      } else if (!_niKnown) {
+        _niStatusLine = '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline">'
+          + _gateLblSpans('toBeConfirmed', _frF) + '</span></div>';
+      }
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="background:var(--airline-accent,#1b3a63)">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _niBadge + '">'
         +       (_niOrbSrc
                   ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="this.remove()">'
-                  : '<span class="v2-fi-orb-code">' + (_opCode || '') + '</span>')
+                  : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
         +       '<div class="v2-fi-title">' + _niTitle + '</div>'
         +       '<div class="v2-fi-value">'
         +         '<div class="v2-fi-mline1">' + (_niFlt ? _niEsc(_niFlt) : '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_niFrom || '\u2014') + '</div>'
-        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline">' + _gateLblSpans('toBeConfirmed', _frF) + '</span></div>'
+        +         _niStatusLine
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -9353,6 +9440,32 @@ function _buildV2MapCol(ctx, vars) {
         // Non-Airbus under RV = data error: keep the TRUE type in mainline
         // paint rather than fabricating Rouge art that doesn't exist.
         _regTrueImg = _rcRouge ? _rougeLiveryEq(_rcRouge) : '';
+      }
+      // v23311 — THE PLATE MUST NOT CONTRADICT THE LABEL, FOR ANY CARRIER.
+      // Nick: 'dont assume its oh one airline no its ALL'. The reg-true type
+      // is a REGISTRY lookup on the tail, and it took precedence over the very
+      // code the label was built from — so whenever the two disagreed the
+      // panel named one aircraft and drew another, and usually drew nothing at
+      // all because the contradicting file does not exist. Measured on YQM
+      // gate 1: label 'Boeing 737 MAX 8', plate aircraft/F8/738.png, broken.
+      //
+      // v23310 only stopped an impossible TYPE reaching the label; this is the
+      // same class of fault one layer down, on the IMAGE, and the only carrier
+      // guarded against it was Air Canada, by the hardcoded 737->MAX pin ten
+      // lines above. That is why it read as 'all of them'.
+      //
+      // Two general rules, replacing the AC special case rather than joining
+      // it: an airframe the carrier cannot fly is discarded outright, and a
+      // reg-true type that survives is used for the picture ONLY when it means
+      // the same aircraft the label names. Otherwise the label's own code
+      // draws the plate, so the two always agree — Nick's standing rule ('it
+      // shouldnt say airbus 321 and show a 320 … the root of this needs to be
+      // fixed'). A genuine substitution still shows through, because in that
+      // case the label has already moved with it.
+      if (_regTrueImg && typeof _equipSaneForCarrier === 'function') {
+        try {
+          if (!_equipSaneForCarrier(vars.airlineCode, _opCode, '', String(_regTrueImg))) _regTrueImg = '';
+        } catch (e) {}
       }
       var _imgEq = _regTrueImg || _liveryEq;
       // Fallback (Nick: 'it should fall back to a picture of the scheduled
@@ -10805,7 +10918,15 @@ function uxgGateHtml(ctx) {
     // with the tilted white widget ('The Delta emblem was not changed to
     // look like this'), so it matches the accent-orb row the old white
     // sphere clashed with.
-    var _birEmblemPath = _birRound || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    // v23307 — same shared resolver as the top orb and the bottom-right card,
+    // so all three round orbs on a gate resolve one carrier to one emblem.
+    // _birRound is kept in the expression only for readability: the resolver
+    // checks GATE_TOP_ROUND_EMBLEM_FILES first itself, so precedence is
+    // identical — what changes is the /logos/symbols/airlines/ tier this
+    // builder never had. Unlike the other two this <img> had NO onerror, so
+    // one is added below; without it a carrier with no art would go from a
+    // blank badge to a broken-image icon.
+    var _birEmblemPath = _birRound || _airlineOrbEmblem(airlineCode) || null;
     // MX: tile-brand treatment (Nick: 'circle same color as the icon, the
     // middle fits within') — navy circle in the tile's own colour, check
     // mark (derived from the airline's tile art) padded inside, no filter.
@@ -10825,7 +10946,7 @@ function uxgGateHtml(ctx) {
     // the orb. Slimmer img pad; the wrap pad alone keeps the round crop safe.
     var _birPad = _birOnWhite ? '8%' : '3%';
     var _birFlightIcon = _birEmblemPath
-      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;">'
+      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;" onerror="this.remove()">'
       : null;
     // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
     // AA/DL (_birOnWhite): keep the DEFAULT accent-coloured badge (same as the
@@ -12459,7 +12580,27 @@ function gateAutofit(root) {
           if (c && c !== 'rgba(0, 0, 0, 0)' && !/,\s*0\)$/.test(c)) { bg = c; break; }
           n = n.parentElement;
         }
-        var bright = '#fca825', deep = '#8a5200', pick = bright;
+        // v23309 — THIS is where the brown came from. `deep` was '#8a5200' =
+        // rgb(138,82,0): hue 36, saturation 1.0, lightness 0.27 — brown by any
+        // measure, and byte-for-byte the colour measured on the YYC/YUL code in
+        // the card title. It is picked whenever the bright gold misses the 3:1
+        // floor, which is exactly what happens on a light or teal banner.
+        //
+        // v23304's _caIsBrown guard could never fix this: that guard lives in
+        // _caFit, on the applyCodeAccents path, and THIS is a separate painter
+        // that writes color with !important. The measured proof was sitting in
+        // the probe output the whole time — those title codes carried
+        // data-ca=null, meaning the accent pass had never touched them. I read
+        // "0 brown" off the body codes and reported the brown as fixed three
+        // times while the element Nick was actually pointing at was painted
+        // here, untouched.
+        //
+        // A darkened gold IS brown; there is no shade of it that isn't. So the
+        // dark option is no longer a gold at all — it is the deep navy the rest
+        // of the board already uses as its light-mode ink (.bidsv2 / light-board
+        // rules use #16283C), which clears contrast on light grounds and sits
+        // far outside the brown band (hue 213).
+        var bright = '#fca825', deep = '#16283C', pick = bright;
         if (bg && typeof _fidsContrast === 'function') {
           var cb = _fidsContrast(bright, bg) || 0, cd = _fidsContrast(deep, bg) || 0;
           pick = (cb >= 3) ? bright : (cd > cb ? deep : bright);
@@ -14044,6 +14185,23 @@ const gView = document.getElementById('gateView');
       const _gateMatchFallback = (data.arr || []).filter(f =>
         f.gate === _gateVal &&
         f.status !== 'departed' &&
+        // v23310 — A CANCELLED FLIGHT NEVER ARRIVES, SO IT IS NEVER THE
+        // INCOMING AIRCRAFT. This filter excluded 'departed' and nothing else,
+        // so a cancelled arrival was fully eligible to be adopted as the
+        // airframe for the next departure — and the ENTIRE right rail is built
+        // from that one object, so the map drew its route, the plate showed its
+        // type, and the card printed its cancelled status. Measured on YQM
+        // gate 2 (Nick: 'its literally fake info … nothing matches anymore'):
+        // PB925 to Wabush was pairing with PB923 from Deer Lake, CANCELLED, and
+        // the rail drew YQM->YDF for a flight going to YWK.
+        // v23303 is what made it reachable: widening the window 6h -> 20h for
+        // overnight aircraft is the only reason an 11:00am cancellation could
+        // be picked up for a 6:40pm departure, seven and a half hours later.
+        // Diverted is excluded on the same logic — it is not landing here.
+        (function () {
+          var _s = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+          return _s !== 'cancelled' && _s !== 'canceled' && _s !== 'diverted';
+        })() &&
         f.flight !== currentFlight.flight &&
         f._sortTs <= _depTs &&
         f._sortTs >= _6hBefore &&
@@ -19056,7 +19214,7 @@ const LOGO_SUBFOLDER = {
   'fairmont-hotel-macdonald.svg':'hotels/accor-luxury', 'fairmont-hotel-vancouver.svg':'hotels/accor-luxury', 'fairmont-jasper-park-lodge.svg':'hotels/accor-luxury', 'fairmont-le-chateau-frontenac.svg':'airlines/canadian',
   'fairmont-le-chateau-montebello.svg':'hotels/accor-luxury', 'fairmont-le-manoir-richelieu.svg':'hotels/accor-luxury', 'fairmont-pacific-rim.svg':'hotels/accor-luxury', 'fairmont-palliser.svg':'hotels/accor-luxury',
   'fairmont-queen-elizabeth.svg':'hotels/accor-luxury', 'fairmont-royal-york.svg':'hotels/accor-luxury', 'fairmont-tremblant.svg':'hotels/accor-luxury', 'fairmont-vancouver-airport.svg':'hotels/accor-luxury',
-  'fairmont-waterfront.svg':'hotels/accor-luxury', 'fairmont.png':'hotels/accor-luxury', 'fairmont.svg':'hotels/accor-luxury', 'flair-wordmark-light.svg':'airlines/canadian', 'flair.svg':'airlines/canadian', 'flying-blue.png':'airlines/alliances', 'flying-blue940X360px.webp':'airlines/alliances',
+  'fairmont-waterfront.svg':'hotels/accor-luxury', 'fairmont.png':'hotels/accor-luxury', 'fairmont.svg':'hotels/accor-luxury', 'flair-wordmark-dark.svg':'airlines/canadian', 'flair-wordmark-light.svg':'airlines/canadian', 'icelandair-wordmark-dark.svg':'airlines/european', 'icelandair-wordmark-light.svg':'airlines/european', 'flair.svg':'airlines/canadian', 'flying-blue.png':'airlines/alliances', 'flying-blue940X360px.webp':'airlines/alliances',
   'four-seasons.png':'hotels/other-chains', 'golden-tulip.jpg':'hotels/wyndham', 'grand-hyatt-white.png':'hotels/hyatt', 'grand-hyatt.png':'hotels/hyatt',
   'grand-mercure.png':'hotels/accor-premium', 'grand-mercure.svg':'hotels/accor-premium', 'great-wolf-lodge.png':'hotels/wyndham', 'greet.svg':'hotels/accor-midscale',
   'hampton-inn-white.png':'hotels/hilton', 'hampton-inn.png':'hotels/hilton', 'hampton-white.png':'hotels/hilton', 'hampton.png':'hotels/hilton',
@@ -20405,7 +20563,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23306';
+var FIDS_BUILD_TAG = 'v23311';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
