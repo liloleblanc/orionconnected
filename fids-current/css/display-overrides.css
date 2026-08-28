@@ -14594,3 +14594,18 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline > span + span::before {
   opacity: .55;
   font-weight: 400;
 }
+
+/* ── v23314 — the takeover map names the flight it is tracking ───────────
+   Chip at the top-left of the big map: 'Arriving From | Procedente de ·
+   AC2003 · Fredericton | YFC'. Without it the map is truthful and reads as
+   broken — a westbound inbound under an eastbound departure headline. */
+.bigcraft-flightcap {
+  position: absolute !important; left: 14px !important; top: 12px !important; z-index: 500 !important;
+  background: rgba(5,10,20,0.82) !important; color: #fff !important;
+  font-size: clamp(12px, 1.6vh, 19px) !important; font-weight: 800 !important;
+  padding: 6px 14px !important; border-radius: 9px !important; letter-spacing: 0.3px !important;
+  max-width: calc(100% - 28px) !important; white-space: nowrap !important;
+  overflow: hidden !important; text-overflow: ellipsis !important;
+}
+.bigcraft-flightcap .bigcraft-cap-sep { opacity: .55; font-weight: 400; }
+.bigcraft-flightcap .bigcraft-cap-flt { color: #ffd25e; }

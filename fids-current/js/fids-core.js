@@ -20589,7 +20589,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23313';
+var FIDS_BUILD_TAG = 'v23314';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -37371,6 +37371,30 @@ function _renderBigCraft(el, ctx) {
       '<div class="bigcraft-wrap bigcraft-wrap--maponly">'
     +   '<div class="bigcraft-mapcol">'
     +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
+    // v23314 — THE MAP NAMES THE FLIGHT IT IS TRACKING. Without this caption
+    // the takeover is truthful and reads as broken: an AC2046->YYT (east)
+    // gate showed the inbound AC2003 from Fredericton flying WEST with
+    // nothing saying so (Nick: 'This plane is heading west but it should be
+    // east which one is it???'), and the Cathay gate's 'rural Alberta' map
+    // was CX828 inbound, unlabeled. Same chip style as the est badge beside
+    // it; bilingual per the board pair like everything else.
+    +     (function () {
+            try {
+              var _capKey = (ctx && ctx.out) ? 'departure' : 'arrivingFrom';
+              var _capF = (ctx && ctx.out) ? (window._gateCurrentFlight || {}) : (window._gateInbound || {});
+              var _capFlt = String(_capF.flight || '').trim();
+              var _capPlc = String(((ctx && ctx.out) ? (_capF.dest || _capF._locIata) : (_capF.origin || _capF._locIata)) || '').trim();
+              if (!_capFlt && !_capPlc) return '';
+              var _capLbl = _gateLbl(_capKey, false, function (w, iC) {
+                return (iC ? '<span class="bigcraft-cap-sep"> | </span>' : '') + '<span>' + w + '</span>';
+              }, '');
+              var _capEsc = function (v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+              return '<div class="bigcraft-flightcap">' + _capLbl
+                + (_capFlt ? ' <span class="bigcraft-cap-flt">' + _capEsc(_capFlt) + '</span>' : '')
+                + (_capPlc ? ' <span class="bigcraft-cap-sep">\u00b7</span> ' + _capEsc(_capPlc) : '')
+                + '</div>';
+            } catch (eCap) { return ''; }
+          })()
     +     (ctx.estimated ? '<div class="bigcraft-est">' + (function(){
             // v23202 — the badge follows the CHOSEN languages like everything
             // else; it was hard-coded EN/FR and read 'Position estimée' on an
