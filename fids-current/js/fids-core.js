@@ -2092,6 +2092,25 @@ function _caScreenAccent() {
   return [56, 132, 255];   // a clean blue — never brown, never the row's ink
 }
 // Walk lightness (hue and saturation held) until the accent clears the row.
+// v23304 — BROWN IS NEVER A VALID RESULT.
+// The fitter walks an accent's LIGHTNESS to clear the background. That is
+// fine for a blue or a red, and wrong for a gold: a darkened gold IS brown.
+// On a WestJet card the screen accent is YQM's gold, the card is light teal,
+// so the fitter darkened the gold to clear it and produced exactly the olive
+// Nick has rejected over and over ('accents need to be accents just not brown
+// its not appealing its not their colors').
+// Brown is a dark, still-saturated yellow-orange. Naming it as a region and
+// refusing to land there is the only way a lightness walk can be stopped from
+// re-inventing it. Candidates inside the region are skipped entirely, so the
+// fitter reaches for a light tint of the same hue instead — which reads as the
+// accent without ever going muddy.
+function _caIsBrown(rgb) {
+  try {
+    var hsl = _caRgbToHsl(rgb[0], rgb[1], rgb[2]);
+    var hueDeg = hsl[0] * 360;
+    return (hueDeg >= 12 && hueDeg <= 58) && hsl[1] > 0.18 && hsl[2] < 0.48;
+  } catch (e) { return false; }
+}
 function _caFit(accent, bg, avoid) {
   var hsl = _caRgbToHsl(accent[0], accent[1], accent[2]);
   var best = null, bestC = 0;
@@ -2110,6 +2129,7 @@ function _caFit(accent, bg, avoid) {
     // accent at all, which is exactly what v23292 shipped.
     var tooCloseToInk = avoid && (Math.abs(rgb[0] - avoid[0]) + Math.abs(rgb[1] - avoid[1]) + Math.abs(rgb[2] - avoid[2])) < 90;
     if (tooCloseToInk) continue;
+    if (_caIsBrown(rgb)) continue;          // never land in the brown region
     if (c > bestC) { bestC = c; best = rgb; }
   }
   // Last resort: some grounds cannot be cleared by ANY lightness of a given
@@ -2125,7 +2145,8 @@ function _caFit(accent, bg, avoid) {
       if (nc > bestC) { bestC = nc; best = n; }
     }
   }
-  return best || accent;
+  if (best && _caIsBrown(best)) best = null;
+  return best || (_caIsBrown(accent) ? [255, 255, 255] : accent);
 }
 function applyCodeAccents() {
   try {
@@ -8328,31 +8349,13 @@ function _buildV2MapCol(ctx, vars) {
   // supposed to have finished with departures — they are on the other side.
   // The panel now keeps the inbound card and lets its wording carry through
   // arrived -> at the gate.
-  var _arrivedSwitch = false;
-  var _noInboundYet = false;
-  try {
-    var _ibSw = vars.inboundFlight;
-    if (_ibSw) {
-      // (no post-arrival switch — see above)
-    } else {
-      // v23295 — NO inbound tracked. This used to flip to the DEPARTURE card,
-      // and that is the bug Nick reported three times ('Im still seeing
-      // fucking departures on the bottom right panel'). The panel is the
-      // incoming aircraft's, so a departure has no business on it in any
-      // state — the departure is already on the other side of the screen.
-      // v23284 removed the post-arrival switch but kept THIS one, so nothing
-      // changed on a gate whose inbound is not tracked, which is most of them
-      // early in the day.
-      // The fallback existed because the panel went near-empty. The honest
-      // answer to 'which aircraft is coming' when nothing is tracked is to say
-      // so — not to answer a different question.
-      _arrivedSwitch = false;
-      _noInboundYet = true;
-    }
-  } catch (e) {}
+  // v23305 — _arrivedSwitch is GONE. It had been pinned to false since v23295,
+  // so the 257-line departure branch it guarded could never run; it sat there
+  // as dead weight and the panel it was supposed to fill rendered nothing.
+  // A panel that would render blank now gets the backstop card further down.
   try {
     var _ib = vars.inboundFlight;
-    if (_ib && !_arrivedSwitch) {
+    if (_ib) {
       // Option 1 — use the live position the airport board already carried for
       // this inbound (the board is fetched with withLocation=true). The separate
       // by-number fetch (window._gateInboundLivePos) often misses what the board
@@ -8947,273 +8950,85 @@ function _buildV2MapCol(ctx, vars) {
     }
   } catch (e) {}
 
-  // ─── DEPARTURE CARD ───────────────────────────────────────────────────
-  // Shown in place of the incoming-aircraft card once the inbound has been on
-  // the ground ~5 min. Same shelf layout, but for the OUTBOUND flight: this
-  // airport → destination, with a "Departing in" countdown.
-  // v23302 — NO CARD HERE AT ALL WHEN THERE IS NO INBOUND.
-  // Two attempts at filling this slot both failed on the same fact: the panel
-  // is a NARROW column. Reusing .v2-fi-label truncated the sentence to
-  // 'Arrivi...' / 'Aircra...'; giving it its own wrapping type turned it into
-  // seven ragged lines with the last word cut off the bottom. A bilingual
-  // sentence does not fit a column this narrow, and no amount of type styling
-  // changes that.
-  // The slot does not need text: the aircraft block directly above it already
-  // names the aircraft, so leaving this empty loses nothing and shows nothing
-  // broken. What matters is what is NOT here — the departure card, which is
-  // the thing Nick asked three times to be rid of and which stays gone
-  // because _arrivedSwitch is false.
-  if (_arrivedSwitch) {
+  // ─── PANEL BACKSTOP — NEVER BLANK ────────────────────────
+  // v23305 — this slot used to hold a 257-line DEPARTURE card behind an
+  // `if (_arrivedSwitch)` that had been pinned false since v23295, so it was
+  // unreachable code guarding an empty panel. Both are gone.
+  //
+  // v23302 argued the empty slot "loses nothing because the aircraft block
+  // above already names the aircraft". Nick, three times over: 'So now theres
+  // nothing??? I asked for the incoming flight info NOT NOTHIONG', 'no info',
+  // 'nothing'. A blank box under a populated one reads as broken, and this
+  // panel is the incoming aircraft's — it says what it knows, or says it does
+  // not know yet. It does not go silent.
+  //
+  // THE CONDITION IS `!_inboundCard`, NOT "no inbound tracked". Measured on
+  // YQM gate 3: window._gateInbound was populated and the panel STILL rendered
+  // nothing, because the builder above bailed on one of its inner guards. So
+  // "no inbound" was never the only route to a blank panel, and keying the
+  // backstop to that would have missed the exact gate Nick photographed. Keyed
+  // to the empty string instead, it covers every route — missing inbound, a
+  // failed inner guard, a throw.
+  //
+  // The two earlier attempts failed on the SAME fact and this one respects it:
+  // the column is narrow. A bilingual sentence truncated ('Arrivi…'/'Aircra…')
+  // or broke into seven ragged lines. So this card carries no sentence — it
+  // reuses the real inbound card's exact shelf, orb and line grid with two
+  // SHORT labelled rows, the shape already proven to fit this column.
+  if (!_inboundCard) {
     try {
-      var _dcf = vars.currentFlight || {};
-      var _dTz = vars.tz || 'UTC';
-      var _dOrig = (vars.iata || '').toString().toUpperCase();      // departing FROM here
-      var _dDest = (vars.locIata || _dcf.dest || '').toString().toUpperCase();
-      var _dLang2 = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
-      function _dt2(o){ return o[_dLang2] || o.fr || o.en || ''; }
-      function _dFmtT(ts){ try { return new Date(ts).toLocaleTimeString('en-US', {timeZone:_dTz, hour:'2-digit', minute:'2-digit', hour12:true}); } catch(e){ return ''; } }
-
-      // Flight number (compact, e.g. "AC1984")
-      var _dFltCompact = String(_dcf.flight || '').replace(/\s+/g, '').toUpperCase();
-
-      // Status — reuse the same passenger-facing display key as the left rail.
-      // This keeps a normally tracking flight from reading On Time on one side
-      // and Scheduled on the other.
-      var _dStKey = String(vars.stKey || _dcf.status || '').trim().toLowerCase();
-      var _dStLabel = String(vars.stLabel || _dStKey || '').trim();
-      var _dStCls = String(vars.stClass || 'ontime').replace(/^v2-fi-status/, '').replace(/^[-\s]+/, '') || 'ontime';
-      if (['scheduled','ontime','delayed','cancelled'].indexOf(_dStCls) === -1) _dStCls = 'ontime';
-
-      // Departure / arrival times — reuse the EXACT strings the left column
-      // already shows (revised, 12-hour, delay-adjusted) so the two panels can
-      // never disagree. Strip any markup down to plain text. Fall back to the
-      // effective-departure timestamp only if the left column had nothing.
-      var _dDepTs = ctx.effectiveDepTs || null;
-      // Strip markup to plain text. Loop until stable (a single pass can leave
-      // a reassembled tag, per CodeQL), then drop any stray angle brackets.
-      function _dStrip(h){
-        var s = String(h || '');
-        if (s.indexOf('<') === -1) return s.trim();
-        // Delayed times arrive as '<span class=g8-r2-strike>OLD</span><span
-        // class=g8-r2-revised>NEW</span>'. Keep ONLY the revised value — else
-        // the tags-stripped text reads 'OLDNEW' mashed together (Nick: '5:30
-        // AM5:49 AM'). Done with a plain CHARACTER SCAN — no HTML-matching
-        // regex (CodeQL js/bad-tag-filter) and no innerHTML — so markup is
-        // never mis-parsed or re-injected.
-        var rev = s.indexOf('g8-r2-revised');
-        if (rev !== -1) {
-          var gt = s.indexOf('>', rev);
-          var lt = (gt !== -1) ? s.indexOf('<', gt + 1) : -1;
-          if (gt !== -1 && lt !== -1) return s.slice(gt + 1, lt).trim();
+      var _niIb = vars.inboundFlight || null;
+      // esc() further down this file is LOCAL to another function, not a
+      // global. Calling it here threw a ReferenceError that this try/catch
+      // swallowed, so the backstop silently produced nothing on exactly the
+      // gates that had an inbound to name — YQM gate 3, the one photographed.
+      function _niEsc(v) {
+        return String(v == null ? '' : v)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      var _niTitle = _gateLbl('arrival', _frF, function (w, i4) {
+        return i4 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>'
+                  : '<span class="v2-fi-lbl-en">' + w + '</span>';
+      }, '');
+      // Whatever the feed DID give us for the inbound still goes on the card —
+      // an unbuildable card is not the same as an unknown aircraft.
+      var _niFlt = _niIb ? String(_niIb.flight || '').trim() : '';
+      var _niFrom = '';
+      if (_niIb) {
+        var _niFromIata = String(_niIb._locIata || '').toUpperCase();
+        // The feed hands origin over ALREADY paired — YQM gate 3 carries
+        // 'Montreal | YHU'. Re-appending the code would print it twice, so
+        // only the city half is taken and the code is re-applied below in the
+        // accent-coloured chip the rest of the board uses.
+        var _niFromCity = String(_niIb.origin || '').split('|')[0].trim();
+        if (_niFromCity && /^[A-Z]{3,4}$/.test(_niFromIata)) {
+          _niFrom = _niEsc(_niFromCity) + ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _niFromIata + '</span>';
+        } else if (/^[A-Z]{3,4}$/.test(_niFromIata)) {
+          _niFrom = '<span class="v2-fi-code v2-rc-iata">' + _niFromIata + '</span>';
+        } else if (_niFromCity) {
+          _niFrom = _niEsc(_niFromCity);
         }
-        // No revised marker: strip every tag by scanning, not regex.
-        var out = '', depth = 0;
-        for (var i = 0; i < s.length; i++) {
-          var c = s.charAt(i);
-          if (c === '<') depth++;
-          else if (c === '>') { if (depth > 0) depth--; }
-          else if (depth === 0) out += c;
-        }
-        return out.trim();
       }
-      var _dDepStr = _dStrip(vars.depTimeHtml) || (_dDepTs ? _dFmtT(_dDepTs) : '');
-      var _dArrStr = _dStrip(vars.arrHtml);
-      // A revised (delayed) departure carries the g8-r2-revised marker — colour
-      // that time ORANGE on this card to match the delayed status (Nick).
-      var _dDepDelayed = String(vars.depTimeHtml || '').indexOf('g8-r2-revised') !== -1;
-      var _dDepEarly = String(vars.depTimeHtml || '').indexOf('g8-rev-early') !== -1;
-      // v23208 — the ORIGINAL scheduled departure, from the g8-r2-strike span
-      // (_dStrip keeps only the revised value). The module's time row shows
-      // 'Revised | Révisé: new | struck-old' exactly like the inbound card
-      // (Nick: 'DepartureDépart: 10:50am NO this is Revised | Revisé').
-      var _dDepSchedStr = '';
-      try {
-        var _sOld = String(vars.depTimeHtml || ''), _kOld = _sOld.indexOf('g8-r2-strike');
-        if (_kOld !== -1) {
-          var _gOld = _sOld.indexOf('>', _kOld);
-          var _lOld = (_gOld !== -1) ? _sOld.indexOf('<', _gOld + 1) : -1;
-          if (_gOld !== -1 && _lOld !== -1) _dDepSchedStr = _sOld.slice(_gOld + 1, _lOld).trim();
-        }
-      } catch (e) {}
-
-      // "Departing in" countdown
-      var _dMins = _dDepTs ? Math.round((_dDepTs - Date.now()) / 60000) : 0;
-      var _dEtaStr = '';
-      if (_dMins > 0 && _dMins < 1440) {
-        _dEtaStr = _dMins >= 60 ? (Math.floor(_dMins/60) + 'h ' + (_dMins % 60) + 'm') : (_dMins + ' min');
-      }
-
-      function _di3(en, val, l2, cls){
-        return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
-             + '<div class="v2-rc-i3val ' + (cls||'') + '">' + (val || '—') + '</div>'
-             + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
-      }
-      function _dr2(abbr, valStr, wordObj){
-        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + abbr + '</div>'
-             + '<div class="v2-rc-r2val">' + valStr + '</div>'
-             + '<div class="v2-rc-r2lbl2">' + _dt2(wordObj) + '</div></div>';
-      }
-
-      // Destination city for "To | À".
-      var _dDestCity = '';
-      try {
-        if (_dDest && typeof CITY !== 'undefined' && CITY[_dDest]) _dDestCity = CITY[_dDest];
-        else if (_dDest && typeof AP !== 'undefined' && AP[_dDest] && AP[_dDest].city) _dDestCity = AP[_dDest].city;
-        if (typeof tc === 'function' && _dDestCity) _dDestCity = tc(_dDestCity);
-      } catch (e) {}
-      // Bilingual status for the departure card (Scheduled | Prévu).
-      var _dStEn = '', _dStFr = '';
-      try {
-        var _dk = String(_dStKey || (_dcf && _dcf.status) || '').toLowerCase().replace(/[\s_-]/g, '');
-        var _dss = (typeof SS !== 'undefined' && SS[_dk]) ? SS[_dk] : null;
-        if (_dss) { _dStEn = _fidsTitleCase(_dss.en); _dStFr = _dss.fr; }
-      } catch (e) {}
-      // ── v22944 — THE STATUS FOLLOWS THE SELECTED LANGUAGES.
-      // This cell hard-coded English + French and consulted nothing, even
-      // though `langs` is a user choice with a picker in the menu and the
-      // status words already exist in nine languages. A screen set to French
-      // only, or to Spanish, still read 'Delayed | En retard'.
-      //
-      // It is also what pins the column width. Measured on the branch, YQM
-      // gate 4: 'Delayed | En retard' needs 263.7px of a 270px value column
-      // and has ALREADY been auto-shrunk from 32.94px to 29.94px to fit — 6.3
-      // pixels of headroom on the longest string. One selected language is
-      // about half that, which is where the room Nick is pointing at comes
-      // from. The size follows the choice; it is not a separate knob.
-      // TWO AT A TIME, ONE IF THAT IS ALL THAT IS PICKED (Nick). The cap is
-      // what makes the column safe: two words is the widest this cell can ever
-      // be asked to render, which is the case the 270px column was already
-      // sized for. Without it a screen set to four languages would produce a
-      // string nothing could fit, and the fitter would shrink the status into
-      // illegibility to cope.
-      function _stByLangs(obj, fallback) {
-        var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-          ? langs.slice(0, 2) : ['en', 'fr'];
-        var seen = Object.create(null), parts = [];
-        for (var _li = 0; _li < picked.length && parts.length < 2; _li++) {
-          var w = obj && obj[picked[_li]];
-          if (!w) continue;
-          w = _fidsTitleCase(w);
-          var k = w.toLowerCase();
-          if (seen[k]) continue;   // never print 'Delayed | Delayed'
-          seen[k] = 1;
-          parts.push(w);
-        }
-        if (!parts.length) return fallback || '—';
-        return parts.join(' <span class="v2-rc-fi-sep">|</span> ');
-      }
-      var _dStShow = _dss
-        ? _stByLangs(_dss, _dStEn || _dStLabel)
-        : ((_dStFr && _dStFr !== _dStEn)
-            ? (_dStEn + ' <span class="v2-rc-fi-sep">|</span> ' + _dStFr) : (_dStEn || _dStLabel || '—'));
-      // The raw API status can still read 'scheduled' after a delay, so the card
-      // showed 'Scheduled' in an orange (delayed) pill next to a bumped time
-      // (Nick: 'Scheduled should be delayed for that flight'). Whenever the
-      // flight IS delayed — by status class OR by a revised departure time —
-      // force the label AND class to Delayed so the card is self-consistent and
-      // matches the left rail.
-      if (_dStCls === 'delayed' || _dDepDelayed) {
-        // v22944 — this branch hard-coded the English/French pair outright, so
-        // it overrode the language choice for the one status that matters most.
-        _dStShow = _stByLangs({ en:'Delayed', fr:'En retard', es:'Retrasado',
-          de:'Verspätet', it:'In ritardo', pt:'Atrasado', ja:'遅延', zh:'延误',
-          ar:'متأخر' }, 'Delayed');
-        _dStCls = 'delayed';
-      }
-      // Flight·To + Status only (no departing-in row — it's on the left).
-      // Same 3-row LABEL | VALUE table as the inbound card (Nick, Jul 2026).
-      var _dCityCode = _dDestCity
-        ? (_dDestCity + (_dDest ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dDest) + '</span>' : ''))
-        : (_dispIata(_dDest) || '—');
-      // Multi-city through-flight → flip the panel row city-by-city too.
-      // Raw feed dest — the display city was already first-leg-reduced.
-      (function () {
-        var _dfRowStops = (vars.currentFlight && Array.isArray(vars.currentFlight._stops) && vars.currentFlight._stops.length > 1)
-          ? vars.currentFlight._stops : null;
-        var _dfRow = _dfRowStops ? _destFlipStops(_dfRowStops, 'c') : null;
-        var _dfRowIa = _dfRowStops ? _destFlipStops(_dfRowStops, 'ia') : null;
-        if (_dfRow) _dCityCode = _dfRow + (_dfRowIa ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_dfRowIa) + '</span>' : '');
-      })();
-      // Same 2-PANEL pattern as the inbound card, inside ONE shelf element
-      // (a second shelf child breaks the rail grid): pane 1 = Flight /
-      // Destination, pane 2 = Departure / Status. Departure TIME stays
-      // (Nick: 'who told you to remove the time').
-      // v23197 — SAME MERGED ONE-SLOT CARD AS THE INBOUND BUILDER. This
-      // departure variant kept the old 2-pane layout after the merge, so the
-      // moment the inbound landed and this builder took over, two panes of
-      // content crammed into the one-slot card and overflowed it (caught on a
-      // render, not by luck: WS812 arrived mid-verification). One banner, the
-      // flight over the destination, the status band, one departure-time
-      // line. The departure TIME stays (Nick: 'who told you to remove the
-      // time').
-      // v23201 — the left module verbatim here too (see the inbound builder).
-      var _dRailT = function (t) { return String(t || '').replace(/\s*([AP]M)\b/gi, function (m, p) { return p.toLowerCase(); }); };
-      var _mdCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
-      var _mdAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mdCode] && AIRLINE_BRAND[_mdCode].accent) || '#D82F2E';
-      var _mdBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mdAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
-      // v23203 — the orb carries the OPERATOR's logo when another carrier
-      // flies the leg (Nick: 'either the airline or the operator in this
-      // case PAL — logo only white — and still have operated by PAL'),
-      // else the airline's; forced to a white silhouette either way.
-      var _mdOrbOp = '';
-      try { var _oRaw_mdOrb = String((vars.currentFlight && vars.currentFlight._opCode) || '').trim().toUpperCase();
-        _mdOrbOp = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_oRaw_mdOrb]) ? CALLSIGN_TO_IATA[_oRaw_mdOrb] : _oRaw_mdOrb;
-        if (_mdOrbOp === _mdCode) _mdOrbOp = ''; } catch (e) {}
-      var _mdOrbSrc = '';
-      try {
-        var _orbCode_mdOrb = _mdOrbOp || _mdCode;
-        // v23208 — emblem only, never a lockup with lettering (see the
-        // inbound builder).
-        // v23288 — through the shared orb resolver: the gate's round-icon
-        // art first (so this orb matches the one up top), then the emblem
-        // set, then the carrier-symbol library.
-        _mdOrbSrc = _airlineOrbEmblem(_orbCode_mdOrb) || _airlineOrbEmblem(_mdCode);
-      } catch (e) {}
-      // v23261 — art-code exemption, same as the inbound builder.
-      var _mdOrbArt = (_mdOrbOp && _airlineOrbEmblem(_mdOrbOp)) ? _mdOrbOp : _mdCode;
-      // v23203 — 'unless the orb is white then its color': a light orb
-      // ground keeps the colour logo; only a dark ground takes the white
-      // silhouette. Judged from the brand accent's luminance.
-      var _mdOrbWhite = true;
-      try { var _h_mdOrb = String(_mdAccFb).replace('#','');
-        if (_h_mdOrb.length === 3) _h_mdOrb = _h_mdOrb.replace(/./g, function(c){return c+c;});
-        var _r_mdOrb = parseInt(_h_mdOrb.substr(0,2),16), _g_mdOrb = parseInt(_h_mdOrb.substr(2,2),16), _b_mdOrb = parseInt(_h_mdOrb.substr(4,2),16);
-        if ((0.2126*_r_mdOrb + 0.7152*_g_mdOrb + 0.0722*_b_mdOrb) > 186) _mdOrbWhite = false; } catch (e) {}
-      // v23240 — this card summarizes the DEPARTURE, so its banner names the
-      // event, not the noun (Nick: 'I do not like the name Flight | Vol on
-      // the right'): 'Departure | Départ | YYY' with the destination code
-      // once at the end, accent-coloured, words from the assigned languages.
-      var _mdDestCode = String(_dDest || '').toUpperCase();
-      if (!/^[A-Z]{3,4}$/.test(_mdDestCode)) _mdDestCode = '';
-      var _mdTitle = _gateLbl('departure', _frF, function (w, i3) { return i3 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>'; }, '')
-        + (_mdDestCode ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _mdDestCode + '</span>' : '');
+      // The orb is emitted in the same shape the inbound card uses so the
+      // operator-emblem and accent post-pass further down repaints it, rather
+      // than a second resolver living here.
+      var _niOrbSrc = '';
+      try { _niOrbSrc = _airlineOrbEmblem(_opCode) || ''; } catch (e) {}
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mdBadge + '">'
-        +       (_mdOrbSrc
-                  // v23222 — same bitmap-native rule as the inbound card.
-                  ? '<img class="v2-fi-orb" src="' + _mdOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mdOrbWhite && !/\.png(\?|$)/i.test(_mdOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mdOrbArt]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
-                  // v23208 — lettered-roundel fallback (see inbound builder).
-                  : '<span class="v2-fi-orb-code">' + (_mdOrbOp || _mdCode || '') + '</span>')
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="background:var(--airline-accent,#1b3a63)">'
+        +       (_niOrbSrc
+                  ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="this.remove()">'
+                  : '<span class="v2-fi-orb-code">' + (_opCode || '') + '</span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
-        // v23208 \u2014 a revision that moves the departure EARLIER banners green,
-        // not amber; only delay-family changes warn (mirrors the inbound).
-        +       '<div class="v2-fi-title' + ((/delayed|cancelled|diverted/.test(_dStCls || '') || (_dDepDelayed && !_dDepEarly)) ? ' v2-fi-title-warn' : (_dDepDelayed && _dDepEarly ? ' v2-fi-title-good' : '')) + '">' + _mdTitle + '</div>'
+        +       '<div class="v2-fi-title">' + _niTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        // v23256 \u2014 LINES REARRANGED per Nick's sketch, mirroring the inbound
-        // card: flight + destination up top, times first with the label
-        // after, status alone on the last line.
-        +         '<div class="v2-fi-mline1">' + (_dFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-fi-mlbl">' + _gateLblSpans('to', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + _dCityCode + '</div>'
-        +         (_dDepDelayed && _dDepStr && _dDepSchedStr && _dDepSchedStr !== _dDepStr
-                    ? '<div class="v2-fi-mline2">'
-                      + '<span class="v2-rc-status-' + (_dDepEarly ? 'early' : (_dStCls || 'delayed')) + '">' + (_dRailT(_dDepStr) || '') + '</span>'
-                      + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _dRailT(_dDepSchedStr) + '</span></span>'
-                      + ' <span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span></div>'
-                    : (_dDepStr ? '<div class="v2-fi-mline2">' + (_dRailT(_dDepStr) || '') + ' <span class="v2-fi-mlbl">' + _gateLblSpans('departure', _frF) + '</span></div>' : ''))
-        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline v2-rc-status-' + _dStCls + '">' + _dStShow + '</span></div>'
+        +         '<div class="v2-fi-mline1">' + (_niFlt ? _niEsc(_niFlt) : '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_niFrom || '\u2014') + '</div>'
+        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline">' + _gateLblSpans('toBeConfirmed', _frF) + '</span></div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -20295,6 +20110,12 @@ var _GATE_LBL = {
   // the first two attempts at this card. It belongs here, beside arrivingFrom,
   // because the bottom-right panel pairs the two when no inbound is tracked.
   arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
+  // v23305 — the bottom-right panel's status line when the board has no
+  // inbound tracked yet. Nick, three times ('So now theres nothing???', 'no
+  // info', 'nothing'): the panel going BLANK is not an acceptable answer to
+  // 'which aircraft is coming'. Short on purpose — this column is narrow, and
+  // a bilingual sentence in it either truncates or breaks into ragged lines.
+  toBeConfirmed: { en:'To be confirmed', fr:'À confirmer', es:'Por confirmar', de:'Wird bestätigt', it:'Da confermare', pt:'A confirmar', ja:'確認中', zh:'待确认', ar:'قيد التأكيد' },
   // v23272 — the line that replaces the countdown once the aircraft is down.
   // v23272 — two states, not one (Nick: 'Once the aircraft arrives it should
   // say your aircraft has arrived once at the gate it should say your
@@ -20557,7 +20378,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23303';
+var FIDS_BUILD_TAG = 'v23305';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
