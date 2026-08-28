@@ -33776,20 +33776,36 @@ function buildAccorAdOnlyV6(ad) {
   // fuller of the two is shown alone, full width — one true statement beats
   // two that contradict each other. The threshold is deliberately loose so
   // ordinary French expansion (~15-25% longer than English) still pairs.
+  // Visible-character count, WITHOUT stripping tags. A regex tag-strip is the
+  // classic incomplete-sanitization pattern (CodeQL flagged the first cut of
+  // this as high severity): one pass over `<[^>]*>` leaves `<scr<script>ipt>`
+  // behind. Nothing here is being sanitized for output — the result is only
+  // ever a number used to compare two lengths — so the honest thing is to
+  // count rather than to strip, which removes the unsafe shape entirely.
+  function _visibleLen(html) {
+    var str = String(html == null ? '' : html), n = 0, inTag = false;
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charAt(i);
+      if (c === '<') { inTag = true; continue; }
+      if (c === '>') { inTag = false; continue; }
+      if (inTag) continue;
+      if (c !== ' ' && c !== '\t' && c !== '\n' && c !== '\r') n++;
+    }
+    return n;
+  }
   function _biMismatch(a, b) {
     try {
-      var ta = String(a).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-      var tb = String(b).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-      if (!ta || !tb) return false;
-      if (ta.length < 24 || tb.length < 24) return false;   // too short to judge
-      var lo = Math.min(ta.length, tb.length), hi = Math.max(ta.length, tb.length);
+      var la = _visibleLen(a), lb = _visibleLen(b);
+      if (!la || !lb) return false;
+      if (la < 24 || lb < 24) return false;   // too short to judge
+      var lo = Math.min(la, lb), hi = Math.max(la, lb);
       return (hi / lo) > 2.0;
     } catch (e) { return false; }
   }
   function _biCols(a, b) {
     if (!a && !b) return '';
     if (a && b && _biMismatch(a, b)) {
-      var _keep = String(a).replace(/<[^>]*>/g, '').length >= String(b).replace(/<[^>]*>/g, '').length ? a : b;
+      var _keep = _visibleLen(a) >= _visibleLen(b) ? a : b;
       var _lang = (_keep === a) ? _lgD : _L2;
       return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lang) + '>' + _keep + '</div></div>';
     }
