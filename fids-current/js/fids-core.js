@@ -7933,7 +7933,20 @@ function _buildV2AircraftCol(ctx, vars) {
         if (code === 'F8') {
           return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;background:#7AFF94;"></div>';
         }
-        var path = (_tileBrand && _tileBrand.icon) || GATE_TOP_ROUND_EMBLEM_FILES[code] || AIRLINE_EMBLEM_FILES[code];
+        // v23307 — THROUGH THE SHARED RESOLVER. v23288 introduced
+        // _airlineOrbEmblem() and called it "the single source for every ROUND
+        // gate orb", but only wired it into the bottom-right card. This builder
+        // and the boarding badge kept their own two-tier lookup with NO
+        // /logos/symbols/airlines/ tier — so a carrier that exists only as one
+        // of the 75 symbol files (BA, TS, WN, LH, AF, KL … most of the list)
+        // got its emblem in the bottom-right card and a GENERIC PLANE up top.
+        // The two orbs on one gate showed different things, which is exactly
+        // what "orbs were supposed to match airline emblems" means and exactly
+        // what was marked done. Precedence is unchanged — the resolver checks
+        // GATE_TOP_ROUND first, then the emblem set — it only adds the third
+        // tier, and the img's onerror still lands on the generic plane when a
+        // carrier has no art anywhere.
+        var path = (_tileBrand && _tileBrand.icon) || _airlineOrbEmblem(code);
         // v218.99.69 — Airlines whose emblem files are full-color tiles
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
@@ -9013,8 +9026,17 @@ function _buildV2MapCol(ctx, vars) {
       // The orb is emitted in the same shape the inbound card uses so the
       // operator-emblem and accent post-pass further down repaints it, rather
       // than a second resolver living here.
+      // v23307 — resolve the carrier HERE. This read `_opCode`, which is
+      // declared with `var` further down this same function, so hoisting made
+      // it exist and be `undefined` at this point: _airlineOrbEmblem('')
+      // returned '', the card fell to the lettered chip, and the chip's text
+      // was empty too. Measured on YQM gate 3 — Porter, which HAS an emblem
+      // registered — the card orb rendered as nothing while the top orb wore
+      // porter-p.svg. Same derivation the builder below uses.
+      var _niCodeRaw = String((_niIb && _niIb._opCode) || (vars.currentFlight && vars.currentFlight._opCode) || vars.airlineCode || '').trim().toUpperCase();
+      var _niCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_niCodeRaw]) ? CALLSIGN_TO_IATA[_niCodeRaw] : _niCodeRaw;
       var _niOrbSrc = '';
-      try { _niOrbSrc = _airlineOrbEmblem(_opCode) || ''; } catch (e) {}
+      try { _niOrbSrc = _airlineOrbEmblem(_niCode) || ''; } catch (e) {}
       _inboundCard =
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
@@ -9022,7 +9044,7 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="background:var(--airline-accent,#1b3a63)">'
         +       (_niOrbSrc
                   ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="this.remove()">'
-                  : '<span class="v2-fi-orb-code">' + (_opCode || '') + '</span>')
+                  : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
         +       '<div class="v2-fi-title">' + _niTitle + '</div>'
@@ -10805,7 +10827,15 @@ function uxgGateHtml(ctx) {
     // with the tilted white widget ('The Delta emblem was not changed to
     // look like this'), so it matches the accent-orb row the old white
     // sphere clashed with.
-    var _birEmblemPath = _birRound || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[airlineCode]) || null;
+    // v23307 — same shared resolver as the top orb and the bottom-right card,
+    // so all three round orbs on a gate resolve one carrier to one emblem.
+    // _birRound is kept in the expression only for readability: the resolver
+    // checks GATE_TOP_ROUND_EMBLEM_FILES first itself, so precedence is
+    // identical — what changes is the /logos/symbols/airlines/ tier this
+    // builder never had. Unlike the other two this <img> had NO onerror, so
+    // one is added below; without it a carrier with no art would go from a
+    // blank badge to a broken-image icon.
+    var _birEmblemPath = _birRound || _airlineOrbEmblem(airlineCode) || null;
     // MX: tile-brand treatment (Nick: 'circle same color as the icon, the
     // middle fits within') — navy circle in the tile's own colour, check
     // mark (derived from the airline's tile art) padded inside, no filter.
@@ -10825,7 +10855,7 @@ function uxgGateHtml(ctx) {
     // the orb. Slimmer img pad; the wrap pad alone keeps the round crop safe.
     var _birPad = _birOnWhite ? '8%' : '3%';
     var _birFlightIcon = _birEmblemPath
-      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;">'
+      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;" onerror="this.remove()">'
       : null;
     // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
     // AA/DL (_birOnWhite): keep the DEFAULT accent-coloured badge (same as the
@@ -20405,7 +20435,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23306';
+var FIDS_BUILD_TAG = 'v23307';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
