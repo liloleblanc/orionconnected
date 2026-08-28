@@ -14582,3 +14582,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 /* v23302 — the no-inbound card and its type are removed; see fids-core.js. */
+
+/* ── v23313 — bilingual separator for the status line ─────────────────────
+   _gateLblSpans() emits the two languages as bare sibling spans and relies on
+   a per-container span+span::before rule for the ' | ' between them. The
+   containers below never had one, so the pair rendered JAMMED — Nick's
+   screenshot of the backstop card read 'To be confirmedPor confirmar'. Same
+   shape as the existing rules for .v2-fi-mlbl and .v2-rc-fi-phdr. */
+html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline > span + span::before {
+  content: ' | ';
+  opacity: .55;
+  font-weight: 400;
+}
