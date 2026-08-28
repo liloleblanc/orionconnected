@@ -3497,6 +3497,10 @@ async function _gateNumbersPoll() {
       if (_adsb.hex && !inb._modeS) inb._modeS = String(_adsb.hex).toUpperCase();
       if (typeof _adsb.track === 'number') {
         inb._liveTrack = _adsb.track;
+        // v23315 — the track on the OBJECT gets a timestamp too. The window
+        // cache always had one and _gateHeading age-checks it; this copy had
+        // none, and _gateHeading returned it unchecked, forever.
+        inb._liveTrackAt = Date.now();
         window._gateInboundLiveTrack = { track: _adsb.track, at: Date.now() };
       }
       if (typeof _adsb.vs === 'number') inb._liveVs = _adsb.vs;
@@ -20589,7 +20593,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23314';
+var FIDS_BUILD_TAG = 'v23315';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27610,7 +27614,17 @@ function _gateHeading(fallbackBearing) {
     var lt = window._gateInboundLiveTrack;
     if (lt && typeof lt.track === 'number' && (Date.now() - lt.at) <= _GATE_TRACK_MAX_AGE_MS) return lt.track;
     var inb = window._gateInbound;
-    if (inb && typeof inb._liveTrack === 'number') return inb._liveTrack;
+    // v23315 — A STALE TRACK IS WORSE THAN NO TRACK. This fallback returned
+    // inb._liveTrack with NO age check while the window cache above is capped
+    // at 2 minutes. The inbound object survives across polls and can carry the
+    // airframe's heading from its PREVIOUS LEG — flown in the opposite
+    // direction — so the icon rendered pointing ENE while AC2003 flew WSW
+    // into Toronto (Nick: 'planes flying sideways'). Same 2-minute cap now;
+    // when both caches are stale the route-course fallback wins, which by
+    // construction points along the drawn line.
+    if (inb && typeof inb._liveTrack === 'number'
+        && typeof inb._liveTrackAt === 'number'
+        && (Date.now() - inb._liveTrackAt) <= _GATE_TRACK_MAX_AGE_MS) return inb._liveTrack;
   } catch (e) {}
   return fallbackBearing;
 }
