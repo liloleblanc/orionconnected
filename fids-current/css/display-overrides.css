@@ -14580,3 +14580,34 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-r1-timebox .octb-ap {
   font-size: clamp(34px, 5.8vh, 56px) !important;
 }
+
+/* ── v23301 — THE NO-INBOUND CARD SAYS ITS WHOLE SENTENCE ───────────────
+   The first cut reused .v2-fi-label, which is designed for short captions in
+   a narrow column: nowrap plus an ellipsis. Two full bilingual sentences in
+   it became 'Arrivi...' and 'Aircra...' — a panel that says nothing.
+   This card owns its own type: it WRAPS, it never ellipsises, and it sizes
+   down on narrow shelves rather than truncating, so the sentence always
+   lands whatever the gate layout gives it. */
+html:not(#_) .g8-noinb { min-width: 0 !important; width: 100% !important; }
+html:not(#_) .g8-noinb .g8-noinb-lbl,
+html:not(#_) .g8-noinb .g8-noinb-val {
+  display: block !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  max-width: 100% !important;
+  line-height: 1.16 !important;
+  hyphens: none !important;
+}
+html:not(#_) .g8-noinb .g8-noinb-lbl {
+  font-size: clamp(15px, 1.5vh, 26px) !important;
+  font-weight: 800 !important;
+  letter-spacing: .01em !important;
+  opacity: .82 !important;
+  margin-bottom: .28em !important;
+}
+html:not(#_) .g8-noinb .g8-noinb-val {
+  font-size: clamp(17px, 1.9vh, 32px) !important;
+  font-weight: 700 !important;
+}
+html:not(#_) .g8-noinb .v2-fi-sep { opacity: .5 !important; }

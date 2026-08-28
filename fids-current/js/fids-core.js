@@ -8955,14 +8955,16 @@ function _buildV2MapCol(ctx, vars) {
     _inboundCard =
         '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
       + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
-      +   '<div class="v2-fi-row"><div class="v2-fi-textcol">'
-      +     '<div class="v2-fi-label">' + _gateLbl('arrivingFrom', _frF, function (w, i9) {
+      // v23301 — DO NOT REUSE .v2-fi-label HERE. That class is built for short
+      // one-word captions in a narrow column: it is nowrap with an ellipsis, so
+      // 'Arriving From | En provenance de' and 'Aircraft to be assigned |
+      // Appareil a confirmer' were cut to 'Arrivi...' and 'Aircra...' — a card
+      // saying nothing at all. This card owns its own class and its own
+      // wrapping, so the full sentence always lands whatever the shelf width.
+      +   '<div class="v2-fi-row"><div class="v2-fi-textcol g8-noinb">'
+      +     '<div class="g8-noinb-lbl">' + _gateLbl('arrivingFrom', _frF, function (w, i9) {
               return i9 ? '<span class="v2-fi-sep"> | </span>' + w : w; }, '') + '</div>'
-      // v23295 — .v2-fi-value renders empty here (it expects a structure this
-      // card does not build), so the awaiting line reuses .v2-fi-label, which
-      // is the element proven to paint in this shelf. Verified by reading the
-      // panel back out of the rendered page, not by assuming.
-      +     '<div class="v2-fi-label" style="opacity:.85;font-weight:700;">' + _gateLbl('awaitAircraft', _frF, function (w, i9) {
+      +     '<div class="g8-noinb-val">' + _gateLbl('awaitAircraft', _frF, function (w, i9) {
               return i9 ? '<span class="v2-fi-sep"> | </span>' + w : w; }, '') + '</div>'
       +   '</div></div>'
       + '</div></div></div>';
@@ -20548,7 +20550,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23299';
+var FIDS_BUILD_TAG = 'v23301';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
