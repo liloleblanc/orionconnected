@@ -8810,7 +8810,7 @@ function _buildV2MapCol(ctx, vars) {
       // :is(.gad-aircraft-col,.g8-bir-shelves).
       var _mcCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
       var _mcAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mcCode] && AIRLINE_BRAND[_mcCode].accent) || '#D82F2E';
-      var _mcBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mcAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      var _mcBadge = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mcAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       // v23203 — the orb carries the OPERATOR's logo when another carrier
       // flies the leg (Nick: 'either the airline or the operator in this
       // case PAL — logo only white — and still have operated by PAL'),
@@ -9074,7 +9074,7 @@ function _buildV2MapCol(ctx, vars) {
       // is the carrier's own brand colour too, not a hardcoded navy, so a gate
       // whose --airline-accent fails to resolve still matches its neighbours.
       var _niAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_niCode] && AIRLINE_BRAND[_niCode].accent) || '#D82F2E';
-      var _niBadge = 'aspect-ratio:1/1;width:clamp(40px,5vh,68px);height:clamp(40px,5vh,68px);min-width:clamp(40px,5vh,68px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _niAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      var _niBadge = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _niAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       // v23308 — the status line only says "to be confirmed" when something
       // ACTUALLY is. Nick's shot printed it under 'WS812 · From: Calgary YYC':
       // 'what is to be confirmed we know the fing plane is coming from
@@ -9114,7 +9114,13 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-fi-textcol">'
         +       '<div class="v2-fi-title">' + _niTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        +         '<div class="v2-fi-mline1">' + (_niFlt ? _niEsc(_niFlt) : '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> <span class="v2-fi-mlbl">' + _gateLblSpans('from', _frF) + '</span><span class="v2-fi-mcolon">:</span> ' + (_niFrom || '\u2014') + '</div>'
+        // v23313 — NEVER print '\u2014 \u00b7 From | Desde: \u2014' (Nick: 'what the
+        // hell is that?'). A From line exists only when there is a flight or
+        // an origin to put on it; a card that knows nothing carries the
+        // status line alone.
+        +         (_niKnown
+                    ? '<div class="v2-fi-mline1">' + (_niFlt ? _niEsc(_niFlt) : '') + (_niFlt && _niFrom ? ' <span class="v2-rc-bar">\u00b7</span> ' : '') + (_niFrom ? '<span class="v2-fi-mlbl">' + _gateLbl('from', _frF, function (w, iF) { return iF ? '<span class="v2-fi-sep"> | </span><span>' + w + '</span>' : '<span>' + w + '</span>'; }, '') + '</span><span class="v2-fi-mcolon">:</span> ' + _niFrom : '') + '</div>'
+                    : '')
         +         _niStatusLine
         +       '</div>'
         +     '</div>'
@@ -9743,7 +9749,8 @@ function _buildV2MapCol(ctx, vars) {
           // here, which for PAL served the full lockup WITH lettering into
           // the orb. No wordmark fallbacks: an operator without emblem art
           // keeps the marketing carrier's emblem the builder already baked.
-          var _orbFix = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_opCode]) || '';
+            // v23312 — through the shared resolver, like every other orb.
+            var _orbFix = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_opCode) : '') || '';
           if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
           // v23222 — a bitmap roundel swapped in here must ALSO drop any
           // invert the builder baked for the original vector art (Rouge's
@@ -9794,9 +9801,11 @@ function _buildV2MapCol(ctx, vars) {
       // while a lookup finishes. Never guess a model; hold the airline mark in
       // the space instead of floating a raw "image pending" warning over it.
       var _holdCode = String(vars.airlineCode || '').trim().toUpperCase();
-      var _holdSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_holdCode]) || '';
+        // v23312 — through the shared resolver, like every other orb; same new onerror.
+        var _holdSrc = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_holdCode) : '') || '';
       var _holdMark = _holdSrc
-        ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="">'
+          ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="" onerror="this.style.display=&quot;none&quot;;if(this.nextElementSibling)this.nextElementSibling.style.display=&quot;&quot;;">'
+            + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_holdCode || '\u2014') + '</span>'
         : '<span class="v2-rc-aircraft-hold-code">' + (_holdCode || '—') + '</span>';
       var _aircraftHoldHtml = '<div class="v2-rc-aircraft-hold">' + _holdMark
         + '<span class="v2-rc-aircraft-hold-text">'
@@ -9839,9 +9848,14 @@ function _buildV2MapCol(ctx, vars) {
   // remove the two fixed shelves from the six-row right rail.
   if (!_aircraftBlock) {
     var _fallbackCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
-    var _fallbackSrc = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_fallbackCode]) || '';
+    // v23312 — through the shared resolver, like every other orb. The onerror
+    // is NEW and required: the resolver returns a symbols path for any
+    // two-character code, so without it a carrier with no art anywhere would
+    // go from a lettered chip to a broken-image icon.
+    var _fallbackSrc = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_fallbackCode) : '') || '';
     var _fallbackMark = _fallbackSrc
-      ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="">'
+        ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="" onerror="this.style.display=&quot;none&quot;;if(this.nextElementSibling)this.nextElementSibling.style.display=&quot;&quot;;">'
+          + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_fallbackCode || '\u2014') + '</span>'
       : '<span class="v2-rc-aircraft-hold-code">' + (_fallbackCode || '—') + '</span>';
     var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark
       + '<span class="v2-rc-aircraft-hold-text">'
@@ -9879,8 +9893,14 @@ function _buildV2MapCol(ctx, vars) {
     'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
     'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
   };
+  // v23312 — through the shared resolver. Nick's Cathay gate C30: this orb
+  // rendered a lettered 'CX' chip while the inbound card beside it wore the
+  // real brushwing, because this site stopped at _AIRLINE_EMBLEM_FILES (25
+  // carriers) and never reached /logos/symbols/airlines/, where CX.svg has
+  // been sitting all along. 'why change 1 orb and not the other' — because
+  // v23307 fixed two call sites and I never enumerated the rest.
   var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
-    || (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[_mapLifeCode]) || '';
+    || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_mapLifeCode) : '') || '';
   var _mapLifeHtml = _mapLifeSrc
     ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
@@ -20557,13 +20577,19 @@ try { if (typeof window !== 'undefined') { window._acSkyPhaseStart = _acSkyPhase
 
 // The gate rail's two-span label cell — primary over secondary.
 function _gateLblSpans(key, frFirst) {
+  // v23313 — bare sibling spans, deliberately: the separator between the two
+  // languages is injected by per-container CSS (span + span::before). The
+  // containers that lacked such a rule rendered the languages JAMMED
+  // ('To be confirmedPor confirmar' — Nick's screenshot); the fix is the
+  // missing CSS rule in display-overrides.css, NOT a separator in this
+  // markup, which would double up wherever the CSS rule already exists.
   return _gateLbl(key, frFirst, function (w) { return '<span>' + w + '</span>'; }, '');
 }
 try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._GATE_LBL = _GATE_LBL; } } catch (e) {}
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23311';
+var FIDS_BUILD_TAG = 'v23314';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27416,6 +27442,41 @@ function _gateMapTileLayer() {
 // painted. Fail-open: the class is cleared by a 2.5s fallback no matter
 // what, and a path that never calls this helper simply shows the map the
 // old way — the fade can only ever be cosmetic, never a blank screen.
+// v23313 — TELL LEAFLET ITS REAL SIZE IMMEDIATELY.
+//
+// The takeover map is created into a container that has only just been sized,
+// so Leaflet reads a stale or zero size at construction and requests tiles for
+// the wrong viewport. invalidateSize() was left to a setTimeout at +500ms, and
+// _bcFadeInWhenReady holds the container in its grey 'bc-loading' state until
+// the tile layer fires 'load' — with a 2500ms fallback. Chained together that
+// is a large GREY BOX in the centre of the screen for up to two and a half
+// seconds on every takeover.
+//
+// Measured off Nick's screen recording of a Cathay gate: frame-to-frame change
+// sits at a median of 0.15 for the whole clip and spikes to 52.88 at t=18.13s,
+// holding through 18.47s — the map tearing out of the rail and the centre
+// panel going blank grey over the top of 'Welcome aboard'. 340ms of it is
+// visible before the recording ends, all of it inside the 500ms window.
+//
+// A size correction is also why the view 'jolts': fitBounds() computed against
+// the wrong size and then corrected half a second later IS the jolt that
+// v23166 and v23172 both chased. Sizing first means the single view decision
+// those versions introduced is finally made against the true viewport.
+//
+// rAF, not a bare call: the container was resized in this same tick, so layout
+// has not happened yet and an immediate invalidateSize() would read the same
+// stale box. One frame later it is correct. The existing +500ms calls stay as
+// the safety net they always were.
+function _bcSizeNow(map) {
+  if (!map) return;
+  try {
+    requestAnimationFrame(function () {
+      try { map.invalidateSize({ animate: false }); } catch (e) {}
+    });
+  } catch (e) {
+    try { map.invalidateSize({ animate: false }); } catch (e2) {}
+  }
+}
 function _bcFadeInWhenReady(tileLayer) {
   try {
     var el = document.getElementById('bigCraftMap');
@@ -37310,6 +37371,30 @@ function _renderBigCraft(el, ctx) {
       '<div class="bigcraft-wrap bigcraft-wrap--maponly">'
     +   '<div class="bigcraft-mapcol">'
     +     '<div class="bigcraft-map" id="bigCraftMap"></div>'
+    // v23314 — THE MAP NAMES THE FLIGHT IT IS TRACKING. Without this caption
+    // the takeover is truthful and reads as broken: an AC2046->YYT (east)
+    // gate showed the inbound AC2003 from Fredericton flying WEST with
+    // nothing saying so (Nick: 'This plane is heading west but it should be
+    // east which one is it???'), and the Cathay gate's 'rural Alberta' map
+    // was CX828 inbound, unlabeled. Same chip style as the est badge beside
+    // it; bilingual per the board pair like everything else.
+    +     (function () {
+            try {
+              var _capKey = (ctx && ctx.out) ? 'departure' : 'arrivingFrom';
+              var _capF = (ctx && ctx.out) ? (window._gateCurrentFlight || {}) : (window._gateInbound || {});
+              var _capFlt = String(_capF.flight || '').trim();
+              var _capPlc = String(((ctx && ctx.out) ? (_capF.dest || _capF._locIata) : (_capF.origin || _capF._locIata)) || '').trim();
+              if (!_capFlt && !_capPlc) return '';
+              var _capLbl = _gateLbl(_capKey, false, function (w, iC) {
+                return (iC ? '<span class="bigcraft-cap-sep"> | </span>' : '') + '<span>' + w + '</span>';
+              }, '');
+              var _capEsc = function (v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+              return '<div class="bigcraft-flightcap">' + _capLbl
+                + (_capFlt ? ' <span class="bigcraft-cap-flt">' + _capEsc(_capFlt) + '</span>' : '')
+                + (_capPlc ? ' <span class="bigcraft-cap-sep">\u00b7</span> ' + _capEsc(_capPlc) : '')
+                + '</div>';
+            } catch (eCap) { return ''; }
+          })()
     +     (ctx.estimated ? '<div class="bigcraft-est">' + (function(){
             // v23202 — the badge follows the CHOSEN languages like everything
             // else; it was hard-coded EN/FR and read 'Position estimée' on an
@@ -37840,7 +37925,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
   o = [o[0], o[1]]; d = [d[0], d[1]];
   while (d[1] - o[1] > 180) d[1] -= 360;
   while (d[1] - o[1] < -180) d[1] += 360;
-  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);
+  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
   /* (fade helper defined once, below at its first use in source order) */
   // Calculate total route distance for zoom scaling
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
@@ -37978,7 +38063,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   } catch (eBIP) {}
   try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
   window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
-  _bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);
+  _bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
