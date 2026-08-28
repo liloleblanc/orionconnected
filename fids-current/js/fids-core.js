@@ -20548,7 +20548,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23298';
+var FIDS_BUILD_TAG = 'v23299';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -27476,7 +27476,15 @@ function _wxRadarAdd(m) {
       // near-black basemap barely move the pixels. Opacity up, and the radar
       // pane is taken off the additive blend in CSS so its colours paint as
       // themselves.
-      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.92, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
+      // v23299 — 0.92 was MY over-correction in v23296b and it is what made the
+      // radar look blurry (Nick: 'the weather is so blurry', 'never was like
+      // this'). The tiles are native zoom 7 shown on a map at zoom 9: a 4x
+      // enlargement that was simply invisible at the old 0.5 additive blend.
+      // Turning it opaque did not add blur, it revealed it. Sharpness is
+      // capped by the source, so the honest fix is to sit between the two —
+      // clearly readable as weather, without the upscaled blocks dominating
+      // the map. A genuinely sharp radar needs a higher-zoom source.
+      L.tileLayer('/wxradar/' + ts + '/{z}/{x}/{y}.png', { pane: 'wxradar', opacity: 0.68, minZoom: 6, maxNativeZoom: 7, maxZoom: 11 }).addTo(m);
     } catch (e) {}
   };
   if (_wxRadarIdx.ts && (Date.now() - _wxRadarIdx.at) < 5 * 60 * 1000) { add(_wxRadarIdx.ts); return; }
@@ -33756,8 +33764,35 @@ function buildAccorAdOnlyV6(ad) {
   // language hasn't loaded yet or the two records carry the same words, so
   // the card is never half empty.
   function _biAttr(L){ return ' lang="' + esc(L) + '"' + ((L === 'ar') ? ' dir="rtl"' : ''); }
+  // v23299 — TWO COLUMNS ONLY WHEN THEY ARE THE SAME THING IN TWO LANGUAGES.
+  // Accor does not return matched pairs: for Fairmont Royal York the English
+  // field carries a one-line tagline ('Welcome to a new era of luxury.') while
+  // the French carries a location paragraph ('Le Fairmont Royal York est situé
+  // en centre-ville de Toronto…'). Printed side by side they read as a
+  // mistake, because they ARE two different facts (Nick: 'the english and
+  // french don't match totally different').
+  // A translation of the same sentence is close in length; different fields
+  // are not. When the two diverge past that, the pair is dropped and the
+  // fuller of the two is shown alone, full width — one true statement beats
+  // two that contradict each other. The threshold is deliberately loose so
+  // ordinary French expansion (~15-25% longer than English) still pairs.
+  function _biMismatch(a, b) {
+    try {
+      var ta = String(a).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      var tb = String(b).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+      if (!ta || !tb) return false;
+      if (ta.length < 24 || tb.length < 24) return false;   // too short to judge
+      var lo = Math.min(ta.length, tb.length), hi = Math.max(ta.length, tb.length);
+      return (hi / lo) > 2.0;
+    } catch (e) { return false; }
+  }
   function _biCols(a, b) {
     if (!a && !b) return '';
+    if (a && b && _biMismatch(a, b)) {
+      var _keep = String(a).replace(/<[^>]*>/g, '').length >= String(b).replace(/<[^>]*>/g, '').length ? a : b;
+      var _lang = (_keep === a) ? _lgD : _L2;
+      return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lang) + '>' + _keep + '</div></div>';
+    }
     if (!a) { return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_L2) + '>' + b + '</div></div>'; }
     if (!b || b === a) return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lgD) + '>' + a + '</div></div>';
     return '<div class="axr-bi">'
@@ -33770,6 +33805,14 @@ function buildAccorAdOnlyV6(ad) {
   // is dropped from the deck rather than shown as a bare logo + name.
   var _p2a = _featsHtml  + (_blurb  ? '<p class="axr-blurb">'+esc(_blurb)+'</p>'  : '');
   var _p2b = _featsHtmlB + (_blurbB ? '<p class="axr-blurb">'+esc(_blurbB)+'</p>' : '');
+  // v23299 — the deck must never fall to two pages (Nick: 'Why is there only
+  // 2 screens unacceptable'). When Accor returns no advantages and no prose
+  // for a property, this page used to be DROPPED, which is how a card that is
+  // supposed to run three or four scenes silently became two. It now falls
+  // back to facts every hotel has — the address, the distance line and the
+  // stars — which is the same fallback page 3 already uses when its own
+  // content is missing. A page with real information on it beats no page.
+  if (!_p2a && !_p2b) { _p2a = _addrLineHtml + _locLineHtml + _starsRow; }
   var _page2 = (!_p2a && !_p2b) ? '' : '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
