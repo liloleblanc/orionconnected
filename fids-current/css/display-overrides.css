@@ -14626,3 +14626,96 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline > span + span::before {
 }
 .bigcraft-flightcap .bigcraft-cap-sep { opacity: .55; font-weight: 400; }
 .bigcraft-flightcap .bigcraft-cap-flt { color: #ffd25e; }
+
+/* ══ v23320 — ONE CLEAN BANNER, THE OLD TRI-SEGMENT IS GONE ══════════════
+   Nick, twice, with screenshots: 'YO that is still there I requested this be
+   gone... THE OLD FUCKING BANNER.' The angled navy/white/gold three-segment
+   banner (clock wedge, white airport-logo pill, gold board wedge) is replaced
+   by the clean band he approved on the BIDS redesign drafts: one navy
+   gradient strip — board icon + bilingual label on the left, clock over the
+   bilingual date on the right. The airport pill and the chevron ground are
+   hidden, not removed, so every fids-core id hook keeps working.
+   The :not(#_) hammer matches the file's other final-word rules — the themed
+   banner rules above carry !important at high specificity. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner {
+  display: flex !important; align-items: center !important;
+  background: linear-gradient(100deg, #0a1f4d 0%, #123a7c 60%, #1b53a8 100%) !important;
+  padding: 0 clamp(24px, 2.6vw, 52px) !important;
+  box-shadow: 0 8px 26px rgba(5, 20, 60, .45) !important;
+  border: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-chevrons,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-airport-pill {
+  display: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-board {
+  order: 0 !important; margin-right: auto !important; margin-left: 0 !important;
+  display: flex !important; align-items: center !important; gap: clamp(12px, 1.2vw, 22px) !important;
+  /* padding-right matters: boardAutofit() shrinks the label whenever its right
+     edge comes within 10px of this box's right edge, and a content-hugging
+     flex box puts it at 0px — the label shrank to the 14px floor forever.
+     16px of air ends the fight. */
+  background: transparent !important; padding: 0 16px 0 0 !important;
+  clip-path: none !important; transform: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-icon {
+  background: #ffd25e !important; border-radius: 50% !important;
+  width: clamp(44px, 5.4vh, 72px) !important; height: clamp(44px, 5.4vh, 72px) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  transform: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-icon svg,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-icon .ac-ico {
+  fill: #0a1f4d !important; color: #0a1f4d !important;
+  width: 62% !important; height: 62% !important; font-size: clamp(26px, 3.2vh, 44px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-label {
+  color: #ffffff !important; font-weight: 850 !important;
+  font-size: clamp(30px, 4.4vh, 58px) !important; letter-spacing: .4px !important;
+  text-transform: none !important; background: transparent !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time-block {
+  order: 1 !important; margin-left: 0 !important;
+  background: transparent !important; clip-path: none !important; transform: none !important;
+  padding: 0 !important; text-align: right !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time {
+  color: #ffffff !important; font-weight: 850 !important;
+  font-size: clamp(34px, 5vh, 64px) !important; line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-date {
+  color: #9fc3ef !important; font-weight: 600 !important;
+  font-size: clamp(14px, 2vh, 22px) !important; margin-top: 4px !important; text-align: right !important;
+}
+/* v23320b — the old design places the time and board segments with
+   position:absolute + their own segment art (the pale angled slabs). Static
+   flex children, no segment backgrounds, no pseudo-element art — the band
+   alone paints. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time-block,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-board {
+  position: static !important; inset: auto !important;
+  width: auto !important; height: auto !important;
+  background-image: none !important; background-color: transparent !important;
+  box-shadow: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner::before,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner::after,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time-block::before,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-time-block::after,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-board::before,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner-board::after {
+  display: none !important; content: none !important;
+}
+/* v23320c — the label box itself: the old design gave .fids-board-label a
+   min-width and right alignment for the gold wedge, and boardAutofit()
+   shrinks the FONT until the text fits that stale box — measured at 13.52px
+   with the old italic skew still applied. Free the box, drop the skew, and
+   the shrink-only fitter has nothing to fight. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-label {
+  min-width: 0 !important; width: auto !important; max-width: none !important;
+  text-align: left !important; transform: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-label .fbl-en,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .fids-banner .fids-board-label .fbl-fr {
+  font-size: inherit !important; transform: none !important;
+}
