@@ -119,6 +119,9 @@
        tour.html?tour=YQM,YHZ,YUL,LGA&apdwell=300&rotate=fids,gids,bids&dwell=60
 
        tour     ordered airport codes (aliases: airports, aps). Repeats allowed.
+       shuffle  1/true/yes/on — visit them in a random order instead, reshuffled
+                on every full pass. Off by default, so an existing tour link
+                keeps exactly the order it was given.
        apdwell  seconds per AIRPORT (default 300 = 5 min). A MINIMUM, not a cut:
                 the tour leaves for the next airport at the first scene boundary
                 at or after it, so a board is never chopped mid-scene.
@@ -152,6 +155,38 @@
       // at the airport it is already showing.
       tour = tour.filter(function (c, i) { return i === 0 || c !== tour[i - 1]; });
       if (!tour.length) tour = ['YQM'];
+
+      // ?shuffle=1 — visit the airports in a random order, reshuffled on every
+      // full pass so a 24/7 stream doesn't settle into one memorised cycle.
+      // Off by default: existing tour links keep the exact order they were given.
+      var doShuffle = /^(1|true|yes|on)$/i.test(q.get('shuffle') || '');
+      function shuffleTour() {
+        if (tour.length < 3) return;            // 2 airports can only alternate
+        var last = tour[tour.length - 1];       // who we're about to leave
+        // 'Repeats allowed' (the doc, above) means a shuffle can deal two
+        // copies of one code side by side — which would play a 7s 'Now
+        // Arriving' card over the airport already on screen, the exact thing
+        // the adjacent-dupe collapse at parse time exists to prevent. So deal
+        // until the hand is clean: no adjacent repeats AND not opening on the
+        // closer. A unique list (the normal case) passes on the first deal;
+        // a repeat-heavy list gets a bounded number of tries and then falls
+        // back to collapsing, because e.g. A,A,A has no clean order at all.
+        for (var attempt = 0; attempt < 20; attempt++) {
+          for (var i = tour.length - 1; i > 0; i--) {
+            var j = Math.floor(Math.random() * (i + 1));
+            var t = tour[i]; tour[i] = tour[j]; tour[j] = t;
+          }
+          var ok = tour[0] !== last;
+          for (var k = 1; ok && k < tour.length; k++) {
+            if (tour[k] === tour[k - 1]) ok = false;
+          }
+          if (ok) return;
+        }
+        var prev = tour;
+        tour = prev.filter(function (c, i) { return i === 0 || c !== prev[i - 1]; });
+        if (tour.length > 1 && tour[0] === last) { tour.push(tour.shift()); }
+      }
+      if (doShuffle) shuffleTour();
 
       var apDwell = parseInt(q.get('apdwell') || q.get('airportdwell') || '300', 10);
       if (!(apDwell > 0)) apDwell = 300;
@@ -189,7 +224,7 @@
       if (seq.length === 0) seq = ['fids.html'];
 
       // ── Params handed to the boards ─────────────────────────────────────
-      ['tour', 'airports', 'aps', 'apdwell', 'airportdwell',
+      ['tour', 'airports', 'aps', 'shuffle', 'apdwell', 'airportdwell',
        'rotate', 'dwell', 'every', 'fade', 'hold', 'announce',
        'ap',                                   // the tour sets this per airport
        'gate', 'belt', 'carousel', 'sub'       // airport-specific pins: meaningless across a tour
@@ -263,11 +298,89 @@
       var elTime  = document.getElementById('tcTime');
       var elTz    = document.getElementById('tcTz');
       var elSep   = document.getElementById('tcMetaSep');
+      var elK1    = document.getElementById('tcK1');
+      var elK2    = document.getElementById('tcK2');
+
+      // v23273 — the card is captioned in the ARRIVING airport's own second
+      // language. It used to be hard-wired English|French, which was fine while
+      // every tour stop was Canadian and plainly wrong the moment one wasn't:
+      // a San Juan card announced itself as "Arrivée à". English stays first —
+      // it is the through-line of the whole tour — and the airport supplies the
+      // second half, so the card always agrees with the board behind it.
+      var CARD_LABELS = {
+        en: ['Now Arriving',  'Local Time'],
+        fr: ['Arrivée à',     'Heure locale'],
+        es: ['Llegando a',    'Hora local'],
+        de: ['Ankunft in',    'Ortszeit'],
+        it: ['In arrivo a',   'Ora locale'],
+        pt: ['Chegando em',   'Hora local'],
+        ja: ['到着',           '現地時間'],
+        zh: ['抵达',           '当地时间'],
+        ar: ['الوصول إلى',      'التوقيت المحلي']
+      };
+      var langCache = {};
+      // A forwarded ?langs= outranks everything on the BOARDS (it is the top of
+      // their four-layer chain, and it is how the old single-airport stream
+      // pinned en/es) — so it must outrank everything on the card too, or the
+      // card announces in a language the boards behind it are not speaking.
+      // `langs` is not in the strip list above precisely because the children
+      // need it; read it here for the same reason.
+      var cardLangs = null;
+      try {
+        var _cl = String(q.get('langs') || q.get('lang') || '').toLowerCase()
+          .split(',').map(function (s) { return s.trim(); })
+          .filter(function (s) { return /^[a-z]{2}$/.test(s); });
+        if (_cl.length) cardLangs = _cl.slice(0, 2);
+      } catch (e) {}
+      // Same borrow-from-an-iframe trick readAp() uses, and for the same reason:
+      // one resolver in fids-core.js, never a second copy of the rule here.
+      function langsFor(code) {
+        if (cardLangs) return cardLangs;
+        if (langCache[code]) return langCache[code];
+        for (var p in frameFor) {
+          try {
+            var w = frameFor[p].contentWindow;
+            if (w && typeof w.boardLangsFor === 'function') {
+              var l = w.boardLangsFor(code);
+              // Copy to OUR OWN primitives before caching. The array the child
+              // returns belongs to the iframe's realm; holding it would pin
+              // that realm's whole document alive after the src changes — a
+              // slow leak of one detached board per airport on a page that
+              // runs for weeks.
+              if (l && l.length) {
+                var own = [String(l[0])];
+                if (l[1]) own.push(String(l[1]));
+                langCache[code] = own; return own;
+              }
+            }
+          } catch (e) { /* not loaded yet */ }
+        }
+        // No frame has loaded yet (cold start: every iframe is still
+        // about:blank when the FIRST card paints). Guessing en/fr here put
+        // 'Arrivée à' on a San Juan opening card for the seconds until a board
+        // parsed, then swapped it mid-announce — a visible language flip on
+        // every stream restart. English alone is never wrong, and paintCard
+        // already drops the divider when there is no second half; the per-beat
+        // repaint fills the real pair in the moment a board can answer.
+        return ['en'];
+      }
 
       function paintCard(code) {
         elCode.textContent = code;
         readAp(code);
         elName.textContent = nameCache[code] || '';
+
+        // Caption in this airport's pair. If its second language IS English
+        // there is no second half to show, so the divider goes too rather than
+        // leaving "Now Arriving |" hanging with nothing after it.
+        var pair = langsFor(code);
+        var l1 = CARD_LABELS[pair[0]] || CARD_LABELS.en;
+        var l2 = (pair[1] && pair[1] !== pair[0]) ? CARD_LABELS[pair[1]] : null;
+        elK1.textContent = l1[0];
+        elK2.textContent = l2 ? l2[0] : '';
+        var kSep = elK2.previousElementSibling;
+        if (kSep && kSep.classList.contains('tc-sep')) kSep.style.display = l2 ? '' : 'none';
+
         var tz = tzCache[code] || '';
         if (tz) {
           var t = '';
@@ -275,7 +388,7 @@
             t = new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
           } catch (e) { t = ''; }
           elTime.textContent = t;
-          elTz.textContent = t ? 'Local Time | Heure Locale' : '';
+          elTz.textContent = t ? (l2 ? (l1[1] + ' | ' + l2[1]) : l1[1]) : '';
           elSep.textContent = t ? '|' : '';
         } else {
           elTime.textContent = ''; elTz.textContent = ''; elSep.textContent = '';
@@ -359,7 +472,11 @@
 
       function nextAirport() {
         if (tour.length < 2) { airportStart = Date.now(); return; }
-        startAirport((apIdx + 1) % tour.length);
+        var nx = (apIdx + 1) % tour.length;
+        // Wrapping to 0 means a full pass just finished: deal a fresh order
+        // before opening the next one.
+        if (doShuffle && nx === 0) shuffleTour();
+        startAirport(nx);
       }
 
       function advanceScene() {
