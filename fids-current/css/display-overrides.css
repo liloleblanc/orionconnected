@@ -2572,22 +2572,35 @@ html .g8-wrap .g8-r1-star {
   opacity: 0.95 !important;
 }
 
-/* Final-call surfaces follow the darkened lane accent so light brand
-   colours (Flair lime) don't wash out the takeover. */
+/* v23319 — FINAL CALL IS AN ALARM, NOT A BRAND SURFACE (Nick: 'its not
+   visible ... perhaps it needs Orange or something to draw attention').
+   The band followed the carrier accent, so on a WestJet gate a TEAL band sat
+   on a TEAL board — invisible by construction, and the same failure waits on
+   any carrier whose accent matches its own theme. Final call now wears the
+   board's one attention colour everywhere: amber with near-black ink, the
+   exact pairing the delayed rows already use, carrier be damned. GATE CLOSED
+   keeps its calm slate below. */
 html .g8-final-hdr {
-  background: var(--accent-lane, var(--airline-accent, #D82F2E)) !important;
-  color: #ffffff;
+  background: linear-gradient(180deg, #FFB300, #F58A00) !important;
+  color: #102437 !important;
 }
-/* FINAL CALL / GATE CLOSED header must READ from across the concourse (Nick:
-   'Final Call is white and tiny, chance you can even see it'). Big, heavy,
-   white on the darkened accent slab. */
+/* And the band was CLIPPING its own text (Nick's screenshot: descenders
+   shaved, 'it kind of borders the border'): the base rule pins height:70px
+   while this font clamp reaches 92px. Height freed, text centered on both
+   axes, and a white rule top and bottom separates the band from whatever
+   colour surrounds it. */
 html .g8-final .g8-final-hdr {
+  height: auto !important;
+  min-height: 70px !important;
   font-size: clamp(34px, 6.2vh, 92px) !important;
   font-weight: 900 !important;
   letter-spacing: .02em !important;
-  line-height: 1.04 !important;
-  padding: clamp(10px, 1.7vh, 28px) clamp(12px, 1.4vw, 30px) !important;
+  line-height: 1.12 !important;
+  padding: clamp(14px, 2vh, 32px) clamp(12px, 1.4vw, 30px) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
   text-align: center !important;
+  border-top: 3px solid rgba(255,255,255,.9) !important;
+  border-bottom: 3px solid rgba(255,255,255,.9) !important;
 }
 html .g8-final-body {
   background: color-mix(in srgb, var(--accent-lane, var(--airline-accent, #D82F2E)) 52%, #10141b) !important;
@@ -2596,7 +2609,7 @@ html .g8-final-body {
    angry red (Nick: 'I don't like the red background gate closed, it's so
    angry'). Still airline-neutral (a green 'closed' screen reads as GO), just
    not aggressive. */
-html .g8-final-closed .g8-final-hdr { background: #475569 !important; }
+html .g8-final-closed .g8-final-hdr { background: #475569 !important; color: #ffffff !important; border-color: rgba(255,255,255,.45) !important; }
 html .g8-final-closed .g8-final-body { background: color-mix(in srgb, #475569 42%, #0f1116) !important; }
 /* GATE CLOSED is ONE statement, CENTERED in the middle of the takeover (Nick:
    'centered … I have asked a million times', and 'why do you keep putting
@@ -2618,12 +2631,16 @@ html .g8-final.g8-final-closed .g8-final-hdr {
 /* ── Final-call / gate-closed takeover: WHITE text on the deep-red panel
    (the navy ink was near-black on red — unreadable, Nick's YHZ shot),
    plus the new flight-identity line. ── */
-html .g8-final .g8-final-hdr,
+/* v23319 — the HDR left this white group: the band is now amber (see the
+   final-call rules above) and white on amber is ~2.4:1; it takes the delayed
+   rows' dark ink instead. The body stays dark, so its lines stay white. */
 html .g8-final .g8-final-allgrp,
 html .g8-final .g8-final-sub,
 html .g8-final .g8-final-flight {
   color: #ffffff !important;
 }
+html .g8-final .g8-final-hdr { color: #102437 !important; }
+html .g8-final.g8-final-closed .g8-final-hdr { color: #ffffff !important; }
 html .g8-final .g8-final-sub { opacity: 0.88; }
 html .g8-final .g8-final-flight {
   font-size: clamp(26px, 3.6vh, 52px);

@@ -9059,7 +9059,10 @@ function _buildV2MapCol(ctx, vars) {
       var _niFlt = _niIb ? String(_niIb.flight || '').trim() : '';
       var _niFrom = '';
       if (_niIb) {
-        var _niFromIata = String(_niIb._locIata || '').toUpperCase();
+        // v23318 — through _dispIata, like every other code chip on the board
+        // (Nick: 'BTW its Montreal | MET not YHU'). The mapping exists for
+        // exactly this airport and this card read the feed code raw.
+        var _niFromIata = _dispIata(String(_niIb._locIata || '').toUpperCase());
         // The feed hands origin over ALREADY paired — YQM gate 3 carries
         // 'Montreal | YHU'. Re-appending the code would print it twice, so
         // only the city half is taken and the code is re-applied below in the
@@ -20645,7 +20648,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23317';
+var FIDS_BUILD_TAG = 'v23319';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
