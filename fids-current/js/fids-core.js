@@ -19763,13 +19763,39 @@ const BOARD_LANG_DEFAULTS = {
   // v23247 — Miami runs English+Spanish (Nick's boards are assigned en/es;
   // without a baked default a profile-wiped display fell back to the Canada
   // en/fr pair — French 'Carrousel' on a Miami baggage screen).
-  MIA: ['en', 'es']
+  MIA: ['en', 'es'],
+
+  // v23317 — the rest of the multi-airport tour (stream 2 now travels). The
+  // en/fr fallback below made sense when every board was Canadian and put
+  // French on a San Juan board the moment one wasn't (measured live: SJU
+  // served 'Départs / Heure à San Juan'). US + Caribbean stops are en/es.
+  // The Canadian stops (YYZ/YUL/YYC/YVR) are deliberately ABSENT — en/fr is
+  // already their answer. OGG is also absent, deliberately: en/ja was tried
+  // and the stream host has no CJK font (tofu), and the gate board's label
+  // maps carry no 'ja' and fall through to French — so Maui keeps the plain
+  // default until both of those are fixed.
+  FLL: ['en', 'es'],
+  TPA: ['en', 'es'],
+  ATL: ['en', 'es'],
+  JFK: ['en', 'es'],
+  BOS: ['en', 'es'],
+  ORD: ['en', 'es'],
+  DFW: ['en', 'es'],
+  LAX: ['en', 'es'],
+  SFO: ['en', 'es'],
+  SEA: ['en', 'es'],
+  CUN: ['en', 'es'],
+  SJU: ['en', 'es']
 };
 function boardLangsFor(iata) {
   var _k = String(iata || '').toUpperCase();
   if (BOARD_LANG_DEFAULTS[_k]) return BOARD_LANG_DEFAULTS[_k].slice();
   return ES_BOARD_AIRPORTS.has(_k) ? ['en','es'] : ['en','fr'];
 }
+// v23317 — EXPORTED for the same reason as AP (v23265): tour.html captions its
+// arrival card in the arriving airport's own second language, and resolving it
+// here means the card can never disagree with the board behind it.
+try { if (typeof window !== 'undefined') window.boardLangsFor = boardLangsFor; } catch (e) {}
 // v23306 — THE LANGUAGES BELONG TO THE BOARD, NOT TO THE DESTINATION.
 //
 // The Accor hotel card is for a hotel in the city the flight is going TO, so
@@ -20593,7 +20619,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23316';
+var FIDS_BUILD_TAG = 'v23317';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -21690,7 +21716,22 @@ function render() {
     // Same for LGA/JFK/EWR — the PANYNJ feed's gate numbers stand alone.
     const _showTermCol = _isAirsideRow || _apUpRow === 'YYZ'
       || _apUpRow === 'LGA' || _apUpRow === 'JFK' || _apUpRow === 'EWR';
-    let _gateVal2 = (f.gate && f.gate !== '—' ? f.gate : (f.terminal && f.terminal !== '—' ? f.terminal : '—'));
+    // v23317 — A TERMINAL IS NOT A GATE. This used to fall back to the bare
+    // terminal, so an airport the feed carries no gates for printed terminal
+    // numbers under a column headed "Gate". Measured on FLL: AeroDataBox
+    // returns no gate key at all — 0 of 39 departures had one — so every row
+    // read "Gate 3" when it meant Terminal 3, and jetBlue's Terminal 3 is a
+    // building. NUMERIC terminals only, shown as T3, which cannot be misread;
+    // a letter terminal is a concourse and 'T'+letter would be a nonsense
+    // token, so it falls to '—' — blank is a smaller failure than confidently
+    // wrong. Airports that already print a Terminal column keep the gate cell
+    // blank rather than repeating the same value under two headings.
+    const _gateRaw = (f.gate && f.gate !== '—') ? String(f.gate).trim() : '';
+    const _termRaw = (f.terminal && f.terminal !== '—') ? String(f.terminal).trim() : '';
+    let _gateVal2;
+    if (_gateRaw) _gateVal2 = _gateRaw;
+    else if (_termRaw && !_showTermCol && /^\d+$/.test(_termRaw)) _gateVal2 = 'T' + _termRaw;
+    else _gateVal2 = '—';
     // MCO/TPA: the airside column already shows the concourse letter, so drop
     // a redundant leading letter from the gate itself (C243 -> 243, E71 -> 71).
     if (_isAirsideRow) _gateVal2 = String(_gateVal2).replace(/^[A-F](?=\d)/, '');
