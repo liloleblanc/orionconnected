@@ -3005,12 +3005,30 @@ function getDedicatedRenderKey() {
     });
   }
   if (screenType === 'baggage') {
-    const arrFlights = (data.arr || []).filter(f => f._belt === subScreenVal || f.flight === subScreenVal).map(f => ({
+    const arrFlights = (data.arr || []).filter(f => (f._belt === subScreenVal || f.flight === subScreenVal) && (typeof _bidsInWindow !== 'function' || _bidsInWindow(f, Date.now()))).map(f => ({
       flight:f.flight, status:f.status, time:f.time, airline:f.airline, loc:f._locIata, sort:f._sortTs
     }));
     return JSON.stringify({screenType, subScreenVal, iata, lang, langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '', flights:arrFlights});
   }
   return JSON.stringify({screenType:'main'});
+}
+
+// v23317 — the BIDS visibility window. One hour of lead (Nick: 'half hour to
+// hour' — the generous end, tunable in one place) and 45 minutes of trail so
+// a landed flight stays listed while its bags are on the belt. The effective
+// time is the best the feed knows: actual arrival, else revised, else
+// scheduled. A flight with NO usable time is kept — hiding a flight because
+// the feed dropped its timestamp would strand passengers silently.
+var BIDS_WINDOW_AHEAD_MS = 60 * 60000;
+var BIDS_WINDOW_TRAIL_MS = 45 * 60000;
+function _bidsInWindow(f, nowTs) {
+  try {
+    var eff = (typeof f._actualArrTime === 'number' && f._actualArrTime > 0) ? f._actualArrTime
+            : (typeof f._revTs === 'number' && f._revTs > 0) ? f._revTs
+            : (typeof f._sortTs === 'number' && f._sortTs > 0) ? f._sortTs : 0;
+    if (!eff) return true;
+    return eff >= nowTs - BIDS_WINDOW_TRAIL_MS && eff <= nowTs + BIDS_WINDOW_AHEAD_MS;
+  } catch (e) { return true; }
 }
 
 // ── LIVE TELEMETRY ANIMATOR ────────────────────────────────────────────────
@@ -15520,7 +15538,15 @@ const gView = document.getElementById('gateView');
   else if (screenType === 'baggage') {
     gView.style.display = 'none';
     bView.style.display = 'flex';
-    const arrFlights = (data.arr || []).filter(f => f._belt === subScreenVal || f.flight === subScreenVal);
+    // v23317 — THE BAGGAGE SCREEN SHOWS THE BELT'S CURRENT HOUR, NOT THE DAY
+    // (Nick: 'flights that are only coming in now or within the next few
+    // minutes maybe a half hour to hour window'). Belt linkage already
+    // existed; the time dimension did not — a 12:08am arrival sat on the
+    // carousel screen at 5pm. A flight now shows only from one hour before
+    // its effective arrival until 45 minutes after it (bags on the belt),
+    // judged on actual > revised > scheduled time, best known first.
+    const arrFlights = (data.arr || []).filter(f =>
+      (f._belt === subScreenVal || f.flight === subScreenVal) && _bidsInWindow(f, Date.now()));
 
     var _isMobileBag = (window.innerWidth || document.documentElement.clientWidth) < 700;
     if (_isMobileBag) {
@@ -20593,7 +20619,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23316';
+var FIDS_BUILD_TAG = 'v23317';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
