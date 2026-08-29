@@ -20648,7 +20648,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23320';
+var FIDS_BUILD_TAG = 'v23321';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -38273,7 +38273,13 @@ setInterval(function () {
     var bn = document.getElementById('fidsBanner');
     if (!bn) return; // not the main-board page
     var _st = (typeof screenType !== 'undefined') ? screenType : 'main';
-    if (_st !== 'main') return;
+    if (_st !== 'main' || document.documentElement.hasAttribute('data-screen-type')) {
+      // A dedicated gate/baggage screen owns the viewport. Never force the
+      // banner here, and undo a force left over from a main-board phase —
+      // inline !important outranks the data-screen-type hide rule.
+      if (bn.style.getPropertyPriority('display')) bn.style.removeProperty('display');
+      return;
+    }
     if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
     if (bn.style.display === 'none') bn.style.display = '';
     // Third failure mode (Nick's 2026-07-12 screenshot: table at y=0, banner
