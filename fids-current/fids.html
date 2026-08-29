@@ -192,7 +192,21 @@
   <link rel="stylesheet" href="css/baggage-display.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23321">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23322">
+  <style>
+    /* v23322 — no banner until the theme is applied (see fids-core.js
+       applyAirportConfigToBoard). Opacity, not display: the top-watchdog
+       heals display-collapsed banners and must not fight this. */
+    html:not([data-fids-chrome-ready]) .fids-banner { opacity: 0 !important; }
+    .fids-banner { transition: opacity .3s; }
+  </style>
+  <script>
+    /* v23322 — safety: if theme application never runs (fatal boot error),
+       show the banner anyway after 6s rather than leaving the top empty. */
+    setTimeout(function () {
+      try { document.documentElement.setAttribute('data-fids-chrome-ready', '1'); } catch (e) {}
+    }, 6000);
+  </script>
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (Nick: 'the old svreen shows up once in a while',
@@ -838,7 +852,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23321"></script>
+<script src="js/fids-core.js?v=23322"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
