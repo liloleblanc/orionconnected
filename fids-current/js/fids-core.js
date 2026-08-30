@@ -15679,8 +15679,13 @@ const gView = document.getElementById('gateView');
       }
       return /^[A-C]$/.test(t) ? t : '';
     })() : '';
+    // v23325 — Nick's approved redesign rides the EXISTING belt-pattern
+    // machinery (the p01-p12 rotation + --crsl-ink/--crsl-pop palette
+    // stamper): the bidsv3 class keys the new skin — flight bars wearing the
+    // pattern's own standout colour, reserved yellow/red for delayed and
+    // cancelled, equal-size languages on the panel.
     bView.innerHTML = `
-      <div class="bidsv2-screen">
+      <div class="bidsv2-screen bidsv3">
 
         <!-- Banner — same v2 chevron pattern as the FIDS board (Nick): time
              + date top-right, airport pill (logo + IATA + name) center, and
@@ -15736,7 +15741,7 @@ const gView = document.getElementById('gateView');
             // headers: bar 1 = langs[0], bar 2 = langs[1], static across the
             // language slides; no second language (or same word) → no second
             // bar. The words reach the ::after through --crsl-l2.
-            var _crslO = (typeof LS !== 'undefined' && LS['carousel']) || {};
+            var _crslO = (typeof LS !== 'undefined' && (LS['bagClaim'] || LS['carousel'])) || {};
             var _crslLs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en', 'fr'];
             var _crslW1 = String(_crslO[_crslLs[0]] || _crslO.en || 'Carousel');
             var _crslW2 = _crslLs.length > 1 ? String(_crslO[_crslLs[1]] || '') : '';
@@ -20648,7 +20653,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23324';
+var FIDS_BUILD_TAG = 'v23325';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -38522,6 +38527,33 @@ setInterval(function () {
         _set('--crsl-ink', _rgb(_ink));
         _set('--crsl-pop', _rgb(_pop));
         _set('--crsl-pop-ink', _rgb(_popInk));
+        // v23325 — THE FLIGHT BARS' COLOUR (Nick: 'match a color from the
+        // panel that stands out' + 'don't use colors that could confuse').
+        // The bar tone is the most saturated palette tone whose HUE cannot
+        // be read as a status: yellow/orange (delayed), red (cancelled) and
+        // status-green (arrived) are excluded. If the whole palette is
+        // confusable, fall back to the ink — dark tones read as neutral.
+        var _hue = function (c) {
+          var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+          var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+          if (mx === mn) return 0;
+          var d = mx - mn, h;
+          if (mx === r) h = ((g - b) / d) % 6;
+          else if (mx === g) h = (b - r) / d + 2;
+          else h = (r - g) / d + 4;
+          h = h * 60; return h < 0 ? h + 360 : h;
+        };
+        var _confusable = function (c) {
+          var h = _hue(c), s = _sat(c);
+          if (s < 0.25) return false;            // washed tones read neutral
+          if (h >= 15 && h <= 75) return true;   // yellow / orange → delayed
+          if (h >= 345 || h <= 15) return true;  // red → cancelled
+          if (h >= 90 && h <= 160) return true;  // status green → arrived
+          return false;
+        };
+        var _barPick = _wp.slice().filter(function (c) { return c !== _ink && !_confusable(c); })
+                          .sort(function (a, b) { return _sat(b) - _sat(a); })[0] || _ink;
+        _set('--crsl-bar', _rgb(_barPick));
       } else {
         document.body.style.removeProperty('--crsl-pattern');
         for (var _wj = 1; _wj <= 4; _wj++) document.body.style.removeProperty('--crsl-w' + _wj);
