@@ -14629,50 +14629,103 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-stline > span + span::before {
 
 
 /* ═══════════════════════════════════════════════════════════════════════
-   v23325 — BIDS: NICK'S APPROVED REDESIGN (the bidsv3 skin)
-   The flight bars join the pattern system: each bar wears the belt
-   pattern's own colours (--crsl-ink → --crsl-pop, stamped per belt by the
-   palette stamper), rounded and outlined; the belt panel keeps its v23161
-   pattern treatment with the languages at EQUAL size; yellow and red stay
-   reserved for DELAYED and CANCELLED/DIVERTED rows only. Airport names
-   and codes are different colours. Bars left, panel right.
+   v23327 — BIDS: THE APPROVED DESIGN, FAITHFUL TO THE APPROVED MOCK
+   (Nick's mock, verbatim): HIS banner untouched on top; a LIGHT ground of
+   his pattern per belt; outlined colour bars for the flights; the belt
+   panel wearing his accent pattern (muted) behind a WHITE number with a
+   BLACK outline and both languages at equal size; status only in the
+   pills; yellow reserved for DELAYED and red for CANCELLED/DIVERTED.
+   Vars stamped inline by the renderer per belt: --bids-accent-img,
+   --bids-ground-img, --bids-bar-grad, --bids-tint. Everything scoped to
+   .bidsv3 — without the class stamp this whole block is inert. ×14 where
+   the v23161 wedge rules must be beaten.
    ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3.bidsv2-screen {
+  background:
+    linear-gradient(var(--bids-tint, rgba(42,108,192,.10)), var(--bids-tint, rgba(42,108,192,.10))),
+    linear-gradient(rgba(255,255,255,.72), rgba(255,255,255,.72)),
+    var(--bids-ground-img, none) center/cover,
+    #eef3f8 !important;
+  color: #16283C !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-chevrons { display: none !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-body {
   grid-template-columns: 62% 38% !important;
+  padding: 26px 40px !important; gap: 30px !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block {
-  grid-column: 2 !important; grid-row: 1 !important;
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block { grid-column: 2 !important; grid-row: 1 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-list { grid-column: 1 !important; grid-row: 1 !important; background: transparent !important; border: none !important; box-shadow: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-list-header { display: none !important; }
+
+/* ── The belt panel: his accent pattern, muted, in the approved card ── */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block {
+  clip-path: none !important;
+  border-radius: 24px !important;
+  border: 5px solid #0d2a52 !important;
+  outline: 3px solid #ffffff !important; outline-offset: -11px !important;
+  box-shadow: 0 18px 50px rgba(6,40,96,.35) !important;
+  background:
+    linear-gradient(rgba(16,36,55,.20), rgba(16,36,55,.20)),
+    var(--bids-accent-img, linear-gradient(120deg,#136a6b,#2fa8a6)) center/cover !important;
+  padding: 34px 20px 30px !important;
+  display: flex !important; flex-direction: column !important;
+  align-items: center !important; justify-content: space-between !important;
+  margin: 0 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-list {
-  grid-column: 1 !important; grid-row: 1 !important;
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::before { display: none !important; content: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-label {
+  background: transparent !important;
+  color: #ffffff !important; -webkit-text-fill-color: #ffffff !important;
+  -webkit-text-stroke: 2.5px #000 !important; paint-order: stroke fill !important;
+  font-size: 4.4vh !important; font-weight: 900 !important;
+  align-self: center !important; text-align: center !important;
+  margin: 0 !important; padding: 0 !important; letter-spacing: .5px !important;
+  text-transform: none !important; width: auto !important; min-width: 0 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-list-header {
-  display: none !important;
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::after {
+  position: static !important;
+  background: transparent !important;
+  color: #ffffff !important;
+  -webkit-text-stroke: 2.5px #000; paint-order: stroke fill;
+  font-size: 4.4vh !important; font-weight: 900 !important;
+  align-self: center !important; text-align: center !important;
+  margin: 0 !important; padding: 0 !important;
 }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-number {
+  color: #ffffff !important; -webkit-text-fill-color: #ffffff !important;
+  -webkit-text-stroke: 0.028em #000000 !important; paint-order: stroke fill !important;
+  font-size: 44vh !important; line-height: .94 !important;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+  font-weight: 900 !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  padding: 0 !important; margin: 0 !important;
+  background: transparent !important;
+  text-shadow: 0 12px 34px rgba(0,0,0,.35) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-terminal {
+  color: #ffffff !important; font-weight: 800 !important;
+  -webkit-text-stroke: 1.5px #000; paint-order: stroke fill;
+}
+
+/* ── Flight bars: the belt's colours, rounded, outlined, roomy ── */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-row {
-  background: linear-gradient(100deg, var(--crsl-ink, #12417e) 0%, var(--crsl-bar, var(--crsl-ink, #2a6cc0)) 100%) !important;
+  background: var(--bids-bar-grad, linear-gradient(100deg,#1d7f80,#2fa8a6,#5fd6d0)) !important;
   border-radius: 18px !important;
-  border: 3px solid var(--crsl-ink, #0d2a52) !important;
-  outline: 2px solid rgba(255,255,255,.85);
-  outline-offset: -7px;
+  border: 3px solid #0d2a52 !important;
+  outline: 2px solid rgba(255,255,255,.85); outline-offset: -7px;
   box-shadow: 0 10px 28px rgba(10,40,90,.30) !important;
-  margin-bottom: 16px !important;
+  margin-bottom: 20px !important;
+  padding: 10px 26px !important;
+  height: auto !important;
   color: #ffffff !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-row *:not(.bidsv2-col-status):not(.bidsv2-col-status *) {
-  color: #ffffff;
-  text-shadow: 0 2px 5px rgba(0,0,0,.45);
+  color: #ffffff; text-shadow: 0 2px 5px rgba(0,0,0,.45);
 }
-/* Airport NAME and CODE are different colours (Nick). City stays white; the
-   code takes a pale ice tone with the separator dimmed. No status colours. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from .dest-iata {
-  color: #cfe4ff !important; font-weight: 850 !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from .dest-iata-sep {
-  color: rgba(255,255,255,.55) !important;
-}
-/* Reserved colours: the whole bar goes amber only when DELAYED, red only
-   when CANCELLED or DIVERTED. Nothing else may wear these. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from .dest-iata { color: #cfe4ff !important; font-weight: 850 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from .dest-iata-sep { color: rgba(255,255,255,.55) !important; }
+
+/* Reserved colours — only these rows may wear them. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-row.bidsv2-row-delayed {
   background: linear-gradient(100deg,#8a5f00 0%,#c98f10 55%,#eec052 100%) !important;
   border-color: #5e4100 !important;
@@ -14682,67 +14735,29 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   background: linear-gradient(100deg,#7c1620 0%,#a82633 55%,#d05560 100%) !important;
   border-color: #55070f !important;
 }
-/* Status = white pill, ink per status: green arrived/early, amber delayed,
-   red cancelled/diverted, board ink otherwise. */
+
+/* Status pills: white with per-status ink at full strength. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status {
   background: rgba(255,255,255,.94) !important;
   border-radius: 12px !important;
   border: 2.5px solid #16283C;
   padding: 10px 14px !important;
-  font-weight: 800 !important;
-  text-align: center !important;
-  text-shadow: none !important;
+  font-weight: 800 !important; text-align: center !important; text-shadow: none !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status * {
-  color: #16283C !important; text-shadow: none !important;
-}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status * { color: #16283C !important; text-shadow: none !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-arrived,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-arrived *,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-early,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-early * {
-  color: #157A43 !important;
-}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-early * { color: #157A43 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-arrived { border-color: #157A43 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-delayed,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-delayed * {
-  color: #A66F00 !important;
-}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-delayed * { color: #A66F00 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status.bidsv2-status-delayed { border-color: #A66F00 !important; }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-cancelled .bidsv2-col-status,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-cancelled .bidsv2-col-status *,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-diverted .bidsv2-col-status,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-diverted .bidsv2-col-status * {
-  color: #B3261E !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-cancelled .bidsv2-col-status,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-diverted .bidsv2-col-status { border-color: #B3261E !important; }
-
-/* The two languages on the belt panel are the SAME size (Nick: 'no reason
-   for the second language to be much smaller'). ×14 to meet the v23161
-   rules that size these two independently. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-label {
-  font-size: 4.4vh !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::after {
-  font-size: 4.4vh !important;
-}
-/* Reserved rows dim their content in the base design; the status pill must
-   stay at full strength — it is the word the passenger needs. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-cancelled .bidsv2-col-status,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-diverted .bidsv2-col-status,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-delayed .bidsv2-col-status {
-  opacity: 1 !important; filter: none !important;
-}
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-cancelled .bidsv2-col-status *,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-diverted .bidsv2-col-status * {
-  opacity: 1 !important; text-decoration: none !important;
-}
-/* ×14 — the reserved rows' base design (14×) repaints descendants; the pill
-   ink must outrank it or Cancelled reads washed out. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-cancelled .bidsv2-col-status,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-cancelled .bidsv2-col-status *,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-diverted .bidsv2-col-status,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-row-diverted .bidsv2-col-status * {
-  color: #B3261E !important; opacity: 1 !important; -webkit-text-fill-color: #B3261E !important;
+  color: #B3261E !important; -webkit-text-fill-color: #B3261E !important; opacity: 1 !important;
+  border-color: #B3261E !important; text-decoration: none !important;
 }

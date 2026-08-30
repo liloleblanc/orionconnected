@@ -15679,13 +15679,32 @@ const gView = document.getElementById('gateView');
       }
       return /^[A-C]$/.test(t) ? t : '';
     })() : '';
-    // v23325 — Nick's approved redesign rides the EXISTING belt-pattern
-    // machinery (the p01-p12 rotation + --crsl-ink/--crsl-pop palette
-    // stamper): the bidsv3 class keys the new skin — flight bars wearing the
-    // pattern's own standout colour, reserved yellow/red for delayed and
-    // cancelled, equal-size languages on the panel.
+    // v23327 — Nick's approved redesign, faithful to the approved mock:
+    // his accent pattern on the panel and his light ground per belt
+    // (assets in /patterns), bars in the accent's own colours. Belts cycle
+    // through the set so belts differ at every airport. Yellow and red
+    // stay reserved for delayed / cancelled.
+    var _bidsAccents = [
+      { img: '/patterns/bids-accent-1.png', ground: '/patterns/bids-ground-1.jpg',
+        bar: 'linear-gradient(100deg,#12417e 0%,#2a6cc0 55%,#6ea4e2 100%)',
+        tint: 'rgba(42,108,192,.10)' },
+      { img: '/patterns/bids-accent-2.png', ground: '/patterns/bids-ground-2.jpg',
+        bar: 'linear-gradient(100deg,#2b3597 0%,#1f71a9 45%,#0bd2c7 100%)',
+        tint: 'rgba(11,210,199,.10)' },
+    ];
+    var _bidsBeltNo = (function () {
+      var m = String(subScreenVal || '').match(/(\d+)\s*$/);
+      return m ? parseInt(m[1], 10) : 1;
+    })();
+    var _bidsAcc = _bidsAccents[(Math.max(1, _bidsBeltNo) - 1) % _bidsAccents.length];
+    // APPROVAL GATE (Nick rejected v23325 on sight): the redesign mounts ONLY
+    // when explicitly enabled — flip _BIDSV3_ON to true in code once Nick has
+    // approved a live render, or set localStorage fids_bidsv3 = '1' on a test
+    // screen. Default false = the prior design, untouched.
+    var _bidsV3On = false;
+    try { _bidsV3On = _BIDSV3_ON === true || localStorage.getItem('fids_bidsv3') === '1'; } catch (e) {}
     bView.innerHTML = `
-      <div class="bidsv2-screen">
+      <div class="bidsv2-screen${_bidsV3On ? ' bidsv3' : ''}" style="--bids-accent-img:url('${_bidsAcc.img}');--bids-ground-img:url('${_bidsAcc.ground}');--bids-bar-grad:${_bidsAcc.bar};--bids-tint:${_bidsAcc.tint};">
 
         <!-- Banner — same v2 chevron pattern as the FIDS board (Nick): time
              + date top-right, airport pill (logo + IATA + name) center, and
@@ -20654,6 +20673,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
 var FIDS_BUILD_TAG = 'v23326';
+var _BIDSV3_ON = false; // Nick's approval gate for the baggage redesign
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
