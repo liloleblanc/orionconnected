@@ -20648,7 +20648,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23322';
+var FIDS_BUILD_TAG = 'v23324';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -25352,12 +25352,6 @@ function applyAirportConfigToBoard(iata) {
     window._lastGateKey = '';
     if (typeof render === 'function') render();
   } catch (e) {}
-  // v23322 — the theme is on: the banner may paint now. Until this attribute
-  // exists, head CSS holds .fids-banner at opacity:0, so the UN-themed
-  // tri-segment art can never flash during a cold boot or a rotation hop
-  // (the hop suppresses the loader, which used to leave the raw banner
-  // showing over an empty ground for the whole populate).
-  try { document.documentElement.setAttribute('data-fids-chrome-ready', '1'); } catch (e) {}
 }
 // Re-apply when an async config load completes (Phase 2 dispatches this)
 try {

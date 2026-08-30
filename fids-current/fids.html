@@ -192,7 +192,7 @@
   <link rel="stylesheet" href="css/baggage-display.css?v=322">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23322">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23324">
   <style>
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
@@ -201,11 +201,12 @@
     .fids-banner { transition: opacity .3s; }
   </style>
   <script>
-    /* v23322 — safety: if theme application never runs (fatal boot error),
-       show the banner anyway after 6s rather than leaving the top empty. */
+    /* v23324 — safety: if the board never reaches its painted state (fatal
+       boot error), show the banner after 20s rather than leaving the top
+       empty forever. 20s clears the ~11s a rotation-hop populate takes. */
     setTimeout(function () {
       try { document.documentElement.setAttribute('data-fids-chrome-ready', '1'); } catch (e) {}
-    }, 6000);
+    }, 20000);
   </script>
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
@@ -852,7 +853,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23322"></script>
+<script src="js/fids-core.js?v=23324"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -895,6 +896,12 @@ window.addEventListener("DOMContentLoaded", function() {
               localStorage.setItem('fids_boot_ground', bg);
             }
           } catch (e) {}
+          /* v23324 — ONLY NOW may the banner paint (v23322 gated it on the theme
+             apply, which is too early: the local theme lands before the cloud
+             config and before any flight rows, so the stale default banner
+             still flashed over an empty board on every rotation hop). The
+             board has painted real content here — reveal the chrome. */
+          try { document.documentElement.setAttribute('data-fids-chrome-ready', '1'); } catch (e) {}
           try { window.dispatchEvent(new Event('fids:ready')); } catch (e) {}
           el.classList.add('is-hidden');
           // Remove from layout after fade finishes (CSS transition is 0.5s + 0.1s delay)
