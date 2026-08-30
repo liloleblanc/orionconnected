@@ -14761,3 +14761,55 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: #B3261E !important; -webkit-text-fill-color: #B3261E !important; opacity: 1 !important;
   border-color: #B3261E !important; text-decoration: none !important;
 }
+/* Row internals sized to FIT the bar (the clipped WS792/wordmark stack):
+   compact wordmark line over the flight number, nothing cut. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-row { overflow: visible !important; align-items: center !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-flight { overflow: visible !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-airline-wordmark {
+  height: 20px !important; max-height: 20px !important; width: auto !important;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,.5)) brightness(10) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-airline-name { font-size: 16px !important; letter-spacing: 1.5px !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-num {
+  font-size: 34px !important; line-height: 1.08 !important; font-weight: 850 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-meta { line-height: 1.05 !important; }
+/* ×14 — the base column inks outrank the ×12 white; the mock's bars carry
+   WHITE city and time with the code in ice. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-time {
+  color: #ffffff !important; text-shadow: 0 2px 5px rgba(0,0,0,.45) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from .dest-iata { color: #cfe4ff !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from .dest-iata-sep { color: rgba(255,255,255,.55) !important; }
+/* Nick's final notes before handing off: BIGGER, VISIBLE, CENTRED. The list
+   centres vertically in its column; row type scales up. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-list {
+  display: flex !important; flex-direction: column !important; justify-content: center !important;
+  padding: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-row {
+  padding: 16px 28px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-time {
+  font-size: 38px !important; font-weight: 800 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-num {
+  font-size: 40px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-airline-wordmark { height: 24px !important; max-height: 24px !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-status { font-size: 26px !important; }
+/* Column balance at the bigger type: explicit row grid so nothing clips. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-flight-row {
+  display: grid !important;
+  grid-template-columns: 290px minmax(0,1fr) 210px 220px !important;
+  gap: 14px !important; align-items: center !important;
+  margin-bottom: 22px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-from,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-time {
+  font-size: 34px !important; white-space: nowrap !important;
+  overflow: hidden !important; text-overflow: ellipsis !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-col-time { text-align: right !important; }
