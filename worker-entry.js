@@ -1,3 +1,5 @@
+import proxy from "./workers/fids-proxy.js";
+
 /**
  * FIDS static-site Worker entry.
  *
@@ -154,6 +156,17 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
+
+    // v23323 — RECOVERY ROUTE. The fids-proxy Worker's auto-build deploys
+    // THIS entry (root wrangler.jsonc) under the fids-proxy name, which
+    // tonight replaced the real backend and took the feeds down. Until that
+    // build is repointed at workers/wrangler.fids-proxy.jsonc, this entry
+    // carries the real proxy bundled in and hands the request over whenever
+    // it is running under the fids-proxy hostname. Secrets persist on the
+    // Worker; KV/R2/AI bindings are declared in the root config below.
+    if (url.hostname.startsWith("fids-proxy")) {
+      return proxy.fetch(request, env, ctx);
+    }
 
     // ── Map engine passthrough ──────────────────────────────────────────
     // Short alias for the stream-agent installer, so it can be TYPED into a
@@ -534,4 +547,9 @@ export default {
     }
     return new Response('Not found', { status: 404 });
   },
+  async scheduled(event, env, ctx) {
+    // Only the fids-proxy Worker carries the proxy's secrets — the board
+    // Worker (no JWT_SECRET) must not run the credit top-up.
+    if (env && env.JWT_SECRET && proxy.scheduled) return proxy.scheduled(event, env, ctx);
+  }
 };
