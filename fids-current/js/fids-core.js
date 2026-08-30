@@ -15822,6 +15822,36 @@ const gView = document.getElementById('gateView');
               const _bAirlineHtml = _bidsEmblemOnly ? '' : (_bWmBase
                 ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 'light' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
                 : '<div class="bidsv2-airline-name">' + airlineName + '</div>');
+              // v23327 — the redesign renders its OWN row markup (b3-*), a
+              // clean flex bar that fully contains its content (Nick:
+              // 'everything hangs outside the box... the info has to minimum
+              // be inside centered and aligned'). The bidsv2 row below stays
+              // for the un-flagged design; b3 shares all the same data.
+              if (_bidsV3On) {
+                const _b3RowCls = isDelayed ? ' b3-delayed'
+                               : (_bStKey === 'cancelled' ? ' b3-cancelled'
+                               : (_bStKey === 'diverted' ? ' b3-diverted' : ''));
+                const _b3StCls = isArr || isEarly ? 's-arrived' : (isDelayed ? 's-delayed'
+                               : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 's-cancelled' : 's-other');
+                const _b3Wm = _bidsEmblemOnly ? '' : (_bWmBase
+                  ? '<img class="b3-wordmark" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, 'light') + '" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
+                  : '<div class="b3-airline-name">' + airlineName + '</div>');
+                // Own city/code split (not .dest-iata): the legacy code-accent
+                // painters target that class and repaint it dark; and the code
+                // must NEVER ellipsize — the city shrinks first.
+                let _b3City = String(cityDisplay || ''), _b3Code = '';
+                try {
+                  const _cm = _b3City.match(_CITY_CODE_TAIL);
+                  if (_cm) { _b3Code = (_cm[1] || _cm[2] || '').toUpperCase(); _b3City = _stripCityCode(_b3City); }
+                } catch (e) {}
+                return `<div class="b3-row${_b3RowCls}">
+                  <div class="b3-tile">${logoHtml}</div>
+                  <div class="b3-flight">${_b3Wm}<div class="b3-num">${_flightDisp}</div></div>
+                  <div class="b3-from"><span class="b3-city">${_b3City}</span>${_b3Code ? '<span class="b3-sep">|</span><span class="b3-code">' + _b3Code + '</span>' : ''}</div>
+                  <div class="b3-time">${_bidsTimeForLang(f.time)}</div>
+                  <div class="b3-status ${_b3StCls}">${stTxt}</div>
+                </div>`;
+              }
               return `<div class="bidsv2-flight-row${_bRowCls}">
                 <div class="bidsv2-col-flight">
                   <div class="bidsv2-airline-block">${logoHtml}</div>
