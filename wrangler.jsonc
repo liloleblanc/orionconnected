@@ -12,5 +12,17 @@
   "assets": {
     "directory": "fids-current",
     "binding": "ASSETS"
-  }
+  },
+  // v23323 — the fids-proxy recovery route bundled into worker-entry.js needs
+  // the proxy's bindings. On the board Worker they are simply unused.
+  "kv_namespaces": [
+    { "binding": "FIDS_USERS",        "id": "1ed38d7f081a4b58bd2811b12e217050" },
+    { "binding": "FIDS_LIVE_FLIGHTS", "id": "23d2a25c9a614f07b7dc860ec4c89e3f" },
+    { "binding": "CITY_BG_CACHE",     "id": "9aa58d273cc64dc08992a35b3c508c8f" }
+  ],
+  "r2_buckets": [
+    { "binding": "FIDS_ASSETS", "bucket_name": "fids-assets" }
+  ],
+  "ai": { "binding": "AI" },
+  "triggers": { "crons": ["17 5,17 * * *"] }
 }
