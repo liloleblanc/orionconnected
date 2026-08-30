@@ -15826,7 +15826,7 @@ const gView = document.getElementById('gateView');
             var _crslW2 = _crslLs.length > 1 ? String(_crslO[_crslLs[1]] || '') : '';
             if (_crslW2 && _crslW2.toLowerCase() === _crslW1.toLowerCase()) _crslW2 = '';
             var _crslVars = _crslW2
-              ? "--crsl-l2:'" + _crslW2.toUpperCase().replace(/'/g, '') + "';"
+              ? "--crsl-l2:'" + (_bidsV3On ? _crslW2 : _crslW2.toUpperCase()).replace(/'/g, '') + "';"
               : '--crsl-l2-disp:none;';
             var _crslNum = (function(){
               const _m = String(subScreenVal || '').match(/^(\w+)-(.+)$/);
@@ -20762,8 +20762,8 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23326';
-var _BIDSV3_ON = false; // Nick's approval gate for the baggage redesign
+var FIDS_BUILD_TAG = 'v23327';
+var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to main'
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
