@@ -15685,7 +15685,7 @@ const gView = document.getElementById('gateView');
     // pattern's own standout colour, reserved yellow/red for delayed and
     // cancelled, equal-size languages on the panel.
     bView.innerHTML = `
-      <div class="bidsv2-screen bidsv3">
+      <div class="bidsv2-screen">
 
         <!-- Banner — same v2 chevron pattern as the FIDS board (Nick): time
              + date top-right, airport pill (logo + IATA + name) center, and
@@ -20653,7 +20653,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23325';
+var FIDS_BUILD_TAG = 'v23326';
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
