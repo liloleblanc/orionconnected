@@ -15686,17 +15686,77 @@ const gView = document.getElementById('gateView');
     // stay reserved for delayed / cancelled.
     var _bidsAccents = [
       { img: '/patterns/bids-accent-1.png', ground: '/patterns/bids-ground-1.jpg',
-        bar: 'linear-gradient(100deg,#12417e 0%,#2a6cc0 55%,#6ea4e2 100%)',
-        tint: 'rgba(42,108,192,.10)' },
+        bar: 'linear-gradient(100deg,rgb(121,55,24) 0%,rgb(243,110,49) 100%)',
+        tint: 'rgba(243,110,49,.10)' },
       { img: '/patterns/bids-accent-2.png', ground: '/patterns/bids-ground-2.jpg',
-        bar: 'linear-gradient(100deg,#2b3597 0%,#1f71a9 45%,#0bd2c7 100%)',
-        tint: 'rgba(11,210,199,.10)' },
+        bar: 'linear-gradient(100deg,rgb(21,90,100) 0%,rgb(65,122,104) 100%)',
+        tint: 'rgba(65,122,104,.10)' },
+      { img: '/patterns/bids-accent-3.png', ground: '/patterns/bids-ground-3.jpg',
+        bar: 'linear-gradient(100deg,rgb(42,47,84) 0%,rgb(79,164,218) 100%)',
+        tint: 'rgba(79,164,218,.10)' },
+      { img: '/patterns/bids-accent-4.png', ground: '/patterns/bids-ground-4.jpg',
+        bar: 'linear-gradient(100deg,rgb(229,18,142) 0%,rgb(169,65,153) 100%)',
+        tint: 'rgba(169,65,153,.10)' },
+      { img: '/patterns/bids-accent-5.png', ground: '/patterns/bids-ground-5.jpg',
+        bar: 'linear-gradient(100deg,rgb(150,9,136) 0%,rgb(185,12,129) 100%)',
+        tint: 'rgba(185,12,129,.10)' },
+      { img: '/patterns/bids-accent-6.png', ground: '/patterns/bids-ground-6.jpg',
+        bar: 'linear-gradient(100deg,rgb(59,5,149) 0%,rgb(75,7,177) 100%)',
+        tint: 'rgba(75,7,177,.10)' },
+      { img: '/patterns/bids-accent-7.png', ground: '/patterns/bids-ground-1.jpg',
+        bar: 'linear-gradient(100deg,rgb(118,40,1) 0%,rgb(236,80,3) 100%)',
+        tint: 'rgba(236,80,3,.10)' },
+      { img: '/patterns/bids-accent-8.png', ground: '/patterns/bids-ground-2.jpg',
+        bar: 'linear-gradient(100deg,rgb(217,32,121) 0%,rgb(217,32,121) 100%)',
+        tint: 'rgba(217,32,121,.10)' },
+      { img: '/patterns/bids-accent-9.png', ground: '/patterns/bids-ground-3.jpg',
+        bar: 'linear-gradient(100deg,rgb(121,51,17) 0%,rgb(242,103,34) 100%)',
+        tint: 'rgba(242,103,34,.10)' },
+      { img: '/patterns/bids-accent-10.png', ground: '/patterns/bids-ground-4.jpg',
+        bar: 'linear-gradient(100deg,rgb(120,45,70) 0%,rgb(241,102,146) 100%)',
+        tint: 'rgba(241,102,146,.10)' },
+      { img: '/patterns/bids-accent-11.png', ground: '/patterns/bids-ground-5.jpg',
+        bar: 'linear-gradient(100deg,rgb(60,88,77) 0%,rgb(60,120,101) 100%)',
+        tint: 'rgba(60,120,101,.10)' },
+      { img: '/patterns/bids-accent-12.png', ground: '/patterns/bids-ground-6.jpg',
+        bar: 'linear-gradient(100deg,rgb(19,78,109) 0%,rgb(3,127,132) 100%)',
+        tint: 'rgba(3,127,132,.10)' },
+      { img: '/patterns/bids-accent-13.png', ground: '/patterns/bids-ground-1.jpg',
+        bar: 'linear-gradient(100deg,rgb(0,77,0) 0%,rgb(1,154,1) 100%)',
+        tint: 'rgba(1,154,1,.10)' },
+      { img: '/patterns/bids-accent-14.png', ground: '/patterns/bids-ground-2.jpg',
+        bar: 'linear-gradient(100deg,rgb(254,19,1) 0%,rgb(254,19,1) 100%)',
+        tint: 'rgba(254,19,1,.10)' },
+      { img: '/patterns/bids-accent-15.png', ground: '/patterns/bids-ground-3.jpg',
+        bar: 'linear-gradient(100deg,rgb(155,1,155) 0%,rgb(222,1,222) 100%)',
+        tint: 'rgba(222,1,222,.10)' },
+      { img: '/patterns/bids-accent-16.png', ground: '/patterns/bids-ground-4.jpg',
+        bar: 'linear-gradient(100deg,rgb(0,0,0) 0%,rgb(65,22,80) 100%)',
+        tint: 'rgba(65,22,80,.10)' },
+      { img: '/patterns/bids-accent-17.png', ground: '/patterns/bids-ground-5.jpg',
+        bar: 'linear-gradient(100deg,rgb(103,23,89) 0%,rgb(192,44,111) 100%)',
+        tint: 'rgba(192,44,111,.10)' },
+      { img: '/patterns/bids-accent-18.png', ground: '/patterns/bids-ground-6.jpg',
+        bar: 'linear-gradient(100deg,rgb(43,53,151) 0%,rgb(6,130,123) 100%)',
+        tint: 'rgba(6,130,123,.10)' },
+      { img: '/patterns/bids-accent-19.png', ground: '/patterns/bids-ground-1.jpg',
+        bar: 'linear-gradient(100deg,rgb(124,29,14) 0%,rgb(248,58,28) 100%)',
+        tint: 'rgba(248,58,28,.10)' },
+      { img: '/patterns/bids-accent-20.png', ground: '/patterns/bids-ground-2.jpg',
+        bar: 'linear-gradient(100deg,rgb(49,70,237) 0%,rgb(39,105,233) 100%)',
+        tint: 'rgba(39,105,233,.10)' },
     ];
     var _bidsBeltNo = (function () {
       var m = String(subScreenVal || '').match(/(\d+)\s*$/);
       return m ? parseInt(m[1], 10) : 1;
     })();
-    var _bidsAcc = _bidsAccents[(Math.max(1, _bidsBeltNo) - 1) % _bidsAccents.length];
+    // Airport hash offsets the start of the rotation; the belt number steps
+    // through it — same scheme as the approved pattern rotation, so belts at
+    // one airport always differ and airports differ from each other, across
+    // ALL of Nick's patterns.
+    var _bidsApHash = 0;
+    try { var _apStr = String(iata || ''); for (var _ai = 0; _ai < _apStr.length; _ai++) _bidsApHash = (_bidsApHash * 31 + _apStr.charCodeAt(_ai)) % 997; } catch (e) {}
+    var _bidsAcc = _bidsAccents[(_bidsApHash + Math.max(1, _bidsBeltNo) - 1) % _bidsAccents.length];
     // APPROVAL GATE (Nick rejected v23325 on sight): the redesign mounts ONLY
     // when explicitly enabled — flip _BIDSV3_ON to true in code once Nick has
     // approved a live render, or set localStorage fids_bidsv3 = '1' on a test
