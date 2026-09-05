@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2521,
+    "total": 2522,
     "by_category": {
       "ad": 10,
-      "airline": 1326,
+      "airline": 1327,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -10145,6 +10145,17 @@
       "name": "Oman Air",
       "iata": "WY",
       "country": "Oman",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airline-tiles/P6-glossy.svg",
+      "file": "P6-glossy.svg",
+      "category": "airline",
+      "subcategory": "tile",
+      "group": "Airline tile logos (row icons)",
+      "name": "P6 glossy",
+      "iata": "",
+      "country": "",
       "ext": "svg"
     },
     {
