@@ -159,6 +159,36 @@ test('the header carries a changeable brand logo', () => {
   assert.ok(withoutLogo.includes('fx-orbit'));
 });
 
+test('departure boards sort by time, offer manual order, and show cancelled in red', () => {
+  const document = Schema.newDocument({ family: 'fids' });
+  const table = document.modules.find((module) => module.type === 'flight-table');
+  const rows = [
+    ['AC 2', 'B', '1', '11:05 AM', 'On time'],
+    ['AC 1', 'A', '1', '5:30 AM', 'Cancelled'],
+    ['AC 3', 'C', '1', '9:15 PM', 'On time']
+  ];
+  const sorted = Render.canvasHTML(document, context({ rows: { departures: rows, arrivals: [] }, nowMs: 0 }));
+  assert.ok(sorted.indexOf('AC 1') < sorted.indexOf('AC 2'));
+  assert.ok(sorted.indexOf('AC 2') < sorted.indexOf('AC 3'));
+  assert.ok(sorted.includes('status-bad'));
+  table.props.sort = 'manual';
+  const manual = Render.canvasHTML(document, context({ rows: { departures: rows, arrivals: [] }, nowMs: 0 }));
+  assert.ok(manual.indexOf('AC 2') < manual.indexOf('AC 1'));
+});
+
+test('editing mode tags rows with stored indices and cells with fields for direct editing', () => {
+  const document = Schema.newDocument({ family: 'fids' });
+  const rows = [['AC 2', 'B', '1', '11:05 AM', 'On time'], ['AC 1', 'A', '1', '5:30 AM', 'On time']];
+  const html = Render.canvasHTML(document, context({ rows: { departures: rows, arrivals: [] }, editing: true, nowMs: 0, selectedId: document.modules.find((m) => m.type === 'flight-table').id }));
+  const sortedFirst = html.indexOf('data-flight-index="1"');
+  const sortedSecond = html.indexOf('data-flight-index="0"');
+  assert.ok(sortedFirst !== -1 && sortedSecond !== -1 && sortedFirst < sortedSecond);
+  assert.ok(html.includes('data-field="city"'));
+  assert.ok(html.includes('cm-edit-pill'));
+  const viewer = Render.canvasHTML(document, context({ rows: { departures: rows, arrivals: [] }, editing: false, nowMs: 0 }));
+  assert.ok(!viewer.includes('data-flight-index') && !viewer.includes('cm-edit-pill'));
+});
+
 test('time-window rules match daily windows, including overnight wrap', () => {
   const rule = { kind: 'time', from: '22:00', to: '05:00' };
   assert.equal(Render.sceneRuleMatches(rule, context({ clock: { minutes: 23 * 60 } })), true);

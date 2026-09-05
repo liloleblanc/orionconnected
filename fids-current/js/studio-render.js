@@ -88,7 +88,28 @@
   }
 
   function statusClass(status) {
-    return status === 'Delayed' || status === 'Cancelled' || status === 'Diverted' ? 'status-warn' : 'status-good';
+    if (status === 'Cancelled' || status === 'Diverted') return 'status-bad';
+    return status === 'Delayed' || status === 'Gate closed' ? 'status-warn' : 'status-good';
+  }
+
+  function timeToMinutes(value) {
+    const match = String(value || '').trim().match(/^(\d{1,2}):(\d{2})\s*([AP]M)?$/i);
+    if (!match) return null;
+    let hour = Number(match[1]) % 12;
+    if (match[3] && match[3].toUpperCase() === 'PM') hour += 12;
+    if (!match[3]) hour = Number(match[1]);
+    return hour * 60 + Number(match[2]);
+  }
+
+  function sortRowsByTime(rows) {
+    return rows.map(function (row, index) { return { row: row, index: index, minutes: timeToMinutes(row[3]) }; })
+      .sort(function (a, b) {
+        if (a.minutes == null && b.minutes == null) return a.index - b.index;
+        if (a.minutes == null) return 1;
+        if (b.minutes == null) return -1;
+        return a.minutes - b.minutes || a.index - b.index;
+      })
+      .map(function (entry) { return entry.row; });
   }
 
   function rowSceneClass(context, status) {
@@ -126,14 +147,16 @@
 
   function tableCell(key, row, context) {
     const airline = airlineFromFlight(row[0]);
+    const fields = { logo: 'flight', airline: 'flight', destination: 'city', flight: 'flight', gate: 'gate', time: 'time', status: 'status' };
+    const field = ' data-field="' + (fields[key] || 'flight') + '"';
     switch (key) {
       case 'logo': return airlineLogoHTML(airline.code);
-      case 'airline': return '<span>' + escapeHTML(airline.name) + '</span>';
-      case 'destination': return '<span>' + escapeHTML(String(row[1]).replace(/\s*\([A-Z]{3}\)$/, '')) + '</span>';
-      case 'flight': return '<span>' + escapeHTML(row[0]) + '</span>';
-      case 'gate': return '<span class="fx-gate">' + escapeHTML(row[2]) + '</span>';
-      case 'time': return '<span>' + escapeHTML(row[3]) + '</span>';
-      default: return '<span class="' + statusClass(row[4]) + '">' + escapeHTML(row[4]) + '</span>';
+      case 'airline': return '<span' + field + '>' + escapeHTML(airline.name) + '</span>';
+      case 'destination': return '<span' + field + '>' + escapeHTML(String(row[1]).replace(/\s*\([A-Z]{3}\)$/, '')) + '</span>';
+      case 'flight': return '<span' + field + '>' + escapeHTML(row[0]) + '</span>';
+      case 'gate': return '<span class="fx-gate"' + field + '>' + escapeHTML(row[2]) + '</span>';
+      case 'time': return '<span' + field + '>' + escapeHTML(row[3]) + '</span>';
+      default: return '<span class="' + statusClass(row[4]) + '"' + field + '>' + escapeHTML(row[4]) + '</span>';
     }
   }
 
@@ -144,21 +167,35 @@
     const columns = TABLE_COLUMNS.filter(function (column) { return hidden[column.key] !== false; });
     const grid = 'grid-template-columns:' + columns.map(function (column) { return column.track; }).join(' ') + ';';
     const perPage = Math.min(12, Math.max(3, Number(module.props.maxRows) || 5));
-    const all = context.rows && context.rows[direction] || [];
-    const pages = Math.max(1, Math.ceil(all.length / perPage));
+    let indexed = (context.rows && context.rows[direction] || []).map(function (row, index) { return { row: row, index: index }; });
+    if (module.props.sort !== 'manual') {
+      indexed = indexed.slice().sort(function (a, b) {
+        const left = timeToMinutes(a.row[3]);
+        const right = timeToMinutes(b.row[3]);
+        if (left == null && right == null) return a.index - b.index;
+        if (left == null) return 1;
+        if (right == null) return -1;
+        return left - right || a.index - b.index;
+      });
+    }
+    const pages = Math.max(1, Math.ceil(indexed.length / perPage));
     const pageSeconds = Math.min(60, Math.max(3, Number(module.props.pageSeconds) || 8));
     const nowMs = Number.isFinite(context.nowMs) ? context.nowMs : Date.now();
     const page = pages > 1 ? Math.floor(nowMs / 1000 / pageSeconds) % pages : 0;
-    const source = all.slice(page * perPage, page * perPage + perPage);
+    const source = indexed.slice(page * perPage, page * perPage + perPage);
     const header = '<div class="fx-cols" style="' + grid + '">' + columns.map(function (column) { return '<span>' + column.label(arrivals) + '</span>'; }).join('') + '</div>';
-    let body = source.map(function (row) {
-      return '<div class="fx-row' + rowSceneClass(context, row[4]) + '" style="' + grid + '">' +
+    let body = source.map(function (entry) {
+      const row = entry.row;
+      const editRef = context.editing ? ' data-flight-index="' + entry.index + '"' : '';
+      return '<div class="fx-row' + rowSceneClass(context, row[4]) + '"' + editRef + ' style="' + grid + '">' +
         columns.map(function (column) { return tableCell(column.key, row, context); }).join('') + '</div>';
     }).join('');
     for (let filler = source.length; source.length && filler < perPage; filler += 1) body += '<div class="fx-row fx-row-blank"></div>';
     if (!source.length) body = '<div class="fx-empty">No scheduled flights</div>';
     const pager = pages > 1 ? '<span class="fx-page">PAGE ' + (page + 1) + ' / ' + pages + '</span>' : '';
-    return '<div class="fx-table' + surfaceClass(module) + '">' + header + body + pager + '</div>';
+    const editPill = context.editing && context.selectedId === module.id
+      ? '<button type="button" class="cm-edit-pill" data-edit-flights>✎ Edit flights</button>' : '';
+    return '<div class="fx-table' + surfaceClass(module) + '">' + header + body + pager + editPill + '</div>';
   }
 
   function advertisementContent(module, context) {
