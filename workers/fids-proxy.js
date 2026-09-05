@@ -2886,8 +2886,164 @@ function msyParseFeed(jsonText, dir, nowMs) {
 }
 __name(msyParseFeed, "msyParseFeed");
 
+// ── Iceland / UK / Washington batch (2026-09-05) ─────────────────────
+// KEF Keflavík — the dream feed: open JSON, CORS *, aircraft reg AND
+// type, gate/belt/stand/desk, UTC-Z times, IATA both ends. Direction is
+// which end equals KEF. Iceland stays on UTC all year.
+function kefParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.flights) ? j.flights : []);
+  for (const r of rows) {
+    if (!r || !r.flt) continue;
+    const isDep = String(r.origin_iata || "").toUpperCase() === "KEF";
+    const isArr = String(r.destination_iata || "").toUpperCase() === "KEF";
+    if (dir === "dep" ? !isDep : !isArr) continue;
+    const su = r.sched_time || "";
+    if (!su) continue;
+    const ts = Date.parse(su);
+    if (isNaN(ts)) continue;
+    const sched = localTimeObjFromTs("Atlantic/Reykjavik", ts);
+    const eu = r.expected_time || r.block_time;
+    const ets = eu ? Date.parse(eu) : NaN;
+    const revised = (!isNaN(ets) && ets !== ts) ? localTimeObjFromTs("Atlantic/Reykjavik", ets) : null;
+    let status = r.cancelled ? "cancelled" : yhzStatus(r.status || "");
+    const otherIata = (isDep ? r.destination_iata : r.origin_iata) || "";
+    const fl = authorityFlight({
+      dir, number: String(r.flt).replace(/\s+/g, "").toUpperCase(),
+      status,
+      homeIata: "KEF", homeIcao: "BIKF", homeName: "Keflavík",
+      gate: (r.gate || "").toString().trim() || null,
+      otherIata: otherIata.toString().toUpperCase() || null,
+      otherName: (isDep ? r.destination : r.origin) || null,
+      airlineIata: (r.flight_prefix || "").toString().toUpperCase() || null,
+      airlineName: r.airline_name || null,
+      aircraftModel: (r.aircraft_type || "").toString().trim() || null,
+      sched, revised
+    });
+    const homeSide = dir === "dep" ? fl.departure : fl.arrival;
+    if (r.stand) homeSide.terminal = String(r.stand);
+    if (dir === "arr" && r.belt) fl.arrival.baggageBelt = String(r.belt);
+    if (r.aircraft_reg) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = String(r.aircraft_reg); }
+    out.push(fl);
+  }
+  return out;
+}
+__name(kefParseFeed, "kefParseFeed");
+
+// EDI Edinburgh — open JSON with offset-bearing ISO times, aircraft
+// type, belt, arrival hall, callsign. One endpoint per direction.
+function ediParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.flights) ? j.flights : []);
+  for (const r of rows) {
+    if (!r || !r.flightNo) continue;
+    if (r.direction && (String(r.direction).toUpperCase() === "D") !== (dir === "dep")) continue;
+    const ts = r.scheduledDateTime ? Date.parse(r.scheduledDateTime) : NaN;
+    if (isNaN(ts)) continue;
+    const sched = localTimeObjFromTs("Europe/London", ts);
+    const eu = r.estimatedDateTime || r.actualDateTime;
+    const ets = eu ? Date.parse(eu) : NaN;
+    const revised = (!isNaN(ets) && ets !== ts) ? localTimeObjFromTs("Europe/London", ets) : null;
+    const ap = r.airport || {};
+    const al = r.airline || {};
+    const acRaw = (r.aircraftType || "").toString().replace(/\s+WINGLETS?$/i, "").trim();
+    const fl = authorityFlight({
+      dir, number: String(r.flightNo).replace(/\s+/g, "").toUpperCase(),
+      callSign: (r.callsign || "").toString().trim() || null,
+      status: yhzStatus(r.status || ""),
+      homeIata: "EDI", homeIcao: "EGPH", homeName: "Edinburgh",
+      gate: (r.gate || "").toString().trim() || null,
+      otherIata: ((ap.codes || {}).iata || "").toString().toUpperCase() || null,
+      otherName: ap.name || null,
+      airlineIata: ((al.codes || {}).iata || "").toString().toUpperCase() || null,
+      airlineName: al.name || null,
+      aircraftModel: acRaw || null,
+      sched, revised
+    });
+    if (dir === "arr" && r.baggageBelt != null) fl.arrival.baggageBelt = String(r.baggageBelt);
+    out.push(fl);
+  }
+  return out;
+}
+__name(ediParseFeed, "ediParseFeed");
+
+// DCA/IAD — the shared MWAA Drupal feed. One JSON with arrivals[] and
+// departures[] arrays; local ET strings with no offset; mwaaTime is the
+// revision. Parameterized by home code since Reagan and Dulles are byte
+// -identical in shape.
+const MWAA_STATUS = { INGATE: "arrived", ARRIVED: "arrived", INAIR: "active", ENROUTE: "active", SCHEDULED: "scheduled", DEPARTED: "departed", OUTGATE: "departed", CANCELLED: "cancelled", CANCELED: "cancelled", DELAYED: "delayed", DIVERTED: "diverted", BOARDING: "boarding" };
+function mwaaStatus(s) {
+  const k = String(s || "").toUpperCase().replace(/[^A-Z]/g, "");
+  return MWAA_STATUS[k] || yhzStatus(s);
+}
+__name(mwaaStatus, "mwaaStatus");
+function mwaaParseFeed(jsonText, dir, home, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = dir === "dep" ? (j.departures || []) : (j.arrivals || []);
+  const homeIcao = home === "DCA" ? "KDCA" : "KIAD";
+  const homeName = home === "DCA" ? "Washington" : "Dulles";
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    if (!r || !r.flightnumber) continue;
+    const code = (r.IATA || "").toString().toUpperCase();
+    const sched = localIsoObj("America/New_York", r.publishedTime);
+    if (!code || !sched) continue;
+    const rev = localIsoObj("America/New_York", r.mwaaTime || r.actualtime);
+    const revised = (rev && rev.ts !== sched.ts) ? settleRevised(rev, sched, "America/New_York") : null;
+    const isDep = dir === "dep";
+    const otherCode = isDep ? (r.arr_airport_code || "") : (r.dep_airport_code || "");
+    const fl = authorityFlight({
+      dir, number: `${code}${String(r.flightnumber).trim()}`,
+      status: mwaaStatus(r.mod_status || r.status || ""),
+      homeIata: home, homeIcao, homeName,
+      gate: (r.mod_gate || r.gate || "").toString().trim() || null,
+      otherIata: (otherCode && otherCode.toUpperCase() !== home) ? otherCode.toUpperCase() : (YHZ_CITY_IATA[String(r.city || "").toUpperCase()] || null),
+      otherName: r.city || null,
+      airlineIata: code, airlineName: r.airline || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    if (isDep && r.dep_terminal) homeSide.terminal = String(r.dep_terminal);
+    if (!isDep && r.arr_terminal) homeSide.terminal = String(r.arr_terminal);
+    if (!isDep && (r.claim || r.baggage)) fl.arrival.baggageBelt = String(r.claim || r.baggage);
+    out.push(fl);
+  }
+  return out;
+}
+__name(mwaaParseFeed, "mwaaParseFeed");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
+  kef: { tz: "Atlantic/Reykjavik", source: "kef-authority", list: async (dir, env) => {
+    const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "Atlantic/Reykjavik", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+    const gv = (t) => (dp.find((p) => p.type === t) || {}).value;
+    const today = `${gv("year")}-${gv("month")}-${gv("day")}`;
+    const tmw = new Date(Date.parse(today + "T12:00:00Z") + 864e5).toISOString().slice(0, 10);
+    const t = await fetchAuthorityText("kef/all", `https://fids.kefairport.is/api/flights?dateFrom=${today}T00:00&dateTo=${tmw}T23:59`, '"flt"', 90);
+    if (!t) return null;
+    const f = kefParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  edi: { tz: "Europe/London", source: "edi-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`edi/${dir}`, `https://flights-api.edinburghairport.com/flights/${dir === "dep" ? "departures" : "arrivals"}?version=2`, '"flightNo"', 90);
+    if (!t) return null;
+    const f = ediParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  dca: { tz: "America/New_York", source: "dca-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("dca/all", "https://www.flyreagan.com/arrivals-and-departures/json", '"flightnumber"', 90, { headers: { "Cookie": "flight-info=1" } });
+    if (!t) return null;
+    const f = mwaaParseFeed(t, dir, "DCA", Date.now());
+    return f.length ? f : null;
+  } },
+  iad: { tz: "America/New_York", source: "iad-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("iad/all", "https://www.flydulles.com/arrivals-and-departures/json", '"flightnumber"', 90, { headers: { "Cookie": "flight-info=1" } });
+    if (!t) return null;
+    const f = mwaaParseFeed(t, dir, "IAD", Date.now());
+    return f.length ? f : null;
+  } },
   pdx: { tz: "America/Los_Angeles", source: "pdx-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText("pdx/all", "https://www.flypdx.com/Flights/GetFlights", '"Flights"', 90);
     if (!t) return null;
@@ -5725,5 +5881,8 @@ export {
   dtwParseFeed,
   sanParseFeed,
   msyParseFeed,
+  kefParseFeed,
+  ediParseFeed,
+  mwaaParseFeed,
   windowTsIn
 };
