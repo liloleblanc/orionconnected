@@ -2720,8 +2720,200 @@ function yhmParseBoard(html, dir, nowMs) {
 }
 __name(yhmParseBoard, "yhmParseBoard");
 
+// ── US wave 2 (2026-09-05) ───────────────────────────────────────────
+// Small shared helper: parse an offset-less local ISO string as a wall
+// clock in the given zone (naive Date.parse would read it as UTC in the
+// Worker). Returns a time object or null.
+function localIsoObj(tz, s) {
+  const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
+  if (!m) return null;
+  if (/[Zz]|[+-]\d{2}:?\d{2}$/.test(String(s))) { const t = Date.parse(s); return isNaN(t) ? null : localTimeObjFromTs(tz, t); }
+  return localTimeObjIn(tz, Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5]));
+}
+__name(localIsoObj, "localIsoObj");
+// A revised time more than 12 h off schedule is the same wall clock on
+// the other side of midnight — nudge it a day toward schedule.
+function settleRevised(revised, sched, tz) {
+  if (!revised || !sched) return revised;
+  if (revised.ts - sched.ts > 432e5 || sched.ts - revised.ts > 432e5) {
+    const d = new Date(revised.ts + (revised.ts > sched.ts ? -864e5 : 864e5));
+    const p = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d);
+    const g = (t) => Number((p.find((x) => x.type === t) || {}).value);
+    return localTimeObjIn(tz, g("year"), g("month"), g("day"), g("hour") === 24 ? 0 : g("hour"), g("minute"));
+  }
+  return revised;
+}
+__name(settleRevised, "settleRevised");
+
+// PDX Portland — Port of Portland's in-house ASP.NET feed, one GET for
+// both directions and a multi-day window. Cities[] carries the IATA
+// code; gates are space-padded; StatusCode is a two-letter enum.
+const PDX_STATUS = { ON: "scheduled", DP: "departed", AR: "arrived", CX: "cancelled", DL: "delayed", DV: "diverted" };
+function pdxParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  for (const r of (Array.isArray(j.Flights) ? j.Flights : [])) {
+    if (!r) continue;
+    const isDep = String(r.ScheduleType || "").toUpperCase() === "D";
+    if ((dir === "dep") !== isDep) continue;
+    const code = (r.CarrierCode || "").toString().toUpperCase();
+    if (!code || r.FlightNo == null) continue;
+    const sched = localIsoObj("America/Los_Angeles", r.ScheduledTime);
+    if (!sched) continue;
+    const est = localIsoObj("America/Los_Angeles", r.ActualTime || r.EstimatedTime);
+    const revised = (est && est.ts !== sched.ts) ? est : null;
+    const city = (Array.isArray(r.Cities) && r.Cities.length) ? r.Cities[r.Cities.length - 1] : {};
+    const fl = authorityFlight({
+      dir, number: `${code}${r.FlightNo}`,
+      status: PDX_STATUS[String(r.StatusCode || "").toUpperCase()] || yhzStatus(r.StatusCode || ""),
+      homeIata: "PDX", homeIcao: "KPDX", homeName: "Portland",
+      gate: (r.Gate || "").toString().trim() || null,
+      otherIata: (city.Code || "").toString().toUpperCase() || null,
+      otherName: city.Name || null,
+      airlineIata: code, airlineName: r.CarrierName || null,
+      sched, revised
+    });
+    if (dir === "arr" && r.BagCarousel) fl.arrival.baggageBelt = String(r.BagCarousel).trim();
+    out.push(fl);
+  }
+  return out;
+}
+__name(pdxParseFeed, "pdxParseFeed");
+
+// DTW Detroit — Wayne County's proxy. ScheduledDateTime is a dummy
+// (0001-01-01) so EstimatedDateTime is the operative time; there's no
+// separate revision to show. Gate letter is the concourse.
+function dtwParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.Flights) ? j.Flights : []);
+  const isDep = dir === "dep";
+  for (const r of rows) {
+    if (!r) continue;
+    const wantType = isDep ? "Departure" : "Arrival";
+    if (r.FlightType && r.FlightType !== wantType) continue;
+    const num = (r.CombinedFlightNumber || ((r.AirLineCode || "") + (r.FlightNumber || ""))).toString().trim();
+    const sched = localIsoObj("America/Detroit", r.EstimatedDateTime);
+    if (!num || !sched) continue;
+    out.push(authorityFlight({
+      dir, number: num,
+      status: yhzStatus(r.PublicStatus || ""),
+      homeIata: "DTW", homeIcao: "KDTW", homeName: "Detroit",
+      gate: (r.Gate || "").toString().trim() || null,
+      otherIata: ((isDep ? r.ArrivalAirportCode : r.DepartureAirportCode) || "").toString().toUpperCase() || null,
+      otherName: (isDep ? r.ArrivalCity : r.DepartureCity) || null,
+      airlineIata: (r.AirLineCode || "").toString().toUpperCase() || null,
+      airlineName: r.AirLine || r.AirLineFullNameName || null,
+      sched, revised: null
+    }));
+  }
+  return out;
+}
+__name(dtwParseFeed, "dtwParseFeed");
+
+// SAN San Diego — Fruition JSON (public embedded x-api-key). Separate
+// FLIGHT_DATE + SCHEDULED_TIME; BAGGAGE_CLAIM encodes the terminal
+// ("T2-1" → terminal 2, claim 1); AIRCRAFT_REGISTRATION when present.
+function sanParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.flights) ? j.flights : []);
+  const isDep = dir === "dep";
+  for (const r of rows) {
+    if (!r) continue;
+    if (r.DIRECTION && (String(r.DIRECTION).toUpperCase() === "D") !== isDep) continue;
+    const code = (r.AIRLINE_CODE || "").toString().toUpperCase();
+    const dm = String(r.FLIGHT_DATE || "").match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    const tm = String(r.SCHEDULED_TIME || "").match(/^(\d{1,2}):(\d{2})$/);
+    if (!code || !r.FLIGHT_NUMBER || !dm || !tm) continue;
+    const sched = localTimeObjIn("America/Los_Angeles", Number(dm[3]), Number(dm[1]), Number(dm[2]), Number(tm[1]), Number(tm[2]));
+    let revised = null;
+    const am = String(r.ACTUAL_TIME || "").match(/^(\d{1,2}):(\d{2})$/);
+    if (am && (am[1] !== tm[1] || am[2] !== tm[2])) {
+      revised = settleRevised(localTimeObjIn("America/Los_Angeles", Number(dm[3]), Number(dm[1]), Number(dm[2]), Number(am[1]), Number(am[2])), sched, "America/Los_Angeles");
+    }
+    const claim = String(r.BAGGAGE_CLAIM || "");
+    const claimM = claim.match(/^T?(\d)-(\w+)$/);
+    const fl = authorityFlight({
+      dir, number: `${code}${String(r.FLIGHT_NUMBER).trim()}`,
+      status: yhzStatus(r.FLIGHT_STATUS || r.REMARKS || ""),
+      homeIata: "SAN", homeIcao: "KSAN", homeName: "San Diego",
+      gate: (r.GATE || "").toString().trim() || null,
+      otherIata: (r.AIRPORT_CODE || "").toString().toUpperCase() || null,
+      otherName: r.AIRPORT_CITY || null,
+      airlineIata: code, airlineName: r.AIRLINE_NAME || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    if (claimM) { homeSide.terminal = claimM[1]; if (!isDep) fl.arrival.baggageBelt = claimM[2]; }
+    if (r.AIRCRAFT_REGISTRATION) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = String(r.AIRCRAFT_REGISTRATION); }
+    out.push(fl);
+  }
+  return out;
+}
+__name(sanParseFeed, "sanParseFeed");
+
+// MSY New Orleans — a small WP-plugin JSON array, both directions.
+// scheduled_time and actual_time are local strings; the actual often
+// carries the wrong calendar day across midnight (settleRevised fixes).
+function msyParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.flights) ? j.flights : []);
+  const isDep = dir === "dep";
+  for (const r of rows) {
+    if (!r) continue;
+    if (r.type1 && (String(r.type1).toUpperCase() === "D") !== isDep) continue;
+    const code = (r.airline || "").toString().toUpperCase();
+    const sched = localIsoObj("America/Chicago", r.scheduled_time);
+    if (!code || !r.flight_number || !sched) continue;
+    let revised = localIsoObj("America/Chicago", r.actual_time);
+    revised = (revised && revised.ts !== sched.ts) ? settleRevised(revised, sched, "America/Chicago") : null;
+    const fl = authorityFlight({
+      dir, number: `${code}${String(r.flight_number).trim()}`,
+      status: yhzStatus(r.remarks || r.status || ""),
+      homeIata: "MSY", homeIcao: "KMSY", homeName: "New Orleans",
+      gate: (r.gate || "").toString().trim() || null,
+      otherIata: YHZ_CITY_IATA[String(r.city || "").toUpperCase().replace(/[`']/g, "")] || null,
+      otherName: r.city || null,
+      airlineIata: code, airlineName: (r.airline_name && r.airline_name !== code) ? r.airline_name : (AIRLINE_IATA_NAME[code] || null),
+      sched, revised
+    });
+    if (dir === "arr" && r.bags) fl.arrival.baggageBelt = String(r.bags);
+    out.push(fl);
+  }
+  return out;
+}
+__name(msyParseFeed, "msyParseFeed");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
+  pdx: { tz: "America/Los_Angeles", source: "pdx-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("pdx/all", "https://www.flypdx.com/Flights/GetFlights", '"Flights"', 90);
+    if (!t) return null;
+    const f = pdxParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  dtw: { tz: "America/Detroit", source: "dtw-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`dtw/${dir}`, `https://proxy.metroairport.com/FlightStatusProxy.ashx?method=${dir === "dep" ? "Departure" : "Arrival"}&pastHours=6&futureHours=24`, "CombinedFlightNumber", 90);
+    if (!t) return null;
+    const f = dtwParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  san: { tz: "America/Los_Angeles", source: "san-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`san/${dir}`, `https://app.flyfruition.com/api/public/san/flights?DIRECTION=${dir === "dep" ? "D" : "A"}`, '"FLIGHT_NUMBER"', 90, {
+      headers: { "x-api-key": "wq80fq129384hfg0", "Accept": "application/json" }
+    });
+    if (!t) return null;
+    const f = sanParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  msy: { tz: "America/Chicago", source: "msy-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("msy/all", "https://flymsy.com/wp-json/flight-status/flights", '"flight_number"', 90);
+    if (!t) return null;
+    const f = msyParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
   ylw: { tz: "America/Vancouver", source: "ylw-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText(`ylw/${dir}`, `https://kelprodylwfast01.blob.core.windows.net/$web/ylw/flights/${dir === "dep" ? "departures" : "arrivals"}.json`, "FlightNumber", 90);
     if (!t) return null;
@@ -5529,5 +5721,9 @@ export {
   yxxParseFeed,
   yqrParsePage,
   yhmParseBoard,
+  pdxParseFeed,
+  dtwParseFeed,
+  sanParseFeed,
+  msyParseFeed,
   windowTsIn
 };
