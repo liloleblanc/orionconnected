@@ -2391,8 +2391,198 @@ function phlParsePage(html, dir, nowMs) {
 }
 __name(phlParsePage, "phlParsePage");
 
+// ── West batch (2026-09-05 daytime shift) ────────────────────────────
+// YYC Calgary — DNN service whose body is JSON-encoded JSON (parse it
+// twice), 2,700+ rows, UTC+local pairs, gates, concourses, claim units.
+function yycParseFeed(rawText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(rawText); if (typeof j === "string") j = JSON.parse(j); } catch (e) { return out; }
+  const wantLeg = dir === "dep" ? "D" : "A";
+  for (const r of (Array.isArray(j) ? j : [])) {
+    if (!r || r.Leg !== wantLeg) continue;
+    if (r.Nature && r.Nature !== "J" && r.Nature !== "C") continue;   // their own app's filter
+    const code = (r.AirlineIATACode || r.AirlineCode || "").toString().toUpperCase();
+    const su = (r.ScheduledTimeUTC || "").toString().replace(" ", "T");
+    if (!code || !r.FlightNumber || !su) continue;
+    const ts = Date.parse(su);
+    if (isNaN(ts)) continue;
+    const sched = localTimeObjFromTs("America/Edmonton", ts);
+    const eu = ((r.ActualTimeUTC || r.EstimatedTimeUTC || "") + "").replace(" ", "T");
+    const ets = eu ? Date.parse(eu) : NaN;
+    const revised = (!isNaN(ets) && ets !== ts) ? localTimeObjFromTs("America/Edmonton", ets) : null;
+    const fl = authorityFlight({
+      dir, number: `${code}${String(r.FlightNumber).trim()}`,
+      status: yhzStatus(r.ShortPrimaryStatusTextEnglish || r.LongPrimaryStatusTextEnglish || ""),
+      homeIata: "YYC", homeIcao: "CYYC", homeName: "Calgary",
+      gate: (r.PrimaryGate || "").toString().trim() || null,
+      otherIata: (r.AirportCode || "").toString().toUpperCase() || null,
+      otherName: r.AirportName || null,
+      airlineIata: code, airlineName: r.AirlineName || null,
+      sched, revised
+    });
+    const homeSide = dir === "dep" ? fl.departure : fl.arrival;
+    if (r.Concourse) homeSide.terminal = String(r.Concourse);
+    if (dir === "arr" && r.ClaimUnit) fl.arrival.baggageBelt = String(r.ClaimUnit);
+    out.push(fl);
+  }
+  return out;
+}
+__name(yycParseFeed, "yycParseFeed");
+
+// SFO — flysfo.com's own on-site API (the old dev portal's successor,
+// zero auth): callsigns, gates, terminals, carousels, first/last bag,
+// ISO times with offsets. The 11 MB payload is the only catch — cache
+// hard and filter per direction.
+function sfoParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const want = dir === "dep" ? "Departure" : "Arrival";
+  for (const r of (Array.isArray(j.data) ? j.data : [])) {
+    if (!r || r.flight_kind !== want) continue;
+    const al = r.airline || {};
+    const code = (al.iata_code || "").toString().toUpperCase();
+    const su = r.scheduled_in_off_block_time || r.scheduled_aod_time;
+    if (!code || !r.flight_number || !su) continue;
+    const ts = Date.parse(su);
+    if (isNaN(ts)) continue;
+    const sched = localTimeObjFromTs("America/Los_Angeles", ts);
+    const eu = r.actual_in_off_block_time || r.actual_aod_time || r.estimated_in_off_block_time || r.estimated_aod_time;
+    const ets = eu ? Date.parse(eu) : NaN;
+    const revised = (!isNaN(ets) && ets !== ts) ? localTimeObjFromTs("America/Los_Angeles", ets) : null;
+    const ap = r.airport || {};
+    const acT = r.aircraft_transport_type;
+    const fl = authorityFlight({
+      dir, number: `${code}${String(r.flight_number).trim()}`,
+      callSign: (r.callsign || "").toString().trim() || null,
+      status: yhzStatus(r.remark || ""),
+      homeIata: "SFO", homeIcao: "KSFO", homeName: "San Francisco",
+      gate: ((r.gate || {}).gate_number || "").toString().trim() || null,
+      otherIata: (ap.iata_code || "").toString().toUpperCase() || null,
+      otherName: ap.airport_city || ap.airport_name || null,
+      airlineIata: code, airlineName: al.airline_display_name || al.airline_name || null,
+      aircraftModel: (typeof acT === "string" && acT.trim()) ? acT.trim() : null,
+      sched, revised
+    });
+    const homeSide = dir === "dep" ? fl.departure : fl.arrival;
+    const term = ((r.terminal || {}).terminal_code || "").toString();
+    if (term) homeSide.terminal = term.replace(/^T/i, "");
+    const car = ((r.baggage_carousel || {}).carousel_name || "").toString();
+    if (dir === "arr" && car) fl.arrival.baggageBelt = car.replace(/^CL-/i, "");
+    out.push(fl);
+  }
+  return out;
+}
+__name(sfoParseFeed, "sfoParseFeed");
+
+// SEA — Sea-Tac's Drupal flight-status page, server-rendered rows with a
+// per-row DATE column (mm-dd-yyyy) and 12-hour clocks. The page serves a
+// window of rows around now, which is exactly a board's appetite.
+function seaParsePage(html, dir, nowMs) {
+  const out = [];
+  const rows = String(html || "").match(/<tr[^>]*class="(?:ItemStyleClass|AltItemStyleClass)"[\s\S]*?<\/tr>/g)
+    || String(html || "").match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    if (row.indexOf("<th") !== -1) continue;
+    const cells = authorityCellsText(row);
+    if (cells.length < 6) continue;
+    const cityRaw = cells[0];
+    const nm = cells[2].replace(/\s+/g, "").match(/^([A-Z0-9]{2})(\d{1,4})$/);
+    const dm = cells[3].match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+    const tm = cells[4].match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (!nm || !dm || !tm) continue;
+    let hh = Number(tm[1]) % 12; if (/pm/i.test(tm[3])) hh += 12;
+    const sched = localTimeObjIn("America/Los_Angeles", Number(dm[3]), Number(dm[1]), Number(dm[2]), hh, Number(tm[2]));
+    const paren = cityRaw.match(/\(([A-Z]{3})\)/);
+    const fl = authorityFlight({
+      dir, number: `${nm[1]}${nm[2]}`,
+      status: yhzStatus(cells[5]),
+      homeIata: "SEA", homeIcao: "KSEA", homeName: "Seattle",
+      gate: (cells[6] || "").trim() || null,
+      otherIata: paren ? paren[1] : null,
+      otherName: cityRaw.replace(/\s*\([A-Z]{3}\)\s*/, "").trim() || null,
+      airlineIata: nm[1], airlineName: cells[1] || null,
+      sched, revised: null
+    });
+    if (dir === "arr" && cells[7] && /^\d{1,2}$/.test(cells[7].trim())) fl.arrival.baggageBelt = cells[7].trim();
+    out.push(fl);
+  }
+  return out;
+}
+__name(seaParsePage, "seaParsePage");
+
+// YVR — the Sitecore OData endpoint behind yvr.ca. Cloudflare 403s every
+// curl we tried, but the Worker's egress is a different animal: this
+// handler is the experiment. Schema reconstructed from an archived
+// capture, so every read is defensive; if the wall holds, the handler
+// stays silent forever and costs nothing.
+function yvrParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.value) ? j.value : []);
+  const want = dir === "dep" ? "D" : "A";
+  for (const r of rows) {
+    if (!r || String(r.FlightType || "").toUpperCase() !== want) continue;
+    const numRaw = (r.FlightNumber || "").toString().replace(/\s+/g, "");
+    const nm = numRaw.match(/^([A-Z0-9]{2})(\d{1,4})$/);
+    // Their timestamps carry no offset ("2026-09-05T16:25:00") — naive
+    // ISO parses as UTC in Workers and as system-local in node, so parse
+    // the components and pin them to Vancouver's wall clock explicitly.
+    const yvrTime = (s) => {
+      const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+      if (!m) return null;
+      if (/[Zz]|[+-]\d{2}:?\d{2}$/.test(String(s))) { const t = Date.parse(s); return isNaN(t) ? null : localTimeObjFromTs("America/Vancouver", t); }
+      return localTimeObjIn("America/Vancouver", Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5]));
+    };
+    const sched = yvrTime(r.FlightScheduledTime);
+    if (!nm || !sched) continue;
+    const est = yvrTime(r.FlightEstimatedTime);
+    const revised = (est && est.ts !== sched.ts) ? est : null;
+    const ts = sched.ts;
+    const fl = authorityFlight({
+      dir, number: numRaw,
+      status: yhzStatus(r.FlightStatus || r.FlightRemarks || ""),
+      homeIata: "YVR", homeIcao: "CYVR", homeName: "Vancouver",
+      gate: (r.FlightGate || "").toString().trim() || null,
+      otherIata: (r.FlightAirportCode || "").toString().toUpperCase() || null,
+      otherName: r.FlightCity || null,
+      airlineIata: nm[1], airlineName: r.FlightAirlineName || null,
+      sched, revised
+    });
+    const homeSide = dir === "dep" ? fl.departure : fl.arrival;
+    if (r.FlightRange) homeSide.terminal = String(r.FlightRange);
+    if (dir === "arr" && r.FlightCarousel) fl.arrival.baggageBelt = String(r.FlightCarousel);
+    out.push(fl);
+  }
+  return out;
+}
+__name(yvrParseFeed, "yvrParseFeed");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
+  yyc: { tz: "America/Edmonton", source: "yyc-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("yyc/all", `https://www.yyc.com/desktopmodules/YYC.ModulesDnn.YYC.Flights.Controllers/API/Flights/getFlights?${Date.now()}`, "AirlineIATACode", 150);
+    if (!t) return null;
+    const f = yycParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  sfo: { tz: "America/Los_Angeles", source: "sfo-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("sfo/all", "https://www.flysfo.com/flysfo/api/flight-status", '"flight_kind"', 180);
+    if (!t) return null;
+    const f = sfoParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  sea: { tz: "America/Los_Angeles", source: "sea-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`sea/${dir}`, `https://www.portseattle.org/sea-tac/flight-status?flightNo=&airline=&city=&arr_or_depart=${dir === "dep" ? "D" : "A"}&flight_date=`, "flight-status", 120);
+    if (!t) return null;
+    const f = seaParsePage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yvr: { tz: "America/Vancouver", source: "yvr-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("yvr/all", "https://www.yvr.ca/en/_api/Flights?$orderby=FlightScheduledTime", '"FlightType"', 120);
+    if (!t) return null;
+    const f = yvrParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
   bos: { tz: "America/New_York", source: "bos-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText(`bos/${dir}`, `https://www.massport.com/massport-flight-updates/flightdata/${dir === "dep" ? "departures" : "arrivals"}/bos`, '"Flights"', 90);
     if (!t) return null;
@@ -5144,5 +5334,9 @@ export {
   denParseFeed,
   ordParseFeed,
   phlParsePage,
+  yycParseFeed,
+  sfoParseFeed,
+  seaParsePage,
+  yvrParseFeed,
   windowTsIn
 };
