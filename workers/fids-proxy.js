@@ -1253,6 +1253,233 @@ function mcoToAdbFlight(f) {
 }
 __name(mcoToAdbFlight, "mcoToAdbFlight");
 
+// ════════════════════════════════════════════════════════════════════
+// YHZ AUTHORITY FEED (2026-09-04 — the night the AeroDataBox sub ended)
+// ════════════════════════════════════════════════════════════════════
+// Halifax Stanfield server-renders its complete departures/arrivals
+// tables straight into the page HTML — no API, no cookies, no special
+// headers (verified with a bare fetch: 89 rows, gates, expected+actual
+// times, statuses, and the airline IATA sitting in data-code="WS").
+// Served AT THE ADB WINDOW URL the boards already call
+// (/proxy/flights/airports/iata/YHZ/<from>/<to> and the bare form),
+// converted to ADB-native shape — the drop-in trick the MCO converter
+// established — so kiosks running year-old cached JS pick this up with
+// no client change and no FIDS_BUILD_TAG dance. On ANY failure (site
+// down, redesign, zero rows) the hook returns null and the caller falls
+// through to the real ADB passthrough: this path can never leave a
+// board worse off than the status quo.
+const YHZ_PAGES = {
+  dep: "https://halifaxstanfield.ca/flights/departures/",
+  arr: "https://halifaxstanfield.ca/flights/arrivals/"
+};
+// Destination cells carry a city NAME; the big ones append "(YYZ)" and
+// the parenthesised code always wins. This map covers the rest of the
+// YHZ route map so airline/route features keyed on IATA keep working;
+// an unknown city still renders fine by name.
+const YHZ_CITY_IATA = {
+  "TORONTO": "YYZ", "MONTREAL": "YUL", "OTTAWA": "YOW", "CALGARY": "YYC",
+  "EDMONTON": "YEG", "VANCOUVER": "YVR", "WINNIPEG": "YWG", "MONCTON": "YQM",
+  "ST. JOHN'S": "YYT", "SYDNEY": "YQY", "DEER LAKE": "YDF", "GANDER": "YQX",
+  "GOOSE BAY": "YYR", "CHARLOTTETOWN": "YYG", "FREDERICTON": "YFC",
+  "SAINT JOHN": "YSJ", "HAMILTON": "YHM", "KITCHENER-WATERLOO": "YKF",
+  "TORONTO/CITY CENTRE": "YTZ", "QUEBEC": "YQB", "QUEBEC CITY": "YQB",
+  "BOSTON": "BOS", "NEWARK": "EWR", "PHILADELPHIA": "PHL", "CHICAGO": "ORD",
+  "ORLANDO": "MCO", "FORT LAUDERDALE": "FLL", "TAMPA": "TPA",
+  "DUBLIN": "DUB", "PARIS": "CDG", "AMSTERDAM": "AMS", "LISBON": "LIS",
+  "MADRID BARAJAS APT": "MAD", "FRANKFURT": "FRA", "MUNICH": "MUC",
+  "ZURICH": "ZRH", "GLASGOW": "GLA", "MANCHESTER": "MAN", "REYKJAVIK": "KEF",
+  "CANCUN": "CUN", "PUNTA CANA": "PUJ", "MONTEGO BAY": "MBJ",
+  "VARADERO": "VRA", "CAYO COCO": "CCC", "HOLGUIN": "HOG", "SANTA CLARA": "SNU"
+};
+function yhzCellText(s) {
+  return String(s || "").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&")
+    .replace(/&#0?39;|&#8217;|&rsquo;/g, "'").replace(/’/g, "'")
+    .replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+}
+__name(yhzCellText, "yhzCellText");
+// Halifax's tables print HH:MM with no date and no offset. The offset is
+// probed per calendar day (at ~noon, so a 02:00 DST flip never lands on
+// the probe itself); rows then walk forward from "today in Halifax", and
+// a backwards jump of more than six hours means the table crossed
+// midnight into tomorrow.
+function yhzOffsetFor(y, mo, d) {
+  try {
+    const probe = new Date(Date.UTC(y, mo - 1, d, 15, 0, 0));
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Halifax", timeZoneName: "shortOffset" }).formatToParts(probe);
+    const tz = ((parts.find((p) => p.type === "timeZoneName") || {}).value || "");
+    const m = tz.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+    if (m) return `${m[1]}${m[2].padStart(2, "0")}:${m[3] || "00"}`;
+  } catch (e) {}
+  return "-03:00";
+}
+__name(yhzOffsetFor, "yhzOffsetFor");
+function yhzTimeObj(y, mo, d, hh, mm) {
+  const p2 = (n) => String(n).padStart(2, "0");
+  const norm = new Date(Date.UTC(y, mo - 1, d, 12));   // lets d be 0 or 32
+  y = norm.getUTCFullYear(); mo = norm.getUTCMonth() + 1; d = norm.getUTCDate();
+  const off = yhzOffsetFor(y, mo, d);
+  const ts = Date.parse(`${y}-${p2(mo)}-${p2(d)}T${p2(hh)}:${p2(mm)}:00${off}`);
+  const iso = new Date(ts).toISOString();
+  return {
+    local: `${y}-${p2(mo)}-${p2(d)} ${p2(hh)}:${p2(mm)}:00${off}`,
+    utc: iso.slice(0, 19).replace("T", " ") + "+00:00",
+    ts
+  };
+}
+__name(yhzTimeObj, "yhzTimeObj");
+function yhzStatus(txt) {
+  const s = String(txt || "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("delay")) return "delayed";
+  return "scheduled";   // ON TIME / EARLY / anything novel
+}
+__name(yhzStatus, "yhzStatus");
+// Parse one rendered board page into ADB-native flight objects. Exported
+// for the node test suite; `nowMs` is injected so tests are deterministic.
+// Each flight carries `_yhzTs` (home-side scheduled epoch ms) for the
+// window filter — the same private-field convention as `_mcoVia`.
+function yhzParseBoard(html, wantDep, nowMs) {
+  const out = [];
+  const rows = String(html || "").match(/<tr[^>]*class="table-row[^"]*"[\s\S]*?<\/tr>/g) || [];
+  // "Today" in Halifax, not in UTC — at 23:30 ADT those differ by a day.
+  const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Halifax", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+  const g = (t) => Number((dp.find((p) => p.type === t) || {}).value);
+  let y = g("year"), mo = g("month"), d = g("day");
+  let prevMin = null;
+  for (const row of rows) {
+    if (row.indexOf("<th") !== -1) continue;   // column-header row
+    const cells = {};
+    for (const m of row.matchAll(/<td[^>]*headers="([a-z-]+)"[\s\S]*?<\/td>/g)) cells[m[1]] = m[0];
+    const codeM = row.match(/data-code="([A-Z0-9]{2,3})"/);
+    const num = yhzCellText(cells["flight-number"]).replace(/\s+/g, "");
+    const expM = yhzCellText(cells["expected-time"]).match(/^(\d{1,2}):(\d{2})$/);
+    if (!codeM || !num || !expM) continue;
+    const eh = Number(expM[1]), em = Number(expM[2]);
+    const min = eh * 60 + em;
+    if (prevMin !== null && min < prevMin - 360) {   // table crossed midnight
+      const next = new Date(Date.UTC(y, mo - 1, d, 12) + 864e5);
+      y = next.getUTCFullYear(); mo = next.getUTCMonth() + 1; d = next.getUTCDate();
+    }
+    prevMin = min;
+    const sched = yhzTimeObj(y, mo, d, eh, em);
+    // Actual mirrors Expected until something really changes; only a
+    // differing value is a revision. An actual that lands >12h from the
+    // scheduled time is the same clock reading on the other side of
+    // midnight (23:55 → 00:20).
+    let revised = null;
+    const actM = yhzCellText(cells["actual-time"]).match(/^(\d{1,2}):(\d{2})$/);
+    if (actM && (Number(actM[1]) !== eh || Number(actM[2]) !== em)) {
+      let r = yhzTimeObj(y, mo, d, Number(actM[1]), Number(actM[2]));
+      if (r.ts - sched.ts > 432e5) r = yhzTimeObj(y, mo, d - 1, Number(actM[1]), Number(actM[2]));
+      else if (sched.ts - r.ts > 432e5) r = yhzTimeObj(y, mo, d + 1, Number(actM[1]), Number(actM[2]));
+      revised = r;
+    }
+    const locRaw = yhzCellText(cells["flight-from"]);
+    const paren = locRaw.match(/\(([A-Z]{3})\)\s*$/);
+    const cityName = locRaw.replace(/\s*\([A-Z]{3}\)\s*$/, "").trim();
+    const otherIata = paren ? paren[1] : (YHZ_CITY_IATA[cityName.toUpperCase()] || null);
+    const gate = yhzCellText(cells["gate"]).replace(/^Gate:\s*/i, "").trim() || null;
+    const status = yhzStatus(yhzCellText(cells["flight-status"]));
+    const airlineObj = { iata: codeM[1], icao: null, name: null };
+    const schedTime = { local: sched.local, utc: sched.utc };
+    const homeSide = {
+      airport: { iata: "YHZ", icao: "CYHZ", name: "Halifax" },
+      gate,
+      scheduledTime: schedTime,
+      ...(revised ? { revisedTime: { local: revised.local, utc: revised.utc } } : {}),
+      airline: airlineObj,
+      quality: ["Live"]
+    };
+    const otherSide = {
+      airport: { iata: otherIata, icao: null, name: cityName || null },
+      scheduledTime: schedTime,
+      airline: airlineObj,
+      quality: ["Live"]
+    };
+    out.push({
+      number: `${codeM[1]}${num}`,
+      callSign: null,
+      status,
+      codeshareStatus: "IsOperator",
+      isCargo: false,
+      departure: wantDep ? homeSide : otherSide,
+      arrival: wantDep ? otherSide : homeSide,
+      _yhzTs: sched.ts
+    });
+  }
+  return out;
+}
+__name(yhzParseBoard, "yhzParseBoard");
+// The board asks in Halifax-local "YYYY-MM-DDTHH:MM" (fmt12) — epoch it
+// with that day's offset so the window filter compares like with like.
+function yhzWindowTs(s) {
+  const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!m) return NaN;
+  return Date.parse(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${yhzOffsetFor(Number(m[1]), Number(m[2]), Number(m[3]))}`);
+}
+__name(yhzWindowTs, "yhzWindowTs");
+async function yhzFetchPage(kind) {
+  const cacheKey = new Request(`https://yhz-authority/${kind}`);
+  const cache = caches.default;
+  try {
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit.headers.get("X-Yhz-Neg") ? null : await hit.text();
+  } catch (e) {}
+  let html = null;
+  try {
+    const r = await fetch(YHZ_PAGES[kind], { headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; OrionConnected-FIDS/1.0; +https://fids.orionconnected.com)",
+      "Accept": "text/html"
+    } });
+    if (r.ok) html = await r.text();
+  } catch (e) {}
+  const good = html && html.indexOf('class="table-row') !== -1;
+  // 75 s positive / 30 s negative: screens polling together cost Halifax
+  // at most one page fetch a minute, and an outage is re-probed quickly.
+  try {
+    await cache.put(cacheKey, good
+      ? new Response(html, { headers: { "Cache-Control": "public, max-age=75" } })
+      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Yhz-Neg": "1" } }));
+  } catch (e) {}
+  return good ? html : null;
+}
+__name(yhzFetchPage, "yhzFetchPage");
+// The hook both ADB passthroughs try first. Returns a Response to serve,
+// or null to fall through to AeroDataBox untouched. The boards fetch two
+// 12-hour windows per direction and merge, so filtering to [from, to) is
+// what keeps a flight from appearing twice.
+async function maybeServeYhzAuthority(adbPath, url, origin) {
+  try {
+    const m = String(adbPath || "").match(/^flights\/airports\/iata\/yhz\/([^/]+)\/([^/?]+)$/i);
+    if (!m) return null;
+    const fromTs = yhzWindowTs(decodeURIComponent(m[1]));
+    const toTs = yhzWindowTs(decodeURIComponent(m[2]));
+    if (isNaN(fromTs) || isNaN(toTs)) return null;
+    const dir = String(url.searchParams.get("direction") || "Both");
+    const sides = [];
+    if (!/^arr/i.test(dir)) sides.push("dep");
+    if (!/^dep/i.test(dir)) sides.push("arr");
+    const body = {};
+    for (const kind of sides) {
+      const html = await yhzFetchPage(kind);
+      if (!html) return null;
+      const flights = yhzParseBoard(html, kind === "dep", Date.now());
+      if (!flights.length) return null;   // parse broke → let ADB answer
+      body[kind === "dep" ? "departures" : "arrivals"] =
+        flights.filter((f) => f._yhzTs >= fromTs && f._yhzTs < toTs);
+    }
+    return new Response(JSON.stringify(body), { headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=60",
+      "X-Feed-Source": "yhz-authority",
+      ...corsHeaders(origin)
+    } });
+  } catch (e) { return null; }
+}
+__name(maybeServeYhzAuthority, "maybeServeYhzAuthority");
+
 // GET /flights/mco?direction=dep|arr  (or Departure|Arrival)
 // Fetches the MCO vendor feed, filters to visible/non-deleted flights for
 // the requested direction, normalizes each into ADB-native shape, and
@@ -2371,6 +2598,8 @@ var fids_proxy_default = {
     }
     if (path.startsWith("/proxy/")) {
       const adbPath = path.replace("/proxy/", "");
+      const _yhzResp = await maybeServeYhzAuthority(adbPath, url, origin);
+      if (_yhzResp) return _yhzResp;
       const adbUrl = `https://aerodatabox.p.rapidapi.com/${adbPath}${url.search}`;
       try {
         const response = await fetch(adbUrl, {
@@ -3518,6 +3747,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // reaches ADB through that one, it just needs a pageSize parameter.)
     if (path.startsWith("/airports/") || path.startsWith("/flights/")
         || path.startsWith("/aircrafts/") || path.startsWith("/health/")) {
+      const _yhzResp = await maybeServeYhzAuthority(path.slice(1), url, origin);
+      if (_yhzResp) return _yhzResp;
       const adbUrl = `https://aerodatabox.p.rapidapi.com${path}${url.search}`;
       try {
         const response = await fetch(adbUrl, {
@@ -3784,5 +4015,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
   }
 };
 export {
-  fids_proxy_default as default
+  fids_proxy_default as default,
+  yhzParseBoard,
+  yhzWindowTs
 };
