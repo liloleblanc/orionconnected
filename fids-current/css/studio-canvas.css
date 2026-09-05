@@ -133,3 +133,7 @@
 .col-toggles{display:flex;flex-wrap:wrap;gap:5px}
 .col-chip{padding:4px 9px;border:1px solid var(--blue);border-radius:5px;background:#e8f1fd;color:var(--blue-ink);font-size:9.5px;font-weight:700;cursor:pointer}
 .col-chip.is-off{border-color:var(--line);background:var(--panel);color:var(--muted);text-decoration:line-through}
+
+/* Direct content editing on the canvas */
+.cm-edit-pill{position:absolute;right:1cqw;top:.8cqw;z-index:60;display:inline-flex;align-items:center;gap:.4cqw;padding:.55cqw 1.1cqw;border:0;border-radius:99px;background:var(--blue);color:#fff;font-weight:800;font-size:1cqw;cursor:pointer;box-shadow:0 .3cqw 1.2cqw rgba(0,0,0,.35)}
+.cm-edit-pill:hover{background:#1668c4}
