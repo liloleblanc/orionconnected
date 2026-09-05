@@ -1,0 +1,364 @@
+{
+ "flights": [
+  {
+   "key": "CYQM:dep:AC1983:2026-09-04",
+   "direction": "dep",
+   "received_at": "2026-09-04T09:01:43.833Z",
+   "source": "webhook",
+   "flight": {
+    "greatCircleDistance": {
+     "Meter": 1209700.47,
+     "Km": 1209.7,
+     "Mile": 751.67,
+     "Nm": 653.19,
+     "Feet": 3968833.57
+    },
+    "departure": {
+     "airport": {
+      "icao": "CYQM",
+      "iata": "YQM",
+      "name": "Moncton Greater",
+      "shortName": "Greater",
+      "municipalityName": "Moncton",
+      "location": {
+       "lat": 46.1122,
+       "lon": -64.6786
+      },
+      "countryCode": "CA",
+      "timeZone": "America/Moncton"
+     },
+     "scheduledTime": {
+      "utc": "2026-09-04 08:30Z",
+      "local": "2026-09-04 05:30-03:00"
+     },
+     "revisedTime": {
+      "utc": "2026-09-04 08:25Z",
+      "local": "2026-09-04 05:25-03:00"
+     },
+     "gate": "4",
+     "quality": [
+      0,
+      1
+     ]
+    },
+    "arrival": {
+     "airport": {
+      "icao": "CYYZ",
+      "iata": "YYZ",
+      "name": "Toronto Pearson",
+      "shortName": "Pearson",
+      "municipalityName": "Toronto",
+      "location": {
+       "lat": 43.6772,
+       "lon": -79.6306
+      },
+      "countryCode": "CA",
+      "timeZone": "America/Toronto"
+     },
+     "scheduledTime": {
+      "utc": "2026-09-04 10:46Z",
+      "local": "2026-09-04 06:46-04:00"
+     },
+     "revisedTime": {
+      "utc": "2026-09-04 10:46Z",
+      "local": "2026-09-04 06:46-04:00"
+     },
+     "terminal": "1",
+     "gate": "D51",
+     "baggageBelt": "3",
+     "quality": [
+      0,
+      1
+     ]
+    },
+    "lastUpdatedUtc": "2026-09-04 09:01Z",
+    "number": "AC 1983",
+    "callSign": "ROU1983",
+    "status": 2,
+    "codeshareStatus": 1,
+    "isCargo": false,
+    "aircraft": {
+     "reg": "C-FJOU",
+     "modeS": "C01945",
+     "model": "Airbus A321"
+    },
+    "airline": {
+     "name": "Air Canada",
+     "iata": "AC",
+     "icao": "ACA"
+    }
+   }
+  },
+  {
+   "key": "CYQM:arr:AC1984:2026-09-03",
+   "direction": "arr",
+   "received_at": "2026-09-03T20:53:10.967Z",
+   "source": "webhook",
+   "flight": {
+    "greatCircleDistance": {
+     "Meter": 1209700.47,
+     "Km": 1209.7,
+     "Mile": 751.67,
+     "Nm": 653.19,
+     "Feet": 3968833.57
+    },
+    "departure": {
+     "airport": {
+      "icao": "CYYZ",
+      "iata": "YYZ",
+      "name": "Toronto Pearson",
+      "shortName": "Pearson",
+      "municipalityName": "Toronto",
+      "location": {
+       "lat": 43.6772,
+       "lon": -79.6306
+      },
+      "countryCode": "CA",
+      "timeZone": "America/Toronto"
+     },
+     "scheduledTime": {
+      "utc": "2026-09-03 18:25Z",
+      "local": "2026-09-03 14:25-04:00"
+     },
+     "revisedTime": {
+      "utc": "2026-09-03 18:34Z",
+      "local": "2026-09-03 14:34-04:00"
+     },
+     "runwayTime": {
+      "utc": "2026-09-03 18:47Z",
+      "local": "2026-09-03 14:47-04:00"
+     },
+     "terminal": "1",
+     "gate": "D36",
+     "runway": "23",
+     "quality": [
+      0,
+      1
+     ]
+    },
+    "arrival": {
+     "airport": {
+      "icao": "CYQM",
+      "iata": "YQM",
+      "name": "Moncton Greater",
+      "shortName": "Greater",
+      "municipalityName": "Moncton",
+      "location": {
+       "lat": 46.1122,
+       "lon": -64.6786
+      },
+      "countryCode": "CA",
+      "timeZone": "America/Moncton"
+     },
+     "scheduledTime": {
+      "utc": "2026-09-03 20:28Z",
+      "local": "2026-09-03 17:28-03:00"
+     },
+     "revisedTime": {
+      "utc": "2026-09-03 20:30Z",
+      "local": "2026-09-03 17:30-03:00"
+     },
+     "gate": "4",
+     "quality": [
+      0,
+      1
+     ]
+    },
+    "lastUpdatedUtc": "2026-09-03 20:53Z",
+    "number": "AC 1984",
+    "callSign": "ROU1984",
+    "status": 9,
+    "codeshareStatus": 1,
+    "isCargo": false,
+    "aircraft": {
+     "reg": "C-GFDU",
+     "modeS": "C0523F",
+     "model": "Airbus A320"
+    },
+    "airline": {
+     "name": "Air Canada",
+     "iata": "AC",
+     "icao": "ACA"
+    }
+   }
+  },
+  {
+   "key": "CYQM:dep:AC1983:2026-09-04:cx",
+   "direction": "dep",
+   "received_at": "2026-09-04T09:01:43.833Z",
+   "source": "webhook",
+   "flight": {
+    "greatCircleDistance": {
+     "Meter": 1209700.47,
+     "Km": 1209.7,
+     "Mile": 751.67,
+     "Nm": 653.19,
+     "Feet": 3968833.57
+    },
+    "departure": {
+     "airport": {
+      "icao": "CYQM",
+      "iata": "YQM",
+      "name": "Moncton Greater",
+      "shortName": "Greater",
+      "municipalityName": "Moncton",
+      "location": {
+       "lat": 46.1122,
+       "lon": -64.6786
+      },
+      "countryCode": "CA",
+      "timeZone": "America/Moncton"
+     },
+     "scheduledTime": {
+      "utc": "2026-09-04 08:30Z",
+      "local": "2026-09-04 05:30-03:00"
+     },
+     "revisedTime": {
+      "utc": "2026-09-04 08:25Z",
+      "local": "2026-09-04 05:25-03:00"
+     },
+     "gate": "4",
+     "quality": [
+      0,
+      1
+     ]
+    },
+    "arrival": {
+     "airport": {
+      "icao": "CYYZ",
+      "iata": "YYZ",
+      "name": "Toronto Pearson",
+      "shortName": "Pearson",
+      "municipalityName": "Toronto",
+      "location": {
+       "lat": 43.6772,
+       "lon": -79.6306
+      },
+      "countryCode": "CA",
+      "timeZone": "America/Toronto"
+     },
+     "scheduledTime": {
+      "utc": "2026-09-04 10:46Z",
+      "local": "2026-09-04 06:46-04:00"
+     },
+     "revisedTime": {
+      "utc": "2026-09-04 10:46Z",
+      "local": "2026-09-04 06:46-04:00"
+     },
+     "terminal": "1",
+     "gate": "D51",
+     "baggageBelt": "3",
+     "quality": [
+      0,
+      1
+     ]
+    },
+    "lastUpdatedUtc": "2026-09-04 09:01Z",
+    "number": "AC 1983",
+    "callSign": "ROU1983",
+    "status": 10,
+    "codeshareStatus": 1,
+    "isCargo": false,
+    "aircraft": {
+     "reg": "C-FJOU",
+     "modeS": "C01945",
+     "model": "Airbus A321"
+    },
+    "airline": {
+     "name": "Air Canada",
+     "iata": "AC",
+     "icao": "ACA"
+    }
+   }
+  },
+  {
+   "key": "CYQM:dep:AC1983:2026-09-04:cs",
+   "direction": "dep",
+   "received_at": "2026-09-04T09:01:43.833Z",
+   "source": "webhook",
+   "flight": {
+    "greatCircleDistance": {
+     "Meter": 1209700.47,
+     "Km": 1209.7,
+     "Mile": 751.67,
+     "Nm": 653.19,
+     "Feet": 3968833.57
+    },
+    "departure": {
+     "airport": {
+      "icao": "CYQM",
+      "iata": "YQM",
+      "name": "Moncton Greater",
+      "shortName": "Greater",
+      "municipalityName": "Moncton",
+      "location": {
+       "lat": 46.1122,
+       "lon": -64.6786
+      },
+      "countryCode": "CA",
+      "timeZone": "America/Moncton"
+     },
+     "scheduledTime": {
+      "utc": "2026-09-04 08:30Z",
+      "local": "2026-09-04 05:30-03:00"
+     },
+     "revisedTime": {
+      "utc": "2026-09-04 08:25Z",
+      "local": "2026-09-04 05:25-03:00"
+     },
+     "gate": "4",
+     "quality": [
+      0,
+      1
+     ]
+    },
+    "arrival": {
+     "airport": {
+      "icao": "CYYZ",
+      "iata": "YYZ",
+      "name": "Toronto Pearson",
+      "shortName": "Pearson",
+      "municipalityName": "Toronto",
+      "location": {
+       "lat": 43.6772,
+       "lon": -79.6306
+      },
+      "countryCode": "CA",
+      "timeZone": "America/Toronto"
+     },
+     "scheduledTime": {
+      "utc": "2026-09-04 10:46Z",
+      "local": "2026-09-04 06:46-04:00"
+     },
+     "revisedTime": {
+      "utc": "2026-09-04 10:46Z",
+      "local": "2026-09-04 06:46-04:00"
+     },
+     "terminal": "1",
+     "gate": "D51",
+     "baggageBelt": "3",
+     "quality": [
+      0,
+      1
+     ]
+    },
+    "lastUpdatedUtc": "2026-09-04 09:01Z",
+    "number": "AC 1983",
+    "callSign": "ROU1983",
+    "status": 2,
+    "codeshareStatus": 2,
+    "isCargo": false,
+    "aircraft": {
+     "reg": "C-FJOU",
+     "modeS": "C01945",
+     "model": "Airbus A321"
+    },
+    "airline": {
+     "name": "Air Canada",
+     "iata": "AC",
+     "icao": "ACA"
+    }
+   }
+  }
+ ]
+}
