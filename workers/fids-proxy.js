@@ -1671,6 +1671,15 @@ const AIRLINE_NAME_IATA_SQUASHED = (() => {
   for (const k of Object.keys(AIRLINE_NAME_IATA)) m[k.replace(/\s+/g, "")] = AIRLINE_NAME_IATA[k];
   return m;
 })();
+// The reverse map, for feeds that print only a flight code — the boards
+// can then show a proper carrier name (Nick: Pascan on YSJ rendered
+// nameless; P6 really is Pascan, the YSJ–YHU operator, not Porter).
+const AIRLINE_IATA_NAME = {
+  AC: "Air Canada", PD: "Porter Airlines", WS: "WestJet", PB: "PAL Airlines",
+  P6: "Pascan Aviation", F8: "Flair Airlines", TS: "Air Transat", WG: "Sunwing",
+  RV: "Air Canada Rouge", PJ: "Air Saint-Pierre", DL: "Delta Air Lines",
+  UA: "United Airlines", AA: "American Airlines"
+};
 function authorityFlight(o) {
   const schedTime = { local: o.sched.local, utc: o.sched.utc };
   const airlineObj = { iata: o.airlineIata || null, icao: null, name: o.airlineName || null };
@@ -1834,7 +1843,8 @@ function ysjParsePage(html, dir, nowMs) {
       homeIata: "YSJ", homeIcao: "CYSJ", homeName: "Saint John",
       otherIata: pref ? pref[1] : (YHZ_CITY_IATA[cityName.toUpperCase()] || null),
       otherName: cityName,
-      airlineIata: nm[1], sched, revised
+      airlineIata: nm[1], airlineName: AIRLINE_IATA_NAME[nm[1]] || null,
+      sched, revised
     }));
   }
   return out;
@@ -2023,8 +2033,178 @@ function yegParseBoard(html, dir, nowMs) {
 }
 __name(yegParseBoard, "yegParseBoard");
 
+// ── LHR Heathrow — the pihub feed behind heathrow.com ────────────────
+// Full local day, both directions, ~2.4k records each. The entire lock
+// is one spoofed Origin header. Times come dated in UTC (sans Z) and
+// local; the status rides in aircraftMovementStatus with the revised
+// time inside the message ("Expected 04:37", "Landed 04:33, bags
+// delivered on belt 02" — the belt included). Operator rows only:
+// codeShareStatus NORMAL_FLIGHT.
+function lhrParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const arr = Array.isArray(j) ? j : [];
+  for (const rec of arr) {
+    const fs = rec && rec.flightService;
+    if (!fs || String(fs.codeShareStatus || "") !== "NORMAL_FLIGHT") continue;
+    const wantAD = dir === "dep" ? "D" : "A";
+    if (String(fs.arrivalOrDeparture || "") !== wantAD) continue;
+    const pocs = (((fs.aircraftMovement || {}).route || {}).portsOfCall) || [];
+    const home = pocs.find((p) => ((p.airportFacility || {}).iataIdentifier) === "LHR");
+    const others = pocs.filter((p) => p !== home && p.airportFacility);
+    const other = dir === "dep" ? others[others.length - 1] : others[0];
+    const schedRaw = (((home || {}).operatingTimes || {}).scheduled || {}).utc;
+    if (!home || !other || !schedRaw || !fs.iataFlightIdentifier) continue;
+    const schedTs = Date.parse(String(schedRaw).endsWith("Z") ? schedRaw : schedRaw + "Z");
+    if (isNaN(schedTs)) continue;
+    const sched = localTimeObjFromTs("Europe/London", schedTs);
+    const stat = ((fs.aircraftMovement || {}).aircraftMovementStatus || [])[0] || {};
+    const msg = String(stat.message || "");
+    let status = stat.statusCode === "CX" ? "cancelled"
+      : (stat.statusCode === "LD" || stat.statusCode === "LB") ? "arrived"
+      : yhzStatus(msg);
+    // "Expected 04:37" / "Departed 07:44" — the trailing clock is the
+    // revision when it differs from schedule (LHR local wall clock).
+    let revised = null;
+    const tmM = msg.match(/(\d{1,2}):(\d{2})/);
+    if (tmM) {
+      const sd = new Date(schedTs);
+      const p = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(sd);
+      const gv = (t) => Number((p.find((x) => x.type === t) || {}).value);
+      let r = localTimeObjIn("Europe/London", gv("year"), gv("month"), gv("day"), Number(tmM[1]), Number(tmM[2]));
+      if (r.ts - schedTs > 432e5) r = localTimeObjIn("Europe/London", gv("year"), gv("month"), gv("day") - 1, Number(tmM[1]), Number(tmM[2]));
+      else if (schedTs - r.ts > 432e5) r = localTimeObjIn("Europe/London", gv("year"), gv("month"), gv("day") + 1, Number(tmM[1]), Number(tmM[2]));
+      if (r.ts !== schedTs) revised = r;
+    }
+    const homeFac = home.airportFacility || {};
+    const term = ((homeFac.terminalFacility || {}).code || "").toString() || null;
+    const gateFac = (homeFac.terminalFacility || {}).gateFacility || {};
+    const gate = (gateFac.code || gateFac.gateNumber || gateFac.name || "").toString() || null;
+    const al = fs.airlineParty || {};
+    const acT = fs.aircraftTransport || {};
+    // "Airbus A330-200 Passenger" → the boards want the airframe, not the cabin.
+    const acModel = (acT.description || (acT.aircraftType || {}).name || acT.icaoTypeCode || "")
+      .toString().replace(/\s+(Passenger|Freighter)$/i, "") || null;
+    const beltM = msg.match(/belt\s+(\w+)/i);
+    const fl = authorityFlight({
+      dir, number: String(fs.iataFlightIdentifier).trim(),
+      callSign: (fs.icaoFlightIdentifier || "").toString().trim() || null,
+      status,
+      homeIata: "LHR", homeIcao: "EGLL", homeName: "London",
+      gate,
+      otherIata: (other.airportFacility.iataIdentifier || "").toString() || null,
+      otherName: ((other.airportFacility.airportCityLocation || {}).name || other.airportFacility.name || "").toString() || null,
+      airlineIata: (al.iataIdentifier || "").toString() || null,
+      airlineName: al.name || null,
+      aircraftModel: acModel,
+      sched, revised
+    });
+    const homeSide = dir === "dep" ? fl.departure : fl.arrival;
+    if (term) homeSide.terminal = term;
+    if (dir === "arr" && beltM) fl.arrival.baggageBelt = beltM[1].replace(/^0+(?=\d)/, "");
+    out.push(fl);
+  }
+  return out;
+}
+__name(lhrParseFeed, "lhrParseFeed");
+
+// ── DUB Dublin — api.dublinairport.com, zero auth, 10 rows a page ────
+// Rows carry everything a board wants (far-end IATA outright, ISO-Z
+// times, belts, terminals, gates on departures); the only work is
+// walking the cursor pagination politely and converting Z-times to
+// Dublin wall clock.
+function dubParseRows(rows, dir) {
+  const out = [];
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    if (!r || !r.flightIdentity || !r.scheduledDateTime) continue;
+    const schedTs = Date.parse(r.scheduledDateTime);
+    if (isNaN(schedTs)) continue;
+    const sched = localTimeObjFromTs("Europe/Dublin", schedTs);
+    let revised = null;
+    if (r.estimatedDateTime) {
+      const et = Date.parse(r.estimatedDateTime);
+      if (!isNaN(et) && et !== schedTs) revised = localTimeObjFromTs("Europe/Dublin", et);
+    }
+    let status = yhzStatus(String(r.statusMessage || ""));
+    if (status === "scheduled" && r.isDelayed === true) status = "delayed";
+    const fl = authorityFlight({
+      dir, number: String(r.flightIdentity).trim(),
+      status,
+      homeIata: "DUB", homeIcao: "EIDW", homeName: "Dublin",
+      gate: (r.gate || "").toString().trim() || null,
+      otherIata: (r.airportCode || "").toString().trim().toUpperCase() || null,
+      otherName: (dir === "dep" ? r.destinationAirportName : r.originAirportName) || null,
+      airlineIata: (r.carrierCode || "").toString().trim().toUpperCase() || null,
+      airlineName: r.carrierName || null,
+      sched, revised
+    });
+    const homeSide = dir === "dep" ? fl.departure : fl.arrival;
+    if (r.terminalName) homeSide.terminal = String(r.terminalName).replace(/^T/i, "");
+    if (dir === "arr" && r.baggageBelt) fl.arrival.baggageBelt = String(r.baggageBelt);
+    out.push(fl);
+  }
+  return out;
+}
+__name(dubParseRows, "dubParseRows");
+async function dubFetchAll(dir) {
+  const cacheKey = new Request(`https://authority-feeds/dub/${dir}`);
+  const cache = caches.default;
+  try {
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit.headers.get("X-Auth-Neg") ? null : JSON.parse(await hit.text());
+  } catch (e) {}
+  const kind = dir === "dep" ? "departures" : "arrivals";
+  const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const gv = (t) => (dp.find((p) => p.type === t) || {}).value;
+  const today = `${gv("year")}-${gv("month")}-${gv("day")}`;
+  const rows = [];
+  try {
+    // Today: walk up to 14 pages. Tomorrow: the first 6 cover the
+    // board's overnight lookahead. 10 rows a page, tiny responses.
+    for (const [date, maxPages] of [[today, 14], [new Date(Date.parse(today + "T12:00:00Z") + 864e5).toISOString().slice(0, 10), 6]]) {
+      let after = "", afterId = "";
+      for (let p = 0; p < maxPages; p++) {
+        const q = after ? `&after=${encodeURIComponent(after)}&after-id=${encodeURIComponent(afterId)}` : "";
+        const r = await fetch(`https://api.dublinairport.com/dap/flight-listing/${kind}?date=${date}${q}`, {
+          headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (compatible; OrionConnected-FIDS/1.0)" }
+        });
+        if (!r.ok) break;
+        const j = await r.json().catch(() => null);
+        const page = (j && Array.isArray(j.content)) ? j.content : [];
+        if (!page.length) break;
+        rows.push(...page);
+        const last = page[page.length - 1];
+        after = last.scheduledDateTime || ""; afterId = last.internalFlightId || "";
+        if (!after || !afterId || page.length < 10) break;
+      }
+    }
+  } catch (e) {}
+  const good = rows.length > 0;
+  try {
+    await cache.put(cacheKey, good
+      ? new Response(JSON.stringify(rows), { headers: { "Cache-Control": "public, max-age=120", "Content-Type": "application/json" } })
+      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1" } }));
+  } catch (e) {}
+  return good ? rows : null;
+}
+__name(dubFetchAll, "dubFetchAll");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
+  lhr: { tz: "Europe/London", source: "lhr-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`lhr/${dir}`, `https://api-dp-prod.dp.heathrow.com/pihub/flights/${dir === "dep" ? "departures" : "arrivals"}`, '"flightService"', 120, {
+      headers: { "Origin": "https://www.heathrow.com" }
+    });
+    if (!t) return null;
+    const f = lhrParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  dub: { tz: "Europe/Dublin", source: "dub-authority", list: async (dir, env) => {
+    const rows = await dubFetchAll(dir);
+    if (!rows) return null;
+    const f = dubParseRows(rows, dir);
+    return f.length ? f : null;
+  } },
   yow: { tz: "America/Toronto", source: "yow-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText("yow/all", "https://www.yow.ca/api/flights/get", '"departures"', 90);
     if (!t) return null;
@@ -4715,5 +4895,7 @@ export {
   yowParseFeed,
   yqbParseHits,
   yegParseBoard,
+  lhrParseFeed,
+  dubParseRows,
   windowTsIn
 };
