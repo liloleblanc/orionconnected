@@ -20762,7 +20762,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23327';
+var FIDS_BUILD_TAG = 'v23328';
 var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to main'
 (function(){
   try {
