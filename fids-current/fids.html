@@ -196,8 +196,14 @@
   <style>
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
-       heals display-collapsed banners and must not fight this. */
-    html:not([data-fids-chrome-ready]) .fids-banner { opacity: 0 !important; }
+       heals display-collapsed banners and must not fight this.
+       v23328 — and never an UNSTYLED banner: body[data-fids-banner] is the
+       attribute the silk/Acadian band keys off; absent, the CSS falls back
+       to the old 'tabs' tri-segment. It is now set at boot (init below), so
+       this second gate is a guarantee, not a delay — an unstyled banner
+       cannot paint even if something reveals the chrome before styling. */
+    html:not([data-fids-chrome-ready]) .fids-banner,
+    body:not([data-fids-banner]) .fids-banner { opacity: 0 !important; }
     .fids-banner { transition: opacity .3s; }
   </style>
   <script>
@@ -853,7 +859,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23327"></script>
+<script src="js/fids-core.js?v=23328"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -940,6 +946,22 @@ window.addEventListener("DOMContentLoaded", function() {
         applyAirportConfigToBoard(ap);
       }
     } catch(e) { console.error('[init] applyAirportConfigToBoard failed:', e); }
+    // v23328 — THE BANNER IS STYLED FROM THE FIRST FRAME, NOT THE FIRST ROW.
+    // _applyBannerStyle (which sets body[data-fids-banner] → silk / Acadian)
+    // only ever ran inside render(), AFTER render's early-return that fires
+    // while the first fetch is still pending. The v23324 20s reveal watchdog
+    // was tuned for an ~11s populate; with cyqm.ca firewalled, Moncton now
+    // burns three failing cyqm retries per direction first, so the watchdog
+    // routinely won the race and revealed a banner with NO style attribute —
+    // the base 'tabs' tri-segment look — over FETCHING LIVE DATA, then it
+    // snapped to silk once rows arrived (Nick: 'the old banner… doesn't stay
+    // there, it goes on to the regular board but it shouldn't happen'). The
+    // style needs no flight data — it resolves from the airport code and
+    // localStorage — so it belongs here at boot. Now whatever reveals the
+    // chrome, it reveals the right band.
+    try {
+      if (typeof _applyBannerStyle === 'function') _applyBannerStyle(ap, 'fids');
+    } catch(e) { console.error('[init] _applyBannerStyle failed:', e); }
 
     if (startMode === 'live') {
       LIVE_MODE = true;
