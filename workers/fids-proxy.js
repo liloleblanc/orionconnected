@@ -1661,10 +1661,16 @@ const AIRLINE_NAME_IATA = {
   "AIR CANADA": "AC", "AIR CANADA EXPRESS": "AC", "AIR CANADA ROUGE": "RV",
   "PORTER": "PD", "PORTER AIRLINES": "PD", "WESTJET": "WS", "WESTJET ENCORE": "WS",
   "PAL AIRLINES": "PB", "PROVINCIAL AIRLINES": "PB", "FLAIR": "F8", "FLAIR AIRLINES": "F8",
+  "WEST JET": "WS",   // Fredericton's site writes it as two words (Nick spotted WS795 losing its identity)
   "PASCAN": "P6", "PASCAN AVIATION": "P6", "AIR TRANSAT": "TS", "SUNWING": "WG",
   "AIR SAINT-PIERRE": "PJ", "UNITED": "UA", "UNITED AIRLINES": "UA",
   "DELTA": "DL", "DELTA AIR LINES": "DL", "AMERICAN AIRLINES": "AA", "AMERICAN": "AA"
 };
+const AIRLINE_NAME_IATA_SQUASHED = (() => {
+  const m = {};
+  for (const k of Object.keys(AIRLINE_NAME_IATA)) m[k.replace(/\s+/g, "")] = AIRLINE_NAME_IATA[k];
+  return m;
+})();
 function authorityFlight(o) {
   const schedTime = { local: o.sched.local, utc: o.sched.utc };
   const airlineObj = { iata: o.airlineIata || null, icao: null, name: o.airlineName || null };
@@ -1882,7 +1888,11 @@ function yfcParseBoard(html, dir, nowMs) {
         revised = r;
       }
       const carrier = p.cells[0], city = p.cells[2];
-      const code = AIRLINE_NAME_IATA[carrier.toUpperCase()] || null;
+      // Direct lookup, then space-squashed — "West Jet"/"WestJet",
+      // "Pal Airlines"/"PAL Airlines" and whatever spacing comes next.
+      const _cu = carrier.toUpperCase().trim();
+      const code = AIRLINE_NAME_IATA[_cu]
+        || AIRLINE_NAME_IATA_SQUASHED[_cu.replace(/\s+/g, "")] || null;
       out.push(authorityFlight({
         dir, number: code ? code + p.num : p.num, status: yhzStatus(p.cells[5]),
         homeIata: "YFC", homeIcao: "CYFC", homeName: "Fredericton",
