@@ -2973,6 +2973,9 @@ __name(ediParseFeed, "ediParseFeed");
 // departures[] arrays; local ET strings with no offset; mwaaTime is the
 // revision. Parameterized by home code since Reagan and Dulles are byte
 // -identical in shape.
+// MWAA's Akamai edge tends to challenge datacenter egress on the
+// OrionConnected UA; a mainstream browser UA gets the JSON through.
+const MWAA_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
 const MWAA_STATUS = { INGATE: "arrived", ARRIVED: "arrived", INAIR: "active", ENROUTE: "active", SCHEDULED: "scheduled", DEPARTED: "departed", OUTGATE: "departed", CANCELLED: "cancelled", CANCELED: "cancelled", DELAYED: "delayed", DIVERTED: "diverted", BOARDING: "boarding" };
 function mwaaStatus(s) {
   const k = String(s || "").toUpperCase().replace(/[^A-Z]/g, "");
@@ -3150,7 +3153,10 @@ async function manFetch(dir) {
   const op = dir === "dep" ? "searchDepartures" : "searchArrivals";
   const dtField = dir === "dep" ? "scheduledDepartureDateTime estimatedDepartureDateTime actualDepartureDateTime" : "scheduledArrivalDateTime estimatedArrivalDateTime actualArrivalDateTime";
   const apField = dir === "dep" ? "arrivalAirport" : "departureAirport";
-  const gateField = dir === "dep" ? "departureGate { name number } departureTerminal { name number }" : "arrivalGate { name number } arrivalTerminal { name number } arrivalBaggageClaim { number }";
+  // Gate is an object { name number }; terminal is a leaf String — a
+  // sub-selection on it fails the whole query (verified live: "Sub
+  // selection not allowed on leaf type String of field arrivalTerminal").
+  const gateField = dir === "dep" ? "departureGate { name number } departureTerminal" : "arrivalGate { name number } arrivalTerminal arrivalBaggageClaim { number }";
   const matchFields = dir === "dep" ? '["arrivalAirport.cityName","flightNumber"]' : '["departureAirport.cityName","flightNumber"]';
   const query = `query S($airportCode: String!, $range: DateRange!) { ${op}( tenant: $airportCode query: { match: "" fields: ${matchFields} range: $range } size: 400 from: 0 ) { ${dtField} status flightNumber ${apField} { name cityName code } airline { name code } ${gateField} } }`;
   let text = null;
@@ -3218,13 +3224,13 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   dca: { tz: "America/New_York", source: "dca-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText("dca/all", "https://www.flyreagan.com/arrivals-and-departures/json", '"flightnumber"', 90, { headers: { "Cookie": "flight-info=1" } });
+    const t = await fetchAuthorityText("dca/all", "https://www.flyreagan.com/arrivals-and-departures/json", '"flightnumber"', 90, { headers: { "Cookie": "flight-info=1", "User-Agent": MWAA_UA } });
     if (!t) return null;
     const f = mwaaParseFeed(t, dir, "DCA", Date.now());
     return f.length ? f : null;
   } },
   iad: { tz: "America/New_York", source: "iad-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText("iad/all", "https://www.flydulles.com/arrivals-and-departures/json", '"flightnumber"', 90, { headers: { "Cookie": "flight-info=1" } });
+    const t = await fetchAuthorityText("iad/all", "https://www.flydulles.com/arrivals-and-departures/json", '"flightnumber"', 90, { headers: { "Cookie": "flight-info=1", "User-Agent": MWAA_UA } });
     if (!t) return null;
     const f = mwaaParseFeed(t, dir, "IAD", Date.now());
     return f.length ? f : null;
