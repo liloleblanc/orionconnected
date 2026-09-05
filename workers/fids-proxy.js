@@ -3443,6 +3443,15 @@ async function maybeServeAuthorityWindow(adbPath, url, env, origin) {
   } catch (e) { return null; }
 }
 __name(maybeServeAuthorityWindow, "maybeServeAuthorityWindow");
+// True when the worker has an authority feed for this IATA (the registry
+// handlers plus the two bespoke ones, YHZ and YQM). Used by the dead-ADB
+// storm guard to tell "no feed for this airport" apart from "roster feed
+// momentarily returned nothing".
+function _authorityRosterHas(iata) {
+  const k = String(iata || "").toLowerCase();
+  return k === "yhz" || k === "yqm" || Object.prototype.hasOwnProperty.call(AUTHORITY_HANDLERS, k);
+}
+__name(_authorityRosterHas, "_authorityRosterHas");
 
 // GET /flights/mco?direction=dep|arr  (or Departure|Arrival)
 // Fetches the MCO vendor feed, filters to visible/non-deleted flights for
@@ -5776,6 +5785,42 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         || path.startsWith("/aircrafts/") || path.startsWith("/health/")) {
       const _authResp = await maybeServeAuthorityWindow(path.slice(1), url, env, origin);
       if (_authResp) return _authResp;
+      // ── DEAD-ADB STORM GUARD (2026-09-05) ───────────────────────────
+      // AeroDataBox is cancelled, so the passthrough below now 429s every
+      // call. Two board-breaking paths reach it:
+      //
+      // 1. A flight-window for an airport with NO authority feed (SJU and
+      //    any non-roster IATA). Relaying the 429 makes the client storm:
+      //    adbFetchWindow retries 2s/4s ×3, each hop through adbPacedFetch
+      //    retries the 429 again — ~75s of doomed calls ending in a LIVE
+      //    DATA ERROR panel (cold boot) or a blank board that re-storms
+      //    every poll. Answer a clean empty 200 instead: the client sees
+      //    r.ok + 0 rows and settles into the normal empty state, no retry.
+      //    Roster airports are untouched — maybeServeAuthorityWindow already
+      //    answered them; one whose feed momentarily returned null still
+      //    falls through to the 429, preserving its last-good render.
+      //
+      // 2. /airports/search/term — the old ADB autocomplete. Every 3+char
+      //    keystroke fired a doomed paced request; empty results (200) stop
+      //    the storm and the board's local airport list still fills the
+      //    dropdown.
+      if (path.startsWith("/airports/search/")) {
+        return new Response(JSON.stringify({ items: [] }), { headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=300",
+          "X-Feed-Source": "none-search",
+          ...corsHeaders(origin)
+        } });
+      }
+      const _win = path.match(/^\/flights\/airports\/iata\/([a-z0-9]{3})\//i);
+      if (_win && !_authorityRosterHas(_win[1])) {
+        return new Response(JSON.stringify({ departures: [], arrivals: [] }), { headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=120",
+          "X-Feed-Source": "none-nonroster",
+          ...corsHeaders(origin)
+        } });
+      }
       const adbUrl = `https://aerodatabox.p.rapidapi.com${path}${url.search}`;
       try {
         const response = await fetch(adbUrl, {
@@ -6078,5 +6123,6 @@ export {
   cltParseFeed,
   mciParseFeed,
   manParseFeed,
-  windowTsIn
+  windowTsIn,
+  _authorityRosterHas
 };
