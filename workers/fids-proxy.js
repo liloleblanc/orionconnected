@@ -1289,7 +1289,16 @@ const YHZ_CITY_IATA = {
   "MADRID BARAJAS APT": "MAD", "FRANKFURT": "FRA", "MUNICH": "MUC",
   "ZURICH": "ZRH", "GLASGOW": "GLA", "MANCHESTER": "MAN", "REYKJAVIK": "KEF",
   "CANCUN": "CUN", "PUNTA CANA": "PUJ", "MONTEGO BAY": "MBJ",
-  "VARADERO": "VRA", "CAYO COCO": "CCC", "HOLGUIN": "HOG", "SANTA CLARA": "SNU"
+  "VARADERO": "VRA", "CAYO COCO": "CCC", "HOLGUIN": "HOG", "SANTA CLARA": "SNU",
+  // Western Canada — the YEG/YQB boards speak in city names too.
+  "YELLOWKNIFE": "YZF", "FORT MCMURRAY": "YMM", "GRANDE PRAIRIE": "YQU",
+  "KELOWNA": "YLW", "VICTORIA": "YYJ", "SASKATOON": "YXE", "REGINA": "YQR",
+  "ABBOTSFORD": "YXX", "PRINCE GEORGE": "YXS", "LETHBRIDGE": "YQL",
+  "MEDICINE HAT": "YXH", "COMOX": "YQQ", "NANAIMO": "YCD", "KAMLOOPS": "YKA",
+  "TORONTO PEARSON": "YYZ", "DENVER": "DEN", "HOUSTON": "IAH", "MINNEAPOLIS": "MSP",
+  "SAN FRANCISCO": "SFO", "LOS ANGELES": "LAX", "LAS VEGAS": "LAS", "PHOENIX": "PHX",
+  "SEATTLE": "SEA", "PALM SPRINGS": "PSP", "SALT LAKE CITY": "SLC", "ATLANTA": "ATL",
+  "WASHINGTON": "IAD", "DETROIT": "DTW", "CHARLOTTE": "CLT"
 };
 function yhzCellText(s) {
   return String(s || "").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&")
@@ -1689,7 +1698,7 @@ __name(authorityFlight, "authorityFlight");
 // One cached page/payload fetch per source per TTL, however many screens
 // are polling. Negative results are cached briefly so an outage is
 // re-probed, not hammered.
-async function fetchAuthorityText(cachePath, srcUrl, marker, ttlS) {
+async function fetchAuthorityText(cachePath, srcUrl, marker, ttlS, fetchOpts) {
   const cacheKey = new Request(`https://authority-feeds/${cachePath}`);
   const cache = caches.default;
   try {
@@ -1698,9 +1707,11 @@ async function fetchAuthorityText(cachePath, srcUrl, marker, ttlS) {
   } catch (e) {}
   let text = null;
   try {
-    const r = await fetch(srcUrl, { headers: {
+    const opts = fetchOpts || {};
+    const r = await fetch(srcUrl, { ...opts, headers: {
       "User-Agent": "Mozilla/5.0 (compatible; OrionConnected-FIDS/1.0; +https://fids.orionconnected.com)",
-      "Accept": "text/html,application/json"
+      "Accept": "text/html,application/json",
+      ...(opts.headers || {})
     } });
     if (r.ok) text = await r.text();
   } catch (e) {}
@@ -1713,6 +1724,30 @@ async function fetchAuthorityText(cachePath, srcUrl, marker, ttlS) {
   return good ? text : null;
 }
 __name(fetchAuthorityText, "fetchAuthorityText");
+// Epoch-ms feeds (YQB's Algolia, and most of the US batch) — render the
+// airport's wall-clock local string from a timestamp.
+function localTimeObjFromTs(tz, ts) {
+  const d = new Date(ts);
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d);
+  const g = (t) => (parts.find((p) => p.type === t) || {}).value || "00";
+  let hh = g("hour"); if (hh === "24") hh = "00";
+  const off = tzOffsetFor(tz, Number(g("year")), Number(g("month")), Number(g("day")));
+  return {
+    local: `${g("year")}-${g("month")}-${g("day")} ${hh}:${g("minute")}:00${off}`,
+    utc: d.toISOString().slice(0, 19).replace("T", " ") + "+00:00",
+    ts
+  };
+}
+__name(localTimeObjFromTs, "localTimeObjFromTs");
+// "2026-09-03 10:10:00 PM" (YOW's format) → time object in a zone.
+function parse12hLocal(tz, s) {
+  const m = String(s || "").match(/(\d{4})-(\d{2})-(\d{2})\s+(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)/i);
+  if (!m) return null;
+  let hh = Number(m[4]) % 12;
+  if (/pm/i.test(m[6])) hh += 12;
+  return localTimeObjIn(tz, Number(m[1]), Number(m[2]), Number(m[3]), hh, Number(m[5]));
+}
+__name(parse12hLocal, "parse12hLocal");
 function authorityCellsText(row) {
   return [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) => yhzCellText(m[1]));
 }
@@ -1863,8 +1898,149 @@ function yfcParseBoard(html, dir, nowMs) {
 }
 __name(yfcParseBoard, "yfcParseBoard");
 
+// ── YOW Ottawa — yow.ca/api/flights/get ──────────────────────────────
+// Craft CMS JSON: three days of both directions keyed by date, full 12h
+// timestamps WITH dates, city IATA outright, gates, carousel strings,
+// bilingual labels. The easiest feed in the whole roster.
+function yowParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const days = (dir === "dep" ? j.departures : j.arrivals) || {};
+  for (const date of Object.keys(days)) {
+    for (const f of (Array.isArray(days[date]) ? days[date] : [])) {
+      if (!f || f.DisplayFlight === false) continue;
+      const sched = parse12hLocal("America/Toronto", f.SchedTime);
+      if (!sched || !f.MasterFlight) continue;
+      let revised = null;
+      const est = parse12hLocal("America/Toronto", f.EstTime);
+      if (est && est.ts !== sched.ts) revised = est;
+      const belt = (typeof f.ActualCarousels === "string" && f.ActualCarousels.trim()) ? f.ActualCarousels.trim() : null;
+      const fl = authorityFlight({
+        dir, number: String(f.MasterFlight).trim(), status: yhzStatus(f.Status),
+        homeIata: "YOW", homeIcao: "CYOW", homeName: "Ottawa",
+        gate: (f.ActualGate || "").toString().trim() || null,
+        otherIata: (f.IATA || "").toString().trim().toUpperCase() || null,
+        otherName: (f.ActualCities || "").toString().trim() || null,
+        airlineIata: (f.CarrierCode || "").toString().trim().toUpperCase() || null,
+        airlineName: f.AirlineName || null, sched, revised
+      });
+      if (dir === "arr" && belt) fl.arrival.baggageBelt = belt;
+      out.push(fl);
+    }
+  }
+  return out;
+}
+__name(yowParseFeed, "yowParseFeed");
+
+// ── YQB Québec — the site's own Algolia index ────────────────────────
+// Typed hits with epoch-ms times and, wonderfully, the AIRCRAFT NAME —
+// the first feed of the night to answer "what aircraft" outright. The
+// search key is the public one embedded in their own page; if it ever
+// rotates, the handler goes quiet and falls through.
+function yqbParseHits(jsonText, dir) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const hits = Array.isArray(j.hits) ? j.hits : [];
+  for (const h of hits) {
+    const isDep = String(h["@type"] || "").indexOf("Departure") !== -1;
+    if ((dir === "dep") !== isDep) continue;
+    const schedTs = isDep ? h.std : h.sta;
+    if (typeof schedTs !== "number" || !h.flightCode) continue;
+    const sched = localTimeObjFromTs("America/Toronto", schedTs);
+    const estTs = isDep ? (h.atd || h.etd) : (h.ata || h.eta);
+    const revised = (typeof estTs === "number" && estTs !== schedTs) ? localTimeObjFromTs("America/Toronto", estTs) : null;
+    const city = isDep ? h.destinationAirportCityName : h.originAirportCityName;
+    const fl = authorityFlight({
+      dir, number: String(h.flightCode).trim(),
+      status: yhzStatus(String(isDep ? h.departureStatus : h.arrivalStatus || "").replace(/_/g, " ")),
+      homeIata: "YQB", homeIcao: "CYQB", homeName: "Québec",
+      gate: (h.gate || "").toString().trim() || null,
+      otherIata: YHZ_CITY_IATA[String(city || "").toUpperCase()] || null,
+      otherName: city || null,
+      airlineIata: (h.airlineIataCode || "").toString().trim().toUpperCase() || null,
+      airlineName: h.airline || null,
+      aircraftModel: h.aircraftName || null,
+      sched, revised
+    });
+    if (dir === "arr" && h.carouselName) fl.arrival.baggageBelt = String(h.carouselName);
+    out.push(fl);
+  }
+  return out;
+}
+__name(yqbParseHits, "yqbParseHits");
+
+// ── YEG Edmonton — flyyeg.com SSR pages ──────────────────────────────
+// Inline ft-row span chains: "20:15, Sep 04" scheduled (a date — thank
+// you), the operator as the first flight-number list item, and a status
+// like "Delayed 20:45" that smuggles the revised time inside the words.
+function yegParseBoard(html, dir, nowMs) {
+  const out = [];
+  const chunks = String(html || "").split(/class="[^"]*ft-row/).slice(1);
+  for (const chunk of chunks) {
+    const sm = chunk.match(/table-heading">Scheduled<\/span>\s*(\d{1,2}):(\d{2}),\s*([A-Za-z]{3})\s+(\d{1,2})/);
+    const fm = chunk.match(/<li><span><strong>\s*([A-Z0-9]{2}\s?\d{1,4})\s*<\/strong><\/span>(?:<span[^>]*>([^<]*)<)?/);
+    if (!sm || !fm) continue;
+    const mo = AUTH_MONTHS[sm[3].toUpperCase()];
+    if (!mo) continue;
+    const y = nearestYear(mo, Number(sm[4]), nowMs);
+    const sched = localTimeObjIn("America/Edmonton", y, mo, Number(sm[4]), Number(sm[1]), Number(sm[2]));
+    const stM = chunk.match(/flight-status[^>]*>\s*([A-Za-z ]+?)(?:\s+(\d{1,2}):(\d{2}))?\s*</);
+    let revised = null;
+    if (stM && stM[2]) {
+      let r = localTimeObjIn("America/Edmonton", y, mo, Number(sm[4]), Number(stM[2]), Number(stM[3]));
+      if (r.ts - sched.ts > 432e5) r = localTimeObjIn("America/Edmonton", y, mo, Number(sm[4]) - 1, Number(stM[2]), Number(stM[3]));
+      else if (sched.ts - r.ts > 432e5) r = localTimeObjIn("America/Edmonton", y, mo, Number(sm[4]) + 1, Number(stM[2]), Number(stM[3]));
+      revised = r;
+    }
+    const city = (chunk.match(/ft-arr-dep[\s\S]*?<strong[^>]*>([^<]+)</) || [, ""])[1].trim();
+    const gv = (chunk.match(/ft-baggage-gate[\s\S]*?table-heading">([^<]*)<\/span>\s*([^<]*?)\s*</) || []);
+    const isGate = /gate/i.test(gv[1] || "");
+    const val = (gv[2] || "").trim() || null;
+    const number = fm[1].replace(/\s+/g, " ").trim();
+    const fl = authorityFlight({
+      dir, number, status: yhzStatus(stM ? stM[1] : ""),
+      homeIata: "YEG", homeIcao: "CYEG", homeName: "Edmonton",
+      gate: isGate ? val : null,
+      otherIata: YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city || null,
+      airlineIata: (number.match(/^([A-Z0-9]{2})/) || [])[1] || null,
+      airlineName: (fm[2] || "").trim() || null,
+      sched, revised
+    });
+    if (dir === "arr" && !isGate && val) fl.arrival.baggageBelt = val;
+    out.push(fl);
+  }
+  return out;
+}
+__name(yegParseBoard, "yegParseBoard");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
+  yow: { tz: "America/Toronto", source: "yow-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("yow/all", "https://www.yow.ca/api/flights/get", '"departures"', 90);
+    if (!t) return null;
+    const f = yowParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yqb: { tz: "America/Toronto", source: "yqb-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`yqb/${dir}`, "https://BIXSL0H900-dsn.algolia.net/1/indexes/prod_flights/query", '"hits"', 75, {
+      method: "POST",
+      headers: {
+        "X-Algolia-Application-Id": "BIXSL0H900",
+        "X-Algolia-API-Key": "1a34f337a4df0a05490762369415d365",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ query: "", hitsPerPage: 300, facetFilters: [[dir === "dep" ? "@type:.DepartureFlight" : "@type:.ArrivalFlight"]] })
+    });
+    if (!t) return null;
+    const f = yqbParseHits(t, dir);
+    return f.length ? f : null;
+  } },
+  yeg: { tz: "America/Edmonton", source: "yeg-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`yeg/${dir}`, `https://flyyeg.com/flights/${dir === "dep" ? "departures" : "arrivals"}/`, "ft-row", 90);
+    if (!t) return null;
+    const f = yegParseBoard(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
   yyt: { tz: "America/St_Johns", source: "yyt-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText(`yyt/${dir}`, `https://stjohnsairport.com/${dir === "dep" ? "dep" : "arr"}table.php?lang=en`, "tblData", 75);
     if (!t) return null;
@@ -4467,5 +4643,8 @@ export {
   yytParseTable,
   ysjParsePage,
   yfcParseBoard,
+  yowParseFeed,
+  yqbParseHits,
+  yegParseBoard,
   windowTsIn
 };
