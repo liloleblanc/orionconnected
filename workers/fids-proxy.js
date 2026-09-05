@@ -1590,11 +1590,333 @@ async function maybeServeYqmCache(adbPath, url, env, origin) {
   } catch (e) { return null; }
 }
 __name(maybeServeYqmCache, "maybeServeYqmCache");
-// One dispatcher for every airport served at the ADB window URL.
+// ════════════════════════════════════════════════════════════════════
+// GENERIC AUTHORITY-FEED MACHINERY (2026-09-05 overnight batch)
+// ════════════════════════════════════════════════════════════════════
+// With the AeroDataBox subscription gone, every airport we can moves to
+// its own authority's data, served AT THE ADB WINDOW URL — the YHZ/YQM
+// trick, generalized. Each handler fetches + parses one source, builds
+// ADB-native flights via authorityFlight(), and the registry dispatcher
+// window-filters per request. A handler that returns null (source down,
+// zero rows — for a scraped page zero usually means a redesign) falls
+// through to the ADB passthrough untouched.
+function tzOffsetFor(tz, y, mo, d) {
+  try {
+    const probe = new Date(Date.UTC(y, mo - 1, d, 15, 0, 0));
+    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: tz, timeZoneName: "shortOffset" }).formatToParts(probe);
+    const name = ((parts.find((p) => p.type === "timeZoneName") || {}).value || "");
+    const m = name.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+    if (m) return `${m[1]}${m[2].padStart(2, "0")}:${m[3] || "00"}`;
+  } catch (e) {}
+  return "+00:00";
+}
+__name(tzOffsetFor, "tzOffsetFor");
+function localTimeObjIn(tz, y, mo, d, hh, mm) {
+  const p2 = (n) => String(n).padStart(2, "0");
+  const norm = new Date(Date.UTC(y, mo - 1, d, 12));
+  y = norm.getUTCFullYear(); mo = norm.getUTCMonth() + 1; d = norm.getUTCDate();
+  const off = tzOffsetFor(tz, y, mo, d);
+  const ts = Date.parse(`${y}-${p2(mo)}-${p2(d)}T${p2(hh)}:${p2(mm)}:00${off}`);
+  const iso = new Date(ts).toISOString();
+  return {
+    local: `${y}-${p2(mo)}-${p2(d)} ${p2(hh)}:${p2(mm)}:00${off}`,
+    utc: iso.slice(0, 19).replace("T", " ") + "+00:00",
+    ts
+  };
+}
+__name(localTimeObjIn, "localTimeObjIn");
+// fmt12 sends window bounds in the AIRPORT'S local clock; parse them in
+// that airport's zone (Newfoundland's half-hour offset included).
+function windowTsIn(tz, s) {
+  const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!m) return NaN;
+  return Date.parse(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${tzOffsetFor(tz, Number(m[1]), Number(m[2]), Number(m[3]))}`);
+}
+__name(windowTsIn, "windowTsIn");
+// A month-day with no year: the year that lands nearest to now wins,
+// which handles a board read across New Year without a special case.
+function nearestYear(mo, d, nowMs) {
+  const yNow = new Date(nowMs).getUTCFullYear();
+  let best = yNow, bestGap = Infinity;
+  for (const y of [yNow - 1, yNow, yNow + 1]) {
+    const gap = Math.abs(Date.UTC(y, mo - 1, d, 12) - nowMs);
+    if (gap < bestGap) { bestGap = gap; best = y; }
+  }
+  return best;
+}
+__name(nearestYear, "nearestYear");
+const AUTH_MONTHS = { JAN: 1, FEB: 2, MAR: 3, APR: 4, MAY: 5, JUN: 6, JUL: 7, AUG: 8, SEP: 9, OCT: 10, NOV: 11, DEC: 12 };
+// Small airports print the carrier's NAME, not its code; the boards key
+// everything (logos, colours) on the IATA prefix of the flight number.
+const AIRLINE_NAME_IATA = {
+  "AIR CANADA": "AC", "AIR CANADA EXPRESS": "AC", "AIR CANADA ROUGE": "RV",
+  "PORTER": "PD", "PORTER AIRLINES": "PD", "WESTJET": "WS", "WESTJET ENCORE": "WS",
+  "PAL AIRLINES": "PB", "PROVINCIAL AIRLINES": "PB", "FLAIR": "F8", "FLAIR AIRLINES": "F8",
+  "PASCAN": "P6", "PASCAN AVIATION": "P6", "AIR TRANSAT": "TS", "SUNWING": "WG",
+  "AIR SAINT-PIERRE": "PJ", "UNITED": "UA", "UNITED AIRLINES": "UA",
+  "DELTA": "DL", "DELTA AIR LINES": "DL", "AMERICAN AIRLINES": "AA", "AMERICAN": "AA"
+};
+function authorityFlight(o) {
+  const schedTime = { local: o.sched.local, utc: o.sched.utc };
+  const airlineObj = { iata: o.airlineIata || null, icao: null, name: o.airlineName || null };
+  const homeSide = {
+    airport: { iata: o.homeIata, icao: o.homeIcao || null, name: o.homeName || null },
+    ...(o.gate ? { gate: o.gate } : {}),
+    scheduledTime: schedTime,
+    ...(o.revised ? { revisedTime: { local: o.revised.local, utc: o.revised.utc } } : {}),
+    airline: airlineObj,
+    quality: ["Live"]
+  };
+  const otherSide = {
+    airport: { iata: o.otherIata || null, icao: null, name: o.otherName || null },
+    scheduledTime: schedTime,
+    airline: airlineObj,
+    quality: ["Live"]
+  };
+  return {
+    number: o.number,
+    callSign: o.callSign || null,
+    status: o.status,
+    codeshareStatus: "IsOperator",
+    isCargo: false,
+    ...(o.aircraftModel ? { aircraft: { model: o.aircraftModel } } : {}),
+    departure: o.dir === "dep" ? homeSide : otherSide,
+    arrival: o.dir === "dep" ? otherSide : homeSide,
+    _authTs: o.sched.ts
+  };
+}
+__name(authorityFlight, "authorityFlight");
+// One cached page/payload fetch per source per TTL, however many screens
+// are polling. Negative results are cached briefly so an outage is
+// re-probed, not hammered.
+async function fetchAuthorityText(cachePath, srcUrl, marker, ttlS) {
+  const cacheKey = new Request(`https://authority-feeds/${cachePath}`);
+  const cache = caches.default;
+  try {
+    const hit = await cache.match(cacheKey);
+    if (hit) return hit.headers.get("X-Auth-Neg") ? null : await hit.text();
+  } catch (e) {}
+  let text = null;
+  try {
+    const r = await fetch(srcUrl, { headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; OrionConnected-FIDS/1.0; +https://fids.orionconnected.com)",
+      "Accept": "text/html,application/json"
+    } });
+    if (r.ok) text = await r.text();
+  } catch (e) {}
+  const good = text && (!marker || text.indexOf(marker) !== -1);
+  try {
+    await cache.put(cacheKey, good
+      ? new Response(text, { headers: { "Cache-Control": `public, max-age=${ttlS}` } })
+      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1" } }));
+  } catch (e) {}
+  return good ? text : null;
+}
+__name(fetchAuthorityText, "fetchAuthorityText");
+function authorityCellsText(row) {
+  return [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) => yhzCellText(m[1]));
+}
+__name(authorityCellsText, "authorityCellsText");
+
+// ── YYT St. John's — stjohnsairport.com dep/arrtable.php fragments ───
+// The richest of the Atlantic feeds: airline IATA in the logo filename,
+// the ICAO callsign in the FlightAware link, the city's IATA in a title
+// attribute, a per-row date, and a revised-time column. Newfoundland
+// runs on the half-hour (America/St_Johns).
+function yytParseTable(html, dir, nowMs) {
+  const out = [];
+  const rows = String(html || "").match(/<tr class="group[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    const code = (row.match(/ALimg\/([A-Z0-9]{2,3})\.png/) || [])[1] || null;
+    const alName = (row.match(/<td class="airline">[\s\S]*?title="([^"]+)"/) || [])[1] || null;
+    const num = (row.match(/class="flight-num">[\s\S]*?>\s*([A-Z0-9]{3,8})\s*<\/a>/) || [])[1];
+    const callSign = (row.match(/flightaware\.com\/live\/flight\/([A-Z0-9]+)/) || [])[1] || null;
+    const dm = row.match(/class="date">\s*(\d{1,2})\s+([A-Za-z]{3})/);
+    const tm = row.match(/class="time">\s*(\d{1,2}):(\d{2})/);
+    const rv = row.match(/class="revised">\s*(\d{1,2}):(\d{2})/);
+    const cm = row.match(/class="city"><span(?:\s+title="([A-Z]{3})")?[^>]*>([^<]+)/);
+    const st = (row.match(/class="[^"]*status"[^>]*>\s*([^<]+?)\s*</) || [])[1] || "";
+    if (!num || !dm || !tm) continue;
+    const mo = AUTH_MONTHS[dm[2].toUpperCase()];
+    if (!mo) continue;
+    const y = nearestYear(mo, Number(dm[1]), nowMs);
+    const sched = localTimeObjIn("America/St_Johns", y, mo, Number(dm[1]), Number(tm[1]), Number(tm[2]));
+    let revised = null;
+    if (rv && (rv[1] !== tm[1] || rv[2] !== tm[2])) {
+      let r = localTimeObjIn("America/St_Johns", y, mo, Number(dm[1]), Number(rv[1]), Number(rv[2]));
+      if (r.ts - sched.ts > 432e5) r = localTimeObjIn("America/St_Johns", y, mo, Number(dm[1]) - 1, Number(rv[1]), Number(rv[2]));
+      else if (sched.ts - r.ts > 432e5) r = localTimeObjIn("America/St_Johns", y, mo, Number(dm[1]) + 1, Number(rv[1]), Number(rv[2]));
+      revised = r;
+    }
+    out.push(authorityFlight({
+      dir, number: num, callSign, status: yhzStatus(st),
+      homeIata: "YYT", homeIcao: "CYYT", homeName: "St. John's",
+      otherIata: (cm && cm[1]) || null, otherName: cm ? cm[2].trim() : null,
+      airlineIata: code, airlineName: alName, sched, revised
+    }));
+  }
+  return out;
+}
+__name(yytParseTable, "yytParseTable");
+
+// ── YSJ Saint John — ysjsaintjohn.ca/flights/ (one page, two tables) ─
+// Table class carries the direction; rows carry M/D dates outright.
+// City sometimes arrives as "YHU-Montréal" — code first, name after.
+function ysjParsePage(html, dir, nowMs) {
+  const out = [];
+  const want = dir === "dep" ? "departures" : "arrivals";
+  const tm = String(html || "").match(new RegExp('<table class="flight-table ' + want + '"[\\s\\S]*?<\\/table>'));
+  if (!tm) return out;
+  const rows = tm[0].match(/<tr>[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    if (row.indexOf("<th") !== -1) continue;
+    const cells = authorityCellsText(row);
+    if (cells.length < 5) continue;
+    const num = cells[0].replace(/\s+/g, "");
+    const nm = num.match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])(\d{1,4})$/);
+    const sm = cells[2].match(/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if (!nm || !sm) continue;
+    const y = nearestYear(Number(sm[1]), Number(sm[2]), nowMs);
+    const sched = localTimeObjIn("America/Halifax", y, Number(sm[1]), Number(sm[2]), Number(sm[3]), Number(sm[4]));
+    let revised = null;
+    const am = cells[3].match(/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if (am && cells[3] !== cells[2]) {
+      const ry = nearestYear(Number(am[1]), Number(am[2]), nowMs);
+      revised = localTimeObjIn("America/Halifax", ry, Number(am[1]), Number(am[2]), Number(am[3]), Number(am[4]));
+    }
+    const city = cells[1];
+    const pref = city.match(/^([A-Z]{3})\s*-\s*(.+)$/);
+    const cityName = pref ? pref[2].trim() : city;
+    const status = (row.match(/class="status-en">\s*([^<]+?)\s*</) || [, ""])[1];
+    out.push(authorityFlight({
+      dir, number: num, status: yhzStatus(status),
+      homeIata: "YSJ", homeIcao: "CYSJ", homeName: "Saint John",
+      otherIata: pref ? pref[1] : (YHZ_CITY_IATA[cityName.toUpperCase()] || null),
+      otherName: cityName,
+      airlineIata: nm[1], sched, revised
+    }));
+  }
+  return out;
+}
+__name(ysjParsePage, "ysjParsePage");
+
+// ── YFC Fredericton — yfcfredericton.ca SSR pages ────────────────────
+// Every data row wears class="arrivals" on BOTH pages (their CSS, not a
+// direction signal — the URL is the direction). Times are HH:MM with no
+// date, so the same midnight walk as Halifax applies; the carrier is a
+// display name mapped back to its IATA prefix.
+function yfcParseBoard(html, dir, nowMs) {
+  const rows = String(html || "").match(/<tr class="arrivals"[\s\S]*?<\/tr>/g) || [];
+  const parsed = [];
+  for (const row of rows) {
+    const cells = authorityCellsText(row);
+    if (cells.length < 6) continue;
+    const sm = cells[3].match(/^(\d{1,2}):(\d{2})$/);
+    const num = cells[1].replace(/\D+/g, "");
+    if (!num || !sm) continue;
+    parsed.push({ cells, num, eh: Number(sm[1]), em: Number(sm[2]) });
+  }
+  if (!parsed.length) return [];
+  const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Halifax", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+  const g = (t) => Number((dp.find((p) => p.type === t) || {}).value);
+  // Two passes over the dateless times. Pass one: the usual midnight
+  // walk from "today". But late at night this page lists ONLY tomorrow's
+  // flights (today's are done and gone), and the walk would then date the
+  // whole board into the past — a live departures board can never be
+  // entirely behind us, so if it comes out that way, redo the walk from
+  // tomorrow (baseOffset 1).
+  const build = (baseOffset) => {
+    const base = new Date(Date.UTC(g("year"), g("month") - 1, g("day"), 12) + baseOffset * 864e5);
+    let y = base.getUTCFullYear(), mo = base.getUTCMonth() + 1, d = base.getUTCDate();
+    let prevMin = null;
+    const out = [];
+    for (const p of parsed) {
+      const min = p.eh * 60 + p.em;
+      if (prevMin !== null && min < prevMin - 360) {
+        const next = new Date(Date.UTC(y, mo - 1, d, 12) + 864e5);
+        y = next.getUTCFullYear(); mo = next.getUTCMonth() + 1; d = next.getUTCDate();
+      }
+      prevMin = min;
+      const sched = localTimeObjIn("America/Halifax", y, mo, d, p.eh, p.em);
+      let revised = null;
+      const am = p.cells[4].match(/^(\d{1,2}):(\d{2})$/);
+      if (am && (Number(am[1]) !== p.eh || Number(am[2]) !== p.em)) {
+        let r = localTimeObjIn("America/Halifax", y, mo, d, Number(am[1]), Number(am[2]));
+        if (r.ts - sched.ts > 432e5) r = localTimeObjIn("America/Halifax", y, mo, d - 1, Number(am[1]), Number(am[2]));
+        else if (sched.ts - r.ts > 432e5) r = localTimeObjIn("America/Halifax", y, mo, d + 1, Number(am[1]), Number(am[2]));
+        revised = r;
+      }
+      const carrier = p.cells[0], city = p.cells[2];
+      const code = AIRLINE_NAME_IATA[carrier.toUpperCase()] || null;
+      out.push(authorityFlight({
+        dir, number: code ? code + p.num : p.num, status: yhzStatus(p.cells[5]),
+        homeIata: "YFC", homeIcao: "CYFC", homeName: "Fredericton",
+        otherIata: YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city,
+        airlineIata: code, airlineName: carrier, sched, revised
+      }));
+    }
+    return out;
+  };
+  let out = build(0);
+  if (out.length && Math.max(...out.map((f) => f._authTs)) < nowMs - 2 * 3600e3) out = build(1);
+  return out;
+}
+__name(yfcParseBoard, "yfcParseBoard");
+
+// ── The registry ─────────────────────────────────────────────────────
+const AUTHORITY_HANDLERS = {
+  yyt: { tz: "America/St_Johns", source: "yyt-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`yyt/${dir}`, `https://stjohnsairport.com/${dir === "dep" ? "dep" : "arr"}table.php?lang=en`, "tblData", 75);
+    if (!t) return null;
+    const f = yytParseTable(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  ysj: { tz: "America/Halifax", source: "ysj-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("ysj/page", "https://ysjsaintjohn.ca/flights/", "flight-table", 75);
+    if (!t) return null;
+    const f = ysjParsePage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yfc: { tz: "America/Halifax", source: "yfc-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`yfc/${dir}`, `https://yfcfredericton.ca/${dir === "dep" ? "departures" : "arrivals"}/`, 'class="arrivals"', 90);
+    if (!t) return null;
+    const f = yfcParseBoard(t, dir, Date.now());
+    return f.length ? f : null;
+  } }
+};
+// One dispatcher for every airport served at the ADB window URL. YHZ and
+// YQM keep their bespoke handlers; everything else goes by registry.
 async function maybeServeAuthorityWindow(adbPath, url, env, origin) {
   const yhz = await maybeServeYhzAuthority(adbPath, url, origin);
   if (yhz) return yhz;
-  return maybeServeYqmCache(adbPath, url, env, origin);
+  const yqm = await maybeServeYqmCache(adbPath, url, env, origin);
+  if (yqm) return yqm;
+  try {
+    const m = String(adbPath || "").match(/^flights\/airports\/iata\/([a-z0-9]{3})\/([^/]+)\/([^/?]+)$/i);
+    if (!m) return null;
+    const h = AUTHORITY_HANDLERS[m[1].toLowerCase()];
+    if (!h) return null;
+    const fromTs = windowTsIn(h.tz, decodeURIComponent(m[2]));
+    const toTs = windowTsIn(h.tz, decodeURIComponent(m[3]));
+    if (isNaN(fromTs) || isNaN(toTs)) return null;
+    const dirQ = String(url.searchParams.get("direction") || "Both");
+    const dirs = [];
+    if (!/^arr/i.test(dirQ)) dirs.push("dep");
+    if (!/^dep/i.test(dirQ)) dirs.push("arr");
+    const body = {};
+    for (const dir of dirs) {
+      const flights = await h.list(dir, env);
+      if (!flights) return null;
+      body[dir === "dep" ? "departures" : "arrivals"] =
+        flights.filter((f) => f._authTs >= fromTs && f._authTs < toTs);
+    }
+    return new Response(JSON.stringify(body), { headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=60",
+      "X-Feed-Source": h.source,
+      ...corsHeaders(origin)
+    } });
+  } catch (e) { return null; }
 }
 __name(maybeServeAuthorityWindow, "maybeServeAuthorityWindow");
 
@@ -3088,7 +3410,11 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // clock, so a 20s edge TTL meant nearly every poll was a cache MISS
       // that hit the community feeds; doubling the TTL halves our request
       // volume against per-IP throttles for no visible staleness.
-      const ADSB_TTL = 40;                       // seconds; positions age fast
+      const ADSB_TTL = 90;                       // seconds. Was 40 — but the
+      // community ring is now the ONLY position source (ADB cancelled), we
+      // use it anonymously and unapproved, and it already throttles us.
+      // Halving our call rate is basic politeness until the airplanes.live
+      // registration lands; positions age a little, nobody's flight does.
       // How long an all-providers-failed answer is remembered. Without this,
       // every board poll re-hammered feeds that were ALREADY rate-limiting
       // us (Nick, morning of 2026-08-25: all three upstreams 429 — no
@@ -4137,5 +4463,9 @@ export {
   yhzParseBoard,
   yhzWindowTs,
   yqmNormFlight,
-  yqmSchedTs
+  yqmSchedTs,
+  yytParseTable,
+  ysjParsePage,
+  yfcParseBoard,
+  windowTsIn
 };
