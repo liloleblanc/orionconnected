@@ -3710,6 +3710,65 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           // Non-OK from ADB (quota, 5xx) → fall through to the community ring.
         } catch (e) { /* network error → community ring */ }
       }
+      // ── FR24, ON A DAILY ALLOWANCE (2026-09-05) ─────────────────────
+      // Nick bought the $9 Explorer tier to test FR24 as the position
+      // source (the community ring is unapproved, anonymous, and
+      // throttling us; airplanes.live registration is pending). Explorer
+      // is a small credit pool billed per aircraft returned, so this
+      // provider spends a HARD daily request budget and then goes quiet
+      // for the day — the ring below always remains. Callsign and reg
+      // lookups only (the documented filters); hex stays with the ring.
+      // A 402/429 from FR24 (credits gone) burns the whole day's budget
+      // at once so a dead pool is never hammered. Budget accounting is
+      // KV read-modify-write: approximate under races, and that's fine.
+      if (env.FR24_KEY && (kind === "callsign" || kind === "reg") && env.FIDS_LIVE_FLIGHTS) {
+        try {
+          const _day = new Date().toISOString().slice(0, 10);
+          const _bKey = `fr24:used:${_day}`;
+          const _cap = Math.max(0, Number(env.FR24_DAILY_BUDGET || 240));
+          const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
+          if (_used < _cap) {
+            const _param = kind === "callsign" ? "callsigns" : "registrations";
+            const _fr = await fetch(
+              `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
+              { headers: { "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } }
+            );
+            const _spend = (_fr.status === 402 || _fr.status === 429 || _fr.status === 403) ? _cap : _used + 1;
+            try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
+            if (_fr.ok) {
+              const _fj = await _fr.json().catch(() => null);
+              const _rows = (_fj && Array.isArray(_fj.data)) ? _fj.data : [];
+              const _p = _rows[0];
+              if (_p && typeof _p.lat === "number" && typeof _p.lon === "number") {
+                const _ageS = _p.timestamp ? Math.max(0, Math.round((Date.now() - Date.parse(_p.timestamp)) / 1000)) : null;
+                const _ac = {
+                  hex: String(_p.hex || "").toLowerCase() || void 0,
+                  flight: _p.callsign || _p.flight || void 0,
+                  r: _p.reg || void 0,
+                  t: _p.type || void 0,
+                  desc: _p.type || void 0,
+                  lat: _p.lat, lon: _p.lon,
+                  alt_baro: (typeof _p.alt === "number" && _p.alt > 0) ? Math.round(_p.alt) : void 0,
+                  gs: (typeof _p.gspeed === "number") ? Math.round(_p.gspeed) : void 0,
+                  track: (typeof _p.track === "number") ? _p.track : void 0,
+                  baro_rate: (typeof _p.vspeed === "number") ? _p.vspeed : void 0,
+                  seen_pos: _ageS !== null ? _ageS : void 0
+                };
+                const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
+                try {
+                  await cache.put(cacheKey, new Response(_frBody, { headers: {
+                    "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+                } catch (e) {}
+                return new Response(_frBody, { status: 200, headers: {
+                  "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
+                  "X-Adsb-Cache": "miss", "X-Adsb-Provider": "fr24", ...corsHeaders(origin) } });
+              }
+              // FR24 answered but sees no such aircraft airborne → the ring
+              // still gets its chance (same reasoning as the ADB fallthrough).
+            }
+          }
+        } catch (e) { /* FR24 trouble → community ring */ }
+      }
       // v23254 — SPREAD THE LOAD ACROSS THE RING. Every request used to try
       // the configured provider first, so one feed absorbed our entire
       // volume (and rate-limited us), then the cascade moved the SAME full
