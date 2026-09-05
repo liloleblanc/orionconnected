@@ -72,6 +72,14 @@ test('yfc: a tomorrow-only departures board shifts forward a day', () => {
   assert.equal(ac.arrival.airport.iata, 'YUL');
 });
 
+test('yfc: "West Jet" (two words, their spelling) still maps to WS', () => {
+  const f = yfcParseBoard(fx('yfc-dep-sample.html'), 'dep', NOW);
+  const ws = f.find((x) => x.number === 'WS795');
+  assert.ok(ws, 'WS795 present with its identity intact');
+  assert.equal(ws.departure.airline.iata, 'WS');
+  assert.equal(ws.arrival.airport.iata, 'YYC');
+});
+
 test('yfc: arrivals with a past row stay anchored to today', () => {
   const f = yfcParseBoard(fx('yfc-arr-sample.html'), 'arr', NOW);
   assert.ok(f.length >= 5, `parsed ${f.length} rows`);
