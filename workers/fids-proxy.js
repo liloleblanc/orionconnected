@@ -1480,6 +1480,124 @@ async function maybeServeYhzAuthority(adbPath, url, origin) {
 }
 __name(maybeServeYhzAuthority, "maybeServeYhzAuthority");
 
+// ════════════════════════════════════════════════════════════════════
+// YQM: THE WEBHOOK CACHE BECOMES THE BOARD'S BASE LIST (2026-09-05)
+// ════════════════════════════════════════════════════════════════════
+// Tonight cyqm.ca raised "WP Remote Firewall" and 403s every external
+// caller — the airport firewalled its own display system's feed — and
+// the AeroDataBox fallback died with the cancelled subscription. Both
+// legs gone at once; the real Moncton screens sat on the splash while
+// the boards looped on 429 retries.
+//
+// The webhook cache is the one YQM source still alive: pushes spend
+// PREPAID webhook credits, not the dead API key (newest record 02:18Z
+// tonight, checked live), and each record's `flight` is a verbatim
+// ADB flight object. So the ADB window URL is answered straight from
+// KV, normalized exactly the way the client overlay normalizes
+// (feed-router.js ~1419 — including the lowercase-'cancelled' lesson),
+// operator rows only (the scrape asks withCodeshared=false), filtered
+// to the requested [from, to) window.
+//
+// EMPTY IS AN ANSWER. Once the cache holds ANY Moncton data, a window
+// with nothing in it returns 200 {departures:[]} rather than falling
+// through — falling through means the dead-key 429 retry loop that hung
+// the boards tonight. Only a wholly empty cache falls through. When the
+// airport unblocks cyqm.ca, the client's primary path resumes and this
+// becomes the quiet safety net it should have been all along.
+const YQM_STATUS_ENUM = {
+  0: "scheduled", 1: "scheduled", 2: "active", 3: "scheduled",
+  4: "boarding", 5: "gateclosed", 6: "departed", 7: "delayed",
+  8: "active", 9: "arrived", 10: "cancelled", 11: "diverted", 12: "cancelled"
+};
+const YQM_CS_ENUM = { 0: "Unknown", 1: "IsOperator", 2: "IsCodeshared" };
+const YQM_QUALITY_ENUM = { 0: "Basic", 1: "Live", 2: "LiveBasicAircraft", 3: "LiveFull", 4: "LiveSchedule" };
+function yqmNormFlight(f) {
+  if (!f || typeof f !== "object") return null;
+  if (typeof f.status === "number") f.status = YQM_STATUS_ENUM[f.status] || String(f.status);
+  if (typeof f.codeshareStatus === "number") f.codeshareStatus = YQM_CS_ENUM[f.codeshareStatus] || String(f.codeshareStatus);
+  const normQ = (q) => Array.isArray(q) ? q.map((x) => typeof x === "number" ? (YQM_QUALITY_ENUM[x] || String(x)) : x) : q;
+  if (f.departure && Array.isArray(f.departure.quality)) f.departure.quality = normQ(f.departure.quality);
+  if (f.arrival && Array.isArray(f.arrival.quality)) f.arrival.quality = normQ(f.arrival.quality);
+  return f;
+}
+__name(yqmNormFlight, "yqmNormFlight");
+// Webhook time strings read "2026-09-04 08:30Z" / "2026-09-04 05:30-03:00"
+// — ADB's space-separated form; one T makes them parseable.
+function yqmSchedTs(f, dir) {
+  const side = dir === "dep" ? f && f.departure : f && f.arrival;
+  const t = side && side.scheduledTime && (side.scheduledTime.utc || side.scheduledTime.local);
+  return t ? Date.parse(String(t).replace(" ", "T")) : NaN;
+}
+__name(yqmSchedTs, "yqmSchedTs");
+// Assemble one direction's normalized list from KV, memoized 30 s in the
+// colo cache so N screens polling together cost one KV sweep, not N.
+async function yqmCacheList(env, dir) {
+  const cacheKey = new Request(`https://yqm-authority/${dir}`);
+  const cache = caches.default;
+  try {
+    const hit = await cache.match(cacheKey);
+    if (hit) return await hit.json();
+  } catch (e) {}
+  const list = await env.FIDS_LIVE_FLIGHTS.list({ prefix: `CYQM:${dir}:` });
+  const vals = await Promise.all(list.keys.map((k) => env.FIDS_LIVE_FLIGHTS.get(k.name)));
+  const flights = [];
+  for (const val of vals) {
+    if (!val) continue;
+    let rec; try { rec = JSON.parse(val); } catch (e) { continue; }
+    const f = yqmNormFlight(rec && rec.flight);
+    if (!f) continue;
+    if (f.isCargo === true) continue;
+    if (f.codeshareStatus === "IsCodeshared") continue;
+    if (isNaN(yqmSchedTs(f, dir))) continue;
+    flights.push(f);
+  }
+  try {
+    await cache.put(cacheKey, new Response(JSON.stringify(flights), {
+      headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=30" }
+    }));
+  } catch (e) {}
+  return flights;
+}
+__name(yqmCacheList, "yqmCacheList");
+async function maybeServeYqmCache(adbPath, url, env, origin) {
+  try {
+    const m = String(adbPath || "").match(/^flights\/airports\/iata\/yqm\/([^/]+)\/([^/?]+)$/i);
+    if (!m || !env.FIDS_LIVE_FLIGHTS) return null;
+    // Moncton shares the Atlantic offset with Halifax year-round, so the
+    // same window parser applies.
+    const fromTs = yhzWindowTs(decodeURIComponent(m[1]));
+    const toTs = yhzWindowTs(decodeURIComponent(m[2]));
+    if (isNaN(fromTs) || isNaN(toTs)) return null;
+    const dirQ = String(url.searchParams.get("direction") || "Both");
+    const dirs = [];
+    if (!/^arr/i.test(dirQ)) dirs.push("dep");
+    if (!/^dep/i.test(dirQ)) dirs.push("arr");
+    const body = {};
+    let cachedTotal = 0;
+    for (const dir of dirs) {
+      const all = await yqmCacheList(env, dir);
+      cachedTotal += all.length;
+      body[dir === "dep" ? "departures" : "arrivals"] =
+        all.filter((f) => { const ts = yqmSchedTs(f, dir); return ts >= fromTs && ts < toTs; });
+    }
+    if (!cachedTotal) return null;   // wholly empty cache → let ADB try
+    return new Response(JSON.stringify(body), { headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "public, max-age=30",
+      "X-Feed-Source": "yqm-webhook-cache",
+      ...corsHeaders(origin)
+    } });
+  } catch (e) { return null; }
+}
+__name(maybeServeYqmCache, "maybeServeYqmCache");
+// One dispatcher for every airport served at the ADB window URL.
+async function maybeServeAuthorityWindow(adbPath, url, env, origin) {
+  const yhz = await maybeServeYhzAuthority(adbPath, url, origin);
+  if (yhz) return yhz;
+  return maybeServeYqmCache(adbPath, url, env, origin);
+}
+__name(maybeServeAuthorityWindow, "maybeServeAuthorityWindow");
+
 // GET /flights/mco?direction=dep|arr  (or Departure|Arrival)
 // Fetches the MCO vendor feed, filters to visible/non-deleted flights for
 // the requested direction, normalizes each into ADB-native shape, and
@@ -2598,8 +2716,8 @@ var fids_proxy_default = {
     }
     if (path.startsWith("/proxy/")) {
       const adbPath = path.replace("/proxy/", "");
-      const _yhzResp = await maybeServeYhzAuthority(adbPath, url, origin);
-      if (_yhzResp) return _yhzResp;
+      const _authResp = await maybeServeAuthorityWindow(adbPath, url, env, origin);
+      if (_authResp) return _authResp;
       const adbUrl = `https://aerodatabox.p.rapidapi.com/${adbPath}${url.search}`;
       try {
         const response = await fetch(adbUrl, {
@@ -3747,8 +3865,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // reaches ADB through that one, it just needs a pageSize parameter.)
     if (path.startsWith("/airports/") || path.startsWith("/flights/")
         || path.startsWith("/aircrafts/") || path.startsWith("/health/")) {
-      const _yhzResp = await maybeServeYhzAuthority(path.slice(1), url, origin);
-      if (_yhzResp) return _yhzResp;
+      const _authResp = await maybeServeAuthorityWindow(path.slice(1), url, env, origin);
+      if (_authResp) return _authResp;
       const adbUrl = `https://aerodatabox.p.rapidapi.com${path}${url.search}`;
       try {
         const response = await fetch(adbUrl, {
@@ -4017,5 +4135,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
 export {
   fids_proxy_default as default,
   yhzParseBoard,
-  yhzWindowTs
+  yhzWindowTs,
+  yqmNormFlight,
+  yqmSchedTs
 };
