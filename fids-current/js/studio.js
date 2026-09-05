@@ -593,7 +593,8 @@
       const columnChips = [['logo', 'Logo'], ['airline', 'Airline'], ['destination', 'To/From'], ['flight', 'Flight'], ['gate', 'Gate'], ['time', 'Time'], ['status', 'Status']].map(function (item) {
         return '<button type="button" class="col-chip' + (hidden[item[0]] === false ? ' is-off' : '') + '" data-col="' + item[0] + '">' + item[1] + '</button>';
       }).join('');
-      return '<div class="field"><label>Direction</label><select data-prop="direction"><option value="departures"' + (direction === 'departures' ? ' selected' : '') + '>Departures</option><option value="arrivals"' + (direction === 'arrivals' ? ' selected' : '') + '>Arrivals</option></select></div>' +
+      return '<div class="field-grid"><div class="field"><label>Direction</label><select data-prop="direction"><option value="departures"' + (direction === 'departures' ? ' selected' : '') + '>Departures</option><option value="arrivals"' + (direction === 'arrivals' ? ' selected' : '') + '>Arrivals</option></select></div>' +
+        '<div class="field"><label>Order</label><select data-prop="sort"><option value=""' + (module.props.sort !== 'manual' ? ' selected' : '') + '>By time</option><option value="manual"' + (module.props.sort === 'manual' ? ' selected' : '') + '>As entered</option></select></div></div>' +
         '<div class="field-grid" style="margin-top:9px"><div class="field"><label>Rows per page</label><input data-prop="maxRows" type="number" min="3" max="12" value="' + (Number(module.props.maxRows) || 5) + '"></div>' +
         '<div class="field"><label>Page every (s)</label><input data-prop="pageSeconds" type="number" min="3" max="60" value="' + (Number(module.props.pageSeconds) || 8) + '"></div></div>' +
         '<div class="field" style="margin-top:9px"><label>Columns</label><div class="col-toggles">' + columnChips + '</div></div>' +
@@ -860,7 +861,8 @@
       '<button type="button" class="flt-del" title="Remove this flight">✕</button></div>';
   }
 
-  function openFlightsEditor() {
+  function openFlightsEditor(options) {
+    const settings = options || {};
     const current = localFlights() || baseRows('departures').map(function (row) {
       return { flight: row[0], city: String(row[1]).replace(/\s*\([A-Z]{3}\)$/, ''), gate: row[2], time: row[3], status: row[4] };
     });
@@ -872,6 +874,15 @@
       '<button class="button button-secondary" id="fltFeed" type="button" title="Clear this list and read the airport feed again">Use the live feed</button></span>' +
       '<span><button class="button button-secondary" value="close">Cancel</button> <button class="button button-primary" id="fltSave" type="button">Save flights</button></span></div>';
     $('#studioDialog').showModal();
+    if (Number.isFinite(settings.focusRow)) {
+      const rows = $$('#fltList .flt-row');
+      const row = rows[Math.min(settings.focusRow, rows.length - 1)];
+      if (row) {
+        const target = $('[data-f="' + (settings.focusField || 'flight') + '"]', row) || $('input', row);
+        row.scrollIntoView({ block: 'center' });
+        if (target) { target.focus(); if (target.select) target.select(); }
+      }
+    }
     function collect() {
       return $$('#fltList .flt-row').map(function (row) {
         const value = {};
@@ -983,6 +994,7 @@
   /* ── Canvas interaction ────────────────────────────────────────────── */
 
   const pointerState = { mode: null, moduleId: null, handle: '', startX: 0, startY: 0, origin: null, moved: false };
+  const doublePress = { id: null, time: 0, x: 0, y: 0 };
 
   function snap(value) {
     return Math.round(value / 0.5) * 0.5;
@@ -1028,6 +1040,11 @@
 
   function onCanvasPointerDown(event) {
     if (event.button !== 0) return;
+    if (event.target.closest('.cm-edit-pill')) {
+      leaveAutoForEditing();
+      openFlightsEditor();
+      return;
+    }
     const handle = event.target.closest('.cm-handle');
     const moduleElement = event.target.closest('.canvas-module');
     if (!moduleElement) {
@@ -1035,6 +1052,16 @@
       return;
     }
     const id = moduleElement.dataset.moduleId;
+    const now = Date.now();
+    const isDouble = doublePress.id === id && now - doublePress.time < 450 &&
+      Math.abs(event.clientX - doublePress.x) < 8 && Math.abs(event.clientY - doublePress.y) < 8;
+    doublePress.id = id; doublePress.time = now; doublePress.x = event.clientX; doublePress.y = event.clientY;
+    const moduleForDouble = moduleById(id);
+    if (isDouble && moduleForDouble) {
+      doublePress.time = 0;
+      moduleDoubleClick(moduleForDouble, event.target);
+      return;
+    }
     leaveAutoForEditing();
     if (id !== selectedModuleId) selectModule(id);
     const module = moduleById(id);
@@ -1611,6 +1638,36 @@
   $('#studioSafe').addEventListener('click', function () { showSafe = !showSafe; this.classList.toggle('is-active', showSafe); renderCanvas(); });
   $('#studioUndo').addEventListener('click', undo);
   $('#studioRedo').addEventListener('click', redo);
+  const PRIMARY_FIELDS = { text: 'text', advertisement: 'headline', 'airport-header': 'title', weather: 'ticker', 'boarding-state': 'body', 'queue-guidance': 'body', 'oversize-message': 'title', 'passenger-message': 'title', 'airline-brand': 'airline', 'gate-flight': 'gate', image: 'src' };
+
+  function moduleDoubleClick(module, target) {
+    leaveAutoForEditing();
+    if (module.id !== selectedModuleId) selectModule(module.id);
+    if (module.type === 'flight-table' || module.type === 'claim-table') {
+      const rowElement = target.closest('[data-flight-index]');
+      const cell = target.closest('[data-field]');
+      openFlightsEditor({
+        focusRow: rowElement ? Number(rowElement.dataset.flightIndex) : 0,
+        focusField: cell ? cell.dataset.field : 'flight'
+      });
+      return;
+    }
+    if (module.type === 'image') {
+      openAssetPicker(function (path) { commitProp(module, 'src', path); renderCanvas(); renderInspector(); saveDraft('Image placed.'); });
+      return;
+    }
+    const field = PRIMARY_FIELDS[module.type];
+    selectedTab = 'design';
+    $$('#studioInspectorTabs button').forEach(function (item) { item.classList.toggle('is-active', item.dataset.tab === 'design'); });
+    $('#studioBuildPane').hidden = true;
+    $('#studioInspectorBody').hidden = false;
+    renderInspector();
+    if (field) {
+      const input = $('#studioInspectorBody [data-prop="' + field + '"]');
+      if (input) { input.focus(); if (input.select) input.select(); }
+    }
+  }
+
   const canvasElement = $('#studioCanvas');
   canvasElement.addEventListener('pointerdown', onCanvasPointerDown);
   canvasElement.addEventListener('pointermove', onCanvasPointerMove);
