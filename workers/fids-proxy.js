@@ -2173,9 +2173,13 @@ async function dubFetchAll(dir) {
         const page = (j && Array.isArray(j.content)) ? j.content : [];
         if (!page.length) break;
         rows.push(...page);
-        const last = page[page.length - 1];
-        after = last.scheduledDateTime || ""; afterId = last.internalFlightId || "";
-        if (!after || !afterId || page.length < 10) break;
+        // The cursor lives in the response's OWN pagination object —
+        // latestTimestamp/latestId are their opaque values, NOT the last
+        // row's fields (verified live 2026-09-05: row-derived cursors
+        // return an empty page and the walk starved at 20 flights).
+        const pg = (j && j.pagination) || {};
+        after = pg.latestTimestamp || ""; afterId = pg.latestId || "";
+        if (!pg.hasNext || !after || !afterId) break;
       }
     }
   } catch (e) {}
@@ -2411,10 +2415,17 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   ord: { tz: "America/Chicago", source: "ord-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText(`ord/${dir}`, `https://prod-flightwarehousewebservice.flychicago.com/FlightWarehouseService.svc/getflightlist/${dir === "dep" ? "Departures" : "Arrivals"}/ord/Today/1/24`, "AirlineCodeFlightNumber", 120);
-    if (!t) return null;
-    const f = ordParseFeed(t, dir, Date.now());
-    return f.length ? f : null;
+    // Their "Today" is the operational day and lags past midnight, so a
+    // pre-dawn board asking about the new day got nothing (verified live
+    // 2026-09-05 ~03:00 CT). Today + Tomorrow together always cover the
+    // board's window; /Tomorrow/ is a supported keyword (verified).
+    const kind = dir === "dep" ? "Departures" : "Arrivals";
+    const parts = [];
+    for (const day of ["Today", "Tomorrow"]) {
+      const t = await fetchAuthorityText(`ord/${dir}/${day}`, `https://prod-flightwarehousewebservice.flychicago.com/FlightWarehouseService.svc/getflightlist/${kind}/ord/${day}/1/24`, "AirlineCodeFlightNumber", 150);
+      if (t) parts.push(...ordParseFeed(t, dir, Date.now()));
+    }
+    return parts.length ? parts : null;
   } },
   phl: { tz: "America/New_York", source: "phl-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText("phl/page", "https://www.phl.org/flights", "flight_feed_arrivals_table", 120);
