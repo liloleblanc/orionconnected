@@ -1,0 +1,15 @@
+/* Full-screen display player — the running output of the Studio. */
+.player-body{margin:0;height:100vh;overflow:hidden;background:#000;color:#f0f4f8;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",sans-serif}
+.player-stage{height:100vh;display:grid;place-items:center}
+.player-frame{position:relative;overflow:hidden;background:#061326}
+.player-frame[data-direction="rtl"]{direction:rtl}
+.player-setup{max-width:520px;padding:34px;border:1px solid #243244;border-radius:12px;background:#0b111a;text-align:center}
+.player-setup h1{margin:0 0 10px;font-size:22px}
+.player-setup p{margin:0 0 18px;color:#8290a5;font-size:13px;line-height:1.6}
+.player-setup a{display:block;padding:11px 14px;margin-bottom:8px;border:1px solid #243244;border-radius:8px;color:#f0f4f8;text-decoration:none;font-size:13px}
+.player-setup a:hover{border-color:#2f8df4}
+.player-setup a small{display:block;color:#8290a5;font-size:10px;margin-top:2px}
+.player-badge{position:fixed;right:12px;bottom:10px;z-index:50;display:flex;gap:8px;align-items:center;padding:5px 10px;border:1px solid rgba(130,144,165,.35);border-radius:6px;background:rgba(5,9,15,.72);color:#8290a5;font-size:10px;letter-spacing:.05em}
+.player-badge b{color:#c8d4e4;font-weight:700}
+.player-badge i{width:6px;height:6px;border-radius:50%;background:#24c9a0}
+.player-badge.is-fallback i{background:#f9c20b}

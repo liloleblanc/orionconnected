@@ -1,0 +1,30 @@
+.studio-bottombar .data-status{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--muted);white-space:nowrap}
+.studio-bottombar .data-status i{width:7px;height:7px;border-radius:50%}
+.studio-bottombar .data-status {
+  font-weight: 700;
+}
+
+.studio-bottombar .data-status.is-preview i {
+  background: var(--blue);
+}
+
+.studio-bottombar .data-status.is-pending i {
+  background: var(--yellow);
+}
+
+.studio-bottombar .data-status.is-operational {
+  color: var(--green);
+}
+
+.studio-bottombar .data-status.is-operational i {
+  background: var(--green);
+  box-shadow: 0 0 0 3px rgba(36, 201, 160, 0.12);
+}
+
+.studio-bottombar .data-status.is-fallback {
+  color: var(--yellow);
+}
+
+.studio-bottombar .data-status.is-fallback i {
+  background: var(--yellow);
+}
