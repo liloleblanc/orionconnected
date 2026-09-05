@@ -2557,8 +2557,195 @@ function yvrParseFeed(jsonText, dir, nowMs) {
 }
 __name(yvrParseFeed, "yvrParseFeed");
 
+// ── Canada wave 2 (2026-09-05) ───────────────────────────────────────
+// YLW Kelowna — the richest small-airport feed: a wide-open Azure blob
+// (the site itself Cloudflare-403s) with true UTC ISO times, gate,
+// baggage, AND tail number. AirlineCode is IATA, FlightNumber bare,
+// ArrivalOrDeparture says the direction outright.
+function ylwParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.flights) ? j.flights : []);
+  for (const r of rows) {
+    if (!r) continue;
+    const isDep = /^dep/i.test(String(r.ArrivalOrDeparture || ""));
+    if ((dir === "dep") !== isDep) continue;
+    const code = (r.AirlineCode || "").toString().toUpperCase();
+    const su = r.ScheduleTime || "";
+    if (!code || !r.FlightNumber || !su) continue;
+    const ts = Date.parse(su);
+    if (isNaN(ts)) continue;
+    const sched = localTimeObjFromTs("America/Vancouver", ts);
+    const ets = r.EstimatedTime ? Date.parse(r.EstimatedTime) : NaN;
+    const revised = (!isNaN(ets) && ets !== ts) ? localTimeObjFromTs("America/Vancouver", ets) : null;
+    const fl = authorityFlight({
+      dir, number: `${code}${String(r.FlightNumber).trim()}`,
+      status: yhzStatus(r.Status || r.StatusRaw || ""),
+      homeIata: "YLW", homeIcao: "CYLW", homeName: "Kelowna",
+      gate: (r.Gate || "").toString().trim() || null,
+      otherIata: (r.ViaAirportCode || "").toString().toUpperCase() || null,
+      otherName: r.ViaAirportCity || null,
+      airlineIata: code, airlineName: AIRLINE_IATA_NAME[code] || null,
+      sched, revised
+    });
+    if (dir === "arr" && r.Baggage) fl.arrival.baggageBelt = String(r.Baggage).replace(/^0+(?=\d)/, "");
+    if (r.TailNumber) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = String(r.TailNumber); }
+    out.push(fl);
+  }
+  return out;
+}
+__name(ylwParseFeed, "ylwParseFeed");
+
+// YXX Abbotsford — Drupal REST: carrier NAME, an ICAO-ish display code
+// (FLE507) plus the bare number, a local "scheddate" and a revised
+// "time". No gate. Pacific.
+function yxxParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.flights) ? j.flights : Object.values(j).find(Array.isArray) || []);
+  for (const r of rows) {
+    if (!r || !r.number) continue;
+    const sm = String(r.scheddate || "").match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+    if (!sm) continue;
+    const sched = localTimeObjIn("America/Vancouver", Number(sm[1]), Number(sm[2]), Number(sm[3]), Number(sm[4]), Number(sm[5]));
+    // Derive IATA from the carrier name; the "display" code is ICAO-ish.
+    const code = AIRLINE_NAME_IATA[String(r.carrier || "").toUpperCase().trim()]
+      || AIRLINE_NAME_IATA_SQUASHED[String(r.carrier || "").toUpperCase().replace(/\s+/g, "").replace(/AIR$/, "")]
+      || null;
+    const num = String(r.number).replace(/^[A-Z]/, "").replace(/\D/g, "") || String(r.number).replace(/\D/g, "");
+    let revised = null;
+    const tm = String(r.time || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (tm && String(r.time) !== String(r.schedtime)) {
+      let hh = Number(tm[1]) % 12; if (/pm/i.test(tm[3])) hh += 12;
+      revised = localTimeObjIn("America/Vancouver", Number(sm[1]), Number(sm[2]), Number(sm[3]), hh, Number(tm[2]));
+    }
+    out.push(authorityFlight({
+      dir, number: code ? `${code}${num}` : String(r.display || r.number).trim(),
+      status: yhzStatus(r.status || ""),
+      homeIata: "YXX", homeIcao: "CYXX", homeName: "Abbotsford",
+      otherIata: YHZ_CITY_IATA[String(r.origin || r.destination || "").toUpperCase()] || null,
+      otherName: r.origin || r.destination || null,
+      airlineIata: code, airlineName: r.carrier || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(yxxParseFeed, "yxxParseFeed");
+
+// YQR Regina — a clean data-th table, one per direction; airline from
+// the icon class (icon-ws-blue → WS), date "Sep-04" (no year). Regina
+// keeps CST all year (no DST), so a fixed offset is correct.
+function yqrParsePage(html, dir, nowMs) {
+  const out = [];
+  const rows = String(html || "").match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    if (row.indexOf('data-th="Flight"') === -1) continue;
+    const numM = row.match(/data-th="Flight"[^>]*>(?:<span[^>]*class="([^"]*)"[^>]*><\/span>)?\s*([A-Z0-9]{2,3}\d{1,4})/);
+    const cityM = row.match(/data-th="(?:Origin|Destination)"[^>]*>([^<]+)/);
+    const dm = row.match(/data-th="Date"[^>]*>([A-Za-z]{3})-(\d{1,2})/);
+    const sm = row.match(/data-th="Scheduled"[^>]*>\s*(\d{1,2}):(\d{2})/);
+    const rvM = row.match(/data-th="Revised"[^>]*>(?:<span[^>]*>)?\s*(\d{1,2}):(\d{2})/);
+    const stM = row.match(/data-th="Status"[^>]*>(?:<span[^>]*>)?\s*([^<]+)/);
+    if (!numM || !dm || !sm) continue;
+    const mo = AUTH_MONTHS[dm[1].toUpperCase()];
+    if (!mo) continue;
+    const y = nearestYear(mo, Number(dm[2]), nowMs);
+    const sched = localTimeObjIn("America/Regina", y, mo, Number(dm[2]), Number(sm[1]), Number(sm[2]));
+    let revised = null;
+    if (rvM && (rvM[1] !== sm[1] || rvM[2] !== sm[2])) {
+      let r = localTimeObjIn("America/Regina", y, mo, Number(dm[2]), Number(rvM[1]), Number(rvM[2]));
+      if (r.ts - sched.ts > 432e5) r = localTimeObjIn("America/Regina", y, mo, Number(dm[2]) - 1, Number(rvM[1]), Number(rvM[2]));
+      else if (sched.ts - r.ts > 432e5) r = localTimeObjIn("America/Regina", y, mo, Number(dm[2]) + 1, Number(rvM[1]), Number(rvM[2]));
+      revised = r;
+    }
+    // "icon-ws-blue" / "icon-ac-blue" → WS / AC.
+    const iconCode = ((numM[1] || "").match(/icon-([a-z0-9]{2})[-\b]/) || [])[1];
+    const code = (iconCode ? iconCode.toUpperCase() : (numM[2].match(/^([A-Z0-9]{2})/) || [])[1]) || null;
+    const city = (cityM ? cityM[1] : "").trim();
+    out.push(authorityFlight({
+      dir, number: numM[2].trim(),
+      status: yhzStatus(stM ? stM[1] : ""),
+      homeIata: "YQR", homeIcao: "CYQR", homeName: "Regina",
+      otherIata: YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city || null,
+      airlineIata: code, airlineName: code ? (AIRLINE_IATA_NAME[code] || null) : null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(yqrParsePage, "yqrParsePage");
+
+// YHM Hamilton — one page, #arrivals and #departures panes, each a set
+// of `.flight` divs carrying data-datetime (scheduled local), data-city
+// and data-airline (name). Status is the div's own class + a revised
+// "HH:MM / Mon DD" in the status cell. Eastern.
+function yhmParseBoard(html, dir, nowMs) {
+  const out = [];
+  const paneId = dir === "dep" ? "departures" : "arrivals";
+  const paneSplit = String(html || "").split(new RegExp(`id=["']${paneId}["']`));
+  if (paneSplit.length < 2) return out;
+  // Everything from this pane's id to the start of the OTHER pane.
+  const other = dir === "dep" ? "arrivals" : "departures";
+  const pane = paneSplit[1].split(new RegExp(`id=["']${other}["']`))[0];
+  const blocks = pane.match(/<div class=['"]flight[\s\S]*?data-airline=['"][^'"]*['"]/g) || [];
+  // Re-split into whole flight blocks by the opening marker.
+  const chunks = pane.split(/<div class=['"]flight\b/).slice(1);
+  for (const chunk of chunks) {
+    const dm = chunk.match(/data-datetime=['"](\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})/);
+    const city = (chunk.match(/data-city=['"]([^'"]*)/) || [, ""])[1];
+    const airline = (chunk.match(/data-airline=['"]([^'"]*)/) || [, ""])[1];
+    const numM = chunk.match(/class=['"]flight-number['"][^>]*>[\s\S]*?(\d{1,4})\s*<\/span>/);
+    if (!dm || !numM) continue;
+    const sched = localTimeObjIn("America/Toronto", Number(dm[1]), Number(dm[2]), Number(dm[3]), Number(dm[4]), Number(dm[5]));
+    const statusText = (chunk.match(/^\s*([A-Za-z ]+?)['"]/) || [, ""])[1].trim()
+      || (chunk.match(/text-(?:danger|success|warning|muted)['"][^>]*><strong>([^<]+)/) || [, ""])[1];
+    let revised = null;
+    const rvM = chunk.match(/<strong>[^<]*<\/strong><span[^>]*>\s*(\d{1,2}):(\d{2})\s*\/\s*([A-Za-z]{3})\s+(\d{1,2})/);
+    if (rvM) {
+      const mo = AUTH_MONTHS[rvM[3].toUpperCase()];
+      if (mo) revised = localTimeObjIn("America/Toronto", nearestYear(mo, Number(rvM[4]), nowMs), mo, Number(rvM[4]), Number(rvM[1]), Number(rvM[2]));
+    }
+    const code = AIRLINE_NAME_IATA[airline.toUpperCase()] || AIRLINE_NAME_IATA_SQUASHED[airline.toUpperCase().replace(/\s+/g, "")] || null;
+    out.push(authorityFlight({
+      dir, number: code ? `${code}${numM[1]}` : numM[1],
+      status: yhzStatus(statusText),
+      homeIata: "YHM", homeIcao: "CYHM", homeName: "Hamilton",
+      otherIata: YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city || null,
+      airlineIata: code, airlineName: airline || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(yhmParseBoard, "yhmParseBoard");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
+  ylw: { tz: "America/Vancouver", source: "ylw-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`ylw/${dir}`, `https://kelprodylwfast01.blob.core.windows.net/$web/ylw/flights/${dir === "dep" ? "departures" : "arrivals"}.json`, "FlightNumber", 90);
+    if (!t) return null;
+    const f = ylwParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yxx: { tz: "America/Vancouver", source: "yxx-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`yxx/${dir}`, `https://www.abbotsfordairport.ca/flights/rest/${dir === "dep" ? "departures" : "arrivals"}`, "scheddate", 90);
+    if (!t) return null;
+    const f = yxxParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yqr: { tz: "America/Regina", source: "yqr-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`yqr/${dir}`, `https://www.yqr.ca/en/passengers/flights/${dir === "dep" ? "departures" : "arrivals"}`, 'data-th="Flight"', 120);
+    if (!t) return null;
+    const f = yqrParsePage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yhm: { tz: "America/Toronto", source: "yhm-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("yhm/page", "https://flyhamilton.ca/arrivals-departures/", "data-datetime", 120);
+    if (!t) return null;
+    const f = yhmParseBoard(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
   yyc: { tz: "America/Edmonton", source: "yyc-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText("yyc/all", `https://www.yyc.com/desktopmodules/YYC.ModulesDnn.YYC.Flights.Controllers/API/Flights/getFlights?${Date.now()}`, "AirlineIATACode", 150);
     if (!t) return null;
@@ -5338,5 +5525,9 @@ export {
   sfoParseFeed,
   seaParsePage,
   yvrParseFeed,
+  ylwParseFeed,
+  yxxParseFeed,
+  yqrParsePage,
+  yhmParseBoard,
   windowTsIn
 };
