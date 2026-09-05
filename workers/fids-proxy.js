@@ -2189,8 +2189,239 @@ async function dubFetchAll(dir) {
 }
 __name(dubFetchAll, "dubFetchAll");
 
+// ── US batch (2026-09-05, deep in the night shift) ───────────────────
+// BOS Massport — JSON with UTC timestamps, gates, terminals, baggage
+// claims, and (bless them) AcType + AcReg: aircraft answered outright.
+function bosParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  for (const r of (Array.isArray(j.Flights) ? j.Flights : [])) {
+    if (!r || r.IsCodeShare === true || r.IsOperator === false) continue;
+    const code = (r.AirlineCode || "").toString().trim().toUpperCase()
+      || ((r.AirlineLogo || "").match(/\/([A-Z0-9]{2,3})\.svg/i) || [])[1] || "";
+    const num = (r.FlightNumber || "").toString().trim();
+    const su = (r.ScheduledTimeUtc || "").toString();
+    if (!code || !num || !su) continue;
+    const ts = Date.parse(su.endsWith("Z") ? su : su + "Z");
+    if (isNaN(ts)) continue;
+    const sched = localTimeObjFromTs("America/New_York", ts);
+    // ActualTime is a local "H:MM PM" clock; only a differing value is a
+    // revision, hung on the scheduled calendar day (±12 h wrap rule).
+    let revised = null;
+    const am = (r.ActualTime || "").toString().match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (am) {
+      let hh = Number(am[1]) % 12; if (/pm/i.test(am[3])) hh += 12;
+      const sd = sched.local.slice(0, 10).split("-").map(Number);
+      let rv = localTimeObjIn("America/New_York", sd[0], sd[1], sd[2], hh, Number(am[2]));
+      if (rv.ts - ts > 432e5) rv = localTimeObjIn("America/New_York", sd[0], sd[1], sd[2] - 1, hh, Number(am[2]));
+      else if (ts - rv.ts > 432e5) rv = localTimeObjIn("America/New_York", sd[0], sd[1], sd[2] + 1, hh, Number(am[2]));
+      if (rv.ts !== ts) revised = rv;
+    }
+    let status = yhzStatus(r.Remarks || "");
+    if (status === "scheduled" && String(r.Delayed) === "True") status = "delayed";
+    const isDep = dir === "dep";
+    const fl = authorityFlight({
+      dir, number: `${code}${num}`, status,
+      homeIata: "BOS", homeIcao: "KBOS", homeName: "Boston",
+      gate: (r.Gate || "").toString().trim() || null,
+      otherIata: ((isDep ? r.DestinationAirportCode : r.OriginAirportCode) || "").toString().toUpperCase() || null,
+      otherName: (isDep ? (r.DestinationCity || r.DestinationAirportName) : (r.OriginCity || r.OriginAirportName)) || null,
+      airlineIata: code, airlineName: r.AirlineName || null,
+      aircraftModel: (r.AcType || "").toString().trim() || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    if (r.Terminal) homeSide.terminal = String(r.Terminal);
+    if (!isDep && (r.Baggage || r.BaggageClaims)) fl.arrival.baggageBelt = String(r.Baggage || r.BaggageClaims);
+    if (r.AcReg) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = String(r.AcReg); }
+    out.push(fl);
+  }
+  return out;
+}
+__name(bosParseFeed, "bosParseFeed");
+
+// LAS Harry Reid — the same vendor family as MCO's feed: epoch-second
+// timestamps, operator flight numbers with the code baked in, terminal,
+// gate, belts. The Api-Key is the public one embedded in their site
+// bundle (the YQB-Algolia precedent); if it rotates the handler goes
+// quiet and falls through.
+function lasParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  for (const r of (((j.data || {}).flights) || [])) {
+    if (!r) continue;
+    const isArr = r.arrival === true;
+    if ((dir === "arr") !== isArr) continue;
+    const num = (r.operatingAirlineFlightNumber || "").toString().trim();
+    if (!num || typeof r.scheduledTimestamp !== "number") continue;
+    const sched = localTimeObjFromTs("America/Los_Angeles", r.scheduledTimestamp * 1000);
+    const bt = r.bestKnownTimestamp;
+    const revised = (typeof bt === "number" && bt !== r.scheduledTimestamp)
+      ? localTimeObjFromTs("America/Los_Angeles", bt * 1000) : null;
+    const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
+    const fl = authorityFlight({
+      dir, number: num, status: yhzStatus(r.status || r.originalStatus || ""),
+      homeIata: "LAS", homeIcao: "KLAS", homeName: "Las Vegas",
+      gate: (r.gate || "").toString().trim() || null,
+      otherIata: ((isArr ? r.departureAirport : r.arrivalAirport) || "").toString().toUpperCase() || null,
+      otherName: null,
+      airlineIata: (r.iataOperatingAirline || "").toString().toUpperCase() || null,
+      sched, revised
+    });
+    const homeSide = dir === "dep" ? fl.departure : fl.arrival;
+    if (r.terminal) homeSide.terminal = String(r.terminal).replace(/^T/i, "");
+    if (dir === "arr" && belt) fl.arrival.baggageBelt = belt;
+    out.push(fl);
+  }
+  return out;
+}
+__name(lasParseFeed, "lasParseFeed");
+
+// DEN — the Fruition widget host behind flydenver.com (the site itself
+// is Cloudflare-walled; this vendor host is open — and named like a QA
+// box, so treat every silence as "the host moved" and fall through).
+function denParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  for (const r of (Array.isArray(j) ? j : [])) {
+    if (!r || !r.flightNumber) continue;
+    const sm = String(r.scheduledTime || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+    if (!sm) continue;
+    const sched = localTimeObjIn("America/Denver", Number(sm[1]), Number(sm[2]), Number(sm[3]), Number(sm[4]), Number(sm[5]));
+    out.push(authorityFlight({
+      dir, number: String(r.flightNumber).trim(),
+      status: yhzStatus(r.status || r.statusRaw || ""),
+      homeIata: "DEN", homeIcao: "KDEN", homeName: "Denver",
+      gate: (r.gate || "").toString().trim() || null,
+      otherIata: (r.airportCode || "").toString().toUpperCase() || null,
+      otherName: r.airportCity || null,
+      airlineIata: (r.airlineCode || "").toString().toUpperCase() || null,
+      airlineName: r.airline || null,
+      sched, revised: null
+    }));
+  }
+  return out;
+}
+__name(denParseFeed, "denParseFeed");
+
+// ORD/MDW — Chicago's WCF warehouse service, times as /Date(ms-0500)/.
+function ordWcfTs(s) {
+  const m = String(s || "").match(/\/Date\((\d+)(?:[+-]\d{4})?\)\//);
+  return m ? Number(m[1]) : NaN;
+}
+__name(ordWcfTs, "ordWcfTs");
+function ordParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const isDep = dir === "dep";
+  for (const r of (Array.isArray(j) ? j : [])) {
+    if (!r || !r.AirlineCodeFlightNumber) continue;
+    const schedTs = ordWcfTs(isDep ? r.DepartureDateTimeScheduled : r.ArrivalDateTimeScheduled);
+    if (isNaN(schedTs)) continue;
+    const sched = localTimeObjFromTs("America/Chicago", schedTs);
+    const estTs = ordWcfTs(isDep
+      ? (r.DepartureDateTimeActualGate || r.DepartureDateTimeEstimatedGate)
+      : (r.ArrivalDateTimeActualGate || r.ArrivalDateTimeEstimatedGate));
+    const revised = (!isNaN(estTs) && estTs !== schedTs) ? localTimeObjFromTs("America/Chicago", estTs) : null;
+    let status = yhzStatus(r.Status || "");
+    if (status === "scheduled") status = yhzStatus(r.Remarks || "");
+    const fl = authorityFlight({
+      dir, number: String(r.AirlineCodeFlightNumber).trim(), status,
+      homeIata: "ORD", homeIcao: "KORD", homeName: "Chicago",
+      gate: ((isDep ? r.DepartureGate : r.ArrivalGate) || "").toString().trim() || null,
+      otherIata: ((isDep ? r.AirportDestinationCode : r.AirportOriginCode) || "").toString().toUpperCase() || null,
+      otherName: (isDep ? r.AirportDestinationCity : r.AirportOriginCity) || null,
+      airlineIata: (r.AirlineCode || "").toString().toUpperCase() || null,
+      airlineName: r.AirlineName || null,
+      aircraftModel: (r.Equipment || "").toString().trim() || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    const term = (isDep ? r.DepartureTerminal : r.ArrivalTerminal);
+    if (term) homeSide.terminal = String(term);
+    if (!isDep && r.BaggageClaim) fl.arrival.baggageBelt = String(r.BaggageClaim);
+    out.push(fl);
+  }
+  return out;
+}
+__name(ordParseFeed, "ordParseFeed");
+
+// PHL — one SSR page, two DataTables; every time cell carries the epoch
+// in data-order, the airline code in data-iata-code, and the flight
+// number in its own div. The gate letter doubles as the terminal.
+function phlParsePage(html, dir, nowMs) {
+  const out = [];
+  const want = dir === "dep" ? "flight_feed_departures_table" : "flight_feed_arrivals_table";
+  const tm = String(html || "").split(want)[1];
+  if (!tm) return out;
+  const table = tm.split("</table>")[0] || "";
+  const rows = table.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    if (row.indexOf("<th") !== -1) continue;
+    const ep = (row.match(/data-order="(\d{9,11})"/) || [])[1];
+    const code = (row.match(/data-iata-code="([A-Z0-9]{2,3})"/) || [])[1];
+    const numM = row.match(/flight-number[^>]*>\s*([A-Z0-9]{2,3})\s*(\d{1,4})/);
+    if (!ep || !code || !numM) continue;
+    const sched = localTimeObjFromTs("America/New_York", Number(ep) * 1000);
+    const city = ((row.match(/airport-name[^>]*>([^<]+)</) || [])[1] || "").trim();
+    const cells = authorityCellsText(row);
+    // Status is the cell that reads like one; the gate is a short token
+    // in one of the trailing cells (its letter is the terminal).
+    let status = "scheduled", gate = null;
+    for (const c of cells.slice(2)) {
+      const s = yhzStatus(c);
+      if (s !== "scheduled" || /on\s?time|scheduled/i.test(c)) { if (s !== "scheduled") status = s; continue; }
+      if (/^[A-F]\d{0,2}$/i.test(c.trim())) gate = c.trim().toUpperCase();
+    }
+    const fl = authorityFlight({
+      dir, number: `${numM[1]} ${numM[2]}`, status,
+      homeIata: "PHL", homeIcao: "KPHL", homeName: "Philadelphia",
+      gate,
+      otherIata: YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city || null,
+      airlineIata: code, sched, revised: null
+    });
+    if (gate) (dir === "dep" ? fl.departure : fl.arrival).terminal = gate[0];
+    out.push(fl);
+  }
+  return out;
+}
+__name(phlParsePage, "phlParsePage");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
+  bos: { tz: "America/New_York", source: "bos-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`bos/${dir}`, `https://www.massport.com/massport-flight-updates/flightdata/${dir === "dep" ? "departures" : "arrivals"}/bos`, '"Flights"', 90);
+    if (!t) return null;
+    const f = bosParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  las: { tz: "America/Los_Angeles", source: "las-authority", list: async (dir, env) => {
+    const now = Math.floor(Date.now() / 1000);
+    const t = await fetchAuthorityText(`las/all`, `https://api.hriairport.com/flights?scheduledTimestamp=${now - 6 * 3600}..${now + 30 * 3600}`, '"flights"', 90, {
+      headers: { "Api-Key": "c54a8aab24174fe3ae17166e38daf399", "Api-Version": "100", "Accept": "application/json" }
+    });
+    if (!t) return null;
+    const f = lasParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  den: { tz: "America/Denver", source: "den-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`den/${dir}`, `https://pages.fruitionqa.com/api/widgets/den/flight-search/data?direction=${dir === "dep" ? "departure" : "arrival"}`, "flightNumber", 90);
+    if (!t) return null;
+    const f = denParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  ord: { tz: "America/Chicago", source: "ord-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`ord/${dir}`, `https://prod-flightwarehousewebservice.flychicago.com/FlightWarehouseService.svc/getflightlist/${dir === "dep" ? "Departures" : "Arrivals"}/ord/Today/1/24`, "AirlineCodeFlightNumber", 120);
+    if (!t) return null;
+    const f = ordParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  phl: { tz: "America/New_York", source: "phl-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText("phl/page", "https://www.phl.org/flights", "flight_feed_arrivals_table", 120);
+    if (!t) return null;
+    const f = phlParsePage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
   lhr: { tz: "Europe/London", source: "lhr-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText(`lhr/${dir}`, `https://api-dp-prod.dp.heathrow.com/pihub/flights/${dir === "dep" ? "departures" : "arrivals"}`, '"flightService"', 120, {
       headers: { "Origin": "https://www.heathrow.com" }
@@ -4897,5 +5128,10 @@ export {
   yegParseBoard,
   lhrParseFeed,
   dubParseRows,
+  bosParseFeed,
+  lasParseFeed,
+  denParseFeed,
+  ordParseFeed,
+  phlParsePage,
   windowTsIn
 };
