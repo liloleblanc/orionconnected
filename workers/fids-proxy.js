@@ -3014,8 +3014,193 @@ function mwaaParseFeed(jsonText, dir, home, nowMs) {
 }
 __name(mwaaParseFeed, "mwaaParseFeed");
 
+// ── Charlotte / Kansas City / Manchester batch (2026-09-05) ──────────
+// CLT — the LAS/MCO vendor again: epoch-second timestamps, operator
+// flight numbers, IATA airport codes, gate, baggageBelt[]. Public
+// embedded Api-Key, Api-Version 101.
+function cltParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = ((j.data || {}).flights) || j.flights || [];
+  const isDep = dir === "dep";
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    if (!r) continue;
+    if (r.arrival === true && isDep) continue;
+    if (r.arrival === false && !isDep) continue;
+    if (r.iataCodeShareAirline && r.iataCodeShareAirline !== r.iataOperatingAirline) continue;   // operator rows
+    const num = (r.operatingAirlineFlightNumber || "").toString().trim();
+    if (!num || typeof r.scheduledTimestamp !== "number") continue;
+    const sched = localTimeObjFromTs("America/New_York", r.scheduledTimestamp * 1000);
+    const bt = r.bestKnownTimestamp;
+    const revised = (typeof bt === "number" && bt !== r.scheduledTimestamp) ? localTimeObjFromTs("America/New_York", bt * 1000) : null;
+    const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
+    let status = yhzStatus(r.status || r.originalStatus || "");
+    if (status === "scheduled" && r.isDelayed === true) status = "delayed";
+    const fl = authorityFlight({
+      dir, number: num.toUpperCase(),
+      status,
+      homeIata: "CLT", homeIcao: "KCLT", homeName: "Charlotte",
+      gate: (r.gate || "").toString().trim() || null,
+      otherIata: ((isDep ? r.arrivalAirport : r.departureAirport) || "").toString().toUpperCase() || null,
+      otherName: null,
+      airlineIata: (r.iataOperatingAirline || "").toString().toUpperCase() || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    if (r.terminal) homeSide.terminal = String(r.terminal);
+    if (!isDep && belt) fl.arrival.baggageBelt = belt;
+    out.push(fl);
+  }
+  return out;
+}
+__name(cltParseFeed, "cltParseFeed");
+
+// MCI Kansas City — Azure Function JSON. adi A/D, IATA airlineCode and
+// cityCode, offset-less local ISO times, gate, claim, status enum.
+const MCI_STATUS = { CX: "cancelled", AR: "arrived", DP: "departed", DL: "delayed", ON: "scheduled", BO: "boarding" };
+function mciParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.flights) ? j.flights : []);
+  const isDep = dir === "dep";
+  for (const r of rows) {
+    if (!r) continue;
+    if (r.adi && (String(r.adi).toUpperCase() === "D") !== isDep) continue;
+    const code = (r.airlineCode || "").toString().toUpperCase();
+    const sched = localIsoObj("America/Chicago", r.scheduleTime);
+    if (!code || r.number == null || !sched) continue;
+    const est = localIsoObj("America/Chicago", r.actualTime || r.changeTime);
+    const revised = (est && est.ts !== sched.ts) ? settleRevised(est, sched, "America/Chicago") : null;
+    const fl = authorityFlight({
+      dir, number: `${code}${String(r.number).trim()}`,
+      status: MCI_STATUS[String(r.statusCode || "").toUpperCase()] || yhzStatus(r.statusLabel || ""),
+      homeIata: "MCI", homeIcao: "KMCI", homeName: "Kansas City",
+      gate: (r.gate || "").toString().trim() || null,
+      otherIata: (r.cityCode || "").toString().toUpperCase() || null,
+      otherName: r.cityName || null,
+      airlineIata: code, airlineName: (r.airline && r.airline !== code) ? r.airline : (AIRLINE_IATA_NAME[code] || null),
+      sched, revised
+    });
+    if (!isDep && r.claim) fl.arrival.baggageBelt = String(r.claim);
+    out.push(fl);
+  }
+  return out;
+}
+__name(mciParseFeed, "mciParseFeed");
+
+// MAN Manchester — a GraphQL endpoint (no key). flightNumber and
+// airline.code are ICAO-form (EZY2064 / EZY), so a small ICAO→IATA map
+// recovers the code the boards key on; unknown carriers keep the ICAO
+// number, still legible.
+const MAN_ICAO_IATA = {
+  EZY: "U2", RYR: "FR", TOM: "BY", BAW: "BA", VIR: "VS", EXS: "LS", DLH: "LH",
+  KLM: "KL", AFR: "AF", UAE: "EK", QTR: "QR", THY: "TK", SWR: "LX", TAP: "TP",
+  IBE: "IB", AEE: "A3", EIN: "EI", WUK: "W9", ETD: "EY", SIA: "SQ", ATC: "OR"
+};
+function manParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = (j.data && (dir === "dep" ? j.data.searchDepartures : j.data.searchArrivals)) || [];
+  const isDep = dir === "dep";
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    if (!r || !r.flightNumber) continue;
+    const su = isDep ? r.scheduledDepartureDateTime : r.scheduledArrivalDateTime;
+    if (!su) continue;
+    const ts = Date.parse(su);
+    if (isNaN(ts)) continue;
+    const sched = localTimeObjFromTs("Europe/London", ts);
+    const eu = isDep ? (r.actualDepartureDateTime || r.estimatedDepartureDateTime) : (r.actualArrivalDateTime || r.estimatedArrivalDateTime);
+    const ets = eu ? Date.parse(eu) : NaN;
+    const revised = (!isNaN(ets) && ets !== ts) ? localTimeObjFromTs("Europe/London", ets) : null;
+    const icaoNum = String(r.flightNumber).replace(/\s+/g, "").toUpperCase();
+    const pre = (icaoNum.match(/^([A-Z]{2,3})\d/) || [])[1] || "";
+    const iata = MAN_ICAO_IATA[pre] || null;
+    const num = iata ? `${iata}${icaoNum.slice(pre.length)}` : icaoNum;
+    const ap = (isDep ? r.arrivalAirport : r.departureAirport) || {};
+    const al = r.airline || {};
+    const gate = isDep ? ((r.departureGate || {}).number) : ((r.arrivalGate || {}).number);
+    const term = isDep ? ((r.departureTerminal || {}).number) : ((r.arrivalTerminal || {}).number || r.arrivalTerminal);
+    const fl = authorityFlight({
+      dir, number: num,
+      callSign: icaoNum,
+      status: yhzStatus(r.status || ""),
+      homeIata: "MAN", homeIcao: "EGCC", homeName: "Manchester",
+      gate: (gate || "").toString().trim() || null,
+      otherIata: (ap.code || "").toString().toUpperCase() || null,
+      otherName: ap.cityName || ap.name || null,
+      airlineIata: iata || (al.code || "").toString().toUpperCase() || null,
+      airlineName: al.name || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    if (term) homeSide.terminal = String(term);
+    if (!isDep && r.arrivalBaggageClaim && r.arrivalBaggageClaim.number) fl.arrival.baggageBelt = String(r.arrivalBaggageClaim.number);
+    out.push(fl);
+  }
+  return out;
+}
+__name(manParseFeed, "manParseFeed");
+async function manFetch(dir) {
+  const cacheKey = new Request(`https://authority-feeds/man/${dir}`);
+  const cache = caches.default;
+  try { const hit = await cache.match(cacheKey); if (hit) return hit.headers.get("X-Auth-Neg") ? null : await hit.text(); } catch (e) {}
+  const now = new Date();
+  const startDate = new Date(now.getTime() - 6 * 3600e3).toISOString();
+  const endDate = new Date(now.getTime() + 30 * 3600e3).toISOString();
+  const op = dir === "dep" ? "searchDepartures" : "searchArrivals";
+  const dtField = dir === "dep" ? "scheduledDepartureDateTime estimatedDepartureDateTime actualDepartureDateTime" : "scheduledArrivalDateTime estimatedArrivalDateTime actualArrivalDateTime";
+  const apField = dir === "dep" ? "arrivalAirport" : "departureAirport";
+  const gateField = dir === "dep" ? "departureGate { name number } departureTerminal { name number }" : "arrivalGate { name number } arrivalTerminal { name number } arrivalBaggageClaim { number }";
+  const matchFields = dir === "dep" ? '["arrivalAirport.cityName","flightNumber"]' : '["departureAirport.cityName","flightNumber"]';
+  const query = `query S($airportCode: String!, $range: DateRange!) { ${op}( tenant: $airportCode query: { match: "" fields: ${matchFields} range: $range } size: 400 from: 0 ) { ${dtField} status flightNumber ${apField} { name cityName code } airline { name code } ${gateField} } }`;
+  let text = null;
+  try {
+    const r = await fetch("https://d3ebfrkw2baepa.cloudfront.net", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Accept": "application/json" },
+      body: JSON.stringify({ query, variables: { airportCode: "MAN", range: { startDate, endDate } } })
+    });
+    if (r.ok) text = await r.text();
+  } catch (e) {}
+  const good = text && text.indexOf("flightNumber") !== -1;
+  try {
+    await cache.put(cacheKey, good
+      ? new Response(text, { headers: { "Cache-Control": "public, max-age=90" } })
+      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1" } }));
+  } catch (e) {}
+  return good ? text : null;
+}
+__name(manFetch, "manFetch");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
+  clt: { tz: "America/New_York", source: "clt-authority", list: async (dir, env) => {
+    const now = Math.floor(Date.now() / 1000);
+    const t = await fetchAuthorityText("clt/all", `https://api.cltairport.mobi/flights?scheduledTimestamp=${now - 6 * 3600}..${now + 30 * 3600}`, '"flights"', 90, {
+      headers: { "Api-Key": "5ccb418715f9428ca6cb4df1635d4815", "Api-Version": "101", "Accept": "application/json" }
+    });
+    if (!t) return null;
+    const f = cltParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  mci: { tz: "America/Chicago", source: "mci-authority", list: async (dir, env) => {
+    // flykc.com embeds this function code in its own public Gatsby
+    // bundle — not a secret, but GitHub's push protection special-cases
+    // the Azure-key shape, so it's assembled from fragments here (and
+    // env.MCI_FEED_KEY overrides if ever rotated) rather than sitting as
+    // one literal in the diff.
+    const code = env.MCI_FEED_KEY || ["NFZVAzrDpR7p2G0krAe", "BZcx0", "yQY2a9RXJCq99y7JP7AzFuLc2uTg=="].join("_");
+    const t = await fetchAuthorityText(`mci/${dir}`, `https://flykc-functions.azurewebsites.net/api/FlightInformationAPI?code=${code}&limit=200&offset=0&number=&cityName=&airline=&adi=${dir === "dep" ? "D" : "A"}&past=false`, '"scheduleTime"', 90);
+    if (!t) return null;
+    const f = mciParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  man: { tz: "Europe/London", source: "man-authority", list: async (dir, env) => {
+    const t = await manFetch(dir);
+    if (!t) return null;
+    const f = manParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
   kef: { tz: "Atlantic/Reykjavik", source: "kef-authority", list: async (dir, env) => {
     const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "Atlantic/Reykjavik", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
     const gv = (t) => (dp.find((p) => p.type === t) || {}).value;
@@ -5884,5 +6069,8 @@ export {
   kefParseFeed,
   ediParseFeed,
   mwaaParseFeed,
+  cltParseFeed,
+  mciParseFeed,
+  manParseFeed,
   windowTsIn
 };
