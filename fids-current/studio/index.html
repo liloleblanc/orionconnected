@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orion Airport Display Studio</title>
+  <link rel="stylesheet" href="../css/studio.css?v=8">
+  <link rel="stylesheet" href="../css/studio-modules.css?v=3">
+  <link rel="stylesheet" href="../css/studio-sections.css?v=8">
+  <link rel="stylesheet" href="../css/studio-pilot.css?v=2">
+  <link rel="stylesheet" href="../css/studio-canvas.css?v=5">
+</head>
+<body>
+  <div class="studio-app" id="studioApp">
+
+    <header class="studio-topbar">
+      <a class="studio-brand" href="../index.html" aria-label="Return to Orion Connected">
+        <span class="studio-orbit" aria-hidden="true"></span>
+        <span>ORION <b>DISPLAY STUDIO</b></span>
+      </a>
+      <nav class="studio-nav" aria-label="Studio sections">
+        <button class="rail-item is-active" data-section="studio">Studio</button>
+        <button class="rail-item" data-section="templates">Templates</button>
+        <button class="rail-item" data-section="assets">Assets</button>
+        <button class="rail-item" data-section="displays">Displays</button>
+        <button class="rail-item" data-section="live">Live</button>
+      </nav>
+      <div class="studio-document">
+        <small>DISPLAY DOCUMENT</small>
+        <input id="studioName" value="YQM Departures · Master" aria-label="Display document name">
+      </div>
+    </header>
+
+    <div class="studio-toolbar" role="toolbar" aria-label="Designer tools">
+      <button class="tool" id="studioAddScene"><i>＋</i><span>Add state</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="studioUndo" disabled><i>↶</i><span>Undo</span></button>
+      <button class="tool" id="studioRedo" disabled><i>↷</i><span>Redo</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="studioPreview"><i>▶</i><span>Preview</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" data-add-block="text"><i>T</i><span>Text</span></button>
+      <button class="tool" data-add-block="box"><i>▬</i><span>Box</span></button>
+      <button class="tool" data-add-block="image"><i>▣</i><span>Media</span></button>
+      <button class="tool" data-add-block="clock"><i>◔</i><span>Clock</span></button>
+      <button class="tool" id="studioAddModule"><i>⊞</i><span>Modules</span></button>
+      <button class="tool" id="studioFlights"><i>✈</i><span>Flights</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="studioForward"><i>⤒</i><span>Forward</span></button>
+      <button class="tool" id="studioBackward"><i>⤓</i><span>Backward</span></button>
+      <button class="tool" id="studioDelete"><i>✕</i><span>Delete</span></button>
+      <span class="tool-sep"></span>
+      <button class="tool" id="studioRules"><i>⚡</i><span>Rules</span></button>
+    </div>
+
+    <div class="studio-workspace">
+      <aside class="studio-states" aria-label="Template states">
+        <div class="states-heading"><strong>States</strong><span class="scene-hint" id="studioSceneHint"></span></div>
+        <div class="scene-list" id="studioScenes"></div>
+      </aside>
+
+      <main class="studio-main">
+        <div class="canvas-toolbar">
+          <div><i></i><strong id="studioFamilyTitle">Flight information</strong><span id="studioFormat">1920 × 1080</span></div>
+          <div class="family-tabs" id="studioFamilies"></div>
+        </div>
+        <section class="canvas-area">
+          <div class="display-canvas" id="studioCanvas"></div>
+        </section>
+        <section class="studio-section-view" id="studioSectionView" hidden></section>
+      </main>
+
+      <aside class="studio-inspector">
+        <div class="selected-module"><span class="module-code" id="studioSelectedCode">FT</span><div><small>SELECTED MODULE</small><strong id="studioSelectedLabel">Departures table</strong></div></div>
+        <div class="inspector-tabs" id="studioInspectorTabs"><button data-tab="build">Build</button><button class="is-active" data-tab="design">Design</button><button data-tab="data">Data</button><button data-tab="languages">Lang</button><button data-tab="motion">Motion</button></div>
+        <div id="studioBuildPane" hidden>
+          <div class="library-tabs" role="tablist"><button class="is-active" data-library-tab="modules">Modules</button><button data-library-tab="blocks">Blocks</button><button data-library-tab="layers">Layers</button></div>
+          <label class="search-field"><span>⌕</span><input id="studioSearch" placeholder="Search modules"></label>
+          <div class="module-list" id="studioModules"></div>
+          <button class="create-module" id="studioCreateModule"><small>EXTENSIBLE PLATFORM</small><strong>Create a module</strong><span>＋</span></button>
+        </div>
+        <div id="studioInspectorBody"></div>
+      </aside>
+    </div>
+
+    <footer class="studio-bottombar">
+      <a class="exit-designer" href="../index.html">← Exit designer</a>
+      <span class="data-status is-preview" id="studioDataStatus"><i></i><span>Preview data</span></span>
+      <span class="bottom-meta" id="studioSiteStatus">9 languages · YQM</span>
+      <span class="bottom-meta" id="studioAutosave">Autosaved just now</span>
+      <div class="bottom-tools">
+        <button id="studioZoomOut" title="Zoom out">−</button><span id="studioZoomLabel">—</span><button id="studioZoomIn" title="Zoom in">＋</button>
+        <button id="studioGrid" class="is-active">Grid</button><button id="studioSafe">Safe area</button>
+        <label>State <select id="studioState"><option value="default">Default</option></select></label>
+      </div>
+      <span class="studio-save-state" id="studioSaveState">Draft</span>
+      <button class="button button-primary" id="studioPublish">Save &amp; publish</button>
+    </footer>
+  </div>
+
+  <dialog id="studioDialog" class="studio-dialog">
+    <form method="dialog">
+      <button class="dialog-close" value="close" aria-label="Close">×</button>
+      <div id="studioDialogContent"></div>
+    </form>
+  </dialog>
+  <div class="studio-toast" id="studioToast" role="status"></div>
+
+  <script src="../js/studio-airports.js?v=6"></script>
+  <script src="../js/studio-data.js?v=6"></script>
+  <script src="../js/studio-schema.js?v=9"></script>
+  <script src="../js/studio-compat.js?v=8"></script>
+  <script src="../js/studio-render.js?v=5"></script>
+  <script src="../js/studio.js?v=11"></script>
+</body>
+</html>

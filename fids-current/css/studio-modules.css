@@ -1,0 +1,59 @@
+/* Module content styles shared by the Studio canvas and the display player. */
+.preview-header{height:20%;display:grid;grid-template-columns:1.4fr .7fr 1fr;align-items:center;padding:0 4%;border-bottom:1px solid #24405e}.preview-header h2,.preview-header p{margin:0}.preview-header h2{font-size:clamp(14px,1.6vw,24px)}.preview-header small{color:#7d91aa}.preview-header>div:nth-child(2){text-align:center}.preview-header>div:last-child{text-align:right}.preview-body{height:70%;display:grid;grid-template-columns:2.4fr 1fr;gap:1.5%;padding:2%}.preview-table,.preview-ad,.preview-panel{border:1px solid #24476d;border-radius:6px;background:#07172a;overflow:hidden}.flight-row{height:20%;display:grid;grid-template-columns:.8fr 1.8fr .55fr .8fr .8fr;align-items:center;padding:0 3%;border-bottom:1px solid #213a55;font-size:clamp(7px,.68vw,11px)}.flight-row strong:nth-child(3){color:#66b5ff}.status-good{color:var(--green)}.status-warn{color:var(--yellow)}.preview-ad{display:flex;flex-direction:column;justify-content:space-between;padding:10%;background:linear-gradient(135deg,#f7c928,#fff0a5);color:#101820}.preview-ad b{font-size:clamp(18px,2.2vw,36px);line-height:.95}.preview-ad small{font-size:clamp(6px,.6vw,10px)}.preview-footer{height:10%;display:flex;align-items:center;justify-content:space-between;padding:0 3%;border-top:1px solid #1f3c59;color:#7893af;font-size:clamp(6px,.6vw,10px)}.preview-footer b{color:#6cc7ff}
+
+/* ── FX board — Orion-brand display design (canvas + player) ─────────────
+   Sized in cqw so type scales with the canvas, not the viewport. */
+.display-canvas,.player-frame{container-type:inline-size}
+.fx-header{position:relative;height:100%;display:flex;align-items:stretch;justify-content:space-between;background:#0b1d31;overflow:hidden}
+.fx-motif{position:absolute;inset:0;pointer-events:none}
+.fx-motif i{position:absolute;top:-20%;height:140%;transform:skewX(-22deg)}
+.fx-motif i:nth-child(1){left:31cqw;width:9cqw;background:#0e2a47}
+.fx-motif i:nth-child(2){left:38.5cqw;width:4.6cqw;background:#2f8df4;opacity:.9}
+.fx-motif i:nth-child(3){left:43.5cqw;width:11cqw;background:#134067}
+.fx-motif i:nth-child(4){left:53.5cqw;width:3cqw;background:#f9c20b}
+.fx-motif i:nth-child(5){left:57cqw;width:15cqw;background:#0e2a47}
+.fx-brand{position:relative;z-index:2;display:flex;align-items:center;gap:1.1cqw;background:#fff;color:#0b1626;padding:0 3.2cqw 0 1.8cqw;clip-path:polygon(0 0,100% 0,calc(100% - 2.4cqw) 100%,0 100%);max-width:34cqw}
+.fx-orbit{width:3cqw;height:3cqw;border:.4cqw solid #0b1626;border-radius:50%;position:relative;transform:rotate(-16deg);flex:none}
+.fx-orbit:after{content:"";position:absolute;left:-.7cqw;right:-.7cqw;top:1.15cqw;border-top:.4cqw solid #f9c20b}
+.fx-brand b{font-size:1.3cqw;line-height:1.2;font-weight:800;letter-spacing:.02em;text-transform:uppercase}
+.fx-headright{position:relative;z-index:2;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:0 2cqw;text-align:right}
+.fx-clock{font-size:2.6cqw;font-weight:800;line-height:1;color:#fff}
+.fx-title{display:flex;align-items:center;gap:.9cqw;font-size:3.4cqw;font-weight:700;color:#fff;line-height:1.05}
+.fx-plane{font-size:2.4cqw;line-height:1}
+.fx-headmeta{margin-top:.35cqw;color:#9db4cf;font-size:.9cqw;letter-spacing:.16em;font-weight:600}
+.fx-table{height:100%;display:flex;flex-direction:column;background:#0a1a2c;overflow:hidden;border-radius:.3cqw}
+.fx-cols,.fx-row{display:grid;grid-template-columns:3.2cqw 10cqw 1.7fr 1fr .8fr 1fr 1.2fr;gap:1cqw;align-items:center;padding:0 1.3cqw}
+.fx-cols{flex:0 0 3cqw;background:#0c2136;color:#4da3ff;font-size:1cqw;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+.fx-row{flex:1;min-height:0;color:#fff;font-size:1.2cqw;font-weight:700;text-transform:uppercase;letter-spacing:.02em}
+.fx-row:nth-child(even){background:#12293f}
+.fx-row:nth-child(odd){background:#0e2236}
+.fx-row>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.fx-logo{width:2.5cqw;height:2.5cqw;border-radius:.35cqw;background:#fff;display:grid;place-items:center;overflow:hidden}
+.fx-logo img{width:86%;height:86%;object-fit:contain}
+.fx-logo i{display:none;font-style:normal;font-size:.95cqw;color:#0b1626;font-weight:900}
+.fx-gate{color:#6cc7ff}
+.fx-row .status-good{color:#39d98f}
+.fx-row .status-warn{color:#f9c20b}
+.fx-row.row-alert{background:rgba(249,194,11,.15)}
+.fx-row.row-focus{background:rgba(36,201,160,.14)}
+.fx-empty{flex:1;display:grid;place-items:center;color:#67809c;font-size:1.3cqw;letter-spacing:.1em;text-transform:uppercase}
+.fx-footer{height:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:2cqw;background:#04090f;color:#fff;padding:0 1.6cqw}
+.fx-temp{color:#6cc7ff;font-weight:800;font-size:1.25cqw;white-space:nowrap}
+.fx-temp small{color:#67809c;font-weight:600;font-size:.85cqw;letter-spacing:.12em;margin-left:.6cqw}
+.fx-ticker{font-size:1.3cqw;font-weight:700;text-align:center;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.fx-foot-right{display:flex;align-items:center;gap:1.2cqw;white-space:nowrap}
+.fx-foot-right small{color:#67809c;font-size:.85cqw;letter-spacing:.14em;text-transform:uppercase}
+.fx-chip{display:flex;align-items:center;background:#f9c20b;color:#101820;font-weight:900;font-size:1cqw;padding:.5cqw 1.1cqw .5cqw 1.4cqw;clip-path:polygon(1cqw 0,100% 0,100% 100%,0 100%);letter-spacing:.06em}
+.fx-text{height:100%;display:flex;align-items:center;line-height:1.15;overflow:hidden}
+.fx-boxfill{height:100%}
+.fx-image{height:100%;display:grid;place-items:center;overflow:hidden}
+.fx-image img{width:100%;height:100%}
+.fx-clockblock{height:100%;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;line-height:1}
+.fx-clockblock b{font-weight:800}
+.fx-clockblock small{margin-top:.4cqw;color:#9db4cf;font-size:1cqw;letter-spacing:.1em}
+.fx-table{position:relative}
+.fx-row-blank{visibility:hidden}
+.fx-page{position:absolute;right:0;bottom:0;background:#f9c20b;color:#101820;font-weight:900;font-size:.95cqw;letter-spacing:.08em;padding:.45cqw 1.1cqw .45cqw 1.5cqw;clip-path:polygon(1.1cqw 0,100% 0,100% 100%,0 100%)}
+.fx-brand-logo{max-height:70%;max-width:11cqw;object-fit:contain;flex:none}
+.fx-brand.is-dark{background:#0b1626;color:#fff}
+.fx-brand.is-dark .fx-orbit{border-color:#fff}
