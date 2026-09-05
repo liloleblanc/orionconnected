@@ -40,6 +40,16 @@
 
   "ai": { "binding": "AI" },
 
+  // 2026-09-04 — ADB QUOTA KILL SWITCH. v23255 put AeroDataBox first in line
+  // for every live-position lookup; on gate screens that poll every 60 s,
+  // 24/7, against a 40 s cache, that burned through the RapidAPI plan (the
+  // quota-exhausted email of 2026-09-04). "community" makes /adsb/* skip ADB
+  // entirely and use the free community ring — the pre-v23255 behaviour;
+  // fids-proxy.js already honours it (see _adbFirst). Schedule/FIDS window
+  // data is unaffected and still uses ADB. Delete this var (or set "adb")
+  // only together with real position caching, or the burn resumes.
+  "vars": { "ADSB_SOURCE": "community" },
+
   // v23269 — twice a day, the worker checks its flight-alert credit balance
   // and tops it up if it has fallen below the floor (see `scheduled()` in
   // fids-proxy.js). Credits burn per notification and are not replenished by
