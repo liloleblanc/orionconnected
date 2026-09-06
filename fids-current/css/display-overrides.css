@@ -2676,6 +2676,18 @@ html body .g8-wrap .g8-r1-logoslot > img:first-child { flex: 0 1 auto; min-width
    so it gets smaller instead of losing its end. */
 html body .g8-wrap .g8-r1-logoslot > * { min-width: 0 !important; }
 html body .g8-wrap .g8-r1-logoslot > img { flex: 0 1 auto !important; }
+/* v23333 — THE PAIR'S OWN CHILDREN MUST SHRINK TOO (Nick: 'United … the
+   Alliance logo overlaps with the airline logo'). In pair mode the wordmark
+   sits INSIDE span.g8-r1-brandpair (emblem + wordmark). The rule above lets
+   the pair shrink, but the wordmark <img> inside it kept min-width:auto — its
+   intrinsic width — so when the slot is tight the pair shrinks and the
+   wordmark overflows it, straight under the Star Alliance tile that follows.
+   Measured on a Denver United gate: wordmark box to 658px, tile from 638px, a
+   20px overlap. The wordmark now gives way (object-fit keeps it whole, just a
+   little smaller); the emblem keeps its size. */
+html body .g8-wrap .g8-r1-logoslot .g8-r1-brandpair { min-width: 0 !important; flex: 0 1 auto !important; }
+html body .g8-wrap .g8-r1-logoslot .g8-r1-brandpair > img.g8-r1-logo { min-width: 0 !important; flex: 0 1 auto !important; object-fit: contain !important; }
+html body .g8-wrap .g8-r1-logoslot .g8-r1-brandpair > *:not(.g8-r1-logo) { flex: 0 0 auto !important; }
 html body .g8-wrap .g8-r1-star {
   width: auto !important;
   min-width: 0 !important;

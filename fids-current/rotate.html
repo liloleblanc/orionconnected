@@ -6,7 +6,7 @@
   <meta http-equiv="Expires" content="0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>YQM Rotating Display</title>
+  <title>Orion Rotating Display</title>
   <style>
     html, body { margin: 0; height: 100%; width: 100%; overflow: hidden;
                  background: #0b1a2b; cursor: none; }
@@ -52,8 +52,15 @@
        rotate = ordered sequence of boards (aliases: departures/gates/bags, etc.);
                 a board may repeat in the sequence (e.g. gates between each).
        dwell  = seconds per screen (default 60).
-     Every OTHER param (ap, mode, theme, stream, …) is forwarded to each board.
-     All boards load up front and stay loaded; switching is just a class toggle,
+       ap     = ONE airport, or a comma list (ap=YHZ,BOS,LHR) for an AIRPORT TOUR:
+                the board sequence plays through for each airport in turn, and the
+                next airport is loaded behind the current one so the switch is the
+                same calm fade as a board switch — no splash, no loader.
+       tour=1 = tour the default list of airports that run on their own
+                authority feeds (below); tour=0 opts out. stream=2 (the second
+                YouTube stream) tours by default unless ap is already a list.
+     Every OTHER param (mode, theme, stream, …) is forwarded to each board.
+     Boards load up front and stay loaded; switching is just a class toggle,
      so the timer stays exact and nothing reloads between screens. */
   (function () {
     try {
@@ -89,12 +96,43 @@
       seq = seq.filter(function (p, i) { return i === 0 || p !== seq[i - 1]; });
       if (seq.length === 0) seq = ['fids.html'];
 
+      // ── v23333 — THE AIRPORT TOUR ────────────────────────────────────────
+      // (Nick: 'change the stream to cities that do work … keep Canadian
+      // cities in there and some US, maybe London and more international'.)
+      // The second YouTube stream was pinned to Miami, which has had no data
+      // since AeroDataBox went away. This is the list it tours instead: every
+      // airport here runs on its own authority's feed. Edit the list, ship,
+      // and the running stream picks it up on its own (see the self-refresh
+      // below) — nothing to touch on the server.
+      var TOUR_DEFAULT = [
+        // Canada
+        'YHZ', 'YYT', 'YOW', 'YQB', 'YYC', 'YEG', 'YYJ', 'YXE',
+        // United States
+        'BOS', 'ORD', 'SFO', 'SEA', 'DEN', 'LAS', 'AUS', 'SLC', 'PHL', 'MSP',
+        // Europe
+        'LHR', 'DUB', 'EDI', 'KEF'
+      ];
+      var apRaw = String(q.get('ap') || '').toUpperCase();
+      var aps = apRaw.split(',').map(function (s) { return s.trim(); }).filter(function (s) { return /^[A-Z0-9]{3,4}$/.test(s); });
+      var tourFlag = q.get('tour');
+      if (tourFlag === '1' || (q.get('stream') === '2' && aps.length < 2 && tourFlag !== '0')) aps = TOUR_DEFAULT.slice();
+      if (aps.length === 0) aps = ['YQM'];
+      var isTour = aps.length > 1;
+
       // Params passed to each board: everything EXCEPT the rotator's own controls
-      // (so the boards don't try to rotate themselves).
+      // (so the boards don't try to rotate themselves). On a tour the airport is
+      // set per frame, and `langs` is dropped so each board speaks its own
+      // airport's languages (en/fr in Canada, en/es where the board says so).
       q.delete('rotate'); q.delete('dwell'); q.delete('every');
       q.delete('fade'); q.delete('hold');   // rotator-only controls, v23166
+      q.delete('tour'); q.delete('ap');
+      if (isTour) q.delete('langs');
       var childQ = q.toString();
-      var childSuffix = childQ ? ('?' + childQ) : '';
+      function childUrl(page, ap) {
+        var p = new URLSearchParams(childQ);
+        p.set('ap', ap);
+        return page + '?' + p.toString();
+      }
 
       // Tell a board iframe whether it's the one on display. The gate board
       // pauses its heavy gate-cycle re-render while it's hidden — otherwise it
@@ -104,26 +142,85 @@
         try { frame.contentWindow.postMessage({ oc: on ? 'active' : 'inactive' }, '*'); } catch (e) {}
       }
 
-      // One iframe per UNIQUE page (gids appears once even if it recurs in seq).
-      var frameFor = {};
+      // One iframe per (airport, unique page). A single-airport run keeps every
+      // page loaded, as before. A tour keeps TWO airports alive at most: the one
+      // on screen (all its pages) and the next one's first page, loaded during
+      // the current airport's last screen so it is painted and populated before
+      // it is ever shown; the previous airport's frames are removed once its
+      // fade-out has finished.
+      var frames = {};   // frames[ap][page] → iframe
       var uniquePages = seq.filter(function (p, i) { return seq.indexOf(p) === i; });
-      uniquePages.forEach(function (page) {
+      function ensureFrame(ap, page) {
+        frames[ap] = frames[ap] || {};
+        if (frames[ap][page]) return frames[ap][page];
         var f = document.createElement('iframe');
         f.className = 'oc-frame';
         f.setAttribute('scrolling', 'no');
         f.setAttribute('allow', 'autoplay');
+        f.setAttribute('data-oc-ap', ap);
+        f.setAttribute('data-oc-page', page);
         // when it finishes loading, tell it whether it's currently on display
-        f.addEventListener('load', function () { ocTell(f, f.classList.contains('oc-active')); });
-        f.src = page + childSuffix;
+        f.addEventListener('load', function () { f._ocLoadedAt = Date.now(); ocTell(f, f.classList.contains('oc-active')); });
+        f.src = childUrl(page, ap);
         document.body.appendChild(f);
-        frameFor[page] = f;
-      });
+        frames[ap][page] = f;
+        return f;
+      }
+      function ensureAirport(ap) { uniquePages.forEach(function (p) { ensureFrame(ap, p); }); }
+      function destroyAirport(ap) {
+        var set = frames[ap]; if (!set) return;
+        Object.keys(set).forEach(function (p) {
+          var f = set[p];
+          if (f.classList.contains('oc-active')) return;   // never pull the visible board
+          try { ocTell(f, false); } catch (e) {}
+          // Removing the iframe unloads its document; no src swap needed.
+          try { f.parentNode && f.parentNode.removeChild(f); } catch (e) {}
+          delete set[p];
+        });
+        if (!Object.keys(set).length) delete frames[ap];
+      }
+      // A board is ready to be SHOWN when it has revealed its chrome (fids/bids
+      // stamp data-fids-chrome-ready once painted) or the gate layout exists;
+      // failing those signals, 45 s after its load event is as long as we wait.
+      function isReady(f) {
+        try {
+          var d = f.contentDocument;
+          if (d) {
+            if (d.documentElement.hasAttribute('data-fids-chrome-ready')) return true;
+            if (d.querySelector('.g8-wrap .g8-r1')) return true;
+          }
+        } catch (e) {}
+        return !!(f._ocLoadedAt && (Date.now() - f._ocLoadedAt) > 45000);
+      }
 
-      var idx = 0;
-      frameFor[seq[0]].classList.add('oc-active');
-      ocTell(frameFor[seq[0]], true);
+      var apIdx = 0, idx = 0;
+      ensureAirport(aps[0]);
+      frames[aps[0]][seq[0]].classList.add('oc-active');
+      ocTell(frames[aps[0]][seq[0]], true);
+      if (isTour && seq.length === 1) ensureFrame(aps[1 % aps.length], seq[0]);   // one-page tours preload right away
 
-      if (seq.length < 2) return; // single board — nothing to rotate
+      if (seq.length < 2 && !isTour) return; // single board, single airport — nothing to rotate
+
+      // ── Self-refresh (v23333) ────────────────────────────────────────────
+      // The stream box loads this page once and keeps it for weeks; only the
+      // boards inside reload themselves on a build-tag change. So this page
+      // checks its own ETag every 30 minutes and, when the deployed copy has
+      // changed, reloads at the next switch — a new tour list or rotator fix
+      // reaches the running stream without a hand on the server.
+      var selfSig = null, reloadPending = false;
+      function checkSelf() {
+        try {
+          fetch(window.location.pathname + '?_oc=' + Date.now(), { method: 'HEAD', cache: 'no-store' }).then(function (r) {
+            if (!r || !r.ok) return;
+            var sig = r.headers.get('etag') || r.headers.get('last-modified') || '';
+            if (!sig) return;
+            if (selfSig === null) selfSig = sig;
+            else if (sig !== selfSig) reloadPending = true;
+          }, function () {});
+        } catch (e) {}
+      }
+      checkSelf();
+      setInterval(checkSelf, 30 * 60000);
 
       // ── Timing ────────────────────────────────────────────────────────────
       // Every screen shows for at least `dwell`. A non-gate board (fids/bids)
@@ -137,6 +234,7 @@
       var GATE = 'gids.html';
       var minMs = dwell * 1000;
       var maxMs = Math.max(minMs * 3, minMs + 120000);
+      var READY_GRACE_MS = 40000;   // how long an airport switch may wait for the next board to be ready
       var slotStart = Date.now();
 
       // v23166 — THE SWITCH IS SEQUENCED: OUT TO BLACK, THEN IN.
@@ -171,33 +269,53 @@
       // idempotent function, so whichever arrives first wins and the other is a
       // no-op. A starved timer now costs at most one extra second of black
       // instead of ending the rotation.
-      var pendingShow = null;   // {frame, dueAt} — a reveal that has not happened yet
+      var pendingShow = null;   // {frame, dueAt, retireAp} — a reveal that has not happened yet
 
       function showNow() {
         if (!pendingShow) return;
-        var f = pendingShow.frame;
+        var f = pendingShow.frame, retire = pendingShow.retireAp;
         pendingShow = null;
         if (!f.classList.contains('oc-active')) {
           f.classList.add('oc-active');
           ocTell(f, true);
         }
         slotStart = Date.now();          // the dwell starts when it is VISIBLE
+        if (retire) {
+          // The previous airport is fully off screen: free its frames, and
+          // finish loading the rest of this airport's pages behind the one
+          // now showing.
+          setTimeout(function () { try { destroyAirport(retire); } catch (e) {} }, 1500);
+          ensureAirport(aps[apIdx]);
+        }
+        // Entering the current airport's LAST screen: start the next airport's
+        // first board now, so it has this whole dwell to load and populate.
+        if (isTour && idx === seq.length - 1) ensureFrame(aps[(apIdx + 1) % aps.length], seq[0]);
       }
 
+      // Returns false when the switch must wait (next airport's board not ready
+      // yet, within grace) so the heartbeat retries a second later.
       function advance() {
-        if (pendingShow) return;         // a switch is already in flight
-        var cur = frameFor[seq[idx]];
-        idx = (idx + 1) % seq.length;
-        var nxt = frameFor[seq[idx]];
+        if (pendingShow) return true;    // a switch is already in flight
+        var curAp = aps[apIdx];
+        var cur = frames[curAp][seq[idx]];
+        var nextIdx = (idx + 1) % seq.length;
+        var nextAp = (isTour && nextIdx === 0) ? aps[(apIdx + 1) % aps.length] : curAp;
+        if (reloadPending && nextAp !== curAp) { window.location.reload(); return true; }
+        var nxt = ensureFrame(nextAp, seq[nextIdx]);
+        if (nextAp !== curAp && !isReady(nxt) && (Date.now() - slotStart) < minMs + READY_GRACE_MS) return false;
+        var retire = null;
+        if (nextAp !== curAp) { retire = curAp; apIdx = (apIdx + 1) % aps.length; }
+        idx = nextIdx;
         slotStart = Date.now();
-        if (nxt === cur) return;
+        if (nxt === cur) return true;
         // 1. fade the current board out; tell it immediately so it can pause its
         //    janitors while it is on its way off screen.
         cur.classList.remove('oc-active');
         ocTell(cur, false);
         // 2. once it is fully out (screen is black), bring the next one up.
-        pendingShow = { frame: nxt, dueAt: Date.now() + FADE_MS + HOLD_MS };
+        pendingShow = { frame: nxt, dueAt: Date.now() + FADE_MS + HOLD_MS, retireAp: retire };
         setTimeout(showNow, FADE_MS + HOLD_MS);
+        return true;
       }
 
       // A gate ad just finished. If we're on the gate and past the minimum, switch
@@ -238,6 +356,8 @@
         driven = true;
       } catch (e) { /* fall through to setInterval */ }
       if (!driven) { window.setInterval(beat, 1000); }
+      // Exposed for verification only (read-only view of the rotation state).
+      window.__ocRotator = { get: function () { return { aps: aps, apIdx: apIdx, idx: idx, seq: seq, isTour: isTour, frames: Object.keys(frames).map(function (a) { return a + ':' + Object.keys(frames[a]).join('+'); }), pending: !!pendingShow, reloadPending: reloadPending }; } };
     } catch (e) { /* if anything fails, the first board still shows */ }
   })();
   </script>
