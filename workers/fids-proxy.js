@@ -5121,7 +5121,148 @@ function miaParseFeed(xmlText, dir, nowMs) {
 }
 __name(miaParseFeed, "miaParseFeed");
 
+// ── ZRH Zürich — flightdata.flughafen-zuerich.ch (2026-09-06) ────────
+// Zero-auth JSON behind the airport's own arrivals/departures pages: a
+// flat array of both directions for one local (SDT) day per ?date=
+// request (~750 KB; yesterday..today+4 are valid, anything else is a
+// 400). The dateless /flights is the whole five-day set at 3.4 MB and
+// is never fetched. Every clock is ISO-8601 UTC with a Z (STD/ETD/ATD,
+// STA/ETA/ATA; actuals carry seconds) — converted to Europe/Zurich wall
+// clock here. ~11% of rows are GA/bizjet/ferry/cargo movements
+// (isCommercial=false, most under the placeholder carrier XXC) that a
+// passenger board must not show. FLC is IATA except easyJet's three
+// operators, which arrive ICAO-form (EZY/EZS/EJU); the boards key logos
+// on U2. statusTextEn code 90 embeds a clock ("Gate Info at 19:10")
+// that is when the gate will be announced — NOT a revised time; only
+// ETD/ETA (or the actual) revise. The feed's `model` string is
+// unreliable (a B763 reads "B757-200"), so the IATA sub-type TYS is the
+// aircraft label — the board's formatAircraft() knows every code seen.
+const ZRH_ICAO_IATA = { EZY: "U2", EZS: "U2", EJU: "U2" };
+// The only commercial carrier seen without an `airline` name.
+const ZRH_AIRLINE_NAMES = { KM: "KM Malta Airlines" };
+// statusCode vocabulary seen live across two days; 200 "Rolling" is
+// off-blocks on a departure and the landing roll on an arrival, so it
+// splits by direction in zrhStatus. Unknown codes fall back to the text.
+const ZRH_STATUS = {
+  2: "gateclosed", 3: "boarding", 4: "departed", 7: "arrived", 8: "cancelled",
+  13: "boarding", 18: "delayed", 57: "scheduled", 90: "scheduled",
+  201: "active", 202: "active"
+};
+function zrhStatus(code, text, dir) {
+  const c = Number(code);
+  if (c === 200) return dir === "dep" ? "departed" : "arrived";
+  if (ZRH_STATUS[c]) return ZRH_STATUS[c];
+  const s = String(text || "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("divert")) return "diverted";
+  if (s.includes("board")) return "boarding";
+  if (s.includes("closed")) return "gateclosed";
+  if (s.includes("route") || s.includes("approach") || s.includes("airborne")) return "active";
+  return yhzStatus(s);
+}
+__name(zrhStatus, "zrhStatus");
+// UTC-Z instant → epoch ms floored to the minute (ATA/ATD carry seconds;
+// the board shows HH:MM, and an on-block 05:50:12 against a 05:50
+// schedule is on time, not a revision).
+function zrhTs(s) {
+  if (!s) return NaN;
+  const t = Date.parse(String(s));
+  return isNaN(t) ? NaN : Math.floor(t / 6e4) * 6e4;
+}
+__name(zrhTs, "zrhTs");
+// Which ?date= files cover the board's window (now-2h .. now+22h) at
+// this Zürich wall-clock moment. Today always. Yesterday for the first
+// two hours, so a 23:30 lander still trails on the arrivals board.
+// Tomorrow from 06:00, when the 22 h reach starts to touch the next
+// morning's first wave (05:45 is the earliest movement seen).
+function zrhFeedDays(nowMs) {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Zurich", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false }).formatToParts(new Date(nowMs));
+  const g = (t) => (p.find((x) => x.type === t) || {}).value;
+  const today = `${g("year")}-${g("month")}-${g("day")}`;
+  const hour = Number(g("hour")) % 24;
+  const plus = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  const days = [];
+  if (hour < 2) days.push(plus(today, -1));
+  days.push(today);
+  if (hour >= 6) days.push(plus(today, 1));
+  return days;
+}
+__name(zrhFeedDays, "zrhFeedDays");
+// One day-file → ADB-native flights for one direction. Pure; exported
+// for the node tests. Operator rows only (the feed's codeShare string
+// is the marketing list, never a row of its own).
+function zrhParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (j && Array.isArray(j.flights) ? j.flights : []);
+  const isDep = dir === "dep";
+  for (const r of rows) {
+    if (!r || String(r.flightType || "").toUpperCase() !== (isDep ? "D" : "A")) continue;
+    // GA / bizjets / ferry legs / cargo: isCommercial=false (XXC is the
+    // placeholder carrier for most of them; statusCode 10 is "Cargo").
+    if (r.isCommercial !== true) continue;
+    const flc = String(r.FLC || "").toUpperCase().trim();
+    if (!flc || flc === "XXC" || Number(r.statusCode) === 10) continue;
+    const flnRaw = String(r.FLN == null ? "" : r.FLN).trim();
+    const fln = flnRaw.replace(/^0+(?=\d)/, "");   // "076" → "76", as the boards print it
+    if (!fln) continue;
+    const ts = zrhTs(isDep ? r.STD : r.STA);
+    if (isNaN(ts)) continue;
+    const sched = localTimeObjFromTs("Europe/Zurich", ts);
+    // The actual (off-block / on-block) outranks the estimate; either
+    // only counts as a revision when it lands on a different minute.
+    const ets = zrhTs(isDep ? (r.ATD || r.ETD) : (r.ATA || r.ETA));
+    const revised = (!isNaN(ets) && ets !== ts) ? localTimeObjFromTs("Europe/Zurich", ets) : null;
+    const iata = ZRH_ICAO_IATA[flc] || flc;
+    const other = String((isDep ? r.PDS : r.POR) || "").toUpperCase().trim();
+    const fl = authorityFlight({
+      dir, number: `${iata}${fln}`,
+      // easyJet rows come ICAO-form (EZS1220): that string IS the callsign.
+      callSign: flc.length === 3 ? `${flc}${flnRaw}` : null,
+      status: zrhStatus(r.statusCode, r.statusTextEn, dir),
+      homeIata: "ZRH", homeIcao: "LSZH", homeName: "Zürich",
+      gate: isDep ? ((r.GAT == null ? "" : String(r.GAT)).trim() || null) : null,
+      // IATA when the feed has one; a 4-letter ICAO (GA airfields) goes
+      // on the far side's icao slot below.
+      otherIata: /^[A-Z0-9]{3}$/.test(other) ? other : null,
+      otherName: String(r.cityEn || r.airportName || "").trim() || null,
+      airlineIata: iata,
+      airlineName: String(r.airline || "").trim() || ZRH_AIRLINE_NAMES[iata] || null,
+      aircraftModel: String(r.TYS || r.ICT || r.model || "").trim() || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    const farSide = isDep ? fl.arrival : fl.departure;
+    if (/^[A-Z0-9]{4}$/.test(other)) farSide.airport.icao = other;
+    // Arrivals carry the terminal (TER 1|2); departures carry the
+    // check-in area instead (CAM 1|2|3), which is what Zürich signs.
+    const term = isDep ? r.CAM : r.TER;
+    if (term != null && String(term).trim()) homeSide.terminal = String(term).trim();
+    // RTK is the baggage "race track" (belt 12–32), posted with the
+    // landing; BDC is a minutes-to-bags countdown, not a belt.
+    if (!isDep && r.RTK != null && String(r.RTK).trim()) fl.arrival.baggageBelt = String(r.RTK).trim();
+    if (r.REG) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = String(r.REG).trim(); }
+    out.push(fl);
+  }
+  return out;
+}
+__name(zrhParseFeed, "zrhParseFeed");
+
 const AUTHORITY_HANDLERS = {
+  zrh: { tz: "Europe/Zurich", source: "zrh-authority", list: async (dir, env) => {
+    // One JSON array per local (SDT) day, both directions in it, so one
+    // edge-cache key per day serves every screen and both list() calls.
+    // Never the dateless /flights (3.4 MB, five days). zrhFeedDays adds
+    // yesterday for the first two hours and tomorrow from 06:00 so the
+    // board's now-2h..now+22h window is always covered.
+    const out = [];
+    for (const day of zrhFeedDays(Date.now())) {
+      const t = await fetchAuthorityText(`zrh/${day}`, `https://flightdata.flughafen-zuerich.ch/flights?date=${day}`, '"flightType"', 90);
+      if (t) out.push(...zrhParseFeed(t, dir, Date.now()));
+    }
+    return out.length ? out : null;
+  } },
+
   mia: { tz: "America/New_York", source: "mia-authority", list: async (dir, env) => {
     // The board's own 60-s XML refresh feed (https, anonymous, ~250-300 KB).
     // Answers in ~0.5 s while polled; the first hit after ~10 min of nobody
@@ -8286,5 +8427,8 @@ export {
   parseYzfDotPage,
   yzfMergeRows,
   miaParseFeed,
+  zrhParseFeed,
+  zrhFeedDays,
+  zrhStatus,
   _authorityRosterHas
 };
