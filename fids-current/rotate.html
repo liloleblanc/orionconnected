@@ -113,12 +113,47 @@
         // Europe
         'LHR', 'DUB', 'EDI', 'KEF'
       ];
-      var apRaw = String(q.get('ap') || '').toUpperCase();
-      var aps = apRaw.split(',').map(function (s) { return s.trim(); }).filter(function (s) { return /^[A-Z0-9]{3,4}$/.test(s); });
-      var tourFlag = q.get('tour');
-      if (tourFlag === '1' || (q.get('stream') === '2' && aps.length < 2 && tourFlag !== '0')) aps = TOUR_DEFAULT.slice();
-      if (aps.length === 0) aps = ['YQM'];
+      // v23346 — THE AIRPORTS THAT ACTUALLY SERVE DATA. Mirrors
+      // FIDS_LIVE_AIRPORTS in fids-core.js and APP_LIVE_AIRPORTS in app.html;
+      // tests/live-airports.test.js fails if the three ever disagree. A list
+      // typed into a URL is filtered against this, so a hand-written tour can
+      // never put a dead airport on a screen someone is watching.
+      var ROSTER = ['YQM','YHZ','YYT','YSJ','YFC','YQY','YQX','YYG','YDF',
+        'YOW','YQB','YQT','YHM','YXX','YLW','YQR','YXE','YYC','YEG',
+        'YYJ','YKA','YXS','YMM',
+        'BOS','ORD','SFO','SEA','DEN','LAS','AUS','SLC','PHL','MSP',
+        'JFK','IAH','MCO','CLT','MCI','RDU','SAN','PDX','DTW','MSY','MIA','PHX','YZF',
+        'LHR','DUB','EDI','KEF','ZRH'];
+      var LIVE = {}; ROSTER.forEach(function (c) { LIVE[c] = 1; });
+
+      // v23346 — ap= and tour= BOTH take a list. `tour=1` means the default
+      // list below; `tour=ZRH,LHR,YHZ` tours exactly those; `tour=0` opts out.
+      // (Nick's desktop launcher passes the airports in tour=, which used to
+      // read as "not the string 1", quietly leaving the rotator on Moncton.)
+      function apList(v) {
+        return String(v || '').toUpperCase().split(',')
+          .map(function (s) { return s.trim(); })
+          .filter(function (s) { return /^[A-Z0-9]{3,4}$/.test(s); });
+      }
+      var tourRaw = q.get('tour');
+      var aps = apList(q.get('ap')).concat(apList(tourRaw === '1' || tourRaw === '0' ? '' : tourRaw));
+      aps = aps.filter(function (c, i) { return aps.indexOf(c) === i; });      // de-dupe, keep order
+      if (tourRaw === '1' || (q.get('stream') === '2' && aps.length < 2 && tourRaw !== '0')) aps = TOUR_DEFAULT.slice();
+      // Drop anything with no feed and say so, rather than showing a dead board.
+      var dropped = aps.filter(function (c) { return !LIVE[c]; });
+      if (dropped.length) {
+        aps = aps.filter(function (c) { return LIVE[c]; });
+        try { console.warn('[TOUR] no feed for ' + dropped.join(', ') + ' — dropped from this tour'); } catch (e) {}
+      }
+      if (aps.length === 0) aps = dropped.length ? TOUR_DEFAULT.slice() : ['YQM'];
       var isTour = aps.length > 1;
+
+      // v23346 — apdwell=SECONDS: how long to stay on ONE AIRPORT before moving
+      // to the next, independent of dwell (which is per board). Without it an
+      // airport lasts exactly one pass of the board sequence.
+      var apDwell = parseInt(q.get('apdwell') || '0', 10);
+      if (!(apDwell > 0)) apDwell = 0;
+      var apDwellMs = apDwell * 1000;
 
       // Params passed to each board: everything EXCEPT the rotator's own controls
       // (so the boards don't try to rotate themselves). On a tour the airport is
@@ -126,7 +161,7 @@
       // airport's languages (en/fr in Canada, en/es where the board says so).
       q.delete('rotate'); q.delete('dwell'); q.delete('every');
       q.delete('fade'); q.delete('hold');   // rotator-only controls, v23166
-      q.delete('tour'); q.delete('ap');
+      q.delete('tour'); q.delete('ap'); q.delete('apdwell');
       if (isTour) q.delete('langs');
       var childQ = q.toString();
       function childUrl(page, ap) {
@@ -256,6 +291,7 @@
       var EMPTY_GRACE_MS = 12000;   // v23342 — how long a visible board may stay empty before we move on
       var READY_GRACE_MS = 40000;   // how long an airport switch may wait for the next board to be ready
       var slotStart = Date.now();
+      var airportStart = Date.now();   // v23346 — when the CURRENT airport came up (apdwell)
 
       // v23166 — THE SWITCH IS SEQUENCED: OUT TO BLACK, THEN IN.
       // (Nick: 'transitions could simply be less or fade it more fade to black
@@ -301,6 +337,7 @@
         }
         slotStart = Date.now();          // the dwell starts when it is VISIBLE
         if (retire) {
+          airportStart = Date.now();   // new airport is on screen
           // The previous airport is fully off screen: free its frames, and
           // finish loading the rest of this airport's pages behind the one
           // now showing.
@@ -319,6 +356,10 @@
         var curAp = aps[apIdx];
         var cur = frames[curAp][seq[idx]];
         var nextIdx = (idx + 1) % seq.length;
+        // v23346 — with apdwell set, the airport changes on ITS OWN clock: once
+        // this airport has had its time, the next board shown is the first
+        // board of the next airport, wherever we happen to be in the sequence.
+        if (isTour && apDwellMs && (Date.now() - airportStart) >= apDwellMs) nextIdx = 0;
         var nextAp = (isTour && nextIdx === 0) ? aps[(apIdx + 1) % aps.length] : curAp;
         if (reloadPending && nextAp !== curAp) { window.location.reload(); return true; }
         var nxt = ensureFrame(nextAp, seq[nextIdx]);
