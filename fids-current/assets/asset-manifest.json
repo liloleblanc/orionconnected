@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2543,
+    "total": 2545,
     "by_category": {
       "ad": 10,
-      "airline": 1348,
+      "airline": 1350,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -6931,6 +6931,28 @@
       "subcategory": "european",
       "group": "Airlines — European",
       "name": "lufthansa monochrome white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/lufthansa-wordmark-dark.svg",
+      "file": "lufthansa-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "lufthansa wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/lufthansa-wordmark-light.svg",
+      "file": "lufthansa-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "lufthansa wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"
