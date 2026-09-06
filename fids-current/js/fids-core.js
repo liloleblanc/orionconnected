@@ -5726,6 +5726,8 @@ const AIRLINE_ACCENT = {
   // navy. Only carriers that had no entry can change; every carrier already in
   // this table is untouched.
   'FR':'#073590','RK':'#073590',
+  // v23365 - El Al had no accent, so its orbs fell to the generic default.
+  'LY':'#1b358f',
 };
 
 
@@ -19524,6 +19526,11 @@ const IATA_TO_WORDMARK = {
   // and EZY, the ICAO form the Edinburgh feed puts in the flight NUMBER.
   'U2': 'easyjet', 'EZY': 'easyjet', 'EC': 'easyjet', 'EJU': 'easyjet', 'EZS': 'easyjet',
   'CJ': 'british-airways',
+  // v23365 - El Al. The supplied wordmark is the bilingual lockup of Latin
+  // EL AL interlocked with the Hebrew, words only, no symbol. Both its
+  // colours are dark (#1b358f navy, #63c7ef blue), so the -light variant is
+  // the whole mark reversed to white for the dark rows.
+  'LY': 'elal',
   // v23354 — the wordmark half of the same seven regionals. A row that says
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
@@ -19691,6 +19698,7 @@ const LOGO_SUBFOLDER = {
   'chair-wordmark-light.svg':'airlines/european', 'chair-wordmark-dark.svg':'airlines/european',
   'edelweiss-wordmark-light.svg':'airlines/european', 'edelweiss-wordmark-dark.svg':'airlines/european',
   'easyjet-wordmark-light.svg':'airlines/european', 'easyjet-wordmark-dark.svg':'airlines/european',
+  'elal-wordmark-light.svg':'airlines/european', 'elal-wordmark-dark.svg':'airlines/european',
   'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
@@ -21115,7 +21123,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23364';
+var FIDS_BUILD_TAG = 'v23365';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

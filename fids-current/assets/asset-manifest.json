@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2531,
+    "total": 2534,
     "by_category": {
       "ad": 10,
-      "airline": 1336,
+      "airline": 1339,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -6518,6 +6518,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/european/elal-wordmark-dark.svg",
+      "file": "elal-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "elal wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/elal-wordmark-light.svg",
+      "file": "elal-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "elal wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/european/icelandair-fin.svg",
       "file": "icelandair-fin.svg",
       "category": "airline",
@@ -7437,6 +7459,17 @@
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "LX",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/LY.svg",
+      "file": "LY.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "LY",
       "iata": "",
       "country": "",
       "ext": "svg"
