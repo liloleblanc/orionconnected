@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2547,
+    "total": 2550,
     "by_category": {
       "ad": 10,
-      "airline": 1352,
+      "airline": 1355,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -6628,6 +6628,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/european/helvetic-wordmark-dark.svg",
+      "file": "helvetic-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "helvetic wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/helvetic-wordmark-light.svg",
+      "file": "helvetic-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "helvetic wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/european/iberia-wordmark-dark.svg",
       "file": "iberia-wordmark-dark.svg",
       "category": "airline",
@@ -7165,6 +7187,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/symbols/airlines/2L.svg",
+      "file": "2L.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "2L",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/symbols/airlines/6E.svg",

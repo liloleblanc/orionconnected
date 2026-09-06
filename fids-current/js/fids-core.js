@@ -5731,6 +5731,8 @@ const AIRLINE_ACCENT = {
   'EY':'#C89801',   // Etihad gold
   'I2':'#D71920',   // Iberia Express takes Iberia's red
   'DE':'#FF7E27',   // Condor orange, taken from its own emblem
+  'CS':'#FF0000',   // Chair red, from its own wordmark
+  '2L':'#CF0018',   // Helvetic red, from its own emblem
 };
 
 
@@ -8082,7 +8084,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // square, taupe ground with the orange bird, and the default
         // brightness(0) invert(1) turns it into a SOLID WHITE CIRCLE - the
         // whole mark gone. Rendered both ways before adding it here.
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true, 'DE': true };  // supplied full-colour art keeps its native colours (DL v23225: Nick's glossy sphere is the badge)
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true, 'DE': true, '2L': true };  // supplied full-colour art keeps its native colours (DL v23225: Nick's glossy sphere is the badge)
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -19179,7 +19181,13 @@ const AIRLINE_NAME = {
   // that is Air Prishtina, whose Swiss-Kosovo flights Chair Airlines operates,
   // which is why Chair's artwork arrived alongside. IV was the one code v23349
   // could not identify and deliberately left alone.
-  'IV': 'Air Prishtina',   'GM': 'Chair Airlines',
+  // v23373 - the Zurich feed carries the operator's real name under
+  // departure.airline.name, which settles all three of these. CS is Chair
+  // Airlines, which is why Chair was never on screen: GM does not fly and IV
+  // is somebody else entirely.
+  'CS': 'Chair Airlines',  'GM': 'Chair Airlines',
+  '2L': 'Helvetic Airways',
+  'IV': 'GP Aviation',     // NOT Air Prishtina - v23361 guessed and guessed wrong
   // ── v23356 — CODES STILL PRINTING AS LETTERS ON LIVE BOARDS ──────────────
   // Nick: 'No airline should have codes'. Every live airport was polled and
   // the carrier prefix taken off each flight number; 53 of them had no entry
@@ -19548,7 +19556,10 @@ const IATA_TO_WORDMARK = {
   // Zurich-Pristina flights that arrive under Air Prishtina's IV code; GM
   // itself never appears in any feed, which is why Chair was nowhere to be
   // seen despite its artwork being installed.
-  'EK': 'emirates',   'IV': 'chair',
+  'EK': 'emirates',
+  // v23373 - chair moves from IV to CS. IV is GP Aviation and should never
+  // have worn Chair's mark.
+  'CS': 'chair',      '2L': 'helvetic',
   // v23368 - Iberia. Its file is filled with a GRADIENT rather than a flat
   // colour, so the white variant points the fill at #ffffff instead of the
   // gradient reference; a hex swap would have found nothing to replace.
@@ -19738,6 +19749,7 @@ const LOGO_SUBFOLDER = {
   'condor-wordmark-light.svg':'airlines/european', 'condor-wordmark-dark.svg':'airlines/european',
   'lufthansa-wordmark-light.svg':'airlines/european', 'lufthansa-wordmark-dark.svg':'airlines/european',
   'austrian-wordmark-light.svg':'airlines/european', 'austrian-wordmark-dark.svg':'airlines/european',
+  'helvetic-wordmark-light.svg':'airlines/european', 'helvetic-wordmark-dark.svg':'airlines/european',
   'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
@@ -19950,6 +19962,7 @@ const IATA_TO_EMBLEM = {
   // but no tile, so the row fell straight through to no emblem at all
   // (Nick: 'EL Al has no Emblem'). Same file, now reachable from both.
   'LY': '/logos/symbols/airlines/LY.svg',   // Star of David flag device
+  '2L': '/logos/symbols/airlines/2L.svg',   // Helvetic roundel, black + red + white plane
   'JV': '/logos/airlines/canadian-regional/bearskin-emblem.svg',      // Bearskin bear-paw emblem
   'WT': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
   'NSA': '/logos/airlines/canadian-regional/north-star-emblem.svg',   // North Star Air emblem
@@ -21168,7 +21181,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23372';
+var FIDS_BUILD_TAG = 'v23373';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
