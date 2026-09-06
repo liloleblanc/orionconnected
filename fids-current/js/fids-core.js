@@ -6276,6 +6276,11 @@ function formatAircraft(raw) {
     if (IATA_AIRCRAFT[eStripped]) return IATA_AIRCRAFT[eStripped];
     if (eStripped.length >= 3 && IATA_AIRCRAFT['E' + eStripped.slice(0,2)]) return IATA_AIRCRAFT['E' + eStripped.slice(0,2)];
   }
+  // 3c. v23330 — A NAMED MAX VARIANT IS ALREADY SPECIFIC. "Boeing 737 MAX 9"
+  //     has a space, not a dash, so step 4 saw a bare '737' and answered the
+  //     family key — which means MAX 8 (see below). Name the variant itself.
+  const maxMatch = stripped.match(/^737[\s-]*MAX[\s-]*(7|8|9|10)\b/i);
+  if (maxMatch) return IATA_AIRCRAFT['7M' + maxMatch[1]] || ('Boeing 737 MAX ' + maxMatch[1]);
   // 4. Try just the first 3 chars of numeric portion: "737" → lookup
   const numMatch = stripped.match(/^(\d{3})/);
   if (numMatch) {
@@ -6283,9 +6288,20 @@ function formatAircraft(raw) {
     const dashMatch = stripped.match(/^(\d{2,3})-(\d{1,3})/);
     if (dashMatch) {
       var composite = dashMatch[1].slice(0,2) + dashMatch[2].charAt(0);
-      if (IATA_AIRCRAFT[composite]) return IATA_AIRCRAFT[composite];
-    }
-    if (IATA_AIRCRAFT[numMatch[1]]) return IATA_AIRCRAFT[numMatch[1]];
+      // v23330 — A DASH-VARIANT IS MORE SPECIFIC THAN THE FAMILY KEY. For
+      // "737-700" the composite is '737': the bare-family key that reads
+      // 'Boeing 737 MAX 8' ON PURPOSE (Air Canada's whole 737 fleet is MAX 8
+      // and reports a bare '737'). So a feed's explicit "Boeing 737-700" was
+      // relabelled a MAX 8 — WS790 at YQM, a real -700, with the MAX plate
+      // drawn from the wrong label. When the composite collides with the
+      // family key, a 737-7xx is the -700 (its own entry, plate 73G) and any
+      // other collision keeps the feed's own wording (step 6). A bare '737'
+      // never reaches here — steps 1/2 already answered it — so Air Canada's
+      // 737 → MAX 8 is exactly what it was.
+      if (composite === numMatch[1]) {
+        if (/^737-7/.test(stripped)) return IATA_AIRCRAFT['73G'] || 'Boeing 737-700';
+      } else if (IATA_AIRCRAFT[composite]) return IATA_AIRCRAFT[composite];
+    } else if (IATA_AIRCRAFT[numMatch[1]]) return IATA_AIRCRAFT[numMatch[1]];
   }
   // 5. Dash 8 / Q400 cleanup — catch long ADB strings
   if (/DASH[\s-]*8[\s-]*(Q?400|402)|DHC[\s-]*8[\s-]*(400|402|Q400)/i.test(upper)) return 'De Havilland Dash 8-400';
@@ -6297,6 +6313,9 @@ function formatAircraft(raw) {
   // 6. Fallback cleanup
   let out = s;
   out = out.replace(/^airbus\s*/i, 'Airbus ').replace(/^boeing\s*/i, 'Boeing ');
+  // v23330 — a maker-less "7x7-xxx" from an authority feed keeps its maker,
+  // so the board reads 'Boeing 747-100' rather than a bare '747-100'.
+  if (/^7[0-9]7-\d/.test(out)) out = 'Boeing ' + out;
   out = out.replace(/^embraer\s*/i, 'Embraer ').replace(/^bombardier\s*/i, 'Bombardier ');
   out = out.replace(/([a-z])(\d)/g, '$1 $2');
   out = out.replace(/A319-1\d{2}$/i, 'A319').replace(/A320-2\d{2}$/i, 'A320').replace(/A321-2\d{2}$/i, 'A321');
@@ -13884,6 +13903,18 @@ function _autoBandPalette(ap, _tries) {
 function _applyBannerStyle(iata, screen) {
   try {
     var ap = String(iata || '').toUpperCase();
+    // v23330 — THE PER-AIRPORT HOOKS TRAVEL WITH THE STYLE. render() and
+    // renderDedicatedScreen() stamp body.fids-ap-YQM / body[data-fids-ap]
+    // right before calling us, but the v23328 boot call did not, and the
+    // CSS keys YQM's 120px Acadian star on that class. So a banner revealed
+    // before the first rows (the loader's 8 s failsafe, or the 20 s
+    // watchdog) wore the generic 56px silk icon and then flipped to the
+    // star once render() ran. Idempotent: the callers toggle the same values.
+    try {
+      document.body.classList.toggle('fids-ap-YQM', ap === 'YQM');
+      if (ap) document.body.setAttribute('data-fids-ap', ap);
+      else document.body.removeAttribute('data-fids-ap');
+    } catch (e0) {}
     var s = '';
     try {
       s = localStorage.getItem('fids_banner_style_' + ap + '_' + screen)
@@ -20814,7 +20845,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23329';
+var FIDS_BUILD_TAG = 'v23330';
 var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to main'
 (function(){
   try {
