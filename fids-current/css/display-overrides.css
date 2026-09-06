@@ -2950,6 +2950,21 @@ html .g8-bir-badge .ac-ico,
 html .v2-fi-icon-wrap .ac-ico {
   color: inherit;
 }
+/* v23351 — GLYPH BADGES TAKE THE CARRIER'S MARK INK. The rail's glyphs were
+   hard-white while the emblem beside them carried the airline's own colour,
+   so a Ryanair column read gold at the ends and white in the middle (Nick:
+   'Should all be gold top t bottom period'). --airline-mark is published with
+   --airline-accent and is #ffffff for every carrier that has not declared one,
+   so this rule changes nothing on the boards that were already right. The
+   badges set color:#fff inline, hence !important. */
+html .g8-bir-badge,
+html .v2-fi-icon-badge,
+html .v2-fi-icon-wrap {
+  color: var(--airline-mark, #ffffff) !important;
+}
+html .v2-fi-orb-code {
+  color: var(--airline-mark, #ffffff) !important;
+}
 html .g8-bir-badge::after {
   content: "";
   position: absolute;
