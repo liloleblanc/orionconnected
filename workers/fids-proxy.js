@@ -4669,7 +4669,364 @@ function ymmDays(nowMs) {
 __name(ymmDays, "ymmDays");
 
 // ── The registry ─────────────────────────────────────────────────────
+// ── PHX Phoenix Sky Harbor — api.phx.aero (2026-09-06) ───────────────
+// skyharbor.com/flights/ polls ONE JSON array (arrivals AND departures,
+// ~800 rows, ~450 KB) from api.phx.aero, sending a Key that sits in the
+// site's public bundle; the API answers identically without it (verified),
+// so the Key travels for parity only (env.PHX_FEED_KEY overrides). Rolling
+// snapshot, no date parameter: a few hours back through ~20 h ahead.
+// Quirks, every one checked against the capture:
+//  • ScheduledTime wears a "Z" but is Phoenix wall-clock (MST all year —
+//    0 of 799 rows disagreed with the local ScheduledDateTime string), so
+//    the Z is stripped and the clock read in America/Phoenix.
+//  • Estimated / Actual / ChockTime are display clocks: "9:56 PM" means
+//    TODAY in Phoenix, "September 6, 4:52 AM" names the day outright.
+//    ChockTime is the gate (on/off-blocks) clock, Actual the runway one,
+//    Estimated the live gate estimate — the board wants the gate clock.
+//  • "Destination" holds the ORIGIN on arrivals ("CITY NAME (IATA)").
+//  • StatusCode is ON / AR / DP / DL / "" (blank = still on time, far
+//    out; DL seen live on a 1 h-late arrival). "Now h:mm" in Status is
+//    just the Estimated clock, i.e. scheduled + revisedTime (the
+//    YVR/DUB/AUS convention — the board derives delayed and early from
+//    the revision itself). Only Estimated/ChockTime/Actual are parsed:
+//    the Status clock drops its "September 6," prefix when Estimated
+//    keeps it, so it is not trusted for dates.
+//  • Through-flights come once PER route city (same ID, gate and clocks:
+//    UA455 "from ORD" and "from PIT"; WN3167 to PVD, DCA and BNA) and the
+//    feed never says which city is the immediate leg — its row order is
+//    not the route order either way. Each city keeps its row, exactly as
+//    the airport's own board lists them; the boards de-dupe on
+//    flight|endpoint, so both rows survive there too.
+//  • Phantom "Z"-suffixed twins (AA4044Z beside AA4044: same side, same
+//    minute, no gate, blank StatusCode) and their PHX→PHX self-rows are
+//    dropped — every suffixed row in the capture had a real twin.
+const PHX_TZ = "America/Phoenix";
+// ON/AR/DP/DL seen live; CX/DV are the PDX-style siblings the vendor is
+// likely to emit — unverified, so anything else falls back to the text.
+const PHX_STATUS = { ON: "scheduled", AR: "arrived", DP: "departed", CX: "cancelled", DL: "delayed", DV: "diverted" };
+// "9:56 PM" (today in Phoenix) or "September 6, 4:52 AM" (that day) → a
+// time object. Dateless clocks are settled toward the schedule so a clock
+// printed just before midnight and read just after it doesn't land a day
+// late; explicit dates are trusted as written.
+function phxClockObj(s, sched, nowMs) {
+  const m = String(s || "").trim().match(/^(?:([A-Za-z]+)\s+(\d{1,2}),\s*)?(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (!m) return null;
+  let hh = Number(m[3]) % 12;
+  if (/pm/i.test(m[5])) hh += 12;
+  const mm = Number(m[4]);
+  if (m[1]) {
+    const mo = AUTH_MONTHS[m[1].slice(0, 3).toUpperCase()];
+    if (!mo) return null;
+    return localTimeObjIn(PHX_TZ, nearestYear(mo, Number(m[2]), nowMs), mo, Number(m[2]), hh, mm);
+  }
+  const dp = new Intl.DateTimeFormat("en-CA", { timeZone: PHX_TZ, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+  const g = (t) => Number((dp.find((p) => p.type === t) || {}).value);
+  return settleRevised(localTimeObjIn(PHX_TZ, g("year"), g("month"), g("day"), hh, mm), sched, PHX_TZ);
+}
+__name(phxClockObj, "phxClockObj");
+function phxParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (Array.isArray(j.flights) ? j.flights : []);
+  const isDep = dir === "dep";
+  const twinKey = (r, num) => `${String(r.LineCode || "").trim().toUpperCase()}|${String(r.AD || "").trim().toUpperCase()}|${String(r.ScheduledTime || "").trim()}|${num}`;
+  // Real (unsuffixed) flight numbers per side and minute — a "4044Z" whose
+  // "4044" twin exists is the phantom.
+  const real = new Set();
+  for (const r of rows) {
+    if (!r) continue;
+    const n = String(r.Flightnumber || "").trim();
+    if (/^\d+$/.test(n)) real.add(twinKey(r, n.replace(/^0+(?=\d)/, "")));
+  }
+  for (const r of rows) {
+    if (!r) continue;
+    if ((String(r.AD || "").trim().toUpperCase() === "D") !== isDep) continue;
+    const code = String(r.LineCode || "").trim().toUpperCase()
+      || ((String(r.LogoSmall || "").match(/\/([A-Z0-9]{2,3})_sml\.png/i) || [])[1] || "").toUpperCase();
+    const nm = String(r.Flightnumber || "").trim().toUpperCase().match(/^(\d+)([A-Z])?$/);
+    if (!code || !nm) continue;
+    const num = nm[1].replace(/^0+(?=\d)/, "");
+    if (nm[2] && real.has(twinKey(r, num))) continue;
+    const dm = String(r.Destination || "").match(/^(.*?)\s*\(([A-Za-z0-9]{3})\)\s*$/);
+    const otherIata = dm ? dm[2].toUpperCase() : null;
+    if (otherIata === "PHX") continue;   // a phantom twin's PHX→PHX self-row
+    const sched = localIsoObj(PHX_TZ, String(r.ScheduledTime || "").trim().replace(/[Zz]$/, ""));
+    if (!sched) continue;
+    const sc = String(r.StatusCode || "").trim().toUpperCase();
+    let revised = phxClockObj(r.ChockTime, sched, nowMs)
+      || phxClockObj(r.Estimated, sched, nowMs)
+      || phxClockObj(r.Actual, sched, nowMs);
+    if (revised && revised.ts === sched.ts) revised = null;
+    const fl = authorityFlight({
+      dir, number: `${code}${num}`,
+      status: PHX_STATUS[sc] || yhzStatus(r.Status || ""),
+      homeIata: "PHX", homeIcao: "KPHX", homeName: "Phoenix",
+      gate: String(r.Gate || "").trim() || null,
+      otherIata,
+      otherName: (dm ? dm[1] : String(r.Destination || "")).trim() || null,
+      airlineIata: code, airlineName: String(r.Airline || "").trim() || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    const term = String(r.Terminal || "").trim();
+    if (term) homeSide.terminal = term;
+    const belt = String(r.BagClaim || "").trim();
+    if (!isDep && belt) fl.arrival.baggageBelt = belt;
+    out.push(fl);
+  }
+  return out;
+}
+__name(phxParseFeed, "phxParseFeed");
+
+// ── YZF Yellowknife — flyyzf.ca Drupal Views page (+ GNWT mirror) ────
+// The airport's own site renders both boards server-side into one page:
+// <div id="arrivals-tab"> and <div id="departures-tab">, each holding a
+// <table class="full-listing"> with 22 named columns straight out of the
+// terminal FIDS (Host Airport Code … Registration Number). Only today's
+// pending flights are listed (cancelled rows linger; landed/departed rows
+// drop off), ~16 + ~15 rows. The French mirror aeroportyzf.ca is the same
+// node. No JSON/XHR endpoint exists.
+//
+// Quirks pinned by the parser (verified live 2026-09-04 → 09-06):
+//  • The bare URL is served from a STUCK Drupal page cache (x-drupal-cache:
+//    HIT, last-modified two days old). Request Cache-Control headers do
+//    not bypass it; only a novel query string forces a render, and that
+//    same string is then a Fastly edge HIT for an hour. So the minute
+//    bucket rides in the URL AND in the Worker cache key — one origin
+//    render per minute at most, whatever the screen count.
+//  • Times are Yellowknife wall clock (America/Yellowknife: -06:00 MDT,
+//    -07:00 MST) with no offset. Scheduled is a full "September 6, 2026
+//    05:40"; Expected is a bare "HH:MM" on the same calendar day, rolled
+//    across midnight by settleRevised (sched 23:57, expected 00:34 → the
+//    next day, a 37-minute delay — seen live). Flight Date (YYYYMMDD)
+//    always matched the Scheduled date in every capture.
+//  • "Actual Time" is NOT a movement time — it is the feed snapshot
+//    stamp, identical on every row (and garbage, year 8390, on a
+//    cancelled row). Ignored.
+//  • Airline is a display name only and Flight lacks the carrier prefix:
+//    Air Canada → AC, WestJet → WS, Canadian North → 5T, Air North → 4N.
+//  • Statuses seen: On Time / Late / Cancelled. "Late" → delayed.
+//  • Registration is sometimes printed without its hyphen ("CGIZG");
+//    normalised to C-GIZG. Aircraft Type is an IATA code (DH4, 7M8, AT4,
+//    CR9, 733, 73G, 73H…), which the boards' IATA_AIRCRAFT map names
+//    directly. Baggage Carousel / Terminal / Route were always blank.
+//
+// The GNWT Department of Infrastructure mirrors the same feed at
+// www.dot.gov.nt.ca/Airports — five plain columns (Airline, Flight,
+// Originating From / Destination, Time, Status), Cache-Control: no-cache,
+// but a THREE-DAY horizon and "Arrived" rows that persist after landing.
+// It supplies what flyyzf.ca drops or never had: tomorrow's schedule,
+// landed arrivals, and the whole board when flyyzf.ca is out. Its Time
+// column is the EXPECTED time (for a future day that is the schedule);
+// there is no gate, aircraft or registration on it.
+const YZF_TZ = "America/Yellowknife";
+// Northern carriers the shared name map doesn't know.
+const YZF_AIRLINE_IATA = { "CANADIAN NORTH": "5T", "AIR NORTH": "4N", "AIR TINDI": "8T", "BUFFALO AIRWAYS": "J4" };
+// City → IATA for the GNWT mirror (flyyzf.ca prints the code itself).
+// Pairs marked with the feed's own Via Airport Code where seen.
+const YZF_CITY_IATA = {
+  "EDMONTON": "YEG", "CALGARY": "YYC", "VANCOUVER": "YVR", "TORONTO": "YYZ",
+  "WHITEHORSE": "YXY", "OTTAWA": "YOW", "WINNIPEG": "YWG", "IQALUIT": "YFB",
+  "INUVIK": "YEV", "INUVIK MIKE ZUBKO": "YEV", "NORMAN WELLS": "YVQ",
+  "HAY RIVER": "YHY", "FORT SIMPSON": "YFS", "FORT SMITH": "YSM",
+  "TALOYOAK": "YYH", "CAMBRIDGE BAY": "YCB", "KUGLUKTUK": "YCO",
+  "GJOA HAVEN": "YHK", "ULUKHAKTOK": "YHI", "ULUKHAKTOK/HOLMAN": "YHI",
+  "RANKIN INLET": "YRT", "KUGAARUK": "YBB", "RESOLUTE BAY": "YRB",
+  "FORT GOOD HOPE": "YGH", "TUKTOYAKTUK": "YUB", "PAULATUK": "YPC",
+  "SACHS HARBOUR": "YSY", "DELINE": "YWJ", "TULITA": "ZFN",
+  "LUTSELK'E": "YSG", "WHATI": "YLE", "GAMETI": "YRA", "WEKWEETI": "YFJ",
+  "FORT RESOLUTION": "YFR", "BAKER LAKE": "YBK", "ARVIAT": "YEK",
+  "WHALE COVE": "YXN", "CORAL HARBOUR": "YZS", "NAUJAAT": "YUT",
+  "IGLOOLIK": "YGT", "POND INLET": "YIO", "ARCTIC BAY": "YAB",
+  "CHESTERFIELD INLET": "YCS", "SANIKILUAQ": "YSK", "HALL BEACH": "YUX",
+  "FORT MCMURRAY": "YMM"
+};
+function yzfStatus(txt) {
+  const s = String(txt || "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("divert")) return "diverted";
+  if (s.includes("gate closed")) return "gateclosed";
+  if (s.includes("final call") || s.includes("boarding")) return "boarding";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("late") || s.includes("delay")) return "delayed";
+  return "scheduled";   // On Time / Early / anything novel
+}
+__name(yzfStatus, "yzfStatus");
+function yzfAirlineCode(name) {
+  const k = String(name || "").toUpperCase().replace(/\s+/g, " ").trim();
+  return YZF_AIRLINE_IATA[k] || AIRLINE_NAME_IATA[k] || AIRLINE_NAME_IATA_SQUASHED[k.replace(/\s+/g, "")] || null;
+}
+__name(yzfAirlineCode, "yzfAirlineCode");
+// "CGIZG" → "C-GIZG"; "C-FLJZ" stays. Anything else is passed through.
+function yzfRegistration(s) {
+  const r = String(s || "").toUpperCase().replace(/[^A-Z0-9-]/g, "");
+  if (!r) return null;
+  const m = r.match(/^C([FGI][A-Z]{3})$/);
+  return m ? `C-${m[1]}` : r;
+}
+__name(yzfRegistration, "yzfRegistration");
+// The mirror names airports, not cities, for two stops: "Inuvik Mike
+// Zubko" and "Ulukhaktok/Holman". flyyzf.ca's own Origin column says
+// "Inuvik" / "Ulukhaktok", so that is the display name.
+function yzfCityName(s) {
+  return String(s || "").split("/")[0].replace(/\s+Mike Zubko$/i, "").replace(/\s+/g, " ").trim();
+}
+__name(yzfCityName, "yzfCityName");
+// flyyzf.ca: one direction's <table class="full-listing">, columns mapped
+// by header text (order-independent). `nowMs` is unused — every row is
+// fully dated — and kept for the parser signature the tests share.
+function parseYzfPage(html, dir, nowMs) {
+  const out = [];
+  const src = String(html || "");
+  const i = src.indexOf(`id="${dir === "dep" ? "departures" : "arrivals"}-tab"`);
+  if (i === -1) return out;
+  const end = src.indexOf("</table>", i);
+  const seg = src.slice(i, end === -1 ? undefined : end);
+  const heads = [...seg.matchAll(/<th[^>]*>([\s\S]*?)<\/th>/g)].map((m) => yhzCellText(m[1]).toLowerCase());
+  const col = (...names) => { for (const n of names) { const k = heads.indexOf(n); if (k !== -1) return k; } return -1; };
+  const c = {
+    airline: col("airline"), num: col("flight"), ad: col("arrival or departure"),
+    via: col("via airport code"), city: col("origin", "destination", "city"),
+    belt: col("baggage carousel"), gate: col("gate"), term: col("terminal"),
+    sched: col("scheduled"), exp: col("expected"), status: col("status"),
+    type: col("aircraft type"), reg: col("registration number")
+  };
+  if (c.num === -1 || c.sched === -1) return out;
+  const wantAD = dir === "dep" ? "D" : "A";
+  for (const rm of seg.matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)) {
+    if (rm[1].indexOf("<th") !== -1) continue;
+    const cells = authorityCellsText(rm[0]);
+    if (cells.length < heads.length) continue;
+    const g = (k) => (c[k] === -1 ? "" : String(cells[c[k]] || "").trim());
+    if (g("ad") && g("ad").toUpperCase() !== wantAD) continue;
+    const digits = g("num").replace(/\D+/g, "");
+    const sm = g("sched").match(/^([A-Za-z]+)\.?\s+(\d{1,2}),?\s+(\d{4})\s+(\d{1,2}):(\d{2})$/);
+    const mo = sm ? AUTH_MONTHS[sm[1].slice(0, 3).toUpperCase()] : null;
+    if (!digits || !mo) continue;
+    const y = Number(sm[3]), d = Number(sm[2]);
+    const sched = localTimeObjIn(YZF_TZ, y, mo, d, Number(sm[4]), Number(sm[5]));
+    // Expected mirrors Scheduled until something changes; a differing
+    // value is the revision, settled to the near side of midnight.
+    let revised = null;
+    const em = g("exp").match(/^(\d{1,2}):(\d{2})$/);
+    if (em) {
+      revised = localTimeObjIn(YZF_TZ, y, mo, d, Number(em[1]), Number(em[2]));
+      revised = revised.ts === sched.ts ? null : settleRevised(revised, sched, YZF_TZ);
+    }
+    const airline = g("airline");
+    const code = yzfAirlineCode(airline);
+    const city = yzfCityName(g("city"));
+    const via = g("via").toUpperCase();
+    const fl = authorityFlight({
+      dir, number: (code || "") + digits, status: yzfStatus(g("status")),
+      homeIata: "YZF", homeIcao: "CYZF", homeName: "Yellowknife",
+      gate: g("gate") || null,
+      otherIata: /^[A-Z]{3}$/.test(via) ? via : (YZF_CITY_IATA[city.toUpperCase()] || YHZ_CITY_IATA[city.toUpperCase()] || null),
+      otherName: city || null,
+      airlineIata: code, airlineName: airline || null,
+      aircraftModel: g("type") || null,
+      sched, revised
+    });
+    const home = dir === "dep" ? fl.departure : fl.arrival;
+    if (g("term")) home.terminal = g("term");
+    if (dir === "arr" && g("belt")) fl.arrival.baggageBelt = g("belt");
+    const reg = yzfRegistration(g("reg"));
+    if (reg) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = reg; }
+    out.push(fl);
+  }
+  return out;
+}
+__name(parseYzfPage, "parseYzfPage");
+// www.dot.gov.nt.ca/Airports: an <h2>Arrivals</h2> table then an
+// <h2>Departures</h2> table, five cells a row, Time as "YYYY-MM-DD HH:MM"
+// local (the expected time — there is no separate schedule).
+function parseYzfDotPage(html, dir, nowMs) {
+  const out = [];
+  const src = String(html || "");
+  const am = src.match(/<h2[^>]*>\s*Arrivals\s*<\/h2>/i), dm = src.match(/<h2[^>]*>\s*Departures\s*<\/h2>/i);
+  if (!am || !dm || dm.index < am.index) return out;
+  const seg = dir === "dep" ? src.slice(dm.index) : src.slice(am.index, dm.index);
+  const tm = seg.match(/<table[^>]*>[\s\S]*?<\/table>/);
+  if (!tm) return out;
+  for (const rm of tm[0].matchAll(/<tr[^>]*>([\s\S]*?)<\/tr>/g)) {
+    if (rm[1].indexOf("<th") !== -1) continue;
+    const cells = authorityCellsText(rm[0]);
+    if (cells.length < 5) continue;
+    const [airline, numRaw, cityRaw, timeRaw, statusRaw] = cells;
+    const digits = String(numRaw || "").replace(/\D+/g, "");
+    const sched = localIsoObj(YZF_TZ, String(timeRaw || "").trim());
+    if (!digits || !sched) continue;
+    const code = yzfAirlineCode(airline);
+    const city = yzfCityName(cityRaw);
+    const key = city.toUpperCase();
+    out.push(authorityFlight({
+      dir, number: (code || "") + digits, status: yzfStatus(statusRaw),
+      homeIata: "YZF", homeIcao: "CYZF", homeName: "Yellowknife",
+      otherIata: YZF_CITY_IATA[key] || YHZ_CITY_IATA[key] || null, otherName: city || null,
+      airlineIata: code, airlineName: String(airline || "").trim() || null,
+      sched, revised: null
+    }));
+  }
+  return out;
+}
+__name(parseYzfDotPage, "parseYzfDotPage");
+// flyyzf.ca rows win. A mirror row is added only when no flyyzf row of the
+// same flight number sits within 12 h of it (by schedule or revision), so
+// last night's late AC8026 and tonight's are both kept while today's
+// pending flights aren't doubled. Mirror rows whose city the map doesn't
+// know borrow the code flyyzf.ca printed for that city today.
+function yzfMergeRows(primary, secondary) {
+  const out = (primary || []).slice();
+  const other = (f) => (f.departure.airport.iata === "YZF" ? f.arrival : f.departure);
+  const home = (f) => (f.departure.airport.iata === "YZF" ? f.departure : f.arrival);
+  const revTs = (f) => { const r = home(f).revisedTime; return r ? Date.parse(String(r.utc).replace(" ", "T")) : NaN; };
+  const learned = {};
+  for (const f of out) {
+    const o = other(f).airport;
+    if (o.iata && o.name) learned[o.name.toUpperCase()] = o.iata;
+  }
+  for (const s of (secondary || [])) {
+    const dup = out.some((p) => p.number === s.number
+      && (Math.abs(p._authTs - s._authTs) <= 432e5 || Math.abs(revTs(p) - s._authTs) <= 432e5));
+    if (dup) continue;
+    const o = other(s).airport;
+    if (!o.iata && o.name) o.iata = learned[o.name.toUpperCase()] || null;
+    out.push(s);
+  }
+  return out;
+}
+__name(yzfMergeRows, "yzfMergeRows");
+
 const AUTHORITY_HANDLERS = {
+  yzf: { tz: "America/Yellowknife", source: "yzf-authority", list: async (dir, env) => {
+    // A novel query string is the only thing that gets past flyyzf.ca's
+    // stuck Drupal page cache, and the same string is then a Fastly HIT
+    // for an hour — so the minute bucket rides in both the URL and the
+    // Worker cache key (one origin render per minute, whatever the
+    // screen count; ~95 KB, ~1.4 s render). The GNWT mirror (~35 KB,
+    // no-cache) is fetched alongside for tomorrow's rows, landed
+    // arrivals, and as the whole board when flyyzf.ca is out.
+    const bucket = Math.floor(Date.now() / 60000);
+    const [t, m] = await Promise.all([
+      fetchAuthorityText(`yzf/page/${bucket}`, `https://flyyzf.ca/passengers/flight-information?v=${bucket}`, 'id="departures-tab"', 90),
+      fetchAuthorityText("yzf/dot", "https://www.dot.gov.nt.ca/Airports", "<h2>Departures</h2>", 90)
+    ]);
+    const f = yzfMergeRows(t ? parseYzfPage(t, dir, Date.now()) : [], m ? parseYzfDotPage(m, dir, Date.now()) : []);
+    return f.length ? f : null;
+  } },
+
+  phx: { tz: "America/Phoenix", source: "phx-authority", list: async (dir, env) => {
+    // One ~450 KB payload carries both directions, so one cache slot
+    // serves both. The Key is the one skyharbor.com's public bundle sends
+    // (the LAS/CLT precedent) and is not enforced server-side.
+    const key = (env || {}).PHX_FEED_KEY || "4f85fe2ef5a240d59809b63de94ef536";
+    const t = await fetchAuthorityText("phx/all", `https://api.phx.aero/flight-information?Key=${key}`, '"LineCode"', 90);
+    if (!t) return null;
+    const f = phxParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+
   clt: { tz: "America/New_York", source: "clt-authority", list: async (dir, env) => {
     const now = Math.floor(Date.now() / 1000);
     const t = await fetchAuthorityText("clt/all", `https://api.cltairport.mobi/flights?scheduledTimestamp=${now - 6 * 3600}..${now + 30 * 3600}`, '"flights"', 90, {
@@ -7790,5 +8147,9 @@ export {
   ymmParseFeed,
   ymmStatus,
   ymmDays,
+  phxParseFeed,
+  parseYzfPage,
+  parseYzfDotPage,
+  yzfMergeRows,
   _authorityRosterHas
 };
