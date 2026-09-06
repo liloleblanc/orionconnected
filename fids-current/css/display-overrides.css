@@ -2950,6 +2950,37 @@ html .g8-bir-badge .ac-ico,
 html .v2-fi-icon-wrap .ac-ico {
   color: inherit;
 }
+
+/* -- v23360 - RYANAIR'S RAIL READS GOLD, TOP TO BOTTOM --------------------
+   Ryanair's harp is gold: FR.svg is fill="#f1c931". The rail whitened the
+   emblem at the TOP of the column while the arrival card at the BOTTOM drew
+   the SAME file in its native gold - one harp, two colours, in one view
+   (Nick: 'look at your screen 2 orbs 2 different colors seriously???' /
+   'Should all be gold top t bottom period'). The emblem TILE keeps its blue
+   ground and gold mark, exactly as the brand has it ('The emblem is blue
+   backgrounf and gold') - only the ink is made consistent.
+
+   Every selector is gated on body[data-gate-airline], so these rules can only
+   apply on a Ryanair gate. The reverted v23351 set `color` through a custom
+   property on the SHARED .v2-fi-icon-wrap container, which reached every
+   carrier and turned WestJet's emblem black. Nothing here touches a shared
+   container or a runtime variable, so no other airline can be affected. */
+html body[data-gate-airline="FR"] .v2-fi-emblem-wrap img,
+html body[data-gate-airline="FR"] .v2-fi-orbwrap img,
+html body[data-gate-airline="FR"] .v2-fi-orb,
+html body[data-gate-airline="RK"] .v2-fi-emblem-wrap img,
+html body[data-gate-airline="RK"] .v2-fi-orbwrap img,
+html body[data-gate-airline="RK"] .v2-fi-orb {
+  filter: none !important;   /* the art is already gold - do not whiten it */
+}
+html body[data-gate-airline="FR"] .v2-fi-icon-badge .ac-ico,
+html body[data-gate-airline="FR"] .g8-bir-badge .ac-ico,
+html body[data-gate-airline="FR"] .v2-fi-orb-code,
+html body[data-gate-airline="RK"] .v2-fi-icon-badge .ac-ico,
+html body[data-gate-airline="RK"] .g8-bir-badge .ac-ico,
+html body[data-gate-airline="RK"] .v2-fi-orb-code {
+  color: #F1C933 !important;
+}
 html .g8-bir-badge::after {
   content: "";
   position: absolute;
