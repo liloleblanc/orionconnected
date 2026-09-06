@@ -20900,7 +20900,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23340';
+var FIDS_BUILD_TAG = 'v23341';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -21669,7 +21669,17 @@ function render() {
   // Apply search filter for desktop table pagination
   const allFiltered = applySearch(flights);
 
-  setState('empty',   !allFiltered.length && window._initialFetchDone === true);
+  // v23341 — AN AIRPORT WITH NO FEED NEVER SHOWS A BLANK BOARD. Nick sent a
+  // Vancouver departures board that was completely empty: no rows, no message,
+  // just the banner over a wall of colour. YVR is one of the four airports
+  // whose feed is built but whose upstream blocks our server (429), so the
+  // fetch never resolves, _initialFetchDone stays false, and this line kept
+  // the empty panel hidden forever. Waiting on a fetch that cannot succeed is
+  // exactly the case that must speak. For an airport with no working feed the
+  // panel shows immediately, and setState() gives it the "no live data"
+  // wording rather than "no flights in window".
+  var _apNow = (document.getElementById('apSel') || {}).value || '';
+  setState('empty',   !allFiltered.length && (window._initialFetchDone === true || !_fidsAirportHasFeed(_apNow)));
   // Until the first fetch resolves, the empty array is just "still loading",
   // not "no flights". Don't flash "No Flights" prematurely. The loading
   // panel stays visible (set by the caller) until data arrives.
