@@ -5720,6 +5720,12 @@ const AIRLINE_ACCENT = {
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
   'AY':'#0B1560','IB':'#D71920','TP':'#096','EI':'#009A44',
+  // v23360 - Ryanair had NO accent, so getAirlineAccent fell to its '#0033A1'
+  // default: a generic blue that belongs to no airline, sitting on a navy
+  // board, which is why its whole gate rail disappeared. This is Ryanair's own
+  // navy. Only carriers that had no entry can change; every carrier already in
+  // this table is untouched.
+  'FR':'#073590','RK':'#073590',
 };
 
 
@@ -21069,7 +21075,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23359';
+var FIDS_BUILD_TAG = 'v23360';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
