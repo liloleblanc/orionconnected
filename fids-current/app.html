@@ -1243,11 +1243,28 @@ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
   const t=localStorage.getItem('app_theme')||'auto'; if(t==='auto')applyTheme('auto');
 });}catch(e){}
 
+// v23338 — the airports that actually serve data. Mirrors FIDS_LIVE_AIRPORTS in
+// fids-core.js (the board's own list); tests/live-airports.test.js fails if the
+// two drift apart or if the worker gains a handler neither of them knows about.
+const APP_LIVE_AIRPORTS = new Set([
+  'YQM','YHZ','YYT','YSJ','YFC','YQY','YQX','YYG','YDF',
+  'YOW','YQB','YQT','YHM','YXX','YLW','YQR','YXE','YYC','YEG',
+  'YYJ','YKA','YXS','YMM',
+  'BOS','ORD','SFO','SEA','DEN','LAS','AUS','SLC','PHL','MSP',
+  'CLT','MCI','RDU','SAN','PDX','DTW','MSY',
+  'LHR','DUB','EDI','KEF'
+]);
 // Build the airport picker from the catalogue, grouped by region.
 function buildAirportOptions(){
   const sel=document.getElementById('apSelect');
   const groups={CA:[],US:[],INT:[]};
-  for(const k in AIRPORTS){(groups[AIRPORTS[k].r]||(groups.INT)).push(k);}
+  // v23338 — ONLY AIRPORTS THAT HAVE DATA ARE OFFERED (Nick: "so are you
+  // removing anything?"). AeroDataBox is gone; a board fills only where the
+  // worker has a handler for that airport, and everything else returns an
+  // empty 200 forever. The board's picker was filtered in v23335; this is the
+  // same list for the mobile companion. AIRPORTS keeps every entry because its
+  // names and timezones still label destinations — only the PICKER is cut.
+  for(const k in AIRPORTS){ if(!APP_LIVE_AIRPORTS.has(k)) continue; (groups[AIRPORTS[k].r]||(groups.INT)).push(k);}
   let html='';
   ['CA','US','INT'].forEach(r=>{
     if(!groups[r].length)return;
