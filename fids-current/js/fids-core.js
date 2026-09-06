@@ -15951,7 +15951,7 @@ const gView = document.getElementById('gateView');
                                : (_bStKey === 'diverted' ? ' b3-diverted' : ''));
                 const _b3StCls = isArr || isEarly ? 's-arrived' : (isDelayed ? 's-delayed'
                                : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 's-cancelled' : 's-other');
-                const _b3WmOne = _bWmBase ? '' : (IATA_WORDMARK_ONE[_bWmCode] || '');   // v23348
+                const _b3WmOne = '';   // v23350 — lockups are not wordmarks; see the note on the main board
                 const _b3Wm = _bidsEmblemOnly ? '' : (_bWmBase
                   ? '<img class="b3-wordmark" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, 'light') + '" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
                   : _b3WmOne
@@ -21003,7 +21003,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23349';
+var FIDS_BUILD_TAG = 'v23350';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -22007,7 +22007,16 @@ function render() {
     // v23348 — a carrier with no light/dark pair may still have one of the
     // single-file wordmarks; it is tinted by CSS (.fids-wm-mono) rather than
     // swapped by variant, so it reads on dark and light rows alike.
-    const _wmOne = _wordmarkBase ? '' : (IATA_WORDMARK_ONE[_airlineCodeForLogo] || '');
+    // v23350 — the /logos/wordmarks files are LOCKUPS (symbol + text), not
+    // wordmarks. Dropped into the narrow label slot beside the emblem they
+    // shrink to an illegible smudge and print the symbol twice (Nick, on a
+    // Dublin board: "cant see a thing" / "NO EMBLEM NO FRILLS WORDS ONLY").
+    // The slot takes words only, so a lockup is not eligible: the airline's
+    // NAME is drawn instead, beside its proper emblem. IATA_WORDMARK_ONE stays
+    // mapped for the day those files are replaced with words-only art — flip
+    // WORDMARK_ONE_OK to true then, or list the codes that qualify.
+    const WORDMARK_ONE_OK = false;
+    const _wmOne = (WORDMARK_ONE_OK && !_wordmarkBase) ? (IATA_WORDMARK_ONE[_airlineCodeForLogo] || '') : '';
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
       ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase, _rowWmVariant)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
       : _wmOne
