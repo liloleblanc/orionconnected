@@ -253,6 +253,7 @@
       var GATE = 'gids.html';
       var minMs = dwell * 1000;
       var maxMs = Math.max(minMs * 3, minMs + 120000);
+      var EMPTY_GRACE_MS = 12000;   // v23342 — how long a visible board may stay empty before we move on
       var READY_GRACE_MS = 40000;   // how long an airport switch may wait for the next board to be ready
       var slotStart = Date.now();
 
@@ -378,6 +379,22 @@
         if (pendingShow && Date.now() >= pendingShow.dueAt) showNow();
         if (pendingShow) return;   // mid-transition: don't stack another switch
         var elapsed = Date.now() - slotStart;
+        // v23342 — NEVER SIT ON AN EMPTY BOARD (Nick: "it can go a long time
+        // with absolutely nothing ... it's not good"). The pre-switch check
+        // only looks at the board we are about to show; a board can also empty
+        // out WHILE it is on screen — its last flight departs, or its feed
+        // stops answering — and the stream would then hold that nothing for
+        // the rest of the dwell, or forever on a single-airport run. Once a
+        // visible board has had EMPTY_GRACE_MS to paint and still has no
+        // flights, move on immediately instead of waiting out the clock.
+        if (elapsed >= EMPTY_GRACE_MS) {
+          var _cur = frames[aps[apIdx]] && frames[aps[apIdx]][seq[idx]];
+          if (_cur && isReady(_cur) && !hasFlights(_cur)) {
+            try { console.log('[TOUR] on-screen board for', aps[apIdx], 'is empty — moving on early'); } catch (e) {}
+            advance();
+            return;
+          }
+        }
         if (seq[idx] === GATE) {
           if (elapsed >= maxMs) advance();
         } else if (elapsed >= minMs) {
