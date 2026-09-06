@@ -15946,6 +15946,12 @@ const gView = document.getElementById('gateView');
 
       </div>`;
 
+    // v23329 — SCALE THE b3 BARS TO THE LIST THEY LIVE IN, before anything
+    // is measured. The bar is a 1141px design; --b3u carries listWidth/1141
+    // so the From cell keeps its share on a 1366 laptop or a 4K wall
+    // (Nick's Halifax shot: 'Ne… | LGA' — the city crushed to nothing).
+    try { _b3FitList(bView); } catch (e) {}
+
     // ── POST-RENDER MEASUREMENT: figure out how many rows actually fit ──
     // v218.36. Run on next animation frame so layout has settled. If the
     // measured fit differs from the current per-page count, save it on
@@ -15955,7 +15961,11 @@ const gView = document.getElementById('gateView');
       requestAnimationFrame(() => {
         try {
           const _list = bView.querySelector('.bidsv2-flight-list');
-          const _rows = bView.querySelectorAll('.bidsv2-flight-row');
+          // v23329 — the redesign renders .b3-row, not .bidsv2-flight-row;
+          // measuring only the latter found nothing and returned early, so
+          // the per-page count never adapted to the screen height on the
+          // live (b3) baggage board — the clipped bottom row on short screens.
+          const _rows = bView.querySelectorAll('.b3-row, .bidsv2-flight-row');
           const _header = bView.querySelector('.bidsv2-list-header');
           if (!_list || !_rows || _rows.length === 0) return;
           // Available height = list height minus header (if present) and
@@ -15964,6 +15974,9 @@ const gView = document.getElementById('gateView');
           const _headerH = _header ? _header.offsetHeight : 0;
           const _rowH = _rows[0].offsetHeight;
           if (_listH <= 0 || _rowH <= 0) return;
+          // b3 bars stack with a margin-bottom (none after the last one):
+          // count that gap or the fit overshoots by a row on tall lists.
+          const _rowGap = parseFloat(getComputedStyle(_rows[0]).marginBottom) || 0;
           // clientHeight INCLUDES the list's own padding; the rows do not
           // get to use it. Not subtracting it overcounted the space by the
           // padding (56px on this layout) — nearly a whole small row, which
@@ -15971,7 +15984,7 @@ const gView = document.getElementById('gateView');
           const _lcs = getComputedStyle(_list);
           const _listPad = (parseFloat(_lcs.paddingTop) || 0) + (parseFloat(_lcs.paddingBottom) || 0);
           const _avail = _listH - _listPad - _headerH - 8; // 8px breathing room
-          let _fit = Math.max(1, Math.floor(_avail / _rowH));
+          let _fit = Math.max(1, Math.floor((_avail + _rowGap) / (_rowH + _rowGap)));
           _fit = Math.min(_fit, 40);
           const _key = (document.body.dataset.fidsLogoSize || BOARD_DENSITY_FALLBACK) + '|' + Math.round(window.innerHeight);
           if (_BIDS_FIT.key !== _key) { _BIDS_FIT.key = _key; _BIDS_FIT.n = 0; _BIDS_FIT.capped = false; }
@@ -15996,6 +16009,45 @@ const gView = document.getElementById('gateView');
     } catch (_e) {}
   }
 }
+
+// v23329 — THE b3 BAGGAGE BARS SCALE WITH THEIR LIST. The bar is a 1141px
+// design (the 62% list column on a 1920 kiosk); every dimension in the
+// .bidsv3 .b3-* rules is N * var(--b3u). --b3u = listWidth / 1141 px, so
+// a 1366 laptop gets a 0.7 bar with the From cell still 30% of the row,
+// and a 4K wall gets a 2.0 bar. Called right after each dedicated render
+// (before the row-fit measurement) and on resize. The unit is written on
+// #baggageView — the persistent element — not on the list, which every
+// render rebuilds through innerHTML; a value there outlives the rebuild.
+// If the list can't be measured at that instant (hidden, mid-layout), the
+// unit is derived from the viewport instead (the list is the 62% column of
+// a 1920 layout, so innerWidth/1920 is within ~2%) — never left at the
+// 1920 design on a narrower screen. Clamped so an absurd measurement can
+// never zero the bar.
+function _b3FitList(root) {
+  var view = document.getElementById('baggageView');
+  if (!view) return 0;
+  var list = view.querySelector('.bidsv3 .bidsv2-flight-list');
+  var w = list ? (list.clientWidth || 0) : 0;
+  var u = w ? (w / 1141) : ((window.innerWidth || 1920) / 1920);
+  u = Math.max(0.3, Math.min(3, u));
+  view.style.setProperty('--b3u', u.toFixed(4) + 'px');
+  return u;
+}
+try {
+  if (!window._b3ResizeHooked) {
+    window._b3ResizeHooked = true;
+    var _b3ResizeT = null;
+    window.addEventListener('resize', function () {
+      try { _b3FitList(document); } catch (e) {}
+      clearTimeout(_b3ResizeT);
+      // Re-render (debounced) so the rows-per-page fit re-measures against
+      // the rescaled bars; _BIDS_FIT keys on innerHeight, so it recomputes.
+      _b3ResizeT = setTimeout(function () {
+        try { if (document.querySelector('.bidsv3 .b3-row') && typeof renderDedicatedScreen === 'function') renderDedicatedScreen(); } catch (e) {}
+      }, 250);
+    });
+  }
+} catch (e) {}
 
 // ── BIDS ROW FIT (module scope) ─────────────────────────────────────────────
 // The fit lives HERE and not on #baggageView: the re-render REPLACES that
@@ -20762,7 +20814,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23328';
+var FIDS_BUILD_TAG = 'v23329';
 var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to main'
 (function(){
   try {
