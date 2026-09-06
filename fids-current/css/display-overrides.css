@@ -14718,15 +14718,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   justify-content: center !important;
   background: transparent !important; border: none !important; box-shadow: none !important;
   padding: 0 !important; overflow: hidden;
+  /* v23329 — ONE UNIT SCALES THE WHOLE BAR. The b3 bar was drawn in pixels
+     for a 1141px list (the 62% column on a 1920 kiosk). On anything
+     narrower the tile / flight / time / status columns kept their pixels
+     and the From cell — the only flexible one — took all the shrink:
+     350px at 1920, 52px at 1440, 6px at 1366 (Nick's Halifax shot,
+     'Ne… | LGA', the code spilling into the time). --b3u = listWidth/1141
+     px, set by _b3FitList() after every render and on resize; the 1px
+     default IS the 1920 design, pixel for pixel. The unit is declared on
+     #baggageView (below), NOT here: this list is rebuilt by innerHTML on
+     every render, and a value on the persistent view survives that. */
 }
+#baggageView { --b3u: 1px; }
 .bidsv3 .b3-row {
-  display: flex; align-items: center; gap: 16px;
-  height: 112px; flex-shrink: 0;
-  margin-bottom: 22px;
-  padding: 0 26px;
-  border-radius: 18px;
-  border: 3px solid #0d2a52;
-  outline: 2px solid rgba(255,255,255,.85); outline-offset: -7px;
+  display: flex; align-items: center; gap: calc(16 * var(--b3u, 1px));
+  height: calc(112 * var(--b3u, 1px)); flex-shrink: 0;
+  margin-bottom: calc(22 * var(--b3u, 1px));
+  padding: 0 calc(26 * var(--b3u, 1px));
+  border-radius: calc(18 * var(--b3u, 1px));
+  border: calc(3 * var(--b3u, 1px)) solid #0d2a52;
+  outline: calc(2 * var(--b3u, 1px)) solid rgba(255,255,255,.85); outline-offset: calc(-7 * var(--b3u, 1px));
   background: var(--bids-bar-grad, linear-gradient(100deg,#12417e,#2a6cc0,#6ea4e2));
   box-shadow: 0 10px 28px rgba(10,40,90,.30);
   overflow: hidden;
@@ -14734,20 +14745,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 .bidsv3 .b3-row:last-child { margin-bottom: 0; }
 .bidsv3 .b3-tile {
-  width: 74px; height: 74px; flex-shrink: 0;
-  border-radius: 12px; overflow: hidden;
-  background: #ffffff; border: 2.5px solid #0d2a52;
+  width: calc(74 * var(--b3u, 1px)); height: calc(74 * var(--b3u, 1px)); flex-shrink: 0;
+  border-radius: calc(12 * var(--b3u, 1px)); overflow: hidden;
+  background: #ffffff; border: calc(2.5 * var(--b3u, 1px)) solid #0d2a52;
   display: flex; align-items: center; justify-content: center;
 }
 .bidsv3 .b3-tile img, .bidsv3 .b3-tile > * { width: 100% !important; height: 100% !important; object-fit: contain; margin: 0 !important; }
-.bidsv3 .b3-flight { flex: 0 0 205px; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
-.bidsv3 .b3-wordmark { height: 22px; width: auto; align-self: flex-start; max-width: 200px; object-fit: contain; object-position: left center; }
-.bidsv3 .b3-airline-name { font-size: 16px; font-weight: 800; letter-spacing: 1.5px; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.bidsv3 .b3-num { font-size: 40px; font-weight: 850; line-height: 1.05; color: #ffffff; font-variant-numeric: tabular-nums; text-shadow: 0 2px 5px rgba(0,0,0,.45); white-space: nowrap; }
+.bidsv3 .b3-flight { flex: 0 0 calc(205 * var(--b3u, 1px)); min-width: 0; display: flex; flex-direction: column; justify-content: center; }
+.bidsv3 .b3-wordmark { height: calc(22 * var(--b3u, 1px)); width: auto; align-self: flex-start; max-width: calc(200 * var(--b3u, 1px)); object-fit: contain; object-position: left center; }
+.bidsv3 .b3-airline-name { font-size: calc(16 * var(--b3u, 1px)); font-weight: 800; letter-spacing: calc(1.5 * var(--b3u, 1px)); color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bidsv3 .b3-num { font-size: calc(40 * var(--b3u, 1px)); font-weight: 850; line-height: 1.05; color: #ffffff; font-variant-numeric: tabular-nums; text-shadow: 0 2px 5px rgba(0,0,0,.45); white-space: nowrap; }
 .bidsv3 .b3-from {
   flex: 1 1 auto; min-width: 0;
-  display: flex; align-items: center; gap: 12px;
-  font-size: 36px; font-weight: 800; color: #ffffff;
+  display: flex; align-items: center; gap: calc(12 * var(--b3u, 1px));
+  font-size: calc(36 * var(--b3u, 1px)); font-weight: 800; color: #ffffff;
   text-shadow: 0 2px 5px rgba(0,0,0,.45);
   white-space: nowrap;
 }
@@ -14755,17 +14766,17 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 .bidsv3 .b3-sep  { flex-shrink: 0; color: rgba(255,255,255,.55); }
 .bidsv3 .b3-code { flex-shrink: 0; color: #cfe4ff; font-weight: 850; }
 .bidsv3 .b3-time {
-  flex: 0 0 175px; flex-shrink: 0; text-align: right;
-  font-size: 34px; font-weight: 850; color: #ffffff;
+  flex: 0 0 calc(175 * var(--b3u, 1px)); flex-shrink: 0; text-align: right;
+  font-size: calc(34 * var(--b3u, 1px)); font-weight: 850; color: #ffffff;
   font-variant-numeric: tabular-nums; text-shadow: 0 2px 5px rgba(0,0,0,.45);
   white-space: nowrap;
 }
 .bidsv3 .b3-status {
-  flex: 0 0 215px; text-align: center;
+  flex: 0 0 calc(215 * var(--b3u, 1px)); text-align: center;
   background: rgba(255,255,255,.94);
-  border-radius: 12px; border: 2.5px solid #16283C;
-  padding: 12px 10px;
-  font-size: 26px; font-weight: 800; color: #16283C;
+  border-radius: calc(12 * var(--b3u, 1px)); border: calc(2.5 * var(--b3u, 1px)) solid #16283C;
+  padding: calc(12 * var(--b3u, 1px)) calc(10 * var(--b3u, 1px));
+  font-size: calc(26 * var(--b3u, 1px)); font-weight: 800; color: #16283C;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .bidsv3 .b3-status.s-arrived   { color: #157A43; border-color: #157A43; }
