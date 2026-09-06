@@ -19944,6 +19944,12 @@ function _hexLum(hex) {
 // AA's eagle box) and from IATA_TO_WORDMARK (text portion). When both an
 // emblem and a wordmark exist, the row shows: [emblem] [wordmark text].
 const IATA_TO_EMBLEM = {
+  // v23372 - El Al's flag device. It was installed at
+  // /logos/symbols/airlines/LY.svg in v23365, which is the path the GATE ORB
+  // resolver reads - the board ROW uses this map instead. LY has a wordmark
+  // but no tile, so the row fell straight through to no emblem at all
+  // (Nick: 'EL Al has no Emblem'). Same file, now reachable from both.
+  'LY': '/logos/symbols/airlines/LY.svg',   // Star of David flag device
   'JV': '/logos/airlines/canadian-regional/bearskin-emblem.svg',      // Bearskin bear-paw emblem
   'WT': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
   'NSA': '/logos/airlines/canadian-regional/north-star-emblem.svg',   // North Star Air emblem
@@ -21162,7 +21168,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23371';
+var FIDS_BUILD_TAG = 'v23372';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
