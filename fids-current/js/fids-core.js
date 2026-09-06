@@ -4175,8 +4175,8 @@ var OPBY_WORDMARKS_THEMED = {
   'EDV': { onDark:'/logos/airlines/us-regional/endeavor-air-monochrome-white.svg', onLight:'/logos/airlines/us-regional/endeavor-air.svg' },
   'OH':  { onDark:'/logos/airlines/us-regional/psa-airlines-monochrome-white.svg', onLight:'/logos/airlines/us-regional/psa-airlines.svg' },
   'PSA': { onDark:'/logos/airlines/us-regional/psa-airlines-monochrome-white.svg', onLight:'/logos/airlines/us-regional/psa-airlines.svg' },
-  'QX':  { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air.svg' },
-  'QXE': { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air.svg' }
+  'QX':  { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */,
+  'QXE': { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */
 };
 function _opbyContrastFix(root) {
   try {
@@ -4195,14 +4195,29 @@ function _opbyContrastFix(root) {
       var m = bg.match(/(\d+)[^\d]+(\d+)[^\d]+(\d+)/);
       var dark = m ? ((0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3]) < 140) : false;
       var pair = OPBY_WORDMARKS_THEMED[op];
+      // v23332 — INLINE !important, OR NOTHING THIS PASS DOES EVER APPLIES.
+      // display-overrides.css carries the v23206 rule for the caption strip
+      // ('.v2-rc-acb-cap .v2-rc-opby-logo { filter: none !important }' — the
+      // wordmark in colour, no white filter, written for the AC-family
+      // light-grey strip). A plain inline style loses to an author
+      // !important, so the whitening this pass was meant to apply (v23261)
+      // on the DARK accent-tinted strips of every other carrier never took
+      // effect: dark operator art sat on a dark strip — GoJet's blue on
+      // United blue, Envoy's navy on American blue — near-invisible. An
+      // inline declaration with priority 'important' is the one thing that
+      // outranks a stylesheet !important. Bitmaps are whitened too on a dark
+      // strip (v23261 kept them native, same rule as the orbs): the only PNG
+      // operators are GoJet, Envoy and Encore, and brightness(0) invert(1)
+      // turns every opaque pixel white, exactly what a caption strip wants.
+      // The light strip keeps v23206's colour art, filter none, as before.
       if (pair) {
         var want = dark ? pair.onDark : pair.onLight;
         if (im.getAttribute('src') !== want) im.setAttribute('src', want);
-        im.style.filter = '';
-      } else if (dark && !/\.png(\?|$)/i.test(im.src)) {
-        im.style.filter = 'brightness(0) invert(1)';
+        im.style.setProperty('filter', 'none', 'important');
+      } else if (dark) {
+        im.style.setProperty('filter', 'brightness(0) invert(1)', 'important');
       } else {
-        im.style.filter = '';
+        im.style.setProperty('filter', 'none', 'important');
       }
     }
   } catch (e2) {}
@@ -20857,7 +20872,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23331';
+var FIDS_BUILD_TAG = 'v23332';
 var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to main'
 (function(){
   try {
