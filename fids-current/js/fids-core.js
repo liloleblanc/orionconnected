@@ -7560,6 +7560,15 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // disk. Each entry is its parent's exact file. Every one of these
         // seven resolved to NOTHING before this, so no carrier that renders
         // correctly today can be affected.
+        // v23355 — the same fault in four more codes, found by matching every
+        // carrier against a sibling that shares its name and already owns art.
+        // LATAM Brasil and LATAM Colombia print LATAM and drew nothing; DI
+        // prints NORWEGIAN; PT prints AMERICAN. Each takes the exact file its
+        // sibling already uses. All four resolved to nothing before this.
+        '4C':  '/logos/airlines/asian-other/latam-spark.svg',   // LATAM Colombia → LATAM
+        'JJ':  '/logos/airlines/asian-other/latam-spark.svg',   // LATAM Brasil → LATAM
+        'DI':  '/logos/airline-tiles/NAX.svg',                  // Norwegian (DI) → Norwegian
+        'PT':  '/logos/airlines/us-major/american-flight-symbol.svg',  // Piedmont → American
         'ZX':  '/logos/airlines/canadian/AC.TO.svg',   // Air Georgian → Air Canada
         '9M':  '/logos/airlines/canadian/AC.TO.svg',   // Central Mountain Air → Air Canada
         '9L':  '/logos/airlines/canadian/AC.TO.svg',   // Colgan → Air Canada
@@ -19446,6 +19455,9 @@ const IATA_TO_WORDMARK = {
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
   // already maps to a wordmark changes.
+  // v23355 — LATAM's two subsidiaries print LATAM and fell through to a plain
+  // text name; latam-wordmark-light/dark are words-only and already on disk.
+  '4C': 'latam',       'JJ': 'latam',
   'ZX': 'air-canada',  '9M': 'air-canada',  '9L': 'air-canada',
   '9E': 'delta',       'MQ': 'american',    'OH': 'american',
   'SP': 'pal-airlines',
@@ -21026,7 +21038,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23354';
+var FIDS_BUILD_TAG = 'v23355';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
