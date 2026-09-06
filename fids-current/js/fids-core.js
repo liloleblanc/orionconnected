@@ -19504,6 +19504,11 @@ const IATA_TO_WORDMARK = {
   // beside the word, and a lockup in the wordmark slot is what v23350 had to
   // revert.
   'GM': 'chair',   'LX': 'swiss',
+  // v23362 - Edelweiss Air. The supplied art is navy #002f86, which would be
+  // invisible on the board's navy rows, so the -light variant (the one the
+  // FIDS table uses on dark rows) is the same single path reversed to white.
+  // One path, one fill: the reversal is exact, not a filter approximation.
+  'WK': 'edelweiss',
   // v23354 — the wordmark half of the same seven regionals. A row that says
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
@@ -19669,6 +19674,7 @@ function wordmarkVariant() {
 // Files not in this map are assumed to live at /logos/ root.
 const LOGO_SUBFOLDER = {
   'chair-wordmark-light.svg':'airlines/european', 'chair-wordmark-dark.svg':'airlines/european',
+  'edelweiss-wordmark-light.svg':'airlines/european', 'edelweiss-wordmark-dark.svg':'airlines/european',
   'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
@@ -21093,7 +21099,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23361';
+var FIDS_BUILD_TAG = 'v23362';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
