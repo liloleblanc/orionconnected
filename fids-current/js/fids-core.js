@@ -19162,6 +19162,11 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
+  // v23361 - Zurich's two remaining bare codes. IV601/IV600 run ZRH<->Pristina:
+  // that is Air Prishtina, whose Swiss-Kosovo flights Chair Airlines operates,
+  // which is why Chair's artwork arrived alongside. IV was the one code v23349
+  // could not identify and deliberately left alone.
+  'IV': 'Air Prishtina',   'GM': 'Chair Airlines',
   // ── v23356 — CODES STILL PRINTING AS LETTERS ON LIVE BOARDS ──────────────
   // Nick: 'No airline should have codes'. Every live airport was polled and
   // the carrier prefix taken off each flight number; 53 of them had no entry
@@ -19488,6 +19493,17 @@ const IATA_WORDMARK_ONE = {
 try { if (typeof window !== 'undefined') window.IATA_WORDMARK_ONE = IATA_WORDMARK_ONE; } catch (e) {}
 
 const IATA_TO_WORDMARK = {
+  // v23361 - two real words-only wordmarks, both supplied by Nick.
+  // chair-wordmark-*.svg is the lowercase 'chair' logotype, no symbol.
+  // swiss-wordmark-*.svg is the SWISS logotype recovered from his .curve
+  // file: the export had an opaque WHITE background baked in, which would
+  // have painted a white slab across the dark row, so the alpha was rebuilt
+  // from the green channel (the art is a single flat #E60005 on white, so
+  // coverage is exactly 255-G) and the result verified on three backgrounds.
+  // NOT used: /logos/wordmarks/LX.svg - that one is a LOCKUP, tail symbol
+  // beside the word, and a lockup in the wordmark slot is what v23350 had to
+  // revert.
+  'GM': 'chair',   'LX': 'swiss',
   // v23354 — the wordmark half of the same seven regionals. A row that says
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
@@ -19652,6 +19668,8 @@ function wordmarkVariant() {
 // path constructions (wordmarkSrc, etc.) can resolve full paths at runtime.
 // Files not in this map are assumed to live at /logos/ root.
 const LOGO_SUBFOLDER = {
+  'chair-wordmark-light.svg':'airlines/european', 'chair-wordmark-dark.svg':'airlines/european',
+  'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
   'Air_Canada_Logo_2017_stacked.svg':'airlines/canadian', 'Air_Canada_Logo_2017_stacked_variant.svg':'airlines/canadian', 'American_Airlines_Logo_2013_alternative_variant.svg':'airlines/us-major',
@@ -21075,7 +21093,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23360';
+var FIDS_BUILD_TAG = 'v23361';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

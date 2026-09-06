@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2523,
+    "total": 2527,
     "by_category": {
       "ad": 10,
-      "airline": 1328,
+      "airline": 1332,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -6353,6 +6353,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/european/chair-wordmark-dark.svg",
+      "file": "chair-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "chair wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/chair-wordmark-light.svg",
+      "file": "chair-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "chair wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/european/discover-airlines-emblem-monochrome-black.svg",
       "file": "discover-airlines-emblem-monochrome-black.svg",
       "category": "airline",
@@ -6799,6 +6821,28 @@
       "subcategory": "european",
       "group": "Airlines — European",
       "name": "Lufthansa Logo 2018",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/swiss-wordmark-dark.svg",
+      "file": "swiss-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "swiss wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/swiss-wordmark-light.svg",
+      "file": "swiss-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "swiss wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"
