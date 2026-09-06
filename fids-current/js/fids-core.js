@@ -7551,6 +7551,22 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
 // of the screen agree.
 window._CARD_COLOR_EMBLEMS = { 'AA': true, 'UA': true };
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
+        // v23354 — REGIONALS THAT ALREADY WEAR A MAINLINE'S NAME. These codes
+        // print their parent's name on the board — ZX/9M/9L say AIR CANADA,
+        // 9E says DELTA, MQ/OH say AMERICAN, SP says PAL AIRLINES — but had no
+        // artwork of their own, so a row reading "AIR CANADA" showed no Air
+        // Canada emblem and the orb came up blank. They are not missing art to
+        // be sourced; they were missing the pointer to the art already on
+        // disk. Each entry is its parent's exact file. Every one of these
+        // seven resolved to NOTHING before this, so no carrier that renders
+        // correctly today can be affected.
+        'ZX':  '/logos/airlines/canadian/AC.TO.svg',   // Air Georgian → Air Canada
+        '9M':  '/logos/airlines/canadian/AC.TO.svg',   // Central Mountain Air → Air Canada
+        '9L':  '/logos/airlines/canadian/AC.TO.svg',   // Colgan → Air Canada
+        '9E':  '/logos/airlines/us-major/delta-widget-monochrome-white.svg',  // Endeavor → Delta
+        'MQ':  '/logos/airlines/us-major/american-flight-symbol.svg',         // Envoy → American
+        'OH':  '/logos/airlines/us-major/american-flight-symbol.svg',         // PSA → American
+        'SP':  '/logos/airline-tiles/PB.svg',          // SATA/PAL express → PAL Airlines
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
@@ -19426,6 +19442,13 @@ const IATA_WORDMARK_ONE = {
 try { if (typeof window !== 'undefined') window.IATA_WORDMARK_ONE = IATA_WORDMARK_ONE; } catch (e) {}
 
 const IATA_TO_WORDMARK = {
+  // v23354 — the wordmark half of the same seven regionals. A row that says
+  // AIR CANADA now draws the Air Canada wordmark instead of falling through to
+  // a plain text name. All seven had no entry here before, so nothing that
+  // already maps to a wordmark changes.
+  'ZX': 'air-canada',  '9M': 'air-canada',  '9L': 'air-canada',
+  '9E': 'delta',       'MQ': 'american',    'OH': 'american',
+  'SP': 'pal-airlines',
   // v23349 — three finished light/dark pairs were sitting unmapped on disk, so
   // Spirit, American and TAP fell through to the single-file map or to text.
   'NK': 'spirit',   'TP': 'tap-portugal',   'AA2': 'american-airlines',
@@ -21003,7 +21026,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23353';
+var FIDS_BUILD_TAG = 'v23354';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
