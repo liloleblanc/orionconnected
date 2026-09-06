@@ -14806,3 +14806,32 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
 .bidsv3 .bidsv2-empty { font-size: 34px; color: #16283C; text-align: center; }
 .bidsv3 .bidsv2-page-indicator { color: #16283C; }
+
+/* ── v23348 — SINGLE-FILE WORDMARKS ARE TINTED, NOT SWAPPED ─────────────
+   (Nick: "I need actual wordmarks ... it looks atrocious".) 61 carriers had
+   artwork in /logos/wordmarks as one IATA-named SVG with no light/dark pair,
+   so the board could not use it and printed a text name instead. Those files
+   are dark-ink or full-colour, which is unreadable on a dark row, so the mark
+   is inked by CSS: white on the dark rows every theme uses, black on the light
+   blocks (delayed, final call) — the same treatment the gate gives operator
+   marks. Anything with a real light/dark pair never reaches these rules. */
+#fidsTable .fids-wm-mono,
+.bidsv3 .b3-wordmark.fids-wm-mono,
+.bidsv2-flight-row .fids-wm-mono {
+  filter: brightness(0) invert(1) !important;
+  opacity: 1 !important;
+}
+/* Light boards, and the light status blocks on any board, take black ink. */
+body.fids-light-board #fidsTable .fids-wm-mono,
+#fidsTable tbody tr.row-delayed .fids-wm-mono,
+#fidsTable tbody tr.row-final-call .fids-wm-mono,
+.bidsv3 .b3-row.b3-delayed .fids-wm-mono {
+  filter: brightness(0) !important;
+}
+/* Cancelled and diverted rows are dark blocks on every theme — white again. */
+#fidsTable tbody tr.row-cancelled .fids-wm-mono,
+#fidsTable tbody tr.row-diverted .fids-wm-mono,
+.bidsv3 .b3-row.b3-cancelled .fids-wm-mono,
+.bidsv3 .b3-row.b3-diverted .fids-wm-mono {
+  filter: brightness(0) invert(1) !important;
+}
