@@ -5720,95 +5720,7 @@ const AIRLINE_ACCENT = {
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
   'AY':'#0B1560','IB':'#D71920','TP':'#096','EI':'#009A44',
-  // v23351 — CARRIERS THAT WERE FALLING TO THE GENERIC NAVY. getAirlineAccent
-  // ends in '#0033A1', a blue that belongs to nobody: every carrier missing
-  // from this table painted its orbs, lanes and panels that one wrong colour
-  // (Nick: 'Most round orbs still dont even have the emblem logo and right
-  // color'). Ryanair was the clearest case — a navy carrier on a navy board,
-  // so its whole rail vanished. These are primary brand colours, picked to
-  // read on the dark board.
-  'FR':'#073590','RK':'#073590',            // Ryanair / Ryanair UK
-  'U2':'#FF6600','EC':'#FF6600','EJU':'#FF6600','EZS':'#FF6600',  // easyJet family
-  'W6':'#C6007E','W4':'#C6007E',            // Wizz Air / Wizz Air Malta
-  'VY':'#FFCC2F','I2':'#D71920',            // Vueling / Iberia Express
-  'DY':'#D81939','D8':'#D81939',            // Norwegian / Norwegian Sweden
-  'FI':'#0057B8','LM':'#005EB8',            // Icelandair / Loganair
-  'VS':'#E10A0A','AZ':'#005BAA','SN':'#1D3F8F',
-  'LO':'#1A3668','OK':'#0066B3','RO':'#003399','BT':'#A8C700',
-  'EW':'#A3195B','DE':'#FFAD00','X3':'#D40E14','BY':'#D40E14',
-  'A3':'#00508F','OU':'#003DA5','JU':'#C8102E','PC':'#FDC300',
-  'TO':'#00D1B0','HV':'#00D1B0','LS':'#E31837',
-  'EY':'#BD8B13','GF':'#C8A55B','WY':'#862633','SV':'#00844B',
-  'ME':'#C8102E','SA':'#005DAA','ET':'#6EBE49','MS':'#C8A951',
-  'AT':'#C8102E','WB':'#005CA9','KQ':'#C8102E','AH':'#C8102E',
-  'KU':'#005BAA','BI':'#FFCD00','UX':'#0057B8','XY':'#6CC24A',
-  'QF':'#E40000','NZ':'#00B0B9','VA':'#C8102E','JQ':'#FF5307',
-  'AI':'#DA0E29','6E':'#001B94','UL':'#00558C','PK':'#006747',
-  'BR':'#16613A','CI':'#E4002B','CZ':'#00539F','CA':'#C8102E',
-  'MU':'#C8102E','HU':'#C8102E','MF':'#0057B8','ZH':'#C8102E',
-  '9C':'#00954C','KA':'#006564','TG':'#4B1F6F','GA':'#035BA9',
-  'MH':'#006DB7','PR':'#C8102E','SG':'#E4002B','VN':'#00674B',
-  'AK':'#E4002B','FD':'#E4002B','QZ':'#E4002B','TR':'#F9E300','3K':'#FF5307',
-  'BW':'#00A651','LA':'#1B0088','JJ':'#1B0088','AR':'#00A0DF',
-  'CM':'#005AA7','AV':'#E4002B','AM':'#1B3D8F','G3':'#FF7A00',
-  'AD':'#0072CE','Y4':'#A5228E','VB':'#009B3A','LY':'#003DA5',
-  'F9':'#00854D','G4':'#FF6900','SY':'#E87722','WT':'#FF6900',
-  'CJ':'#2E5DA4','SU':'#00559C','RJ':'#6E2639','SP':'#009639','S4':'#009639',
-  // Canadian regionals + northern operators
-  'QK':'#D82F2E','RV':'#D82F2E','ZX':'#D82F2E',
-  '3H':'#005DAA','YN':'#003DA5','MO':'#C8102E','5T':'#0067B1','4N':'#FFCD00',
-  '9M':'#005BAA','P6':'#003DA5','8T':'#E4002B','PJ':'#005BAA','9X':'#005BAA',
 };
-
-// ── AIRLINE MARK INK ──────────────────────────────────────────────────────
-// v23351 — the colour an airline's SYMBOL takes when it sits on a coloured
-// orb or a dark banner. Everything not listed here keeps today's behaviour
-// (the brightness(0) invert(1) whitening), so adding this table changes
-// nothing for any carrier already on the boards.
-//
-// Ryanair is why it exists. Its harp is gold, but the rail whitened the
-// emblem at the top of the column while the card at the bottom rendered the
-// same file in its native gold — one harp, two colours, in the same view
-// (Nick: 'look at your screen 2 orbs 2 different colors seriously???' /
-// 'Should all be gold top t bottom period'). The emblem tile itself keeps its
-// blue ground and gold mark, exactly as the brand has it ('The emblem is blue
-// backgrounf and gold') — only the ink is unified.
-var AIRLINE_MARK = {
-  'FR':'#F1C933','RK':'#F1C933',   // Ryanair harp — gold, never white
-};
-function getAirlineMark(code) {
-  var c = String(code || '').toUpperCase();
-  return AIRLINE_MARK[c] || AIRLINE_MARK[c.substring(0, 2)] || '';
-}
-// Paint an <img> mark in the carrier's ink. Masking the element with its own
-// source recolours the artwork exactly, where a filter chain only approximates
-// it — and it works the same for a local SVG and a wway.io CDN logo.
-// ── NO ORB IS EVER EMPTY ───────────────────────────────────────────────────
-// v23351 — every orb builder ended its <img> with onerror="this.remove()", so
-// a 404 on the emblem art left the coloured ball with NOTHING inside it — a
-// ring drawn around a hole (Nick, on a Delta BOS gate: 'attrocious circle
-// within a circle one is empty'). The builders already know what to draw when
-// there is no art at all: the carrier's letters on the accent circle. This
-// routes the failure case to that same fallback instead of to a blank disc.
-// No code to fall back to → remove, as before; an empty orb beats a stray box.
-function _orbFallbackAttr(code) {
-  var c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
-  if (!c) return ' onerror="this.remove()"';
-  return ' onerror="this.outerHTML=\'<span class=&quot;v2-fi-orb-code&quot;>' + c + '</span>\'"';
-}
-function paintAirlineMark(img, ink) {
-  if (!img || !ink) return false;
-  var src = img.getAttribute('src');
-  if (!src) return false;
-  try {
-    var m = 'url("' + src + '") center/contain no-repeat';
-    img.style.setProperty('filter', 'none', 'important');
-    img.style.setProperty('background-color', ink, 'important');
-    img.style.setProperty('-webkit-mask', m, 'important');
-    img.style.setProperty('mask', m, 'important');
-    return true;
-  } catch (e) { return false; }
-}
 
 
 // ── AIRLINE DOMAIN MAP — for logo CDN lookups ──────────────────
@@ -8135,14 +8047,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // the real colour art, centred on the SAME accent-coloured glossy orb
         // the other icon badges wear (the orb sheen + inset shadow already come
         // from the shared .v2-fi-emblem-wrap rule), so it matches its neighbours.
-        // v23351 — a carrier with a declared mark ink joins this set. Its
-        // symbol file is ALREADY drawn in that ink (Ryanair's harp is gold),
-        // so the fix is to stop whitening it, not to recolour it. This is the
-        // top orb in the rail; the card orb at the other end of the screen
-        // already rendered the same file natively, which is how one harp came
-        // out white up top and gold down below.
         var COLOR_ON_WHITE = { 'AA': true, 'DL': true };
-        if (getAirlineMark(code)) COLOR_ON_WHITE[code] = true;
         var onWhite = !!COLOR_ON_WHITE[code] && !_tileBrand && !native;
         // v22989 — ONE ACCENT PER GATE, NEVER TWO (Nick: 'its still 2
         // different colors holy fuck' / 'Delta orbs need to be either red to
@@ -9050,7 +8955,7 @@ function _buildV2MapCol(ctx, vars) {
                   // solid colour roundel; invert(1) turned it into a blank
                   // white disc. Only vector silhouettes take the white
                   // treatment — .png art is colour art by construction.
-                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbArt]) ? 'filter:brightness(0) invert(1);' : '') + '"' + _orbFallbackAttr(_mcOrbOp || _mcCode) + '>'
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbArt]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
                   // v23208 — no emblem art on file → the carrier's LETTERS on
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
@@ -9269,7 +9174,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _niBadge + '">'
         +       (_niOrbSrc
-                  ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;"' + _orbFallbackAttr(_niCode) + '>'
+                  ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="this.remove()">'
                   : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
@@ -11127,7 +11032,7 @@ function uxgGateHtml(ctx) {
     // the orb. Slimmer img pad; the wrap pad alone keeps the round crop safe.
     var _birPad = _birOnWhite ? '8%' : '3%';
     var _birFlightIcon = _birEmblemPath
-      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;"' + _orbFallbackAttr(airlineCode) + '>'
+      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;" onerror="this.remove()">'
       : null;
     // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
     // AA/DL (_birOnWhite): keep the DEFAULT accent-coloured badge (same as the
@@ -11930,21 +11835,7 @@ function uxgGateHtml(ctx) {
     // carrier's symbol again, so a single failed wordmark fetch put TWO
     // emblems in the banner (Nick saw it on Icelandair). data-pairmode makes
     // g8LogoFail go straight to the text name instead.
-    // v23351 — BANNER WORDMARK TAKES THE CARRIER'S MARK INK. The banner art is
-    // whitened to survive the dark band, which is right for most carriers but
-    // wrong for one whose identity IS a colour: Ryanair's lettering went white
-    // while its harp stayed gold (Nick: 'even the top logo left top should
-    // have the gold'). Masking the image with its own source recolours the
-    // artwork exactly rather than approximating it with a filter chain. Skipped
-    // on the white logo plate, where a light ink would have nothing to read
-    // against, and skipped entirely for carriers with no declared mark.
-    var _markInk = _onPlate ? '' : getAirlineMark(_bannerBrandCode || airlineCode);
-    var _markTint = _markInk
-      ? 'filter:none !important;background-color:' + _markInk + ' !important;'
-        + '-webkit-mask:url("' + r1LogoSrc + '") center/contain no-repeat !important;'
-        + 'mask:url("' + r1LogoSrc + '") center/contain no-repeat !important;'
-      : '';
-    r1LogoHtml = '<img class="g8-r1-logo' + (_onPlate ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + _markTint + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
+    r1LogoHtml = '<img class="g8-r1-logo' + (_onPlate ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
     if (_bannerEmblemHtml) {
       r1LogoHtml = '<span class="g8-r1-brandpair" style="display:inline-flex;align-items:center;gap:16px;">' + _bannerEmblemHtml + r1LogoHtml + '</span>';
     }
@@ -12153,11 +12044,6 @@ function uxgGateHtml(ctx) {
     _rootStyle.setProperty('--banner-bg',
       (_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF')
         ? _bannerSpec.r1 : '#0c1119');
-    // v23351 — the carrier's mark ink, published beside its accent so the
-    // glyph badges and the emblem art read the SAME value. White unless the
-    // carrier is listed in AIRLINE_MARK, which keeps every existing board
-    // exactly as it is.
-    _rootStyle.setProperty('--airline-mark', getAirlineMark(airlineCode) || '#ffffff');
   } catch (e) {}
 
   return '<div class="g8-wrap'
@@ -21117,7 +21003,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23351';
+var FIDS_BUILD_TAG = 'v23353';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
