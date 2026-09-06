@@ -5730,6 +5730,7 @@ const AIRLINE_ACCENT = {
   'LY':'#1b358f',
   'EY':'#C89801',   // Etihad gold
   'I2':'#D71920',   // Iberia Express takes Iberia's red
+  'DE':'#FF7E27',   // Condor orange, taken from its own emblem
 };
 
 
@@ -8077,7 +8078,11 @@ function _buildV2AircraftCol(ctx, vars) {
         // and unbadged. DL now takes the COLOR_ON_WHITE path below: the same
         // round glossy accent orb (Delta red) as every other icon, white
         // widget centered inside.
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true };  // supplied full-colour art keeps its native colours (DL v23225: Nick's glossy sphere is the badge)
+        // v23369 - Condor joins the native list. Its emblem is a full-colour
+        // square, taupe ground with the orange bird, and the default
+        // brightness(0) invert(1) turns it into a SOLID WHITE CIRCLE - the
+        // whole mark gone. Rendered both ways before adding it here.
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true, 'DE': true };  // supplied full-colour art keeps its native colours (DL v23225: Nick's glossy sphere is the badge)
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -19549,6 +19554,9 @@ const IATA_TO_WORDMARK = {
   // gradient reference; a hex swap would have found nothing to replace.
   // Iberia Express rides the same logotype.
   'IB': 'iberia',     'I2': 'iberia',
+  // v23369 - Condor. The supplied wordmark is BLACK, which is invisible on
+  // the board's navy rows, so -light is the whole mark reversed to white.
+  'DE': 'condor',
   // v23354 — the wordmark half of the same seven regionals. A row that says
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
@@ -19720,6 +19728,7 @@ const LOGO_SUBFOLDER = {
   'etihad-wordmark-light.svg':'airlines/asian-other', 'etihad-wordmark-dark.svg':'airlines/asian-other',
   'emirates-wordmark-light.svg':'airlines/asian-other', 'emirates-wordmark-dark.svg':'airlines/asian-other',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
+  'condor-wordmark-light.svg':'airlines/european', 'condor-wordmark-dark.svg':'airlines/european',
   'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
@@ -21144,7 +21153,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23368';
+var FIDS_BUILD_TAG = 'v23369';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
