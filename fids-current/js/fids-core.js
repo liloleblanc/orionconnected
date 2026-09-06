@@ -16252,6 +16252,9 @@ const AP = {
   YYT:{ name:"St. John's International Airport",                     tz:'America/St_Johns'   },
   YQT:{ name:'Thunder Bay International Airport',                       tz:'America/Toronto'     },
   YZF:{ name:'Yellowknife Airport',                                  tz:'America/Yellowknife'},
+  YKA:{ name:'Kamloops Airport',                                     tz:'America/Vancouver'  },   // v23334 — wave 5 authority feeds
+  YXS:{ name:'Prince George Airport',                                tz:'America/Vancouver'  },
+  YMM:{ name:'Fort McMurray International Airport',                  tz:'America/Edmonton'   },
 };
 // v23265 — EXPORTED for sibling pages in the same origin. AP is declared with
 // `const`, which creates a script-scope binding and NOT a window property, so
@@ -20889,7 +20892,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23333';
+var FIDS_BUILD_TAG = 'v23334';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

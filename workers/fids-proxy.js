@@ -3952,6 +3952,722 @@ async function yyjFetchBoard() {
 }
 __name(yyjFetchBoard, "yyjFetchBoard");
 
+// ── YQY Sydney NS — yqy.terminalsystems.com/flights.php ──────────────
+// Terminal Systems Inc (TSI) serves the board that flyyqy.ca's homepage
+// widget jQuery.getJSON's: one ~1 KB JSON payload (the Content-Type says
+// text/html — ignore it) carrying BOTH directions, about two Air Canada
+// round trips a day (YYZ, YUL). Rows carry the carrier name AND code, a
+// digits-only flight number, a city NAME (no code), an explicit
+// YYYY-MM-DD date, and 12-hour clock strings with inconsistent
+// zero-padding ("5:20 PM" / "05:05 AM") that are Halifax wall-clock with
+// no offset — the site's own JS computes "today" in America/Halifax.
+// `actualtime` is the board's "Update" column: the estimate while a
+// flight is pending, the actual once Departed/Arrived, and simply equal
+// to scheduletime when nothing changed. Yesterday's rows linger until
+// ~02:00–03:00 local (seen at 01:48, gone at 03:06); no tomorrow rows
+// were seen, so the board is today-only. No auth, no params (all
+// ignored), CORS *, no cache headers upstream. Verified live 2026-09-06
+// 03:06 ADT with the worker's UA and with no UA at all. sydneyairport.ca
+// (the old domain) has a broken TLS chain — never fetch it.
+const YQY_FEED_URL = "https://yqy.terminalsystems.com/flights.php";
+// Cities YQY's board could name that the Halifax map lacks (Halifax
+// itself, the accented Montréal, St. John's without the period);
+// Toronto / Montreal / St. John's / Charlottetown come from YHZ_CITY_IATA.
+const YQY_CITY_IATA = { "HALIFAX": "YHZ", "MONTRÉAL": "YUL", "ST JOHN'S": "YYT", "ST. JOHNS": "YYT", "ST JOHNS": "YYT" };
+// TSI's remarks vocabulary — On Time / Early / Late / Delayed / Departed /
+// Arrived / Cancelled / Diverted (the data shows the first three of the
+// live states; the page's CSS switch names the rest and styles Late
+// exactly like Delayed). Diverted and Late are the two yhzStatus misses.
+function yqyStatus(txt) {
+  const s = String(txt || "").toLowerCase();
+  if (s.includes("divert")) return "diverted";
+  if (s.includes("late")) return "delayed";
+  return yhzStatus(s);   // cancel / depart / arriv / delay; On Time, Early → scheduled
+}
+__name(yqyStatus, "yqyStatus");
+// The raw rows, or null when the body is not the {flights:[…]} shape.
+// The handler leans on that null to tell "the feed changed under us"
+// (fall through) from "no flights this way right now" (an empty board).
+function yqyFeedRows(jsonText) {
+  const t = String(jsonText || "").trim();
+  if (t[0] !== "{") return null;
+  let j = null;
+  try { j = JSON.parse(t); } catch (e) {
+    // PHP-built JSON: tolerate a dangling comma on a row-less day.
+    try { j = JSON.parse(t.replace(/,\s*([\]}])/g, "$1")); } catch (e2) { return null; }
+  }
+  return j && Array.isArray(j.flights) ? j.flights : null;
+}
+__name(yqyFeedRows, "yqyFeedRows");
+// Exported for the node test suite. `nowMs` only matters for a row that
+// arrives without its date (never seen) — such a row is Halifax-today.
+function yqyParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  const rows = yqyFeedRows(jsonText);
+  if (!rows) return out;
+  const tz = "America/Halifax";
+  let today = null;
+  const todayIn = () => {
+    if (today) return today;
+    const dp = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+    const gv = (t) => (dp.find((p) => p.type === t) || {}).value;
+    return (today = `${gv("year")}-${gv("month")}-${gv("day")}`);
+  };
+  for (const r of rows) {
+    if (!r || typeof r !== "object") continue;
+    const type = String(r.type || "").trim().toUpperCase();
+    if (type !== "A" && type !== "D") continue;
+    if ((dir === "dep") !== (type === "D")) continue;
+    const airlineName = String(r.Airline || "").trim().replace(/\s+/g, " ");
+    const nameU = airlineName.toUpperCase();
+    const code = String(r.airlinecode || "").trim().toUpperCase()
+      || AIRLINE_NAME_IATA[nameU] || AIRLINE_NAME_IATA_SQUASHED[nameU.replace(/\s+/g, "")] || "";
+    let fn = String(r.flightnumber == null ? "" : r.flightnumber).trim().toUpperCase();
+    if (code && fn.startsWith(code)) fn = fn.slice(code.length);   // defensive: the feed sends digits only
+    fn = fn.replace(/^0+(?=\d)/, "");
+    if (!code || !/^\d{1,4}[A-Z]?$/.test(fn)) continue;
+    const dm = String(r.date || "").match(/^\s*(\d{4}-\d{2}-\d{2})/);
+    const date = dm ? dm[1] : todayIn();
+    const sched = parse12hLocal(tz, `${date} ${String(r.scheduletime || "").trim()}`);
+    if (!sched) continue;
+    // "Update" differs from schedule → revisedTime (estimate or actual,
+    // the status tells which — the YVR/DUB/YYJ convention). A 12 AM
+    // update on an 11 PM flight belongs to the next calendar day.
+    const act = parse12hLocal(tz, `${date} ${String(r.actualtime || "").trim()}`);
+    const revised = act && act.ts !== sched.ts ? settleRevised(act, sched, tz) : null;
+    const city = String(r.city || "").trim().replace(/\s+/g, " ");
+    const cityKey = city.toUpperCase();
+    out.push(authorityFlight({
+      dir, number: `${code}${fn}`, status: yqyStatus(r.remarks),
+      homeIata: "YQY", homeIcao: "CYQY", homeName: "Sydney NS",   // the worker's own CITY_NAMES spelling
+      gate: String(r.gate == null ? "" : r.gate).trim() || null,   // "" on every arrival row; "2" on departures
+      otherIata: YQY_CITY_IATA[cityKey] || YHZ_CITY_IATA[cityKey] || null,
+      otherName: city || null,
+      airlineIata: code, airlineName: airlineName || AIRLINE_IATA_NAME[code] || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(yqyParseFeed, "yqyParseFeed");
+
+// ── YQX Gander — ganderairport.com/flights/?type=… (WordPress SSR) ───
+// WP Engine behind Cloudflare, page cache 600 s. Each typed view renders
+// one <table class="flights-table-arrivals"|"flights-table-departures">
+// server-side, eight <td>s a row: Flight (IATA-prefixed), Airline (a
+// display name), Date "DD Mon" (no year), Scheduled HH:MM, Revised
+// HH:MM (mirrors Scheduled until something changes), Arriving From,
+// Destination, Status (only "OnTime" seen; a colour hint rides in a
+// style attr). Today through ~5 days ahead, ~18 rows a direction. No
+// gates, belts, aircraft, codeshares or JSON — flights.js only toggles
+// the two tabs.
+//
+// Quirks pinned by the parser:
+//  • Cloudflare 403s the EXACT User-Agent "Mozilla/5.0"; any other
+//    descriptive UA gets 200, so the fetch sends a product UA outright.
+//  • The combined /flights/ page prints Arriving From/Destination
+//    SWAPPED relative to the typed views. We fetch the typed views, and
+//    the parser takes whichever city cell is NOT Gander either way.
+//  • PAL's through-flights (PB921 YYT–YQX–YYR, PB922 back) show the same
+//    number on both boards at different times: one arrival row, one
+//    departure row — exactly what the screens want, no de-dup across
+//    directions.
+//  • Cities are names only: "St. John's " carries a trailing space and a
+//    literal apostrophe (yhzCellText also decodes the entity forms).
+//  • Every row is dated; a row that ever loses its date is read as
+//    today's in Gander's clock.
+// Newfoundland runs on the half-hour (America/St_Johns: -02:30 NDT /
+// -03:30 NST) — offsets come from the tz helper, never hand-rolled.
+const YQX_UA = "OrionConnected-FIDS/1.0 (+https://fids.orionconnected.com)";
+const YQX_CITY_IATA = {
+  "HALIFAX": "YHZ",   // absent from the Halifax-centric shared map
+  "ST. JOHN'S": "YYT", "ST JOHN'S": "YYT", "ST. JOHNS": "YYT", "ST JOHNS": "YYT",
+  "GOOSE BAY": "YYR", "HAPPY VALLEY-GOOSE BAY": "YYR", "HAPPY VALLEY": "YYR",
+  "DEER LAKE": "YDF", "ST. ANTHONY": "YAY", "ST ANTHONY": "YAY", "STEPHENVILLE": "YJT",
+  "WABUSH": "YWK", "LABRADOR CITY": "YWK", "CHURCHILL FALLS": "ZUM", "NAIN": "YDP",
+  "SAINT-PIERRE": "FSP", "ST-PIERRE": "FSP", "ST. PIERRE": "FSP",
+  "ORLANDO": "MCO", "ORLANDO SANFORD": "SFB", "SANFORD": "SFB"
+};
+// Should the site ever print ICAO prefixes (ACA1170, PVL921), fold them
+// back to the IATA keys the boards use for logos and colours.
+const YQX_ICAO_IATA = { ACA: "AC", JZA: "AC", ROU: "RV", PVL: "PB", WJA: "WS", WEN: "WS", POE: "PD", FLE: "F8", TSC: "TS", SWG: "WG", SPM: "PJ" };
+function yqxStatus(txt) {
+  const s = String(txt || "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("divert")) return "diverted";
+  if (s.includes("gate closed")) return "gateclosed";
+  if (s.includes("final call") || s.includes("board")) return "boarding";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("delay") || s.includes("late")) return "delayed";
+  return "scheduled";   // OnTime / On Time / Early / anything novel
+}
+__name(yqxStatus, "yqxStatus");
+// "06 Sep" + "13:20" → time object on that Gander calendar day. The year
+// is whichever lands nearest to now (December boards reading into
+// January included); a row with no readable date is today's, in
+// Gander's clock, not UTC's.
+function parseYqxTime(dateStr, timeStr, nowMs) {
+  const tm = String(timeStr || "").trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!tm) return null;
+  const hh = Number(tm[1]), mm = Number(tm[2]);
+  if (hh > 23 || mm > 59) return null;
+  const dm = String(dateStr || "").trim().match(/^(\d{1,2})\s+([A-Za-z]{3})[A-Za-z]*\.?(?:,?\s+(\d{4}))?$/);
+  const mo = dm ? AUTH_MONTHS[dm[2].toUpperCase()] : undefined;
+  let y, d;
+  if (dm && mo) {
+    d = Number(dm[1]);
+    if (d < 1 || d > 31) return null;
+    y = dm[3] ? Number(dm[3]) : nearestYear(mo, d, nowMs);
+    return localTimeObjIn("America/St_Johns", y, mo, d, hh, mm);
+  }
+  const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "America/St_Johns", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+  const g = (t) => Number((dp.find((p) => p.type === t) || {}).value);
+  return localTimeObjIn("America/St_Johns", g("year"), g("month"), g("day"), hh, mm);
+}
+__name(parseYqxTime, "parseYqxTime");
+function parseYqxPage(html, dir, nowMs) {
+  const out = [];
+  const want = dir === "dep" ? "flights-table-departures" : "flights-table-arrivals";
+  const tm = String(html || "").match(new RegExp('<table class="' + want + '"[\\s\\S]*?<\\/table>'));
+  if (!tm) return out;
+  const seen = new Set();
+  const isHome = (s) => /^gander\b/i.test(String(s || "").trim());
+  // Each row ends in a commented-out "<!-- <td></td> -->" (a shelved
+  // Weather column) — strip comments first so the cell count stays 8.
+  const rows = tm[0].replace(/<!--[\s\S]*?-->/g, "").match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    if (row.indexOf("<th") !== -1) continue;
+    const cells = authorityCellsText(row);
+    if (cells.length < 8) continue;
+    const [numRaw, carrier, dateRaw, schedRaw, revRaw, fromRaw, toRaw, statusRaw] = cells;
+    const nm = numRaw.replace(/\s+/g, "").toUpperCase().match(/^([A-Z][A-Z0-9]|[0-9][A-Z]|[A-Z]{3})?(\d{1,4})$/);
+    if (!nm) continue;
+    const _cu = carrier.toUpperCase().trim();
+    const nameCode = AIRLINE_NAME_IATA[_cu] || AIRLINE_NAME_IATA_SQUASHED[_cu.replace(/\s+/g, "")] || null;
+    const prefix = nm[1] || "";
+    const code = (prefix.length === 3 ? (YQX_ICAO_IATA[prefix] || nameCode) : prefix) || nameCode;
+    const number = (code || prefix) + nm[2];
+    const sched = parseYqxTime(dateRaw, schedRaw, nowMs);
+    if (!sched) continue;
+    // Revised mirrors Scheduled until something changes; a differing value
+    // is the revision, settled across midnight toward the schedule.
+    let revised = parseYqxTime(dateRaw, revRaw, nowMs);
+    if (revised && revised.ts === sched.ts) revised = null;
+    if (revised) revised = settleRevised(revised, sched, "America/St_Johns");
+    // Typed views keep Gander in the home column; the combined page swaps
+    // the two. Whichever cell is NOT Gander is the other end.
+    let other = dir === "dep" ? toRaw : fromRaw;
+    const alt = dir === "dep" ? fromRaw : toRaw;
+    if (isHome(other) && !isHome(alt)) other = alt;
+    const city = other.trim();
+    const cityU = city.toUpperCase();
+    const key = `${number}|${sched.ts}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(authorityFlight({
+      dir, number, status: yqxStatus(statusRaw),
+      homeIata: "YQX", homeIcao: "CYQX", homeName: "Gander",
+      otherIata: YQX_CITY_IATA[cityU] || YHZ_CITY_IATA[cityU] || null, otherName: city || null,
+      airlineIata: code || null, airlineName: carrier || (code && AIRLINE_IATA_NAME[code]) || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(parseYqxPage, "parseYqxPage");
+
+// ── YYG Charlottetown — flyyyg.com SSR page (one page, two tables) ───
+// flypei.com (the old host) is dead: https times out and http is a
+// JavaScript redirect stub to flyyyg.com. The WordPress/Beaver Builder
+// site renders both boards server-side from an upstream XML its theme
+// reads (no XHR/JSON endpoint exists — the guessed XML paths all 404):
+// <table class="arrdeptables"> is arrivals, <table class="arrdeptables
+// departing"> is departures. EVERY data row wears class="arrivals" in
+// BOTH tables (their CSS, not a direction signal — the table class is)
+// and a stray unclosed <tr> precedes the first data row of each table,
+// so rows are anchored on `<tr class="arrivals"`. Seven cells: Date
+// ("Sep 6, 2026" — a full date per row, so no midnight walk), Carrier
+// (logo <img> + display name), Flight # (IATA-prefixed: AC630, F8678,
+// PD2364, WS789), City (name only — "Montreal -MET" is Porter's Montréal
+// Metropolitan/Saint-Hubert service per the airport's own news post),
+// "Sch. Time (AST)" and "Arr. Time"/"Dep. Time" as 24-h HH:MM, Status.
+// The "(AST)" header is a label, not the zone: the page's own feed stamp
+// reads in ADT in summer (03:05 at 06:06Z), so times are Halifax wall
+// clock on the row's date — via the tz helper, never a fixed offset.
+// The page shows the operating day plus the previous day's stragglers
+// for a couple of hours after midnight (a Sep 5 "Arrived" row at 01:45,
+// gone by 03:06). No gates, belts, terminals or aircraft; ~10 movements
+// a day each way. Upstream is cache-control: no-store — we cache here.
+const YYG_CITY_IATA = {
+  "MONTREAL-MET": "YHU",          // Montréal Metropolitan (Saint-Hubert) — the only tagged city seen live
+  "HALIFAX": "YHZ"                // the shared map has no entry for its own home
+};
+// Carrier logo filename → IATA: a fallback for a display name the shared
+// name map doesn't know (the flight number normally carries the prefix).
+const YYG_LOGO_IATA = { air_canada_logo: "AC", flair_logo: "F8", porter_logo: "PD", westjet_logo: "WS" };
+function yygStatus(txt) {
+  const s = String(txt || "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("divert")) return "diverted";
+  if (s.includes("gate closed")) return "gateclosed";
+  if (s.includes("boarding") || s.includes("final call")) return "boarding";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("delay") || s.includes("late")) return "delayed";
+  return "scheduled";   // On Time / Early / anything novel
+}
+__name(yygStatus, "yygStatus");
+// "Sep 6, 2026" (also "Sept 6, 2026", "6 Sep 2026") → { y, mo, d } or null.
+function parseYygDate(s) {
+  const t = String(s || "").replace(/\s+/g, " ").trim();
+  let m = t.match(/^([A-Za-z]{3})[A-Za-z]*\.?\s+(\d{1,2}),?\s+(\d{4})$/);
+  let mo, d;
+  if (m) { mo = AUTH_MONTHS[m[1].toUpperCase()]; d = Number(m[2]); }
+  else {
+    m = t.match(/^(\d{1,2})\s+([A-Za-z]{3})[A-Za-z]*\.?,?\s+(\d{4})$/);
+    if (!m) return null;
+    mo = AUTH_MONTHS[m[2].toUpperCase()]; d = Number(m[1]);
+  }
+  if (!mo || d < 1 || d > 31) return null;
+  return { y: Number(m[3]), mo, d };
+}
+__name(parseYygDate, "parseYygDate");
+// City cell → IATA. Exact (dash-squashed) key first, then the shared
+// Atlantic map, then the bare city with any " -TAG" suffix dropped —
+// so a tag we have not seen still lands on the city's main airport.
+function yygCityIata(city) {
+  const key = String(city || "").toUpperCase().replace(/\s*-\s*/g, "-").replace(/\s+/g, " ").trim();
+  if (!key) return null;
+  if (YYG_CITY_IATA[key]) return YYG_CITY_IATA[key];
+  if (YHZ_CITY_IATA[key]) return YHZ_CITY_IATA[key];
+  const base = key.replace(/-[A-Z]{2,5}$/, "");
+  return YYG_CITY_IATA[base] || YHZ_CITY_IATA[base] || null;
+}
+__name(yygCityIata, "yygCityIata");
+function parseYygPage(html, dir, nowMs) {
+  const out = [];
+  const tz = "America/Halifax";
+  const tables = String(html || "").match(/<table[^>]*class="arrdeptables[^"]*"[\s\S]*?<\/table>/g) || [];
+  const table = tables.find((t) => /^<table[^>]*class="[^"]*\bdeparting\b/.test(t) === (dir === "dep"));
+  if (!table) return out;
+  let today = null;   // airport-local today, only computed if a row lacks its date
+  const rows = table.match(/<tr class="arrivals"[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    const cells = authorityCellsText(row);
+    if (cells.length < 7) continue;
+    const [dateRaw, carrier, numRaw, cityRaw, schedRaw, estRaw, statusRaw] = cells;
+    const num = numRaw.replace(/\s+/g, "").toUpperCase();
+    const nm = num.match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])?(\d{1,4})$/);
+    const sm = schedRaw.match(/^(\d{1,2})[:hH](\d{2})$/);
+    if (!nm || !sm) continue;
+    let dt = parseYygDate(dateRaw);
+    if (!dt) {
+      if (!today) {
+        const dp = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+        const g = (t) => Number((dp.find((p) => p.type === t) || {}).value);
+        today = { y: g("year"), mo: g("month"), d: g("day") };
+      }
+      dt = today;
+    }
+    const sched = localTimeObjIn(tz, dt.y, dt.mo, dt.d, Number(sm[1]), Number(sm[2]));
+    // Arr./Dep. Time mirrors the schedule until something changes; only a
+    // differing value is a revision, and one on the far side of midnight
+    // (sched 23:59, actual 00:12 on the same dated row) is settled.
+    let revised = null;
+    const em = estRaw.match(/^(\d{1,2})[:hH](\d{2})$/);
+    if (em && (Number(em[1]) !== Number(sm[1]) || Number(em[2]) !== Number(sm[2]))) {
+      revised = settleRevised(localTimeObjIn(tz, dt.y, dt.mo, dt.d, Number(em[1]), Number(em[2])), sched, tz);
+    }
+    const _cu = carrier.toUpperCase().trim();
+    const logo = ((row.match(/carriers\/([a-z0-9_]+)\.(?:png|svg|jpe?g|webp)/i) || [])[1] || "").toLowerCase();
+    const code = nm[1] || AIRLINE_NAME_IATA[_cu]
+      || AIRLINE_NAME_IATA_SQUASHED[_cu.replace(/\s+/g, "")] || YYG_LOGO_IATA[logo] || null;
+    const city = cityRaw.trim();
+    out.push(authorityFlight({
+      dir, number: nm[1] ? num : (code ? code + nm[2] : nm[2]), status: yygStatus(statusRaw),
+      homeIata: "YYG", homeIcao: "CYYG", homeName: "Charlottetown",
+      otherIata: yygCityIata(city), otherName: city || null,
+      airlineIata: code, airlineName: (code && AIRLINE_IATA_NAME[code]) || carrier || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(parseYygPage, "parseYygPage");
+
+// ── YKA Kamloops — kamloopsairport.com/starkapi.php (2026-09-06) ─────
+// A WordPress-root PHP shim in front of the airport's Stark FIDS; the
+// site's own React board (plugin ch-flight-data, Vantage Airport Group)
+// polls ?type=arrivals and ?type=departures every 60 s. One bare JSON
+// array per direction, from about now to +2 days (landed flights linger
+// briefly, then drop off), no auth, no cookies, no referer; Cloudflare-
+// fronted but unchallenged with the worker's own UA (verified live
+// 2026-09-05 23:06 PDT). Quirks: AirlineCode holds the carrier NAME
+// ("Air Canada" / "WestJet" / "Pacific Coastal") and FlightNumber the
+// bare digits; ScheduleTime/EstimatedTime read "Sep 5 - 22:13" (no year,
+// no offset — Pacific wall clock); ActualTime is [] until the flight
+// moves, then a bare "HH:MM"; Status is free text with the clock
+// embedded: "On Time", "Late at 22:50", "Early at 23:47", "Arrived at
+// 23:02". Gate on both directions; no terminal, belt, tail or type. A
+// missing ?type= answers a WP REST 404 JSON and an unknown one silently
+// falls back to departures — the ArrivalOrDeparture field guards that.
+const YKA_TZ = "America/Vancouver";
+// Carriers the Kamloops board names that the shared map lacks (8P flies
+// YKA–YYJ today; 9M and Jazz for whenever they are back on the roster).
+const YKA_AIRLINE_IATA = {
+  "PACIFIC COASTAL": "8P", "PACIFIC COASTAL AIRLINES": "8P",
+  "CENTRAL MOUNTAIN AIR": "9M", "CENTRAL MOUNTAIN": "9M",
+  "AIR CANADA JAZZ": "AC", "JAZZ": "AC", "WESTJET LINK": "WS"
+};
+// "Sep 5 - 22:13" → time object in the Pacific zone. The year is the one
+// nearest to now (a "Jan 2" read on New Year's Eve lands next year); an
+// explicit year, should the shim ever grow one, is honoured.
+function parseYkaTime(s, nowMs) {
+  const m = String(s || "").match(/^\s*([A-Za-z]{3})[A-Za-z]*\.?\s+(\d{1,2})(?:,?\s+(\d{4}))?\s*-?\s*(\d{1,2}):(\d{2})\s*$/);
+  if (!m) return null;
+  const mo = AUTH_MONTHS[m[1].toUpperCase()];
+  if (!mo) return null;
+  const d = Number(m[2]), hh = Number(m[4]), mm = Number(m[5]);
+  if (d < 1 || d > 31 || hh > 23 || mm > 59) return null;
+  const y = m[3] ? Number(m[3]) : nearestYear(mo, d, nowMs);
+  return localTimeObjIn(YKA_TZ, y, mo, d, hh, mm);
+}
+__name(parseYkaTime, "parseYkaTime");
+// Stark's word for delayed is "Late". "Early at HH:MM" is an estimate on
+// a flight that is otherwise on schedule — scheduled + revisedTime, the
+// YYJ/AUS convention (the boards colour "early" from the revised gap).
+// Gate-side words (not yet seen here, but a Stark FIDS has them) take
+// the YXE spellings; anything novel falls to yhzStatus → scheduled.
+function ykaStatus(txt) {
+  const s = String(txt || "").toLowerCase();
+  if (/\blate\b/.test(s)) return "delayed";
+  if (/divert/.test(s)) return "diverted";
+  if (/gate\s*closed/.test(s)) return "gateclosed";
+  if (/final\s*call|boarding/.test(s)) return "boarding";
+  return yhzStatus(s);
+}
+__name(ykaStatus, "ykaStatus");
+// A bare "HH:MM" (ActualTime, or the clock inside Status) placed on the
+// scheduled day and settled across midnight.
+function ykaClockOn(sched, txt) {
+  const m = String(txt || "").match(/(\d{1,2}):(\d{2})/);
+  if (!m || !sched) return null;
+  const y = Number(sched.local.slice(0, 4)), mo = Number(sched.local.slice(5, 7)), d = Number(sched.local.slice(8, 10));
+  return settleRevised(localTimeObjIn(YKA_TZ, y, mo, d, Number(m[1]), Number(m[2])), sched, YKA_TZ);
+}
+__name(ykaClockOn, "ykaClockOn");
+function parseYkaFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = Array.isArray(j) ? j : (j && Array.isArray(j.flights) ? j.flights : []);
+  for (const r of rows) {
+    if (!r || typeof r !== "object") continue;
+    // Each endpoint is one direction, but the field is there — and it is
+    // what turns the shim's silent fallback to departures into an empty
+    // (→ null → untouched) read instead of departures on the arrivals board.
+    const ad = String(r.ArrivalOrDeparture || "").trim().toUpperCase();
+    if (ad && (dir === "dep") !== /^D/.test(ad)) continue;
+    const nm = String(r.FlightNumber || "").trim().toUpperCase().match(/^(?:([A-Z]\d|\d[A-Z]|[A-Z]{2})\s*)?(\d{1,4})[A-Z]?$/);
+    if (!nm) continue;
+    const sched = parseYkaTime(r.ScheduleTime, nowMs);
+    if (!sched) continue;
+    const name = String(r.AirlineCode || "").trim();
+    const key = name.toUpperCase();
+    const code = YKA_AIRLINE_IATA[key] || AIRLINE_NAME_IATA[key] || AIRLINE_NAME_IATA_SQUASHED[key.replace(/\s+/g, "")]
+      || (/^[A-Z0-9]{2}$/.test(key) ? key : null) || nm[1] || null;
+    // EstimatedTime carries its own date and is kept in step with the
+    // status clock (verified: "Arrived at 23:02" ↔ "Sep 5 - 23:02");
+    // ActualTime and the "at HH:MM" inside Status are the fallbacks.
+    const est = parseYkaTime(r.EstimatedTime, nowMs);
+    let revised = (est && est.ts !== sched.ts) ? est
+      : ykaClockOn(sched, typeof r.ActualTime === "string" ? r.ActualTime : "")
+        || ykaClockOn(sched, (String(r.Status || "").match(/\bat\s+(\d{1,2}:\d{2})/i) || [])[1]);
+    if (revised && revised.ts === sched.ts) revised = null;
+    const city = String(r.ViaAirportCity || r.Comments || "").trim();
+    out.push(authorityFlight({
+      dir, number: code ? `${code}${nm[2]}` : nm[2],
+      status: ykaStatus(r.Status),
+      homeIata: "YKA", homeIcao: "CYKA", homeName: "Kamloops",
+      gate: String(r.Gate || "").trim() || null,
+      otherIata: String(r.ViaAirportCode || "").trim().toUpperCase() || YHZ_CITY_IATA[city.toUpperCase()] || null,
+      otherName: city || null,
+      airlineIata: code,
+      airlineName: (name && !/^[A-Z0-9]{2}$/.test(key)) ? name : (AIRLINE_IATA_NAME[code] || null),
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(parseYkaFeed, "parseYkaFeed");
+
+// ── YXS Prince George — pgairport.ca "yxs_ifids" WordPress AJAX board ─
+// One GET to admin-ajax.php?action=yxs_ifids_get_panels&refresh=0 answers
+// {success, data:{html, timestamp, raw}}: server-rendered HTML holding
+// BOTH directions — <div id="panel-arrivals"> then <div id="panel-
+// departures">, each an <ol> of
+//   <button class="yxs-ifids-widget__item yxs-ifids-widget__item--on-time"
+//     data-flight="8349" data-airline="Air Canada" data-from="Vancouver"
+//     data-scheduled="23:34, Sep 5" data-status="On Time" data-gate="2A"
+//     data-baggage="">…<div class="…flight-expected">Expected 23:35</div>…
+// Rolling window: roughly now → ~4 days ahead (53 + 52 rows at 23:06 PDT);
+// completed rows drop out an hour or two after the fact. ~150 KB a call.
+// Verified live 2026-09-05 23:07 PDT with the worker's own UA.
+//
+// Pinned quirks:
+//  • The page's WP nonce (YXSIFIDS.nonce) is NOT enforced: no nonce, a
+//    bogus nonce, GET or POST all answer the identical payload. A request
+//    with no User-Agent header at all is a 403 (fetchAuthorityText always
+//    sends one); the browser UA and the worker UA both pass.
+//  • refresh=1 asks the plugin to re-pull its upstream and intermittently
+//    answers {"success":false,"data":"No data"}; refresh=0 serves the
+//    plugin's own ~2-min cache (data.raw advances ~1 min between calls)
+//    and is all we ever send. "No data" carries no panel marker, so
+//    fetchAuthorityText files it as a miss (30 s negative cache).
+//  • Flight numbers are digits only; the carrier comes from the logo
+//    filename (icon-ac / icon-wja / icon-9m / icon-pca) with the display
+//    name as fallback. data-from is the far city NAME — reused for "To"
+//    on departures (the widget JS relabels it) — no codes anywhere.
+//  • Times are the Pacific wall clock: data.raw ("2026-09-05 23:06:11")
+//    tracked PDT at fetch time although the page labels it "PST".
+//    Scheduled carries a month-day but no year (nearestYear); Expected is
+//    HH:MM with no date — paired with the scheduled day and settled across
+//    midnight. Expected equal to Scheduled is not a revision.
+//  • data-baggage ('' or a belt number) is set on departure rows too (the
+//    inbound aircraft's belt); it is only attached to arrivals.
+//  • Statuses seen live: On Time, Late, Delayed, Departed (slug class
+//    on-time/late/delayed/departed). Anything novel maps by keyword, else
+//    "scheduled".
+const YXS_AJAX_URL = "https://www.pgairport.ca/wp-admin/admin-ajax.php?action=yxs_ifids_get_panels&refresh=0";
+// Logo filename stem → IATA. The plugin's own carrier key, so it wins over
+// the display name (Air Canada Express / WestJet Encore both fly the
+// mainline code here).
+const YXS_ICON_IATA = { ac: "AC", wja: "WS", wj: "WS", ws: "WS", "9m": "9M", cma: "9M", pca: "8P", "8p": "8P", f8: "F8", fle: "F8", wg: "WG", swg: "WG" };
+// Carriers the shared name map lacks: the two YXS regionals.
+const YXS_AIRLINE_IATA = { "CENTRAL MOUNTAIN AIR": "9M", "PACIFIC COASTAL": "8P", "PACIFIC COASTAL AIRLINES": "8P" };
+// City names on the YXS route map that YHZ_CITY_IATA doesn't cover: the
+// northern-BC regionals plus the sun destinations. The big ones
+// (Vancouver, Calgary, Edmonton, Kelowna, Victoria, Kamloops…) fall
+// through to the shared map.
+const YXS_CITY_IATA = {
+  "TERRACE": "YXT", "FORT NELSON": "YYE", "FORT ST. JOHN": "YXJ", "FORT ST JOHN": "YXJ",
+  "SMITHERS": "YYD", "PRINCE RUPERT": "YPR", "WILLIAMS LAKE": "YWL", "QUESNEL": "YQZ",
+  "DAWSON CREEK": "YDQ", "CAMPBELL RIVER": "YBL", "CRANBROOK": "YXC", "CASTLEGAR": "YCG",
+  "PENTICTON": "YYF", "POWELL RIVER": "YPW", "PORT HARDY": "YZT", "WHITEHORSE": "YXY",
+  "BELLA COOLA": "QBC", "ANAHIM LAKE": "YAA", "MASSET": "ZMT", "SANDSPIT": "YZP",
+  "TRAIL": "YZZ", "TOFINO": "YAZ", "PUERTO VALLARTA": "PVR", "CANCUN": "CUN",
+  "LOS CABOS": "SJD", "SAN JOSE DEL CABO": "SJD", "MAZATLAN": "MZT", "PHOENIX-MESA": "AZA"
+};
+function yxsStatus(txt, cls) {
+  const s = `${txt || ""} ${cls || ""}`.toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("divert")) return "diverted";
+  if (s.includes("gate closed") || s.includes("gate-closed")) return "gateclosed";
+  if (s.includes("final call") || s.includes("boarding")) return "boarding";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("late") || s.includes("delay")) return "delayed";
+  return "scheduled";   // On Time / Early / anything novel
+}
+__name(yxsStatus, "yxsStatus");
+// One data-* attribute off a row's <button …> tag, entity-decoded.
+function yxsAttr(tag, name) {
+  const m = String(tag || "").match(new RegExp(`\\s${name}="([^"]*)"`));
+  return m ? yhzCellText(m[1]) : "";
+}
+__name(yxsAttr, "yxsAttr");
+// The wanted panel's slice of the payload HTML: from its id to the other
+// panel's id (or the end), whichever order the two are rendered in.
+function yxsPanel(html, dir) {
+  const src = String(html || "");
+  const ia = src.indexOf('id="panel-arrivals"'), id = src.indexOf('id="panel-departures"');
+  const start = dir === "dep" ? id : ia, other = dir === "dep" ? ia : id;
+  if (start === -1) return "";
+  return src.slice(start, other > start ? other : undefined);
+}
+__name(yxsPanel, "yxsPanel");
+// jsonText is the raw admin-ajax response ({success, data:{html}}); a bare
+// HTML fragment is accepted too so the parser can be fed either. `nowMs`
+// only anchors the year of the month-day dates.
+function parseYxsPanels(jsonText, dir, nowMs) {
+  const out = [];
+  const tz = "America/Vancouver";
+  let html = String(jsonText || "");
+  if (/^\s*\{/.test(html)) {
+    let j; try { j = JSON.parse(html); } catch (e) { return out; }
+    if (!j || !j.success || !j.data || typeof j.data.html !== "string") return out;
+    html = j.data.html;
+  }
+  const panel = yxsPanel(html, dir);
+  for (const rm of panel.matchAll(/<button\b([^>]*\sdata-flight="[^"]*"[^>]*)>([\s\S]*?)<\/button>/g)) {
+    const tag = rm[1], inner = rm[2];
+    const digits = yxsAttr(tag, "data-flight").replace(/\D+/g, "");
+    // "23:34, Sep 5" (PHP "H:i, M j"); a year is tolerated should one appear.
+    const sm = yxsAttr(tag, "data-scheduled").match(/^(\d{1,2}):(\d{2}),?\s*([A-Za-z]{3})[A-Za-z]*\.?\s+(\d{1,2})(?:,?\s*(\d{4}))?$/);
+    if (!digits || !sm) continue;
+    const mo = AUTH_MONTHS[sm[3].toUpperCase()];
+    if (!mo) continue;
+    const d = Number(sm[4]);
+    const y = sm[5] ? Number(sm[5]) : nearestYear(mo, d, nowMs);
+    const sched = localTimeObjIn(tz, y, mo, d, Number(sm[1]), Number(sm[2]));
+    // "Expected 21:47" lives only in the row body (no data-* for it).
+    const em = yhzCellText((inner.match(/yxs-ifids-widget__flight-expected"[^>]*>([\s\S]*?)<\/div>/) || [])[1] || "").match(/(\d{1,2}):(\d{2})/);
+    let revised = null;
+    if (em && (Number(em[1]) !== Number(sm[1]) || Number(em[2]) !== Number(sm[2]))) {
+      revised = settleRevised(localTimeObjIn(tz, y, mo, d, Number(em[1]), Number(em[2])), sched, tz);
+    }
+    const airline = yxsAttr(tag, "data-airline");
+    const icon = ((inner.match(/\/icon[-_]([A-Za-z0-9]+)\.(?:png|svg|webp|jpe?g)/i) || [])[1] || "").toLowerCase();
+    const key = airline.toUpperCase();
+    const code = YXS_ICON_IATA[icon] || YXS_AIRLINE_IATA[key] || AIRLINE_NAME_IATA[key]
+      || AIRLINE_NAME_IATA_SQUASHED[key.replace(/\s+/g, "")] || null;
+    const slug = (tag.match(/yxs-ifids-widget__item--([a-z-]+)/) || [])[1] || "";
+    const city = yxsAttr(tag, "data-from");
+    const cityKey = city.toUpperCase();
+    const gate = yxsAttr(tag, "data-gate");
+    const belt = yxsAttr(tag, "data-baggage");
+    const fl = authorityFlight({
+      dir, number: (code || "") + digits, status: yxsStatus(yxsAttr(tag, "data-status"), slug),
+      homeIata: "YXS", homeIcao: "CYXS", homeName: "Prince George",
+      gate: gate && gate !== "-" ? gate : null,
+      otherIata: YXS_CITY_IATA[cityKey] || YHZ_CITY_IATA[cityKey] || null,
+      otherName: city || null,
+      airlineIata: code, airlineName: airline || null,
+      sched, revised
+    });
+    if (dir === "arr" && belt && belt !== "-") fl.arrival.baggageBelt = belt;
+    out.push(fl);
+  }
+  return out;
+}
+__name(parseYxsPanels, "parseYxsPanels");
+
+// ── YMM Fort McMurray — flyymm.com's WordPress REST route (fmaa/v1) ───
+// One small JSON per direction per calendar day (7–10 rows, ~2 KB): a
+// dated row ("date" plus a "HH:MM, Mon DD" scheduletime), a bare "HH:MM"
+// actualtime that is the estimate/actual (equal to schedule when on
+// time), and the status in "remarks" with the clock repeated in
+// "status_time" ("Early 01:17"). "type" is the direction; "indicator" is
+// D on every row, arrivals included, so it is NOT. Naive Fort McMurray
+// wall clock throughout (America/Edmonton). Only WS/AC fly here (F8 per
+// the site's logo CSS), so the feed never needs a name→code lookup.
+//
+// Status vocabulary: the live feed has shown only "On Time" and "Early";
+// the page's own CSS classes are "status-" + remarks lowercased and
+// hyphenated, and its mock table uses "Delayed" / "Cancelled". Known
+// words map onto the board keys; anything novel travels through
+// lowercased (the boards treat an unknown key as scheduled, and the raw
+// word stays visible in the JSON for the next person).
+const YMM_STATUS = {
+  "ON TIME": "scheduled", "EARLY": "scheduled", "SCHEDULED": "scheduled", "EXPECTED": "scheduled",
+  "DELAYED": "delayed", "LATE": "delayed",
+  "CANCELLED": "cancelled", "CANCELED": "cancelled",
+  "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
+  "BOARDING": "boarding", "FINAL CALL": "boarding", "LAST CALL": "boarding",
+  "GATE CLOSED": "gateclosed", "DIVERTED": "diverted"
+};
+function ymmStatus(txt) {
+  const k = String(txt || "").replace(/\s+/g, " ").trim().toUpperCase();
+  if (!k) return "scheduled";
+  if (YMM_STATUS[k]) return YMM_STATUS[k];
+  const s = k.toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("divert")) return "diverted";
+  if (s.includes("gate closed")) return "gateclosed";
+  if (s.includes("final call") || s.includes("last call") || s.includes("board")) return "boarding";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("delay") || s.includes("late")) return "delayed";
+  if (s.includes("on time") || s.includes("early") || s.includes("sched") || s.includes("expect")) return "scheduled";
+  return s;   // novel wording passes through as-is
+}
+__name(ymmStatus, "ymmStatus");
+// "HH:MM" anywhere in a string ("05:45, Sep 06", "01:17", "Early 01:17").
+function ymmClock(s) {
+  const m = String(s || "").match(/(\d{1,2}):(\d{2})/);
+  if (!m) return null;
+  const hh = Number(m[1]), mm = Number(m[2]);
+  return (hh > 23 || mm > 59) ? null : [hh, mm];
+}
+__name(ymmClock, "ymmClock");
+// The scheduled time object: the clock and "Mon DD" from scheduletime,
+// the year anchored to the row's own "YYYY-MM-DD" (so a Dec 31 row
+// reading "Jan 01" lands in the new year), falling back to the date
+// field when the month-day text is absent, and to "nearest to now" for
+// the year when neither carries one.
+function ymmTimeObj(dateStr, timeStr, nowMs) {
+  const clock = ymmClock(timeStr);
+  if (!clock) return null;
+  const dm = String(dateStr || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const anchor = dm ? Date.UTC(Number(dm[1]), Number(dm[2]) - 1, Number(dm[3]), 12) : nowMs;
+  const md = String(timeStr || "").match(/,\s*([A-Za-z]{3})\.?\s+(\d{1,2})\b/);
+  let y, mo, d;
+  if (md && AUTH_MONTHS[md[1].toUpperCase()]) {
+    mo = AUTH_MONTHS[md[1].toUpperCase()]; d = Number(md[2]);
+    y = nearestYear(mo, d, anchor);
+  } else if (dm) {
+    y = Number(dm[1]); mo = Number(dm[2]); d = Number(dm[3]);
+  } else return null;
+  return localTimeObjIn("America/Edmonton", y, mo, d, clock[0], clock[1]);
+}
+__name(ymmTimeObj, "ymmTimeObj");
+// Pure parser (exported for tests): one day's JSON for one direction →
+// ADB-native flights. `dir` is checked against each row's "type" so a
+// mislabelled fetch cannot cross the board.
+function ymmParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = j && j.all_flights && Array.isArray(j.all_flights.flights) ? j.all_flights.flights : [];
+  for (const r of rows) {
+    if (!r || typeof r !== "object") continue;
+    const ty = String(r.type || "").trim().toUpperCase();
+    if (ty && (dir === "dep") !== (ty === "D")) continue;
+    const number = String(r.flightnumber || "").replace(/\s+/g, "").toUpperCase();
+    if (!/^[A-Z0-9]{2,3}\d{1,4}[A-Z]?$/.test(number)) continue;
+    const sched = ymmTimeObj(r.date, r.scheduletime, nowMs);
+    if (!sched) continue;
+    // actualtime is a bare clock hung on the scheduled calendar day; only
+    // a differing value is a revision, settled across midnight (an
+    // "00:20" against a 23:55 schedule is 25 min late, not 23 h early).
+    // status_time repeats the same clock inside the words, so it is the
+    // fallback when actualtime is blank.
+    let revised = null;
+    const rc = ymmClock(r.actualtime) || ymmClock(r.status_time);
+    if (rc) {
+      const sd = sched.local.slice(0, 10).split("-").map(Number);
+      const rv = settleRevised(localTimeObjIn("America/Edmonton", sd[0], sd[1], sd[2], rc[0], rc[1]), sched, "America/Edmonton");
+      if (rv.ts !== sched.ts) revised = rv;
+    }
+    const cityName = String(r.city_name || "").trim();
+    const paren = (cityName.match(/\(([A-Za-z0-9]{3})\)\s*$/) || [])[1] || "";
+    const otherName = cityName.replace(/\s*\([A-Za-z0-9]{3}\)\s*$/, "").trim() || null;
+    let otherIata = String(r.city || "").trim().toUpperCase();
+    if (!/^[A-Z0-9]{3}$/.test(otherIata)) otherIata = paren.toUpperCase() || YHZ_CITY_IATA[String(otherName || "").toUpperCase()] || null;
+    const code = (String(r.airlinecode || "").trim().toUpperCase().match(/^[A-Z0-9]{2}$/) || [])[0] || number.slice(0, 2);
+    const remarks = String(r.remarks || "").trim() || String(r.status_time || "").replace(/\d{1,2}:\d{2}.*$/, "").trim();
+    out.push(authorityFlight({
+      dir, number, status: ymmStatus(remarks),
+      homeIata: "YMM", homeIcao: "CYMM", homeName: "Fort McMurray",
+      gate: String(r.gate == null ? "" : r.gate).trim() || null,
+      otherIata, otherName,
+      airlineIata: code,
+      airlineName: String(r.airlinename || "").trim() || AIRLINE_IATA_NAME[code] || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(ymmParseFeed, "ymmParseFeed");
+// Today and tomorrow on Fort McMurray's clock (the route is per local
+// calendar day; a UTC date would ask for the wrong day every evening).
+function ymmDays(nowMs) {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Edmonton", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+  const g = (t) => (p.find((x) => x.type === t) || {}).value;
+  const today = `${g("year")}-${g("month")}-${g("day")}`;
+  return [today, new Date(Date.parse(today + "T12:00:00Z") + 864e5).toISOString().slice(0, 10)];
+}
+__name(ymmDays, "ymmDays");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
   clt: { tz: "America/New_York", source: "clt-authority", list: async (dir, env) => {
@@ -4255,6 +4971,82 @@ const AUTHORITY_HANDLERS = {
     if (!t) return null;
     const f = yyjParseFeed(t, dir, Date.now());
     return f.length ? f : null;
+  } },
+  yqy: { tz: "America/Halifax", source: "yqy-authority", list: async (dir, env) => {
+    // One ~1 KB payload carries both directions; 75 s like the other
+    // Atlantic boards (nothing cacheable upstream, Apache on Ubuntu).
+    const t = await fetchAuthorityText("yqy/all", YQY_FEED_URL, '"flights"', 75);
+    if (!t || !yqyFeedRows(t)) return null;
+    // Two Air Canada round trips a day: a direction with no rows is a
+    // normal hour here, not a redesign — answer it as an empty board
+    // rather than falling through to the dead ADB passthrough.
+    return yqyParseFeed(t, dir, Date.now());
+  } },
+  yqx: { tz: "America/St_Johns", source: "yqx-authority", list: async (dir, env) => {
+    // One typed view per direction (the combined /flights/ page swaps its
+    // city columns). Upstream is WP Engine behind Cloudflare with a 10-min
+    // page cache, so 120 s here costs nothing. Cloudflare 403s the bare
+    // "Mozilla/5.0" UA — a descriptive product UA goes out explicitly.
+    const kind = dir === "dep" ? "departures" : "arrivals";
+    const t = await fetchAuthorityText(`yqx/${dir}`, `https://ganderairport.com/flights/?type=${kind}`, `flights-table-${kind}`, 120, { headers: { "User-Agent": YQX_UA } });
+    if (!t) return null;
+    const f = parseYqxPage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yyg: { tz: "America/Halifax", source: "yyg-authority", list: async (dir, env) => {
+    // One ~100 KB page carries both directions; the marker is the table
+    // itself (the theme's <style> also says "arrdeptables", so a bare
+    // word would pass a page whose boards failed to render). The homepage
+    // renders the same two tables in its Arrivals/Departures tabs, so it
+    // stands in if the sub-page's slug ever moves.
+    const marker = '<table class="arrdeptables';
+    const t = await fetchAuthorityText("yyg/page", "https://flyyyg.com/passengers/flights/arrivals_departures/", marker, 90)
+      || await fetchAuthorityText("yyg/home", "https://flyyyg.com/", marker, 90);
+    if (!t) return null;
+    const f = parseYygPage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yka: { tz: "America/Vancouver", source: "yka-authority", list: async (dir, env) => {
+    // Cloudflare passes the query-string URL through uncached (fastcgi-cache
+    // BYPASS, cf-cache-status DYNAMIC), so every miss here reaches the
+    // airport's origin: the 90 s edge TTL is what stands between thirty
+    // polling screens and a WordPress box that already answers its own
+    // board every 60 s. ~12 KB per direction, ~18 movements a day.
+    const t = await fetchAuthorityText(`yka/${dir}`, `https://kamloopsairport.com/starkapi.php?type=${dir === "dep" ? "departures" : "arrivals"}`, '"FlightNumber"', 90);
+    if (!t) return null;
+    const f = parseYkaFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yxs: { tz: "America/Vancouver", source: "yxs-authority", list: async (dir, env) => {
+    // One payload carries both panels ~4 days out; the plugin's own cache
+    // turns over every ~2 min, so 90 s here is as fresh as it gets. The
+    // marker is matched against the raw JSON (quotes escaped there), hence
+    // the bare id. Never refresh=1 — see the quirks above.
+    const t = await fetchAuthorityText("yxs/panels", YXS_AJAX_URL, "panel-arrivals", 90);
+    if (!t) return null;
+    const f = parseYxsPanels(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  ymm: { tz: "America/Edmonton", source: "ymm-authority", list: async (dir, env) => {
+    // Per-day route with no pagination. "Today" empties out once its
+    // last flight is done while tomorrow is already full (22:48 MDT
+    // 2026-09-05: today 0 rows, tomorrow 7–10), so today and tomorrow
+    // are always fetched and merged — two ~2 KB GETs per direction per
+    // TTL. The empty-day body still carries the marker, so a quiet day
+    // caches as an answer rather than re-probing as an outage. The site
+    // itself polls every 15 min; 120 s here keeps gate/status changes
+    // fresh at a few requests a minute across every screen.
+    const out = [], seen = new Set();
+    for (const day of ymmDays(Date.now())) {
+      const t = await fetchAuthorityText(`ymm/${dir}/${day}`, `https://flyymm.com/wp-json/fmaa/v1/flights-info?type=${dir === "dep" ? "D" : "A"}&searchval=&dt=${day}`, '"all_flights"', 120);
+      if (!t) continue;
+      for (const f of ymmParseFeed(t, dir, Date.now())) {
+        const k = `${f.number}|${f._authTs}`;
+        if (seen.has(k)) continue;
+        seen.add(k); out.push(f);
+      }
+    }
+    return out.length ? out : null;
   } }
 };
 // One dispatcher for every airport served at the ADB window URL. YHZ and
@@ -6984,5 +7776,19 @@ export {
   parseYqtPage,
   yyjParseFeed,
   yyjParseNonce,
+  yqyParseFeed,
+  yqyFeedRows,
+  yqyStatus,
+  parseYqxPage,
+  parseYqxTime,
+  parseYygPage,
+  parseYygDate,
+  parseYkaFeed,
+  parseYkaTime,
+  parseYxsPanels,
+  yxsStatus,
+  ymmParseFeed,
+  ymmStatus,
+  ymmDays,
   _authorityRosterHas
 };
