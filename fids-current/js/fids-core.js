@@ -7571,6 +7571,10 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // LATAM Brasil and LATAM Colombia print LATAM and drew nothing; DI
         // prints NORWEGIAN; PT prints AMERICAN. Each takes the exact file its
         // sibling already uses. All four resolved to nothing before this.
+        // v23363 - CJ wears British Airways' speedmarque; EZY is the ICAO
+        // form of U2 and takes the same easyJet tile the mainline uses.
+        'CJ':  '/logos/airlines/european/british-airways-speedmarque.svg',
+        'EZY': '/logos/airline-tiles/EZY.svg',
         '4C':  '/logos/airlines/asian-other/latam-spark.svg',   // LATAM Colombia → LATAM
         'JJ':  '/logos/airlines/asian-other/latam-spark.svg',   // LATAM Brasil → LATAM
         'DI':  '/logos/airline-tiles/NAX.svg',                  // Norwegian (DI) → Norwegian
@@ -19214,7 +19218,13 @@ const AIRLINE_NAME = {
   // identify with confidence are here; anything still unnamed is listed in the
   // handover notes rather than guessed at, because a wrong airline name on a
   // public board is worse than a code.
-  'EW': 'Eurowings',           'CJ': 'BA CityFlyer',
+  'EW': 'Eurowings',
+  // v23363 - CJ is BA CityFlyer's code, but the board should simply read
+  // BRITISH AIRWAYS on those rows (Nick: 'BA City Flyer is simply British
+  // Airways unless its operated by'). It also takes BA's emblem and wordmark.
+  // Naming the operator separately belongs on the 'Operated by' line, which
+  // needs CityFlyer artwork the repo does not have.
+  'CJ': 'BRITISH AIRWAYS',
   'RK': 'Ryanair UK',          'EC': 'easyJet Europe',
   'EJU': 'easyJet Europe',     'EZS': 'easyJet Switzerland',
   'LM': 'Loganair',            'W4': 'Wizz Air Malta',
@@ -19509,6 +19519,11 @@ const IATA_TO_WORDMARK = {
   // FIDS table uses on dark rows) is the same single path reversed to white.
   // One path, one fill: the reversal is exact, not a filter approximation.
   'WK': 'edelweiss',
+  // v23363 - the easyJet family. One orange logotype, no symbol, so every
+  // code in the family points at it: the mainline, the three subsidiaries,
+  // and EZY, the ICAO form the Edinburgh feed puts in the flight NUMBER.
+  'U2': 'easyjet', 'EZY': 'easyjet', 'EC': 'easyjet', 'EJU': 'easyjet', 'EZS': 'easyjet',
+  'CJ': 'british-airways',
   // v23354 — the wordmark half of the same seven regionals. A row that says
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
@@ -19675,6 +19690,7 @@ function wordmarkVariant() {
 const LOGO_SUBFOLDER = {
   'chair-wordmark-light.svg':'airlines/european', 'chair-wordmark-dark.svg':'airlines/european',
   'edelweiss-wordmark-light.svg':'airlines/european', 'edelweiss-wordmark-dark.svg':'airlines/european',
+  'easyjet-wordmark-light.svg':'airlines/european', 'easyjet-wordmark-dark.svg':'airlines/european',
   'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
@@ -21099,7 +21115,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23362';
+var FIDS_BUILD_TAG = 'v23363';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
