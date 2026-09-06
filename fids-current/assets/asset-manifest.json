@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2522,
+    "total": 2523,
     "by_category": {
       "ad": 10,
-      "airline": 1327,
+      "airline": 1328,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -7382,6 +7382,17 @@
       "subcategory": "symbol",
       "group": "Airline symbols (emblem only)",
       "name": "MK",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/MO.svg",
+      "file": "MO.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "MO",
       "iata": "",
       "country": "",
       "ext": "svg"
