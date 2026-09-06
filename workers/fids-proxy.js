@@ -4998,7 +4998,141 @@ function yzfMergeRows(primary, secondary) {
 }
 __name(yzfMergeRows, "yzfMergeRows");
 
+// ── MIA Miami International — AirIT WebFIDS on webvids.miami-airport.com ──
+// miami-airport.com's own flight-status page (flight_status.asp is a 404 —
+// the board lives on the webvids subdomain) is the same 2010 AirIT WebFIDS
+// frameset as Austin's, over https with no cookie, token or referer (verified
+// 2026-09-06). Its 60-s refresh call (webfids?action=updateArrivals |
+// updateDepartures) returns the AUS XML shape: offset-less local <stt>/<ett>/
+// <att> in Eastern time (<timeInMillis> agrees with -04:00 on every row of
+// the capture), <CXR>+<TRN> (TRN zero-padded: "LY 018"), the far end's IATA
+// in <CTY>, terminal letter (D/E/F/G/H/J), a gate that already carries the
+// letter ("D60"), claim in <bags> — numeric, "J1".."J5" in Terminal J, or
+// "CD" on international arrivals whose bags come off inside the customs hall
+// (passed through as MIA's own board prints it: a fabricated carousel would
+// be worse), check-in counters in <CTR> ("602-609"), aircraft <TYP> in
+// AirIT's own vocabulary and tail <REG>. Blank cells are literally "&#160;"
+// and a missing time is "#" (ausXmlField / localIsoObj already give "" /
+// null for those). Rolling window, ~220-260 rows / ~250-300 KB a direction:
+// arrivals ~4 h back / ~12 h ahead plus stragglers still inbound (AA 904, a
+// day late, keeps yesterday's <stt>), departures ~6 h back / ~12 h ahead.
+// Quirks: through-flights (Emirates' DXB–MIA–BOG fifth-freedom rotation)
+// are emitted once PER route city with identical <stt>, and — unlike AUS,
+// where the home airport ends the route — <cities><so> lists the immediate
+// far end FIRST in both directions (EK 213 in: so=[DUBAI, BOGOTA]; EK 213
+// out: so=[BOGOTA, DUBAI]; EK 214 in: so=[BOGOTA, DUBAI]); the copy may
+// even carry an empty <cities>. The AUS "last stop" rule would land EK 213
+// arriving from Bogotá. A row whose <CTY> is MIA itself (UA 4195: a
+// positioning/charter placeholder, terminal "NO", no gate) is dropped — a
+// Miami board listing an arrival "from MIAMI" helps nobody. Statuses seen:
+// "On Time", "Now h:mmA", "Arrived h:mmA", "Departed h:mmA", "Cancelled"
+// (<RMK> XLD); the status clock is the gate time the board shows, <att> is
+// the runway clock and <ett> can be stale once a flight is in, so the status
+// clock wins for revisedTime as at AUS — except that <ett> carries a DATE
+// the status clock lacks, so when the two agree to the minute <ett> is used
+// as-is (AA 904: stt 09-05 05:50, "Now 5:45A", ett 09-06 05:45 — a
+// 24-hour delay, not five minutes early).
+//
+// AirIT's <TYP> vocabulary → the IATA type codes the board's formatAircraft
+// labels (a trailing W is winglets). Left alone, "7378W" — American's
+// 737-800, the most common type at MIA — matches the board's bare-737
+// family key and prints "Boeing 737 MAX 8"; "B38M" and friends echo raw.
+// Unknown codes pass through untouched.
+const MIA_AIRCRAFT_IATA = {
+  "7378W": "73H", B7378: "738", "7379W": "739", "7377W": "73W", B7374: "734",
+  B38M: "7M8", B39M: "7M9", B777: "777", "7773E": "77W", B7878: "788", B7879: "789",
+  "7572W": "752", "7673W": "763", A319W: "319", A320W: "320", A321W: "321",
+  A21N: "32Q", A20N: "32N", A3302: "332", A3303: "333", A3309: "339", MD83: "M83"
+};
+function miaParseFeed(xmlText, dir, nowMs) {
+  const TZ = "America/New_York";
+  const out = [];
+  const seen = new Map();   // "EK213|stt" → index into out, for the through-flight collapse
+  const isDep = dir === "dep";
+  const chunks = String(xmlText || "").match(/<flight>[\s\S]*?<\/flight>/g) || [];
+  for (const c of chunks) {
+    const g = (t) => ausXmlField(c, t);
+    const d = g("DIR").toUpperCase() || (/^dep/i.test(g("direction")) ? "D" : "A");
+    if ((d === "D") !== isDep) continue;
+    const code = g("CXR").toUpperCase();
+    const trn = g("TRN").replace(/^0+(?=\d)/, "");
+    const stt = g("stt");
+    let sched = localIsoObj(TZ, stt);
+    if (!sched) { const ms = Number(g("timeInMillis")); if (ms > 0) sched = localTimeObjFromTs(TZ, ms); }
+    if (!code || !trn || !sched) continue;
+    const otherIata = g("CTY").toUpperCase();
+    if (otherIata === "MIA") continue;   // placeholder row "from MIAMI" (see header)
+    const number = `${code}${trn}`;
+    const key = `${number}|${sched.ts}`;
+    const stops = [...c.matchAll(/<so>([^<]*)<\/so>/g)].map((m) => ausXmlField(m[0], "so"));
+    const city = g("city");
+    // Through-flight copy: the row whose city is the FIRST route stop names
+    // the immediate far end (see header); keep that one's city, drop the rest.
+    if (seen.has(key)) {
+      if (stops[0] && city === stops[0]) {
+        const prev = out[seen.get(key)];
+        const side = isDep ? prev.arrival : prev.departure;
+        side.airport.iata = otherIata || side.airport.iata;
+        side.airport.name = city || side.airport.name;
+      }
+      continue;
+    }
+    const statusTxt = g("status");
+    const est = localIsoObj(TZ, g("ett"));   // dated; "#" → null
+    let revised = null;
+    const sm = statusTxt.match(/(\d{1,2}):(\d{2})\s*([AP])/i);
+    if (sm) {
+      let hh = Number(sm[1]) % 12; if (/p/i.test(sm[3])) hh += 12;
+      const wall = `${String(hh).padStart(2, "0")}:${sm[2]}`;
+      if (est && est.local.slice(11, 16) === wall) {
+        revised = est;   // same instant, with the feed's own date on it
+      } else {
+        const dm = sched.local.match(/^(\d{4})-(\d{2})-(\d{2})/);
+        revised = settleRevised(localTimeObjIn(TZ, Number(dm[1]), Number(dm[2]), Number(dm[3]), hh, Number(sm[2])), sched, TZ);
+      }
+    }
+    if (!revised && est) revised = est;
+    if (revised && revised.ts === sched.ts) revised = null;
+    const typ = g("TYP").toUpperCase();
+    const fl = authorityFlight({
+      dir, number,
+      status: yhzStatus(statusTxt),   // "Now H:MM" → scheduled + revisedTime, like AUS/YVR/DUB
+      homeIata: "MIA", homeIcao: "KMIA", homeName: "Miami",
+      gate: g("gate") || null,
+      otherIata: otherIata || null,
+      otherName: city || null,
+      airlineIata: code, airlineName: g("airlineName") || null,
+      aircraftModel: (MIA_AIRCRAFT_IATA[typ] || typ) || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    const term = g("terminal").toUpperCase();
+    if (term && term !== "NO") homeSide.terminal = term;
+    const bags = g("bags");
+    if (!isDep && bags) fl.arrival.baggageBelt = bags;
+    const ctr = g("CTR");
+    if (isDep && ctr) fl.departure.checkInDesk = ctr;
+    const reg = g("REG");
+    if (reg) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = reg; }
+    seen.set(key, out.length);
+    out.push(fl);
+  }
+  return out;
+}
+__name(miaParseFeed, "miaParseFeed");
+
 const AUTHORITY_HANDLERS = {
+  mia: { tz: "America/New_York", source: "mia-authority", list: async (dir, env) => {
+    // The board's own 60-s XML refresh feed (https, anonymous, ~250-300 KB).
+    // Answers in ~0.5 s while polled; the first hit after ~10 min of nobody
+    // asking took 16-18 s twice (a 2010 JSP waking up). Steady 60-s polling
+    // keeps it warm, and the edge cache keeps thirty screens from feeling it.
+    const t = await fetchAuthorityText(`mia/${dir}`, `https://webvids.miami-airport.com/webfids/webfids?action=${dir === "dep" ? "updateDepartures" : "updateArrivals"}`, "<flightNumber>", 60);
+    if (!t) return null;
+    const f = miaParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+
   yzf: { tz: "America/Yellowknife", source: "yzf-authority", list: async (dir, env) => {
     // A novel query string is the only thing that gets past flyyzf.ca's
     // stuck Drupal page cache, and the same string is then a Fastly HIT
@@ -8151,5 +8285,6 @@ export {
   parseYzfPage,
   parseYzfDotPage,
   yzfMergeRows,
+  miaParseFeed,
   _authorityRosterHas
 };
