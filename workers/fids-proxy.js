@@ -5454,7 +5454,193 @@ function mcoParseFeed(jsonText, dir, nowMs) {
 }
 __name(mcoParseFeed, "mcoParseFeed");
 
+// ── JFK New York Kennedy — PANYNJ GraphQL (www.jfkairport.com/api/graphql)
+// The site's Next.js client POSTs {operationName, variables, query} as an
+// lz-string compressToEncodedURIComponent() string with content-type
+// text/plain (bundle module 46660 → module 511 = lz-string 1.5); a plain
+// JSON body is a 400, and the edge wants a same-site Referer or it serves
+// a branded "500 Error" page with a 403. No key, no cookie. The same host
+// answers for LGA/EWR/SWF via the airport variable (verified byte-identical
+// to each airport's own host), so the fetch is parameterised by IATA.
+//
+// Minimal lz-string port (MIT, pieroxy) — only the compress side, only the
+// URI-safe alphabet, so the Worker carries no npm dependency.
+const JFK_LZ_URI = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-$";
+function jfkLzCompressUri(input) {
+  if (input == null) return "";
+  const s = String(input);
+  const dict = new Map(), toCreate = new Set();
+  let w = "", enlargeIn = 2, dictSize = 3, numBits = 2, val = 0, pos = 0;
+  const out = [];
+  const bit = (b) => {
+    val = (val << 1) | b;
+    if (pos === 5) { out.push(JFK_LZ_URI.charAt(val)); val = 0; pos = 0; } else pos++;
+  };
+  const lsb = (value, n) => { for (let i = 0; i < n; i++) { bit(value & 1); value >>= 1; } };
+  const grow = () => { if (--enlargeIn === 0) { enlargeIn = Math.pow(2, numBits); numBits++; } };
+  const emitW = () => {
+    if (toCreate.has(w)) {
+      const code = w.charCodeAt(0);
+      if (code < 256) { lsb(0, numBits); lsb(code, 8); } else { lsb(1, numBits); lsb(code, 16); }
+      grow();
+      toCreate.delete(w);
+    } else {
+      lsb(dict.get(w), numBits);
+    }
+    grow();
+  };
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charAt(i);
+    if (!dict.has(c)) { dict.set(c, dictSize++); toCreate.add(c); }
+    const wc = w + c;
+    if (dict.has(wc)) { w = wc; } else { emitW(); dict.set(wc, dictSize++); w = c; }
+  }
+  if (w !== "") emitW();
+  lsb(2, numBits);
+  for (;;) { val <<= 1; if (pos === 5) { out.push(JFK_LZ_URI.charAt(val)); break; } pos++; }
+  return out.join("");
+}
+__name(jfkLzCompressUri, "jfkLzCompressUri");
+// Query text verbatim from the site bundle (_app-*.js), newlines included.
+const JFK_GQL_DEP = "query GetDepartingFlights(\n  $departureAirport: String!\n  $departureDateTime: String!\n  $destinationAirport: String\n  $carrierCode: String\n  $limit: Int\n  $after: String\n) {\n  getDepartingFlights(\n    departureAirport: $departureAirport\n    departureDateTime: $departureDateTime\n    destinationAirport: $destinationAirport\n    carrierCode: $carrierCode\n    limit: $limit\n    after: $after\n  ) {\n    data {\n      dateScheduled\n      timeScheduled\n      dateRevised\n      timeRevised\n      destinationName\n      destinationAirportCode\n      airlineCode\n      airlineName\n      flightNumber\n      terminal\n      gate\n      status\n    }\n    paging {\n      next\n    }\n  }\n}\n";
+const JFK_GQL_ARR = "query GetArrivingFlights(\n  $arrivalAirport: String!\n  $arrivalDateTime: String!\n  $originAirport: String\n  $carrierCode: String\n  $limit: Int\n  $after: String\n) {\n  getArrivingFlights(\n    arrivalAirport: $arrivalAirport\n    arrivalDateTime: $arrivalDateTime\n    originAirport: $originAirport\n    carrierCode: $carrierCode\n    limit: $limit\n    after: $after\n  ) {\n    data {\n      dateScheduled\n      timeScheduled\n      dateRevised\n      timeRevised\n      originName\n      originAirportCode\n      airlineCode\n      airlineName\n      flightNumber\n      terminal\n      gate\n      status\n      isInternationalFlight\n    }\n    paging {\n      next\n    }\n  }\n}\n";
+// Site vocabulary (bundle enum: Scheduled / Delayed / Departed / In Flight /
+// Landed / Arrived / Cancelled; the list API says "On Time" and "En Route").
+const JFK_STATUS = {
+  "ON TIME": "scheduled", SCHEDULED: "scheduled", DELAYED: "delayed", DEPARTED: "departed",
+  "IN FLIGHT": "active", "EN ROUTE": "active", LANDED: "arrived", ARRIVED: "arrived",
+  CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted"
+};
+// Every marketing carrier is its own row (TK12 IST is also TG9183, AV6634,
+// PK5012, HY7292, B66903, 6E4016 — same minute, terminal and gate) and no
+// row says who operates. Rank within a group: a sub-1000 flight number is
+// the operator (2599+2868 rows on 2026-09-06: never two of them in one
+// group); else a JFK hub carrier inside its own numbering (Delta
+// Connection runs to 58xx while DL's codeshares on Virgin start at 5922;
+// AA's regionals stop below 6000, its codeshares start 6881; JetBlue's own
+// numbers stop below 3000, its codeshares on Qatar start 5552); else the
+// lowest number, with a hub carrier's codeshare-range numbers last.
+const JFK_HUB_OWN_MAX = { DL: 5900, AA: 6000, B6: 3000 };
+function jfkRowRank(code, num) {
+  if (num < 1000) return 0;
+  const cap = JFK_HUB_OWN_MAX[code];
+  if (cap == null) return 2;
+  return num < cap ? 1 : 3;
+}
+__name(jfkRowRank, "jfkRowRank");
+// "2026-09-06" + "12:15 AM" → time object in the airport's zone.
+function jfkTimeObj(tz, dateStr, timeStr) {
+  const dm = String(dateStr || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  const tm = String(timeStr || "").match(/^\s*(\d{1,2}):(\d{2})\s*(AM|PM)\s*$/i);
+  if (!dm || !tm) return null;
+  let hh = Number(tm[1]) % 12;
+  if (/pm/i.test(tm[3])) hh += 12;
+  return localTimeObjIn(tz, Number(dm[1]), Number(dm[2]), Number(dm[3]), hh, Number(tm[2]));
+}
+__name(jfkTimeObj, "jfkTimeObj");
+// One parser for the PANYNJ family; `home` names the airport the rows
+// belong to (JFK today; LGA/EWR/SWF are the same shape).
+function parseJfkFeed(jsonText, dir, nowMs, home) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const isDep = dir === "dep";
+  const node = j && j.data && (isDep ? j.data.getDepartingFlights : j.data.getArrivingFlights);
+  const rows = node && Array.isArray(node.data) ? node.data : [];
+  const h = home || { iata: "JFK", icao: "KJFK", name: "New York", tz: "America/New_York" };
+  const tz = h.tz || "America/New_York";
+  // Group the expanded codeshare rows: same scheduled minute, other
+  // airport and terminal. Gate is NOT in the key — a partner row can carry
+  // a null gate while the operator's is assigned (AF5654 on DL5795 to PIT).
+  const groups = new Map();
+  for (const r of rows) {
+    if (!r) continue;
+    const code = (r.airlineCode || "").toString().trim().toUpperCase();
+    const num = Number(r.flightNumber);
+    const other = ((isDep ? r.destinationAirportCode : r.originAirportCode) || "").toString().trim().toUpperCase();
+    if (!code || !Number.isFinite(num) || !r.dateScheduled || !r.timeScheduled) continue;
+    const term = (r.terminal == null ? "" : String(r.terminal)).trim();
+    const key = `${r.dateScheduled}|${r.timeScheduled}|${other}|${term}`;
+    const rank = jfkRowRank(code, num);
+    const g = groups.get(key);
+    if (!g) { groups.set(key, { best: r, code, num, rank, gate: r.gate }); continue; }
+    if (!g.gate && r.gate) g.gate = r.gate;
+    if (rank < g.rank || (rank === g.rank && num < g.num)) { g.best = r; g.code = code; g.num = num; g.rank = rank; }
+  }
+  for (const g of groups.values()) {
+    const r = g.best;
+    const sched = jfkTimeObj(tz, r.dateScheduled, r.timeScheduled);
+    if (!sched) continue;
+    let revised = null;
+    if (r.timeRevised) {
+      let rv = jfkTimeObj(tz, r.dateRevised || r.dateScheduled, r.timeRevised);
+      if (rv && !r.dateRevised) rv = settleRevised(rv, sched, tz);
+      if (rv && rv.ts !== sched.ts) revised = rv;
+    }
+    const other = ((isDep ? r.destinationAirportCode : r.originAirportCode) || "").toString().trim().toUpperCase() || null;
+    // "Athens, Greece (ATH)" / " Rome, Italy (FCO)" — drop the code echo.
+    let otherName = ((isDep ? r.destinationName : r.originName) || "").toString().trim();
+    if (other) otherName = otherName.replace(new RegExp("\\s*\\(" + other + "\\)\\s*$"), "").trim();
+    // "T4" / "T 4" turn up in the gate column on unassigned rows: not a gate.
+    let gate = (g.gate == null ? "" : String(g.gate)).trim();
+    if (/^T\s*\d+$/i.test(gate)) gate = "";
+    const term = (r.terminal == null ? "" : String(r.terminal)).trim();
+    const fl = authorityFlight({
+      dir, number: `${g.code}${g.num}`,
+      status: JFK_STATUS[String(r.status || "").trim().toUpperCase()] || yhzStatus(r.status || ""),
+      homeIata: h.iata, homeIcao: h.icao, homeName: h.name,
+      gate: gate || null,
+      otherIata: other, otherName: otherName || null,
+      airlineIata: g.code, airlineName: (r.airlineName || "").toString().trim() || null,
+      sched, revised
+    });
+    if (term && term !== "0") (isDep ? fl.departure : fl.arrival).terminal = term;
+    out.push(fl);
+  }
+  out.sort((a, b) => a._authTs - b._authTs);   // arrivals arrive unsorted
+  return out;
+}
+__name(parseJfkFeed, "parseJfkFeed");
+// The boards ask -2 h → +22 h; one range query anchored on the local hour
+// ([H-3h, H+23h], 26 h) covers that with a cache key that only rolls once
+// an hour. A JFK day is ~2600 expanded rows / ~720 KB per direction, so
+// this is ~800 KB per direction per TTL — the price of not paging (cursors
+// are 50-140 KB lz strings). A range that crosses midnight is fine (rows
+// carry their own dates).
+function jfkRangeStrings(tz, nowMs) {
+  const local = localTimeObjFromTs(tz, nowMs).local;             // "YYYY-MM-DD HH:MM:00±hh:mm"
+  const hourTs = windowTsIn(tz, local.slice(0, 10) + "T" + local.slice(11, 13) + ":00");   // this local hour, epoch ms
+  const fmt = (ts) => localTimeObjFromTs(tz, ts).local.slice(0, 16).replace(" ", "T");
+  return { from: fmt(hourTs - 3 * 3600e3), to: fmt(hourTs + 23 * 3600e3) };
+}
+__name(jfkRangeStrings, "jfkRangeStrings");
+async function jfkFetchList(dir, airport, nowMs) {
+  const tz = "America/New_York";
+  const { from, to } = jfkRangeStrings(tz, nowMs);
+  const key = airport.toLowerCase();
+  const isDep = dir === "dep";
+  const payload = isDep
+    ? { operationName: "GetDepartingFlights", variables: { departureAirport: airport, departureDateTime: `${from}/${to}`, limit: 5000 }, query: JFK_GQL_DEP }
+    : { operationName: "GetArrivingFlights", variables: { arrivalAirport: airport, arrivalDateTime: `${from}/${to}`, limit: 5000 }, query: JFK_GQL_ARR };
+  return fetchAuthorityText(`${key}/${dir}/${from}`, "https://www.jfkairport.com/api/graphql", '"dateScheduled"', 120, {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain",
+      "Accept": "application/json",
+      "Referer": "https://www.jfkairport.com/flights"
+    },
+    body: jfkLzCompressUri(JSON.stringify(payload))
+  });
+}
+__name(jfkFetchList, "jfkFetchList");
+
 const AUTHORITY_HANDLERS = {
+  jfk: { tz: "America/New_York", source: "jfk-authority", list: async (dir, env) => {
+    const t = await jfkFetchList(dir, "JFK", Date.now());
+    if (!t) return null;
+    const f = parseJfkFeed(t, dir, Date.now(), { iata: "JFK", icao: "KJFK", name: "New York", tz: "America/New_York" });
+    return f.length ? f : null;
+  } },
+
   mco: { tz: "America/New_York", source: "mco-authority", list: async (dir, env) => {
     // GOAA's api.goaa.aero — the LAS/CLT vendor family. The Api-Key is the
     // public one baked into flymco.com's Next.js bundle; the Api-Version is
@@ -8673,5 +8859,8 @@ export {
   zrhStatus,
   parseIahFeed,
   mcoParseFeed,
+  parseJfkFeed,
+  jfkLzCompressUri,
+  jfkRangeStrings,
   _authorityRosterHas
 };
