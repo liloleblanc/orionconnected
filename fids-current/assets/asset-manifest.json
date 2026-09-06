@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2536,
+    "total": 2538,
     "by_category": {
       "ad": 10,
-      "airline": 1341,
+      "airline": 1343,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -3796,6 +3796,28 @@
       "subcategory": "asian-other",
       "group": "Airlines — Asian & other",
       "name": "copa wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/asian-other/emirates-wordmark-dark.svg",
+      "file": "emirates-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "asian-other",
+      "group": "Airlines — Asian & other",
+      "name": "emirates wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/asian-other/emirates-wordmark-light.svg",
+      "file": "emirates-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "asian-other",
+      "group": "Airlines — Asian & other",
+      "name": "emirates wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"
