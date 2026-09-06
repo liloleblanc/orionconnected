@@ -7,6 +7,15 @@
 // main'. The app carried a ~50-entry city map and 17 airlines against the
 // board's 2,400+/190 — GYE, LIM, VS, H2 all rendered as raw codes.
 window.FIDS_SHARED_CITY = {
+  // v23333 — mirrors the additions to CITY in fids-core.js (tour-airport destinations).
+  PVC:'PROVINCETOWN',   BEG:'BELGRADE',       LUX:'LUXEMBOURG',   BJI:'BEMIDJI',
+  MCT:'MUSCAT',         SOF:'SOFIA',          LJU:'LJUBLJANA',    IOM:'ISLE OF MAN',
+  PFO:'PAPHOS',         RIX:'RIGA',           YAY:'ST. ANTHONY',  FSP:'SAINT-PIERRE',
+  ALG:'ALGIERS',        BWN:'BANDAR SERI BEGAWAN', ALA:'ALMATY',  DAC:'DHAKA',
+  KGL:'KIGALI',         TBS:'TBILISI',        ABV:'ABUJA',        KUN:'KAUNAS',
+  ADS:'DALLAS ADDISON', FAE:'FAROE ISLANDS',  PPT:'PAPEETE',      FMN:'FARMINGTON',
+  LHE:'LAHORE',         GIB:'GIBRALTAR',      ISB:'ISLAMABAD',    HAN:'HANOI',
+  KSC:'KOSICE',         GCI:'GUERNSEY',       BOJ:'BURGAS',       MLA:'MALTA',
   YYZ:'TORONTO',        YUL:'MONTREAL',       YVR:'VANCOUVER',    YYC:'CALGARY',
   YEG:'EDMONTON',       YOW:'OTTAWA',         YQM:'MONCTON',      YHZ:'HALIFAX',
   YQB:'QUEBEC CITY',    YWG:'WINNIPEG',       YXE:'SASKATOON',    YYJ:'VICTORIA',    YXX:'ABBOTSFORD',

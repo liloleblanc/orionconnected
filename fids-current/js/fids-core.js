@@ -16148,6 +16148,7 @@ const AP = {
   FRA:{ name:'Frankfurt Airport',                                    tz:'Europe/Berlin'      },
   AMS:{ name:'Amsterdam Airport Schiphol',                           tz:'Europe/Amsterdam'   },
   DUB:{ name:'Dublin Airport',                                       tz:'Europe/Dublin'      },
+  EDI:{ name:'Edinburgh Airport',                                    tz:'Europe/London'      },   // v23333 — on the roster since #642, never in this table
   DXB:{ name:'Dubai International Airport',                          tz:'Asia/Dubai'         },
   DOH:{ name:'Hamad International Airport',                          tz:'Asia/Qatar'         },
   NRT:{ name:'Tokyo Narita International Airport',                   tz:'Asia/Tokyo'         },
@@ -16263,6 +16264,17 @@ try { if (typeof window !== 'undefined') window.AP = AP; } catch (e) {}
 
 // ── CITY NAMES ────────────────────────────────────────────────────────────
 const CITY = {
+  // v23333 — destinations that appeared on the stream-tour airports' live
+  // boards (Boston, Chicago, Dublin, Edinburgh, Heathrow, Keflavík, St.
+  // John's…) with no name here, so the row printed the bare code.
+  PVC:'PROVINCETOWN',   BEG:'BELGRADE',       LUX:'LUXEMBOURG',   BJI:'BEMIDJI',
+  MCT:'MUSCAT',         SOF:'SOFIA',          LJU:'LJUBLJANA',    IOM:'ISLE OF MAN',
+  PFO:'PAPHOS',         RIX:'RIGA',           YAY:'ST. ANTHONY',  FSP:'SAINT-PIERRE',
+  ALG:'ALGIERS',        BWN:'BANDAR SERI BEGAWAN', ALA:'ALMATY',  DAC:'DHAKA',
+  KGL:'KIGALI',         TBS:'TBILISI',        ABV:'ABUJA',        KUN:'KAUNAS',
+  ADS:'DALLAS ADDISON', FAE:'FAROE ISLANDS',  PPT:'PAPEETE',      FMN:'FARMINGTON',
+  LHE:'LAHORE',         GIB:'GIBRALTAR',      ISB:'ISLAMABAD',    HAN:'HANOI',
+  KSC:'KOSICE',         GCI:'GUERNSEY',       BOJ:'BURGAS',       MLA:'MALTA',
   YYZ:'TORONTO',        YUL:'MONTREAL',       YVR:'VANCOUVER',    YYC:'CALGARY',
   YEG:'EDMONTON',       YOW:'OTTAWA',         YQM:'MONCTON',      YHZ:'HALIFAX',
   YQB:'QUEBEC CITY',    YWG:'WINNIPEG',       YXE:'SASKATOON',    YYJ:'VICTORIA',    YXX:'ABBOTSFORD',
@@ -19270,6 +19282,11 @@ const IATA_TO_TILE_ICAO = {
   'AY':'FIN',  'IB':'IBE',  'TP':'TAP',  'EI':'EIN',  'LO':'LOT',
   'OK':'CSA',  'RO':'ROT',  'BT':'BTI',  'FI':'ICE',  'DY':'NAX',
   'U2':'EZY',  'FR':'RYR',  'W6':'WZZ',  'VY':'VLG',  'WK':'EDW',
+  // v23333 — sister codes that share a parent's tile (seen on the Dublin,
+  // Edinburgh and Keflavík boards with no tile at all): Ryanair UK, easyJet
+  // Europe/Switzerland, Norwegian Air Sweden, Iberia Express, Wizz Malta,
+  // Jet2 and Loganair (their own tiles were on disk, never mapped).
+  'RK':'RYR',  'EC':'EZY',  'EJU':'EZY', 'EZS':'EZY', 'D8':'NAX',  'I2':'IBE',  'W4':'WZZ',  'LS':'EXS',  'LM':'LOG',
   'DE':'CFG',  'X3':'TUI',  'A3':'AEE',  'OU':'CTN',  'JU':'ASL',
   'PC':'PGT',  'TK':'THY',  'TO':'TVF',  'HV':'TRA',  'EW':'EWG',
   // Middle East / Africa
@@ -20872,7 +20889,24 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23332';
+var FIDS_BUILD_TAG = 'v23333';
+// v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
+// rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
+// boards inside it reload on a build-tag change (this line). Miami has had
+// no data since AeroDataBox went away, so the first board that boots with
+// the retired config sends the whole rotator (same origin) to the tour
+// (rotate.html tour=1: working airports only, Nick's call). Once there, the
+// boards carry ap=<tour airport>, so this never fires again.
+try {
+  var _sq = new URLSearchParams(window.location.search);
+  if (_sq.get('stream') === '2' && String(_sq.get('ap') || '').toUpperCase() === 'MIA' && window.top !== window) {
+    var _tu = new URL(window.top.location.href);
+    if (/rotate\.html$/i.test(_tu.pathname) && _tu.searchParams.get('tour') !== '1') {
+      _tu.searchParams.set('tour', '1');
+      window.top.location.replace(_tu.toString());
+    }
+  }
+} catch (e) {}
 var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to main'
 (function(){
   try {
