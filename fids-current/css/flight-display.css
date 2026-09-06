@@ -2098,14 +2098,33 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
    fixed px totals were eating the whole row width on smaller windows and
    truncating destinations ("St-Hubert…"). TIME/REVISED/STATUS keep enough
    room for revised times + FR statuses ("EN RETARD") at every size. */
+/* v23357 — THE CLAMP FLOORS DID NOT FIT THE BOARD THEY WERE PROTECTING.
+   Measured on a live Dublin departures board at 1024px wide: the flight
+   column floors at 100px, but a six-character number ("VY8723", "FR9330")
+   needs 118px at that row's 20px type — so EVERY flight number on the board
+   truncated to "VY8…", "FR7…", "EK1…" (Nick, repeatedly: 'flight numbers on
+   fids still are not showing all the number attrocious').
+
+   The second half of the same fault: these floors summed to 1066px BEFORE
+   the flexible destination column got a single pixel. On a 1024px board the
+   table forced itself to 1095px, so Status ran off the right edge entirely
+   and read "En re…" — the truncated EMBARQUEMENT / statuses he photographed.
+
+   Floors are now sized to their actual content instead of guessed, and they
+   total 1000px, which leaves the destination column real room at 1024. The
+   vw terms and the maximums are UNTOUCHED, so a 1920 board — the stream —
+   renders pixel-identical to before: every column there is on its max or its
+   vw term, never its floor. */
 #fidsTable colgroup col.col-airline   { width: clamp(240px, 15.5vw, 292px) !important; }
-#fidsTable colgroup col.col-flight    { width: clamp(100px, 7vw, 150px) !important; }
-#fidsTable colgroup col.col-wx        { width: clamp(124px, 8.2vw, 150px) !important; }
+#fidsTable colgroup col.col-flight    { width: clamp(138px, 7vw, 150px) !important; }
+#fidsTable colgroup col.col-wx        { width: clamp(150px, 8.2vw, 150px) !important; }
 #fidsTable colgroup col.col-dest      { width: auto  !important; }
-#fidsTable colgroup col.col-gate      { width: clamp(100px, 7vw, 134px) !important; }
+#fidsTable colgroup col.col-gate      { width: clamp(84px, 7vw, 134px) !important; }
+/* 146 stays: measured, a 12-hour time with a two-digit hour ("10:00 PM")
+   needs 142px at this row's type, so a 134px floor clipped the meridiem. */
 #fidsTable colgroup col.col-time      { width: clamp(146px, 10vw, 178px) !important; }
 #fidsTable colgroup col.col-time-rev  { width: clamp(146px, 10vw, 178px) !important; }
-#fidsTable colgroup col.col-status    { width: clamp(210px, 13vw, 250px) !important; }
+#fidsTable colgroup col.col-status    { width: clamp(196px, 13vw, 250px) !important; }
 
 /* Emblem-only mode: shrink airline column further */
 body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
