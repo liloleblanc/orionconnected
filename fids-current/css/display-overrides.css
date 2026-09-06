@@ -14727,7 +14727,11 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    delayed and cancelled/diverted rows. */
 .bidsv3 .bidsv2-flight-list {
   display: flex !important; flex-direction: column !important;
-  justify-content: center !important;
+  /* v23347 — THE BARS FILL FROM THE TOP (Nick: "they need to start from the
+     top down"). Centring them left a deep empty band above a short belt —
+     three arrivals sat halfway down the panel with nothing over them. A
+     baggage hall reads top-down like every other board. */
+  justify-content: flex-start !important;
   background: transparent !important; border: none !important; box-shadow: none !important;
   padding: 0 !important; overflow: hidden;
   /* v23329 — ONE UNIT SCALES THE WHOLE BAR. The b3 bar was drawn in pixels
