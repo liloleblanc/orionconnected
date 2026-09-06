@@ -79,3 +79,22 @@ test('the mobile app offers the same live airports as the board', () => {
   assert.deepEqual(codes.slice().sort(), clientCodes().slice().sort(), 'app.html and fids-core.js disagree on which airports are live');
   assert.match(app, /APP_LIVE_AIRPORTS\.has\(k\)/, 'the app picker no longer filters on APP_LIVE_AIRPORTS');
 });
+
+// v23346 — the rotator filters hand-written tour lists against its own copy of
+// the roster (a URL can name any airport), so it has to agree with the board.
+test('the rotator knows the same live airports as the board', () => {
+  const rot = readFileSync(path.join(here, '..', 'fids-current', 'rotate.html'), 'utf8');
+  const s = rot.indexOf('var ROSTER = [');
+  assert.ok(s >= 0, 'ROSTER not found in rotate.html');
+  const codes = [...rot.slice(s, rot.indexOf('];', s)).matchAll(/'([A-Z0-9]{3})'/g)].map((m) => m[1]);
+  assert.deepEqual(codes.slice().sort(), clientCodes().slice().sort(), 'rotate.html and fids-core.js disagree on which airports are live');
+});
+
+test('every airport in the default tour has a feed', () => {
+  const rot = readFileSync(path.join(here, '..', 'fids-current', 'rotate.html'), 'utf8');
+  const s = rot.indexOf('var TOUR_DEFAULT = [');
+  const tour = [...rot.slice(s, rot.indexOf('];', s)).matchAll(/'([A-Z0-9]{3})'/g)].map((m) => m[1]);
+  const live = new Set(clientCodes());
+  const dead = tour.filter((c) => !live.has(c));
+  assert.deepEqual(dead, [], `the stream tour would show airports with no feed: ${dead.join(' ')}`);
+});
