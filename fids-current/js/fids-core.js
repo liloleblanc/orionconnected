@@ -20900,7 +20900,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23335';
+var FIDS_BUILD_TAG = 'v23336';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -22174,11 +22174,39 @@ function fidsRowClick(tr) {
 }
 window.fidsRowClick = fidsRowClick;
 
+// v23336 — AN AIRPORT WITH NO FEED SAYS SO, INSTEAD OF "NO FLIGHTS IN WINDOW".
+// (Nick sent a Cancún board reading NO FLIGHTS IN WINDOW at 1:53 AM.) That
+// message means "nothing is scheduled right now, look again later", which is
+// true for a live airport at a quiet hour — and a lie for an airport that has
+// no data source at all. Since AeroDataBox ended, a board fills only when the
+// worker has a handler for that airport (FIDS_LIVE_AIRPORTS, v23335); every
+// other one returns an empty 200 forever. A board can still be opened on any
+// airport by URL, so the empty panel has to tell those two cases apart.
+function _fidsAirportHasFeed(code) {
+  try {
+    var c = String(code || '').toUpperCase();
+    if (!c) return true;                                  // unknown: say nothing
+    if (typeof FIDS_LIVE_AIRPORTS === 'undefined') return true;
+    return FIDS_LIVE_AIRPORTS.has(c);
+  } catch (e) { return true; }
+}
 function setState(which, show) {
   ['empty','loading','error'].forEach(id => {
     document.getElementById('panel'+id.charAt(0).toUpperCase()+id.slice(1)).style.display =
       (id === which && show) ? 'block' : 'none';
   });
+  if (which === 'empty' && show) {
+    try {
+      var el = document.getElementById('panelEmpty');
+      var ap = (document.getElementById('apSel') || {}).value || '';
+      if (el) {
+        el.innerHTML = _fidsAirportHasFeed(ap)
+          ? 'NO FLIGHTS IN WINDOW<div class="sub">NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW</div>'
+          : 'NO LIVE DATA FOR THIS AIRPORT<div class="sub">' + String(ap).toUpperCase()
+            + ' HAS NO FLIGHT FEED YET · SIN DATOS EN VIVO PARA ESTE AEROPUERTO</div>';
+      }
+    } catch (e) {}
+  }
 }
 
 // ── DEMO DATA BUILDER ─────────────────────────────────────────────────────
