@@ -3178,6 +3178,776 @@ async function manFetch(dir) {
 }
 __name(manFetch, "manFetch");
 
+// ── AUS Austin-Bergstrom — AirIT WebFIDS on content.abia.org:8080 ────
+// flyaustin.com's "View Arrivals & Departures" is a 2014 AirIT WebFIDS
+// frameset on plain http://. Its own 60-s refresh call
+// (webfids?action=updateArrivals|updateDepartures) returns an XML list:
+// offset-less local <stt>/<ett>/<att>, <CXR>+<TRN>, the far end's IATA in
+// <CTY>, gate, terminal, claim carousel in <bags>, aircraft <TYP> and
+// tail <REG>. No cookie, token or referer needed (verified). Rolling
+// window: arrivals ~3 h back / ~12 h ahead, departures ~14 h back / ~12 h
+// ahead. Quirks: multi-stop Southwest routes are emitted once PER route
+// city (identical stt; <cities><so> lists the route) — collapsed here to
+// one flight; the status clock ("Arrived 6:25P", "Now 11:37P") is the
+// gate time the board shows, while <att> is a different (runway) clock,
+// so the status clock wins for revisedTime with <ett> as the fallback.
+function ausXmlField(chunk, tag) {
+  const m = String(chunk || "").match(new RegExp("<" + tag + ">([^<]*)</" + tag + ">"));
+  if (!m) return "";
+  return m[1].replace(/&#160;|&nbsp;/g, " ").replace(/&amp;/g, "&")
+    .replace(/&#0?39;|&apos;|&#8217;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/\s+/g, " ").trim();
+}
+__name(ausXmlField, "ausXmlField");
+function ausParseFeed(xmlText, dir, nowMs) {
+  const out = [];
+  const seen = new Map();   // "DL3612|stt" → index into out, for multi-city collapse
+  const isDep = dir === "dep";
+  const chunks = String(xmlText || "").match(/<flight>[\s\S]*?<\/flight>/g) || [];
+  for (const c of chunks) {
+    const g = (t) => ausXmlField(c, t);
+    const d = g("DIR").toUpperCase() || (/^dep/i.test(g("direction")) ? "D" : "A");
+    if ((d === "D") !== isDep) continue;
+    const code = g("CXR").toUpperCase();
+    const trn = g("TRN").replace(/^0+(?=\d)/, "");
+    const stt = g("stt");
+    let sched = localIsoObj("America/Chicago", stt);
+    if (!sched) { const ms = Number(g("timeInMillis")); if (ms > 0) sched = localTimeObjFromTs("America/Chicago", ms); }
+    if (!code || !trn || !sched) continue;
+    const number = `${code}${trn}`;
+    const key = `${number}|${sched.ts}`;
+    const stops = [...c.matchAll(/<so>([^<]*)<\/so>/g)].map((m) => ausXmlField(m[0], "so"));
+    const city = g("city");
+    // Multi-stop route: the immediate far end is the last stop before AUS
+    // on an arrival and the first stop after it on a departure. Keep the
+    // duplicate row whose city is that stop; drop the rest.
+    if (seen.has(key)) {
+      const want = stops.length > 1 ? (isDep ? stops[0] : stops[stops.length - 1]) : null;
+      if (want && city === want) {
+        const prev = out[seen.get(key)];
+        const side = isDep ? prev.arrival : prev.departure;
+        side.airport.iata = g("CTY").toUpperCase() || side.airport.iata;
+        side.airport.name = city || side.airport.name;
+      }
+      continue;
+    }
+    const statusTxt = g("status");
+    let revised = null;
+    const sm = statusTxt.match(/(\d{1,2}):(\d{2})\s*([AP])/i);
+    if (sm) {
+      let hh = Number(sm[1]) % 12; if (/p/i.test(sm[3])) hh += 12;
+      const dm = sched.local.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      revised = settleRevised(localTimeObjIn("America/Chicago", Number(dm[1]), Number(dm[2]), Number(dm[3]), hh, Number(sm[2])), sched, "America/Chicago");
+    }
+    if (!revised) { const est = localIsoObj("America/Chicago", g("ett")); if (est) revised = est; }
+    if (revised && revised.ts === sched.ts) revised = null;
+    const fl = authorityFlight({
+      dir, number,
+      status: yhzStatus(statusTxt),   // "Now H:MM" → scheduled + revisedTime, like YVR/DUB
+      homeIata: "AUS", homeIcao: "KAUS", homeName: "Austin",
+      gate: g("gate") || null,
+      otherIata: g("CTY").toUpperCase() || null,
+      otherName: city || null,
+      airlineIata: code, airlineName: g("airlineName") || null,
+      aircraftModel: g("TYP") || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    const term = g("terminal");
+    if (term) homeSide.terminal = term;
+    const bags = g("bags");
+    if (!isDep && bags) fl.arrival.baggageBelt = bags;
+    const reg = g("REG");
+    if (reg) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = reg; }
+    seen.set(key, out.length);
+    out.push(fl);
+  }
+  return out;
+}
+__name(ausParseFeed, "ausParseFeed");
+
+// MSP — the airport's own Drupal view, server-rendered, 100 rows a page,
+// covering roughly one hour back through the end of tomorrow (verified
+// live 2026-09-05 21:10 CDT: dep/arr each spanned 4–5 pages). Five plain
+// cells per row: "Sep 05 — 8:10 p.m." (month-day, no year, em dash,
+// "a.m."/"p.m."), "Denver (DEN)", the carrier name glued to the flight
+// number ("SouthwestWN 1577"), a status word, and "T2H12" — terminal
+// digit + gate, or a bare "T1"/"T2" when no gate is posted yet. No
+// revised time and no belt anywhere on the page.
+const MSP_STATUS = {
+  "ON TIME": "scheduled", "GATE CHANGE": "scheduled", "BOARDING": "boarding",
+  "DEPARTED": "departed", "LANDED": "arrived", "ARRIVED AT GATE": "arrived",
+  "ARRIVED": "arrived", "DELAYED": "delayed", "CANCELLED": "cancelled", "CANCELED": "cancelled"
+};
+function mspStatus(txt) {
+  const k = String(txt || "").toUpperCase().replace(/\s+/g, " ").trim();
+  return MSP_STATUS[k] || yhzStatus(txt);
+}
+__name(mspStatus, "mspStatus");
+// Data rows only (the header row is <th>); the handler uses the count
+// to tell a full 100-row page from the last, short one.
+function mspPageRowCount(html) {
+  return (String(html || "").match(/<td[^>]*headers="view-scheduled-time-table-column"/g) || []).length;
+}
+__name(mspPageRowCount, "mspPageRowCount");
+function mspParsePage(html, dir, nowMs) {
+  const out = [];
+  const rows = String(html || "").match(/<tr>[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    if (row.indexOf("<th") !== -1 || row.indexOf("view-scheduled-time-table-column") === -1) continue;
+    const cells = authorityCellsText(row);
+    if (cells.length < 4) continue;
+    // "Sep 05 — 8:10 p.m." — the year is whichever lands nearest now.
+    const tm = cells[0].match(/^([A-Za-z]{3})\s+(\d{1,2})\s*[—–-]+\s*(\d{1,2}):(\d{2})\s*([AaPp])\.?\s*[Mm]\.?/);
+    // "SouthwestWN 1577" / "Air CanadaAC 8623" / "KLMKL 6035": the code
+    // is the two chars immediately before "<space><digits>" at the end.
+    const nm = cells[2].match(/^(.*?)\s*([A-Z0-9]{2})\s+(\d{1,4})$/);
+    if (!tm || !nm) continue;
+    const mo = AUTH_MONTHS[tm[1].toUpperCase()];
+    if (!mo) continue;
+    let hh = Number(tm[3]) % 12; if (/p/i.test(tm[5])) hh += 12;
+    const d = Number(tm[2]);
+    const sched = localTimeObjIn("America/Chicago", nearestYear(mo, d, nowMs), mo, d, hh, Number(tm[4]));
+    const paren = cells[1].match(/\(([A-Z]{3})\)/);
+    const city = cells[1].replace(/\s*\([A-Z]{3}\)\s*/, "").trim();
+    // "T2H12" → terminal 2, gate H12; "T1" → terminal 1, no gate yet.
+    const gm = (cells[4] || "").replace(/\s+/g, "").toUpperCase().match(/^T(\d)([A-Z]\d{1,2}[A-Z]?)?$/);
+    const statusTxt = (row.match(/flight-search-results__status--([^"]*?)\s+views-field/) || [])[1] || cells[3];
+    const fl = authorityFlight({
+      dir, number: `${nm[2]}${nm[3]}`,
+      status: mspStatus(statusTxt),
+      homeIata: "MSP", homeIcao: "KMSP", homeName: "Minneapolis",
+      gate: gm && gm[2] ? gm[2] : null,
+      otherIata: paren ? paren[1] : null,
+      otherName: city || null,
+      airlineIata: nm[2], airlineName: nm[1].trim() || null,
+      sched, revised: null
+    });
+    if (gm) (dir === "dep" ? fl.departure : fl.arrival).terminal = gm[1];
+    out.push(fl);
+  }
+  return out;
+}
+__name(mspParsePage, "mspParsePage");
+
+// ── 1. Top-level helpers ─────────────────────────────────────────────
+// The board is server-rendered HTML with unquoted attributes and NO
+// closing </td>/</tr> tags: `<tr><td>8:34 PM <td>Anchorage <td>DL2713
+// <td style=text-transform:uppercase>Scheduled <td>A47 <tr>…`. Rows are
+// dateless but every day's table sits under `<div class=table-title>
+// Sat, Sep 05</div>`, so the calendar day comes from that header (year
+// via nearestYear). `type=simple` only shows now-onward, so the handler
+// uses `type=advanced` with an explicit local day range; a day fits in
+// one `results_per_page=500` page (SLC runs ~300 each way) and
+// "Showing Page 1 of N" is followed if it ever doesn't. The city column
+// is a free-text name (no code) whose spellings don't match the site's
+// own <select> labels, hence the static map below (+ YHZ_CITY_IATA as a
+// fallback). No revised time, belt, or aircraft anywhere on the page.
+const SLC_CITY_IATA = {
+  "ALBUQUERQUE": "ABQ", "AMSTERDAM": "AMS", "ANCHORAGE": "ANC", "ASPEN": "ASE", "ASPEN, COLORAD": "ASE",
+  "ATLANTA": "ATL", "AUSTIN": "AUS", "BAKERSFIELD CA": "BFL", "BAKERSFIELD, CA": "BFL", "BALTIMORE": "BWI",
+  "BELLINGHAM, WA": "BLI", "BILLINGS": "BIL", "BOISE": "BOI", "BOSTON": "BOS", "BOZEMAN": "BZN",
+  "BURBANK": "BUR", "BUTTE": "BTM", "CABO SAN LUCAS": "SJD", "LOS CABOS": "SJD", "CALGARY": "YYC",
+  "CANCUN, MEXICO": "CUN", "CANCUN, MX": "CUN", "CANCUN": "CUN", "CASPER": "CPR", "CEDAR CITY": "CDC",
+  "CHARLOTTE": "CLT", "CHATTANOOGA": "CHA", "CHICAGO-MIDWAY": "MDW", "CHICAGO MIDWAY": "MDW",
+  "CHICAGO-O`HARE": "ORD", "CHICAGO-O'HARE": "ORD", "CHICAGO O'HARE": "ORD", "CINCINNATI": "CVG",
+  "CLEVELAND": "CLE", "COLORADO SPRINGS": "COS", "CO SPRINGS": "COS", "CODY": "COD", "COLUMBUS": "CMH",
+  "COLUMBUS, OH": "CMH", "DALLAS-LOVE FIELD": "DAL", "DALLAS/LOVEFLD": "DAL", "DALLAS/FT. WORTH": "DFW",
+  "DALLAS-FTWORTH": "DFW", "DENVER": "DEN", "DETROIT": "DTW", "DURANGO, CO": "DRO", "EDMONTON, AB": "YEG",
+  "EDMONTON": "YEG", "EL PASO": "ELP", "ELKO": "EKO", "EUGENE, OR": "EUG", "FARGO": "FAR",
+  "FORT LAUDERDALE": "FLL", "FT LAUDERDALE": "FLL", "FORT MYERS": "RSW", "FRANKFURT, DE": "FRA",
+  "FRANKFURT": "FRA", "FRESNO, CA": "FAT", "FRESNO": "FAT", "GRAND JUNCTION": "GJT", "GRAND RAPIDS": "GRR",
+  "GREAT FALLS": "GTF", "GUADALAJARA": "GDL", "GUATEMALA CITY": "GUA", "HARTFORD": "BDL", "HELENA": "HLN",
+  "HONOLULU": "HNL", "HOUSTON-BUSH": "IAH", "HOUSTON": "IAH", "HOUSTON-HOBBY": "HOU", "HOUSTON HOBBY": "HOU",
+  "IDAHO FALLS": "IDA", "INDIANAPOLIS": "IND", "JACKSON HOLE": "JAC", "KAHULUI-MAUI": "OGG",
+  "KAHULUI, MAUI": "OGG", "KALISPELL": "FCA", "KANSAS CITY": "MCI", "LA GUARDIA": "LGA",
+  "NEW YORK-LAGUARDIA": "LGA", "LAS VEGAS": "LAS", "LEWISTON, ID": "LWS", "LITTLE ROCK": "LIT",
+  "LONDON-HEATHROW, UK": "LHR", "LONDON HTHRW": "LHR", "LONDON-HEATHROW": "LHR", "LONG BEACH": "LGB",
+  "LOS ANGELES": "LAX", "MALPENSA, ITA": "MXP", "MILAN-MALPENSA": "MXP", "MANCHESTER, NH": "MHT",
+  "MEDFORD, OR": "MFR", "MEMPHIS": "MEM", "MEXICO CITY": "MEX", "MIAMI": "MIA", "MILWAUKEE": "MKE",
+  "MINNEAPOLIS/ST. PAUL": "MSP", "MINNEAPOLIS": "MSP", "MISSOULA": "MSO", "MONTROSE": "MTJ",
+  "NW ARKANSAS REGIONAL": "XNA", "NASHVILLE": "BNA", "NEW ORLEANS": "MSY", "NEW YORK-JFK": "JFK",
+  "NEW YORK JFK": "JFK", "NEWARK": "EWR", "OAKLAND": "OAK", "OKLAHOMA CITY": "OKC", "OMAHA": "OMA",
+  "ONTARIO": "ONT", "ORANGE COUNTY": "SNA", "ORLANDO": "MCO", "PALM SPRINGS": "PSP", "PARIS, FRANCE": "CDG",
+  "PARIS": "CDG", "PASCO": "PSC", "PHILADELPHIA": "PHL", "PHOENIX": "PHX", "PITTSBURGH": "PIT",
+  "POCATELLO": "PIH", "PORTLAND, OR": "PDX", "PORTLAND": "PDX", "PUERTO VALLARTA": "PVR",
+  "PUERTO VALLART": "PVR", "RALEIGH/DURHAM": "RDU", "RALEIGH-D'HAM": "RDU", "RAPID CITY": "RAP",
+  "REDMOND, OR": "RDM", "RENO, NV": "RNO", "RENO": "RNO", "SACRAMENTO": "SMF", "SALEM, OREGON": "SLE",
+  "SALT LAKE CITY": "SLC", "SAN ANTONIO": "SAT", "SAN DIEGO": "SAN", "SAN FRANCISCO": "SFO",
+  "SAN JOSE, CA": "SJC", "SAN JOSE": "SJC", "SAN LUIS OBIS": "SBP", "SAN LUIS OBISPO": "SBP",
+  "SANTA BARBARA": "SBA", "SEATTLE/TACOMA": "SEA", "SEATTLE": "SEA", "SEOUL-INCHEON": "ICN", "SPOKANE": "GEG",
+  "ST. GEORGE": "SGU", "ST GEORGE": "SGU", "ST. LOUIS": "STL", "ST LOUIS": "STL", "STEAMBOAT SPRI": "HDN",
+  "STEAMBOAT SPRINGS": "HDN", "SUN VALLEY, ID": "SUN", "SUN VALLEY": "SUN", "TAMPA, FL": "TPA", "TAMPA": "TPA",
+  "TORONTO, ON": "YYZ", "TORONTO": "YYZ", "TUCSON, AZ": "TUS", "TUCSON": "TUS", "TULSA, OK": "TUL", "TULSA": "TUL",
+  "TWIN FALLS": "TWF", "VANCOUVER, BC": "YVR", "VANCOUVER": "YVR", "WASHINGTON-DULLES": "IAD",
+  "WASH DULLES": "IAD", "WASHINGTON-REAGAN": "DCA", "WASH NATIONAL": "DCA", "WEST YELLOWSTONE, MT": "WYS",
+  "WEST YELLOWSTONE": "WYS", "YAKIMA, WASH": "YKM", "YAKIMA": "YKM", "YUMA, AZ": "YUM", "YUMA": "YUM"
+};
+// Carriers the board's own airline <select> lists (plus SY/WS seen in
+// rows) — the page prints only the code, so the name comes from here.
+const SLC_AIRLINE_NAME = {
+  AM: "Aeromexico", AC: "Air Canada", AS: "Alaska Airlines", AA: "American Airlines", OS: "Austrian",
+  CZ: "China Southern", DL: "Delta Air Lines", OO: "Delta Connection", EW: "Eurowings", F9: "Frontier",
+  B6: "JetBlue", KL: "KLM", LH: "Lufthansa", SK: "SAS", WN: "Southwest", NK: "Spirit Airlines",
+  UA: "United Airlines", SY: "Sun Country", WS: "WestJet"
+};
+// Status vocabulary seen live: Scheduled / On Time / Departed / Arrived /
+// In Flight / InGate. "InGate" on a DEPARTURE row is the inbound aircraft
+// (AM793, a 09:30 departure, still read InGate at 20:00), so it only
+// means "arrived" on the arrivals side.
+const SLC_STATUS = {
+  SCHEDULED: "scheduled", ONTIME: "scheduled", DEPARTED: "departed", OUTGATE: "departed",
+  ARRIVED: "arrived", LANDED: "arrived", INFLIGHT: "active", ENROUTE: "active", INAIR: "active",
+  DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted",
+  BOARDING: "boarding", GATECLOSED: "gateclosed"
+};
+function slcStatus(txt, dir) {
+  const k = String(txt || "").toUpperCase().replace(/[^A-Z]/g, "");
+  if (k === "INGATE") return dir === "arr" ? "arrived" : "scheduled";
+  return SLC_STATUS[k] || yhzStatus(txt);
+}
+__name(slcStatus, "slcStatus");
+// Pure parser (exported for tests): one board page → ADB-native flights.
+function slcParsePage(html, dir, nowMs) {
+  const out = [];
+  const sections = String(html || "").split(/<div class="?table-title"?>/).slice(1);
+  for (const sec of sections) {
+    const dm = sec.match(/^\s*[A-Za-z]{3},\s*([A-Za-z]{3})\s+(\d{1,2})/);
+    if (!dm) continue;
+    const mo = AUTH_MONTHS[dm[1].toUpperCase()];
+    if (!mo) continue;
+    const day = Number(dm[2]);
+    const y = nearestYear(mo, day, nowMs);
+    const table = (sec.split("</table>")[0] || "").split(/<tbody[^>]*>/)[1] || "";
+    for (const row of table.split(/<tr[^>]*>/).slice(1)) {
+      const cells = row.split(/<td[^>]*>/).slice(1).map((c) => yhzCellText(c));
+      if (cells.length < 4) continue;
+      const tm = cells[0].match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      const nm = cells[2].replace(/\s+/g, "").match(/^([A-Z0-9]{2})(\d{1,4})$/);
+      if (!tm || !nm) continue;
+      let hh = Number(tm[1]) % 12; if (/pm/i.test(tm[3])) hh += 12;
+      const sched = localTimeObjIn("America/Denver", y, mo, day, hh, Number(tm[2]));
+      const city = cells[1].trim();
+      const code = nm[1];
+      const gate = (cells[4] || "").trim();
+      const fl = authorityFlight({
+        dir, number: `${code}${nm[2].replace(/^0+(?=\d)/, "")}`,
+        status: slcStatus(cells[3], dir),
+        homeIata: "SLC", homeIcao: "KSLC", homeName: "Salt Lake City",
+        gate: gate && !/^TBD$/i.test(gate) ? gate.toUpperCase() : null,
+        otherIata: SLC_CITY_IATA[city.toUpperCase()] || YHZ_CITY_IATA[city.toUpperCase()] || null,
+        otherName: city || null,
+        airlineIata: code, airlineName: SLC_AIRLINE_NAME[code] || null,
+        sched, revised: null
+      });
+      out.push(fl);
+    }
+  }
+  return out;
+}
+__name(slcParsePage, "slcParsePage");
+// One local calendar day of the board, following "Page 1 of N" when a
+// day overflows 500 rows (it hasn't; 3 pages is the safety cap).
+async function slcFetchDay(dir, dayIso, nextIso) {
+  const leg = dir === "dep" ? "D" : "A";
+  const q = (p) => `https://slcairport.com/airlines-flights/arrivals-departures?type=advanced&query_leg=${leg}&sortby=departure&sortdir=asc&page=${p}&results_per_page=500&query_date1=${encodeURIComponent(dayIso + " 00:00:00")}&query_date2=${encodeURIComponent(nextIso + " 00:00:00")}`;
+  const parts = [];
+  for (let p = 0; p < 3; p++) {
+    const t = await fetchAuthorityText(`slc/${dir}/${dayIso}/${p}`, q(p), "flight-data", 90);
+    if (!t) break;
+    parts.push(t);
+    const pm = t.match(/Showing Page (\d+) of (\d+)/);
+    if (!pm || Number(pm[1]) >= Number(pm[2])) break;
+  }
+  return parts;
+}
+__name(slcFetchDay, "slcFetchDay");
+
+// ── RDU Raleigh–Durham — OAG flightview FIDS behind rdu.com ──────────
+// rdu.com/airline-information/flight-status/ is an iframe onto
+// tracker.flightview.com's hosted FIDS (accCustId=RaleighDurham,
+// fidsId=20001, fidsInit=arrivals|departures). A vendor page rather than
+// the authority's own — licensing-fragile — but it is what the airport
+// publishes, it is server-rendered, and it answers a plain GET with no
+// cookie, referer or token. Every row carries an ffDtNm(...) onclick
+// with the airline code, BOTH airport IATAs and the departure date, and
+// the Sched/Updated cells hide a full local date-time in an HTML comment
+// (<!--dtDateTime(2026-09-05,15:26:00,TwelveHour)-->) — so no dateless
+// rows, no city→IATA map, and revised times that cross midnight carry
+// their own calendar day. Window is roughly −6 h / +18 h around now (the
+// ffArrdate/ffArrhr sort-form parameters return "No flights found").
+// The list has no gate, terminal or belt — those exist only in the
+// per-flight detail POST (ffState=3), one round trip per flight.
+// Status arrives as a CSS class (flightStatus-InGate …) with a friendly
+// text; diverted legs are listed next to the recovery leg of the same
+// flight, and the class vocabulary is the same one MWAA uses.
+const RDU_STATUS = { INGATE: "arrived", LANDED: "arrived", INAIR: "active", OUTGATE: "departed", DEPARTED: "departed", SCHEDULED: "scheduled", DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted", BOARDING: "boarding" };
+function rduCellTime(chunk, cls) {
+  const m = chunk.match(new RegExp(`class="${cls}[^"]*"[^>]*><!--dtDateTime\\((\\d{4})-(\\d{2})-(\\d{2}),(\\d{2}):(\\d{2}):\\d{2}`));
+  if (!m) return null;
+  return localTimeObjIn("America/New_York", Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5]));
+}
+__name(rduCellTime, "rduCellTime");
+function rduCellText(chunk, cls) {
+  const m = chunk.match(new RegExp(`<td[^>]*class="${cls}[^"]*"[^>]*>([\\s\\S]*?)<\\/td>`));
+  return yhzCellText((m ? m[1] : "").replace(/&#160;/g, " "));
+}
+__name(rduCellText, "rduCellText");
+function rduParsePage(html, dir, nowMs) {
+  const out = [];
+  const want = dir === "dep" ? "ffFidsDepartures" : "ffFidsArrivals";
+  const data = String(html || "").split('id="fvData"')[1];
+  if (!data) return out;
+  const byKey = new Map();
+  for (const chunk of data.split(/<tr class="(?:odd|even)">/).slice(1)) {
+    const oc = chunk.match(/ffDtNm\('(ffFids[A-Za-z]+)','([^']*)','([A-Z0-9]{2})','([A-Z0-9]{3})','([A-Z0-9]{3})','\d{8}','\d{4}'\)/);
+    if (!oc || oc[1] !== want) continue;                 // wrong pane / not a flight row
+    const num = oc[2].replace(/\D/g, "");
+    const sched = rduCellTime(chunk, "c5");
+    const home = dir === "dep" ? oc[4] : oc[5];
+    if (!num || !sched || home !== "RDU") continue;
+    const upd = rduCellTime(chunk, "c6");
+    const revised = (upd && upd.ts !== sched.ts) ? upd : null;
+    const cls = ((chunk.match(/flightStatus-([A-Za-z]+)/) || [])[1] || "").toUpperCase();
+    const secondary = ((chunk.match(/ffFlightStatusSecondary[^>]*>\s*<span class="([a-z]+)"/) || [])[1] || "");
+    const status = secondary === "diversion" ? "diverted" : (RDU_STATUS[cls] || yhzStatus(rduCellText(chunk, "c4")));
+    const city = rduCellText(chunk, "c3");
+    const airlineName = yhzCellText((chunk.match(/class="ffAlLbl"[^>]*>([^<]*)</) || [])[1] || "");
+    const fl = authorityFlight({
+      dir, number: `${oc[3]}${num}`, status,
+      homeIata: "RDU", homeIcao: "KRDU", homeName: "Raleigh-Durham",
+      otherIata: dir === "dep" ? oc[5] : oc[4], otherName: city || null,
+      airlineIata: oc[3], airlineName: airlineName || null,
+      sched, revised
+    });
+    // One row per flight+schedule: a diverted leg gives way to the
+    // recovery leg that actually reached RDU (DL1550 was listed twice on
+    // 2026-09-05 — a "Diversion" row with no time, then "Recovery").
+    const key = `${fl.number}@${sched.ts}`;
+    const prev = byKey.get(key);
+    if (prev === undefined) { byKey.set(key, out.length); out.push(fl); }
+    else if (out[prev].status === "diverted" && status !== "diverted") out[prev] = fl;
+  }
+  return out;
+}
+__name(rduParsePage, "rduParsePage");
+
+// ── YXE Saskatoon — yxe.ca WordPress board, server-rendered ──────────
+// /departures/ and /arrival/ (singular!) each carry three panes —
+// #today, #yesterday, #tomorrow — of positional <li> rows with seven
+// <p> cells: carrier name (with an icon whose filename IS the IATA
+// code: AC.png, WS.png, PD.png, 4T.png), flight number, city,
+// scheduled and estimated as bare 12-hour clocks, gate, status. No
+// dates on the rows: the pane supplies the calendar day, anchored to
+// "today in Saskatoon". Departures print Rise Air's whole milk-run
+// ("Prince Albert, Wollaston Lake, Prince Albert"); the first stop is
+// the next leg. Saskatchewan never observes DST (America/Regina).
+const YXE_CITY_IATA = {
+  "PRINCE ALBERT": "YPA", "LA RONGE": "YVC", "STONY RAPIDS": "YSF",
+  "FOND-DU-LAC": "ZFD", "FOND DU LAC": "ZFD", "URANIUM CITY": "YBE",
+  "WOLLASTON LAKE": "ZWL", "POINTS N. LANDING": "YNL", "POINTS NORTH LANDING": "YNL",
+  "MEADOW LAKE": "YLJ", "BUFFALO NARROWS": "YVT", "HALIFAX": "YHZ",
+  "PUERTO VALLARTA": "PVR", "MAZATLAN": "MZT", "LOS CABOS": "SJD", "PHOENIX-MESA": "AZA"
+};
+// Rise Air (ex-Transwest/West Wind) isn't in the shared name map; the
+// icon filename normally settles it, this is the fallback.
+const YXE_AIRLINE_IATA = { "RISE AIR": "4T" };
+const YXE_PANE_DAY = { yesterday: -1, today: 0, tomorrow: 1 };
+function yxeStatus(txt) {
+  const s = String(txt || "").toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("divert")) return "diverted";
+  if (s.includes("gate closed")) return "gateclosed";
+  if (s.includes("final call") || s.includes("boarding")) return "boarding";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("delay")) return "delayed";
+  return "scheduled";   // On Time / Early / anything novel
+}
+__name(yxeStatus, "yxeStatus");
+// "05:05 AM" / "4:25 PM" on a given Saskatoon calendar day → time object.
+function yxeTimeObj(y, mo, d, s) {
+  const m = String(s || "").match(/(\d{1,2}):(\d{2})\s*([AP])\.?M/i);
+  if (!m) return null;
+  let hh = Number(m[1]) % 12;
+  if (/p/i.test(m[3])) hh += 12;
+  return localTimeObjIn("America/Regina", y, mo, d, hh, Number(m[2]));
+}
+__name(yxeTimeObj, "yxeTimeObj");
+function yxeParsePage(html, dir, nowMs) {
+  const out = [];
+  const tz = "America/Regina";
+  const dp = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+  const g = (t) => Number((dp.find((p) => p.type === t) || {}).value);
+  const y = g("year"), mo = g("month"), d = g("day");
+  const parts = String(html || "").split(/<div class="arrivals-infor-wrapper[^"]*"\s+id="([a-z]+)">/);
+  for (let i = 1; i + 1 < parts.length; i += 2) {
+    const dayOff = YXE_PANE_DAY[parts[i]];
+    if (dayOff === undefined) continue;
+    const pane = parts[i + 1].split("</ul>")[0];
+    for (const rowM of pane.matchAll(/<li([^>]*)>([\s\S]*?)<\/li>/g)) {
+      if (/table-heading/.test(rowM[1])) continue;
+      const cells = [...rowM[2].matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].map((m) => yhzCellText(m[1]));
+      if (cells.length < 7) continue;
+      const [airline, numRaw, cityRaw, schedRaw, estRaw, gateRaw, statusRaw] = cells;
+      const number = numRaw.replace(/\s+/g, "");
+      if (!/^[A-Z0-9]{2}\d{1,4}$/.test(number)) continue;
+      const sched = yxeTimeObj(y, mo, d + dayOff, schedRaw);
+      if (!sched) continue;
+      // Estimated mirrors Scheduled until something changes; a differing
+      // value is the revision. An estimate on the far side of midnight
+      // (sched 23:50, est 00:10) is settled toward schedule.
+      let revised = yxeTimeObj(y, mo, d + dayOff, estRaw);
+      if (revised && revised.ts === sched.ts) revised = null;
+      revised = settleRevised(revised, sched, tz);
+      const icon = (rowM[2].match(/airline-icons\/([A-Za-z0-9]{2,3})\.png/) || [])[1];
+      const al = airline.toUpperCase();
+      const code = (icon ? icon.toUpperCase() : null)
+        || YXE_AIRLINE_IATA[al] || AIRLINE_NAME_IATA[al] || AIRLINE_NAME_IATA_SQUASHED[al.replace(/\s+/g, "")]
+        || (number.match(/^([A-Z0-9]{2})/) || [])[1] || null;
+      const city = cityRaw.split(",")[0].trim();
+      const cityKey = city.toUpperCase();
+      out.push(authorityFlight({
+        dir, number, status: yxeStatus(statusRaw),
+        homeIata: "YXE", homeIcao: "CYXE", homeName: "Saskatoon",
+        gate: gateRaw || null,
+        otherIata: YXE_CITY_IATA[cityKey] || YHZ_CITY_IATA[cityKey] || null,
+        otherName: city || null,
+        airlineIata: code, airlineName: airline || null,
+        sched, revised
+      }));
+    }
+  }
+  return out;
+}
+__name(yxeParsePage, "yxeParsePage");
+
+// ── YDF Deer Lake — deerlakeairport.com SSR page ─────────────────────
+// WordPress (WP Engine, CF-cached ~10 min) renders two tables server-side:
+// <table class="fdArrivalsTable"> and <table class="fdDeparturesTable">,
+// six cells each — Carrier (icon + display name), Flight # (digits only),
+// From/To (city name), Scheduled, Expected, Status. Dates ride along:
+// arrivals print "MM/DD HH:MM" (no year), departures "YYYY/MM/DD HH:MM".
+// A duplicate mobile <ul class="fdArrivalsList"> follows each table with
+// "From: " / "Scheduled: " prefixes — the parser scopes to the <table>
+// so those never double-count. Newfoundland runs on the half-hour
+// (America/St_Johns: -02:30 NDT / -03:30 NST) — offsets come from the
+// tz helper per calendar day, never hand-rolled.
+const YDF_CITY_IATA = {
+  "ST. JOHNS": "YYT", "ST JOHNS": "YYT", "ST JOHN'S": "YYT",   // site drops the apostrophe
+  "HALIFAX": "YHZ"
+};
+// Carrier icon filename → IATA, a fallback when the display name changes.
+const YDF_ICON_IATA = { "icon-pal": "PB", "icon-ac": "AC", "icon-wj": "WS", "icon_porter": "PD" };
+function parseYdfTime(s, nowMs) {
+  const m = String(s || "").trim().match(/^(?:(\d{4})\/)?(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const mo = Number(m[2]), d = Number(m[3]);
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const y = m[1] ? Number(m[1]) : nearestYear(mo, d, nowMs);
+  return localTimeObjIn("America/St_Johns", y, mo, d, Number(m[4]), Number(m[5]));
+}
+__name(parseYdfTime, "parseYdfTime");
+function parseYdfPage(html, dir, nowMs) {
+  const out = [];
+  const want = dir === "dep" ? "fdDeparturesTable" : "fdArrivalsTable";
+  const tm = String(html || "").match(new RegExp('<table class="' + want + '"[\\s\\S]*?<\\/table>'));
+  if (!tm) return out;
+  const rows = tm[0].match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    if (row.indexOf("<th") !== -1) continue;
+    const cells = authorityCellsText(row);
+    if (cells.length < 6) continue;
+    const num = cells[1].replace(/\D+/g, "");
+    const sched = parseYdfTime(cells[3], nowMs);
+    if (!num || !sched) continue;
+    const carrier = cells[0].trim();
+    const _cu = carrier.toUpperCase();
+    const icon = (row.match(/\/(icon[-_][a-z]+)\.png/i) || [])[1] || "";
+    const code = AIRLINE_NAME_IATA[_cu]
+      || AIRLINE_NAME_IATA_SQUASHED[_cu.replace(/\s+/g, "")]
+      || YDF_ICON_IATA[icon.toLowerCase()] || null;
+    let revised = parseYdfTime(cells[4], nowMs);
+    if (revised && revised.ts === sched.ts) revised = null;
+    if (revised) revised = settleRevised(revised, sched, "America/St_Johns");
+    const city = cells[2].trim();
+    const cityU = city.toUpperCase();
+    out.push(authorityFlight({
+      dir, number: code ? code + num : num, status: yhzStatus(cells[5]),
+      homeIata: "YDF", homeIcao: "CYDF", homeName: "Deer Lake",
+      otherIata: YDF_CITY_IATA[cityU] || YHZ_CITY_IATA[cityU] || null, otherName: city || null,
+      airlineIata: code, airlineName: (code && AIRLINE_IATA_NAME[code]) || carrier || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(parseYdfPage, "parseYdfPage");
+
+// ── YQT Thunder Bay — flyqt.ca "ifids" WordPress plugin ──────────────
+// tbairport.on.ca is dead (its TLS cert expired 2026-07-06 and it 302s to
+// flyqt.ca). The new site renders the board server-side: one page per
+// direction, each with a #today and a #tomorrow tab holding a
+// <table class="fids-detailed-table"> of <tr class="fids-arrival|
+// fids-departure"> rows — airline (logo alt + icon-XX filename), flight
+// number, "A → B → Thunder Bay" route, Planned / Expected as 12-hour
+// clock with no date, and a status word. No gates, belts or aircraft.
+// No AJAX at all (the theme JS only toggles the tabs), no cache headers.
+//
+// Quirks pinned by the parser:
+//  • Flight-number prefixes mix IATA and ICAO — WJA (WestJet), WSG
+//    (Wasaya), NSA (North Star Air), and Flair as "F8*" — so they are
+//    normalised to IATA for the boards' logo/colour keys.
+//  • Rows are ordered by EXPECTED time, so a delayed 05:10 can follow a
+//    06:00; the midnight walk only reacts to a >6 h backwards jump.
+//  • Once the day's last departure is gone the #today tab is refilled
+//    with tomorrow's rows (verified 22:10 ET: #today == #tomorrow, row
+//    for row). Such a rolled tab is dated tomorrow and de-duplicated.
+//  • Two renderings alternate minute to minute: one drops the day's
+//    landed rows, the other keeps them as "Arrived" (class
+//    status-confirmed), out of strict time order and with Planned
+//    showing the last estimate rather than the schedule. Statuses seen
+//    live: "On Time", "Late", "Delayed", "Arrived".
+//  • Multi-stop routes: the site's own summary cell names the previous
+//    stop for arrivals and the final stop for departures; we follow it.
+const YQT_CITY_IATA = {
+  "TORONTO": "YYZ", "TORONTO PEARSON": "YYZ", "TORONTO CITY": "YTZ",
+  "TORONTO ISLAND": "YTZ", "OTTAWA": "YOW", "WINNIPEG": "YWG", "CALGARY": "YYC",
+  "MONTREAL": "YUL", "HAMILTON": "YHM", "SIOUX LOOKOUT": "YXL",
+  "SAULT STE MARIE": "YAM", "SAULT STE. MARIE": "YAM", "SAULT STE-MARIE": "YAM",
+  "KENORA": "YQK", "FORT FRANCES": "YAG", "RED LAKE": "YRL", "SUDBURY": "YSB",
+  "NORTH BAY": "YYB", "DRYDEN": "YHD", "TIMMINS": "YTS", "PICKLE LAKE": "YPL",
+  "ARMSTRONG": "YYW", "GERALDTON": "YGQ", "MARATHON": "YSP", "WAWA": "YXZ",
+  "SANDY LAKE": "ZSJ", "KASABONIKA": "XKS", "WEBEQUIE": "YWP", "KITCHENER": "YKF",
+  "MINNEAPOLIS": "MSP", "VANCOUVER": "YVR", "EDMONTON": "YEG", "SASKATOON": "YXE",
+  "REGINA": "YQR"
+};
+// Board prefixes → IATA. WestJet/Wasaya/North Star fly under their ICAO
+// codes on this site; Flair carries a stray asterisk.
+const YQT_PREFIX_IATA = { WJA: "WS", WEN: "WS", WSG: "WP", NSA: "0N", "F8*": "F8", BLS: "JV", POE: "PD", ACA: "AC", FLE: "F8" };
+const YQT_AIRLINE_NAME_IATA = {
+  "BEARSKIN AIRLINE": "JV", "BEARSKIN AIRLINES": "JV", "WASAYA AIRWAYS": "WP",
+  "WASAYA": "WP", "NORTH STAR AIR": "0N", "PERIMETER AVIATION": "JV"
+};
+function parseYqtStatus(text, cls) {
+  const s = `${text || ""} ${cls || ""}`.toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("arriv") || s.includes("land")) return "arrived";
+  if (s.includes("late") || s.includes("delay")) return "delayed";
+  return "scheduled";   // On Time / Early / anything novel
+}
+__name(parseYqtStatus, "parseYqtStatus");
+// One tab's rows → [{ cells, prefix, digits, name, ... }] without dates.
+function parseYqtRows(seg, dir) {
+  const want = dir === "dep" ? "fids-departure" : "fids-arrival";
+  const parsed = [];
+  for (const rm of String(seg || "").matchAll(/<tr class="(fids-[a-z]+)"[^>]*>([\s\S]*?)<\/tr>/g)) {
+    if (rm[1] !== want) continue;
+    const cells = {};
+    for (const cm of rm[2].matchAll(/<td class="([^"]*)"[^>]*>([\s\S]*?)<\/td>/g)) {
+      const key = cm[1].split(/\s+/)[0];
+      cells[key] = { cls: cm[1], html: cm[2], text: yhzCellText(cm[2]) };
+    }
+    const numRaw = (cells["flight-number"] || cells["mobile-flight-number"] || {}).text || "";
+    const nm = numRaw.replace(/\s+/g, "").toUpperCase().match(/^([A-Z0-9*]{2,3}?)(\d{1,4})$/);
+    const sm = ((cells.scheduled || {}).text || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!nm || !sm) continue;
+    const to24 = (h, ap) => (Number(h) % 12) + (/pm/i.test(ap) ? 12 : 0);
+    const em = ((cells.expected || {}).text || "").match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    const airHtml = (cells.airline || {}).html || "";
+    const name = ((airHtml.match(/alt="([^"]*)"/) || [])[1] || "").replace(/\s*logo\s*$/i, "").trim();
+    const icon = ((airHtml.match(/icon-([^".]+)\.png/) || [])[1] || "").toUpperCase();
+    const prefix = nm[1];
+    const nameKey = name.toUpperCase();
+    const code = YQT_PREFIX_IATA[prefix] || YQT_PREFIX_IATA[icon]
+      || (/^[A-Z0-9]{2}$/.test(prefix) ? prefix : null)
+      || YQT_AIRLINE_NAME_IATA[nameKey] || AIRLINE_NAME_IATA[nameKey]
+      || AIRLINE_NAME_IATA_SQUASHED[nameKey.replace(/\s+/g, "")] || null;
+    // The summary cell (<h3>City</h3>) is the site's own pick of the
+    // "other" city; fall back to the far end of the route arrow chain.
+    const route = ((cells.route || {}).text || "").split(/\s*(?:→|&rarr;|->)\s*/).map((s) => s.trim()).filter(Boolean);
+    let city = ((((cells["mobile-flight-number"] || {}).html || "").match(/<h3[^>]*>([\s\S]*?)<\/h3>/) || [])[1] || "");
+    city = yhzCellText(city);
+    if (!city && route.length > 1) city = dir === "dep" ? route[route.length - 1] : route[route.length - 2];
+    const st = cells.status || {};
+    parsed.push({
+      number: (code || prefix.replace(/\*/g, "")) + nm[2], code, name: name || null,
+      city, route,
+      sh: to24(sm[1], sm[3]), smin: Number(sm[2]),
+      eh: em ? to24(em[1], em[3]) : null, emin: em ? Number(em[2]) : null,
+      status: parseYqtStatus(st.text, st.cls)
+    });
+  }
+  return parsed;
+}
+__name(parseYqtRows, "parseYqtRows");
+function parseYqtPage(html, dir, nowMs) {
+  const tz = "America/Toronto";
+  const src = String(html || "");
+  const tab = (id) => {
+    const i = src.indexOf(`id="${id}"`);
+    if (i === -1) return "";
+    const end = src.indexOf("</table>", i);
+    return src.slice(i, end === -1 ? undefined : end);
+  };
+  const todayRows = parseYqtRows(tab("today"), dir);
+  const tmwRows = parseYqtRows(tab("tomorrow"), dir);
+  if (!todayRows.length && !tmwRows.length) return [];
+  const dp = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+  const g = (t) => Number((dp.find((p) => p.type === t) || {}).value);
+  // Dateless 12-hour clocks: walk forward from the tab's base day and
+  // treat a >6 h backwards jump as the table crossing midnight.
+  const build = (rows, dayOffset) => {
+    const base = new Date(Date.UTC(g("year"), g("month") - 1, g("day"), 12) + dayOffset * 864e5);
+    let y = base.getUTCFullYear(), mo = base.getUTCMonth() + 1, d = base.getUTCDate();
+    let prevMin = null;
+    const out = [];
+    for (const r of rows) {
+      const min = r.sh * 60 + r.smin;
+      if (prevMin !== null && min < prevMin - 360) {
+        const next = new Date(Date.UTC(y, mo - 1, d, 12) + 864e5);
+        y = next.getUTCFullYear(); mo = next.getUTCMonth() + 1; d = next.getUTCDate();
+      }
+      prevMin = min;
+      const sched = localTimeObjIn(tz, y, mo, d, r.sh, r.smin);
+      let revised = null;
+      if (r.eh !== null && (r.eh !== r.sh || r.emin !== r.smin)) {
+        revised = settleRevised(localTimeObjIn(tz, y, mo, d, r.eh, r.emin), sched, tz);
+      }
+      const cityKey = r.city.toUpperCase();
+      out.push(authorityFlight({
+        dir, number: r.number, status: r.status,
+        homeIata: "YQT", homeIcao: "CYQT", homeName: "Thunder Bay",
+        otherIata: YQT_CITY_IATA[cityKey] || YHZ_CITY_IATA[cityKey] || null,
+        otherName: r.city || null,
+        airlineIata: r.code, airlineName: r.name,
+        sched, revised
+      }));
+    }
+    return out;
+  };
+  let today = build(todayRows, 0);
+  const tomorrow = build(tmwRows, 1);
+  if (today.length) {
+    const maxTs = Math.max(...today.map((f) => f._authTs));
+    const sig = (rows) => rows.map((r) => `${r.number}|${r.sh}:${r.smin}`).join(",");
+    const rolled = sig(todayRows) === sig(tmwRows);
+    // A live board can't be entirely behind us; and a #today tab that is
+    // row-for-row #tomorrow with nothing left to come has already rolled.
+    if (maxTs < nowMs - 2 * 3600e3 || (rolled && maxTs <= nowMs)) today = build(todayRows, 1);
+  }
+  const seen = new Set();
+  const out = [];
+  for (const f of [...today, ...tomorrow]) {
+    const k = `${f.number}|${f._authTs}`;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(f);
+  }
+  return out;
+}
+__name(parseYqtPage, "parseYqtPage");
+
+// ── YYJ Victoria — yyj.ca WordPress AJAX board ───────────────────────
+// Two hops: the flight-status page carries a WP nonce in a
+// wp_localize_script blob (`var flightsData = {"ajaxUrl":…,"nonce":…}`),
+// and POST admin-ajax.php?action=yyj_get_flights with that nonce returns
+// {success, data:{html}} — one HTML blob holding BOTH directions for
+// Today and Tomorrow (<table id="flightsToday"> / "flightsTomorrow">),
+// rows tagged <tr class="arrival …"> / "departure …". Each row prints
+// the carrier NAME (hidden span), the flight number with IATA prefix,
+// a city name, a gate (both directions — no belt column), "Sat Sep 5"
+// + "6:00 AM" (no year, no offset — Pacific wall clock), and a status
+// bubble "Departed: 6:08 AM" / "Arrived:" / "Delayed:" / "On Time:"
+// whose time is the actual/estimated. A bad nonce answers 200 with
+// {"success":false,"data":{"nonce_expired":true}} — no flightsTable
+// marker, so fetchAuthorityText treats it as a miss.
+// Verified live 2026-09-05 with the worker's own UA (no WAF on this path).
+const YYJ_PAGE_URL = "https://yyj.ca/en/flights-info/flight-status/";
+const YYJ_AJAX_URL = "https://yyj.ca/wp-admin/admin-ajax.php";
+// Carriers yyj.ca names that AIRLINE_NAME_IATA lacks (the flight number
+// carries the code anyway; this is the fallback for a code-less row).
+const YYJ_AIRLINE_IATA = { "PACIFIC COASTAL": "8P", "PACIFIC COASTAL AIRLINES": "8P", "ALASKA": "AS", "ALASKA AIRLINES": "AS" };
+function yyjParseNonce(pageHtml) {
+  const m = String(pageHtml || "").match(/var\s+flightsData\s*=\s*(\{[^}]*\})/);
+  if (!m) return null;
+  try { const j = JSON.parse(m[1]); return j && j.nonce ? String(j.nonce) : null; } catch (e) {}
+  return (m[1].match(/"nonce"\s*:\s*"([^"]+)"/) || [])[1] || null;
+}
+__name(yyjParseNonce, "yyjParseNonce");
+// jsonText is the raw admin-ajax response ({success, data:{html}}); a bare
+// HTML fragment is accepted too so the parser can be fed either.
+function yyjParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let html = String(jsonText || "");
+  if (/^\s*\{/.test(html)) {
+    let j; try { j = JSON.parse(html); } catch (e) { return out; }
+    if (!j || !j.success || !j.data || typeof j.data.html !== "string") return out;
+    html = j.data.html;
+  }
+  const rows = html.match(/<tr class="(?:arrival|departure)[^"]*">[\s\S]*?<\/tr>/g) || [];
+  for (const row of rows) {
+    const isDep = /^<tr class="departure/.test(row);
+    if ((dir === "dep") !== isDep) continue;
+    const cells = {};
+    for (const m of row.matchAll(/<td data-label="([^"]+)"[^>]*>([\s\S]*?)<\/td>/g)) cells[m[1]] = m[2];
+    const num = yhzCellText(cells.Flight).replace(/\s+/g, "");
+    const nm = num.match(/^([A-Z0-9]{2})(\d{1,4})[A-Z]?$/);
+    const dm = (cells["Scheduled Time"] || "").match(/<small>\s*[A-Za-z]{3}\s+([A-Za-z]{3})\s+(\d{1,2})\s*<\/small>/);
+    const tm = (cells["Scheduled Time"] || "").match(/<div>\s*(\d{1,2}):(\d{2})\s*(AM|PM)\s*<\/div>/i);
+    if (!nm || !dm || !tm) continue;
+    const mo = AUTH_MONTHS[dm[1].toUpperCase()];
+    if (!mo) continue;
+    const d = Number(dm[2]);
+    const y = nearestYear(mo, d, nowMs);
+    let hh = Number(tm[1]) % 12; if (/pm/i.test(tm[3])) hh += 12;
+    const sched = localTimeObjIn("America/Vancouver", y, mo, d, hh, Number(tm[2]));
+    const stTxt = yhzCellText(cells.Status);                       // "Departed: 6:08 AM" | "On Time" | "Delayed: 12:40 AM"
+    const stM = stTxt.match(/^([A-Za-z ]+?)\s*(?::\s*(\d{1,2}):(\d{2})\s*(AM|PM))?\s*$/i);
+    let revised = null;
+    if (stM && stM[2]) {
+      let rh = Number(stM[2]) % 12; if (/pm/i.test(stM[4])) rh += 12;
+      revised = settleRevised(localTimeObjIn("America/Vancouver", y, mo, d, rh, Number(stM[3])), sched, "America/Vancouver");
+    }
+    const airlineName = ((cells.Airline || "").match(/<span[^>]*>([^<]+)<\/span>/) || [, ""])[1].trim()
+      || ((cells.Airline || "").match(/alt="([^"]+)"/) || [, ""])[1].trim() || null;
+    const key = (airlineName || "").toUpperCase();
+    const airlineIata = nm[1] || YYJ_AIRLINE_IATA[key] || AIRLINE_NAME_IATA[key] || AIRLINE_NAME_IATA_SQUASHED[key.replace(/\s+/g, "")] || null;
+    const city = yhzCellText(cells.Location);
+    const gate = yhzCellText(cells.Gate) || null;
+    out.push(authorityFlight({
+      dir, number: `${nm[1]}${nm[2]}`,
+      status: yhzStatus(stM ? stM[1] : stTxt),
+      homeIata: "YYJ", homeIcao: "CYYJ", homeName: "Victoria",
+      gate: gate && gate !== "-" ? gate : null,
+      otherIata: YHZ_CITY_IATA[city.toUpperCase()] || null, otherName: city || null,
+      airlineIata, airlineName,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(yyjParseFeed, "yyjParseFeed");
+async function yyjFetchBoard() {
+  const ajax = (nonce) => fetchAuthorityText(`yyj/flights/${nonce}`, YYJ_AJAX_URL, "flightsTable", 75, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json, text/html", "Referer": YYJ_PAGE_URL },
+    body: `action=yyj_get_flights&nonce=${encodeURIComponent(nonce)}&lang=en`
+  });
+  const page = await fetchAuthorityText("yyj/page", YYJ_PAGE_URL, "flightsData", 1800);
+  const nonce = yyjParseNonce(page);
+  let t = nonce ? await ajax(nonce) : null;
+  if (t) return t;
+  // The nonce rotates every 12 h; the cached page may hold a dead one.
+  // One fresh page read, keyed to the minute so a dead site is not looped.
+  const fresh = await fetchAuthorityText(`yyj/page/${Math.floor(Date.now() / 6e4)}`, YYJ_PAGE_URL, "flightsData", 60);
+  const n2 = yyjParseNonce(fresh);
+  if (n2 && n2 !== nonce) t = await ajax(n2);
+  return t || null;
+}
+__name(yyjFetchBoard, "yyjFetchBoard");
+
 // ── The registry ─────────────────────────────────────────────────────
 const AUTHORITY_HANDLERS = {
   clt: { tz: "America/New_York", source: "clt-authority", list: async (dir, env) => {
@@ -3405,6 +4175,81 @@ const AUTHORITY_HANDLERS = {
     const t = await fetchAuthorityText(`yfc/${dir}`, `https://yfcfredericton.ca/${dir === "dep" ? "departures" : "arrivals"}/`, 'class="arrivals"', 90);
     if (!t) return null;
     const f = yfcParseBoard(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  aus: { tz: "America/Chicago", source: "aus-authority", list: async (dir, env) => {
+    // Plain http:// (the site has no TLS on :8080); the board's own XML
+    // refresh feed, refreshed there every 60 s.
+    const t = await fetchAuthorityText(`aus/${dir}`, `http://content.abia.org:8080/webfids/webfids?action=${dir === "dep" ? "updateDepartures" : "updateArrivals"}`, "<flightNumber>", 60);
+    if (!t) return null;
+    const f = ausParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  msp: { tz: "America/Chicago", source: "msp-authority", list: async (dir, env) => {
+    // Walk the paginated view until a short page (each page is a separate
+    // edge-cache key so 30 screens polling still cost ~5 fetches a TTL).
+    const kind = dir === "dep" ? "departure" : "arrival";
+    const all = [];
+    for (let p = 0; p < 8; p++) {
+      const t = await fetchAuthorityText(`msp/${dir}/${p}`, `https://www.mspairport.com/flights-and-airlines/flights?flight_type=${kind}&page=${p}`, 'headers="view-scheduled-time-table-column"', 120);
+      if (!t) break;
+      all.push(...mspParsePage(t, dir, Date.now()));
+      if (mspPageRowCount(t) < 100) break;
+    }
+    return all.length ? all : null;
+  } },
+  slc: { tz: "America/Denver", source: "slc-authority", list: async (dir, env) => {
+    // Today + tomorrow in Salt Lake's clock (the board's day boundary is
+    // local midnight; the same wall-clock 00:00:00 bounds each request).
+    const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+    const gv = (t) => (dp.find((p) => p.type === t) || {}).value;
+    const today = `${gv("year")}-${gv("month")}-${gv("day")}`;
+    const plus = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+    const out = [], seen = new Set();
+    for (const day of [today, plus(today, 1)]) {
+      for (const t of await slcFetchDay(dir, day, plus(day, 1))) {
+        for (const f of slcParsePage(t, dir, Date.now())) {
+          const k = `${f.number}|${f._authTs}`;
+          if (seen.has(k)) continue;
+          seen.add(k); out.push(f);
+        }
+      }
+    }
+    return out.length ? out : null;
+  } },
+  rdu: { tz: "America/New_York", source: "rdu-authority", list: async (dir, env) => {
+    const pane = dir === "dep" ? "ffFidsDepartures" : "ffFidsArrivals";
+    const t = await fetchAuthorityText(`rdu/${dir}`, `https://tracker.flightview.com/FVAccess3/tools/fids/fidsDefault.asp?accCustId=RaleighDurham&fidsId=20001&fidsInit=${dir === "dep" ? "departures" : "arrivals"}`, pane, 120);
+    if (!t) return null;
+    const f = rduParsePage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yxe: { tz: "America/Regina", source: "yxe-authority", list: async (dir, env) => {
+    // Arrivals live at /arrival/ (singular); /arrivals/ is a 404.
+    const t = await fetchAuthorityText(`yxe/${dir}`, `https://yxe.ca/${dir === "dep" ? "departures" : "arrival"}/`, "light-info-arrivals-table", 90);
+    if (!t) return null;
+    const f = yxeParsePage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  ydf: { tz: "America/St_Johns", source: "ydf-authority", list: async (dir, env) => {
+    // One page carries both directions (fdArrivalsTable + fdDeparturesTable),
+    // ~4 days ahead. Upstream is WP Engine behind Cloudflare with a 10-min
+    // page cache, so 120 s here costs nothing.
+    const t = await fetchAuthorityText("ydf/page", "https://deerlakeairport.com/arrivals-departures/", "fdArrivalsTable", 120);
+    if (!t) return null;
+    const f = parseYdfPage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yqt: { tz: "America/Toronto", source: "yqt-authority", list: async (dir, env) => {
+    const t = await fetchAuthorityText(`yqt/${dir}`, `https://flyqt.ca/${dir === "dep" ? "departures" : "arrivals"}/`, "fids-display", 120);
+    if (!t) return null;
+    const f = parseYqtPage(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+  yyj: { tz: "America/Vancouver", source: "yyj-authority", list: async (dir, env) => {
+    const t = await yyjFetchBoard();
+    if (!t) return null;
+    const f = yyjParseFeed(t, dir, Date.now());
     return f.length ? f : null;
   } }
 };
@@ -6124,5 +6969,16 @@ export {
   mciParseFeed,
   manParseFeed,
   windowTsIn,
+  ausParseFeed,
+  mspParsePage,
+  mspPageRowCount,
+  slcParsePage,
+  rduParsePage,
+  yxeParsePage,
+  parseYdfPage,
+  parseYdfTime,
+  parseYqtPage,
+  yyjParseFeed,
+  yyjParseNonce,
   _authorityRosterHas
 };
