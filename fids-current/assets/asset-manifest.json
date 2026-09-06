@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2545,
+    "total": 2547,
     "by_category": {
       "ad": 10,
-      "airline": 1350,
+      "airline": 1352,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -6194,6 +6194,28 @@
       "subcategory": "european",
       "group": "Airlines — European",
       "name": "air france",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/austrian-wordmark-dark.svg",
+      "file": "austrian-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "austrian wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/austrian-wordmark-light.svg",
+      "file": "austrian-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "austrian wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"

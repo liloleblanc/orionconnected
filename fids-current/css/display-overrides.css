@@ -403,7 +403,8 @@ body[data-fids-logo-size] {
    British Airways both compute to 22px, right beside SWISS's 21px, and they
    are the same wide all-caps shape. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="IB"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="I2"] { --wm-h: 23px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="I2"] { --wm-h: 18px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="OS"] { --wm-h: 22px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LH"] { --wm-h: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="DE"] { --wm-h: 26px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="EK"] { --wm-h: 26px; }
@@ -436,7 +437,7 @@ body[data-fids-logo-size] {
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AS"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="G3"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="KL"] { --wm-h: 26px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="KL"] { --wm-h: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="TS"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="Y4"] { --wm-h: 25px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LA"],
