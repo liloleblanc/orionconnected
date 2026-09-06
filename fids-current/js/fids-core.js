@@ -19156,6 +19156,37 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
+  // ── v23356 — CODES STILL PRINTING AS LETTERS ON LIVE BOARDS ──────────────
+  // Nick: 'No airline should have codes'. Every live airport was polled and
+  // the carrier prefix taken off each flight number; 53 of them had no entry
+  // here, so the board printed the raw code. These are the ones identifiable
+  // with confidence, ordered by how many flights they were actually carrying.
+  // The rest were cargo, military, ferry or handler codes that should never
+  // have reached a passenger board at all — a feed problem, not a naming one,
+  // and deliberately not papered over with a name here.
+  'EZY': 'easyJet',                 // 37 flights at EDI — the ICAO form of U2,
+                                    // which CALLSIGN_TO_IATA only rekeys when
+                                    // it arrives as a callsign, never when the
+                                    // feed puts it in the flight NUMBER
+  'ITY': 'ITA Airways',             // same shape: the ICAO form of AZ
+  'LF':  'Contour Airlines',        // 39 flights at DEN
+  'KG':  'Denver Air Connection',   // 32 at DEN
+  'JX':  'STARLUX Airlines',        // has symbols/airlines/JX.svg already
+  'AN':  'Advanced Air',
+  '4B':  'Boutique Air',
+  'N0':  'Norse Atlantic Airways',
+  'Z0':  'Norse Atlantic France',
+  'DM':  'Arajet',
+  'H4':  'HiSky',
+  '5F':  'FlyOne',
+  'KC':  'Air Astana',
+  'P4':  'Air Peace',
+  'KM':  'KM Malta Airlines',
+  'HY':  'Uzbekistan Airways',
+  'ZG':  'ZIPAIR',
+  'BF':  'French Bee',
+  'Q6':  'Volaris Costa Rica',
+  'SM':  'Air Cairo',
   // v23349 — the rest of the bare codes from Nick's boards. On a second look I
   // could identify all but one of these with confidence, so they are named
   // rather than left as letters. IV (Zurich–Pristina) is still unidentified
@@ -21038,7 +21069,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23355';
+var FIDS_BUILD_TAG = 'v23356';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
