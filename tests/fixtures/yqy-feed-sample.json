@@ -1,0 +1,6 @@
+{"flights":[
+{"Airline":"Air Canada","date":"2026-09-06","remarks":"Arrived","gate":"","actualtime":"12:05 AM","scheduletime":"12:12 AM","city":"Toronto","flightnumber":"1178","airlinecode":"AC","indicator":"D","type":"A"},
+{"Airline":"Air Canada","date":"2026-09-06","remarks":"On Time","gate":"2","actualtime":"05:05 AM","scheduletime":"05:05 AM","city":"Toronto","flightnumber":"1177","airlinecode":"AC","indicator":"D","type":"D"},
+{"Airline":"Air Canada","date":"2026-09-06","remarks":"On Time","gate":"","actualtime":"4:14 PM","scheduletime":"4:14 PM","city":"Montreal","flightnumber":"8096","airlinecode":"AC","indicator":"D","type":"A"},
+{"Airline":"Air Canada","date":"2026-09-06","remarks":"On Time","gate":"2","actualtime":"5:20 PM","scheduletime":"5:20 PM","city":"Montreal","flightnumber":"8095","airlinecode":"AC","indicator":"D","type":"D"}
+]}

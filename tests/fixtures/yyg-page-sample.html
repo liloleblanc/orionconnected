@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en-CA"><head>
+<meta charset="UTF-8" />
+<script>
+var gform;gform||(document.addEventListener("gform_main_scripts_loaded",function(){gform.scriptsLoaded=!0}),document.addEventListener("gform/theme/scripts_loaded",function(){gform.themeScriptsLoaded=!0}),window.addEventListener("DOMContentLoaded",function(){gform.domLoaded=!0}),gform={domLoaded:!1,scriptsLoaded:!1,themeScriptsLoaded:!1,isFormEditor:()=>"function"==typeof InitializeEditor,callIfLoaded:function(o){return!(!gform.domLoaded||!gform.scriptsLoaded||!gform.themeScriptsLoaded&&!gform.isFormEditor()||(gform.isFormEditor()&&console.warn("The use of gform.initializeOnLoaded() is deprecated in the form editor context and will be removed in Gravity Forms 3.1."),o(),0))},initializeOnLoaded:function(o){gform.callIfLoaded(o)||(document.addEventListener("gform_main_scripts_loaded",()=>{gform.scriptsLoaded=!0,gform.callIfLoaded(o)}),document.addEventListener("gform/theme/scripts_loaded",()=>{gform.themeScriptsLoaded=!0,gform.callIfLoaded(o)}),window.addEventListener("DOMContentLoaded",()=>{gform.domLoaded=!0,gform.callIfLoaded(o)}))},hooks:{action:{},filter:{}},addAction:function(o,r,e,t){gform.addHook("action",o,r,e,t)},addFilter:function(o,r,e,t){gform.addHook("filter",o,r,e,t)},doAction:function(o){gform.doHook("action",o,arguments)},applyFilters:function(o){return gform.doHook("filter",o,arguments)},removeAction:function(o,r){gform.removeHook("action",o,r)},removeFilter:function(o,r,e){gform.removeHook("filter",o,r,e)},addHook:function(o,r,e,t,n){null==gform.hooks[o][r]&&(gform.hooks[o][r]=[]);var d=gform.hooks[o][r];null==n&&(n=r+"_"+d.length),gform.hooks[o][r].push({tag:n,callable:e,priority:t=null==t?10:t})},doHook:function(r,o,e){var t;if(e=Array.prototype.slice.call(e,1),null!=gform.hooks[r][o]&&((o=gform.hooks[r][o]).sort(function(o,r){return o.priority-r.priority}),o.forEach(function(o){"function"!=typeof(t=o.callable)&&(t=window[t]),"action"==r?t.apply(null,e):e[0]=t.apply(null,e)})),"filter"==r)return e[0]},removeHook:function(o,r,t,n){var e;null!=gform.hooks[o][r]&&(e=(e=gform.hooks[o][r]).filter(function(o,r,e){return!!(null!=n&&n!=o.tag||null!=t&&t!=o.priority)}),gform.hooks[o][r]=e)}});
+</script>
+
+<meta name='viewport' content='width=device-width, initial-scale=1.0' />
+<meta http-equiv='X-UA-Compatible' content='IE=edge' />
+<link rel="profile" href="https://gmpg.org/xfn/11" />
+
+<meta name='robots' content='index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1' />
+<link rel="alternate" href="https://flyyyg.com/fr/passagers/vols/arrivees-departs/" hreflang="fr" />
+<link rel="alternate" href="https://flyyyg.com/passengers/flights/arrivals_departures/" hreflang="en" />
+
+	<!-- This site is optimized with the Yoast SEO plugin v28.4 - https://yoast.com/product/yoast-seo-wordpress/ -->
+	<title>Arrivals/Departures - YYG</title>
+	<link rel="canonical" href="https://flyyyg.com/passengers/flights/arrivals_departures/" />
+	<meta property="og:locale" content="en_US" />
+	<meta property="og:locale:alternate" content="fr_CA" />
+	<meta property="og:type" content="article" />
+	<meta property="og:title" content="Arrivals/Departures - YYG" />
+	<meta property="og:description" content="Arrivals &#038; Departures" />
+	<meta property="og:url" content="https://flyyyg.com/passengers/flights/arrivals_departures/" />
+	<meta property="og:site_name" content="YYG" />
+	<meta property="article:modified_time" content="2026-05-25T19:41:09+00:00" />
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:label1" content="Est. reading time" />
+	<meta name="twitter:data1" content="1 minute" />
+	<script type="application/ld+json" class="yoast-schema-graph">{"@context":"https:\/\/schema.org","@graph":[{"@type":"WebPage","@id":"https:\/\/flyyyg.com\/passengers\/flights\/arrivals_departures\/","url":"https:\/\/flyyyg.com\/passengers\/flights\/arrivals_departures\/","name":"Arrivals\/Departures - YYG","isPartOf":{"@id":"https:\/\/flyyyg.com\/#website"},"datePublished":"2020-03-13T19:19:25+00:00","dateModified":"2026-05-25T19:41:09+00:00","breadcrumb":{"@id":"https:\/\/flyyyg.com\/passengers\/flights\/arrivals_departures\/#breadcrumb"},"inLanguage":"en-CA","potentialAction":[{"@type":"ReadAction","target":["https:\/\/flyyyg.com\/passengers\/flights\/arrivals_departures\/"]}]},{"@type":"BreadcrumbList","@id":"https:\/\/flyyyg.com\/passengers\/flights\/arrivals_departures\/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"[home_sr_breadcrumbs]","item":"https:\/\/flyyyg.com\/"},{"@type":"ListItem","position":2,"name":"Passengers","item":"https:\/\/flyyyg.com\/passengers\/"},{"@type":"ListItem","position":3,"name":"Flights","item":"https:\/\/flyyyg.com\/passengers\/flights\/"},{"@type":"ListItem","position":4,"name":"Arrivals\/Departures"}]},{"@type":"WebSite","@id":"https:\/\/flyyyg.com\/#website","url":"https:\/\/flyyyg.com\/","name":"YYG","description":"","publisher":{"@id":"https:\/\/flyyyg.com\/#organization"},"potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https:\/\/flyyyg.com\/?s={search_term_string}"},"query-input":{"@type":"PropertyValueSpecification","valueRequired":true,"valueName":"search_term_string"}}],"inLanguage":"en-CA"},{"@type":"Organization","@id":"https:\/\/flyyyg.com\/#organization","name":"YYG Charlottetown Airport","url":"https:\/\/flyyyg.com\/","logo":{"@type":"ImageObject","inLanguage":"en-CA","@id":"https:\/\/flyyyg.com\/#\/schema\/logo\/image\/","url":"https:\/\/flyyyg.com\/wp-content\/uploads\/2020\/06\/meta-data.jpg","contentUrl":"https:\/\/flyyyg.com\/wp-content\/uploads\/2020\/06\/meta-data.jpg","width":2000,"height":1050,"caption":"YYG Charlottetown Airport"},"image":{"@id":"https:\/\/flyyyg.com\/#\/schema\/logo\/image\/"}}]}</script>
+	<!-- / Yoast SEO plugin. -->
+
+
+<link rel='dns-prefetch' href='//kit.fontawesome.com' />
+<link rel='dns-prefetch' href='//www.googletagmanager.com' />
+<link rel='dns-prefetch' href='//fonts.googleapis.com' />
+<link href='https://fonts.gstatic.com' crossorigin rel='preconnect' />
+<link rel="alternate" type="application/rss+xml" title="YYG &raquo; Feed" href="https://flyyyg.com/feed/" />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://flyyyg.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fflyyyg.com%2Fpassengers%2Fflights%2Farrivals_departures%2F&#038;lang=en" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://flyyyg.com/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fflyyyg.com%2Fpassengers%2Fflights%2Farrivals_departures%2F&#038;format=xml&#038;lang=en" />
+<style id="wp-img-auto-sizes-contain-inline-css">
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+
+<style id="wp-emoji-styles-inline-css">
+
+	img.wp-smiley, img.emoji {
+		display: inline !important;
+		border: none !important;
+		box-shadow: none !important;
+		height: 1em !important;
+		width: 1em !important;
+		margin: 0 0.07em !important;
+		vertical-align: -0.1em !important;
+		background: none !important;
+		padding: 0 !important;
+	}
+/*# sourceURL=wp-emoji-styles-inline-css */
+</style>
+<style id="wp-block-library-inline-css">
+:root{--wp-block-synced-color:#7a00df;--wp-block-synced-color--rgb:122,0,223;--wp-bound-block-color:var(--wp-block-synced-color);--wp-editor-canvas-background:#ddd;--wp-admin-theme-color:#007cba;--wp-admin-theme-color--rgb:0,124,186;--wp-admin-theme-color-darker-10:#006ba1;--wp-admin-theme-color-darker-10--rgb:0,107,160.5;--wp-admin-theme-color-darker-20:#005a87;--wp-admin-theme-color-darker-20--rgb:0,90,135;--wp-admin-border-width-focus:2px}@media (min-resolution:192dpi){:root{--wp-admin-border-width-focus:1.5px}}.wp-element-button{cursor:pointer}:root .has-very-light-gray-background-color{background-color:#eee}:root .has-very-dark-gray-background-color{background-color:#313131}:root .has-very-light-gray-color{color:#eee}:root .has-very-dark-gray-color{color:#313131}:root .has-vivid-green-cyan-to-vivid-cyan-blue-gradient-background{background:linear-gradient(135deg,#00d084,#0693e3)}:root .has-purple-crush-gradient-background{background:linear-gradient(135deg,#34e2e4,#4721fb 50%,#ab1dfe)}:root .has-hazy-dawn-gradient-background{background:linear-gradient(135deg,#faaca8,#dad0ec)}:root .has-subdued-olive-gradient-background{background:linear-gradient(135deg,#fafae1,#67a671)}:root .has-atomic-cream-gradient-background{background:linear-gradient(135deg,#fdd79a,#004a59)}:root .has-nightshade-gradient-background{background:linear-gradient(135deg,#330968,#31cdcf)}:root .has-midnight-gradient-background{background:linear-gradient(135deg,#020381,#2874fc)}:root{--wp--preset--font-size--normal:16px;--wp--preset--font-size--huge:42px}.has-regular-font-size{font-size:1em}.has-larger-font-size{font-size:2.625em}.has-normal-font-size{font-size:var(--wp--preset--font-size--normal)}.has-huge-font-size{font-size:var(--wp--preset--font-size--huge)}:root .has-text-align-center{text-align:center}:root .has-text-align-left{text-align:left}:root .has-text-align-right{text-align:right}.has-fit-text{white-space:nowrap!important}#end-resizable-editor-section{display:none}.aligncenter{clear:both}.items-justified-left{justify-content:flex-start}.items-justified-center{justify-content:center}.items-justified-right{justify-content:flex-end}.items-justified-space-between{justify-content:space-between}.screen-reader-text{word-wrap:normal!important;border:0;clip-path:inset(50%);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;word-break:normal!important}.screen-reader-text:focus{background-color:#ddd;clip-path:none;color:#444;display:block;font-size:1em;height:auto;left:5px;line-height:normal;padding:15px 23px 14px;text-decoration:none;top:5px;width:auto;z-index:100000}html :where(.has-border-color){border-style:solid}html :where([style^=border-color],[style*=";border-color"],[style*="; border-color"]){border-style:solid}html :where([style^=border-top-color],[style*=";border-top-color"],[style*="; border-top-color"]){border-top-style:solid}html :where([style^=border-right-color],[style*=";border-right-color"],[style*="; border-right-color"]){border-right-style:solid}html :where([style^=border-bottom-color],[style*=";border-bottom-color"],[style*="; border-bottom-color"]){border-bottom-style:solid}html :where([style^=border-left-color],[style*=";border-left-color"],[style*="; border-left-color"]){border-left-style:solid}html :where([style^=border-width],[style*=";border-width"],[style*="; border-width"]){border-style:solid}html :where([style^=border-top-width],[style*=";border-top-width"],[style*="; border-top-width"]){border-top-style:solid}html :where([style^=border-right-width],[style*=";border-right-width"],[style*="; border-right-width"]){border-right-style:solid}html :where([style^=border-bottom-width],[style*=";border-bottom-width"],[style*="; border-bottom-width"]){border-bottom-style:solid}html :where([style^=border-left-width],[style*=";border-left-width"],[style*="; border-left-width"]){border-left-style:solid}html :where(img[class*=wp-image-]){height:auto;max-width:100%}:where(figure){margin:0 0 1em}html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:var(--wp-admin--admin-bar--height,0px)}@media screen and (max-width:600px){html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:0px}}
+
+/*# sourceURL=/wp-includes/css/dist/block-library/common.min.css */
+</style>
+<style id="classic-theme-styles-inline-css">
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+/*# sourceURL=/wp-includes/css/classic-themes.min.css */
+</style>
+
+<style id="font-awesome-svg-styles-default-inline-css">
+.svg-inline--fa {
+  display: inline-block;
+  height: 1em;
+  overflow: visible;
+  vertical-align: -.125em;
+}
+/*# sourceURL=font-awesome-svg-styles-default-inline-css */
+</style>
+<link rel='stylesheet' id='font-awesome-svg-styles-css' href='https://flyyyg.com/wp-content/uploads/font-awesome/v6.7.2/css/svg-with-js.css' media='all' />
+<style id="font-awesome-svg-styles-inline-css">
+   .wp-block-font-awesome-icon svg::before,
+   .wp-rich-text-font-awesome-icon svg::before {content: unset;}
+/*# sourceURL=font-awesome-svg-styles-inline-css */
+</style>
+<style id="global-styles-inline-css">
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--fl-heading-text: #95c93d;--wp--preset--color--fl-body-bg: #f2f2f2;--wp--preset--color--fl-body-text: #005289;--wp--preset--color--fl-accent: #005289;--wp--preset--color--fl-accent-hover: #95c93d;--wp--preset--color--fl-topbar-bg: #005289;--wp--preset--color--fl-topbar-text: #ffffff;--wp--preset--color--fl-topbar-link: #ffffff;--wp--preset--color--fl-topbar-hover: #005289;--wp--preset--color--fl-header-bg: #ffffff;--wp--preset--color--fl-header-text: #005289;--wp--preset--color--fl-header-link: #005289;--wp--preset--color--fl-header-hover: #4682aa;--wp--preset--color--fl-nav-bg: #ffffff;--wp--preset--color--fl-nav-link: #005289;--wp--preset--color--fl-nav-hover: #4682aa;--wp--preset--color--fl-content-bg: #ffffff;--wp--preset--color--fl-footer-widgets-bg: #ffffff;--wp--preset--color--fl-footer-widgets-text: #000000;--wp--preset--color--fl-footer-widgets-link: #428bca;--wp--preset--color--fl-footer-widgets-hover: #428bca;--wp--preset--color--fl-footer-bg: #ffffff;--wp--preset--color--fl-footer-text: #000000;--wp--preset--color--fl-footer-link: #428bca;--wp--preset--color--fl-footer-hover: #428bca;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}.wp-block-button{--wp--preset--dimension--25: 25%;--wp--preset--dimension--50: 50%;--wp--preset--dimension--75: 75%;--wp--preset--dimension--100: 100%;}:where(body) { margin: 0; }:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;font-style: inherit;font-weight: inherit;letter-spacing: inherit;line-height: inherit;padding-top: calc(0.667em + 2px);padding-right: calc(1.333em + 2px);padding-bottom: calc(0.667em + 2px);padding-left: calc(1.333em + 2px);text-decoration: none;text-transform: inherit;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-fl-heading-text-color{color: var(--wp--preset--color--fl-heading-text) !important;}.has-fl-body-bg-color{color: var(--wp--preset--color--fl-body-bg) !important;}.has-fl-body-text-color{color: var(--wp--preset--color--fl-body-text) !important;}.has-fl-accent-color{color: var(--wp--preset--color--fl-accent) !important;}.has-fl-accent-hover-color{color: var(--wp--preset--color--fl-accent-hover) !important;}.has-fl-topbar-bg-color{color: var(--wp--preset--color--fl-topbar-bg) !important;}.has-fl-topbar-text-color{color: var(--wp--preset--color--fl-topbar-text) !important;}.has-fl-topbar-link-color{color: var(--wp--preset--color--fl-topbar-link) !important;}.has-fl-topbar-hover-color{color: var(--wp--preset--color--fl-topbar-hover) !important;}.has-fl-header-bg-color{color: var(--wp--preset--color--fl-header-bg) !important;}.has-fl-header-text-color{color: var(--wp--preset--color--fl-header-text) !important;}.has-fl-header-link-color{color: var(--wp--preset--color--fl-header-link) !important;}.has-fl-header-hover-color{color: var(--wp--preset--color--fl-header-hover) !important;}.has-fl-nav-bg-color{color: var(--wp--preset--color--fl-nav-bg) !important;}.has-fl-nav-link-color{color: var(--wp--preset--color--fl-nav-link) !important;}.has-fl-nav-hover-color{color: var(--wp--preset--color--fl-nav-hover) !important;}.has-fl-content-bg-color{color: var(--wp--preset--color--fl-content-bg) !important;}.has-fl-footer-widgets-bg-color{color: var(--wp--preset--color--fl-footer-widgets-bg) !important;}.has-fl-footer-widgets-text-color{color: var(--wp--preset--color--fl-footer-widgets-text) !important;}.has-fl-footer-widgets-link-color{color: var(--wp--preset--color--fl-footer-widgets-link) !important;}.has-fl-footer-widgets-hover-color{color: var(--wp--preset--color--fl-footer-widgets-hover) !important;}.has-fl-footer-bg-color{color: var(--wp--preset--color--fl-footer-bg) !important;}.has-fl-footer-text-color{color: var(--wp--preset--color--fl-footer-text) !important;}.has-fl-footer-link-color{color: var(--wp--preset--color--fl-footer-link) !important;}.has-fl-footer-hover-color{color: var(--wp--preset--color--fl-footer-hover) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-fl-heading-text-background-color{background-color: var(--wp--preset--color--fl-heading-text) !important;}.has-fl-body-bg-background-color{background-color: var(--wp--preset--color--fl-body-bg) !important;}.has-fl-body-text-background-color{background-color: var(--wp--preset--color--fl-body-text) !important;}.has-fl-accent-background-color{background-color: var(--wp--preset--color--fl-accent) !important;}.has-fl-accent-hover-background-color{background-color: var(--wp--preset--color--fl-accent-hover) !important;}.has-fl-topbar-bg-background-color{background-color: var(--wp--preset--color--fl-topbar-bg) !important;}.has-fl-topbar-text-background-color{background-color: var(--wp--preset--color--fl-topbar-text) !important;}.has-fl-topbar-link-background-color{background-color: var(--wp--preset--color--fl-topbar-link) !important;}.has-fl-topbar-hover-background-color{background-color: var(--wp--preset--color--fl-topbar-hover) !important;}.has-fl-header-bg-background-color{background-color: var(--wp--preset--color--fl-header-bg) !important;}.has-fl-header-text-background-color{background-color: var(--wp--preset--color--fl-header-text) !important;}.has-fl-header-link-background-color{background-color: var(--wp--preset--color--fl-header-link) !important;}.has-fl-header-hover-background-color{background-color: var(--wp--preset--color--fl-header-hover) !important;}.has-fl-nav-bg-background-color{background-color: var(--wp--preset--color--fl-nav-bg) !important;}.has-fl-nav-link-background-color{background-color: var(--wp--preset--color--fl-nav-link) !important;}.has-fl-nav-hover-background-color{background-color: var(--wp--preset--color--fl-nav-hover) !important;}.has-fl-content-bg-background-color{background-color: var(--wp--preset--color--fl-content-bg) !important;}.has-fl-footer-widgets-bg-background-color{background-color: var(--wp--preset--color--fl-footer-widgets-bg) !important;}.has-fl-footer-widgets-text-background-color{background-color: var(--wp--preset--color--fl-footer-widgets-text) !important;}.has-fl-footer-widgets-link-background-color{background-color: var(--wp--preset--color--fl-footer-widgets-link) !important;}.has-fl-footer-widgets-hover-background-color{background-color: var(--wp--preset--color--fl-footer-widgets-hover) !important;}.has-fl-footer-bg-background-color{background-color: var(--wp--preset--color--fl-footer-bg) !important;}.has-fl-footer-text-background-color{background-color: var(--wp--preset--color--fl-footer-text) !important;}.has-fl-footer-link-background-color{background-color: var(--wp--preset--color--fl-footer-link) !important;}.has-fl-footer-hover-background-color{background-color: var(--wp--preset--color--fl-footer-hover) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-fl-heading-text-border-color{border-color: var(--wp--preset--color--fl-heading-text) !important;}.has-fl-body-bg-border-color{border-color: var(--wp--preset--color--fl-body-bg) !important;}.has-fl-body-text-border-color{border-color: var(--wp--preset--color--fl-body-text) !important;}.has-fl-accent-border-color{border-color: var(--wp--preset--color--fl-accent) !important;}.has-fl-accent-hover-border-color{border-color: var(--wp--preset--color--fl-accent-hover) !important;}.has-fl-topbar-bg-border-color{border-color: var(--wp--preset--color--fl-topbar-bg) !important;}.has-fl-topbar-text-border-color{border-color: var(--wp--preset--color--fl-topbar-text) !important;}.has-fl-topbar-link-border-color{border-color: var(--wp--preset--color--fl-topbar-link) !important;}.has-fl-topbar-hover-border-color{border-color: var(--wp--preset--color--fl-topbar-hover) !important;}.has-fl-header-bg-border-color{border-color: var(--wp--preset--color--fl-header-bg) !important;}.has-fl-header-text-border-color{border-color: var(--wp--preset--color--fl-header-text) !important;}.has-fl-header-link-border-color{border-color: var(--wp--preset--color--fl-header-link) !important;}.has-fl-header-hover-border-color{border-color: var(--wp--preset--color--fl-header-hover) !important;}.has-fl-nav-bg-border-color{border-color: var(--wp--preset--color--fl-nav-bg) !important;}.has-fl-nav-link-border-color{border-color: var(--wp--preset--color--fl-nav-link) !important;}.has-fl-nav-hover-border-color{border-color: var(--wp--preset--color--fl-nav-hover) !important;}.has-fl-content-bg-border-color{border-color: var(--wp--preset--color--fl-content-bg) !important;}.has-fl-footer-widgets-bg-border-color{border-color: var(--wp--preset--color--fl-footer-widgets-bg) !important;}.has-fl-footer-widgets-text-border-color{border-color: var(--wp--preset--color--fl-footer-widgets-text) !important;}.has-fl-footer-widgets-link-border-color{border-color: var(--wp--preset--color--fl-footer-widgets-link) !important;}.has-fl-footer-widgets-hover-border-color{border-color: var(--wp--preset--color--fl-footer-widgets-hover) !important;}.has-fl-footer-bg-border-color{border-color: var(--wp--preset--color--fl-footer-bg) !important;}.has-fl-footer-text-border-color{border-color: var(--wp--preset--color--fl-footer-text) !important;}.has-fl-footer-link-border-color{border-color: var(--wp--preset--color--fl-footer-link) !important;}.has-fl-footer-hover-border-color{border-color: var(--wp--preset--color--fl-footer-hover) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+
+<link rel='stylesheet' id='fl-builder-layout-202-css' href='https://flyyyg.com/wp-content/uploads/bb-plugin/cache/202-layout.css?ver=ded2fedd0a96c57a1923bbc2b5b4bf0d' media='all' />
+<link rel='stylesheet' id='uabb-animate-css' href='https://flyyyg.com/wp-content/plugins/bb-ultimate-addon/modules/info-list/css/animate.css' media='all' />
+<link rel='stylesheet' id='fl-builder-layout-bundle-0bb972ae69bd6ff9883c92bf07e54f33-css' href='https://flyyyg.com/wp-content/uploads/bb-plugin/cache/0bb972ae69bd6ff9883c92bf07e54f33-layout-bundle.css?ver=2.10.3.1-1.5.3.2' media='all' />
+<link rel='stylesheet' id='jquery-magnificpopup-css' href='https://flyyyg.com/wp-content/plugins/bb-plugin/css/jquery.magnificpopup.min.css?ver=2.10.3.1' media='all' />
+<link rel='stylesheet' id='bootstrap-4-css' href='https://flyyyg.com/wp-content/themes/bb-theme/css/bootstrap-4.min.css?ver=1.7.20' media='all' />
+<link rel='stylesheet' id='fl-automator-skin-css' href='https://flyyyg.com/wp-content/uploads/bb-theme/skin-6a984f5616987.css?ver=1.7.20' media='all' />
+<link rel='stylesheet' id='fl-child-theme-css' href='https://flyyyg.com/wp-content/themes/bb-theme-child/style.css?ver=7.1' media='all' />
+<link rel='stylesheet' id='pp-animate-css' href='https://flyyyg.com/wp-content/plugins/bbpowerpack/assets/css/animate.min.css?ver=3.5.1' media='all' />
+<link rel='stylesheet' id='fl-builder-google-fonts-5843a6aa16932f1c2065201a82651095-css' href='//fonts.googleapis.com/css?family=Montserrat:600,300,400,700,500&#038;ver=7.1' media='all' />
+<link rel='stylesheet' id='style-css' href='https://flyyyg.com/wp-content/themes/bb-theme-child/style.css?1784550389' media='all' />
+<!--n2css--><!--n2js--><script defer crossorigin="anonymous" id="font-awesome-official-js" src="https://kit.fontawesome.com/bdf7f17853.js"></script>
+<script id="jquery-core-js" src="https://flyyyg.com/wp-includes/js/jquery/jquery.min.js?ver=3.7.1"></script>
+<script id="jquery-migrate-js" src="https://flyyyg.com/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1"></script>
+
+<!-- Google tag (gtag.js) snippet added by Site Kit -->
+<!-- Google Analytics snippet added by Site Kit -->
+<script id="google_gtagjs-js" src="https://www.googletagmanager.com/gtag/js?id=GT-NSSMG8N6" async></script>
+<script id="google_gtagjs-js-after">
+window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}
+gtag("set","linker",{"domains":["flyyyg.com"]});
+gtag("js", new Date());
+gtag("set", "developer_id.dZTNiMT", true);
+gtag("config", "GT-NSSMG8N6", {"googlesitekit_post_type":"page"});
+ window._googlesitekit = window._googlesitekit || {}; window._googlesitekit.throttledEvents = []; window._googlesitekit.gtagEvent = (name, data) => { var key = JSON.stringify( { name, data } ); if ( !! window._googlesitekit.throttledEvents[ key ] ) { return; } window._googlesitekit.throttledEvents[ key ] = true; setTimeout( () => { delete window._googlesitekit.throttledEvents[ key ]; }, 5 ); gtag( "event", name, { ...data, event_source: "site-kit" } ); }; 
+//# sourceURL=google_gtagjs-js-after
+</script>
+<link rel="https://api.w.org/" href="https://flyyyg.com/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://flyyyg.com/wp-json/wp/v2/pages/202" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://flyyyg.com/xmlrpc.php?rsd" />
+<meta name="generator" content="WordPress 7.1" />
+<link rel='shortlink' href='https://flyyyg.com/?p=202' />
+		<script>
+			var bb_powerpack = {
+				version: '2.42.2',
+				getAjaxUrl: function() { return atob( 'aHR0cHM6Ly9mbHl5eWcuY29tL3dwLWFkbWluL2FkbWluLWFqYXgucGhw' ); },
+				callback: function() {},
+				mapMarkerData: {},
+				post_id: '202',
+				search_term: '',
+				current_page: 'https://flyyyg.com/passengers/flights/arrivals_departures/',
+				conditionals: {
+					is_front_page: false,
+					is_home: false,
+					is_archive: false,
+					current_post_type: '',
+					is_tax: false,
+										is_author: false,
+					current_author: false,
+					is_search: false,
+									}
+			};
+					</script>
+		<meta name="generator" content="Site Kit by Google 1.185.0" /><link rel="icon" href="https://flyyyg.com/wp-content/uploads/2020/06/cropped-site-icon-1-32x32.png" sizes="32x32" />
+<link rel="icon" href="https://flyyyg.com/wp-content/uploads/2020/06/cropped-site-icon-1-192x192.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://flyyyg.com/wp-content/uploads/2020/06/cropped-site-icon-1-180x180.png" />
+<meta name="msapplication-TileImage" content="https://flyyyg.com/wp-content/uploads/2020/06/cropped-site-icon-1-270x270.png" />
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-K8SZ3GRZXJ"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-K8SZ3GRZXJ');
+</script>
+
+
+<!-- included in header.php -->
+<link href="https://flyyyg.com/wp-content/themes/bb-theme-child/css/arrivals_departures_styles.css?v=1788670160" rel="stylesheet" type="text/css" />
+	<style>
+
+	
+		@media(min-width:641px) {
+			table.arrdeptables td, table.arrdeptables thead tr th , .xml-date-modified.arri, .xml-date-modified.depa {
+						padding: 10px 5px 10px 5px;
+				}
+		}
+		
+
+
+@media
+	only screen and (max-width: 768px),
+	(min-device-width: 320px) and (max-device-width: 640px)  {
+	
+		table.arrdeptables th.colctr, table.arrdeptables td.colctx {
+					display:none;
+				}
+		
+	}
+	</style>
+<!-- AcuityAds Pixel -->
+<script>
+    'use strict'
+    !(function(a, e) {
+        if (!a.aap) {
+            a.aap = function(e) {
+                ;(a.acuityAdsEventQueue = a.acuityAdsEventQueue || []).push(e)
+            }
+            var t = 'script'
+            var i = e.createElement(t)
+            i.async = true
+            i.src = 'https://origin.acuityplatform.com/event/v2/pixel.js'
+            var c = e.getElementsByTagName(t)[0]
+            c.parentNode.insertBefore(i, c)
+            a.acuityPiggybackCallback = function(e) {
+                a.acuityParseResponse(e)
+            }
+        }
+    })(window, document)
+    aap({ pixelKey: '377506959451421257' })
+</script>
+<!-- AcuityAds Pixel -->
+	
+</head>
+<body data-rsssl=1 class="wp-singular page-template-default page page-id-202 page-child parent-pageid-236 wp-theme-bb-theme wp-child-theme-bb-theme-child fl-builder fl-builder-2-10-3-1 fl-themer-1-5-3-2 fl-theme-1-7-20 fl-no-js fl-theme-builder-footer fl-theme-builder-footer-footer fl-theme-builder-header fl-theme-builder-header-site-header fl-theme-builder-part fl-theme-builder-part-header-part-toggle-menu-passenger fl-framework-bootstrap-4 fl-preset-default fl-full-width fl-scroll-to-top fl-search-active" itemscope="itemscope" itemtype="https://schema.org/WebPage">
+<a aria-label="Skip to content" class="fl-screen-reader-text" href="#fl-main-content">Skip to content</a><div class="fl-page">
+	<div class="fl-builder-content fl-builder-content-5415 fl-builder-global-templates-locked" data-post-id="5415" data-type="part"><div class="fl-row fl-row-full-width fl-row-bg-color fl-node-qul9m08t4p6h fl-row-default-height fl-row-align-center fl-visible-desktop fl-visible-large fl-visible-medium" data-node="qul9m08t4p6h">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-fixed-width fl-node-content">
+		
+<div class="fl-col-group fl-node-brm512ekfu4g fl-col-group-equal-height fl-col-group-align-top" data-node="brm512ekfu4g">
+			<div class="fl-col fl-node-xreswhl3ovic fl-col-bg-color fl-col-small" data-node="xreswhl3ovic">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-uabb-advanced-menu fl-node-bcdexhw08o4t defaultmenu" data-node="bcdexhw08o4t">
+	<div class="fl-module-content fl-node-content">
+			<div class="uabb-creative-menu
+	 uabb-creative-menu-accordion-collapse	uabb-menu-default">
+					<div class="uabb-clear"></div>
+					<ul id="menu-toggle-menu" class="menu uabb-creative-menu-horizontal uabb-toggle-none"><li id="menu-item-1217" class="togglefirst menu-item menu-item-type-custom menu-item-object-custom uabb-creative-menu uabb-cm-style"><a href="/"><span class="menu-item-text">Passengers</span></a></li>
+<li id="menu-item-2341" class="togglesecond menu-item menu-item-type-post_type menu-item-object-page uabb-creative-menu uabb-cm-style"><a href="https://flyyyg.com/corporate/who-we-are/about-yyg/"><span class="menu-item-text">Corporate</span></a></li>
+<li id="menu-item-5104" class="togglethird menu-item menu-item-type-post_type menu-item-object-page uabb-creative-menu uabb-cm-style"><a href="https://flyyyg.com/community/epekwitk/"><span class="menu-item-text">Community</span></a></li>
+<li id="menu-item-4976" class="togglefourth menu-item menu-item-type-post_type menu-item-object-page uabb-creative-menu uabb-cm-style"><a href="https://flyyyg.com/news_and_events/"><span class="menu-item-text">News</span></a></li>
+</ul>	</div>
+
+		</div>
+</div>
+</div>
+</div>
+			<div class="fl-col fl-node-jvi92f0y8cgm fl-col-bg-color fl-col-small" data-node="jvi92f0y8cgm">
+	<div class="fl-col-content fl-node-content"><div  class="fl-module fl-module-html fl-html fl-node-oi69hmeqd45s" data-node="oi69hmeqd45s">
+	<ul class="polylang_langswitcher">	<li class="lang-item lang-item-24 lang-item-fr lang-item-first"><a lang="fr-CA" hreflang="fr-CA" href="https://flyyyg.com/fr/passagers/vols/arrivees-departs/">Français</a></li>
+</ul></div>
+<div class="fl-module fl-module-html fl-node-9pmycbte076k show_toggle_search" data-node="9pmycbte076k">
+	<div class="fl-module-content fl-node-content">
+		<div class="fl-html">
+	<div class="fl-page-nav-search">
+	<a href="#" class="fas fa-search" aria-label="Search" aria-expanded="false" aria-haspopup="true" id='flsearchform'></a>
+	<form method="get" role="search" aria-label="Search" action="https://flyyyg.com/" title="Type and press Enter to search.">
+		<input type="search" class="fl-search-input form-control" name="s" placeholder="Search" value="" aria-labelledby="flsearchform" />
+	</form>
+</div>
+</div>
+	</div>
+</div>
+</div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+</div><div class="uabb-js-breakpoint" style="display: none;"></div><header class="fl-builder-content fl-builder-content-4967 fl-builder-global-templates-locked" data-post-id="4967" data-type="header" data-sticky="1" data-sticky-on="" data-sticky-breakpoint="medium" data-shrink="1" data-overlay="0" data-overlay-bg="transparent" data-shrink-image-height="50px" role="banner" itemscope="itemscope" itemtype="http://schema.org/WPHeader"><div class="fl-row fl-row-full-width fl-row-bg-color fl-node-yfr4am79eudj fl-row-default-height fl-row-align-center fl-visible-desktop fl-visible-large fl-visible-medium" data-node="yfr4am79eudj">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-fixed-width fl-node-content">
+		
+<div class="fl-col-group fl-node-q0zuvgkim3fj fl-col-group-equal-height fl-col-group-align-center fl-col-group-custom-width" data-node="q0zuvgkim3fj">
+			<div class="fl-col fl-node-hizf5jm697ow fl-col-bg-color fl-col-small fl-col-small-custom-width" data-node="hizf5jm697ow">
+	<div class="fl-col-content fl-node-content"><figure class="fl-module fl-module-photo fl-photo fl-photo-align-center fl-node-ru9g3qkfd4c0" data-node="ru9g3qkfd4c0" itemscope itemtype="https://schema.org/ImageObject">
+	<div class="fl-photo-content fl-photo-img-svg">
+				<a href="https://flyyyg.com/"  target="_self" itemprop="url">
+				<img loading="lazy" decoding="async" class="fl-photo-img wp-image-5360 size-full" src="https://flyyyg.com/wp-content/uploads/2024/03/YYG-1.svg" alt="Charlottetown Airport Authority" height="0" width="0" title="YYG"  data-no-lazy="1" />
+				</a>
+					</div>
+	</figure>
+</div>
+</div>
+			<div class="fl-col fl-node-cv45bwu78ilg fl-col-bg-color fl-col-small-custom-width" data-node="cv45bwu78ilg">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-pp-advanced-menu fl-node-hb6g9v1oa0j3 main_header_menu" data-node="hb6g9v1oa0j3">
+	<div class="fl-module-content fl-node-content">
+		<div class="pp-advanced-menu pp-advanced-menu-accordion-collapse pp-menu-default pp-menu-align-right pp-menu-position-below">
+   				<div class="pp-advanced-menu-mobile">
+			<button class="pp-advanced-menu-mobile-toggle hamburger" tabindex="0" aria-label="Menu" aria-expanded="false">
+				<div class="pp-hamburger"><div class="pp-hamburger-box"><div class="pp-hamburger-inner"></div></div></div>			</button>
+			</div>
+			   	<div class="pp-clear"></div>
+	<nav class="pp-menu-nav" aria-label="Passenger Menu" itemscope="itemscope" itemtype="https://schema.org/SiteNavigationElement">
+		<ul id="menu-passenger-menu" class="menu pp-advanced-menu-horizontal pp-toggle-arrows"><li id="menu-item-653" class="menu-item menu-item-type-custom menu-item-object-custom current-menu-ancestor current-menu-parent menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Flights</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Flights" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-653"></button></div><ul id="sub-menu-653" class="sub-menu">	<li id="menu-item-651" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-202 current_page_item"><a href="https://flyyyg.com/passengers/flights/arrivals_departures/" aria-current="page"><span class="menu-item-text">Arrivals / Departures</span></a></li>	<li id="menu-item-5198" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/flights/destinations/"><span class="menu-item-text">Destinations</span></a></li>	<li id="menu-item-663" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/flights/flying-a-drone/"><span class="menu-item-text">Flying a Drone</span></a></li></ul></li><li id="menu-item-666" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Parking &#038; Transport</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Parking & Transport" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-666"></button></div><ul id="sub-menu-666" class="sub-menu">	<li id="menu-item-5089" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/parking/"><span class="menu-item-text">Parking</span></a></li>	<li id="menu-item-5097" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/ground-transportation/"><span class="menu-item-text">Ground Transportation</span></a></li>	<li id="menu-item-5098" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/car-rentals/"><span class="menu-item-text">Car Rentals</span></a></li>	<li id="menu-item-3248" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/turo/"><span class="menu-item-text">TURO</span></a></li>	<li id="menu-item-672" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/accessible_transportation/"><span class="menu-item-text">Accessible Transportation</span></a></li></ul></li><li id="menu-item-684" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">While You’re Here</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for While You’re Here" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-684"></button></div><ul id="sub-menu-684" class="sub-menu">	<li id="menu-item-5838" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/budleys/"><span class="menu-item-text">Budley’s Restaurant</span></a></li>	<li id="menu-item-5082" class="menu-item menu-item-type-custom menu-item-object-custom"><a href="https://flyyyg.com/passengers/while-youre-here/budleys/#onthefly"><span class="menu-item-text">Budley’s On The Fly</span></a></li>	<li id="menu-item-5075" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/the-dock/"><span class="menu-item-text">The Dock</span></a></li>	<li id="menu-item-5076" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/airport-amenities/"><span class="menu-item-text">Airport Amenities</span></a></li>	<li id="menu-item-5078" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/lost-found/"><span class="menu-item-text">Lost &#038; Found</span></a></li>	<li id="menu-item-5080" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/community/autism_aviators/"><span class="menu-item-text">Autism Aviators</span></a></li>	<li id="menu-item-6547" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/therapy-dog-program/"><span class="menu-item-text">Therapy Dog Program</span></a></li>	<li id="menu-item-6445" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/hidden-disabilities-sunflowers/"><span class="menu-item-text">Hidden Disabilities Sunflower Program</span></a></li>	<li id="menu-item-7126" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/community/not-in-my-city-program/"><span class="menu-item-text">Not In My City</span></a></li></ul></li><li id="menu-item-5091" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Travel Planning</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Travel Planning" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-5091"></button></div><ul id="sub-menu-5091" class="sub-menu">	<li id="menu-item-3385" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/traveltips/"><span class="menu-item-text">Check-In &#038; Travel Tips</span></a></li>	<li id="menu-item-5072" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/security-screening/"><span class="menu-item-text">Security Screening</span></a></li>	<li id="menu-item-5073" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/nexus/"><span class="menu-item-text">NEXUS</span></a></li>	<li id="menu-item-662" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/travelling-internationally/"><span class="menu-item-text">Travelling Internationally</span></a></li>	<li id="menu-item-661" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/cannabis/"><span class="menu-item-text">Travelling with Cannabis</span></a></li>	<li id="menu-item-690" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/travelling-with-pets/"><span class="menu-item-text">Travelling with Pets</span></a></li>	<li id="menu-item-698" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/lost-baggage/"><span class="menu-item-text">Lost Baggage</span></a></li>	<li id="menu-item-699" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/cargo/"><span class="menu-item-text">Cargo</span></a></li>	<li id="menu-item-692" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/terminal_map/"><span class="menu-item-text">Terminal Map</span></a></li>	<li id="menu-item-676" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/directions/"><span class="menu-item-text">Directions</span></a></li>	<li id="menu-item-665" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/visiting_pei/"><span class="menu-item-text">Visiting P.E.I.</span></a></li></ul></li><li id="menu-item-5866" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/accessibility/"><span class="menu-item-text">Accessibility</span></a></li></ul>	</nav>
+</div>
+	</div>
+</div>
+</div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+<div class="fl-row fl-row-full-width fl-row-bg-color fl-node-in3cht9pjfdg fl-row-default-height fl-row-align-center fl-visible-mobile" data-node="in3cht9pjfdg">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-fixed-width fl-node-content">
+		
+<div class="fl-col-group fl-node-atmrefv1wnlx fl-col-group-equal-height fl-col-group-align-center fl-col-group-custom-width" data-node="atmrefv1wnlx">
+			<div class="fl-col fl-node-lbnr7zx5jsh1 fl-col-bg-color fl-col-small fl-col-small-custom-width" data-node="lbnr7zx5jsh1">
+	<div class="fl-col-content fl-node-content"><figure class="fl-module fl-module-photo fl-photo fl-photo-align-left fl-node-lhfkcuj3a7b1" data-node="lhfkcuj3a7b1" itemscope itemtype="https://schema.org/ImageObject">
+	<div class="fl-photo-content fl-photo-img-svg">
+				<a href="https://flyyyg.com/"  target="_self" itemprop="url">
+				<img loading="lazy" decoding="async" class="fl-photo-img wp-image-5360 size-full" src="https://flyyyg.com/wp-content/uploads/2024/03/YYG-1.svg" alt="Charlottetown Airport Authority" height="0" width="0" title="YYG"  data-no-lazy="1" />
+				</a>
+					</div>
+	</figure>
+</div>
+</div>
+			<div class="fl-col fl-node-cnq4abhuxirk fl-col-bg-color fl-col-small-custom-width" data-node="cnq4abhuxirk">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-pp-search-form fl-node-2pzx6ir9agkq" data-node="2pzx6ir9agkq">
+	<div class="fl-module-content fl-node-content">
+		<div class="pp-search-form-wrap pp-search-form--style-minimal pp-search-form--button-type-icon">
+	<form class="pp-search-form" role="search" action="https://flyyyg.com" method="get" aria-label="Search form">
+				<div class="pp-search-form__container">
+							<div class="pp-search-form__icon">
+					<i class="fa fa-search" aria-hidden="true"></i>					<span class="pp-screen-reader-text">Search</span>
+				</div>
+										<label class="pp-screen-reader-text" for="pp-search-form__input-2pzx6ir9agkq">
+				Search			</label>
+			<input id="pp-search-form__input-2pzx6ir9agkq"  placeholder="Search" class="pp-search-form__input" type="search" name="s" title="Search" value="">
+											</div>
+			</form>
+</div>	</div>
+</div>
+<div  class="fl-module fl-module-rich-text fl-rich-text fl-node-1nfpid6rwjmq" data-node="1nfpid6rwjmq">
+	<p><a href="/accessibility"><i class="fad fa-wheelchair"></i> Accessibility</a></p>
+</div>
+<div  class="fl-module fl-module-html fl-html fl-node-wv98xpykczjg" data-node="wv98xpykczjg">
+	<ul class="polylang_langswitcher">	<li class="lang-item lang-item-24 lang-item-fr lang-item-first"><a lang="fr-CA" hreflang="fr-CA" href="https://flyyyg.com/fr/passagers/vols/arrivees-departs/">Français</a></li>
+</ul></div>
+</div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+<div class="fl-row fl-row-full-width fl-row-bg-color fl-node-ox8vqkjscl7i fl-row-default-height fl-row-align-center fl-visible-mobile mobile_passenger_tabs" data-node="ox8vqkjscl7i">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-full-width fl-node-content">
+		
+<div class="fl-col-group fl-node-xw6fkrcqjmy0 fl-col-group-equal-height fl-col-group-align-top fl-col-group-custom-width" data-node="xw6fkrcqjmy0">
+			<div class="fl-col fl-node-5e3mjhtyrs60 fl-col-bg-color fl-col-small fl-col-small-custom-width" data-node="5e3mjhtyrs60">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-pp-advanced-menu fl-node-u0n9d2oa35bs mobileblockmenu" data-node="u0n9d2oa35bs">
+	<div class="fl-module-content fl-node-content">
+					<div class="pp-advanced-menu-mobile">
+			<button class="pp-advanced-menu-mobile-toggle text" tabindex="0" aria-label="Passengers" aria-expanded="false">
+				<span class="pp-advanced-menu-mobile-toggle-label">Passengers</span>			</button>
+			</div>
+			<div id="pp-menu-u0n9d2oa35bs"><div class="pp-advanced-menu pp-advanced-menu-accordion-collapse full-screen pp-menu-position-inline">
+	<div class="pp-clear"></div>
+	<nav class="pp-menu-nav pp-menu-overlay pp-overlay-fade" aria-label="Passenger Menu" itemscope="itemscope" itemtype="https://schema.org/SiteNavigationElement">
+		<div class="pp-menu-close-btn"></div>
+		<ul id="menu-passenger-menu-1" class="menu pp-advanced-menu-accordion pp-toggle-arrows"><li id="menu-item-653" class="menu-item menu-item-type-custom menu-item-object-custom current-menu-ancestor current-menu-parent menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Flights</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Flights" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-653"></button></div><ul id="sub-menu-653" class="sub-menu">	<li id="menu-item-651" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-202 current_page_item"><a href="https://flyyyg.com/passengers/flights/arrivals_departures/" aria-current="page"><span class="menu-item-text">Arrivals / Departures</span></a></li>	<li id="menu-item-5198" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/flights/destinations/"><span class="menu-item-text">Destinations</span></a></li>	<li id="menu-item-663" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/flights/flying-a-drone/"><span class="menu-item-text">Flying a Drone</span></a></li></ul></li><li id="menu-item-666" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Parking &#038; Transport</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Parking & Transport" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-666"></button></div><ul id="sub-menu-666" class="sub-menu">	<li id="menu-item-5089" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/parking/"><span class="menu-item-text">Parking</span></a></li>	<li id="menu-item-5097" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/ground-transportation/"><span class="menu-item-text">Ground Transportation</span></a></li>	<li id="menu-item-5098" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/car-rentals/"><span class="menu-item-text">Car Rentals</span></a></li>	<li id="menu-item-3248" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/turo/"><span class="menu-item-text">TURO</span></a></li>	<li id="menu-item-672" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/parking-transport/accessible_transportation/"><span class="menu-item-text">Accessible Transportation</span></a></li></ul></li><li id="menu-item-684" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">While You’re Here</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for While You’re Here" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-684"></button></div><ul id="sub-menu-684" class="sub-menu">	<li id="menu-item-5838" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/budleys/"><span class="menu-item-text">Budley’s Restaurant</span></a></li>	<li id="menu-item-5082" class="menu-item menu-item-type-custom menu-item-object-custom"><a href="https://flyyyg.com/passengers/while-youre-here/budleys/#onthefly"><span class="menu-item-text">Budley’s On The Fly</span></a></li>	<li id="menu-item-5075" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/the-dock/"><span class="menu-item-text">The Dock</span></a></li>	<li id="menu-item-5076" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/airport-amenities/"><span class="menu-item-text">Airport Amenities</span></a></li>	<li id="menu-item-5078" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/lost-found/"><span class="menu-item-text">Lost &#038; Found</span></a></li>	<li id="menu-item-5080" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/community/autism_aviators/"><span class="menu-item-text">Autism Aviators</span></a></li>	<li id="menu-item-6547" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/therapy-dog-program/"><span class="menu-item-text">Therapy Dog Program</span></a></li>	<li id="menu-item-6445" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/hidden-disabilities-sunflowers/"><span class="menu-item-text">Hidden Disabilities Sunflower Program</span></a></li>	<li id="menu-item-7126" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/community/not-in-my-city-program/"><span class="menu-item-text">Not In My City</span></a></li></ul></li><li id="menu-item-5091" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Travel Planning</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Travel Planning" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-5091"></button></div><ul id="sub-menu-5091" class="sub-menu">	<li id="menu-item-3385" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/traveltips/"><span class="menu-item-text">Check-In &#038; Travel Tips</span></a></li>	<li id="menu-item-5072" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/security-screening/"><span class="menu-item-text">Security Screening</span></a></li>	<li id="menu-item-5073" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/nexus/"><span class="menu-item-text">NEXUS</span></a></li>	<li id="menu-item-662" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/travelling-internationally/"><span class="menu-item-text">Travelling Internationally</span></a></li>	<li id="menu-item-661" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/cannabis/"><span class="menu-item-text">Travelling with Cannabis</span></a></li>	<li id="menu-item-690" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/travelling-with-pets/"><span class="menu-item-text">Travelling with Pets</span></a></li>	<li id="menu-item-698" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/lost-baggage/"><span class="menu-item-text">Lost Baggage</span></a></li>	<li id="menu-item-699" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/cargo/"><span class="menu-item-text">Cargo</span></a></li>	<li id="menu-item-692" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/terminal_map/"><span class="menu-item-text">Terminal Map</span></a></li>	<li id="menu-item-676" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/directions/"><span class="menu-item-text">Directions</span></a></li>	<li id="menu-item-665" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/travel-planning/visiting_pei/"><span class="menu-item-text">Visiting P.E.I.</span></a></li></ul></li><li id="menu-item-5866" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/accessibility/"><span class="menu-item-text">Accessibility</span></a></li></ul>	</nav>
+</div>
+</div>	</div>
+</div>
+</div>
+</div>
+			<div class="fl-col fl-node-tjq5l2oamc8y fl-col-bg-color fl-col-small fl-col-small-custom-width" data-node="tjq5l2oamc8y">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-pp-advanced-menu fl-node-v64fpnhki3t0 mobileblockmenu" data-node="v64fpnhki3t0">
+	<div class="fl-module-content fl-node-content">
+					<div class="pp-advanced-menu-mobile">
+			<button class="pp-advanced-menu-mobile-toggle text" tabindex="0" aria-label="Corporate" aria-expanded="false">
+				<span class="pp-advanced-menu-mobile-toggle-label">Corporate</span>			</button>
+			</div>
+			<div id="pp-menu-v64fpnhki3t0"><div class="pp-advanced-menu pp-advanced-menu-accordion-collapse full-screen pp-menu-position-inline">
+	<div class="pp-clear"></div>
+	<nav class="pp-menu-nav pp-menu-overlay pp-overlay-fade" aria-label="Corporate Menu" itemscope="itemscope" itemtype="https://schema.org/SiteNavigationElement">
+		<div class="pp-menu-close-btn"></div>
+		<ul id="menu-corporate-menu" class="menu pp-advanced-menu-accordion pp-toggle-arrows"><li id="menu-item-5047" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Who We Are</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Who We Are" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-5047"></button></div><ul id="sub-menu-5047" class="sub-menu">	<li id="menu-item-5103" class="menu-item menu-item-type-custom menu-item-object-custom"><a href="https://flyyyg.com/corporate/about-yyg/"><span class="menu-item-text">About YYG</span></a></li>	<li id="menu-item-1222" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/who-we-are/board_of_directors/"><span class="menu-item-text">Board of Directors</span></a></li>	<li id="menu-item-704" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/who-we-are/management/"><span class="menu-item-text">Management</span></a></li>	<li id="menu-item-7142" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/yyg-connection/"><span class="menu-item-text">YYG Connection</span></a></li>	<li id="menu-item-5266" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/who-we-are/job-opportunities/"><span class="menu-item-text">Careers</span></a></li></ul></li><li id="menu-item-8950" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/expansion/"><span class="menu-item-text">Expansion</span></a></li><li id="menu-item-5048" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Reports</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Reports" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-5048"></button></div><ul id="sub-menu-5048" class="sub-menu">	<li id="menu-item-2104" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/reports-and-publications/master-plan/"><span class="menu-item-text">Master Plan</span></a></li>	<li id="menu-item-712" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/reports-and-publications/annual_reports/"><span class="menu-item-text">Annual Reports</span></a></li>	<li id="menu-item-713" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/reports-and-publications/economic-impact/"><span class="menu-item-text">Economic Impact</span></a></li></ul></li><li id="menu-item-5049" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-has-children pp-has-submenu"><div class="pp-has-submenu-container"><a href="#"><span class="menu-item-text">Responsibility</span></a><button type="button" class="pp-menu-toggle" aria-label="Toggle submenu for Responsibility" aria-haspopup="true" aria-expanded="false" aria-controls="sub-menu-5049"></button></div><ul id="sub-menu-5049" class="sub-menu">	<li id="menu-item-714" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/corporate-responsibility/aca_policy/"><span class="menu-item-text">ACA Policy</span></a></li>	<li id="menu-item-5042" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/corporate-responsibility/sustainability-plan/"><span class="menu-item-text">Sustainability Plan</span></a></li></ul></li><li id="menu-item-5045" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/corporate/yyg-business-park/"><span class="menu-item-text">Business Park</span></a></li><li id="menu-item-5865" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/accessibility/"><span class="menu-item-text">Accessibility</span></a></li></ul>	</nav>
+</div>
+</div>	</div>
+</div>
+</div>
+</div>
+			<div class="fl-col fl-node-nob69cv8p01w fl-col-bg-color fl-col-small fl-col-small-custom-width" data-node="nob69cv8p01w">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-pp-advanced-menu fl-node-58gmefwxdhzl mobileblockmenu" data-node="58gmefwxdhzl">
+	<div class="fl-module-content fl-node-content">
+					<div class="pp-advanced-menu-mobile">
+			<button class="pp-advanced-menu-mobile-toggle text" tabindex="0" aria-label="Community" aria-expanded="false">
+				<span class="pp-advanced-menu-mobile-toggle-label">Community</span>			</button>
+			</div>
+			<div id="pp-menu-58gmefwxdhzl"><div class="pp-advanced-menu pp-advanced-menu-accordion-collapse full-screen pp-menu-position-inline">
+	<div class="pp-clear"></div>
+	<nav class="pp-menu-nav pp-menu-overlay pp-overlay-fade" aria-label="Community Menu" itemscope="itemscope" itemtype="https://schema.org/SiteNavigationElement">
+		<div class="pp-menu-close-btn"></div>
+		<ul id="menu-community-menu" class="menu pp-advanced-menu-accordion pp-toggle-arrows"><li id="menu-item-5063" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/community/epekwitk/"><span class="menu-item-text">Epekwitk</span></a></li><li id="menu-item-5064" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/community/runway-run/"><span class="menu-item-text">Runway Run</span></a></li><li id="menu-item-7127" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/community/not-in-my-city-program/"><span class="menu-item-text">Not In My City Program</span></a></li><li id="menu-item-6144" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/community/autism_aviators/"><span class="menu-item-text">Autism Aviators</span></a></li><li id="menu-item-5864" class="menu-item menu-item-type-post_type menu-item-object-page"><a href="https://flyyyg.com/passengers/while-youre-here/accessibility/"><span class="menu-item-text">Accessibility</span></a></li></ul>	</nav>
+</div>
+</div>	</div>
+</div>
+</div>
+</div>
+			<div class="fl-col fl-node-nbsly6jvcowr fl-col-bg-color fl-col-small fl-col-small-custom-width" data-node="nbsly6jvcowr">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-uabb-button fl-node-ku1brfm03eod mobilenewstab" data-node="ku1brfm03eod">
+	<div class="fl-module-content fl-node-content">
+		
+<div class="uabb-module-content uabb-button-wrap uabb-creative-button-wrap uabb-button-width-auto uabb-creative-button-width-auto uabb-button-center uabb-creative-button-center uabb-button-tablet-center uabb-creative-button-tablet-center uabb-button-reponsive-center uabb-creative-button-reponsive-center">
+			<a href="https://flyyyg.com/news_and_events/" title="News" target="_self"  class="uabb-button ast-button uabb-creative-button uabb-creative-default-btn   "  role="button" aria-label="News">
+							<span class="uabb-button-text uabb-creative-button-text">News</span>
+							
+						
+		</a>
+	</div>
+
+
+
+
+	</div>
+</div>
+</div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+</header><div class="uabb-js-breakpoint" style="display: none;"></div>	<div id="fl-main-content" class="fl-page-content" itemprop="mainContentOfPage" role="main">
+
+		
+<div class="fl-content-full container">
+	<div class="row">
+		<div class="fl-content col-md-12">
+			<article class="fl-post post-202 page type-page status-publish hentry" id="fl-post-202" itemscope="itemscope" itemtype="https://schema.org/CreativeWork">
+
+			<div class="fl-post-content clearfix" itemprop="text">
+		<div class="fl-builder-content fl-builder-content-202 fl-builder-content-primary fl-builder-global-templates-locked" data-post-id="202"><div class="fl-row fl-row-fixed-width fl-row-bg-none fl-node-5eb9bdec65903 fl-row-default-height fl-row-align-center" data-node="5eb9bdec65903">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-fixed-width fl-node-content">
+		
+<div class="fl-col-group fl-node-5eb9bdec657eb" data-node="5eb9bdec657eb">
+			<div class="fl-col fl-node-5eb9bdec65837 fl-col-bg-color" data-node="5eb9bdec65837">
+	<div class="fl-col-content fl-node-content"><div id="breadcrumbs" class="fl-module fl-module-html fl-node-5ed940f43354e fl-visible-desktop fl-visible-large fl-visible-medium" data-node="5ed940f43354e">
+	<div class="fl-module-content fl-node-content">
+		<div class="fl-html">
+	<span><span><a href="https://flyyyg.com/"><i class="fa-sharp fa-solid fa-plane"></i><span class="sr-only">Home</span></a></span> <i style="color: #3db3e3;padding-left: 20px;padding-right: 20px" class="fas fa-angle-right" aria-hidden="true"></i> <span><a href="https://flyyyg.com/passengers/">Passengers</a></span> <i style="color: #3db3e3;padding-left: 20px;padding-right: 20px" class="fas fa-angle-right" aria-hidden="true"></i> <span><a href="https://flyyyg.com/passengers/flights/">Flights</a></span> <i style="color: #3db3e3;padding-left: 20px;padding-right: 20px" class="fas fa-angle-right" aria-hidden="true"></i> <span class="breadcrumb_last" aria-current="page">Arrivals/Departures</span></span></div>
+	</div>
+</div>
+<div class="fl-module fl-module-heading fl-node-5eb9bdec65883" data-node="5eb9bdec65883">
+	<div class="fl-module-content fl-node-content">
+		<h1 class="fl-heading">
+		<span class="fl-heading-text">Arrivals & Departures</span>
+	</h1>
+	</div>
+</div>
+</div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+<div class="fl-row fl-row-fixed-width fl-row-bg-none fl-node-5ecfea8e25536 fl-row-default-height fl-row-align-center" data-node="5ecfea8e25536">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-fixed-width fl-node-content">
+		
+<div class="fl-col-group fl-node-5ecfea8e39b03" data-node="5ecfea8e39b03">
+			<div class="fl-col fl-node-5ecfea8e39ca2 fl-col-bg-color" data-node="5ecfea8e39ca2">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-html fl-node-5ece74e7d771f" data-node="5ece74e7d771f">
+	<div class="fl-module-content fl-node-content">
+		<div class="fl-html">
+	
+	<div class="fl-row-content-wrap arrdepholder">
+	<div class="fl-row-content fl-node-content">	
+	<div class="fl-col-group">
+	<div class="fl-col" style="width:100%;">
+	<div class="fl-col-content fl-node-content">
+	
+
+	<nav>
+  <div class="nav nav-tabs" id="nav-tab" aria-hidden="true">
+
+		<a class="nav-item nav-link active" id="nav-arrivals-tab" data-toggle="tab" href="#nav-arrivals" aria-hidden="true"><h4><i class="fas fa-plane-arrival"></i> Arrivals</h4></a>
+
+
+		<a class="nav-item nav-link" id="nav-departures-tab" data-toggle="tab" href="#nav-departures" aria-hidden="true"><h4><i class="fas fa-plane-departure"></i> Departures</h4></a>
+					
+</div>
+</nav>
+
+		<div class="tab-content" id="nav-tabContent">
+			
+		<div class="tab-pane fade show active" id="nav-arrivals" aria-label="Arrivals">
+
+			<!-- Arrivals -->
+	<table class="arrdeptables">
+		<thead>
+		<tr>
+				<th>Date</th>
+				<th>Carrier</th>
+				<th>Flight #</th>
+				<th>City</th>
+				<th class="colctr">Sch. Time (AST)</th>
+				<th>Arr. Time</th>
+				<th>Status</th>
+				
+			
+		</tr>
+		</thead>
+		<tr>
+			
+			
+			<tr class="arrivals"><td class="labelcol">Sep 5, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC2016</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">23:59</td><td class='labelcol'>23:56</td><td class="labelcol">Arrived</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC2030</td><td class='labelcol'>Montreal</td><td class="colctx labelcol">10:30</td><td class='labelcol'>10:30</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/flair_logo.png" style="width:24px;" aria-hidden="true"> Flair</td><td class='labelcol'>F8678</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">10:55</td><td class='labelcol'>10:55</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/porter_logo.png" style="width:24px;" aria-hidden="true"> Porter</td><td class='labelcol'>PD2367</td><td class='labelcol'>Montreal -MET</td><td class="colctx labelcol">11:10</td><td class='labelcol'>11:10</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC628</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">11:35</td><td class='labelcol'>11:35</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/porter_logo.png" style="width:24px;" aria-hidden="true"> Porter</td><td class='labelcol'>PD197</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">11:44</td><td class='labelcol'>11:44</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC636</td><td class='labelcol'>Montreal</td><td class="colctx labelcol">15:40</td><td class='labelcol'>15:40</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/porter_logo.png" style="width:24px;" aria-hidden="true"> Porter</td><td class='labelcol'>PD2221</td><td class='labelcol'>Ottawa</td><td class="colctx labelcol">16:35</td><td class='labelcol'>16:35</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/westjet_logo.png" style="width:24px;" aria-hidden="true"> WestJet</td><td class='labelcol'>WS788</td><td class='labelcol'>Calgary</td><td class="colctx labelcol">17:10</td><td class='labelcol'>17:10</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC630</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">17:55</td><td class='labelcol'>17:55</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC2016</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">23:59</td><td class='labelcol'>23:59</td><td class="labelcol">On Time</td></tr>	</table>
+		<div class="xml-date-modified arri">		
+			
+			September 06, 2026 &#97;&#116; 01:45		</div>
+		<div class="xml-out-of-date">
+
+							
+		</div>					
+					
+
+		</div>
+
+
+		<div class="tab-pane fade" id="nav-departures" aria-label="Departures">
+
+			<!-- Departures -->
+	<table class="arrdeptables departing">
+		<thead>
+		<tr>
+				<th>Date</th>
+			  <th>Carrier</th>
+				<th>Flight #</th>
+				<th>City</th>
+				<th class="colctr">Sch. Time (AST)</th>
+				<th>Dep. Time</th>
+				<th>Status</th>
+				
+				
+		</tr>
+		</thead>
+		<tr>
+			<tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC2013</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">05:20</td><td class='labelcol'>05:20</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC2033</td><td class='labelcol'>Montreal</td><td class="colctx labelcol">11:20</td><td class='labelcol'>11:20</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/flair_logo.png" style="width:24px;" aria-hidden="true"> Flair</td><td class='labelcol'>F8679</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">11:40</td><td class='labelcol'>11:40</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/porter_logo.png" style="width:24px;" aria-hidden="true"> Porter</td><td class='labelcol'>PD2364</td><td class='labelcol'>Ottawa</td><td class="colctx labelcol">11:50</td><td class='labelcol'>11:50</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC631</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">12:30</td><td class='labelcol'>12:30</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/porter_logo.png" style="width:24px;" aria-hidden="true"> Porter</td><td class='labelcol'>PD198</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">12:45</td><td class='labelcol'>12:45</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC635</td><td class='labelcol'>Montreal</td><td class="colctx labelcol">16:30</td><td class='labelcol'>16:30</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/porter_logo.png" style="width:24px;" aria-hidden="true"> Porter</td><td class='labelcol'>PD2368</td><td class='labelcol'>Montreal -MET</td><td class="colctx labelcol">17:20</td><td class='labelcol'>17:20</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/westjet_logo.png" style="width:24px;" aria-hidden="true"> WestJet</td><td class='labelcol'>WS789</td><td class='labelcol'>Calgary</td><td class="colctx labelcol">18:00</td><td class='labelcol'>18:00</td><td class="labelcol">On Time</td></tr><tr class="arrivals"><td class="labelcol">Sep 6, 2026</td><td class="labelcol"><img decoding="async" src="https://flyyyg.com/wp-content/themes/bb-theme-child/images/carriers/air_canada_logo.png" style="width:24px;" aria-hidden="true"> Air Canada</td><td class='labelcol'>AC633</td><td class='labelcol'>Toronto</td><td class="colctx labelcol">19:00</td><td class='labelcol'>19:00</td><td class="labelcol">On Time</td></tr>	</table>
+
+	
+		<div class="xml-date-modified depa">
+			
+			September 06, 2026 &#97;&#116; 01:45		
+		</div>
+		<div class="xml-out-of-date">
+
+		
+		</div>
+		</div> <!-- #tabs -->
+
+
+					
+	</div><!--content-->
+
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<script src="https://flyyyg.com/wp-content/themes/bb-theme-child/js/bootstrap.441.min.js"></script>
+
+
+
+</div>
+	</div>
+</div>
+</div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+<div class="fl-row fl-row-full-width fl-row-bg-photo fl-node-ok28zualn0c7 fl-row-custom-height fl-row-align-center fl-row-bg-fixed" data-node="ok28zualn0c7">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-full-width fl-node-content">
+		
+<div class="fl-col-group fl-node-yxlori1fbq23" data-node="yxlori1fbq23">
+			<div class="fl-col fl-node-1apx3ehfukb8 fl-col-bg-color" data-node="1apx3ehfukb8">
+	<div class="fl-col-content fl-node-content"></div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+<div class="fl-row fl-row-full-width fl-row-bg-photo fl-node-ynihgujpomtw fl-row-custom-height fl-row-align-center fl-row-bg-fixed" data-node="ynihgujpomtw">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-full-width fl-node-content">
+		
+<div class="fl-col-group fl-node-5wc4ytr6guz7" data-node="5wc4ytr6guz7">
+			<div class="fl-col fl-node-vrcx1yenghba fl-col-bg-color" data-node="vrcx1yenghba">
+	<div class="fl-col-content fl-node-content"></div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+<div class="fl-row fl-row-full-width fl-row-bg-photo fl-node-rj02tf61bnxg fl-row-custom-height fl-row-align-center fl-row-bg-fixed" data-node="rj02tf61bnxg">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-full-width fl-node-content">
+		
+<div class="fl-col-group fl-node-o7jkn04hrp8z" data-node="o7jkn04hrp8z">
+			<div class="fl-col fl-node-ju35eongr1dk fl-col-bg-color" data-node="ju35eongr1dk">
+	<div class="fl-col-content fl-node-content"></div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+</div><div class="uabb-js-breakpoint" style="display: none;"></div>	</div><!-- .fl-post-content -->
+	
+</article>
+
+<!-- .fl-post -->
+					</div>
+	</div>
+</div>
+
+
+	</div><!-- .fl-page-content -->
+	<footer class="fl-builder-content fl-builder-content-542 fl-builder-global-templates-locked" data-post-id="542" data-type="footer" itemscope="itemscope" itemtype="http://schema.org/WPFooter"><div class="fl-row fl-row-full-width fl-row-bg-photo fl-node-r2h5almkz01c fl-row-custom-height fl-row-align-center" data-node="r2h5almkz01c">
+	<div class="fl-row-content-wrap">
+		<div class="uabb-row-separator uabb-top-row-separator" >
+</div>
+						<div class="fl-row-content fl-row-fixed-width fl-node-content">
+		
+<div class="fl-col-group fl-node-nt3jropmfv6e fl-col-group-custom-width" data-node="nt3jropmfv6e">
+			<div class="fl-col fl-node-d73k2os0cxl1 fl-col-bg-color fl-col-small" data-node="d73k2os0cxl1">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-pp-social-icons fl-node-4fq6jn7slr8k" data-node="4fq6jn7slr8k">
+	<div class="fl-module-content fl-node-content">
+		
+<div class="pp-social-icons pp-social-icons-horizontal">
+	<span class="pp-social-icon" itemscope itemtype="https://schema.org/Organization">
+		<link itemprop="url" href="https://flyyyg.com">
+		<a itemprop="sameAs" href="https://www.facebook.com/YYGAirport/" target="_blank" title="Facebook" aria-label="Facebook" role="button" rel="noopener noreferrer external" >
+							<i class="fab fa-facebook"></i>
+					</a>
+	</span>
+		<span class="pp-social-icon" itemscope itemtype="https://schema.org/Organization">
+		<link itemprop="url" href="https://flyyyg.com">
+		<a itemprop="sameAs" href="https://www.instagram.com/fly_yyg/?hl=en" target="_blank" title="Instagram" aria-label="Instagram" role="button" rel="noopener noreferrer external" >
+							<i class="fab fa-instagram"></i>
+					</a>
+	</span>
+	</div>
+	</div>
+</div>
+</div>
+</div>
+			<div class="fl-col fl-node-vkml8hc4qj0b fl-col-bg-color fl-col-small-custom-width" data-node="vkml8hc4qj0b">
+	<div class="fl-col-content fl-node-content"><div class="fl-module fl-module-info-list fl-node-5sprxl0z674h footer_menu_list" data-node="5sprxl0z674h">
+	<div class="fl-module-content fl-node-content">
+		
+<div class="uabb-module-content uabb-info-list">
+	<ul class="uabb-info-list-wrapper uabb-info-list-left">
+		<li class="uabb-info-list-item info-list-item-dynamic0"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic0"><p class="uabb-info-list-title"><a href="https://flyyyg.com/rfps/" target="_self"  aria-label="Go to https://flyyyg.com/rfps/">RFPs</a></p ></div></div></li><li class="uabb-info-list-item info-list-item-dynamic1"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic1"><p class="uabb-info-list-title"><a href="https://flyyyg.com/avop/" target="_self"  aria-label="Go to https://flyyyg.com/avop/">AVOP</a></p ></div></div></li><li class="uabb-info-list-item info-list-item-dynamic2"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic2"><p class="uabb-info-list-title"><a href="https://flyyyg.com/corporate/who-we-are/job-opportunities/" target="_self"  aria-label="Go to https://flyyyg.com/corporate/who-we-are/job-opportunities/">Job Opportunities</a></p ></div></div></li><li class="uabb-info-list-item info-list-item-dynamic3"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic3"><p class="uabb-info-list-title"><a href="https://flyyyg.com/terms/" target="_self"  aria-label="Go to https://flyyyg.com/terms/">Privacy &amp; Terms of Use</a></p ></div></div></li><li class="uabb-info-list-item info-list-item-dynamic4"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic4"><p class="uabb-info-list-title"><a href="https://flyyyg.com/contact/" target="_self"  aria-label="Go to https://flyyyg.com/contact/">Contact</a></p ></div></div></li><li class="uabb-info-list-item info-list-item-dynamic5"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic5"><p class="uabb-info-list-title"><a href="https://flyyyg.com/employee-login/" target="_self"  aria-label="Go to https://flyyyg.com/employee-login/">Employee Login</a></p ></div></div></li><li class="uabb-info-list-item info-list-item-dynamic6"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic6"><p class="uabb-info-list-title"><a href="https://flyyyg.com/website-accessibility/" target="_self"  aria-label="Go to https://flyyyg.com/website-accessibility/">Website Accessibility</a></p ></div></div></li><li class="uabb-info-list-item info-list-item-dynamic7"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic7"><p class="uabb-info-list-title"><a href="https://flyyyg.com/media/" target="_self"  aria-label="Go to https://flyyyg.com/media/">Media</a></p ></div></div></li><li class="uabb-info-list-item info-list-item-dynamic8"><div class="uabb-info-list-content-wrapper fl-clearfix uabb-info-list-left"><div class="uabb-info-list-content uabb-info-list-left info-list-content-dynamic8"><p class="uabb-info-list-title"><a href="https://flyyyg.com/sponsorship/" target="_self"  aria-label="Go to https://flyyyg.com/sponsorship/">Sponsorships</a></p ></div></div></li>	</ul>
+</div>
+	</div>
+</div>
+<div  class="fl-module fl-module-rich-text fl-rich-text fl-node-1sqfao3ny24h" data-node="1sqfao3ny24h">
+	<p><span style="font-size: 10px;">Copyright ©2026 YYG Charlottetown Alexander B. Campbell Airport. </span></p>
+</div>
+</div>
+</div>
+	</div>
+		</div>
+	</div>
+</div>
+</footer><div class="uabb-js-breakpoint" style="display: none;"></div>	</div><!-- .fl-page -->
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/wp-*.php","/wp-admin/*","/wp-content/uploads/*","/wp-content/*","/wp-content/plugins/*","/wp-content/themes/bb-theme-child/*","/wp-content/themes/bb-theme/*","/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script>
+	var relevanssi_rt_regex = /(&|\?)_(rt|rt_nonce)=(\w+)/g
+	var newUrl = window.location.search.replace(relevanssi_rt_regex, '')
+	history.replaceState(null, null, window.location.pathname + newUrl + window.location.hash)
+</script>
+<a href="#" role="button" id="fl-to-top"><span class="sr-only">Scroll To Top</span><i class="fas fa-chevron-up" aria-hidden="true"></i></a><script id="fl-builder-layout-202-js" src="https://flyyyg.com/wp-content/uploads/bb-plugin/cache/202-layout.js?ver=912a6591edde1ceb75f7c2f20c41283d"></script>
+<script id="pll_cookie_script-js-after">
+(function() {
+				var expirationDate = new Date();
+				expirationDate.setTime( expirationDate.getTime() + 31536000 * 1000 );
+				document.cookie = "pll_language=en; expires=" + expirationDate.toUTCString() + "; path=/; secure; SameSite=Lax";
+			}());
+
+//# sourceURL=pll_cookie_script-js-after
+</script>
+<script id="imagesloaded-js" src="https://flyyyg.com/wp-content/plugins/bb-plugin/js/libs/jquery.imagesloaded.min.js?ver=2.10.3.1"></script>
+<script id="jquery-throttle-js" src="https://flyyyg.com/wp-content/plugins/bb-plugin/js/libs/jquery.ba-throttle-debounce.min.js?ver=2.10.3.1"></script>
+<script id="fl-builder-layout-bundle-124052222e20284011e34ad8c7a7193d-js" src="https://flyyyg.com/wp-content/uploads/bb-plugin/cache/124052222e20284011e34ad8c7a7193d-layout-bundle.js?ver=2.10.3.1-1.5.3.2"></script>
+<script id="jquery-magnificpopup-js" src="https://flyyyg.com/wp-content/plugins/bb-plugin/js/libs/jquery.magnificpopup.min.js?ver=2.10.3.1"></script>
+<script id="bootstrap-4-js" src="https://flyyyg.com/wp-content/themes/bb-theme/js/bootstrap-4.min.js?ver=1.7.20"></script>
+<script id="fl-automator-js-extra">
+var themeopts = {"medium_breakpoint":"992","mobile_breakpoint":"768","lightbox":"enabled","scrollTopPosition":"800"};
+//# sourceURL=fl-automator-js-extra
+</script>
+<script id="fl-automator-js" src="https://flyyyg.com/wp-content/themes/bb-theme/js/theme.min.js?ver=1.7.20"></script>
+<script id="wp-emoji-settings" type="application/json">
+{"baseUrl":"https://s.w.org/images/core/emoji/17.0.2/72x72/","ext":".png","svgUrl":"https://s.w.org/images/core/emoji/17.0.2/svg/","svgExt":".svg","source":{"concatemoji":"https://flyyyg.com/wp-includes/js/wp-emoji-release.min.js?ver=7.1"}}
+</script>
+<script type="module">
+/*! This file is auto-generated */
+var e="script#wp-emoji-settings",t=document.querySelector(e);if(!(t instanceof HTMLScriptElement))throw new Error("Element missing: "+e);const r=JSON.parse(t.text),s=(window._wpemojiSettings=r,"wpEmojiSettingsSupports"),o=["flag","emoji"];function i(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(s,JSON.stringify(t))}catch(e){}}function c(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0);const r=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);return t.every((e,t)=>e===r[t])}function p(e,t){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var n=e.getImageData(16,16,1,1);for(let e=0;e<n.data.length;e++)if(0!==n.data[e])return!1;return!0}function u(e,t,n,r){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\udde8\ud83c\uddf6","\ud83c\udde8\u200b\ud83c\uddf6")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!r(e,"\ud83e\u1fac8")}return!1}function f(e,t,n,r){let a;const s=(a="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):document.createElement("canvas")).getContext("2d",{willReadFrequently:!0}),o=(s.textBaseline="top",s.font="600 32px Arial",{});return e.forEach(e=>{o[e]=t(s,e,n,r)}),o}function a(e){var t=document.createElement("script");t.src=e,t.defer=!0,document.head.appendChild(t)}r.supports={everything:!0,everythingExceptFlag:!0},new Promise(t=>{let n=function(){try{var e=JSON.parse(sessionStorage.getItem(s));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+f.toString()+"("+[JSON.stringify(o),u.toString(),c.toString(),p.toString()].join(",")+"));",r=new Blob([e],{type:"text/javascript"});const a=new Worker(URL.createObjectURL(r),{name:"wpTestEmojiSupports"});return void(a.onmessage=e=>{i(n=e.data),a.terminate(),t(n)})}catch(e){}i(n=f(o,u,c,p))}t(n)}).then(e=>{for(const n in e)r.supports[n]=e[n],r.supports.everything=r.supports.everything&&r.supports[n],"flag"!==n&&(r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&r.supports[n]);var t;r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&!r.supports.flag,r.supports.everything||((t=r.source||{}).concatemoji?a(t.concatemoji):t.wpemoji&&t.twemoji&&(a(t.twemoji),a(t.wpemoji)))});
+//# sourceURL=https://flyyyg.com/wp-includes/js/wp-emoji-loader.min.js
+</script>
+
+	<script>(function(document, tag) { var script = document.createElement(tag); var element = document.getElementsByTagName('body')[0]; script.src = 'https://acsbap.com/apps/app/assets/js/acsb.js'; script.async = true; script.defer = true; (typeof element === 'undefined' ? document.getElementsByTagName('html')[0] : element).appendChild(script); script.onload = function() { acsbJS.init({ statementLink : '', feedbackLink : '', footerHtml : '', hideMobile : false, hideTrigger : false, language : 'en', position : 'right', leadColor : '#333333', triggerColor : '#333333', triggerRadius : '50%', triggerPositionX : 'right', triggerPositionY : 'bottom', triggerIcon : 'default', triggerSize : 'medium', triggerOffsetX : 20, triggerOffsetY : 20, mobile : { triggerSize : 'small', triggerPositionX : 'right', triggerPositionY : 'bottom', triggerOffsetX : 20, triggerOffsetY : 20, triggerRadius : '50%' } }); };}(document, 'script'));</script>
+
+</body>
+</html>
+
+
+<!-- Page uncached by LiteSpeed Cache 7.9.1 on 2026-09-06 01:49:22 -->
