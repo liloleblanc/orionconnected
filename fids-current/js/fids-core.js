@@ -19131,6 +19131,17 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
+  // v23349 — the rest of the bare codes from Nick's boards. On a second look I
+  // could identify all but one of these with confidence, so they are named
+  // rather than left as letters. IV (Zurich–Pristina) is still unidentified
+  // and is the only one deliberately left alone.
+  'NK': 'Spirit Airlines',     'P6': 'Pascan Aviation',
+  '8T': 'Air Tindi',           'PJ': 'Air Saint-Pierre',
+  'AH': 'Air Algérie',         'KU': 'Kuwait Airways',
+  'BI': 'Royal Brunei',        'UX': 'Air Europa',
+  'XY': 'flynas',              'MF': 'Xiamen Air',
+  'ZH': 'Shenzhen Airlines',   '9C': 'Spring Airlines',
+  'KA': 'Cathay Dragon',
   // v23348 — carriers whose rows printed a BARE IATA CODE because nothing here
   // named them (Nick's Zurich board: "EW", "CJ", "IV"). Only codes I could
   // identify with confidence are here; anything still unnamed is listed in the
@@ -19415,6 +19426,9 @@ const IATA_WORDMARK_ONE = {
 try { if (typeof window !== 'undefined') window.IATA_WORDMARK_ONE = IATA_WORDMARK_ONE; } catch (e) {}
 
 const IATA_TO_WORDMARK = {
+  // v23349 — three finished light/dark pairs were sitting unmapped on disk, so
+  // Spirit, American and TAP fell through to the single-file map or to text.
+  'NK': 'spirit',   'TP': 'tap-portugal',   'AA2': 'american-airlines',
   // Canadian carriers
   'AC':'air-canada',  'WS':'westjet',  'PD':'porter',  'TS':'transat',
   'PB':'pal-airlines',
@@ -20989,7 +21003,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23348';
+var FIDS_BUILD_TAG = 'v23349';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
