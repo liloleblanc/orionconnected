@@ -5248,7 +5248,248 @@ function zrhParseFeed(jsonText, dir, nowMs) {
 }
 __name(zrhParseFeed, "zrhParseFeed");
 
+// ── IAH Houston Intercontinental (2026-09-06) ────────────────────────
+// Houston Airport System's own API (api.houstonairports.mobi) — the
+// LAS/CLT/MCO vendor once more: epoch-second timestamps, operator flight
+// numbers with the code baked in, IATA airport codes only (no names, no
+// aircraft), gate, terminal letter, baggageBelt[]. The Api-Key is the
+// public one in fly2houston.com's Next.js bundle (chunk
+// 6836-a7bea09f5c4d8549.js); Api-Version 101 is mandatory (a 500
+// without it). The same host serves Hobby (baseAirport=HOU), so the
+// parser takes the home code and only keeps that airport's rows.
+//
+// Terminal: departures carry the check-in terminal (A/C/D/E); arrivals
+// carry null throughout, and the gate's letter IS the terminal at IAH
+// (A–E gates sit in Terminals A–E, the PHL convention) — used only when
+// the feed gave nothing. Hobby's gates are plain numbers, so nothing is
+// derived there.
+const IAH_FEED_KEY = "9ACB3B733BE94B11A03B6E84CA87E895";
+// The vendor's normalised `status` is Scheduled | Boarding | Departed |
+// Landed | Canceled; `originalStatus` is the airline's own text (ON TIME,
+// "Now 5:18a", "BRD @ 830PM", DELAYED, InGate). isDelayed is the
+// vendor's verdict; an airline DELAYED with isDelayed=false (LH441 on
+// 2026-09-05) still reads as delayed here. "Now h:mma" is an estimate,
+// not a delay: scheduled + revised, the AUS/YVR convention. A Departed
+// arrival is en route (the boards render it that way); a Landed
+// departure has reached the far end, "arrived" as ADB itself says.
+function iahStatus(r) {
+  const s = String(r.status || "").toLowerCase();
+  const o = String(r.originalStatus || "").toLowerCase();
+  if (s.includes("cancel") || o.includes("cancel")) return "cancelled";
+  if (s.includes("divert") || o.includes("divert")) return "diverted";
+  if (s.includes("board") || /\bbrd\b|board|final call/.test(o)) return "boarding";
+  if (s.includes("depart")) return "departed";
+  if (s.includes("land") || s.includes("arriv")) return "arrived";
+  if (r.isDelayed === true || o.includes("delay")) return "delayed";
+  return "scheduled";
+}
+__name(iahStatus, "iahStatus");
+// jsonText → ADB-native flights for one direction. `home` defaults to
+// IAH; pass "HOU" to read Hobby out of the same payload. Southwest's
+// multi-stop rows at Hobby come once per route city with the same
+// number and timestamp (a bare "Scheduled" placeholder beside the real
+// row, different `id`), so rows are collapsed on number|scheduled,
+// keeping whichever carries a gate or a live status.
+function parseIahFeed(jsonText, dir, nowMs, home) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const rows = ((j && j.data) || {}).flights;
+  if (!Array.isArray(rows)) return out;
+  const isDep = dir === "dep";
+  const tz = "America/Chicago";
+  const homeIata = String(home || "IAH").toUpperCase();
+  const seen = new Map();   // "number|scheduledTimestamp" → [index in out, richness]
+  for (const r of rows) {
+    if (!r || r.isVisible === false || r.isDeleted === true) continue;
+    if (r.baseAirport && String(r.baseAirport).toUpperCase() !== homeIata) continue;
+    if (r.arrival !== true && r.arrival !== false) continue;
+    if (r.arrival === isDep) continue;
+    if (r.iataCodeShareAirline && r.iataOperatingAirline && r.iataCodeShareAirline !== r.iataOperatingAirline) continue;   // operator rows only
+    const num = (r.operatingAirlineFlightNumber || "").toString().trim().toUpperCase();
+    if (!num || typeof r.scheduledTimestamp !== "number") continue;
+    const sched = localTimeObjFromTs(tz, r.scheduledTimestamp * 1000);
+    // estimated/actual mirror scheduled (or sit null) until something
+    // changes; bestKnown is always set and is the one the site shows.
+    const bt = r.bestKnownTimestamp;
+    const revised = (typeof bt === "number" && bt !== r.scheduledTimestamp) ? localTimeObjFromTs(tz, bt * 1000) : null;
+    const gate = (r.gate || "").toString().trim() || null;
+    const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
+    const fl = authorityFlight({
+      dir, number: num,
+      callSign: (r.icaoOperatingAirlineFlightNumber || "").toString().trim().toUpperCase() || null,
+      status: iahStatus(r),
+      homeIata, homeIcao: homeIata === "HOU" ? "KHOU" : "KIAH", homeName: homeIata === "HOU" ? "Houston Hobby" : "Houston",
+      gate,
+      otherIata: ((isDep ? r.arrivalAirport : r.departureAirport) || "").toString().toUpperCase() || null,
+      otherName: null,
+      airlineIata: (r.iataOperatingAirline || "").toString().toUpperCase() || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    const term = (r.terminal || "").toString().trim().replace(/^T/i, "").toUpperCase()
+      || (((gate || "").match(/^([A-E])\d/i) || [])[1] || "").toUpperCase() || null;
+    if (term) homeSide.terminal = term;
+    if (!isDep && belt) fl.arrival.baggageBelt = belt;
+    const rich = (gate ? 2 : 0) + (String(r.originalStatus || "").toLowerCase() !== "scheduled" ? 1 : 0);
+    const k = `${num}|${r.scheduledTimestamp}`;
+    const prev = seen.get(k);
+    if (prev) { if (rich > prev[1]) { out[prev[0]] = fl; prev[1] = rich; } continue; }
+    seen.set(k, [out.length, rich]);
+    out.push(fl);
+  }
+  return out;
+}
+__name(parseIahFeed, "parseIahFeed");
+
+// MCO Orlando — GOAA's api.goaa.aero in its v200 shape (the LAS/CLT
+// vendor family): epoch-second scheduledTimestamp plus ONE
+// lastKnownTimestamp that is the estimate or the actual, operator flight
+// numbers with the code baked in (mainFlightNumber "DL1735", the ICAO
+// callsign in icaoMainFlightNumber "DAL1735"), IATA origin/destination,
+// two-letter status codes, gate, and a belt on arrivals. No terminal
+// field and every airline/city name field is an empty string — the
+// airport's own site fills those from a static table, mirrored below.
+// Multi-stop flights come back once PER ROUTE STEP (same number, same
+// MCO time, identical gate/belt/status/times; routeStep 0,1,2 with the
+// step's airport in stepAirport), so rows are grouped by number +
+// scheduled time: the routeStep 0 row is the movement and the step chain
+// rides along as the board's _stops / via label. Status codes are the
+// vendor's enum (the site's chunk 37675): AR Arrived, LD Landed, DP
+// Departed, CX Canceled, DL Delayed, DV Diverted, BD Boarding, LC Last
+// Call, NT New Time, ON On Time (the default for every future flight).
+const MCO_AUTH_STATUS = {
+  AR: "arrived", LD: "arrived", DP: "departed", CX: "cancelled", DL: "delayed",
+  DV: "diverted", BD: "boarding", LC: "boarding", ON: "scheduled"
+};
+// flymco.com's own airline table (the flightsEnrichmentData block in its
+// page payload, read 2026-09-06): display name and the terminal the
+// carrier checks in at. TAP lists no terminal.
+const MCO_AIRLINES = {
+  WN: ["Southwest", "A"], F9: ["Frontier", "A"], XP: ["Avelo Airlines", "A"], TS: ["Air Transat", "A"],
+  DL: ["Delta", "B"], AA: ["American", "B"], UA: ["United", "B"], AS: ["Alaska", "B"], G4: ["Allegiant", "B"],
+  MX: ["Breeze", "B"], SY: ["Sun Country", "B"], AC: ["Air Canada", "B"], RV: ["Air Canada Rouge", "B"],
+  WS: ["WestJet", "B"], F8: ["Flair Airlines", "B"], LA: ["LATAM", "B"], JJ: ["LATAM Airlines Brasil", "B"],
+  "4C": ["LATAM Airlines Colombia", "B"], Y4: ["Volaris", "B"], Q6: ["Volaris Costa Rica", "B"], VB: ["Viva", "B"],
+  UP: ["Bahamasair", "B"], "2T": ["BermudAir", "B"],
+  B6: ["JetBlue", "C"], BA: ["British Airways", "C"], VS: ["Virgin Atlantic", "C"], EI: ["Aer Lingus", "C"],
+  AF: ["Air France", "C"], IB: ["Iberia", "C"], FI: ["Icelandair", "C"], EK: ["Emirates", "C"], PD: ["Porter", "C"],
+  AM: ["Aeromexico", "C"], CM: ["Copa Airlines", "C"], AV: ["Avianca", "C"], AD: ["Azul", "C"], G3: ["GOL", "C"],
+  BW: ["Caribbean", "C"], "4Y": ["Discover Airlines", "C"], Z0: ["Norse Atlantic UK", "C"], ZG: ["Zipair", "C"],
+  TP: ["TAP Air Portugal", null]
+};
+// The terminal letter the feed doesn't carry. A C-prefixed gate or belt
+// is Terminal C (its own building). Arrivals: MCO numbers its belts by
+// building — 1–16 Terminal A, 20–32 Terminal B — and 481/481 belts in
+// the capture agree with the carrier's published terminal. Departures:
+// the numeric airsides (gates 1–129) are reached from BOTH A and B, so a
+// gate alone can't say where check-in is; the airport's airline table
+// can (Frontier and Breeze share gates 1–29 from opposite terminals).
+function mcoAuthTerminal(isDep, gate, belt, airlineIata) {
+  const g = String(gate || "").toUpperCase(), b = String(belt || "").toUpperCase();
+  if (/^C\d/.test(g) || /^C\d/.test(b)) return "C";
+  if (!isDep && /^\d+$/.test(b)) return Number(b) < 20 ? "A" : "B";
+  const al = MCO_AIRLINES[String(airlineIata || "").toUpperCase()];
+  return (al && al[1]) || null;
+}
+__name(mcoAuthTerminal, "mcoAuthTerminal");
+function mcoParseFeed(jsonText, dir, nowMs) {
+  const out = [];
+  let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
+  const isDep = dir === "dep";
+  const groups = new Map();   // "DL1735|1788659040" → its route-step rows, first-seen order
+  for (const r of (((j && j.data) || {}).flights) || []) {
+    if (!r || typeof r !== "object") continue;
+    const isArr = r.arrival === true;
+    if ((dir === "arr") !== isArr) continue;
+    const num = String(r.mainFlightNumber || r.iataMainFlightNumber || "").replace(/\s+/g, "").toUpperCase();
+    if (!num || typeof r.scheduledTimestamp !== "number") continue;
+    const k = `${num}|${r.scheduledTimestamp}`;
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  for (const rows of groups.values()) {
+    rows.sort((a, b) => (Number(a.routeStep) || 0) - (Number(b.routeStep) || 0));
+    const r = rows[0];
+    const num = String(r.mainFlightNumber || r.iataMainFlightNumber || "").replace(/\s+/g, "").toUpperCase();
+    const sched = localTimeObjFromTs("America/New_York", r.scheduledTimestamp * 1000);
+    const lk = r.lastKnownTimestamp;
+    const revised = (typeof lk === "number" && lk !== r.scheduledTimestamp)
+      ? localTimeObjFromTs("America/New_York", lk * 1000) : null;
+    const code = String(r.status || "").toUpperCase().trim();
+    let status = MCO_AUTH_STATUS[code] || "scheduled";   // unknown codes (an "OG" was seen once) → scheduled + revised time
+    if (code === "NT" && revised && revised.ts > sched.ts) status = "delayed";   // "New Time": later is a delay, earlier just a revision
+    const airline = String(r.iataMainPrefix || "").toUpperCase().trim() || (num.match(/^[A-Z0-9]{2}/) || [])[0] || null;
+    const al = airline ? MCO_AIRLINES[airline] : null;
+    const gate = String(r.gate || "").trim() || null;
+    const belt = isDep ? null : (String(r.baggageBelt || "").trim() || null);
+    const fl = authorityFlight({
+      dir, number: num, status,
+      callSign: String(r.icaoMainFlightNumber || "").toUpperCase().trim() || null,
+      homeIata: "MCO", homeIcao: "KMCO", homeName: "Orlando",
+      gate,
+      otherIata: String((isDep ? r.destinationAirport : r.originAirport) || "").toUpperCase().trim() || null,
+      otherName: null,
+      airlineIata: airline, airlineName: (al && al[0]) || null,
+      sched, revised
+    });
+    const homeSide = isDep ? fl.departure : fl.arrival;
+    const term = mcoAuthTerminal(isDep, gate, belt, airline);
+    if (term) homeSide.terminal = term;
+    if (belt) fl.arrival.baggageBelt = belt;
+    // Multi-stop: the step airports in the vendor's order — for departures
+    // that is route order with the final destination last (verified on
+    // every group); for arrivals the vendor's origin comes first and the
+    // remaining steps follow as filed by the carrier.
+    if (rows.length > 1) {
+      const stops = rows.map((x) => String(x.stepAirport || "").toUpperCase().trim()).filter(Boolean);
+      if (stops.length > 1) {
+        fl._stops = stops.map((c) => ({ iata: c, city: "" }));
+        const via = isDep ? stops.slice(0, -1) : stops.slice(1);
+        if (via.length) fl._mcoViaStop = via.join(", ");
+      }
+    }
+    out.push(fl);
+  }
+  return out;
+}
+__name(mcoParseFeed, "mcoParseFeed");
+
 const AUTHORITY_HANDLERS = {
+  mco: { tz: "America/New_York", source: "mco-authority", list: async (dir, env) => {
+    // GOAA's api.goaa.aero — the LAS/CLT vendor family. The Api-Key is the
+    // public one baked into flymco.com's Next.js bundle; the Api-Version is
+    // pinned because the vendor retires old ones with a 412 ("101" died in
+    // 2026-09 and took the airport's own board with it), so both are
+    // env-overridable without touching code. One combined call, ~490 KB for
+    // the 36 h window, split by the `arrival` flag in the parser.
+    const now = Math.floor(Date.now() / 1000);
+    const t = await fetchAuthorityText("mco/all", `https://api.goaa.aero/flights?scheduledTimestamp=${now - 6 * 3600}..${now + 30 * 3600}`, '"flights"', 90, {
+      headers: { "Api-Key": env.MCO_FEED_KEY || "8eaac7209c824616a8fe58d22268cd59", "Api-Version": env.MCO_FEED_API_VERSION || "200", "Accept": "application/json" }
+    });
+    if (!t) return null;
+    const f = mcoParseFeed(t, dir, Date.now());
+    return f.length ? f : null;
+  } },
+
+  iah: { tz: "America/Chicago", source: "iah-authority", list: async (dir, env) => {
+    // The board asks -2h..+10h and then +10h..+22h (feed-router.js), so
+    // one fetch spans that plus an hour of cache slack. ~1.1 KB a row,
+    // ~500–600 rows a direction over a full day (≈570 KB dep / 590 KB
+    // arr measured 2026-09-06); per-direction calls keep each payload and
+    // its JSON.parse half the size of the unfiltered feed. The key is the
+    // public one in fly2houston.com's bundle; env.IAH_FEED_KEY overrides
+    // if it ever rotates. A 206 is the vendor's "truncated at 3000 rows"
+    // — still a full day here, and fetchAuthorityText keeps it (r.ok).
+    const now = Math.floor(Date.now() / 1000);
+    const key = (env && env.IAH_FEED_KEY) || IAH_FEED_KEY;
+    const t = await fetchAuthorityText(`iah/${dir}`, `https://api.houstonairports.mobi/flights?scheduledTimestamp=${now - 2 * 3600}..${now + 23 * 3600}&baseAirport=IAH&arrival=${dir === "arr"}`, '"flights"', 90, {
+      headers: { "Api-Key": key, "Api-Version": "100", "Accept": "application/json" }
+    });
+    if (!t) return null;
+    const f = parseIahFeed(t, dir, Date.now(), "IAH");
+    return f.length ? f : null;
+  } },
+
   zrh: { tz: "Europe/Zurich", source: "zrh-authority", list: async (dir, env) => {
     // One JSON array per local (SDT) day, both directions in it, so one
     // edge-cache key per day serves every screen and both list() calls.
@@ -8430,5 +8671,7 @@ export {
   zrhParseFeed,
   zrhFeedDays,
   zrhStatus,
+  parseIahFeed,
+  mcoParseFeed,
   _authorityRosterHas
 };
