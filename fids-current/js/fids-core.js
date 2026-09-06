@@ -5729,6 +5729,7 @@ const AIRLINE_ACCENT = {
   // v23365 - El Al had no accent, so its orbs fell to the generic default.
   'LY':'#1b358f',
   'EY':'#C89801',   // Etihad gold
+  'I2':'#D71920',   // Iberia Express takes Iberia's red
 };
 
 
@@ -19543,6 +19544,11 @@ const IATA_TO_WORDMARK = {
   // itself never appears in any feed, which is why Chair was nowhere to be
   // seen despite its artwork being installed.
   'EK': 'emirates',   'IV': 'chair',
+  // v23368 - Iberia. Its file is filled with a GRADIENT rather than a flat
+  // colour, so the white variant points the fill at #ffffff instead of the
+  // gradient reference; a hex swap would have found nothing to replace.
+  // Iberia Express rides the same logotype.
+  'IB': 'iberia',     'I2': 'iberia',
   // v23354 — the wordmark half of the same seven regionals. A row that says
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
@@ -19713,6 +19719,7 @@ const LOGO_SUBFOLDER = {
   'elal-wordmark-light.svg':'airlines/european', 'elal-wordmark-dark.svg':'airlines/european',
   'etihad-wordmark-light.svg':'airlines/asian-other', 'etihad-wordmark-dark.svg':'airlines/asian-other',
   'emirates-wordmark-light.svg':'airlines/asian-other', 'emirates-wordmark-dark.svg':'airlines/asian-other',
+  'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
   'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
@@ -21137,7 +21144,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23367';
+var FIDS_BUILD_TAG = 'v23368';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
