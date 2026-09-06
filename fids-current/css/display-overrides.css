@@ -402,6 +402,7 @@ body[data-fids-logo-size] {
    The method checks out against the existing calibration - Air Canada and
    British Airways both compute to 22px, right beside SWISS's 21px, and they
    are the same wide all-caps shape. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="EY"] { --wm-h: 23px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LY"] { --wm-h: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LX"] { --wm-h: 21px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WK"] { --wm-h: 27px; }
@@ -410,7 +411,7 @@ body[data-fids-logo-size] {
 #fidsTable .td-airline .fids-airline-wordmark[data-code="EZY"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="EC"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="EJU"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="EZS"] { --wm-h: 35px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="EZS"] { --wm-h: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WT"] { --wm-h: 44px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="NSA"] { --wm-h: 50px; }
 /* Air Inuit is a stacked lockup too (syllabics over the word, 480x320
