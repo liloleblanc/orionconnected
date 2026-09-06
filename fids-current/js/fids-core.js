@@ -15951,8 +15951,11 @@ const gView = document.getElementById('gateView');
                                : (_bStKey === 'diverted' ? ' b3-diverted' : ''));
                 const _b3StCls = isArr || isEarly ? 's-arrived' : (isDelayed ? 's-delayed'
                                : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 's-cancelled' : 's-other');
+                const _b3WmOne = _bWmBase ? '' : (IATA_WORDMARK_ONE[_bWmCode] || '');   // v23348
                 const _b3Wm = _bidsEmblemOnly ? '' : (_bWmBase
                   ? '<img class="b3-wordmark" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, 'light') + '" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
+                  : _b3WmOne
+                  ? '<img class="b3-wordmark fids-wm-mono" alt="' + _bSafeName + '" src="' + _b3WmOne + '">'
                   : '<div class="b3-airline-name">' + airlineName + '</div>');
                 // Own city/code split (not .dest-iata): the legacy code-accent
                 // painters target that class and repaint it dark; and the code
@@ -19128,6 +19131,16 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
+  // v23348 — carriers whose rows printed a BARE IATA CODE because nothing here
+  // named them (Nick's Zurich board: "EW", "CJ", "IV"). Only codes I could
+  // identify with confidence are here; anything still unnamed is listed in the
+  // handover notes rather than guessed at, because a wrong airline name on a
+  // public board is worse than a code.
+  'EW': 'Eurowings',           'CJ': 'BA CityFlyer',
+  'RK': 'Ryanair UK',          'EC': 'easyJet Europe',
+  'EJU': 'easyJet Europe',     'EZS': 'easyJet Switzerland',
+  'LM': 'Loganair',            'W4': 'Wizz Air Malta',
+  'I2': 'Iberia Express',      'D8': 'Norwegian Air Sweden',
   // Regionals/internationals the map lacked — without an entry here the
   // prefix-first branding can't recognize the code and a feed row marked
   // AC carrying 3H802 branded as Air Canada (Nick).
@@ -19325,6 +19338,82 @@ const IATA_TO_TILE_ICAO = {
 // Used by mkLogo to render the airline name as a wordmark image instead
 // of plain text. Choose -dark.svg or -light.svg based on background.
 // FIDS table uses -light.svg (white wordmarks on dark navy rows).
+// ── v23348 — THE SINGLE-FILE WORDMARKS FINALLY GET USED ──────────────
+// (Nick, on a Zurich board: "fix the airline names worldwide, it looks
+// atrocious, I need actual wordmarks".) 61 airlines had real artwork sitting
+// in /logos/wordmarks as one IATA-named SVG each, but IATA_TO_WORDMARK only
+// understands a BASE name with -light/-dark variants, so none of it was ever
+// reachable and those rows printed a plain text name — or worse, the bare
+// code. These files are single-colour or full-colour with no light variant,
+// so the board tints them instead: .fids-wm-mono is whitened on dark rows and
+// inked black on the light ones (delayed, final call), the same treatment the
+// gate already gives operator marks. Consulted only when IATA_TO_WORDMARK has
+// nothing, so every hand-made light/dark pair still wins.
+const IATA_WORDMARK_ONE = {
+  '6E': '/logos/wordmarks/6E.svg',
+  'A3': '/logos/wordmarks/A3.svg',
+  'AH': '/logos/wordmarks/AH.svg',
+  'AI': '/logos/wordmarks/AI.svg',
+  'AK': '/logos/wordmarks/AK.svg',
+  'AR': '/logos/wordmarks/AR.svg',
+  'BI': '/logos/wordmarks/BI.svg',
+  'BT': '/logos/wordmarks/BT.svg',
+  'CX': '/logos/wordmarks/CX.svg',
+  'EI': '/logos/wordmarks/EI.svg',
+  'EK': '/logos/wordmarks/EK.svg',
+  'ET': '/logos/wordmarks/ET.svg',
+  'EW': '/logos/wordmarks/EW.svg',
+  'EY': '/logos/wordmarks/EY.svg',
+  'FR': '/logos/wordmarks/FR.svg',
+  'FY': '/logos/wordmarks/FY.svg',
+  'GA': '/logos/wordmarks/GA.svg',
+  'HV': '/logos/wordmarks/HV.svg',
+  'IB': '/logos/wordmarks/IB.svg',
+  'J2': '/logos/wordmarks/J2.svg',
+  'JL': '/logos/wordmarks/JL.svg',
+  'JQ': '/logos/wordmarks/JQ.svg',
+  'JU': '/logos/wordmarks/JU.svg',
+  'JX': '/logos/wordmarks/JX.svg',
+  'KE': '/logos/wordmarks/KE.svg',
+  'KQ': '/logos/wordmarks/KQ.svg',
+  'KU': '/logos/wordmarks/KU.svg',
+  'LH': '/logos/wordmarks/LH.svg',
+  'LX': '/logos/wordmarks/LX.svg',
+  'MF': '/logos/wordmarks/MF.svg',
+  'MH': '/logos/wordmarks/MH.svg',
+  'MK': '/logos/wordmarks/MK.svg',
+  'MM': '/logos/wordmarks/MM.svg',
+  'NZ': '/logos/wordmarks/NZ.svg',
+  'OZ': '/logos/wordmarks/OZ.svg',
+  'PG': '/logos/wordmarks/PG.svg',
+  'PR': '/logos/wordmarks/PR.svg',
+  'QH': '/logos/wordmarks/QH.svg',
+  'QP': '/logos/wordmarks/QP.svg',
+  'QR': '/logos/wordmarks/QR.svg',
+  'RC': '/logos/wordmarks/RC.svg',
+  'RO': '/logos/wordmarks/RO.svg',
+  'RX': '/logos/wordmarks/RX.svg',
+  'SK': '/logos/wordmarks/SK.svg',
+  'SN': '/logos/wordmarks/SN.svg',
+  'SQ': '/logos/wordmarks/SQ.svg',
+  'TK': '/logos/wordmarks/TK.svg',
+  'TP': '/logos/wordmarks/TP.svg',
+  'TR': '/logos/wordmarks/TR.svg',
+  'TW': '/logos/wordmarks/TW.svg',
+  'UB': '/logos/wordmarks/UB.svg',
+  'UO': '/logos/wordmarks/UO.svg',
+  'UX': '/logos/wordmarks/UX.svg',
+  'VA': '/logos/wordmarks/VA.svg',
+  'VJ': '/logos/wordmarks/VJ.svg',
+  'VN': '/logos/wordmarks/VN.svg',
+  'W6': '/logos/wordmarks/W6.svg',
+  'WY': '/logos/wordmarks/WY.svg',
+  'XY': '/logos/wordmarks/XY.svg',
+  'ZB': '/logos/wordmarks/ZB.svg',
+  'ZP': '/logos/wordmarks/ZP.svg'
+};
+try { if (typeof window !== 'undefined') window.IATA_WORDMARK_ONE = IATA_WORDMARK_ONE; } catch (e) {}
+
 const IATA_TO_WORDMARK = {
   // Canadian carriers
   'AC':'air-canada',  'WS':'westjet',  'PD':'porter',  'TS':'transat',
@@ -20900,7 +20989,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23346';
+var FIDS_BUILD_TAG = 'v23348';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -21901,8 +21990,14 @@ function render() {
     // 'airlines in general all white on red').
     const _rowWmVariant = (isDelayed || stKey === 'final-call') ? 'dark'
       : (isCanc || isDiv) ? 'light' : undefined;
+    // v23348 — a carrier with no light/dark pair may still have one of the
+    // single-file wordmarks; it is tinted by CSS (.fids-wm-mono) rather than
+    // swapped by variant, so it reads on dark and light rows alike.
+    const _wmOne = _wordmarkBase ? '' : (IATA_WORDMARK_ONE[_airlineCodeForLogo] || '');
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
       ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase, _rowWmVariant)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
+      : _wmOne
+      ? `<img class="fids-airline-wordmark fids-wm-mono" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${_wmOne}" onerror="this.outerHTML='<span class=&quot;fids-airline-name&quot;>' + this.alt + '</span>'">`
       : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
     // (Operated-by label lives on the GATE screen only — Nick doesn't want it
     // on the main board; the enforced Express matrix still drives the gate.)
