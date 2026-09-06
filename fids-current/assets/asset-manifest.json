@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2529,
+    "total": 2531,
     "by_category": {
       "ad": 10,
-      "airline": 1334,
+      "airline": 1336,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -6469,6 +6469,28 @@
       "subcategory": "european",
       "group": "Airlines — European",
       "name": "discover airlines",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/easyjet-wordmark-dark.svg",
+      "file": "easyjet-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "easyjet wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/easyjet-wordmark-light.svg",
+      "file": "easyjet-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "easyjet wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"
