@@ -8433,7 +8433,14 @@ function _buildV2MapCol(ctx, vars) {
       // rendered blank while live data was demonstrably reaching the page.
       // Reading the shared cache removes that coupling entirely.
       var _adsbC = null;
-      try { _adsbC = _adsbCached(_ib._reg, _ib._callSign, _ib.flight, null, _ib._modeS || (_ib.aircraft && _ib.aircraft.modeS)); } catch (e) {}
+      // v23331 — no lookup outside the leg's window (see _gateLegWindowOpen):
+      // a pre-departure or long-landed inbound spent FR24 budget every poll
+      // and could only ever answer with some other leg of the same tail.
+      try {
+        if (typeof _gateLegWindowOpen !== 'function' || _gateLegWindowOpen(_ib, vars.iata)) {
+          _adsbC = _adsbCached(_ib._reg, _ib._callSign, _ib.flight, null, _ib._modeS || (_ib.aircraft && _ib.aircraft.modeS));
+        }
+      } catch (e) {}
       var _candAlt = (_adsbC && typeof _adsbC.alt === 'number') ? _adsbC.alt
                    : (typeof _ib._liveAlt === 'number') ? _ib._liveAlt
                    : (_wpC && typeof _wpC.altitude === 'number' ? _wpC.altitude : null);
@@ -14960,12 +14967,17 @@ const gView = document.getElementById('gateView');
                       // Once arrived/landed there's nothing to hold → pins only.
                       if (/arriv|land|cancel/i.test(String(inb.status || ''))) { window._gateMapFix = null; return false; }
                       var _onG = inb._liveOnGround === true;
+                      // v23331 — resolve through the ONE gated resolver; never hand
+                      // the raw row snapshot to the sticky cache (a feed position
+                      // with an altitude re-armed the 4-minute hold on every tick,
+                      // so a frozen fix could never expire).
+                      var _lf0 = (typeof _gateLiveFix === 'function') ? _gateLiveFix(inb) : null;
                       var _mf = _gateStickyFix(
                         String(inb.flight || inb._reg || ''),
-                        (typeof inb._liveLat === 'number') ? inb._liveLat : null,
-                        (typeof inb._liveLng === 'number') ? inb._liveLng : null,
-                        (_onG ? null : (typeof inb._liveAlt === 'number' ? inb._liveAlt : null)),
-                        (_onG ? null : (typeof inb._liveSpd === 'number' ? inb._liveSpd : null))
+                        _lf0 ? _lf0.lat : null,
+                        _lf0 ? _lf0.lng : null,
+                        ((_onG || !_lf0) ? null : (typeof inb._liveAlt === 'number' ? inb._liveAlt : null)),
+                        ((_onG || !_lf0) ? null : (typeof inb._liveSpd === 'number' ? inb._liveSpd : null))
                       );
                       window._gateMapFix = (_mf && typeof _mf.lat === 'number' && typeof _mf.lng === 'number' && typeof _mf.alt === 'number' && _mf.alt > 0) ? _mf : null;
                       return !!window._gateMapFix;
@@ -20845,7 +20857,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23330';
+var FIDS_BUILD_TAG = 'v23331';
 var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to main'
 (function(){
   try {
@@ -23549,16 +23561,75 @@ function _gateStickyFix(key, lat, lng, alt, spd) {
 // expressible. This answers WHICH SOURCE only: each map keeps its own
 // honesty gates (physical plausibility, route corridor, leg window,
 // on-ground) on top of the position it gets back.
+// v23331 — A POSITION IS ONLY THIS LEG'S IF IT IS RECENT, INSIDE THE LEG'S
+// WINDOW, AND ABLE TO REACH THIS FIELD BY ITS ETA. Nick's WS790 gate
+// (Edmonton → Moncton, about to land) drew the aircraft over Saskatchewan.
+// The only position source left is the ADS-B lookup, and it took the first
+// answer for the REGISTRATION before the callsign — the airframe wherever it
+// is, another leg included — with no age check and no sanity check on the
+// coordinates it handed back. The lookup itself is now callsign-first with a
+// tail guard (_adsbTelemetry); this resolver adds the honesty gates that
+// every map shares.
+var _FIX_MAX_AGE_MS = 15 * 60000;
+// The leg's plausible airborne window: from ~its departure (arrival −
+// duration − 25 min pad) until arrival + 8 min. Same arithmetic as the
+// render's guard, lifted here so no lookup is even FIRED outside it — a
+// pre-departure or long-landed inbound used to spend FR24 budget every poll.
+function _gateLegWindowOpen(row, apIata) {
+  try {
+    if (!row) return false;
+    var arr = Math.max(row._revTs || 0, row._sortTs || 0);
+    if (!arr) return true;                                   // no times → cannot judge; the render's own guards decide
+    var acType = ((row._reg && typeof _regTrueType === 'function') ? _regTrueType(row._reg) : '') || row._aircraft || row._aircraftCode || '';
+    var durMl = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(row._locIata, apIata || window._gateIata || '', acType) : null;
+    var span = ((row._durationMins || durMl || 240) + 25) * 60000;
+    var now = Date.now();
+    return !(now < arr - span || now > arr + 8 * 60000);
+  } catch (e) { return true; }
+}
+// Can the aircraft still get from (lat,lng) to this field by its ETA? A 600 kt
+// ceiling plus 60 nm of slack: a fix 1,500 nm out at ETA−15 min is somebody
+// else's airplane. Pure, so tests/gate-fix-gate.test.js can pin it.
+function _fixCanReachByEta(lat, lng, dest, arrTs, nowTs) {
+  var remainNm = _gcNm([lat, lng], dest);
+  var hrsLeft = Math.max(0, (arrTs - nowTs) / 3600000);
+  return remainNm <= hrsLeft * 600 + 60;
+}
+function _fixPlausibleForLeg(row, lat, lng) {
+  try {
+    if (!row || row.dest) return true;                       // arrival rows only; outbound legs keep their own guards
+    var apI = (typeof window !== 'undefined' && window._gateIata) || '';
+    var dC = _lookupAirport(apI); if (!dC) return true;
+    var arrTs = Math.max(row._revTs || 0, row._sortTs || 0); if (!arrTs) return true;
+    return _fixCanReachByEta(lat, lng, dC, arrTs, Date.now());
+  } catch (e) { return true; }
+}
 function _gateLiveFix(row) {
   if (!row) return null;
+  var key = String(row.flight || row._reg || '');
+  // Outside the leg's window there is no position to look up — and nothing
+  // to hold: drop this leg's sticky fix so the map cannot keep a stale one.
+  if (!_gateLegWindowOpen(row)) {
+    if (_gateFixCache && _gateFixCache.key === key) _gateFixCache = null;
+    return null;
+  }
   var c = null;
   try { c = (typeof _adsbCached === 'function') ? _adsbCached(row._reg, row._callSign, row.flight, null, row._modeS || (row.aircraft && row.aircraft.modeS)) : null; } catch (e) {}
-  var lat = (c && typeof c.lat === 'number') ? c.lat
-          : (typeof row._liveLat === 'number') ? row._liveLat : null;
-  var lng = (c && typeof c.lng === 'number') ? c.lng
-          : (typeof row._liveLng === 'number') ? row._liveLng : null;
+  // The provider's own age (seen_pos, in seconds) — an old fix is not a position.
+  if (c && typeof c.age === 'number' && c.age * 1000 > _FIX_MAX_AGE_MS) c = null;
+  var lat = null, lng = null, src = '';
+  if (c && typeof c.lat === 'number' && typeof c.lng === 'number') { lat = c.lat; lng = c.lng; src = 'adsb'; }
+  else if (typeof row._liveLat === 'number' && typeof row._liveLng === 'number'
+           && !(typeof row._liveAt === 'number' && (Date.now() - row._liveAt) > _FIX_MAX_AGE_MS)) {
+    lat = row._liveLat; lng = row._liveLng; src = 'feed';
+  }
   if (lat === null || lng === null) return null;
-  return { lat: lat, lng: lng, onGround: !!(c && c.onGround === true) };
+  if (!_fixPlausibleForLeg(row, lat, lng)) {
+    try { console.log('[FIX-GATE]', row.flight, src, 'fix', lat.toFixed(2) + ',' + lng.toFixed(2), 'cannot reach', window._gateIata, 'by ETA — ignored'); } catch (e) {}
+    if (_gateFixCache && _gateFixCache.key === key) _gateFixCache = null;
+    return null;
+  }
+  return { lat: lat, lng: lng, onGround: !!(c && c.onGround === true), src: src };
 }
 
 // ── Actual-track recorder + deviation helper ──────────────────────────────
@@ -23650,7 +23721,16 @@ async function _adsbFetchOne(path) {
     if (timer) clearTimeout(timer);
     if (!r.ok) { _adsbCache[key] = { at: Date.now(), ac: null }; return null; }
     var j = await r.json();
-    var ac = (j && Array.isArray(j.ac) && j.ac.length) ? j.ac[0] : null;
+    // v23331 — two airframes can answer one callsign (a stale FMS entry on
+    // another tail): take the freshest position, not the first row.
+    var ac = null;
+    if (j && Array.isArray(j.ac) && j.ac.length) {
+      ac = j.ac.slice().sort(function (a, b) {
+        var sa = (a && typeof a.seen_pos === 'number') ? a.seen_pos : 1e9;
+        var sb = (b && typeof b.seen_pos === 'number') ? b.seen_pos : 1e9;
+        return sa - sb;
+      })[0];
+    }
     _adsbCache[key] = { at: Date.now(), ac: ac };
     return ac;
   } catch (e) {
@@ -23660,10 +23740,10 @@ async function _adsbFetchOne(path) {
   }
 }
 
-// Registration first — it is an exact identifier and _reg is already
-// resolved by the time the gate poll runs. Callsign second: ADS-B carries
-// the ICAO callsign (ROU1908), not the IATA flight number (RV1908), so a
-// bare flight number is only tried when it already looks like a callsign.
+// v23331 — CALLSIGN FIRST (see _adsbTelemetry): a registration is the
+// airframe wherever it is, not this leg. ADS-B carries the ICAO callsign
+// (ROU1908), not the IATA flight number (RV1908), so a bare flight number is
+// only tried when it already looks like a callsign — hence the conversion.
 // v22924 — IATA flight numbers are not callsigns. Measured on a live YQM gate:
 // the inbound resolves as 'WS812' with reg '(pending)', and spd/alt come back
 // null every time. The reason is here — 'WS812' has a TWO-letter prefix, so it
@@ -23690,27 +23770,21 @@ function _icaoCallsign(s) {
 }
 async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
   var tries = [];
-  // v23171 — MODE-S HEX FIRST. It is the aircraft's ICAO 24-bit address: the
-  // primary key every ADS-B feed indexes by, unique to the airframe, and it
-  // cannot be confused the way a callsign can (callsigns are reused across
-  // legs, and the IATA number on the board is often not the callsign at all —
-  // which is the whole reason for the conversion table below).
-  //
-  // We already have it for free: AeroDataBox returns aircraft.modeS alongside
-  // the registration on every flight lookup, and it is merged onto the row
-  // (~line 22881). It was simply never used for the position query.
-  var _hexId = String(modeS || '').trim().toUpperCase().replace(/[^0-9A-F]/g, '');
-  if (/^[0-9A-F]{6}$/.test(_hexId)) tries.push('/hex/' + _hexId);
-  var _r = String(reg || '').trim().toUpperCase();
-  if (/^[A-Z0-9-]{4,10}$/.test(_r)) tries.push('/reg/' + encodeURIComponent(_r));
+  // v23331 — CALLSIGN FIRST. A callsign is set per flight; a registration
+  // (or Mode-S hex) is the AIRFRAME wherever it is — its previous leg, a
+  // swapped rotation. The v23171 hex-first / reg-second order drew WS790 over
+  // Saskatchewan while it was landing at Moncton: the tail answered before
+  // the flight did, and nothing checked which flight that tail was flying.
+  // Hex and reg stay as the LAST resort, and only count if the answer is
+  // squawking OUR number (guard in the loop below).
   // {0,2} not {0,1}: real callsigns carry two trailing letters (DLH3CF,
   // SXS2VN were both live over FRA during verification and both were skipped).
   var _cs = String(callSign || '').trim().toUpperCase().replace(/\s+/g, '');
   if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_cs)) tries.push('/callsign/' + encodeURIComponent(_cs));
   var _fn = String(flightNo || '').trim().toUpperCase().replace(/\s+/g, '');
   if (_fn && _fn !== _cs && /^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_fn)) tries.push('/callsign/' + encodeURIComponent(_fn));
-  // Then the converted forms — this is what makes a gate whose inbound is only
-  // known by its IATA number resolvable at all.
+  // Then the converted forms ('WS812' → 'WJA812') — this is what makes a gate
+  // whose inbound is only known by its IATA number resolvable at all.
   var _seen = Object.create(null);
   tries.forEach(function (t) { _seen[t] = 1; });
   [_icaoCallsign(_cs), _icaoCallsign(_fn)].forEach(function (c) {
@@ -23718,9 +23792,29 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
     var path = '/callsign/' + encodeURIComponent(c);
     if (!_seen[path]) { _seen[path] = 1; tries.push(path); }
   });
+  var _hexId = String(modeS || '').trim().toUpperCase().replace(/[^0-9A-F]/g, '');
+  if (/^[0-9A-F]{6}$/.test(_hexId)) tries.push('/hex/' + _hexId);
+  var _r = String(reg || '').trim().toUpperCase();
+  if (/^[A-Z0-9-]{4,10}$/.test(_r)) tries.push('/reg/' + encodeURIComponent(_r));
+  // Our flight's digits, for the tail guard ('JZA7992' still matches 'AC7992').
+  var _ourDigits = (_fn || _cs).replace(/^\D+/, '').replace(/\D+$/, '');
   for (var i = 0; i < tries.length; i++) {
     var ac = await _adsbFetchOne(tries[i]);
     if (!ac) continue;
+    // A fix older than 15 minutes is not a position (seen_pos is in seconds).
+    if (typeof ac.seen_pos === 'number' && ac.seen_pos > 900) continue;
+    // THE TAIL IS NOT THE FLIGHT (v23103's guard, now where the lookups
+    // actually happen and for the whole leg, not only pre-departure): a
+    // hex/reg answer must be squawking OUR flight number, or carry no callsign
+    // at all (the community ring often omits it; the resolver's reachability
+    // gate still catches those).
+    if (!/^\/callsign\//.test(tries[i])) {
+      var _acDigits = String(ac.flight || '').trim().toUpperCase().replace(/^\D+/, '').replace(/\D+$/, '');
+      if (_acDigits && _ourDigits && _acDigits !== _ourDigits) {
+        try { console.log('[ADSB]', _fn || _cs, tries[i], 'is flying', String(ac.flight).trim(), '— not this leg; fix ignored'); } catch (e) {}
+        continue;
+      }
+    }
     // alt_baro is the number a board should show; it reads 'ground' (a
     // STRING) while the aircraft is on the surface, which is also the most
     // reliable on-ground signal in the feed.
@@ -24804,6 +24898,19 @@ function mapADB(raw, mode) {
     const _liveAlt = _adbAltFt(f.location);
     const _liveSpd = _adbSpdKt(f.location);
     const _liveOnGround = _adbOnGround(f.location);
+    // v23331 — the feed fix's report time, so the gate resolver can age it
+    // out (ADB location blocks carry reportedAtUtc; authority rows have no
+    // location at all, so this is null there and the check simply never bites).
+    const _liveAt = (function () {
+      try {
+        var s = String((f.location && f.location.reportedAtUtc) || '').trim();
+        if (!s) return null;
+        s = s.replace(' ', 'T');
+        if (!/(Z|[+-]\d\d:?\d\d)$/.test(s)) s += 'Z';
+        var t = Date.parse(s);
+        return isFinite(t) ? t : null;
+      } catch (e) { return null; }
+    })();
     // Flight duration from scheduled times
     var _durationMins = null;
     const _depSched = f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc;
@@ -24820,8 +24927,8 @@ function mapADB(raw, mode) {
     // unknown places for a flight, that can't be').
     if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
     return mode==='dep'
-      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
-      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
+      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
+      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode);
 }
 
