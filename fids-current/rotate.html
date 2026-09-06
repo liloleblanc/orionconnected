@@ -182,6 +182,24 @@
       // A board is ready to be SHOWN when it has revealed its chrome (fids/bids
       // stamp data-fids-chrome-ready once painted) or the gate layout exists;
       // failing those signals, 45 s after its load event is as long as we wait.
+      // v23337 — THE STREAM NEVER SHOWS AN EMPTY BOARD (Nick: "a stream with
+      // empty pages = no views and potentially a bad impression"). Even an
+      // airport with a perfectly good feed is empty at 3am its time — Moncton,
+      // Gander and Deer Lake all were when this was written. So an airport is
+      // skipped for this lap when its first board has loaded and has nothing on
+      // it, and it comes back on the next lap when its day starts. Fails open:
+      // if the board can't be inspected we show it rather than skip everything.
+      function hasFlights(f) {
+        try {
+          var d = f.contentDocument;
+          if (!d) return true;
+          if (d.querySelector('#fidsTable tbody tr, .b3-row, .bidsv2-flight-row')) return true;
+          if (d.querySelector('.g8-wrap .g8-r1-flightnum')) return true;   // gate screen with a flight
+          var empty = d.getElementById('panelEmpty');
+          if (empty && empty.offsetParent !== null) return false;          // the board itself says it is empty
+          return true;
+        } catch (e) { return true; }
+      }
       function isReady(f) {
         try {
           var d = f.contentDocument;
@@ -303,6 +321,23 @@
         if (reloadPending && nextAp !== curAp) { window.location.reload(); return true; }
         var nxt = ensureFrame(nextAp, seq[nextIdx]);
         if (nextAp !== curAp && !isReady(nxt) && (Date.now() - slotStart) < minMs + READY_GRACE_MS) return false;
+        // v23337 — skip an airport whose board has loaded with nothing on it,
+        // and try the one after it. Bounded by the roster length so a quiet
+        // night everywhere still shows a board rather than stalling on black.
+        if (nextAp !== curAp && isTour && isReady(nxt) && !hasFlights(nxt)) {
+          for (var _s = 0; _s < aps.length - 1; _s++) {
+            var _skipped = nextAp;
+            apIdx = (apIdx + 1) % aps.length;
+            nextAp = aps[apIdx];
+            if (nextAp === curAp) { apIdx = (apIdx + 1) % aps.length; nextAp = aps[apIdx]; }
+            try { console.log('[TOUR] skipping', _skipped, '— no flights on its board right now; trying', nextAp); } catch (e) {}
+            try { destroyAirport(_skipped); } catch (e) {}
+            nxt = ensureFrame(nextAp, seq[nextIdx]);
+            if (!isReady(nxt)) return false;            // give the new one a tick to load
+            if (hasFlights(nxt)) break;
+          }
+          apIdx = (apIdx - 1 + aps.length) % aps.length;  // the switch below advances it
+        }
         var retire = null;
         if (nextAp !== curAp) { retire = curAp; apIdx = (apIdx + 1) % aps.length; }
         idx = nextIdx;
