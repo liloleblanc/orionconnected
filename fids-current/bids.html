@@ -197,7 +197,8 @@
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
        heals display-collapsed banners and must not fight this. */
-    html:not([data-fids-chrome-ready]) .fids-banner { opacity: 0 !important; }
+    html:not([data-fids-chrome-ready]) .fids-banner,
+    body:not([data-fids-banner]) .fids-banner { opacity: 0 !important; }
     .fids-banner { transition: opacity .3s; }
   </style>
   <script>
@@ -883,7 +884,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=5"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23329"></script>
+<script src="js/fids-core.js?v=23330"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
@@ -967,6 +968,16 @@ window.addEventListener("DOMContentLoaded", async function() {
         applyAirportConfigToBoard(ap);
       }
     } catch(e) { console.error('[init] applyAirportConfigToBoard failed:', e); }
+
+    // v23330 — THE BANNER IS STYLED FROM THE FIRST FRAME (same as fids.html
+    // v23328). body[data-fids-banner] used to be set only by the dedicated
+    // renderer, after the first fetch; the loader's 8 s failsafe and the 20 s
+    // watchdog reveal the chrome regardless, so a slow first fetch showed the
+    // base 'tabs' banner until data arrived. The head gate above also keeps
+    // .fids-banner hidden until this attribute exists.
+    try {
+      if (typeof _applyBannerStyle === 'function') _applyBannerStyle(ap, 'bids');
+    } catch(e) { console.error('[init] _applyBannerStyle failed:', e); }
 
     // Set subScreenVal early so updateSubScreens preserves it through render cycles
     if (requestedBelt) {

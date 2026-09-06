@@ -226,6 +226,15 @@
 html:not([data-screen-ready]) #fidsBanner,
 html:not([data-screen-ready]) .ticker,
 html:not([data-screen-ready]) .content-area { display: none !important; }
+/* v23330 — AN UNSTYLED BANNER CANNOT PAINT. The board banner is laid out from
+   data-screen-ready (set at init, before the fetch) until changeScreenType
+   ('gate') after the data lands, hidden only by the 8 s ?gate= hold — and it
+   wore the base 'tabs' look because body[data-fids-banner] was only set by
+   the renderers. Init now sets it synchronously (_applyBannerStyle), so this
+   never delays anything; it only guarantees the base look is never seen.
+   Deliberately NOT the fids/bids data-fids-chrome-ready rule: nothing on this
+   page ever sets that attribute, so that rule would hide the banner forever. */
+body:not([data-fids-banner]) .fids-banner { opacity: 0 !important; }
 /* v23289 — THE GUARD ABOVE LIFTS TOO EARLY. It releases the moment the screen
    TYPE is settled, which is several frames before the gate has actually
    rendered — so on a gate boot the board banner painted in that gap and the
@@ -861,7 +870,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23329"></script>
+<script src="js/fids-core.js?v=23330"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -940,6 +949,17 @@ window.addEventListener("DOMContentLoaded", async function() {
         applyAirportConfigToBoard(ap);
       }
     } catch(e) { console.error('[init] applyAirportConfigToBoard failed:', e); }
+
+    // v23330 — THE BANNER IS STYLED FROM THE FIRST FRAME (same as fids.html
+    // v23328 / bids.html). This page has no chrome-ready gate or watchdog:
+    // #fidsBanner is laid out from data-screen-ready (below) until
+    // changeScreenType('gate') after the fetch, hidden only by the 8 s ?gate=
+    // hold, and it showed the base 'tabs' look in that window because
+    // body[data-fids-banner] was only set by the renderers. Set it now; the
+    // head guard keeps .fids-banner hidden until it exists.
+    try {
+      if (typeof _applyBannerStyle === 'function') _applyBannerStyle(ap, 'gids');
+    } catch(e) { console.error('[init] _applyBannerStyle failed:', e); }
 
     // Set subScreenVal early — updateSubScreens() will then preserve it
     // through any render cycle that happens after data loads.
