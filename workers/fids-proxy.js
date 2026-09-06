@@ -1301,9 +1301,10 @@ const YHZ_CITY_IATA = {
   "WASHINGTON": "IAD", "DETROIT": "DTW", "CHARLOTTE": "CLT"
 };
 function yhzCellText(s) {
-  return String(s || "").replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&")
+  // &amp; is decoded LAST (see ausXmlField): first would double-unescape.
+  return String(s || "").replace(/<[^>]+>/g, " ")
     .replace(/&#0?39;|&#8217;|&rsquo;/g, "'").replace(/’/g, "'")
-    .replace(/&nbsp;/g, " ").replace(/\s+/g, " ").trim();
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 }
 __name(yhzCellText, "yhzCellText");
 // Halifax's tables print HH:MM with no date and no offset. The offset is
@@ -3194,8 +3195,11 @@ __name(manFetch, "manFetch");
 function ausXmlField(chunk, tag) {
   const m = String(chunk || "").match(new RegExp("<" + tag + ">([^<]*)</" + tag + ">"));
   if (!m) return "";
-  return m[1].replace(/&#160;|&nbsp;/g, " ").replace(/&amp;/g, "&")
+  // &amp; is decoded LAST: decoding it first turns a literal "&amp;lt;" in
+  // the feed into a real "<" (CodeQL js/double-escaping).
+  return m[1].replace(/&#160;|&nbsp;/g, " ")
     .replace(/&#0?39;|&apos;|&#8217;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
     .replace(/\s+/g, " ").trim();
 }
 __name(ausXmlField, "ausXmlField");
