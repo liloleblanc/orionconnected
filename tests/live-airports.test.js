@@ -67,3 +67,15 @@ test('every offered airport has a name and a timezone in the AP table', () => {
     assert.match(apBlock, new RegExp(`\\n\\s*${c}\\s*:\\s*\\{[^}]*tz\\s*:`), `${c} is offered but missing from the AP table`);
   }
 });
+
+// v23338 — the mobile companion (app.html) has its own hardcoded airport
+// catalogue and its own picker, so it needs the same cut. Nick saw dead
+// airports still on offer there after the board's picker was filtered.
+test('the mobile app offers the same live airports as the board', () => {
+  const app = readFileSync(path.join(here, '..', 'fids-current', 'app.html'), 'utf8');
+  const s = app.indexOf('const APP_LIVE_AIRPORTS = new Set([');
+  assert.ok(s >= 0, 'APP_LIVE_AIRPORTS not found in app.html');
+  const codes = [...app.slice(s, app.indexOf(']);', s)).matchAll(/'([A-Z0-9]{3})'/g)].map((m) => m[1]);
+  assert.deepEqual(codes.slice().sort(), clientCodes().slice().sort(), 'app.html and fids-core.js disagree on which airports are live');
+  assert.match(app, /APP_LIVE_AIRPORTS\.has\(k\)/, 'the app picker no longer filters on APP_LIVE_AIRPORTS');
+});
