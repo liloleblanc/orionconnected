@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- TAP Air Portugal wordmark — Portuguese flag carrier.
      Red (#CC0000) and green are TAP's brand colors. -->
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0.085 13.205 280.307 39.921" font-family="Helvetica Neue, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 3.07 309.85 50.04" font-family="Helvetica Neue, Arial, sans-serif">
   <text x="0" y="44" font-size="42" letter-spacing="-0.5">
     <tspan fill="#CC0000" font-weight="700">TAP</tspan><tspan fill="#0E7A41" font-weight="500" dx="10">Air Portugal</tspan>
   </text>
