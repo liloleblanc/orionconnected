@@ -402,6 +402,7 @@ body[data-fids-logo-size] {
    The method checks out against the existing calibration - Air Canada and
    British Airways both compute to 22px, right beside SWISS's 21px, and they
    are the same wide all-caps shape. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="LY"] { --wm-h: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LX"] { --wm-h: 21px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WK"] { --wm-h: 27px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="GM"] { --wm-h: 30px; }
