@@ -1,0 +1,15 @@
+HTTP/2 200 
+content-type: application/json; charset=UTF-8
+access-control-allow-headers: x-apikey,Content-type
+access-control-allow-methods: GET,OPTIONS
+access-control-allow-origin: *
+expires: Sun, 06 Sep 2026 06:08:50 GMT
+cache-control: max-age=0, no-cache, no-store
+pragma: no-cache
+date: Sun, 06 Sep 2026 06:08:50 GMT
+server-timing: cdn-cache; desc=MISS
+server-timing: edge; dur=486
+server-timing: origin; dur=40
+akamai-grn: 0.c4182117.1788674929.c1b7a33c
+server-timing: ak_p; desc="1788674929625_388044996_3250037564_52486_13155_21_67_15";dur=1
+
