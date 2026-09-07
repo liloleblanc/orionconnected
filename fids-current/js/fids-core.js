@@ -7767,8 +7767,18 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // had white leave it white'. This map feeds the orb, so it stays mono
         // white. The colour leaf is applied ONLY on the welcome card, via
         // _FB_WELCOME_LOGO.
-        'WS':  '/logos/symbols/airlines-mono/WS.svg',   // real WestJet leaf/swoosh (single-path mono)
-        'WR':  '/logos/symbols/airlines-mono/WS.svg',
+        // v23404 — WestJet's leaf was BLACK on the aircraft hold panel (Nick:
+        // 'Shouldn't be a black leaf should be color'). symbols/airlines-mono/
+        // WS.svg is painted fill="currentColor", and inside an <img> there is
+        // no colour to inherit, so it resolves to the initial value: black.
+        // The orb never showed it because the orb whitens its art — but the
+        // hold panel sits on the light sky plate and paints the file as-is.
+        // WestJet-leaf-colour.svg is the real navy-and-teal leaf, already the
+        // file the countdown (_CD_MARK) and welcome strip (_BW_EMBLEM) use for
+        // exactly this reason. Whitened in the orb it flattens to the same
+        // white leaf as before, so the orb is unchanged.
+        'WS':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
@@ -9446,7 +9456,25 @@ function _buildV2MapCol(ctx, vars) {
       // was empty too. Measured on YQM gate 3 — Porter, which HAS an emblem
       // registered — the card orb rendered as nothing while the top orb wore
       // porter-p.svg. Same derivation the builder below uses.
-      var _niCodeRaw = String((_niIb && _niIb._opCode) || (vars.currentFlight && vars.currentFlight._opCode) || vars.airlineCode || '').trim().toUpperCase();
+      // v23404 — NEVER AN EMPTY DISC. Nick, on the YQM/AC stream: 'It's blank
+      // right now on the stream' — the bottom-right Arrival orb was a bare red
+      // circle with nothing in it while the whole left rail showed Air Canada
+      // fine. When the inbound aircraft is still 'To be confirmed' every
+      // source in this chain can come back empty, and an empty code resolves
+      // to no art AND to empty letters, so the orb paints as a plain disc that
+      // reads as broken.
+      // The gate's own carrier is the right fallback: the stand is that
+      // airline's, and a genuinely operated-by inbound overrides it above as
+      // soon as the feed names one.
+      var _niCodeRaw = String(
+        (_niIb && _niIb._opCode)
+        || (vars.currentFlight && vars.currentFlight._opCode)
+        || (vars.currentFlight && vars.currentFlight.airline)
+        || vars.airlineCode
+        || (ctx && ctx.airlineCode)
+        || (typeof airlineCode !== 'undefined' ? airlineCode : '')
+        || ''
+      ).trim().toUpperCase();
       var _niCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_niCodeRaw]) ? CALLSIGN_TO_IATA[_niCodeRaw] : _niCodeRaw;
       var _niOrbSrc = '';
       try { _niOrbSrc = _airlineOrbEmblem(_niCode) || ''; } catch (e) {}
@@ -21524,7 +21552,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23402';
+var FIDS_BUILD_TAG = 'v23404';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
