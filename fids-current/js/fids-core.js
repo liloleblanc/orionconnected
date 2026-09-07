@@ -21591,7 +21591,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23410';
+var FIDS_BUILD_TAG = 'v23412';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -36628,6 +36628,9 @@ function _buildGateAdSlideList() {
         'F8': '/logos/airlines/canadian/flair-dot.svg?v=2',
         'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2'
       };
+      // Welcome marks that ALREADY carry the carrier's name, so the sub line
+      // below must stay empty or the card says it twice.
+      var _FB_LOGO_HAS_NAME = { 'BA':1, 'BAW':1, 'MX':1 };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
         bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
@@ -36645,7 +36648,14 @@ function _buildGateAdSlideList() {
             return _w.join(' · ');
           } catch (e) { return _WA.en + ' · ' + _WA.fr; }
         })(),
-        sub: (_fb && _fb.name) ? _fb.name : '',
+        // v23412 — DON'T PRINT THE NAME TWICE. Nick: 'British Airways welcome
+        // screen has British Airways twice with 2 different emblems'. Most
+        // carriers put an EMBLEM here — a leaf, a widget, a tail — so the name
+        // underneath is what identifies it. But two entries above are not
+        // emblems at all: BA's welcome mark is the STACKED LOCKUP, which
+        // already sets 'BRITISH AIRWAYS' under the speedmarque, and Breeze's
+        // is its wordmark, which is nothing but the name.
+        sub: (_fb && _fb.name && !_FB_LOGO_HAS_NAME[code]) ? _fb.name : '',
         // v23123 — Nick: 'put the actual delta name in the middle wordmark'.
         subLogo: (function () {
           var _SUB_WORDMARK = {
