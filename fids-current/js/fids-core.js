@@ -21604,7 +21604,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23430';
+var FIDS_BUILD_TAG = 'v23434';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -22994,15 +22994,26 @@ function setState(which, show) {
       // boot cannot trigger it. ?norotate=1 opts out for anyone deliberately
       // looking at a feedless airport.
       try {
-        if (window.top === window && !window.__ocDeadTour
+        // v23434 — TAKE THE WHOLE PAGE, NOT JUST THIS FRAME. v23430 required
+        // window.top === window, so it only fired on a board that was already
+        // top-level. Nick's OGG board sits INSIDE the old rotator, which is
+        // pinned and cannot reload itself — so the one case this was written
+        // for was the one case it skipped, and the stream stayed dead a fourth
+        // day. Navigating window.top works either way: a top-level board sends
+        // itself, and a framed board takes the stale rotator with it instead of
+        // waiting for the rotator to cooperate.
+        if (!window.__ocDeadTour
             && ap && !_fidsAirportHasFeed(ap)
             && !/[?&]norotate=1/.test(location.search)) {
           window.__ocDeadTour = setTimeout(function () {
             try {
               var _still = (document.getElementById('apSel') || {}).value || '';
               if (_still && !_fidsAirportHasFeed(_still)) {
-                console.log('[FIDS] ' + _still + ' has no feed — sending this board to the tour');
-                location.href = '/rotate';
+                console.log('[FIDS] ' + _still + ' has no feed — sending the display to the tour');
+                // window.top so a framed board escapes a pinned rotator too;
+                // same-origin, and it falls back to this frame if it throws.
+                try { window.top.location.href = '/rotate?tour=1'; }
+                catch (e) { location.href = '/rotate?tour=1'; }
               }
             } catch (e) {}
           }, 45000);
