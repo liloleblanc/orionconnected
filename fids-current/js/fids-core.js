@@ -7752,6 +7752,39 @@ function _orbMono(code) {
 }
 window._orbArtFailed = function (img, code) {
   var wrap = img && img.parentNode;
+  // v23388 — TRY THE ROW TILE BEFORE FALLING BACK TO LETTERS.
+  // 59 of the 137 carriers with no orb symbol already have a tile drawn for
+  // the board row — SkyWest OO→SKW, JetBlue B6→JBU, Alaska AS→ASA, Qantas
+  // QF→QFA, ANA NH→ANA — and every one of those tiles is exactly 1:1, so it
+  // sits in a round orb without letterboxing. Nick, on the BOS/A1 Delta gate:
+  // the arrival orb read a bare 'OO' when SkyWest's own mark was already on
+  // disk. Letters are the last resort, not the second.
+  if (img && wrap && !img.dataset.orbTileTried) {
+    img.dataset.orbTileTried = '1';
+    var _icao = (typeof IATA_TO_TILE_ICAO !== 'undefined') && IATA_TO_TILE_ICAO[code];
+    if (_icao) {
+      // Tiles are full-colour artwork. Whatever whitening the orb applied to
+      // a silhouette symbol would flatten a tile into a white blob, so drop it.
+      try {
+        img.style.removeProperty('filter');
+        // A symbol is a silhouette that wants padding and breathing room; a
+        // tile is a finished square mark, and several carry their own baked
+        // background (Etihad gold, airBaltic, Czech, Allegiant). Padded and
+        // 'contain'-fitted, those read as a square floating in a circle —
+        // the "circle within a circle" Nick has called out before. Filling
+        // the disc instead turns the tile's own background INTO the orb, so
+        // it reads like a proper roundel either way.
+        img.style.setProperty('width', '100%', 'important');
+        img.style.setProperty('height', '100%', 'important');
+        img.style.setProperty('object-fit', 'cover', 'important');
+        img.style.setProperty('border-radius', '50%', 'important');
+        var _p = img.parentNode;
+        if (_p && _p.style) _p.style.setProperty('padding', '0', 'important');
+      } catch (e) {}
+      img.src = '/logos/airline-tiles/' + _icao + '.svg';
+      return;   // a second failure re-enters here and falls through to letters
+    }
+  }
   if (img && img.remove) img.remove();
   if (!wrap || wrap.querySelector('.v2-fi-orb-code')) return;
   var span = document.createElement('span');
@@ -21316,7 +21349,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23386';
+var FIDS_BUILD_TAG = 'v23388';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
