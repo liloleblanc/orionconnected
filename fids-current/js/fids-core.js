@@ -12288,6 +12288,17 @@ function uxgGateHtml(ctx) {
       var _embT = (typeof IATA_TO_TILE_ICAO !== 'undefined') ? (IATA_TO_TILE_ICAO[_embCode2] || IATA_TO_TILE_ICAO[airlineCode]) : null;
       if (_embF) _bannerEmblemSrc = _embF;
       else if (_embT) _bannerEmblemSrc = '/logos/airline-tiles/' + _embT + '.svg';
+      // v23440 — THE BANNER MARK IS SQUARE (Nick, on the DEN/A14 United gate:
+      // 'Logo at the top banner left should be square'). This band already
+      // carries a square Star Alliance tile to the right of the wordmark;
+      // United's glossy globe is a disc, so the two marks in one band read as
+      // two different kinds of object. UAL-sq.svg is the same globe on
+      // United's #1414D2 ground, square, so the pair matches.
+      // Scoped to the BANNER only — the orbs, countdown and aircraft plate
+      // keep the round glossy globe v23394 standardised on.
+      var _SQ_BANNER_EMBLEM = { 'UA': '/logos/airline-tiles/UAL-sq.svg' };
+      var _sqB = _SQ_BANNER_EMBLEM[_embCode2] || _SQ_BANNER_EMBLEM[airlineCode];
+      if (_sqB) _bannerEmblemSrc = _sqB;
     } catch (e) {}
   }
   var _bannerEmblemHtml = _bannerEmblemSrc
@@ -21632,7 +21643,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23438';
+var FIDS_BUILD_TAG = 'v23440';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

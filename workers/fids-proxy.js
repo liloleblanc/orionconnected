@@ -2440,6 +2440,22 @@ function sfoParseFeed(jsonText, dir, nowMs) {
   const want = dir === "dep" ? "Departure" : "Arrival";
   for (const r of (Array.isArray(j.data) ? j.data : [])) {
     if (!r || r.flight_kind !== want) continue;
+    // v23440 — ONE ROW PER AIRCRAFT (Nick: 'SFO shows codeshare flights').
+    // flysfo expands every marketing partner into its own row: his shot had
+    // UA2624, NZ9349 and VA8456 stacked to Portland, all 10:10 off F13, and
+    // nine rows to Los Angeles at 10:12 off B22. Measured on the live feed
+    // 2026-09-07: 1738 departure rows are 506 aircraft, 1801 arrivals are
+    // 529 — better than two thirds of the board was the same flight repeated.
+    //
+    // Unlike the PANYNJ feeds, which say nothing and have to be ranked by
+    // flight number, SFO labels the duplicates: the partner rows carry
+    // is_code_share and the operator's does not, and every row in a group
+    // shares the operator's callsign. Checked across the whole feed before
+    // relying on it — 506/506 departure callsign groups and 529/529 arrival
+    // groups hold EXACTLY ONE non-codeshare row, none hold zero or two, and
+    // no row is missing a callsign. So this drops duplicates only; it can
+    // never drop the flight itself.
+    if (r.is_code_share) continue;
     const al = r.airline || {};
     const code = (al.iata_code || "").toString().toUpperCase();
     const su = r.scheduled_in_off_block_time || r.scheduled_aod_time;
