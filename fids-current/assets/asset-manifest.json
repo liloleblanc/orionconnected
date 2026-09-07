@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2552,
+    "total": 2555,
     "by_category": {
       "ad": 10,
-      "airline": 1357,
+      "airline": 1360,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -6628,6 +6628,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/european/eurowings-wordmark-dark.svg",
+      "file": "eurowings-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "eurowings wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/eurowings-wordmark-light.svg",
+      "file": "eurowings-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "eurowings wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/european/helvetic-wordmark-dark.svg",
       "file": "helvetic-wordmark-dark.svg",
       "category": "airline",
@@ -7352,6 +7374,17 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/symbols/airlines/CS.png",
+      "file": "CS.png",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "CS",
+      "iata": "",
+      "country": "",
+      "ext": "png"
     },
     {
       "path": "/logos/symbols/airlines/CX.svg",
