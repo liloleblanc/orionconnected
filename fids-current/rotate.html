@@ -431,7 +431,16 @@
         // board of the next airport, wherever we happen to be in the sequence.
         if (isTour && apDwellMs && (Date.now() - airportStart) >= apDwellMs) nextIdx = 0;
         var nextAp = (isTour && nextIdx === 0) ? aps[(apIdx + 1) % aps.length] : curAp;
-        if (reloadPending && nextAp !== curAp) { window.location.reload(); return true; }
+        // v23422 — RELOAD EVEN WHEN THE AIRPORT NEVER CHANGES. This used to
+        // fire only on an airport switch, which is a trap: a single-airport run
+        // has nextAp === curAp forever, so a stream pinned to one board could
+        // NEVER pick up a deploy. That is exactly what happened — Nick's stream
+        // sat on the old code for days while every fix shipped past it, and no
+        // amount of deploying could reach it ('it never gets done'). An airport
+        // switch is still the preferred moment because it hides the reload
+        // behind a transition, but a board switch will do when there is no
+        // airport switch coming.
+        if (reloadPending && (nextAp !== curAp || aps.length < 2)) { window.location.reload(); return true; }
         var nxt = ensureFrame(nextAp, seq[nextIdx]);
         if (nextAp !== curAp && !isReady(nxt) && (Date.now() - slotStart) < minMs + READY_GRACE_MS) return false;
         // v23337 — skip an airport whose board has loaded with nothing on it,
