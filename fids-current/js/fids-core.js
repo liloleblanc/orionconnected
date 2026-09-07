@@ -21604,7 +21604,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23428';
+var FIDS_BUILD_TAG = 'v23430';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -22981,6 +22981,33 @@ function setState(which, show) {
           : 'NO LIVE DATA FOR THIS AIRPORT<div class="sub">' + String(ap).toUpperCase()
             + ' HAS NO FLIGHT FEED YET · SIN DATOS EN VIVO PARA ESTE AEROPUERTO</div>';
       }
+      // v23430 — A DEAD BOARD SENDS ITSELF TO THE TOUR.
+      // Nick's stream spent four days on a board for an airport with no feed
+      // (OGG), showing this very panel. Every fix to the tour list missed it
+      // because the stream was never pointed at the rotator at all — it loads a
+      // single-airport board URL, so TOUR_DEFAULT was never consulted and no
+      // deploy could route around it. He is not at the machine and cannot
+      // change the URL, so the board has to recover on its own.
+      // Narrow on purpose: only a TOP-LEVEL board (never one inside the
+      // rotator, never an embed), only when the airport definitively has no
+      // feed, only once, and only after 45s so a transient empty state during
+      // boot cannot trigger it. ?norotate=1 opts out for anyone deliberately
+      // looking at a feedless airport.
+      try {
+        if (window.top === window && !window.__ocDeadTour
+            && ap && !_fidsAirportHasFeed(ap)
+            && !/[?&]norotate=1/.test(location.search)) {
+          window.__ocDeadTour = setTimeout(function () {
+            try {
+              var _still = (document.getElementById('apSel') || {}).value || '';
+              if (_still && !_fidsAirportHasFeed(_still)) {
+                console.log('[FIDS] ' + _still + ' has no feed — sending this board to the tour');
+                location.href = '/rotate';
+              }
+            } catch (e) {}
+          }, 45000);
+        }
+      } catch (e) {}
     } catch (e) {}
   }
 }
