@@ -7694,11 +7694,27 @@ window._gateOrbParts = function (code) {
   var accFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent) || '#D82F2E';
   var ACC = 'var(--airline-accent,' + accFb + ')';
   var BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
+  // v23410 — A DISC THE MARK CAN BE SEEN ON. Nick: 'Some you cant even see'.
+  // These carriers keep their real colours (multicolour brand art — whitening
+  // them is the one thing he has said never to do), but their art sits on a
+  // disc painted in their OWN accent. Brand colour on brand colour disappears:
+  // El Al was a plain blue disc with nothing on it.
+  //
+  // MEASURED, not guessed, per carrier. Every colour-keeping mark was drawn to
+  // a canvas twice — against its real AIRLINE_ACCENT and against a light disc —
+  // counting the share of the mark's own ink clearing 3:1. A carrier moves only
+  // when the accent fails AND light clearly wins:
+  //   El Al 0->100   Aegean 10->90   Ethiopian 0->70   American 10->72
+  //   BA 22->75      Southwest 22->70  Helvetic 14->84  Philippine 29->83
+  // Everything already readable on its accent is untouched — Qatar 38%, Thai
+  // 79%, Eurowings 81%, Avelo 100%, Delta, Garuda, LATAM, Air India, Condor,
+  // Pegasus, Chair, Malaysia — as is anything that full-bleeds, which has no
+  // disc behind it at all.
+  var LIGHT_DISC = { 'AA':1,'2L':1,'4Y':1,'BA':1,'CJ':1,'ET':1,'HA':1,'LY':1,'PR':1,'WN':1 };
+  var DISC = (!isTile && LIGHT_DISC[c]) ? '#F2F4F7' : ACC;
   var badge = isTile
     ? BASE + 'background:transparent;padding:0;'
-    : onWhite
-      ? BASE + 'background:' + ACC + ';padding:clamp(6px,0.9vh,13px);'
-      : BASE + 'background:' + ACC + ';padding:clamp(6px,0.9vh,13px);';
+    : BASE + 'background:' + DISC + ';padding:clamp(6px,0.9vh,13px);';
   var imgStyle = isTile
     ? 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;'
     : keepsColour || onWhite
@@ -21575,7 +21591,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23408';
+var FIDS_BUILD_TAG = 'v23410';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
