@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2557,
+    "total": 2560,
     "by_category": {
       "ad": 10,
-      "airline": 1362,
+      "airline": 1365,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -7090,6 +7090,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/european/pegasus-wordmark-dark.svg",
+      "file": "pegasus-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "pegasus wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/pegasus-wordmark-light.svg",
+      "file": "pegasus-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "pegasus wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/european/sas-wordmark-dark.svg",
       "file": "sas-wordmark-dark.svg",
       "category": "airline",
@@ -7803,6 +7825,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/symbols/airlines/PC.svg",
+      "file": "PC.svg",
+      "category": "airline",
+      "subcategory": "symbol",
+      "group": "Airline symbols (emblem only)",
+      "name": "PC",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/symbols/airlines/PG.svg",
