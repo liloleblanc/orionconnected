@@ -10286,7 +10286,20 @@ function _buildV2MapCol(ctx, vars) {
         // color'). Same reason the countdown keeps _CD_MARK and the welcome
         // strip keeps _BW_EMBLEM: a light ground needs the colour cut. Scoped
         // to this plate, so the orb keeps the mono leaf it was drawn for.
+        // v23428 — NO ORB ON THIS PLATE. Nick's rule: 'ROUND ORBS ONLY GO TOP
+        // LEFT AND BOTTOM RIGHT ALL ELSE IS ACTUAL EMBLEMS'. This sky plate is
+        // neither, so it must show the carrier's real emblem — but two
+        // carriers' orb art IS an orb: Delta's glossy sphere and United's
+        // glossy globe. Falling through to _airlineOrbEmblem put a round
+        // glossy ball on a flat plate (Nick, on the JFK/B55 Delta gate: 'these
+        // are still not right'). Both have a flat colour emblem on disk, which
+        // is what belongs here — the same art the countdown uses for the same
+        // reason. No other carrier resolves to orb-shaped art.
         var _HOLD_MARK = {
+          'DL':  '/logos/airlines/us-major/delta-emblem-colour.svg',
+          'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+          'UA':  '/logos/airlines/us-major/united-globe-only.svg',
+          'UAL': '/logos/airlines/us-major/united-globe-only.svg',
           'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
           'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
         };
@@ -21591,7 +21604,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23426';
+var FIDS_BUILD_TAG = 'v23428';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
