@@ -3634,12 +3634,14 @@ body, body.gids-page, body.gate-page{
 .g8-airline-F8 .g8-r1-right .g8-bilbl,
 .g8-airline-F8 .g8-r1-right .g8-r1-gate { color: #1C1C1C !important; }
 .g8-airline-F8 :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row .v2-fi-svg { fill: #1C1C1C !important; }
-/* The rail icon badges are BLACK (#141414, set inline by the renderer), NOT
-   lime — so the glyph must be the brand GREEN, not brand black. Forcing #1C1C1C
-   here painted a dark glyph on the dark badge = invisible (Nick: 'flair has
-   black icons with nothing in it'). The Flair EMBLEM badge (green dot) has no
-   glyph and is unaffected. */
-.g8-airline-F8 :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-icon-wrap { color: #7AFF94 !important; }
+/* v23438 — THE BADGES ARE LIME NOW, SO THE GLYPH GOES BACK TO BRAND BLACK.
+   Nick: 'Flair is supposed to have the green ball I see where this is going
+   the other blacks are wrong they should be green with black markings'. The
+   renderer paints the rail badges #7AFF94 as of this build, so the green glyph
+   this rule used to force would be green-on-green — the same invisibility it
+   was written to cure, just inverted. The Flair EMBLEM badge (the green ball)
+   carries no glyph and is unaffected either way. */
+.g8-airline-F8 :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-icon-wrap { color: #1C1C1C !important; }
 /* Flair emblem is the brand GREEN dot — keep its native color, never blacken it. */
 .g8-airline-F8 .v2-fi-emblem-img { filter: none !important; }
 
@@ -4603,8 +4605,28 @@ body, body.gids-page, body.gate-page{
    #f01428), and colour the functional icons red. AC-scoped only. */
 /* (Black-sphere AC treatment RETIRED — Nick now wants AC's vertical
    badges RED like every other carrier's accent badges.) */
-/* Flight-orb airline emblem a touch smaller so it fits the orb */
-.g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row .v2-fi-emblem-img { width: 74% !important; height: 74% !important; margin: auto !important; }
+/* ── v23438 — THE 74% INSET IS RETIRED (Nick, WestJet YEG/49D: 'CAnnot be 2
+   different sizes unacceptable'; China Eastern: 'the 2 orbs dont match the
+   botom orb is right').
+
+   The gate draws one round emblem orb top-left and one bottom-right, and by
+   v23396 both were built from the same recipe — same 60px disc, same
+   clamp(6px,0.9vh,13px) padding, same art, same inline width:100%. They still
+   came out different sizes, and this rule was why: it shrank the TOP-LEFT one
+   to 74% with !important, on top of the padding the wrap already carries, so
+   the same WestJet leaf measured 33.6px here against 45.5px in the arrival
+   orb. The bottom orb escaped only because its <img> wears .v2-fi-orb rather
+   than .v2-fi-emblem-img.
+
+   Written back when the wrap had no padding of its own, so the inset had to
+   come from somewhere; the recipe supplies it now, and doing it twice is also
+   what Nick called 'the logos inside are tiny' in v23130. The 100% rule
+   further up this file governs again — which is exactly what the bottom orb
+   does, and he says the bottom orb is right.
+
+   (The .g8-airline-UA block above re-asserts 100% for United's full-bleed
+   tile; it is now saying what the default already says, and is left alone
+   rather than churned.) */
 
 /* ── v218.99 — Right column (.gad-map-col-v2) airline watermark:
    let the per-airline emblem/pattern read BEHIND the panel content (it was
