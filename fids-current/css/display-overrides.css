@@ -14802,7 +14802,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-number {
   color: #ffffff !important; -webkit-text-fill-color: #ffffff !important;
   -webkit-text-stroke: 0.028em #000000 !important; paint-order: stroke fill !important;
-  font-size: 44vh !important; line-height: .94 !important;
+  /* v23454 — the ceiling lives here, once, as a custom property so the JS
+     fitter (_b3FitBeltNumber) measures from the same constant the CSS uses
+     rather than hardcoding 44vh in a second place. Resolved value is
+     unchanged. */
+  --crsl-num-cap: 44vh;
+  font-size: var(--crsl-num-cap) !important; line-height: .94 !important;
   font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
   font-weight: 900 !important;
   display: flex !important; align-items: center !important; justify-content: center !important;

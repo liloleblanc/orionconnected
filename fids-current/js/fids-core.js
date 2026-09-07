@@ -5769,6 +5769,15 @@ const AIRLINE_ACCENT = {
   'EW':'#7C2045',   // Eurowings burgundy, from its own wordmark
   'A3':'#1C4093',   // Aegean blue, from its own wordmark
   'PC':'#FDC300',   // Pegasus yellow - the red emblem reads on it
+  // v23454 — the second half of 'the colors dont match even the blue'. China
+  // Eastern had no accent at all, so getAirlineAccent fell to the generic
+  // '#0033A1' — a navy belonging to no carrier, and near enough to United's
+  // #0033A0 to read as United's. With the orbs now wearing the CES tile, the
+  // gate furniture was a second, different blue on the same screen. This is
+  // not a guess: it is the literal ground fill of the tile art itself,
+  // <path fill="#1B1D80"> in logos/airline-tiles/CES.svg, so orb and
+  // furniture are now the same ink.
+  'MU':'#1B1D80',   // China Eastern navy, measured off its own roundel
 };
 
 
@@ -7863,7 +7872,27 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'AF':  '/logos/airlines/european/air-france-emblem.svg?v=2',   // rebuilt Jul 2026 — official accent path, centered (old file was a clipped sliver)
         'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
         'BW':  '/logos/airlines/asian-other/caribbean-emblem.png',     // official hummingbird (airline's own brand art)
-        '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg'
+        '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg',
+        // v23454 — CHINA EASTERN'S ORB IS ITS OWN ROUNDEL. Nick, on the MU
+        // gate: 'the 2 orbs dont match the botom orb is right howeer the
+        // colors dont match even the blue'.
+        //
+        // No MU symbol was ever drawn, so _airlineOrbEmblem fell through to
+        // its optimistic guess of /logos/symbols/airlines/MU.svg — a 404 here
+        // AND in production. The arrival card and the shelf builder recover
+        // from that through _orbArtFailed, which finds the carrier's row tile
+        // and draws the swallow; the TOP RAIL orb's onerror does not — it
+        // draws a generic aeroplane and throws the carrier away. Hence one orb
+        // showing China Eastern and the other a blank plane on a different
+        // blue, which is exactly what he described.
+        //
+        // Naming the tile here means the path resolves first time at every one
+        // of the eleven call sites, so no onerror round-trip and no divergence
+        // between them. _gateOrbParts treats any /logos/airline-tiles/ path as
+        // a finished tile — transparent badge, object-fit:cover, no whitening —
+        // so the tile's own navy ground BECOMES the orb and both ends of the
+        // screen wear the same disc in the same colour.
+        'MU':  '/logos/airline-tiles/CES.svg'
 };
 
 // Gate-only artwork overrides. Keep these separate from AIRLINE_EMBLEM_FILES:
@@ -16521,7 +16550,7 @@ const gView = document.getElementById('gateView');
     // is measured. The bar is a 1141px design; --b3u carries listWidth/1141
     // so the From cell keeps its share on a 1366 laptop or a 4K wall
     // (Nick's Halifax shot: 'Ne… | LGA' — the city crushed to nothing).
-    try { _b3FitList(bView); } catch (e) {}
+    try { _b3FitList(bView); _b3FitBeltNumber(); } catch (e) {}
 
     // ── POST-RENDER MEASUREMENT: figure out how many rows actually fit ──
     // v218.36. Run on next animation frame so layout has settled. If the
@@ -16604,12 +16633,75 @@ function _b3FitList(root) {
   view.style.setProperty('--b3u', u.toFixed(4) + 'px');
   return u;
 }
+
+// v23454 — THE BELT ID IS MEASURED, NOT COUNTED.
+// Nick, on the SFO baggage board: 'the bag claim number bulges out the
+// assigned area' — 'B10' ran past the panel and the last character was cut.
+//
+// There WAS already a rule meant to prevent this: a data-len ladder (v23247)
+// that steps the numeral down for longer ids. It never fired. Its selector and
+// the .bidsv3 rule both carry fourteen :not(#_) plus two class parts, so they
+// tie exactly on specificity and the ladder LOSES on source order — the flat
+// 44vh wins for every id, however long. Confirmed on the booted board rather
+// than by reading: the [data-len="4"] rule reports matches:true while the
+// computed size is still 475.2px = 44vh.
+//
+// Fixing the tie alone would not be enough, because a character COUNT cannot
+// size this. At the shipped face 'B10' is 1.99em wide, '111' is 2.00em and
+// 'CL12' is 2.60em — same data-len for two of those, different widths. Worse,
+// the rule asks for 'Segoe UI', which a Windows wall resolves and a Mac does
+// not, so the metrics the ladder was tuned against are not the metrics every
+// screen renders.
+//
+// So: measure the text, fit the box. The ladder stays as the no-JS safety net;
+// this is the exact fit. --crsl-num-cap is the ceiling, published by the CSS so
+// the cap lives in exactly one place.
+function _b3FitBeltNumber() {
+  try {
+    var el = document.querySelector('.bidsv3 .bidsv2-carousel-number');
+    if (!el) return;
+    var box = el.parentElement;
+    if (!box) return;
+    // Measure from the flat ceiling every time, never from a previous fit or
+    // from whichever ladder rung happened to match — otherwise the numeral
+    // ratchets smaller on each render and never recovers.
+    var cap = (getComputedStyle(el).getPropertyValue('--crsl-num-cap') || '').trim() || '44vh';
+    el.style.setProperty('font-size', cap, 'important');
+    el.style.setProperty('white-space', 'nowrap', 'important');
+    // Measure against the NUMERAL'S own content box, not the panel's. The
+    // numeral is a flex child and is narrower than the panel it sits in, so
+    // sizing to the panel leaves the text overflowing its own box — which is
+    // precisely what gets clipped. A first pass at 0.90 of the panel took
+    // 'B10' from 148px of overflow down to 41px, and 41px is still cut off.
+    // Shrink ONLY on real overflow. scrollWidth collapses to clientWidth as
+    // soon as the text fits, so testing against a reduced target instead of
+    // against clientWidth itself shrinks ids that were never too big — an
+    // earlier cut of this took '1' and 'E7' from the full 475px down to 346px
+    // for no reason. The margin belongs in the correction, not the test.
+    //
+    // One ratio pass is not enough: the face carries a text-stroke and its
+    // advance widths do not scale perfectly linearly with font-size, so the
+    // first estimate lands close but still long. Converge instead of guessing;
+    // the loop exits the moment it fits, and bails if a pass makes no
+    // progress rather than spinning.
+    for (var pass = 0; pass < 5; pass++) {
+      var avail = el.clientWidth;
+      var w = el.scrollWidth;
+      if (!avail || !w || w <= avail) break;        // fits — leave the cap alone
+      var base = parseFloat(getComputedStyle(el).fontSize) || 0;
+      if (!base) break;
+      var next = Math.floor(base * ((avail * 0.94) / w));
+      if (!(next > 0) || next >= base) break;
+      el.style.setProperty('font-size', next + 'px', 'important');
+    }
+  } catch (e) { /* best-effort: a board must never fail to render over this */ }
+}
 try {
   if (!window._b3ResizeHooked) {
     window._b3ResizeHooked = true;
     var _b3ResizeT = null;
     window.addEventListener('resize', function () {
-      try { _b3FitList(document); } catch (e) {}
+      try { _b3FitList(document); _b3FitBeltNumber(); } catch (e) {}
       clearTimeout(_b3ResizeT);
       // Re-render (debounced) so the rows-per-page fit re-measures against
       // the rescaled bars; _BIDS_FIT keys on innerHeight, so it recomputes.
@@ -21683,7 +21775,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23452';
+var FIDS_BUILD_TAG = 'v23454';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
