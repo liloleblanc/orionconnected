@@ -256,21 +256,197 @@ export default {
     // callers for one airport share a cache entry, and a good reading is kept
     // for six hours so an outage shows last week's real numbers rather than
     // nothing. See the matching omCachedJson in workers/fids-proxy.js.
+    // ══════════════════════════════════════════════════════════════════
+    // v23452 — WEATHER COMES FROM MET NORWAY NOW.
+    //
+    // Nick: 'Weather doesnt work either'. open-meteo's free tier was refusing
+    // with "Daily API request limit exceeded". v23448 cached it, which stops
+    // the burn — but two things came out of researching the replacement that
+    // made a cache alone the wrong answer:
+    //
+    //   1. The free tier is licensed NON-COMMERCIAL ONLY. open-meteo's terms:
+    //      "You may only use the free API services for non-commercial
+    //      purposes", and their own example of commercial use is "Operating
+    //      websites or apps that ... display advertisements". These boards
+    //      carry advertising — the product is literally Gate & Advertisement
+    //      Terminal Experience. So the old arrangement was outside its licence
+    //      regardless of how politely we cached it.
+    //
+    //   2. MET Norway (the Norwegian Meteorological Institute, the service
+    //      behind yr.no) publishes the same kind of forecast with NO key, NO
+    //      account, NO credit budget and NO daily quota — the failure mode that
+    //      took the boards down does not exist here. The only ceiling is 20
+    //      requests/second for the whole application; this roster runs about
+    //      600x under it. It is dual-licensed NLOD 2.0 / CC BY 4.0, and NLOD
+    //      grants use "for any purpose and in all contexts" — public display
+    //      and broadcast included, commercially, which is exactly what a gate
+    //      board on a live stream is.
+    //
+    // Their terms ask for specific manners, all honoured below: a real
+    // User-Agent naming the app and a reachable contact (placeholder domains
+    // are actively rejected — a UA containing example.com gets a 403); gzip;
+    // coordinates truncated to at most 4 decimals; no browser calling the API
+    // directly ("use a local proxy ... where you can cache data"); and no
+    // refetching before the Expires header, which sits ~30 minutes out. The
+    // cache below already satisfied the last one at 30 minutes.
+    //
+    // Attribution, per Nick: a line on the board reading "Weather data
+    // generously provided by MET Norway". NLOD allows the credit to live on an
+    // about page; showing it on the board itself is more than required.
+    // ══════════════════════════════════════════════════════════════════
+    const MET_UA = 'OrionFIDS/1.0 (+https://fids.orionconnected.com)';
+    // MET encodes conditions as symbol_code strings; the boards speak WMO
+    // codes and already own the icon and label tables for them. 41 base
+    // symbols, 21 of which take _day/_night/_polartwilight suffixes, giving 83
+    // distinct strings — all of which collapse onto WMO codes the boards
+    // already handle, so no new artwork is needed.
+    //
+    // Two of MET's own strings are misspelled — lightssleetshowersandthunder
+    // and lightssnowshowersandthunder carry an extra 's'. MET has deliberately
+    // NOT fixed them ("correcting this would mean breaking existing
+    // applications"), so they are the real wire values. Both end in
+    // 'andthunder' and are caught by the rule below rather than needing to be
+    // spelled out, misspelling and all.
+    const MET_WMO = {
+      clearsky: 0, fair: 1, partlycloudy: 2, cloudy: 3, fog: 45,
+      lightrain: 61, rain: 63, heavyrain: 65,
+      lightrainshowers: 80, rainshowers: 81, heavyrainshowers: 82,
+      lightsnow: 71, snow: 73, heavysnow: 75,
+      lightsnowshowers: 85, snowshowers: 85, heavysnowshowers: 86,
+      // Sleet is the one lossy step. WMO's strictly-correct mixed-precipitation
+      // codes are 68/69 and 83/84, which open-meteo never emitted and the
+      // boards therefore have no icons for. Mapping onto the freezing-rain and
+      // snow-shower codes reuses art that exists and reads correctly.
+      lightsleet: 66, sleet: 67, heavysleet: 67,
+      lightsleetshowers: 85, sleetshowers: 85, heavysleetshowers: 86
+    };
+    const metWmo = (sym) => {
+      const base = String(sym || '').replace(/_(day|night|polartwilight)$/, '');
+      if (!base) return null;
+      // Every *andthunder variant, including MET's two misspelled ones.
+      if (/andthunder$/.test(base)) return 95;
+      const w = MET_WMO[base];
+      return (w === undefined) ? null : w;
+    };
+    // MET timestamps are UTC ISO ("2026-09-07T18:00:00Z"). The boards parse the
+    // hourly series as `new Date(t + ':00Z')`, i.e. open-meteo's UTC form with
+    // no seconds, so hand back exactly that.
+    const metHourStr = (iso) => String(iso || '').slice(0, 16);
+
+    // MET → open-meteo CURRENT + HOURLY. The client reads exactly:
+    //   current.temperature_2m / .apparent_temperature / .weather_code
+    //          .wind_speed_10m / .relative_humidity_2m
+    //   hourly.time[] / .temperature_2m[] / .weather_code[]
+    // and parses each hourly time as `new Date(t + ':00Z')`.
+    //
+    // MET gives wind in m/s where open-meteo gave km/h, so it is scaled here —
+    // getting that wrong would quietly under-report every wind on every board.
+    const metToCurrent = (met) => {
+      const ts = (met && met.properties && met.properties.timeseries) || [];
+      if (!ts.length) return null;
+      const d0 = ts[0].data || {};
+      const inst = (d0.instant && d0.instant.details) || {};
+      if (typeof inst.air_temperature !== 'number') return null;
+      const sym0 = (d0.next_1_hours && d0.next_1_hours.summary && d0.next_1_hours.summary.symbol_code)
+                || (d0.next_6_hours && d0.next_6_hours.summary && d0.next_6_hours.summary.symbol_code);
+      const time = [], temp = [], code = [];
+      for (const step of ts) {
+        const det = (step.data && step.data.instant && step.data.instant.details) || {};
+        if (typeof det.air_temperature !== 'number') continue;
+        const sym = (step.data.next_1_hours && step.data.next_1_hours.summary && step.data.next_1_hours.summary.symbol_code)
+                 || (step.data.next_6_hours && step.data.next_6_hours.summary && step.data.next_6_hours.summary.symbol_code);
+        time.push(metHourStr(step.time));
+        temp.push(det.air_temperature);
+        code.push(metWmo(sym));
+      }
+      return {
+        current: {
+          temperature_2m: inst.air_temperature,
+          // apparent_air_temperature exists only on /complete, which is what
+          // we request; fall back to the dry-bulb rather than emit null.
+          apparent_temperature: (typeof inst.apparent_air_temperature === 'number')
+            ? inst.apparent_air_temperature : inst.air_temperature,
+          weather_code: metWmo(sym0),
+          wind_speed_10m: (typeof inst.wind_speed === 'number')
+            ? Math.round(inst.wind_speed * 3.6 * 10) / 10 : null,
+          relative_humidity_2m: (typeof inst.relative_humidity === 'number')
+            ? Math.round(inst.relative_humidity) : null
+        },
+        hourly: { time: time, temperature_2m: temp, weather_code: code },
+        _src: 'met-norway'
+      };
+    };
+
+    // MET → open-meteo DAILY. MET publishes no daily summary, so the week is
+    // derived from the next_6_hours blocks: bucket every step into its LOCAL
+    // day, take the max of air_temperature_max and the min of
+    // air_temperature_min across that day's blocks, and take the day's icon
+    // from the block nearest local noon (a day is better represented by its
+    // afternoon than by whatever happens to fall at midnight).
+    //
+    // Local day comes from longitude — MET stamps everything UTC, and bucketing
+    // by UTC would roll the day over at mid-afternoon for western airports,
+    // shifting every high and low by one day. Longitude/15 is within an hour
+    // everywhere and only ever has to be right enough to pick a date.
+    //
+    // Deriving highs and lows is a modification of MET's data, which CC BY 4.0
+    // asks be indicated — hence the credit line reads "Weather data generously
+    // provided by MET Norway" rather than presenting these as MET's own
+    // published daily figures.
+    const metToDaily = (met, lonStr) => {
+      const ts = (met && met.properties && met.properties.timeseries) || [];
+      if (!ts.length) return null;
+      const offMs = Math.round(Number(lonStr) / 15) * 3600000;
+      const days = new Map();
+      for (const step of ts) {
+        const t = Date.parse(step.time);
+        if (!Number.isFinite(t)) continue;
+        const key = new Date(t + offMs).toISOString().slice(0, 10);
+        const six = step.data && step.data.next_6_hours;
+        const det = (six && six.details) || {};
+        let day = days.get(key);
+        if (!day) { day = { max: null, min: null, sym: null, symGap: Infinity }; days.set(key, day); }
+        if (typeof det.air_temperature_max === 'number') {
+          day.max = (day.max == null) ? det.air_temperature_max : Math.max(day.max, det.air_temperature_max);
+        }
+        if (typeof det.air_temperature_min === 'number') {
+          day.min = (day.min == null) ? det.air_temperature_min : Math.min(day.min, det.air_temperature_min);
+        }
+        const sym = (six && six.summary && six.summary.symbol_code)
+                 || (step.data.next_1_hours && step.data.next_1_hours.summary && step.data.next_1_hours.summary.symbol_code);
+        if (sym) {
+          const localHour = new Date(t + offMs).getUTCHours();
+          const gap = Math.abs(localHour - 12);
+          if (gap < day.symGap) { day.symGap = gap; day.sym = sym; }
+        }
+      }
+      const time = [], code = [], tmax = [], tmin = [];
+      for (const key of [...days.keys()].sort()) {
+        const d = days.get(key);
+        // A day with no max/min is the tail of the series, not a real day.
+        if (d.max == null && d.min == null) continue;
+        time.push(key); code.push(metWmo(d.sym));
+        tmax.push(d.max); tmin.push(d.min);
+        if (time.length >= 7) break;
+      }
+      if (!time.length) return null;
+      return {
+        daily: { time: time, weather_code: code, temperature_2m_max: tmax, temperature_2m_min: tmin },
+        _src: 'met-norway'
+      };
+    };
+
     if (path === '/wxdaily' || path === '/wxcurrent') {
       const loc = url.searchParams.get('location') || '';
       const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(loc);
       if (!m) return new Response('Bad location', { status: 400 });
+      // MET asks for at most 4 decimals; 2 is ~1km and makes every board at an
+      // airport share one cache entry and one upstream call.
       const rnd = (v) => { const n = Number(v); return Number.isFinite(n) ? n.toFixed(2) : null; };
       const la = rnd(m[1]), lo = rnd(m[2]);
       if (la == null || lo == null) return new Response('Bad location', { status: 400 });
       const daily = path === '/wxdaily';
-      const om = daily
-        ? ('https://api.open-meteo.com/v1/forecast?latitude=' + la + '&longitude=' + lo
-           + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
-           + '&timezone=auto&forecast_days=7')
-        : ('https://api.open-meteo.com/v1/forecast?latitude=' + la + '&longitude=' + lo
-           + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'
-           + '&hourly=temperature_2m,weather_code&forecast_days=2&timezone=UTC');
+      const om = 'https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=' + la + '&lon=' + lo;
       const base = 'https://wx.cache.invalid' + path + '?lat=' + la + '&lng=' + lo;
       const kFresh = new Request(base);
       const kLkg = new Request(base + '&lkg=1');
@@ -302,9 +478,20 @@ export default {
                       : ok(JSON.stringify({ error: true, reason: 'weather upstream unavailable' }), 120, 'unavailable');
           }
         }
-        const r = await fetch(om);
-        const txt = await r.text();
-        let body = null; try { body = JSON.parse(txt); } catch (e) {}
+        const r = await fetch(om, {
+          headers: { 'User-Agent': MET_UA, 'Accept': 'application/json', 'Accept-Encoding': 'gzip' }
+        });
+        // 203 is how MET signals a deprecated product version — it keeps
+        // serving for about a month, then stops. Surface it so it cannot
+        // become a silent hard failure later.
+        if (r.status === 203) console.warn('[wx] MET Norway signalled deprecation (HTTP 203) for', path);
+        const raw = await r.text();
+        let met = null; try { met = JSON.parse(raw); } catch (e) {}
+        // Normalise MET's shape into the open-meteo shape the boards already
+        // parse, so nothing downstream changes.
+        let body = null;
+        try { body = met ? (daily ? metToDaily(met, lo) : metToCurrent(met)) : null; } catch (e) { body = null; }
+        const txt = body ? JSON.stringify(body) : raw;
         if (!r.ok || !body || body.error) {
           if (cache) {
             await cache.put(kNeg, new Response('1', { headers: { 'Cache-Control': 'public, max-age=120' } })).catch(() => {});
@@ -313,7 +500,7 @@ export default {
           if (lg) return ok(lg, 120, 'stale');
           return ok(JSON.stringify({
             error: true,
-            reason: (body && body.reason) || ('wxdaily upstream ' + r.status)
+            reason: (met && met.reason) || ('MET Norway upstream ' + r.status)
           }), 120, 'unavailable');
         }
         if (cache) {

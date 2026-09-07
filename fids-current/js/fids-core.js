@@ -19311,9 +19311,11 @@ async function _fetchOpenMeteoWx(iata) {
       },
       hourly: hourly,
       ts: Date.now(),
-      _src: 'open-meteo',
+      // v23452 — the route reports which service actually answered, so a
+      // console line never claims a source that did not supply the reading.
+      _src: d._src || 'met-norway',
     };
-    console.log('[WX-OM] ✓ Open-Meteo fallback for', iata, Math.round(d.current.temperature_2m) + '°C');
+    console.log('[WX] ✓', (d._src || 'met-norway'), 'for', iata, Math.round(d.current.temperature_2m) + '°C');
     return TOMORROW_WX[iata];
   } catch (e) { return null; }
 }
@@ -21681,7 +21683,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23448';
+var FIDS_BUILD_TAG = 'v23452';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39228,7 +39230,23 @@ function _renderWxCard(el) {
       + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
             en: nDays + '-DAY', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
           }) + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col">' + _wxMainHtml + _wxStripsHtml + '</div>';
+    // v23452 — THE SOURCE CREDIT. Nick: 'say at the bottom of the screen
+    // Weather provided generously by MET Norway'.
+    //
+    // MET's data is dual-licensed NLOD 2.0 / CC BY 4.0 and both ask that the
+    // Norwegian Meteorological Institute be named as the source. NLOD is
+    // explicit that the credit need not sit beside the data — an about page
+    // would satisfy it — so a line on the card itself is more than the licence
+    // requires, which is how Nick wanted it.
+    //
+    // Wording is his, with 'data' added: it is MET's open DATA the boards
+    // render, and the week's highs and lows are derived from it rather than
+    // published by MET, which CC BY asks be indicated. Saying 'weather data
+    // provided by' rather than 'weather by' also keeps clear of implying MET
+    // endorses or produced these boards — the one thing their trademark terms
+    // ask you not to suggest.
+    var _wxCredit = '<div class="wxc-credit">Weather data generously provided by MET Norway</div>';
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col">' + _wxMainHtml + _wxStripsHtml + _wxCredit + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually

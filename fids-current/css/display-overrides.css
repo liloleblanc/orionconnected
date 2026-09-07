@@ -14982,3 +14982,37 @@ html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airli
   background: #ffffff !important;
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23452 — THE WEATHER SOURCE CREDIT (Nick: 'say at the bottom of the
+   screen Weather provided generously by MET Norway').
+
+   MET Norway's data is dual-licensed NLOD 2.0 / CC BY 4.0; both ask that
+   the Norwegian Meteorological Institute be named as the source. NLOD says
+   the credit need not sit next to the data at all — an about page would do
+   — so this line is more than the licence asks for, which is how he wanted
+   it. It must be legible, though: NLOD's one constraint is that the credit
+   "must not be hidden or difficult to find", so this sits at 0.62 opacity
+   rather than the near-invisible watermark treatment used elsewhere.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_) .wxcard-wrap .wxc-credit {
+  margin-top: auto;
+  padding-top: clamp(6px, 0.8vh, 12px);
+  text-align: center;
+  font-size: clamp(11px, 1.15vh, 17px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+  color: rgba(255, 255, 255, 0.62);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+/* The card is a column; keep the credit pinned to its foot rather than
+   letting it float up when the 7-day strip is short. */
+html body:not(#_):not(#_) .wxcard-wrap.wxcard-col {
+  display: flex;
+  flex-direction: column;
+}
