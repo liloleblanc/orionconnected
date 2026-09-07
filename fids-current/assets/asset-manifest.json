@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2550,
+    "total": 2552,
     "by_category": {
       "ad": 10,
-      "airline": 1355,
+      "airline": 1357,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -7041,6 +7041,28 @@
       "subcategory": "european",
       "group": "Airlines — European",
       "name": "Lufthansa Logo 2018",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/sas-wordmark-dark.svg",
+      "file": "sas-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "sas wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/sas-wordmark-light.svg",
+      "file": "sas-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "sas wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"

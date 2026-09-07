@@ -19575,6 +19575,9 @@ const IATA_TO_WORDMARK = {
   'LH': 'lufthansa',
   // v23371 - Austrian. Red #dc0d15, so -light is reversed to white.
   'OS': 'austrian',
+  // v23374 - SAS. Supplied fill #000099 is a deep blue that would disappear
+  // into the board's navy rows, so -light is reversed to white.
+  'SK': 'sas',
   // v23354 — the wordmark half of the same seven regionals. A row that says
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
@@ -19750,6 +19753,7 @@ const LOGO_SUBFOLDER = {
   'lufthansa-wordmark-light.svg':'airlines/european', 'lufthansa-wordmark-dark.svg':'airlines/european',
   'austrian-wordmark-light.svg':'airlines/european', 'austrian-wordmark-dark.svg':'airlines/european',
   'helvetic-wordmark-light.svg':'airlines/european', 'helvetic-wordmark-dark.svg':'airlines/european',
+  'sas-wordmark-light.svg':'airlines/european', 'sas-wordmark-dark.svg':'airlines/european',
   'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
@@ -21181,7 +21185,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23373';
+var FIDS_BUILD_TAG = 'v23374';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
