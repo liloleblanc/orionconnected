@@ -7677,7 +7677,14 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'XP':  '/logos/airlines/us-major/avelo-emblem.svg',   // Avelo tail mark — yellow/cyan/white, reads on the purple badge
         'LL':  '/logos/airlines/european/level-emblem.svg',   // LEVEL cyan/green block mark
         '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
-        'MX':  '/logos/airlines/us-major/breeze-airways-emblem.png',
+        // v23390 — Breeze uses its FINISHED roundel, not a rebuilt one.
+        // Nick: 'Breeze is terrible the orb … why are we trying to recreate
+        // orbs and they already exist?' Right — breeze-airways-emblem.png is
+        // a thin washed white check drawn to sit on a constructed badge,
+        // while MXY.svg is Breeze's own finished mark and was already on disk
+        // serving the board row. One carrier, one face, and no orb rebuilt
+        // from a silhouette when the real one exists.
+        'MX':  '/logos/airline-tiles/MXY.svg',
         // International
         // v23250 — LATAM had no orb emblem, so its rail/card orbs drew the
         // generic plane glyph. The spark (cut from the LAN tile art, no navy
@@ -21349,7 +21356,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23388';
+var FIDS_BUILD_TAG = 'v23390';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
