@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2595,
+    "total": 2596,
     "by_category": {
       "ad": 10,
       "airline": 1400,
@@ -10,7 +10,7 @@
       "brand": 2,
       "hotel": 884,
       "livery": 96,
-      "misc": 13,
+      "misc": 14,
       "symbol": 4,
       "weather": 83
     }
@@ -27592,6 +27592,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/airports/mark-CYQM-white.svg",
+      "file": "mark-CYQM-white.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "mark CYQM white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/priority-pass.svg",

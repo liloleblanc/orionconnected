@@ -12811,8 +12811,14 @@ function uxgGateHtml(ctx) {
             if (!i) return '';
             var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i);
             return '<span class="g8-r1-apmark" style="visibility:hidden;">'
-              + '<img src="/logos/airports/mark-' + ic + '-white.png" alt="" '
-              +   'onerror="this.parentNode.style.display=\'none\';" '
+              // v23456 — PREFER A VECTOR MARK, FALL BACK TO THE PNG.
+              // Nick drew YQM's mark as an SVG; a vector stays crisp at every
+              // clamp size the banner uses and is a third of the PNG's weight.
+              // Airports that only have the raster are untouched — the onerror
+              // tries the .png once before giving up, so this adds a vector
+              // tier without needing a per-airport table.
+              + '<img src="/logos/airports/mark-' + ic + '-white.svg" alt="" '
+              +   'onerror="if(!this.dataset.pngTried){this.dataset.pngTried=1;this.src=\'/logos/airports/mark-' + ic + '-white.png\';return;}this.parentNode.style.display=\'none\';" '
               +   'onload="if(this.naturalWidth){this.parentNode.style.visibility=\'visible\';}else{this.parentNode.style.display=\'none\';}">'
               + '</span>';
           })()
@@ -21775,7 +21781,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23454';
+var FIDS_BUILD_TAG = 'v23456';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
