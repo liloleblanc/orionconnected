@@ -19274,12 +19274,25 @@ async function _fetchOpenMeteoWx(iata) {
   try {
     if (!COORDS[iata]) return null;
     var lat = COORDS[iata][0], lon = COORDS[iata][1];
-    var r = await fetch('https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon
-      + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'
-      + '&hourly=temperature_2m,weather_code&forecast_days=2&timezone=UTC');
+    // v23448 — THROUGH THE SITE WORKER, NOT STRAIGHT AT OPEN-METEO.
+    // Every board called the public API from its own address, around the
+    // clock, at full coordinate precision — nothing shared, nothing cached.
+    // Between that and the equally uncached proxy route, the free daily
+    // allowance was gone and the API started answering 'Daily API request
+    // limit exceeded. Please try again tomorrow.' (Nick: 'Weather doesnt work
+    // either'). /wxcurrent is the same query behind the worker's cache: one
+    // upstream call per airport per half hour however many screens ask, a
+    // six-hour last-known-good so an outage shows the previous reading, and a
+    // refusal that is never stored as if it were weather. Same origin, so no
+    // preflight. The response body is open-meteo's own shape, unchanged, so
+    // everything below reads exactly as it did.
+    var r = await fetch('/wxcurrent?location=' + lat + ',' + lon);
     if (!r.ok) return null;
     var d = await r.json();
-    if (!d || !d.current || typeof d.current.temperature_2m !== 'number') return null;
+    // The route reports an upstream refusal in the body (HTTP 200 so a board
+    // never storms on it); treat that as 'no reading', not as data.
+    if (!d || d.error) return null;
+    if (!d.current || typeof d.current.temperature_2m !== 'number') return null;
     var hourly = [];
     try {
       var ht = (d.hourly && d.hourly.time) || [];
@@ -21668,7 +21681,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23446';
+var FIDS_BUILD_TAG = 'v23448';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
