@@ -198,7 +198,18 @@
       var tourRaw = q.get('tour');
       var aps = apList(q.get('ap')).concat(apList(tourRaw === '1' || tourRaw === '0' ? '' : tourRaw));
       aps = aps.filter(function (c, i) { return aps.indexOf(c) === i; });      // de-dupe, keep order
-      if (tourRaw === '1' || (q.get('stream') === '2' && aps.length < 2 && tourRaw !== '0')) aps = TOUR_DEFAULT.slice();
+      // v23432 — EVERY BROADCAST STREAM TOURS, not just stream 2. Nick's
+      // stream is launched as stream=1 with a single ap= (config.env on the
+      // Hetzner box: rotate.html?ap=OGG&...&stream=1). A single ap makes
+      // isTour false, which switches off the airport rotation, the
+      // skip-empty-board rule AND the self-reload — so it sat on one board for
+      // four days and no deploy could route around it, because TOUR_DEFAULT
+      // was never consulted. stream=2 already toured for exactly this reason;
+      // stream=1 was simply never given the same treatment.
+      // A `stream=` parameter means a broadcast feed, which always wants the
+      // tour. Real gate kiosks never pass it, so a pinned board on a wall is
+      // untouched, and tour=0 still opts out explicitly.
+      if (tourRaw === '1' || (q.get('stream') && aps.length < 2 && tourRaw !== '0')) aps = TOUR_DEFAULT.slice();
       // Drop anything with no feed and say so, rather than showing a dead board.
       var dropped = aps.filter(function (c) { return !LIVE[c]; });
       if (dropped.length) {
