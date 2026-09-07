@@ -114,15 +114,29 @@
       // empty overnight, so the stream spent much of its time on a bare board.
       // Every airport below serves its own feed and owes nothing to the
       // retired paid API.
+      // v23416 — ONLY AIRPORTS THAT ACTUALLY HAVE FLIGHTS. Nick: 'its empty …
+      // I just need airports that work period'.
+      // The previous list carried eight small Canadian airports and a few
+      // quiet US ones that are genuinely dead overnight, so a large part of
+      // every cycle was a bare board. Measured live against the proxy on
+      // 2026-09-07 at 05:10 EDT, counting what a board actually SHOWS
+      // (-2h/+6h window) rather than a whole day:
+      //   ORD 556  DTW 410  SFO 402  ZRH 379  JFK 312  BOS 302  CLT 291
+      //   DUB 280  MCO 229  PHL 226  EDI 198  DEN 193  IAH 184  MSP 158
+      //   KEF 120  AUS 109  PHX 105
+      // and the ones cut, same moment: MIA 0, SEA 3, YYJ 6, YXE 10, YYT 14,
+      // YQB 20, YEG 25, LHR 32, YHZ 35, SAN 45, MSY 45, YOW 47, YYC 50,
+      // MCI 57, SLC 60, PDX 60, RDU 98, LAS 99.
+      // The set spans US East, Central and West plus Europe on purpose, so
+      // whatever the hour some of them are in their busy period — the four
+      // European boards carry the North American night. Every one runs on its
+      // own authority feed and owes nothing to the cancelled subscription.
       var TOUR_DEFAULT = [
-        // Canada
-        'YHZ', 'YYT', 'YOW', 'YQB', 'YYC', 'YEG', 'YYJ', 'YXE',
-        // United States — the hubs first, so a cycle opens on a full board
-        'JFK', 'CLT', 'DTW', 'IAH', 'PHX', 'MCO', 'BOS', 'ORD', 'SFO',
-        'DEN', 'LAS', 'PHL', 'MSP', 'AUS', 'SLC', 'SAN', 'PDX', 'RDU',
-        'MCI', 'MSY', 'SEA', 'MIA',
-        // Europe
-        'LHR', 'ZRH', 'DUB', 'EDI', 'KEF'
+        // North America — the hubs, busiest first
+        'ORD', 'DTW', 'SFO', 'JFK', 'BOS', 'CLT', 'MCO', 'PHL',
+        'DEN', 'IAH', 'MSP', 'AUS', 'PHX',
+        // Europe — these carry the North American overnight
+        'ZRH', 'DUB', 'EDI', 'KEF'
       ];
       // v23346 — THE AIRPORTS THAT ACTUALLY SERVE DATA. Mirrors
       // FIDS_LIVE_AIRPORTS in fids-core.js and APP_LIVE_AIRPORTS in app.html;
