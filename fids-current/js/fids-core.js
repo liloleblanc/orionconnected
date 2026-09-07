@@ -1102,6 +1102,34 @@ function getAirlineBgSlideLabel(slide, idx) {
 function changeFont(f) {
   const fam = "'" + f + "', sans-serif";
   document.body.style.fontFamily = fam;
+  // v23386 — DRIVE --font-primary, not just the universal rule.
+  // Nick: 'why is it that all the font are the same whatever chosen from the
+  // list except the destination and code?' Exactly right, and the reason is
+  // specificity. The universal rule below is `*:where(...)`: the universal
+  // selector scores zero and :where() contributes zero, so it lands at (0,0,0)
+  // — it beats un-important rules, and loses to EVERY !important font rule
+  // that has any specificity at all. flight-display pins the board cells with
+  //   .fids-board-label, .fids-airport-name, #fidsTable .td-dest,
+  //   #fidsTable .td-airline { font-family: var(--font-primary) !important }
+  // at (1,1,0), and fids.css pins the whole gate screen with
+  //   .uxg-screen, .uxg-screen * { font-family: var(--font-primary) !important }
+  // so the cells never moved. Their CHILD spans — the destination city and the
+  // airport code — match only the universal rule, which is why those two were
+  // the only things on the board that ever changed.
+  //
+  // Rather than fight 28 !important rules with a specificity hack, drive the
+  // variable they already read. The split falls out exactly right: the 7 rules
+  // that resolve var(--font-*) follow the pick, and the 21 that name a literal
+  // font stay exactly as they are — every icon font, all the Fairmont/Sofitel
+  // brand type, the BIDS carousel, the gate map pill. Terminal theme reads
+  // var(--font-mono), which is untouched, so it stays monospace.
+  //
+  // Set on BODY and WITHOUT !important, both deliberately: display-overrides
+  // has `html.fids-stream body { --font-primary: 'AC Nord Display Bold' …
+  // !important }`, and an !important inline value here would outrank it and
+  // flatten the Accor stream's brand font. Non-important loses to that one
+  // rule and wins everywhere else — which is precisely the wanted behaviour.
+  try { document.body.style.setProperty('--font-primary', fam); } catch (e) {}
   // Force font on ALL elements including gate/baggage screens
   let s = document.getElementById('fids-font-override');
   if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
@@ -1164,7 +1192,12 @@ function restoreFontChoice(defaultFont) {
         }
       }
       if (_stack) {
-        document.body.style.setProperty('--font-primary', _stack, 'important');
+        // v23386 — was set !important here, which outranked
+        // `html.fids-stream body { --font-primary: 'AC Nord Display Bold' …
+        // !important }` and flattened the Accor stream's brand font whenever a
+        // board also had a configured font. Non-important still beats the
+        // :root default on every normal board and now yields to that one rule.
+        document.body.style.setProperty('--font-primary', _stack);
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
         // .axr exempt — Accor brand ads keep brand typography (see changeFont).
@@ -21283,7 +21316,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23384';
+var FIDS_BUILD_TAG = 'v23386';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -25854,7 +25887,11 @@ function applyAirportConfigToBoard(iata) {
     };
     if (_fontStacks[_font]) {
       var _stack = _fontStacks[_font];
-      document.body.style.setProperty('--font-primary', _stack, 'important');
+      // v23386 — was !important, which outranked `html.fids-stream body {
+      // --font-primary: 'AC Nord Display Bold' … !important }` and flattened
+      // the Accor stream's brand font. Non-important still beats the :root
+      // default on every normal board and now yields to that one rule.
+      document.body.style.setProperty('--font-primary', _stack);
       document.body.dataset.fidsFont = _font;
       // Nuclear override — inject *, *::before, *::after rule so the font
       // also lands on hardcoded inline styles and JS-generated SVG/HTML.
