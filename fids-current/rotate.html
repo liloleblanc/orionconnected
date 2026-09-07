@@ -104,14 +104,25 @@
       // airport here runs on its own authority's feed. Edit the list, ship,
       // and the running stream picks it up on its own (see the self-refresh
       // below) — nothing to touch on the server.
+      // v23414 — THE BIG BOARDS ARE ON THE TOUR NOW. Nick: 'its playing half to
+      // empty screens'. Twelve airports that run on their OWN authority feed
+      // were never added here, and they are the busiest ones the system has.
+      // Counted live against the proxy while writing this, over a -2h/+14h
+      // window: CLT 969 flights, DTW 862, JFK 807, IAH 767, PHX 702, ZRH 698,
+      // MCO 681, SAN 317, PDX 312, RDU 297, MCI 211, MSY 74. The tour was
+      // instead weighted toward small Canadian airports that are genuinely
+      // empty overnight, so the stream spent much of its time on a bare board.
+      // Every airport below serves its own feed and owes nothing to the
+      // retired paid API.
       var TOUR_DEFAULT = [
         // Canada
         'YHZ', 'YYT', 'YOW', 'YQB', 'YYC', 'YEG', 'YYJ', 'YXE',
-        // United States
-        'BOS', 'ORD', 'SFO', 'SEA', 'DEN', 'LAS', 'AUS', 'SLC', 'PHL', 'MSP',
-        'MIA',
+        // United States — the hubs first, so a cycle opens on a full board
+        'JFK', 'CLT', 'DTW', 'IAH', 'PHX', 'MCO', 'BOS', 'ORD', 'SFO',
+        'DEN', 'LAS', 'PHL', 'MSP', 'AUS', 'SLC', 'SAN', 'PDX', 'RDU',
+        'MCI', 'MSY', 'SEA', 'MIA',
         // Europe
-        'LHR', 'DUB', 'EDI', 'KEF'
+        'LHR', 'ZRH', 'DUB', 'EDI', 'KEF'
       ];
       // v23346 — THE AIRPORTS THAT ACTUALLY SERVE DATA. Mirrors
       // FIDS_LIVE_AIRPORTS in fids-core.js and APP_LIVE_AIRPORTS in app.html;
@@ -145,7 +156,17 @@
         aps = aps.filter(function (c) { return LIVE[c]; });
         try { console.warn('[TOUR] no feed for ' + dropped.join(', ') + ' — dropped from this tour'); } catch (e) {}
       }
-      if (aps.length === 0) aps = dropped.length ? TOUR_DEFAULT.slice() : ['YQM'];
+      // v23414 — NO AIRPORT NAMED, SO TOUR. Nick: 'why did you never change my
+      // stream I asked this days ago … its playing half to empty screens'.
+      // The tour was built and the list was right, but it only ran when the URL
+      // said so. With no ap= and no tour=, this fell back to the single airport
+      // 'YQM' — and a ONE-airport run is not a tour, so isTour is false, which
+      // switches off BOTH the rotation and the skip-an-empty-board rule below.
+      // The stream therefore sat on one small airport that is empty for most of
+      // the night, which is exactly the empty screen he has been watching.
+      // Touring is the safe default: a bare rotate.html now walks the working
+      // airports, and a single airport still happens whenever ap= asks for one.
+      if (aps.length === 0) aps = TOUR_DEFAULT.slice();
       var isTour = aps.length > 1;
 
       // v23346 — apdwell=SECONDS: how long to stay on ONE AIRPORT before moving
