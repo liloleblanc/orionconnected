@@ -21233,7 +21233,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23381';
+var FIDS_BUILD_TAG = 'v23382';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38560,9 +38560,15 @@ function _renderWxCard(el) {
       var loc = _WX_LOCALE[lg] || 'en-US';
       var day = d.toLocaleDateString(loc, { weekday: 'long' });
       day = day.charAt(0).toUpperCase() + day.slice(1);
+      // v23382 — ABBREVIATED month. A 7-across tile is roughly a seventh of the
+      // card, and the long form blows straight through it: Spanish renders
+      // '7 de septiembre' (15 chars), and because .wxc-dt is nowrap/overflow-
+      // visible the text ran into the neighbouring day (Nick: 'dates spilling
+      // out of weather attrociouss'). Short form caps every supported locale at
+      // 9 chars — es '7 sept', en 'Sep 7', pt '7 de set.', de '7. Sept.'.
       var date = (lg === 'en')
-        ? d.toLocaleDateString(loc, { month: 'long' }) + ' ' + d.getDate()
-        : d.toLocaleDateString(loc, { day: 'numeric', month: 'long' });
+        ? d.toLocaleDateString(loc, { month: 'short' }) + ' ' + d.getDate()
+        : d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
       return '<div class="wxc-d' + extraCls + '">' + day + '</div>'
         + '<div class="wxc-dt' + extraCls.replace('wxc-d-fr', 'wxc-dt-fr') + '">' + date + '</div>';
     };

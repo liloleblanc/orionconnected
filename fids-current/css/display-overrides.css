@@ -5015,6 +5015,29 @@ html .wxc-hour {
 }
 html .wxc-grid-7 { gap: clamp(5px, 0.6vw, 12px) !important; }
 
+/* ── v23382 — a day tile CONTAINS its own text. The earlier rules set the day
+   and date lines to `white-space: nowrap` with `overflow: visible`, which was
+   fine while every label was a short word ('Sun', 'Dim', 'Sep 7') but had no
+   floor under it: Spanish long-form dates ran clean out of the tile and
+   collided with the next day, reading as one smeared string —
+   '7 de septiembre8 de septiembre9 de septiembre' (Nick: 'dates spilling out
+   of weather attrociouss').
+
+   The month abbreviation in fids-core (_dayLine) is the real fix; this is the
+   floor beneath it, so no future locale, longer weekday, or narrower board can
+   reproduce the spill. Text that still cannot fit clips inside its own tile
+   with an ellipsis rather than escaping into its neighbour. The tile keeps
+   overflow visible so the weather icon is never cropped — only the two text
+   lines are clipped. */
+html .wxcard-col .wxc-grid-7 .wxc-d,
+html .wxcard-col .wxc-grid-7 .wxc-dt,
+html .wxcard-col .wxc-d, html .wxcard-col .wxc-d-fr,
+html .wxcard-col .wxc-dt, html .wxcard-col .wxc-dt-fr {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
 /* ── v22617: THE FRENCH LABEL CLASS IS .v2-fi-lbl-2, NOT .v2-fi-lbl-fr.
    Dumped from the live DOM — every earlier override missed it, which is
    why 'Vol', 'Statut', 'Départ' stayed dark on the tinted rail while
