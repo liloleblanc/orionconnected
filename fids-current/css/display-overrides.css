@@ -409,7 +409,7 @@ body[data-fids-logo-size] {
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LH"] { --wm-h: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="DE"] { --wm-h: 26px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="EK"] { --wm-h: 26px; }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="CS"] { --wm-h: 30px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="CS"] { --wm-h: 21px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="2L"] { --wm-h: 22px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="EY"] { --wm-h: 23px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LY"] { --wm-h: 24px; }
