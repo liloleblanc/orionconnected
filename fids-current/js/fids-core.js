@@ -7689,7 +7689,15 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // Standard emblem used outside the one gate-flight badge override below
+        // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
+        // NOTHING else. Every surface falling through to this map drew a white
+        // globe — and the countdown takeover's ground samples (253,253,253),
+        // so United's countdown centrepiece was a white globe on a white card:
+        // invisible. Exactly the bug Delta was fixed for in v23130 ('I made you
+        // change this yesterday why is this still white OMG WOW') and WestJet in
+        // v23198. United never got it. Nick, picking from the comparison: 'so
+        // the first one and should be all around full circle'.
+        'UA':  '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
         // v22960 — SINGLE-COLOUR widget (Nick: 'the actual delta icon is 2
         // colors this needs to be changed'). The native widget is two-tone
         // red; the monochrome-white one reads as ONE mark and sits on the red
@@ -10931,7 +10939,7 @@ function uxgGateHtml(ctx) {
     // leave it white'). The strip's ground is white, so the leaf's navy and
     // teal both read on it.
     var _BW_EMBLEM = {
-      'UA': '/logos/airlines/us-major/united-globe-only.svg',
+      'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // v23394 one United face everywhere
       'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
       'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
     };
@@ -12168,7 +12176,7 @@ function uxgGateHtml(ctx) {
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
     'DL': '/logos/airlines/us-major/delta-widget-red.svg',                         // Delta widget, ONE flat red (Nick: 'simply red please')
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead
-    'UA': '/logos/airlines/us-major/united-globe-only.svg',                        // United Globe
+    'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // United Globe   // v23394 one United face everywhere
     'WS': '/logos/airline-tiles/WJA.svg',                                          // WestJet white emblem on teal square
     'PB': '/logos/airlines/canadian-regional/PB-blue-white.svg',                   // PAL white emblem on navy-blue square
     'PD': '/logos/Backgrounds/PD/porter-pattern-panel.png',                             // Porter faded panel pattern background
@@ -20212,7 +20220,7 @@ const IATA_TO_EMBLEM = {
   'DL': '/logos/airlines/us-major/delta-widget-red.svg',       // Delta widget, ONE flat red (Nick: 'simply red please')
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
   'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
-  'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // United globe   // v23394 one United face everywhere
   // v23250 — LATAM had no emblem file, so the banner's pair path fell to the
   // LAN square TILE: a navy rounded plate that read as an app icon beside the
   // wordmark (Nick's MIA J5 shot: 'unacceptable it's not what I asked for').
@@ -21413,7 +21421,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23392';
+var FIDS_BUILD_TAG = 'v23394';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
