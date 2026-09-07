@@ -1,1 +1,17 @@
-<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Aegean Airlines</title><path fill="#93a5cf" d="m4.018 0 .114.34c3.34 1.358 5.718 3.509 7.02 6.51a12.313 12.313 0 0 0 4.358 5.094l.056.056h4.416c-2.321-1.189-4.245-3.056-5.434-5.434C12.623 2.716 8.886.51 4.018 0Zm0 3.905c.793 2.943 1.868 5.435 2.83 6.623A5.27 5.27 0 0 0 8.718 12h3.453a7.286 7.286 0 0 1-3.68-3.68C7.641 6.34 6 4.755 4.018 3.906Z"/><path fill="#002677" d="M8.717 12a5.27 5.27 0 0 0-1.868 1.472c-.963 1.188-2.038 3.68-2.83 6.623 1.98-.849 3.622-2.434 4.471-4.416A7.286 7.286 0 0 1 12.17 12Zm6.85 0-.057.056a12.313 12.313 0 0 0-4.359 5.095c-1.301 3-3.68 5.151-7.019 6.51L4.018 24c4.868-.51 8.605-2.717 10.53-6.566 1.189-2.378 3.113-4.245 5.434-5.434Z"/></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with Linearity Curve (http://linearity.io/curve) -->
+<svg height="100%" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="193.22 -0.0152768 47.9954 48.0153" width="100%" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs/>
+<g id="Layer" vectornator:layerName="Layer">
+<g opacity="1" vectornator:layerName="Group 1">
+<g opacity="1" vectornator:layerName="Group 1">
+<path d="M193.22-0.0152768L241.215-0.0152768L241.215 48L193.22 48L193.22-0.0152768Z" fill="#0a2768" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Rectangle 1"/>
+</g>
+<path d="M224.259 24L233.159 24C228.459 21.6 224.659 17.8 222.259 13.1C218.359 5.4 210.859 0.9 201.159 0L201.359 0.7C208.059 3.4 212.759 7.7 215.459 13.8L215.459 13.8C217.359 17.9 220.459 21.5 224.259 24" fill="#88a8d8" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Curve 1"/>
+<path d="M224.259 24L233.159 24C228.459 26.4 224.659 30.2 222.259 34.9C218.359 42.7 210.859 47.1 201.159 48L201.359 47.3C208.059 44.6 212.759 40.3 215.459 34.2L215.459 34.2C217.359 30.1 220.459 26.5 224.259 24" fill="#1c4093" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Curve 2"/>
+<path d="M201.159 7.8C202.759 13.8 204.959 18.7 206.859 21.1L206.859 21.1C207.859 22.4 209.159 23.4 210.559 24L217.559 24C214.259 22.5 211.659 19.9 210.159 16.6L210.159 16.6C208.359 12.6 205.159 9.5 201.159 7.8" fill="#88a8d8" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Curve 3"/>
+<path d="M201.159 40.2C202.759 34.2 204.959 29.3 206.859 26.9L206.859 26.9C207.859 25.6 209.159 24.6 210.559 24L217.559 24C214.259 25.5 211.659 28.1 210.159 31.4L210.159 31.4C208.359 35.4 205.159 38.6 201.159 40.2" fill="#1c4093" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Curve 4"/>
+</g>
+</g>
+</svg>
