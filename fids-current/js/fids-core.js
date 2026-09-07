@@ -7698,6 +7698,56 @@ function _airlineOrbEmblem(code) {
   return /^[A-Z0-9]{2}$/.test(c) ? '/logos/symbols/airlines/' + c + '.svg' : '';
 }
 
+// v23384 — A MISSING EMBLEM MUST NOT LEAVE AN EMPTY DISC.
+// The resolver above optimistically hands back '/logos/symbols/airlines/XX.svg'
+// for ANY two-character code, whether or not that file was ever drawn: of the
+// 231 carriers the board can name, 137 have no emblem file. Both orb call sites
+// then used onerror="this.remove()", which deleted the broken image and left a
+// bare coloured circle behind it — no emblem, no letters, nothing. That is the
+// 'circle within a circle one is empty' Nick has been reporting, and it reads
+// as a rendering fault rather than as a carrier we simply have no art for.
+//
+// The wordmark path already handles its own miss gracefully (it falls back to
+// the airline's name), so the orb was the one slot that failed to nothing.
+// Fall back to the SAME monogram the no-art branch already renders, so the two
+// ways of having no art look identical instead of one looking broken.
+// The monogram is interpolated into a single-quoted inline onerror attribute,
+// so it is hard-limited to the shape a carrier code actually has. Anything the
+// feed sends that is not A-Z0-9 cannot reach the attribute.
+function _orbMono(code) {
+  return String(code == null ? '' : code).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+}
+window._orbArtFailed = function (img, code) {
+  var wrap = img && img.parentNode;
+  if (img && img.remove) img.remove();
+  if (!wrap || wrap.querySelector('.v2-fi-orb-code')) return;
+  var span = document.createElement('span');
+  span.className = 'v2-fi-orb-code';
+  span.textContent = code || '';
+  // The orb wears the carrier's accent, and the badge sets its text white —
+  // which disappears on a light accent (Vueling's #FFE500, Southwest's amber,
+  // Pegasus yellow). Pick the ink from the disc's own luminance so the
+  // monogram reads on every carrier instead of only the dark ones.
+  try {
+    var bg = getComputedStyle(wrap).backgroundColor || '';
+    var p = bg.match(/(\d+(?:\.\d+)?)/g);
+    if (p && p.length >= 3 && (p.length < 4 || parseFloat(p[3]) > 0.1)) {
+      var lin = [p[0], p[1], p[2]].map(function (v) {
+        v = parseFloat(v) / 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      var lum = 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2];
+      // Only step in where white genuinely fails — a light accent. Dark orbs
+      // keep whatever the stylesheet chose, so the deliberate per-carrier
+      // rules (Ryanair's gold letters on FR/RK) are left exactly as they are.
+      // display-overrides sets this colour !important at high specificity, so
+      // the override has to carry !important of its own to land.
+      if (lum > 0.45) span.style.setProperty('color', '#10151f', 'important');
+    }
+  } catch (e) {}
+  wrap.appendChild(span);
+};
+
 function _buildV2AircraftCol(ctx, vars) {
   var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
   var currentFlight = vars.currentFlight, inboundFlight = vars.inboundFlight;
@@ -9030,7 +9080,7 @@ function _buildV2MapCol(ctx, vars) {
                   // solid colour roundel; invert(1) turned it into a blank
                   // white disc. Only vector silhouettes take the white
                   // treatment — .png art is colour art by construction.
-                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbArt]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbArt]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_mcOrbOp || _mcCode) + '\')">'
                   // v23208 — no emblem art on file → the carrier's LETTERS on
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
@@ -9249,7 +9299,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _niBadge + '">'
         +       (_niOrbSrc
-                  ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="this.remove()">'
+                  ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="window._orbArtFailed(this,\'' + _orbMono(_niCode) + '\')">'
                   : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
@@ -21233,7 +21283,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23382';
+var FIDS_BUILD_TAG = 'v23384';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
