@@ -7655,7 +7655,28 @@ window._gateOrbParts = function (code) {
   // out as a red pill in the top-left orb (Nick: 'what the fuck really?').
   // Only tile art fills; colour art keeps its colours ON the accent disc.
   var keepsColour = !!(window._orbKeepsColour && window._orbKeepsColour(c));
-  var isTile = !!tb || /\/logos\/airline-tiles\//.test(String(path || ''));
+  // "Is this art already a disc?" — if it is, it BECOMES the orb. Padding a
+  // finished disc onto another disc is what Nick kept seeing: 'why is there
+  // orbs within orbs for some', 'Turkeish again circle within circkle'.
+  //
+  // MEASURED, not guessed. Filename and folder rules kept missing cases, so
+  // every emblem file the resolver can reach was drawn to a canvas and its
+  // alpha sampled around the inscribed circle's rim: art that paints its own
+  // ground out to the edge is a disc, art with a transparent surround is a
+  // flat mark that belongs ON the accent circle. 21 of 85 files are discs.
+  // Turkish measured 100% rim, Delta's glossy sphere 63% (soft edge, checked
+  // by eye on a checkerboard), Southwest 42% and Qatar 13% are flat.
+  // The airline-tiles folder is included wholesale — those are finished square
+  // tiles by construction — except PB-arrow, the one bare arrow in there,
+  // which is drawn to sit ON the gold badge.
+  var SELF_DISC = {
+    'EZY':1,'EW':1,'MO':1,'F8':1,'SP':1,'UA':1,'LL':1,'LH':1,'LO':1,'RO':1,
+    'DE':1,'A3':1,'PC':1,'TK':1,'HV':1,'DI':1,'JL':1,'CM':1,'MX':1,'ZP':1,'DL':1
+  };
+  var _p = String(path || '');
+  var isTile = !!tb
+    || !!SELF_DISC[c]
+    || (/\/logos\/airline-tiles\//.test(_p) && !/PB-arrow/i.test(_p));
   // AA and DL are drawn to sit centred ON the accent disc rather than fill it.
   var COLOR_ON_WHITE = { 'AA': true, 'DL': true };
   var onWhite = !!COLOR_ON_WHITE[c] && !tb;
@@ -21482,7 +21503,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23396';
+var FIDS_BUILD_TAG = 'v23398';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
