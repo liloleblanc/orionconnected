@@ -4139,8 +4139,15 @@ function operatorLogoUrl(opCode) {
 // background and the white mark on a dark (night) background. Operators without
 // a monochrome pair fall back to their standard colour logo.
 var OPERATOR_LOGOS_THEMED = {
-  'RV':  { light:'/logos/airlines/canadian/rouge-monochrome-black.svg',                   dark:'/logos/airlines/canadian/rouge-monochrome-white.svg' },
-  'ROU': { light:'/logos/airlines/canadian/rouge-monochrome-black.svg',                   dark:'/logos/airlines/canadian/rouge-monochrome-white.svg' },
+  // v23464 — ROUGE KEEPS ITS COLOUR. Nick: 'The logos also such as Rouge
+  // should be color no reason for white you cant see it'. The 'Operated By'
+  // strip is the light grey AC-family plate, and the monochrome-black mark it
+  // was given reads as a grey smudge on it. rouge.svg is the real wordmark in
+  // its own crimson (#A21C37 / #EC1C2B), which is what the strip was designed
+  // to carry. The white variant stays for the dark accent strips other
+  // carriers use — that one is doing its job.
+  'RV':  { light:'/logos/airlines/canadian/rouge.svg',                                    dark:'/logos/airlines/canadian/rouge-monochrome-white.svg' },
+  'ROU': { light:'/logos/airlines/canadian/rouge.svg',                                    dark:'/logos/airlines/canadian/rouge-monochrome-white.svg' },
   'QK':  { light:'/logos/airlines/canadian-regional/jazz-monochrome-black.svg',           dark:'/logos/airlines/canadian-regional/jazz-monochrome-white.svg' },
   'JZA': { light:'/logos/airlines/canadian-regional/jazz-monochrome-black.svg',           dark:'/logos/airlines/canadian-regional/jazz-monochrome-white.svg' },
   'PB':  { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
@@ -7892,7 +7899,24 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // a finished tile — transparent badge, object-fit:cover, no whitening —
         // so the tile's own navy ground BECOMES the orb and both ends of the
         // screen wear the same disc in the same colour.
-        'MU':  '/logos/airline-tiles/CES.svg'
+        'MU':  '/logos/airline-tiles/CES.svg',
+        // v23464 — SWISS IS NOT REVERSIBLE. Nick: 'The crosses need to be
+        // white' and 'You cant even have the reverse in the orb'.
+        //
+        // symbols/airlines/LX.svg paints ONE colour, #e60005, and the cross is
+        // a CUT-OUT — it shows whatever sits behind it. Whitened into an orb
+        // that becomes a WHITE tail with the disc's red showing through the
+        // cross: the Swiss flag inverted, which is not a thing that is allowed
+        // to appear on a board.
+        //
+        // SWR.svg is the same mark drawn properly — #e60005 AND #ffffff, a
+        // solid white cross on red. v23400 already reached for it for the
+        // spinning welcome mark and deliberately left the orb on the cut-out
+        // version; that judgement was wrong. Being under /airline-tiles/ the
+        // shared recipe treats it as a finished tile: full-bleed, no whitening,
+        // so the orb becomes red with a white cross, the right way round.
+        'LX':  '/logos/airline-tiles/SWR.svg',
+        'SWR': '/logos/airline-tiles/SWR.svg'
 };
 
 // Gate-only artwork overrides. Keep these separate from AIRLINE_EMBLEM_FILES:
@@ -21857,7 +21881,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23462';
+var FIDS_BUILD_TAG = 'v23464';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
