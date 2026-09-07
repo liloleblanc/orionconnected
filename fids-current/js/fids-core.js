@@ -7777,8 +7777,19 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // file the countdown (_CD_MARK) and welcome strip (_BW_EMBLEM) use for
         // exactly this reason. Whitened in the orb it flattens to the same
         // white leaf as before, so the orb is unchanged.
-        'WS':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-        'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+        // v23406 — BACK TO THE MONO LEAF. v23404 pointed this at the colour
+        // leaf to fix a black leaf on the aircraft hold plate, and broke the
+        // ORB doing it (Nick: 'the WestJet orb was fine from the beginning now
+        // it's completely white and missing black stripe for the mountain in
+        // the middle'). The orb WHITENS its art: the mono leaf is one path
+        // whose internal cut-outs let the orb colour show through, so it
+        // whitens to a leaf with its swoosh separation intact. The colour leaf
+        // has separate navy/teal/white shapes, so whitening flattens all of
+        // them to one solid white blob. This file's own v23050 note already
+        // said it — 'the round rail ORB keeps the mono white leaf it has
+        // always had'. The hold plate gets its own override instead.
+        'WS':  '/logos/symbols/airlines-mono/WS.svg',
+        'WR':  '/logos/symbols/airlines-mono/WS.svg',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
@@ -10251,8 +10262,20 @@ function _buildV2MapCol(ctx, vars) {
       // while a lookup finishes. Never guess a model; hold the airline mark in
       // the space instead of floating a raw "image pending" warning over it.
       var _holdCode = String(vars.airlineCode || '').trim().toUpperCase();
-        // v23312 — through the shared resolver, like every other orb; same new onerror.
-        var _holdSrc = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_holdCode) : '') || '';
+        // v23406 — LIGHT-GROUND ART FOR THE HOLD PLATE. This panel is the pale
+        // sky plate, not an orb: it paints the file as-is, with no whitening.
+        // Art drawn for the orb can be wrong here — WestJet's mono leaf is
+        // fill="currentColor", and inside an <img> that resolves to its
+        // initial value, BLACK (Nick: 'Shouldnt be a black leaf should be
+        // color'). Same reason the countdown keeps _CD_MARK and the welcome
+        // strip keeps _BW_EMBLEM: a light ground needs the colour cut. Scoped
+        // to this plate, so the orb keeps the mono leaf it was drawn for.
+        var _HOLD_MARK = {
+          'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+          'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
+        };
+        var _holdSrc = _HOLD_MARK[_holdCode]
+          || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_holdCode) : '') || '';
       var _holdMark = _holdSrc
           ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="" onerror="this.style.display=&quot;none&quot;;if(this.nextElementSibling)this.nextElementSibling.style.display=&quot;&quot;;">'
             + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_holdCode || '\u2014') + '</span>'
@@ -21552,7 +21575,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23404';
+var FIDS_BUILD_TAG = 'v23406';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
