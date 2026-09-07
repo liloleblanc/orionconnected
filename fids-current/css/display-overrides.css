@@ -404,6 +404,7 @@ body[data-fids-logo-size] {
    are the same wide all-caps shape. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="IB"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="I2"] { --wm-h: 18px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PC"] { --wm-h: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="A3"] { --wm-h: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="EW"] { --wm-h: 22px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="SK"] { --wm-h: 22px; }

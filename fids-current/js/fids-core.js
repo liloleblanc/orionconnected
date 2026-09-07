@@ -5735,6 +5735,7 @@ const AIRLINE_ACCENT = {
   '2L':'#CF0018',   // Helvetic red, from its own emblem
   'EW':'#7C2045',   // Eurowings burgundy, from its own wordmark
   'A3':'#1C4093',   // Aegean blue, from its own wordmark
+  'PC':'#FDC300',   // Pegasus yellow - the red emblem reads on it
 };
 
 
@@ -7590,6 +7591,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'CS':  '/logos/symbols/airlines/CS.png',
         'EW':  '/logos/symbols/airlines/EW.svg',
         'A3':  '/logos/symbols/airlines/A3.svg',
+        'PC':  '/logos/symbols/airlines/PC.svg',
         '4C':  '/logos/airlines/asian-other/latam-spark.svg',   // LATAM Colombia → LATAM
         'JJ':  '/logos/airlines/asian-other/latam-spark.svg',   // LATAM Brasil → LATAM
         'DI':  '/logos/airline-tiles/NAX.svg',                  // Norwegian (DI) → Norwegian
@@ -8092,7 +8094,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // square, taupe ground with the orange bird, and the default
         // brightness(0) invert(1) turns it into a SOLID WHITE CIRCLE - the
         // whole mark gone. Rendered both ways before adding it here.
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true, 'DE': true, '2L': true, 'CS': true, 'EW': true, 'A3': true };  // supplied full-colour art keeps its native colours (DL v23225: Nick's glossy sphere is the badge)
+        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true, 'DE': true, '2L': true, 'CS': true, 'EW': true, 'A3': true, 'PC': true };  // supplied full-colour art keeps its native colours (DL v23225: Nick's glossy sphere is the badge)
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -19590,6 +19592,10 @@ const IATA_TO_WORDMARK = {
   'EW': 'eurowings',
   // v23377 - Aegean. Blue #1c4093, reversed to white for the dark rows.
   'A3': 'aegean',
+  // v23378 - Pegasus. Its logo file shipped with NO viewBox, only width and
+  // height, so it had no intrinsic aspect to scale against in the slot; a
+  // viewBox of 0 0 1531 270 was added from those dimensions.
+  'PC': 'pegasus',
   // v23354 — the wordmark half of the same seven regionals. A row that says
   // AIR CANADA now draws the Air Canada wordmark instead of falling through to
   // a plain text name. All seven had no entry here before, so nothing that
@@ -19768,6 +19774,7 @@ const LOGO_SUBFOLDER = {
   'sas-wordmark-light.svg':'airlines/european', 'sas-wordmark-dark.svg':'airlines/european',
   'eurowings-wordmark-light.svg':'airlines/european', 'eurowings-wordmark-dark.svg':'airlines/european',
   'aegean-wordmark-light.svg':'airlines/european', 'aegean-wordmark-dark.svg':'airlines/european',
+  'pegasus-wordmark-light.svg':'airlines/european', 'pegasus-wordmark-dark.svg':'airlines/european',
   'swiss-wordmark-light.svg':'airlines/european', 'swiss-wordmark-dark.svg':'airlines/european',
   '21c-museum-hotel.svg':'hotels/accor-premium', '25-hours.png':'hotels/accor-midscale', '25hours.svg':'hotels/accor-midscale', 'AC-tail-reversed.svg':'airlines/canadian', 'AC.TO.svg':'airlines/canadian', 'AC.TO_BIG.D.svg':'airlines/canadian', 'AC.TO_BIG.svg':'airlines/canadian', 'ACAEROPLANStar-white.png':'airlines/canadian',
   'ACAEROPLANStar.png':'airlines/canadian', 'Adagio.png':'hotels/accor-midscale', 'Air-Canada-Aeroplan.png':'airlines/canadian',
@@ -19984,6 +19991,7 @@ const IATA_TO_EMBLEM = {
   'CS': '/logos/symbols/airlines/CS.png',   // Chair tail, red fin + Swiss cross
   'EW': '/logos/symbols/airlines/EW.svg',   // Eurowings wings on their grey ground
   'A3': '/logos/symbols/airlines/A3.svg',   // Aegean birds on their navy ground
+  'PC': '/logos/symbols/airlines/PC.svg',   // Pegasus P on its red ground
   'JV': '/logos/airlines/canadian-regional/bearskin-emblem.svg',      // Bearskin bear-paw emblem
   'WT': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
   'NSA': '/logos/airlines/canadian-regional/north-star-emblem.svg',   // North Star Air emblem
@@ -21202,7 +21210,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23377';
+var FIDS_BUILD_TAG = 'v23378';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
