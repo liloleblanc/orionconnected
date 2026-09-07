@@ -7624,6 +7624,79 @@ window._orbKeepsColour = function (code) {
   var c = String(code == null ? '' : code).trim().toUpperCase();
   return !!(c && window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[c]);
 };
+
+// v23396 — ONE ORB RECIPE, USED BY BOTH ORBS.
+// Nick: 'the 2 orbs never match … unless its operated by someone else it
+// should always match period', and 'its a copy paste from the original which
+// is top left in most cases it should be right if its there'.
+//
+// The gate shows a round orb in exactly two places — the top-left rail shelf
+// and the bottom-right arrival card — and each was built by its own function
+// with its own rules. The rail decided a carrier's treatment from a tile-brand
+// map, a colour list and an on-white list; the arrival card knew about none of
+// that, so the same carrier came out full-bleed on one and small-on-an-accent-
+// disc on the other. Breeze was the clearest: the rail drew breeze-check.svg
+// on #001633 while the card drew MXY.svg.
+//
+// This is the rail's recipe, lifted verbatim so it can be CALLED by both
+// instead of copied into each. The rail is the original; the card now asks it
+// the same question and gets the same answer by construction.
+window._gateOrbParts = function (code) {
+  var c = String(code == null ? '' : code).trim().toUpperCase();
+  var tb = (window._BADGE_TILE_BRANDS && window._BADGE_TILE_BRANDS[c]) || null;
+  var path = (tb && tb.icon)
+    || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(c) : '');
+  // TWO SEPARATE QUESTIONS, and v23392 wrongly rode both on one flag.
+  //   keepsColour — does this art already carry its own colours? (don't whiten)
+  //   isTile      — is this art a finished SQUARE/ROUND tile? (let it fill)
+  // The rail used a single `native` for both, so when v23392 grew the colour
+  // list from 2 to 40 it also flipped 38 carriers to full-bleed. `cover` then
+  // cropped wide silhouettes into a blob — British Airways' speedmarque came
+  // out as a red pill in the top-left orb (Nick: 'what the fuck really?').
+  // Only tile art fills; colour art keeps its colours ON the accent disc.
+  var keepsColour = !!(window._orbKeepsColour && window._orbKeepsColour(c));
+  // "Is this art already a disc?" — if it is, it BECOMES the orb. Padding a
+  // finished disc onto another disc is what Nick kept seeing: 'why is there
+  // orbs within orbs for some', 'Turkeish again circle within circkle'.
+  //
+  // MEASURED, not guessed. Filename and folder rules kept missing cases, so
+  // every emblem file the resolver can reach was drawn to a canvas and its
+  // alpha sampled around the inscribed circle's rim: art that paints its own
+  // ground out to the edge is a disc, art with a transparent surround is a
+  // flat mark that belongs ON the accent circle. 21 of 85 files are discs.
+  // Turkish measured 100% rim, Delta's glossy sphere 63% (soft edge, checked
+  // by eye on a checkerboard), Southwest 42% and Qatar 13% are flat.
+  // The airline-tiles folder is included wholesale — those are finished square
+  // tiles by construction — except PB-arrow, the one bare arrow in there,
+  // which is drawn to sit ON the gold badge.
+  var SELF_DISC = {
+    'EZY':1,'EW':1,'MO':1,'F8':1,'SP':1,'UA':1,'LL':1,'LH':1,'LO':1,'RO':1,
+    'DE':1,'A3':1,'PC':1,'TK':1,'HV':1,'DI':1,'JL':1,'CM':1,'MX':1,'ZP':1,'DL':1
+  };
+  var _p = String(path || '');
+  var isTile = !!tb
+    || !!SELF_DISC[c]
+    || (/\/logos\/airline-tiles\//.test(_p) && !/PB-arrow/i.test(_p));
+  // AA and DL are drawn to sit centred ON the accent disc rather than fill it.
+  var COLOR_ON_WHITE = { 'AA': true, 'DL': true };
+  var onWhite = !!COLOR_ON_WHITE[c] && !tb;
+  var accFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent) || '#D82F2E';
+  var ACC = 'var(--airline-accent,' + accFb + ')';
+  var BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
+  var badge = isTile
+    ? BASE + 'background:transparent;padding:0;'
+    : onWhite
+      ? BASE + 'background:' + ACC + ';padding:clamp(6px,0.9vh,13px);'
+      : BASE + 'background:' + ACC + ';padding:clamp(6px,0.9vh,13px);';
+  var imgStyle = isTile
+    ? 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;'
+    : keepsColour || onWhite
+      ? 'width:100%;height:100%;object-fit:contain;display:block;'
+      : 'width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);';
+  return { path: path, badge: badge, imgStyle: imgStyle,
+           native: isTile, keepsColour: keepsColour,
+           nativeCls: isTile ? ' v2-fi-emblem-native' : '' };
+};
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // v23354 — REGIONALS THAT ALREADY WEAR A MAINLINE'S NAME. These codes
         // print their parent's name on the board — ZX/9M/9L say AIR CANADA,
@@ -7689,7 +7762,15 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
-        'UA':  '/logos/airlines/us-major/united-globe-clean.svg?v=2',   // Standard emblem used outside the one gate-flight badge override below
+        // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
+        // NOTHING else. Every surface falling through to this map drew a white
+        // globe — and the countdown takeover's ground samples (253,253,253),
+        // so United's countdown centrepiece was a white globe on a white card:
+        // invisible. Exactly the bug Delta was fixed for in v23130 ('I made you
+        // change this yesterday why is this still white OMG WOW') and WestJet in
+        // v23198. United never got it. Nick, picking from the comparison: 'so
+        // the first one and should be all around full circle'.
+        'UA':  '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
         // v22960 — SINGLE-COLOUR widget (Nick: 'the actual delta icon is 2
         // colors this needs to be changed'). The native widget is two-tone
         // red; the monochrome-white one reads as ONE mark and sits on the red
@@ -8221,8 +8302,13 @@ function _buildV2AircraftCol(ctx, vars) {
         // emblem is an opaque square tile render as a CIRCLE in the tile's
         // own background colour with just the mark padded inside — the mark
         // file is derived from the airline's own tile art, never redrawn.
-        var BADGE_TILE_BRANDS = {
-          'MX': { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' },
+        var BADGE_TILE_BRANDS = window._BADGE_TILE_BRANDS = {
+          // v23396 — MX removed. This forced the rail to draw breeze-check.svg
+          // on #001633 while the arrival card drew Breeze's real mark, so the
+          // two orbs disagreed on the one carrier Nick called out by name.
+          // Dropping it lets both fall through to _airlineOrbEmblem — MXY.svg,
+          // Breeze's own finished roundel (v23390) — and MX is in the colour
+          // list, so it full-bleeds the orb exactly as the rail intends.
           // v22989 (Nick: 'no icon on the orb ... the icons should be that
           // light teal blue with white'): Transat had NO emblem registered
           // at all, so its orb fell through to the generic plane. TSC.svg is
@@ -8281,24 +8367,23 @@ function _buildV2AircraftCol(ctx, vars) {
         var _accFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code] && AIRLINE_BRAND[code].accent) || '#D82F2E';
         var ACC = 'var(--airline-accent,' + _accFb + ')';
         var BADGE_BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
-        var BADGE = _tileBrand
-          ? BADGE_BASE + 'background:' + _tileBrand.bg + ';padding:clamp(8px,1.1vh,14px);'
-          : native
-            ? BADGE_BASE + 'background:transparent;padding:0;'
-            : onWhite
-              ? BADGE_BASE + 'background:' + ACC + ';padding:clamp(6px,0.9vh,13px);'
-              : BADGE_BASE + 'background:' + ACC + ';padding:clamp(2px,0.3vh,4px);';
+        // v23396 — the rail now asks the SHARED recipe, so the bottom-right
+        // arrival orb (which asks the same one) cannot render this carrier any
+        // differently. It also fixes what v23392 broke here: growing the
+        // colour list flipped 38 carriers onto the full-bleed branch, and
+        // `cover` cropped wide silhouettes into a blob — BA's speedmarque came
+        // out as a red pill (Nick: 'what the fuck really?'). Colour and layout
+        // are separate questions again: only real tiles fill the disc.
+        var _railParts = window._gateOrbParts(code);
+        var BADGE = _railParts.badge;
         if (!path) {
           var GENERIC_PLANE = '<svg viewBox="0 0 24 24" style="width:100%;height:100%;fill:#fff;"><path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z"/></svg>';
           return '<div class="v2-fi-icon-wrap v2-fi-emblem-wrap" style="' + BADGE_BASE + 'background:' + ACC + ';padding:clamp(5px,0.7vh,10px);">'
             + GENERIC_PLANE
             + '</div>';
         }
-        var IMG = native
-          ? 'width:100%;height:100%;object-fit:cover;display:block;'
-          : onWhite
-            ? 'width:100%;height:100%;object-fit:contain;display:block;'
-            : 'width:100%;height:100%;object-fit:contain;display:block;filter:brightness(0) invert(1);';
+        var IMG = _railParts.imgStyle;
+        native = _railParts.native;   // marker class below follows the recipe
         // Native full-bleed tiles get a marker class: the stylesheet forces
         // object-fit:contain !important on emblem imgs (right for symbol
         // emblems), which would beat the inline `cover` and leave the square
@@ -9093,7 +9178,10 @@ function _buildV2MapCol(ctx, vars) {
       // :is(.gad-aircraft-col,.g8-bir-shelves).
       var _mcCode = String((vars && vars.airlineCode) || '').trim().toUpperCase();
       var _mcAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_mcCode] && AIRLINE_BRAND[_mcCode].accent) || '#D82F2E';
-      var _mcBadge = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _mcAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // v23396 — the arrival card asks the RAIL's recipe instead of carrying
+      // its own. Same carrier, same badge and same fit as the top-left orb.
+      var _mcParts = window._gateOrbParts(_mcOrbArt || _mcCode);
+      var _mcBadge = _mcParts.badge + 'color:#fff;';
       // v23203 — the orb carries the OPERATOR's logo when another carrier
       // flies the leg (Nick: 'either the airline or the operator in this
       // case PAL — logo only white — and still have operated by PAL'),
@@ -9175,7 +9263,7 @@ function _buildV2MapCol(ctx, vars) {
                   // solid colour roundel; invert(1) turned it into a blank
                   // white disc. Only vector silhouettes take the white
                   // treatment — .png art is colour art by construction.
-                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._orbKeepsColour && window._orbKeepsColour(_mcOrbArt)) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_mcOrbOp || _mcCode) + '\')">'
+                  ? '<img class="v2-fi-orb' + _mcParts.nativeCls + '" src="' + _mcOrbSrc + '" alt="" style="' + _mcParts.imgStyle + (/\.png(\?|$)/i.test(_mcOrbSrc) ? 'filter:none;' : '') + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_mcOrbOp || _mcCode) + '\')">'
                   // v23208 — no emblem art on file → the carrier's LETTERS on
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
@@ -9395,7 +9483,9 @@ function _buildV2MapCol(ctx, vars) {
       // is the carrier's own brand colour too, not a hardcoded navy, so a gate
       // whose --airline-accent fails to resolve still matches its neighbours.
       var _niAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_niCode] && AIRLINE_BRAND[_niCode].accent) || '#D82F2E';
-      var _niBadge = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:var(--airline-accent,' + _niAccFb + ');color:#fff;box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
+      // v23396 — same recipe as the rail (see _gateOrbParts).
+      var _niParts = window._gateOrbParts(_niOrbArt || _niCode);
+      var _niBadge = _niParts.badge + 'color:#fff;';
       // v23308 — the status line only says "to be confirmed" when something
       // ACTUALLY is. Nick's shot printed it under 'WS812 · From: Calgary YYC':
       // 'what is to be confirmed we know the fing plane is coming from
@@ -9429,7 +9519,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _niBadge + '">'
         +       (_niOrbSrc
-                  ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + _niOrbFilter + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_niCode) + '\')">'
+                  ? '<img class="v2-fi-orb' + _niParts.nativeCls + '" src="' + _niOrbSrc + '" alt="" style="' + _niParts.imgStyle + (/\.png(\?|$)/i.test(_niOrbSrc) ? 'filter:none;' : '') + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_niCode) + '\')">'
                   : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
@@ -10931,7 +11021,7 @@ function uxgGateHtml(ctx) {
     // leave it white'). The strip's ground is white, so the leaf's navy and
     // teal both read on it.
     var _BW_EMBLEM = {
-      'UA': '/logos/airlines/us-major/united-globe-only.svg',
+      'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // v23394 one United face everywhere
       'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
       'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
     };
@@ -12168,7 +12258,7 @@ function uxgGateHtml(ctx) {
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
     'DL': '/logos/airlines/us-major/delta-widget-red.svg',                         // Delta widget, ONE flat red (Nick: 'simply red please')
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead
-    'UA': '/logos/airlines/us-major/united-globe-only.svg',                        // United Globe
+    'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // United Globe   // v23394 one United face everywhere
     'WS': '/logos/airline-tiles/WJA.svg',                                          // WestJet white emblem on teal square
     'PB': '/logos/airlines/canadian-regional/PB-blue-white.svg',                   // PAL white emblem on navy-blue square
     'PD': '/logos/Backgrounds/PD/porter-pattern-panel.png',                             // Porter faded panel pattern background
@@ -20212,7 +20302,7 @@ const IATA_TO_EMBLEM = {
   'DL': '/logos/airlines/us-major/delta-widget-red.svg',       // Delta widget, ONE flat red (Nick: 'simply red please')
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
   'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
-  'UA': '/logos/airlines/us-major/united-globe-only.svg',      // United globe
+  'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // United globe   // v23394 one United face everywhere
   // v23250 — LATAM had no emblem file, so the banner's pair path fell to the
   // LAN square TILE: a navy rounded plate that read as an app icon beside the
   // wordmark (Nick's MIA J5 shot: 'unacceptable it's not what I asked for').
@@ -21413,7 +21503,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23392';
+var FIDS_BUILD_TAG = 'v23398';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
