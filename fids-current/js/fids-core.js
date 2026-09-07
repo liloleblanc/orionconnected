@@ -7611,7 +7611,12 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
 // The comment above already promised 'one shared list … so both ends of the
 // screen agree'. This makes that true: one list, consulted by both orbs.
 window._CARD_COLOR_EMBLEMS = {
-  'AA': true, 'UA': true,
+  // v23438 — 'AA' REMOVED (Nick, ORD/H14: 'these are the wrong color either
+  // they are all white or all blue not both white is not bad'). American's
+  // symbol is the only art in its rail rendering in colour while the five
+  // glyph badges under it are white; it inks white now and the column reads
+  // as one set. See the LIGHT_DISC note in _gateOrbParts.
+  'UA': true,
   '2L': true, '4C': true, '4Y': true, 'A3': true, 'AI': true, 'BA': true, 'BW': true, 'CJ': true,
   'CS': true, 'DE': true, 'DI': true, 'DL': true, 'EI': true, 'ET': true, 'EW': true, 'EZY': true,
   'F8': true, 'GA': true, 'HA': true, 'JJ': true, 'LA': true, 'LL': true, 'LY': true,
@@ -7688,8 +7693,9 @@ window._gateOrbParts = function (code) {
   var isTile = !!tb
     || !!SELF_DISC[c]
     || (/\/logos\/airline-tiles\//.test(_p) && !/PB-arrow/i.test(_p));
-  // AA and DL are drawn to sit centred ON the accent disc rather than fill it.
-  var COLOR_ON_WHITE = { 'AA': true, 'DL': true };
+  // DL is drawn to sit centred ON the accent disc rather than fill it.
+  // v23438 — AA removed with the rest of its colour treatment (see below).
+  var COLOR_ON_WHITE = { 'DL': true };
   var onWhite = !!COLOR_ON_WHITE[c] && !tb;
   var accFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent) || '#D82F2E';
   var ACC = 'var(--airline-accent,' + accFb + ')';
@@ -7710,7 +7716,16 @@ window._gateOrbParts = function (code) {
   // 79%, Eurowings 81%, Avelo 100%, Delta, Garuda, LATAM, Air India, Condor,
   // Pegasus, Chair, Malaysia — as is anything that full-bleeds, which has no
   // disc behind it at all.
-  var LIGHT_DISC = { 'AA':1,'2L':1,'4Y':1,'BA':1,'CJ':1,'ET':1,'HA':1,'LY':1,'PR':1,'WN':1 };
+  // v23438 — AA LEAVES THIS LIST. Nick, on the ORD/H14 American gate: 'these
+  // are the wrong color either they are all white or all blue not both white
+  // is not bad'. American's red-and-blue flight symbol sat on a near-white
+  // chip directly above five icon badges that are plain white on AA's blue —
+  // two treatments in one column of six, and the odd one out is the light
+  // chip, which is also what he rejected for Delta in v23131 ('this was never
+  // requested better fucking change it'). AA now inks white on its own accent
+  // like its five neighbours. Only AA moves; every other carrier here keeps
+  // the treatment it has.
+  var LIGHT_DISC = { '2L':1,'4Y':1,'BA':1,'CJ':1,'ET':1,'HA':1,'LY':1,'PR':1,'WN':1 };
   var DISC = (!isTile && LIGHT_DISC[c]) ? '#F2F4F7' : ACC;
   var badge = isTile
     ? BASE + 'background:transparent;padding:0;'
@@ -8503,10 +8518,13 @@ function _buildV2AircraftCol(ctx, vars) {
       // glyph orbs fall back to the carrier's own brand accent, so they can
       // never diverge from the emblem orb sitting beside them.
       var _railAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_alCodeEmb] && AIRLINE_BRAND[_alCodeEmb].accent) || '#D82F2E';
-      var _railBadgeBg = (_alCodeEmb === 'F8') ? '#141414'
+      // v23438 — Flair flips: GREEN ground, BLACK markings (Nick: 'the other
+      // blacks are wrong they should be green with black markings'). The
+      // Flight orb is still the plain green ball he asked for.
+      var _railBadgeBg = (_alCodeEmb === 'F8') ? '#7AFF94'
         : (_alCodeEmb === 'MX') ? '#001633'
         : 'var(--airline-accent,' + _railAccFb + ')';
-      var _railBadgeInk = (_alCodeEmb === 'F8') ? '#7AFF94' : '#fff';
+      var _railBadgeInk = (_alCodeEmb === 'F8') ? '#141414' : '#fff';
       var BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _railBadgeBg + ';color:' + _railBadgeInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
       function _badge(svg) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
@@ -11357,7 +11375,14 @@ function uxgGateHtml(ctx) {
     var _birF8 = (airlineCode === 'F8');
     // Breeze: every badge in the row wears the flight rondelle's tile navy
     // (Nick: 'keep the color consistent so the rest same color').
-    var _birBadgeStyle = _birF8 ? ' style="background:#141414;color:#7AFF94;"'
+    // v23438 — FLAIR'S BADGES ARE GREEN WITH BLACK MARKINGS, not black with
+    // green ones. Nick: 'Flair is supposed to have the green ball I see where
+    // this is going the other blacks are wrong they should be green with black
+    // markings'. The Flight orb stays the plain green ball (his mark IS the
+    // dot); the five glyph badges under it now carry the same green ground
+    // with the glyph knocked out in Flair's near-black, so the whole column
+    // reads as one set in the brand's own two colours.
+    var _birBadgeStyle = _birF8 ? ' style="background:#7AFF94;color:#141414;"'
       : (airlineCode === 'MX') ? ' style="background:#001633;"'
       : '';
     // v23115b \u2014 THE RAIL'S OWN SHELF, VERBATIM (Nick: 'copy the exact current
@@ -11367,10 +11392,11 @@ function uxgGateHtml(ctx) {
     // has approved (metal card, accent underline, per-airline artwork, and
     // whatever he changes next) applies here without a parallel copy.
     var _birAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[airlineCode] && AIRLINE_BRAND[airlineCode].accent) || '#D82F2E';
-    var _birRailBg = _birF8 ? '#141414'
+    // v23438 — see _birBadgeStyle: Flair rides green ground / black markings.
+    var _birRailBg = _birF8 ? '#7AFF94'
       : (airlineCode === 'MX') ? '#001633'
       : 'var(--airline-accent,' + _birAccFb + ')';
-    var _birRailInk = _birF8 ? '#7AFF94' : '#fff';
+    var _birRailInk = _birF8 ? '#141414' : '#fff';
     var _BIR_BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _birRailBg + ';color:' + _birRailInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
     function _cell(icon, en, fr, val, noswap, cls) {
       var _t1 = en, _t2 = fr;
@@ -11458,38 +11484,40 @@ function uxgGateHtml(ctx) {
     // builder never had. Unlike the other two this <img> had NO onerror, so
     // one is added below; without it a carrier with no art would go from a
     // blank badge to a broken-image icon.
-    var _birEmblemPath = _birRound || _airlineOrbEmblem(airlineCode) || null;
-    // MX: tile-brand treatment (Nick: 'circle same color as the icon, the
-    // middle fits within') — navy circle in the tile's own colour, check
-    // mark (derived from the airline's tile art) padded inside, no filter.
-    var _birTile = (airlineCode === 'MX') ? { bg: '#001633', icon: '/logos/airlines/us-major/breeze-check.svg' } : null;
-    if (_birTile) _birEmblemPath = _birTile.icon;
-    // COLOR-ON-WHITE (Nick: American/Delta 'color and centered'): the real
-    // colour symbol on a white chip instead of the flat white silhouette on
-    // the accent circle — matches the rail rondelle treatment.
-    // v23131 — the AA-only WHITE orb was never requested (Nick's orange box:
-    // 'this was never requested better fucking change it'). AA rides the same
-    // accent orb as every other cell; its colour art stays unfiltered.
-    var _birOnWhite = false;
-    var _birNativeColor = !!_birRound || !!_birTile || !!_birOnWhite;
-    var _birFilter = _birNativeColor ? '' : 'filter:brightness(0) invert(1);';
-    // v23130 — Nick: 'the logos inside are tiny'. The img carried 9% padding
-    // ON TOP of the wrap's 5-10px — double-padded art filled barely 60% of
-    // the orb. Slimmer img pad; the wrap pad alone keeps the round crop safe.
-    var _birPad = _birOnWhite ? '8%' : '3%';
+    // ── v23438 — THE THIRD ORB BUILDER ASKS THE SHARED RECIPE TOO.
+    //
+    // Nick, on his WestJet YEG/49D gate: 'CAnnot be 2 different sizes
+    // unacceptable', and on the China Eastern gate: 'the 2 orbs dont match the
+    // botom orb is right howeer the colors dont match even the blue'.
+    //
+    // He is right, and v23396 only joined TWO of the three builders. The rail
+    // and the arrival card both call _gateOrbParts; this shelf kept its own
+    // hand-copied version, which had drifted on every axis:
+    //   · padding — the wrap's clamp(5px,0.7vh,10px) PLUS a further 3% on the
+    //     img, against the recipe's single clamp(6px,0.9vh,13px). Measured on
+    //     the demo YEG board: the same WestJet leaf came out 33.6px here and
+    //     45.5px in the arrival orb. That is his 'two different sizes'.
+    //   · tiles — a one-carrier map (Breeze) instead of _BADGE_TILE_BRANDS.
+    //   · colour — its own _birNativeColor rule instead of _orbKeepsColour.
+    //   · art — no _orbArtFailed fallback, so a carrier the emblem set does
+    //     not cover (China Eastern) fell through to the generic plane glyph
+    //     here while the arrival orb found the real mark. That is his 'the
+    //     botom orb is right'.
+    //   · Flair — a special case that drew F8 as an EMPTY lime disc, which is
+    //     the featureless green ball on his YEG/10 board.
+    //
+    // One recipe, three call sites. The bottom orb is the reference, as he
+    // says, and this is the function that draws it.
+    var _birParts = window._gateOrbParts(airlineCode);
+    var _birEmblemPath = _birParts.path || null;
+    var _birNativeColor = _birParts.native;
     var _birFlightIcon = _birEmblemPath
-      ? '<img src="' + _birEmblemPath + '" alt="" style="width:100%;height:100%;object-fit:contain;display:block;' + _birFilter + 'padding:' + _birPad + ';box-sizing:border-box;" onerror="this.remove()">'
+      ? '<img src="' + _birEmblemPath + '" alt="" style="' + _birParts.imgStyle
+        + (/\.png(\?|$)/i.test(_birEmblemPath) ? 'filter:none;' : '')
+        + '" onerror="window._orbArtFailed(this,\'' + _orbMono(airlineCode) + '\')">'
       : null;
-    // Flair's emblem IS the green dot — an empty lime badge, nothing inside.
-    // AA/DL (_birOnWhite): keep the DEFAULT accent-coloured badge (same as the
-    // other cells) — just don't white-invert the emblem, so the colour art sits
-    // on the matching accent orb.
-    var _birBadgeBgStyle = _birTile ? ' style="background:' + _birTile.bg + ';"' : '';
-    var _birFlightBadge = _birF8
-      ? '<div class="g8-bir-badge" style="background:#7AFF94;"></div>'
-      : (_birFlightIcon
-          ? '<div class="g8-bir-badge"' + _birBadgeBgStyle + '>' + _birFlightIcon + '</div>'
-          : null);
+    // Flair's emblem IS the green dot — an empty lime badge, nothing inside
+    // (Nick, v23438: 'Flair is supposed to have the green ball').
     // Flight shelf wears the airline rondelle in the rail's emblem-wrap
     // grammar; falls back to the generic glyph badge exactly like the rail.
     // v23130 — Flair's mark IS the green dot (Nick: 'The icons were changed
@@ -11499,7 +11527,7 @@ function uxgGateHtml(ctx) {
     if (_birF8) _birFlightIcon = '';
     var _birFlightShelf = (_birFlightIcon || _birF8)
       ? '<div class="v2-fi-row v2-fi-flight">'
-        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (_birNativeColor ? ' v2-fi-emblem-native' : '') + '" style="' + _BIR_BADGE_STYLE + (_birF8 ? 'background:#7AFF94;' : '') + (_birTile ? 'background:' + _birTile.bg + ';' : '') + (_birOnWhite ? 'background:#fff;' : '') + '">' + (_birF8 ? '' : _birFlightIcon.replace('<img ', '<img class="v2-fi-emblem-img" ')) + '</div></div>'
+        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-emblem-wrap' + _birParts.nativeCls + '" style="' + _birParts.badge + 'color:' + _birRailInk + ';' + (_birF8 ? 'background:#7AFF94;' : '') + '">' + (_birF8 ? '' : _birFlightIcon.replace('<img ', '<img class="v2-fi-emblem-img" ')) + '</div></div>'
         + '<div class="v2-fi-textcol">'
         +   '<div class="v2-fi-title">' + _gateLbl('flight', _frF, function(w,i){ return i ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">'+w+'</span>' : '<span class="v2-fi-lbl-en">'+w+'</span>'; }, '') + '</div>'
         +   '<div class="v2-fi-value v2-fi-flight-number">' + (currentFlight.flight || '\u2014') + '</div>'
@@ -21604,7 +21632,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23434';
+var FIDS_BUILD_TAG = 'v23438';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
