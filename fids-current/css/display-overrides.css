@@ -15021,3 +15021,104 @@ html body:not(#_):not(#_) .wxcard-wrap.wxcard-col {
   display: flex;
   flex-direction: column;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23458 — MONCTON'S BANNER CLOCK CARRIES THE AIRPORT MARK.
+
+   Nick: 'For moncton only can you remove it from beside the gate simply
+   add it where the time is where the text says YQM', and then 'I would
+   push the same banner line down all the way make the time bigger and
+   logo beside it with the seperation'.
+
+   So, on YQM only: the mark replaces the letters beside the clock, the
+   separator he asked to keep stays, the time grows, and the date line is
+   pushed to the foot of the band so the clock gets the height it needs.
+   Every other airport is untouched — all of this is scoped to .g8-ap-YQM,
+   the class fids-core stamps on .g8-wrap from the IATA code.
+
+   The mark is a BACKGROUND, not an <img>: this band flips between light
+   and dark depending on the airline palette, and only CSS can swap which
+   file gets painted. An <img> src cannot follow a theme.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow .octb-apmark {
+  display: block !important;
+  /* Sized off the clock's own height so the two always read as a pair, and
+     the mark is portrait (312x350) so width follows from that ratio. */
+  height: clamp(52px, 9.2vh, 120px) !important;
+  width: calc(clamp(52px, 9.2vh, 120px) * 0.891) !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  background-image: url('/logos/airports/mark-CYQM-white.svg') !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .35)) !important;
+}
+/* The silk band is cream on most gates, so a white mark would vanish on it;
+   the colour original is painted instead. Same file pair, chosen by the same
+   luminance flag the code letters already follow. */
+html body.g8-header-is-light:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow .octb-apmark,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox-silk .octb-clockrow .octb-apmark {
+  background-image: url('/logos/airports/mark-CYQM-colour.svg') !important;
+  filter: none !important;
+}
+/* THE TIME GETS THE ROOM. The row is baseline-aligned for letters; with a
+   mark in it, centre is right. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow {
+  align-items: center !important;
+  gap: .28em !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-tab .octb-clock,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clockrow .v2-fi-clock-val {
+  font-size: clamp(46px, 8.6vh, 112px) !important;
+  line-height: .94 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clockrow .octb-apsep {
+  font-size: clamp(30px, 5.6vh, 74px) !important;
+  opacity: .42 !important;
+  font-weight: 400 !important;
+}
+/* AND THE DATE GOES DOWN. The stack spreads instead of bunching at the top,
+   so the divide between time and date sits low and the clock owns the band. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-tab.octb-stack {
+  justify-content: space-between !important;
+  padding-top: clamp(2px, 0.5vh, 8px) !important;
+  /* No padding under the stack: the date bar is the band's own bottom edge
+     now, so any padding here would float it back up off the edge. */
+  padding-bottom: 0 !important;
+}
+/* THE COLOURED BAR GOES TO THE FLOOR. Nick: 'you push the red line lets say
+   or blue whatever color down to the bottom of the top banner then you have
+   more room'. It is the date strip, painted in the airline's accent — it sat
+   29px tall at y105 in a 138px band with a gap beneath it. Flush to the
+   bottom edge and slimmer, so everything it gives up goes to the clock. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+  margin-top: auto !important;
+  margin-bottom: 0 !important;
+  align-self: stretch !important;
+  font-size: clamp(10px, 1.28vh, 17px) !important;
+  line-height: 1.05 !important;
+  padding: clamp(1px, 0.18vh, 3px) 0 clamp(2px, 0.26vh, 4px) !important;
+  opacity: 1 !important;
+}
+
+/* THE GATE BLOCK TAKES THE ROOM IT NOW HAS. Nick, once the date bar went to
+   the floor: 'now the Gate and Porte and Number can be bigger theres more
+   room'. The number is stamped INLINE by the renderer with !important
+   (fids-core sizes it by digit count), so only a heavier selector reaches it.
+   Sized off the band rather than by digit count, with the clamp ceiling doing
+   the work for 2- and 3-character gates. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-right .g8-r1-gate {
+  font-size: clamp(104px, 14.6vh, 190px) !important;
+  line-height: .88 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-right .g8-bilbl {
+  font-size: clamp(21px, 2.9vh, 38px) !important;
+  line-height: 1.06 !important;
+}
+/* A longer gate id must not push the number out of its block — the label and
+   number share the row, so the number gets whatever is left. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-right {
+  gap: clamp(10px, 1.2vw, 22px) !important;
+  padding: 0 clamp(16px, 1.6vw, 34px) !important;
+}

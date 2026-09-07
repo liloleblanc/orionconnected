@@ -12775,7 +12775,21 @@ function uxgGateHtml(ctx) {
               // 'YHZ | 11:00PM' (Nick). YQM already carried its code inside the
               // gate tab; this puts every airport's beside the clock instead.
               +   '<span class="octb-clockrow">'
-              +     (iata ? '<span class="octb-ap">' + _e(String(iata).toUpperCase()) + '</span><span class="octb-apsep">|</span>' : '')
+              // v23458 — MONCTON SHOWS ITS MARK HERE, NOT ITS LETTERS.
+              // Nick: 'For moncton only can you remove it from beside the gate
+              // simply add it where the time is where the text says YQM', then
+              // 'make the time bigger and logo beside it with the seperation'.
+              // The separator stays — he asked for it explicitly — so the row
+              // reads mark | time instead of YQM | time. A SPAN, not an <img>,
+              // because the band flips between light and dark and only CSS can
+              // swap which file is painted; an <img> src cannot follow a theme.
+              // Every other airport keeps its letters.
+              +     (iata
+                      ? (String(iata).toUpperCase() === 'YQM'
+                          ? '<span class="octb-apmark" role="img" aria-label="YQM"></span>'
+                          : '<span class="octb-ap">' + _e(String(iata).toUpperCase()) + '</span>')
+                        + '<span class="octb-apsep">|</span>'
+                      : '')
               +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
               +   '</span>'
               +   '<div class="octb-date">' + _tbDate1 + '</div>'
@@ -12809,6 +12823,10 @@ function uxgGateHtml(ctx) {
             // no asset exists, taking the code with it.
             var i = String(iata || '').toUpperCase();
             if (!i) return '';
+            // v23458 — Moncton's mark moved to the clock (see octb-apmark
+            // above); showing it here as well would put the same logo on the
+            // banner twice, a few centimetres apart.
+            if (i === 'YQM') return '';
             var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i);
             return '<span class="g8-r1-apmark" style="visibility:hidden;">'
               // v23456 — PREFER A VECTOR MARK, FALL BACK TO THE PNG.
@@ -21781,7 +21799,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23456';
+var FIDS_BUILD_TAG = 'v23458';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
