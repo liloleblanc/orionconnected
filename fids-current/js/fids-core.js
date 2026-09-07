@@ -19987,7 +19987,11 @@ const IATA_TO_EMBLEM = {
   // but no tile, so the row fell straight through to no emblem at all
   // (Nick: 'EL Al has no Emblem'). Same file, now reachable from both.
   'LY': '/logos/symbols/airlines/LY.svg',   // Star of David flag device
-  '2L': '/logos/symbols/airlines/2L.svg',   // Helvetic roundel, black + red + white plane
+  // v23380 - the ROW tile keeps Helvetic's full mark, black ring included,
+  // because it sits on white. The gate ORB reads a different file with that
+  // ring removed: on the red accent the black ring made the emblem the odd
+  // one out in a rail of red orbs (Nick: 'emblem not the same color').
+  '2L': '/logos/airlines/european/helvetic-emblem-tile.svg',
   'CS': '/logos/symbols/airlines/CS.png',   // Chair tail, red fin + Swiss cross
   'EW': '/logos/symbols/airlines/EW.svg',   // Eurowings wings on their grey ground
   'A3': '/logos/symbols/airlines/A3.svg',   // Aegean birds on their navy ground
@@ -21210,7 +21214,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23379';
+var FIDS_BUILD_TAG = 'v23380';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
