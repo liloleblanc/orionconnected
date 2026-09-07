@@ -8094,7 +8094,26 @@ function _buildV2AircraftCol(ctx, vars) {
         // square, taupe ground with the orange bird, and the default
         // brightness(0) invert(1) turns it into a SOLID WHITE CIRCLE - the
         // whole mark gone. Rendered both ways before adding it here.
-        var NATIVE_COLOR_EMBLEMS = { 'F8': true, 'UA': true, 'MX': true, 'DL': true, 'DE': true, '2L': true, 'CS': true, 'EW': true, 'A3': true, 'PC': true };  // supplied full-colour art keeps its native colours (DL v23225: Nick's glossy sphere is the badge)
+        // v23381 - NEVER WHITE-WASH A COLOUR EMBLEM. Nick: 'I dont want to
+        // see white washed out emblems ever ... unless it belongs in the logo
+        // by start'. The old default was the reverse: whiten everything and
+        // add carriers here one at a time as each broke, which is how Condor,
+        // Helvetic, Chair, Eurowings, Aegean and Pegasus each had to be
+        // rescued individually tonight.
+        //
+        // This list is now DERIVED, not hand-kept: every emblem file the orb
+        // resolver can reach was scanned for distinct fill colours, and any
+        // carrier whose art carries more than one colour (or is a raster) is
+        // listed. 36 of 92 qualify. Carriers absent from this list have a
+        // genuine single-colour silhouette, which is the only case where
+        // inking it white is what the artwork was drawn for.
+        var NATIVE_COLOR_EMBLEMS = {
+          '2L': true, '4C': true, '4Y': true, 'A3': true, 'AI': true, 'BA': true, 'BW': true, 'CJ': true,
+          'CS': true, 'DE': true, 'DI': true, 'DL': true, 'EI': true, 'ET': true, 'EW': true, 'EZY': true,
+          'F8': true, 'GA': true, 'HA': true, 'JJ': true, 'JX': true, 'LA': true, 'LL': true, 'LY': true,
+          'MO': true, 'MX': true, 'PC': true, 'PR': true, 'QK': true, 'QR': true, 'RV': true, 'TG': true,
+          'TK': true, 'TP': true, 'UA': true, 'VS': true, 'WN': true, 'WY': true, 'XP': true,
+        }
         var native = !!NATIVE_COLOR_EMBLEMS[code];
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
@@ -21214,7 +21233,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23380';
+var FIDS_BUILD_TAG = 'v23381';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
