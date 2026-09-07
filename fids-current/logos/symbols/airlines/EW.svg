@@ -1,1 +1,24 @@
-<svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><title>Eurowings</title><path fill="#7cc5d3" d="M9.589 5.005c-2.084-.28-3.14.879-4.598 1.944L0 10.875l.953.504h.01c1.252.617 2.99.411 4.168-.467L7.243 9.23l.804-.636 4.018-3.196Z"/><path fill="#7c2045" d="m18.112 7.426-2.673-.477s-1.869-.448-3.43.757c0 0-1.15.86-2 1.524l-1.888 1.495-4.364 3.467-.037.028 1.317.701c1.253.617 2.991.412 4.178-.467l3.906-3.093 4.991-3.926M24 9.688l-2.897-.524c-1.73-.327-2.552.234-4.234 1.552l-4.308 3.476-4.673 3.776 1.308.701c1.253.617 3.112.449 4.3-.43l4.14-3.29z"/></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with Linearity Curve (http://linearity.io/curve) -->
+<svg height="100%" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="148.885 0.00952543 53.3149 51.1905" width="100%" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs/>
+<g id="Layer" vectornator:layerName="Layer">
+<g opacity="1" vectornator:layerName="Group 1">
+<g opacity="1" vectornator:layerName="Group 3">
+<g opacity="1" vectornator:layerName="Group 1">
+<path d="M148.885 0.00952543L202.2 0.00952543L202.2 51.2L148.885 51.2L148.885 0.00952543Z" fill="#a6959c" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Rectangle 1"/>
+</g>
+</g>
+<path d="M186.058 14.5159L180.601 13.3293C180.601 13.3293 176.736 12.2746 173.553 15.1751C173.553 15.1751 171.166 17.2846 169.461 18.7349L165.596 22.2947L156.615 30.6009L156.501 30.7327L159.23 32.4467C161.844 33.8969 165.368 33.3696 167.756 31.3919L175.713 24.0087L186.058 14.5159" fill="#7c2045" fill-rule="evenodd" opacity="1" stroke="none" vectornator:layerName="Curve 4"/>
+<g opacity="1" vectornator:layerName="Group 4">
+<path d="M168.551 8.83713C164.232 8.17791 162.072 10.9466 159.116 13.4517L148.885 22.8126L150.818 23.9991L150.818 23.9991C153.432 25.4494 156.956 24.9221 159.343 22.9444L163.663 18.9891L165.255 17.5388L173.439 9.89188L168.551 8.83713Z" fill="#7cc5d3" fill-rule="evenodd" opacity="1" stroke="none" vectornator:layerName="Curve 2"/>
+<g opacity="1" vectornator:layerName="Group 2">
+<path d="M169.461 18.8572C171.166 17.2751 173.553 15.2975 173.553 15.2975C174.122 14.7701 174.804 14.3746 175.372 14.1109L165.368 17.407L163.663 18.9891L159.343 22.9444C156.843 25.0539 153.66 25.4494 150.818 23.9991C152.977 25.5813 156.388 25.845 161.503 24.131L165.027 22.9444L165.596 22.417L169.461 18.8572ZM183.443 22.417C184.694 21.0986 186.058 20.0438 187.536 19.1209L176.395 23.3399L175.713 23.9991L167.756 31.3824C165.255 33.4919 162.072 33.8874 159.23 32.569C163.208 35.074 169.233 33.2282 174.349 31.1187L174.69 30.855L183.443 22.417M196.63 30.7232C192.196 29.2729 190.832 30.1958 185.489 32.0416L185.035 32.4371L176.509 40.2159C173.894 42.3254 170.598 42.7209 167.756 41.2707C170.939 43.1165 174.235 42.7209 179.805 40.7433L202.2 32.7008L196.63 30.7232Z" fill="#c1beb9" fill-rule="evenodd" opacity="1" stroke="none" vectornator:layerName="Curve 5"/>
+</g>
+</g>
+<path d="M198.108 19.9215L192.196 18.7349C188.672 17.9439 186.967 19.2623 183.557 22.4265L174.69 30.7327L165.141 39.6981L167.869 41.412C170.484 42.8623 174.235 42.4668 176.736 40.3573L185.262 32.5785L198.108 19.9215Z" fill="#7c2045" fill-rule="evenodd" opacity="1" stroke="none" vectornator:layerName="Curve 6"/>
+<path d="M165.027 22.8126L184.012 16.3522L176.395 23.2081L156.501 30.7232L165.027 22.8126ZM174.349 30.9869L194.925 22.9444L185.489 32.0416L165.027 39.6885L174.349 30.9869" fill="#a22455" fill-rule="evenodd" opacity="1" stroke="none" vectornator:layerName="Curve 7"/>
+</g>
+</g>
+</svg>
