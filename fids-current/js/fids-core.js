@@ -7598,7 +7598,32 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
 // already renders AA in colour via its own COLOR_ON_WHITE set. One shared
 // list for the card builders (and the operator re-point pass) so both ends
 // of the screen agree.
-window._CARD_COLOR_EMBLEMS = { 'AA': true, 'UA': true };
+// v23392 — THE TWO GATE ORBS MUST SHOW THE SAME FACE.
+// Nick: 'the 2 orbs never match … unless its operated by someone else it
+// should always match period', and 'its a copy paste from the original which
+// is top left'. He is right, and the split was here: this list had two
+// carriers while a SECOND list, NATIVE_COLOR_EMBLEMS, carried thirty-nine.
+// The top-left orb whitened its art to a flat silhouette unless the carrier
+// was in THIS list; the bottom-right orb read the other list (and in fact
+// never whitened at all). So one carrier's own artwork rendered two different
+// ways on one screen — Delta, BA, Breeze, Qatar, Turkish, Southwest, Aegean
+// and Condor among 38 others.
+// The comment above already promised 'one shared list … so both ends of the
+// screen agree'. This makes that true: one list, consulted by both orbs.
+window._CARD_COLOR_EMBLEMS = {
+  'AA': true, 'UA': true,
+  '2L': true, '4C': true, '4Y': true, 'A3': true, 'AI': true, 'BA': true, 'BW': true, 'CJ': true,
+  'CS': true, 'DE': true, 'DI': true, 'DL': true, 'EI': true, 'ET': true, 'EW': true, 'EZY': true,
+  'F8': true, 'GA': true, 'HA': true, 'JJ': true, 'JX': true, 'LA': true, 'LL': true, 'LY': true,
+  'MO': true, 'MX': true, 'PC': true, 'PR': true, 'QK': true, 'QR': true, 'RV': true, 'TG': true,
+  'TK': true, 'TP': true, 'VS': true, 'WN': true, 'WY': true, 'XP': true,
+};
+// One rule for "this orb keeps its real colours", so no call site can drift
+// from another again.
+window._orbKeepsColour = function (code) {
+  var c = String(code == null ? '' : code).trim().toUpperCase();
+  return !!(c && window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[c]);
+};
 var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // v23354 — REGIONALS THAT ALREADY WEAR A MAINLINE'S NAME. These codes
         // print their parent's name on the board — ZX/9M/9L say AIR CANADA,
@@ -8230,14 +8255,11 @@ function _buildV2AircraftCol(ctx, vars) {
         // listed. 36 of 92 qualify. Carriers absent from this list have a
         // genuine single-colour silhouette, which is the only case where
         // inking it white is what the artwork was drawn for.
-        var NATIVE_COLOR_EMBLEMS = {
-          '2L': true, '4C': true, '4Y': true, 'A3': true, 'AI': true, 'BA': true, 'BW': true, 'CJ': true,
-          'CS': true, 'DE': true, 'DI': true, 'DL': true, 'EI': true, 'ET': true, 'EW': true, 'EZY': true,
-          'F8': true, 'GA': true, 'HA': true, 'JJ': true, 'JX': true, 'LA': true, 'LL': true, 'LY': true,
-          'MO': true, 'MX': true, 'PC': true, 'PR': true, 'QK': true, 'QR': true, 'RV': true, 'TG': true,
-          'TK': true, 'TP': true, 'UA': true, 'VS': true, 'WN': true, 'WY': true, 'XP': true,
-        }
-        var native = !!NATIVE_COLOR_EMBLEMS[code];
+        // v23392 — this WAS a second, longer copy of the colour-exemption
+        // list. Two lists meant the top-left orb and the bottom-right orb
+        // disagreed about the same carrier's artwork. Now both read the one
+        // list defined next to _CARD_COLOR_EMBLEMS; the entries are unchanged.
+        var native = !!(window._orbKeepsColour && window._orbKeepsColour(code));
         // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
         // perfectly'). White-inverting AA's red+blue symbol / Delta's red
@@ -9153,7 +9175,7 @@ function _buildV2MapCol(ctx, vars) {
                   // solid colour roundel; invert(1) turned it into a blank
                   // white disc. Only vector silhouettes take the white
                   // treatment — .png art is colour art by construction.
-                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_mcOrbArt]) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_mcOrbOp || _mcCode) + '\')">'
+                  ? '<img class="v2-fi-orb" src="' + _mcOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + (_mcOrbWhite && !/\.png(\?|$)/i.test(_mcOrbSrc) && !(window._orbKeepsColour && window._orbKeepsColour(_mcOrbArt)) ? 'filter:brightness(0) invert(1);' : '') + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_mcOrbOp || _mcCode) + '\')">'
                   // v23208 — no emblem art on file → the carrier's LETTERS on
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
@@ -9329,6 +9351,41 @@ function _buildV2MapCol(ctx, vars) {
       var _niCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_niCodeRaw]) ? CALLSIGN_TO_IATA[_niCodeRaw] : _niCodeRaw;
       var _niOrbSrc = '';
       try { _niOrbSrc = _airlineOrbEmblem(_niCode) || ''; } catch (e) {}
+      // v23392 — SAME CARRIER, SAME ORB. Nick: 'unless its operated by
+      // someone else it should always match period … its a copy paste from
+      // the original which is top left'. When this inbound aircraft belongs
+      // to the gate's own carrier, take the top orb's resolved artwork
+      // verbatim instead of resolving a second time — a second resolve could
+      // pick a different tier (the operator re-point above prefers the
+      // OPERATOR's art) and put two faces on one screen. A genuinely
+      // operated-by inbound still resolves on its own code, which is the one
+      // case Nick wants them to differ.
+      var _niSameCarrier = !!(_niCode && _mcCode && _niCode === _mcCode);
+      if (_niSameCarrier && _mcOrbSrc) _niOrbSrc = _mcOrbSrc;
+      // …and the same treatment. This orb never whitened at all while the top
+      // one whitened everything outside the colour list, so even one shared
+      // file rendered as a white silhouette up top and full colour down here.
+      var _niOrbArt = _niSameCarrier ? _mcOrbArt : _niCode;
+      var _niOrbWhite = _niSameCarrier ? _mcOrbWhite : true;
+      if (!_niSameCarrier) {
+        // Operated-by inbound: judge from ITS OWN accent, exactly the way the
+        // top orb judges from the gate carrier's — a light disc keeps the
+        // colour logo, only a dark one takes the white silhouette.
+        try {
+          var _niAccJudge = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_niCode]
+            && AIRLINE_BRAND[_niCode].accent) || '#D82F2E';
+          var _h_ni = String(_niAccJudge).replace('#', '');
+          if (_h_ni.length === 3) _h_ni = _h_ni.replace(/./g, function (c) { return c + c; });
+          var _r_ni = parseInt(_h_ni.substr(0, 2), 16),
+              _g_ni = parseInt(_h_ni.substr(2, 2), 16),
+              _b_ni = parseInt(_h_ni.substr(4, 2), 16);
+          if ((0.2126 * _r_ni + 0.7152 * _g_ni + 0.0722 * _b_ni) > 186) _niOrbWhite = false;
+        } catch (e) {}
+      }
+      var _niOrbFilter = (_niOrbWhite
+        && !/\.png(\?|$)/i.test(_niOrbSrc)
+        && !(window._orbKeepsColour && window._orbKeepsColour(_niOrbArt)))
+        ? 'filter:brightness(0) invert(1);' : '';
       // v23308 — THE ORB IS A CIRCLE WITH A SIZE. This wrapper carried a bare
       // `background:` and nothing else — no width, no height, no border-radius
       // — so it rendered as an empty rounded SQUARE the size of whatever the
@@ -9372,7 +9429,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _niBadge + '">'
         +       (_niOrbSrc
-                  ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;" onerror="window._orbArtFailed(this,\'' + _orbMono(_niCode) + '\')">'
+                  ? '<img class="v2-fi-orb" src="' + _niOrbSrc + '" alt="" style="width:100%;height:100%;object-fit:contain;' + _niOrbFilter + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_niCode) + '\')">'
                   : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
         +     '</div></div>'
         +     '<div class="v2-fi-textcol">'
@@ -21356,7 +21413,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23390';
+var FIDS_BUILD_TAG = 'v23392';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
