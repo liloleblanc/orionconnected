@@ -1,1 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><path fill="#FFA200" d="M0 0h100v100H0z"/><path d="M12.5 33.36h22.785v3.945l-4.512 1.183 14.715 9.473s-7.832-6.707-5.218-11.84c1.183-1.973 3.32-2.96 5.695-2.762h41.531L62.578 53.094l-2.848-2.762 12.102-11.844h-23.02c-.238 0-1.425 0-1.66.79-1.664 3.554 11.864 16.972 25.157 26.054l5.695 3.945v6.711Zm0 0"/></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with Linearity Curve (http://linearity.io/curve) -->
+<svg height="100%" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="0 0 39.8302 40.0017" width="100%" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs/>
+<path d="M0 0L39.8302 0L39.8302 40.0017L0 40.0017L0 0Z" fill="#ffffff" fill-rule="nonzero" opacity="1" stroke="none" vectornator:artboardBackground="true" vectornator:layerName="Rectangle"/>
+<clipPath id="ArtboardFrame">
+<rect height="40.0017" width="39.8302" x="0" y="0"/>
+</clipPath>
+<g clip-path="url(#ArtboardFrame)" id="Layer" vectornator:layerName="Layer">
+<path d="M-0.000434352-7.10543e-15L39.8297-7.10543e-15L39.8297 40.0017L-0.000434352 40.0017L-0.000434352-7.10543e-15Z" fill="#594d46" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Rectangle 1"/>
+<g opacity="1" vectornator:layerName="Group 1">
+<path d="M0.018 20.0008C-0.452 9.10085 8.124 0.100844 19.022 0.000844C19.122 0.000844 19.322 0.000844 19.422 0.000844C30.319-0.099156 39.438 8.70085 39.808 19.6008C39.811 19.7008 39.816 19.9008 39.818 20.0008C40.189 30.9008 31.71 39.8008 20.915 40.0008C20.715 40.0008 20.615 40.0008 20.415 40.0008C9.517 40.1008 0.401 31.4008 0.031 20.5008C0.028 20.4008 0.023 20.2008 0.018 20.0008ZM1.921 20.1008C2.066 30.0008 10.067 38.1008 19.972 38.3008C20.072 38.3008 20.272 38.3008 20.372 38.3008C30.275 38.4008 38.179 30.5008 38.033 20.6008C38.031 20.5008 38.026 20.3008 38.023 20.2008C37.977 10.3008 29.774 2.10085 19.871 2.00085C19.771 2.00085 19.571 2.00085 19.471 2.00085C9.569 1.90085 1.667 9.90085 1.816 19.9008C1.913 19.8008 1.916 19.9008 1.921 20.1008L1.921 20.1008ZM4.072 14.1008L13.672 14.1008L13.714 15.8008L11.826 16.3008L18.126 20.3008C18.126 20.3008 14.754 17.4008 15.799 15.2008C16.279 14.4008 17.169 14.0008 18.172 14.1008L35.672 14.1008L25.378 22.4008L24.148 21.2008L29.126 16.3008L19.426 16.3008C19.326 16.3008 18.826 16.3008 18.734 16.6008C18.071 18.1008 23.912 23.8008 29.607 27.6008L32.046 29.2008L32.116 32.0008L4.072 14.1008Z" fill="#ff7e27" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Curve 2"/>
+</g>
+<path d="M-8.21784 27.0301L-4.21767 27.0301L-4.21767 31.0302L-8.21784 31.0302L-8.21784 27.0301Z" fill="#594d46" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Rectangle 2"/>
+</g>
+</svg>
