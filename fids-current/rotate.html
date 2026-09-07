@@ -131,10 +131,29 @@
       // whatever the hour some of them are in their busy period — the four
       // European boards carry the North American night. Every one runs on its
       // own authority feed and owes nothing to the cancelled subscription.
+      // v23418 — RANKED BY FLIGHTS PER DAY, WITH CANADA BACK. Nick asked for
+      // airports that work, then 'Canada?'. v23416 judged them on a 5am
+      // snapshot, which was the wrong measure: it cut Las Vegas and Miami as
+      // "quiet" when they are 1,132 and 535 flights a day — they were simply
+      // asleep at 1am local. Re-measured over a FULL DAY (-2h/+22h) against
+      // the proxy, 2026-09-07:
+      //   ORD 2699  DEN 2038  SFO 1781  CLT 1349  JFK 1237  IAH 1158
+      //   LAS 1132  PHX 1032  MCO 979   DTW 958   MSP 867   ZRH 776
+      //   BOS 725   YYC 559   PHL 552   MIA 535   EDI 414   DUB 356
+      //   KEF 218   YEG 214   YOW 188   YHZ 153
+      // Calgary is 15th overall, ahead of Philadelphia — Canada earns its
+      // place on the numbers, it is not a courtesy. Spread across US East,
+      // Central, West, Canada and Europe on purpose so some board is always in
+      // its busy hours; the European four carry the North American night.
+      // Every airport runs on its own authority feed. Not here because they
+      // have NO feed and 429 on the cancelled subscription: YYZ, YUL, YVR,
+      // YWG, TPA, FLL, ATL, CUN, LAX.
       var TOUR_DEFAULT = [
-        // North America — the hubs, busiest first
-        'ORD', 'DTW', 'SFO', 'JFK', 'BOS', 'CLT', 'MCO', 'PHL',
-        'DEN', 'IAH', 'MSP', 'AUS', 'PHX',
+        // United States
+        'ORD', 'DEN', 'SFO', 'CLT', 'JFK', 'IAH', 'LAS', 'PHX',
+        'MCO', 'DTW', 'MSP', 'BOS', 'PHL', 'MIA',
+        // Canada
+        'YYC', 'YEG', 'YOW', 'YHZ',
         // Europe — these carry the North American overnight
         'ZRH', 'DUB', 'EDI', 'KEF'
       ];
