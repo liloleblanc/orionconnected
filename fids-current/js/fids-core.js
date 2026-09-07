@@ -21591,7 +21591,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23420';
+var FIDS_BUILD_TAG = 'v23424';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -21681,6 +21681,44 @@ var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to 
           }).catch(function () {});
       } catch (e) {}
     }, 180000);
+
+    // v23424 — RESCUE A ROTATOR THAT CANNOT RELOAD ITSELF.
+    // Nick's stream sat on days-old code while every fix shipped past it. The
+    // rotator only reloaded on an AIRPORT SWITCH, and it was pinned to one
+    // airport, so that moment never came — it could not pick up a deploy under
+    // any circumstances, and no amount of shipping could reach it. v23422 fixed
+    // the condition, but the RUNNING copy still contains the old one, so it can
+    // never receive its own fix. That needed a hand on the machine.
+    //
+    // A board can do it instead. This board is same-origin with the rotator and
+    // reloads itself within ~3 minutes of a deploy (the poller above), so a new
+    // board lands inside the stale rotator on its own. From there it can reload
+    // the parent — which is the one thing the parent cannot do for itself.
+    //
+    // Deliberately narrow: only when framed, only when the parent really is a
+    // rotator (__ocRotator), only when its build predates the fix, and at most
+    // once every 10 minutes. A current rotator publishes __ocRotatorVer and is
+    // never touched, so this goes quiet for good the moment the stream is
+    // running new code. Cross-origin access throws and is ignored.
+    try {
+      if (window.parent && window.parent !== window) {
+        var _rot = null;
+        try { _rot = window.parent.__ocRotator ? window.parent : null; } catch (e) { _rot = null; }
+        if (_rot) {
+          var _rotVer = 0;
+          try { _rotVer = Number(_rot.__ocRotatorVer || 0) || 0; } catch (e) {}
+          if (_rotVer < 23422) {
+            var _rk = 'oc_rotator_rescue_at', _rlast = 0;
+            try { _rlast = Number(sessionStorage.getItem(_rk) || 0) || 0; } catch (e) {}
+            if (Date.now() - _rlast > 10 * 60000) {
+              try { sessionStorage.setItem(_rk, String(Date.now())); } catch (e) {}
+              console.log('[FIDS] rotator build ' + _rotVer + ' predates 23422 and cannot reload itself — reloading it from here');
+              try { _rot.location.reload(); } catch (e) {}
+            }
+          }
+        }
+      }
+    } catch (e) {}
   } catch (e) {}
 })();
 

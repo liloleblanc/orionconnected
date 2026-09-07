@@ -331,6 +331,11 @@
       // checks its own ETag every 30 minutes and, when the deployed copy has
       // changed, reloads at the next switch — a new tour list or rotator fix
       // reaches the running stream without a hand on the server.
+      // v23424 — publish the rotator's build so a board INSIDE it can tell
+      // whether the page around it is current. A rotator older than 23422
+      // cannot reload itself when it is pinned to one airport, so the board
+      // rescues it (see fids-core.js).
+      try { window.__ocRotatorVer = 23424; } catch (e) {}
       var selfSig = null, reloadPending = false;
       function checkSelf() {
         try {
