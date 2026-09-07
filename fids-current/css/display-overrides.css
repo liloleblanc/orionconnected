@@ -14931,3 +14931,54 @@ body.fids-light-board #fidsTable .fids-wm-mono,
 .bidsv3 .b3-row.b3-diverted .fids-wm-mono {
   filter: brightness(0) invert(1) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23444 — AMERICAN'S RAIL IS WHITE OUTER, COLOUR INTERIOR — ALL SIX.
+
+   Nick, on the ORD/H14 gate: 'these are the wrong color either they are all
+   white or all blue not both white is not bad'. v23438 read that backwards
+   and inked American's symbol white, which is the one thing he has said
+   never to do — 'You just changed the orbs to American with white emblem
+   what DID I SAY FOR NOT DOING THAT' — and then he said exactly what he had
+   meant: 'I said you had them white outer and color interior fine changethe
+   others white you did the entire oppposite'.
+
+   So the emblem orb was already right: a white disc carrying American's real
+   red-and-blue symbol (restored in fids-core's LIGHT_DISC / COLOR_ON_WHITE /
+   _CARD_COLOR_EMBLEMS). The five glyph badges beneath it are what was out of
+   step — blue discs with white glyphs — and they come to white as well, with
+   the glyph in American's own blue so the whole column is one treatment.
+
+   Same shape as the Delta block above (v22915): the badges are inline-styled
+   by the renderer with background:var(--airline-accent) and color:#fff, and
+   the glyph SVGs pick that up as currentColor, so only !important reaches
+   them. The GENERIC_PLANE fallback hard-codes fill:#fff inline, which is why
+   fill is forced alongside color — otherwise that one icon stays white on
+   white. The emblem wrap is deliberately NOT in this list: it carries the
+   airline artwork, and forcing a fill on it would flatten the symbol to a
+   silhouette (the v22916 lesson).
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_) .g8-wrap
+  .v2-fi-icon-badge {
+  background: #ffffff !important;
+  color: #0078D2 !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
+}
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_) .g8-wrap
+  .v2-fi-icon-badge svg,
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_) .g8-wrap
+  .v2-fi-icon-badge svg path,
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_) .g8-wrap
+  .v2-fi-icon-badge .ac-ico {
+  fill: #0078D2 !important;
+  color: #0078D2 !important;
+}
+/* The emblem orb's own disc, pinned to the SAME white as the five badges.
+   The shared recipe paints it #F2F4F7, which is a hair off #ffffff — close
+   enough to look like a mistake rather than a choice when the six sit in one
+   column ('the colors dont match even the blue'). One white for all six. */
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_) .g8-wrap
+  .v2-fi-emblem-wrap:not(.v2-fi-emblem-native) {
+  background: #ffffff !important;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
+}

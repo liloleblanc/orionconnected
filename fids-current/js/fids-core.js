@@ -7611,12 +7611,14 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
 // The comment above already promised 'one shared list … so both ends of the
 // screen agree'. This makes that true: one list, consulted by both orbs.
 window._CARD_COLOR_EMBLEMS = {
-  // v23438 — 'AA' REMOVED (Nick, ORD/H14: 'these are the wrong color either
-  // they are all white or all blue not both white is not bad'). American's
-  // symbol is the only art in its rail rendering in colour while the five
-  // glyph badges under it are white; it inks white now and the column reads
-  // as one set. See the LIGHT_DISC note in _gateOrbParts.
-  'UA': true,
+  // v23444 — 'AA' IS BACK. v23438 read Nick's ORD/H14 note backwards and
+  // whitened American's symbol; he had said the opposite: 'I said you had
+  // them white outer and color interior fine changethe others white you did
+  // the entire oppposite'. The white disc with the carrier's real colours on
+  // it is the treatment he approves of. What changes is the FIVE GLYPH
+  // BADGES, which go white to match it — see the AA block in
+  // display-overrides.css.
+  'AA': true, 'UA': true,
   '2L': true, '4C': true, '4Y': true, 'A3': true, 'AI': true, 'BA': true, 'BW': true, 'CJ': true,
   'CS': true, 'DE': true, 'DI': true, 'DL': true, 'EI': true, 'ET': true, 'EW': true, 'EZY': true,
   'F8': true, 'GA': true, 'HA': true, 'JJ': true, 'LA': true, 'LL': true, 'LY': true,
@@ -7693,9 +7695,8 @@ window._gateOrbParts = function (code) {
   var isTile = !!tb
     || !!SELF_DISC[c]
     || (/\/logos\/airline-tiles\//.test(_p) && !/PB-arrow/i.test(_p));
-  // DL is drawn to sit centred ON the accent disc rather than fill it.
-  // v23438 — AA removed with the rest of its colour treatment (see below).
-  var COLOR_ON_WHITE = { 'DL': true };
+  // AA and DL are drawn to sit centred ON the accent disc rather than fill it.
+  var COLOR_ON_WHITE = { 'AA': true, 'DL': true };
   var onWhite = !!COLOR_ON_WHITE[c] && !tb;
   var accFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent) || '#D82F2E';
   var ACC = 'var(--airline-accent,' + accFb + ')';
@@ -7716,16 +7717,14 @@ window._gateOrbParts = function (code) {
   // 79%, Eurowings 81%, Avelo 100%, Delta, Garuda, LATAM, Air India, Condor,
   // Pegasus, Chair, Malaysia — as is anything that full-bleeds, which has no
   // disc behind it at all.
-  // v23438 — AA LEAVES THIS LIST. Nick, on the ORD/H14 American gate: 'these
-  // are the wrong color either they are all white or all blue not both white
-  // is not bad'. American's red-and-blue flight symbol sat on a near-white
-  // chip directly above five icon badges that are plain white on AA's blue —
-  // two treatments in one column of six, and the odd one out is the light
-  // chip, which is also what he rejected for Delta in v23131 ('this was never
-  // requested better fucking change it'). AA now inks white on its own accent
-  // like its five neighbours. Only AA moves; every other carrier here keeps
-  // the treatment it has.
-  var LIGHT_DISC = { '2L':1,'4Y':1,'BA':1,'CJ':1,'ET':1,'HA':1,'LY':1,'PR':1,'WN':1 };
+  // v23444 — AA IS BACK ON THE LIGHT DISC. v23438 took it off and inked the
+  // symbol white; Nick: 'You just changed the orbs to American with white
+  // emblem what DID I SAY FOR NOT DOING THAT', and then exactly what he had
+  // meant — 'you had them white outer and color interior fine changethe
+  // others white you did the entire oppposite'. The white outer with the
+  // carrier's own colours inside is the approved half; the five glyph badges
+  // are the half that moves, and they move TO white.
+  var LIGHT_DISC = { 'AA':1,'2L':1,'4Y':1,'BA':1,'CJ':1,'ET':1,'HA':1,'LY':1,'PR':1,'WN':1 };
   var DISC = (!isTile && LIGHT_DISC[c]) ? '#F2F4F7' : ACC;
   var badge = isTile
     ? BASE + 'background:transparent;padding:0;'
@@ -21669,7 +21668,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23442';
+var FIDS_BUILD_TAG = 'v23444';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
