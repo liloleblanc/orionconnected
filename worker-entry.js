@@ -247,26 +247,87 @@ export default {
     // /wxdaily?location=44.88,-63.51 → daily code + hi/lo for 7 days.
     // The Tomorrow.io proxy (separate worker) only returns 48h hourly; this
     // route feeds the gate Arrival Weather outlook's full week.
-    if (path === '/wxdaily') {
+    // v23448 — open-meteo answers a quota refusal with HTTP 200 and a body of
+    // {"error":true,"reason":"Daily API request limit exceeded…"}. r.ok was
+    // therefore TRUE, and this route forwarded that refusal AND stamped it
+    // max-age=1800 — so a single refusal poisoned the week's forecast for half
+    // an hour at a time (Nick: 'Weather doesnt work either'). The status is not
+    // enough; the body has to be read. Coordinates are rounded to ~1km so all
+    // callers for one airport share a cache entry, and a good reading is kept
+    // for six hours so an outage shows last week's real numbers rather than
+    // nothing. See the matching omCachedJson in workers/fids-proxy.js.
+    if (path === '/wxdaily' || path === '/wxcurrent') {
       const loc = url.searchParams.get('location') || '';
       const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(loc);
       if (!m) return new Response('Bad location', { status: 400 });
+      const rnd = (v) => { const n = Number(v); return Number.isFinite(n) ? n.toFixed(2) : null; };
+      const la = rnd(m[1]), lo = rnd(m[2]);
+      if (la == null || lo == null) return new Response('Bad location', { status: 400 });
+      const daily = path === '/wxdaily';
+      const om = daily
+        ? ('https://api.open-meteo.com/v1/forecast?latitude=' + la + '&longitude=' + lo
+           + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
+           + '&timezone=auto&forecast_days=7')
+        : ('https://api.open-meteo.com/v1/forecast?latitude=' + la + '&longitude=' + lo
+           + '&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m'
+           + '&hourly=temperature_2m,weather_code&forecast_days=2&timezone=UTC');
+      const base = 'https://wx.cache.invalid' + path + '?lat=' + la + '&lng=' + lo;
+      const kFresh = new Request(base);
+      const kLkg = new Request(base + '&lkg=1');
+      const kNeg = new Request(base + '&neg=1');
+      const ok = (txt, age, state) => new Response(txt, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=' + age,
+          'X-Weather-State': state,
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+      let cache = null;
+      try { cache = caches.default; } catch (e) {}
+      const lastGood = async () => {
+        if (!cache) return null;
+        const old = await cache.match(kLkg).catch(() => null);
+        return old ? await old.text().catch(() => null) : null;
+      };
       try {
-        const om = 'https://api.open-meteo.com/v1/forecast?latitude=' + m[1]
-          + '&longitude=' + m[2]
-          + '&daily=weather_code,temperature_2m_max,temperature_2m_min'
-          + '&timezone=auto&forecast_days=7';
-        const r = await fetch(om, { cf: { cacheEverything: true, cacheTtl: 1800 } });
-        if (!r.ok) return new Response('wxdaily upstream ' + r.status, { status: 502, headers: NO_STORE });
-        return new Response(r.body, {
-          status: 200,
-          headers: {
-            'Content-Type': 'application/json',
-            'Cache-Control': 'public, max-age=1800',
-            'Access-Control-Allow-Origin': '*',
-          },
-        });
+        if (cache) {
+          const hit = await cache.match(kFresh).catch(() => null);
+          if (hit) return ok(await hit.text(), 1800, 'fresh');
+          const neg = await cache.match(kNeg).catch(() => null);
+          if (neg) {
+            const lg = await lastGood();
+            return lg ? ok(lg, 120, 'stale')
+                      : ok(JSON.stringify({ error: true, reason: 'weather upstream unavailable' }), 120, 'unavailable');
+          }
+        }
+        const r = await fetch(om);
+        const txt = await r.text();
+        let body = null; try { body = JSON.parse(txt); } catch (e) {}
+        if (!r.ok || !body || body.error) {
+          if (cache) {
+            await cache.put(kNeg, new Response('1', { headers: { 'Cache-Control': 'public, max-age=120' } })).catch(() => {});
+          }
+          const lg = await lastGood();
+          if (lg) return ok(lg, 120, 'stale');
+          return ok(JSON.stringify({
+            error: true,
+            reason: (body && body.reason) || ('wxdaily upstream ' + r.status)
+          }), 120, 'unavailable');
+        }
+        if (cache) {
+          await cache.put(kFresh, new Response(txt, {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=1800' }
+          })).catch(() => {});
+          await cache.put(kLkg, new Response(txt, {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=21600' }
+          })).catch(() => {});
+        }
+        return ok(txt, 1800, 'fresh');
       } catch (e) {
+        const lg = await lastGood();
+        if (lg) return ok(lg, 120, 'stale');
         return new Response('wxdaily fetch failed', { status: 502, headers: NO_STORE });
       }
     }
