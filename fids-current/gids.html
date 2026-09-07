@@ -159,10 +159,10 @@
   <link rel="stylesheet" href="css/menu.css?v=23173">
   <link rel="stylesheet" href="css/fids.css?v=22852">
   <link rel="stylesheet" href="css/flight-display.css?v=23357">
-  <link rel="stylesheet" href="css/baggage-display.css?v=23444">
+  <link rel="stylesheet" href="css/baggage-display.css?v=23446">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23444">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23446">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (We: 'the old svreen shows up once in a while',
@@ -187,7 +187,7 @@
     }, 8000);
   } catch (e) {}
   </script>
-  <link rel="stylesheet" href="css/gate-display.css?v=23444">
+  <link rel="stylesheet" href="css/gate-display.css?v=23446">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg-v21853">
@@ -870,7 +870,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23444"></script>
+<script src="js/fids-core.js?v=23446"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -1009,6 +1009,44 @@ window.addEventListener("DOMContentLoaded", async function() {
               pickedIndex = i;
               break;
             }
+          }
+        } else {
+          // ── v23446 — THE TOUR STOPS LANDING ON THE SAME GATE EVERY TIME.
+          // Nick: 'Gates dont really rotate everytime its on Calgary its the
+          // same gate and everytime its in a city its thet same gate'.
+          //
+          // He is right, and it is this line: with no ?gate= the board took
+          // option 0. The option list is built from the feed and sorted, so
+          // for a given airport it is the SAME gate on every visit — and the
+          // tour opens a fresh board per airport, so the gate-cycler in
+          // fids-core never gets its 'inactive' message before the airport
+          // changes. Its random walk only ever ran on a board that stayed up.
+          //
+          // Only boards that were going to cycle anyway are randomised — the
+          // same test the cycler itself uses (inside the rotator, or an
+          // explicit ?gatecycle). A wall display pinned with ?gate=C77 takes
+          // the branch above and is untouched; a standalone gids opened by
+          // hand still gets a stable first gate.
+          //
+          // The last gate shown for THIS airport is remembered for the tab and
+          // excluded, so two visits in a row cannot repeat while another gate
+          // exists. sessionStorage is per-origin and the tour's boards share
+          // it; if it is unavailable the pick is simply random.
+          var _cyc = null;
+          try { _cyc = params.get('gatecycle'); } catch (e) {}
+          var _willCycle = (_cyc != null && _cyc !== '' && _cyc !== '0')
+                        || (window.self !== window.top);
+          if (_willCycle && sel.options.length > 1) {
+            var _key = 'ocLastGate:' + String(ap || '').toUpperCase();
+            var _last = null;
+            try { _last = window.sessionStorage.getItem(_key); } catch (e) {}
+            var _idx = [];
+            for (var _g = 0; _g < sel.options.length; _g++) {
+              if (String(sel.options[_g].value).toUpperCase() !== String(_last || '').toUpperCase()) _idx.push(_g);
+            }
+            if (!_idx.length) for (var _h = 0; _h < sel.options.length; _h++) _idx.push(_h);
+            pickedIndex = _idx[Math.floor(Math.random() * _idx.length)];
+            try { window.sessionStorage.setItem(_key, String(sel.options[pickedIndex].value)); } catch (e) {}
           }
         }
         sel.selectedIndex = pickedIndex;
