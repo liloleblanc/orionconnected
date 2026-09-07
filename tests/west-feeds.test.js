@@ -44,6 +44,25 @@ test('sfo: gates, carousel prefix stripped, remark maps', () => {
   assert.equal(in1434.callSign, 'UAL1434');
 });
 
+test('sfo: codeshare rows collapse to the operating flight', () => {
+  // The fixture holds two aircraft, each expanded by flysfo into an operator
+  // row plus a marketing partner: UAL2025 is UA2025 + NZ2729, UAL1434 is
+  // UA1434 + ET1358. Nick's shot of the live board had ten rows to Los
+  // Angeles on one aeroplane. Only the operator survives.
+  const dep = sfoParseFeed(fx('sfo-sample.json'), 'dep', NOW);
+  const arr = sfoParseFeed(fx('sfo-sample.json'), 'arr', NOW);
+  assert.equal(dep.length, 1, `one departure, got ${dep.map((x) => x.number).join()}`);
+  assert.equal(arr.length, 1, `one arrival, got ${arr.map((x) => x.number).join()}`);
+  assert.equal(dep[0].number, 'UA2025');
+  assert.equal(arr[0].number, 'UA1434');
+  // The partners are gone, not merely reordered.
+  assert.ok(!dep.some((x) => x.number === 'NZ2729'), 'NZ2729 dropped');
+  assert.ok(!arr.some((x) => x.number === 'ET1358'), 'ET1358 dropped');
+  // And the operator keeps everything the board renders from.
+  assert.equal(dep[0].departure.gate, 'E6');
+  assert.equal(arr[0].arrival.baggageBelt, 'F5');
+});
+
 test('sea: dated 12-hour rows with gate and belt', () => {
   const arr = seaParsePage(fx('sea-arr-sample.html'), 'arr', NOW);
   assert.ok(arr.length >= 2, `parsed ${arr.length}`);

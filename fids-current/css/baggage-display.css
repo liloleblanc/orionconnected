@@ -328,10 +328,23 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   overflow: hidden;
 }
 
+/* v23440 — THE CITY COLUMN GETS THE ROOM IT NEEDS (Nick, YYC baggage:
+   'Words cutoff' — the board read 'Fort McMur…').
+
+   Measured against the real stylesheet at board width: the origin column had
+   210px and 'Fort McMurray | YMM' needs 261px, so it ellipsised. The two
+   flexible columns were equal at 2.4fr each even though the left one only
+   ever holds a tile, a short carrier name and a flight number, while the
+   right one holds a city name AND its IATA code.
+
+   Re-weighted to what each column actually carries, with the gap tightened
+   from 24px to 14px to find the rest. Verified across the long names on his
+   boards — Fort McMurray, Sault Ste. Marie, Grande Prairie, Charlottetown —
+   all now fit, and the time and status columns still clear their content. */
 .bidsv2-list-header {
   display: grid;
-  grid-template-columns: 2.4fr 2.4fr 1fr 1.2fr;
-  gap: 24px;
+  grid-template-columns: 1.95fr 2.95fr 1fr 1.15fr;
+  gap: 14px;
   padding: 0 24px 12px 24px;
   font-size: 16px;
   font-weight: 700;
@@ -342,8 +355,8 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
 
 .bidsv2-flight-row {
   display: grid;
-  grid-template-columns: 2.4fr 2.4fr 1fr 1.2fr;
-  gap: 24px;
+  grid-template-columns: 1.95fr 2.95fr 1fr 1.15fr;   /* v23440 — see header */
+  gap: 14px;
   padding: 10px 24px;
   background: rgba(255,255,255,0.04);
   border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -405,7 +418,9 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
 .bidsv2-airline-name {
   font-size: 16px;
   font-weight: 800;
-  letter-spacing: 1px;
+  /* v23440 — half the tracking so the carrier name clears the narrower left
+     column (AIR TRANSAT was the one that would not). */
+  letter-spacing: 0.5px;
   color: rgba(255,255,255,0.65);
   white-space: nowrap;
   overflow: hidden;
@@ -424,7 +439,9 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   font-size: 24px;
   font-weight: 800;
   color: #ffffff;
-  letter-spacing: 1px;
+  /* v23440 — 1px of tracking over a 22-character line cost 22px on its own,
+     which is most of what 'Fort McMur…' was missing. */
+  letter-spacing: 0.5px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -498,7 +515,7 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
 @media (max-width: 900px) {
   .bidsv2-body { grid-template-columns: 32% 68%; }
   .bidsv2-list-header,
-  .bidsv2-flight-row { grid-template-columns: 2.2fr 2.2fr 0.9fr 1fr; gap: 12px; padding: 12px 16px; }
+  .bidsv2-flight-row { grid-template-columns: 1.8fr 2.7fr 0.95fr 1.05fr; gap: 10px; padding: 12px 16px; }
   .bidsv2-airline-block { width: 48px; height: 48px; }
 }
 
