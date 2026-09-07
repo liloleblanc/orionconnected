@@ -11022,6 +11022,16 @@ function uxgGateHtml(ctx) {
     // teal both read on it.
     var _BW_EMBLEM = {
       'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // v23394 one United face everywhere
+      // v23400 — SWISS's spinning boarding mark had a BLACK cross (Nick).
+      // symbols/airlines/LX.svg paints ONLY #e60005: the cross is a CUT-OUT,
+      // so it shows whatever sits behind it. That is right in the orb, where
+      // the art is whitened to a white tail and the cross reads as the orb's
+      // own red — but this strip spins over the dark boarding takeover, so the
+      // hole showed the near-black ground. SWR.svg is the same mark with a
+      // SOLID white cross (#e60005 + #ffffff), which reads on dark, on white
+      // and on navy alike. Verified on all three grounds before shipping.
+      // Scoped to this strip only — the orb keeps the cut-out version.
+      'LX': '/logos/airline-tiles/SWR.svg',
       'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
       'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
     };
@@ -21503,7 +21513,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23398';
+var FIDS_BUILD_TAG = 'v23400';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
