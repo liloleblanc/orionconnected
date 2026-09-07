@@ -7614,9 +7614,20 @@ window._CARD_COLOR_EMBLEMS = {
   'AA': true, 'UA': true,
   '2L': true, '4C': true, '4Y': true, 'A3': true, 'AI': true, 'BA': true, 'BW': true, 'CJ': true,
   'CS': true, 'DE': true, 'DI': true, 'DL': true, 'EI': true, 'ET': true, 'EW': true, 'EZY': true,
-  'F8': true, 'GA': true, 'HA': true, 'JJ': true, 'JX': true, 'LA': true, 'LL': true, 'LY': true,
-  'MO': true, 'MX': true, 'PC': true, 'PR': true, 'QK': true, 'QR': true, 'RV': true, 'TG': true,
-  'TK': true, 'TP': true, 'VS': true, 'WN': true, 'WY': true, 'XP': true,
+  'F8': true, 'GA': true, 'HA': true, 'JJ': true, 'LA': true, 'LL': true, 'LY': true,
+  'MO': true, 'MX': true, 'PC': true, 'PR': true, 'QR': true, 'TG': true,
+  'TK': true, 'TP': true, 'WN': true, 'WY': true, 'XP': true,
+  // v23402 — QK, RV, JX and VS REMOVED. Nick: 'the rouge and jazz ones were
+  // fine you stripped them'. He is right and this was my v23392 regression.
+  // Those four are single-colour LETTERFORMS — Rouge's r in #A21C37, Jazz's
+  // J, STARLUX, Virgin — drawn to be inked white on the carrier's own accent
+  // disc, which is the treatment this file's own comment calls 'the only case
+  // where inking it white is what the artwork was drawn for'. v23392 swept
+  // them into the keep-your-colours list, so Rouge became burgundy-on-red and
+  // Jazz red-on-red: muddy at best, invisible at worst. Rendered all three
+  // treatments side by side to confirm white-on-accent is the crisp one.
+  // Only genuinely single-colour art is removed here; multicolour marks stay
+  // in the list, because whitening those would flatten them.
 };
 // One rule for "this orb keeps its real colours", so no call site can drift
 // from another again.
@@ -21513,7 +21524,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23400';
+var FIDS_BUILD_TAG = 'v23402';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
