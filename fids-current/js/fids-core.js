@@ -21591,7 +21591,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23424';
+var FIDS_BUILD_TAG = 'v23426';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -21702,8 +21702,17 @@ var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to 
     // running new code. Cross-origin access throws and is ignored.
     try {
       if (window.parent && window.parent !== window) {
+        // v23426 — IDENTIFY THE ROTATOR BY ITS URL, NOT BY A JS MARKER.
+        // v23424 keyed on window.parent.__ocRotator, which only exists from
+        // v23333 onward — so a rotator OLDER than that (exactly the stuck case
+        // this is meant to rescue) was invisible and the rescue never fired.
+        // Nick: 'It has not restarted'. The path is true of every version.
         var _rot = null;
-        try { _rot = window.parent.__ocRotator ? window.parent : null; } catch (e) { _rot = null; }
+        try {
+          var _pp = String(window.parent.location.pathname || '');
+          if (/(^|\/)rotate(\.html)?$/i.test(_pp)) _rot = window.parent;
+        } catch (e) { _rot = null; }
+        try { if (!_rot && window.parent.__ocRotator) _rot = window.parent; } catch (e) {}
         if (_rot) {
           var _rotVer = 0;
           try { _rotVer = Number(_rot.__ocRotatorVer || 0) || 0; } catch (e) {}
