@@ -2491,6 +2491,21 @@ function sfoParseFeed(jsonText, dir, nowMs) {
 }
 __name(sfoParseFeed, "sfoParseFeed");
 
+// v23450 — the AeroDataBox ENRICHMENT routes, every one of them a permanent
+// 429 since the subscription was cancelled. Shared by the /proxy/* passthrough
+// and the bare /flights|/aircrafts|/airports allowlist, because the board
+// reaches these through BOTH. Returns a tag for X-Feed-Source, or null.
+function _adbDeadEnrichment(p) {
+  const s = String(p || "").replace(/^\/proxy\//, "/");
+  if (/^\/flights\/number\//i.test(s)) return "none-flightno";
+  if (/^\/flights\/callsign\//i.test(s)) return "none-callsign";
+  if (/^\/flights\/reg\//i.test(s)) return "none-flightreg";
+  if (/^\/aircrafts\//i.test(s)) return "none-aircraft";
+  if (/^\/airports\/iata\/[a-z0-9]{3}\/distance-time\//i.test(s)) return "none-distance";
+  return null;
+}
+__name(_adbDeadEnrichment, "_adbDeadEnrichment");
+
 // ── v23448 — WEATHER GOES THROUGH A CACHE, AND STOPS LYING WHEN IT FAILS.
 //
 // Nick: 'Weather doesnt work either'. open-meteo is answering:
@@ -7376,6 +7391,19 @@ var fids_proxy_default = {
       const adbPath = path.replace("/proxy/", "");
       const _authResp = await maybeServeAuthorityWindow(adbPath, url, env, origin);
       if (_authResp) return _authResp;
+      // v23450 — same dead-enrichment guard as the bare allowlist below. The
+      // gate board reaches ML-ETA and flight-number lookups through THIS route
+      // (/proxy/airports/iata/YOW/distance-time/EWR was in Ottawa's network
+      // log), so guarding only the other one would have left the storm intact.
+      const _deadProxy = _adbDeadEnrichment(path);
+      if (_deadProxy) {
+        return new Response("{}", { headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=600",
+          "X-Feed-Source": _deadProxy,
+          ...corsHeaders(origin)
+        } });
+      }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/${adbPath}${url.search}`;
       try {
         const response = await fetch(adbUrl, {
@@ -8624,6 +8652,42 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           ...corsHeaders(origin)
         } });
       }
+      // ── v23450 — THE ENRICHMENT ROUTES STOP STORMING TOO.
+      //
+      // Nick: 'ottawa doesnt work'. YOW's own feed is healthy — 25 departures
+      // and 34 arrivals with gates AND belts on every row — but the live board
+      // sat on the boot splash. Its console was a wall of 429s, and the network
+      // log named them: /flights/number/PD2339/<date>?withLocation=true and
+      // /proxy/airports/iata/YOW/distance-time/EWR, each fired repeatedly.
+      //
+      // These are the PER-FLIGHT enrichments — schedule detail, ML arrival
+      // estimate, registration and aircraft lookups. They were the 'remaining
+      // audit items' left after the PR #645 storm guard, judged to degrade
+      // gracefully. They do not: they go through the same paced queue with the
+      // same 429 retries as the window fetch, so a board on a perfectly good
+      // authority feed still burns ~75s of doomed calls per render and never
+      // reaches its content. #645 fixed the two paths that had no data at all;
+      // this is the same fix for the paths that merely have no ENRICHMENT.
+      //
+      // Every one of these is a permanent 429 — verified against the live
+      // worker, all four answering 'exceeded the MONTHLY quota … BASIC'. The
+      // subscription is cancelled for good, so nothing is lost by answering
+      // empty: the board keeps the feed's own gate, belt, time and status, and
+      // simply goes without the extras it has not had since the key died.
+      // NOTE the bare /airports/iata/<IATA> lookup is deliberately NOT in this
+      // list. It is the coordinate source for the map, and I have not proved
+      // the client falls back to the static airport-coords table when it comes
+      // back empty. Wrongly emptying it would put pins in the wrong place —
+      // worse than the 429 it replaces. Left for when that fallback is checked.
+      const _deadEnrichment = _adbDeadEnrichment(path);
+      if (_deadEnrichment) {
+        return new Response("{}", { headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=600",
+          "X-Feed-Source": _deadEnrichment,
+          ...corsHeaders(origin)
+        } });
+      }
       const adbUrl = `https://aerodatabox.p.rapidapi.com${path}${url.search}`;
       try {
         const response = await fetch(adbUrl, {
@@ -8939,6 +9003,7 @@ export {
   phlParsePage,
   yycParseFeed,
   sfoParseFeed,
+  _adbDeadEnrichment,
   seaParsePage,
   yvrParseFeed,
   ylwParseFeed,
