@@ -12138,7 +12138,18 @@ function uxgGateHtml(ctx) {
   var _bannerBrandCode = (typeof gatePreferredBrandCode === 'function')
     ? gatePreferredBrandCode(airlineCode, _opCode, currentFlight)
     : airlineCode;
-  var r1LogoSrc = BANNER_LOGO_OVERRIDE[_bannerBrandCode] || carrierLogoUrl(_bannerBrandCode || airlineCode);
+  // v23462 — MONCTON'S CREAM BAND SKIPS THE WHITE-LOGO TABLES.
+  // BANNER_LOGO_OVERRIDE holds pre-made WHITE-variant lockups chosen to read
+  // on a near-black banner ('red rondelle + white AIR CANADA' says its own
+  // comment). On a cream band that is the wrong file by definition, and worse,
+  // matching it sets _useOverrideFile, which gates off the wordmark branch
+  // further down — the branch that already knows to ask for the 'dark' variant
+  // when the banner is light. Skipping the table here is what lets that branch
+  // run. Scoped to YQM; every other airport resolves exactly as before.
+  var _apIsYQM = String(iata || '').toUpperCase() === 'YQM';
+  var _bannerOverrideFile = _apIsYQM ? null
+    : (BANNER_LOGO_OVERRIDE[_bannerBrandCode] || BANNER_LOGO_OVERRIDE[airlineCode]);
+  var r1LogoSrc = _bannerOverrideFile || carrierLogoUrl(_bannerBrandCode || airlineCode);
   var r1LogoFallback = 'https://pics.avs.io/400/120/' + (_bannerBrandCode || airlineCode) + '.png';
   var _sz = BANNER_SIZE_OVERRIDE[_bannerBrandCode] || BANNER_SIZE_OVERRIDE[airlineCode] || { h: 140, w: 560 };
   // If the airline has a pre-made white-variant file listed in
@@ -12147,7 +12158,7 @@ function uxgGateHtml(ctx) {
   // come through as-is. For airlines without a white variant, let the CSS
   // filter force the logo to white (so at minimum the text reads cleanly
   // against the dark banner).
-  var _useOverrideFile = !!BANNER_LOGO_OVERRIDE[_bannerBrandCode] || !!BANNER_LOGO_OVERRIDE[airlineCode];
+  var _useOverrideFile = !!_bannerOverrideFile;
   // v219 — Colored brand tile for carriers that have a square airline tile but
   // no curated banner lockup (Boliviana de Aviación, Avianca, etc.). Without
   // this the banner pulls the external wway.io logo and force-whitens it into
@@ -12179,7 +12190,11 @@ function uxgGateHtml(ctx) {
   // HA/WS/PD default to WHITE in-code but the data file overrides them dark; if
   // we couldn't read a colour, assume DARK (white wordmark) — every live banner
   // is dark now, so white is the safe default.
-  var _bannerIsLight = _hexIsLight(_bannerR1Now);
+  // v23462 — Moncton's band is cream (see _silkDark below), and the logo chain
+  // runs BEFORE that value is computed, so the flag is declared here and both
+  // ends share it. Everything downstream then treats YQM as a light banner
+  // without a second colour test.
+  var _bannerIsLight = _apIsYQM ? true : _hexIsLight(_bannerR1Now);
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
@@ -12209,7 +12224,15 @@ function uxgGateHtml(ctx) {
     'BQ': '/logos/airlines/canadian-regional/pascan-monochrome-white.svg',
     '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg'
   };
-  var _darkLogo = BANNER_DARK_LOGO[_bannerBrandCode] || BANNER_DARK_LOGO[airlineCode];
+  // v23462 — every entry in that table is a WHITE or monochrome-white file,
+  // chosen to read on a near-black banner. On Moncton's cream band it is the
+  // wrong file by definition — Air Canada came out as air-canada-white.svg on
+  // cream, which is the invisible wordmark Nick would have seen. Skipping it
+  // here lets the wordmark branch below run instead, and that branch already
+  // asks for the 'dark' variant when _bannerIsLight. Scoped to YQM: no other
+  // airport's banner logo changes.
+  var _darkLogo = _apIsYQM ? null
+    : (BANNER_DARK_LOGO[_bannerBrandCode] || BANNER_DARK_LOGO[airlineCode]);
   var _darkLogoWhiten = false;
   if (!_useOverrideFile && _darkLogo) {
     r1LogoSrc = (typeof _darkLogo === 'object') ? _darkLogo.src : _darkLogo;
@@ -12326,7 +12349,20 @@ function uxgGateHtml(ctx) {
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
                  + (_useOverrideFile
                      ? (_darkLogoWhiten ? 'filter:brightness(0) invert(1) !important;' : 'filter:none !important;')
-                     : '')
+                     // v23462 — NEVER WHITEN ONTO A LIGHT BAND. With no inline
+                     // filter the cascade falls to fids.css:905, which paints
+                     // .g8-r1-logo white for the near-black banner. On Moncton's
+                     // cream band that is an invisible wordmark.
+                     //
+                     // It matters for exactly one carrier: of the nine serving
+                     // YQM, eight resolve a dark or colour wordmark through
+                     // IATA_TO_WORDMARK (checked by asking the resolver, not by
+                     // guessing at filenames — Transat and Rouge DO resolve,
+                     // via transat-wordmark-color and air-canada-wordmark-dark).
+                     // Sunwing has no entry at all and falls through to the
+                     // external lockup, which is colour art and reads on cream
+                     // as it is — provided nothing whitens it first.
+                     : (_apIsYQM ? 'filter:none !important;' : ''))
                  // Logo sits on a clean white rounded plate so it reads on the
                  // dark header and is never clipped by the banner band.
                  + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');
@@ -12517,7 +12553,18 @@ function uxgGateHtml(ctx) {
   // hard skewed Time/airport tabs. The gate tab is kept exactly as-is.
   // Kill-switch: localStorage fids_gate_banner_classic='1' restores the tabs.
   // (_silkBanner is computed earlier, before the logo width cap.)
-  var _silkDark = (airlineCode === 'F9') ? '#5AA0DE'
+  // v23462 — MONCTON'S BANNER IS ONE COLOUR ACROSS. Nick: 'What I was
+  // proposing was for the same color all across minus the gate', 'with the
+  // stripe runnning across', and 'Im open to the color changing too I just
+  // think it should all be the same color'.
+  //
+  // Setting the band colour here rather than overriding it downstream is what
+  // makes the rest fall out for free: _silkLum below measures THIS value, so a
+  // cream band flips _silkLightBand true and the ink becomes the deep navy the
+  // code already keeps for exactly this case. Nothing else has to be told the
+  // banner went light.
+  var _silkDark = _apIsYQM ? '#F5F1E7'
+    : (airlineCode === 'F9') ? '#5AA0DE'
     : ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119');
   // Timebox ink adapts to the banner colour (Nick: 'Frontier — the font is all
   // white and it's light, needs to be blue'). Frontier's sky-blue band is too
@@ -12543,7 +12590,12 @@ function uxgGateHtml(ctx) {
   // black) edge-to-edge; the airline accent (red) only enters in the last
   // ~16%, which sits UNDER the skewed gate tab so no black wedge shows at the
   // seam. Result: solid black wordmark+time field, red only at the gate.
-  var _silkGrad = 'linear-gradient(90deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 84%, var(--airline-accent,#1aa) 93%, var(--airline-accent,#1aa) 100%)';
+  // The standard band fades into the airline accent at 84-100% so the gate tab
+  // sits on a matching edge. Moncton's is FLAT — 'all the same color' — and its
+  // accent appears only as the stripe along the foot (see display-overrides).
+  var _silkGrad = _apIsYQM
+    ? 'linear-gradient(180deg, #F7F4EC 0%, ' + _silkDark + ' 100%)'
+    : 'linear-gradient(90deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 84%, var(--airline-accent,#1aa) 93%, var(--airline-accent,#1aa) 100%)';
   // v23123 — Nick's Delta rendition: the top strip is FLAT deep indigo
   // (#11063C, sampled from his image), not the gradient. Inline !important
   // background is unbeatable from a stylesheet, so the swap happens here.
@@ -12656,7 +12708,13 @@ function uxgGateHtml(ctx) {
     + '<div class="g8-r1 g8-r1-bg' + (_silkBanner ? ' g8-r1-silk' : '') + '"' + (
         _silkBanner
           // Silk: one flowing fabric band (dark → white centre → accent).
-          ? ' style="background:' + _silkGrad + ' !important;color:#fff !important;"'
+          // v23462 — the ink is the one _silkLightBand computed, not a
+          // hardcoded white: on Moncton's cream band white text would be
+          // invisible. A real background-color rides along too, because
+          // tagGidsHeaderBrightness_v21862 reads backgroundColor (never a
+          // gradient) to decide g8-header-is-light — the flag the octb rules
+          // already use to darken the clock and date.
+          ? ' style="background:' + _silkGrad + ' !important;background-color:' + _silkDark + ' !important;color:' + _silkInk + ' !important;"'
           : (_bannerSpec
           ? (function () {
               // Frontier (Nick): the VISIBLE top banner is a lighter Frontier
@@ -21799,7 +21857,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23460';
+var FIDS_BUILD_TAG = 'v23462';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

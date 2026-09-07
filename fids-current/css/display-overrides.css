@@ -15140,3 +15140,64 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   padding-right: clamp(4px, 0.6vw, 14px) !important;
   box-sizing: border-box !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23462 — MONCTON'S BANNER: ONE COLOUR ACROSS, STRIPE ALONG THE FOOT.
+
+   Nick: 'What I was proposing was for the same color all across minus the
+   gate' / 'with the stripe runnning across'.
+
+   The band colour and the flat gradient are set in fids-core (see
+   _silkDark / _silkGrad, v23462) so the luminance machinery there turns the
+   ink dark by itself. What is left for CSS is the stripe, and cleaning up
+   the pieces that were painted for a DARK band.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* THE STRIPE. Full width along the banner's foot, in the airline's accent.
+   It sits at z-index 3: the gate block is z-index 5 and opaque, so the
+   stripe passes behind it and stops being visible exactly where the gate
+   begins — 'all across minus the gate' without hard-coding where the gate
+   starts. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1.g8-r1-bg {
+  position: relative !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1.g8-r1-bg::after {
+  content: '' !important;
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important; right: 0 !important; bottom: 0 !important;
+  height: clamp(7px, 1.05vh, 15px) !important;
+  background: var(--airline-accent, #00B2A9) !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+}
+
+/* The timebox no longer needs a ground of its own — it IS the banner now.
+   Its own cream panel would show as a slightly different rectangle sitting
+   on the band, which is the opposite of 'all the same color'. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-tab,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox.g8-r1-timebox-silk {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+/* The date line was a filled accent bar because it sat on a cream panel with
+   a dark band behind it. With the stripe carrying that job along the whole
+   foot, the date is just text on the band — dark ink, sitting above the
+   stripe rather than being it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+  background: transparent !important;
+  color: #0A2E6B !important;
+  opacity: .78 !important;
+  margin-bottom: clamp(8px, 1.3vh, 18px) !important;
+}
+
+/* Clock, separator and the airport mark all read on a light band now. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clock {
+  color: #0A2E6B !important;
+  -webkit-text-fill-color: #0A2E6B !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-apsep {
+  color: rgba(10, 46, 107, 0.38) !important;
+}
