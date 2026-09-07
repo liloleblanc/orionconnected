@@ -7926,6 +7926,32 @@ function _airlineOrbEmblem(code) {
 function _orbMono(code) {
   return String(code == null ? '' : code).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
 }
+// v23440 — THE AIRCRAFT PLATE GETS THE ROW TILE TOO.
+// Nick, on the China Eastern gate: 'The logo at the clouds is simply MU'.
+// The plate resolved its art through _airlineOrbEmblem, which hands back
+// /logos/symbols/airlines/MU.svg for any two-letter code whether or not that
+// file was ever drawn — and China Eastern's was not. Its onerror then went
+// STRAIGHT to the lettered chip, so the plate printed the raw code while the
+// arrival orb beside it, which goes through _orbArtFailed, found the carrier's
+// own tile (CES) and drew the swallow. Same carrier, same screen, one surface
+// showing artwork and the other showing letters.
+//
+// This is _orbArtFailed's tile tier with the plate's own last resort: the tile
+// is a finished square mark and the plate is a rectangle, so unlike the orb it
+// needs no cropping, no filter strip and no padding reset — just the swap.
+// Letters stay the last resort, not the second, for the 59 carriers that have
+// a tile on disk and no symbol.
+window._holdArtFailed = function (img, code) {
+  if (!img) return;
+  if (!img.dataset.holdTileTried) {
+    img.dataset.holdTileTried = '1';
+    var icao = (typeof IATA_TO_TILE_ICAO !== 'undefined') && IATA_TO_TILE_ICAO[code];
+    if (icao) { img.src = '/logos/airline-tiles/' + icao + '.svg'; return; }
+  }
+  img.style.display = 'none';
+  var sib = img.nextElementSibling;
+  if (sib) sib.style.display = '';
+};
 window._orbArtFailed = function (img, code) {
   var wrap = img && img.parentNode;
   // v23388 — TRY THE ROW TILE BEFORE FALLING BACK TO LETTERS.
@@ -10324,7 +10350,7 @@ function _buildV2MapCol(ctx, vars) {
         var _holdSrc = _HOLD_MARK[_holdCode]
           || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_holdCode) : '') || '';
       var _holdMark = _holdSrc
-          ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="" onerror="this.style.display=&quot;none&quot;;if(this.nextElementSibling)this.nextElementSibling.style.display=&quot;&quot;;">'
+          ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="" onerror="window._holdArtFailed(this,&quot;' + _orbMono(_holdCode) + '&quot;)">'
             + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_holdCode || '\u2014') + '</span>'
         : '<span class="v2-rc-aircraft-hold-code">' + (_holdCode || '—') + '</span>';
       var _aircraftHoldHtml = '<div class="v2-rc-aircraft-hold">' + _holdMark
@@ -10374,7 +10400,7 @@ function _buildV2MapCol(ctx, vars) {
     // go from a lettered chip to a broken-image icon.
     var _fallbackSrc = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_fallbackCode) : '') || '';
     var _fallbackMark = _fallbackSrc
-        ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="" onerror="this.style.display=&quot;none&quot;;if(this.nextElementSibling)this.nextElementSibling.style.display=&quot;&quot;;">'
+        ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="" onerror="window._holdArtFailed(this,&quot;' + _orbMono(_fallbackCode) + '&quot;)">'
           + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_fallbackCode || '\u2014') + '</span>'
       : '<span class="v2-rc-aircraft-hold-code">' + (_fallbackCode || '—') + '</span>';
     var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark
@@ -21643,7 +21669,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23440';
+var FIDS_BUILD_TAG = 'v23442';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
