@@ -21591,7 +21591,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23412';
+var FIDS_BUILD_TAG = 'v23420';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -28292,6 +28292,12 @@ document.addEventListener('click', function(e) {
 // YVR, MAN, DCA, IAD. tests/live-airports.test.js keeps this in step with the
 // worker; adding a handler there fails the suite until the code lands here.
 const FIDS_LIVE_AIRPORTS = new Set([
+  // v23420 — dedicated-route feeds (not the window endpoint): TPA fetches
+  // Tampa's Acquia API client-side; YUL/YTZ/YHU use /flights/<iata>; LGA/EWR
+  // use /flights/panynj. Verified live: EWR 1235, LGA 896, YUL 553, TPA 453,
+  // YTZ 144, YHU 51. YYZ stays out — its route returns an empty list because
+  // Toronto's bot manager blocks the Worker's datacenter IP.
+  'TPA', 'YUL', 'LGA', 'EWR', 'YTZ', 'YHU',
   // Canada
   'YQM', 'YHZ', 'YYT', 'YSJ', 'YFC', 'YQY', 'YQX', 'YYG', 'YDF',
   'YOW', 'YQB', 'YQT', 'YHM', 'YXX', 'YLW', 'YQR', 'YXE', 'YYC', 'YEG',

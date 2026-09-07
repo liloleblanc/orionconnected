@@ -152,8 +152,10 @@
         // United States
         'ORD', 'DEN', 'SFO', 'CLT', 'JFK', 'IAH', 'LAS', 'PHX',
         'MCO', 'DTW', 'MSP', 'BOS', 'PHL', 'MIA',
+        // v23420 — served by dedicated routes; verified live EWR 1235, LGA 896, TPA 453
+        'EWR', 'LGA', 'TPA',
         // Canada
-        'YYC', 'YEG', 'YOW', 'YHZ',
+        'YYC', 'YUL', 'YEG', 'YOW', 'YHZ',
         // Europe — these carry the North American overnight
         'ZRH', 'DUB', 'EDI', 'KEF'
       ];
@@ -162,7 +164,21 @@
       // tests/live-airports.test.js fails if the three ever disagree. A list
       // typed into a URL is filtered against this, so a hand-written tour can
       // never put a dead airport on a screen someone is watching.
+      // v23420 — AIRPORTS SERVED BY A DEDICATED ROUTE, NOT THE WINDOW ENDPOINT.
+      // TPA, YUL, LGA, EWR, YTZ and YHU were missing from this roster, so the
+      // tour dropped them as "feedless" even though they work. They do not go
+      // through /proxy/flights/airports/iata/... like the other 52 — they have
+      // their own handlers (feed-router.js: TPA fetches Tampa's Acquia endpoint
+      // straight from the browser; YUL/YTZ/YHU hit /flights/<iata>; LGA/EWR/JFK
+      // hit /flights/panynj). Verified live 2026-09-07: EWR 1235 rows, LGA 896,
+      // YUL 553, TPA 453, YTZ 144, YHU 51.
+      // YYZ is deliberately NOT here: its route exists but returns {"list":[]}
+      // because Toronto's Radware bot manager blocks the Worker's DATACENTER
+      // IP. The same request with identical headers returns 548 rows from a
+      // residential IP, so this is egress reputation, not a header bug — it
+      // needs a different egress, not a code change.
       var ROSTER = ['YQM','YHZ','YYT','YSJ','YFC','YQY','YQX','YYG','YDF',
+        'TPA','YUL','LGA','EWR','YTZ','YHU',
         'YOW','YQB','YQT','YHM','YXX','YLW','YQR','YXE','YYC','YEG',
         'YYJ','YKA','YXS','YMM',
         'BOS','ORD','SFO','SEA','DEN','LAS','AUS','SLC','PHL','MSP',

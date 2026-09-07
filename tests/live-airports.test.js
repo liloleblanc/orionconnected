@@ -17,7 +17,23 @@ const core = readFileSync(path.join(here, '..', 'fids-current', 'js', 'fids-core
 
 // Airports served outside AUTHORITY_HANDLERS: YQM from the webhook cache
 // (maybeServeYqmCache) and YHZ from its bespoke handler (maybeServeYhzAuthority).
-const EXTRA = ['YQM', 'YHZ'];
+//
+// v23420 — plus a THIRD class the registry never described: airports with a
+// DEDICATED worker route or a client-side fetch, which never touch
+// /proxy/flights/airports/iata/... at all. feed-router.js dispatches these by
+// IATA: TPA reads Tampa's own Acquia API straight from the browser; YUL, YTZ
+// and YHU call /flights/<iata>; LGA and EWR call /flights/panynj. They were
+// invisible to this test, so the rotator's roster could never list them and
+// the tour dropped them as feedless — which is exactly why Nick kept seeing
+// airports he knew worked missing from the stream. Verified live 2026-09-07:
+// EWR 1235 rows, LGA 896, YUL 553, TPA 453, YTZ 144, YHU 51.
+//
+// YYZ has such a route too but is NOT listed: /flights/yyz returns {"list":[]}
+// because Toronto's Radware bot manager blocks the Worker's datacenter IP. The
+// identical request with identical headers returns 548 rows from a residential
+// IP, so it is egress reputation, not a header bug. Add YYZ here the day it
+// has a working egress.
+const EXTRA = ['YQM', 'YHZ', 'TPA', 'YUL', 'LGA', 'EWR', 'YTZ', 'YHU'];
 
 // Handlers that exist and parse correctly, but whose upstream blocks the
 // Worker's datacenter IP: every request 429s, so the board would be blank.

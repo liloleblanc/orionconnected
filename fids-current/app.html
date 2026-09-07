@@ -1247,6 +1247,7 @@ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
 // fids-core.js (the board's own list); tests/live-airports.test.js fails if the
 // two drift apart or if the worker gains a handler neither of them knows about.
 const APP_LIVE_AIRPORTS = new Set([
+  'TPA','YUL','LGA','EWR','YTZ','YHU',   // v23420 dedicated-route feeds
   'YQM','YHZ','YYT','YSJ','YFC','YQY','YQX','YYG','YDF',
   'YOW','YQB','YQT','YHM','YXX','YLW','YQR','YXE','YYC','YEG',
   'YYJ','YKA','YXS','YMM',
