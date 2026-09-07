@@ -7682,7 +7682,9 @@ window._gateOrbParts = function (code) {
   // which is drawn to sit ON the gold badge.
   var SELF_DISC = {
     'EZY':1,'EW':1,'MO':1,'F8':1,'SP':1,'UA':1,'LL':1,'LH':1,'LO':1,'RO':1,
-    'DE':1,'A3':1,'PC':1,'TK':1,'HV':1,'DI':1,'JL':1,'CM':1,'MX':1,'ZP':1,'DL':1
+    'DE':1,'A3':1,'PC':1,'TK':1,'HV':1,'DI':1,'JL':1,'CM':1,'MX':1,'ZP':1
+    // 'DL' removed in v23436 — its art is no longer a self-contained disc but a
+    // transparent widget, which belongs ON the accent circle, not filling it.
   };
   var _p = String(path || '');
   var isTile = !!tb
@@ -7865,7 +7867,14 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
   // orb was the one LIGHT chip in a row of red accent orbs — this sphere
   // is Delta red with the tilted white widget, so it sits in the red row
   // it belongs to. Same full-bleed native treatment as United's globe.
-  'DL': '/logos/airlines/us-major/delta-glossy-orb.png?v=23225'
+  // v23436 — Nick: 'please fix the top left Delta orb'. The glossy sphere is a
+  // red ball carrying a WHITE widget, and it was the only Delta on the screen
+  // that did not match: the welcome card and the aircraft plate both draw the
+  // RED widget from delta-emblem-colour.svg, and the banner is Delta navy.
+  // Same art here puts the red widget on the navy accent disc, so every Delta
+  // mark on a gate is now the same widget in the same colours. Both orbs read
+  // this through the shared recipe, so top-left and bottom-right move together.
+  'DL': '/logos/airlines/us-major/delta-emblem-colour.svg'
 };
 
 // v23288 — ONE ORB EMBLEM PER CARRIER, EVERYWHERE ON THE GATE.
@@ -21604,7 +21613,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23434';
+var FIDS_BUILD_TAG = 'v23436';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
