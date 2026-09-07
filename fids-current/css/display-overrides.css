@@ -12543,12 +12543,23 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold {
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold-logo {
   display: block !important;
+  /* v23408 — the mark is SIZED, not merely capped. It was width:auto /
+     height:auto with only max-* limits, and a max- rule can never GROW an
+     image: the leaf rendered at the SVG's own intrinsic size and the caps did
+     nothing. That is why it sat tiny no matter what the ceiling said. */
   width: auto !important;
-  height: auto !important;
-  max-width: min(46%, 150px) !important;
-  max-height: clamp(40px, 6.5vh, 76px) !important;
+  height: clamp(78px, 13.5vh, 158px) !important;
+  /* v23408 — BIGGER. Nick: 'Its so small the one in the clouds … you put
+     things so small you cant see it why?' He is right: the mark was capped at
+     6.5vh, about 70px on a 1080 board, floating in a plate roughly three
+     times that tall. This is the panel that holds the stand while the
+     aircraft lookup finishes, so the airline mark IS the content — it should
+     read from across a gate hall, not sit as a footnote above the caption.
+     Roughly doubled, and still leaving room for the two caption lines. */
+  max-width: min(66%, 260px) !important;
+  max-height: none !important;
   object-fit: contain !important;
-  filter: drop-shadow(0 2px 3px rgba(0,0,0,.24)) !important;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.26)) !important;
 }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold-code {
   font-size: clamp(28px, 4vh, 52px) !important;
