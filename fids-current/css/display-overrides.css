@@ -15655,6 +15655,31 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    that side is not what he flagged. _gateTitleFit absorbs the lost width.
    The v23472 label step below stays: it is still the right base size, it was
    just never going to be the whole fix. */
+/* v23490 — A BILINGUAL TITLE THAT WILL NOT FIT GOES ON TWO LINES.
+   _gateTitleFit adds this when shrinking to 0.82 still leaves the string over
+   its pill. The halves stack, the pipe between them stops making sense so it
+   goes, and the pill grows to hold both lines instead of the text being cut.
+   This is what .g8-lane-stacked was for; that mechanism stacks by setting the
+   halves display:block, which does nothing to a flex ROW, so it has been dead
+   since these titles became flex. Doing it as an explicit column is the same
+   intent, on a container that actually obeys it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title.g8-fi-title-2line {
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: auto !important;
+  min-height: 0 !important;
+  row-gap: 1px !important;
+  line-height: 1.12 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title.g8-fi-title-2line .v2-fi-sep {
+  display: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title.g8-fi-title-2line :is(.v2-fi-lbl-en, .v2-fi-lbl-2) {
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+}
+
 /* v23482 — THE TITLE BAR STOPS OVERHANGING ITS OWN TILE. This is the
    "sticking out" Nick has reported three times, and it was never the card
    edge. The dark rounded plate under each row is .v2-fi-row::before, inset
