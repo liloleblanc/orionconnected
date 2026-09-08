@@ -9484,7 +9484,7 @@ function _buildV2MapCol(ctx, vars) {
         // revision — the same semantics as the left rail's status banner.
         +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_stCls || '') ? ' v2-fi-title-warn' : ((_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) ? ' v2-fi-title-good' : '')) + '">' + _mcTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        // v23257 \u2014 the banner carries 'Arriving From | En provenance de', so
+        // v23257 \u2014 the banner carries 'Arriving From | Provenant de', so
         // line 1 is flight and city ONLY (Nick: 'Then have flight and city
         // only / ac7992 etc'):
         //   AC7992 \u00b7 Montreal | YUL
@@ -21239,7 +21239,7 @@ const LS = {
   // ── INBOUND PANEL LABELS ── (used by TL(), not SL())
   scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
   revised:         { en:'Revised',fr:'Révisé',es:'Revisado',de:'Geändert',it:'Modificato',pt:'Revisado',ja:'修正',zh:'修订',ar:'مُعدَّل' },
-  arrivingFrom:    { en:'Arriving from',fr:'En provenance de',es:'Procedente de',de:'Aus',it:'Proveniente da',pt:'Proveniente de',ja:'到着便',zh:'来自',ar:'قادم من' },
+  arrivingFrom:    { en:'Arriving from',fr:'Provenant de',es:'Procedente de',de:'Aus',it:'Proveniente da',pt:'Proveniente de',ja:'到着便',zh:'来自',ar:'قادم من' },
   yourAircraftLbl: { en:'YOUR AIRCRAFT',fr:'VOTRE APPAREIL',es:'SU AERONAVE',de:'IHR FLUGZEUG',it:'IL VOSTRO AEREO',pt:'A SUA AERONAVE',ja:'ご搭乗機',zh:'您的飞机',ar:'طائرتكم' },
   willBoardIn:     { en:'Your flight will begin boarding in approximately',fr:'Votre vol commencera l\'embarquement dans environ',es:'Su vuelo iniciará el embarque en aproximadamente',de:'Ihr Flug beginnt mit dem Boarding in etwa',it:'L\'imbarco del vostro volo inizierà tra circa',pt:'O seu voo iniciará o embarque em aproximadamente',ja:'ご搭乗開始まで約',zh:'您的航班将在大约',ar:'سيبدأ صعود رحلتكم خلال حوالي' },
   arrivedAtGate:   { en:'Arrived at the gate',fr:'Arrivé à la porte',es:'Llegó a la puerta',de:'Am Gate angekommen',it:'Arrivato al gate',pt:'Chegou ao portão',ja:'ゲート到着',zh:'已到达登机口',ar:'وصل إلى البوابة' },
@@ -21895,7 +21895,7 @@ var _GATE_LBL = {
   // v23257 — the inbound card's banner names the movement, airport-PA style
   // (Nick: 'Above simply put … arriving From | En Provenance de … Or Arrivé
   // de'). The en-route and landed variants.
-  arrivingFrom: { en:'Arriving From', fr:'En provenance de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
+  arrivingFrom: { en:'Arriving From', fr:'Provenant de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
   // v23295 — _gateLbl() reads _GATE_LBL, NOT LS; a key added to LS resolves to
   // an empty string and the line silently vanishes, which is what happened on
   // the first two attempts at this card. It belongs here, beside arrivingFrom,
@@ -22175,7 +22175,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23480';
+var FIDS_BUILD_TAG = 'v23482';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
