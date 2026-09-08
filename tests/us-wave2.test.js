@@ -6,7 +6,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { pdxParseFeed, dtwParseFeed, sanParseFeed, msyParseFeed } from '../workers/fids-proxy.js';
+import { pdxParseFeed, dtwParseFeed, sanParseFeed, msyParseFeed, dtwFr24Lookup } from '../workers/fids-proxy.js';
 
 const fx = (n) => readFileSync(new URL(`./fixtures/${n}`, import.meta.url), 'utf8');
 const NOW = Date.parse('2026-09-04T22:00:00-07:00');
@@ -91,4 +91,31 @@ test('us-wave2: garbage in, empty out', () => {
   assert.deepEqual(dtwParseFeed('x', 'arr', NOW), []);
   assert.deepEqual(sanParseFeed('[]', 'arr', NOW), []);
   assert.deepEqual(msyParseFeed('{}', 'dep', NOW), []);
+});
+
+test('dtw: FR24 lookup matches on destination and a wheels-up window', () => {
+  // Wheels-up runs late of schedule, so the match is a window, not a stamp.
+  const sched = { CVG: [{ m: 21 * 60 + 40, f: 'DL5478', op: 'EDV' }] };
+  assert.equal(dtwFr24Lookup(sched, 'CVG', 21 * 60 + 22).f, 'DL5478', '18 min late is inside the window');
+  assert.equal(dtwFr24Lookup(sched, 'CVG', 19 * 60), null, 'two hours early is not this flight');
+  assert.equal(dtwFr24Lookup(sched, 'CVG', 21 * 60 + 55), null, 'wheels-up cannot precede the schedule');
+  assert.equal(dtwFr24Lookup(sched, 'ORD', 21 * 60 + 22), null, 'wrong destination');
+  // A 23:50 departure lifting at 00:10 is 20 minutes late, not 23 hours early.
+  const wrap = { MSP: [{ m: 10, f: 'DL1234', op: null }] };
+  assert.equal(dtwFr24Lookup(wrap, 'MSP', 23 * 60 + 50).f, 'DL1234', 'midnight wrap');
+  // Nearest match wins when a destination has several departures.
+  const many = { ATL: [{ m: 600, f: 'DL100' }, { m: 431, f: 'DL200' }] };
+  assert.equal(dtwFr24Lookup(many, 'ATL', 420).f, 'DL200');
+  assert.equal(dtwFr24Lookup(null, 'ATL', 420), null, 'no schedule is not a crash');
+});
+
+test('dtw: codeshare-only groups stay uncollapsed when FR24 cannot name them', () => {
+  // The guarantee that matters — a guessed number is worse than a duplicate
+  // row, so with no schedule the all-codeshare groups must survive intact.
+  const arr = dtwParseFeed(fx('dtw-arr-sample.json'), 'arr', NOW, null);
+  const withEmpty = dtwParseFeed(fx('dtw-arr-sample.json'), 'arr', NOW, {});
+  assert.equal(withEmpty.length, arr.length, 'an empty schedule changes nothing');
+  for (const f of arr) {
+    assert.ok(f.number && /^[A-Z0-9]{2}\d+$/.test(f.number), `${f.number} is not a usable flight number`);
+  }
 });
