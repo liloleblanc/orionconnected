@@ -14386,12 +14386,19 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    the code vanished into it). */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-code {
   font-weight: 900 !important;
-  /* Nick's own accent for codes — the hdrText gold from his saved YQM
-     palette, the same #fca825 the right card's 'City | CODE' already wears
-     (v23196's precedent). The rail context's white-forcing v2-rc-iata rule
-     would otherwise blend the code into the banner's white words. */
-  color: #fca825 !important;
-  -webkit-text-fill-color: #fca825 !important;
+  /* v23494 — THE CARRIER'S ACCENT, NOT A FIXED GOLD. Nick: "clearly not
+     accents". The gold was his own hdrText from the saved YQM palette and was
+     right when every code on the gate wore it — but v23476 moved the VALUE-line
+     code to var(--airline-accent-ink) at his request and left this one behind,
+     so a Porter gate showed gold in the left column and Porter navy on the
+     shelf. Two codes, two colours, neither of them the airline's on one of them.
+     Both are the accent now. The gold stays as the LAST fallback, which is what
+     the comment above says this rule is for: a gate with no theming at all.
+     Legibility is handled separately — _gateCodeInk lifts an accent along its
+     own hue when it cannot be read on the ground it lands on, so this rule does
+     not have to trade the carrier's colour for contrast. */
+  color: var(--airline-accent-ink, var(--airline-accent, #fca825)) !important;
+  -webkit-text-fill-color: var(--airline-accent-ink, var(--airline-accent, #fca825)) !important;
 }
 
 /* ── v23240 — THE AIRCRAFT FILLS ITS SKY (Nick: 'the plane I dont think its
