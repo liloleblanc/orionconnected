@@ -15429,3 +15429,197 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
   font-size: clamp(13px, 2.05vh, 19px) !important;
 }
+
+/* ══ v23472 — THE EMBLEM FITS THE BAND AGAIN ═══════════════════════════════
+   Nick, on the live Moncton gate: "1 So roundel too big", pointing at an Air
+   Canada roundel sliced along the top edge.
+
+   Two v23470 changes compounded. The leaf nudge (-13px) was measured when the
+   band centred its children over the full 112px, where it overhung by 3px —
+   inside the artwork's own padding, so nothing was lost. The vertical-fit block
+   then reserved the date bar as padding, re-centring everything into the space
+   ABOVE it, which already raised the emblem; the nudge took it a further 13px
+   and the overhang became 10px. Measured on the live board: emblem y = -10.
+
+   WestJet survives that because its leaf sits low in its own square. Air
+   Canada's roundel very nearly fills its box — the ring runs to the edge — so
+   10px cuts the circle, which is what Nick is looking at.
+
+   The nudge goes, and the height is ABSOLUTE. A first attempt used
+   height:calc(100% - …) and blew the emblem up to 445px: its parent
+   .g8-r1-brandpair has no height of its own and sizes to its child, so the
+   percentage resolved against a box the emblem was itself defining. Measured
+   before and after — that is a circular reference, not a tuning problem.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-emblem {
+  /* Bigger than the wordmark's own box, and lifted 4px. The BOXES already
+     centre level (measured midDelta 0), but WS.svg draws its leaf low inside
+     its square, so matching boxes still read as a low leaf — which is what the
+     original -13px nudge was compensating for before it over-ran. 4px is what
+     the artwork's own offset needs; the height is then set so bottom lands
+     exactly on the bar, never past it. */
+  transform: translateY(-9px) !important;
+  height: clamp(64px, 9.6vh, 104px) !important;
+  max-height: clamp(64px, 9.6vh, 104px) !important;
+  width: auto !important;
+  object-fit: contain !important;
+  align-self: center !important;
+}
+
+/* ══ v23472 — SHELF TITLES REACH THE EDGES ════════════════════════════════
+   Nick: "4 ... the ones in the shelve panels with titles Flight | Vol etc the
+   dont touch the right side like 5 the bottom right as requested earlier".
+
+   Measured at his own window size: .v2-fi-title is 245px inside a 268px
+   .v2-fi-textcol. gate-display.css ALREADY sets width:100% on the title and it
+   was applying — the missing 23px is .v2-fi-textcol's own left/right padding,
+   so 100% resolves to the content box and can never reach the panel edge. The
+   padding is what goes, not the width.
+
+   The code is then pushed to the right edge, which is the "touch the side"
+   Nick means, and matches the Arriving From pill at bottom right that he
+   pointed to as the one that gets it right.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-textcol {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: flex !important;
+  align-items: baseline !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-lbl-en,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-lbl-2,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-sep,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-code {
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-code.v2-rc-iata {
+  margin-left: auto !important;
+}
+
+/* ══ v23472 — WESTJET'S SHELF TOPS TAKE THE NAVY ══════════════════════════
+   Nick: "try the westjet only tops in navy blue their color", then "TEAL CODE".
+
+   The pill was painted with the accent itself, which is why the code could
+   never be accent-coloured: _caFit keeps the accent's HUE and scans lightness
+   for maximum contrast, so on a teal ground the darkest teal wins and lands at
+   rgb(0,8,20) — the near-black Nick reads as "no colour". Measured: 7.6:1
+   against the pill, doing exactly what it is meant to do.
+
+   Moving the pill to r1 — WestJet's own navy #003366, published as
+   --airline-r1 in v23470 — leaves the accent hue free at the light end, where
+   it clears the navy comfortably (teal on navy measures 4.77:1). The painter
+   then picks a light teal on its own; no override, no fighting its inline
+   !important, and it still adapts if a carrier's colours change.
+
+   Scoped to WestJet while Nick looks at it.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-WS :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  background: var(--airline-r1, #003366) !important;
+}
+
+/* ══ v23472 — THE SEPARATOR COMES BACK ════════════════════════════════════
+   Nick: "There should be seperationsn between words | i dont see them".
+
+   Not a new bug — a stranded rule. display-overrides.css already carries
+   'html body .v2-fi-title.g8-lane-stacked .v2-fi-sep { display: none }', which
+   is RIGHT for a stacked title: with English above French, a pipe between them
+   would be nonsense. The titles carry .g8-lane-stacked whether or not they
+   actually stacked.
+
+   Making them single-line earlier in this build left that rule hiding a
+   separator the layout now needs. So it is lifted for the shelf titles only —
+   where the line is one row by construction — and left alone everywhere else,
+   so anything still genuinely stacked keeps hiding it.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-sep {
+  display: inline !important;
+  opacity: .55 !important;
+  margin: 0 .34em !important;
+  flex: 0 0 auto !important;
+}
+
+/* ══ v23472 — THE CLOCK WEARS THE CARRIER'S COLOUR ════════════════════════
+   Nick: "is the time make sure it matches the airline? you have blue with Air
+   Canada".
+
+   v23462 set the Moncton clock, date and separator to a flat #0A2E6B when the
+   band went cream — a navy chosen to read on cream, not to belong to anyone.
+   On WestJet it happens to look right; on Air Canada it is simply blue.
+
+   r1 is the carrier's own dark shade and is already published per airline, so
+   the clock follows the carrier with no table: Air Canada #0A0A0A, WestJet
+   #003366. It is also the readable choice — measured on the cream band, r1
+   gives 17.6:1 for AC and 11.2:1 for WS, where the bright accents give 4.3 and
+   2.3. The old navy stays as the fallback for any carrier without an r1.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clock {
+  color: var(--airline-r1, #0A2E6B) !important;
+  -webkit-text-fill-color: var(--airline-r1, #0A2E6B) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+  color: var(--airline-r1, #0A2E6B) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-apsep {
+  color: var(--airline-r1, #0A2E6B) !important;
+  opacity: .38 !important;
+}
+
+/* ══ v23472 — THE BOTTOM SHELF STOPS SPILLING ═════════════════════════════
+   Nick: "make sure the last bottom panel shelve is not overspilling?".
+
+   It was, and it was mine: forcing the titles onto one line earlier in this
+   build gave the labels nowrap but no way to shrink, so on the narrow
+   Arriving-From shelf 'En provenance de' ran 154px wide and finished 45px past
+   the shelf's right edge — measured, and that shelf is overflow:visible so it
+   showed.
+
+   The shelf is 380px with roughly 100px of it icon column, leaving ~280 for
+   'Arriving From | En provenance de', which needs ~290 at the inherited size.
+   So the shelf titles take a smaller step of the same clamp — enough to fit
+   with room to spare — and the title keeps overflow:hidden as a backstop so a
+   longer language pair can never push past the panel again.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-en,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-2 {
+  font-size: clamp(13px, 1.65vh, 19px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title {
+  overflow: hidden !important;
+}
+
+/* ══ v23472 — THE VALUE-LINE CODE GOES BLUE ═══════════════════════════════
+   Nick: "and the code bottom right blue please".
+
+   That one is not painted by the accent pass at all — its selector is
+   '… .v2-fi-title .v2-fi-code', and this code lives in the VALUE line
+   ('WS790 · Edmonton | YEG'), not a title pill. It was gold because a CSS rule
+   twelve :not(#_) deep pins -webkit-text-fill-color: #fca825 on
+   .gad-map-col-v2 .v2-rc-iata. Chased the JS first and had to take that change
+   back out — it could never have run.
+
+   Scoped to the value line so the title-pill codes keep the carrier accent
+   Nick asked for in the same breath ("TEAL CODE"), and set on BOTH color and
+   -webkit-text-fill-color, since the fill is what actually paints the glyphs
+   in Chrome and is what the gold rule was winning with.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-value .v2-rc-iata,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-value .v2-fi-code {
+  color: #4DA3FF !important;
+  -webkit-text-fill-color: #4DA3FF !important;
+}
+
+/* Last 8px of the Arriving-From overspill — one more step down on the shelf
+   label size clears it with room to spare. Measured: 45px before the first
+   step, 8px after, 0 here. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-en,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-2 {
+  font-size: clamp(12px, 1.5vh, 17px) !important;
+}
