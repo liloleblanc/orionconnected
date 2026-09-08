@@ -12284,9 +12284,62 @@ function uxgGateHtml(ctx) {
     '4N': '/logos/airlines/canadian-regional/airnorth-monochrome-white.svg',
     'MO': '/logos/airlines/canadian-regional/calmair-monochrome-white.svg',
     'YP': '/logos/airlines/canadian-regional/perimeter-aviation-logo-monochrome-white.svg',
+    // v23468 — PAG is Perimeter's ICAO and already appears as a banner brand code
+    // elsewhere (OPERATOR_LOGOS carries it). Without a twin here, a feed that
+    // reports PAG as the MARKETING code would skip this table on the dark banner
+    // and fall through to the external lockup at every airport, not just YQM.
+    'PAG': '/logos/airlines/canadian-regional/perimeter-aviation-logo-monochrome-white.svg',
     'BQ': '/logos/airlines/canadian-regional/pascan-monochrome-white.svg',
-    '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg'
+    '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg',
+    // v23468 — Encore's white lockup as a VECTOR. Nick's own artwork, outlined,
+    // replacing the raster encore.png the banner reached through LOCAL_LOGOS.
+    // Same appearance on the dark band (that PNG was already all-white and WR
+    // sits in LOGO_SKIP_FILTER, so nothing was inverting it), but crisp at the
+    // 1080p stream's banner height instead of an upscaled bitmap. Plain-string
+    // entry = whiten:false, which is what the art needs — it is already white.
+    // WestJet is one of the four carriers that publish an official reversed
+    // lockup, so a white Encore is the sanctioned mark, not a flattened emblem.
+    'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg',
+    'WEN': '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg'
   };
+  // v23468 — the mirror of BANNER_DARK_LOGO, for the other band.
+  //
+  // Every entry in the table above is a WHITE or monochrome-white file chosen to
+  // read on the near-black banner. On a LIGHT band each one is the wrong file by
+  // definition. v23462 handled that for Moncton by nulling _darkLogo when
+  // _apIsYQM, which lets the wordmark branch below run instead — but that only
+  // rescues carriers that HAVE an IATA_TO_WORDMARK entry. The ones that don't
+  // fall through to carrierLogoUrl(), and that is where two carriers go wrong:
+  //
+  //   WR  — LOCAL_LOGOS points at the all-white encore.png. On cream it is
+  //         invisible (contrast 1.1:1); it is the single carrier the light-band
+  //         audit flagged as unreadable across the whole 251-code roster.
+  //   YP  — has no LOCAL_LOGOS entry at all, so it reaches the external
+  //         img.wway.io fallback, which serves AIR PREMIA's logo for 'YP'.
+  //         That is a different airline's trademark on a Perimeter flight.
+  //
+  // Fixing either one in LOCAL_LOGOS would be wrong: that object IS
+  // LOCAL_TRANSPARENT_LOGOS (line ~20069), so it also feeds the FIDS board
+  // airline column, where WR renders unfiltered (LOGO_SKIP_FILTER) on a DARK
+  // row and needs to stay white. Hence a banner-scoped table.
+  //
+  // Setting _useOverrideFile here also pins filter:none, so these never take the
+  // fids.css .g8-r1-logo whitening — that matters for the general light-banner
+  // rollout, where _apIsYQM is false and the inline filter would otherwise be ''.
+  var BANNER_LIGHT_LOGO = {
+    'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
+    'WEN': '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
+    'YP':  '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg',
+    'PAG': '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg'
+  };
+  var _lightLogo = _bannerIsLight
+    ? (BANNER_LIGHT_LOGO[_bannerBrandCode] || BANNER_LIGHT_LOGO[airlineCode])
+    : null;
+  if (!_useOverrideFile && _lightLogo) {
+    r1LogoSrc = _lightLogo;
+    _useOverrideFile = true;          // real colours — never whiten onto a light band
+    _sz = { h: 108, w: 620 };         // same band fill as the dark-logo branch
+  }
   // v23462 — every entry in that table is a WHITE or monochrome-white file,
   // chosen to read on a near-black banner. On Moncton's cream band it is the
   // wrong file by definition — Air Canada came out as air-canada-white.svg on
@@ -21953,7 +22006,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23466';
+var FIDS_BUILD_TAG = 'v23468';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
