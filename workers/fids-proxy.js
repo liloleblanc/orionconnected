@@ -1704,6 +1704,11 @@ function authorityFlight(o) {
     status: o.status,
     codeshareStatus: "IsOperator",
     isCargo: false,
+    // v23472 — carried straight through to the field fids-core already reads
+    // for the "Operated by" line (fids-core.js:7249). Only set when a feed
+    // actually names the operator; otherwise absent, and the existing
+    // flight-number heuristics run exactly as before.
+    ...(o.opCode ? { _opCode: o.opCode } : {}),
     ...(o.aircraftModel ? { aircraft: { model: o.aircraftModel } } : {}),
     departure: o.dir === "dep" ? homeSide : otherSide,
     arrival: o.dir === "dep" ? otherSide : homeSide,
@@ -2899,21 +2904,97 @@ function pdxParseFeed(jsonText, dir, nowMs) {
 }
 __name(pdxParseFeed, "pdxParseFeed");
 
+// Delta Connection regionals at DTW. SkyWest and Republic also fly for
+// United, American and Alaska elsewhere, so this mapping is deliberately
+// scoped to Detroit rather than pushed into a global table.
+const DTW_DELTA_REGIONAL = { "9E": "Endeavor Air", "OO": "SkyWest Airlines", "YX": "Republic Airways" };
+// SkyTeam partners that sell seats on Delta metal out of DTW. Measured on
+// the live feed 2026-09-07: WestJet's 35 rows start at 5481, Aeromexico's 33
+// at 3024 — neither carrier operates a single DTW departure, every row is a
+// codeshare. Air France and KLM DO fly their own metal here, which is why
+// membership of this set is never on its own enough to call a row a
+// codeshare; the flight number decides that (see DTW_OPERATOR_MAX).
+const DTW_SKYTEAM_CS = new Set(["WS", "AM", "KL", "AF", "VS", "KE", "MU", "CI", "SU", "RO", "UX", "ME"]);
+// Every row below this number in the whole feed is real operating metal, and
+// nothing above it is: DL136/292/412/700/916/978/1187/1689, AF377 to Paris
+// and TK206 to Istanbul — ten rows, all operators. The lowest codeshare
+// anywhere in the feed is KL2227. Checked across both directions before
+// relying on it.
+const DTW_OPERATOR_MAX = 2000;
+
+// Picks the one row in a duplicate group that represents the aircraft, or
+// null when the feed sent only ticket-sellers. Order matters: a Delta
+// regional outranks a low partner number, because RIC came through as
+// AF2582 · AM3483 · 9E4679 · WS6625 · KL7748 — Endeavor is the operator even
+// though Air France's codeshare carries the lower number.
+function dtwPickOperator(group) {
+  const code = (r) => String(r.AirLineCode || "").toUpperCase();
+  const num = (r) => parseInt(r.FlightNumber, 10) || 0;
+  const dl = group.find((r) => code(r) === "DL");
+  if (dl) return { row: dl, airline: "DL", operator: null };
+  const reg = group.find((r) => DTW_DELTA_REGIONAL[code(r)]);
+  if (reg) return { row: reg, airline: "DL", operator: code(reg) };
+  const own = group.find((r) => num(r) > 0 && num(r) < DTW_OPERATOR_MAX);
+  if (own) return { row: own, airline: code(own), operator: null };
+  const outside = group.find((r) => !DTW_SKYTEAM_CS.has(code(r)));
+  if (outside) return { row: outside, airline: code(outside), operator: null };
+  return null;   // all codeshares — the operator's row was never sent
+}
+__name(dtwPickOperator, "dtwPickOperator");
+
 // DTW Detroit — Wayne County's proxy. ScheduledDateTime is a dummy
 // (0001-01-01) so EstimatedDateTime is the operative time; there's no
 // separate revision to show. Gate letter is the concourse.
+//
+// ONE ROW PER AIRCRAFT (Nick: 'I did not ask for you to put regional carriers
+// on the main board', and on what should show: 'it falls on the parent company
+// and is operated by them only').
+//
+// Detroit expands every marketing partner into its own row and gives no
+// codeshare flag at all — unlike flysfo, whose is_code_share drives the same
+// collapse at :2443. Measured on the live feed 2026-09-07: 160 departure rows
+// are 75 aircraft. Better than half the board was one flight repeated, and
+// because Delta's SkyTeam partners dominate it, a Delta fortress hub was
+// reading as WestJet 35 · Aeromexico 33 · Air France 27 · KLM 24 · Delta 18.
+//
+// Rows are grouped on destination + gate + minute, and dtwPickOperator names
+// the aircraft. Where the group holds ONLY codeshares — 34 of the 75, Delta
+// metal whose own row Detroit simply omits — the group is left ALONE and every
+// row still shows. That is deliberate: the collapse would have to print
+// Delta's name above a partner's flight number, since no Delta number exists
+// anywhere in the data. Wrong numbers do not go on a public board to make a
+// count look better. Those groups are what the FR24 flight-summary lookup is
+// for; until it lands they stay as they are.
 function dtwParseFeed(jsonText, dir, nowMs) {
   const out = [];
   let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
   const rows = Array.isArray(j) ? j : (Array.isArray(j.Flights) ? j.Flights : []);
   const isDep = dir === "dep";
+  const wantType = isDep ? "Departure" : "Arrival";
+
+  const groups = new Map();
   for (const r of rows) {
     if (!r) continue;
-    const wantType = isDep ? "Departure" : "Arrival";
     if (r.FlightType && r.FlightType !== wantType) continue;
-    const num = (r.CombinedFlightNumber || ((r.AirLineCode || "") + (r.FlightNumber || ""))).toString().trim();
+    const other = ((isDep ? r.ArrivalAirportCode : r.DepartureAirportCode) || "").toString().toUpperCase();
+    const key = other + "|" + (r.Gate || "").toString().trim() + "|" + (r.EstimatedDateTime || "");
+    const g = groups.get(key);
+    if (g) g.push(r); else groups.set(key, [r]);
+  }
+
+  const emit = (r, airlineIata, airlineName, operator) => {
+    // A Delta Connection flight keeps its digits across the pair: DL3909 is
+    // the ticket, OO3909 is the aircraft. So when the row has been remapped
+    // onto Delta, re-prefix the SAME digits rather than print OO3909 under
+    // Delta's name. This is only ever done for the regional case, where the
+    // digits provably belong to both carriers — never for the codeshare
+    // partners, whose numbers are their own and unrelated to Delta's.
+    const digits = (r.FlightNumber || "").toString().trim();
+    const num = (operator && airlineIata && digits)
+      ? airlineIata + digits
+      : (r.CombinedFlightNumber || ((r.AirLineCode || "") + (r.FlightNumber || ""))).toString().trim();
     const sched = localIsoObj("America/Detroit", r.EstimatedDateTime);
-    if (!num || !sched) continue;
+    if (!num || !sched) return;
     out.push(authorityFlight({
       dir, number: num,
       status: yhzStatus(r.PublicStatus || ""),
@@ -2921,10 +3002,29 @@ function dtwParseFeed(jsonText, dir, nowMs) {
       gate: (r.Gate || "").toString().trim() || null,
       otherIata: ((isDep ? r.ArrivalAirportCode : r.DepartureAirportCode) || "").toString().toUpperCase() || null,
       otherName: (isDep ? r.ArrivalCity : r.DepartureCity) || null,
-      airlineIata: (r.AirLineCode || "").toString().toUpperCase() || null,
-      airlineName: r.AirLine || r.AirLineFullNameName || null,
+      airlineIata: airlineIata || null,
+      airlineName: airlineName || null,
+      // fids-core reads currentFlight._opCode (:7249) to draw the gate
+      // screen's "Operated by" line, and derives it from flight-number
+      // ranges when the feed says nothing. Here the feed DOES say — the
+      // regional's own row is what we collapsed onto — so pass the code
+      // through rather than let a heuristic guess at it.
+      opCode: operator || null,
       sched, revised: null
     }));
+  };
+
+  for (const g of groups.values()) {
+    // Single-row groups go through dtwPickOperator too. A lone OO3909 has no
+    // codeshares to collapse, but it is still Delta Connection and still has
+    // to read as Delta — that row, and OO3684 beside it, are exactly the two
+    // Nick ringed on the DTW board. Skipping groups of one left 8 SkyWest and
+    // 8 Endeavor rows sitting there after the first pass.
+    const pick = dtwPickOperator(g);
+    if (!pick) { for (const r of g) emit(r, String(r.AirLineCode || "").toUpperCase() || null, r.AirLine || r.AirLineFullNameName || null, null); continue; }
+    const r = pick.row;
+    const name = pick.airline === "DL" ? "Delta Air Lines" : (r.AirLine || r.AirLineFullNameName || null);
+    emit(r, pick.airline, name, pick.operator);
   }
   return out;
 }
