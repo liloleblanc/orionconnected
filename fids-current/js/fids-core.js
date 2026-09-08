@@ -12477,7 +12477,21 @@ function uxgGateHtml(ctx) {
     // overrunning the ~118px banner (Nick: 'some airline logos are way too big
     // now, passing the border'). 96px fills it with breathing room; compact
     // marks that were already smaller are untouched (Math.min).
-    _logoH = Math.min(_logoH, 106);
+    // v23470 — Nick, choosing between a thin line and the bar in his mockup:
+    // "The logo smaller i guess make it touch edges". On YQM the stripe grows
+    // from 7px to a real date bar, and the band cannot grow with it: .g8-r1 is
+    // pinned to 112px by height/min-height/max-height with overflow:hidden
+    // (gate-display.css:2642-2651), so the room has to come from the logo.
+    //
+    // This number cannot be overridden from CSS — it is stamped inline with
+    // !important a few lines below, and an inline !important outranks any
+    // stylesheet !important. Hence the cap moves here rather than in an
+    // override block.
+    //
+    // 82px against a 26px bar leaves the same ~2px breathing room at the top
+    // that 106 left in the full 112. Scoped to YQM: every other airport keeps
+    // 106 until its banner grows a bar too.
+    _logoH = Math.min(_logoH, _apIsYQM ? 82 : 106);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -12819,6 +12833,18 @@ function uxgGateHtml(ctx) {
        // pointing at Flair: 'we cant see this'). --airline-accent-ink is the
        // same treatment for the airport-code colour.
        + ';--airline-r2:' + (function (h) { return _hexIsLight(h) ? _accentInk(airlineCode, h) : h; })((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
+       // v23470 — r1 = the carrier's DARK brand shade, the other half of the
+       // pair r2 comes from. Nick, on the banner's date bar: "maybe it should
+       // be the second color to the airline Air Canada Dark Gray or Black
+       // maybe Westjet Blue" — that is exactly r1 (AC #0A0A0A, WS #003366),
+       // already in airline-colors.js for every carrier.
+       //
+       // It had no custom property, so CSS could not reach it: the stripe was
+       // painting --airline-accent, the BRIGHT colour, which put white date
+       // text on WestJet teal at ~2.8:1. On r1 navy the same text is ~10:1.
+       // Same #FFFFFF guard and fallback the r1 readers at :12725 use.
+       + ';--airline-r1:' + ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF')
+           ? _bannerSpec.r1 : '#0c1119')
        // WAS: color-mix(accent 42%, #0a1f12). Darkening an accent by mixing it
        // toward black IS brown when the accent is warm — Southwest gold
        // #F9B612 came out #6e5e12 and Sunwing amber #F7941D came out #6e5017,
