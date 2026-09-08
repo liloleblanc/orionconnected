@@ -56,3 +56,45 @@ test('diverted flights use a full red row on flight and baggage boards', () => {
   assert.match(css, /row-diverted:nth-child\(odd\)[\s\S]*background-color:\s*#A61B2B\s*!important/);
   assert.match(css, /row-diverted:nth-child\(even\)[\s\S]*background-color:\s*#DE4B58\s*!important/);
 });
+
+test('the gate banner date refreshes itself over a day boundary', () => {
+  // The date is painted once by the gate rebuild and _computeGateKey has no
+  // time term, so without a heartbeat an overnight gate with no data churn
+  // shows yesterday until its flight data next moves — measured at six hours
+  // on a real board. The node has to carry its zone and the day it was built
+  // for, and the existing 5s clock tick has to roll it when that day changes.
+  assert.match(core, /<div class="octb-date" data-tz="' \+ _e\(_tbTz\) \+ '" data-day="' \+ _e\(_tbDay1\) \+ '">/);
+  assert.match(core, /_tbDay1 = _ocLocalDayKey\(_tbTz \|\| null\)/);
+  assert.match(core, /function _ocLocalDayKey\(tz\)/);
+  const tick = core.slice(core.indexOf('/* Local-time shelf clock'), core.indexOf('/* Accor hotel slide'));
+  assert.match(tick, /querySelectorAll\('\.octb-date\[data-tz\]'\)/);
+  assert.match(tick, /getAttribute\('data-day'\) === day\) continue/);
+  assert.match(tick, /innerHTML = _ocClockDate\(new Date\(\), dtz \|\| null\)/);
+  // The rebuild must NOT be the mechanism: a day term in the gate key repaints
+  // the whole screen unattended at midnight, which is what v23166 and the
+  // aircraft retry both exist to prevent.
+  const gateKey = core.slice(core.indexOf('var _computeGateKey = function ()'));
+  assert.doesNotMatch(gateKey.slice(0, 400), /_ocLocalDayKey|fidsLocalDateKey|dayKey/);
+});
+
+test('the Moncton banner never paints text in its own background colour', () => {
+  // --airline-r1 is the carrier's DARK shade: it backs the date bar and inks
+  // the clock. Porter's r1 is #EFE8DA, the cream the band is made of, and the
+  // old guard only rejected the literal '#FFFFFF' — so it was painted onto
+  // itself at 1.08:1. The guard is luminance now, falling back to the
+  // carrier's own r1Text ink.
+  // Scoped to the --airline-r1 publication on purpose. The same string guard
+  // still appears on _silkDark, where Porter's cream IS the intended band
+  // (v23120) and _silkLum already darkens the ink for it, and on --banner-bg,
+  // which has the same latent bug but paints a different surface.
+  const r1From = core.indexOf("+ ';--airline-r1:'");
+  const r1To = core.indexOf("+ ';--airline-accent-ink:'");
+  assert.ok(r1From >= 0 && r1To > r1From, 'could not isolate the --airline-r1 publication');
+  const r1Pub = core.slice(r1From, r1To);
+  assert.doesNotMatch(r1Pub, /!== '#FFFFFF'/);
+  assert.match(r1Pub, /_hexIsLight\(s\.r1\)/);
+  assert.match(core, /\(s\.r1Text && !_hexIsLight\(s\.r1Text\)\) \? s\.r1Text : '#0c1119'/);
+  // And the date, which sits ON that bar, must not be coloured with it.
+  assert.doesNotMatch(css, /\.g8-ap-YQM \.g8-r1-timebox \.octb-date \{\s*color: var\(--airline-r1/);
+  assert.match(css, /\.g8-ap-YQM \.g8-r1-timebox \.octb-clock \{\s*color: var\(--airline-r1/);
+});

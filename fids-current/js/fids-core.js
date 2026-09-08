@@ -12871,9 +12871,25 @@ function uxgGateHtml(ctx) {
        // It had no custom property, so CSS could not reach it: the stripe was
        // painting --airline-accent, the BRIGHT colour, which put white date
        // text on WestJet teal at ~2.8:1. On r1 navy the same text is ~10:1.
-       // Same #FFFFFF guard and fallback the r1 readers at :12725 use.
-       + ';--airline-r1:' + ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF')
-           ? _bannerSpec.r1 : '#0c1119')
+       // v23474 — THE GUARD IS LUMINANCE, NOT THE STRING '#FFFFFF'. r1 has to
+       // be DARK: it is painted as the date bar's BACKGROUND here, and since
+       // v23472 as the clock's INK on the cream band. The old test rejected
+       // pure white only, so Porter's r1 — #EFE8DA, the latte cream that IS
+       // the Moncton band — sailed straight through and was painted onto
+       // itself. Measured on the live gate: clock and date at 1.08:1 against
+       // the band, which is invisible, and that is Nick's 4:50AM photo.
+       //
+       // r1Text is the carrier's own ink for exactly this case ('white if r1
+       // is black, dark if r1 is white' — :12610), so a light r1 falls back to
+       // it: Porter #152C53, the wordmark navy sampled from porter.svg, which
+       // makes the clock and the bar the same ink as the logo beside them.
+       // Neutral near-black only where a carrier has no usable dark — the same
+       // shape as the --airline-accent-ink fallback below.
+       + ';--airline-r1:' + (function (s) {
+           if (!s || !s.r1) return '#0c1119';
+           if (!_hexIsLight(s.r1)) return s.r1;
+           return (s.r1Text && !_hexIsLight(s.r1Text)) ? s.r1Text : '#0c1119';
+         })(_bannerSpec)
        // WAS: color-mix(accent 42%, #0a1f12). Darkening an accent by mixing it
        // toward black IS brown when the accent is warm — Southwest gold
        // #F9B612 came out #6e5e12 and Sunwing amber #F7941D came out #6e5017,
@@ -12998,8 +13014,9 @@ function uxgGateHtml(ctx) {
             var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
             var _tbNow1 = '—';
             try { _tbNow1 = new Date().toLocaleTimeString('en-US', _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
-            var _tbDate1 = '';
+            var _tbDate1 = '', _tbDay1 = '';
             try { _tbDate1 = _ocClockDate(new Date(), _tbTz || null); } catch (e) {}
+            try { _tbDay1 = _ocLocalDayKey(_tbTz || null); } catch (e) {}
             // ATTACHED-TO-GATE tab (Nick: 'align it with the gate tab, same
             // format as the gate — a colour and border, attached to the gate,
             // all text justified, take as much space'). The tab's right edge
@@ -13051,7 +13068,7 @@ function uxgGateHtml(ctx) {
                       : '')
               +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
               +   '</span>'
-              +   '<div class="octb-date">' + _tbDate1 + '</div>'
+              +   '<div class="octb-date" data-tz="' + _e(_tbTz) + '" data-day="' + _e(_tbDay1) + '">' + _tbDate1 + '</div>'
               + '</div>'
               + '</div>';
           }
@@ -22108,7 +22125,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23472';
+var FIDS_BUILD_TAG = 'v23474';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27319,6 +27336,17 @@ function _ocClockDate(now, tz) {
     out.push(w);
   }
   return out.join(' <span class="cl-sep">|</span> ') || _one('en');
+}
+// v23474 — the calendar day _ocClockDate is currently showing, as 'YYYY-MM-DD'.
+// It has to follow _ocClockDate's timezone rule EXACTLY, which is why this is
+// not fidsLocalDateKey(): that one falls back to UTC on a missing zone, while
+// _ocClockDate falls back to the browser's. On a tz-less board the two would
+// disagree either side of UTC midnight and the banner would roll over at the
+// wrong moment. One toLocaleDateString, cheap enough to call on a heartbeat.
+function _ocLocalDayKey(tz) {
+  var o = { year: 'numeric', month: '2-digit', day: '2-digit' };
+  if (tz) o.timeZone = tz;
+  try { return new Date().toLocaleDateString('en-CA', o); } catch (e) { return ''; }
 }
 
 // ── CLOCK — airport local time ────────────────────────────────────────────
@@ -38513,6 +38541,35 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
           s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
         }
         if (s && els[i].textContent !== s) els[i].textContent = s;
+      } catch (e) {}
+    }
+    // v23474 — AND THE DATE ROLLS OVER WITH IT. The gate banner's date is
+    // painted once, by the gate rebuild, and _computeGateKey carries no time
+    // term — so a gate with no data churn overnight kept showing YESTERDAY.
+    // Verified on a live board rather than argued: YOW gate 21, one 05:55
+    // departure and nothing before it, still read 'Monday, September 7' at
+    // 00:00, 00:06 and 00:08 local while the clock beside it said 12:06AM.
+    // Three forced render() passes did not shift it either, so this is not a
+    // background-throttling artefact — nothing in the render path repaints it.
+    //
+    // NOT a day term in _computeGateKey: that fires a full innerHTML rebuild,
+    // which replays gadSlideIn, re-grows the takeover, restarts the aircraft
+    // float and drops --gate-wm-top. v23166 and the aircraft retry at :806
+    // both exist to STOP those repaints; buying a date with one, unattended,
+    // at midnight, would be trading a wrong date for the glitch Nick keeps
+    // filming.
+    //
+    // The day key is what keeps this honest on the streaming box: the Intl
+    // work in _ocClockDate (up to six toLocaleDateString calls) runs once per
+    // rollover, not once per tick. Steady state is one cheap key per node.
+    var dts = document.querySelectorAll('.octb-date[data-tz]');
+    for (var j = 0; j < dts.length; j++) {
+      try {
+        var dtz = dts[j].getAttribute('data-tz') || '';
+        var day = _ocLocalDayKey(dtz || null);
+        if (!day || dts[j].getAttribute('data-day') === day) continue;
+        dts[j].innerHTML = _ocClockDate(new Date(), dtz || null);
+        dts[j].setAttribute('data-day', day);
       } catch (e) {}
     }
   }

@@ -15564,9 +15564,17 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: var(--airline-r1, #0A2E6B) !important;
   -webkit-text-fill-color: var(--airline-r1, #0A2E6B) !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
-  color: var(--airline-r1, #0A2E6B) !important;
-}
+/* THE DATE IS NOT IN THIS RULE, AND MUST NOT BE (v23474). The clock and the
+   separator sit on the CREAM BAND, so wearing the carrier's dark r1 is right
+   for them. The date does not: :15328 pins it to the foot of the timebox, on
+   top of the r1 bar that :15307 paints — so colouring it r1 painted the text
+   in the exact colour of the strip behind it. Measured on the live Moncton
+   gate: bar rgb(24,54,119), date rgb(24,54,119), 1:1. That is why the date
+   was missing from BOTH of Nick's photos, PAL as well as Porter, and it hit
+   every carrier — not just the one whose r1 was also wrong.
+   The date keeps the white ink :15345 gives it, which is what puts it at
+   ~10:1 on the bar. Any future 'the clock should be X' rule belongs on
+   .octb-clock and .octb-apsep, never on .octb-date. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-apsep {
   color: var(--airline-r1, #0A2E6B) !important;
   opacity: .38 !important;
