@@ -22214,7 +22214,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23492';
+var FIDS_BUILD_TAG = 'v23498';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -26506,8 +26506,13 @@ async function fetchLive() {
     // applies LOOKAHEAD_HRS, so deciding it afterwards left every cold start
     // rendering one cycle behind. See the note on the assignment below.
     _fidsSetLookahead(depRaw, arrRaw);
-    data.dep = mapADB(depRaw, 'dep');
-    data.arr = mapADB(arrRaw, 'arr');
+    // v23498 — collapse revision-suffixed duplicates (AC2040 + AC2040Z) before
+    // anything downstream sees them, so the board, the gate and the belts all
+    // work from one row per flight per day.
+    var _revTz = '';
+    try { _revTz = (AP[(document.getElementById('apSel') || {}).value] || {}).tz || ''; } catch (e) {}
+    data.dep = _fidsCollapseRevisions(mapADB(depRaw, 'dep'), _revTz);
+    data.arr = _fidsCollapseRevisions(mapADB(arrRaw, 'arr'), _revTz);
     // [BELT SUMMARY v218.18] Quick breakdown of belt assignments.
     try {
       const _belts = data.arr.map(f => f._belt).filter(Boolean);
@@ -27262,6 +27267,78 @@ function onApChange() {
   $el('vTabArr').classList.toggle('active',    viewMode === 'arr');
   $el('vTabRotate').classList.toggle('active', viewMode === 'rotate');
   if (LIVE_MODE) { fetchLive(); } else { loadDemo(); }
+}
+
+/* ── v23498 — A REVISED FLIGHT IS ONE FLIGHT, NOT TWO ──────────────────────
+   Nick's arrivals board showed both of these at once, and they disagreed:
+
+     AC2040Z  YUL  Sep 8 21:38  delayed    revised 21:46
+     AC2040   YUL  Sep 8 21:38  scheduled  no revision
+
+   Nick, on what the letter means: "the letter means theres been a change and
+   2040 is the initial number ... if its at z it had 26 changes from a to z".
+   So the suffix is a REVISION COUNTER — A is the first change, Z the
+   twenty-sixth — and the highest letter is the current truth. The un-suffixed
+   row is the original, superseded. Showing both puts a contradiction in front
+   of a passenger: one row says delayed 9:46, the other says scheduled.
+
+   Collapse by carrier + base number + LOCAL DAY, and keep the highest suffix.
+   The day is not optional: the same board legitimately carries today's arrived
+   instance and tomorrow's scheduled one of the same flight —
+
+     PD2373  Sep 8 16:33 arrived  /  PD2373  Sep 9 16:33 scheduled
+     AC1984  Sep 8 17:23 arrived  /  AC1984  Sep 9 17:23 scheduled
+     AC7754  Sep 8 18:38 arrived  /  AC7754  Sep 9 18:38 scheduled
+
+   all measured on the live board. Those are different flights and must both
+   stand; a day-blind collapse would silently delete tomorrow's departures.
+
+   Only groups that actually contain a suffixed variant are collapsed. Two
+   un-suffixed rows on one day are a different problem (a feed duplicate) and
+   are left alone rather than guessed at.
+
+   The kept row is renamed to the BASE number: a passenger holds AC2040, and
+   the revision letter is the feed's bookkeeping, not their flight. The raw
+   value and the letter are preserved on the row for anything that needs them. */
+function _fidsCollapseRevisions(list, tz) {
+  try {
+    if (!Array.isArray(list) || list.length < 2) return list;
+    var groups = Object.create(null), order = [], i;
+    for (i = 0; i < list.length; i++) {
+      var f = list[i];
+      var m = String((f && f.flight) || '').match(/^([A-Z]{2,3})\s?(\d{1,4})([A-Z])?$/);
+      if (!m) { order.push({ solo: f }); continue; }
+      var day = '';
+      try {
+        day = (typeof fidsLocalDateKey === 'function' && f._sortTs)
+          ? fidsLocalDateKey(f._sortTs, tz || 'UTC') : String(f._sortTs || i);
+      } catch (e) { day = String(f._sortTs || i); }
+      var key = m[1] + '|' + m[2] + '|' + day;
+      if (!groups[key]) { groups[key] = []; order.push({ key: key }); }
+      groups[key].push({ f: f, base: m[1] + m[2], suffix: m[3] || '' });
+    }
+    var out = [];
+    for (i = 0; i < order.length; i++) {
+      if (order[i].solo) { out.push(order[i].solo); continue; }
+      var g = groups[order[i].key];
+      if (!g) continue;
+      groups[order[i].key] = null;                       // emit each group once
+      if (g.length === 1) { out.push(g[0].f); continue; }
+      var suffixed = false;
+      for (var k = 0; k < g.length; k++) if (g[k].suffix) { suffixed = true; break; }
+      if (!suffixed) { for (k = 0; k < g.length; k++) out.push(g[k].f); continue; }
+      g.sort(function (a, b) { return (b.suffix || '').localeCompare(a.suffix || ''); });
+      var win = g[0];
+      try {
+        win.f._revisionRaw = win.f.flight;               // 'AC2040Z'
+        win.f._revision = win.suffix;                    // 'Z' — the 26th change
+        win.f._revisionsCollapsed = g.length - 1;
+        win.f.flight = win.base;                         // 'AC2040' — what the passenger holds
+      } catch (e) {}
+      out.push(win.f);
+    }
+    return out;
+  } catch (e) { return list; }
 }
 
 function loadDemo() {
