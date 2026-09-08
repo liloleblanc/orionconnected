@@ -60,6 +60,12 @@ function smApplyTheme(theme) {
   if (theme !== 'light' && theme !== 'dark') theme = 'light';
   var panel = document.getElementById('overlayMenu');
   if (panel) panel.setAttribute('data-theme', theme);
+  // v23478 — AND EVERYTHING THE CONSOLE OPENS OUTSIDE ITSELF. The dark tokens
+  // were scoped to .settings-sidebar[data-theme], but the pickers append their
+  // modal to document.body, outside that element — so they never saw the theme
+  // at all and sat on whatever they had hardcoded. Stamping the root as well
+  // lets menu.css hand the same tokens to anything the console opens.
+  try { document.documentElement.setAttribute('data-console-theme', theme); } catch (e) {}
   var icon = document.getElementById('smThemeToggleIcon');
   if (icon) icon.textContent = theme === 'dark' ? '☀' : '☾';
   var btn = document.getElementById('smThemeToggle');
@@ -3875,17 +3881,21 @@ function cuDeleteActivePreset() {
       var isAssigned = alreadyAssigned.indexOf(it.id) !== -1;
       var thumb;
       if (it.type === 'image') {
-        thumb = '<img src="' + _esc(it.url || '') + '" style="width:42px;height:28px;object-fit:cover;border-radius:3px;background:#374151;" onerror="this.style.opacity=0.3">';
+        thumb = '<img src="' + _esc(it.url || '') + '" style="width:54px;height:36px;object-fit:cover;border-radius:4px;flex:0 0 auto;background:var(--console-surface);" onerror="this.style.opacity=0.3">';
       } else {
         var lbl = it.source === 'youtube' ? (it.ytType === 'playlist' ? 'PL' : 'YT') : 'VID';
         var bg = it.source === 'youtube' ? (it.ytType === 'playlist' ? '#dc2626' : '#ef4444') : '#3b82f6';
-        thumb = '<div style="width:42px;height:28px;background:'+bg+';color:#fff;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:10px;font-weight:700;">'+lbl+'</div>';
+        thumb = '<div style="width:54px;height:36px;background:'+bg+';color:#fff;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:12px;font-weight:700;flex:0 0 auto;">'+lbl+'</div>';
       }
       var label = it.label || '(no label)';
-      return '<label style="display:flex;align-items:center;gap:8px;padding:6px 8px;background:'+(isAssigned?'#1e3a8a':'#1f2937')+';border-radius:4px;margin-bottom:3px;cursor:'+(isAssigned?'default':'pointer')+';opacity:'+(isAssigned?'0.55':'1')+';">'
-        + '<input type="checkbox"' + (isAssigned ? ' checked disabled' : (' onchange="mediaPickerToggle(\''+_esc(it.id)+'\', this.checked)"')) + ' style="margin:0;">'
+      // v23478 — Nick: "Its so dark make it lighter ... I CANT see". The row was
+      // 12px of #e5e7eb on a hardcoded #1f2937, inside a hardcoded #18181b card
+      // that never followed the console theme. Tokens now, so the picker is light
+      // when the console is light, and a size you can actually read a filename at.
+      return '<label style="display:flex;align-items:center;gap:10px;padding:9px 10px;background:'+(isAssigned?'var(--console-accent-bg)':'var(--console-surface-hi)')+';border:1px solid var(--console-border);border-radius:6px;margin-bottom:5px;cursor:'+(isAssigned?'default':'pointer')+';opacity:'+(isAssigned?'0.6':'1')+';">'
+        + '<input type="checkbox"' + (isAssigned ? ' checked disabled' : (' onchange="mediaPickerToggle(\''+_esc(it.id)+'\', this.checked)"')) + ' style="margin:0;width:16px;height:16px;flex:0 0 auto;">'
         + thumb
-        + '<span style="flex:1;font-size:12px;color:#e5e7eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(label) + (isAssigned ? ' <em style="color:#9ca3af;">(already added)</em>' : '') + '</span>'
+        + '<span style="flex:1;font-size:13.5px;font-weight:500;color:var(--console-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _esc(label) + (isAssigned ? ' <em style="color:var(--console-text-3);font-weight:400;">(already added)</em>' : '') + '</span>'
         + '</label>';
     }).join('');
   }

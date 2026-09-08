@@ -758,10 +758,10 @@
 
       <!-- Library item picker modal — shown when user clicks "Pick from Library" -->
       <div id="mlPickerModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;">
-        <div style="background:#18181b;border:1px solid #374151;border-radius:8px;padding:16px;max-width:520px;width:92%;max-height:80vh;overflow-y:auto;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-            <div style="font-weight:600;font-size:14px;color:#fff;" id="mlPickerTitle">Pick items</div>
-            <button onclick="mediaPickerClose()" style="background:transparent;color:#9ca3af;border:none;font-size:18px;cursor:pointer;line-height:1;">×</button>
+        <div style="background:var(--console-card);border:1px solid var(--console-border);box-shadow:var(--console-shadow);border-radius:10px;padding:18px;max-width:560px;width:92%;max-height:80vh;overflow-y:auto;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-weight:600;font-size:15px;color:var(--console-text);" id="mlPickerTitle">Pick items</div>
+            <button onclick="mediaPickerClose()" style="background:transparent;color:var(--console-text-3);border:none;font-size:20px;cursor:pointer;line-height:1;">×</button>
           </div>
           <div id="mlPickerList"></div>
           <div style="margin-top:12px;display:flex;gap:8px;">
