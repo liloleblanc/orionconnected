@@ -15201,3 +15201,60 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-apsep {
   color: rgba(10, 46, 107, 0.38) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23466 — THE RAIL AND THE OPERATED-BY STRIP, per Nick's list.
+   Sizes below are measured, not guessed: every "now" figure was read off a
+   rendered Air Canada YQM board at 1600x900.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 3 — THE OPERATED-BY MARK IS TOO SMALL. Nick: 'The logo should be bigger
+   operated by actually its too small'. Measured 35x20px inside a 45px strip
+   that had 25px of unused headroom, beside a 10.8px label. Roughly doubled,
+   which is what the strip takes with its 3.15px padding intact. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-opby-logo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-val.v2-rc-opby-val .v2-rc-opby-logo {
+  height: clamp(26px, 3.9vh, 50px) !important;
+  max-height: none !important;
+  width: auto !important;
+  max-width: 100% !important;
+  object-fit: contain !important;
+}
+/* The strip has to be allowed to hold it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap {
+  align-items: center !important;
+  min-height: clamp(34px, 4.9vh, 62px) !important;
+}
+
+/* 4 — THE SHELF TITLES ARE TOO SMALL FOR THEIR PILL. Nick: 'If there is any
+   way to see those Status titles in the boxes such as Flight | Vol bigger to
+   fit the contour'. Measured 12.9px inside a 26px-tall pill, the row's value
+   below it running 37-67px. The pill has the height; the type never used it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-lbl-en,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-lbl-2,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-code,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-sep {
+  font-size: clamp(15px, 1.92vh, 26px) !important;
+  line-height: 1.16 !important;
+}
+/* Let the pill breathe with the bigger type instead of clipping it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  padding-top: clamp(2px, 0.34vh, 6px) !important;
+  padding-bottom: clamp(2px, 0.34vh, 6px) !important;
+  line-height: 1.16 !important;
+}
+
+/* 6 — ONE EDGE FOR THE RIGHT COLUMN. Nick: 'if you look at the shelve down
+   bottom right with the arriving from it touches the side right the others
+   dont'. Measured: the map and illustration shelves sit 14px in with a 14.4px
+   radius while the arriving-from shelf sits flush at 3px, square. Three
+   shelves, one column, two different edges. They come out to meet the one
+   that already touches. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-map,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus {
+  margin-right: 0 !important;
+  margin-left: 0 !important;
+  width: auto !important;
+  align-self: stretch !important;
+}

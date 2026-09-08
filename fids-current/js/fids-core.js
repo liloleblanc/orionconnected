@@ -4226,14 +4226,45 @@ function _opbyContrastFix(root) {
       var op = String(im.getAttribute('data-op') || '').toUpperCase();
       // Effective ground: the nearest painted ancestor (the strip itself is
       // usually transparent so the plate behind it shows through).
-      var e = im, bg = '';
+      // v23466 — THE GROUND TEST NOW RESPECTS TRANSPARENCY.
+      // It used to stop at the first ancestor whose backgroundColor was not
+      // fully transparent, then regex the first three numbers out and treat
+      // them as opaque. On the aircraft shelf that ancestor is
+      // rgba(10,26,48,0.55) — a 55% navy VEIL over a bright sky photo. Scored
+      // as solid navy it reads luma 24, "dark", so the pass reached for the
+      // white mark and put it on a ground that is actually pale. That is the
+      // white Rouge Nick has been looking at.
+      //
+      // Composite instead: walk the whole chain, blending each translucent
+      // layer onto what is behind it, and only stop at something opaque. A
+      // 55% navy over a light photo lands mid-scale and no longer claims to
+      // be dark.
+      var _px = function (col) {
+        var q = String(col || '').match(/rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+))?/);
+        if (!q) return null;
+        return { r: +q[1], g: +q[2], b: +q[3], a: (q[4] === undefined ? 1 : +q[4]) };
+      };
+      var e = im, layers = [];
       while (e && e.nodeType === 1) {
-        var c = getComputedStyle(e).backgroundColor;
-        if (c && c !== 'transparent' && !/^rgba\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*,\s*0\s*\)$/.test(c)) { bg = c; break; }
+        var lay = _px(getComputedStyle(e).backgroundColor);
+        if (lay && lay.a > 0) {
+          layers.push(lay);
+          if (lay.a >= 0.999) break;   // opaque — nothing behind it can show
+        }
         e = e.parentElement;
       }
-      var m = bg.match(/(\d+)[^\d]+(\d+)[^\d]+(\d+)/);
-      var dark = m ? ((0.2126 * m[1] + 0.7152 * m[2] + 0.0722 * m[3]) < 140) : false;
+      // Unknown ground behind the last translucent layer: assume the mid grey
+      // a photo averages to, rather than silently assuming black (which is what
+      // made every veil look dark).
+      var acc = { r: 128, g: 128, b: 128 };
+      for (var _L = layers.length - 1; _L >= 0; _L--) {
+        var L = layers[_L];
+        acc = { r: L.r * L.a + acc.r * (1 - L.a),
+                g: L.g * L.a + acc.g * (1 - L.a),
+                b: L.b * L.a + acc.b * (1 - L.a) };
+      }
+      var bg = 'rgb(' + Math.round(acc.r) + ',' + Math.round(acc.g) + ',' + Math.round(acc.b) + ')';
+      var dark = layers.length ? ((0.2126 * acc.r + 0.7152 * acc.g + 0.0722 * acc.b) < 140) : false;
       var pair = OPBY_WORDMARKS_THEMED[op];
       // v23332 — INLINE !important, OR NOTHING THIS PASS DOES EVER APPLIES.
       // display-overrides.css carries the v23206 rule for the caption strip
@@ -4254,9 +4285,17 @@ function _opbyContrastFix(root) {
         var want = dark ? pair.onDark : pair.onLight;
         if (im.getAttribute('src') !== want) im.setAttribute('src', want);
         im.style.setProperty('filter', 'none', 'important');
-      } else if (dark) {
-        im.style.setProperty('filter', 'brightness(0) invert(1)', 'important');
       } else {
+        // v23466 — NO FILTER, EVER. Nick: 'The logos also such as Rouge should
+        // be color no reason for white you cant see it', and the wider rule he
+        // set out — a white mark is fine only when the AIRLINE publishes one;
+        // whitening their colour artwork ourselves is altering their mark, and
+        // that is the part a rights holder objects to.
+        //
+        // Operators WITH a published pair are handled above and already carry
+        // filter:none. Operators without one keep their own artwork as drawn.
+        // Where that art then sits badly on a strip, the strip is what changes
+        // — never the mark.
         im.style.setProperty('filter', 'none', 'important');
       }
     }
@@ -13331,10 +13370,43 @@ function gateAutofit(root) {
         // of the board already uses as its light-mode ink (.bidsv2 / light-board
         // rules use #16283C), which clears contrast on light grounds and sits
         // far outside the brown band (hue 213).
+        // v23466 — THE CODE WEARS THE AIRLINE'S OWN COLOUR. Nick: 'my colors
+        // are gone from the Destination | YYZ the YYZ shouls be colored its
+        // not anymore'.
+        //
+        // The pass offered two inks: a gold #fca825 and, when gold missed the
+        // 3:1 floor, a deep navy #16283C. On Air Canada the labels sit on a
+        // light grey pill, gold fails against it, so every code fell to navy —
+        // no accent anywhere, which is what he is seeing. Neither ink was ever
+        // the carrier's.
+        //
+        // The airline's accent is tried FIRST and kept whenever it clears the
+        // floor: AC red on that grey pill is comfortably over. Gold stays as
+        // the fallback for a carrier with no accent, and navy as the last
+        // resort — a darkened gold reads brown, which is the v23309 lesson.
+        // Read the accent the BOARD is already wearing rather than looking it
+        // up: --airline-accent is set on .g8-wrap and is the same ink the orbs,
+        // the gate block and the stripe use, so the code cannot drift from
+        // them. It is also scope-proof — this painter lives too deep for the
+        // banner's own locals to reach, which is why an earlier attempt here
+        // silently resolved nothing and fell straight through to navy.
+        var _acc = '';
+        try {
+          var _gw = document.querySelector('.g8-wrap');
+          if (_gw) _acc = (getComputedStyle(_gw).getPropertyValue('--airline-accent') || '').trim();
+          if (!_acc) {
+            var _bodyCode = (document.body.getAttribute('data-gate-airline') || '').toUpperCase();
+            _acc = (typeof getAirlineAccent === 'function' ? getAirlineAccent(_bodyCode) : '') || '';
+          }
+          if (!/^#[0-9a-fA-F]{3,8}$/.test(_acc)) _acc = '';
+        } catch (eA) { _acc = ''; }
         var bright = '#fca825', deep = '#16283C', pick = bright;
         if (bg && typeof _fidsContrast === 'function') {
+          var ca = _acc ? (_fidsContrast(_acc, bg) || 0) : 0;
           var cb = _fidsContrast(bright, bg) || 0, cd = _fidsContrast(deep, bg) || 0;
-          pick = (cb >= 3) ? bright : (cd > cb ? deep : bright);
+          pick = (ca >= 3) ? _acc : (cb >= 3) ? bright : (cd > cb ? deep : bright);
+        } else if (_acc) {
+          pick = _acc;
         }
         el.style.setProperty('color', pick, 'important');
         el.style.setProperty('-webkit-text-fill-color', pick, 'important');
@@ -21881,7 +21953,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23464';
+var FIDS_BUILD_TAG = 'v23466';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
