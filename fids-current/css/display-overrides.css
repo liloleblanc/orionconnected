@@ -15258,3 +15258,174 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   width: auto !important;
   align-self: stretch !important;
 }
+
+/* ── v23470 — WESTJET'S LEAF SITS HIGHER IN THE BANNER (Nick: 'the leaf needs
+   to be slightly higher i think', then picked the largest of three nudges).
+   The emblem box is already centred — 10px above, 12px below in the 112px
+   band — so this is not correcting a layout error. The LEAF ITSELF sits low
+   inside its own square: WS.svg leaves roughly 6px of empty box above the
+   top spike at the 90px the banner renders it at, so the mark READS low even
+   though the box is centred.
+   .g8-r1 is overflow:hidden, so -13px puts the box top at y=-3 and 3px of it
+   is cut — but that 3px is the artwork's own padding, not ink.
+   SCOPED TO WESTJET. Air Canada's roundel very nearly fills its box (the ring
+   runs to the edge), so the same nudge would shave the top of the circle;
+   AC stays centred until Nick has seen it on a live AC gate. ── */
+html body .g8-wrap.g8-airline-WS .g8-r1-emblem,
+html body .g8-wrap.g8-airline-WJA .g8-r1-emblem {
+  transform: translateY(-13px) !important;
+}
+
+/* ══ v23470 — THE STRIPE BECOMES THE DATE BAR ══════════════════════════════
+   Nick, shown the 7px line that shipped in v23462 against his own mockup:
+   "need to be able tos ee the date look at mine", and on the cost of the
+   room: "The logo smaller i guess make it touch edges".
+
+   The line stays exactly where it was — full width along the foot, behind the
+   opaque gate block so it stops where the gate begins — it just grows from
+   clamp(7px,1.05vh,15px) into a bar deep enough to carry text.
+
+   The date is NOT moved in the DOM. Six blocks in this file style
+   .g8-r1-timebox .octb-date, two of them YQM-scoped at this same 14x chain;
+   relocating the node would silently drop all six and drag the ink back to
+   the low-specificity base rule. Instead it is pinned to the foot of the
+   timebox, whose right edge already meets the gate — which is where the date
+   sits in Nick's mockup anyway.
+
+   White ink now, not the v23462 navy: it sits ON the accent bar rather than
+   above it. Comes LAST in the file so it wins the tie against :15189.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1.g8-r1-bg::after {
+  height: clamp(20px, 3.6vh, 30px) !important;
+  /* THE SECOND COLOUR, NOT THE BRIGHT ONE. Nick: "maybe it should be the
+     second color to the airline Air Canada Dark Gray or Black maybe Westjet
+     Blue". That is r1 — AC #0A0A0A, WS #003366 — now published as
+     --airline-r1 alongside the existing --airline-r2. It is also what makes
+     the date legible: white on WestJet's bright teal is ~2.8:1, white on the
+     navy is ~10:1. The gate block keeps the bright colour, so the bar and the
+     gate no longer melt into one another. */
+  background: var(--airline-r1, var(--airline-accent, #0c1119)) !important;
+  /* ANCHOR TO THE FOOT, NOT THE HEAD. gate-display.css:2041 gives this
+     pseudo-element `inset: 0`, which sets top:0 as well as bottom:0. With a
+     fixed height, top wins — so v23462's stripe has been painting along the
+     TOP edge of the banner since it shipped, not the bottom. Proved by
+     temporarily colouring it magenta on a live board: the bar appeared above
+     the wordmark. Clearing top is what moves it to the floor. */
+  top: auto !important;
+  /* AND IT HAS TO PAINT ITS OWN COLOUR. The same rule sets
+     mix-blend-mode:screen for the old light-sweep. Screening a DARK colour
+     over a cream band returns almost white, so the navy simply vanished —
+     the magenta test came back pale pink rather than magenta. Nothing dark
+     can render here until the blend is normal. */
+  mix-blend-mode: normal !important;
+  /* AND IT HAS TO BE OPAQUE. display-overrides.css:4542 pins
+     `html body .g8-r1::after { opacity: .32 !important }` for the colour wash
+     that used to live on this pseudo-element. v23462's stripe never cleared
+     it, so the 7px line has been painting at 32% since it shipped — which is
+     why it reads as a faint tint rather than a rule. */
+  opacity: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  /* -2px, not 0. The date's containing block is .g8-r1-timebox, which measures
+     110px inside the 112px band, so bottom:0 lands the text at 90-110 while
+     the bar spans 92-112 — the text overhangs the bar by 2px onto the cream.
+     Measured on the live board, not guessed. Tried height:100% on the timebox
+     first; something else pins it at 110 and it had no effect. */
+  bottom: -2px !important;
+  height: clamp(20px, 3.6vh, 30px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  padding: 0 clamp(10px, 1.1vw, 18px) 0 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  color: #FFFFFF !important;
+  opacity: 1 !important;
+  font-size: clamp(11px, 1.55vh, 17px) !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  white-space: nowrap !important;
+  z-index: 4 !important;
+}
+
+/* ══ v23470 — THE BANNER TEXTURE ══════════════════════════════════════════
+   Nick supplied a geometric white/grey banner graphic (Vecteezy, Pro licence
+   — no attribution required, confirmed with him) to replace the silk photo.
+
+   TWO problems with how the silk was painted, both measured on the live board:
+
+   a) mix-blend-mode: SCREEN. Screening a white-and-grey image onto a cream
+      base blows every grey to white, so the texture was very nearly invisible
+      — rendered side by side at the same opacity, silk / geo / no-texture at
+      all were indistinguishable. MULTIPLY keeps the greys, which is the only
+      way a light texture reads on a light ground.
+
+   b) A SECOND COPY on the clock box. .g8-r1-timebox::before (:4830) paints the
+      SAME photo again with background-size:cover over a 360px-wide element —
+      a completely different crop of the same image, sitting on top of the
+      full-width one. Nick: "Theres a patch that isnt the same color theres a
+      design on it either get rid of it or make the design the entire way."
+      Removing the duplicate IS "the entire way": the full-width layer beneath
+      it already spans the band, so the design runs edge to edge, evenly.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1::before {
+  background-image: url("/logos/Backgrounds/banner-geo.jpg?v=23470") !important;
+  mix-blend-mode: multiply !important;
+  opacity: .55 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox::before,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-wrap::before {
+  display: none !important;
+  content: none !important;
+}
+
+/* ══ v23470 — VERTICAL FIT NOW THAT THE BAND RESERVES A BAR ════════════════
+   Nick, on the first live preview: "your text for dates needs to fit the
+   height the logo and time need to be centered height wise and bigger same
+   for your logos bigger", then "logo and time slightly needs lower".
+
+   The band still centres its children over the FULL 112px, so the wordmark
+   was hanging into the bar and the clock was stranded at the top with 49px of
+   dead space under it. Two different causes:
+
+   - The WORDMARK centres in .g8-r1 (align-items:center). Reserving the bar as
+     padding-bottom makes it centre in what is left instead. The bar itself is
+     unaffected — it is an absolutely-positioned ::after, which padding cannot
+     move — and so is the timebox, which is absolute top:0/bottom:0.
+
+   - The CLOCK sat high because .octb-stack is justify-content:space-between
+     with the clock and the date as its two children. Absolutely positioning
+     the date onto the bar took it out of the flex flow, so the clock lost its
+     counterweight and sprang to the top. Centring the stack and reserving the
+     same bar height puts it back in the middle of the space above.
+
+   .octb-clockrow was height:44px with overflow:hidden and clipped a larger
+   clock through the middle, so it goes to auto/visible.
+
+   THE CLOCK SIZE NEEDS 30 :not(#_). The winning declaration is a 28-deep
+   chain on .octb-clockrow .v2-fi-clock-val (clamp(40px,7.1vh,94px)); a 14-deep
+   rule loses to it silently. Matching its element path and going two deeper is
+   what makes this apply at all.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1 {
+  --yqm-bar: clamp(20px, 3.6vh, 30px) !important;
+  padding-bottom: var(--yqm-bar) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb.octb-tab.octb-stack {
+  justify-content: center !important;
+  padding-bottom: var(--yqm-bar) !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow {
+  height: auto !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clockrow .v2-fi-clock-val {
+  font-size: clamp(46px, 9vh, 76px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+  font-size: clamp(13px, 2.05vh, 19px) !important;
+}

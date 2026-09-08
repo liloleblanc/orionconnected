@@ -12477,7 +12477,21 @@ function uxgGateHtml(ctx) {
     // overrunning the ~118px banner (Nick: 'some airline logos are way too big
     // now, passing the border'). 96px fills it with breathing room; compact
     // marks that were already smaller are untouched (Math.min).
-    _logoH = Math.min(_logoH, 106);
+    // v23470 — Nick, choosing between a thin line and the bar in his mockup:
+    // "The logo smaller i guess make it touch edges". On YQM the stripe grows
+    // from 7px to a real date bar, and the band cannot grow with it: .g8-r1 is
+    // pinned to 112px by height/min-height/max-height with overflow:hidden
+    // (gate-display.css:2642-2651), so the room has to come from the logo.
+    //
+    // This number cannot be overridden from CSS — it is stamped inline with
+    // !important a few lines below, and an inline !important outranks any
+    // stylesheet !important. Hence the cap moves here rather than in an
+    // override block.
+    //
+    // 82px against a 26px bar leaves the same ~2px breathing room at the top
+    // that 106 left in the full 112. Scoped to YQM: every other airport keeps
+    // 106 until its banner grows a bar too.
+    _logoH = Math.min(_logoH, _apIsYQM ? 82 : 106);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -12510,7 +12524,19 @@ function uxgGateHtml(ctx) {
       var _embCode2 = _bannerBrandCode || airlineCode;
       var _embF = (typeof IATA_TO_EMBLEM !== 'undefined') ? (IATA_TO_EMBLEM[_embCode2] || IATA_TO_EMBLEM[airlineCode]) : null;
       var _embT = (typeof IATA_TO_TILE_ICAO !== 'undefined') ? (IATA_TO_TILE_ICAO[_embCode2] || IATA_TO_TILE_ICAO[airlineCode]) : null;
-      if (_embF) _bannerEmblemSrc = _embF;
+      // v23470 — carriers whose BANNER is the wordmark alone. Nick: "porter
+      // does not use one with their name", and on where the emblem does
+      // belong, "fids bids they use it". So this is scoped to the banner: the
+      // FIDS row and the BIDS tile both resolve through mkLogo(), which never
+      // reads this, and keep drawing Porter's tile exactly as they do today.
+      //
+      // Needed as its own guard rather than a falsy IATA_TO_EMBLEM entry,
+      // because '' and null both fall through to the tile on the next line —
+      // which for PD is /logos/airline-tiles/PTR.svg, the square plate.
+      var _NO_BANNER_EMBLEM = { 'PD': 1, 'POE': 1 };
+      var _noEmb = _NO_BANNER_EMBLEM[_embCode2] || _NO_BANNER_EMBLEM[airlineCode];
+      if (_noEmb) _bannerEmblemSrc = '';
+      else if (_embF) _bannerEmblemSrc = _embF;
       else if (_embT) _bannerEmblemSrc = '/logos/airline-tiles/' + _embT + '.svg';
       // v23440 — THE BANNER MARK IS SQUARE (Nick, on the DEN/A14 United gate:
       // 'Logo at the top banner left should be square'). This band already
@@ -12807,6 +12833,18 @@ function uxgGateHtml(ctx) {
        // pointing at Flair: 'we cant see this'). --airline-accent-ink is the
        // same treatment for the airport-code colour.
        + ';--airline-r2:' + (function (h) { return _hexIsLight(h) ? _accentInk(airlineCode, h) : h; })((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
+       // v23470 — r1 = the carrier's DARK brand shade, the other half of the
+       // pair r2 comes from. Nick, on the banner's date bar: "maybe it should
+       // be the second color to the airline Air Canada Dark Gray or Black
+       // maybe Westjet Blue" — that is exactly r1 (AC #0A0A0A, WS #003366),
+       // already in airline-colors.js for every carrier.
+       //
+       // It had no custom property, so CSS could not reach it: the stripe was
+       // painting --airline-accent, the BRIGHT colour, which put white date
+       // text on WestJet teal at ~2.8:1. On r1 navy the same text is ~10:1.
+       // Same #FFFFFF guard and fallback the r1 readers at :12725 use.
+       + ';--airline-r1:' + ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF')
+           ? _bannerSpec.r1 : '#0c1119')
        // WAS: color-mix(accent 42%, #0a1f12). Darkening an accent by mixing it
        // toward black IS brown when the accent is warm — Southwest gold
        // #F9B612 came out #6e5e12 and Sunwing amber #F7941D came out #6e5017,
@@ -20831,6 +20869,23 @@ const IATA_TO_EMBLEM = {
   // square — native colours, no plate — and latam-wordmark-light is letters
   // only, so the pair composes the official spark+LATAM lockup.
   'LA': '/logos/airlines/asian-other/latam-spark.svg',         // LATAM spark (coral + white)
+  // v23470 — Nick, on the Moncton banner: "mine has the wordmark with the
+  // rondelle without a background in full color no background", against a
+  // board showing "an emblem of Air Canada with black — its the emblem then
+  // the wordmark". Exactly right: neither AC nor WS had an entry here, so the
+  // banner fell through to IATA_TO_TILE_ICAO and drew the SQUARE TILE —
+  // 'ACA-black' for Air Canada, which is the black box he was looking at, and
+  // 'WJA' for WestJet. Tiles are square-with-baked-background by design; that
+  // is right for the board's airline column and wrong on a cream banner.
+  //
+  // Both transparent marks were already on disk, unreferenced. No new art.
+  //
+  // This does NOT touch the FIDS board. mkLogo() checks IATA_TO_TILE_ICAO
+  // FIRST (line ~20804) and returns there; AC and WS both have tiles, so the
+  // board never reaches this map and keeps the tiles it draws today —
+  // Nick: "only if its the FIDS".
+  'AC': '/logos/symbols/airlines/AC.svg',                      // roundel, no plate
+  'WS': '/logos/symbols/airlines/WS.svg',                      // leaf, no plate
 };
 
 
@@ -22024,7 +22079,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23468';
+var FIDS_BUILD_TAG = 'v23470';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
