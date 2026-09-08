@@ -142,10 +142,14 @@ test('the silk airport logo rule outranks the ID branch that collapsed it', () =
   // Both ID branches present — this is what wins the cascade.
   assert.match(rule, /body\[data-fids-banner="silk"\] \.fids-airport-pill #fidsAirportLogoImg/);
   assert.match(rule, /body\[data-fids-banner="silk-acadian"\] \.fids-airport-pill #fidsAirportLogoImg/);
-  // A definite height AND a definite max-height: 72% against an auto-height pill is
+  // A DEFINITE height and a DEFINITE max-height, both in px. That is the invariant,
+  // not the particular number: max-height:72% against an auto-height pill is
   // circular, so a winning height alone would still have been clamped to zero.
-  assert.match(rule, /height: 84px !important/);
-  assert.match(rule, /max-height: 84px !important/);
+  // Pinning the literal 84 made this test fail the moment the logo was made bigger
+  // in v23500, which is a test asserting a design choice rather than a defect.
+  assert.match(rule, /(^|\s)height: \d+px !important/m);
+  assert.match(rule, /max-height: \d+px !important/);
+  assert.doesNotMatch(rule, /max-height: \d+% !important/, 'a percentage max-height is what collapsed it');
   // The element the rule has to reach still carries that id.
   const fidsHtml = fs.readFileSync(path.join(root, 'fids.html'), 'utf8');
   assert.match(fidsHtml, /id="fidsAirportLogoImg"/);

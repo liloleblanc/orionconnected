@@ -3623,9 +3623,19 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-logo-img,
   body[data-fids-banner="silk"] .fids-airport-pill #fidsAirportLogoImg,
   body[data-fids-banner="silk-acadian"] .fids-airport-pill #fidsAirportLogoImg {
-    height: 84px !important;
-    max-height: 84px !important;
-    max-width: 340px !important;
+    /* v23500 — BIGGER. Nick: "Logos are tiny though :(". 84px in a 128px band
+       left the mark at 66% of the height with 22px of dead air above and below,
+       and nowhere near the 340px width cap — measured 240x84 on the live board
+       with his 300x105 wordmark. Measured the alternatives in the real band:
+       96px -> 75%, 104px -> 81% (12px clear top and bottom), 112px -> 88% (8px,
+       too tight against the band edge). 104 gives it presence without crowding.
+       The width cap rises with it so a WIDE mark benefits too: at 104px tall a
+       4:1 logo wants 416px, and the old 340 would have clamped it back down to
+       85px — the height rise would have done nothing for exactly the logos that
+       needed it most. */
+    height: 104px !important;
+    max-height: 104px !important;
+    max-width: 420px !important;
     width: auto !important;
     object-fit: contain !important;
   }
