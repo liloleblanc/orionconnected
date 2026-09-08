@@ -461,6 +461,15 @@ async function handlePutAirport(request, env, payload, origin, code) {
     "displayName", "longName", "logo", "theme", "hideAirlinePrefix", "hideWeather", "airlineStyle",
     "customColors",   // the resolved palette (NOT a preset id)
     "presetName",     // what the operator called it, for the console
+    "presets",        // v23488 — the operator's SAVED PALETTE LIBRARY.
+                      // customColors is the one look currently applied; this
+                      // is the shelf of looks they built. It lived only in
+                      // localStorage, so it never left the browser it was made
+                      // in (Nick: "most presets are gone" / "it should be
+                      // saving everything globably"). The console merges by id
+                      // rather than replacing, so a device holding presets the
+                      // cloud has not seen yet contributes them instead of
+                      // losing them.
     "font",
     "customFonts",
     "langs",

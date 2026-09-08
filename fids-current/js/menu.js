@@ -2539,7 +2539,88 @@ function _cuPresetsAll() {
 }
 function _cuPresetsSave(list) {
   try { localStorage.setItem('fids_presets', JSON.stringify(list)); } catch(e){}
+  _cuPresetsPush(list);
 }
+
+/* ── v23488 — THE PRESET LIBRARY IS AIRPORT-WIDE, NOT BROWSER-WIDE ──────────
+   Nick: "most presets are gone", "it should be saving everything globably",
+   and the tell that made it diagnosable — "I would save it and I would see it
+   change on the stream so it must work to a certain point".
+
+   That is exactly right, and it is the shape of the bug. v23214 made the ACTIVE
+   look sync: _cuCloudPush sends customColors to the airport config, every screen
+   picks it up, the stream changes. But the LIBRARY of saved palettes was only
+   ever localStorage — it is not in the worker's field whitelist, so it could not
+   be stored server-side even in principle. Save on the laptop, open the console
+   on another machine, and the look is right while the shelf of presets is empty.
+
+   Merge, never replace. A device that has been offline holding three presets the
+   cloud has not seen must CONTRIBUTE them, not be wiped by a cloud copy that
+   predates them — losing a palette he spent time on is worse than a stale one.
+   Union by id; where both sides hold the same id, the newer savedAt wins.        */
+function _cuPresetsMerge(local, cloud) {
+  var byId = {}, out = [], i, p;
+  for (i = 0; i < (local || []).length; i++) { p = local[i]; if (p && p.id) byId[p.id] = p; }
+  for (i = 0; i < (cloud || []).length; i++) {
+    p = cloud[i];
+    if (!p || !p.id) continue;
+    var cur = byId[p.id];
+    if (!cur) { byId[p.id] = p; continue; }
+    if (+(p.savedAt || 0) > +(cur.savedAt || 0)) byId[p.id] = p;   // newer wins
+  }
+  for (var k in byId) { if (Object.prototype.hasOwnProperty.call(byId, k)) out.push(byId[k]); }
+  return out;
+}
+
+var _cuPresetPushTimer = null;
+function _cuPresetsPush(list) {
+  try {
+    if (!_acGetToken()) return;                 // signed out → local only, as before
+    var code = _acCurrentCode(); if (!code) return;
+    if (_cuPresetPushTimer) clearTimeout(_cuPresetPushTimer);
+    _cuPresetPushTimer = setTimeout(function () {
+      _cuPresetPushTimer = null;
+      _acFetch(_AC_WORKER_URL + '/api/airport-config/' + encodeURIComponent(code), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ presets: list || [] })
+      }).then(function (res) {
+        try { console.log('[FIDS Presets] cloud save ' + (res && res.ok ? 'ok' : 'FAILED') + ' for ' + code); } catch (e) {}
+      }).catch(function (e) {
+        try { console.warn('[FIDS Presets] cloud save failed:', e && e.message); } catch (e2) {}
+      });
+    }, 900);
+  } catch (e) {}
+}
+
+function _cuPresetsPull() {
+  try {
+    var code = _acCurrentCode(); if (!code) return;
+    // Public endpoint: reading the library does not need admin, so a screen or a
+    // signed-out console still shows the airport's palettes.
+    fetch(_AC_WORKER_URL + '/api/airport-config/' + encodeURIComponent(code), { cache: 'no-cache' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (cfg) {
+        if (!cfg || !Array.isArray(cfg.presets) || !cfg.presets.length) return;
+        var local = _cuPresetsAll();
+        var merged = _cuPresetsMerge(local, cfg.presets);
+        if (merged.length === local.length) return;      // nothing new to add
+        try { localStorage.setItem('fids_presets', JSON.stringify(merged)); } catch (e) {}
+        try { _cuRenderPresetGroup(); } catch (e) {}
+        try { console.log('[FIDS Presets] merged ' + (merged.length - local.length) + ' from the cloud'); } catch (e) {}
+      })
+      .catch(function () {});
+  } catch (e) {}
+}
+
+// Pull the library when the Customize tab opens — same hook the Media tab uses.
+(function () {
+  var _origSw = window.smSwitchTab;
+  window.smSwitchTab = function (tabId) {
+    if (typeof _origSw === 'function') _origSw.apply(this, arguments);
+    if (tabId === 'customize') { try { _cuPresetsPull(); } catch (e) {} }
+  };
+})();
 
 function _cuRenderPresetGroup() {
   var grp = document.getElementById('cuPresetGroup');
@@ -2778,11 +2859,13 @@ function cuSavePreset() {
   if (_cuActivePresetId) {
     id = _cuActivePresetId;
     list = list.map(function(p) {
-      return p.id === id ? { id: id, name: name, colors: colors } : p;
+      // v23488 — stamped, so the airport-wide merge can tell which copy of a
+      // preset is the newer one when two devices have both touched it.
+      return p.id === id ? { id: id, name: name, colors: colors, savedAt: Date.now() } : p;
     });
   } else {
     id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
-    list.push({ id: id, name: name, colors: colors });
+    list.push({ id: id, name: name, colors: colors, savedAt: Date.now() });
     _cuActivePresetId = id;
   }
   _cuPresetsSave(list);
