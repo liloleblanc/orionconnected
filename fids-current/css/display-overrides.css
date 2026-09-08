@@ -15643,7 +15643,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    The v23472 label step below stays: it is still the right base size, it was
    just never going to be the whole fix. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves {
-  padding-right: clamp(6px, 0.55vw, 12px) !important;
+  /* v23480 — Nick: "needs to go maximum at the edge there should be a bit of
+     space". v23476 pulled the shelf 10.5px off the card edge to stop it running
+     into the 3px border; that overshot and left the code 20px inside. Enough to
+     clear the border and the 24px corner, not enough to read as a margin:
+     measured, this lands the code ~9px off the card's outer edge. */
+  padding-right: clamp(1px, 0.12vw, 3px) !important;
   box-sizing: border-box !important;
 }
 
