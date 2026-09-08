@@ -29,13 +29,36 @@ test('pdx: offset-less ISO to Pacific, padded gate trimmed, IATA city, enum stat
 test('dtw: uses EstimatedDateTime because Scheduled is a 0001 dummy', () => {
   const arr = dtwParseFeed(fx('dtw-arr-sample.json'), 'arr', NOW);
   assert.ok(arr.length >= 1, `parsed ${arr.length}`);
-  const f = arr.find((x) => x.number === '9E5338');
-  assert.ok(f, '9E5338 present');
+  // Endeavor is Delta Connection, so this arrives as DL5338 operated by 9E —
+  // same digits, parent's code. It used to come through as 9E5338.
+  const f = arr.find((x) => x.number === 'DL5338');
+  assert.ok(f, 'DL5338 present');
   assert.ok(f.arrival.scheduledTime.local.startsWith('2026-09-04 21:05'), f.arrival.scheduledTime.local);
   assert.ok(!f.arrival.scheduledTime.local.startsWith('0001'), 'dummy date not used');
   assert.equal(f.arrival.gate, 'B5');
   assert.equal(f.status, 'arrived');
   assert.equal(f.departure.airport.iata, 'MKE');
+  assert.equal(f._opCode, '9E', 'operator carried for the Operated by line');
+});
+
+test('dtw: one row per aircraft — no regional carriers, no codeshare duplicates', () => {
+  const arr = dtwParseFeed(fx('dtw-arr-sample.json'), 'arr', NOW);
+  // Nick: 'I did not ask for you to put regional carriers on the main board'.
+  // Delta Connection operators must never be the airline on a row.
+  const regionals = arr.filter((x) => ['9E', 'OO', 'YX'].includes(x.arrival.airline.iata));
+  assert.equal(regionals.length, 0, `regional carriers still shown: ${regionals.map((x) => x.number).join(', ')}`);
+  // A remapped row always numbers itself under the parent, never the operator.
+  for (const f of arr.filter((x) => x._opCode)) {
+    assert.match(f.number, /^DL\d+$/, `${f.number} kept the operator's prefix`);
+  }
+  // The collapse drops duplicates only. Every distinct aircraft in the fixture
+  // — one per destination + gate + minute — must still be represented.
+  const raw = JSON.parse(fx('dtw-arr-sample.json'));
+  const rows = Array.isArray(raw) ? raw : (raw.Flights || []);
+  const want = new Set(rows.filter((r) => !r.FlightType || r.FlightType === 'Arrival')
+    .map((r) => `${r.DepartureAirportCode}|${r.Gate || ''}|${r.EstimatedDateTime}`));
+  const got = new Set(arr.map((f) => `${f.departure.airport.iata}|${f.arrival.gate || ''}|${f.arrival.scheduledTime.local}`));
+  assert.equal(got.size, want.size, `${want.size} aircraft in, ${got.size} out — the collapse lost a flight`);
 });
 
 test('san: FLIGHT_DATE+TIME combine; claim "T2-1" splits into terminal+belt', () => {
