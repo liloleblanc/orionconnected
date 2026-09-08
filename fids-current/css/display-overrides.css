@@ -15258,3 +15258,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   width: auto !important;
   align-self: stretch !important;
 }
+
+/* ── v23470 — WESTJET'S LEAF SITS HIGHER IN THE BANNER (Nick: 'the leaf needs
+   to be slightly higher i think', then picked the largest of three nudges).
+   The emblem box is already centred — 10px above, 12px below in the 112px
+   band — so this is not correcting a layout error. The LEAF ITSELF sits low
+   inside its own square: WS.svg leaves roughly 6px of empty box above the
+   top spike at the 90px the banner renders it at, so the mark READS low even
+   though the box is centred.
+   .g8-r1 is overflow:hidden, so -13px puts the box top at y=-3 and 3px of it
+   is cut — but that 3px is the artwork's own padding, not ink.
+   SCOPED TO WESTJET. Air Canada's roundel very nearly fills its box (the ring
+   runs to the edge), so the same nudge would shave the top of the circle;
+   AC stays centred until Nick has seen it on a live AC gate. ── */
+html body .g8-wrap.g8-airline-WS .g8-r1-emblem,
+html body .g8-wrap.g8-airline-WJA .g8-r1-emblem {
+  transform: translateY(-13px) !important;
+}
