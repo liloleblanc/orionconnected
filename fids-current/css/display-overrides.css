@@ -15453,8 +15453,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-emblem {
   transform: none !important;
-  height: clamp(46px, 6.2vh, 72px) !important;
-  max-height: clamp(46px, 6.2vh, 72px) !important;
+  height: clamp(58px, 8.6vh, 94px) !important;
+  max-height: clamp(58px, 8.6vh, 94px) !important;
   width: auto !important;
   object-fit: contain !important;
   align-self: center !important;
