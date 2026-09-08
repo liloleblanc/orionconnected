@@ -15305,6 +15305,19 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      navy is ~10:1. The gate block keeps the bright colour, so the bar and the
      gate no longer melt into one another. */
   background: var(--airline-r1, var(--airline-accent, #0c1119)) !important;
+  /* ANCHOR TO THE FOOT, NOT THE HEAD. gate-display.css:2041 gives this
+     pseudo-element `inset: 0`, which sets top:0 as well as bottom:0. With a
+     fixed height, top wins — so v23462's stripe has been painting along the
+     TOP edge of the banner since it shipped, not the bottom. Proved by
+     temporarily colouring it magenta on a live board: the bar appeared above
+     the wordmark. Clearing top is what moves it to the floor. */
+  top: auto !important;
+  /* AND IT HAS TO PAINT ITS OWN COLOUR. The same rule sets
+     mix-blend-mode:screen for the old light-sweep. Screening a DARK colour
+     over a cream band returns almost white, so the navy simply vanished —
+     the magenta test came back pale pink rather than magenta. Nothing dark
+     can render here until the blend is normal. */
+  mix-blend-mode: normal !important;
   /* AND IT HAS TO BE OPAQUE. display-overrides.css:4542 pins
      `html body .g8-r1::after { opacity: .32 !important }` for the colour wash
      that used to live on this pseudo-element. v23462's stripe never cleared
@@ -15336,4 +15349,35 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   line-height: 1 !important;
   white-space: nowrap !important;
   z-index: 4 !important;
+}
+
+/* ══ v23470 — THE BANNER TEXTURE ══════════════════════════════════════════
+   Nick supplied a geometric white/grey banner graphic (Vecteezy, Pro licence
+   — no attribution required, confirmed with him) to replace the silk photo.
+
+   TWO problems with how the silk was painted, both measured on the live board:
+
+   a) mix-blend-mode: SCREEN. Screening a white-and-grey image onto a cream
+      base blows every grey to white, so the texture was very nearly invisible
+      — rendered side by side at the same opacity, silk / geo / no-texture at
+      all were indistinguishable. MULTIPLY keeps the greys, which is the only
+      way a light texture reads on a light ground.
+
+   b) A SECOND COPY on the clock box. .g8-r1-timebox::before (:4830) paints the
+      SAME photo again with background-size:cover over a 360px-wide element —
+      a completely different crop of the same image, sitting on top of the
+      full-width one. Nick: "Theres a patch that isnt the same color theres a
+      design on it either get rid of it or make the design the entire way."
+      Removing the duplicate IS "the entire way": the full-width layer beneath
+      it already spans the band, so the design runs edge to edge, evenly.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1::before {
+  background-image: url("/logos/Backgrounds/banner-geo.jpg?v=23470") !important;
+  mix-blend-mode: multiply !important;
+  opacity: .55 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox::before,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-wrap::before {
+  display: none !important;
+  content: none !important;
 }

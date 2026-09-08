@@ -2,11 +2,11 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2599,
+    "total": 2600,
     "by_category": {
       "ad": 10,
       "airline": 1402,
-      "background": 103,
+      "background": 104,
       "brand": 2,
       "hotel": 884,
       "livery": 96,
@@ -15932,6 +15932,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/Backgrounds/banner-geo.jpg",
+      "file": "banner-geo.jpg",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "banner geo",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
     },
     {
       "path": "/logos/Backgrounds/banner-silk-alpha.png",
