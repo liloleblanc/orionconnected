@@ -15381,3 +15381,51 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   display: none !important;
   content: none !important;
 }
+
+/* ══ v23470 — VERTICAL FIT NOW THAT THE BAND RESERVES A BAR ════════════════
+   Nick, on the first live preview: "your text for dates needs to fit the
+   height the logo and time need to be centered height wise and bigger same
+   for your logos bigger", then "logo and time slightly needs lower".
+
+   The band still centres its children over the FULL 112px, so the wordmark
+   was hanging into the bar and the clock was stranded at the top with 49px of
+   dead space under it. Two different causes:
+
+   - The WORDMARK centres in .g8-r1 (align-items:center). Reserving the bar as
+     padding-bottom makes it centre in what is left instead. The bar itself is
+     unaffected — it is an absolutely-positioned ::after, which padding cannot
+     move — and so is the timebox, which is absolute top:0/bottom:0.
+
+   - The CLOCK sat high because .octb-stack is justify-content:space-between
+     with the clock and the date as its two children. Absolutely positioning
+     the date onto the bar took it out of the flex flow, so the clock lost its
+     counterweight and sprang to the top. Centring the stack and reserving the
+     same bar height puts it back in the middle of the space above.
+
+   .octb-clockrow was height:44px with overflow:hidden and clipped a larger
+   clock through the middle, so it goes to auto/visible.
+
+   THE CLOCK SIZE NEEDS 30 :not(#_). The winning declaration is a 28-deep
+   chain on .octb-clockrow .v2-fi-clock-val (clamp(40px,7.1vh,94px)); a 14-deep
+   rule loses to it silently. Matching its element path and going two deeper is
+   what makes this apply at all.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1 {
+  --yqm-bar: clamp(20px, 3.6vh, 30px) !important;
+  padding-bottom: var(--yqm-bar) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb.octb-tab.octb-stack {
+  justify-content: center !important;
+  padding-bottom: var(--yqm-bar) !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow {
+  height: auto !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clockrow .v2-fi-clock-val {
+  font-size: clamp(46px, 9vh, 76px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+  font-size: clamp(13px, 2.05vh, 19px) !important;
+}
