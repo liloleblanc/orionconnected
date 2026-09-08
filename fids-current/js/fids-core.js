@@ -11544,9 +11544,38 @@ function uxgGateHtml(ctx) {
       if (!_sec && /\|/.test(_t1)) {
         var _tp = _t1.split('|');
         _t1 = _tp[0].trim();
-        if (_tp[1] && _tp[1].trim() && _tp[1].trim() !== _t1) {
-          _sec = '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _tp[1].trim() + '</span>';
+        // v23472 — READ EVERY SEGMENT, NOT JUST THE FIRST TWO.
+        //
+        // _gateLbl hands these titles over already '|'-joined, and the airport
+        // code rides at the END: 'Destination | YYZ' with one language, and
+        // 'Destination | Destination | YYZ' once a second one is assigned.
+        // Taking only _tp[0] and _tp[1] got both wrong, in two different ways
+        // Nick reported separately:
+        //
+        //   two segments  -> the CODE landed in the lbl-2 span, so it rendered
+        //                    as the French word and stayed plain white
+        //                    ('YYZ still has no color')
+        //   three segments-> the third was silently DISCARDED, so the code
+        //                    vanished entirely ('when it switches ... the
+        //                    Destination does not even have the airport code
+        //                    at all')
+        //
+        // A trailing 2-4 char all-caps token is the code. Emitted as
+        // .v2-fi-code.v2-rc-iata, which is what _codeSeg() builds on the rail
+        // and what the accent painter at :2192 already looks for — so it picks
+        // up the carrier accent with no extra rule. Anything else stays a
+        // language word, exactly as before.
+        var _tail = (_tp.length > 1) ? _tp[_tp.length - 1].trim() : '';
+        var _isCode = /^[A-Z]{2,4}$/.test(_tail) && _tail !== _t1.toUpperCase();
+        var _mid = _isCode ? _tp.slice(1, -1) : _tp.slice(1);
+        var _midWord = '';
+        for (var _mi = 0; _mi < _mid.length; _mi++) {
+          var _w = _mid[_mi].trim();
+          if (_w && _w !== _t1) { _midWord = _w; break; }
         }
+        _sec = '';
+        if (_midWord) _sec += '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _midWord + '</span>';
+        if (_isCode) _sec += ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _tail + '</span>';
       }
       return '<div class="v2-fi-row' + (cls ? ' ' + cls : '') + '">'
         + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '"><span class="ac-ico ' + icon + '"></span></div></div>'
@@ -22079,7 +22108,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23470';
+var FIDS_BUILD_TAG = 'v23472';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

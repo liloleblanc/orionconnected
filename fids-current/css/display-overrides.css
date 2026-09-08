@@ -15429,3 +15429,71 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
   font-size: clamp(13px, 2.05vh, 19px) !important;
 }
+
+/* ══ v23472 — THE EMBLEM FITS THE BAND AGAIN ═══════════════════════════════
+   Nick, on the live Moncton gate: "1 So roundel too big", pointing at an Air
+   Canada roundel sliced along the top edge.
+
+   Two v23470 changes compounded. The leaf nudge (-13px) was measured when the
+   band centred its children over the full 112px, where it overhung by 3px —
+   inside the artwork's own padding, so nothing was lost. The vertical-fit block
+   then reserved the date bar as padding, re-centring everything into the space
+   ABOVE it, which already raised the emblem; the nudge took it a further 13px
+   and the overhang became 10px. Measured on the live board: emblem y = -10.
+
+   WestJet survives that because its leaf sits low in its own square. Air
+   Canada's roundel very nearly fills its box — the ring runs to the edge — so
+   10px cuts the circle, which is what Nick is looking at.
+
+   The nudge goes, and the height is ABSOLUTE. A first attempt used
+   height:calc(100% - …) and blew the emblem up to 445px: its parent
+   .g8-r1-brandpair has no height of its own and sizes to its child, so the
+   percentage resolved against a box the emblem was itself defining. Measured
+   before and after — that is a circular reference, not a tuning problem.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-emblem {
+  transform: none !important;
+  height: clamp(46px, 6.2vh, 72px) !important;
+  max-height: clamp(46px, 6.2vh, 72px) !important;
+  width: auto !important;
+  object-fit: contain !important;
+  align-self: center !important;
+}
+
+/* ══ v23472 — SHELF TITLES REACH THE EDGES ════════════════════════════════
+   Nick: "4 ... the ones in the shelve panels with titles Flight | Vol etc the
+   dont touch the right side like 5 the bottom right as requested earlier".
+
+   Measured at his own window size: .v2-fi-title is 245px inside a 268px
+   .v2-fi-textcol. gate-display.css ALREADY sets width:100% on the title and it
+   was applying — the missing 23px is .v2-fi-textcol's own left/right padding,
+   so 100% resolves to the content box and can never reach the panel edge. The
+   padding is what goes, not the width.
+
+   The code is then pushed to the right edge, which is the "touch the side"
+   Nick means, and matches the Arriving From pill at bottom right that he
+   pointed to as the one that gets it right.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-textcol {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: flex !important;
+  align-items: baseline !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-lbl-en,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-lbl-2,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-sep,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-code {
+  white-space: nowrap !important;
+  flex: 0 0 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-code.v2-rc-iata {
+  margin-left: auto !important;
+}
