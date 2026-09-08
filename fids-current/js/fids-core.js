@@ -14028,13 +14028,34 @@ function _gateTitleFit(root) {
         parts[j].style.removeProperty('font-size');           // re-measure clean
         bases.push(parseFloat(getComputedStyle(parts[j]).fontSize) || 16);
       }
+      // v23490 — SHRINK A LITTLE, THEN STACK. Nick: "Why are the title banners so
+      // low and or so small in height?". The floor was 0.62, and on the longest
+      // title the fitter spent all of it and still lost: measured on WestJet gate
+      // 1 at 1675x880, 'Your aircraft has arrived at the gate | Votre appareil est
+      // arrivé à la porte' came out at 8.18px AND still overflowed by 77px. So it
+      // was illegible and clipped, and because the pill is sized by its text it
+      // was 20px tall next to the column's 28 — the squashed look he is pointing
+      // at. No amount of shrinking fits that string on one line at this width.
+      //
+      // A bilingual title that cannot fit belongs on TWO LINES, which is what
+      // .g8-lane-stacked was always meant to do — it just cannot work any more,
+      // because it stacks by setting the halves display:block and the title is a
+      // flex ROW, where that does nothing. So the fitter now does it directly:
+      // shrink only as far as 0.82 (still readable), and if it STILL does not fit,
+      // put the two languages on their own lines at full size and let the pill be
+      // as tall as it needs. Taller and readable beats short and cut.
+      t.classList.remove('g8-fi-title-2line');
       var ratio = 1, guard = 26;
-      while (t.scrollWidth > t.clientWidth + 0.5 && ratio > 0.62 && guard-- > 0) {
-        ratio = Math.max(0.62, ratio - 0.045);
+      while (t.scrollWidth > t.clientWidth + 0.5 && ratio > 0.82 && guard-- > 0) {
+        ratio = Math.max(0.82, ratio - 0.045);
         for (j = 0; j < parts.length; j++) {
           // The CSS sizes are !important, so the inline override must be too.
           parts[j].style.setProperty('font-size', (bases[j] * ratio).toFixed(2) + 'px', 'important');
         }
+      }
+      if (t.scrollWidth > t.clientWidth + 0.5) {
+        for (j = 0; j < parts.length; j++) parts[j].style.removeProperty('font-size');
+        t.classList.add('g8-fi-title-2line');
       }
     }
   } catch (e) {}
@@ -22175,7 +22196,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23486';
+var FIDS_BUILD_TAG = 'v23490';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
