@@ -1704,6 +1704,11 @@ function authorityFlight(o) {
     status: o.status,
     codeshareStatus: "IsOperator",
     isCargo: false,
+    // v23472 — carried straight through to the field fids-core already reads
+    // for the "Operated by" line (fids-core.js:7249). Only set when a feed
+    // actually names the operator; otherwise absent, and the existing
+    // flight-number heuristics run exactly as before.
+    ...(o.opCode ? { _opCode: o.opCode } : {}),
     ...(o.aircraftModel ? { aircraft: { model: o.aircraftModel } } : {}),
     departure: o.dir === "dep" ? homeSide : otherSide,
     arrival: o.dir === "dep" ? otherSide : homeSide,
@@ -2899,21 +2904,222 @@ function pdxParseFeed(jsonText, dir, nowMs) {
 }
 __name(pdxParseFeed, "pdxParseFeed");
 
+// ── DTW: the parent flight number for the codeshare-only groups ──────────
+//
+// 34 of Detroit's 75 departures arrive as codeshares with no operator row, so
+// the feed holds no Delta number to put on them (see dtwParseFeed). FR24's
+// flight-summary does: `flight` is the PARENT's number and `operating_as` the
+// regional actually flying it —
+//
+//   { flight: "DL4159", callsign: "SKW4159", operating_as: "SKW", painted_as: "DAL" }
+//
+// It is historical, not a schedule, and carries no scheduled time — only
+// wheels-up. Neither matters: flight numbers repeat daily, so yesterday's
+// sweep names today's flights, and matching is done on DESTINATION plus a
+// TIME-OF-DAY WINDOW rather than an exact stamp (a 21:22 departure is wheels-up
+// nearer 21:40). DTW runs only a handful of departures to any one city a day,
+// so destination plus an hour is unambiguous.
+//
+// The plan caps results at 20 per call whatever `limit` says — measured — and
+// they come back oldest-first, so the sweep walks forward from the last
+// takeoff it saw. A full DTW day is roughly 25 calls, taken once and cached,
+// against the same FR24_DAILY_BUDGET the ADSB path already spends from.
+// Without FR24_KEY the whole thing is a no-op and the board behaves as before.
+const DTW_FR24_CACHE_KEY = "dtw:fr24:sched:v2";
+const DTW_FR24_MAX_CALLS = 30;
+const DTW_FR24_WINDOW_MIN = 75;   // wheels-up lands within this of schedule
+
+// Minutes past local midnight in Detroit for a UTC millisecond stamp.
+function dtwLocalMinutes(ts) {
+  try {
+    const p = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Detroit", hour: "2-digit", minute: "2-digit", hour12: false
+    }).formatToParts(new Date(ts));
+    const h = Number((p.find((x) => x.type === "hour") || {}).value);
+    const m = Number((p.find((x) => x.type === "minute") || {}).value);
+    if (isNaN(h) || isNaN(m)) return null;
+    return ((h % 24) * 60) + m;
+  } catch (e) { return null; }
+}
+__name(dtwLocalMinutes, "dtwLocalMinutes");
+
+async function dtwFr24Schedule(env) {
+  if (!env || !env.FR24_KEY || !env.FIDS_LIVE_FLIGHTS) return null;
+  try {
+    const cached = await env.FIDS_LIVE_FLIGHTS.get(DTW_FR24_CACHE_KEY, { type: "json" }).catch(() => null);
+    if (cached && cached.at && Date.now() - cached.at < 20 * 3600 * 1000) return cached.map || null;
+
+    const day = new Date().toISOString().slice(0, 10);
+    const bKey = `fr24:used:${day}`;
+    const cap = Math.max(0, Number(env.FR24_DAILY_BUDGET || 240));
+    let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
+    if (used >= cap) return (cached && cached.map) || null;
+
+    const endTs = Date.now() - 30 * 60000;          // wheels-up needs to have happened
+    const iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
+    const map = {};
+    let cursor = endTs - 26 * 3600 * 1000;
+    let calls = 0;
+
+    while (cursor < endTs && used < cap && calls < DTW_FR24_MAX_CALLS) {
+      const url = "https://fr24api.flightradar24.com/api/flight-summary/full"
+        + "?airports=outbound:KDTW"
+        + `&flight_datetime_from=${iso(cursor)}&flight_datetime_to=${iso(endTs)}`;
+      let r;
+      try {
+        r = await fetch(url, { headers: {
+          "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } });
+      } catch (e) { break; }
+      calls += 1;
+      // A hard no from the plan burns the rest of the day, same as the ADSB path.
+      if (r.status === 402 || r.status === 429 || r.status === 403) { used = cap; break; }
+      used += 1;
+      if (!r.ok) break;
+      const j = await r.json().catch(() => null);
+      const rows = (j && Array.isArray(j.data)) ? j.data : [];
+      if (!rows.length) break;
+
+      let maxTs = cursor;
+      for (const f of rows) {
+        const ts = Date.parse(f && f.datetime_takeoff || "");
+        if (!isNaN(ts)) maxTs = Math.max(maxTs, ts);
+        const dest = String((f && f.dest_iata) || "").toUpperCase();
+        const flight = String((f && f.flight) || "").toUpperCase();
+        // General aviation comes through with flight:null — skip it.
+        if (!dest || !flight || isNaN(ts)) continue;
+        const mins = dtwLocalMinutes(ts);
+        if (mins === null) continue;
+        (map[dest] = map[dest] || []).push({ m: mins, f: flight, op: String((f && f.operating_as) || "") || null });
+      }
+      if (rows.length < 20) break;          // last page
+      if (maxTs <= cursor) break;           // no forward progress; stop rather than spin
+      cursor = maxTs + 1000;
+    }
+
+    try { await env.FIDS_LIVE_FLIGHTS.put(bKey, String(used), { expirationTtl: 172800 }); } catch (e) {}
+    if (Object.keys(map).length) {
+      try { await env.FIDS_LIVE_FLIGHTS.put(DTW_FR24_CACHE_KEY, JSON.stringify({ at: Date.now(), map }), { expirationTtl: 172800 }); } catch (e) {}
+      return map;
+    }
+    return (cached && cached.map) || null;
+  } catch (e) { return null; }
+}
+__name(dtwFr24Schedule, "dtwFr24Schedule");
+
+// ICAO callsign prefix -> IATA, for turning FR24's operating_as into the code
+// fids-core draws the "Operated by" line from. Only the carriers that actually
+// operate DTW departures.
+const DTW_FR24_OP_IATA = { SKW: "OO", EDV: "9E", RPA: "YX", ENY: "MQ", JIA: "OH", PDT: "PT", DAL: null, AAL: null, AFR: null, KLM: null };
+
+// Finds the parent flight for a codeshare-only group: same destination, and
+// wheels-up inside the window after its scheduled minute.
+function dtwFr24Lookup(schedule, destIata, schedMins) {
+  if (!schedule || !destIata || schedMins === null || schedMins === void 0) return null;
+  const list = schedule[String(destIata).toUpperCase()];
+  if (!Array.isArray(list) || !list.length) return null;
+  let best = null, bestGap = Infinity;
+  for (const e of list) {
+    // Midnight wrap: a 23:50 departure lifting at 00:10 is 20 minutes later.
+    let gap = e.m - schedMins;
+    if (gap < -720) gap += 1440;
+    if (gap < 0 || gap > DTW_FR24_WINDOW_MIN) continue;
+    if (gap < bestGap) { bestGap = gap; best = e; }
+  }
+  return best;
+}
+__name(dtwFr24Lookup, "dtwFr24Lookup");
+
+// Delta Connection regionals at DTW. SkyWest and Republic also fly for
+// United, American and Alaska elsewhere, so this mapping is deliberately
+// scoped to Detroit rather than pushed into a global table.
+const DTW_DELTA_REGIONAL = { "9E": "Endeavor Air", "OO": "SkyWest Airlines", "YX": "Republic Airways" };
+// SkyTeam partners that sell seats on Delta metal out of DTW. Measured on
+// the live feed 2026-09-07: WestJet's 35 rows start at 5481, Aeromexico's 33
+// at 3024 — neither carrier operates a single DTW departure, every row is a
+// codeshare. Air France and KLM DO fly their own metal here, which is why
+// membership of this set is never on its own enough to call a row a
+// codeshare; the flight number decides that (see DTW_OPERATOR_MAX).
+const DTW_SKYTEAM_CS = new Set(["WS", "AM", "KL", "AF", "VS", "KE", "MU", "CI", "SU", "RO", "UX", "ME"]);
+// Every row below this number in the whole feed is real operating metal, and
+// nothing above it is: DL136/292/412/700/916/978/1187/1689, AF377 to Paris
+// and TK206 to Istanbul — ten rows, all operators. The lowest codeshare
+// anywhere in the feed is KL2227. Checked across both directions before
+// relying on it.
+const DTW_OPERATOR_MAX = 2000;
+
+// Picks the one row in a duplicate group that represents the aircraft, or
+// null when the feed sent only ticket-sellers. Order matters: a Delta
+// regional outranks a low partner number, because RIC came through as
+// AF2582 · AM3483 · 9E4679 · WS6625 · KL7748 — Endeavor is the operator even
+// though Air France's codeshare carries the lower number.
+function dtwPickOperator(group) {
+  const code = (r) => String(r.AirLineCode || "").toUpperCase();
+  const num = (r) => parseInt(r.FlightNumber, 10) || 0;
+  const dl = group.find((r) => code(r) === "DL");
+  if (dl) return { row: dl, airline: "DL", operator: null };
+  const reg = group.find((r) => DTW_DELTA_REGIONAL[code(r)]);
+  if (reg) return { row: reg, airline: "DL", operator: code(reg) };
+  const own = group.find((r) => num(r) > 0 && num(r) < DTW_OPERATOR_MAX);
+  if (own) return { row: own, airline: code(own), operator: null };
+  const outside = group.find((r) => !DTW_SKYTEAM_CS.has(code(r)));
+  if (outside) return { row: outside, airline: code(outside), operator: null };
+  return null;   // all codeshares — the operator's row was never sent
+}
+__name(dtwPickOperator, "dtwPickOperator");
+
 // DTW Detroit — Wayne County's proxy. ScheduledDateTime is a dummy
 // (0001-01-01) so EstimatedDateTime is the operative time; there's no
 // separate revision to show. Gate letter is the concourse.
-function dtwParseFeed(jsonText, dir, nowMs) {
+//
+// ONE ROW PER AIRCRAFT (Nick: 'I did not ask for you to put regional carriers
+// on the main board', and on what should show: 'it falls on the parent company
+// and is operated by them only').
+//
+// Detroit expands every marketing partner into its own row and gives no
+// codeshare flag at all — unlike flysfo, whose is_code_share drives the same
+// collapse at :2443. Measured on the live feed 2026-09-07: 160 departure rows
+// are 75 aircraft. Better than half the board was one flight repeated, and
+// because Delta's SkyTeam partners dominate it, a Delta fortress hub was
+// reading as WestJet 35 · Aeromexico 33 · Air France 27 · KLM 24 · Delta 18.
+//
+// Rows are grouped on destination + gate + minute, and dtwPickOperator names
+// the aircraft. Where the group holds ONLY codeshares — 34 of the 75, Delta
+// metal whose own row Detroit simply omits — the group is left ALONE and every
+// row still shows. That is deliberate: the collapse would have to print
+// Delta's name above a partner's flight number, since no Delta number exists
+// anywhere in the data. Wrong numbers do not go on a public board to make a
+// count look better. Those groups are what the FR24 flight-summary lookup is
+// for; until it lands they stay as they are.
+function dtwParseFeed(jsonText, dir, nowMs, schedule) {
   const out = [];
   let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
   const rows = Array.isArray(j) ? j : (Array.isArray(j.Flights) ? j.Flights : []);
   const isDep = dir === "dep";
+  const wantType = isDep ? "Departure" : "Arrival";
+
+  const groups = new Map();
   for (const r of rows) {
     if (!r) continue;
-    const wantType = isDep ? "Departure" : "Arrival";
     if (r.FlightType && r.FlightType !== wantType) continue;
-    const num = (r.CombinedFlightNumber || ((r.AirLineCode || "") + (r.FlightNumber || ""))).toString().trim();
+    const other = ((isDep ? r.ArrivalAirportCode : r.DepartureAirportCode) || "").toString().toUpperCase();
+    const key = other + "|" + (r.Gate || "").toString().trim() + "|" + (r.EstimatedDateTime || "");
+    const g = groups.get(key);
+    if (g) g.push(r); else groups.set(key, [r]);
+  }
+
+  const emit = (r, airlineIata, airlineName, operator) => {
+    // A Delta Connection flight keeps its digits across the pair: DL3909 is
+    // the ticket, OO3909 is the aircraft. So when the row has been remapped
+    // onto Delta, re-prefix the SAME digits rather than print OO3909 under
+    // Delta's name. This is only ever done for the regional case, where the
+    // digits provably belong to both carriers — never for the codeshare
+    // partners, whose numbers are their own and unrelated to Delta's.
+    const digits = (r.FlightNumber || "").toString().trim();
+    const num = (operator && airlineIata && digits)
+      ? airlineIata + digits
+      : (r.CombinedFlightNumber || ((r.AirLineCode || "") + (r.FlightNumber || ""))).toString().trim();
     const sched = localIsoObj("America/Detroit", r.EstimatedDateTime);
-    if (!num || !sched) continue;
+    if (!num || !sched) return;
     out.push(authorityFlight({
       dir, number: num,
       status: yhzStatus(r.PublicStatus || ""),
@@ -2921,10 +3127,59 @@ function dtwParseFeed(jsonText, dir, nowMs) {
       gate: (r.Gate || "").toString().trim() || null,
       otherIata: ((isDep ? r.ArrivalAirportCode : r.DepartureAirportCode) || "").toString().toUpperCase() || null,
       otherName: (isDep ? r.ArrivalCity : r.DepartureCity) || null,
-      airlineIata: (r.AirLineCode || "").toString().toUpperCase() || null,
-      airlineName: r.AirLine || r.AirLineFullNameName || null,
+      airlineIata: airlineIata || null,
+      airlineName: airlineName || null,
+      // fids-core reads currentFlight._opCode (:7249) to draw the gate
+      // screen's "Operated by" line, and derives it from flight-number
+      // ranges when the feed says nothing. Here the feed DOES say — the
+      // regional's own row is what we collapsed onto — so pass the code
+      // through rather than let a heuristic guess at it.
+      opCode: operator || null,
       sched, revised: null
     }));
+  };
+
+  for (const g of groups.values()) {
+    // Single-row groups go through dtwPickOperator too. A lone OO3909 has no
+    // codeshares to collapse, but it is still Delta Connection and still has
+    // to read as Delta — that row, and OO3684 beside it, are exactly the two
+    // Nick ringed on the DTW board. Skipping groups of one left 8 SkyWest and
+    // 8 Endeavor rows sitting there after the first pass.
+    const pick = dtwPickOperator(g);
+    if (!pick) {
+      // Codeshares only — the operator's row was never sent. Ask FR24 for the
+      // parent's number rather than print Delta above a partner's. Departures
+      // only: the sweep is outbound:KDTW, so it knows nothing about arrivals.
+      const lead = g[0];
+      const hhmm = String((lead && lead.EstimatedDateTime) || "").match(/T(\d{2}):(\d{2})/);
+      const mins = hhmm ? (Number(hhmm[1]) * 60) + Number(hhmm[2]) : null;
+      const dest = String((lead && lead.ArrivalAirportCode) || "").toUpperCase();
+      const hit = isDep ? dtwFr24Lookup(schedule, dest, mins) : null;
+      if (hit && /^[A-Z0-9]{2}\d+$/.test(hit.f)) {
+        const parent = hit.f.slice(0, 2);
+        const opIata = hit.op ? DTW_FR24_OP_IATA[hit.op] : null;
+        out.push(authorityFlight({
+          dir, number: hit.f,
+          status: yhzStatus(lead.PublicStatus || ""),
+          homeIata: "DTW", homeIcao: "KDTW", homeName: "Detroit",
+          gate: (lead.Gate || "").toString().trim() || null,
+          otherIata: dest || null,
+          otherName: lead.ArrivalCity || null,
+          airlineIata: parent,
+          airlineName: parent === "DL" ? "Delta Air Lines" : null,
+          opCode: opIata || null,
+          sched: localIsoObj("America/Detroit", lead.EstimatedDateTime), revised: null
+        }));
+        continue;
+      }
+      // No answer — leave the group exactly as the feed sent it. A guessed
+      // number is worse than a duplicated row.
+      for (const r of g) emit(r, String(r.AirLineCode || "").toUpperCase() || null, r.AirLine || r.AirLineFullNameName || null, null);
+      continue;
+    }
+    const r = pick.row;
+    const name = pick.airline === "DL" ? "Delta Air Lines" : (r.AirLine || r.AirLineFullNameName || null);
+    emit(r, pick.airline, name, pick.operator);
   }
   return out;
 }
@@ -5911,7 +6166,11 @@ const AUTHORITY_HANDLERS = {
   dtw: { tz: "America/Detroit", source: "dtw-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText(`dtw/${dir}`, `https://proxy.metroairport.com/FlightStatusProxy.ashx?method=${dir === "dep" ? "Departure" : "Arrival"}&pastHours=6&futureHours=24`, "CombinedFlightNumber", 90);
     if (!t) return null;
-    const f = dtwParseFeed(t, dir, Date.now());
+    // Codeshare-only groups need FR24 to name the parent flight. Cached for a
+    // day and budget-guarded; null without FR24_KEY, which just leaves those
+    // groups uncollapsed.
+    const sched = dir === "dep" ? await dtwFr24Schedule(env).catch(() => null) : null;
+    const f = dtwParseFeed(t, dir, Date.now(), sched);
     return f.length ? f : null;
   } },
   san: { tz: "America/Los_Angeles", source: "san-authority", list: async (dir, env) => {
@@ -9012,6 +9271,8 @@ export {
   yhmParseBoard,
   pdxParseFeed,
   dtwParseFeed,
+  dtwFr24Lookup,
+  dtwLocalMinutes,
   sanParseFeed,
   msyParseFeed,
   kefParseFeed,
