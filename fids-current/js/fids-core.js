@@ -395,10 +395,28 @@ function _fidsSaveAuthRescue(res) {
   return true;
 }
 
+// v23492 — ONE PLACE THAT KNOWS WHERE THE TOKEN LIVES.
+// Nick, signed in as admin with a valid token: "Cannot add videos or pictures at
+// all right now logos dont work". Both were true at once, and this is why.
+//
+// v23170 added a DURABLE copy of the session token in localStorage precisely so
+// a new tab or a restored window stays signed in — but only _acGetToken (menu.js
+// :1174) was taught to read it. Every media call still read sessionStorage ALONE,
+// and sessionStorage is per-TAB. Open the board in a second tab and the console
+// says you are signed in, Customize still syncs to the cloud (it goes through
+// _acGetToken), and every upload throws 'Not authenticated' — while _isAdmin,
+// reading the same per-tab key, can hide the Media tab outright.
+//
+// Durable first, per-tab mirror second, same order as _acGetToken.
+function _fidsAuthToken() {
+  try { return localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token') || null; }
+  catch (e) { try { return sessionStorage.getItem('fids_token') || null; } catch (e2) { return null; } }
+}
+
 // Admin-only write — caller must have a valid Bearer token in
 // sessionStorage.fids_token. Returns { success, config } on success.
 async function saveMediaConfig(cfg) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = _fidsAuthToken();
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-config', {
     method: 'PUT',
@@ -493,7 +511,7 @@ function getMediaAssignments() { return _mediaAssignCache; }
 
 // Admin: add a YouTube ref to the library. Returns the new item.
 async function addYouTubeLibraryItem(ytType, ytId, label) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = _fidsAuthToken();
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-library/youtube', {
     method: 'POST',
@@ -511,7 +529,7 @@ async function addYouTubeLibraryItem(ytType, ytId, label) {
 
 // Admin: upload a binary file (video/image). file is a File or Blob.
 async function uploadLibraryFile(file, label, category) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = _fidsAuthToken();
   if (!token) throw new Error('Not authenticated');
   var cat = (category && /^(ads|airport-logo|airline-logo|background)$/.test(category)) ? category : 'ads';
   var url = FIDS_API_BASE + '/api/media-library/upload'
@@ -535,7 +553,7 @@ async function uploadLibraryFile(file, label, category) {
 // server-side). params: { term, contentType?, page?, perPage?, orientation? }.
 // Returns { page, lastPage, perPage, totalResources, resources: [...] }.
 async function vecteezySearchStock(params) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = _fidsAuthToken();
   if (!token) throw new Error('Not authenticated');
   params = params || {};
   var q = new URLSearchParams();
@@ -562,7 +580,7 @@ async function vecteezySearchStock(params) {
 // Admin: import a Vecteezy resource — the worker downloads the file into R2
 // and appends a normal library item ({ source: 'vecteezy', ... }).
 async function vecteezyImportLibraryItem(resourceId, label, category, contentTypeHint) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = _fidsAuthToken();
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/vecteezy/import', {
     method: 'POST',
@@ -589,7 +607,7 @@ async function vecteezyImportLibraryItem(resourceId, label, category, contentTyp
 // Admin: update a library item's playback settings (loop, duration) or label.
 // patch body: { label?, playback?: { loop, duration } }
 async function updateLibraryItem(itemId, patch) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = _fidsAuthToken();
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-library/' + encodeURIComponent(itemId), {
     method: 'PATCH',
@@ -607,7 +625,7 @@ async function updateLibraryItem(itemId, patch) {
 
 // Admin: delete a library item by id.
 async function deleteLibraryItem(itemId) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = _fidsAuthToken();
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-library/' + encodeURIComponent(itemId), {
     method: 'DELETE',
@@ -624,7 +642,7 @@ async function deleteLibraryItem(itemId) {
 
 // Admin: save the airline → item id assignments map.
 async function saveMediaAssignments(cfg) {
-  var token = sessionStorage.getItem('fids_token');
+  var token = _fidsAuthToken();
   if (!token) throw new Error('Not authenticated');
   var res = await fetch(FIDS_API_BASE + '/api/media-assignments', {
     method: 'PUT',
@@ -1544,7 +1562,7 @@ function manageCustomBgUrls() {
 // If we already have a valid session token, restore LIVE_MODE=true BEFORE
 // the demo rebuild timer would start. Without this, every page refresh
 // knocks you back to DEMO data until you log in again.
-if (sessionStorage.getItem('fids_token')) {
+if (_fidsAuthToken()) {
   LIVE_MODE = true;
   // Defer UI updates until DOM is ready
   document.addEventListener('DOMContentLoaded', () => {
@@ -22196,7 +22214,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23490';
+var FIDS_BUILD_TAG = 'v23492';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
