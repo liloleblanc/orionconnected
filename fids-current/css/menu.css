@@ -64,7 +64,15 @@
 }
 
 /* ─── DARK THEME (toggle, nighttime use) ─── */
-.settings-sidebar[data-theme="dark"] {
+/* v23478 — html[data-console-theme="dark"] rides alongside the sidebar
+   selector so the tokens reach what the console opens OUTSIDE itself. The
+   media pickers append their modal to document.body, so they were never
+   inside .settings-sidebar and never saw a theme at all — they sat on
+   hardcoded near-black whether the console was light or dark, which is the
+   "Its so dark make it lighter" Nick is looking at. smApplyTheme stamps the
+   root; light stays the default because :root already carries it. */
+.settings-sidebar[data-theme="dark"],
+html[data-console-theme="dark"] {
   --console-bg-1:        #070b14;
   --console-bg-2:        #0f1424;
   --console-bg-radial-1: rgba(251, 191, 36, 0.04);
