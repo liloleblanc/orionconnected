@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2597,
+    "total": 2599,
     "by_category": {
       "ad": 10,
-      "airline": 1400,
+      "airline": 1402,
       "background": 103,
       "brand": 2,
       "hotel": 884,
@@ -5130,6 +5130,28 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg",
+      "file": "WestJet-Encore-logo-colour.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "WestJet Encore logo colour",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg",
+      "file": "WestJet-Encore-logo-white.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "WestJet Encore logo white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.png",
