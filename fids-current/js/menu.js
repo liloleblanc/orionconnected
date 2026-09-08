@@ -3240,7 +3240,10 @@ function cuDeleteActivePreset() {
       }
     } catch (e) {}
     try {
-      var token = sessionStorage.getItem('fids_token');
+      // v23492 — durable first. Reading sessionStorage alone hid the Media tab
+      // in any tab but the one that logged in (see _fidsAuthToken in fids-core).
+      var token = (typeof _fidsAuthToken === 'function') ? _fidsAuthToken()
+                : (localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token'));
       if (!token) return false;
       var parts = token.split('.');
       if (parts.length !== 3) return false;
