@@ -4216,7 +4216,25 @@ var OPBY_WORDMARKS_THEMED = {
   'OH':  { onDark:'/logos/airlines/us-regional/psa-airlines-monochrome-white.svg', onLight:'/logos/airlines/us-regional/psa-airlines.svg' },
   'PSA': { onDark:'/logos/airlines/us-regional/psa-airlines-monochrome-white.svg', onLight:'/logos/airlines/us-regional/psa-airlines.svg' },
   'QX':  { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */,
-  'QXE': { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */
+  'QXE': { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */,
+  // v23468 — EXACTLY the v23332 Horizon bug, still open for Encore.
+  //
+  // Operated-by is the one surface Encore reliably reaches: the banner and the
+  // board key on the MARKETING code (gatePreferredBrandCode returns it
+  // unchanged), and WestJet-marketed Encore flying is WS 3000-3999, so those
+  // surfaces draw WestJet mainline. Encore arrives here instead, through
+  // _opCode.
+  //
+  // With no pair, WR fell to the else-branch of _opbyContrastFix, which since
+  // v23466 applies filter:none unconditionally — deliberately, because
+  // whitening a carrier's own artwork is altering their mark. Correct rule,
+  // but it leaves encore.png (all-white raster) unfiltered on whatever strip
+  // it lands on: fine on the dark ones, invisible on the light grey bar.
+  //
+  // Nick's own artwork supplies both halves, so the strip no longer has to be
+  // the thing that changes — the mark simply matches the ground it is on.
+  'WR':  { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' },
+  'WEN': { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' }
 };
 function _opbyContrastFix(root) {
   try {
