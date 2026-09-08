@@ -128,3 +128,25 @@ test('the shelf code follows the carrier, and the aircraft hold is logo-only', (
   assert.doesNotMatch(core, /v2-rc-aircraft-hold-text/);
   assert.match(core, /acUpdating:\{ en:'Aircraft details updating'/);  // string kept in TL
 });
+
+test('the silk airport logo rule outranks the ID branch that collapsed it', () => {
+  // v23496 — flight-display.css lists .fids-airport-pill #fidsAirportLogoImg (1,1,0)
+  // beside the class branch. The static main-board <img id="fidsAirportLogoImg">
+  // matched it, so height:auto beat the silk theme's height:84px (0,3,1) — one ID
+  // outranks three classes regardless of sheet order. Inside the shrink-to-fit silk
+  // pill, auto height on an SVG with no intrinsic px size resolves to 0 and the pill
+  // collapses onto it. Bisected: id present -> 0x0, id removed -> 74.88x84.
+  const silk = css.slice(css.indexOf('v23496 — ONE RULE GOVERNS THE SILK AIRPORT LOGO'));
+  assert.ok(silk.length > 0, 'the silk airport-logo rule must carry its reasoning');
+  const rule = silk.slice(0, silk.indexOf('}') + 1);
+  // Both ID branches present — this is what wins the cascade.
+  assert.match(rule, /body\[data-fids-banner="silk"\] \.fids-airport-pill #fidsAirportLogoImg/);
+  assert.match(rule, /body\[data-fids-banner="silk-acadian"\] \.fids-airport-pill #fidsAirportLogoImg/);
+  // A definite height AND a definite max-height: 72% against an auto-height pill is
+  // circular, so a winning height alone would still have been clamped to zero.
+  assert.match(rule, /height: 84px !important/);
+  assert.match(rule, /max-height: 84px !important/);
+  // The element the rule has to reach still carries that id.
+  const fidsHtml = fs.readFileSync(path.join(root, 'fids.html'), 'utf8');
+  assert.match(fidsHtml, /id="fidsAirportLogoImg"/);
+});
