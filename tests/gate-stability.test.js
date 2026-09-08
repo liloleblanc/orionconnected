@@ -98,3 +98,33 @@ test('the Moncton banner never paints text in its own background colour', () => 
   assert.doesNotMatch(css, /\.g8-ap-YQM \.g8-r1-timebox \.octb-date \{\s*color: var\(--airline-r1/);
   assert.match(css, /\.g8-ap-YQM \.g8-r1-timebox \.octb-clock \{\s*color: var\(--airline-r1/);
 });
+
+test('the bilingual gate titles fit their pill instead of being cut', () => {
+  // gateLanguageLayout stacks an over-wide title by adding .g8-lane-stacked,
+  // and the stacking rules work by setting the two halves to display:block.
+  // The titles are display:flex, where a flex item ignores display:block — so
+  // the stack has been dead since they became flex, every title carries the
+  // class regardless, and long strings were simply clipped ('Embarquemen').
+  // Measured on the shipped board: 17px over at 1920x1080, 22px at 1366x768.
+  assert.match(core, /function _gateTitleFit\(root\)/);
+  assert.match(core, /gateLanguageLayout\(root\);\s*\n\s*_gateTitleFit\(root\);/);
+  // Shrink by RATIO, so the separator keeps its size relative to the words.
+  assert.match(core, /bases\[j\] \* ratio/);
+  // Cached on text+width like the other fitters, so it is shrink-only and
+  // re-measures when the column width changes.
+  assert.match(core, /dataset\.titleFitKey/);
+});
+
+test('the shelf code follows the carrier, and the aircraft hold is logo-only', () => {
+  // v23472 painted the value-line code a flat #4DA3FF, so the same YYZ rendered
+  // in two colours on one screen — accent red in the left column, blue here.
+  const from = css.indexOf('v23472 — THE VALUE-LINE CODE');
+  const to = css.indexOf('v23476 — AND IT CLEARS THE CARD EDGE');
+  assert.ok(from >= 0 && to > from, 'could not isolate the value-line code block');
+  const codeBlock = css.slice(from, to);
+  assert.doesNotMatch(codeBlock, /color:\s*#4DA3FF/);
+  assert.match(codeBlock, /--airline-accent-ink/);
+  // The hold panel is the carrier mark alone — no 'Aircraft details updating'.
+  assert.doesNotMatch(core, /v2-rc-aircraft-hold-text/);
+  assert.match(core, /acUpdating:\{ en:'Aircraft details updating'/);  // string kept in TL
+});

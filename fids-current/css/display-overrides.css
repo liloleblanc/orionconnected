@@ -15620,13 +15620,34 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-value .v2-rc-iata,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-value .v2-fi-code {
-  color: #4DA3FF !important;
-  -webkit-text-fill-color: #4DA3FF !important;
+  /* v23476 — THE CARRIER'S COLOUR, NOT A FLAT BLUE. Nick, on the live
+     Moncton gate: "it certainly should not be blue" — reversing the
+     "code bottom right blue please" this block shipped for in v23472.
+     Measured on that board, the same YYZ was rendering three different
+     colours at once: #D82F2E in the left column's Destination and
+     Arrival rows, and #4DA3FF here. The accent is what the rest of the
+     screen already uses, and it follows the carrier with no table —
+     Air Canada red, WestJet teal, Porter navy — so the shelf code and
+     the column codes can never drift apart again. */
+  color: var(--airline-accent-ink, var(--airline-accent, #D82F2E)) !important;
+  -webkit-text-fill-color: var(--airline-accent-ink, var(--airline-accent, #D82F2E)) !important;
 }
 
-/* Last 8px of the Arriving-From overspill — one more step down on the shelf
-   label size clears it with room to spare. Measured: 45px before the first
-   step, 8px after, 0 here. */
+/* v23476 — AND IT CLEARS THE CARD EDGE. Measured on the shipped board, the
+   shelf ran to x=1917 and .gad-map-col-v2's content edge is x=1917: the
+   title pill was hard against a 3px border under a 24px corner radius, with
+   no inset at all, which is the 'sticks out' Nick is pointing at. The pill
+   is square-cornered, so at the corner it rides over the curve. An inset on
+   the right only — the left is where the emblem v23472 just sized lives, and
+   that side is not what he flagged. _gateTitleFit absorbs the lost width.
+   The v23472 label step below stays: it is still the right base size, it was
+   just never going to be the whole fix. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves {
+  padding-right: clamp(6px, 0.55vw, 12px) !important;
+  box-sizing: border-box !important;
+}
+
+/* The v23472 label step, kept as the base size. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-en,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-2 {
   font-size: clamp(12px, 1.5vh, 17px) !important;

@@ -10462,10 +10462,13 @@ function _buildV2MapCol(ctx, vars) {
           ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="" onerror="window._holdArtFailed(this,&quot;' + _orbMono(_holdCode) + '&quot;)">'
             + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_holdCode || '\u2014') + '</span>'
         : '<span class="v2-rc-aircraft-hold-code">' + (_holdCode || '—') + '</span>';
-      var _aircraftHoldHtml = '<div class="v2-rc-aircraft-hold">' + _holdMark
-        + '<span class="v2-rc-aircraft-hold-text">'
-        + _gateLbl('acUpdating', _frF8, function (w) { return '<span>' + w + '</span>'; }, '')
-        + '</span></div>';
+      // v23476 — LOGO ONLY (Nick: 'the Aircraft details updating Mise a jour
+      // etc just leave the logo'). The hold panel is the carrier's mark on the
+      // sky plate while the aircraft type resolves. The caption under it told a
+      // passenger nothing they can act on and read as a fault message on a
+      // board that is otherwise all live data. TL keeps the acUpdating string,
+      // so nothing else that wants those words loses them.
+      var _aircraftHoldHtml = '<div class="v2-rc-aircraft-hold">' + _holdMark + '</div>';
       // Facing class baked at build time from the manifest — the clouds are
       // mirrored correctly on the FIRST painted frame, no onload race.
       var _facingCls = '';
@@ -10512,10 +10515,8 @@ function _buildV2MapCol(ctx, vars) {
         ? '<img class="v2-rc-aircraft-hold-logo" src="' + _fallbackSrc + '" alt="" onerror="window._holdArtFailed(this,&quot;' + _orbMono(_fallbackCode) + '&quot;)">'
           + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_fallbackCode || '\u2014') + '</span>'
       : '<span class="v2-rc-aircraft-hold-code">' + (_fallbackCode || '—') + '</span>';
-    var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark
-      + '<span class="v2-rc-aircraft-hold-text">'
-      + _gateLbl('acUpdating', _frF8, function (w) { return '<span>' + w + '</span>'; }, '')
-      + '</span></div>';
+    // v23476 — logo only here too, same reason as the hold panel above.
+    var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark + '</div>';
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
       +   '<div id="gateCloudsBg"></div>'
@@ -13988,6 +13989,55 @@ function gateAutofit(root) {
     });
   } catch (e) {}
   gateLanguageLayout(root);
+  _gateTitleFit(root);
+}
+
+// v23476 — THE BILINGUAL GATE TITLES FIT INSTEAD OF BEING CUT.
+// Nick, on the live Moncton gate: "the top banner sticks out still". Measured
+// on the shipped board: 'Boarding | Embarquement' overflows its pill by 17px at
+// 1920x1080, 18px at 1600x900 and 22px at 1366x768, and 'Arriving From | En
+// provenance de' by up to 14px — so the board has been painting 'Embarquemen'.
+//
+// Why the existing machinery could not catch it: gateLanguageLayout stacks a
+// too-wide title by adding .g8-lane-stacked, and the stacking rules work by
+// setting the two halves to display:block. These titles are display:flex, and
+// a flex item ignores display:block — it stays in the row. Every title on the
+// screen carries .g8-lane-stacked already (measured: all seven), so the class
+// is not even a usable signal any more. The stack has been dead since the
+// titles became flex; the v23472 font-size step was a one-off px nudge against
+// that, measured at one viewport ("0 here"), and it does not hold at any other.
+//
+// So: shrink to fit, the same law as every other box on this screen, and by
+// RATIO so the separator keeps its designed size relative to the words. Cached
+// on text+width like the Accor fitter, and shrink-only — a title that already
+// fits is never touched.
+function _gateTitleFit(root) {
+  try {
+    var titles = (root || document).querySelectorAll(
+      '.gad-aircraft-col .v2-fi-title, .g8-bir-shelves .v2-fi-title');
+    for (var i = 0; i < titles.length; i++) {
+      var t = titles[i];
+      if (!t.isConnected || t.clientWidth <= 1) continue;   // not laid out yet
+      var parts = t.querySelectorAll('.v2-fi-lbl-en, .v2-fi-lbl-2, .v2-fi-sep');
+      if (!parts.length) continue;
+      var key = (t.textContent || '') + '|' + Math.round(t.clientWidth);
+      if (t.dataset.titleFitKey === key) continue;
+      t.dataset.titleFitKey = key;
+      var bases = [], j;
+      for (j = 0; j < parts.length; j++) {
+        parts[j].style.removeProperty('font-size');           // re-measure clean
+        bases.push(parseFloat(getComputedStyle(parts[j]).fontSize) || 16);
+      }
+      var ratio = 1, guard = 26;
+      while (t.scrollWidth > t.clientWidth + 0.5 && ratio > 0.62 && guard-- > 0) {
+        ratio = Math.max(0.62, ratio - 0.045);
+        for (j = 0; j < parts.length; j++) {
+          // The CSS sizes are !important, so the inline override must be too.
+          parts[j].style.setProperty('font-size', (bases[j] * ratio).toFixed(2) + 'px', 'important');
+        }
+      }
+    }
+  } catch (e) {}
 }
 
 // ═══ BOARD AUTOFIT ═══ (Nick: 'row sizes everywhere to check and adjust',
@@ -22125,7 +22175,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23474';
+var FIDS_BUILD_TAG = 'v23476';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
