@@ -14008,6 +14008,7 @@ function gateAutofit(root) {
   } catch (e) {}
   gateLanguageLayout(root);
   _gateTitleFit(root);
+  _gateCodeInk(root);
 }
 
 // v23476 — THE BILINGUAL GATE TITLES FIT INSTEAD OF BEING CUT.
@@ -14029,6 +14030,115 @@ function gateAutofit(root) {
 // RATIO so the separator keeps its designed size relative to the words. Cached
 // on text+width like the Accor fitter, and shrink-only — a title that already
 // fits is never touched.
+/* v23494 — THE AIRPORT CODE KEEPS THE CARRIER'S COLOUR AND STAYS READABLE.
+   Nick, twice: "clearly not accents", then "Porter Code bottom right is still blue
+   its almost same color as background". Both are true at once and they pull against
+   each other. v23476 made the codes wear var(--airline-accent-ink) so they stop being
+   a flat blue and become the CARRIER's colour — which is what he asked for. But an
+   accent is only legible against the ground it lands on, and the gate has several:
+   the cream Moncton band, the dark slate shelf plate, the navy WestJet pill. Porter's
+   accent is #254D87; on the shelf slate it measures barely over 1:1.
+   All four contrast bugs this session had one shape — a colour assigned per-carrier
+   with no regard for what it sits on. So rather than a fifth one-off: the code takes
+   the accent, then the accent is LIFTED along its own hue until it clears the floor.
+   Porter stays Porter blue, just a readable one; AC red on cream already passes and
+   is left alone. Deliberately NOT _fidsInk — that snaps to black or white, which is
+   the "not accents" complaint. Hue and saturation are preserved; only lightness moves,
+   toward whichever end has headroom against the real ground. */
+function _ocColorParts(str) {
+  var s = String(str || '').trim();
+  var m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(s);
+  if (m) {
+    var h = m[1];
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+  }
+  // color(srgb 0.27 0.34 0.44) — Chrome returns these for color-mix() grounds, and
+  // reading its 0-1 components as 0-255 reports a slate plate as near-black, which
+  // makes every contrast check against it nonsense.
+  if (/^color\(\s*srgb/i.test(s)) {
+    var c = s.match(/[-\d.]+/g);
+    if (!c || c.length < 3) return null;
+    return [Math.round(+c[0] * 255), Math.round(+c[1] * 255), Math.round(+c[2] * 255)];
+  }
+  var n = s.match(/[\d.]+/g);
+  if (!n || n.length < 3) return null;
+  if (s.indexOf('rgba') === 0 && n.length > 3 && +n[3] === 0) return null;  // transparent is not a ground
+  return [+n[0], +n[1], +n[2]];
+}
+function _ocLum(rgb) {
+  var f = rgb.map(function (v) { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+  return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
+}
+function _ocCr(a, b) {
+  var la = _ocLum(a), lb = _ocLum(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+function _ocToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, h = 0, sat = 0, l = (mx + mn) / 2;
+  if (d) {
+    sat = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    h = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) : mx === g ? ((b - r) / d + 2) : ((r - g) / d + 4);
+    h /= 6;
+  }
+  return [h, sat, l];
+}
+function _ocFromHsl(h, sat, l) {
+  function q(p, q2, t) {
+    if (t < 0) t += 1; if (t > 1) t -= 1;
+    if (t < 1 / 6) return p + (q2 - p) * 6 * t;
+    if (t < 1 / 2) return q2;
+    if (t < 2 / 3) return p + (q2 - p) * (2 / 3 - t) * 6;
+    return p;
+  }
+  if (!sat) { var v = Math.round(l * 255); return [v, v, v]; }
+  var b2 = l < 0.5 ? l * (1 + sat) : l + sat - l * sat, a2 = 2 * l - b2;
+  return [Math.round(q(a2, b2, h + 1 / 3) * 255), Math.round(q(a2, b2, h) * 255), Math.round(q(a2, b2, h - 1 / 3) * 255)];
+}
+// The real ground under an element: the first ancestor that actually paints one.
+function _ocGroundOf(el) {
+  var n = el;
+  while (n && n !== document.documentElement) {
+    var parts = _ocColorParts(getComputedStyle(n).backgroundColor);
+    if (parts) return parts;
+    n = n.parentElement;
+  }
+  return [12, 16, 24];
+}
+function _gateCodeInk(root) {
+  try {
+    var FLOOR = 3.2, TARGET = 4.6;
+    var els = (root || document).querySelectorAll('.g8-wrap .v2-fi-code, .g8-wrap .v2-rc-iata');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (!el.isConnected || !el.getClientRects().length) continue;
+      el.style.removeProperty('color');
+      el.style.removeProperty('-webkit-text-fill-color');
+      var cs = getComputedStyle(el);
+      var fg = _ocColorParts(cs.webkitTextFillColor || cs.color);
+      var bg = _ocGroundOf(el.parentElement || el);
+      if (!fg || !bg) continue;
+      var base = _ocCr(fg, bg);
+      if (base >= FLOOR) continue;                     // already legible — the accent stands
+      var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
+      var up = _ocLum(bg) < 0.5;                       // dark ground lift, light ground deepen
+      var best = fg, bestCr = base;
+      for (var step = 1; step <= 20; step++) {
+        var l = up ? Math.min(0.97, hsl[2] + step * 0.04) : Math.max(0.06, hsl[2] - step * 0.04);
+        var cand = _ocFromHsl(hsl[0], hsl[1], l);
+        var cr = _ocCr(cand, bg);
+        if (cr > bestCr) { bestCr = cr; best = cand; }
+        if (cr >= TARGET) break;
+      }
+      if (bestCr <= base) continue;                    // nothing better available — keep the brand colour
+      var css = 'rgb(' + best[0] + ', ' + best[1] + ', ' + best[2] + ')';
+      el.style.setProperty('color', css, 'important');
+      el.style.setProperty('-webkit-text-fill-color', css, 'important');
+    }
+  } catch (e) {}
+}
+
 function _gateTitleFit(root) {
   try {
     var titles = (root || document).querySelectorAll(
@@ -22214,7 +22324,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23492';
+var FIDS_BUILD_TAG = 'v23494';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
