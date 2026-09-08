@@ -15452,9 +15452,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    before and after — that is a circular reference, not a tuning problem.
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-emblem {
-  transform: none !important;
-  height: clamp(58px, 8.6vh, 94px) !important;
-  max-height: clamp(58px, 8.6vh, 94px) !important;
+  /* Bigger than the wordmark's own box, and lifted 4px. The BOXES already
+     centre level (measured midDelta 0), but WS.svg draws its leaf low inside
+     its square, so matching boxes still read as a low leaf — which is what the
+     original -13px nudge was compensating for before it over-ran. 4px is what
+     the artwork's own offset needs; the height is then set so bottom lands
+     exactly on the bar, never past it. */
+  transform: translateY(-9px) !important;
+  height: clamp(64px, 9.6vh, 104px) !important;
+  max-height: clamp(64px, 9.6vh, 104px) !important;
   width: auto !important;
   object-fit: contain !important;
   align-self: center !important;
@@ -15496,4 +15502,25 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-code.v2-rc-iata {
   margin-left: auto !important;
+}
+
+/* ══ v23472 — WESTJET'S SHELF TOPS TAKE THE NAVY ══════════════════════════
+   Nick: "try the westjet only tops in navy blue their color", then "TEAL CODE".
+
+   The pill was painted with the accent itself, which is why the code could
+   never be accent-coloured: _caFit keeps the accent's HUE and scans lightness
+   for maximum contrast, so on a teal ground the darkest teal wins and lands at
+   rgb(0,8,20) — the near-black Nick reads as "no colour". Measured: 7.6:1
+   against the pill, doing exactly what it is meant to do.
+
+   Moving the pill to r1 — WestJet's own navy #003366, published as
+   --airline-r1 in v23470 — leaves the accent hue free at the light end, where
+   it clears the navy comfortably (teal on navy measures 4.77:1). The painter
+   then picks a light teal on its own; no override, no fighting its inline
+   !important, and it still adapts if a carrier's colours change.
+
+   Scoped to WestJet while Nick looks at it.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-WS :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  background: var(--airline-r1, #003366) !important;
 }
