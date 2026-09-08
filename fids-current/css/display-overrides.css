@@ -3596,9 +3596,35 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   }
 
 
+  /* v23496 — ONE RULE GOVERNS THE SILK AIRPORT LOGO'S BOX.
+     Nick: "no logo on the board again at all", and earlier the same day a
+     logo so large it was cut off by the header. One defect, two symptoms.
+
+     flight-display.css:3554-3555 lists an ID branch
+     (.fids-airport-pill #fidsAirportLogoImg, specificity 1,1,0) beside the
+     class branch. The static main-board <img id="fidsAirportLogoImg">
+     (fids.html:581) matches it, so its height:auto / max-height:72% beat the
+     class-only version of THIS rule (0,3,1) — one ID outranks three
+     classes/attributes no matter which sheet loads later. Inside the silk
+     pill, which :3583-3596 makes shrink-to-fit in both axes, auto height on a
+     logo SVG with no intrinsic px size resolves to 0 and the pill collapses
+     onto it. Bisected in headless Chrome against the real sheets: id present
+     -> 0x0; id removed -> 74.88x84; id restored -> 0x0.
+
+     max-height is part of the fix, not decoration. 72% resolved against a pill
+     whose own height is auto is circular, so Blink takes it as 0 — a winning
+     height:84px alone would still have been clamped to nothing.
+
+     This is also why the 18:38 asset swap changed the symptom and not the
+     cause: the same auto/auto path renders an SVG that carries px dimensions
+     at full natural size (the "huge, cut off" state) and a viewBox-only one at
+     zero. A definite height makes the rule asset-independent. */
   body[data-fids-banner="silk"] .fids-airport-pill .fids-airport-logo-img,
-  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-logo-img {
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-logo-img,
+  body[data-fids-banner="silk"] .fids-airport-pill #fidsAirportLogoImg,
+  body[data-fids-banner="silk-acadian"] .fids-airport-pill #fidsAirportLogoImg {
     height: 84px !important;
+    max-height: 84px !important;
     max-width: 340px !important;
     width: auto !important;
     object-fit: contain !important;
