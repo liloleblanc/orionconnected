@@ -84,6 +84,21 @@ function _smInitTheme() {
   smApplyTheme(theme);
 }
 
+// v23484 — THE PICKER HAS TO LIVE ON THE BODY, NOT INSIDE THE PANEL.
+// Nick: "its not on the screen". #mlPickerModal is position:fixed;inset:0, which
+// should centre it on the viewport — except it is markup inside menu.html, which
+// is injected into .ctrl, and fids.css:45 gives .ctrl.show `transform:
+// translateY(0)` for its slide-in. ANY transform other than `none` makes that
+// element the containing block for fixed-position descendants, so inset:0
+// resolved against the panel's box instead of the screen and the dialog hung off
+// the top edge with its first rows unreachable.
+// Re-parenting to <body> on open is immune to that, and to any future ancestor
+// that picks up a transform/filter/will-change. Cheap: the node moves once.
+function _fidsDetachModal(modal) {
+  try { if (modal && modal.parentElement !== document.body) document.body.appendChild(modal); } catch (e) {}
+  return modal;
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // OPEN / CLOSE — push layout
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3275,7 +3290,7 @@ function cuDeleteActivePreset() {
           thumb = '<div style="width:48px;height:32px;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;border-radius:3px;font-size:9px;font-weight:700;">VID</div>';
         }
       } else {
-        thumb = '<img src="' + _esc(it.url || '') + '" style="width:48px;height:32px;object-fit:cover;border-radius:3px;background:#374151;" onerror="this.style.opacity=0.3">';
+        thumb = '<img src="' + _esc(it.url || '') + '" style="width:48px;height:32px;object-fit:contain;border-radius:3px;background:#374151;" onerror="this.style.opacity=0.3">';
       }
       var meta = it.source === 'youtube'
         ? (it.ytType === 'playlist' ? 'YouTube Playlist' : 'YouTube Video') + ' · ' + (it.ytId || '').slice(0, 14)
@@ -3472,7 +3487,7 @@ function cuDeleteActivePreset() {
     var lib = (_libCache && _libCache.items) || [];
     var it = lib.find(function(x) { return x.id === itemId; });
     if (!it) return _libFlash('Item not found', 'error');
-    var modal = document.getElementById('mlPickerModal');
+    var modal = _fidsDetachModal(document.getElementById('mlPickerModal'));
     var title = document.getElementById('mlPickerTitle');
     var listEl = document.getElementById('mlPickerList');
     if (!modal || !listEl) return;
@@ -3799,7 +3814,7 @@ function cuDeleteActivePreset() {
         meta = '';
       } else {
         if (it.type === 'image') {
-          thumb = '<img src="' + _esc(it.url || '') + '" style="width:36px;height:24px;object-fit:cover;border-radius:3px;background:#374151;" onerror="this.style.opacity=0.3">';
+          thumb = '<img src="' + _esc(it.url || '') + '" style="width:36px;height:24px;object-fit:contain;border-radius:3px;background:#374151;" onerror="this.style.opacity=0.3">';
         } else {
           var lbl = it.source === 'youtube' ? (it.ytType === 'playlist' ? 'PL' : 'YT') : 'VID';
           var bg = it.source === 'youtube' ? (it.ytType === 'playlist' ? '#dc2626' : '#ef4444') : '#3b82f6';
@@ -3862,7 +3877,7 @@ function cuDeleteActivePreset() {
     var titleEl = document.getElementById('mlPickerTitle');
     if (titleEl) titleEl.textContent = 'Pick ' + (slot === 'videos' ? 'videos' : 'images') + ' for ' + _currentAirline;
     _renderPicker();
-    var modal = document.getElementById('mlPickerModal');
+    var modal = _fidsDetachModal(document.getElementById('mlPickerModal'));
     if (modal) modal.style.display = 'flex';
   };
 
@@ -3881,7 +3896,7 @@ function cuDeleteActivePreset() {
       var isAssigned = alreadyAssigned.indexOf(it.id) !== -1;
       var thumb;
       if (it.type === 'image') {
-        thumb = '<img src="' + _esc(it.url || '') + '" style="width:54px;height:36px;object-fit:cover;border-radius:4px;flex:0 0 auto;background:var(--console-surface);" onerror="this.style.opacity=0.3">';
+        thumb = '<img src="' + _esc(it.url || '') + '" style="width:54px;height:36px;object-fit:contain;border-radius:4px;flex:0 0 auto;background:var(--console-surface);" onerror="this.style.opacity=0.3">';
       } else {
         var lbl = it.source === 'youtube' ? (it.ytType === 'playlist' ? 'PL' : 'YT') : 'VID';
         var bg = it.source === 'youtube' ? (it.ytType === 'playlist' ? '#dc2626' : '#ef4444') : '#3b82f6';
