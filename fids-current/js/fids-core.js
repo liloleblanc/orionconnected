@@ -12510,7 +12510,19 @@ function uxgGateHtml(ctx) {
       var _embCode2 = _bannerBrandCode || airlineCode;
       var _embF = (typeof IATA_TO_EMBLEM !== 'undefined') ? (IATA_TO_EMBLEM[_embCode2] || IATA_TO_EMBLEM[airlineCode]) : null;
       var _embT = (typeof IATA_TO_TILE_ICAO !== 'undefined') ? (IATA_TO_TILE_ICAO[_embCode2] || IATA_TO_TILE_ICAO[airlineCode]) : null;
-      if (_embF) _bannerEmblemSrc = _embF;
+      // v23470 — carriers whose BANNER is the wordmark alone. Nick: "porter
+      // does not use one with their name", and on where the emblem does
+      // belong, "fids bids they use it". So this is scoped to the banner: the
+      // FIDS row and the BIDS tile both resolve through mkLogo(), which never
+      // reads this, and keep drawing Porter's tile exactly as they do today.
+      //
+      // Needed as its own guard rather than a falsy IATA_TO_EMBLEM entry,
+      // because '' and null both fall through to the tile on the next line —
+      // which for PD is /logos/airline-tiles/PTR.svg, the square plate.
+      var _NO_BANNER_EMBLEM = { 'PD': 1, 'POE': 1 };
+      var _noEmb = _NO_BANNER_EMBLEM[_embCode2] || _NO_BANNER_EMBLEM[airlineCode];
+      if (_noEmb) _bannerEmblemSrc = '';
+      else if (_embF) _bannerEmblemSrc = _embF;
       else if (_embT) _bannerEmblemSrc = '/logos/airline-tiles/' + _embT + '.svg';
       // v23440 — THE BANNER MARK IS SQUARE (Nick, on the DEN/A14 United gate:
       // 'Logo at the top banner left should be square'). This band already
@@ -20831,6 +20843,23 @@ const IATA_TO_EMBLEM = {
   // square — native colours, no plate — and latam-wordmark-light is letters
   // only, so the pair composes the official spark+LATAM lockup.
   'LA': '/logos/airlines/asian-other/latam-spark.svg',         // LATAM spark (coral + white)
+  // v23470 — Nick, on the Moncton banner: "mine has the wordmark with the
+  // rondelle without a background in full color no background", against a
+  // board showing "an emblem of Air Canada with black — its the emblem then
+  // the wordmark". Exactly right: neither AC nor WS had an entry here, so the
+  // banner fell through to IATA_TO_TILE_ICAO and drew the SQUARE TILE —
+  // 'ACA-black' for Air Canada, which is the black box he was looking at, and
+  // 'WJA' for WestJet. Tiles are square-with-baked-background by design; that
+  // is right for the board's airline column and wrong on a cream banner.
+  //
+  // Both transparent marks were already on disk, unreferenced. No new art.
+  //
+  // This does NOT touch the FIDS board. mkLogo() checks IATA_TO_TILE_ICAO
+  // FIRST (line ~20804) and returns there; AC and WS both have tiles, so the
+  // board never reaches this map and keeps the tiles it draws today —
+  // Nick: "only if its the FIDS".
+  'AC': '/logos/symbols/airlines/AC.svg',                      // roundel, no plate
+  'WS': '/logos/symbols/airlines/WS.svg',                      // leaf, no plate
 };
 
 
@@ -22024,7 +22053,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23468';
+var FIDS_BUILD_TAG = 'v23470';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
