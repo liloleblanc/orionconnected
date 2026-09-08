@@ -15524,6 +15524,19 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-WS :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
   background: var(--airline-r1, #003366) !important;
 }
+/* v23486 — AND THE INK THAT GOES ON IT. Painting the pill navy without
+   saying what colour the words are left the two halves of this to be decided
+   in different places: the left column happened to inherit white and read at
+   12.61:1, the shelf inherited rgb(20,33,58) — an ink meant for a LIGHT pill —
+   and read at 1.27:1. Measured on the live WestJet gate 1: invisible.
+   The ink lives in the same block as the background now, so the next person to
+   retune one cannot leave the other behind. The CODE span is excluded on
+   purpose — 'Destination | YEG' keeps the carrier accent it is supposed to
+   wear, which is the whole point of v23476. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-WS :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title :is(.v2-fi-lbl-en, .v2-fi-lbl-2, .v2-fi-sep) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
 
 /* ══ v23472 — THE SEPARATOR COMES BACK ════════════════════════════════════
    Nick: "There should be seperationsn between words | i dont see them".
