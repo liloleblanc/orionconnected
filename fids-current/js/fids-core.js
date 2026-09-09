@@ -3087,6 +3087,10 @@ function getDedicatedRenderKey() {
 // time is the best the feed knows: actual arrival, else revised, else
 // scheduled. A flight with NO usable time is kept — hiding a flight because
 // the feed dropped its timestamp would strand passengers silently.
+// v23526 — how many minutes BEFORE the revised departure a gate reads closed.
+// Nick's call is five. Porter publishes ten; other carriers differ, so this is
+// one knob rather than a rule buried in a comparison.
+var GATE_CLOSE_LEAD_MIN = 5;
 var BIDS_WINDOW_AHEAD_MS = 60 * 60000;
 var BIDS_WINDOW_TRAIL_MS = 45 * 60000;
 function _bidsInWindow(f, nowTs) {
@@ -11002,7 +11006,18 @@ function uxgGateHtml(ctx) {
     // with no contrary status reads as closed. Cancelled/diverted keep
     // their own signs, and a revised departure moves this deadline with
     // it — minsToDep is already revised-aware.
-    || (typeof minsToDep === 'number' && isFinite(minsToDep) && minsToDep <= -2
+    // v23526 — A REAL CUT-OFF, BEFORE DEPARTURE. Nick: "lets do gate topp and
+    // a 5 min cutoff."
+    // This was -2, i.e. the gate only ever read closed TWO MINUTES AFTER the
+    // aircraft was due to leave, which is not a cut-off at all — it was a
+    // backstop for a feed whose status flip arrives late or never (v23228,
+    // Nick's 7:33 shot: FINAL BOARDING CALL still up three minutes past a 7:30
+    // departure). Airlines close the door before departure, not after it:
+    // Porter publishes ten minutes, and Nick's call for this board is five.
+    // GATE_CLOSE_LEAD_MIN is positive minutes BEFORE the (revised) departure,
+    // and minsToDep is already revised-aware, so a delay carries the deadline
+    // with it. A feed that says gateclosed/departed still wins outright above.
+    || (typeof minsToDep === 'number' && isFinite(minsToDep) && minsToDep <= GATE_CLOSE_LEAD_MIN
         && minsToDep > -720
         && stKey !== 'cancelled' && stKey !== 'diverted');
   var isFinalCallStatus = (stKey === 'final' || stKey === 'finalcall' || stKey === 'final-call');
@@ -11735,7 +11750,17 @@ function uxgGateHtml(ctx) {
       : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true, 'v2-fi-flight');
     return '<div class="g8-board-info-row g8-bir-shelves"><div class="v2-flightinfo-block">'
       + _birFlightShelf
-      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | '), '', _bDest, true)
+      // v23526 — THE CODE RIDES THE DESTINATION LABEL. Nick: "The Top Panel
+      // shelves when it switches to boarding does not have airport code yet as
+      // requested for all airlines."
+      // _cell already knows how to render it: v23472 taught it to read a
+      // trailing 2-4 char all-caps segment as the code and emit it as
+      // .v2-fi-code.v2-rc-iata — the same markup the rail uses, which the
+      // accent painter already looks for. That machinery has been sitting here
+      // working the whole time; this call site simply never handed it a code,
+      // so there was nothing to parse. Appending locIata is the entire fix, and
+      // it is airline-agnostic because this row builds for every carrier.
+      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | ') + (locIata ? ' | ' + locIata : ''), '', _bDest, true)
       + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(boardTimeHtml)), true, _birRevCls(boardTimeHtml))
       + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(depTimeHtml)), true, _birRevCls(depTimeHtml))
       // v23115b — ALWAYS four shelves. The abnormal state (delayed /
@@ -22599,7 +22624,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23524';
+var FIDS_BUILD_TAG = 'v23526';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
