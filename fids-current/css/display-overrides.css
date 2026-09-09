@@ -16013,3 +16013,46 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   min-width: 0 !important;
   max-width: 100% !important;
 }
+
+/* ── v23528 — THE BANNER SITS FLUSH TO THE TOP ────────────────────────────
+   Nick: "The Banners themselves are not flush to the top and it makes it
+   smaller."
+   The banner row carries a top padding in several places — 12px at :813, 4px
+   at :965 and :1057, and clamp(4px,0.7vh,9px) at :14276 — and the wrap adds
+   its own on top of that. Every one of them does the same two things: it
+   pushes the banner down off the top edge, and because the row is sized by its
+   content it takes that space OUT of the banner rather than off the screen. So
+   the gap and the shrinking Nick is describing are the same pixels, counted
+   once. Zeroing the top inset gives them back to the artwork and puts the
+   banner where he wants it — against the edge. Side and bottom padding are
+   untouched; this is only about the top. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-bg {
+  padding-top: 0 !important;
+  margin-top: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap {
+  padding-top: 0 !important;
+}
+
+/* ── v23528 — THE RAIL'S CODES WEAR THE CARRIER'S COLOUR TOO ──────────────
+   v23524 fixed the codes painted by applyCodeAccents(), and the map column's
+   codes already had the accent chain at :3893 — but the LEFT RAIL and the
+   boarding shelves never had a colour of their own at all. They inherit
+   --fids-text (#16283C, rgb(22,40,60)), and _gateCodeInk then lifts THAT for
+   contrast: hue-preserving, so a navy base can only ever come back as a
+   lighter navy. That is the blue still sitting on the Air Canada rail after
+   the shelf beside it went red — same complaint, a different paint path.
+   Same chain as the map column, so the lift starts from the airline's own
+   colour and currentColor remains the last resort — never an invented hue. */
+/* NOT prefixed with .g8-wrap: .gad-aircraft-col is a SIBLING of it, not a
+   descendant, so the .g8-wrap-scoped version of this rule matched nothing
+   and the rail stayed navy. Verified against the live gate DOM. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gad-aircraft-col .v2-fi-code,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bir-shelves .v2-fi-code {
+  color: var(--airline-accent-ink, var(--airline-accent, currentColor)) !important;
+  /* _gateCodeInk reads `cs.webkitTextFillColor || cs.color` for its base, so
+     setting colour alone leaves the OLD fill as the thing it measures and the
+     lift keeps coming back navy. Both properties, or neither. */
+  -webkit-text-fill-color: var(--airline-accent-ink, var(--airline-accent, currentColor)) !important;
+}
