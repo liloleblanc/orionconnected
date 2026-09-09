@@ -12393,8 +12393,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      designer set it and only touches one that would actually escape the row. */
   /* Two px inside the row, so a mark tuned to exactly the row height (Porter's
      30px) cannot sit on the line it is meant to stay inside. */
-  max-height: calc(var(--fids-row-h, 58px) - 2px) !important;
+  /* v23510 — the ceiling drops from row-2 to row-6 to buy headroom, and 2px
+     of it is spent lifting the mark. Only marks actually pinned AT the ceiling
+     lose anything; every carrier tuned below it (Porter 28, WestJet 30, Flair
+     32) is untouched, which is the whole point of a ceiling. */
+  max-height: calc(var(--fids-row-h, 58px) - 6px) !important;
   max-width: 198px !important;
+  position: relative !important;
+  top: -2px !important;
   object-fit: contain !important;
   /* v23504b — LEFT, not centred. Nick: "I meant centered height wise not long
      wise". object-position:center pushed short wordmarks into the middle of the
@@ -12453,6 +12459,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   padding: 0 !important;
   margin: 0 !important;
   border-radius: 0 !important;
+  /* v23510 — Nick: "logos icons need to go about less than a cm up".
+     A 36px row leaves no headroom: the tile already clears the row line by
+     only 2px, so lifting it further puts it back across the line into the row
+     above — exactly what Nick reported as "the logos are outside the lines
+     into the other rows". 2px is the whole budget, and it costs nothing: the
+     break between adjacent tiles is set by the inset BELOW the upper tile, so
+     shifting up moves the gap rather than closing it. Size unchanged,
+     separation still 4px. */
+  position: relative !important;
+  top: -2px !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo img,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo svg {
@@ -12461,7 +12477,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   max-width: 100% !important;
   max-height: 100% !important;
   object-fit: contain !important;
-  object-position: center !important;
+  /* v23510 — LEFT, not centred, and this is the delayed-row bug. Nick: "when
+     the flight is delayed its pushed right by about half a cm", and earlier
+     "why is it not alligned between delayed and not delayed".
+     A delayed row is a YELLOW (light) ground, so the variant swap at
+     fids-core.js:4169/:4224 loads a different SVG file for it — the -black or
+     onLight art instead of the white or colour art. Those files do not share
+     an aspect ratio or the same internal whitespace, and object-position:center
+     centres whatever it gets inside a fixed square box. A slightly wider light
+     variant therefore sits further right than its dark twin in the row above,
+     and the column edge breaks exactly on the rows that changed state.
+     Pinning left means the ink starts at the same x no matter which variant
+     loaded, so the column stays straight through every status change. The
+     wordmark was pinned left for this same reason in v23504b. */
+  object-position: left center !important;
   display: block !important;
   margin: 0 !important;
 }
