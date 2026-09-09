@@ -14133,8 +14133,17 @@ function _gateCodeInk(root) {
       if (!fg) continue;
       var base = _ocCr(fg, bg);
       if (base >= FLOOR) {                             // already legible — the accent stands
-        el.style.removeProperty('color');
-        el.style.removeProperty('-webkit-text-fill-color');
+        // v23502c — ONLY EVER UNDO OUR OWN OVERRIDE. Nick: "The airport code no
+        // longer has color". Calling removeProperty unconditionally stripped the
+        // inline colour the BOARD itself had set, so a code that was already
+        // perfectly legible lost its accent the moment this pass looked at it —
+        // and because the pass then ran again, it came back: "its still
+        // sweithving on and ofg". Undo only what this function applied.
+        if (el.dataset.inkApplied) {
+          el.style.removeProperty('color');
+          el.style.removeProperty('-webkit-text-fill-color');
+          delete el.dataset.inkApplied;
+        }
         continue;
       }
       var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
@@ -14149,6 +14158,7 @@ function _gateCodeInk(root) {
       }
       if (bestCr <= base) continue;                    // nothing better available — keep the brand colour
       var css = 'rgb(' + best[0] + ', ' + best[1] + ', ' + best[2] + ')';
+      el.dataset.inkApplied = '1';
       el.style.setProperty('color', css, 'important');
       el.style.setProperty('-webkit-text-fill-color', css, 'important');
     }
@@ -14447,8 +14457,11 @@ function _fidsRowInk(root) {
         if (!fg) continue;
         var base = _ocCr(fg, bg);
         if (base >= FLOOR) {                         // already readable — palette untouched
-          el.style.removeProperty('color');
-          el.style.removeProperty('-webkit-text-fill-color');
+          if (el.dataset.inkApplied) {                 // same rule as the gate pass
+            el.style.removeProperty('color');
+            el.style.removeProperty('-webkit-text-fill-color');
+            delete el.dataset.inkApplied;
+          }
           continue;
         }
         var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
@@ -14468,6 +14481,7 @@ function _fidsRowInk(root) {
         }
         if (bestCr <= base) continue;
         var css = 'rgb(' + best[0] + ', ' + best[1] + ', ' + best[2] + ')';
+        el.dataset.inkApplied = '1';
         el.style.setProperty('color', css, 'important');
         el.style.setProperty('-webkit-text-fill-color', css, 'important');
       }
@@ -14486,7 +14500,11 @@ function _fidsAirportLogoFit() {
     if (br.height < 40 || br.width < 200) return;
 
     var GAP = 28;   // clear air the logo must leave beside each neighbour
-    var VPAD = 8;   // and above/below, inside the band
+    // v23502b — Nick: "Logos may need to be slightly smaller but not by much".
+    // 8px of vertical padding filled 88% of the band (320x112). 14px takes it to
+    // 100px / 78% — a step down, not a retreat to the 84px it started at. This is
+    // the one number to turn if it still wants nudging: bigger VPAD, smaller logo.
+    var VPAD = 14;  // and above/below, inside the band
 
     // The corridor is bounded by whatever actually sits left and right of the
     // pill, measured — not by a hardcoded guess at the layout.
