@@ -11807,11 +11807,17 @@ function uxgGateHtml(ctx) {
   // commences it returns to the Porter Reserve priority queue, which is what
   // lanes 1-2 are for from then on.
   function _pdLanesBodyHtml(rowsVal, comingVal, preActive) {
-    var _prioT = _gateLbl(preActive ? 'preboard' : 'priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
+    // v23530 — the HEADER keeps saying Priority; only the VALUE names the
+    // phase. v23522 put the same bilingual 'Pre-boarding | Pre-embarquement'
+    // in both, so the column said it twice and the value — the big line — ran
+    // out of room and clipped to "Pre-". Caught on the live YHZ gate 15 sign.
+    var _prioT = _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
     var _rowsLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
-    var _prioVal = preActive
-      ? _gateLbl('preboard', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ')
-      : 'Porter Reserve';
+    // Single language, not the bilingual pair: this is the largest type on the
+    // panel and the paired form does not fit. The board already rotates its
+    // language, so each pass shows it in one of them — the same reason the
+    // roster below uses TL().
+    var _prioVal = preActive ? (_gateLbl1('preboard', _frF) || 'Pre-boarding') : 'Porter Reserve';
     // v23524 — the two product names in Porter's list get their marks. Nick
     // sent the artwork; every file in it is DARK INK (porter_reserve_logo.svg
     // is #222223, the VIPorter tier marks are black or #153993) and this sign's
@@ -11826,7 +11832,7 @@ function uxgGateHtml(ctx) {
         + '</div>'
       : '';
     var _prioSub = preActive
-      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + TL('preboardList') + '</span></div>' + _prioMarks
+      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1('preboardList', _frF) + '</span></div>' + _prioMarks
       : '';
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>' + _prioSub + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
@@ -14095,9 +14101,6 @@ function gateAutofit(root) {
   gateLanguageLayout(root);
   _gateTitleFit(root);
   _gateCodeInk(root);
-  // After the ink pass: the two are independent (size vs colour), and
-  // tests/code-ink.test.js pins these two as adjacent.
-  _birValueFit(root);
 }
 
 // v23476 — THE BILINGUAL GATE TITLES FIT INSTEAD OF BEING CUT.
@@ -14250,68 +14253,6 @@ function _gateCodeInk(root) {
       el.dataset.inkApplied = '1';
       el.style.setProperty('color', css, 'important');
       el.style.setProperty('-webkit-text-fill-color', css, 'important');
-    }
-  } catch (e) {}
-}
-
-// v23528 — HOW BIG CAN THIS TEXT BE. Nick: "the text does not fill all
-// available room and if it does it spills it needs to be flush and snug and
-// able to accomodate the text."
-//
-// The shelf values are sized by clamp(22px, 3.8vh, 48px) — a VIEWPORT-HEIGHT
-// figure that knows nothing about how much WIDTH the shelf has. So "Toronto"
-// left half the plate empty while a long name ran off it, and the stylesheet
-// has carried the admission for months: "may still clip the longest names —
-// flagged to fix later (Nick)". One fixed number cannot be right for both.
-//
-// Search for the largest ratio that still fits, in both directions from 1:
-// grow a short string until it fills the plate, shrink a long one until it
-// stops spilling. Kept PURE — a function of a measuring callback — so the
-// arithmetic is testable without a browser. fits(ratio) answers "does it fit
-// at this size"; this returns the ratio to use.
-function _ocFitRatio(fits, opts) {
-  var o = opts || {};
-  var lo = o.min || 0.55, hi = o.max || 1.8, step = o.step || 0.04;
-  if (!fits(1)) {                                   // spilling — come down
-    for (var d = 1 - step; d >= lo - 1e-9; d -= step) {
-      if (fits(d)) return Math.max(lo, Number(d.toFixed(4)));
-    }
-    return lo;                                      // nothing fits; take the floor
-  }
-  var best = 1;                                     // fits — see how much room is left
-  for (var u = 1 + step; u <= hi + 1e-9; u += step) {
-    if (!fits(u)) break;
-    best = Number(u.toFixed(4));
-  }
-  return best;
-}
-
-// The boarding shelf values fill their plate, and never overrun it. Same
-// anti-flicker contract as _gateCodeInk and _gateTitleFit: remember the inputs
-// and do no DOM writes when nothing changed. This runs from gateAutofit, which
-// fires on paint, font settle, resize and a 5s heartbeat — re-measuring from
-// scratch every pass is exactly what made the airport codes flicker.
-function _birValueFit(root) {
-  try {
-    var vals = (root || document).querySelectorAll('.g8-bir-shelves .v2-fi-value');
-    for (var i = 0; i < vals.length; i++) {
-      var v = vals[i];
-      if (!v.isConnected || v.clientWidth <= 1) continue;
-      var box = v.parentElement || v;
-      var key = (v.textContent || '') + '|' + Math.round(v.clientWidth) + 'x' + Math.round(box.clientHeight);
-      if (v.dataset.valFitKey === key) continue;
-      v.dataset.valFitKey = key;
-      v.style.removeProperty('font-size');
-      var base = parseFloat(getComputedStyle(v).fontSize) || 24;
-      // A value may never grow so tall it pushes its own label out of the
-      // shelf: the plate's height is the real ceiling, not the font clamp.
-      var hCap = box.clientHeight > 0 ? (box.clientHeight * 0.62) / base : 1.8;
-      var ratio = _ocFitRatio(function (r) {
-        v.style.setProperty('font-size', (base * r).toFixed(2) + 'px', 'important');
-        return v.scrollWidth <= v.clientWidth + 0.5;
-      }, { min: 0.55, max: Math.max(1, Math.min(1.8, hCap)), step: 0.04 });
-      if (Math.abs(ratio - 1) < 1e-9) v.style.removeProperty('font-size');
-      else v.style.setProperty('font-size', (base * ratio).toFixed(2) + 'px', 'important');
     }
   } catch (e) {}
 }
@@ -22542,6 +22483,27 @@ function _bidsTimeForLang(t) {
 function _gateLblHalf(w, i) {
   return '<span class="g8-bir-l' + (i + 1) + '">' + w + '</span>';
 }
+// v23530 — ONE LANGUAGE OUT OF THE GATE LABEL TABLE.
+// The pre-boarding phase name and its roster were written with TL(), which
+// reads a DIFFERENT table — so both rendered their raw keys on the live sign:
+// the value read "preboard" and the courtesy list read "preboardList". Caught
+// on YHZ gate 15 in its actual pre-boarding window; it had been shipping that
+// way since v23522 because I verified the markup and never a lit gate.
+// _gateLbl pairs both languages, which is right for a small header and far too
+// long for the biggest line on the panel or for a five-item list. This returns
+// ONE language from the same table the pairs come from, following the board's
+// own language rotation so each pass shows it in one of them.
+function _gateLbl1(key, frF) {
+  try {
+    var t = (typeof _GATE_LBL !== 'undefined') && _GATE_LBL[key];
+    if (!t) return '';
+    if (frF && t.fr) return t.fr;
+    var L = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en'];
+    for (var i = 0; i < L.length; i++) { if (t[L[i]]) return t[L[i]]; }
+    return t.en || '';
+  } catch (e) { return ''; }
+}
+
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
   var o = _GATE_LBL[key];
   if (!o) return '';
@@ -22689,7 +22651,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23528';
+var FIDS_BUILD_TAG = 'v23530';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

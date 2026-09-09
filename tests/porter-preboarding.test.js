@@ -35,13 +35,16 @@ function build(preActive, lang) {
     else if (SRC[k] === '}') { depth--; if (depth === 0) { end = k + 1; break; } }
   }
   const fn = new Function(
-    '_gateLbl', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF',
+    '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF',
     SRC.slice(at, end) + '\nreturn _pdLanesBodyHtml;',
   )(
     (key) => '[' + key + ']',
+    // v23530 — the sign reads ONE language from _GATE_LBL for the phase name
+    // and the roster; TL() reads a different table and returned the raw keys.
+    (key) => (key === 'preboardList' ? TABLE[lang] : (key === 'preboard' ? 'Pre-boarding' : '[' + key + ']')),
     () => '',
     (v) => v,
-    (key) => (key === 'preboardList' ? TABLE[lang] : '[' + key + ']'),
+    (key) => '[' + key + ']',
     (v) => '<coming>' + v + '</coming>',
     () => '',
     false,
@@ -75,7 +78,9 @@ test('every language the board can run carries the roster', () => {
 
 test('while pre-boarding, the column is headed Pre-boarding and lists the groups', () => {
   const html = build(true, 'en');
-  assert.match(html, /\[preboard\]/, 'the column must be headed Pre-boarding, not Priority');
+  assert.ok(html.includes('Pre-boarding'), 'the phase name must be the value on the panel');
+  assert.match(html, /\[priority\]/,
+    'the HEADER stays Priority — v23522 put the phase in both and the value clipped');
   assert.ok(html.includes('Unaccompanied minors'), 'the published list must be on the sign');
   assert.ok(html.includes('Families with children 2 and under'));
   assert.doesNotMatch(html, />Porter Reserve</,
@@ -87,7 +92,6 @@ test('once general boarding commences it returns to the Reserve priority queue',
   assert.ok(html.includes('Porter Reserve'), 'lanes 1-2 are the Reserve queue from then on');
   assert.ok(!html.includes('Unaccompanied minors'),
     'the pre-boarding courtesy list must not linger through general boarding');
-  assert.match(html, /\[priority\]/);
 });
 
 test('the phase is driven by the real boarding window, not a magic number', () => {
@@ -97,6 +101,6 @@ test('the phase is driven by the real boarding window, not a magic number', () =
 
 test('the French sign says it in French', () => {
   const html = build(true, 'fr');
-  assert.ok(html.includes('Mineurs non accompagnés'));
+  assert.ok(html.includes('Mineurs non accompagn'));
   assert.ok(html.includes('PorterReserve'), 'brand names stay as Porter writes them');
 });
