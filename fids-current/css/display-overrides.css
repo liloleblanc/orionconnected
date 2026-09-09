@@ -12407,32 +12407,45 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   margin-bottom: auto !important;
 }
 
-/* The emblem tracks the row too, instead of a separate constant, and centres in
-   it. Nick: "center height wise" — measured, row 1's emblem sat 4.5px below the
-   row top against 3px for every other row. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo img,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo svg,
+/* v23506 — THE EMBLEM TAKES THE WHOLE ROW. Nick: "ICONS ARE NOT DONE",
+   "It should take the row and allign", "the entire space of the row".
+   Two things were wrong and the screenshot showed both. The tile artwork carries
+   its OWN square background, so sizing the image to 0.92 of the row left a black
+   or navy chip floating with row colour above and below it — it read as a sticker
+   stuck on the row rather than part of it. And the 54x54 container never knew the
+   row height, so the chips never lined up into a column either.
+   Container and image are both exactly --fids-row-h now. The tile fills the row
+   top to bottom, every row's tile is identical, and they stack into one clean
+   edge down the left. Square is right here: the artwork IS a square tile, and
+   giving it the full row height is what makes the edges meet. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo .full-logo,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .full-logo {
-  /* v23504c — 0.80 of a 30px row is 24px, which is EXACTLY where the emblem
-     already was, so v23504 changed nothing visible and Nick said so: "you did
-     not touch the logos either ... icons". 0.92 gives 27.6px in the same row and
-     ~1.2px of clearance each side, which a circular mark can carry far closer to
-     the row line than text can. This is a ratio, so every tier grows with it. */
-  height: calc(var(--fids-row-h, 58px) * 0.92) !important;
-  width: calc(var(--fids-row-h, 58px) * 0.92) !important;
-  max-height: calc(var(--fids-row-h, 58px) * 0.92) !important;
-  object-fit: contain !important;
-  align-self: center !important;
-  /* v23504d — Nick: "they need to move up". Measured, the emblem sat 0.8px below
-     the row centre on a 30px row and 1.55px on the 31.5px first row. An <img> is
-     an inline replaced element, so it rides the text baseline and the line box
-     leaves descender space UNDER it — the box is centred, the glyph is not.
-     display:block takes it off the baseline and the auto margins then centre it
-     for real. */
+  width: var(--fids-row-h, 58px) !important;
+  height: var(--fids-row-h, 58px) !important;
+  min-width: var(--fids-row-h, 58px) !important;
+  min-height: var(--fids-row-h, 58px) !important;
+  max-width: var(--fids-row-h, 58px) !important;
+  max-height: var(--fids-row-h, 58px) !important;
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
   display: block !important;
-  vertical-align: middle !important;
-  margin-top: auto !important;
-  margin-bottom: auto !important;
+  margin: 0 !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-cell-airline {
   display: flex !important;
