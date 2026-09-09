@@ -16018,7 +16018,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-pd-preboard-marks .g8-pd-mark img {
   /* Sized off the VIEWPORT, not em: the marks inherited the coming-up line's
      small font and came out tiny. */
-  height: clamp(30px, 4.4vh, 66px) !important;
+  height: clamp(40px, 6.4vh, 96px) !important;
   width: auto !important;
   max-width: min(46%, 30em) !important;
   object-fit: contain !important;
