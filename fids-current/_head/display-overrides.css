@@ -12390,12 +12390,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   max-height: calc(var(--fids-row-h, 58px) * 0.72) !important;
   max-width: 198px !important;
   object-fit: contain !important;
-  /* v23504b — LEFT, not centred. Nick: "I meant centered height wise not long
-     wise". object-position:center pushed short wordmarks into the middle of the
-     198px box, so porter and flair floated away from the emblem while a wide
-     mark like AIR CANADA still looked left-aligned because it fills the box.
-     Vertical centring is what he asked for; horizontal stays flush left. */
-  object-position: left center !important;
+  object-position: center !important;
   display: block !important;
   margin-top: auto !important;
   margin-bottom: auto !important;
