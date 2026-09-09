@@ -12407,11 +12407,24 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo img,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo svg,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .full-logo {
-  height: calc(var(--fids-row-h, 58px) * 0.80) !important;
-  width: calc(var(--fids-row-h, 58px) * 0.80) !important;
-  max-height: calc(var(--fids-row-h, 58px) * 0.80) !important;
+  /* v23504c — 0.80 of a 30px row is 24px, which is EXACTLY where the emblem
+     already was, so v23504 changed nothing visible and Nick said so: "you did
+     not touch the logos either ... icons". 0.92 gives 27.6px in the same row and
+     ~1.2px of clearance each side, which a circular mark can carry far closer to
+     the row line than text can. This is a ratio, so every tier grows with it. */
+  height: calc(var(--fids-row-h, 58px) * 0.92) !important;
+  width: calc(var(--fids-row-h, 58px) * 0.92) !important;
+  max-height: calc(var(--fids-row-h, 58px) * 0.92) !important;
   object-fit: contain !important;
   align-self: center !important;
+  /* v23504d — Nick: "they need to move up". Measured, the emblem sat 0.8px below
+     the row centre on a 30px row and 1.55px on the 31.5px first row. An <img> is
+     an inline replaced element, so it rides the text baseline and the line box
+     leaves descender space UNDER it — the box is centred, the glyph is not.
+     display:block takes it off the baseline and the auto margins then centre it
+     for real. */
+  display: block !important;
+  vertical-align: middle !important;
   margin-top: auto !important;
   margin-bottom: auto !important;
 }
