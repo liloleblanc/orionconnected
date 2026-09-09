@@ -16146,3 +16146,27 @@ html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-dest {
   background-image: url('/logos/airlines/canadian/porter/passport_ticket.svg') !important;
 }
+
+/* ── v23536 — THE PORTER "p" GOES NAVY ON THE WHITE ORB ───────────────────
+   Nick: "you changed the orbs to white which is fine I like it but the p for
+   porter needs to change then."
+   Exactly right, and it is the same white-on-white fault as the Departure
+   glyph in v23532 — I fixed the icon FONT there and missed the airline emblem,
+   which is an <img>. porter-p.svg is pure #ffffff by design: it was drawn to
+   sit on Porter's accent circle, and on the white orb it is invisible.
+   No filter chain — those approximate a brand colour and drift. porter-p-navy
+   is the same artwork with the fill swapped to Porter's #152C53, so the shape
+   is identical and the colour is exact. Swapped with content:url(), which
+   replaces the rendered image on a replaced element, so the JS emblem map
+   stays untouched and every OTHER surface keeps the white p on its accent
+   circle where that is still correct. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-badge img[src*="porter-p.svg"],
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-wrap img[src*="porter-p.svg"] {
+  content: url('/logos/airlines/canadian/porter/porter-p-navy.svg') !important;
+  /* The emblem carries a whitening filter for its usual dark ground — that is
+     why the navy swap alone rendered nothing but a blank white orb. Both have
+     to go together: swap the artwork AND stop the filter repainting it. */
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
+}
