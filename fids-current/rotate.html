@@ -374,13 +374,34 @@
       // whether the page around it is current. A rotator older than 23422
       // cannot reload itself when it is pinned to one airport, so the board
       // rescues it (see fids-core.js).
-      try { window.__ocRotatorVer = 23424; } catch (e) {}
+      try { window.__ocRotatorVer = 23518; } catch (e) {}
       var selfSig = null, reloadPending = false;
+      // v23518 — THE SELF-REFRESH WAS INERT IN PRODUCTION. Measured on the live
+      // site: https://fids.orionconnected.com/rotate answers 200 with
+      // cf-cache-status HIT and NO etag and NO last-modified — zero validator
+      // headers. This asked for exactly those two, found neither, and took the
+      // `if (!sig) return;` exit on every poll, so selfSig stayed null forever
+      // and reloadPending was never set. The mechanism written in v23333 so
+      // that "a rotator fix reaches the running stream without a hand on the
+      // server" has therefore never once fired in production. That is why the
+      // streams sit on old code for days, why Nick says "it never gets done",
+      // and why a deploy appears to change nothing.
+      // Use a signature the CDN cannot withhold: the page's own bytes. Still
+      // one request every 30 minutes, now a GET so there is a body to hash.
+      // Headers are still preferred when present — cheaper and exact.
       function checkSelf() {
         try {
-          fetch(window.location.pathname + '?_oc=' + Date.now(), { method: 'HEAD', cache: 'no-store' }).then(function (r) {
-            if (!r || !r.ok) return;
+          fetch(window.location.pathname + '?_oc=' + Date.now(), { cache: 'no-store' }).then(function (r) {
+            if (!r || !r.ok) return null;
             var sig = r.headers.get('etag') || r.headers.get('last-modified') || '';
+            if (sig) return sig;
+            return r.text().then(function (t) {
+              if (!t) return '';
+              var h = 0;
+              for (var i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) | 0; }
+              return t.length + ':' + h;
+            });
+          }).then(function (sig) {
             if (!sig) return;
             if (selfSig === null) selfSig = sig;
             else if (sig !== selfSig) reloadPending = true;
