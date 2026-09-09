@@ -9564,7 +9564,17 @@ function _buildV2MapCol(ctx, vars) {
                         // rotates through its languages, so each pass shows the
                         // sentence in one of them anyway. Same reasoning, and
                         // the same helper, as the pre-boarding roster.
-                        ? _gateLbl1(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF)
+                        // v23542 — BOTH LANGUAGES, ON ONE LINE. Nick: "Youre
+                        // missing the second language".
+                        // v23538 stacked them into two forced blocks and he
+                        // called that "too much"; v23540 answered by dropping
+                        // one, which was the wrong half to cut. The banner
+                        // above already carries its pair inline —
+                        // "Your Aircraft | Votre appareil" — so the sentence
+                        // follows the same grammar: one line, one pipe, both
+                        // languages, wrapping inside the panel when it needs to
+                        // rather than being forced into blocks.
+                        ? _gateLbl(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
                         : _stShow)
         +           '</span></div>'
         +       '</div>'
@@ -22692,7 +22702,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23540';
+var FIDS_BUILD_TAG = 'v23542';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
