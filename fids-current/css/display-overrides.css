@@ -7684,11 +7684,16 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    drifts with panel resolution. The BIDS band now carries the FIDS
    ticker's own fixed geometry — 59px band, 18px scroll text — so the
    bands share a top edge on every wall at every resolution. */
+/* v23512 — derived, not retyped. See the --fids-ticker-* block: this band is
+   the FIDS ticker's total height (rule + padding + line) so the two boards
+   share a top edge on a wall, and it now tracks any future ticker change on
+   its own instead of waiting for someone to remember this line. */
 html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
-  height: 59px !important;
+  height: var(--fids-ticker-h) !important;
 }
 html .bidsv2-screen .bidsv2-ticker-track span {
-  font-size: 18px !important;
+  font-size: var(--fids-ticker-fs) !important;
+  line-height: var(--fids-ticker-lh) !important;
 }
 
 /* ── v22841 — AC GATE RESKIN, PASS 1 (Nick: 'I HATE THOSE panels lol all
@@ -12350,11 +12355,36 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    slightly smaller span puts it near 38px without touching the marquee
    animation or clipping the text. Scoped here rather than edited in fids.css so
    the legacy base file stays as it is for anything else that leans on it. */
+/* v23512 — AND THE TWO BANDS SHARE ONE NUMBER NOW. Nick: "orlando does align
+   the patterns?" — he was right to push back on how I described it. "Orlando"
+   is not a scope, just where he first saw the gap; the rule is every airport's
+   baggage screen.
+   v22831 fixed the original 9.3px gap by having the BIDS band COPY the FIDS
+   ticker's fixed geometry — 59px and 18px, typed out a second time at line
+   7687. That held until v23504 shrank the FIDS ticker to ~38px and the copy
+   did not follow, so the fix reintroduced its own bug at twice the size. Two
+   duplicated numbers cannot stay equal across edits; one number can.
+   Everything below derives from these four, and the band height is computed
+   rather than typed, so shrinking the ticker again moves BOTH screens. The
+   line-height is declared rather than inherited for the same reason — a
+   computed band height cannot depend on a value the calc is unable to see. */
+:root {
+  --fids-ticker-pad: 8px;
+  --fids-ticker-fs: 15px;
+  --fids-ticker-lh: 1.35;
+  --fids-ticker-rule: 3px;
+  --fids-ticker-h: calc(
+      var(--fids-ticker-pad) * 2
+    + var(--fids-ticker-fs) * var(--fids-ticker-lh)
+    + var(--fids-ticker-rule));
+}
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ticker {
-  padding: 8px 0 !important;
+  padding: var(--fids-ticker-pad) 0 !important;
+  border-top-width: var(--fids-ticker-rule) !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ticker span {
-  font-size: 15px !important;
+  font-size: var(--fids-ticker-fs) !important;
+  line-height: var(--fids-ticker-lh) !important;
 }
 
 /* ── v23504 — THE WORDMARK IS SIZED BY THE ROW, NOT BY ITS OWN ARTWORK ─────
