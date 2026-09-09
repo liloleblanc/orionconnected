@@ -17148,9 +17148,16 @@ const gView = document.getElementById('gateView');
             var _crslVars = _crslW2
               ? "--crsl-l2:'" + (_bidsV3On ? _crslW2 : _crslW2.toUpperCase()).replace(/'/g, '') + "';"
               : '--crsl-l2-disp:none;';
+            // v23514 — NO EM-DASH IN THE NUMBER. When a hall has no belt to
+            // show, subScreenVal is the '—' placeholder from updateSubScreens.
+            // Painted through .bidsv2-carousel-number that glyph is ~44vh of
+            // white fill inside a dark stroke, which does not read as "no
+            // carousel" — it reads as an EMPTY WHITE BOX, and that is the box
+            // in Nick's photo. An absent number should be absent.
             var _crslNum = (function(){
               const _m = String(subScreenVal || '').match(/^(\w+)-(.+)$/);
-              return _m ? _m[2] : (subScreenVal || '—');
+              const _v = _m ? _m[2] : String(subScreenVal || '');
+              return (_v && _v !== '—') ? _v : '';
             })();
             return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
               + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
@@ -22515,7 +22522,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23512';
+var FIDS_BUILD_TAG = 'v23514';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -26757,6 +26764,19 @@ async function oagFetch(iata, dir) {
   return j;  // { departures: [...] } or { arrivals: [...] }
 }
 
+// v23514 — one direction's failure must not take the other down with it.
+// Returns null instead of throwing, so the caller decides what a half-answer
+// means. Deliberately NOT a retry: adbFetch already retries internally, and
+// the 5-minute refresh is the outer loop.
+async function _fidsFetchLeg(label, fn) {
+  try {
+    return await fn();
+  } catch (e) {
+    console.warn('[FIDS] ' + label + ' fetch failed (keeping the other direction):', (e && e.message) || e);
+    return null;
+  }
+}
+
 async function fetchLive() {
   const iata = document.getElementById('apSel').value;
   // Only show the loading splash on the FIRST load. The 5-minute auto-refresh
@@ -26798,10 +26818,19 @@ async function fetchLive() {
         arrRaw = await adbFetch(iata, 'Arrival');
       }
     } else {
-      // AeroDataBox — sequential to stay within rate limits
-      depRaw = await adbFetch(iata, 'Departure');
+      // AeroDataBox — sequential to stay within rate limits.
+      // v23514 — EACH LEG STANDS ALONE. These two awaits shared one try, so a
+      // throw on ARRIVALS discarded a perfectly good departures payload that
+      // had already come back, and the board went dark in both directions.
+      // Ottawa shows all three faces of that at once: an empty departures
+      // table, a gate tile with no gate, and a baggage board with no belt.
+      // Now a failed leg yields null, its partner is still used, and only a
+      // double failure raises — so the cold-start error panel still means
+      // what it says.
+      depRaw = await _fidsFetchLeg('departures', () => adbFetch(iata, 'Departure'));
       await new Promise(r => setTimeout(r, 1500));
-      arrRaw = await adbFetch(iata, 'Arrival');
+      arrRaw = await _fidsFetchLeg('arrivals',   () => adbFetch(iata, 'Arrival'));
+      if (!depRaw && !arrRaw) throw new Error('both direction fetches failed');
     }
     // Settle the lookahead BEFORE the cut, not after it — mapADB is what
     // applies LOOKAHEAD_HRS, so deciding it afterwards left every cold start
@@ -26812,8 +26841,14 @@ async function fetchLive() {
     // work from one row per flight per day.
     var _revTz = '';
     try { _revTz = (AP[(document.getElementById('apSel') || {}).value] || {}).tz || ''; } catch (e) {}
-    data.dep = _fidsCollapseRevisions(mapADB(depRaw, 'dep'), _revTz);
-    data.arr = _fidsCollapseRevisions(mapADB(arrRaw, 'arr'), _revTz);
+    // v23514 — ASSIGN ONLY WHAT ACTUALLY CAME BACK. Overwriting with the
+    // result of a failed leg is the same mistake as answering a dead upstream
+    // with an empty 200: it turns "we could not ask" into "there is nothing",
+    // and a warm board that was showing real flights wipes itself. A leg that
+    // failed leaves its side untouched — last-good on a warm board, still []
+    // on a cold one.
+    if (depRaw) data.dep = _fidsCollapseRevisions(mapADB(depRaw, 'dep'), _revTz);
+    if (arrRaw) data.arr = _fidsCollapseRevisions(mapADB(arrRaw, 'arr'), _revTz);
     // [BELT SUMMARY v218.18] Quick breakdown of belt assignments.
     try {
       const _belts = data.arr.map(f => f._belt).filter(Boolean);
@@ -26884,8 +26919,17 @@ async function fetchLive() {
       if (_pSub) _pSub.textContent = String((e && e.message) || '');
       p.style.display = 'block';
     }
-    // On a background refresh failure, keep the auto-refresh alive so it recovers.
-    if (window._initialFetchDone === true && !autoRefreshTimer) {
+    // v23514 — ARM IT EVEN WHEN THE COLD START IS WHAT FAILED. This guard used
+    // to read `window._initialFetchDone === true`, and that flag is only set
+    // near the end of the try, AFTER both awaits. So the one case that needed
+    // a retry most — the very first fetch failing — was the one case that got
+    // none: no data, no timer, no route back, for the whole life of the frame.
+    // The board simply sat there. That is Nick's Ottawa: chrome, clock and
+    // date all painted correctly (they do not need the feed) over a body that
+    // could never fill, and it stayed that way because nothing was ever going
+    // to ask again. It looked like a data fault and it was a lifecycle fault.
+    // A board that failed to load is exactly a board that should try again.
+    if (!autoRefreshTimer) {
       autoRefreshTimer = setInterval(fetchLive, 5 * 60 * 1000);
     }
     console.error('ADB error:', e.message);
@@ -39484,10 +39528,25 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       try {
         var ap = document.getElementById('apSel');
         if (ap && ap.value === 'YQM') return ['1', '2'];   // always both carousels
-        var b = ((typeof data !== 'undefined' && data && data.arr) || [])
-                  .map(function (f) { return f._belt; })
-                  .filter(function (x) { return x && x !== '—'; });
-        return b.filter(function (x, i) { return b.indexOf(x) === i; }).sort();
+        // v23514 — WALK ONLY THE BELTS THAT HAVE SOMETHING DUE. This read
+        // every belt in data.arr, which spans hours, while a belt's own list
+        // is cut to the BIDS window (45 min back, 60 min ahead). So a belt
+        // whose next bag lands at 05:35 still took its turn in the 20-second
+        // walk and sat there saying "Aucune arrivée assignée" — true, but it
+        // reads as a broken board, and at Ottawa it was one lap in four.
+        // If NOTHING is due anywhere, fall back to the full set rather than
+        // showing no carousel at all: at 3am an honest empty belt is right.
+        var _all = ((typeof data !== 'undefined' && data && data.arr) || []);
+        var _uniq = function (list) {
+          var v = list.map(function (f) { return f._belt; })
+                      .filter(function (x) { return x && x !== '—'; });
+          return v.filter(function (x, i) { return v.indexOf(x) === i; }).sort();
+        };
+        var _now = Date.now();
+        var _due = _uniq(_all.filter(function (f) {
+          return (typeof _bidsInWindow !== 'function') || _bidsInWindow(f, _now);
+        }));
+        return _due.length ? _due : _uniq(_all);
       } catch (e) { return []; }
     }
     var _ocVisible = true;
