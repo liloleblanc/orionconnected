@@ -14607,7 +14607,17 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   justify-content: flex-start !important;
   align-self: stretch !important;
   min-width: 0 !important;
-  padding-top: 11px !important;
+  /* v23550 — FLUSH, NOT INSET. Nick: "the banner still needs to go up actually
+     in the panels". The 11px above was a deliberate match to the banner-to-top
+     inset measured on panels he had called done, so this is a reversal of a
+     considered choice rather than a bug — reversing it here, in the rule that
+     set it, instead of stacking another override on top.
+     Verified live on v23548 first: padding-left/right were already 0 from
+     v23472 and the title reached the sides, but the top kept an 11px gap, so
+     the pill met three edges out of four. The bottom inset stays: the value
+     still centres in the space that remains via auto margins, and removing it
+     too would drag the value up with the banner. */
+  padding-top: 0 !important;
   padding-bottom: 11px !important;
   box-sizing: border-box !important;
 }
