@@ -9491,6 +9491,20 @@ function _buildV2MapCol(ctx, vars) {
       // coloured line. The same fact twice, with the anchor doing the moving.
       // One label, always, and the status stays where it belongs underneath.
       var _mcTitleKey = 'yourAircraftHdr';
+      // v23544 — WHICH CLOCK. Nick: "4:48 wheels down lets say" for arrived,
+      // then "5:05pm ... arrived at the gate". They are two different moments
+      // and the feed already separates them: _actualArrTime is the ON-BLOCK
+      // gate time (see the note above _mcOnStand), while the revised arrival is
+      // when it came down. So on stand shows the gate time and a bare landed
+      // shows the touchdown, instead of one timestamp standing in for both.
+      var _mcEvtStr = '';
+      if (_stKey === 'arrived') {
+        if (_mcOnStand && _ib && typeof _ib._actualArrTime === 'number' && _ib._actualArrTime > 0) {
+          _mcEvtStr = _ibFmtT(_ib._actualArrTime);
+        } else {
+          _mcEvtStr = _ibArrRevStr || _ibArrSchedStr || '';
+        }
+      }
       var _mcTitle = _gateLbl(_mcTitleKey, _frF, function (w, i2) {
         return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>';
       }, '');
@@ -9538,14 +9552,18 @@ function _buildV2MapCol(ctx, vars) {
         //   10:48am | 10:25am  Revised | R\u00e9vis\u00e9   (times first, label after)
         //   Delayed | En retard                   (status on its own line)
         +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> ' + _ibCityCode + '</div>'
-        +         (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr
+        // v23544 — once it is down, the scheduled/revised pair steps aside. Nick:
+        // the arrived panel reads "4:58pm | Your aircraft has arrived", so the
+        // ONE time that matters is the one the event actually happened at, and
+        // it belongs beside the sentence rather than on a line of its own.
+        +         (_stKey === 'arrived' ? '' : (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr
                     ? '<div class="v2-fi-mline2">'
                       + '<span class="v2-rc-status-' + (_stCls || 'delayed') + '">' + _railT(_ibArrRevStr) + '</span>'
                       + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>'
                       + ' <span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span></div>'
                     : (_ibArrSchedStr
                         ? '<div class="v2-fi-mline2">' + _railT(_ibArrSchedStr) + ' <span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span></div>'
-                        : ''))
+                        : '')))
         // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. Nick, laying out the
         // panel: banner fixed, then "WS668 · Calgary | YYC", then "Your
         // aircraft has arrived: when landed then (at the gate when its at
@@ -9574,7 +9592,14 @@ function _buildV2MapCol(ctx, vars) {
                         // follows the same grammar: one line, one pipe, both
                         // languages, wrapping inside the panel when it needs to
                         // rather than being forced into blocks.
-                        ? _gateLbl(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
+                        // v23544 — "4:58pm | Your aircraft has arrived", with the
+                        // second language on the line beneath. The time leads
+                        // because it is the fact that changed; the sentence
+                        // says what it means.
+                        ? ((_mcEvtStr ? '<span class="v2-rc-fi-evt">' + _railT(_mcEvtStr) + '</span> <span class="v2-rc-bar">|</span> ' : '')
+                           + _gateLbl(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF, function (w, i2) {
+                               return '<span class="' + (i2 ? 'v2-fi-lbl-2 g8-arr-l2' : 'v2-fi-lbl-en') + '">' + w + '</span>';
+                             }, ''))
                         : _stShow)
         +           '</span></div>'
         +       '</div>'
@@ -22702,7 +22727,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23542';
+var FIDS_BUILD_TAG = 'v23544';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
