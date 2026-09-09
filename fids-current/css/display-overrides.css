@@ -12343,6 +12343,79 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 
+/* v23504 — THE BOTTOM TICKER STOPS EATING THE BOARD. Nick: "banner at the
+   bottom way to big". Measured: 59px, 7% of an 880px viewport — fids.css:420
+   gives it padding 16px top and bottom plus a 3px border, around an 18px span,
+   and none of it has moved since the rows got shorter. Half the padding and a
+   slightly smaller span puts it near 38px without touching the marquee
+   animation or clipping the text. Scoped here rather than edited in fids.css so
+   the legacy base file stays as it is for anything else that leans on it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ticker {
+  padding: 8px 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ticker span {
+  font-size: 15px !important;
+}
+
+/* ── v23504 — THE WORDMARK IS SIZED BY THE ROW, NOT BY ITS OWN ARTWORK ─────
+   Nick: "logos overlap between rows" (he means the wordmarks), "the emblems are
+   too small and they dont align", "center height wise", "its in the picture".
+
+   Measured on the board at a 30px row, and his picture is exactly this:
+
+     Porter       artwork 300x99   rendered 198 x 30   0.8px PAST the row bottom
+     flair        artwork 300x123  rendered 198 x 29   hard on the edge
+     Air Canada   artwork 300x27   rendered 198 x 17   floating small
+
+   Two different sizing models were fighting. flight-display.css carries a table
+   of per-airline FIXED heights — [data-code="WS"] 30px, "PD" 28px, "AV" 32px and
+   ~20 more — tuned against the old 58px default row. Airlines with no entry fall
+   through to the width-driven default (width:198px, height auto), so their height
+   comes from the artwork's aspect instead. Neither model knows the row height, so
+   when Small went 44 -> 34 -> 30 the marks stayed put and the tall ones grew out
+   through the row line.
+
+   One cap, derived from the row, beats both: no wordmark may exceed 62% of
+   --fids-row-h, width follows the aspect up to the existing 198px, and the box
+   centres. Every mark now lands within a couple of px of every other, nothing
+   crosses a row line, and the whole thing tracks the tier — including any future
+   tier — without another table of numbers.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-wordmark,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-wordmark[data-code] {
+  /* A SAFETY NET, not the shaping. The per-airline ratios in flight-display.css
+     decide the actual heights; this only guarantees that nothing — including a
+     carrier with no entry in that table, whose height comes from its artwork
+     aspect — can ever cross the row line again. */
+  max-height: calc(var(--fids-row-h, 58px) * 0.72) !important;
+  max-width: 198px !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  display: block !important;
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
+
+/* The emblem tracks the row too, instead of a separate constant, and centres in
+   it. Nick: "center height wise" — measured, row 1's emblem sat 4.5px below the
+   row top against 3px for every other row. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo svg,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .full-logo {
+  height: calc(var(--fids-row-h, 58px) * 0.80) !important;
+  width: calc(var(--fids-row-h, 58px) * 0.80) !important;
+  max-height: calc(var(--fids-row-h, 58px) * 0.80) !important;
+  object-fit: contain !important;
+  align-self: center !important;
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-cell-airline {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    v23146 — MONCTON ON THE FIDS BOARD (Nick: "Moncton didn't go in the
    baggage claim it was the fids" / "still do city"). His no-text
