@@ -750,6 +750,18 @@ body {
    H = 60/sqrt(ink aspect), clamped 16-29. Regenerate with the script in
    the session scratchpad rather than hand-editing single values. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"],
+/* v23504e — BACK TO FIXED PIXELS, ON PURPOSE. v23504 converted these ~21
+   per-airline heights into fractions of --fids-row-h so they would scale with
+   the tier. That was the wrong trade: at a 30px row Porter's 28px became 14.5px
+   and, because a 300x99 mark can only be as wide as three times its height, it
+   rendered 65px wide beside Air Canada's 198px and read as tiny. Nick: "looks
+   like porter is too small", then "If you just put porter back the way it was it
+   was fine".
+   These numbers are a designer's judgement about how marks of very different
+   aspect should read next to each other, and that judgement does not scale
+   linearly with the row. They stay absolute. What stops them crossing a row line
+   is the blanket cap in display-overrides.css, which clamps ANY wordmark to the
+   row height — a ceiling, not a rescaling. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { height: 32px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { height: 30px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"],
@@ -2226,7 +2238,18 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 /* Clearly-distinct fixed row heights per size (Nick: widen the spread so Small
    / Medium / Large actually differ — 44/52/60 read the same). */
-body[data-fids-logo-size="small"]  { --fids-logo-size: 34px !important; --fids-row-h: 44px !important; }
+/* v23502 — Small is actually small now. Nick, with Small already selected:
+   "So Rows are too big". Measured on his board: data-fids-logo-size="small",
+   --fids-row-h 44px, rows rendering exactly 44 — the control was working, the
+   tier was just not small. 34px row / 26px logo keeps the three tiers clearly
+   apart (34 / 66 / 90), which is what the note above widened the spread for. */
+/* v23504f — 36px, not 30. Nick asked for four things that all need height:
+   Porter back at its old size (30px, which spilled 1.8px out of a 30px row),
+   flair "a smidge bigger" than its 29px, icons bigger than 27.6px, and
+   nothing crossing a row line. At 30px those are mutually exclusive — the
+   tallest wordmark IS the row. 36px gives every one of them room and is still
+   well clear of Medium at 66. */
+body[data-fids-logo-size="small"]  { --fids-logo-size: 28px !important; --fids-row-h: 36px !important; }
 body[data-fids-logo-size="medium"] { --fids-logo-size: 52px !important; --fids-row-h: 66px !important; }
 body[data-fids-logo-size="large"]  { --fids-logo-size: 72px !important; --fids-row-h: 90px !important; }
 
@@ -4074,7 +4097,7 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: 22px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PD"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { height: 30px; }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { height: 29px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { height: 32px; }  /* v23504f — Nick: "flair could be a smidge bigger" */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { height: 23px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { height: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { height: 21px; }

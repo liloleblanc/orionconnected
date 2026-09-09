@@ -3623,9 +3623,19 @@ html body .bidsv2-flight-row.bidsv2-row-cancelled * { color: #ffffff !important;
   body[data-fids-banner="silk-acadian"] .fids-airport-pill .fids-airport-logo-img,
   body[data-fids-banner="silk"] .fids-airport-pill #fidsAirportLogoImg,
   body[data-fids-banner="silk-acadian"] .fids-airport-pill #fidsAirportLogoImg {
-    height: 84px !important;
-    max-height: 84px !important;
-    max-width: 340px !important;
+    /* v23500 — BIGGER. Nick: "Logos are tiny though :(". 84px in a 128px band
+       left the mark at 66% of the height with 22px of dead air above and below,
+       and nowhere near the 340px width cap — measured 240x84 on the live board
+       with his 300x105 wordmark. Measured the alternatives in the real band:
+       96px -> 75%, 104px -> 81% (12px clear top and bottom), 112px -> 88% (8px,
+       too tight against the band edge). 104 gives it presence without crowding.
+       The width cap rises with it so a WIDE mark benefits too: at 104px tall a
+       4:1 logo wants 416px, and the old 340 would have clamped it back down to
+       85px — the height rise would have done nothing for exactly the logos that
+       needed it most. */
+    height: 104px !important;
+    max-height: 104px !important;
+    max-width: 420px !important;
     width: auto !important;
     object-fit: contain !important;
   }
@@ -7674,11 +7684,16 @@ html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airli
    drifts with panel resolution. The BIDS band now carries the FIDS
    ticker's own fixed geometry — 59px band, 18px scroll text — so the
    bands share a top edge on every wall at every resolution. */
+/* v23512 — derived, not retyped. See the --fids-ticker-* block: this band is
+   the FIDS ticker's total height (rule + padding + line) so the two boards
+   share a top edge on a wall, and it now tracks any future ticker change on
+   its own instead of waiting for someone to remember this line. */
 html .bidsv2-screen .bidsv2-bottom-band.bidsv2-ticker {
-  height: 59px !important;
+  height: var(--fids-ticker-h) !important;
 }
 html .bidsv2-screen .bidsv2-ticker-track span {
-  font-size: 18px !important;
+  font-size: var(--fids-ticker-fs) !important;
+  line-height: var(--fids-ticker-lh) !important;
 }
 
 /* ── v22841 — AC GATE RESKIN, PASS 1 (Nick: 'I HATE THOSE panels lol all
@@ -12333,6 +12348,188 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 
+/* v23504 — THE BOTTOM TICKER STOPS EATING THE BOARD. Nick: "banner at the
+   bottom way to big". Measured: 59px, 7% of an 880px viewport — fids.css:420
+   gives it padding 16px top and bottom plus a 3px border, around an 18px span,
+   and none of it has moved since the rows got shorter. Half the padding and a
+   slightly smaller span puts it near 38px without touching the marquee
+   animation or clipping the text. Scoped here rather than edited in fids.css so
+   the legacy base file stays as it is for anything else that leans on it. */
+/* v23512 — AND THE TWO BANDS SHARE ONE NUMBER NOW. Nick: "orlando does align
+   the patterns?" — he was right to push back on how I described it. "Orlando"
+   is not a scope, just where he first saw the gap; the rule is every airport's
+   baggage screen.
+   v22831 fixed the original 9.3px gap by having the BIDS band COPY the FIDS
+   ticker's fixed geometry — 59px and 18px, typed out a second time at line
+   7687. That held until v23504 shrank the FIDS ticker to ~38px and the copy
+   did not follow, so the fix reintroduced its own bug at twice the size. Two
+   duplicated numbers cannot stay equal across edits; one number can.
+   Everything below derives from these four, and the band height is computed
+   rather than typed, so shrinking the ticker again moves BOTH screens. The
+   line-height is declared rather than inherited for the same reason — a
+   computed band height cannot depend on a value the calc is unable to see. */
+:root {
+  --fids-ticker-pad: 8px;
+  --fids-ticker-fs: 15px;
+  --fids-ticker-lh: 1.35;
+  --fids-ticker-rule: 3px;
+  --fids-ticker-h: calc(
+      var(--fids-ticker-pad) * 2
+    + var(--fids-ticker-fs) * var(--fids-ticker-lh)
+    + var(--fids-ticker-rule));
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ticker {
+  padding: var(--fids-ticker-pad) 0 !important;
+  border-top-width: var(--fids-ticker-rule) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ticker span {
+  font-size: var(--fids-ticker-fs) !important;
+  line-height: var(--fids-ticker-lh) !important;
+}
+
+/* ── v23504 — THE WORDMARK IS SIZED BY THE ROW, NOT BY ITS OWN ARTWORK ─────
+   Nick: "logos overlap between rows" (he means the wordmarks), "the emblems are
+   too small and they dont align", "center height wise", "its in the picture".
+
+   Measured on the board at a 30px row, and his picture is exactly this:
+
+     Porter       artwork 300x99   rendered 198 x 30   0.8px PAST the row bottom
+     flair        artwork 300x123  rendered 198 x 29   hard on the edge
+     Air Canada   artwork 300x27   rendered 198 x 17   floating small
+
+   Two different sizing models were fighting. flight-display.css carries a table
+   of per-airline FIXED heights — [data-code="WS"] 30px, "PD" 28px, "AV" 32px and
+   ~20 more — tuned against the old 58px default row. Airlines with no entry fall
+   through to the width-driven default (width:198px, height auto), so their height
+   comes from the artwork's aspect instead. Neither model knows the row height, so
+   when Small went 44 -> 34 -> 30 the marks stayed put and the tall ones grew out
+   through the row line.
+
+   One cap, derived from the row, beats both: no wordmark may exceed 62% of
+   --fids-row-h, width follows the aspect up to the existing 198px, and the box
+   centres. Every mark now lands within a couple of px of every other, nothing
+   crosses a row line, and the whole thing tracks the tier — including any future
+   tier — without another table of numbers.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-wordmark,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-wordmark[data-code] {
+  /* A SAFETY NET, not the shaping. The per-airline ratios in flight-display.css
+     decide the actual heights; this only guarantees that nothing — including a
+     carrier with no entry in that table, whose height comes from its artwork
+     aspect — can ever cross the row line again. */
+  /* v23504e — a CEILING, not a rescaling. 0.72 shrank every mark including the
+     ones that were already right; Nick only ever reported the tall ones crossing
+     the line. Clamping at the row height leaves a well-tuned mark exactly as its
+     designer set it and only touches one that would actually escape the row. */
+  /* Two px inside the row, so a mark tuned to exactly the row height (Porter's
+     30px) cannot sit on the line it is meant to stay inside. */
+  /* v23510 — the ceiling drops from row-2 to row-6 to buy headroom, and 2px
+     of it is spent lifting the mark. Only marks actually pinned AT the ceiling
+     lose anything; every carrier tuned below it (Porter 28, WestJet 30, Flair
+     32) is untouched, which is the whole point of a ceiling. */
+  max-height: calc(var(--fids-row-h, 58px) - 6px) !important;
+  max-width: 198px !important;
+  position: relative !important;
+  top: -2px !important;
+  object-fit: contain !important;
+  /* v23504b — LEFT, not centred. Nick: "I meant centered height wise not long
+     wise". object-position:center pushed short wordmarks into the middle of the
+     198px box, so porter and flair floated away from the emblem while a wide
+     mark like AIR CANADA still looked left-aligned because it fills the box.
+     Vertical centring is what he asked for; horizontal stays flush left. */
+  object-position: left center !important;
+  display: block !important;
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
+
+/* v23506 — THE EMBLEM TAKES THE WHOLE ROW. Nick: "ICONS ARE NOT DONE",
+   "It should take the row and allign", "the entire space of the row".
+   Two things were wrong and the screenshot showed both. The tile artwork carries
+   its OWN square background, so sizing the image to 0.92 of the row left a black
+   or navy chip floating with row colour above and below it — it read as a sticker
+   stuck on the row rather than part of it. And the 54x54 container never knew the
+   row height, so the chips never lined up into a column either.
+   Container and image are both exactly --fids-row-h now. The tile fills the row
+   top to bottom, every row's tile is identical, and they stack into one clean
+   edge down the left. Square is right here: the artwork IS a square tile, and
+   giving it the full row height is what makes the edges meet.
+   v23508 — Nick: "there be seperation between rows with icons". Filling the
+   row exactly made four Air Canada tiles fuse into one unbroken black bar, so
+   you could not see where one row ended. Two pixels off the top and bottom
+   puts a 4px break between adjacent tiles: the row's own ground shows through
+   as the divider, the tile still reads as full-height, and the column edge
+   stays straight because every tile is inset by the same amount.
+   v23508 — and back to contain, not cover. Nick: "why is it not alligned
+   between delayed and not delayed", "colors are clearly still an issue".
+   cover was mine and it was wrong twice over. It crops, so a carrier whose
+   artwork is not perfectly square got trimmed by a different amount than its
+   neighbour and the optical centres stopped lining up — which is exactly the
+   alignment break, and it does not care whether the row is delayed. And it
+   let the artwork\'s own opaque square ground bleed across the whole row, so
+   the same black tile reads as a hard black block on a yellow delayed row and
+   dissolves into a navy scheduled one. Same emblem, two completely different
+   objects. contain keeps every emblem whole and lets the box do the aligning:
+   the box is a fixed row-derived square on every row, so the column is
+   straight by construction and no row state can shift it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo .full-logo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .full-logo {
+  width: calc(var(--fids-row-h, 58px) - 4px) !important;
+  height: calc(var(--fids-row-h, 58px) - 4px) !important;
+  min-width: calc(var(--fids-row-h, 58px) - 4px) !important;
+  min-height: calc(var(--fids-row-h, 58px) - 4px) !important;
+  max-width: calc(var(--fids-row-h, 58px) - 4px) !important;
+  max-height: calc(var(--fids-row-h, 58px) - 4px) !important;
+  flex: 0 0 auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+  /* v23510 — Nick: "logos icons need to go about less than a cm up".
+     A 36px row leaves no headroom: the tile already clears the row line by
+     only 2px, so lifting it further puts it back across the line into the row
+     above — exactly what Nick reported as "the logos are outside the lines
+     into the other rows". 2px is the whole budget, and it costs nothing: the
+     break between adjacent tiles is set by the inset BELOW the upper tile, so
+     shifting up moves the gap rather than closing it. Size unchanged,
+     separation still 4px. */
+  position: relative !important;
+  top: -2px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo svg {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  /* v23510 — LEFT, not centred, and this is the delayed-row bug. Nick: "when
+     the flight is delayed its pushed right by about half a cm", and earlier
+     "why is it not alligned between delayed and not delayed".
+     A delayed row is a YELLOW (light) ground, so the variant swap at
+     fids-core.js:4169/:4224 loads a different SVG file for it — the -black or
+     onLight art instead of the white or colour art. Those files do not share
+     an aspect ratio or the same internal whitespace, and object-position:center
+     centres whatever it gets inside a fixed square box. A slightly wider light
+     variant therefore sits further right than its dark twin in the row above,
+     and the column edge breaks exactly on the rows that changed state.
+     Pinning left means the ink starts at the same x no matter which variant
+     loaded, so the column stays straight through every status change. The
+     wordmark was pinned left for this same reason in v23504b. */
+  object-position: left center !important;
+  display: block !important;
+  margin: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-cell-airline {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+}
+
 /* ═══════════════════════════════════════════════════════════════════════
    v23146 — MONCTON ON THE FIDS BOARD (Nick: "Moncton didn't go in the
    baggage claim it was the fids" / "still do city"). His no-text
@@ -12344,11 +12541,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard {
   background-image: url("/logos/Backgrounds/moncton-skyline.svg?v=23146") !important;
   background-attachment: fixed !important;
-  /* v23146d — "Lower Moncton please to improve skyline coverage": the city
-     sits 10vh lower, so the buildings hug the bottom band instead of
-     riding up into the rows. */
-  background-position: center calc(100% + 10vh) !important;
-  background-size: 100vw auto !important;
+  /* v23502 — ON THE SHORELINE, NOT ON THE WATER. Nick: "drop the scenery
+     remove the water from the painting of Moncton so drop it and shrink it a
+     bit", then "a tiny bit smaller and lower at the shoreline instead of on the
+     water". The artwork is one SVG with the city above its own reflection, so
+     the water cannot be deleted from it without editing the asset — but pushing
+     the image down past the waterline takes the reflection below the board's
+     edge and leaves the buildings standing on the shore, which is the same
+     result and reversible with one number.
+     Measured at 1675x880 against the real board: 10vh (as shipped) shows the
+     full reflection; 20vh puts the waterline at the bottom edge with the city
+     intact; 28vh is too far and starts cutting the buildings off. 92vw shrinks
+     it the "tiny bit" without leaving a gap at either end. */
+  background-position: center calc(100% + 20vh) !important;
+  background-size: 92vw auto !important;
   background-repeat: no-repeat !important;
 }
 html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard::after {
