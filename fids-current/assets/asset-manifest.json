@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2600,
+    "total": 2608,
     "by_category": {
       "ad": 10,
-      "airline": 1402,
+      "airline": 1410,
       "background": 104,
       "brand": 2,
       "hotel": 884,
@@ -4527,6 +4527,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian/porter/check_bags.svg",
+      "file": "check_bags.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "check bags",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian/encore.png",
       "file": "encore.png",
       "category": "airline",
@@ -4676,6 +4687,17 @@
       "subcategory": "canadian",
       "group": "Airlines — Canadian",
       "name": "mr porter logo",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/porter/passport_ticket.svg",
+      "file": "passport_ticket.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "passport ticket",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -4835,6 +4857,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian/porter/porter_reserve_logo.svg",
+      "file": "porter_reserve_logo.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "porter reserve logo",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian/rouge-icon.png",
       "file": "rouge-icon.png",
       "category": "airline",
@@ -4989,6 +5022,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian/porter/tickets.svg",
+      "file": "tickets.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "tickets",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian/transat-monochrome-black.svg",
       "file": "transat-monochrome-black.svg",
       "category": "airline",
@@ -5105,6 +5149,50 @@
       "subcategory": "canadian",
       "group": "Airlines — Canadian",
       "name": "viporter",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/porter/viporter_first_single_line_en.svg",
+      "file": "viporter_first_single_line_en.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "viporter first single line en",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/porter/viporter_member_single_line_en.svg",
+      "file": "viporter_member_single_line_en.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "viporter member single line en",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/porter/viporter_passport_single_line_en.svg",
+      "file": "viporter_passport_single_line_en.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "viporter passport single line en",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/porter/viporter_venture_single_line_en.svg",
+      "file": "viporter_venture_single_line_en.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "viporter venture single line en",
       "iata": "",
       "country": "",
       "ext": "svg"

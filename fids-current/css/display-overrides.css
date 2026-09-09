@@ -14054,13 +14054,27 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
 
 /* v23207 — the module's three rows: full words, no ellipsis, times on their
-   own line. */
+   own line.
+   v23524 — AND INSIDE THE PANEL. Nick: "fix the spilling bottom right corner
+   shelve panel that spills text" — his gate-3 shot has
+   "PD2373 · Ottawa | YOW" running out past the shelf's right edge, YOW hanging
+   in open space. `overflow: visible` here was how v23207 kept full words: it
+   overrode the ellipsis rule at :13905 (same specificity, later wins) so no
+   city was ever cut to "Otta…". It worked, and it also removed the only thing
+   stopping the line leaving the box.
+   Wrapping keeps both promises. Every word still renders in full — no ellipsis,
+   nothing clipped — but a line too long for the shelf now takes a second line
+   instead of escaping it, and `overflow: hidden` is a hard boundary so no
+   future content can spill again. overflow-wrap lets an unbroken token (a long
+   flight number joined to a code) break rather than force the panel wide. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline1 {
   font-size: clamp(12px, 2vh, 24px) !important;
   line-height: 1.12 !important;
-  white-space: nowrap !important;
-  overflow: visible !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  overflow: hidden !important;
   text-overflow: clip !important;
+  min-width: 0 !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline2,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 {
@@ -14642,9 +14656,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    gentle pitch (translate + rotate in one transform — the wrapper carries
    it, the img keeps its sizing), so it reads as flying, not hovering. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img img {
-  /* v23242 — bigger still (Nick: 'may need to be bigger too'). */
-  max-width: 94% !important;
-  max-height: 88% !important;
+  /* v23242 — bigger still (Nick: 'may need to be bigger too').
+     v23524 — bigger again: "Air Canada plane 319 too small". The 319 art is a
+     narrow side-on render, so a 94%/88% BOX still leaves a small aeroplane —
+     contain fits the long axis and the short one goes slack. Filling the box
+     is what actually grows the aircraft. */
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: 100% !important;
+  height: auto !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-aircraft-img {
   /* v23242 — the aircraft rides low but CLEAR of the caption bar (Nick:
@@ -15949,4 +15969,47 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-en,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-2 {
   font-size: clamp(12px, 1.5vh, 17px) !important;
+}
+
+/* ── v23524 — PORTER PRE-BOARDING MARKS ────────────────────────────────────
+   Nick sent Porter's brand artwork for the pre-boarding list. Every file is
+   DARK INK — porter_reserve_logo.svg is #222223, the VIPorter tier marks are
+   pure black or #153993 — and the Porter gate sign's ground is #002244. Laid
+   straight on that they would be invisible, which is the same fault the gate
+   emblems had. The rule from that fix applies unchanged: never repaint the
+   artwork, give it a ground it can be read against. So each mark gets its own
+   light chip, sized off the sign's own type scale so it tracks the panel
+   rather than fighting it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-pd-preboard-marks {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 0.6em !important;
+  margin-top: 0.5em !important;
+  flex-wrap: wrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-pd-preboard-marks .g8-pd-mark {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: #FFFFFF !important;
+  border-radius: 0.35em !important;
+  padding: 0.3em 0.55em !important;
+  line-height: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-pd-preboard-marks .g8-pd-mark img {
+  height: 1.5em !important;
+  width: auto !important;
+  max-width: 11em !important;
+  object-fit: contain !important;
+  display: block !important;
+}
+
+/* v23524 — a flex child defaults to min-width:auto, which refuses to shrink
+   below its content and is the other half of why the shelf line escaped rather
+   than wrapped. Both the value column and the shelf that holds it have to be
+   allowed to be narrower than their text. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-value,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-value > * {
+  min-width: 0 !important;
+  max-width: 100% !important;
 }
