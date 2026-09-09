@@ -12417,16 +12417,34 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    Container and image are both exactly --fids-row-h now. The tile fills the row
    top to bottom, every row's tile is identical, and they stack into one clean
    edge down the left. Square is right here: the artwork IS a square tile, and
-   giving it the full row height is what makes the edges meet. */
+   giving it the full row height is what makes the edges meet.
+   v23508 — Nick: "there be seperation between rows with icons". Filling the
+   row exactly made four Air Canada tiles fuse into one unbroken black bar, so
+   you could not see where one row ended. Two pixels off the top and bottom
+   puts a 4px break between adjacent tiles: the row's own ground shows through
+   as the divider, the tile still reads as full-height, and the column edge
+   stays straight because every tile is inset by the same amount.
+   v23508 — and back to contain, not cover. Nick: "why is it not alligned
+   between delayed and not delayed", "colors are clearly still an issue".
+   cover was mine and it was wrong twice over. It crops, so a carrier whose
+   artwork is not perfectly square got trimmed by a different amount than its
+   neighbour and the optical centres stopped lining up — which is exactly the
+   alignment break, and it does not care whether the row is delayed. And it
+   let the artwork\'s own opaque square ground bleed across the whole row, so
+   the same black tile reads as a hard black block on a yellow delayed row and
+   dissolves into a navy scheduled one. Same emblem, two completely different
+   objects. contain keeps every emblem whole and lets the box do the aligning:
+   the box is a fixed row-derived square on every row, so the column is
+   straight by construction and no row state can shift it. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .fids-airline-logo .full-logo,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsTable .td-airline .full-logo {
-  width: var(--fids-row-h, 58px) !important;
-  height: var(--fids-row-h, 58px) !important;
-  min-width: var(--fids-row-h, 58px) !important;
-  min-height: var(--fids-row-h, 58px) !important;
-  max-width: var(--fids-row-h, 58px) !important;
-  max-height: var(--fids-row-h, 58px) !important;
+  width: calc(var(--fids-row-h, 58px) - 4px) !important;
+  height: calc(var(--fids-row-h, 58px) - 4px) !important;
+  min-width: calc(var(--fids-row-h, 58px) - 4px) !important;
+  min-height: calc(var(--fids-row-h, 58px) - 4px) !important;
+  max-width: calc(var(--fids-row-h, 58px) - 4px) !important;
+  max-height: calc(var(--fids-row-h, 58px) - 4px) !important;
   flex: 0 0 auto !important;
   display: flex !important;
   align-items: center !important;
@@ -12442,7 +12460,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   height: 100% !important;
   max-width: 100% !important;
   max-height: 100% !important;
-  object-fit: cover !important;
+  object-fit: contain !important;
   object-position: center !important;
   display: block !important;
   margin: 0 !important;
