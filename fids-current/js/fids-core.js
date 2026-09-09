@@ -9480,9 +9480,17 @@ function _buildV2MapCol(ctx, vars) {
         var _mcRawSt = String(_ib.status || '').replace(/[\s_-]+/g, '').toLowerCase();
         _mcOnStand = (_mcRawSt === 'arrived' || !!_ib._actualArrTime);
       } catch (e) {}
-      var _mcTitleKey = (_stKey === 'arrived')
-        ? (_mcOnStand ? 'acArrivedGate' : 'acArrived')
-        : 'arrivingFrom';
+      // v23538 — THE HEADER NEVER MOVES. Nick: "the status should not be in the
+      // banner that never changes ... it is the bottom that changes", then "At
+      // this point its irelevant it has arrived its here", then the call:
+      // "The Banner should always say ... Your Aircraft | Votre Appareil".
+      // It used to swap to "Your aircraft has arrived at the gate" the moment
+      // the inbound landed — a STATUS, in the one element on the panel that is
+      // supposed to be the fixed thing telling you what you are looking at. And
+      // the body already carried it: flight, times, and "Arrived" on its own
+      // coloured line. The same fact twice, with the anchor doing the moving.
+      // One label, always, and the status stays where it belongs underneath.
+      var _mcTitleKey = 'yourAircraftHdr';
       var _mcTitle = _gateLbl(_mcTitleKey, _frF, function (w, i2) {
         return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>';
       }, '');
@@ -9538,7 +9546,22 @@ function _buildV2MapCol(ctx, vars) {
                     : (_ibArrSchedStr
                         ? '<div class="v2-fi-mline2">' + _railT(_ibArrSchedStr) + ' <span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span></div>'
                         : ''))
-        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</span></div>'
+        // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. Nick, laying out the
+        // panel: banner fixed, then "WS668 · Calgary | YYC", then "Your
+        // aircraft has arrived: when landed then (at the gate when its at
+        // gate)" with the second language under it.
+        // The sentence used to live in the banner, which is why the banner
+        // moved and the status appeared twice. It belongs on the changing side,
+        // and it keeps the distinction the old header made: landed is not the
+        // same as on stand. Any other state keeps the plain status word.
+        +         '<div class="v2-fi-mline3">'
+        +           '<span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">'
+        +             (_stKey === 'arrived'
+                        ? _gateLbl(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF, function (w, i2) {
+                            return '<span class="' + (i2 ? 'v2-fi-lbl-2' : 'v2-fi-lbl-en') + '">' + w + '</span>';
+                          }, '')
+                        : _stShow)
+        +           '</span></div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
@@ -22380,6 +22403,14 @@ var _GATE_LBL = {
   comingUp:  { en:'Coming up',     fr:'À venir',        es:'Próximas',     de:'Als Nächstes', it:'In arrivo',  pt:'A seguir',   ja:'次',        zh:'即将',   ar:'قادم' },
   // v23224 — PAL Airlines boards OPEN-FLOW (their published process: no
   // zones, no rows — pre-boarding, then one general call).
+  // v23538 — the inbound shelf's PERMANENT header. Nick: "So The Banner should
+  // always say I like Your Aircraft | Vote Appareil".
+  // Deliberately NOT the existing `yourAircraft`: that one lives in the TL
+  // table (not _GATE_LBL, which is what _gateLbl reads — using it here would
+  // have printed the raw key, exactly as `preboard` and `preboardList` did on
+  // air until v23530), and its text is "Your Aircraft Is Arriving From", which
+  // is a sentence about a state. This is a label about a panel.
+  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre appareil', es:'Su aeronave', de:'Ihr Flugzeug', it:'Il tuo aeromobile', pt:'Sua aeronave', ja:'\u304a\u5ba2\u69d8\u306e\u6a5f\u6750', zh:'\u60a8\u7684\u98de\u673a', ar:'\u0637\u0627\u0626\u0631\u062a\u0643' },
   preboard:  { en:'Pre-boarding',  fr:'Pré-embarquement', es:'Preembarque', de:'Vorab-Einstieg', it:'Preimbarco', pt:'Pré-embarque', ja:'優先搭乗', zh:'优先登机', ar:'صعود مسبق' },
   genboard:  { en:'General boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'صعود عام' },
   // v23522 — Porter's published pre-boarding list, verbatim from flyporter.com
@@ -22656,7 +22687,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23536';
+var FIDS_BUILD_TAG = 'v23538';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
