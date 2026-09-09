@@ -209,7 +209,35 @@
       // A `stream=` parameter means a broadcast feed, which always wants the
       // tour. Real gate kiosks never pass it, so a pinned board on a wall is
       // untouched, and tour=0 still opts out explicitly.
-      if (tourRaw === '1' || (q.get('stream') && aps.length < 2 && tourRaw !== '0')) aps = TOUR_DEFAULT.slice();
+      // v23516 — ONLY STREAM 1 IS PINNED; EVERY OTHER STREAM TOURS.
+      // Nick: "You're playing the rotation of international airports on the
+      // Moncton stream" — and then, when I over-corrected to pin every named
+      // airport: "it's not just Miami though or Orlando or Tampa for that
+      // matter it's an international stream". Box 2 is MEANT to tour. Pinning
+      // it to the ap= in its URL would have killed the international stream to
+      // fix the Moncton one.
+      //
+      // v23432 widened this to `q.get('stream')` — ANY stream value — so the
+      // Moncton box, which passes ap=YQM AND stream=1, lost its airport to
+      // TOUR_DEFAULT along with everything else. Stream 1 is the pinned
+      // single-airport broadcast; anything else carrying a stream= is a
+      // touring broadcast.
+      //
+      // NOTE the docs disagree with the tooling and neither is authoritative
+      // here: stream-server/README.md still shows box 2 as Orlando on
+      // stream=1 (it predates the tour and never mentions it), while
+      // setup.sh:61 and tools/repair-second-stream.sh wire the second stream
+      // as stream=2. `tour=` is the escape hatch for exactly that ambiguity —
+      // `tour=0` pins any box to its ap= and `tour=1` tours any box, both
+      // without a deploy — so a box whose number is not what we think can
+      // always be corrected from its own config.env.
+      //
+      // v23432's protection is untouched: an ap= with no feed is dropped by
+      // the LIVE filter below and the `aps.length === 0` fallback then hands
+      // the run to TOUR_DEFAULT, so a stream aimed at a dead airport still
+      // tours rather than showing a black board.
+      var _streamRaw = q.get('stream');
+      if (tourRaw === '1' || (_streamRaw && _streamRaw !== '1' && tourRaw !== '0')) aps = TOUR_DEFAULT.slice();
       // Drop anything with no feed and say so, rather than showing a dead board.
       var dropped = aps.filter(function (c) { return !LIVE[c]; });
       if (dropped.length) {
