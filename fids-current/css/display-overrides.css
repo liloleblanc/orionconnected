@@ -16083,3 +16083,52 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   padding: 0 clamp(8px, 1vw, 20px) !important;
   margin-top: clamp(2px, 0.4vh, 6px) !important;
 }
+
+/* ── v23532 — PORTER'S OWN ICONS ON PORTER GATES ──────────────────────────
+   Nick sent Porter's artwork and then, plainly: "Logos need to be used thats
+   the point." One of the eight files was in use; these three were sitting in
+   the tree doing nothing.
+   They are FULL-COLOUR illustrations (check_bags alone carries 17 colours), not
+   monochrome glyphs, so they cannot be masked into the badge ink the way the
+   icon font is drawn — masking would flatten the artwork to a silhouette. And
+   their ink is navy on a navy badge, so they cannot simply be dropped in
+   either. Same rule as the pre-boarding marks, and Nick's own instruction:
+   lighten the ground, never the artwork. On Porter gates the badge becomes a
+   white disc and the illustration sits inside it at full colour.
+   Scoped to PD so every other carrier keeps the icon font exactly as it is. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-badge {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(21, 44, 83, 0.18) !important;
+}
+/* The badge ground going white is only half the change. The glyphs that are
+   NOT being replaced — Departure, Flight, Status, Arrival — are drawn in white
+   ink for a navy disc, so on a white one they vanish: I shipped exactly that
+   for one render and the Departure badge came back empty. Every remaining
+   glyph takes Porter's navy on the new ground. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico {
+  color: #152C53 !important;
+}
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-boarding::before,
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-baggage::before,
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-dest::before {
+  content: '' !important;
+}
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-boarding,
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-baggage,
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-dest {
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 92% 92% !important;
+  width: 100% !important;
+  height: 100% !important;
+  display: block !important;
+}
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-boarding {
+  background-image: url('/logos/airlines/canadian/porter/tickets.svg') !important;
+}
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-baggage {
+  background-image: url('/logos/airlines/canadian/porter/check_bags.svg') !important;
+}
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .ac-ico-dest {
+  background-image: url('/logos/airlines/canadian/porter/passport_ticket.svg') !important;
+}

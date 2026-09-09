@@ -11827,7 +11827,12 @@ function uxgGateHtml(ctx) {
     // against. Each mark sits on its own light chip.
     var _prioMarks = preActive
       ? '<div class="g8-pd-preboard-marks">'
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/viporter.svg" alt="VIPorter"></span>'
+        // v23532 — the mark Nick supplied, not the older file already in the tree.
+        // The policy line reads "Premium VIPorter MEMBERS", which is the whole
+        // premium tier set, so the member wordmark is the right one of the four
+        // he sent — naming a single tier would imply the other two do not
+        // pre-board.
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_en.svg" alt="VIPorter"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
         + '</div>'
       : '';
@@ -22651,7 +22656,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23530';
+var FIDS_BUILD_TAG = 'v23532';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
