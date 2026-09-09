@@ -2129,6 +2129,23 @@ function _caScreenAccent() {
   var tries = [];
   try {
     var cs = getComputedStyle(document.body);
+    // v23524 — THE AIRLINE'S OWN ACCENT COMES FIRST ON A GATE. Nick: "Why is
+    // Air Canada have blue text .....?" and "Air canada airport codes are too
+    // Blue they need match accordingly".
+    // A gate screen is branded to ONE carrier — the rail, the banner and the
+    // plates are all its colours — and the airport codes were the one element
+    // ignoring it. Neither --fids-silk-accent nor --fids-code-accent is set
+    // there and BANNER_ACCENT is keyed by AIRPORT, so every candidate missed
+    // and the function fell to its literal blue at the end. Measured on a live
+    // Air Canada gate: --airline-accent was #D82F2E all along, sitting unread
+    // one variable away, while YYZ rendered rgb(194,217,255).
+    // The carrier accent is only consulted when the screen actually declares a
+    // gate airline, so board and baggage screens keep the airport accent they
+    // have always used.
+    if (document.body.getAttribute('data-gate-airline')) {
+      tries.push(cs.getPropertyValue('--airline-accent-ink'));
+      tries.push(cs.getPropertyValue('--airline-accent'));
+    }
     tries.push(cs.getPropertyValue('--fids-silk-accent'));
     tries.push(cs.getPropertyValue('--fids-code-accent'));
   } catch (e) {}
@@ -11770,8 +11787,21 @@ function uxgGateHtml(ctx) {
     var _prioVal = preActive
       ? _gateLbl('preboard', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ')
       : 'Porter Reserve';
+    // v23524 — the two product names in Porter's list get their marks. Nick
+    // sent the artwork; every file in it is DARK INK (porter_reserve_logo.svg
+    // is #222223, the VIPorter tier marks are black or #153993) and this sign's
+    // ground is #002244, so painting them straight on would have made them
+    // invisible — the same failure as the gate emblems, and the rule there
+    // holds here: never recolour the artwork, put it on a plate it can be read
+    // against. Each mark sits on its own light chip.
+    var _prioMarks = preActive
+      ? '<div class="g8-pd-preboard-marks">'
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/viporter.svg" alt="VIPorter"></span>'
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
+        + '</div>'
+      : '';
     var _prioSub = preActive
-      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + TL('preboardList') + '</span></div>'
+      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + TL('preboardList') + '</span></div>' + _prioMarks
       : '';
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>' + _prioSub + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
@@ -22569,7 +22599,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23522';
+var FIDS_BUILD_TAG = 'v23524';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
