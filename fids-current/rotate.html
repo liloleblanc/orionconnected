@@ -209,7 +209,31 @@
       // A `stream=` parameter means a broadcast feed, which always wants the
       // tour. Real gate kiosks never pass it, so a pinned board on a wall is
       // untouched, and tour=0 still opts out explicitly.
-      if (tourRaw === '1' || (q.get('stream') && aps.length < 2 && tourRaw !== '0')) aps = TOUR_DEFAULT.slice();
+      // v23516 — A NAMED AIRPORT WINS. Nick: "You're playing the rotation of
+      // international airports on the Moncton stream", then "there's stream 0
+      // and 1 ... so I'm a bit suspicious" — and he was right to be.
+      //
+      // v23432 widened this to `q.get('stream')`, ANY stream value, to rescue a
+      // box launched with a single ap= that sat on one dead board. But both
+      // live boxes pass an ap= AND a stream=, so it captured them too and
+      // overwrote Moncton with the international list.
+      //
+      // Do NOT key this on the stream number. stream-server/README.md is the
+      // ground truth and BOTH boxes run stream=1 — box 1 is Moncton
+      // (ap=YQM&stream=1), box 2 is Orlando (ap=MCO&stream=1). The only
+      // `stream=2` left in the repo is a stale Miami default in setup.sh:61
+      // and tools/repair-second-stream.sh from when stream 2 toured. A rule
+      // built on that number would be a rule built on a value neither box
+      // sends.
+      //
+      // So: name an airport and you get that airport — the promise made eight
+      // lines above this and broken by v23432. `tour=1` still forces the tour
+      // and `tour=LIST` still tours a list. v23432's protection is NOT lost:
+      // an ap= with no feed is dropped by the LIVE filter just below, and the
+      // `aps.length === 0` fallback further down hands the run to TOUR_DEFAULT
+      // — so a stream pointed at a dead airport still tours, and a bare
+      // rotate.html with no ap= still tours.
+      if (tourRaw === '1') aps = TOUR_DEFAULT.slice();
       // Drop anything with no feed and say so, rather than showing a dead board.
       var dropped = aps.filter(function (c) { return !LIVE[c]; });
       if (dropped.length) {
