@@ -11848,8 +11848,21 @@ function uxgGateHtml(ctx) {
       _comingVal = _zRestWS.join(' • ');
     } else if (airlineCode === 'PD') {
       // Porter boards by ROW NUMBER, back to front (Nick). Row count by
-      // aircraft: Dash 8-400 ~20 rows, E195-E2 ~29 rows; three bands.
-      var _pdRows = /DH4|DH8|Q400|DASH/i.test(String(equipRaw || '')) ? 20 : 29;
+      // aircraft: Dash 8-400 = 20 rows, E195-E2 = 33 rows; three bands.
+      //
+      // v23520 — Nick: "the DH4 only has 20 rows not 29 for boarding",
+      // "E195 has 33". Two things were wrong. The E-jet figure was 29, which
+      // called rows 20-29 on an aircraft that has 33 — the last four rows were
+      // never called at all, and they are the first ones that should be, since
+      // Porter boards back to front. And the Dash 8 test read the raw code with
+      // hyphens in place, so it matched DH4 and DH8D but missed the DHC-8
+      // spellings the feeds also send ('DHC-8-400', 'DHC8400'). Anything it
+      // missed fell through to the E-jet branch, so a Dash 8 could be called by
+      // rows that do not exist on it.
+      // Punctuation is stripped before matching for that reason.
+      var _pdEq = String(equipRaw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      var _pdIsDash = /DH4|DH8|DHC8|Q400|DASH8/.test(_pdEq);
+      var _pdRows = _pdIsDash ? 20 : 33;
       var _pdBand = Math.ceil(_pdRows / 3);
       _grpLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
       if (lateBoarding) {
@@ -22522,7 +22535,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23518';
+var FIDS_BUILD_TAG = 'v23520';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
