@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2608,
+    "total": 2609,
     "by_category": {
       "ad": 10,
-      "airline": 1410,
+      "airline": 1411,
       "background": 104,
       "brand": 2,
       "hotel": 884,
@@ -4720,6 +4720,17 @@
       "subcategory": "canadian",
       "group": "Airlines — Canadian",
       "name": "porter monochrome white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/porter/porter-p-navy.svg",
+      "file": "porter-p-navy.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "porter p navy",
       "iata": "",
       "country": "",
       "ext": "svg"
