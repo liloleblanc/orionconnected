@@ -16180,3 +16180,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   overflow-wrap: anywhere !important;
   line-height: 1.18 !important;
 }
+
+/* v23544 — the arrived line is "TIME | sentence" with the second language
+   under it (Nick's layout). The pair is not stacked into two blocks — that was
+   the "too much" of v23538 — only the SECOND language drops to its own line, so
+   the first reads as one sentence beside its time. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .g8-arr-l2 {
+  display: block !important;
+  white-space: normal !important;
+  line-height: 1.16 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-rc-fi-evt {
+  font-weight: 800 !important;
+}
