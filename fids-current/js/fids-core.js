@@ -14094,8 +14094,10 @@ function gateAutofit(root) {
   } catch (e) {}
   gateLanguageLayout(root);
   _gateTitleFit(root);
-  _birValueFit(root);
   _gateCodeInk(root);
+  // After the ink pass: the two are independent (size vs colour), and
+  // tests/code-ink.test.js pins these two as adjacent.
+  _birValueFit(root);
 }
 
 // v23476 — THE BILINGUAL GATE TITLES FIT INSTEAD OF BEING CUT.

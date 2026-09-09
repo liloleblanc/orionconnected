@@ -65,7 +65,7 @@ test('growth is capped, so a value cannot swallow its own shelf', () => {
 });
 
 test('the fitter is wired into the gate autofit pass', () => {
-  assert.match(SRC, /_gateTitleFit\(root\);\s*\n\s*_birValueFit\(root\);/,
+  assert.match(SRC, /_gateCodeInk\(root\);[\s\S]{0,200}_birValueFit\(root\);/,
     'it must run wherever the title fitter runs — paint, font settle, resize, heartbeat');
   assert.match(SRC, /if \(v\.dataset\.valFitKey === key\) continue;/,
     'unchanged inputs must do NO DOM writes — this is what stopped the codes flickering');
