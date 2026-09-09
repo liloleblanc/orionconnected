@@ -16170,3 +16170,13 @@ html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   -webkit-filter: none !important;
   opacity: 1 !important;
 }
+
+/* v23538 — the arrival sentence on the inbound shelf takes a line per
+   language. Nick wrote it out that way: "Your aircraft has arrived" then
+   "Su aeronave ha llegado" under it. Inline they would run past the panel. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-fi-lbl-en,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-fi-lbl-2 {
+  display: block !important;
+  white-space: normal !important;
+  line-height: 1.18 !important;
+}

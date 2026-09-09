@@ -9546,7 +9546,22 @@ function _buildV2MapCol(ctx, vars) {
                     : (_ibArrSchedStr
                         ? '<div class="v2-fi-mline2">' + _railT(_ibArrSchedStr) + ' <span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span></div>'
                         : ''))
-        +         '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">' + _stShow + '</span></div>'
+        // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. Nick, laying out the
+        // panel: banner fixed, then "WS668 · Calgary | YYC", then "Your
+        // aircraft has arrived: when landed then (at the gate when its at
+        // gate)" with the second language under it.
+        // The sentence used to live in the banner, which is why the banner
+        // moved and the status appeared twice. It belongs on the changing side,
+        // and it keeps the distinction the old header made: landed is not the
+        // same as on stand. Any other state keeps the plain status word.
+        +         '<div class="v2-fi-mline3">'
+        +           '<span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">'
+        +             (_stKey === 'arrived'
+                        ? _gateLbl(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF, function (w, i2) {
+                            return '<span class="' + (i2 ? 'v2-fi-lbl-2' : 'v2-fi-lbl-en') + '">' + w + '</span>';
+                          }, '')
+                        : _stShow)
+        +           '</span></div>'
         +       '</div>'
         +     '</div>'
         +   '</div>'
