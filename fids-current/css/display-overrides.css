@@ -16171,12 +16171,12 @@ html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   opacity: 1 !important;
 }
 
-/* v23538 — the arrival sentence on the inbound shelf takes a line per
-   language. Nick wrote it out that way: "Your aircraft has arrived" then
-   "Su aeronave ha llegado" under it. Inline they would run past the panel. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-fi-lbl-en,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-fi-lbl-2 {
-  display: block !important;
+/* v23540 — the arrival sentence is ONE language now (Nick: "I think tahts too
+   much"), so the per-language stacking rule that lived here is gone with it.
+   The line still has to be able to wrap inside the panel rather than run off
+   it, which is all that is left to say. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-rc-fi-stline {
   white-space: normal !important;
+  overflow-wrap: anywhere !important;
   line-height: 1.18 !important;
 }
