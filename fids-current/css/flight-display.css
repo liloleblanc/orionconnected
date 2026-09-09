@@ -750,56 +750,57 @@ body {
    H = 60/sqrt(ink aspect), clamped 16-29. Regenerate with the script in
    the session scratchpad rather than hand-editing single values. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"],
-/* v23504 — THESE ARE RATIOS OF THE ROW NOW, NOT FIXED PIXELS.
-   Each of these ~50 heights was hand-tuned so that wordmarks of very different
-   aspect ratios read at a comparable WIDTH — Porter's 300x99 mark needs more
-   height than Air Canada's 300x27 to look like a peer beside it. That tuning is
-   worth keeping. What broke was that they were absolute px, measured against the
-   58px default row, and they did not move when Small went 44 -> 34 -> 30: a 30px
-   WestJet mark in a 30px row grew straight through the row line (Nick: "the logos
-   are outside the lines into the other rows").
-   Each value is now its original px expressed as a fraction of 58, so the whole
-   table scales with --fids-row-h and the relative balance between carriers is
-   preserved exactly. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { height: calc(var(--fids-row-h, 58px) * 0.5517); }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { height: calc(var(--fids-row-h, 58px) * 0.5172); }
+/* v23504e — BACK TO FIXED PIXELS, ON PURPOSE. v23504 converted these ~21
+   per-airline heights into fractions of --fids-row-h so they would scale with
+   the tier. That was the wrong trade: at a 30px row Porter's 28px became 14.5px
+   and, because a 300x99 mark can only be as wide as three times its height, it
+   rendered 65px wide beside Air Canada's 198px and read as tiny. Nick: "looks
+   like porter is too small", then "If you just put porter back the way it was it
+   was fine".
+   These numbers are a designer's judgement about how marks of very different
+   aspect should read next to each other, and that judgement does not scale
+   linearly with the row. They stay absolute. What stops them crossing a row line
+   is the blanket cap in display-overrides.css, which clamps ANY wordmark to the
+   row height — a ceiling, not a rescaling. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { height: 32px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { height: 30px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="P3"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="PD"] { height: calc(var(--fids-row-h, 58px) * 0.4828); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PD"] { height: 28px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="OO"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="QK"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="VB"] { height: calc(var(--fids-row-h, 58px) * 0.4655); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="VB"] { height: 27px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AM"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AS"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="G3"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="KL"] { height: calc(var(--fids-row-h, 58px) * 0.4483); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="KL"] { height: 26px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="TS"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="Y4"] { height: calc(var(--fids-row-h, 58px) * 0.431); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="Y4"] { height: 25px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LA"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="PB"] { height: calc(var(--fids-row-h, 58px) * 0.4138); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="PB"] { height: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="DL"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="UA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="UP"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="VS"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { height: calc(var(--fids-row-h, 58px) * 0.3966); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="WN"] { height: 23px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="9X"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="LO"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="MX"] { height: calc(var(--fids-row-h, 58px) * 0.3793); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="MX"] { height: 22px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AT"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="BA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="CM"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F8"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="TP"] { height: calc(var(--fids-row-h, 58px) * 0.3621); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="TP"] { height: 21px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AF"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: calc(var(--fids-row-h, 58px) * 0.3448); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: 20px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="3H"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AC"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PT"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="RV"] { height: calc(var(--fids-row-h, 58px) * 0.3103); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="RV"] { height: 18px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="OB"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="YX"] { height: calc(var(--fids-row-h, 58px) * 0.2759); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="YX"] { height: 16px; }
 
 /* Emblem sizing for icon-first carriers (Mokulele, Frontier, Discover,
    Breeze) — the symbol is the brand identity, so it renders larger than
@@ -2242,7 +2243,13 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
    --fids-row-h 44px, rows rendering exactly 44 — the control was working, the
    tier was just not small. 34px row / 26px logo keeps the three tiers clearly
    apart (34 / 66 / 90), which is what the note above widened the spread for. */
-body[data-fids-logo-size="small"]  { --fids-logo-size: 24px !important; --fids-row-h: 30px !important; }
+/* v23504f — 36px, not 30. Nick asked for four things that all need height:
+   Porter back at its old size (30px, which spilled 1.8px out of a 30px row),
+   flair "a smidge bigger" than its 29px, icons bigger than 27.6px, and
+   nothing crossing a row line. At 30px those are mutually exclusive — the
+   tallest wordmark IS the row. 36px gives every one of them room and is still
+   well clear of Medium at 66. */
+body[data-fids-logo-size="small"]  { --fids-logo-size: 28px !important; --fids-row-h: 36px !important; }
 body[data-fids-logo-size="medium"] { --fids-logo-size: 52px !important; --fids-row-h: 66px !important; }
 body[data-fids-logo-size="large"]  { --fids-logo-size: 72px !important; --fids-row-h: 90px !important; }
 
@@ -4082,18 +4089,18 @@ body #fidsTable tbody tr.row-final td .fids-cell-time { background: transparent 
 body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !important; }
 
 /* Sun Country (SY) — official artwork wired Jul 2026 (ink aspect 7.5). */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="SY"] { height: calc(var(--fids-row-h, 58px) * 0.3793); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="SY"] { height: 22px; }
 
 /* Nick's nudges Jul 5 2026 — mirrors display-overrides.css (which governs). */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { height: calc(var(--fids-row-h, 58px) * 0.4828); }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: calc(var(--fids-row-h, 58px) * 0.3793); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { height: 28px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: 22px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PD"],
-#fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { height: calc(var(--fids-row-h, 58px) * 0.5172); }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { height: calc(var(--fids-row-h, 58px) * 0.5); }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { height: calc(var(--fids-row-h, 58px) * 0.3966); }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { height: calc(var(--fids-row-h, 58px) * 0.3276); }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { height: calc(var(--fids-row-h, 58px) * 0.3621); }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { height: 30px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { height: 32px; }  /* v23504f — Nick: "flair could be a smidge bigger" */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { height: 23px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { height: 19px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { height: 21px; }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    BANNER STYLE 'merged' — the clock joins the white airport band.

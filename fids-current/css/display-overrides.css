@@ -12387,7 +12387,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      decide the actual heights; this only guarantees that nothing — including a
      carrier with no entry in that table, whose height comes from its artwork
      aspect — can ever cross the row line again. */
-  max-height: calc(var(--fids-row-h, 58px) * 0.72) !important;
+  /* v23504e — a CEILING, not a rescaling. 0.72 shrank every mark including the
+     ones that were already right; Nick only ever reported the tall ones crossing
+     the line. Clamping at the row height leaves a well-tuned mark exactly as its
+     designer set it and only touches one that would actually escape the row. */
+  /* Two px inside the row, so a mark tuned to exactly the row height (Porter's
+     30px) cannot sit on the line it is meant to stay inside. */
+  max-height: calc(var(--fids-row-h, 58px) - 2px) !important;
   max-width: 198px !important;
   object-fit: contain !important;
   /* v23504b — LEFT, not centred. Nick: "I meant centered height wise not long
