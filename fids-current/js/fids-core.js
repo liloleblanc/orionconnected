@@ -11754,11 +11754,27 @@ function uxgGateHtml(ctx) {
   // rest' + 'Porter Reserve is priority'). LEFT half = the Porter Reserve
   // priority queue on Lanes 1\u20222 (always shown while boarding); RIGHT half =
   // the row band being called for everyone else on Lanes 3\u20224.
-  function _pdLanesBodyHtml(rowsVal, comingVal) {
-    var _prioT = _gateLbl('priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
+  // v23522 — PRE-BOARDING IS A PHASE, AND THE SIGN NOW SAYS WHO IT IS FOR.
+  // Nick sent Porter's published boarding order and said "This is important if
+  // somehow it can be integrated". The priority column named ONE of the five
+  // groups entitled to pre-board — Porter Reserve — so a passenger travelling
+  // with an infant, an unaccompanied minor, or anyone needing assistance had
+  // nothing on the sign telling them the courtesy applies to them.
+  // For the first stretch of the boarding window the column is headed
+  // "Pre-boarding" and carries the full published list; once general boarding
+  // commences it returns to the Porter Reserve priority queue, which is what
+  // lanes 1-2 are for from then on.
+  function _pdLanesBodyHtml(rowsVal, comingVal, preActive) {
+    var _prioT = _gateLbl(preActive ? 'preboard' : 'priority', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
     var _rowsLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
+    var _prioVal = preActive
+      ? _gateLbl('preboard', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ')
+      : 'Porter Reserve';
+    var _prioSub = preActive
+      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + TL('preboardList') + '</span></div>'
+      : '';
     return '<div class="g8-board-body g8-lanes-pd">'
-      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">Porter Reserve</div></div><div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
+      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>' + _prioSub + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
       + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div>' + _comingLineHtml(comingVal) + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
       + '</div>';
   }
@@ -11895,7 +11911,9 @@ function uxgGateHtml(ctx) {
       + (_acLanes
           ? _acLanesBodyHtml(_acZonesVal, _comingVal)
           : airlineCode === 'PD'
-          ? _pdLanesBodyHtml(nowVal, _comingVal)
+          // Pre-boarding runs for the first five minutes of the boarding
+          // window; after that Porter's general boarding has commenced.
+          ? _pdLanesBodyHtml(nowVal, _comingVal, minsToDep > (_boardLeadShown - 5))
           // v23224 — PAL's open-flow sign: pre-boarding for the first
           // stretch of the window, then the one general call.
           : airlineCode === 'PB'
@@ -22298,6 +22316,22 @@ var _GATE_LBL = {
   // zones, no rows — pre-boarding, then one general call).
   preboard:  { en:'Pre-boarding',  fr:'Pré-embarquement', es:'Preembarque', de:'Vorab-Einstieg', it:'Preimbarco', pt:'Pré-embarque', ja:'優先搭乗', zh:'优先登机', ar:'صعود مسبق' },
   genboard:  { en:'General boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'صعود عام' },
+  // v23522 — Porter's published pre-boarding list, verbatim from flyporter.com
+  // (Nick: "This is important if somehow it can be integrated"). Shown as the
+  // priority column's sub-line during the pre-boarding phase. Rendered with
+  // TL(), not the bilingual _gateLbl pairing — five categories side by side in
+  // two languages would not fit a gate sign, and the board already rotates its
+  // language, so each pass shows the whole list in one of them.
+  preboardList: {
+    en:'Passengers with disabilities \u00b7 Unaccompanied minors \u00b7 Families with children 2 and under \u00b7 Premium VIPorter \u00b7 PorterReserve',
+    fr:'Passagers handicap\u00e9s \u00b7 Mineurs non accompagn\u00e9s \u00b7 Familles avec enfants de 2 ans et moins \u00b7 VIPorter Premium \u00b7 PorterReserve',
+    es:'Pasajeros con discapacidad \u00b7 Menores no acompa\u00f1ados \u00b7 Familias con ni\u00f1os de 2 a\u00f1os o menos \u00b7 VIPorter Premium \u00b7 PorterReserve',
+    de:'Passagiere mit Behinderung \u00b7 Alleinreisende Kinder \u00b7 Familien mit Kindern bis 2 Jahre \u00b7 Premium VIPorter \u00b7 PorterReserve',
+    it:'Passeggeri con disabilit\u00e0 \u00b7 Minori non accompagnati \u00b7 Famiglie con bambini fino a 2 anni \u00b7 Premium VIPorter \u00b7 PorterReserve',
+    pt:'Passageiros com defici\u00eancia \u00b7 Menores desacompanhados \u00b7 Fam\u00edlias com crian\u00e7as at\u00e9 2 anos \u00b7 Premium VIPorter \u00b7 PorterReserve',
+    ja:'\u304a\u624b\u4f1d\u3044\u304c\u5fc5\u8981\u306a\u304a\u5ba2\u69d8 \u00b7 \u304a\u5b50\u69d8\u306e\u3072\u3068\u308a\u65c5 \u00b7 2\u6b73\u4ee5\u4e0b\u306e\u304a\u5b50\u69d8\u9023\u308c \u00b7 \u30d7\u30ec\u30df\u30a2\u30e0VIPorter \u00b7 PorterReserve',
+    zh:'\u9700\u534f\u52a9\u65c5\u5ba2 \u00b7 \u65e0\u4eba\u966a\u4f34\u513f\u7ae5 \u00b7 \u643a2\u5c81\u53ca\u4ee5\u4e0b\u513f\u7ae5\u7684\u5bb6\u5ead \u00b7 \u9ad8\u7ea7VIPorter \u00b7 PorterReserve',
+    ar:'\u0627\u0644\u0631\u0643\u0627\u0628 \u0630\u0648\u0648 \u0627\u0644\u0625\u0639\u0627\u0642\u0629 \u00b7 \u0627\u0644\u0642\u0627\u0635\u0631\u0648\u0646 \u063a\u064a\u0631 \u0627\u0644\u0645\u0635\u062d\u0648\u0628\u064a\u0646 \u00b7 \u0627\u0644\u0639\u0627\u0626\u0644\u0627\u062a \u0645\u0639 \u0623\u0637\u0641\u0627\u0644 \u062d\u062a\u0649 \u0633\u0646\u062a\u064a\u0646 \u00b7 VIPorter \u0628\u0631\u064a\u0645\u064a\u0648\u0645 \u00b7 PorterReserve' },
   allPax:    { en:'All passengers', fr:'Tous les passagers', es:'Todos los pasajeros', de:'Alle Passagiere', it:'Tutti i passeggeri', pt:'Todos os passageiros', ja:'全てのお客様', zh:'所有乘客', ar:'جميع الركاب' },
   finalCall: { en:'FINAL BOARDING CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終搭乗案内', zh:'最后登机广播', ar:'النداء الأخير للصعود' },
   gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'ゲート閉鎖', zh:'登机口已关闭', ar:'البوابة مغلقة' },
@@ -22535,7 +22569,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23520';
+var FIDS_BUILD_TAG = 'v23522';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
