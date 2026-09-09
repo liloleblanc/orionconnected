@@ -13463,9 +13463,18 @@ function gateAutofit(root) {
   // shrank every value and label to the 12px floor before first paint. Their
   // normal sizes now come from CSS, with the later visible-box one-line fitter
   // handling only genuinely long flight/destination/status strings.
+  // v23546 — the inbound shelf's flight line joins the fitter. Nick, on a
+  // Frankfurt inbound: "this one in particular is spilling" — "4Y74 ·
+  // Frankfurt | FRA" broke after the pipe and pushed the arrival line out of
+  // the panel. It was never in this list, so it had no way to get smaller;
+  // v23528 let it WRAP so it would stop running off the right edge, which
+  // traded a horizontal overflow for a vertical one. A long origin needs the
+  // type to shrink, which is exactly what this pass does for every other
+  // value on the gate.
   var sels = ['.g8-welcome-city', '.g8-r1-dest',
               '.v2-rc-i3val', '.v2-rc-r2val', '.v2-rc-actype-val',
-              '.v2-rc-fi-val', '.v2-rc-fi-tval', '.v2-rc-acb-actype'];
+              '.v2-rc-fi-val', '.v2-rc-fi-tval', '.v2-rc-acb-actype',
+              '.v2-fi-mline1'];
   sels.forEach(function(sel) {
     var els = root.querySelectorAll(sel);
     els.forEach(function(el) {
@@ -22727,7 +22736,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23544';
+var FIDS_BUILD_TAG = 'v23546';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
