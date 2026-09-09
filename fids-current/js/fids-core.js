@@ -14094,6 +14094,7 @@ function gateAutofit(root) {
   } catch (e) {}
   gateLanguageLayout(root);
   _gateTitleFit(root);
+  _birValueFit(root);
   _gateCodeInk(root);
 }
 
@@ -14247,6 +14248,68 @@ function _gateCodeInk(root) {
       el.dataset.inkApplied = '1';
       el.style.setProperty('color', css, 'important');
       el.style.setProperty('-webkit-text-fill-color', css, 'important');
+    }
+  } catch (e) {}
+}
+
+// v23528 — HOW BIG CAN THIS TEXT BE. Nick: "the text does not fill all
+// available room and if it does it spills it needs to be flush and snug and
+// able to accomodate the text."
+//
+// The shelf values are sized by clamp(22px, 3.8vh, 48px) — a VIEWPORT-HEIGHT
+// figure that knows nothing about how much WIDTH the shelf has. So "Toronto"
+// left half the plate empty while a long name ran off it, and the stylesheet
+// has carried the admission for months: "may still clip the longest names —
+// flagged to fix later (Nick)". One fixed number cannot be right for both.
+//
+// Search for the largest ratio that still fits, in both directions from 1:
+// grow a short string until it fills the plate, shrink a long one until it
+// stops spilling. Kept PURE — a function of a measuring callback — so the
+// arithmetic is testable without a browser. fits(ratio) answers "does it fit
+// at this size"; this returns the ratio to use.
+function _ocFitRatio(fits, opts) {
+  var o = opts || {};
+  var lo = o.min || 0.55, hi = o.max || 1.8, step = o.step || 0.04;
+  if (!fits(1)) {                                   // spilling — come down
+    for (var d = 1 - step; d >= lo - 1e-9; d -= step) {
+      if (fits(d)) return Math.max(lo, Number(d.toFixed(4)));
+    }
+    return lo;                                      // nothing fits; take the floor
+  }
+  var best = 1;                                     // fits — see how much room is left
+  for (var u = 1 + step; u <= hi + 1e-9; u += step) {
+    if (!fits(u)) break;
+    best = Number(u.toFixed(4));
+  }
+  return best;
+}
+
+// The boarding shelf values fill their plate, and never overrun it. Same
+// anti-flicker contract as _gateCodeInk and _gateTitleFit: remember the inputs
+// and do no DOM writes when nothing changed. This runs from gateAutofit, which
+// fires on paint, font settle, resize and a 5s heartbeat — re-measuring from
+// scratch every pass is exactly what made the airport codes flicker.
+function _birValueFit(root) {
+  try {
+    var vals = (root || document).querySelectorAll('.g8-bir-shelves .v2-fi-value');
+    for (var i = 0; i < vals.length; i++) {
+      var v = vals[i];
+      if (!v.isConnected || v.clientWidth <= 1) continue;
+      var box = v.parentElement || v;
+      var key = (v.textContent || '') + '|' + Math.round(v.clientWidth) + 'x' + Math.round(box.clientHeight);
+      if (v.dataset.valFitKey === key) continue;
+      v.dataset.valFitKey = key;
+      v.style.removeProperty('font-size');
+      var base = parseFloat(getComputedStyle(v).fontSize) || 24;
+      // A value may never grow so tall it pushes its own label out of the
+      // shelf: the plate's height is the real ceiling, not the font clamp.
+      var hCap = box.clientHeight > 0 ? (box.clientHeight * 0.62) / base : 1.8;
+      var ratio = _ocFitRatio(function (r) {
+        v.style.setProperty('font-size', (base * r).toFixed(2) + 'px', 'important');
+        return v.scrollWidth <= v.clientWidth + 0.5;
+      }, { min: 0.55, max: Math.max(1, Math.min(1.8, hCap)), step: 0.04 });
+      if (Math.abs(ratio - 1) < 1e-9) v.style.removeProperty('font-size');
+      else v.style.setProperty('font-size', (base * ratio).toFixed(2) + 'px', 'important');
     }
   } catch (e) {}
 }
@@ -22624,7 +22687,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23526';
+var FIDS_BUILD_TAG = 'v23528';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
