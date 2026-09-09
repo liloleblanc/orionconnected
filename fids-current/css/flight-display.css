@@ -2226,7 +2226,12 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 /* Clearly-distinct fixed row heights per size (Nick: widen the spread so Small
    / Medium / Large actually differ — 44/52/60 read the same). */
-body[data-fids-logo-size="small"]  { --fids-logo-size: 34px !important; --fids-row-h: 44px !important; }
+/* v23502 — Small is actually small now. Nick, with Small already selected:
+   "So Rows are too big". Measured on his board: data-fids-logo-size="small",
+   --fids-row-h 44px, rows rendering exactly 44 — the control was working, the
+   tier was just not small. 34px row / 26px logo keeps the three tiers clearly
+   apart (34 / 66 / 90), which is what the note above widened the spread for. */
+body[data-fids-logo-size="small"]  { --fids-logo-size: 26px !important; --fids-row-h: 34px !important; }
 body[data-fids-logo-size="medium"] { --fids-logo-size: 52px !important; --fids-row-h: 66px !important; }
 body[data-fids-logo-size="large"]  { --fids-logo-size: 72px !important; --fids-row-h: 90px !important; }
 

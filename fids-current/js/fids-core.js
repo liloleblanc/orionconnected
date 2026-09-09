@@ -14113,14 +14113,30 @@ function _gateCodeInk(root) {
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
       if (!el.isConnected || !el.getClientRects().length) continue;
-      el.style.removeProperty('color');
-      el.style.removeProperty('-webkit-text-fill-color');
-      var cs = getComputedStyle(el);
-      var fg = _ocColorParts(cs.webkitTextFillColor || cs.color);
+      // v23502 — DO NOT STRIP AND RE-APPLY ON EVERY PASS. Nick: "the airport codes
+      // keep flickering". This runs from gateAutofit, which fires on paint, font
+      // settle, resize and a 5s heartbeat; removing the override to re-measure and
+      // then putting it back repainted the code in its ORIGINAL colour for a frame
+      // every single time. The un-lifted value is remembered on the element the
+      // first time instead, so a pass with unchanged inputs does no DOM writes at
+      // all — measure, compare, skip.
       var bg = _ocGroundOf(el.parentElement || el);
-      if (!fg || !bg) continue;
+      if (!bg) continue;
+      if (!el.dataset.inkBase) {
+        var cs0 = getComputedStyle(el);
+        el.dataset.inkBase = cs0.webkitTextFillColor || cs0.color;
+      }
+      var inkKey = bg.join(',') + '|' + el.dataset.inkBase;
+      if (el.dataset.inkKey === inkKey) continue;      // nothing changed — no repaint
+      el.dataset.inkKey = inkKey;
+      var fg = _ocColorParts(el.dataset.inkBase);
+      if (!fg) continue;
       var base = _ocCr(fg, bg);
-      if (base >= FLOOR) continue;                     // already legible — the accent stands
+      if (base >= FLOOR) {                             // already legible — the accent stands
+        el.style.removeProperty('color');
+        el.style.removeProperty('-webkit-text-fill-color');
+        continue;
+      }
       var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
       var up = _ocLum(bg) < 0.5;                       // dark ground lift, light ground deepen
       var best = fg, bestCr = base;
@@ -14354,6 +14370,156 @@ function _axrFitBubbleNames() {
       el.style.setProperty('font-size', size + 'px', 'important');
     }
   }
+}
+
+/* ── v23502 — THE AIRPORT LOGO FILLS THE ROOM IT ACTUALLY HAS ──────────────
+   Nick: "Can we do bigger a bit it should actualy adjust to fit as big as
+   possible", and the constraint that makes it tractable — "without taking over".
+
+   Every size before this was a number I picked: 84px in v23496, 104px in v23500.
+   A fixed number cannot be right, because the room depends on the viewport, on
+   how wide the board title renders in the current language, and on the logo's own
+   aspect. The 300x105 Moncton wordmark and a square airport crest want completely
+   different heights out of the same band.
+
+   So measure the corridor and fit to it. Measured on the live board at 1675x880:
+
+     .fids-banner-board       90 -> 609    (the star and 'Arrivals | Arrivées')
+     .fids-airport-pill      689 -> 986    (the logo, centred)
+     .fids-banner-time-block 1206 -> 1585  (clock and date)
+
+   — a 597px gap between the two neighbours, of which the logo was using 297.
+   "Without taking over" is the GAP either side: the logo may grow into that
+   corridor but must keep clear air between itself and both neighbours, and stay
+   inside the band vertically. Height is capped by the band, width by the
+   corridor, and whichever binds first wins — so a wide wordmark gets width and a
+   tall crest gets height, from one rule.
+
+   Shrink-only relative to the CSS ceiling it never exceeds, cached on the inputs
+   so the common case is two getBoundingClientRect reads and no write. */
+/* ── v23502 — NO CELL IS LEFT UNREADABLE ON A LIGHT ROW ────────────────────
+   Nick: "Yellow with white does not go wel".
+
+   Measured on the live board, the two delayed rows disagreed with each other:
+
+     row-delayed  bg rgb(249,212,76)  worst cell rgb(143,183,232)   1.44:1
+     row-delayed  bg rgb(237,187,0)   worst cell rgb(16,36,55)      8.81:1
+
+   The status colouring flips a delayed row to yellow, but the per-column inks —
+   the destination code's pale blue especially — were chosen against the DARK
+   board and keep their value when the row underneath turns light. So the same
+   status renders legible on one row and nearly invisible on the next.
+
+   This is the same defect as the gate codes in v23494 and the three carrier
+   contrast bugs before it: a colour chosen without reference to the ground it
+   lands on. It reuses the same lift — hue and saturation preserved, lightness
+   moved toward whichever end has headroom — so a code stays recognisably its own
+   colour instead of being flattened to black. Only cells that actually fail the
+   floor are touched; a row that already reads is left exactly as the operator's
+   palette painted it. */
+function _fidsRowInk(root) {
+  try {
+    if (typeof _ocColorParts !== 'function') return;
+    var FLOOR = 3.0, TARGET = 4.6;
+    var rows = (root || document).querySelectorAll('#fidsTable tbody tr');
+    for (var i = 0; i < rows.length; i++) {
+      var tr = rows[i];
+      if (!tr.getClientRects().length) continue;
+      var bg = _ocGroundOf(tr);
+      if (!bg) continue;
+      var key = bg.join(',');
+      if (tr.dataset.rowInkKey === key) continue;     // same ground — nothing to redo
+      tr.dataset.rowInkKey = key;
+      var nodes = tr.querySelectorAll('td, td *');
+      for (var j = 0; j < nodes.length; j++) {
+        var el = nodes[j];
+        // Only elements that actually paint text of their own.
+        if (!el.firstChild || el.querySelector('*')) continue;
+        if (!String(el.textContent || '').trim()) continue;
+        // Remember the palette's own colour once; never strip-and-restore on a
+        // later pass (see the note in _gateCodeInk — that is what made the gate
+        // codes flicker).
+        if (!el.dataset.inkBase) {
+          var cs0 = getComputedStyle(el);
+          el.dataset.inkBase = cs0.webkitTextFillColor || cs0.color;
+        }
+        var fg = _ocColorParts(el.dataset.inkBase);
+        if (!fg) continue;
+        var base = _ocCr(fg, bg);
+        if (base >= FLOOR) {                         // already readable — palette untouched
+          el.style.removeProperty('color');
+          el.style.removeProperty('-webkit-text-fill-color');
+          continue;
+        }
+        var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
+        var up = _ocLum(bg) < 0.5;
+        // White or near-black text has no hue to preserve, so there is nothing to
+        // be gained by stopping at the minimum. Nick's "yellow with white does not
+        // go wel" was white at 1.44:1; lifting it only to 4.6 leaves a washy mid
+        // grey on the yellow. Achromatic ink goes all the way to a proper dark.
+        var goal = hsl[1] < 0.12 ? 8.5 : TARGET;
+        var best = fg, bestCr = base;
+        for (var step = 1; step <= 24; step++) {
+          var l = up ? Math.min(0.98, hsl[2] + step * 0.04) : Math.max(0.04, hsl[2] - step * 0.04);
+          var cand = _ocFromHsl(hsl[0], hsl[1], l);
+          var c = _ocCr(cand, bg);
+          if (c > bestCr) { bestCr = c; best = cand; }
+          if (c >= goal) break;
+        }
+        if (bestCr <= base) continue;
+        var css = 'rgb(' + best[0] + ', ' + best[1] + ', ' + best[2] + ')';
+        el.style.setProperty('color', css, 'important');
+        el.style.setProperty('-webkit-text-fill-color', css, 'important');
+      }
+    }
+  } catch (e) {}
+}
+
+function _fidsAirportLogoFit() {
+  try {
+    var img = document.querySelector('.fids-airport-pill .fids-airport-logo-img');
+    var banner = document.querySelector('.fids-banner');
+    if (!img || !banner || !img.naturalWidth || !img.naturalHeight) return;
+    var br = banner.getBoundingClientRect();
+    // Inert while the banner is hidden or collapsed — gate and baggage screens
+    // display:none it, and a pre-reveal measurement would size to nothing.
+    if (br.height < 40 || br.width < 200) return;
+
+    var GAP = 28;   // clear air the logo must leave beside each neighbour
+    var VPAD = 8;   // and above/below, inside the band
+
+    // The corridor is bounded by whatever actually sits left and right of the
+    // pill, measured — not by a hardcoded guess at the layout.
+    var left = br.left, right = br.right;
+    var kids = banner.children;
+    var pr = img.getBoundingClientRect();
+    var cx = (pr.left + pr.right) / 2;
+    for (var i = 0; i < kids.length; i++) {
+      var el = kids[i];
+      if (el.contains(img)) continue;
+      var s = getComputedStyle(el);
+      if (s.display === 'none' || s.visibility === 'hidden') continue;
+      var r = el.getBoundingClientRect();
+      if (r.width < 2 || r.height < 2) continue;
+      if (r.right <= cx && r.right > left) left = r.right;      // nearest on the left
+      if (r.left >= cx && r.left < right) right = r.left;       // nearest on the right
+    }
+
+    var availW = Math.max(40, (right - left) - GAP * 2);
+    var availH = Math.max(24, br.height - VPAD * 2);
+    var ratio = img.naturalWidth / img.naturalHeight;
+    var h = Math.min(availH, availW / ratio);
+    h = Math.floor(h);
+    if (!(h > 0)) return;
+
+    var key = h + '|' + Math.round(availW) + '|' + img.naturalWidth + 'x' + img.naturalHeight;
+    if (img.dataset.logoFitKey === key) return;
+    img.dataset.logoFitKey = key;
+    img.style.setProperty('height', h + 'px', 'important');
+    img.style.setProperty('max-height', h + 'px', 'important');
+    img.style.setProperty('max-width', Math.round(availW) + 'px', 'important');
+    img.style.setProperty('width', 'auto', 'important');
+  } catch (e) {}
 }
 
 function boardAutofit(full) {
@@ -14648,7 +14814,14 @@ function boardAutofit(full) {
 }
 // Standing refit — covers the BAGS render, destination flips changing text
 // lengths, and window resizes, same rhythm as the gate's fit heartbeat.
-try { _ocEvery(function () { boardAutofit(false); }, 5000); } catch (e) {}
+try { _ocEvery(function () { boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); }, 5000); } catch (e) {}
+// The logo's natural size is only known once it decodes, and the banner may
+// still be revealing — fit on load as well as on the heartbeat.
+try {
+  document.addEventListener('load', function (e) {
+    if (e.target && e.target.classList && e.target.classList.contains('fids-airport-logo-img')) _fidsAirportLogoFit();
+  }, true);
+} catch (e) {}
 try { window.addEventListener('resize', function () { setTimeout(function () { boardAutofit(true); }, 120); }); } catch (e) {}
 
 // ── Banner style registry (Nick: merged time+airport banner, "changeable by
@@ -22324,7 +22497,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23500';
+var FIDS_BUILD_TAG = 'v23502';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

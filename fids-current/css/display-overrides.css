@@ -12354,11 +12354,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard {
   background-image: url("/logos/Backgrounds/moncton-skyline.svg?v=23146") !important;
   background-attachment: fixed !important;
-  /* v23146d — "Lower Moncton please to improve skyline coverage": the city
-     sits 10vh lower, so the buildings hug the bottom band instead of
-     riding up into the rows. */
-  background-position: center calc(100% + 10vh) !important;
-  background-size: 100vw auto !important;
+  /* v23502 — ON THE SHORELINE, NOT ON THE WATER. Nick: "drop the scenery
+     remove the water from the painting of Moncton so drop it and shrink it a
+     bit", then "a tiny bit smaller and lower at the shoreline instead of on the
+     water". The artwork is one SVG with the city above its own reflection, so
+     the water cannot be deleted from it without editing the asset — but pushing
+     the image down past the waterline takes the reflection below the board's
+     edge and leaves the buildings standing on the shore, which is the same
+     result and reversible with one number.
+     Measured at 1675x880 against the real board: 10vh (as shipped) shows the
+     full reflection; 20vh puts the waterline at the bottom edge with the city
+     intact; 28vh is too far and starts cutting the buildings off. 92vw shrinks
+     it the "tiny bit" without leaving a gap at either end. */
+  background-position: center calc(100% + 20vh) !important;
+  background-size: 92vw auto !important;
   background-repeat: no-repeat !important;
 }
 html body[data-fids-ap="YQM"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) #fidsBoard::after {
