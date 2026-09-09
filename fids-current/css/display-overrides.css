@@ -15992,24 +15992,38 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  gap: 0.6em !important;
-  margin-top: 0.5em !important;
+  gap: clamp(14px, 1.8vw, 40px) !important;
+  margin-top: clamp(6px, 1vh, 16px) !important;
   flex-wrap: wrap !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-pd-preboard-marks .g8-pd-mark {
+  /* v23534 — NO CHIP. Nick: "Remove the background please make it transparent
+     possiblity change ot white come on make it work thats TINY".
+     The white plate was there because the supplied artwork is dark ink
+     (#222223 / #027AC0) on a #002244 sign. Dropping the plate without dealing
+     with the ink would just make the marks vanish, so his other option is the
+     one taken: the artwork itself goes white. brightness(0) flattens every
+     colour to black and invert(1) lifts it to pure white, which is exact for a
+     wordmark and needs no second asset. The blue in PorterReserve is lost —
+     that is the trade for sitting straight on the navy. A real light variant
+     would keep it, if one exists in the brand kit. */
   display: inline-flex !important;
   align-items: center !important;
-  background: #FFFFFF !important;
-  border-radius: 0.35em !important;
-  padding: 0.3em 0.55em !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
   line-height: 0 !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-pd-preboard-marks .g8-pd-mark img {
-  height: 1.5em !important;
+  /* Sized off the VIEWPORT, not em: the marks inherited the coming-up line's
+     small font and came out tiny. */
+  height: clamp(40px, 6.4vh, 96px) !important;
   width: auto !important;
-  max-width: 11em !important;
+  max-width: min(46%, 30em) !important;
   object-fit: contain !important;
   display: block !important;
+  filter: brightness(0) invert(1) !important;
 }
 
 /* v23524 — a flex child defaults to min-width:auto, which refuses to shrink
