@@ -48,17 +48,30 @@ test('box 1 plays Moncton and nothing else', () => {
   assert.equal(r.isTour, false);
 });
 
-test('box 2 plays Orlando and nothing else', () => {
-  const r = select(BOX2);
-  assert.deepEqual(r.aps, ['MCO']);
-  assert.equal(r.isTour, false);
+test('the second stream tours, whatever airport its URL happens to name', () => {
+  // Nick: "it's not just Miami though or Orlando or Tampa for that matter it's
+  // an international stream". Pinning box 2 to its ap= would kill the tour.
+  for (const q of ['ap=MIA&mode=live&stream=2', 'ap=MCO&mode=live&stream=2', 'mode=live&stream=2']) {
+    const r = select(q);
+    assert.ok(r.isTour, `${q} must tour`);
+    assert.ok(r.aps.length > 1);
+  }
 });
 
-test('the stream number never decides — only the airport does', () => {
-  for (const s of ['0', '1', '2', '3', '']) {
-    const r = select('ap=YQM&mode=live&stream=' + s);
-    assert.deepEqual(r.aps, ['YQM'], `stream=${s} must not change which airport plays`);
+test('only stream 1 is pinned; any other stream number tours', () => {
+  assert.deepEqual(select('ap=YQM&mode=live&stream=1').aps, ['YQM']);
+  for (const s of ['0', '2', '3']) {
+    assert.ok(select('ap=YQM&mode=live&stream=' + s).isTour, `stream=${s} is a touring broadcast`);
   }
+});
+
+test('tour= overrides the stream number in BOTH directions, with no deploy', () => {
+  // The escape hatch for a box whose number is not what the docs claim: this
+  // is editable in config.env on the box itself.
+  assert.deepEqual(select('ap=YQM&mode=live&stream=2&tour=0').aps, ['YQM'],
+    'tour=0 pins a touring stream to its airport');
+  assert.ok(select('ap=YQM&mode=live&stream=1&tour=1').isTour,
+    'tour=1 tours a pinned stream');
 });
 
 test('a bare rotate.html with no airport still tours', () => {

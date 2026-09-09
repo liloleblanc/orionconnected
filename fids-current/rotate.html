@@ -209,31 +209,35 @@
       // A `stream=` parameter means a broadcast feed, which always wants the
       // tour. Real gate kiosks never pass it, so a pinned board on a wall is
       // untouched, and tour=0 still opts out explicitly.
-      // v23516 — A NAMED AIRPORT WINS. Nick: "You're playing the rotation of
-      // international airports on the Moncton stream", then "there's stream 0
-      // and 1 ... so I'm a bit suspicious" — and he was right to be.
+      // v23516 — ONLY STREAM 1 IS PINNED; EVERY OTHER STREAM TOURS.
+      // Nick: "You're playing the rotation of international airports on the
+      // Moncton stream" — and then, when I over-corrected to pin every named
+      // airport: "it's not just Miami though or Orlando or Tampa for that
+      // matter it's an international stream". Box 2 is MEANT to tour. Pinning
+      // it to the ap= in its URL would have killed the international stream to
+      // fix the Moncton one.
       //
-      // v23432 widened this to `q.get('stream')`, ANY stream value, to rescue a
-      // box launched with a single ap= that sat on one dead board. But both
-      // live boxes pass an ap= AND a stream=, so it captured them too and
-      // overwrote Moncton with the international list.
+      // v23432 widened this to `q.get('stream')` — ANY stream value — so the
+      // Moncton box, which passes ap=YQM AND stream=1, lost its airport to
+      // TOUR_DEFAULT along with everything else. Stream 1 is the pinned
+      // single-airport broadcast; anything else carrying a stream= is a
+      // touring broadcast.
       //
-      // Do NOT key this on the stream number. stream-server/README.md is the
-      // ground truth and BOTH boxes run stream=1 — box 1 is Moncton
-      // (ap=YQM&stream=1), box 2 is Orlando (ap=MCO&stream=1). The only
-      // `stream=2` left in the repo is a stale Miami default in setup.sh:61
-      // and tools/repair-second-stream.sh from when stream 2 toured. A rule
-      // built on that number would be a rule built on a value neither box
-      // sends.
+      // NOTE the docs disagree with the tooling and neither is authoritative
+      // here: stream-server/README.md still shows box 2 as Orlando on
+      // stream=1 (it predates the tour and never mentions it), while
+      // setup.sh:61 and tools/repair-second-stream.sh wire the second stream
+      // as stream=2. `tour=` is the escape hatch for exactly that ambiguity —
+      // `tour=0` pins any box to its ap= and `tour=1` tours any box, both
+      // without a deploy — so a box whose number is not what we think can
+      // always be corrected from its own config.env.
       //
-      // So: name an airport and you get that airport — the promise made eight
-      // lines above this and broken by v23432. `tour=1` still forces the tour
-      // and `tour=LIST` still tours a list. v23432's protection is NOT lost:
-      // an ap= with no feed is dropped by the LIVE filter just below, and the
-      // `aps.length === 0` fallback further down hands the run to TOUR_DEFAULT
-      // — so a stream pointed at a dead airport still tours, and a bare
-      // rotate.html with no ap= still tours.
-      if (tourRaw === '1') aps = TOUR_DEFAULT.slice();
+      // v23432's protection is untouched: an ap= with no feed is dropped by
+      // the LIVE filter below and the `aps.length === 0` fallback then hands
+      // the run to TOUR_DEFAULT, so a stream aimed at a dead airport still
+      // tours rather than showing a black board.
+      var _streamRaw = q.get('stream');
+      if (tourRaw === '1' || (_streamRaw && _streamRaw !== '1' && tourRaw !== '0')) aps = TOUR_DEFAULT.slice();
       // Drop anything with no feed and say so, rather than showing a dead board.
       var dropped = aps.filter(function (c) { return !LIVE[c]; });
       if (dropped.length) {
