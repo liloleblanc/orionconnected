@@ -14078,8 +14078,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline1 {
   font-size: clamp(12px, 2vh, 24px) !important;
   line-height: 1.12 !important;
-  white-space: normal !important;
-  overflow-wrap: anywhere !important;
+  /* v23546 — back to ONE LINE, because it can shrink now. v23528 made this
+     wrap to stop it running off the right edge; with .v2-fi-mline1 in
+     gateAutofit the type comes down to fit instead, so the line neither
+     escapes sideways nor pushes the arrival line out the bottom — which is
+     what Nick's Frankfurt shelf was doing. overflow:hidden stays as the hard
+     stop for the frame before the fitter has measured. */
+  white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: clip !important;
   min-width: 0 !important;
@@ -16160,8 +16165,15 @@ html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    replaces the rendered image on a replaced element, so the JS emblem map
    stays untouched and every OTHER surface keeps the white p on its accent
    circle where that is still correct. */
-html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-badge img[src*="porter-p.svg"],
-html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-icon-wrap img[src*="porter-p.svg"] {
+/* v23546 — ONLY THE WHITE ORB. Nick: "top orb left top is still blue on blue".
+   v23536 matched every porter-p inside .v2-fi-icon-wrap, and that is two
+   different orbs with two different grounds: the arrival shelf's emblem, which
+   v23532 turned WHITE and where a white p disappeared, and the LEFT RAIL's
+   orb, which is still Porter blue and where the white p was correct all along.
+   Making the p navy fixed the first and broke the second — blue on blue,
+   reproduced on YHZ gate 14. The rail orb is .v2-fi-orbwrap; the emblem is
+   .v2-fi-emblem-wrap. Name the one that actually changed ground. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-emblem-wrap img[src*="porter-p.svg"] {
   content: url('/logos/airlines/canadian/porter/porter-p-navy.svg') !important;
   /* The emblem carries a whitening filter for its usual dark ground — that is
      why the navy swap alone rendered nothing but a blank white orb. Both have
