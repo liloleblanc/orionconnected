@@ -16173,7 +16173,17 @@ html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    Making the p navy fixed the first and broke the second — blue on blue,
    reproduced on YHZ gate 14. The rail orb is .v2-fi-orbwrap; the emblem is
    .v2-fi-emblem-wrap. Name the one that actually changed ground. */
-html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-emblem-wrap img[src*="porter-p.svg"] {
+/* v23548 — I HAD THE TWO ORBS THE WRONG WAY ROUND. Traced in the live DOM on
+   YHZ gate 14, which is the only thing that settled it:
+     .v2-fi-emblem-wrap — the LEFT RAIL orb. background:var(--airline-accent,
+       #1a3a6b), Porter blue. Its p must stay WHITE.
+     .v2-fi-orbwrap     — the arrival shelf orb. Also carries .v2-fi-icon-badge,
+       so v23532's white-badge rule turns it WHITE. Its p must be NAVY.
+   v23536 matched both and made both navy: it fixed the white orb and turned the
+   blue one into Nick's "blue on blue". v23546 then scoped to emblem-wrap — the
+   BLUE one — which kept the bug and undid the fix. Same wrong guess twice.
+   Named by the orb that actually has the white ground this time. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-orbwrap img[src*="porter-p.svg"] {
   content: url('/logos/airlines/canadian/porter/porter-p-navy.svg') !important;
   /* The emblem carries a whitening filter for its usual dark ground — that is
      why the navy swap alone rendered nothing but a blank white orb. Both have
@@ -16204,4 +16214,19 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-rc-fi-evt {
   font-weight: 800 !important;
+}
+
+/* ── v23548 — ONE PIPE, NOT THREE ─────────────────────────────────────────
+   Caught on the live YHZ gate 14 arrival shelf, the first time I have had that
+   state lit: "6:14pm ||| Your aircraft has arrived / | Votre appareil est
+   arrivé". The line carries ONE explicit bar between the time and the
+   sentence, but the label spans also pick up an auto-inserted pipe from the
+   generic bilingual-pair rule — so they stack, and the second language starts
+   with a stray one even though it sits on its own line.
+   The generic rule is right for a pair sharing a line; this line already
+   punctuates itself. Turn the automatic pipes off here only. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-fi-lbl-en::before,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-fi-lbl-2::before,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 span + span::before {
+  content: none !important;
 }
