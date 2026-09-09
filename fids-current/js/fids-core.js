@@ -9557,9 +9557,14 @@ function _buildV2MapCol(ctx, vars) {
         +         '<div class="v2-fi-mline3">'
         +           '<span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">'
         +             (_stKey === 'arrived'
-                        ? _gateLbl(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF, function (w, i2) {
-                            return '<span class="' + (i2 ? 'v2-fi-lbl-2' : 'v2-fi-lbl-en') + '">' + w + '</span>';
-                          }, '')
+                        // v23540 — ONE LANGUAGE, NOT TWO. Nick, seeing the
+                        // stacked pair: "I think tahts too much". He is right —
+                        // four lines is a lot for this panel, and the second
+                        // language is the redundant half: the board already
+                        // rotates through its languages, so each pass shows the
+                        // sentence in one of them anyway. Same reasoning, and
+                        // the same helper, as the pre-boarding roster.
+                        ? _gateLbl1(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF)
                         : _stShow)
         +           '</span></div>'
         +       '</div>'
@@ -22687,7 +22692,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23538';
+var FIDS_BUILD_TAG = 'v23540';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
