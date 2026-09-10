@@ -17984,3 +17984,31 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   white-space: nowrap !important;
 }
 
+/* ══ THE BILINGUAL SEPARATOR, KEYED TO THE ELEMENT — THIRD TIME ══════════
+   Caught on the live YQM inbound panel: "5:20pm ArrivalArrivée".
+
+   Same root cause as the two before it. _gateLblSpans emits the two languages
+   as bare sibling spans and leaves the ' | ' to a per-container rule; the one
+   for .v2-fi-mlbl is scoped '.g8-wrap .gad-map-col-v2 .v2-fi-mlbl'
+   (display-overrides.css:14118), so it only fires where that card happens to
+   live. This panel renders outside it and the pair jams.
+
+   That is now three separate strings broken by the same pattern:
+     v23313  .v2-rc-fi-stline  scoped to a container the card moved out of
+     v23640  .v2-rc-fi-stline  and then killed outright by a neighbour's rule
+     here    .v2-fi-mlbl       scoped to a container this panel is not in
+
+   Keyed to .v2-fi-mlbl ITSELF, wherever it appears, so it travels with the
+   element. The chain is long enough to clear the v23548 mline3 kill, which is
+   the rule that silently disabled the last attempt.
+
+   The mline3 exemption still stands where it belongs: that line carries its
+   own explicit bar between the time and the sentence and must not get a
+   second. This rule targets .v2-fi-mlbl, which that line does not use.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-mlbl > span + span::before {
+  content: ' | ' !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
+}
+
