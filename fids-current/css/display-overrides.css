@@ -15338,8 +15338,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      clock does — a clipped logo is worse than a slightly smaller one. Nick's
      Air Canada gate had the Y sliced off the front. */
   min-width: 0 !important;
-  flex-shrink: 1 !important;
-  flex: 0 0 auto !important;
+  /* v23654 — THE MARK MUST BE ABLE TO SHRINK, OR IT GETS SLICED.
+     Nick: "make sure the YQM logo is not clipped". Measured on YQM gate 2:
+     .octb-clockrow is overflow:hidden and its left edge sat 8.6px inside the
+     mark's, so 8.6px of a 75.4px mark — about 11% — was cut off the front.
+
+     The clockrow's own comment (below, v23460) says the bound was added "with
+     the mark shrinking before the clock". It could not: `flex-shrink: 1` was
+     immediately cancelled by the `flex: 0 0 auto` shorthand on the next line,
+     which resets shrink to 0. The longhand never survived the shorthand, so
+     the mark held full size, overran the row and the clip took its front edge.
+
+     `flex: 0 1 auto` is that stated intent expressed once, in the shorthand,
+     with nothing after it to undo it. */
+  flex: 0 1 auto !important;
   align-self: center !important;
   background-image: url('/logos/airports/mark-CYQM-white.svg') !important;
   background-repeat: no-repeat !important;
@@ -17857,5 +17869,33 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-date {
   line-height: 1.16 !important;
+}
+
+/* ══ THE CLOCK YIELDS TO THE MARK, ONLY WHERE THERE IS ONE ═══════════════
+   Nick: "make sure the YQM logo is not clipped".
+
+   Letting the mark shrink stopped the clipping but produced the other failure:
+   flexbox squeezed it from 75.4px to 38px, half size, because the row is
+   genuinely over-full. Measured inside .octb-clockrow at 1680x920:
+
+       row inner   433.4px
+       clock       374.3px   ("10:30AM" at 76px)
+       separator    12.2px
+       mark         38.0px   (wants 75.4)
+       spare         0.0px
+
+   The mark's full width only exists if the clock gives up about 28px. So the
+   clock steps down to ~69px — but ONLY on a row that actually contains a mark.
+   :has() scopes it to exactly that case, so Moncton's clock yields to its mark
+   and every airport without one keeps the full 76px. No airport pays for
+   another airport's furniture.
+
+   Ordered after the 9vh clock rule and carrying a longer chain, so it wins
+   where it applies and is silent everywhere else. A renderer without :has()
+   support simply keeps today's behaviour rather than breaking.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-apmark) .v2-fi-clock-val,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-apmark) .octb-clock {
+  font-size: clamp(38px, 7.5vh, 64px) !important;
 }
 
