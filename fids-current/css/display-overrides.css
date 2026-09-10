@@ -15326,8 +15326,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   display: block !important;
   /* Sized off the clock's own height so the two always read as a pair, and
      the mark is portrait (312x350) so width follows from that ratio. */
-  height: clamp(44px, 7.8vh, 102px) !important;
-  width: calc(clamp(44px, 7.8vh, 102px) * 0.891) !important;
+  /* v23554 — BIGGER THAN THE CLOCK'S BOX. Nick: "make it bigger same size
+     height wise as the time" then "or slightly biggger". It already matched
+     the clock's BOX exactly — measured mark 72px against clock 71px, both
+     spanning the same y — but a text box carries ascender and descender space
+     the digits never fill, so an equal box reads smaller than the numerals
+     beside it. Sized past the box instead of to it. */
+  height: clamp(52px, 9.2vh, 120px) !important;
+  width: calc(clamp(52px, 9.2vh, 120px) * 0.891) !important;
   /* If a narrow band ever leaves too little room the MARK gives way before the
      clock does — a clipped logo is worse than a slightly smaller one. Nick's
      Air Canada gate had the Y sliced off the front. */
@@ -15740,7 +15746,21 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      original -13px nudge was compensating for before it over-ran. 4px is what
      the artwork's own offset needs; the height is then set so bottom lands
      exactly on the bar, never past it. */
-  transform: translateY(-9px) !important;
+  /* v23554 — LIFTED 6, WHICH IS THE CEILING AT THIS SIZE. Nick: "the leafis
+     alligned to the westjet name though its built that way it needs to go
+     higher" — he knows the lockup pairs leaf and wordmark, and wants the leaf
+     above that pairing anyway.
+     The limit is measured, not estimated. Rendering WS.svg to a canvas and
+     reading the alpha channel puts its ink at 6.82% in from the top — and the
+     SAME 6.82% from the bottom, so the leaf is CENTRED in its square, not
+     sitting low as the earlier -13px nudge assumed. Every pixel of lift
+     therefore moves real artwork toward the band edge one-for-one.
+     At the 88px this renders that is 6px of clearance, and .g8-r1 is
+     overflow:hidden. -11 cut five pixels off the top spike; -7 cut one. Six is
+     the whole of it.
+     Higher needs a smaller leaf — 80px would allow ~10, 70px ~15 — but Nick
+     asked for bigger, so size wins and the lift takes what is left. */
+  transform: translateY(-6px) !important;
   height: clamp(64px, 9.6vh, 104px) !important;
   max-height: clamp(64px, 9.6vh, 104px) !important;
   width: auto !important;
