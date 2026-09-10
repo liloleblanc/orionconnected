@@ -17807,3 +17807,36 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-weight: 600 !important;
 }
 
+/* ══ THE 'TO BE CONFIRMED' PIPE, FOR REAL THIS TIME ══════════════════════
+   My v23638 fix for "To be confirmedÀ confirmer" did not work, and Nick's
+   Ryanair shot proved it. Verified on the preview: the rule matched, but the
+   computed ::before was still `none`.
+
+   The blocker is v23548 (display-overrides.css:14-chain rule). That
+   change deliberately turned the automatic bilingual pipes OFF for everything
+   inside .v2-fi-mline3, because the "your aircraft has arrived" line already
+   carries an explicit bar between the time and the sentence and was picking up
+   a second one — "6:14pm ||| Your aircraft has arrived". Correct fix for that
+   line, and it is still correct.
+
+   But .v2-rc-fi-stline lives inside .v2-fi-mline3 too, and it has NO bar of
+   its own — it relies entirely on the automatic one. So the blanket kill took
+   out the separator that the "To be confirmed" pair depends on. Two different
+   things share that container: one punctuates itself, one does not.
+
+   This carves the stline back out, with a chain six longer than the kill rule
+   so it lands on the right side of it. The arrived line is untouched and keeps
+   its single bar.
+
+   Worth noting for whoever reads this next: this is the THIRD attempt at this
+   one string. v23313 scoped it to a container and the card moved out from
+   under it; v23638 keyed it to the element but lost to a rule nobody had
+   connected to it. The lesson both times was that the separator's fate is
+   decided by rules written for its NEIGHBOURS.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-mline3 .v2-rc-fi-stline > span + span::before {
+  content: ' | ' !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
+}
+

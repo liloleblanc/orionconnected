@@ -12821,6 +12821,40 @@ function uxgGateHtml(ctx) {
   // merge it over the built-in defaults so edits there win.
   try { if (typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS) Object.assign(BANNER_COLOR_SPEC, window.AIRLINE_BRAND_COLORS); } catch (e) {}
   var _bannerSpec = BANNER_COLOR_SPEC[airlineCode];
+  // ── EVERY CARRIER GETS ITS OWN BANNER COLOUR ──────────────────────────
+  // Nick's Ryanair shot of DUB: the gate banner rendered GREY while the rest
+  // of that board was Ryanair navy and yellow.
+  //
+  // Cause: BANNER_COLOR_SPEC holds exactly ten airlines — AA AC AS DL HA PD QK
+  // RV UA WS, all North American. Any carrier outside that list resolves
+  // _bannerSpec to undefined, the inline background is never written, and the
+  // banner falls back to the stylesheet's neutral grey. Ryanair, easyJet,
+  // Wizz, Vueling, Lufthansa and every other non-NA carrier were all grey.
+  //
+  // The colour already existed: AIRLINE_ACCENT carries 'FR':'#073590' —
+  // Ryanair navy — and an entry for most carriers the boards ever show. It was
+  // simply never wired to the banner. So the accent becomes the fallback spec
+  // rather than leaving the banner unstyled.
+  //
+  // Ink is computed, not assumed: _hexIsLight decides black or white text, so
+  // a light brand colour (Wizz magenta, Vueling yellow) does not end up with
+  // white type on it. The ten hand-tuned entries above still win — this only
+  // fills the gap where there was nothing at all.
+  if (!_bannerSpec) {
+    try {
+      var _accFallback = (typeof AIRLINE_ACCENT !== 'undefined') && AIRLINE_ACCENT[airlineCode];
+      if (_accFallback && /^#[0-9a-f]{6}$/i.test(_accFallback)) {
+        var _accLight = (typeof _hexIsLight === 'function') ? _hexIsLight(_accFallback) : false;
+        _bannerSpec = {
+          r1: _accFallback,
+          r1Text: _accLight ? '#0F172A' : '#FFFFFF',
+          r2: _accFallback,
+          body: '#F7FAFD',
+          bodyText: '#0F172A'
+        };
+      }
+    } catch (eAcc) {}
+  }
   // v218.99.20 — overlay layered customizations on top of the hardcoded
   // brand defaults. Resolution: global ← airport[X] ← airline[Y].
   var _customForDebug = {};
@@ -22736,7 +22770,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23638';
+var FIDS_BUILD_TAG = 'v23640';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
