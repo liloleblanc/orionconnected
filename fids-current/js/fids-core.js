@@ -22602,7 +22602,20 @@ var _GATE_LBL = {
   // info', 'nothing'): the panel going BLANK is not an acceptable answer to
   // 'which aircraft is coming'. Short on purpose — this column is narrow, and
   // a bilingual sentence in it either truncates or breaks into ragged lines.
-  toBeConfirmed: { en:'To be confirmed', fr:'À confirmer', es:'Por confirmar', de:'Wird bestätigt', it:'Da confermare', pt:'A confirmar', ja:'確認中', zh:'待确认', ar:'قيد التأكيد' },
+  // v23670 — Nick: "To be confirmed | A confirmer 2 lines this simply should
+  // say something else it doesnt look professional", proposing "Information
+  // Currently Unavailable".
+  //
+  // His wording, with the French corrected. He floated "A Cette Heure" and "En
+  // Ce temps": the first is grammatical but reads as "at this hour", oddly
+  // literal for signage; the second is not idiomatic — it means "in that era".
+  // "Actuellement" / "pour le moment" is how French says "currently".
+  //
+  // Dropped "Currently" from the pair to keep it on ONE line, which was the
+  // actual complaint. Full form is 76 characters against 51 for this, and the
+  // panel is narrow enough that 76 wraps — reintroducing the two lines he is
+  // trying to be rid of. "Non disponible" already implies the present tense.
+  toBeConfirmed: { en:'Information Unavailable', fr:'Information non disponible', es:'Información no disponible', de:'Information nicht verfügbar', it:'Informazione non disponibile', pt:'Informação não disponível', ja:'情報がありません', zh:'暂无信息', ar:'المعلومات غير متوفرة' },
   // v23272 — the line that replaces the countdown once the aircraft is down.
   // v23272 — two states, not one (Nick: 'Once the aircraft arrives it should
   // say your aircraft has arrived once at the gate it should say your
@@ -22916,7 +22929,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23668';
+var FIDS_BUILD_TAG = 'v23670';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
