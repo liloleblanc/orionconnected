@@ -3598,6 +3598,49 @@ async function _gateNumbersPoll() {
       // ADS-B knows the exact sub-type (B38M where the schedule feed says
       // nothing) and the live tail — both better than what we had.
       if (!inb._reg && _adsb.reg) inb._reg = _adsb.reg;
+      // v23702 — AND THE TYPE, WHICH THE COMMENT ABOVE PROMISED AND THE CODE
+      // NEVER DELIVERED.
+      //
+      // Nick: "most times the aircraft type doesnt even show why is that ?" and
+      // "it should show aircraft and registration at minimum".
+      //
+      // The line above assigns the tail and stops. `_adsb.type` is fetched,
+      // parsed out of the provider response (:26358 `type: ac.t || null`),
+      // published to window._adsbLast (:26370-26373) — and then dropped on the
+      // floor. Measured on the live YHZ board: 0 of 53 departures carried a type.
+      // Nothing needed to be bought to fix that; the answer was already in hand
+      // and already paid for.
+      //
+      // This is the AIRBORNE case, which is the only case Nick asked for:
+      //   "It doesnt need to show until airborne"
+      //   "but once on the ground keep the info until its gone"
+      // _acResolvedPut is what satisfies the second half — the feed rebuilds
+      // flight rows on every refresh, so a type written only onto `inb` would
+      // vanish at the next poll and the panel would fall back to Pending. The
+      // resolved store survives the row and ages out on its own 6h TTL, so the
+      // aircraft keeps its identity from wheels-up until the flight leaves the
+      // board.
+      //
+      // ICAO in, board vocabulary out: ADS-B reports the ICAO designator (DH8D,
+      // B38M), while the board keys on IATA and renders a display name, so both
+      // go through the existing converters rather than being stored raw — the
+      // same pair every other ingest path uses.
+      //
+      // Fill-when-empty, deliberately. ADS-B is the real airframe and is
+      // arguably better than any scheduled value, but overwriting is a wider
+      // blast radius than this fix needs: every board that shows a type today
+      // keeps showing exactly what it shows now.
+      if (_adsb.type) {
+        try {
+          var _atNm = (typeof formatAircraft === 'function') ? formatAircraft(_adsb.type) : '';
+          var _atCd = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_adsb.type) : '';
+          if (_atNm && !inb._aircraft) inb._aircraft = _atNm;
+          if (_atCd && !inb._aircraftCode) inb._aircraftCode = _atCd;
+          if ((_atNm || _atCd) && typeof _acResolvedPut === 'function') {
+            _acResolvedPut(inb.flight || flt, _atNm, _atCd, inb._reg || '');
+          }
+        } catch (eT) {}
+      }
       try { _gateTelemSetReal(_adsb.spd, _adsb.alt); } catch (e) {}
       try { console.log('[ADSB]', flt, '→ spd', _adsb.spd, 'alt', _adsb.alt, 'trk', _adsb.track, 'age', _adsb.age + 's'); } catch (e) {}
       return;   // fresher than anything AeroDataBox can offer
@@ -23213,7 +23256,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23700';
+var FIDS_BUILD_TAG = 'v23702';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
