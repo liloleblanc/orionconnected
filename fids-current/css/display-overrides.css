@@ -15746,21 +15746,18 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      original -13px nudge was compensating for before it over-ran. 4px is what
      the artwork's own offset needs; the height is then set so bottom lands
      exactly on the bar, never past it. */
-  /* v23554 — LIFTED 6, WHICH IS THE CEILING AT THIS SIZE. Nick: "the leafis
-     alligned to the westjet name though its built that way it needs to go
-     higher" — he knows the lockup pairs leaf and wordmark, and wants the leaf
-     above that pairing anyway.
-     The limit is measured, not estimated. Rendering WS.svg to a canvas and
-     reading the alpha channel puts its ink at 6.82% in from the top — and the
-     SAME 6.82% from the bottom, so the leaf is CENTRED in its square, not
-     sitting low as the earlier -13px nudge assumed. Every pixel of lift
-     therefore moves real artwork toward the band edge one-for-one.
-     At the 88px this renders that is 6px of clearance, and .g8-r1 is
-     overflow:hidden. -11 cut five pixels off the top spike; -7 cut one. Six is
-     the whole of it.
-     Higher needs a smaller leaf — 80px would allow ~10, 70px ~15 — but Nick
-     asked for bigger, so size wins and the lift takes what is left. */
-  transform: translateY(-6px) !important;
+  /* v23556 — NO NUDGE. CENTRED. Nick, after several passes of moving one mark
+     toward the other: "they need to allign height wise the westjet logo is way
+     to high" / "centered by height".
+     Every lift in this build was chasing an assumption that turned out to be
+     false. The original -13px existed because the leaf was thought to sit low
+     inside its square. Measured instead — WS.svg rendered to a canvas, alpha
+     read — its ink starts 6.82% from the top and 6.82% from the bottom. It is
+     ALREADY centred. CYQM is 8.30% and 8.0%, near enough the same. So the two
+     marks and the clock all centre on the band's own midline with no transform
+     at all, which is what Nick has been asking for; every nudge was moving
+     artwork off a line it was already on. */
+  transform: none !important;
   height: clamp(64px, 9.6vh, 104px) !important;
   max-height: clamp(64px, 9.6vh, 104px) !important;
   width: auto !important;
@@ -16259,4 +16256,25 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 .v2-fi-lbl-2::before,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-fi-mline3 span + span::before {
   content: none !important;
+}
+
+/* ══ v23556 — THE TIME UP, THE WORDMARK DOWN ══════════════════════════════
+   Nick, looking at the live band: "time needs to go up by a bit not much ...
+   and westjet needs to come down the wordmark".
+
+   Two separate moves, so they are two separate rules rather than one nudge on
+   the row they share. An earlier pass moved the whole clockrow, which dragged
+   the airport mark with the time; the mark is where he wants it and stays put.
+
+   Measured starting point, all four ink-centres (each SVG rendered to a canvas
+   and its alpha read, so these are the ARTWORK's centre, not the box's):
+   leaf 44, wordmark 44, YQM mark 44, clock digits 40. The clock's own digits
+   already sit above its box centre because a text box carries descender space
+   the numerals never use — which is why "up a bit" is a small number here.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow .octb-clock {
+  transform: translateY(-4px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-logoslot .g8-r1-logo {
+  transform: translateY(3px) !important;
 }
