@@ -17954,37 +17954,6 @@ function _cityForIata(iata) {
 try { if (typeof window !== 'undefined') window._cityForIata = _cityForIata; } catch (e) {}
 
 const CITY = {
-  // ── v23662 — CITY CORRECTIONS AND ADDITIONS ─────────────────────────
-  // Nick: "only Tia shows as destination ... locations with no Names", then
-  // "I can guarantee you those are not the only 4 missing". Two faults, not one.
-  //
-  // ABSENT: TIA, OTP, RMO and BCM were in neither CITY nor AP, so they rendered
-  // as a bare code.
-  //
-  // WRONG: several entries hold the airport's VILLAGE rather than the city it
-  // serves, because the table was seeded from the feed's own location string.
-  // ADB read 'Gaziemir' (an Izmir suburb), KIR read 'Farranfore' (a Kerry
-  // village), and VRN read 'Caselle' — which is TURIN's airport town and simply
-  // wrong for Verona. A passenger reads the city, not the parish.
-  //
-  // Declared first so these win over any later duplicate key in the literal.
-  TIA: 'Tirana',
-  OTP: 'Bucharest',
-  RMO: 'Chisinau',
-  BCM: 'Bacau',
-  ADB: 'Izmir',
-  VRN: 'Verona',
-  KIR: 'Kerry',
-  ACE: 'Lanzarote',
-  TFS: 'Tenerife',
-  BGY: 'Bergamo',
-  BVA: 'Beauvais',
-  KRK: 'Krakow',
-  RMU: 'Murcia',
-  EMA: 'East Midlands',
-  NCL: 'Newcastle',
-  LBA: 'Leeds',
-  EXT: 'Exeter',
 
   // v23333 — destinations that appeared on the stream-tour airports' live
   // boards (Boston, Chicago, Dublin, Edinburgh, Heathrow, Keflavík, St.
@@ -18788,6 +18757,43 @@ const CITY = {
   ZSA:'SAN SALVADOR', ZTH:'ZAKYNTHOS', ZUH:'ZHUHAI',
   ZYI:'ZUNYI',
 
+  // ── v23662 — CITY CORRECTIONS AND ADDITIONS ─────────────────────────
+  // Nick: "only Tia shows as destination ... locations with no Names", then
+  // "I can guarantee you those are not the only 4 missing". Two faults, not one.
+  //
+  // ABSENT: TIA, OTP, RMO and BCM were in neither CITY nor AP, so they rendered
+  // as a bare code.
+  //
+  // WRONG: several entries hold the airport's VILLAGE rather than the city it
+  // serves, because the table was seeded from the feed's own location string.
+  // ADB read 'Gaziemir' (an Izmir suburb), KIR read 'Farranfore' (a Kerry
+  // village), and VRN read 'Caselle' — which is TURIN's airport town and simply
+  // wrong for Verona. A passenger reads the city, not the parish.
+  //
+  // Declared LAST on purpose. A first attempt put this block at the top of the
+  // literal with a comment claiming it would win — that is backwards: in a JS
+  // object literal the LATER duplicate key wins, so the originals silently
+  // overrode every correction and the board still read 'SAN BARTOLOME' and
+  // 'CASELLE'. Caught by resolving the live destination list rather than by
+  // trusting the edit.
+  TIA: 'Tirana',
+  OTP: 'Bucharest',
+  RMO: 'Chisinau',
+  BCM: 'Bacau',
+  ADB: 'Izmir',
+  VRN: 'Verona',
+  KIR: 'Kerry',
+  ACE: 'Lanzarote',
+  TFS: 'Tenerife',
+  BGY: 'Bergamo',
+  BVA: 'Beauvais',
+  KRK: 'Krakow',
+  RMU: 'Murcia',
+  EMA: 'East Midlands',
+  NCL: 'Newcastle',
+  LBA: 'Leeds',
+  EXT: 'Exeter',
+  CLJ: 'Cluj-Napoca',
 };
 
 // French city name overrides (used when lang === 'fr')
@@ -22956,7 +22962,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23684';
+var FIDS_BUILD_TAG = 'v23686';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
