@@ -1,12 +1,103 @@
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// THE RAPIDAPI / AERODATABOX KILL SWITCH — 2026-09-10
+//
+// Nick: "NO RAPID API IS NOT APPROVED GET IT??????" / "ITS TOO EXPENSIVE" /
+//       "anything from Rapid API disconnected RIGHT NOW this was never authorized"
+//
+// RapidAPI is NOT an approved provider and is NOT to be billed. This constant
+// is the single point of enforcement: while it is true, adbFetch() answers
+// locally and NO packet leaves this worker for aerodatabox.p.rapidapi.com.
+//
+// WHY A WRAPPER AND NOT JUST DELETING THE KEY: several call sites put the key
+// straight into a header and fetch regardless. With the secret absent they
+// would still have made an UNAUTHENTICATED request to RapidAPI — a call, and
+// therefore potentially a billable event, on an unapproved provider. Blocking
+// at the fetch is the only way to guarantee zero requests no matter what
+// secrets exist on the worker. All 13 AeroDataBox call sites route through
+// here; `grep -n "aerodatabox" workers/fids-proxy.js` must show no bare
+// fetch() to that host.
+//
+// The 503 shape is deliberate. Every caller already handles a non-OK from this
+// provider — they had to, because the account has been answering 429 since the
+// quota ran out — so each one falls through to its existing path (the FR24 /
+// community position ring, the airport's own authority feed, or an empty
+// enrichment) with no new branches needed.
+//
+// DO NOT flip this back to false. Re-enabling RapidAPI needs Nick's explicit
+// approval, and he has refused it on cost. If a future provider is approved,
+// add it alongside FR24 — do not resurrect this one.
+// ═══════════════════════════════════════════════════════════════════════════
+const ADB_DISCONNECTED = true;
+function adbFetch(url, init) {
+  if (ADB_DISCONNECTED) {
+    console.log("[ADB] blocked (RapidAPI disconnected 2026-09-10, unapproved):", String(url).slice(0, 120));
+    return Promise.resolve(new Response(
+      JSON.stringify({ error: "aerodatabox-disconnected", since: "2026-09-10" }),
+      { status: 503, headers: { "Content-Type": "application/json", "X-Feed-Source": "adb-disconnected" } }
+    ));
+  }
+  return fetch(url, init);
+}
+__name(adbFetch, "adbFetch");
+
 // worker/fids-proxy.js — v219
 // Single canonical worker. Implements: ADB proxy, AI city/hotel backgrounds,
 // destination info, airport-config + airline-override + media-config/library.
 //
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║  AERODATABOX / RAPIDAPI IS DISCONNECTED — 2026-09-10                      ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+//
+// Nick, 2026-09-10, verbatim:
+//   "anything from Rapid API disconnected RIGHT NOW this was never authorized"
+//   "AeroDataBox STOP ANYTHING CONNECTED IM NOT PAYING FOR IT OK??????????"
+//
+// THIS WORKER MUST NOT MAKE ANY REQUEST TO aerodatabox.p.rapidapi.com.
+// Enforced by ADB_DISCONNECTED + adbFetch() below — see that block for how.
+//
+// WHY, measured live on 2026-09-10 before the switch went in:
+//   · Every AeroDataBox route answered HTTP 429:
+//       "You have exceeded the MONTHLY quota for API Units on your current
+//        plan, BASIC. Upgrade your plan at rapidapi.com/aedbx-aedbx/api/aerodatabox"
+//     Called three times uncached — same answer each time. So the key still
+//     AUTHENTICATES (RapidAPI names the plan back) against an account Nick
+//     does not pay for and never authorized.
+//   · The board therefore had NO aircraft type and NO registration anywhere:
+//     0 of 53 departures on the live YHZ gate board carried either field.
+//   · Worse, scheduled() ran a cron that SPENT API units topping up webhook
+//     credits (floor 1000 / ceiling 5000, "credits convert 1:1 from the plan's
+//     API units") unattended, on that same unauthorized account. Disabled.
+//
+// WHAT NICK ACTUALLY PAYS FOR: FLIGHTRADAR24 (fr24api.flightradar24.com,
+// secret FR24_KEY). It was wired to only two narrow things — a Detroit-only
+// schedule cache and callsign/reg live positions — and it sat BEHIND
+// AeroDataBox in the provider order, so it was rarely even reached. FR24's
+// position payload already carries `reg` and `type`, which are exactly the
+// registration and aircraft type the gate boards were missing. Repointing the
+// enrichment onto FR24 is the follow-up work; this change is the disconnect.
+//
+// FLIGHTAWARE AeroAPI (AEROAPI_KEY) is referenced in three lines for Billy
+// Bishop gate numbers, but the secret is NOT SET on the deployed worker —
+// proved by /flights/ytz returning 149 departure rows with zero gates, gates
+// being the only thing that block produces. It therefore never executes and
+// costs nothing. Not authorized, not billing, left inert.
+//
+// STILL TO BE DONE BY NICK (cannot be done from here — secrets never pass
+// through this repo or a chat):
+//   1. Delete the stale secret:  wrangler secret delete ADB_KEY
+//   2. Cancel the RapidAPI/AeroDataBox subscription at rapidapi.com if any
+//      billing relationship remains open.
+// The code no longer depends on either, so both are safe to do at any time.
+//
 // REQUIRED env / secrets (set via `wrangler secret put`):
-//   ADB_KEY                — RapidAPI key for aerodatabox.p.rapidapi.com
+//   ADB_KEY                — DISCONNECTED 2026-09-10, see the block above.
+//                            No longer read for any outbound request. Delete it.
+//   FR24_KEY               — Flightradar24 API bearer (fr24api.flightradar24.com)
+//                            THIS is the paid feed. FR24_DAILY_BUDGET caps spend.
+//   AEROAPI_KEY            — FlightAware AeroAPI. NOT SET; block is inert.
 //   NINJAS_KEY             — api-ninjas.com X-Api-Key (airline logos)
 //   ACCOR_KEY              — secure.accor.com apikey (public bookings lookup)
 //   JWT_SECRET             — HMAC secret for signing FIDS JWTs
@@ -350,7 +441,7 @@ async function handleApiProxy(request, env, url, origin) {
   const adbPath = url.pathname.replace("/api/adb/", "");
   const adbUrl = `https://aerodatabox.p.rapidapi.com/${adbPath}${url.search}`;
   try {
-    const response = await fetch(adbUrl, {
+    const response = await adbFetch(adbUrl, {
       headers: {
         "X-RapidAPI-Key": env.ADB_KEY,
         "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com"
@@ -7674,7 +7765,7 @@ var fids_proxy_default = {
       }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/${adbPath}${url.search}`;
       try {
-        const response = await fetch(adbUrl, {
+        const response = await adbFetch(adbUrl, {
           headers: {
             "X-RapidAPI-Key": env.ADB_KEY,
             "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com"
@@ -8045,8 +8136,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       const ADSB_TTL = 90;                       // seconds. Was 40 — but the
       // community ring is now the ONLY position source (ADB cancelled), we
       // use it anonymously and unapproved, and it already throttles us.
-      // Halving our call rate is basic politeness until the airplanes.live
-      // registration lands; positions age a little, nobody's flight does.
+      // Halving our call rate is basic politeness — and it is PERMANENT, not
+      // a stopgap. airplanes.live is CLOSED TO US (see the ring filter below);
+      // positions age a little, nobody's flight does.
       // How long an all-providers-failed answer is remembered. Without this,
       // every board poll re-hammered feeds that were ALREADY rate-limiting
       // us (Nick, morning of 2026-08-25: all three upstreams 429 — no
@@ -8092,10 +8184,14 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // then the other allowed feeds in the ring; the first healthy answer
       // wins and is cached. A dead upstream costs one extra hop, never the
       // whole feature. All three feeds speak the same readsb /v2 shape.
-      // v23255 — AERODATABOX IS THE POSITION SOURCE (Nick: 'I never got the
-      // email done please use aerodatabox for now' — the airplanes.live key
-      // was never registered, and the anonymous community feeds throttle our
-      // shared egress). ADB's flight lookups carry a live `location` block
+      // v23255 — AERODATABOX WAS the position source. IT IS NOW DISCONNECTED
+      // (2026-09-10, unapproved and too expensive — see the kill switch at the
+      // top of this file). Kept only as the record of how we got here.
+      // The 'I never got the email done' quote below has been MISREAD by every
+      // session since: it does not mean the airplanes.live registration is
+      // outstanding. He emailed them and was refused. Closed question.
+      // (Nick: 'I never got the email done please use aerodatabox for now'.)
+      // ADB's flight lookups carry a live `location` block
       // (lat/lon, pressureAltitude.feet, groundSpeed.kt, trueTrack.deg,
       // vsiFpm, reportedAtUtc) on EnRoute legs, fetched with the SAME paid
       // key the schedule data already uses — our own quota, nobody else's
@@ -8169,7 +8265,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // ── FR24, ON A DAILY ALLOWANCE (2026-09-05) ─────────────────────
       // Nick bought the $9 Explorer tier to test FR24 as the position
       // source (the community ring is unapproved, anonymous, and
-      // throttling us; airplanes.live registration is pending). Explorer
+      // throttling us; airplanes.live REFUSED us — see the ring filter
+      // below, it is a closed question, do not raise it). Explorer
       // is a small credit pool billed per aircraft returned, so this
       // provider spends a HARD daily request budget and then goes quiet
       // for the day — the ring below always remains. Callsign and reg
@@ -8239,8 +8336,25 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // days, 2B requests/week). Access is now feeder-IP or paid sponsorship.
       // Calling it anonymously is a guaranteed 403 that costs us a round-trip
       // of latency on every miss AND adds to the exact load they asked people
-      // to stop generating. It stays OUT of the ring until ADSB_KEY exists;
-      // set that secret and it returns to the front automatically.
+      // to stop generating.
+      //
+      // ╔═════════════════════════════════════════════════════════════════════╗
+      // ║ AIRPLANES.LIVE IS CLOSED TO US. DO NOT PROPOSE REGISTERING FOR IT.  ║
+      // ╚═════════════════════════════════════════════════════════════════════╝
+      // Nick, 2026-09-10: "this must be the 5th time i tell you no ... They do
+      // not do this... I emailed and I was told to fuck off."
+      //
+      // He asked them directly and was refused. This is a SETTLED, CLOSED
+      // question — not an open task, not "pending", not something a future
+      // session should rediscover and suggest because it is free.
+      //
+      // Earlier comments in this file described the registration as "pending"
+      // and "never got the email done", which reads as not-yet-done and is why
+      // it kept being re-proposed to him. It is done: the answer was no. Those
+      // comments have been corrected. ADSB_KEY exists only so that a sponsored
+      // or feeder-IP arrangement COULD be honoured if one ever appears — it is
+      // not a to-do. Leave the filter below exactly as it is: with no key the
+      // provider stays out of the ring, which is the correct permanent state.
       const _provNames = Object.keys(PROVIDERS)
         .filter((p) => p !== "airplanes.live" || !!env.ADSB_KEY);
       let _h = 0;
@@ -8418,7 +8532,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     if (path.startsWith("/airlines/")) {
       const adbUrl = `https://aerodatabox.p.rapidapi.com${path}${url.search}`;
       try {
-        const response = await fetch(adbUrl, {
+        const response = await adbFetch(adbUrl, {
           headers: {
             "X-RapidAPI-Key": env.ADB_KEY,
             "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com"
@@ -8447,7 +8561,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/balance`;
       const debugMode = path.endsWith("/debug");
       try {
-        const response = await fetch(adbUrl, {
+        const response = await adbFetch(adbUrl, {
           headers: {
             "X-RapidAPI-Key": env.ADB_KEY,
             "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com"
@@ -8487,7 +8601,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       { const _gate = requireOpsSecret(url, env, origin); if (_gate) return _gate; }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/webhook`;
       try {
-        const response = await fetch(adbUrl, {
+        const response = await adbFetch(adbUrl, {
           headers: {
             "X-RapidAPI-Key": env.ADB_KEY,
             "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com"
@@ -8526,7 +8640,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/balance/refill`;
       try {
-        const response = await fetch(adbUrl, {
+        const response = await adbFetch(adbUrl, {
           method: "POST",
           headers: {
             "X-RapidAPI-Key": env.ADB_KEY,
@@ -8566,7 +8680,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       };
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/webhook/FlightByAirportIcao/CYQM?useCredits=true`;
       try {
-        const response = await fetch(adbUrl, {
+        const response = await adbFetch(adbUrl, {
           method: "POST",
           headers: {
             "X-RapidAPI-Key": env.ADB_KEY,
@@ -8600,7 +8714,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
       const adbUrl = `https://aerodatabox.p.rapidapi.com/subscriptions/webhook/${encodeURIComponent(subId)}`;
       try {
-        const response = await fetch(adbUrl, {
+        const response = await adbFetch(adbUrl, {
           method: "DELETE",
           headers: {
             "X-RapidAPI-Key": env.ADB_KEY,
@@ -8854,6 +8968,59 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // GET /flights/ytz?direction=dep|arr — Billy Bishop's server-rendered
     // board rows, parsed server-side. Must precede the generic /flights/
     // ADB passthrough.
+    // ── GET /fr24/usage?period=24h|7d|30d|1y ────────────────────────────────
+    //
+    // WHAT WE SPEND, READ FROM THE PROVIDER RATHER THAN GUESSED AT.
+    //
+    // Added 2026-09-10, the day an unattended integration was found to have been
+    // buying credits on an account Nick had closed, and nothing anywhere said so.
+    // The gap that let that run was not the cron — it was that NOTHING in this
+    // repo could answer "what has this cost". Our own counters are two KV keys
+    // (fr24:used:<day>) that increment once per HTTP CALL, while FR24 bills per
+    // RETURNED ROW at up to 8 credits a row. So the meter we had could not
+    // narrow current spend past "somewhere between 12% and 97% of the ceiling".
+    //
+    // FR24's /api/usage reports the real figures — request_count AND credits,
+    // per endpoint, over 24h/7d/30d/1y — so this route replaces that range with
+    // a number. Read-only: it performs no writes, spends no budget beyond the
+    // single call, and is safe to hit at any time.
+    //
+    // Cached 5 minutes, because the honest failure mode of a "check the spend"
+    // endpoint is somebody polling it and adding to the spend.
+    if (path === "/fr24/usage") {
+      if (!env.FR24_KEY) {
+        return jsonResponse({ error: "no FR24_KEY on this worker", hint:
+          "Flightradar24 is the approved provider; set the secret with `wrangler secret put FR24_KEY`." }, 503, origin);
+      }
+      const _per = (url.searchParams.get("period") || "30d").trim();
+      if (!["24h", "7d", "30d", "1y"].includes(_per)) {
+        return jsonResponse({ error: "bad period", allowed: ["24h", "7d", "30d", "1y"] }, 400, origin);
+      }
+      const _uKey = new Request(`https://fr24-usage/${_per}`);
+      try {
+        const hit = await caches.default.match(_uKey);
+        if (hit) {
+          const h = new Headers(hit.headers);
+          h.set("X-Fr24-Usage-Cache", "hit");
+          for (const [k, v] of Object.entries(corsHeaders(origin))) h.set(k, v);
+          return new Response(hit.body, { status: hit.status, headers: h });
+        }
+      } catch (e) {}
+      try {
+        const ur = await fetch(`https://fr24api.flightradar24.com/api/usage?period=${encodeURIComponent(_per)}`, {
+          headers: { "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" }
+        });
+        const ub = await ur.text();
+        const resp = new Response(ub, { status: ur.status, headers: {
+          "Content-Type": "application/json", "Cache-Control": "public, max-age=300",
+          "X-Fr24-Usage-Cache": "miss", ...corsHeaders(origin) } });
+        if (ur.ok) { try { await caches.default.put(_uKey, resp.clone()); } catch (e) {} }
+        return resp;
+      } catch (e) {
+        return jsonResponse({ error: "fr24 usage fetch failed", detail: e && e.message }, 502, origin);
+      }
+    }
+
     if (path === "/flights/ytz") {
       const direction = url.searchParams.get("direction") || "dep";
       return handleYtzFids(request, env, origin, direction);
@@ -8958,7 +9125,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
       const adbUrl = `https://aerodatabox.p.rapidapi.com${path}${url.search}`;
       try {
-        const response = await fetch(adbUrl, {
+        const response = await adbFetch(adbUrl, {
           headers: {
             "X-RapidAPI-Key": env.ADB_KEY,
             "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com"
@@ -9181,6 +9348,31 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
   // so a bug here cannot drain the quota. Credits convert 1:1 from the plan's
   // API units, so the standing cost is a few thousand units a month.
   async scheduled(event, env, ctx) {
+    // ┌───────────────────────────────────────────────────────────────────────┐
+    // │ DISABLED 2026-09-10 — THIS CRON WAS SPENDING MONEY ON AN UNAPPROVED   │
+    // │ PROVIDER, TWICE A DAY, WITH NOBODY WATCHING.                          │
+    // └───────────────────────────────────────────────────────────────────────┘
+    //
+    // Nick: "ITS TOO EXPENSIVE" / "anything from Rapid API disconnected RIGHT
+    // NOW this was never authorized" / "was there anything charged".
+    //
+    // The comment above this line called the standing cost "a few thousand
+    // units a month" and treated that as conservative. It was not conservative,
+    // it was unauthorized: the refill BUYS webhook credits out of the plan's API
+    // units (1:1), and wrangler.fids-proxy.jsonc schedules this at
+    // "17 5,17 * * *" — 05:17 and 17:17 UTC, every day, unattended, since
+    // v23269. That is the single largest identified consumer of the AeroDataBox
+    // monthly quota that later ran out, and it is why the boards lost aircraft
+    // type and registration.
+    //
+    // The whole routine is left in place but unreachable rather than deleted,
+    // so the history of what it did stays readable. It must not be re-enabled
+    // for RapidAPI under any circumstances. If flight-alert webhooks are ever
+    // wanted again they have to be built on an APPROVED provider — today that
+    // is Flightradar24 (FR24_KEY) — and with a spend cap agreed by Nick first.
+    console.log("[BALANCE] cron disabled 2026-09-10 — RapidAPI/AeroDataBox is not an approved provider");
+    return;
+    /* eslint-disable no-unreachable */
     const ADB = "https://aerodatabox.p.rapidapi.com";
     const H = { "X-RapidAPI-Key": env.ADB_KEY, "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com" };
     const FLOOR = 1000;     // top up once the balance drops below this
@@ -9192,7 +9384,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // are fine") is exactly the run where a dead subscription must still be
     // reported. A healthy balance is not evidence of a healthy subscription.
     const checkBalance = async () => {
-      const r = await fetch(`${ADB}/subscriptions/balance`, { headers: H });
+      const r = await adbFetch(`${ADB}/subscriptions/balance`, { headers: H });
       const body = await r.text();
       if (!r.ok) { console.log(`[BALANCE] read failed ${r.status}: ${body.slice(0, 160)}`); return; }
       let bal = null;
@@ -9206,7 +9398,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       if (typeof bal !== "number") { console.log(`[BALANCE] unreadable: ${body.slice(0, 160)}`); return; }
       if (bal >= FLOOR) { console.log(`[BALANCE] ${bal} credits — above floor ${FLOOR}, no action`); return; }
       const want = CEILING - bal;
-      const rr = await fetch(`${ADB}/subscriptions/balance/refill`, {
+      const rr = await adbFetch(`${ADB}/subscriptions/balance/refill`, {
         method: "POST",
         headers: { ...H, "Content-Type": "application/json" },
         body: JSON.stringify({ credits: want })
@@ -9229,7 +9421,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // decision with a duplicate-subscription failure mode, so it stays a
     // deliberate human act. This makes the state visible instead of silent.
     try {
-      const sr = await fetch(`${ADB}/subscriptions/webhook`, { headers: H });
+      const sr = await adbFetch(`${ADB}/subscriptions/webhook`, { headers: H });
       const sb = await sr.text();
       if (!sr.ok) { console.log(`[WEBHOOK] status read failed ${sr.status}: ${sb.slice(0, 160)}`); return; }
       const list = JSON.parse(sb);

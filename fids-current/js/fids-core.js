@@ -3598,6 +3598,49 @@ async function _gateNumbersPoll() {
       // ADS-B knows the exact sub-type (B38M where the schedule feed says
       // nothing) and the live tail — both better than what we had.
       if (!inb._reg && _adsb.reg) inb._reg = _adsb.reg;
+      // v23702 — AND THE TYPE, WHICH THE COMMENT ABOVE PROMISED AND THE CODE
+      // NEVER DELIVERED.
+      //
+      // Nick: "most times the aircraft type doesnt even show why is that ?" and
+      // "it should show aircraft and registration at minimum".
+      //
+      // The line above assigns the tail and stops. `_adsb.type` is fetched,
+      // parsed out of the provider response (:26358 `type: ac.t || null`),
+      // published to window._adsbLast (:26370-26373) — and then dropped on the
+      // floor. Measured on the live YHZ board: 0 of 53 departures carried a type.
+      // Nothing needed to be bought to fix that; the answer was already in hand
+      // and already paid for.
+      //
+      // This is the AIRBORNE case, which is the only case Nick asked for:
+      //   "It doesnt need to show until airborne"
+      //   "but once on the ground keep the info until its gone"
+      // _acResolvedPut is what satisfies the second half — the feed rebuilds
+      // flight rows on every refresh, so a type written only onto `inb` would
+      // vanish at the next poll and the panel would fall back to Pending. The
+      // resolved store survives the row and ages out on its own 6h TTL, so the
+      // aircraft keeps its identity from wheels-up until the flight leaves the
+      // board.
+      //
+      // ICAO in, board vocabulary out: ADS-B reports the ICAO designator (DH8D,
+      // B38M), while the board keys on IATA and renders a display name, so both
+      // go through the existing converters rather than being stored raw — the
+      // same pair every other ingest path uses.
+      //
+      // Fill-when-empty, deliberately. ADS-B is the real airframe and is
+      // arguably better than any scheduled value, but overwriting is a wider
+      // blast radius than this fix needs: every board that shows a type today
+      // keeps showing exactly what it shows now.
+      if (_adsb.type) {
+        try {
+          var _atNm = (typeof formatAircraft === 'function') ? formatAircraft(_adsb.type) : '';
+          var _atCd = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_adsb.type) : '';
+          if (_atNm && !inb._aircraft) inb._aircraft = _atNm;
+          if (_atCd && !inb._aircraftCode) inb._aircraftCode = _atCd;
+          if ((_atNm || _atCd) && typeof _acResolvedPut === 'function') {
+            _acResolvedPut(inb.flight || flt, _atNm, _atCd, inb._reg || '');
+          }
+        } catch (eT) {}
+      }
       try { _gateTelemSetReal(_adsb.spd, _adsb.alt); } catch (e) {}
       try { console.log('[ADSB]', flt, '→ spd', _adsb.spd, 'alt', _adsb.alt, 'trk', _adsb.track, 'age', _adsb.age + 's'); } catch (e) {}
       return;   // fresher than anything AeroDataBox can offer
@@ -13906,12 +13949,58 @@ function gateAutofit(root) {
     // background through the same 3:1 floor as every other ink.
     root.querySelectorAll('.gad-aircraft-col .v2-fi-title .v2-fi-code, .g8-bir-shelves .v2-fi-title .v2-fi-code').forEach(function (el) {
       try {
+        // v23696 — A GRADIENT CHIP IS A GROUND, AND THIS WALK WAS BLIND TO IT.
+        //
+        // Nick: "Air Canada airport code on the left is blue" and "Porter cannot
+        // see the airport code same blue".
+        //
+        // Measured on the live YQM/4 Air Canada gate, which is what finally
+        // settled it — the span carried BOTH of these inline at once:
+        //     color: rgb(252,238,238) !important          (applyCodeAccents)
+        //     -webkit-text-fill-color: rgb(76,130,189) !important   (this pass)
+        // Blink paints glyphs from -webkit-text-fill-color, so the blue is what
+        // is on screen. Meanwhile the label beside it is rgb(20,23,27), near
+        // black — because the chip they BOTH sit on is light.
+        //
+        // The chip is `.v2-fi-title`, and on AC and Porter it is painted with a
+        // LINEAR-GRADIENT (AC linear-gradient(#CFCBC2,#B6B1A7), Porter
+        // linear-gradient(#F4EEE2,#E7DECB)). A gradient lives in
+        // background-IMAGE; background-COLOR stays rgba(0,0,0,0). This loop only
+        // ever read backgroundColor, so it walked straight past the chip and
+        // measured the near-black plate underneath it. Every ink below was then
+        // fitted to clear black — and painted onto cream. That is the whole bug,
+        // and it is one bug, not the two separate carrier reports it looked like.
+        //
+        // The file already knows this test: :13866 uses
+        // /url\(|gradient/.test(backgroundImage) for the plate-inset probe. Same
+        // idea here, taking the gradient's first colour stop as the ground —
+        // these chips are shallow vertical fades, so the top stop is
+        // representative and it is the half the text sits on.
         var bg = '', n = el.parentElement;
         while (n && n !== document.body) {
-          var c = getComputedStyle(n).backgroundColor;
+          var _ncs = getComputedStyle(n);
+          var c = _ncs.backgroundColor;
           if (c && c !== 'rgba(0, 0, 0, 0)' && !/,\s*0\)$/.test(c)) { bg = c; break; }
+          var _bi = _ncs.backgroundImage;
+          if (_bi && _bi !== 'none' && /gradient/i.test(_bi)) {
+            var _stop = _bi.match(/rgba?\([^)]*\)|#[0-9a-fA-F]{3,8}/);
+            if (_stop && !/,\s*0\)$/.test(_stop[0])) { bg = _stop[0]; break; }
+          }
           n = n.parentElement;
         }
+        // The ink the LABEL is wearing on this same chip. Whatever the chip's
+        // own CSS chose is legible on it by construction, so this is a far
+        // better last resort than a hardcoded near-black — which is exactly the
+        // "#16283C" that reads as the grey Nick has ruled out ("I do not want
+        // any gray wording"). On American's blue chip the label is white; the
+        // code now goes white with it instead of dark-navy-on-blue.
+        var _lblInk = '';
+        try {
+          var _tw = el.closest ? el.closest('.v2-fi-title') : null;
+          var _lb = _tw && _tw.querySelector('.v2-fi-lbl-en, .v2-fi-lbl-2');
+          if (_lb && _lb !== el) _lblInk = (getComputedStyle(_lb).color || '').trim();
+          if (/,\s*0\)$/.test(_lblInk)) _lblInk = '';
+        } catch (eL) { _lblInk = ''; }
         // v23309 — THIS is where the brown came from. `deep` was '#8a5200' =
         // rgb(138,82,0): hue 36, saturation 1.0, lightness 0.27 — brown by any
         // measure, and byte-for-byte the colour measured on the YYC/YUL code in
@@ -13966,9 +14055,22 @@ function gateAutofit(root) {
         if (bg && typeof _fidsContrast === 'function') {
           var ca = _acc ? (_fidsContrast(_acc, bg) || 0) : 0;
           var cb = _fidsContrast(bright, bg) || 0, cd = _fidsContrast(deep, bg) || 0;
-          pick = (ca >= 3) ? _acc : (cb >= 3) ? bright : (cd > cb ? deep : bright);
+          // v23696 — the label's ink is now the last resort, ahead of the navy.
+          // With the ground measured correctly the first branch finally does
+          // what v23466 intended: AC red on its light grey chip is ~3.4:1 and is
+          // kept, Porter's navy on cream clears easily. The branch had been
+          // structurally unreachable for the generic-topper carriers too, where
+          // the chip is painted var(--airline-accent) and contrast(accent,
+          // accent) is 1.0 by definition — for those the label ink now answers
+          // instead of the navy, which is the only neutral in the chain and the
+          // one Nick keeps rejecting.
+          pick = (ca >= 3) ? _acc
+               : (cb >= 3) ? bright
+               : (_lblInk || (cd > cb ? deep : bright));
         } else if (_acc) {
           pick = _acc;
+        } else if (_lblInk) {
+          pick = _lblInk;
         }
         el.style.setProperty('color', pick, 'important');
         el.style.setProperty('-webkit-text-fill-color', pick, 'important');
@@ -23154,7 +23256,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23690';
+var FIDS_BUILD_TAG = 'v23702';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -31064,13 +31166,46 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // two-level jump that dumps the whole tile cache and repaints from blank
   // every cycle. Remembering the view per ROUTE, on window, means a rebuilt
   // map re-seeds exactly where the old one was and the tiles stay warm.
-  var _lv = null;
+  // v23700 — THE ZOOM HOLD WAS MEASURING ITSELF, SO IT NEVER LET GO.
+  //
+  // Nick: "map issues still" — the mini map sat zoomed deep into the middle of
+  // the route (a tight New England crop on a YHZ->LGA leg) while the big centre
+  // map framed the whole thing correctly.
+  //
+  // The hold below is anti-flap: if the aircraft has barely moved since the last
+  // view, keep the zoom rather than re-deriving a tier and flapping between two
+  // levels. Sound idea, wrong reference point. `_fidsLastView` is ALSO written by
+  // the glide's follow-pan (:31945 `vmap._fidsLastView = { lat, lng, ... }`) on
+  // every eased camera move, using the CURRENT INTERPOLATED position. So by the
+  // time the next real ADS-B fix arrives, the saved lat/lng is wherever the glide
+  // last painted the aircraft — a dead-reckoning residual, not a position from
+  // one poll ago. The delta is therefore always tiny (well under the 0.05 gate,
+  // where a 60s poll of real movement is ~0.12), the hold fires EVERY time, and
+  // the hysteresis line under it is dead code because `zoom` has just been set
+  // equal to `_lv.zoom`. Whatever close-in tier the map happened to get on its
+  // first frame of the leg is the tier it keeps for the whole cruise.
+  //
+  // The big map has no hold at all (_bigMapCloneLive recomputes the tier and
+  // applies it directly), which is exactly the asymmetry he is looking at.
+  //
+  // Fix: keep the two records apart. `_fidsLastView` stays the CAMERA record —
+  // the glide owns it and a rebuilt map re-seeds from it, which is what it was
+  // added for. `_fidsLastFix` is the last REAL FIX, written only here, and it is
+  // what the movement test reads. The glide can no longer answer a question about
+  // how far the aircraft has actually flown.
+  var _lv = null, _fx = null;
   try {
     if (_liveReuse && gateMap._fidsLastView) _lv = gateMap._fidsLastView;
     else if (window._GATE_MAP_VIEW && window._GATE_MAP_VIEW.key === _liveRouteKey) _lv = window._GATE_MAP_VIEW;
+    if (_liveReuse && gateMap._fidsLastFix) _fx = gateMap._fidsLastFix;
+    else if (window._GATE_MAP_FIX && window._GATE_MAP_FIX.key === _liveRouteKey) _fx = window._GATE_MAP_FIX;
   } catch (e) {}
   if (_lv) {
-    var _dLat = Math.abs(_lv.lat - planeLat), _dLng = Math.abs(_lv.lng - planeLng);
+    // Measure against the last REAL fix. Falls back to the camera record only
+    // when no fix has been recorded yet (first frame of a leg), which is the
+    // pre-v23700 behaviour and harmless there because nothing has glided.
+    var _ref = _fx || _lv;
+    var _dLat = Math.abs(_ref.lat - planeLat), _dLng = Math.abs(_ref.lng - planeLng);
     if (_dLat < 0.05 && _dLng < 0.05) zoom = _lv.zoom;                 // hold zoom, no flap
     // Hysteresis: even on a real move, never let one tick jump more than a
     // single zoom level. A 2-level jump is what reads as the map 'going'.
@@ -31096,7 +31231,11 @@ function initGateMapLive(org,dst,planeLat,planeLng){
       if (_mv && _mv.marker && _mv.marker._map === gateMap && _mv.a1 && _mv.a2 &&
           _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
         gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+        // v23700 — the REAL fix, kept apart from the camera record above so the
+        // glide's follow-pan cannot overwrite the movement test's reference.
+        gateMap._fidsLastFix = { lat: planeLat, lng: planeLng };
         try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e0) {}
+        try { window._GATE_MAP_FIX = { key: _liveRouteKey, lat: planeLat, lng: planeLng }; } catch (e0b) {}
         // Camera: intervene only when the plane is OFF the visible window or
         // the zoom tier genuinely moved — and then ease, never jump.
         try {
@@ -31149,7 +31288,11 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   }
   gateMap._fidsLive = true;   // live map — the marker watchdog polices this one
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+  // v23700 — see the note at the zoom hold: this is the last REAL fix, and it
+  // is the only thing the movement test may measure against.
+  gateMap._fidsLastFix = { lat: planeLat, lng: planeLng };
   try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
+  try { window._GATE_MAP_FIX = { key: _liveRouteKey, lat: planeLat, lng: planeLng }; } catch (eF) {}
   gateMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
