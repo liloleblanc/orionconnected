@@ -17670,3 +17670,32 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   text-transform: uppercase !important;
 }
 
+/* ══ GATE / PORTE, EVERY AIRPORT ═════════════════════════════════════════
+   Nick: "So the Gate and Porte or whatever need to be much bigger", and
+   separately "These changes btw its every airport".
+
+   Written as ONE global rule rather than bumping Moncton's copy, because the
+   two were already out of step in the wrong direction: Moncton rendered the
+   label at 26.68px (its own 28-chain rule in this file) while every other
+   airport got clamp(20px, 2vw, 34px) from gate-display.css:2242 — 33.6px at
+   1680 wide. The airport that had the most banner room had the smallest label.
+
+   Measured at 1680x920 before changing: .g8-r1-right had 126px of unused width
+   to the LEFT of the label, and the two-line stack was 57px inside a 118px
+   column. The block had been sized as though the row were tight; it has been
+   roomy since the date bar moved to the floor.
+
+   5.4vh lands near 50px. Checked at both real board sizes: at 1680x920 "Porte"
+   needs ~133px of 197px available and the stack is 106px of the 118px column;
+   at 1366x740 it is ~106px of 158 and 85px of 108. Fits both with margin, and
+   the clamp ends hold the extremes.
+
+   The chain is long enough to beat Moncton's own 28-chain rule as well, so
+   there is a single source of truth for this size and Moncton cannot silently
+   diverge from the rest of the network again.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right .g8-bilbl {
+  font-size: clamp(38px, 5.4vh, 68px) !important;
+  line-height: 1.06 !important;
+}
+
