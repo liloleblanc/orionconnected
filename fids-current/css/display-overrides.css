@@ -17695,7 +17695,115 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    diverge from the rest of the network again.
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right .g8-bilbl {
-  font-size: clamp(38px, 5.4vh, 68px) !important;
+  /* v23636 — back down from 5.4vh. Nick: "Ok the gate Porte tooo big sorry I
+     ddint check before". 5.4vh measured as FITTING and it does — the block is
+     centred to the pixel at every size — but fitting is not looking right: on
+     his Ryanair shot of DUB gate 109 the label and a three-character numeral
+     filled the panel wall to wall, 35px of air left of 386px. 4.0vh leaves
+     ~75px and is still well up on where this started (26.68px at Moncton,
+     33.6px everywhere else). */
+  font-size: clamp(30px, 4.0vh, 52px) !important;
   line-height: 1.06 !important;
+}
+
+/* ══ TWO FIXES OFF NICK'S RYANAIR SHOT (DUB gate 109) ════════════════════
+
+   1. GATE / PORTE COMES BACK DOWN. Nick: "Ok the gate Porte tooo big sorry I
+      ddint check before". 5.4vh (~50px) was measured to FIT — and it does,
+      the block is perfectly centred at every size I tested — but fitting is
+      not the same as looking right. On a three-character gate like 109 the
+      label and the numeral together fill the panel wall to wall with no air
+      left. 4.0vh lands near 37px: still well up on where it started (26.68px
+      at Moncton, 33.6px everywhere else) without crowding the numeral.
+
+   2. 'To be confirmedÀ confirmer' — the bilingual pair jammed together with
+      no separator, bottom right of his shot.
+
+      _gateLblSpans() deliberately emits the two languages as bare sibling
+      spans and leaves the ' | ' to a per-container `span + span::before`
+      rule (see the comment at fids-core.js:22727). A container without such
+      a rule renders them jammed. This exact bug was fixed once before, in
+      v23313, for the same string — but that rule is scoped
+      `.g8-wrap .gad-map-col-v2 .v2-rc-fi-stline`, so it only ever covered the
+      one place the card lived at the time.
+
+      Scoping the fix to a container is what let it regress. The rule below
+      keys on .v2-rc-fi-stline ITSELF, wherever it appears, so the separator
+      travels with the element and cannot be lost again by the card moving.
+      The v23313 rule is left in place: it now simply matches a subset of
+      this one and sets the identical declarations, so there is no conflict.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-rc-fi-stline > span + span::before {
+  content: ' | ';
+  opacity: 0.55;
+  font-weight: 400;
+}
+
+/* ══ PANEL TITLES STAY ON ONE ROW ════════════════════════════════════════
+   Nick: "banners the words cant be in 2 rows".
+
+   I had let .wxc-side-title wrap earlier, to stop an ellipsis eating the end
+   of it. That traded one bad outcome for another: on his Ryanair shot the
+   title broke as "DEPARTURE WEATHER |" / "| MÉTÉO AU DÉPART", with the
+   separator stranded at the start of the second line.
+
+   These titles sit in HALF-WIDTH columns while the two strip titles below get
+   the full card, so they cannot hold the same size on one line — that is
+   geometry, not preference. They take a smaller step and keep nowrap.
+
+   min() rather than a bare clamp: the panels are a fixed fraction of the card,
+   so 3.1cqw-style sizing is not available here, but capping against the
+   viewport WIDTH as well as height stops a tall narrow board (where vh is
+   generous but the column is not) from pushing it back onto two lines.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: min(clamp(10px, 1.55vh, 19px), 1.35vw) !important;
+  letter-spacing: 0.3px !important;
+  line-height: 1.2 !important;
+}
+
+/* ══ A NESTED SEPARATOR MUST NEVER BE HIDDEN ═════════════════════════════
+   Nick: "does not have seperation:  |  Destination Destino PRG", and
+   "Can yyou please just do one space esample Flight | Vol".
+
+   Reproduced on the preview, and it is a shape mismatch, not a missing rule.
+   The gate titles are built in TWO different markup shapes:
+
+     A  <span class=v2-fi-lbl-en>Flight</span>
+        <span class=v2-fi-sep> | </span>            <- spaces INSIDE the span
+        <span class=v2-fi-lbl-2>Vuelo</span>
+
+     B  <span class=v2-fi-lbl-en>Destination
+          <span class=v2-fi-sep>|</span> Destino    <- spaces are text nodes
+          <span class=v2-fi-sep>|</span>               OUTSIDE the span
+          <span class=v2-fi-code>PRG</span></span>
+
+   Shape B is used by the titles that carry an IATA code (Destination,
+   Arrival). Two existing rules hide .v2-fi-sep when a title goes stacked or
+   two-line — display-overrides.css:11527 and :15970 — and for shape A that is
+   right: the languages move onto separate lines and the bar is REPLACED by the
+   line break.
+
+   Shape B cannot stack. It is a single span, so hiding its separator does not
+   replace it with anything — it just deletes the bars and leaves the spaces
+   that were sitting outside them. Verified by adding .g8-fi-title-2line to a
+   live Destination title: it rendered "Destination Destino YYC" with
+   sepDisplay:none. That is Nick's screenshot exactly.
+
+   _gateTitleFit adds .g8-fi-title-2line whenever a label still overflows at
+   its 0.82 floor, which a long trilingual string like "Destination | Destino
+   | PRG" reliably does — so this fires on real boards, not just in theory.
+
+   The fix keys on the nesting: a .v2-fi-sep INSIDE a .v2-fi-lbl-en is shape B
+   and always stays visible. A separator that is a SIBLING of the labels is
+   shape A and keeps the existing stacked behaviour untouched.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-lbl-en .v2-fi-sep {
+  display: inline !important;
+  opacity: 0.55 !important;
+  font-weight: 600 !important;
 }
 
