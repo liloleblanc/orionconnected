@@ -18214,3 +18214,43 @@ html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airli
 html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],[data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge::after {
   background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(186, 203, 224, 0.22)) !important;
 }
+
+/* ══ v23704 — THE AIRPORT CODE AND THE CLOCK MATCH ═══════════════════════════
+   Requested: the airport code and the time should be at equal height and size.
+
+   Measured on the live YUL/A25 board at 1920x1010 before the change:
+       YUL      font-size 56px   top 16   bottom 74
+       6:12PM   font-size 64px   top 11   bottom 71
+   8px apart in size and 3px apart on the baseline, which is what reads as the
+   code sitting small and low beside the clock.
+
+   The two came from unrelated rules that were never reconciled: the code from
+   clamp(34px, 5.8vh, 56px) at :15008, the clock from the v23662 step-down at
+   :17975 that v23692 extended to lettered rows. Giving the code the clock's
+   EXACT clamp settles both complaints at once — same size by definition, and
+   the shared baseline follows from a shared font at a shared size, so no
+   separate vertical nudge is needed and none is added.
+
+   THE ROW HAS TO STILL FIT. Growing the code 56px -> 64px widens it by roughly
+   17px (118px -> ~135px measured), against 443px of row inner width carrying
+   ~416px of content. That leaves it inside, but only just — which is the same
+   margin that produced the sliced "'HZ" before v23692. The separator therefore
+   comes down to the code's OLD size rather than up, buying back the width the
+   code takes, and the whole row keeps the shrink-to-fit behaviour it has.
+
+   Chain length matches the clock rule it is pairing with (34), so the two
+   cannot be separated by a later edit to one of them. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .octb-ap {
+  font-size: clamp(38px, 7.5vh, 64px) !important;
+  line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .v2-fi-clock-val,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .octb-clock {
+  line-height: 1 !important;
+}
+/* The divider yields the width the code just took. It is punctuation, not a
+   peer of the two values it sits between. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .octb-apsep {
+  font-size: clamp(26px, 4.4vh, 40px) !important;
+  line-height: 1 !important;
+}
