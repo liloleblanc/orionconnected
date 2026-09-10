@@ -16276,5 +16276,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   transform: translateY(-4px) !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-logoslot .g8-r1-logo {
-  transform: translateY(3px) !important;
+  /* Down 11, not 3. Nick: "wordmark still needs to come down even if the j
+     hits the bar" — the WESTJET J's descender crossing into the date bar is
+     acceptable to him, so the ceiling here is not the bar. The wordmark is
+     effectively full-bleed in its own box (ink pad 0.75% top and bottom,
+     measured), so every pixel here moves real letterform. */
+  transform: translateY(11px) !important;
 }
