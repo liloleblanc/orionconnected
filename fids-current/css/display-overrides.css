@@ -17899,3 +17899,30 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-size: clamp(38px, 7.5vh, 64px) !important;
 }
 
+/* ══ THE BANNER TEXTURE BECOMES VISIBLE ══════════════════════════════════
+   Nick: "there is supposed to be a background in there we dont see it at all
+   can you make it more apparent".
+
+   It was rendering the whole time — banner-geo.jpg, multiply, cover, inset 0 —
+   just too faintly to register. Two things compounded, both measured:
+
+     the image itself   luminance min 162, mean 222, max 234 (87% white)
+     opacity            0.55
+
+   Multiply with a near-white texture barely darkens anything, and halving it
+   again left a shift of ~17 RGB points on a 245-bright band. That is below
+   the threshold where a pattern reads as a pattern rather than as noise.
+
+   Opacity to 0.95 roughly doubles the shift, and a contrast lift deepens the
+   texture's OWN range before it composites — the source only spans 72 levels,
+   so stretching that is what actually makes the geometry legible rather than
+   simply making the whole band darker.
+
+   Deliberately not going heavier: this sits behind the wordmark and the clock,
+   and the point is a texture you notice, not one that competes with them.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1::before {
+  opacity: 0.95 !important;
+  filter: contrast(1.45) brightness(0.98) !important;
+}
+
