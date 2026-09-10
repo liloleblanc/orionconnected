@@ -12699,7 +12699,7 @@ function uxgGateHtml(ctx) {
     // 82px against a 26px bar leaves the same ~2px breathing room at the top
     // that 106 left in the full 112. Scoped to YQM: every other airport keeps
     // 106 until its banner grows a bar too.
-    _logoH = Math.min(_logoH, _apIsYQM ? 82 : 106);
+    _logoH = Math.min(_logoH, _apIsYQM ? 76 : 106);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
