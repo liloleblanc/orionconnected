@@ -17986,6 +17986,93 @@ const AP = {
   YKA:{ name:'Kamloops Airport',                                     tz:'America/Vancouver'  },   // v23334 — wave 5 authority feeds
   YXS:{ name:'Prince George Airport',                                tz:'America/Vancouver'  },
   YMM:{ name:'Fort McMurray International Airport',                  tz:'America/Edmonton'   },
+
+  // ── v23688 — THE SIXTY EUROPEAN DESTINATIONS THAT HAD NO TIMEZONE ────────
+  //
+  // Weather was never blocked on this — that was COORDS, and adding eleven
+  // lat/lon pairs cleared it, so all 89 destinations on the live Dublin board
+  // now resolve a forecast. What a missing tz breaks is the HOUR beside it.
+  //
+  // _wxClock and _wxNightAt (:40882, :40867) both read AP[iata].tz and fall
+  // back to the BOARD'S OWN timezone when there is none. So the two-up hero
+  // built this week — departure city on the left at time of departure,
+  // destination on the right at time of arrival — was printing the Bucharest
+  // arrival hour in Irish time, and picking its day/night icon off Irish
+  // sunset. Every one of these sixty was silently doing that.
+  //
+  // Enumerated off the live board, not guessed: none of the sixty had an AP
+  // entry at all (`hasApEntryButNoTz` came back empty), so nothing here
+  // overrides an existing value. Appended at the END of the literal, which is
+  // where a later duplicate key would win if one ever appeared — the lesson
+  // from the CITY corrections, which sat at the TOP and were overridden in
+  // silence for weeks.
+  //
+  // Britain and Ireland
+  BHX:{ name:'Birmingham Airport',                                   tz:'Europe/London'      },
+  BRS:{ name:'Bristol Airport',                                      tz:'Europe/London'      },
+  CWL:{ name:'Cardiff Airport',                                      tz:'Europe/London'      },
+  EMA:{ name:'East Midlands Airport',                                tz:'Europe/London'      },
+  EXT:{ name:'Exeter Airport',                                       tz:'Europe/London'      },
+  GLA:{ name:'Glasgow Airport',                                      tz:'Europe/London'      },
+  INV:{ name:'Inverness Airport',                                    tz:'Europe/London'      },
+  LBA:{ name:'Leeds Bradford Airport',                               tz:'Europe/London'      },
+  LPL:{ name:'Liverpool John Lennon Airport',                        tz:'Europe/London'      },
+  LTN:{ name:'London Luton Airport',                                 tz:'Europe/London'      },
+  MAN:{ name:'Manchester Airport',                                   tz:'Europe/London'      },
+  NCL:{ name:'Newcastle Airport',                                    tz:'Europe/London'      },
+  SOU:{ name:'Southampton Airport',                                  tz:'Europe/London'      },
+  STN:{ name:'London Stansted Airport',                              tz:'Europe/London'      },
+  IOM:{ name:'Isle of Man Airport',                                  tz:'Europe/Isle_of_Man' },
+  CFN:{ name:'Donegal Airport',                                      tz:'Europe/Dublin'      },
+  KIR:{ name:'Kerry Airport',                                        tz:'Europe/Dublin'      },
+  // Iberia — ACE is the Canaries, an hour behind the Spanish mainland
+  ACE:{ name:'Lanzarote Airport',                                    tz:'Atlantic/Canary'    },
+  AGP:{ name:'Málaga-Costa del Sol Airport',                         tz:'Europe/Madrid'      },
+  ALC:{ name:'Alicante-Elche Airport',                               tz:'Europe/Madrid'      },
+  BIO:{ name:'Bilbao Airport',                                       tz:'Europe/Madrid'      },
+  GRO:{ name:'Girona-Costa Brava Airport',                           tz:'Europe/Madrid'      },
+  IBZ:{ name:'Ibiza Airport',                                        tz:'Europe/Madrid'      },
+  PMI:{ name:'Palma de Mallorca Airport',                            tz:'Europe/Madrid'      },
+  REU:{ name:'Reus Airport',                                         tz:'Europe/Madrid'      },
+  RMU:{ name:'Región de Murcia International Airport',               tz:'Europe/Madrid'      },
+  SCQ:{ name:'Santiago-Rosalía de Castro Airport',                   tz:'Europe/Madrid'      },
+  SVQ:{ name:'Seville Airport',                                      tz:'Europe/Madrid'      },
+  VLC:{ name:'Valencia Airport',                                     tz:'Europe/Madrid'      },
+  FAO:{ name:'Faro Airport',                                         tz:'Europe/Lisbon'      },
+  OPO:{ name:'Porto Francisco Sá Carneiro Airport',                  tz:'Europe/Lisbon'      },
+  // France
+  BVA:{ name:'Paris Beauvais-Tillé Airport',                         tz:'Europe/Paris'       },
+  LYS:{ name:'Lyon-Saint Exupéry Airport',                           tz:'Europe/Paris'       },
+  MRS:{ name:'Marseille Provence Airport',                           tz:'Europe/Paris'       },
+  NCE:{ name:'Nice Côte d\'Azur Airport',                            tz:'Europe/Paris'       },
+  TLS:{ name:'Toulouse-Blagnac Airport',                             tz:'Europe/Paris'       },
+  // Italy
+  BDS:{ name:'Brindisi Airport',                                     tz:'Europe/Rome'        },
+  BGY:{ name:'Milan Bergamo Airport',                                tz:'Europe/Rome'        },
+  NAP:{ name:'Naples International Airport',                         tz:'Europe/Rome'        },
+  PSA:{ name:'Pisa International Airport',                           tz:'Europe/Rome'        },
+  TRS:{ name:'Trieste Airport',                                      tz:'Europe/Rome'        },
+  VCE:{ name:'Venice Marco Polo Airport',                            tz:'Europe/Rome'        },
+  VRN:{ name:'Verona Villafranca Airport',                           tz:'Europe/Rome'        },
+  // Germany, Luxembourg
+  BER:{ name:'Berlin Brandenburg Airport',                           tz:'Europe/Berlin'      },
+  MUC:{ name:'Munich Airport',                                       tz:'Europe/Berlin'      },
+  STR:{ name:'Stuttgart Airport',                                    tz:'Europe/Berlin'      },
+  LUX:{ name:'Luxembourg Findel Airport',                            tz:'Europe/Luxembourg'  },
+  // Central, eastern and southern Europe
+  BCM:{ name:'Bacău George Enescu International Airport',            tz:'Europe/Bucharest'   },
+  CLJ:{ name:'Cluj-Napoca International Airport',                    tz:'Europe/Bucharest'   },
+  OTP:{ name:'Bucharest Henri Coandă International Airport',         tz:'Europe/Bucharest'   },
+  BOJ:{ name:'Burgas Airport',                                       tz:'Europe/Sofia'       },
+  CFU:{ name:'Corfu Ioannis Kapodistrias Airport',                   tz:'Europe/Athens'      },
+  KRK:{ name:'Kraków John Paul II International Airport',            tz:'Europe/Warsaw'      },
+  LCJ:{ name:'Łódź Władysław Reymont Airport',                       tz:'Europe/Warsaw'      },
+  MLA:{ name:'Malta International Airport',                          tz:'Europe/Malta'       },
+  RIX:{ name:'Riga International Airport',                           tz:'Europe/Riga'        },
+  RMO:{ name:'Chișinău International Airport',                       tz:'Europe/Chisinau'    },
+  SPU:{ name:'Split Airport',                                        tz:'Europe/Zagreb'      },
+  TIA:{ name:'Tirana International Airport Nënë Tereza',             tz:'Europe/Tirane'      },
+  ADB:{ name:'İzmir Adnan Menderes Airport',                         tz:'Europe/Istanbul'    },
 };
 // v23265 — EXPORTED for sibling pages in the same origin. AP is declared with
 // `const`, which creates a script-scope binding and NOT a window property, so
@@ -23067,7 +23154,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23688';
+var FIDS_BUILD_TAG = 'v23690';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
