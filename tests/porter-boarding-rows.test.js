@@ -2,7 +2,7 @@
 
 // v23520 — PORTER BOARDS BY ROW, SO THE ROW COUNT HAS TO BE THE REAL ONE.
 //
-// Nick: "the DH4 only has 20 rows not 29 for boarding", then "E195 has 33".
+// Reported: the DH4 has 20 rows for boarding, not 29; the E195 has 33.
 //
 // Porter boards back to front in three bands, so the count sets every band.
 // Two faults: the E-jet figure was 29 against a real 33, which meant rows
@@ -14,16 +14,17 @@
 //
 // v23688 — AND NONE OF THAT MATTERED, BECAUSE THE INPUT WAS EMPTY.
 //
-// Nick, on a Porter Q400 still boarding by 33 rows: "it was supposed to be
-// fixed yesterday". Read live off the YHZ board, every Porter departure
+// Reported again: a Porter Q400 was still boarding by 33 rows after the fix.
+// Read live off the YHZ board, every Porter departure
 // arrives with _aircraftCode:'' and _aircraft:'' — the type is resolved by a
 // later enrichment poll — so the matcher above was handed '' and every Porter
 // flight fell to the E-jet branch. The tests below passed the whole time
 // because they fed it the strings the sign never actually receives.
 //
-// The rule that does not depend on a feed, from Nick: "Porter flights in
-// general with 4 numbers always operate the DH4 and 3 numbers the jet", and
-// "thats how you can know that and YTZ vs YYZ or western flights etc". The
+// The rule that does not depend on a feed, supplied by the owner: a Porter
+// flight number with 4 digits operates the DH4, 3 digits the jet — the 4-digit
+// series being the Billy Bishop turboprop network and the 3-digit series the
+// jets flying YYZ and west. The
 // flight number is the one field that is never blank, so it decides; the
 // equipment string is only the fallback for a number this rule does not
 // describe. THE EMPTY-FEED CASE IS THE TEST THAT WOULD HAVE CAUGHT THIS.

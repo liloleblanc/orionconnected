@@ -4,8 +4,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 // ═══════════════════════════════════════════════════════════════════════════
 // THE RAPIDAPI / AERODATABOX KILL SWITCH — 2026-09-10
 //
-// Nick: "NO RAPID API IS NOT APPROVED GET IT??????" / "ITS TOO EXPENSIVE" /
-//       "anything from Rapid API disconnected RIGHT NOW this was never authorized"
+// RapidAPI is NOT an approved provider and is NOT to be billed (decision of
+// 2026-09-10, on cost).
 //
 // RapidAPI is NOT an approved provider and is NOT to be billed. This constant
 // is the single point of enforcement: while it is true, adbFetch() answers
@@ -26,8 +26,8 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 // community position ring, the airport's own authority feed, or an empty
 // enrichment) with no new branches needed.
 //
-// DO NOT flip this back to false. Re-enabling RapidAPI needs Nick's explicit
-// approval, and he has refused it on cost. If a future provider is approved,
+// DO NOT flip this back to false. Re-enabling RapidAPI needs explicit owner
+// approval, which has been refused on cost. If a future provider is approved,
 // add it alongside FR24 — do not resurrect this one.
 // ═══════════════════════════════════════════════════════════════════════════
 const ADB_DISCONNECTED = true;
@@ -51,9 +51,8 @@ __name(adbFetch, "adbFetch");
 // ║  AERODATABOX / RAPIDAPI IS DISCONNECTED — 2026-09-10                      ║
 // ╚═══════════════════════════════════════════════════════════════════════════╝
 //
-// Nick, 2026-09-10, verbatim:
-//   "anything from Rapid API disconnected RIGHT NOW this was never authorized"
-//   "AeroDataBox STOP ANYTHING CONNECTED IM NOT PAYING FOR IT OK??????????"
+// Decision, 2026-09-10: RapidAPI / AeroDataBox is not an approved provider and
+// is not to be billed. Disconnect it entirely.
 //
 // THIS WORKER MUST NOT MAKE ANY REQUEST TO aerodatabox.p.rapidapi.com.
 // Enforced by ADB_DISCONNECTED + adbFetch() below — see that block for how.
@@ -63,15 +62,15 @@ __name(adbFetch, "adbFetch");
 //       "You have exceeded the MONTHLY quota for API Units on your current
 //        plan, BASIC. Upgrade your plan at rapidapi.com/aedbx-aedbx/api/aerodatabox"
 //     Called three times uncached — same answer each time. So the key still
-//     AUTHENTICATES (RapidAPI names the plan back) against an account Nick
-//     does not pay for and never authorized.
+//     AUTHENTICATES (RapidAPI names the plan back) against an account that is
+//     not paid for and was never authorised.
 //   · The board therefore had NO aircraft type and NO registration anywhere:
 //     0 of 53 departures on the live YHZ gate board carried either field.
 //   · Worse, scheduled() ran a cron that SPENT API units topping up webhook
 //     credits (floor 1000 / ceiling 5000, "credits convert 1:1 from the plan's
 //     API units") unattended, on that same unauthorized account. Disabled.
 //
-// WHAT NICK ACTUALLY PAYS FOR: FLIGHTRADAR24 (fr24api.flightradar24.com,
+// THE APPROVED PAID FEED IS FLIGHTRADAR24 (fr24api.flightradar24.com,
 // secret FR24_KEY). It was wired to only two narrow things — a Detroit-only
 // schedule cache and callsign/reg live positions — and it sat BEHIND
 // AeroDataBox in the provider order, so it was rarely even reached. FR24's
@@ -85,7 +84,7 @@ __name(adbFetch, "adbFetch");
 // being the only thing that block produces. It therefore never executes and
 // costs nothing. Not authorized, not billing, left inert.
 //
-// STILL TO BE DONE BY NICK (cannot be done from here — secrets never pass
+// STILL TO BE DONE BY THE OWNER (cannot be done from here — secrets never pass
 // through this repo or a chat):
 //   1. Delete the stale secret:  wrangler secret delete ADB_KEY
 //   2. Cancel the RapidAPI/AeroDataBox subscription at rapidapi.com if any
@@ -8187,10 +8186,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // v23255 — AERODATABOX WAS the position source. IT IS NOW DISCONNECTED
       // (2026-09-10, unapproved and too expensive — see the kill switch at the
       // top of this file). Kept only as the record of how we got here.
-      // The 'I never got the email done' quote below has been MISREAD by every
-      // session since: it does not mean the airplanes.live registration is
-      // outstanding. He emailed them and was refused. Closed question.
-      // (Nick: 'I never got the email done please use aerodatabox for now'.)
+      // An older note here was MISREAD by every session since as meaning the
+      // airplanes.live registration was still outstanding. It is not: access was
+      // requested and refused. Closed question.
       // ADB's flight lookups carry a live `location` block
       // (lat/lon, pressureAltitude.feet, groundSpeed.kt, trueTrack.deg,
       // vsiFpm, reportedAtUtc) on EnRoute legs, fetched with the SAME paid
@@ -8341,12 +8339,10 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // ╔═════════════════════════════════════════════════════════════════════╗
       // ║ AIRPLANES.LIVE IS CLOSED TO US. DO NOT PROPOSE REGISTERING FOR IT.  ║
       // ╚═════════════════════════════════════════════════════════════════════╝
-      // Nick, 2026-09-10: "this must be the 5th time i tell you no ... They do
-      // not do this... I emailed and I was told to fuck off."
-      //
-      // He asked them directly and was refused. This is a SETTLED, CLOSED
+      // Access was requested directly and declined. This is a SETTLED, CLOSED
       // question — not an open task, not "pending", not something a future
-      // session should rediscover and suggest because it is free.
+      // session should rediscover and suggest because it is free. It has been
+      // re-proposed repeatedly; do not add to that.
       //
       // Earlier comments in this file described the registration as "pending"
       // and "never got the email done", which reads as not-yet-done and is why
@@ -8973,7 +8969,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // WHAT WE SPEND, READ FROM THE PROVIDER RATHER THAN GUESSED AT.
     //
     // Added 2026-09-10, the day an unattended integration was found to have been
-    // buying credits on an account Nick had closed, and nothing anywhere said so.
+    // buying credits on a closed account, and nothing anywhere said so.
     // The gap that let that run was not the cron — it was that NOTHING in this
     // repo could answer "what has this cost". Our own counters are two KV keys
     // (fr24:used:<day>) that increment once per HTTP CALL, while FR24 bills per
@@ -9353,8 +9349,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // │ PROVIDER, TWICE A DAY, WITH NOBODY WATCHING.                          │
     // └───────────────────────────────────────────────────────────────────────┘
     //
-    // Nick: "ITS TOO EXPENSIVE" / "anything from Rapid API disconnected RIGHT
-    // NOW this was never authorized" / "was there anything charged".
+    // Unapproved spend on a settled account.
     //
     // The comment above this line called the standing cost "a few thousand
     // units a month" and treated that as conservative. It was not conservative,
@@ -9369,7 +9364,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // so the history of what it did stays readable. It must not be re-enabled
     // for RapidAPI under any circumstances. If flight-alert webhooks are ever
     // wanted again they have to be built on an APPROVED provider — today that
-    // is Flightradar24 (FR24_KEY) — and with a spend cap agreed by Nick first.
+    // is Flightradar24 (FR24_KEY) — and with an agreed spend cap first.
     console.log("[BALANCE] cron disabled 2026-09-10 — RapidAPI/AeroDataBox is not an approved provider");
     return;
     /* eslint-disable no-unreachable */

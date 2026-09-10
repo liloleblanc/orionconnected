@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // THE MINI MAP'S ZOOM HOLD MUST MEASURE THE AIRCRAFT, NOT THE CAMERA.
 //
-// Nick: "map issues still" — the small map sat zoomed deep into the MIDDLE of a
-// YHZ->LGA route while the big centre map framed the whole thing.
+// Reported: the small map sat zoomed deep into the MIDDLE of a YHZ->LGA route
+// while the big centre map framed the whole thing.
 //
 // initGateMapLive holds the current zoom when the aircraft has barely moved, to
 // stop the distance tier flapping between two levels. The reference it used was

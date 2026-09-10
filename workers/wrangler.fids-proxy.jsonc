@@ -55,25 +55,23 @@
   // was AeroDataBox work: top up flight-alert credits by BUYING them out of
   // the plan's API units (1:1), and check webhook subscription status.
   //
-  // Nick, 2026-09-10: "NO RAPID API IS NOT APPROVED GET IT??????" /
-  // "ITS TOO EXPENSIVE" / "anything from Rapid API disconnected RIGHT NOW
-  // this was never authorized" / "I am appalled right now this is not ok
-  // this is doing things agaisnt my wish".
+  // Decision, 2026-09-10: RapidAPI is not an approved provider, on cost, and
+  // this spend was never authorised.
   //
   // So this fired twice a day, unattended, spending on an unapproved provider,
   // and is the largest identified consumer of the monthly quota that later ran
   // out and took aircraft type + registration off every board with it. It was
-  // added by a Claude session (49665d92, 2026-08-26) on the strength of Nick
-  // saying "please use aerodatabox for now" the day before — which authorized
-  // USING the service, never BUYING from it.
+  // added by a Claude session (49665d92, 2026-08-26) on the strength of the
+  // owner approving USE of that service the day before — which is not
+  // authorisation to BUY from it.
   //
   // `scheduled()` in fids-proxy.js now returns immediately as well; the trigger
   // is removed here so Cloudflare does not invoke it at all. tests/
   // provider-ban.test.js fails if either protection is undone.
   //
   // DO NOT restore this trigger for RapidAPI. If flight-alert webhooks are
-  // wanted again, rebuild them on an approved provider (Flightradar24) with a
-  // spend cap Nick has agreed to first. See docs/FLIGHT-DATA-PROVIDERS.md.
+  // wanted again, rebuild them on an approved provider (Flightradar24) with an
+  // agreed spend cap first. See docs/FLIGHT-DATA-PROVIDERS.md.
   // ─────────────────────────────────────────────────────────────────────────
 
   "observability": { "enabled": true }

@@ -3,9 +3,8 @@
 // v23526 — THE BOARDING SHELF SHOWS THE AIRPORT CODE, AND THE GATE CLOSES
 // BEFORE THE AIRCRAFT LEAVES.
 //
-// Nick: "The Top Panel shelves when it swtches to boarding does not have
-// airport code yet as requested for all airlines", and "lets do gate topp and
-// a 5 min cutoff".
+// Requested: the top-panel shelves must carry the airport code once the board
+// switches to boarding, for all airlines; and the gate cut-off is five minutes.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -53,9 +52,8 @@ test('a label with no code is untouched', () => {
 
 test('the boarding row actually passes the code, for every airline', () => {
   // v23688 — the code moved OFF the end of the title and INTO the orb, so the
-  // shape this guards changed with it (Nick: "I would like the airport code to
-  // go in the orb YYC for isntance", then "Boarding panels to reflect new
-  // changes"). What it is guarding has not changed: the boarding shelf must
+  // shape this guards changed with it, and the boarding panels were asked to
+  // follow the rail. What it is guarding has not changed: the boarding shelf must
   // still hand the destination code over, for every carrier.
   const at = SRC.indexOf("_cell('ac-ico-dest'");
   assert.ok(at >= 0, 'the destination shelf must still exist');
@@ -71,8 +69,8 @@ test('the boarding row actually passes the code, for every airline', () => {
 });
 
 test('the boarding destination keeps the duplicate pair the rail keeps', () => {
-  // "In French Please also add Destination even if twice Destination |
-  // Destination" — the rail passes keepDup; the boarding shelf now does too.
+  // The destination label is a kept bilingual pair even when both languages
+  // render the same word — the rail passes keepDup; the boarding shelf now does too.
   // It cannot go through _cell's '|' splitter to get there, because that
   // splitter DROPS any segment equal to the first, which is exactly this pair.
   const at = SRC.indexOf("_cell('ac-ico-dest'");
@@ -88,7 +86,7 @@ test('the boarding destination keeps the duplicate pair the rail keeps', () => {
 test('the gate closes five minutes BEFORE departure, not after it', () => {
   const m = SRC.match(/var GATE_CLOSE_LEAD_MIN = (\d+);/);
   assert.ok(m, 'the cut-off must be a named constant, not a literal in a comparison');
-  assert.equal(m[1], '5', "Nick's call is a five-minute cut-off");
+  assert.equal(m[1], '5', 'the agreed cut-off is five minutes');
   assert.match(SRC, /minsToDep <= GATE_CLOSE_LEAD_MIN/,
     'the clock rule must use the constant');
   assert.doesNotMatch(SRC, /isFinite\(minsToDep\) && minsToDep <= -2/,
