@@ -22736,7 +22736,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23556';
+var FIDS_BUILD_TAG = 'v23630';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -37248,6 +37248,46 @@ function renderGateAd(index) {
 
   var totalSlots = slides.length;
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
+
+  // ── SCENE PIN (?scene=) — REVIEW AID, OFF UNLESS ASKED FOR ─────────────
+  // The centre panel cycles every few minutes, which makes reviewing any one
+  // scene a matter of waiting for it to come round again. With ?scene=wx (or
+  // bigcraft / welcome / any slide type in the deck) the rotation parks on the
+  // first slide of that type and stops advancing, so a scene can be looked at
+  // for as long as it takes to judge it.
+  //
+  // Deliberately inert without the parameter: no query string, no behaviour
+  // change, so nothing about the deployed boards or the stream is affected.
+  try {
+    var _pin = new URLSearchParams(location.search).get('scene');
+    if (_pin) {
+      var _pinIdx = -1;
+      for (var _pi = 0; _pi < slides.length; _pi++) {
+        if (slides[_pi] && String(slides[_pi].type || '').toLowerCase() === String(_pin).toLowerCase()) { _pinIdx = _pi; break; }
+      }
+      if (_pinIdx >= 0) {
+        slot = _pinIdx; _gateAdIndex = _pinIdx; window._gateAdCurrentIdx = _pinIdx;
+        // A pinned scene can be asked for before its data exists — the weather
+        // card returns false until the forecast lands, and the dispatcher's
+        // skip-the-dead-slide path would then drop us onto a different slide
+        // and stay there until the next rotation tick, minutes away. While
+        // pinned, retry shortly instead of giving up.
+        if (!window._gateScenePinRetry) {
+          window._gateScenePinRetry = setTimeout(function () {
+            window._gateScenePinRetry = null;
+            try {
+              if (window._gateAdCurrentIdx !== _pinIdx) {
+                window._gateAdAuthChange = true;
+                renderGateAd(_pinIdx);
+                window._gateAdAuthChange = false;
+              }
+            } catch (eR) { window._gateAdAuthChange = false; }
+          }, 1500);
+        }
+      }
+    }
+  } catch (ePin) {}
+
   var slide = slides[slot];
 
   // ── SLIDE LOCK (v22212) ────────────────────────────────────────────────
@@ -40346,8 +40386,14 @@ function _renderWxCard(el) {
     var _WX_LOCALE = { en:'en-US', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt-BR', ja:'ja', zh:'zh-CN', ar:'ar' };
     var _dayLine = function (d, lg, extraCls) {
       var loc = _WX_LOCALE[lg] || 'en-US';
-      var day = d.toLocaleDateString(loc, { weekday: 'long' });
-      day = day.charAt(0).toUpperCase() + day.slice(1);
+      // v23558 — THREE LETTERS, STILL IN BOTH LANGUAGES (Nick: 'it needs to
+      // still be in langauges but only the 3 letters'). The short form is
+      // locale-correct but punctuated in several of them — fr 'mer.', de
+      // 'Mi.', pt 'qua.' — so strip anything that is not a letter before
+      // trimming. CJK/Arabic short forms are already 1-3 glyphs and pass
+      // through untouched.
+      var day = d.toLocaleDateString(loc, { weekday: 'short' });
+      day = day.replace(/[^\p{L}]/gu, '').slice(0, 3).toUpperCase();
       // v23382 — ABBREVIATED month. A 7-across tile is roughly a seventh of the
       // card, and the long form blows straight through it: Spanish renders
       // '7 de septiembre' (15 chars), and because .wxc-dt is nowrap/overflow-
@@ -40357,8 +40403,12 @@ function _renderWxCard(el) {
       var date = (lg === 'en')
         ? d.toLocaleDateString(loc, { month: 'short' }) + ' ' + d.getDate()
         : d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
-      return '<div class="wxc-d' + extraCls + '">' + day + '</div>'
-        + '<div class="wxc-dt' + extraCls.replace('wxc-d-fr', 'wxc-dt-fr') + '">' + date + '</div>';
+      // v23558 — NO DATES (Nick: 'no need for dates just like that'). The day
+      // name alone fills the tile header band, which is what the reference
+      // layout shows. `date` is left computed but unused so the abbreviated-
+      // month logic above stays available if dates are ever wanted back.
+      void date;
+      return '<div class="wxc-d' + extraCls + '">' + day + '</div>';
     };
     var _dayTopEn = function (d) { return _dayLine(d, _wxLangs[0], ''); };
     var _dayBotFr = function (d) { return _wxLangs[1] ? _dayLine(d, _wxLangs[1], ' wxc-d-fr') : ''; };
@@ -40378,12 +40428,12 @@ function _renderWxCard(el) {
       try { if (el && el.isConnected && el.querySelector('.wxcard-wrap')) _renderWxCard(el); } catch (eR) {}
     });
     if (daily && daily.time && daily.time.length) {
-      for (var i = 0; i < Math.min(7, daily.time.length); i++) {
+      for (var i = 0; i < Math.min(5, daily.time.length); i++) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
-        tiles += '<div class="wxc-day">' + _dayTopEn(dt)
+        tiles += '<div class="wxc-day">'
+          + '<div class="wxc-dhead">' + _dayTopEn(dt) + _dayBotFr(dt) + '</div>'
           + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
-          + _dayBotFr(dt)
           + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
           + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
         nDays++;
@@ -40399,14 +40449,14 @@ function _renderWxCard(el) {
         var hr = Number(String(h.time).slice(11, 13));
         if (hr >= 11 && hr <= 16 && typeof h.code !== 'undefined') days[day].codes[h.code] = (days[day].codes[h.code] || 0) + 1;
       });
-      order.sort().slice(0, 7).forEach(function (k) {
+      order.sort().slice(0, 5).forEach(function (k) {
         var dd = days[k];
         var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
         var dt2 = new Date(k + 'T12:00:00');
         var ich = _wxAnimIcon(code, false);
-        tiles += '<div class="wxc-day">' + _dayTopEn(dt2)
+        tiles += '<div class="wxc-day">'
+          + '<div class="wxc-dhead">' + _dayTopEn(dt2) + _dayBotFr(dt2) + '</div>'
           + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
-          + _dayBotFr(dt2)
           + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
         nDays++;
       });
@@ -40421,17 +40471,26 @@ function _renderWxCard(el) {
       var _hNow = Date.now();
       var _hFmt = _hTz ? { timeZone: _hTz, hour: 'numeric', hour12: true } : { hour: 'numeric', hour12: true };
       var _hFmt24 = _hTz ? { timeZone: _hTz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' };
-      var _hrs = (wx.hourly || [])
+      // v23558 — FIVE PERIODS ACROSS THE DAY, not six consecutive hours
+      // (Nick: 'every few hours maybe like 5 periods throughout the day').
+      // Six back-to-back hours only ever showed the next quarter-day and the
+      // icons barely changed between tiles. Stepping 3h gives ~12 hours of
+      // real spread — now, +3, +6, +9, +12 — so the strip actually tells you
+      // how the day moves. Falls back to whatever is available if the feed is
+      // short (a late-evening fetch can return fewer than 13 usable hours).
+      var _hAll = (wx.hourly || [])
         .filter(function (h) { return h && typeof h.temp === 'number' && h.ts && h.ts >= _hNow - 1800000; })
-        .sort(function (a, b) { return a.ts - b.ts; })
-        .slice(0, 6);
+        .sort(function (a, b) { return a.ts - b.ts; });
+      var _hSlots = 5, _hStep = 3, _hrs = [];
+      for (var _hi = 0; _hi < _hAll.length && _hrs.length < _hSlots; _hi += _hStep) _hrs.push(_hAll[_hi]);
+      if (_hrs.length < _hSlots) _hrs = _hAll.slice(0, _hSlots);
       _hrs.forEach(function (h) {
         var hd = new Date(h.ts);
         var lbl = hd.toLocaleTimeString('en-US', _hFmt).replace(/:00/, '').replace(/\s/g, ' '); // "3 PM"
         var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
         var hNight = h24 < 6 || h24 >= 21;
         var hic = _wxAnimIcon(h.code, hNight);
-        hoursHtml += '<div class="wxc-hour"><div class="wxc-hr">' + lbl + '</div>'
+        hoursHtml += '<div class="wxc-hour"><div class="wxc-dhead"><div class="wxc-hr">' + lbl + '</div></div>'
           + '<img class="wxanim" data-wx="' + hic + '" src="/logos/weather/animated/' + hic + '.svg" alt="">'
           + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
       });
@@ -40441,6 +40500,134 @@ function _renderWxCard(el) {
     // rebuilding the whole card for it reloaded the big hero icon — the
     // 'bump di bump, almost twice at the beginning' (Nick). With the split,
     // late strip data swaps in UNDER the untouched hero.
+    // ══ TWO-UP TOP: ORIGIN AT DEPARTURE | DESTINATION ═══════════════════════
+    // Nick: "I would like One side Moncton or wheever its leaving from on left
+    // at time of departure then destination on the right", "this is the top".
+    //
+    // The card already fetches BOTH airports — gate-render calls
+    // fetchTomorrowWeather() for the departure and the destination (see the
+    // Promise.all around fids-core.js:16355) — so the origin's forecast is
+    // already in TOMORROW_WX and no new request is made here.
+    //
+    // The left panel is the origin AT ITS DEPARTURE HOUR, not "now": a 6:15pm
+    // departure read at 10am would show the wrong sky. tioArrivalWeather() is
+    // a generic "this airport at this timestamp" hourly lookup despite its
+    // name, so it serves both sides; each falls back to `current` when the
+    // hourly window does not cover the time (a departure more than ~48h out,
+    // or a short feed).
+    var _wxOrig = '';
+    try { _wxOrig = String(window._gateIata || '').toUpperCase(); } catch (eO) {}
+    var _wxDepTs = 0, _wxArrTs = 0;
+    try {
+      _wxDepTs = (cf && (cf._depTs || cf._sortTs)) || 0;
+      _wxArrTs = (cf && cf._arrTs) || 0;
+      if (!_wxArrTs && _wxDepTs) {
+        // _durationMins is frequently absent on the gate flight, which left the
+        // arrival side with no clock at all. The left rail solves this with
+        // estimateFlightDuration() (see fids-core.js:15627) — same fallback
+        // here so both sides always carry a time.
+        var _wxDur = (cf && cf._durationMins) || 0;
+        if (!_wxDur && typeof estimateFlightDuration === 'function') {
+          try { _wxDur = estimateFlightDuration(_wxOrig, dest) || 0; } catch (eD) {}
+        }
+        if (_wxDur) _wxArrTs = _wxDepTs + _wxDur * 60000;
+      }
+    } catch (eT) {}
+
+    var _wxAtTime = function (iata, ts) {
+      var w = (typeof TOMORROW_WX !== 'undefined') ? TOMORROW_WX[iata] : null;
+      if (!w) return null;
+      if (ts && typeof tioArrivalWeather === 'function') {
+        try {
+          var a = tioArrivalWeather(iata, ts);
+          if (a && typeof a.temp === 'number') return a;
+        } catch (eA) {}
+      }
+      return (w.current && typeof w.current.temp === 'number') ? w.current : null;
+    };
+    var _wxNightAt = function (iata, ts) {
+      try {
+        var z = (AP[iata] || {}).tz;
+        var d = ts ? new Date(ts) : new Date();
+        var h = Number(d.toLocaleTimeString('en-GB', z ? { timeZone: z, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }).slice(0, 2));
+        return h < 6 || h >= 21;
+      } catch (eN) { return false; }
+    };
+    var _wxCityOf = function (iata) {
+      var c = iata;
+      try { c = (typeof CITY !== 'undefined' && CITY[iata]) || (AP[iata] && AP[iata].city) || iata; } catch (eC) {}
+      if (typeof tc === 'function') { try { c = tc(c); } catch (eC2) {} }
+      return c;
+    };
+    var _wxClock = function (iata, ts) {
+      if (!ts) return '';
+      try {
+        var z = (AP[iata] || {}).tz;
+        return new Date(ts).toLocaleTimeString('en-US',
+          z ? { timeZone: z, hour: 'numeric', minute: '2-digit', hour12: true }
+            : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s/g, ' ');
+      } catch (eK) { return ''; }
+    };
+
+    var _wxSide = function (iata, ts, whenLbl, cls, shortLbl) {
+      var w = _wxAtTime(iata, ts);
+      if (!w) return '';
+      var sIc = _wxAnimIcon(w.code, _wxNightAt(iata, ts));
+      var when = _wxClock(iata, ts);
+      // The city + time pair goes inside a .wxc-dhead, the SAME header-band
+      // element the hour and day tiles use. Nick: "BE CONSISTENT" — the top
+      // block was the only section on the card not built as a tile, so it read
+      // as a different component sitting above the forecast rather than the
+      // first of three matching panels. Same wrapper here means it inherits
+      // the same band styling for free and can never drift from the tiles
+      // again.
+      // Nick: "I just meant like the others such as NEXT HOURS etc" — the
+      // Departure/Arrival label is a SECTION TITLE, so it is emitted above the
+      // panel exactly as .wxc-title sits above the hour and day grids, not
+      // crammed into the panel's header band. That also stops the band running
+      // to three lines, which had pushed the 5-day row 28px into the credit.
+      // The band keeps what identifies the panel: the city and its clock.
+      return '<div class="wxc-sidewrap ' + cls + '-wrap">'
+        + '<div class="wxc-title wxc-side-title">' + whenLbl + '</div>'
+        + '<div class="wxc-side ' + cls + '">'
+        +   '<div class="wxc-dhead">'
+        +     '<div class="wxc-side-city">' + _wxCityOf(iata) + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + _dispIata(iata) + '</span></div>'
+        +     (when ? '<div class="wxc-side-when">' + (shortLbl ? shortLbl + ' ' : '') + when + '</div>' : '')
+        +   '</div>'
+        +   '<img class="wxanim" data-wx="' + sIc + '" src="/logos/weather/animated/' + sIc + '.svg" alt="">'
+        +   '<div class="wxc-temp">' + dT(w.temp) + '</div>'
+        +   '<div class="wxc-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
+        + '</div></div>';
+    };
+
+    // Nick: "it should be one side Departure Weather then Arrival Weather".
+    // Each panel now names what it IS rather than just tagging a time, which
+    // also retires the card-level "Arrival Weather" kicker above — that kicker
+    // labelled the whole card as arrival even though half of it is the
+    // departure airport, so it was both redundant and wrong.
+    var _depLbl = _wxPair({ en:'Departure Weather', fr:'Météo au départ', es:'Clima a la salida', de:'Wetter bei Abflug', it:'Meteo alla partenza', pt:'Clima na partida', ja:'出発地の天気', zh:'出发地天气', ar:'طقس المغادرة' });
+    var _arrLbl = _wxPair({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter bei Ankunft', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' });
+    // Nick: "beside the time put Departure for Monvton Arrival for Calgary".
+    // The panel title carries the long form; the band carries the short one
+    // next to the clock, so the line reads "Departure | Départ 6:15 PM".
+    //
+    // "I do not want the text seperated unless its the full sentence" — so the
+    // short label is passed through _wxPair like every other bilingual string
+    // on this board, joining two COMPLETE words with the separator. Nothing
+    // here is a fragment of a phrase split across the bar.
+    var _depShort = _wxPair({ en:'Departure', fr:'Départ', es:'Salida', de:'Abflug', it:'Partenza', pt:'Partida', ja:'出発', zh:'出发', ar:'المغادرة' });
+    var _arrShort = _wxPair({ en:'Arrival', fr:'Arrivée', es:'Llegada', de:'Ankunft', it:'Arrivo', pt:'Chegada', ja:'到着', zh:'到达', ar:'الوصول' });
+    var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depLbl, 'wxc-side-dep', _depShort) : '';
+    var _sideR = _wxSide(dest, _wxArrTs, _arrLbl, 'wxc-side-arr', _arrShort);
+    // If the origin has no usable reading, fall back to the single destination
+    // hero rather than rendering a lopsided two-up with one empty half.
+    var _wxHeroTwoUp = (_sideL && _sideR)
+      ? '<div class="wxc-hero wxc-hero-2up">' + _sideL + _sideR + '</div>'
+      : '<div class="wxc-hero">'
+        + '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
+        + '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div></div>'
+        + '</div>';
+
     var _wxMainHtml =
         '<div class="wxc-globe" aria-hidden="true"></div>'
       + '<div class="wxcard-main">'
@@ -40448,21 +40635,26 @@ function _renderWxCard(el) {
       +     '<div><div class="wxc-kicker">' + _wxPair({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter am Ziel', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' }) + '</div>'
       +     '<div class="wxc-city">' + city + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + _dispIata(dest) + '</span></div></div>'
       +   '</div>'
-      +   '<div class="wxc-hero">'
-      +     '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
-      +     '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div>'
-      +     '<div class="wxc-meta">'
-      +       (typeof cur.feelsLike === 'number' ? '<span>' + _mlbl('feels') + ' <b>' + dT(cur.feelsLike) + '</b></span>' : '')
-      +       (typeof cur.windSpeed === 'number' ? '<span>' + _mlbl('wind') + ' <b>' + Math.round(cur.windSpeed) + ' km/h</b></span>' : '')
-      +       (typeof cur.humidity === 'number' ? '<span>' + _mlbl('hum') + ' <b>' + Math.round(cur.humidity) + '%</b></span>' : '')
-      +     '</div></div>'
-      +   '</div>'
+      +   _wxHeroTwoUp
       + '</div>';
+    // Nick: "you need to add for every middle and last row that its Calgary |
+    // YYC" — with the top block now showing BOTH airports, these two rows were
+    // the only part of the card that did not say whose forecast it is, and a
+    // reader could reasonably take them for the departure airport's.
+    // The city is appended after a middot so the bilingual pair keeps the bar
+    // to itself ("I do not want the text seperated unless its the full
+    // sentence") rather than chaining three bars in one line.
+    var _wxForCity = ' <span class="wxc-bar">|</span> ' + _wxCityOf(dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest);
     var _wxStripsHtml =
-        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
+        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxForCity + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
       + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
-            en: nDays + '-DAY', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
-          }) + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
+            // Nick: "5-DAY FORECAST Forecast is missing". The English and German
+            // strings said only "5-DAY" / "5-TAGE" — a duration, not a heading —
+            // while every other language here already carried the noun
+            // (PRÉVISIONS, PRONÓSTICO, PREVISIONI, PREVISÃO, 予報, 预报, توقعات).
+            // The two odd ones out now say what the row actually is.
+            en: nDays + '-DAY FORECAST', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE-VORHERSAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
+          }) + _wxForCity + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
     // v23452 — THE SOURCE CREDIT. Nick: 'say at the bottom of the screen
     // Weather provided generously by MET Norway'.
     //
@@ -40488,7 +40680,37 @@ function _renderWxCard(el) {
     // matches the gate's airline theming (same accentTint the other weather
     // panels use; AC red auto-swaps to charcoal to avoid muddy maroon). Folded
     // into the cache key so an airline change re-tints.
-    var _wxBg = 'linear-gradient(135deg, #0d2440 0%, #164a7c 100%)';
+    // ══ THE CARD'S GROUND IS THE SKY PHOTO ═════════════════════════════════
+    // Nick supplied a sun/lens-flare sky and asked for it as the background.
+    //
+    // IT HAS TO BE SET HERE, NOT IN CSS. A few lines down this value is
+    // written as an INLINE style with !important — and inline !important is
+    // unbeatable from a stylesheet, so a display-overrides rule for the card
+    // background is silently ignored no matter how long its :not(#_) chain.
+    // (Confirmed empirically: the CSS rule computed as "MISSING" on the live
+    // card while the image itself loaded fine at 1920x1080.)
+    //
+    // The scrim is not decoration. The photo's top-left is blown to near-white
+    // around the sun, which is exactly where the departure/arrival pair sits,
+    // and every label on this card is white — so a dark wash is composited
+    // over the image, heavier at the top where the flare is and easing toward
+    // the bottom where the sky is already deep enough to carry white type.
+    // Spring sky — sun rays from the top with a grass band along the foot.
+    // 'center bottom' keeps that grass in frame: with cover on a card that is
+    // squarer than the 4:3 source, a centred crop cuts the bottom quarter off
+    // and the grass — the reason for this image over the plain sun — is the
+    // first thing lost.
+    var _wxSkyUrl = '/logos/Backgrounds/wx-sky-spring.jpg';
+    // Scrim lightened hard (was .62/.42/.30, top-weighted). Nick: "Doesnt seem
+    // bright enough on top weird" — correct, and the reason it was that dark
+    // no longer holds. The heavy top existed to keep white text legible where
+    // it sat on the blown-out sky; since then every string moved onto an
+    // opaque plate, so the scrim is only tinting the margins and the gaps
+    // between tiles. It now does the one job still left — stopping the sky
+    // from competing with the plates — at roughly a third of the strength,
+    // and no longer leans on the top.
+    var _wxBg = 'linear-gradient(180deg, rgba(4,26,48,0.16) 0%, rgba(4,26,48,0.14) 45%, rgba(4,26,48,0.20) 100%) center/cover no-repeat,'
+              + " url('" + _wxSkyUrl + "') center bottom/cover no-repeat, #1c6fb0";
     try {
       // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
       // same source the media frame reads) — the static AIRLINE_ACCENT table
@@ -40498,7 +40720,14 @@ function _renderWxCard(el) {
       var _wxGw = document.querySelector('.g8-wrap');
       if (_wxGw) _wxAcc = (getComputedStyle(_wxGw).getPropertyValue('--airline-accent') || '').trim();
       if (!_wxAcc && typeof getAirlineAccent === 'function') _wxAcc = getAirlineAccent((cf && cf.airline) || '');
-      if (_wxAcc && typeof accentTint === 'function') _wxBg = accentTint(_wxAcc, 0.42);
+      // The accent tint that used to own this ground is retired: the card now
+      // carries the sky photo. Per-carrier identity did not disappear with it —
+      // it moved to the tiles, which take var(--airline-r1), the airline's
+      // BANNER colour (see display-overrides). That is a deliberate swap: the
+      // old tint used the SECONDARY accent, which for WestJet was the same
+      // teal as the card behind it, and the same-hue-on-same-hue is what Nick
+      // called "that ugly color".
+      void _wxAcc;
     } catch (e) {}
     // v22199 — the accent used to be part of the rebuild signature, but it's
     // read from a LIVE computed var that is briefly empty right after a gate

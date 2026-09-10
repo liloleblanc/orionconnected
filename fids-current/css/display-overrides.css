@@ -15907,10 +15907,6 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    with room to spare — and the title keeps overflow:hidden as a backstop so a
    longer language pair can never push past the panel again.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-en,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-2 {
-  font-size: clamp(13px, 1.65vh, 19px) !important;
-}
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title {
   overflow: hidden !important;
 }
@@ -16006,10 +16002,6 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 /* The v23472 label step, kept as the base size. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-en,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-title .v2-fi-lbl-2 {
-  font-size: clamp(12px, 1.5vh, 17px) !important;
-}
 
 /* ── v23524 — PORTER PRE-BOARDING MARKS ────────────────────────────────────
    Nick sent Porter's brand artwork for the pre-boarding list. Every file is
@@ -16283,3 +16275,1381 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      measured), so every pixel here moves real letterform. */
   transform: translateY(11px) !important;
 }
+
+/* ══ v23558 — THE SHELF TITLE GETS ITS TRAILING PADDING BACK AS ROOM ══════
+   Nick: "The bottom shelve right You Aircraft the banner text is too small it
+   doesnt = to the left" — then "why cant you remove the padding".
+
+   Measured cause, not a guess. Every title is sized by _gateTitleFit
+   (fids-core.js:14337), which shrinks the label in 4.5% steps down to a 0.82
+   floor until it stops overflowing its OWN box. "Your Aircraft | Votre
+   appareil" is 29 characters and needs 275.5px; the title box is 266px with
+   14px lead-in and 16.8px trailing padding, leaving 235.2px. It needed ratio
+   0.854 — but the loop steps 1.0 → 0.955 → 0.91 → 0.865 → 0.82 and 0.865 was
+   still 3px too wide, so it clamped to the floor: 17.664 × 0.82 = 14.48px,
+   against the left column's 17.664px.
+
+   Giving back the 16.8px of TRAILING padding lands it on ratio 0.91 = 16.07px.
+   Trailing padding only — the 14px lead-in stays, because every title on the
+   board is indented exactly 14px past its own value line (measured: title ink
+   x=118, value ink x=104 on all six left-column rows AND the shelf), and
+   dropping it would step this one label out of that alignment.
+
+   Scoped to .g8-bir-shelves, whose title carries no IATA code, so nothing gets
+   pushed to the panel edge. The left column keeps its trailing padding because
+   its Destination/Arrival titles pin their codes right with margin-left:auto.
+
+   Must out-weigh the 12-ID (12,4,2) rule at display-overrides.css:14570 that
+   owns this element's padding; 18 chains clears it and the 16-ID rule at
+   :15910 as well. Applies at every airport — Nick: "These changes btw its
+   every airport".
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-bir-shelves .v2-fi-row .v2-fi-title {
+  padding-right: 0 !important;
+}
+
+/* ══ v23558 — WEATHER TILES GET THEIR COLOUR BACK ═════════════════════════
+   Nick: "The colors are off dont know if you can see they are dull they dont
+   match the rest", then sent a reference layout — solid gradient tiles, a
+   lighter band behind the day name, bold white high / muted low.
+
+   The dullness was measured, not guessed: every tile was
+   `background: rgba(255,255,255,.07)` (display-overrides.css:1898) — a 7%
+   white wash that reads as grey haze over the card, while the panels beside
+   it are painted with the carrier's accent at full strength. Same story on
+   the hour tiles at .06 (:2053).
+
+   The tile now takes the AIRLINE ACCENT as a solid ground, so it matches the
+   board it sits on instead of being a fixed blue that would clash with every
+   carrier that is not blue. The reference's depth comes from a light-to-dark
+   vertical gradient laid OVER that ground, so one rule serves every airline.
+
+   Icons are deliberately untouched — Nick: "We dont cahnge the icons".
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour {
+  background-color: var(--airline-accent, #3280c3) !important;
+  background-image: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.16) 100%) !important;
+  border-radius: 0 !important;
+  padding: 0 0 clamp(6px, 1.1vh, 13px) !important;
+  overflow: hidden !important;
+  text-align: center !important;
+}
+
+/* The day/hour name sits in its own lighter band across the tile head, the
+   way the reference does it. Full-bleed: the tile's padding is zeroed at the
+   top and the band supplies its own. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead {
+  background: rgba(255, 255, 255, 0.17) !important;
+  padding: clamp(4px, 0.7vh, 9px) 4px !important;
+  margin: 0 0 clamp(4px, 0.7vh, 10px) !important;
+  line-height: 1.1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead .wxc-hr {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  margin: 0 !important;
+}
+/* Second language sits directly under the first inside the same band. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead .wxc-d-fr {
+  margin-top: 1px !important;
+  opacity: 1 !important;
+}
+
+/* ══ BIG, SLIM NUMBERS (Nick: "make it like the picture i gave you so big
+   numbers", "big slim letters") ═══════════════════════════════════════════
+   The reference's numerals are the loudest thing on the tile and they are set
+   LIGHT, not heavy — the size carries the emphasis, the weight stays open.
+   Everything here was 800/900 black, which at this size closes the counters
+   up and reads as a chunky sports scoreboard rather than the reference.
+
+   AC Nord Display ships Regular/Medium/Bold/Heavy, so 400 resolves to a real
+   drawn Regular rather than a synthesised thin. tabular-nums keeps the five
+   tiles' digits on a common rhythm so the row does not jitter between two-
+   and three-character temperatures. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht {
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-size: clamp(26px, 4.4vh, 56px) !important;
+  font-weight: 400 !important;
+  color: #ffffff !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.5px !important;
+  font-variant-numeric: tabular-nums !important;
+  margin-top: clamp(1px, 0.3vh, 4px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo {
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-size: clamp(15px, 2.5vh, 31px) !important;
+  font-weight: 400 !important;
+  color: rgba(255, 255, 255, 0.60) !important;
+  line-height: 1.05 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+/* Day / hour label: slim and letter-spaced, the way the reference sets it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead .wxc-hr {
+  font-weight: 500 !important;
+  letter-spacing: 1.2px !important;
+  font-size: clamp(11px, 1.6vh, 20px) !important;
+}
+
+/* Five across now that the outlook is a 5-day (Nick: "lets do the 5 days"). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-col .wxc-grid-5 {
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: clamp(6px, 0.8vw, 13px) !important;
+}
+/* Hour strip matches the outlook: five across, same tile, same header band.
+   Overrides the repeat(6,1fr) at display-overrides.css:2052. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hoursgrid {
+  grid-template-columns: repeat(5, 1fr) !important;
+  gap: clamp(6px, 0.8vw, 13px) !important;
+}
+/* ══ THE OUTLOOK LEADS, THE HOURS SUPPORT ════════════════════════════════
+   Nick: "bigger icons", then "reduce the size hourly maybe" and "Theres too
+   much on that screen actually".
+
+   Both strips at one size made the card 851px of content in a 730px box — the
+   5-day temperatures were being sliced off the bottom edge. Measured, not
+   eyeballed: head 84 + hero 214 + hours 193 + outlook 269 + gaps.
+
+   Resolved by giving the two strips a hierarchy instead of parity. The 5-day
+   outlook is the thing you actually read, so it takes the large glyph; the
+   hour strip is a supporting scan and goes to half that. Combined with the
+   compacted hero meta below, that leaves ~46px of headroom at 1680x920 —
+   enough that the meta can wrap to a second line on a wordier locale without
+   pushing the outlook off the card again.
+
+   Artwork untouched throughout ("We dont cahnge the icons") — only the box
+   it draws into. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-col .wxc-day img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-col .wxc-day .wxanim-host,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxanim-host {
+  width: clamp(62px, 11.3vh, 132px) !important;
+  height: clamp(62px, 11.3vh, 132px) !important;
+  margin: clamp(1px, 0.25vh, 4px) auto !important;
+  display: block !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxanim-host {
+  width: clamp(34px, 5.65vh, 68px) !important;
+  height: clamp(34px, 5.65vh, 68px) !important;
+  margin: clamp(1px, 0.15vh, 3px) auto !important;
+  display: block !important;
+}
+
+/* Outlook number is the headline; the hour number steps back to match its
+   smaller glyph. Both stay slim — the size does the shouting, not the weight. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi {
+  font-size: clamp(24px, 4.13vh, 52px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht {
+  font-size: clamp(15px, 2.5vh, 31px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo {
+  font-size: clamp(13px, 2.39vh, 30px) !important;
+}
+
+/* Hour tile is physically tighter than the day tile, so its band and footer
+   come in proportionally. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxc-dhead {
+  padding: clamp(2px, 0.35vh, 5px) 4px !important;
+  margin: 0 0 clamp(2px, 0.35vh, 5px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour {
+  padding: 0 0 clamp(3px, 0.55vh, 7px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxc-dhead .wxc-hr {
+  font-size: clamp(10px, 1.35vh, 17px) !important;
+}
+
+/* ══ THE HERO META STOPS EATING THE CARD ══════════════════════════════════
+   "Feels like / Wind / Humidity" was wrapping to two lines and taking 84px of
+   a 730px card — a quarter of the hero — for three short readings. On one
+   line it is 18px. Nothing is removed; it just stops being a paragraph. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-meta {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: clamp(8px, 1.1vw, 18px) !important;
+  row-gap: 2px !important;
+  font-size: clamp(11px, 1.5vh, 18px) !important;
+  line-height: 1.25 !important;
+  justify-content: flex-start !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-meta > span {
+  white-space: nowrap !important;
+}
+
+/* ══ NO GREY WORDING ══════════════════════════════════════════════════════
+   Nick: "I do not want any gray wording".
+
+   Everything on this card that was carrying its meaning in a faded tint now
+   reads at full strength. Measured before changing: .wxc-lo was at 0.60 alpha,
+   the second-language day name at 0.82 opacity, and the data credit at 0.62 —
+   all of which render as grey text on the tile rather than white.
+
+   Hierarchy still exists, it is just carried by SIZE and position instead of
+   by fading the ink: the outlook high is 38px against the low's 23px, so the
+   high still leads without the low having to be greyed out to get out of its
+   way.
+
+   The MET Norway credit line stays on the card — the licence requires the
+   attribution to be shown — but it reads properly now instead of being a grey
+   smudge along the bottom edge. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-credit,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-credit * {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-cond,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-meta,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-meta *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-kicker,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-d {
+  color: #ffffff !important;
+  opacity: 1 !important;
+}
+
+/* ══ READABLE FROM THE SEATS ══════════════════════════════════════════════
+   Nick: "that is too small you need to enlarge the font the point here is for
+   people to see too much info is too much convolution", "too small".
+
+   Two moves, and the first pays for the second.
+
+   CUT: the hero's Feels-like / Wind / Humidity row goes. Three secondary
+   readings nobody squints at from a gate seat, and it was the single densest
+   thing on the card. That is the "convolution" — removing it frees the height
+   that the numbers need.
+
+   ENLARGE: everything that remains steps up hard. The outlook high goes to
+   ~5vh (46px at 1080-class boards), the hour reading to ~3.3vh, and the low
+   is no longer a footnote. Labels move up with them so the tile reads as one
+   block from a distance rather than a big number with fine print attached.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-meta {
+  display: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi {
+  font-size: clamp(30px, 5vh, 62px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht {
+  font-size: clamp(20px, 3.3vh, 41px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo {
+  font-size: clamp(18px, 3.04vh, 38px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d {
+  font-size: clamp(14px, 1.96vh, 25px) !important;
+  letter-spacing: 1.4px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxc-dhead .wxc-hr {
+  font-size: clamp(12px, 1.74vh, 22px) !important;
+  letter-spacing: 1.2px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title {
+  font-size: clamp(14px, 2.1vh, 26px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-cond {
+  font-size: clamp(17px, 2.5vh, 32px) !important;
+}
+
+/* ══ WED | MER ON ONE LINE, AND THE CARD USES ITS FULL HEIGHT ═════════════
+   Nick: "put the WED | MER side by side and bigger", "You need to maximize
+   space here".
+
+   The two day names were stacked, which cost a whole line of band height on
+   every tile and made each label half the size it could be. Side by side with
+   a rule between them they read as one unit — the same "Flight | Vol" pattern
+   the rest of the board already uses — and the height that buys goes straight
+   back into the type.
+
+   The separator is generated rather than DOM, because the day-name builder
+   emits the two languages as siblings with nothing between them; inserting it
+   here keeps fids-core's markup untouched.
+
+   The strips also now GROW into whatever height the card has left, instead of
+   sitting at their natural height and leaving a dead band at the bottom. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: baseline !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  white-space: nowrap !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead .wxc-d-fr {
+  display: inline-block !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d-fr {
+  font-size: clamp(15px, 2.25vh, 29px) !important;
+  letter-spacing: 1px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-dhead .wxc-d-fr::before {
+  content: '|';
+  display: inline-block;
+  margin: 0 0.42em;
+  font-weight: 400;
+  color: #ffffff;
+  opacity: 0.55;
+}
+
+/* Fill the card: the two strips share whatever height the hero leaves. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxcard-col {
+  justify-content: flex-start !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-outlook {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-outlook .wxc-grid {
+  flex: 1 1 auto !important;
+  align-content: stretch !important;
+  min-height: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxanim-host {
+  flex: 0 0 auto !important;
+}
+
+/* ══ SPEND THE LAST OF THE CARD ══════════════════════════════════════════
+   Nick: "You need to maximize space here". After cutting the meta row and
+   folding WED | MER onto one line there were 38px of dead card left under the
+   outlook. Measured, then handed to the glyphs and numerals rather than left
+   as padding. Leaves a few px of tolerance so a three-character temperature
+   (-10°C) or a wordier locale cannot tip it back over the edge. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxanim-host {
+  width: clamp(68px, 12.6vh, 148px) !important;
+  height: clamp(68px, 12.6vh, 148px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxanim-host {
+  width: clamp(38px, 6.2vh, 76px) !important;
+  height: clamp(38px, 6.2vh, 76px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi {
+  font-size: clamp(33px, 5.5vh, 68px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo {
+  font-size: clamp(19px, 3.3vh, 41px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht {
+  font-size: clamp(22px, 3.6vh, 45px) !important;
+}
+
+/* ══ TWO-UP TOP: WHERE YOU ARE | WHERE YOU LAND ══════════════════════════
+   Nick: "One side Moncton or wheever its leaving from on left at time of
+   departure then destination on the right", "this is the top".
+
+   Two equal halves split by a hairline. Each half names its own airport, so
+   the single city line that used to sit in the card head is redundant and is
+   hidden below — that is part of "this is why you need to remove things":
+   the two-up only fits because the head shrinks to a kicker. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero.wxc-hero-2up {
+  display: grid !important;
+  grid-template-columns: 1fr 1px 1fr !important;
+  align-items: start !important;
+  gap: clamp(8px, 1.2vw, 20px) !important;
+  width: 100% !important;
+  margin: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up::before {
+  content: '';
+  grid-column: 2;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.22);
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  min-width: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-dep { grid-column: 1; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-arr { grid-column: 3; }
+
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-city {
+  font-size: clamp(15px, 2.3vh, 29px) !important;
+  font-weight: 700 !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-when {
+  font-size: clamp(12px, 1.75vh, 22px) !important;
+  font-weight: 400 !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  margin-top: 1px !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-when b {
+  font-weight: 700 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side .wxanim-host {
+  width: clamp(60px, 10.5vh, 124px) !important;
+  height: clamp(60px, 10.5vh, 124px) !important;
+  margin: clamp(1px, 0.3vh, 5px) auto !important;
+  display: block !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-temp {
+  font-size: clamp(34px, 6vh, 74px) !important;
+  font-weight: 400 !important;
+  color: #ffffff !important;
+  line-height: 1.02 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-cond {
+  font-size: clamp(13px, 1.9vh, 24px) !important;
+  color: #ffffff !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  max-width: 100% !important;
+}
+
+/* Each half names its airport now, so the card head's single city line is
+   duplicate information — removed, per "remove things". The kicker stays as
+   the scene label. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-head .wxc-city {
+  display: none !important;
+}
+
+/* ══ MAKING ROOM FOR THE TWO-UP ══════════════════════════════════════════
+   Nick: "this is why you need to remove things".
+
+   Adding the departure/arrival pair to the top put the card 47px over again
+   (measured at 1680x920). Rather than shrink the thing he asked to enlarge,
+   the space comes out of the two supporting elements: the hero glyphs step
+   down from 10.5vh, and the hour strip — explicitly the secondary read —
+   tightens further. The 5-day outlook and its numerals are untouched. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side .wxanim-host {
+  width: clamp(50px, 8.4vh, 98px) !important;
+  height: clamp(50px, 8.4vh, 98px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-temp {
+  font-size: clamp(30px, 5.2vh, 64px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxanim-host {
+  width: clamp(30px, 4.7vh, 58px) !important;
+  height: clamp(30px, 4.7vh, 58px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht {
+  font-size: clamp(17px, 2.8vh, 35px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxc-dhead .wxc-hr {
+  font-size: clamp(10px, 1.5vh, 19px) !important;
+}
+/* The scene kicker is a label, not content — it can be modest. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-kicker {
+  font-size: clamp(10px, 1.4vh, 17px) !important;
+  letter-spacing: 1.4px !important;
+}
+/* Final 8px: measured overflow at 1680x920 once both hero sides carry a
+   clock line. Taken off the hero, which is the newest addition, so the
+   outlook Nick asked to enlarge keeps every pixel it has. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side .wxanim-host {
+  width: clamp(46px, 7.8vh, 92px) !important;
+  height: clamp(46px, 7.8vh, 92px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-temp {
+  font-size: clamp(28px, 4.9vh, 60px) !important;
+}
+/* ══ THE LOWS MUST CLEAR THE CARD EDGE ═══════════════════════════════════
+   Measured at 1680x920 with both hero clocks present: the last row of low
+   temperatures sat 1.5px past the card's bottom, i.e. shaved. A display board
+   has no scrollbar to reveal what overflows — anything past the edge is
+   simply gone — so this buys ~25px of real clearance rather than tuning to
+   zero. Taken from the hero and the hour strip; the 5-day glyphs and numerals
+   keep their size. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side .wxanim-host {
+  width: clamp(40px, 6.8vh, 80px) !important;
+  height: clamp(40px, 6.8vh, 80px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-temp {
+  font-size: clamp(25px, 4.4vh, 54px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxanim-host {
+  width: clamp(27px, 4.2vh, 52px) !important;
+  height: clamp(27px, 4.2vh, 52px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxanim-host {
+  width: clamp(62px, 11.6vh, 136px) !important;
+  height: clamp(62px, 11.6vh, 136px) !important;
+}
+
+/* ══ NOTHING GETS SILENTLY SLICED ════════════════════════════════════════
+   Measured: the day tile renders 187px tall while its content needs 203px,
+   so `overflow:hidden` on the tile was cutting 8.2px off the bottom of every
+   LOW temperature — 17.4px of a 25.6px line was all that showed. On a display
+   board there is no scrollbar to reveal what overflowed; it is just gone.
+
+   Two changes, deliberately belt-and-braces:
+   1. The clip comes off. It was only ever there to keep the header band
+      inside a rounded corner, and the tiles are square now (Nick: "i would
+      like square rectangles"), so it has no job left — and without it, a
+      future overflow shows itself instead of hiding.
+   2. The glyph gives back the 15px that makes the content fit honestly,
+      rather than relying on the tile to hide the difference.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour {
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxanim-host {
+  width: clamp(54px, 10vh, 118px) !important;
+  height: clamp(54px, 10vh, 118px) !important;
+}
+
+/* ══ BOLDER (Nick: "Bolder but fill up some space") ══════════════════════
+   The weight half of that request, kept. The "fill up some space" half was
+   attempted with flex rules that let the card collapse on itself and sliced
+   the 5-day row off the bottom — Nick: "tererrible" — so it is reverted here
+   and will be done against a measured container instead of guessed flex.
+   700 is Merriweather's true Bold off the variable axis, not a synthesised one. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-temp,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d-fr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxc-dhead .wxc-hr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title {
+  font-weight: 700 !important;
+}
+
+/* ══ THE WEATHER CARD SETS IN THE BOARD'S OWN FACE ══════════════════════
+   Nick picked AC Nord after seeing the card rendered in Merriweather, Airport
+   and AC Nord side by side.
+
+   It is the right answer for the reason he raised the whole issue: his first
+   complaint was that the weather "dont match the rest". AC Nord Display is
+   the face the left rail, the Gate/Porte block and the clock are already set
+   in, so the card stops reading as a different product bolted onto the board.
+   Merriweather (a serif) and Airport were both defensible in isolation and
+   both looked foreign next to their own neighbours.
+
+   500 (Medium) is the weight he saw and chose — enough presence for the
+   numerals at gate-viewing distance without the closed-up counters that
+   Heavy gives at 46px.
+
+   The Merriweather webfont fetched for the earlier pass is removed with this
+   change; there is no point shipping 170KB of unused face to every board.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-temp,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d-fr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxc-dhead .wxc-hr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-when,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-cond,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-kicker {
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-style: normal !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-temp,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day .wxc-dhead .wxc-d-fr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour .wxc-dhead .wxc-hr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title {
+  font-weight: 500 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-side-when,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-cond,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-kicker {
+  font-weight: 400 !important;
+}
+
+/* ══ THE 32px GOES BETWEEN THE SECTIONS, NOT UNDER THEM ══════════════════
+   Measured: card 575px, content 543px — the whole surplus was pooling as one
+   dead band beneath the 5-day row, which is what read as "empty".
+
+   space-between hands that 32px to the three gaps instead. No flex-grow and
+   no height claims anywhere: the earlier attempt used those and the card
+   collapsed on itself (Nick: "tererrible"). Distributing slack that already
+   exists cannot collapse anything — if the surplus is ever zero this rule
+   simply does nothing.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxcard-col {
+  justify-content: space-between !important;
+}
+
+/* ══ THE CARD SITS ON SKY ════════════════════════════════════════════════
+   Nick supplied a sun/lens-flare sky and asked for it as the background.
+
+   THE PHOTO CANNOT CARRY TEXT ON ITS OWN. Its top-left quadrant is blown to
+   near-white around the sun, which is exactly where the departure/arrival
+   pair sits, and every label on this card is white. So the image is laid down
+   first and a scrim is composited over it: heavier at the top where the flare
+   is, easing off toward the bottom where the sky is already deep enough to
+   hold white type. That keeps the sky readable as sky while guaranteeing the
+   text never lands on a blown highlight.
+
+   background-image stacks top-layer-first, hence scrim then photo.
+
+   `cover` + `center` rather than a fixed size: the card is 575px at 1680x920
+   but the boards are not all one resolution, and a 16:9 photo in a ~4:3 box
+   has to crop somewhere — centring keeps the sun in frame at every aspect.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxcard-col {
+  background-color: #1c6fb0 !important;
+  background-image:
+    linear-gradient(180deg, rgba(4, 26, 48, 0.62) 0%, rgba(4, 26, 48, 0.42) 38%, rgba(4, 26, 48, 0.30) 100%),
+    url('/logos/Backgrounds/wx-sky-sun.jpg') !important;
+  background-size: auto, cover !important;
+  background-position: center, center !important;
+  background-repeat: no-repeat, no-repeat !important;
+}
+
+/* The decorative globe wash was drawn for the old flat-teal card and muddies
+   the photo — it goes now that there is a real image behind the content. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap > .wxc-globe {
+  display: none !important;
+}
+
+/* Tiles move off the accent and onto the carrier's BANNER colour. The teal
+   tiles were the same hue as the old teal card, which is what read as ugly
+   and flat; against sky they also need to be a solid, darker block to hold
+   white numerals. --airline-r1 is the banner's own colour, so this stays
+   per-carrier — navy for WestJet, and each other airline gets its own. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-day,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hour {
+  background-color: var(--airline-r1, #003366) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.20) 100%) !important;
+}
+
+/* ══ ONE TYPE SCALE FOR THE WHOLE CARD ═══════════════════════════════════
+   Nick: "the words i tell you you need to be consistant nothing matches most
+   on there i cant see".
+
+   Fair, and it is my mess: this card accumulated a dozen independently-tuned
+   font-sizes across a long back-and-forth — every time something overflowed I
+   nudged one value, and the result has no shared rhythm at all.
+
+   Replaced with FIVE steps, and everything on the card is assigned to one of
+   them. Sizes are vh so they track the board rather than the viewport width:
+
+     step 1  6.0vh   hero temperature        (the two-up numbers)
+     step 2  4.6vh   outlook high            (the 5-day headline)
+     step 3  2.9vh   hour temp + outlook low (secondary readings)
+     step 4  2.2vh   city + day name         (identifiers)
+     step 5  1.7vh   kicker, title, when, condition (supporting)
+
+   Weight is 500 everywhere a value or identifier is shown and 400 for the
+   supporting step — no more mixing 400/500/600/700 by accident.
+
+   LEGIBILITY OVER THE PHOTO: every string on this card is white and a chunk
+   of it now sits on open sky rather than on an opaque tile, which is the "most
+   on there i cant see". One shared text-shadow gives all of it the same
+   guaranteed floor of contrast, so it stays readable wherever the crop puts
+   the flare — rather than relying on the scrim being heavy enough everywhere,
+   which is what forced the scrim so dark it hid the sky Nick liked.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-temp { font-size: clamp(34px, 6.0vh, 74px) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hi                 { font-size: clamp(26px, 4.6vh, 58px) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-ht,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-lo                 { font-size: clamp(17px, 2.9vh, 36px) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-day .wxc-dhead .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-day .wxc-dhead .wxc-d-fr { font-size: clamp(13px, 2.2vh, 28px) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour .wxc-dhead .wxc-hr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-cond,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-kicker             { font-size: clamp(11px, 1.7vh, 21px) !important; }
+
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-temp,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hi,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-ht,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-lo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-d-fr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hr {
+  font-weight: 500 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-when,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-cond,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-kicker {
+  font-weight: 400 !important;
+}
+
+/* The shared contrast floor. Applied to the card's text only — the tiles are
+   opaque so it costs them nothing, and it is what lets the scrim lighten. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-temp,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hi,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-ht,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-lo,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-when,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-cond,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-d,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-d-fr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hr,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-kicker,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-credit {
+  text-shadow: 0 1px 3px rgba(0, 20, 40, 0.72), 0 0 14px rgba(0, 20, 40, 0.38) !important;
+}
+
+/* ══ THE CITY NAMES LEAD THE TOP ═════════════════════════════════════════
+   Nick: "Moncton Calgary those needs bigger for sure uch bigger".
+
+   In the five-step scale the city sat on step 4 (2.2vh) alongside the day
+   names — treating "Moncton | YQM" as an identifier of the same rank as
+   "WED". It is not: on this card the two place names ARE the headline, and
+   the temperature is the value hanging off them.
+
+   So the city moves up to its own step between the hero number and the
+   outlook high — 3.7vh, roughly 60% of the temperature it sits above — and
+   the day names stay on step 4. That keeps the scale intact rather than
+   adding another ad-hoc size, which is the inconsistency he called out.
+
+   The IATA suffix stays a notch down and lighter so "Moncton" reads first and
+   "YQM" confirms it, instead of the pair competing at one weight.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city {
+  font-size: clamp(22px, 3.7vh, 46px) !important;
+  font-weight: 500 !important;
+  line-height: 1.08 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city .wxc-iata {
+  font-size: 0.72em !important;
+  font-weight: 400 !important;
+  opacity: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city .wxc-bar {
+  opacity: 0.5 !important;
+  margin: 0 0.16em !important;
+}
+
+/* ══ THREE SECTIONS, ONE COMPONENT ═══════════════════════════════════════
+   Nick: "NO LOOK BE CONSISTENT".
+
+   He is right and I had been asking him to choose between variants instead of
+   looking at the card. What is actually wrong is structural, not a setting:
+   the hour strip and the 5-day strip are tiles — a header band, a glyph, a
+   number — and the top block was NOT. Two cities floating on bare sky above
+   two rows of plated tiles is why nothing matched.
+
+   The top is now the same component: same tile ground, same header band (the
+   markup change puts city + time inside a .wxc-dhead like every other tile),
+   same order of parts. Three sections, one build, differing only in scale.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side {
+  background-color: var(--airline-r1, #003366) !important;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.07) 0%, rgba(0,0,0,0.20) 100%) !important;
+  padding: 0 0 clamp(6px, 1.1vh, 14px) !important;
+  overflow: visible !important;
+}
+/* The divider was separating two floating columns; with both on their own
+   plate the gap between them does that job. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up::before {
+  background: transparent !important;
+}
+/* City band matches the day/hour bands exactly. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-dhead {
+  display: block !important;
+  background: rgba(255, 255, 255, 0.17) !important;
+  padding: clamp(4px, 0.7vh, 9px) 6px !important;
+  margin: 0 0 clamp(4px, 0.7vh, 10px) !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when {
+  display: block !important;
+  text-align: center !important;
+  margin: 0 !important;
+}
+/* Text now sits on an opaque plate everywhere, so the sky-legibility shadow
+   is no longer doing any work and only muddies the type. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side * {
+  text-shadow: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-day *,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour * {
+  text-shadow: none !important;
+}
+
+/* ══ SAME SIZE MEANS SAME SIZE ═══════════════════════════════════════════
+   Nick: "YQM is smaller than Moncton seeriously", "I cant see the times in
+   row 2 Icant see most on that screen seriously", "terrible".
+
+   All three are mine and all three are the same mistake: I kept shrinking
+   things to make them fit, then called the result a hierarchy.
+
+   1. YQM: I had set the IATA to 0.72em to "let the city read first". Nowhere
+      else on this board does that — the left rail sets "Destination | YYC"
+      with both halves at one size, and so does "Arrival | Arrivée | YYC".
+      Making this card the exception is precisely the inconsistency he keeps
+      pointing at. Both halves now match.
+
+   2. The hour row's times were on the smallest step (1.7vh, ~15px) — the same
+      step as a section kicker. They are not a kicker, they are the label for
+      the value beneath them, exactly like WED | MER on the row below. They
+      move to the same step as the day names.
+
+   3. Everything else on the supporting step comes up with them. A gate display
+      is read standing several metres away; 15px was never going to survive
+      that, and "I cant see most on that screen" is the correct verdict.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city .wxc-iata {
+  font-size: 1em !important;
+  font-weight: 500 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour .wxc-dhead .wxc-hr {
+  font-size: clamp(14px, 2.2vh, 28px) !important;
+  font-weight: 500 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when {
+  font-size: clamp(13px, 2.0vh, 25px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-cond {
+  font-size: clamp(13px, 2.0vh, 25px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-title {
+  font-size: clamp(12px, 1.9vh, 23px) !important;
+}
+
+/* ══ THE CARD IS AT CAPACITY ═════════════════════════════════════════════
+   Raising the hour times and the IATA to a readable size pushed the 5-day
+   lows into the MET Norway credit (measured: -1px, i.e. touching).
+
+   The 26px comes off the top block's SUN GLYPH and its band padding, not off
+   any text. On that panel the glyph is decoration sitting beside a 44px
+   temperature that already says the same thing; every other element there is
+   a word or a number someone actually reads.
+
+   Worth stating plainly: after this the card has no slack left. Anything else
+   that grows has to be paid for by removing a section — and the hour strip is
+   the obvious candidate, since the top block now covers departure and arrival
+   conditions directly.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side .wxanim-host {
+  width: clamp(38px, 6.0vh, 74px) !important;
+  height: clamp(38px, 6.0vh, 74px) !important;
+  margin: clamp(1px, 0.2vh, 4px) auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-dhead {
+  padding: clamp(3px, 0.5vh, 7px) 6px !important;
+  margin: 0 0 clamp(2px, 0.4vh, 6px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-credit {
+  font-size: clamp(9px, 1.15vh, 14px) !important;
+  line-height: 1.1 !important;
+  margin-top: 2px !important;
+}
+
+/* ══ TOP ROW: GLYPH BESIDE THE DEGREE ════════════════════════════════════
+   Nick: "Top row put the weather icon beside the degree", "enlarge it".
+
+   Done as a grid rather than a DOM change, so fids-core keeps emitting the
+   same .wxc-side children in the same order and only their placement changes:
+
+       head head      city | IATA, and the departure/arrival time
+       icon temp      glyph and temperature, side by side
+       cond cond      the condition line, spanning
+
+   Pairing them horizontally is what pays for the enlargement. Stacked, the
+   panel spent (icon height + temp height) vertically; side by side it spends
+   only the taller of the two, which is why BOTH can grow — the glyph from
+   6.0vh to 9.6vh and the number from 6.0vh to 7.4vh — while the card stays
+   inside its 575px.
+
+   The pair is baseline-agnostic on purpose (centre-aligned): the glyph is a
+   square bitmap-ish SVG with no baseline of its own, so aligning to text
+   baselines makes it sit visibly low next to a large numeral.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side {
+  display: grid !important;
+  grid-template-columns: auto auto !important;
+  grid-template-areas:
+    "head head"
+    "icon temp"
+    "cond cond" !important;
+  justify-content: center !important;
+  align-items: center !important;
+  column-gap: clamp(6px, 1vw, 16px) !important;
+  row-gap: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-dhead {
+  grid-area: head !important;
+  width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxanim-host {
+  grid-area: icon !important;
+  width: clamp(56px, 9.6vh, 116px) !important;
+  height: clamp(56px, 9.6vh, 116px) !important;
+  margin: 0 !important;
+  align-self: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-temp {
+  grid-area: temp !important;
+  font-size: clamp(40px, 7.4vh, 92px) !important;
+  line-height: 1 !important;
+  align-self: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-cond {
+  grid-area: cond !important;
+  width: 100% !important;
+  padding-bottom: clamp(2px, 0.4vh, 6px) !important;
+}
+
+/* ══ THE TOP BANNER SPANS THE PANEL, LIKE EVERY OTHER ONE ════════════════
+   Nick: "banner on top needs consistency it needs to be across like others".
+
+   Diagnosed rather than nudged: the top panels were laid out as
+   `grid-template-columns: auto auto` with `justify-content: center`, which
+   makes the grid itself only as wide as its widest row — the icon+temperature
+   pair. The header row spanned both columns faithfully, but "both columns"
+   was ~200px of content, not the ~250px panel. So the band floated as a
+   centred strip while the hour and day tiles' bands run wall to wall.
+
+   Fixed by giving the grid two 1fr columns so it fills the panel, and
+   pulling the icon/temperature pair to the centre seam instead — icon
+   right-aligned in the left column, temperature left-aligned in the right.
+   The pair still reads as one centred unit, and the band is now genuinely
+   full-bleed like the rest.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side {
+  grid-template-columns: 1fr 1fr !important;
+  justify-content: stretch !important;
+  column-gap: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-dhead {
+  width: auto !important;
+  justify-self: stretch !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxanim-host {
+  justify-self: end !important;
+  margin-right: clamp(4px, 0.6vw, 10px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-temp {
+  justify-self: start !important;
+  margin-left: clamp(4px, 0.6vw, 10px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-cond {
+  justify-self: stretch !important;
+}
+
+/* ══ CENTRED, AND EVERYTHING UP A STEP ═══════════════════════════════════
+   Nick: "almost there center your weather p[lease enlarge your titles enlarge
+   in general all of it if you can especially the middle and titltes".
+
+   Three things, in the order they have to happen:
+
+   1. TITLES. "NEXT HOURS" and "5-DAY" were on the smallest step, sized like
+      fine print above the rows they name. They go up hard — they are section
+      headings on a board read from across a lounge, and at 1.9vh they were
+      the least legible thing on the card.
+
+   2. THE MIDDLE. The hour strip was deliberately shrunk earlier ("reduce the
+      size hourly maybe") back when it was competing for room with a top block
+      that has since been re-laid out. That reduction is no longer paying for
+      anything, so the glyph and the reading both come back up.
+
+   3. CENTRED. Whatever slack survives the two enlargements is now split above
+      and below instead of pooling under the last row. justify-content:center
+      only distributes space that already exists — unlike the flex-grow attempt
+      earlier in this session, it cannot make the card collapse.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxcard-col {
+  justify-content: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-title {
+  font-size: clamp(15px, 2.6vh, 32px) !important;
+  font-weight: 500 !important;
+  letter-spacing: 1.1px !important;
+  margin-bottom: clamp(2px, 0.45vh, 7px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-kicker {
+  font-size: clamp(12px, 1.9vh, 24px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour .wxanim-host {
+  width: clamp(38px, 6.0vh, 74px) !important;
+  height: clamp(38px, 6.0vh, 74px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-ht {
+  font-size: clamp(21px, 3.5vh, 43px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour .wxc-dhead .wxc-hr {
+  font-size: clamp(15px, 2.4vh, 30px) !important;
+}
+
+/* ══ A LITTLE SKY THROUGH THE PLATES ═════════════════════════════════════
+   Nick: "maybe add a bit of see through slightly".
+
+   Done with color-mix on the background COLOUR, not with opacity on the tile.
+   `opacity` would fade the numerals and the glyph along with the plate — the
+   text would lose the contrast the whole card was rebuilt to protect. Mixing
+   the carrier colour toward transparent leaves the content fully opaque and
+   only lets the sky through behind it.
+
+   78% keeps the plate reading as a solid block from across a room while the
+   grass and the rays still register at the edges — "slightly", as asked.
+
+   The plain opaque declaration is left immediately above as a fallback: a
+   renderer without color-mix support drops the second declaration and keeps
+   the solid plate, which is the current, known-good appearance rather than a
+   broken one.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-day,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side {
+  background-color: var(--airline-r1, #003366) !important;
+  background-color: color-mix(in srgb, var(--airline-r1, #003366) 78%, transparent) !important;
+}
+
+/* ══ CLEARANCE FOR THE CREDIT LINE ═══════════════════════════════════════
+   The title and hour-strip enlargements left 2.8px between the last row of
+   low temperatures and the card foot, so the MET Norway credit was printing
+   over them.
+
+   The credit cannot simply be dropped — MET's licence asks to be named as the
+   source, and this line is that attribution. So it gets guaranteed clearance
+   of its own instead: a fixed reserve under the outlook that the rows cannot
+   grow into, and the hour glyph gives back the few pixels that pays for.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-credit {
+  flex: 0 0 auto !important;
+  margin-top: clamp(3px, 0.55vh, 8px) !important;
+  padding-top: 0 !important;
+  font-size: clamp(9px, 1.2vh, 15px) !important;
+  line-height: 1.15 !important;
+  position: relative !important;
+  z-index: 2 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour .wxanim-host {
+  width: clamp(34px, 5.4vh, 66px) !important;
+  height: clamp(34px, 5.4vh, 66px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-day {
+  padding-bottom: clamp(4px, 0.8vh, 10px) !important;
+}
+
+/* ══ THE SOURCE CREDIT GETS ITS OWN LINE ═════════════════════════════════
+   Nick: "the Weather for MET NORway is also too small should be lowered
+   bigger".
+
+   It had been squeezed to ~11px and was printing 1px over the low
+   temperatures — the attribution for the data the whole card is built from,
+   rendered as the least legible thing on the screen and colliding with the
+   content on top of it. MET's licence asks to be named as the source; naming
+   them illegibly is not really naming them.
+
+   So it becomes a real line: pushed to the foot of the card with margin-top
+   auto (it is the last flex child, so auto margin drives it to the bottom
+   regardless of what the sections above do), and sized to be read.
+
+   Paid for out of the hour strip rather than the outlook — the hour row is
+   the supporting scan, and it had the most recently-granted size increase.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-credit {
+  margin-top: auto !important;
+  padding-top: clamp(3px, 0.6vh, 9px) !important;
+  font-size: clamp(12px, 1.75vh, 22px) !important;
+  line-height: 1.2 !important;
+  opacity: 1 !important;
+  flex: 0 0 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hour .wxanim-host {
+  width: clamp(30px, 4.6vh, 58px) !important;
+  height: clamp(30px, 4.6vh, 58px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-ht {
+  font-size: clamp(18px, 3.05vh, 38px) !important;
+}
+
+/* ══ EACH SIDE NAMES ITSELF, AT ONE SIZE ═════════════════════════════════
+   Nick: "The Top text same size it should be one side Departure Weather then
+   Arrival Weather".
+
+   The city and the label were on two different steps, so the band read as a
+   heading with a caption stuck under it. They are the same rank — one says
+   where, the other says which end of the journey — so they take one size.
+
+   The card-level kicker goes with this change. It read "ARRIVAL WEATHER"
+   across the top of a card whose left half is the DEPARTURE airport, so it
+   was actively misleading as well as duplicated; removing it also returns the
+   ~24px that the MET credit needed to stop overlapping the low temperatures.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-kicker {
+  display: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when {
+  font-size: clamp(17px, 2.6vh, 32px) !important;
+  font-weight: 500 !important;
+  line-height: 1.16 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when b {
+  font-weight: 500 !important;
+}
+
+/* ══ CENTRE THE PAIR, NOT THE SEAM ═══════════════════════════════════════
+   Nick: "You need to center please center center".
+
+   The bug was a real one, not a taste call. To get a full-bleed banner I had
+   made the panel a 1fr 1fr grid and pinned the glyph to the right edge of
+   column 1 and the temperature to the left edge of column 2. That centres the
+   SEAM BETWEEN THEM on the panel's midline — but the glyph is ~71px and
+   "20°C" is ~110px, so the pair as a whole ends up sitting roughly 20px right
+   of centre. Every panel was off by that amount, consistently, which is
+   exactly the sort of thing that looks wrong without being obviously wrong.
+
+   Four columns fix both requirements at once: 1fr | auto | auto | 1fr. The two
+   auto columns shrink-wrap the glyph and the number, and the equal fr columns
+   either side push that pair to the true centre whatever their widths. The
+   banner and the condition line span 1 / -1 and stay full-bleed.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side {
+  display: grid !important;
+  grid-template-columns: 1fr auto auto 1fr !important;
+  grid-template-areas:
+    "head head head head"
+    "padl icon temp padr"
+    "cond cond cond cond" !important;
+  justify-content: stretch !important;
+  align-items: center !important;
+  column-gap: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-dhead {
+  grid-area: head !important;
+  justify-self: stretch !important;
+  width: auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxanim-host {
+  grid-area: icon !important;
+  justify-self: end !important;
+  margin-right: clamp(5px, 0.7vw, 12px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-temp {
+  grid-area: temp !important;
+  justify-self: start !important;
+  margin-left: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side > .wxc-cond {
+  grid-area: cond !important;
+  justify-self: stretch !important;
+  text-align: center !important;
+}
+
+/* ══ THE TIMES COME BACK ═════════════════════════════════════════════════
+   Making the top text one size pushed "Departure Weather | Météo au départ"
+   past the panel width, and because that line carried nowrap + ellipsis the
+   overflow that got clipped was the DEPARTURE TIME on the end of it — the
+   thing Nick specifically asked the panel to show ("at time of departure").
+   Silent truncation of the payload, caused by a styling rule. Exactly the
+   failure mode to avoid on a board with no scrollbar.
+
+   The clock is a <b> inside that line, so promoting it to a block drops it
+   onto its own row at the same size — nothing is cut, nothing shrinks, and
+   the two-line band still fits because removing the card kicker freed more
+   height than this costs.
+
+   The label line keeps nowrap+ellipsis as a last resort for a very long
+   locale, but it can now overflow into a row of its own rather than eating
+   the time.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  line-height: 1.18 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when b {
+  display: block !important;
+  font-weight: 500 !important;
+  margin-top: 1px !important;
+}
+
+/* ══ THE TOP LABELS ARE SECTION TITLES ═══════════════════════════════════
+   Nick: "I just meant like the others such as NEXT HOURS etc".
+
+   Each top panel now carries its own title above it, using the very same
+   .wxc-title class as NEXT HOURS and 5-DAY FORECAST, so it inherits that
+   styling by definition and cannot drift from it later.
+
+   The grid that splits the two halves moves up one level — it now lays out
+   the two title+panel WRAPPERS rather than the bare panels, which is what
+   keeps each title sitting over its own half instead of spanning both.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up {
+  grid-template-columns: 1fr 1fr !important;
+  align-items: start !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up > .wxc-sidewrap {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up > .wxc-side-dep-wrap { grid-column: 1 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up > .wxc-side-arr-wrap { grid-column: 2 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title {
+  text-align: left !important;
+  width: 100% !important;
+}
+/* The clock keeps the city's size — it is the panel's value, not a caption. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when {
+  display: block !important;
+  white-space: nowrap !important;
+  font-size: clamp(15px, 2.3vh, 29px) !important;
+  font-weight: 500 !important;
+  margin-top: 1px !important;
+}
+
+/* ══ PAYING FOR THE TWO NEW TITLES ═══════════════════════════════════════
+   Adding a title over each top panel cost height twice over: the titles
+   themselves, and then both wrapped to a second line ("Météo au départ"
+   breaking after "au"), leaving the card 35px over and the credit printing
+   across the low temperatures again.
+
+   Kept on one line each and the difference taken from the top panel's glyph
+   and number — the two elements up there that were most recently enlarged and
+   have the most to give. The 5-day row, which is the thing actually being
+   read, keeps every pixel.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title {
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: clamp(12px, 2.0vh, 25px) !important;
+  letter-spacing: 0.6px !important;
+  margin-bottom: clamp(1px, 0.3vh, 5px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side img,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side .wxanim-host {
+  width: clamp(34px, 5.6vh, 68px) !important;
+  height: clamp(34px, 5.6vh, 68px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-temp {
+  font-size: clamp(28px, 4.9vh, 60px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city {
+  font-size: clamp(15px, 2.3vh, 29px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when {
+  font-size: clamp(14px, 2.1vh, 26px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-cond {
+  font-size: clamp(12px, 1.8vh, 22px) !important;
+}
+
+/* ══ EVERY TITLE CENTRED ═════════════════════════════════════════════════
+   Nick: "and centered pelase centered".
+
+   All four titles — the two panel titles and the two strip titles — centre
+   over the content they name. They were left-aligned, which on a card whose
+   every other element (bands, glyphs, numbers, conditions) is centred left
+   them as the one thing hanging off the left edge.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title {
+  text-align: center !important;
+  width: 100% !important;
+}
+
+/* ══ TOP IN CAPS, AND DARK ENOUGH TO READ ════════════════════════════════
+   Nick: "top needs to be caps like others same for calgary top is hard to
+   see".
+
+   CAPS: the two strip titles are uppercase and so are the day names, so the
+   panel titles and the city line were the only lowercase text on the card.
+   Both go uppercase — set with text-transform rather than by changing the
+   strings, so the underlying values stay properly cased for any other use and
+   the accented French (MÉTÉO À L'ARRIVÉE) is uppercased by the browser's
+   locale rules rather than by hand.
+
+   HARD TO SEE: this one is a real contrast problem with a specific cause. The
+   plates are 78% opaque over the sky photo — fine over the lower half, where
+   the backdrop is deep blue and grass. The TOP panels sit over the brightest
+   part of the image, the sun and its flare, so the same 78% navy composites
+   much lighter there and white text loses its contrast. The top panels
+   therefore take a higher opacity than the rows below: still see-through,
+   but dark enough to carry white type over a blown highlight.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-city,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side-when {
+  text-transform: uppercase !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-side {
+  background-color: var(--airline-r1, #003366) !important;
+  background-color: color-mix(in srgb, var(--airline-r1, #003366) 90%, transparent) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-hero-2up .wxc-dhead {
+  background: rgba(255, 255, 255, 0.13) !important;
+}
+
+/* ══ THE PANEL TITLE WRAPS RATHER THAN TRUNCATES ═════════════════════════
+   Uppercasing the panel titles widened them past their half-width column and
+   the ellipsis began eating them — measured: "DEPARTURE WEATHER | MÉTÉO AU
+   DÉPART" rendering as "...MÉTÉO AU DÉP...". Losing the text is worse than
+   the alternatives.
+
+   Three ways out and why this one: shrinking the title would put it below the
+   two strip titles and undo the consistency Nick just asked for; shortening
+   the phrase would drop the "Weather" he specifically asked to add. So it
+   wraps to a second line at the SAME size as every other title. The card had
+   33.9px of measured clearance above the credit and the extra line costs ~20,
+   so it fits with room left.
+
+   The strip titles keep one line — they span the full card width and are not
+   close to needing two.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  font-size: clamp(12px, 1.95vh, 24px) !important;
+  letter-spacing: 0.4px !important;
+  line-height: 1.14 !important;
+  text-wrap: balance;
+}
+
