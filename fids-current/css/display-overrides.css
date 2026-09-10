@@ -17956,3 +17956,31 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   padding-right: 0 !important;
 }
 
+/* ══ THE IATA CODE RIDES IN THE ORB ══════════════════════════════════════
+   Nick: "I would like the airport code to go in the orb YYC for isntance".
+
+   The destination row's orb held a globe glyph while the code sat stapled to
+   the end of the title ("Destination | YYC"). The code moves into the orb, and
+   the title goes back to being a clean bilingual pair.
+
+   Sized with cqw-free arithmetic: 0.30 of the orb's own height, so it tracks
+   the badge at every board size rather than needing its own clamp. Three
+   characters is the whole design space here — every IATA code is exactly
+   three — so it can be set tight and centred without a fitter.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-size: clamp(15px, 3.0vh, 34px) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  line-height: 1 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  white-space: nowrap !important;
+}
+

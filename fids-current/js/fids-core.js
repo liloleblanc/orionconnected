@@ -8741,9 +8741,10 @@ function _buildV2AircraftCol(ctx, vars) {
       var _destCityName = '';
       try {
         var _dIata = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
-        if (typeof CITY !== 'undefined' && CITY[_dIata]) _destCityName = CITY[_dIata];
-        else if (typeof AP !== 'undefined' && AP[_dIata] && AP[_dIata].city) _destCityName = AP[_dIata].city;
-        else _destCityName = _dIata;
+        // v23678 — one resolver. The old middle branch read AP[_dIata].city,
+        // which never existed (AP carries `name`), so it fell straight through
+        // to the bare code. _cityForIata does the whole chain properly.
+        _destCityName = _cityForIata(_dIata);
         if (typeof normalizeDisplayCity === 'function') _destCityName = normalizeDisplayCity(_destCityName, _dIata);
       } catch (e) {}
 
@@ -8816,8 +8817,20 @@ function _buildV2AircraftCol(ctx, vars) {
       var _codeSeg = function (c) {
         return c ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + c + '</span>' : '';
       };
-      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
-        + _codeSeg(_destIataDisp);
+      // v23678 — Nick: "In French Please also add Destination even if twice
+      // Destination | Destination I would like the airport code to go in the
+      // orb YYC for isntance".
+      //
+      // Two changes in one line. keepDup (the 5th argument) makes _gateLbl
+      // print both languages even when they are the same word — it exists
+      // already, for Nick's 'Zones | Zones' ruling, and this call simply never
+      // passed it. Every other rail row goes through _railPair(), which does.
+      //
+      // And the IATA code leaves the title: it now rides in the ORB instead,
+      // so the title reads as a clean bilingual pair rather than a pair with a
+      // code stapled on. _codeSeg is left defined — the right-hand shelves
+      // still use that shape.
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true);
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -8877,7 +8890,10 @@ function _buildV2AircraftCol(ctx, vars) {
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
-        + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_destIataDisp
+                          ? '<span class="v2-fi-orbcode">' + _destIataDisp + '</span>'
+                          : _svgGlobe),
+                 _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         // v23195 — the STATUS shelf's row carries the status class, so its
         // banner can take the status colour the way Nick's target shows it:
         // "Status | Statut" on an amber bar while the flight is delayed. Only
@@ -22929,7 +22945,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23676';
+var FIDS_BUILD_TAG = 'v23678';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
