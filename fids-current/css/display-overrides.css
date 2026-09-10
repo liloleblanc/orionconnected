@@ -18148,3 +18148,49 @@ html body:is([data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airlin
   color: #1B2430 !important;
   -webkit-text-fill-color: #1B2430 !important;
 }
+
+/* ══ v23694 — THE LIGHT-DISC ORBS GET THEIR DEPTH BACK ═══════════════════════
+   Nick: "Americans orbs are so flat too any reason why?"
+
+   Yes — two, and both are side effects of putting a carrier on a WHITE disc.
+
+   1. THE LIFT WAS DELETED. Every badge gets `box-shadow: 0 2px 8px
+      rgba(5,15,30,0.35)` from the base rule (:3435) — the drop shadow that
+      sits the orb ON the panel rather than in it. American's own rule (:15252)
+      then sets `box-shadow: inset 0 0 0 1px rgba(0,0,0,0.14) !important`.
+      box-shadow is not additive: that REPLACES the drop shadow rather than
+      joining it, so American's orbs have no lift at all while every other
+      carrier's do. The hairline ring was added to keep a white disc from
+      dissolving into a light panel, and it silently cost the shadow.
+
+   2. THE GLOSS IS WHITE ON WHITE. The sheen is `.v2-fi-icon-badge::after`
+      (:3438), a `rgba(255,255,255,0.55)` → `rgba(255,255,255,0.05)` gradient
+      across the top 42%. On a red, navy or lime disc that reads as curvature.
+      On #ffffff it is invisible — the same white-on-white family of bug as
+      Porter's "p" (v23536), Porter's YQM code (v23688) and American's own
+      destination code (v23692). Fourth instance; it is worth stating plainly
+      that ANY white element on a white disc has to be re-thought, not re-tinted.
+
+   THE FIX, and why it is shaped this way: a white sphere does not get its form
+   from a white highlight, it gets it from the shading UNDERNEATH. So the ring
+   is kept, the drop shadow is restored alongside it (one declaration, three
+   shadows), and an inner bottom shadow supplies the curvature the ::after
+   cannot. The ::after itself is re-aimed to fade to a cool grey instead of to
+   transparent-white, so it still reads top-lit.
+
+   Keyed to the whole LIGHT_DISC set from _gateOrbParts (AA 2L 4Y BA CJ ET HA
+   LY PR WN), not to American alone. Nine of those ten have no per-carrier rule
+   and sit on #F2F4F7, where the same gloss is nearly as invisible — so they had
+   a milder version of the identical problem and would otherwise have become the
+   next report. Carriers on their own accent disc are untouched.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],[data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge,
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],[data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-emblem-wrap:not(.v2-fi-emblem-native) {
+  box-shadow:
+    0 2px 8px rgba(5, 15, 30, 0.35),
+    inset 0 -7px 11px -7px rgba(12, 30, 56, 0.30),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.14) !important;
+}
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"],[data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-icon-badge::after {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.95), rgba(186, 203, 224, 0.22)) !important;
+}
