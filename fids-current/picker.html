@@ -6,7 +6,7 @@
        display actually OPENS on: index.html paints, then location.replace()s to
        fids.html. Without this it painted white first, so every open began with
        a white frame before the board's own boot even started — one of the
-       flashes Nick counts when a screen comes on. -->
+ flashes the owner counts when a screen comes on. -->
   <script>
   (function () {
     try {
@@ -226,7 +226,7 @@
 
     // A deliberate pick is a FRESH START — drop any remembered screen type
     // (gate/baggage) left by an earlier session, or clicking FIDS lands on
-    // a Gate view (Nick). Kiosk deploy-reloads never pass through the
+    // a Gate view. Kiosk deploy-reloads never pass through the
     // picker, so their saved state still survives.
     try { localStorage.removeItem('fids_screen_state'); } catch (e) {}
 
@@ -266,7 +266,7 @@
   // ── Guard: if no mode set, default LIVE ───────────────────────────────
   // v22832 — the silent default was 'demo', so a direct navigation (or a
   // device whose session storage cleared) dropped every board into demo
-  // data (Nick: 'it should never go in demo mode'). Live needs no auth for
+  // data. Live needs no auth for
   // viewing; demo is now only ever explicit — the Enter Demo button on the
   // entry page or ?mode=demo on a board URL.
   if (!sessionStorage.getItem('fids_mode')) {

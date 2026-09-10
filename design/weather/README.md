@@ -17,7 +17,7 @@ a separate change.
 
 ### Source and licensing
 
-The artwork is a Vecteezy asset Nick purchased and supplied
+The artwork is a Vecteezy asset the owner purchased and supplied
 (`set-of-meteorological-3d-cartoon-icons-of-rain`, item 22347571, Adobe Illustrator
 EPS). It was converted EPS → PDF → SVG, and the six marks were separated out of the
 mockup **by paint order**. That detail matters: in the source the temperature numerals

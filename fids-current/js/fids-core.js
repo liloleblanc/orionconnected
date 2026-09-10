@@ -107,8 +107,8 @@ function _gateDayNightTheme() {
 }
 
 // ── LEGIBILITY FLOOR (v23114) ────────────────────────────────────────────
-// Nick, Aug 11: 'my teal screen is white white letters and numbers of white
-// background and i cant change it'. Reproduced: a saved CUSTOM palette whose
+//
+// Reproduced: a saved CUSTOM palette whose
 // Row Text is white next to a Row Odd of #ffffff paints the board's own ink
 // invisible — every flight number, time and status vanishes. The palette is
 // the operator's to choose, but an unreadable board is never what they meant,
@@ -275,15 +275,15 @@ function bootstrapAirportConfig(code) {
   loadAirlineOverrides(norm);
 }
 
-// v23221 — CLOUD SETTINGS FOLLOW THE BOARD, NOT JUST THE BOOT (Nick: 'the
-// themes dont carry over other than the computer its made on it needs to be
-// global'). loadAirportConfig caches for the life of the page, so an
+// v23221 — CLOUD SETTINGS FOLLOW THE BOARD, NOT JUST THE BOOT
+//
+// loadAirportConfig caches for the life of the page, so an
 // always-on display only ever saw the config that existed when its tab
 // loaded — a theme saved on another computer never arrived until someone
 // walked over and reloaded the kiosk. This refresher re-reads the airport
-// config every TEN SECONDS (Nick: 'if the youtube live mix is live and i
-// change the theme on another computer it should technically within a few
-// seconds be the same on youtube') and, ONLY when the cloud copy's
+// config every TEN SECONDS
+//
+// and, ONLY when the cloud copy's
 // updatedAt actually moved, swaps the cache and re-applies the board
 // config through the same newer-wins gate the boot path uses. The config
 // JSON is under a kilobyte, so the streaming kiosk pays ~6 tiny requests a
@@ -385,7 +385,7 @@ function getAirlineAdImages(airlineCode) {
 }
 
 // v22839 — shared 401 rescue for admin writes: an expired 24h token made
-// every save die with a bare 'Save failed: HTTP 401' (Nick hit it saving
+// every save die with a bare 'Save failed: HTTP 401' (the owner hit it saving
 // YHU info). Clear the stale token and pop the login modal so the path
 // back is visible; the caller's form keeps its values.
 function _fidsSaveAuthRescue(res) {
@@ -396,8 +396,8 @@ function _fidsSaveAuthRescue(res) {
 }
 
 // v23492 — ONE PLACE THAT KNOWS WHERE THE TOKEN LIVES.
-// Nick, signed in as admin with a valid token: "Cannot add videos or pictures at
-// all right now logos dont work". Both were true at once, and this is why.
+//
+// Both were true at once, and this is why.
 //
 // v23170 added a DURABLE copy of the session token in localStorage precisely so
 // a new tab or a restored window stays signed in — but only _acGetToken (menu.js
@@ -816,13 +816,13 @@ function scheduleAircraftPendingRetry(flightNumber, airportIata) {
     if (!cf || cf.flight !== flightNumber) return; // flight changed, abort
     // Any displayed reg aborts the retry (including an "expected" history
     // tail): the retry force-rebuilds the whole gate, which restarted the
-    // weather/takeover slides every 3 minutes on expected-reg gates (Nick:
+    // weather/takeover slides every 3 minutes on expected-reg gates (
     // 'something refreshes... reboot'). Expected → confirmed upgrades ride
     // the NATURAL poll instead — each board refresh rebuilds the flight and
     // re-runs enrichment past the 60s cache, so today's tail still lands.
     if (cf._reg) return;
-    // v23166 — THE RETRY NO LONGER REPAINTS THE SCREEN (Nick: 'flashes and
-    // glitches... especially on gate'). Clearing _lastGateKey and calling
+    // v23166 — THE RETRY NO LONGER REPAINTS THE SCREEN
+    // Clearing _lastGateKey and calling
     // renderDedicatedScreen() here forced a FULL gate rebuild every 3 minutes
     // for as long as the flight had no registration — which for a regional
     // departure is its entire time on the board. A rebuild is not free: it
@@ -1055,8 +1055,8 @@ function goLive() {
 const LIVE_USER = '';
 const LIVE_PASS = '';
 
-// v23239 — THE DEMO IS GONE (Nick: 'You’re using the demo which should be
-// gone again cheating'). Boards run LIVE always: the feed router reaches the
+// v23239 — THE DEMO IS GONE
+// Boards run LIVE always: the feed router reaches the
 // public authority feeds and the proxy with no login, so an unauthenticated
 // screen has no reason to paint fabricated flights. Login still gates the
 // operations tools, not the data; a failed live fetch shows the honest
@@ -1065,7 +1065,7 @@ let LIVE_MODE = true;
 // 'airline', 'photo', or 'custom'.
 //
 // 'photo', 'airline', or 'custom'. Airline brand scenes are OPT-IN from the
-// menu only — they never paint behind the gate by default (Nick, Aug 8:
+// menu only — they never paint behind the gate by default (the owner, Aug 8:
 // 'THEY DON'T GO IN THE BACK OF THE GIDS PANEL').
 let GATE_BG_MODE = 'photo';
 // Restore last-used mode from localStorage so the pill stays sticky across reloads.
@@ -1121,8 +1121,8 @@ function changeFont(f) {
   const fam = "'" + f + "', sans-serif";
   document.body.style.fontFamily = fam;
   // v23386 — DRIVE --font-primary, not just the universal rule.
-  // Nick: 'why is it that all the font are the same whatever chosen from the
-  // list except the destination and code?' Exactly right, and the reason is
+  //
+  // Exactly right, and the reason is
   // specificity. The universal rule below is `*:where(...)`: the universal
   // selector scores zero and :where() contributes zero, so it lands at (0,0,0)
   // — it beats un-important rules, and loses to EVERY !important font rule
@@ -1154,10 +1154,10 @@ function changeFont(f) {
   // .axr (Accor hotel ads) is EXEMPT — brand typography (The Seasons /
   // Montserrat / Rebelton…) must render per brand book, not the board font.
   // Without the :not() guards this universal !important nuked those fonts
-  // (Nick: 'AC Nord takes over' — it was actually this override).
+  //
   s.textContent = `*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ${fam} !important; } .ac-ico, .ac-ico::before { font-family:'ac-icons' !important; }`;
   // Persist the choice — page load used to hard-reset to Geist, wiping
-  // whatever the user picked ("every time I add a new font it goes away").
+  // whatever the user picked; a newly added font vanished on the next load.
   try { localStorage.setItem('fids_font_choice', f); } catch (e) {}
   try { var _fs = document.getElementById('fontSel'); if (_fs && _fs.value !== f) _fs.value = f; } catch (e) {}
 }
@@ -1243,8 +1243,8 @@ function startAirlineBgRotation() {
     var code = (window._gateCurrentAirline || '').toUpperCase();
     var slides = getAirlineBgSlides(code);
     // A single slide has nothing to rotate to — repainting it anyway made
-    // the whole screen visibly pulse on every tick (Nick: 'everything on
-    // the screen bumps in and out about every 10 seconds').
+    // the whole screen visibly pulse on every tick
+    // 
     if (slides.length < 2) return;
     _airlineBgIndex = (_airlineBgIndex + 1) % slides.length;
     // Repaint both photo layers directly (avoid a full screen rebuild).
@@ -1311,9 +1311,9 @@ function cityCodeSplitHtml(disp) {
 if (typeof window !== 'undefined') window.cityCodeSplitHtml = cityCodeSplitHtml;
 
 // ── v23290 — THE AIRPORT CODE WEARS THE SCREEN'S ACCENT ────────────────
-// Nick: 'color the airport codes with accents so Toronto | YYZ the YYZ
-// colored to accent the screen ... this is on all screens ... or let us have
-// the option to color it'. On by default; the switch persists per display, so
+//
+//
+// On by default; the switch persists per display, so
 // a board that wants the quieter grey code can have it.
 // The colour itself is CSS — the code takes whichever accent that screen
 // already owns (the board's banner accent, or the carrier accent on a gate),
@@ -1419,7 +1419,7 @@ function setDedicatedBgMode(mode) {
   try {
     if (typeof setGateBgMode === 'function') setGateBgMode(mode);
     // Custom backgrounds need saved image URLs — with none, the screen just
-    // went BLACK and looked broken (Nick). Open the URL manager right away
+    // went BLACK and looked broken. Open the URL manager right away
     // so picking Custom always leads somewhere.
     if (mode === 'custom' && typeof _loadCustomBgUrls === 'function'
         && !_loadCustomBgUrls().length && typeof manageCustomBgUrls === 'function') {
@@ -1650,7 +1650,7 @@ if (!LIVE_MODE) {
 let screenType = 'main';
 
 // ── BOARD CHROME IS DELETED WHEN THE GATE TAKES OVER ─────────────────────
-// Nick, repeatedly, at the top of his voice: the FIDS departures banner was
+// the owner, repeatedly, at the top of his voice: the FIDS departures banner was
 // still on screen behind the gate header after the gate had loaded. 'IT
 // DOESNT BELONG THERE IT NEEDS TO BE DELETED ... I DONT WANT TO SEE IT ...
 // it needs to flow from one screen to another, that is why there is a
@@ -1673,8 +1673,8 @@ let screenType = 'main';
 // in place and RESTORES the board chrome by clearing its inline display. With
 // the elements deleted there was nothing to restore, so the first switch to
 // GATE permanently destroyed the board — FIDS and BIDS came back blank and the
-// gate selector was gone with the rest of it (Nick: 'It only happens when on
-// Gate ... until you get to GATE then it wont move').
+// gate selector was gone with the rest of it
+// 
 //
 // The requirement was never destruction, it was AUTHORITY: the banner must not
 // reappear on a gate screen no matter which show path runs. A state attribute
@@ -1695,12 +1695,12 @@ let subScreenVal = '';
 
 // Default row/logo density: without a saved pref the body attribute was
 // never set, the row-height cap never applied, and fresh boards rendered
-// ~90px rows (Nick: 'rows are much bigger than they used to be').
+// ~90px rows.
 // v23077 — the default is now PER-AIRPORT, for the same reason as
 // BOARD_LANG_DEFAULTS. A chosen density lives in Local Storage
 // (fids_customize_<IATA>.logoSize), and the streaming box deletes its Chrome
 // profile on every restart, so Orlando kept coming back at 'medium' — 98px
-// BAGS rows, which is what Nick saw as "too big". Nothing on the board was
+// BAGS rows, which is what the owner saw as "too big". Nothing on the board was
 // wrong; the saved choice had simply been erased, and re-setting it by hand
 // means the Hetzner console, which splits pasted lines mid-command.
 //
@@ -1708,8 +1708,8 @@ let subScreenVal = '';
 // menu.js only calls _applyLogoSize when fids_customize_<IATA> exists, and the
 // guard below only fills in an UNSET attribute — so any screen can still be
 // customised, and every airport not listed here is untouched.
-// v23114 — SMALL IS THE DEFAULT EVERYWHERE (Nick: 'default small then medium
-// then large with a set height no matter what'). Only Orlando was listed, so
+// v23114 — SMALL IS THE DEFAULT EVERYWHERE
+// Only Orlando was listed, so
 // every other airport fell through to 'medium' — 66px board rows / 98px BAGS
 // rows, which is the "rows are much bigger" report. The tiers themselves are
 // already absolute heights, not a fit: flight-display.css pins 44/66/90 on the board
@@ -1740,7 +1740,7 @@ function scheduleGateControlsAutoHide() {
   }, 1800);
 }
 
-// ── PHONE HANDOFF → app.html (Nick: "Wrong app opens should be the app one")
+// ── PHONE HANDOFF → app.html
 // A PHONE opening any board link (fids/gids/bids) gets the Airport Companion
 // app instead, with the URL state carried over — app.html reads ?ap= /
 // ?screen= / ?gate= / ?belt= and lands on the same airport, tab and gate.
@@ -1761,8 +1761,8 @@ function scheduleGateControlsAutoHide() {
   } catch (e) {}
 })();
 
-// ── CROSS-DEVICE SCREEN STATE (Nick: "They need to be connected to the same
-// devices … I'm not connecting in the same system whatsoever") ──────────────
+// ── CROSS-DEVICE SCREEN STATE
+// ──────────────
 // The URL always mirrors the full screen state: ?ap= is kept in sync by
 // onApChange, and ?screen= + ?gate=/?belt= are kept in sync here. Copy the
 // address bar onto ANY device — phone, TV, laptop — and it lands on the SAME
@@ -1819,15 +1819,15 @@ function changeScreenType(val) {
   try { _restoreApLangs(); } catch (e) {}
   // v22814: the SCREEN TYPE dropdown always mirrors reality. The gids boot
   // path called changeScreenType('gate') without setting the select, so the
-  // menu read 'Main Board' on a live gate (Nick: 'Proof im on the gate
-  // right now its showing main board its fucked up'). Sync here — the one
+  // menu read 'Main Board' on a live gate
+  // Sync here — the one
   // place every caller passes through.
   try { var _stSel = document.getElementById('screenTypeSel'); if (_stSel && _stSel.value !== val) _stSel.value = val; } catch (e) {}
   // v22939 — AND THE DISPLAY-TYPE PILLS. v22814 fixed the legacy <select>
   // and stopped there; the redesigned menu's FIDS/GIDS/BIDS pills are a
   // second copy of the same state and they were never wired to it. So the
-  // exact fault came back on a different control (Nick: 'Not on the right
-  // setting ffs this all happened before').
+  // exact fault came back on a different control
+  // 
   //
   // Measured on the live branch, /gids?ap=YYZ&gate=D36 (v22938):
   //   screenType 'gate' · screenTypeSel 'gate' · uxg-gate-mode true
@@ -1835,7 +1835,7 @@ function changeScreenType(val) {
   // and calling _syncMenu() by hand flipped them to GIDS:ACTIVE. So the
   // state was right and nothing ever pushed it to the pills: menu.js syncs
   // once when the fragment lands — BEFORE the gids boot path flips
-  // screenType — and menubar.js, which owns the top-bar dropdown Nick
+  // screenType — and menubar.js, which owns the top-bar dropdown
   // actually opens, never calls _syncMenu at all.
   //
   // Fixed where the value changes, not where it is displayed, so any future
@@ -1850,7 +1850,7 @@ function changeScreenType(val) {
   } catch (e) {}
   // Survive the self-update reloads: a screen put into gate/baggage mode via
   // the MENU (no URL param) was being dumped back to the main board on every
-  // deploy (Nick: 'what happened to baggage… it's all over the place').
+  // deploy.
   try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: val, s: (typeof subScreenVal !== 'undefined' ? subScreenVal : '') })); } catch (e) {}
   document.body.classList.toggle('uxg-gate-mode', val === 'gate');
   if (val !== 'gate') { if (typeof stopGateAds==='function') stopGateAds(); } else { if (typeof startGateAds==='function' && !_gateAdTimer) startGateAds(); }
@@ -1950,7 +1950,7 @@ function updateSubScreens() {
     locations = [...new Set(flights.map(f => f._belt).filter(b => b && b !== '—'))].sort();
     // YQM has exactly two carousels: 1 (domestic) and 2 (international). Always
     // surface BOTH — even an empty Carousel 2 — so travelers always see where
-    // international bags come out (Nick). Other airports list only live belts.
+    // international bags come out. Other airports list only live belts.
     try {
       var _apBagSel = document.getElementById('apSel');
       if (_apBagSel && _apBagSel.value === 'YQM') {
@@ -1975,8 +1975,8 @@ function updateSubScreens() {
   //
   // Measured at Moncton: Porter has roughly one departure a day at gate 3, and
   // the cyqm.ca feed 403s on about a third of polls, so the departure list
-  // keeps changing shape underneath this. Gate 3 kept losing itself (Nick: 'I
-  // have a porter flight gate 3 and not catching it half the time'), and the
+  // keeps changing shape underneath this. Gate 3 kept losing itself
+  // and the
   // rendered board showed 'Awaiting Next Flight' over a blank gate tile.
   //
   // A screen opened with ?gate=/?belt=/?sub= was asked for ONE gate. If that
@@ -2037,8 +2037,8 @@ function updateSubScreens() {
     // A CYCLING display must not always open on the same gate. `locations` is
     // sorted, so locations[0] is the lowest gate number — which is why every
     // rotation was seen starting at the bottom of the list and walking up
-    // (Nick: 'rotation starts from the lowest number gate up ... this should be
-    // random not in order'). The per-cycle pick is already random; only this
+    //
+    // The per-cycle pick is already random; only this
     // FIRST gate was ordered. A pinned or operator-driven screen keeps the
     // deterministic first entry — the dropdown must open on a predictable one.
     var _start = 0;
@@ -2055,8 +2055,8 @@ function updateSubScreens() {
 //          That fixed contrast and destroyed the accent: on a WestJet row the
 //          row's own ink IS the darkened carrier colour, so the code inherited
 //          the brown, and on a board with no accent set currentColor makes the
-//          code identical to the city name beside it (Nick: 'my Codes went
-//          back to brown for Westjet none for the main').
+//          code identical to the city name beside it
+// 
 // CSS cannot measure contrast, so it was always going to be a guess. This
 // measures. For each code it reads the background actually painted behind it,
 // takes the SCREEN's accent (one colour per board, never per carrier, so it
@@ -2129,8 +2129,8 @@ function _caScreenAccent() {
   var tries = [];
   try {
     var cs = getComputedStyle(document.body);
-    // v23524 — THE AIRLINE'S OWN ACCENT COMES FIRST ON A GATE. Nick: "Why is
-    // Air Canada have blue text .....?" and "Air canada airport codes are too
+    // v23524 — THE AIRLINE'S OWN ACCENT COMES FIRST ON A GATE.
+    // and "Air canada airport codes are too
     // Blue they need match accordingly".
     // A gate screen is branded to ONE carrier — the rail, the banner and the
     // plates are all its colours — and the airport codes were the one element
@@ -2165,7 +2165,7 @@ function _caScreenAccent() {
 // fine for a blue or a red, and wrong for a gold: a darkened gold IS brown.
 // On a WestJet card the screen accent is YQM's gold, the card is light teal,
 // so the fitter darkened the gold to clear it and produced exactly the olive
-// Nick has rejected over and over ('accents need to be accents just not brown
+// the owner has rejected over and over ('accents need to be accents just not brown
 // its not appealing its not their colors').
 // Brown is a dark, still-saturated yellow-orange. Naming it as a region and
 // refusing to land there is the only way a lightness walk can be stopped from
@@ -2222,8 +2222,8 @@ function applyCodeAccents() {
     // v23295 — .g8-city-code matches NOTHING on the gate screen. The gate's
     // codes are built by _codeSeg() as .v2-fi-code.v2-rc-iata, so targeting
     // only the board's class is why the gate accents never changed however
-    // many times this was reported fixed (Nick: 'the accents have not
-    // changed'). Verified by counting the elements on a live gate.
+    // many times this was reported fixed
+    // Verified by counting the elements on a live gate.
     var nodes = document.querySelectorAll('.dest-iata, .g8-city-code, .v2-fi-code, .v2-rc-iata');
     if (!nodes.length) return;
     var accent = _caScreenAccent();
@@ -2960,8 +2960,8 @@ function gateWeatherHtml(locIata, loc, dayNames) {
 let dedicatedRenderKey = '';
 // Debounced gate key reset — prevents rapid successive re-renders.
 //
-// v23166 — TRAILING EDGE, AND WIDER THAN THE CALLER'S PACING (Nick: 'flashes
-// and glitches... especially on gate'). This used to be a LEADING-edge latch:
+// v23166 — TRAILING EDGE, AND WIDER THAN THE CALLER'S PACING
+// This used to be a LEADING-edge latch:
 // the first call armed a fixed 300ms timer and every later call inside that
 // window was DROPPED — but dropped callers were not batched, they were simply
 // ignored, and the timer never extended. Enrichment fans its API calls out on
@@ -3001,7 +3001,7 @@ function _gateRebuildFire() {
         && typeof renderDedicatedScreen === 'function') renderDedicatedScreen();
   } catch (e) {}
 }
-// ── Codeshare guard for GATE screens (Nick: a Qantas codeshare number must
+// ── Codeshare guard for GATE screens (the owner: a Qantas codeshare number must
 // never brand an American flight). The same physical departure can appear
 // under several marketing numbers; keep the row whose marketing carrier
 // matches the OPERATING carrier's family, and rebrand a lone foreign-
@@ -3032,7 +3032,7 @@ function _gateCsPick(list) {
       // Connection — so the operator code alone can't pick the brand. Left
       // unguarded, the gate banner flipped AA↔UA every time the operator field
       // oscillated between Envoy (MQ→AA) and Republic (YX→UA) for one flight
-      // (Nick: 'United branding on an AA flight … it keeps happening').
+      //
       if (!_CS_REGIONAL_FAM[f.airline]) return;
       var fm = fam(f._opCode);
       f._csRebrandFrom = f._csRebrandFrom || f.airline;
@@ -3081,14 +3081,14 @@ function getDedicatedRenderKey() {
   return JSON.stringify({screenType:'main'});
 }
 
-// v23317 — the BIDS visibility window. One hour of lead (Nick: 'half hour to
-// hour' — the generous end, tunable in one place) and 45 minutes of trail so
+// v23317 — the BIDS visibility window. One hour of lead
+// — the generous end, tunable in one place) and 45 minutes of trail so
 // a landed flight stays listed while its bags are on the belt. The effective
 // time is the best the feed knows: actual arrival, else revised, else
 // scheduled. A flight with NO usable time is kept — hiding a flight because
 // the feed dropped its timestamp would strand passengers silently.
 // v23526 — how many minutes BEFORE the revised departure a gate reads closed.
-// Nick's call is five. Porter publishes ten; other carriers differ, so this is
+// the owner's call is five. Porter publishes ten; other carriers differ, so this is
 // one knob rather than a rule buried in a comparison.
 var GATE_CLOSE_LEAD_MIN = 5;
 var BIDS_WINDOW_AHEAD_MS = 60 * 60000;
@@ -3104,7 +3104,7 @@ function _bidsInWindow(f, nowTs) {
 }
 
 // ── LIVE TELEMETRY ANIMATOR ────────────────────────────────────────────────
-// The inbound's real speed/altitude only refresh every few minutes. Nick wants
+// The inbound's real speed/altitude only refresh every few minutes. the owner wants
 // them to read live between fixes. This holds a modeled speed (kt) / altitude
 // (ft) that drifts by flight phase — steady w/ a gentle shimmer at cruise, and
 // continuing only the bounded rate measured between real fixes. A new REAL reading
@@ -3133,12 +3133,12 @@ function _gateTelemSetReal(spdKt, altFt) {
   var now = Date.now();
   // Remember the PREVIOUS real fix — the pair (prev, real) measures the
   // actual climb/descent/accel rate, which the model below continues
-  // between pings (Nick's glide rule, applied to the digits).
+  // between pings.
   if (T.realTs) { T.prevSpd = T.realSpd; T.prevAlt = T.realAlt; T.prevTs = T.realTs; }
   T.realSpd = sp; T.realAlt = al; T.realTs = now;
   // A fresh ping re-anchors the MODEL; the per-second animator EASES the
-  // displayed digits onto it over ~10 s (Nick: 'play the realistic game,
-  // then catch up with the pings') — no hard snap after a frozen minute.
+  // displayed digits onto it over ~10 s
+  // — no hard snap after a frozen minute.
   // Only a first-ever anchor is written directly (nothing to ease from).
   if (T.spd === null && sp !== null) T.spd = sp;
   if (T.alt === null && al !== null) T.alt = al;
@@ -3161,7 +3161,7 @@ function _gateTelemModel() {
   var spd = T.realSpd, alt = T.realAlt;
   // v23100 — ON THE GROUND THE TREND IS DEAD. After touchdown the bridge
   // kept carrying the last measured altitude rate (a baro→ground blip can
-  // even measure a CLIMB) while the speed honoured the real zero — Nick's
+  // even measure a CLIMB) while the speed honoured the real zero — the owner's
   // video: 'Speed 0 kph / Altitude 1,576 ft' and RISING, at the gate. On
   // the ground the digits are the real anchor with no trend: speed as
   // reported, altitude 0 — the displayed number eases down and stays.
@@ -3172,7 +3172,7 @@ function _gateTelemModel() {
       return { spd: (typeof spd === 'number' ? spd : 0), alt: 0 };
     }
   } catch (e) {}
-  // TREND BRIDGE — the map glide's rule applied to the digits (Nick:
+  // TREND BRIDGE — the map glide's rule applied to the digits (
   // 'calculate approx, then adjust with the pings'). Between real fixes,
   // continue the RATE measured between the last two fixes, so a plane on
   // final keeps visibly descending instead of freezing at the last ping
@@ -3185,8 +3185,8 @@ function _gateTelemModel() {
     var age = (now - (T.realTs || 0)) / 1000;
     // TRUST WINDOW = the real inter-ping gap. ADB's upstream often repeats
     // the SAME fix for 3-5 minutes; the old 90 s cap froze the digits for
-    // the back half of every such gap — glide, stall, lurch (Nick: 'the
-    // altimeter and speed dont [work] as intended'). The measured rate now
+    // the back half of every such gap — glide, stall, lurch
+    // The measured rate now
     // carries the WHOLE gap: full strength for 120 s, HALF strength out to
     // 360 s (accumulated-error damping — a noise blip can't run at full
     // rate for six minutes), then HELD saturated. Held, never dropped: the
@@ -3197,7 +3197,7 @@ function _gateTelemModel() {
     // floor 0, re-anchored by every genuinely fresh ping.
     if (T.prevTs && T.realTs && T.realTs > T.prevTs && age > 0) {
       var span = (T.realTs - T.prevTs) / 1000;
-      // DAMPED: two pings can differ by a wind/ADS-B noise blip (Nick:
+      // DAMPED: two pings can differ by a wind/ADS-B noise blip (
       // '757kph to 867 climbing in less than a minute') — tight rate caps
       // keep the carried trend sane at any age.
       var effAge = Math.min(age, 120) + Math.max(0, Math.min(age, 360) - 120) * 0.5;
@@ -3258,7 +3258,7 @@ function _animateGateTelem() {
 // map — the map stays exactly as it is, so nothing can get jumpy. loadFlight
 // caches 45s, so a 60s cadence always gets a fresh reading.
 var _gateNumPollBusy = false;
-// ── ADB ML FLIGHT TIME (Nick, from the ADB spec: /airports/.../distance-time,
+// ── ADB ML FLIGHT TIME (the owner, from the ADB spec: /airports/.../distance-time,
 // flightTimeModel=ML01). Replaces the crude "great-circle ÷ 780 km/h + 25 min"
 // guess wherever the board estimates a route duration it wasn't told. Cached
 // 14 days per airport pair (Tier 2 → one call per pair per kiosk fortnight),
@@ -3336,7 +3336,7 @@ function _fidsMlFetch(o, d, k, aircraftName) {
   }).catch(function () { _mlftMem[k] = 0; });
 }
 
-// ── ADB FLIGHT PLAN ACCESS (Nick: 'FlightPlan access'). The ATC-FILED plan
+// ── ADB FLIGHT PLAN ACCESS. The ATC-FILED plan
 // (?withFlightPlan=true): route string + filed/assigned altitude & airspeed.
 // Fetched ONCE per flight (3 h cache) — NEVER on the 60 s poll, since a found
 // plan bills 2x per the spec. Filed numbers surface only where no live
@@ -3391,8 +3391,8 @@ function fidsFlightPlan(flightNo, dateStr) {
 // The poll used to write the type straight onto the flight object it was
 // handed — but the board rebuilds those objects from the feed on every
 // refresh, roughly as often as the poll runs, so the answer was routinely
-// thrown away between resolving it and drawing it (Nick, repeatedly: 'no
-// aircraft'). Keyed by flight number and kept for six hours, this survives
+// thrown away between resolving it and drawing it
+// Keyed by flight number and kept for six hours, this survives
 // every rebuild, and the renderers read it whenever the fresh object has
 // nothing of its own.
 window._ACRES = window._ACRES || {};
@@ -3416,7 +3416,7 @@ function _acResolvedGet(fl) {
   } catch (e) { return null; }
 }
 
-// v23130 — A TRUNCATED STATUS IS A BROKEN SENTENCE (Nick's YYZ shot:
+// v23130 — A TRUNCATED STATUS IS A BROKEN SENTENCE (the owner's YYZ shot:
 // 'Embarquem\u2026' — 'unaccepatble'). After any geometry/fit pass, any
 // status cell still wider than its box steps its own font down until the
 // whole word fits. No ellipsis, ever — the language law applies to the
@@ -3445,7 +3445,7 @@ async function _gateNumbersPoll() {
     // flight in the aircraft panel (AC185 at D24 — no inbound linked at all),
     // and this poll bailed out entirely in that case, so the type never
     // arrived and the panel read 'aircraft details pending' with the schedule
-    // sitting right there in the feed (Nick: 'btw no aircraft'). Fall back to
+    // sitting right there in the feed. Fall back to
     // the flight the gate is actually showing.
     if (!inb || !inb.flight) {
       var _cf = window._gateCurrentFlight;
@@ -3481,7 +3481,7 @@ async function _gateNumbersPoll() {
                   || (window._gateInbound && window._gateInbound.flight === flt)
                   || (window._gateCurrentFlight && window._gateCurrentFlight.flight === flt);
     if (!_stillSame) return;   // gate changed mid-fetch
-    // TODAY'S TAIL FROM THE SAME FETCH (Nick's PD2293: ADB had C-GKQE all
+    // TODAY'S TAIL FROM THE SAME FETCH (the owner's PD2293: ADB had C-GKQE all
     // along while the panel said 'expected | prévu' — the render-time
     // enrichment had missed once, and this poll then fetched the FULL
     // record every 60 s and threw everything but the live position away).
@@ -3499,9 +3499,9 @@ async function _gateNumbersPoll() {
       // A220-300' in the feed the night before, with no registration yet,
       // because the tail is assigned in the morning. The type was only being
       // copied INSIDE the registration branch, so the panel sat on 'aircraft
-      // details pending' while the answer was already in hand (Nick: 'there
-      // should always be an aircraft assigned its a scheduled with a
-      // scheduled aircraft'). Adopt it on its own, and let a real
+      // details pending' while the answer was already in hand
+      //
+      // Adopt it on its own, and let a real
       // registration still upgrade it later.
       if (inbData.aircraft && (!inb._aircraft || /^history/i.test(String(inb._aircraftSource || '')))) {
         inb._aircraft = inbData.aircraft;
@@ -3555,7 +3555,7 @@ async function _gateNumbersPoll() {
     try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex); } catch (e) {}
     // v23103 — THE TAIL IS NOT THE FLIGHT. Registration matching finds the
     // airframe wherever it is — including mid-air on its PREVIOUS leg.
-    // Nick's gate 4: AC1984 hadn't left Toronto (departs ~90 min later) yet
+    // the owner's gate 4: AC1984 hadn't left Toronto (departs ~90 min later) yet
     // the panel showed 926 kph / 37,000 ft — the tail's real state on
     // another flight, displayed as this one's. Until this leg's departure
     // window opens, the fix is not THIS flight's telemetry: discard it and
@@ -3601,7 +3601,7 @@ async function _gateNumbersPoll() {
       // v23702 — AND THE TYPE, WHICH THE COMMENT ABOVE PROMISED AND THE CODE
       // NEVER DELIVERED.
       //
-      // Nick: "most times the aircraft type doesnt even show why is that ?" and
+      // and
       // "it should show aircraft and registration at minimum".
       //
       // The line above assigns the tail and stops. `_adsb.type` is fetched,
@@ -3611,9 +3611,9 @@ async function _gateNumbersPoll() {
       // Nothing needed to be bought to fix that; the answer was already in hand
       // and already paid for.
       //
-      // This is the AIRBORNE case, which is the only case Nick asked for:
-      //   "It doesnt need to show until airborne"
-      //   "but once on the ground keep the info until its gone"
+      // This is the AIRBORNE case, which is the only case requested:
+      //   the type need not show until the aircraft is airborne
+      //   once it is on the ground, keep the info until the flight is gone
       // _acResolvedPut is what satisfies the second half — the feed rebuilds
       // flight rows on every refresh, so a type written only onto `inb` would
       // vanish at the next poll and the panel would fall back to Pending. The
@@ -3654,7 +3654,7 @@ async function _gateNumbersPoll() {
     var liveAlt = (_alt !== null) ? Math.round(_alt) : null;
     if (liveSpd !== null) inb._liveSpd = liveSpd;   // the panel reads _ib._liveSpd
     if (liveAlt !== null) inb._liveAlt = liveAlt;
-    // Feed the MAP too (Nick: 'nothing is moving' — this poll fed only the
+    // Feed the MAP too ( — this poll fed only the
     // numbers, so the mini map could sit on the full-route view with no
     // plane). window._gateInboundLivePos is the map tick's EXISTING input:
     // a fresh fix here makes the camera follow the plane and re-seeds the
@@ -3673,7 +3673,7 @@ try { setInterval(_gateNumbersPoll, 60000); setTimeout(_gateNumbersPoll, 2000); 
 // MAP TICK — re-evaluates the gate map every 10 s against the latest state
 // (late-identified inbound, fresh 60 s fix). The posKey/progKey guards inside
 // tryInitMap make unchanged states a no-op, so this can't cause jumpiness;
-// it CAN swing a wrong first view (Nick's video: EWR outbound pins while the
+// it CAN swing a wrong first view (the owner's video: EWR outbound pins while the
 // panel tracked the DEN inbound) to the right one within 10 s.
 try {
   setInterval(function () {
@@ -3681,7 +3681,7 @@ try {
       if (typeof screenType !== 'undefined' && screenType === 'gate'
           && typeof window._gateMapRetry === 'function'
           && document.getElementById('gateMapBox')) {
-        // MARKER WATCHDOG (Nick's approach video: street-zoom map with NO
+        // MARKER WATCHDOG (the owner's approach video: street-zoom map with NO
         // plane on it): a LIVE map whose plane marker is gone — teardown
         // race, hidden-container rebuild — must not sit empty. Reset the
         // pos/prog guards so this very tick rebuilds it plane-and-all.
@@ -3692,7 +3692,7 @@ try {
             window._lastMapPosKey = null; window._lastMapProgKey = null;
           }
         } catch (e2) {}
-        // v23129 — MOTION WATCHDOG (Nick's PD253: 'nope it doesnt its
+        // v23129 — MOTION WATCHDOG (the owner's PD253: 'nope it doesnt its
         // stuck'). The marker watchdog above only catches a MISSING marker;
         // a marker that exists but never moves — a glide that seeded at
         // speed 0, a wedged frame loop, anything — sat frozen forever. A
@@ -3716,10 +3716,10 @@ try {
             }
           }
         } catch (e3) {}
-        // v23138 — THE MAP MUST EXIST WHENEVER THE AIRCRAFT DOES (Nick, with
-        // a shot of the airline emblem filling the map slot while the bar
-        // read 32,000 ft: 'this just cant happen sorry'). The emblem is a
-        // watermark UNDER the map — so what he photographed is an EMPTY map
+        // v23138 — THE MAP MUST EXIST WHENEVER THE AIRCRAFT DOES (reported with
+        // a screenshot of the airline emblem filling the map slot while the bar
+        // read 32,000 ft). The emblem is a
+        // watermark UNDER the map — so the screenshot is of an EMPTY map
         // container, i.e. the map died (or never built) while telemetry kept
         // running. The two existing watchdogs only police a live map's
         // marker and its motion; neither notices the map itself being gone.
@@ -3741,7 +3741,7 @@ try {
         // for the same correct reason — then fired again 10 seconds later.
         // Measured on the live Moncton gate 3 board with PD2373 'arrived': the
         // rebuild log every tick and 15 subtree replacements in 30 seconds.
-        // That standoff is Nick's 'lots of glitching and flashing'.
+        // That standoff is the owner's 'lots of glitching and flashing'.
         //
         // Asking the same question the renderer asks ends it: no arriving
         // aircraft, nothing to insist on.
@@ -3784,8 +3784,8 @@ function updateDedicatedTimeOnly() {
   const banClock = document.getElementById('dedicatedBannerClock');
   const bidsDate = document.getElementById('bidsBannerDate');
   if (screenType === 'baggage') {
-    // BIDS banner clock matches the FIDS board (Nick: 'the same on all
-    // screens even FIDS and BIDS') — shared helpers for label / dual time /
+    // BIDS banner clock matches the FIDS board
+    // — shared helpers for label / dual time /
     // bilingual date, plus the analog hands.
     if (banClock) banClock.textContent = _ocClockTime1(now, tz);
     if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
@@ -3835,8 +3835,8 @@ function getTimeInTz(ts, tz) {
   } catch(e) { return ''; }
 }
 
-// ── MULTI-CITY DESTINATION FLIP (Nick: 'the board should flip so first
-// city then second city etc'). Through-flights like UA611 TPA→SFO→LAS
+// ── MULTI-CITY DESTINATION FLIP
+// Through-flights like UA611 TPA→SFO→LAS
 // crammed 'San Francisco, Las Vegas' into one shelf and truncated the
 // chip. Any [data-destflip] span carries its city list; ONE shared ticker
 // advances them ALL in lockstep every 4 s, so the big city text and the
@@ -3850,7 +3850,7 @@ function _destFlipFromItems(items, kind, cls) {
   return '<span class="' + (cls || 'dest-flip') + '" data-destflip="' + encodeURIComponent(JSON.stringify(items))
     + '" data-dfk="' + (kind || 'c') + '">' + first + '</span>';
 }
-// ROOT PATH (Nick: 'they all do that... dont do another patch'): the feeds
+// ROOT PATH: the feeds
 // TELL us every stop's airport code (TPA city.code list, YYZ routes[].code,
 // MCO via-leg codes). Rows carry them as _stops = [{iata, city}] and every
 // leg renders through the SAME naming machinery a single-stop destination
@@ -3880,8 +3880,8 @@ function _iataFromCityName(name) {
 // Feeds qualify a stop with its airport, not just its city: TPA writes
 // 'Houston - Intercontinental', 'Chicago - O'Hare', 'Washington - Dulles'.
 // A board says WHERE the flight goes, so the qualifier is dropped whenever the
-// part in front of it is a city the engine already knows (Nick: 'the nams of
-// the fucking multi ass city still has not been fucking changed'). Names with
+// part in front of it is a city the engine already knows
+// Names with
 // a hyphen of their own \u2014 Wilkes-Barre, Baie-Comeau \u2014 are untouched because
 // the split needs whitespace around the dash, and an unknown head is kept
 // whole rather than guessed at.
@@ -3904,9 +3904,9 @@ function _destFlipStops(stops, kind, cls) {
       // Feeds that NAME a via-stop without its code (TPA name-only legs,
       // YYZ routes[] without .code) left ia = '' here — and because the
       // chip is all-or-nothing, ONE such leg hid the (XXX) chip on the
-      // whole row while every single-stop row kept its code (Nick: 'the
-      // multi destination flights show the city and not the code like
-      // others'). Resolve the code from the city name through the engine's
+      // whole row while every single-stop row kept its code
+      //
+      // Resolve the code from the city name through the engine's
       // own tables; legs no table can name still suppress the chip.
       if (!ia) ia = _iataFromCityName(_cityFromStopLabel((s && s.city) || ''));
       var name = '';
@@ -3924,8 +3924,8 @@ function _destFlipStops(stops, kind, cls) {
 // text on commas fabricated multi-city flips out of single names
 // ('Houston, TX') — rows without a feed-code _stops list simply don't flip.
 try {
-  // 7 s per leg — the 4 s swap read as a cheap strobe (Nick: 'too fast...
-  // looks like a bad effect'). Soft crossfade instead of a raw text pop. The
+  // 7 s per leg — the 4 s swap read as a cheap strobe
+  // Soft crossfade instead of a raw text pop. The
   // gate fitter measures every alternate up front, so a swap never re-fits the
   // rest of the screen or makes unrelated boarding numbers and titles pulse.
   setInterval(function () {
@@ -3960,7 +3960,7 @@ try {
 } catch (e) {}
 
 // ── IS THIS INBOUND AIRBORNE? — the spec's own signals, one answer for every
-// consumer (Nick: 'did you read the instructions thats number one'). The
+// consumer. The
 // AeroDataBox docs define exactly how to read a record; the mini map, the
 // big takeover and the telemetry all ask THIS function now instead of each
 // keeping its own regex guess (which disagreed — the glyph popped in/out as
@@ -4008,8 +4008,8 @@ function _equipSaneForCarrier(mktCode, opCode, reg, acStr) {
     if (s.trim()) {
       if (c === 'RV' && !/319|320|321|32N|32Q|32S|32A|32B/.test(s)) return false;
       if ((c === 'PD' || c === 'P3') && !/DH8|DH4|DHC|DASH|Q400|E19|195|E29|290|EMBRAER/.test(s)) return false;
-      // v23310 — FLAIR FLIES THE MAX 8, NOTHING ELSE (Nick: 'a 737-800 with
-      // Flair doesnt exist'). This function is the guard against exactly that
+      // v23310 — FLAIR FLIES THE MAX 8, NOTHING ELSE
+      // This function is the guard against exactly that
       // — history/guessed equipment that cannot belong to the carrier — but it
       // only ever carried rules for Rouge and Porter, so 'Boeing 737-800 |
       // C-FLEJ' passed unchallenged: the tail is C-F..., which satisfies the
@@ -4065,11 +4065,11 @@ function getBoardingCountdown(depTs) {
 const AIRLINE_BRAND = {
   'AC': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Air Canada' },
   'WS': { bg1:'#003366', bg2:'#001a33', bg3:'#004488', accent:'#00b2a9', name:'WestJet' },
-  // Transat repainted from Nick's wing artwork (Aug 7: 'these are the actual
+  // Transat repainted from the owner's wing artwork (Aug 7: 'these are the actual
   // colors') — deep navy field, mid-navy lift, teal accent from the wing.
   // v22989 - repainted around Transat's OWN brand blue (#00B3F0, taken from
-  // the official TSC tile) after Nick: 'transat colors overall are all wrong
-  // ... the icons should be that light teal blue'. The grounds move off the
+  // the official TSC tile) after
+  // The grounds move off the
   // near-black navy onto Transat's deep brand blue so the gate reads as the
   // airline, and the accent that paints every orb IS the light teal blue.
   'TS': { bg1:'#0B3C63', bg2:'#062741', bg3:'#12557F', accent:'#00B3F0', name:'Air Transat' },
@@ -4077,7 +4077,7 @@ const AIRLINE_BRAND = {
   // v23291 — Pacific Coastal (IATA 8P / ICAO PCO / callsign PASCO), the YVR
   // regional. It had NO entry anywhere, so its rows and gates fell through
   // to the generic navy with no name. Its identity is a WORDMARK — there is
-  // no separate symbol — which is exactly what Nick asked for ('Pacific
+  // no separate symbol — which is exactly what the owner asked for ('Pacific
   // Coastal uses word mark as the Logo emblem'): with no logo file to
   // resolve, the banner's existing text path renders the name itself.
   // Brand colours from the airline's own identity: midnight blue over its
@@ -4087,7 +4087,7 @@ const AIRLINE_BRAND = {
   'QK': { bg1:'#1a2332', bg2:'#0a1628', bg3:'#162640', accent:'#d91a2a', name:'Jazz' },
   'AA': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#0078d2', name:'American Airlines' },
   'DL': { bg1:'#1a1a2e', bg2:'#0a0a1e', bg3:'#2a2a4e', accent:'#c01933', name:'Delta' },
-  'UA': { bg1:'#0C2340', bg2:'#071A33', bg3:'#0033A0', accent:'#0033A0', name:'United' },  // official Rhapsody/United Blue (Nick)
+  'UA': { bg1:'#0C2340', bg2:'#071A33', bg3:'#0033A0', accent:'#0033A0', name:'United' },  // official Rhapsody/United Blue
   'WN': { bg1:'#1a1a2e', bg2:'#0d0d1a', bg3:'#2a2a4e', accent:'#fbb612', name:'Southwest' },
   'B6': { bg1:'#00205b', bg2:'#001040', bg3:'#003080', accent:'#005cb9', name:'JetBlue' },
   'F8': { bg1:'#1a1e28', bg2:'#0c1018', bg3:'#242a36', accent:'#7AFF94', name:'Flair' },
@@ -4131,8 +4131,8 @@ var LOCAL_LOGOS = {
   'AS': '/logos/airlines/us-major/alaska-airlines.svg',
   'B6': '/logos/airlines/us-major/jetblue.svg',
   'F9': '/logos/airlines/us-major/frontier.svg',  // Frontier Airlines (green wordmark + F-emblem)
-  'XP': '/logos/airlines/us-major/avelo.svg',     // Avelo Airlines (purple wordmark + tail emblem) — official kit from Nick
-  'LL': '/logos/airlines/european/level.svg',     // LEVEL (cyan/green mark + lettering) — official kit from Nick
+  'XP': '/logos/airlines/us-major/avelo.svg',     // Avelo Airlines (purple wordmark + tail emblem) — official kit from
+  'LL': '/logos/airlines/european/level.svg',     // LEVEL (cyan/green mark + lettering) — official kit from
   // NK (Spirit) removed — airline ceased operations May 2 2026 after second
   // bankruptcy and failed bailout. Code paths preserved as no-ops in case
   // any historical/legacy data still references the carrier.
@@ -4221,8 +4221,8 @@ function operatorLogoUrl(opCode) {
 // background and the white mark on a dark (night) background. Operators without
 // a monochrome pair fall back to their standard colour logo.
 var OPERATOR_LOGOS_THEMED = {
-  // v23464 — ROUGE KEEPS ITS COLOUR. Nick: 'The logos also such as Rouge
-  // should be color no reason for white you cant see it'. The 'Operated By'
+  // v23464 — ROUGE KEEPS ITS COLOUR.
+  // The 'Operated By'
   // strip is the light grey AC-family plate, and the monochrome-black mark it
   // was given reads as a grey smudge on it. rouge.svg is the real wordmark in
   // its own crimson (#A21C37 / #EC1C2B), which is what the strip was designed
@@ -4235,8 +4235,8 @@ var OPERATOR_LOGOS_THEMED = {
   'PB':  { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
   'PVL': { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' }
 };
-// v23208 — WORDMARK-ONLY art for the Operated-By caption (Nick: 'the
-// wordmark without emblem goes at operated by' — 'this is all airlines').
+// v23208 — WORDMARK-ONLY art for the Operated-By caption
+// — 'this is all airlines').
 // Lettering alone, natural colour ('collor or black'): the emblem belongs in
 // the orb by the aircraft ('whoever operates that aircraft gets the logo'),
 // never here. Operators without a lettering-only file fall through to their
@@ -4260,7 +4260,7 @@ var OPERATOR_WORDMARKS = {
   'JZA': '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
   'PB':  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
   'PVL': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
-  // v23261 — the US regionals join the wordmark rule (Nick's UA3513 shot:
+  // v23261 — the US regionals join the wordmark rule (the owner's UA3513 shot:
   // 'Operated By:' rendered with nothing beside it — Republic's navy
   // lettering, and SkyWest's square colour logo, are invisible on United's
   // navy caption strip). Base pick is the dark-ink lettering (right for the
@@ -4313,7 +4313,7 @@ var OPBY_WORDMARKS_THEMED = {
   // but it leaves encore.png (all-white raster) unfiltered on whatever strip
   // it lands on: fine on the dark ones, invisible on the light grey bar.
   //
-  // Nick's own artwork supplies both halves, so the strip no longer has to be
+  // the owner's own artwork supplies both halves, so the strip no longer has to be
   // the thing that changes — the mark simply matches the ground it is on.
   'WR':  { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' },
   'WEN': { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' }
@@ -4333,7 +4333,7 @@ function _opbyContrastFix(root) {
       // rgba(10,26,48,0.55) — a 55% navy VEIL over a bright sky photo. Scored
       // as solid navy it reads luma 24, "dark", so the pass reached for the
       // white mark and put it on a ground that is actually pale. That is the
-      // white Rouge Nick has been looking at.
+      // white Rouge the owner has been looking at.
       //
       // Composite instead: walk the whole chain, blending each translucent
       // layer onto what is behind it, and only stop at something opaque. A
@@ -4386,8 +4386,8 @@ function _opbyContrastFix(root) {
         if (im.getAttribute('src') !== want) im.setAttribute('src', want);
         im.style.setProperty('filter', 'none', 'important');
       } else {
-        // v23466 — NO FILTER, EVER. Nick: 'The logos also such as Rouge should
-        // be color no reason for white you cant see it', and the wider rule he
+        // v23466 — NO FILTER, EVER.
+        // and the wider rule he
         // set out — a white mark is fine only when the AIRLINE publishes one;
         // whitening their colour artwork ourselves is altering their mark, and
         // that is the part a rights holder objects to.
@@ -4490,11 +4490,11 @@ function carrierLogoUrl(code) {
   //        is now Discover Airlines.
   //   XP — WAS here. wway's file arrived with its own canvas and a white
   //        ground, so Avelo rendered as a clipped 'velo' in a white box and
-  //        the text-wordmark fallback was the lesser evil. v22676: Nick
+  // the text-wordmark fallback was the lesser evil. v22676:
   //        supplied the real brand kit, so XP now has local artwork like
   //        every other carrier and no longer needs the fallback.
   //   LL — LEVEL sat here for one version (v22680, the white-box E25
-  //        banner) until Nick supplied the real brand kit; v22681 wires the
+  // banner) until the owner supplied the real brand kit; v22681 wires the
   //        local artwork and the fallback comes off, same arc as Avelo.
   var STALE_WWAY_CARRIER = { '4Y': 1 };
   if (STALE_WWAY_CARRIER[up]) return '';
@@ -4539,7 +4539,7 @@ var WATERMARK_OVERRIDE = {
   'F8': '/logos/airlines/canadian/flair-mark-white.png',   // brand "flair ●" mark — white wordmark + green dot (matches the gate banner; reads on the dark sky)
   'PB': '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg',
   // European
-  // v23293 — Nick's own supplied artwork (British_Airwayslogo.eps, converted):
+  // v23293 — the owner's own supplied artwork (British_Airwayslogo.eps, converted):
   // the OFFICIAL STACKED lockup, 'BRITISH' over 'AIRWAYS' under the
   // speedmarque ('i think it woiuld be best to have the name british with
   // airways underneath'). It is 168.96 x 68.35 = 2.47:1 against the one-line
@@ -4797,7 +4797,7 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
     // Handwritten Collection properties carry the brand in their name
     // ('Hotel Maison Hamelin Paris - Handwritten Collection'), so match on it:
     // the script wordmark then shows for whatever code the catalog sends
-    // (Nick: 'Many hotels should be using this logo, its not used at all').
+    //
     [/handwritten/,                          '/logos/hotels/accor-midscale/handwritten-monochrome-white.svg'],
     [/\bfaena\b/,                                '/logos/hotels/accor-luxury/faena-monochrome-white.svg'],
     [/\borient\s*express\b/,                    '/logos/hotels/accor-luxury/orientexpress-monochrome-white.svg'],
@@ -5262,8 +5262,8 @@ function resolveFairmontLockupFile(hotelName) {
   var best = null, bestLen = 0;
   // v22974 — a fuzzy key must not steal a DIFFERENT property. 'Fairmont
   // Century Plaza' (no pack art of its own) contains the whole word 'plaza',
-  // and the loose pass handed it The Plaza New York's lockup (Nick: 'Century
-  // Plaza in LAX is showing as the Fairmont The Plaza'). A key only counts
+  // and the loose pass handed it The Plaza New York's lockup
+  // A key only counts
   // when the word immediately BEFORE the matched span is brand filler
   // ('the fairmont …', 'le …') or nothing — a distinguishing word there
   // ('century plaza', 'copley plaza') means this is some other property, so
@@ -5313,7 +5313,7 @@ function accorLockupCarriesName(p) {
   if (/^data:image\/svg\+xml/i.test(p)) return true;                                  // runtime-generated lockup (name baked in)
   if (/\/fairmont\/(outlined|editable)_svg_(white|black|gray)\//i.test(p)) return true; // brand-team per-property packs
   if (/\/rimrock-banff\.svg(?:[?#]|$)/i.test(p)) return true;                          // Emblems per-property file
-  if (/\/sofitel\/sofitel-montreal-(en|fr)\.svg(?:[?#]|$)/i.test(p)) return true;      // Sofitel Montréal per-property (Nick, EN/FR)
+  if (/\/sofitel\/sofitel-montreal-(en|fr)\.svg(?:[?#]|$)/i.test(p)) return true;      // Sofitel Montréal per-property
   if (/\/fairmont-(?!monochrome\b|full\b)[a-z0-9-]+\.svg(?:[?#]|$)/i.test(p)) return true; // legacy one-off per-property lockups
   return false;
 }
@@ -5339,8 +5339,8 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   // character, we estimate text width and scale font down if needed.
   // Match the OFFICIAL Canadian property lockups: the property name is set in
   // LATO sans-serif, ~17px/400/2.7-tracking in their 266.5-wide viewBox — i.e.
-  // ~6.4% of width, 1.0% tracking. Not an ornate serif (Nick: 'totally wrong
-  // font — thin and skinny'). Scale that ratio to our 80-wide box (~5.1u), and
+  // ~6.4% of width, 1.0% tracking. Not an ornate serif
+  // Scale that ratio to our 80-wide box (~5.1u), and
   // shrink only for very long names so they still fit.
   var len = name.length;
   var fontSize, letterSpacing;
@@ -5360,7 +5360,7 @@ function makeFairmontLockupSvgDataUri(propertyName) {
   // NOTE: this data-URI variant renders as an <img>, so its font never loads —
   // the INLINE variant (makeFairmontLockupInlineSvg) is what actually paints the
   // name in The Seasons. This copy stays only for name-suppression bookkeeping.
-  // Wordmark a touch bigger, filling the width (Nick: 'Fairmont a bit bigger').
+  // Wordmark a touch bigger, filling the width.
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 30.5" preserveAspectRatio="xMidYMid meet">'
     + '<g transform="translate(1.6, 0) scale(1.42)" fill="#ffffff" fill-rule="evenodd" clip-rule="evenodd">'
     +   '<path d="' + _FAIRMONT_WORDMARK_D + '"/>'
@@ -5378,9 +5378,9 @@ function makeFairmontLockupSvgDataUri(propertyName) {
 // INLINE-SVG variant of the Fairmont lockup. A @font-face embedded in an SVG
 // rendered as <img> does NOT load in browsers, so the property name fell back
 // to whatever the board had installed. Rendered INLINE in the DOM the name can
-// use a document-level @font-face. Per Nick, the standalone lockup name is part
+// use a document-level @font-face. Per the owner, the standalone lockup name is part
 // of the LOGO (not a title in a sentence), so it is set in Franklin Gothic
-// URW Book (FairmontLogoName — Nick's spec), matching the name line on the real
+// URW Book (FairmontLogoName — the owner's spec), matching the name line on the real
 // Fairmont logos ('ROYAL YORK', 'LE REINE ELIZABETH') — NOT The Seasons, which
 // is reserved for titles. The Fairmont script wordmark is vector paths either
 // way. Returns raw <svg> markup (not a data URI). Layout matches
@@ -5419,11 +5419,11 @@ function makeFairmontLockupInlineSvg(propertyName) {
 }
 
 // ── SOFITEL LOCKUP GENERATOR ───────────────────────────────────────────
-// Every Sofitel property renders the SAME way as the Montréal art Nick
+// Every Sofitel property renders the SAME way as the Montréal art
 // supplied: the real SOFITEL wordmark + the property name set in Rebelton
-// Extended (the Sofitel property-name typeface Nick provided), same style and
-// size (Nick: 'all Sofitel rendered the same way ... use the same style of
-// font and size'). Montréal keeps its own brand-team files; every OTHER
+// Extended (the Sofitel property-name typeface the owner provided), same style and
+// size
+// Montréal keeps its own brand-team files; every OTHER
 // Sofitel is composed here. The font is EMBEDDED (base64) because these
 // lockups render inside <img> SVGs, which cannot load page/external fonts.
 var _REBELTON_TTF_B64 = "AAEAAAASAQAABAAgRkZUTYm2ypcAANogAAAAHEdERUYEtQWgAADLQAAAADxHUE9TCvzmOgAAzcwAAAxUR1NVQlchScUAAMt8AAACUE9TLzJpv4SfAAABqAAAAGBjbWFwRBc9MAAABuQAAAOGY3Z0IAeDJwwAABgcAAAAamZwZ212ZH54AAAKbAAADRZnYXNwAAAAEAAAyzgAAAAIZ2x5Zg+wAyIAABr4AACmpGhlYWQZO+bLAAABLAAAADZoaGVhCvAHZwAAAWQAAAAkaG10eJyMNbEAAAIIAAAE3GxvY2GH4LNMAAAYiAAAAnBtYXhwAn4ByAAAAYgAAAAgbmFtZX7zLbYAAMGcAAAEfXBvc3SGdNL3AADGHAAABRlwcmVwRj27IgAAF4QAAACYAAEAAAABAABiNdRCXw889QAfA+gAAAAA2K/k0gAAAADbYr68/z/+cAZ3A+gAQAAIAAIAAAAAAAAAAQAAA6f/vwGQBrj/P/+4BncAAQAAAAAAAAAAAAAAAAAAATcAAQAAATcATQAKAAAAAAACACgAOQCLAAAAiQFAAAAAAAADAv8BkAAFAAACigJYAAAASwKKAlgAAAFeADIBLAAAAAAFAAAAAAAAAAAAAAcAAAAAAAAAAAAAAABVS1dOAEAAIPsCA6f/vwGQBRIAZiAAAIMAAAAAAfQC8AAAACAAAwK8AIIAAAAAAU0AAAJYAAAA+AA3AlgANwM/ADcC6QAtAygANwO0ADcA3QA3AUYANwFGADcCQwA3ApYANwEBADcB7gA3APgANwIqAA8DSAAhAjwANwMYADcC4AAoAvkANwLiADcC5wA3ArYANwLrADcC5wA3APgANwEPADcCqgA3ApYANwKqADcDCgA3BCAANwN1AA8DjgBBA4YAKwN4AEEDhABBA4QAQQOGACsDtgBBAPAAQQHEADcDdABBA0gAQQQfAEEDtgBBA7cAKwN8AEEDtwArA44AQQNjACMDPgAZA34AQQN1AA8FIQAPA1IAIwNdABkDbAA3AWEANwIqABkBYQA3AfcANwLwADcAef+4A3UADwOOAEEDhgArA3gAQQOEAEEDhABBA4YAKwO2AEEA8ABBAcQANwN0AEEDSABBBB8AQQO2AEEDtwArA3wAQQO3ACsDjgBBA2MAIwM+ABkDfgBBA3UADwUhAA8DUgAjA10AGQNsADcCWAA3AMAANwGRADcCMQA2APgANwLuAC0C9wA3ArgANwOZADcAwAA3A4sANwGUABkD2wA3A3UADwKCABkD2wA3ARsAGQGhADcClgA3AcsANwG1ADcAeQAZAPgANwDS/+oBVAA3A7cAKwKCADcDEwA4A0wANwMIADcDCgA3A3UADwN1AA8DdQAPA3UADwN1AA8DdQAPBe0ADwOGACsDhABBA4QAQQOEAEEDhABBAPD/7wDwAEEA8P/kAPD/xQNuAAADtgBBA7cAKwO3ACsDtwArA7cAKwO3ACsCMwA3A6IAIAN+AEEDfgBBA34AQQN+AEEDXQAZA3IANwN2AEEDdQAPA3UADwN1AA8DdQAPA3UADwN1AA8F7QAPA4YAKwOEAEEDhABBA4QAQQOEAEEA8P/vAPAAQQDw/+QA8P/FA24AAAO2AEEDtwArA7cAKwO3ACsDtwArA7cAKwKWADcDogAgA34AQQN+AEEDfgBBA34AQQNdABkDcgA3A10AGQN1AA8DdQAPA3UADwN1AA8DdQAPA3UADwOGACsDhgArA4YAKwOGACsDeABBA3gAQQNuAAADbgAAA4QAQQOEAEEDhABBA4QAQQOEAEEDhABBA4QAQQOEAEEDhgArA4YAKwOGACsDhgArAPAABADwAAQA8AAoAPAAKADwAEEDdABBA3QAQQNIAEEDSABBA0gAQQNIAEEDSABBA0gAQQNIAB4DSAAeA7YAQQO2AEEDtgBBA7YAQQO2AEEDtgBBA7cAKwO3ACsDtwArA7cAKwZlACAGZQAgA44AQQOOAEEDjgBBA44AQQOOAEEDYwAjA2MAIwNjACMDYwAjA2MAIwNjACMDPgAZAz4AGQM+ABkDPgAZA34AQQN+AEEDfgBBA34AQQN+AEEDfgBBA34AQQN+AEEDXQAZA2wANwNsADcDbAA3A2wANwNsADcDbAA3AzYANwNjACMDYwAjAz4AGQM+ABkBVwAZAVcAGQFaABkAvAAZASkAGQDXABkBkQAXARUAGQAA/z8ClgA3A5sANwEBADcBAQA3AlgANwHMADcBzAA3AcoANwLKADcCygA3AUIANwLoADcEowA3Ac8AGQHPADcCkgAZAwAANwS5ADcClgA3AjEANgJYAFUCqgA3AqoANwRgAEEGuABBAAAAAwAAAAMAAAAcAAEAAAAAAXwAAwABAAAAHAAEAWAAAABU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v6aj/Z5aAAAAAgBBAAADBwK/AAMACQAhQB4AAQEAXQIBAAARSwADAwReAAQEEgRMERERERAFBxkrATMHIyUzESEVIQHJeWs9/qduAlj9OgK/pqP9nloAAAABAB4AAAMHArwADQAsQCkMCwoJBgUEAwgCAQFKAAEBEUsDAQICAF4AAAASAEwAAAANAA0VEQQHFislFSERBzU3ETMRNxUHFQMH/TojI25LS1paATEMWQwBMv71Glka/gABAB4AAAMHArwADQAsQCkMCwoJBgUEAwgCAQFKAAEBEUsDAQICAF4AAAASAEwAAAANAA0VEQQHFislFSERBzU3ETMRNxUHFQMH/TojI25LS1paATEMWQwBMv71Glka/gACAEEAAAN1A4oAAwANAChAJQsGAgQCAUoAAAABAgABZQMBAgIRSwUBBAQSBEwSERIRERAGBxorATMHIwUzAREzESMBESMB8HlrPf6AjAI6boj9wm4DiqYo/bUCS/1EAkv9tQAAAgBBAAADdQOKAAMADQAoQCULBgIEAgFKAAAAAQIAAWUDAQICEUsFAQQEEgRMEhESEREQBgcaKwEzByMFMwERMxEjAREjAfB5az3+gIwCOm6I/cJuA4qmKP21Akv9RAJL/bUAAAIAQf9DA3UCvAAJAA0AJ0AkBwICAgABSgAEAAUEBWEBAQAAEUsDAQICEgJMERESERIQBgcaKxMzAREzESMBESMFMwcjQYwCOm6I/cJuAYk8L3kCvP21Akv9RAJL/bUXpgAAAAACAEH/QwN1ArwACQANACdAJAcCAgIAAUoABAAFBAVhAQEAABFLAwECAhICTBEREhESEAYHGisTMwERMxEjAREjBTMHI0GMAjpuiP3CbgGJPC95Arz9tQJL/UQCS/21F6YAAAAAAgBBAAADdQOWAAYAEAAwQC0CAQIADgkCBQMCSgEBAAIAgwACAwKDBAEDAxFLBgEFBRIFTBIREhEREhAHBxsrATMXNzMHIwUzAREzESMBESMBT2MwMmBrTv6GjAI6boj9wm4DlnNzpjT9tQJL/UQCS/21AAACAEEAAAN1A5YABgAQADBALQIBAgAOCQIFAwJKAQEAAgCDAAIDAoMEAQMDEUsGAQUFEgVMEhESERESEAcHGysBMxc3MwcjBTMBETMRIwERIwFPYzAyYGtO/oaMAjpuiP3CbgOWc3Om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BAQSBEwREREREREREAgHHCsTIRUhFSEVIREjATMRIRUhQQMC/WwCUv2ubgNwbgJY/ToCvFrXWv7PArz9nloAAAAAABgBJgABAAAAAAAAADwAegABAAAAAAABABEA2wABAAAAAAACAAgA/wABAAAAAAADAEgBmgABAAAAAAAEABECBwABAAAAAAAFAAUCJQABAAAAAAAGABECTwABAAAAAAAIABIChwABAAAAAAAJABICwAABAAAAAAAMABkDBwABAAAAAAAQAAgDMwABAAAAAAARAAgDTgADAAEECQAAAHgAAAADAAEECQABACIAtwADAAEECQACABAA7QADAAEECQADAJABCAADAAEECQAEACIB4wADAAEECQAFAAoCGQADAAEECQAGACICKwADAAEECQAIACQCYQADAAEECQAJACQCmgADAAEECQAMADIC0wADAAEECQAQABADIQADAAEECQARABADPABDAG8AcAB5AHIAaQBnAGgAdAAgAKkAIAAyADAAMQA5ACAAYgB5ACAASwBvAG4AcwB0AGEAbgB0AGkAbgBlACAAUwB0AHUAZABpAG8ALgAgAEEAbABsACAAcgBpAGcAaAB0AHMAIAByAGUAcwBlAHIAdgBlAGQALgAAQ29weXJpZ2h0IKkgMjAxOSBieSBLb25zdGFudGluZSBTdHVkaW8uIEFsbCByaWdodHMgcmVzZXJ2ZWQuAABSAGUAYgBlAGwAdABvAG4AIABFAHgAdABlAG4AZABlAGQAAFJlYmVsdG9uIEV4dGVuZGVkAABFAHgAdABlAG4AZABlAGQAAEV4dGVuZGVkAABjAG8AbQAuAG0AeQBmAG8AbgB0AHMALgBlAGEAcwB5AC4ASwBvAG4AcwB0AGEAbgB0AGkAbgBlAFMAdAB1AGQAaQBvAC4AcgBlAGIAZQBsAHQAbwBuAC4AZQB4AHQAZQBuAGQAZQBkAC4AdwBmAGsAaQB0ADIALgB2AGUAcgBzAGkAbwBuAC4ANQB5AEoAUQAAY29tLm15Zm9udHMuZWFzeS5Lb25zdGFudGluZVN0dWRpby5yZWJlbHRvbi5leHRlbmRlZC53ZmtpdDIudmVyc2lvbi41eUpRAABSAGUAYgBlAGwAdABvAG4AIABFAHgAdABlAG4AZABlAGQAAFJlYmVsdG9uIEV4dGVuZGVkAAAxAC4AMAAwADAAADEuMDAwAABSAEUAQgBFAEwAVABPAE4ALQBFAHgAdABlAG4AZABlAGQAAFJFQkVMVE9OLUV4dGVuZGVkAABLAG8AbgBzAHQAYQBuAHQAaQBuAGUAIABTAHQAdQBkAGkAbwAAS29uc3RhbnRpbmUgU3R1ZGlvAABLAG8AbgBzAHQAYQBuAHQAaQBuAGUAIABTAHQAdQBkAGkAbwAAS29uc3RhbnRpbmUgU3R1ZGlvAAB3AHcAdwAuAGsAbwBuAHMAdABhAG4AdABpAG4AZQBzAHQAdQBkAGkAbwAuAGMAbwBtAAB3d3cua29uc3RhbnRpbmVzdHVkaW8uY29tAABSAGUAYgBlAGwAdABvAG4AAFJlYmVsdG9uAABFAHgAdABlAG4AZABlAGQAAEV4dGVuZGVkAAAAAAACAAAAAAAA/4MAMgAAAAAAAAAAAAAAAAAAAAAAAAAAATcAAAABAAIAAwAEAAUABgAHAAgACQAKAAsADAANAA4ADwAQABEAEgATABQAFQAWABcAGAAZABoAGwAcAB0AHgAfACAAIQAiACMAJAAlACYAJwAoACkAKgArACwALQAuAC8AMAAxADIAMwA0ADUANgA3ADgAOQA6ADsAPAA9AD4APwBAAEEAQgBDAEQARQBGAEcASABJAEoASwBMAE0ATgBPAFAAUQBSAFMAVABVAFYAVwBYAFkAWgBbAFwAXQBeAF8AYABhAKMAhACFAL0AlgDoAIYAjgCLAJ0AqQCKANoAgwCTAQIBAwCNAMMA3gEEAJ4AqgD1APQA9gCiAK0AyQDHAK4AYgBjAJAAZADLAGUAyADKAM8AzADNAM4A6QBmANMA0ADRAK8AZwDwAJEA1gDUANUAaADrAO0AiQBqAGkAawBtAGwAbgCgAG8AcQBwAHIAcwB1AHQAdgB3AOoAeAB6AHkAewB9AHwAuAChAH8AfgCAAIEA7ADuALoBBQEGAQcBCAEJAQoA/QD+AP8BAAELAQwBDQEBAQ4BDwEQAREBEgETARQBFQD4APkBFgEXARgBGQEaARsA1wEcAR0BHgEfASABIQEiASMA4gDjASQBJQEmAScBKAEpASoBKwEsAS0AsACxAS4BLwEwATEBMgEzATQA+wD8AOQA5QE1ATYBNwE4ATkBOgE7ATwBPQE+AT8BQAC7AUEBQgFDAUQA5gDnAKYBRQFGAUcBSADYAOEA2wDcAN0A4ADZAN8BSQCyALMAtgC3AMQAtAC1AMUAggDCAIcAqwDGAL4AvwC8AUoAjADvAKcAjwCUAJUAwADBB3VuaTAwQjIHdW5pMDBCMwd1bmkwMEI5B0FtYWNyb24HYW1hY3JvbgZBYnJldmUGYWJyZXZlB0FvZ29uZWsHYW9nb25lawZEY2Fyb24GZGNhcm9uBkRjcm9hdAdFbWFjcm9uB2VtYWNyb24KRWRvdGFjY2VudAplZG90YWNjZW50B0VvZ29uZWsHZW9nb25lawZFY2Fyb24GZWNhcm9uDEdjb21tYWFjY2VudAxnY29tbWFhY2NlbnQHSW1hY3JvbgdpbWFjcm9uB0lvZ29uZWsHaW9nb25lawxLY29tbWFhY2NlbnQMa2NvbW1hYWNjZW50BkxhY3V0ZQZsYWN1dGUMTGNvbW1hYWNjZW50DGxjb21tYWFjY2VudAZMY2Fyb24GbGNhcm9uBk5hY3V0ZQZuYWN1dGUMTmNvbW1hYWNjZW50DG5jb21tYWFjY2VudAZOY2Fyb24GbmNhcm9uB09tYWNyb24Hb21hY3Jvbg1PaHVuZ2FydW1sYXV0DW9odW5nYXJ1bWxhdXQGcmFjdXRlDFJjb21tYWFjY2VudAxyY29tbWFhY2NlbnQGUmNhcm9uBnJjYXJvbgZTYWN1dGUGc2FjdXRlB3VuaTAxNjIHdW5pMDE2MwZUY2Fyb24GdGNhcm9uB1VtYWNyb24HdW1hY3JvbgVVcmluZwV1cmluZw1VaHVuZ2FydW1sYXV0DXVodW5nYXJ1bWxhdXQHVW9nb25lawd1b2dvbmVrBlphY3V0ZQZ6YWN1dGUKWmRvdGFjY2VudAp6ZG90YWNjZW50DFNjb21tYWFjY2VudAxzY29tbWFhY2NlbnQHdW5pMDIxQQd1bmkwMjFCB3VuaTAzMjYERXVybwAAAAABAAH//wAPAAEAAAAMAAAANAAAAAIABgABAHgAAQB5AHsAAgB8ARwAAQEdAR0AAwEeATQAAQE1ATYAAgAEAAAAAgAAAAEAAAAKAHAAxgACREZMVAAObGF0bgAiAAQAAAAA//8ABQAAAAEAAgAFAAYAEAACTU9MIAAgUk9NIAAyAAD//wAFAAAAAQACAAUABgAA//8ABgAAAAEAAgADAAUABgAA//8ABgAAAAEAAgAE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AAEB5v/zAAECm//9AAEB6v/yAAEAeP//AAEBqf//AAEBs///AAEB4f//AAEBqQAAAAEBnP/0AAEBnv//AAECiQBEAAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEFBP/9AAEB5v/zAAECm//9AAECm//9AAECm//9AAECm//9AAEAeP//AAEAeP//AAEAeP//AAEAeP//AAEB4f//AAECiQBEAAECiQBEAAECiQBEAAECiQBEAAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEFBP/9AAEB5v/zAAECm//9AAECm//9AAECm//9AAECm//9AAEAeP//AAEAeP//AAEAeP//AAEAeP//AAEB4f//AAECiQBEAAECiQBEAAECiQBEAAECiQBEAAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEDKv//AAEB5v/zAAEB5v/zAAEB5v/zAAEB5v/zAAECm//9AAECm//9AAECm//9AAECm//9AAECm//9AAECm//9AAECm//9AAECm//9AAEB6v/yAAEB6v/yAAEB6v/yAAEB6v/yAAEAeP//AAEAeP//AAEAeP//AAEAeP//AAEAeP//AAEBqf//AAEBqf//AAEBs///AAEBs///AAEBs///AAEBs///AAEBs///AAEBs///AAEBs///AAEBs///AAEB4f//AAEB4f//AAEB4f//AAEB4f//AAEB4f//AAEB4f//AAEFfP/9AAEFfP/9AAEBqQAAAAEBqQAAAAEBqQAAAAEBqQAAAAEBqQAAAAEBnP/0AAEBnP/0AAEBnP/0AAEBnP/0AAEBnP/0AAEBnP/0AAEBnv//AAEBnv//AAEBnv//AAEBnv//AAECiQBEAAECiQBEAAECiQBEAAECiQBEAAECiQBEAAECiQBEAAECiQBEAAECiQBEAAEBnP/0AAEBnP/0AAEBnv//AAEBnv//AAIAGwAkACQAAAAmACYAAQAoACgAAgAqACoAAwAsACwABAAuAC8ABQAxADEABwA1ADgACABEAEQADABGAEYADQBIAEgADgBKAEoADwBMAEwAEABOAE8AEQBRAFEAEwBVAFgAFABrAGsAGAB9AIwAGQCOAI4AKQCWAJkAKgCdAKwALgCuAK4APgC2ALkAPwC9AMYAQwDLAOsATQDwAQgAbgERARQAhwABAAEBHQABAAAABgAB/8IAGgAAAAEAAAAA1aQnCAAAAADYr+TSAAAAANtivrw=";
@@ -5446,7 +5446,7 @@ function makeSofitelLockupSvgDataUri(propertyName) {
     + '</svg>';
   return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
 }
-// INLINE-SVG variant of the Sofitel lockup (Nick: 'some Sofitel … wrong font').
+// INLINE-SVG variant of the Sofitel lockup.
 // A @font-face embedded in an SVG rendered as <img> does NOT load in browsers,
 // so the property name fell back to a system font. Rendered INLINE in the DOM
 // with the font declared at document level (RebeltonExt @font-face in
@@ -5460,7 +5460,7 @@ function makeSofitelLockupInlineSvg(propertyName) {
     .trim();
   if (!clean) clean = String(propertyName).trim();
   var name = String(clean.toUpperCase()).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  // v23246 — NO EMBLEM, WORDMARK OVER NAME ONLY (Nick's MIA D20 shot: 'The
+  // v23246 — NO EMBLEM, WORDMARK OVER NAME ONLY (the owner's MIA D20 shot: 'The
   // Sofitel logo is way too big can we get rid of the icon from the logo and
   // simply have Sofitel New York but proportional?', with the official
   // Sofitel New York lockup as the reference). Geometry measured off that
@@ -5484,8 +5484,8 @@ function makeSofitelLockupInlineSvg(propertyName) {
   var fsz = Math.min(12.5, 170 / _est);         // reference size, eased for long names
   var _nat = _est * fsz;                        // natural width at that size
   var _tl = (_nat < 93) ? 93 : Math.round(_nat);
-  // v23253 — a touch more air under the wordmark (Nick: 'maybe more space a
-  // bit not much between Sofitel and New York'): baseline 32.4 → 34.
+  // v23253 — a touch more air under the wordmark
+  // : baseline 32.4 → 34.
   return '<svg class="axr-hotel-svg sof-inline-lockup" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 -3 190 42" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block;">'
     + '<g fill="#FFFFFF">' + _SOFITEL_WORDMARK_G + '</g>'
     + '<text x="95" y="34" text-anchor="middle" textLength="' + _tl + '" lengthAdjust="spacing" fill="#FFFFFF" font-family="SofitelName, sans-serif" font-size="' + fsz + '">' + name + '</text>'
@@ -5890,8 +5890,8 @@ const AIRLINE_ACCENT = {
   'AS':'#01426A','B6':'#003876','TS':'#00B3F0',
   'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
   // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
-  // operator at Miami (Nick: 'Thios airline is supposed to be added and its
-  // not'). Navy taken from their aircraft titles; swap in the exact hex when
+  // operator at Miami
+  // Navy taken from their aircraft titles; swap in the exact hex when
   // an official kit turns up, same arc Avelo followed.
   'WL':'#004280',
   'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
@@ -5915,7 +5915,7 @@ const AIRLINE_ACCENT = {
   'EW':'#7C2045',   // Eurowings burgundy, from its own wordmark
   'A3':'#1C4093',   // Aegean blue, from its own wordmark
   'PC':'#FDC300',   // Pegasus yellow - the red emblem reads on it
-  // v23454 — the second half of 'the colors dont match even the blue'. China
+  // v23454 — the second half of the blue-mismatch report. China
   // Eastern had no accent at all, so getAirlineAccent fell to the generic
   // '#0033A1' — a navy belonging to no carrier, and near enough to United's
   // #0033A0 to read as United's. With the orbs now wearing the CES tile, the
@@ -5954,8 +5954,8 @@ var AIRLINE_DOMAIN = {
 // A carrier whose identity IS its lettering has no emblem file to resolve, so
 // the banner would request an image, watch it 404, and only then fall back to
 // text — a broken-image beat on every render. Seeding the cache sends those
-// carriers straight to their wordmark (Nick: 'Pacific Coastal uses word mark
-// as the Logo emblem'). Add a code here only when the airline genuinely has no
+// carriers straight to their wordmark
+// Add a code here only when the airline genuinely has no
 // symbol, never to paper over a missing file.
 var _g8LogoCache = { '8P': 'text' };
 function g8LogoFail(img) {
@@ -6007,7 +6007,7 @@ function g8LogoFail(img) {
 
 // Operating carrier for regional flights
 // Québec-province airports show FRENCH FIRST on every bilingual pair
-// (Nick — OQLF convention: 'anything in Quebec, French first then English').
+//
 function frFirstAirport(iata) {
   return /^(YUL|YQB|YHU|YMX|YMY|YBG|YVO|YZV|YUY|YGP|YGL|YGW|YKQ|YPX|YVP|YHR|YNA|YBC|YTF|AKV|YIK|YZG|YQC|YHA|YKG|XGR)$/.test(String(iata || '').toUpperCase());
 }
@@ -6041,11 +6041,11 @@ function getAirlineAccent(code) {
 function acExpressMatrix(fn) {
   if (isNaN(fn)) return null;
   if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines' };
-  // v22929 — AC77xx is PAL too (Nick, on AC7753 YQM->YOW: 'it had the aircraft
-  // right on 7753 haha it was just showing a jazz plane instead of PAL').
+  // v22929 — AC77xx is PAL too
+  // 
   // The type was already correct — a Dash 8-400 — but 7753 fell in NO band, so
   // _opCode came out empty and the LIVERY fell back to the default Jazz-painted
-  // Express aircraft. Deliberately scoped to the 7700-7799 block that Nick
+  // Express aircraft. Deliberately scoped to the 7700-7799 block that
   // named rather than the whole 7300-7949 gap: an invented band is what put
   // 'Operated by PAL Airlines' on AC7053 to Vancouver. If PAL flies more of
   // the gap, widen it on evidence, one block at a time.
@@ -6061,8 +6061,8 @@ function acExpressMatrix(fn) {
 // 7000–7299 band, so the gate printed 'Operated by PAL Airlines' — and then,
 // because PAL flies nothing but Dash 8-400s, the equipment rule below
 // OVERWROTE the aircraft with a Dash 8. A turboprop crossing the country in
-// the schedule's block time (Nick: 'PAL airlines going to operate that flight
-// to YVR? In a Dash8? in one hour 15 minutes?'). Every band-derived operator
+// the schedule's block time
+// Every band-derived operator
 // now has to survive the geography; when it can't, the attribution is dropped
 // and the marketing carrier stands on its own rather than being invented.
 var _REGIONAL_MAX_KM = { 'PB': 1900, 'WR': 1900, 'QK': 2900 };
@@ -6214,11 +6214,11 @@ var AIRLINE_BACKGROUNDS = {
   // from a corporate slide deck — 'RELISH EACH JOURNEY', 'CORE VALUES', '180
   // MILLION TRAVELERS WORLDWIDE' — headline + body copy, not backgrounds.
   // The moment airline mode became the default the rotation opened on slide
-  // 0 and put a PowerPoint page behind the gate (Nick: 'there's words now in
-  // the background, I'm so confused what are you doing?'). The files stay on
+  // 0 and put a PowerPoint page behind the gate — reported as unexplained
+  // deck copy showing behind the flight info. The files stay on
   // disk; they are just never painted as scenery.
   'DL': [
-    // Nick's pick (Aug 7): red papercut waves on Delta navy.
+    // the owner's pick (Aug 7): red papercut waves on Delta navy.
     '/logos/Backgrounds/DL/deltabackground10.png'
   ],
   'UA': [
@@ -6227,11 +6227,11 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/UA/unitedbackground3.png'
   ],
   'TS': [
-    // Nick's wing artwork composed on its own navy palette (Aug 7).
+    // the owner's wing artwork composed on its own navy palette (Aug 7).
     '/logos/Backgrounds/TS/transatbackground.png'
   ],
   'AF': [
-    // Nick's pick (Aug 7): tricolore streaks on true AF blue — the clean
+    // the owner's pick (Aug 7): tricolore streaks on true AF blue — the clean
     // right-side field is where gate text lands.
     '/logos/Backgrounds/AF/airfrancebackground.png'
   ],
@@ -6241,7 +6241,7 @@ var AIRLINE_BACKGROUNDS = {
     '/logos/Backgrounds/EK/emiratesbackground.png'
   ],
   'F8': [
-    // Nick's pick (Aug 7): smooth lime-green gradient — Flair's brand green.
+    // the owner's pick (Aug 7): smooth lime-green gradient — Flair's brand green.
     '/logos/Backgrounds/F8/flairbackground.png'
   ]
 };
@@ -6319,7 +6319,7 @@ function getAircraftCategory(code) {
 function getBoardingLeadMins(aircraftCode) {
   var cat = getAircraftCategory(aircraftCode || '');
   // v22747 — the Q400 boards in 20 minutes, not the generic regional 25
-  // (Nick, who works these gates: 'It's 20 minutes for the q400'). Covers
+  // Covers
   // every code the feeds use for the Dash 8-400 — DH4 (IATA), DH8D (ICAO) —
   // and the -300/-100/-200 stay on the regional default.
   var _acU = String(aircraftCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -6686,7 +6686,7 @@ function aircraftCodeToIata(raw) {
   // to match our actual file naming (e.g. BCS→223, CS1→221 because our AC folder uses 221/223)
   var _REMAP = { 'BCS':'223', 'CS1':'221', 'CS3':'223', 'DHC3':'DH3', 'DHC':'DH3', 'DH8A':'DH1', 'DH8B':'DH2', 'DH8C':'DH3', 'DH8D':'DH4',
                  '32A':'320', '32B':'321', '32S':'320', // v22833 — sharklet codes to their REAL families (were 319/320)
-                 // v218.99.48 — Nick noted API sometimes returns bare '757' instead of 752/753.
+                 // v218.99.48 — the owner noted API sometimes returns bare '757' instead of 752/753.
                  // 757-200 is far more common than -300; default to that. Specific "757-200"
                  // and "757-300" full strings are matched by regex below and override this.
                  // '75W' is the 757-200 winglet code (Delta's 757s carry it) — no
@@ -6703,7 +6703,7 @@ function aircraftCodeToIata(raw) {
                  // ('B772'→'B77', 'B38M'→'B38') with no art anywhere — the
                  // image 404-walked its whole chain and hid, leaving 'Aircraft
                  // image pending' beside a perfectly resolved type label
-                 // (Nick's MIA D25 screenshot). Map ICAO → our IATA file names.
+                 // Map ICAO → our IATA file names.
                  'B712':'717',
                  'B733':'733', 'B734':'734', 'B735':'735', 'B736':'736',
                  'B737':'73G', 'B738':'738', 'B739':'739',
@@ -6812,7 +6812,7 @@ function aircraftCodeToIata(raw) {
   // ── 737 Next Gen ──
   if (/737[\s-]*800/i.test(s)) return '738';
   if (/737[\s-]*900/i.test(s)) return '739';
-  if (/737[\s-]*700/i.test(s)) return '73G'; // 73G = 737-700 (73H is the -800 — this returned the wrong airframe AND the wrong photo, Nick's C-FWSI case)
+  if (/737[\s-]*700/i.test(s)) return '73G'; // 73G = 737-700 (73H is the -800 — this returned the wrong airframe AND the wrong photo, the owner's C-FWSI case)
   if (/737[\s-]*600/i.test(s)) return '736';
   if (/737[\s-]*500/i.test(s)) return '735';
   if (/737[\s-]*400/i.test(s)) return '734';
@@ -6854,7 +6854,7 @@ function aircraftCodeToIata(raw) {
   if (/757[\s-]*300/i.test(s)) return '753';
   // Bare "Boeing 757" / "757" with NO variant (what the ADB reg lookup returns
   // for Delta's 757s, e.g. N819DX) — default to the 757-200 image so it doesn't
-  // fall through to the generic A320 white plane (Nick).
+  // fall through to the generic A320 white plane.
   if (/\b757\b/.test(s)) return '752';
 
   // ── 747 ──
@@ -6921,8 +6921,8 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // narrowbody to 32Q (neo) for TS so the gate always shows the neo image,
   // never a ceo/320. Other carriers genuinely fly these, so this stays TS-only.
   if (al === 'TS' && /^(319|320|321|32N|32A|32B|32S)$/.test(eq)) eq = '32Q';
-  // v23141 — AIR FRANCE AND KLM WERE NEVER ON THIS LIST (Nick: 'they are
-  // not installed to work'). Their livery art has been sitting in
+  // v23141 — AIR FRANCE AND KLM WERE NEVER ON THIS LIST
+  // Their livery art has been sitting in
   // aircraft/AF/ and aircraft/KL/ — 25 files, committed and serving — but
   // this whitelist is what decides whether the resolver ever LOOKS in a
   // carrier folder, and neither code was in it. So every AF and KLM flight
@@ -6947,8 +6947,8 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // livery folder first. e.g. Canadian North gets a feed "73H" (a 737-800 they
   // don't even fly); there's no 5T/73H.png, so we slide to their real 5T/733
   // (737-300) livery instead of breaking to a "?".
-  // STRICT same-aircraft aliases ONLY (Nick: 'it shouldnt say airbus 321 and
-  // show a 320 … wires are crossed / the root of this needs to be fixed').
+  // STRICT same-aircraft aliases ONLY
+  // 
   // The old table deliberately slid to DIFFERENT types (321→320, MAX 8→738),
   // so the picture could contradict the label whenever a livery file was
   // missing. Now the chain may only try codes that mean the SAME aircraft
@@ -7016,8 +7016,8 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
       // Terminal: step down to the SAME TYPE's generic image (strip the
       // livery suffix), else hide. NEVER a different aircraft — the old
       // hardcoded 320.png fallback put an A320 picture under an 'Airbus
-      // A321' label (Nick: 'it shouldnt say airbus 321 and show a 320 …
-      // wires are crossed').
+      // A321' label
+      // 
       + "else if(!this.dataset.gfb){this.dataset.gfb='1';"
       +   "var _g=_p.replace(/-[a-z]{2,4}\\.png$/i,'.png');"
       +   "if(_g!==_p){this.src=_g+'" + _imgCacheBuster + "';}"
@@ -7049,8 +7049,8 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
 // class arrives ASYNC on img onload: one missed or late detection on a
 // live display leaves the shelf unclassed and the clouds unmirrored — a
 // right-facing plane then drifts WITH the clouds and reads as flying
-// backwards (Nick: 'this plane is going backwards CRJ900 clouds need
-// reversed'). Known art now resolves SYNCHRONOUSLY from this table (baked
+// backwards
+// Known art now resolves SYNCHRONOUSLY from this table (baked
 // into the shelf class at render time); the canvas scan remains solely
 // for art not yet in the table.
 var PLANE_FACING = {
@@ -7059,7 +7059,7 @@ var PLANE_FACING = {
   '32D.png':'L', '32N.png':'L', '32Q.png':'L', '332.png':'L', '333.png':'L', '338.png':'L',
   '339.png':'L', '340.png':'L', '342.png':'L', '343.png':'L', '345.png':'L', '346.png':'L',
   '351.png':'L', '359.png':'L', '388.png':'L',
-  // v23248 — the 35 livery files that had NO facing entry (Nick's MIA F5
+  // v23248 — the 35 livery files that had NO facing entry (the owner's MIA F5
   // shot: the Frontier A320neo rendered nose-DOWN — 'this airplane does not
   // look normal'). With the facing unknown at build time, the nose-trim pass
   // read the missing class as faces-right and applied the wrong sign, so the
@@ -7131,9 +7131,9 @@ function _planeFacingFromSrc(src) {
     return PLANE_FACING[p] || null;
   } catch (e) { return null; }
 }
-// ROUGE FLEET: A319/A320/A321 + the 737 MAX 8 (Nick confirmed the MAX flies in
-// Rouge paint; 7M8r.png is the real livery). NOT the 737-800 (Nick: '73Hr no
-// 737-800' — Rouge never flew the NG). ONE shared gate for every surface that
+// ROUGE FLEET: A319/A320/A321 + the 737 MAX 8 (the owner confirmed the MAX flies in
+// Rouge paint; 7M8r.png is the real livery). NOT the 737-800
+// — Rouge never flew the NG). ONE shared gate for every surface that
 // picks Rouge paint: the 'r' suffix / MAX-8 mapping applies solely to those
 // families; anything else RV-labeled renders honest MAINLINE art.
 function _rougeLiveryEq(eq) {
@@ -7142,7 +7142,7 @@ function _rougeLiveryEq(eq) {
   // applying the Rouge 'r' suffix. The old strict /^(319|320|321)$/ test only
   // matched the exact demo strings, so a LIVE variant ('32A'→319, '32B'/'32S'→320,
   // 'A320'→320…) slipped past un-suffixed and aircraftImgTag then loaded the
-  // MAINLINE 320.png — Nick: 'AC Rouge aircraft does not show'. Rouge flies only
+  // MAINLINE 320.png — Rouge flies only
   // the A319/A320/A321 (ceo), so those three are the complete set.
   var base = (typeof aircraftCodeToIata === 'function') ? (aircraftCodeToIata(e) || e) : e;
   // Rouge now flies the 737 MAX 8 alongside the A319/A320/A321. AC's ONLY 737
@@ -7150,7 +7150,7 @@ function _rougeLiveryEq(eq) {
   // subbrand, so ANY 737 code on a Rouge flight is a MAX 8 → the Rouge MAX 8
   // livery (7M8r.png — the only Rouge 737 paint on disk). Without this a Rouge
   // MAX arriving as a raw '738' hit /aircraft/AC/738.png (no file) and drew
-  // NOTHING. Nick: 'its not rendering the 737 Max from rouge'.
+  // NOTHING.
   if (/^7M[789]$/.test(base) || /^73[0-9HGJW]$/.test(base) || /737|7M[789]|MAX/i.test(e)) return '7M8r';
   return /^(319|320|321)$/.test(base) ? (base + 'r') : e;
 }
@@ -7481,7 +7481,7 @@ function renderMobileGateHtml(ctx) {
       else if (_minsToArr > 0 && _minsToArr < 1440)
         _etaStr = _minsToArr >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(_minsToArr/60) + 'h ' + (_minsToArr%60) + 'm') : (TL('arrivesIn') + ' ' + _minsToArr + ' min');
       var _fromDisplay = _fromCity ? (_fromCity + (_fromIata ? ' | ' + _fromIata : '')) : (_fromIata || (_inb.flight || ''));
-      // MOBILE = SAME PROGRAMMING (Nick: 'you did not connect mobile'):
+      // MOBILE = SAME PROGRAMMING:
       // the live route MAP (same #gateMapBox the shared map engine + 10 s
       // tick target) and the live Speed/Altitude line (same data-gtelem spans
       // the shared animator writes every second). Telemetry renders only with
@@ -7734,19 +7734,19 @@ function buildV2GateLayout(ctx, vars) {
 // Class-based markup matching gate-display.css.
 // Structure: header > livery > 3-row data > inbound panel.
 // ── ANIMATED RONDELLE for the boarding screen's centre mark (v23115) ─────
-// Nick: 'the middle is the maple leaf rondelle that i have the gif that
-// swings'. Drop the file under /logos/motion/ and name it here — one line per
+//
+// Drop the file under /logos/motion/ and name it here — one line per
 // carrier, any format a <video> can decode (webm/mp4) or a .gif via the same
 // slot. Until a carrier is listed, its boarding screen shows the static ring
 // + symbol, which is what the mockup draws anyway; nothing waits on an asset.
 var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
-  // Nick's TCA→AC evolution clip, cut to the MODERN segment on black (his
+  // the owner's TCA→AC evolution clip, cut to the MODERN segment on black (his
   // instruction: 'remove the older logos simply keep the modern part where
   // its black') and ping-ponged so the swing loops seamlessly. 81KB.
   'AC': '/logos/motion/AC-rondelle-swing.mp4'
 };
 
-// v23246 — CARD ORBS THAT KEEP THEIR COLOUR ART (Nick's MIA D20 shot: 'the
+// v23246 — CARD ORBS THAT KEEP THEIR COLOUR ART (the owner's MIA D20 shot: 'the
 // icon for Aa at the bottom right should be color'). The merged-module orbs
 // judge white-vs-colour purely from the accent luminance, which white-washed
 // AA's red+blue flight symbol on its mid-blue orb — while the left rail
@@ -7754,8 +7754,8 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
 // list for the card builders (and the operator re-point pass) so both ends
 // of the screen agree.
 // v23392 — THE TWO GATE ORBS MUST SHOW THE SAME FACE.
-// Nick: 'the 2 orbs never match … unless its operated by someone else it
-// should always match period', and 'its a copy paste from the original which
+//
+// and 'its a copy paste from the original which
 // is top left'. He is right, and the split was here: this list had two
 // carriers while a SECOND list, NATIVE_COLOR_EMBLEMS, carried thirty-nine.
 // The top-left orb whitened its art to a flat silhouette unless the carrier
@@ -7766,7 +7766,7 @@ var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
 // The comment above already promised 'one shared list … so both ends of the
 // screen agree'. This makes that true: one list, consulted by both orbs.
 window._CARD_COLOR_EMBLEMS = {
-  // v23444 — 'AA' IS BACK. v23438 read Nick's ORD/H14 note backwards and
+  // v23444 — 'AA' IS BACK. v23438 read the owner's ORD/H14 note backwards and
   // whitened American's symbol; he had said the opposite: 'I said you had
   // them white outer and color interior fine changethe others white you did
   // the entire oppposite'. The white disc with the carrier's real colours on
@@ -7779,8 +7779,8 @@ window._CARD_COLOR_EMBLEMS = {
   'F8': true, 'GA': true, 'HA': true, 'JJ': true, 'LA': true, 'LL': true, 'LY': true,
   'MO': true, 'MX': true, 'PC': true, 'PR': true, 'QR': true, 'TG': true,
   'TK': true, 'TP': true, 'WN': true, 'WY': true, 'XP': true,
-  // v23402 — QK, RV, JX and VS REMOVED. Nick: 'the rouge and jazz ones were
-  // fine you stripped them'. He is right and this was my v23392 regression.
+  // v23402 — QK, RV, JX and VS REMOVED.
+  // He is right and this was my v23392 regression.
   // Those four are single-colour LETTERFORMS — Rouge's r in #A21C37, Jazz's
   // J, STARLUX, Virgin — drawn to be inked white on the carrier's own accent
   // disc, which is the treatment this file's own comment calls 'the only case
@@ -7799,8 +7799,8 @@ window._orbKeepsColour = function (code) {
 };
 
 // v23396 — ONE ORB RECIPE, USED BY BOTH ORBS.
-// Nick: 'the 2 orbs never match … unless its operated by someone else it
-// should always match period', and 'its a copy paste from the original which
+//
+// and 'its a copy paste from the original which
 // is top left in most cases it should be right if its there'.
 //
 // The gate shows a round orb in exactly two places — the top-left rail shelf
@@ -7825,12 +7825,12 @@ window._gateOrbParts = function (code) {
   // The rail used a single `native` for both, so when v23392 grew the colour
   // list from 2 to 40 it also flipped 38 carriers to full-bleed. `cover` then
   // cropped wide silhouettes into a blob — British Airways' speedmarque came
-  // out as a red pill in the top-left orb (Nick: 'what the fuck really?').
+  // out as a red pill in the top-left orb.
   // Only tile art fills; colour art keeps its colours ON the accent disc.
   var keepsColour = !!(window._orbKeepsColour && window._orbKeepsColour(c));
   // "Is this art already a disc?" — if it is, it BECOMES the orb. Padding a
-  // finished disc onto another disc is what Nick kept seeing: 'why is there
-  // orbs within orbs for some', 'Turkeish again circle within circkle'.
+  // finished disc onto another disc is what
+  // 'Turkeish again circle within circkle'.
   //
   // MEASURED, not guessed. Filename and folder rules kept missing cases, so
   // every emblem file the resolver can reach was drawn to a canvas and its
@@ -7856,7 +7856,7 @@ window._gateOrbParts = function (code) {
   var accFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[c] && AIRLINE_BRAND[c].accent) || '#D82F2E';
   var ACC = 'var(--airline-accent,' + accFb + ')';
   var BASE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;box-sizing:border-box;overflow:hidden;';
-  // v23410 — A DISC THE MARK CAN BE SEEN ON. Nick: 'Some you cant even see'.
+  // v23410 — A DISC THE MARK CAN BE SEEN ON.
   // These carriers keep their real colours (multicolour brand art — whitening
   // them is the one thing he has said never to do), but their art sits on a
   // disc painted in their OWN accent. Brand colour on brand colour disappears:
@@ -7873,8 +7873,8 @@ window._gateOrbParts = function (code) {
   // Pegasus, Chair, Malaysia — as is anything that full-bleeds, which has no
   // disc behind it at all.
   // v23444 — AA IS BACK ON THE LIGHT DISC. v23438 took it off and inked the
-  // symbol white; Nick: 'You just changed the orbs to American with white
-  // emblem what DID I SAY FOR NOT DOING THAT', and then exactly what he had
+  // symbol white;
+  // and then exactly what he had
   // meant — 'you had them white outer and color interior fine changethe
   // others white you did the entire oppposite'. The white outer with the
   // carrier's own colours inside is the approved half; the five glyph badges
@@ -7933,8 +7933,8 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
-        // v23259 — JAZZ WEARS ITS OWN J (Nick: 'The Logo for Jazz should not
-        // be AC it should be the J only'). jazz-j.svg is the brush-script J
+        // v23259 — JAZZ WEARS ITS OWN J
+        // jazz-j.svg is the brush-script J
         // cut from jazz.svg: its detached cap stroke plus the connected
         // 'Ja' path clipped at the measured ligature waist (x=53.8) — the
         // cut lands on the thin joining stroke and reads as a natural
@@ -7948,12 +7948,12 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'RV':  '/logos/airlines/canadian/rouge-r.svg',
         'ROU': '/logos/airlines/canadian/rouge-r.svg',
         // v23049 — BACK TO THE WHITE MONO LEAF. v23047 pointed this at the
-        // colour leaf, which also repainted the round rail orb; Nick: 'the orb
-        // had white leave it white'. This map feeds the orb, so it stays mono
+        // colour leaf, which also repainted the round rail orb;
+        // This map feeds the orb, so it stays mono
         // white. The colour leaf is applied ONLY on the welcome card, via
         // _FB_WELCOME_LOGO.
-        // v23404 — WestJet's leaf was BLACK on the aircraft hold panel (Nick:
-        // 'Shouldn't be a black leaf should be color'). symbols/airlines-mono/
+        // v23404 — WestJet's leaf was BLACK on the aircraft hold panel; it
+        // must render in colour there. symbols/airlines-mono/
         // WS.svg is painted fill="currentColor", and inside an <img> there is
         // no colour to inherit, so it resolves to the initial value: black.
         // The orb never showed it because the orb whitens its art — but the
@@ -7964,8 +7964,8 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // white leaf as before, so the orb is unchanged.
         // v23406 — BACK TO THE MONO LEAF. v23404 pointed this at the colour
         // leaf to fix a black leaf on the aircraft hold plate, and broke the
-        // ORB doing it (Nick: 'the WestJet orb was fine from the beginning now
-        // it's completely white and missing black stripe for the mountain in
+        // ORB doing it
+        // s completely white and missing black stripe for the mountain in
         // the middle'). The orb WHITENS its art: the mono leaf is one path
         // whose internal cut-outs let the orb colour show through, so it
         // whitens to a leaf with its swoosh separation intact. The colour leaf
@@ -7976,7 +7976,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'WS':  '/logos/symbols/airlines-mono/WS.svg',
         'WR':  '/logos/symbols/airlines-mono/WS.svg',
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
-        'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right per Nick; white on the standard glossy gold badge like the other icons
+        'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right as specified; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
         // US majors — symbol-only emblems (rendered white on the accent badge)
         // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
@@ -7985,11 +7985,11 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // so United's countdown centrepiece was a white globe on a white card:
         // invisible. Exactly the bug Delta was fixed for in v23130 ('I made you
         // change this yesterday why is this still white OMG WOW') and WestJet in
-        // v23198. United never got it. Nick, picking from the comparison: 'so
-        // the first one and should be all around full circle'.
+        // v23198. United never got it.
+        // 
         'UA':  '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
-        // v22960 — SINGLE-COLOUR widget (Nick: 'the actual delta icon is 2
-        // colors this needs to be changed'). The native widget is two-tone
+        // v22960 — SINGLE-COLOUR widget
+        // The native widget is two-tone
         // red; the monochrome-white one reads as ONE mark and sits on the red
         // orb the badges now wear — his spec, literally: 'Delta icons white
         // with red middle'.
@@ -8001,8 +8001,8 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'LL':  '/logos/airlines/european/level-emblem.svg',   // LEVEL cyan/green block mark
         '9X':  '/logos/airlines/us-major/mokulele-emblem.svg',
         // v23390 — Breeze uses its FINISHED roundel, not a rebuilt one.
-        // Nick: 'Breeze is terrible the orb … why are we trying to recreate
-        // orbs and they already exist?' Right — breeze-airways-emblem.png is
+        //
+        // Right — breeze-airways-emblem.png is
         // a thin washed white check drawn to sit on a constructed badge,
         // while MXY.svg is Breeze's own finished mark and was already on disk
         // serving the board row. One carrier, one face, and no orb rebuilt
@@ -8019,7 +8019,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'FI':  '/logos/airlines/european/icelandair-fin.svg',          // official tail-fin symbol (flag knockout)
         'BW':  '/logos/airlines/asian-other/caribbean-emblem.png',     // official hummingbird (airline's own brand art)
         '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg',
-        // v23454 — CHINA EASTERN'S ORB IS ITS OWN ROUNDEL. Nick, on the MU
+        // v23454 — CHINA EASTERN'S ORB IS ITS OWN ROUNDEL. the owner, on the MU
         // gate: 'the 2 orbs dont match the botom orb is right howeer the
         // colors dont match even the blue'.
         //
@@ -8039,8 +8039,8 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // so the tile's own navy ground BECOMES the orb and both ends of the
         // screen wear the same disc in the same colour.
         'MU':  '/logos/airline-tiles/CES.svg',
-        // v23464 — SWISS IS NOT REVERSIBLE. Nick: 'The crosses need to be
-        // white' and 'You cant even have the reverse in the orb'.
+        // v23464 — SWISS IS NOT REVERSIBLE.
+        // The reversed form must not appear in the orb either.
         //
         // symbols/airlines/LX.svg paints ONE colour, #e60005, and the cross is
         // a CUT-OUT — it shows whatever sits behind it. Whitened into an orb
@@ -8060,12 +8060,12 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
 
 // Gate-only artwork overrides. Keep these separate from AIRLINE_EMBLEM_FILES:
 // that shared set also feeds the expanded-map hold, boarding scenes and other
-// branded gate surfaces. Nick's supplied glossy United globe belongs ONLY in
+// branded gate surfaces. the owner's supplied glossy United globe belongs ONLY in
 // the first/top round Flight icon on the gate display — never in the main FIDS
 // all-flights airline cell (which has its own IATA_TO_* logo system).
 var GATE_TOP_ROUND_EMBLEM_FILES = {
   'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',
-  // v23225 — DL glossy is BACK, with Nick's own supplied art (his zip:
+  // v23225 — DL glossy is BACK, with the owner's own supplied art (his zip:
   // 'The Delta emblem was not changed to look like this … The emblem is
   // titled[tilted] thats what i mean'). Unlike the Aug 7 removal — that
   // orb was the one LIGHT chip in a row of red accent orbs — this sphere
@@ -8075,8 +8075,8 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
 };
 
 // v23288 — ONE ORB EMBLEM PER CARRIER, EVERYWHERE ON THE GATE.
-// Nick: 'United logo for bottom right needs to match the other united emblem
-// orb logo' and 'all airlines need to have an orb with their emblem on it'.
+//
+// and 'all airlines need to have an orb with their emblem on it'.
 // Two problems, one cause: each orb builder resolved its own art, so United
 // wore the glossy globe in the top round icon and the flat white globe in the
 // bottom-right card; and AIRLINE_EMBLEM_FILES is a hand-kept list, so any
@@ -8104,7 +8104,7 @@ function _airlineOrbEmblem(code) {
 // 231 carriers the board can name, 137 have no emblem file. Both orb call sites
 // then used onerror="this.remove()", which deleted the broken image and left a
 // bare coloured circle behind it — no emblem, no letters, nothing. That is the
-// 'circle within a circle one is empty' Nick has been reporting, and it reads
+// 'circle within a circle one is empty' the owner has been reporting, and it reads
 // as a rendering fault rather than as a carrier we simply have no art for.
 //
 // The wordmark path already handles its own miss gracefully (it falls back to
@@ -8118,7 +8118,7 @@ function _orbMono(code) {
   return String(code == null ? '' : code).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
 }
 // v23440 — THE AIRCRAFT PLATE GETS THE ROW TILE TOO.
-// Nick, on the China Eastern gate: 'The logo at the clouds is simply MU'.
+//
 // The plate resolved its art through _airlineOrbEmblem, which hands back
 // /logos/symbols/airlines/MU.svg for any two-letter code whether or not that
 // file was ever drawn — and China Eastern's was not. Its onerror then went
@@ -8149,7 +8149,7 @@ window._orbArtFailed = function (img, code) {
   // 59 of the 137 carriers with no orb symbol already have a tile drawn for
   // the board row — SkyWest OO→SKW, JetBlue B6→JBU, Alaska AS→ASA, Qantas
   // QF→QFA, ANA NH→ANA — and every one of those tiles is exactly 1:1, so it
-  // sits in a round orb without letterboxing. Nick, on the BOS/A1 Delta gate:
+  // sits in a round orb without letterboxing. the owner, on the BOS/A1 Delta gate:
   // the arrival orb read a bare 'OO' when SkyWest's own mark was already on
   // disk. Letters are the last resort, not the second.
   if (img && wrap && !img.dataset.orbTileTried) {
@@ -8164,7 +8164,7 @@ window._orbArtFailed = function (img, code) {
         // tile is a finished square mark, and several carry their own baked
         // background (Etihad gold, airBaltic, Czech, Allegiant). Padded and
         // 'contain'-fitted, those read as a square floating in a circle —
-        // the "circle within a circle" Nick has called out before. Filling
+        // the "circle within a circle" the owner has called out before. Filling
         // the disc instead turns the tile's own background INTO the orb, so
         // it reads like a proper roundel either way.
         img.style.setProperty('width', '100%', 'important');
@@ -8244,9 +8244,9 @@ function _buildV2AircraftCol(ctx, vars) {
       if (!inboundFlight._reg && _inbR.reg) inboundFlight._reg = _inbR.reg;
     }
   }
-  // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
-  // match the aircraft details so it must be coming from 2 different
-  // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
+  // PAIRWISE, ONE FLIGHT
+  //
+  // — exactly right: name and code were merged FIELD-BY-FIELD,
   // so an inbound carrying only the CODE (320) zipped with the
   // outbound's NAME ('Airbus A319'): the text said A319 while the image
   // drew the 320, with the reg riding along from whichever had it. Type
@@ -8289,7 +8289,7 @@ function _buildV2AircraftCol(ctx, vars) {
   // Livery code: subbrands (Rouge=RV, Express=QK, JazzAC=QK) use AC's folder.
   // The "r" suffix on Rouge codes (e.g. 319r) is preserved; AC folder has these.
   // ROUGE FLEET: A319/A320/A321 + 737 MAX 8 (7M8r.png). The MAX now flies in
-  // Rouge paint (Nick), so any 737 code on an RV flight → the Rouge MAX 8
+  // Rouge paint, so any 737 code on an RV flight → the Rouge MAX 8
   // livery; the A319/A320/A321 keep the 'r' suffix. See _rougeLiveryEq.
   var _liveryEq = _equipCd;
   if (_opCode === 'RV' && _liveryEq) _liveryEq = _rougeLiveryEq(_liveryEq);
@@ -8309,7 +8309,7 @@ function _buildV2AircraftCol(ctx, vars) {
     }
   } catch(e) { _acImg = ''; }
 
-  // ── Aircraft livery image block (Nick's custom PNGs from aircraft/{AL}/{eq}.png).
+  // ── Aircraft livery image block.
   // If the real PNG fails to load at runtime, the onerror handler hides it.
   // NO SVG cartoon fallback — that's the one that gets disabled.
   var _liveryBlock = '';
@@ -8380,7 +8380,7 @@ function _buildV2AircraftCol(ctx, vars) {
     var _inbFlightTxt = inboundFlight.flight || '';
     var _inbMain = _fromDisplay || _inbFlightTxt || '';
     if (_inbFlightTxt && _fromDisplay) _inbMain = _fromDisplay + ' · ' + _inbFlightTxt;
-    // v23272 — SAY IT LANDED (Nick: 'all i want is the aircraft arrived').
+    // v23272 — SAY IT LANDED.
     //
     // This block used to be unreachable once the inbound touched down, and
     // when it was reachable it only ever said 'coming from' with a countdown.
@@ -8418,14 +8418,14 @@ function _buildV2AircraftCol(ctx, vars) {
   // empty lower half instead of leaving a dead navy slab.
   var _hasAnyOptional = !!(_regBlock || (_hasInb && _inbLine && _inbLine.indexOf('visibility:hidden') === -1) || _liveryBlock || _eqBlock);
   var _bareCls = _hasAnyOptional ? '' : ' is-bare';
-  // When the column is bare, SAY WHY on screen (Nick at TPA: 'no aircraft at
-  // all / very rare to see an aircraft'). TPA's own feed carries zero
+  // When the column is bare, SAY WHY on screen
+  // TPA's own feed carries zero
   // equipment, so everything here rides on the ADB lookup — surface that
   // lookup's last outcome (window._adbHealth, written by loadFlight) so a
   // photo of the screen diagnoses it. Honest states only, never a guess.
   // The status goes INTO the column's ::after filler via data-baremsg —
   // rendering it as an extra element displaced the filler and collapsed
-  // the left rail's shape (Nick: 'all lopsided').
+  // the left rail's shape.
   var _bareAttr = '';
   if (!_hasAnyOptional) {
     try {
@@ -8542,8 +8542,8 @@ function _buildV2AircraftCol(ctx, vars) {
     if (_fiFlightNo || _fiDep || _fiArr || _fiBrd || _fiStLbl) {
       var _svgClock = '<svg viewBox="0 0 24 24" class="v2-fi-svg"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
       var _svgDepart = '<span class=\"ac-ico ac-ico-depart"></span>';
-      var _svgArrive = '<span class=\"ac-ico ac-ico-landing"></span>'; // landing plane, not a clock (Nick)
-      // v222 — new left-rail panel icons (Nick's 6-panel spec).
+      var _svgArrive = '<span class=\"ac-ico ac-ico-landing"></span>'; // landing plane, not a clock
+      // v222 — new left-rail panel icons.
       var _svgPlane = '<span class=\"ac-ico ac-ico-flight"></span>';
       var _svgGlobe = '<span class=\"ac-ico ac-ico-dest"></span>';
       // Boarding — "enter the gate" (doorway on the right + arrow in).
@@ -8567,7 +8567,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // of the 75 symbol files (BA, TS, WN, LH, AF, KL … most of the list)
         // got its emblem in the bottom-right card and a GENERIC PLANE up top.
         // The two orbs on one gate showed different things, which is exactly
-        // what "orbs were supposed to match airline emblems" means and exactly
+        // what the orbs-match-airline-emblems requirement rules out and exactly
         // what was marked done. Precedence is unchanged — the resolver checks
         // GATE_TOP_ROUND first, then the emblem set — it only adds the third
         // tier, and the img's onerror still lands on the generic plane when a
@@ -8577,27 +8577,27 @@ function _buildV2AircraftCol(ctx, vars) {
         // (e.g. PAL = yellow tile + navy plane + red triangle). These keep
         // their native colors instead of being filtered to white, and they
         // fill the rondelle edge-to-edge (no padding) since the file IS the badge.
-        // TILE-BRAND badges (Nick: 'the circle needs to be same color as the
-        // icon then the middle needs to fit within the circle'): brands whose
+        // TILE-BRAND badges
+        // : brands whose
         // emblem is an opaque square tile render as a CIRCLE in the tile's
         // own background colour with just the mark padded inside — the mark
         // file is derived from the airline's own tile art, never redrawn.
         var BADGE_TILE_BRANDS = window._BADGE_TILE_BRANDS = {
           // v23396 — MX removed. This forced the rail to draw breeze-check.svg
           // on #001633 while the arrival card drew Breeze's real mark, so the
-          // two orbs disagreed on the one carrier Nick called out by name.
+          // two orbs disagreed on the one carrier the owner called out by name.
           // Dropping it lets both fall through to _airlineOrbEmblem — MXY.svg,
           // Breeze's own finished roundel (v23390) — and MX is in the colour
           // list, so it full-bleeds the orb exactly as the rail intends.
-          // v22989 (Nick: 'no icon on the orb ... the icons should be that
-          // light teal blue with white'): Transat had NO emblem registered
+          // v22989
+          // : Transat had NO emblem registered
           // at all, so its orb fell through to the generic plane. TSC.svg is
           // the official Transat tile - #00B3F0 ground, white star - which is
           // exactly the colourway he asked for.
           'TS': { bg: '#00B3F0', icon: '/logos/airline-tiles/TSC-star-white.svg' }
         };
         var _tileBrand = BADGE_TILE_BRANDS[code] || null;
-        // DL removed (Nick: 'still not the right color its not even round'):
+        // DL removed:
         // native=true meant transparent badge + full-bleed art, which was
         // right for the old glossy-sphere file but wrong for the monochrome
         // widget — it rendered as a bare white mark on the dark plate, square
@@ -8608,9 +8608,9 @@ function _buildV2AircraftCol(ctx, vars) {
         // square, taupe ground with the orange bird, and the default
         // brightness(0) invert(1) turns it into a SOLID WHITE CIRCLE - the
         // whole mark gone. Rendered both ways before adding it here.
-        // v23381 - NEVER WHITE-WASH A COLOUR EMBLEM. Nick: 'I dont want to
-        // see white washed out emblems ever ... unless it belongs in the logo
-        // by start'. The old default was the reverse: whiten everything and
+        // v23381 - NEVER WHITE-WASH A COLOUR EMBLEM.
+        //
+        // The old default was the reverse: whiten everything and
         // add carriers here one at a time as each broke, which is how Condor,
         // Helvetic, Chair, Eurowings, Aegean and Pegasus each had to be
         // rescued individually tonight.
@@ -8626,7 +8626,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // disagreed about the same carrier's artwork. Now both read the one
         // list defined next to _CARD_COLOR_EMBLEMS; the entries are unchanged.
         var native = !!(window._orbKeepsColour && window._orbKeepsColour(code));
-        // COLOUR-ON-ACCENT (Nick: American/Delta 'color and centered' + 'make
+        // COLOUR-ON-ACCENT (the owner: American/Delta 'color and centered' + 'make
         // it the same colour and shiny' + 'AA is a light blue it will fit
         // perfectly'). White-inverting AA's red+blue symbol / Delta's red
         // widget to a flat silhouette threw the brand colour away. Instead keep
@@ -8635,8 +8635,8 @@ function _buildV2AircraftCol(ctx, vars) {
         // from the shared .v2-fi-emblem-wrap rule), so it matches its neighbours.
         var COLOR_ON_WHITE = { 'AA': true, 'DL': true };
         var onWhite = !!COLOR_ON_WHITE[code] && !_tileBrand && !native;
-        // v22989 — ONE ACCENT PER GATE, NEVER TWO (Nick: 'its still 2
-        // different colors holy fuck' / 'Delta orbs need to be either red to
+        // v22989 — ONE ACCENT PER GATE, NEVER TWO
+        // / 'Delta orbs need to be either red to
         // white no other color'). The emblem badge fell back to #0078D2 (a
         // BLUE, chosen for American) while the five glyph badges beside it
         // fell back to #D82F2E (red) — so any gate where --airline-accent
@@ -8652,7 +8652,7 @@ function _buildV2AircraftCol(ctx, vars) {
         // differently. It also fixes what v23392 broke here: growing the
         // colour list flipped 38 carriers onto the full-bleed branch, and
         // `cover` cropped wide silhouettes into a blob — BA's speedmarque came
-        // out as a red pill (Nick: 'what the fuck really?'). Colour and layout
+        // out as a red pill. Colour and layout
         // are separate questions again: only real tiles fill the disc.
         var _railParts = window._gateOrbParts(code);
         var BADGE = _railParts.badge;
@@ -8704,7 +8704,7 @@ function _buildV2AircraftCol(ctx, vars) {
         if (!html || html.indexOf('g8-r2-revised') === -1) return html;
         return html.replace(/<[^>]*g8-r2-strike[^>]*>[\s\S]*?<\/[^>]+>/g, '').trim();
       }
-      // v23219 — a REVISED time panel flips its own title banner (Nick, MIA
+      // v23219 — a REVISED time panel flips its own title banner (the owner, MIA
       // G11: 'Every topper banner above the time NEEDS to be the proper color
       // when a change occors if 3 panels change times 3 panels above need a
       // change of banner color'): amber for a delay, green for an early
@@ -8727,16 +8727,16 @@ function _buildV2AircraftCol(ctx, vars) {
 
       // v218.99.32 — Inline-style every badge so the cascade can't lie.
       // Single source of truth for what a flight-info badge looks like.
-      // Flair (Nick): black badges with the green glyph inside; the airline
+      // Flair: black badges with the green glyph inside; the airline
       // badge itself is the plain green dot (handled in _emblemImg).
-      // Breeze (Nick: 'keep the color consistent so the rest same color'):
+      // Breeze:
       // every badge matches the flight rondelle's tile navy.
       // Same single-accent rule as the emblem badge above (v22989): the
       // glyph orbs fall back to the carrier's own brand accent, so they can
       // never diverge from the emblem orb sitting beside them.
       var _railAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_alCodeEmb] && AIRLINE_BRAND[_alCodeEmb].accent) || '#D82F2E';
-      // v23438 — Flair flips: GREEN ground, BLACK markings (Nick: 'the other
-      // blacks are wrong they should be green with black markings'). The
+      // v23438 — Flair flips: GREEN ground, BLACK markings
+      // The
       // Flight orb is still the plain green ball he asked for.
       var _railBadgeBg = (_alCodeEmb === 'F8') ? '#7AFF94'
         : (_alCodeEmb === 'MX') ? '#001633'
@@ -8755,7 +8755,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // v22956 — the left rail follows `langs` like every other surface.
       // _L2 picked French-or-Spanish BY AIRPORT and never consulted the
       // user's selection — a fourth parallel label system (after the right
-      // rail, the boarding row, and the banner). Nick's screenshot: right
+      // rail, the boarding row, and the banner). the owner's screenshot: right
       // rail correctly English-only, left rail still 'Flight | Vol'.
       function _railPair(key) {
         var _s = _gateLbl(key, _frF, function (w) { return w; }, '\u0001', true);
@@ -8763,9 +8763,9 @@ function _buildV2AircraftCol(ctx, vars) {
         return [_a[0] || '', _a[1] || ''];
       }
       function _shelf(icon, en, second, val, valCls, rowCls) {
-        // v223 — Nick's exact spec: two columns. Icon column (left) + text
+        // v223 — the owner's exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
-        // Québec airports: French first on every pair (Nick).
+        // Québec airports: French first on every pair.
         // v22956 — labels arrive langs-resolved (French-first already applied
         // by _gateLbl); re-swapping here would undo it.
         var _p1 = en, _p2 = second;
@@ -8803,16 +8803,16 @@ function _buildV2AircraftCol(ctx, vars) {
       var _arrL2L = _arrRev ? _L2('Révisé - Arrivée','Revisado - Llegada')      : _L2('Heure d’arrivée','Hora de llegada');
       var _brdL2L = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Heure d’embarquement','Hora de embarque');
 
-      // v222 — Nick's 6 equal panels (top→bottom):
+      // v222 — the owner's 6 equal panels (top→bottom):
       //   Flight·Vol | Destination | Status·Statut | Boarding·Embarquement
       //   | Departure·Départ | Flight Time·Temps Vol
       // Short bilingual labels (revised-aware for the time panels).
       // Code slot shows CODES only. The dest-string fallback painted the
       // whole city list into the label ('Destination | DENVER, RENO' above
-      // 'Denver, Reno' — Nick's gate A6 screenshot). No code → no chip.
+      // 'Denver, Reno' — the owner's gate A6 screenshot). No code → no chip.
       var _destIataDisp = _dispIata(String(locIata || '').toUpperCase());
       if (!/^[A-Z]{3,4}$/.test(_destIataDisp)) _destIataDisp = '';
-      // Per Nick: "Destination | YYZ" — code on the label line, accent-coloured
+      // Per — code on the label line, accent-coloured
       // (same size, not bigger); the value is the city alone.
       // MULTI-CITY through-flights FLIP city-by-city (chip flips in lockstep).
       // Source is the RAW feed dest — the display name was already reduced
@@ -8826,9 +8826,9 @@ function _buildV2AircraftCol(ctx, vars) {
       // A flipping value with a frozen chip disagrees half the time
       // ('DEN' beside 'Reno') — if the city flips and the chip can't flip
       // with it, drop the chip entirely.
-      // v23164 — the IATA chip comes OUT of the title (Nick: 'the title
-      // destination is off by quite a bit... this is not adjustments, those
-      // titles DON'T change').
+      // v23164 — the IATA chip comes OUT of the title
+      //
+      // T change').
       //
       // Every other shelf title is two segments — "Flight | Vuelo", "Status |
       // Estado". Destination was three, because the code was appended here,
@@ -8840,18 +8840,18 @@ function _buildV2AircraftCol(ctx, vars) {
       // Nothing is lost. When there is no city name the value on line below
       // already falls back to the IATA code, so the code still reaches the
       // screen — in the value, where a changing thing belongs.
-      // v23165 — no keepDup here (Nick's screenshot: 'Destination |
+      // v23165 — no keepDup here (the owner's screenshot: 'Destination |
       // Destination' on a French gate — EN and FR share the word, and the
       // doubled title reads as a glitch, not symmetry). Languages that differ
       // still show both: 'Destination | Destino' is untouched. The boarding
       // sign's deliberate 'Zones | Zones' symmetry (v23130) keeps its own
       // keepDup at its own call sites.
-      // v23229 — the code rides the Destination banner too (Nick: 'Destination
-      // is also supposed to have the airport code it doesnt'), the same
+      // v23229 — the code rides the Destination banner too
+      // the same
       // pattern as the Arrival banner: the destination IATA prefixes the word
       // in every selected language; the dedup still collapses EN/FR sharing
       // 'Destination' to one prefixed word.
-      // v23240 — the code rides ONCE, at the END, accent-coloured (Nick:
+      // v23240 — the code rides ONCE, at the END, accent-coloured (
       // 'Change to Destination | Second language | YYY (all the codes are to
       // be a different color and accent)'). Words come from the 9-language
       // tables for the assigned pair; EN/FR sharing 'Destination' still
@@ -8860,13 +8860,13 @@ function _buildV2AircraftCol(ctx, vars) {
       var _codeSeg = function (c) {
         return c ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + c + '</span>' : '';
       };
-      // v23678 — Nick: "In French Please also add Destination even if twice
-      // Destination | Destination I would like the airport code to go in the
-      // orb YYC for isntance".
+      // v23678 —
+      //
+      // 
       //
       // Two changes in one line. keepDup (the 5th argument) makes _gateLbl
       // print both languages even when they are the same word — it exists
-      // already, for Nick's 'Zones | Zones' ruling, and this call simply never
+      // already, for the owner's 'Zones | Zones' ruling, and this call simply never
       // passed it. Every other rail row goes through _railPair(), which does.
       //
       // And the IATA code leaves the title: it now rides in the ORB instead,
@@ -8880,7 +8880,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // "Revised -" to BOTH languages overflows the shelf. (Same rule as Departure.)
       var _brdShortEn = 'Boarding';
       var _brdShortL2 = _L2('Embarquement','Embarque');
-      // Label stays "Departure | Départ" even when the time is revised (per Nick).
+      // Label stays "Departure | Départ" even when the time is revised.
       var _depShortEn = 'Departure';
       var _depShortL2 = _L2('Départ','Salida');
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
@@ -8906,13 +8906,13 @@ function _buildV2AircraftCol(ctx, vars) {
         var _stk = String((currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
         if (_stk === 'ontime') _stk = 'ontime';
         if (_delayedByRev && (_stk === 'scheduled' || _stk === 'ontime' || _stk === '')) _stk = 'delayed';
-        // A plain "scheduled" flight with no delay reads as ON TIME (per Nick) —
+        // A plain "scheduled" flight with no delay reads as ON TIME —
         // "Scheduled" looked wrong on a flight that's tracking on schedule.
         else if (_stk === 'scheduled' || _stk === '') _stk = 'ontime';
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
           var _enTC = _fidsTitleCase(_ss.en); // Title Case the EN
-          // Status STACKED — EN over FR (per Nick).
+          // Status STACKED — EN over FR.
           // v22956 — stacked in the SELECTED languages, not hard EN/FR.
           var _stPick = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
           if (_frF) { var _sfi = _stPick.indexOf('fr'); if (_sfi > 0) { _stPick.splice(_sfi, 1); _stPick.unshift('fr'); } }
@@ -8938,7 +8938,7 @@ function _buildV2AircraftCol(ctx, vars) {
                           : _svgGlobe),
                  _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         // v23195 — the STATUS shelf's row carries the status class, so its
-        // banner can take the status colour the way Nick's target shows it:
+        // banner can take the status colour the way the owner's target shows it:
         // "Status | Statut" on an amber bar while the flight is delayed. Only
         // the value used to carry the class, and a title bar cannot be
         // selected from its sibling's class without :has(), which the kiosk
@@ -9023,10 +9023,10 @@ function _buildV2MapCol(ctx, vars) {
   // no "—" placeholders).
   var _inboundCard = '';
   var _telemBar = '';
-  // THE RIGHT PANEL IS THE INCOMING AIRCRAFT'S, START TO FINISH. Nick: 'It
-  // should always display the incoming flight info, we should know where this
-  // flight comes from. Once it arrives it arrived, it is landed, then it is at
-  // the gate.' It used to flip to the DEPARTURE five minutes after arrival,
+  // THE RIGHT PANEL IS THE INCOMING AIRCRAFT'S, START TO FINISH.
+  //
+  //
+  // It used to flip to the DEPARTURE five minutes after arrival,
   // which is why the departure banner kept coming back on a panel that was
   // supposed to have finished with departures — they are on the other side.
   // The panel now keeps the inbound card and lets its wording carry through
@@ -9080,7 +9080,7 @@ function _buildV2MapCol(ctx, vars) {
       if (typeof _liveFixPhysOk === 'function' && !_liveFixPhysOk(_ib)) {
         _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
       }
-      // LEG-WINDOW GUARD (Nick: 'impossible — this aircraft is not en route').
+      // LEG-WINDOW GUARD.
       // ADB's withLocation position belongs to the AIRFRAME, not the leg — it
       // can be a stale cruise fix from a previous flight or linger after
       // landing. A fix only counts as THIS leg being airborne inside the
@@ -9110,7 +9110,7 @@ function _buildV2MapCol(ctx, vars) {
       // Speed and altitude appear together or not at all — never one without a
       // genuine airborne altitude (that produced "141 kph at 0 ft").
       if (_liveAlt === null || _liveAlt <= 0) { _liveAlt = null; _liveSpd = null; }
-      // Nick: 'that altimeter panel keeps glitching and changing sizes' —
+      // —
       // a render that momentarily lost the fix dropped the Speed/Altitude
       // bar entirely and the map re-flowed around it, then the next fix
       // brought it back. Hold the last airborne reading for up to 3 minutes
@@ -9179,8 +9179,8 @@ function _buildV2MapCol(ctx, vars) {
       // Verified airborne (real altitude from live telemetry) → show the PHASE
       // 'En route' instead of the neutral word (Scheduled / On time) the feed
       // hands us. A plane at altitude is unambiguously enroute.
-      // v23158 — but PUNCTUALITY BEATS PHASE (Nick: 'Why is it nt deayed on
-      // the right' — AC1986 running 104 min late read 'En route | En vol'
+      // v23158 — but PUNCTUALITY BEATS PHASE
+      // — AC1986 running 104 min late read 'En route | En vol'
       // in green while every other surface said Delayed; and his approved
       // reference card shows 'Early | En avance' on an airborne flight).
       // Delayed and Early survive takeoff; the amber/green ink and the
@@ -9250,7 +9250,7 @@ function _buildV2MapCol(ctx, vars) {
         if (_telemBits.length) _telem = '<div class="v2-rc-telem">' + _telemBits.join('<span class="v2-rc-telem-sep">·</span>') + '</div>';
       }
 
-      // Speed + Altitude — ALWAYS shown for the inbound airframe (per Nick).
+      // Speed + Altitude — ALWAYS shown for the inbound airframe.
       // Live values from AeroDataBox when the plane is airborne; an em-dash
       // while it's still on the ground (so the panel is consistent and the
       // numbers light up the moment it's in the air).
@@ -9269,7 +9269,7 @@ function _buildV2MapCol(ctx, vars) {
           +   '</div>'
           + '</div>';
 
-      // v218.99.68 — Compact, readable right-column header per Nick.
+      // v218.99.68 — Compact, readable right-column header as specified.
       // ONE block instead of duplicated info top + bottom. No truncated labels.
       // e.g. "WS812". Don't prepend the code if the number already carries it —
       // alphanumeric codes (F8, B6) slip past the letter-only prefix strip,
@@ -9293,7 +9293,7 @@ function _buildV2MapCol(ctx, vars) {
       // Status class for color — the SAME key as the shown word. It used to
       // re-derive from the raw feed status while the text upgraded to
       // 'En route' at altitude, so an airborne plane wore Scheduled's white
-      // (Nick: 'make sure we do colored status'). Label and colour come
+      // Label and colour come
       // from one key so they can never disagree.
       var _stCls = _stKey || 'scheduled';
 
@@ -9349,11 +9349,11 @@ function _buildV2MapCol(ctx, vars) {
       // switches", and it meant it: this cell took .en and .fr off the status
       // table and ignored `langs` entirely, even though `langs` is a user
       // choice with a picker in the menu and _ST_SHORT already carries nine
-      // languages. This is the card on Nick's YQM gate 4 shot — the one with
+      // languages. This is the card on the owner's YQM gate 4 shot — the one with
       // From/Revised — so it is the one that was actually printing
       // "Delayed | En retard" on a screen that had not asked for both.
       //
-      // Two at a time, one if that is all that is picked (Nick). The cap is
+      // Two at a time, one if that is all that is picked. The cap is
       // what keeps the column honest: two words is the widest this cell can be
       // asked to render, and its 270px column is already sized for exactly
       // that. Four selected languages would otherwise build a string nothing
@@ -9386,15 +9386,15 @@ function _buildV2MapCol(ctx, vars) {
       })();
       // ONE flight-info shelf: Flight·From + Status (bilingual). No ETA row —
       // that lives on the left/departure side.
-      // Nick's approved reference (Jul 2026): a clean 3-row LABEL | VALUE
+      // the owner's approved reference (Jul 2026): a clean 3-row LABEL | VALUE
       // table — "Flight | Vol  WS576" / "From | De  Edmonton (YEG)" /
       // "Status | Statut  Early | En avance" — thin rules between rows.
-      // City | CODE with the code in a different colour (Nick: 'Cleveland |
-      // CLE … different colour', consistent on the From side too).
+      // City | CODE with the code in a different colour
+      // consistent on the From side too).
       var _ibCityCode = _origCity
         ? (_origCity + (_origIata ? ' <span class="v2-rc-bar">|</span> <span class="v2-rc-iata">' + _dispIata(_origIata) + '</span>' : ''))
         : (_dispIata(_origIata) || '—');
-      // Arrival row — RESTORED (Nick: 'we don't have an arrival time anymore
+      // Arrival row — RESTORED (t have an arrival time anymore
       // on there, we did before and we need it'). Scheduled time, with a
       // strike + revised time when the ETA moved: green when earlier (early
       // is good), amber when later. Label flips to Arrived once it's in.
@@ -9404,8 +9404,8 @@ function _buildV2MapCol(ctx, vars) {
       };
       var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
       var _ibArrRevStr = (_ibRevTs && Math.abs(_ibRevTs - _ibArrTs) >= 60000) ? _ibFmtT(_ibRevTs) : '';
-      // Nick (Jul 26 2026): 'flight and from needs to be one and arrival
-      // and status needs to be one so 2 panels its 2 shelves' + 'I DIDNT
+      //
+      // + 'I DIDNT
       // ASK FOR EVERYTHING TO BE SQUISHED ON 2 LINES I SAID THE PATTERN
       // NEEDS TO BE AS 2 PANELS' — every row keeps its OWN full line
       // exactly as before; only the SHELF PANELS regroup: Flight+From
@@ -9429,10 +9429,10 @@ function _buildV2MapCol(ctx, vars) {
         // 'Arrival | Arrivée' was hard-coded En/Fr on ja/ar screens.
         var _ibArrLblKey = (_stKey === 'arrived') ? 'arrived' : 'arrival';
         if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
-          // Nick's approved sketch: 'Arrival 5:28PM    Revised 5:27PM' —
+          // the owner's approved sketch: 'Arrival 5:28PM Revised 5:27PM' —
           // one line, two pairs; revised inked green earlier/amber later.
           var _ibRevCls = (_ibRevTs < _ibArrTs) ? 'v2-rc-status-early' : 'v2-rc-status-delayed';
-          // v23190 — TWO ROWS, REVISED FIRST. Nick's target has the status
+          // v23190 — TWO ROWS, REVISED FIRST. the owner's target has the status
           // panel reading top to bottom as: the status itself on a full-width
           // bar, then "Revised | Revisé 5:30pm", then "Arrival | Arrivée
           // 5:20pm". The old four-cell single line put both pairs side by side,
@@ -9462,11 +9462,11 @@ function _buildV2MapCol(ctx, vars) {
       }
       // ONE shelf element as it always was — the right column is a fixed
       // grid and a second shelf child spilled the whole rail into a
-      // phantom side column (v22591 regression). The 2-PANEL pattern Nick
+      // phantom side column (v22591 regression). The 2-PANEL pattern
       // asked for lives INSIDE the shelf: pane 1 = Flight/From, pane 2 =
       // Arrival/Status, each drawn as its own panel.
-      // v23201 — THE LEFT MODULE, VERBATIM (Nick: 'they are like modules …
-      // interchangeable', repeated since the first mockup; and the boarding
+      // v23201 — THE LEFT MODULE, VERBATIM
+      // repeated since the first mockup; and the boarding
       // strip already proved the pattern at v23115b: 'copy the exact current
       // left info panel' — same classes, same structure, so every style he
       // has approved, and whatever he changes next, applies here WITHOUT a
@@ -9482,8 +9482,8 @@ function _buildV2MapCol(ctx, vars) {
       var _mcParts = window._gateOrbParts(_mcOrbArt || _mcCode);
       var _mcBadge = _mcParts.badge + 'color:#fff;';
       // v23203 — the orb carries the OPERATOR's logo when another carrier
-      // flies the leg (Nick: 'either the airline or the operator in this
-      // case PAL — logo only white — and still have operated by PAL'),
+      // flies the leg
+      // 
       // else the airline's; forced to a white silhouette either way.
       var _mcOrbOp = '';
       try { var _oRaw_mcOrb = String((vars.currentFlight && vars.currentFlight._opCode) || '').trim().toUpperCase();
@@ -9504,7 +9504,7 @@ function _buildV2MapCol(ctx, vars) {
       // in the orb, not on the resolved operator: a UA Express leg resolves
       // _mcOrbOp to SkyWest/Republic, but neither has emblem art, so the orb
       // still holds United's globe — and the globe must render in colour
-      // (Nick's UA3513 shot: the card orb went white-silhouette while the
+      // (the owner's UA3513 shot: the card orb went white-silhouette while the
       // rail's stayed colour; 'make sure the first orb is used only').
       var _mcOrbArt = (_mcOrbOp && _airlineOrbEmblem(_mcOrbOp)) ? _mcOrbOp : _mcCode;
       // v23203 — 'unless the orb is white then its color': a light orb
@@ -9516,18 +9516,18 @@ function _buildV2MapCol(ctx, vars) {
         var _r_mcOrb = parseInt(_h_mcOrb.substr(0,2),16), _g_mcOrb = parseInt(_h_mcOrb.substr(2,2),16), _b_mcOrb = parseInt(_h_mcOrb.substr(4,2),16);
         if ((0.2126*_r_mcOrb + 0.7152*_g_mcOrb + 0.0722*_b_mcOrb) > 186) _mcOrbWhite = false; } catch (e) {}
       // v23222 — the inbound card's banner names the event, not the noun
-      // (Nick: 'the Flight/Vol becomes YQM Arrival | YQM Arrivee'): this
+      //: this
       // aircraft is arriving HERE, so the local airport code prefixes the
       // Arrival pair in both languages. The shared shrink-fitter already
       // sizes the longer title to the banner.
-      // v23257 — the banner reads like the airport PA (Nick: 'Above simply
-      // put … arriving From | En Provenance de'): 'Arriving From | En
+      // v23257 — the banner reads like the airport PA
+      // : 'Arriving From | En
       // provenance de' while en route, 'Arrived From | Arrivé de' once
       // landed. The origin itself lives on line 1, so no code in the banner.
       // v23272 — once it is down, SAY SO, in the words a passenger uses
-      // (Nick: 'Once the aircraft arrives it should say your aircraft has
-      // arrived once at the gate it should say your aircraft has arrived at
-      // the gate simple done'). 'Arrived From' names the movement; it does
+      //
+      //
+      // 'Arrived From' names the movement; it does
       // not answer the question the person waiting is actually asking.
       //
       // Two states, because they are not the same news: ADB's 'arrived' is
@@ -9539,8 +9539,8 @@ function _buildV2MapCol(ctx, vars) {
         var _mcRawSt = String(_ib.status || '').replace(/[\s_-]+/g, '').toLowerCase();
         _mcOnStand = (_mcRawSt === 'arrived' || !!_ib._actualArrTime);
       } catch (e) {}
-      // v23538 — THE HEADER NEVER MOVES. Nick: "the status should not be in the
-      // banner that never changes ... it is the bottom that changes", then "At
+      // v23538 — THE HEADER NEVER MOVES.
+      // then "At
       // this point its irelevant it has arrived its here", then the call:
       // "The Banner should always say ... Your Aircraft | Votre Appareil".
       // It used to swap to "Your aircraft has arrived at the gate" the moment
@@ -9550,7 +9550,7 @@ function _buildV2MapCol(ctx, vars) {
       // coloured line. The same fact twice, with the anchor doing the moving.
       // One label, always, and the status stays where it belongs underneath.
       var _mcTitleKey = 'yourAircraftHdr';
-      // v23544 — WHICH CLOCK. Nick: "4:48 wheels down lets say" for arrived,
+      // v23544 — WHICH CLOCK. for arrived,
       // then "5:05pm ... arrived at the gate". They are two different moments
       // and the feed already separates them: _actualArrTime is the ON-BLOCK
       // gate time (see the note above _mcOnStand), while the revised arrival is
@@ -9579,7 +9579,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div class="v2-fi-row">'
         +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mcBadge + '">'
         +       (_mcOrbSrc
-                  // v23222 — BITMAP ROUNDELS STAY NATIVE (Nick's G4 shot:
+                  // v23222 — BITMAP ROUNDELS STAY NATIVE (the owner's G4 shot:
                   // 'Rouge here is a sqwuare empty'). rouge-icon.png is a
                   // solid colour roundel; invert(1) turned it into a blank
                   // white disc. Only vector silhouettes take the white
@@ -9590,7 +9590,7 @@ function _buildV2MapCol(ctx, vars) {
                   // glyph: a KE board drew a passengers icon in the orb.
                   : '<span class="v2-fi-orb-code">' + (_mcOrbOp || _mcCode || '') + '</span>')
         +     '</div></div>'
-        // v23207 — THREE ROWS, per Nick's sketch (with his screenshot: 'half
+        // v23207 — THREE ROWS, as specified's sketch (with his screenshot: 'half
         // the words are missing … Times and Status needs to be 2 lines for 3
         // rows in total'):
         //   AC1986 · Early | En Avance
@@ -9600,18 +9600,18 @@ function _buildV2MapCol(ctx, vars) {
         // is eaten.
         +     '<div class="v2-fi-textcol">'
         // v23207 — the banner CHANGES COLOUR when a change is imminent
-        // (Nick): amber for delayed/cancelled/diverted, green for an early
+        //: amber for delayed/cancelled/diverted, green for an early
         // revision — the same semantics as the left rail's status banner.
         +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_stCls || '') ? ' v2-fi-title-warn' : ((_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) ? ' v2-fi-title-good' : '')) + '">' + _mcTitle + '</div>'
         +       '<div class="v2-fi-value">'
         // v23257 \u2014 the banner carries 'Arriving From | Provenant de', so
-        // line 1 is flight and city ONLY (Nick: 'Then have flight and city
-        // only / ac7992 etc'):
+        // line 1 is flight and city ONLY
+        // :
         //   AC7992 \u00b7 Montreal | YUL
         //   10:48am | 10:25am  Revised | R\u00e9vis\u00e9   (times first, label after)
         //   Delayed | En retard                   (status on its own line)
         +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> ' + _ibCityCode + '</div>'
-        // v23544 — once it is down, the scheduled/revised pair steps aside. Nick:
+        // v23544 — once it is down, the scheduled/revised pair steps aside.
         // the arrived panel reads "4:58pm | Your aircraft has arrived", so the
         // ONE time that matters is the one the event actually happened at, and
         // it belongs beside the sentence rather than on a line of its own.
@@ -9623,7 +9623,7 @@ function _buildV2MapCol(ctx, vars) {
                     : (_ibArrSchedStr
                         ? '<div class="v2-fi-mline2">' + _railT(_ibArrSchedStr) + ' <span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span></div>'
                         : '')))
-        // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. Nick, laying out the
+        // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. the owner, laying out the
         // panel: banner fixed, then "WS668 · Calgary | YYC", then "Your
         // aircraft has arrived: when landed then (at the gate when its at
         // gate)" with the second language under it.
@@ -9634,15 +9634,15 @@ function _buildV2MapCol(ctx, vars) {
         +         '<div class="v2-fi-mline3">'
         +           '<span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">'
         +             (_stKey === 'arrived'
-                        // v23540 — ONE LANGUAGE, NOT TWO. Nick, seeing the
-                        // stacked pair: "I think tahts too much". He is right —
+                        // v23540 — ONE LANGUAGE, NOT TWO. The stacked pair
+                        // was reported as too much. That is right —
                         // four lines is a lot for this panel, and the second
                         // language is the redundant half: the board already
                         // rotates through its languages, so each pass shows the
                         // sentence in one of them anyway. Same reasoning, and
                         // the same helper, as the pre-boarding roster.
-                        // v23542 — BOTH LANGUAGES, ON ONE LINE. Nick: "Youre
-                        // missing the second language".
+                        // v23542 — BOTH LANGUAGES, ON ONE LINE.
+                        // 
                         // v23538 stacked them into two forced blocks and he
                         // called that "too much"; v23540 answered by dropping
                         // one, which was the wrong half to cut. The banner
@@ -9669,7 +9669,7 @@ function _buildV2MapCol(ctx, vars) {
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
-      // v23193 — REBUILT TO NICK'S TARGET, cell by cell ("your altimter DID
+      // v23193 — REBUILT TO THE OWNER'S TARGET, cell by cell ("your altimter DID
       // NOT EVEN CHANGE" — v23192 moved the old markup and left its content
       // untouched, and he was right). His strip reads:
       //   Speed          Altitude          Distance
@@ -9717,7 +9717,7 @@ function _buildV2MapCol(ctx, vars) {
   } catch (e) {
     // v23308 — this catch was SILENT, and that silence has now hidden two
     // separate bugs: the backstop's esc() ReferenceError, and whatever throws
-    // here on the WestJet gate Nick photographed (WS812 from Calgary), where
+    // here on the WestJet gate the owner photographed (WS812 from Calgary), where
     // the feed had the flight in full yet the real card never built and the
     // panel fell through to the backstop. A swallowed exception that changes
     // what renders should say so.
@@ -9730,8 +9730,8 @@ function _buildV2MapCol(ctx, vars) {
   // unreachable code guarding an empty panel. Both are gone.
   //
   // v23302 argued the empty slot "loses nothing because the aircraft block
-  // above already names the aircraft". Nick, three times over: 'So now theres
-  // nothing??? I asked for the incoming flight info NOT NOTHIONG', 'no info',
+  // above already names the aircraft".
+  // 'no info',
   // 'nothing'. A blank box under a populated one reads as broken, and this
   // panel is the incoming aircraft's — it says what it knows, or says it does
   // not know yet. It does not go silent.
@@ -9740,7 +9740,7 @@ function _buildV2MapCol(ctx, vars) {
   // YQM gate 3: window._gateInbound was populated and the panel STILL rendered
   // nothing, because the builder above bailed on one of its inner guards. So
   // "no inbound" was never the only route to a blank panel, and keying the
-  // backstop to that would have missed the exact gate Nick photographed. Keyed
+  // backstop to that would have missed the exact gate the owner photographed. Keyed
   // to the empty string instead, it covers every route — missing inbound, a
   // failed inner guard, a throw.
   //
@@ -9761,13 +9761,13 @@ function _buildV2MapCol(ctx, vars) {
           .replace(/&/g, '&amp;').replace(/</g, '&lt;')
           .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
-      // v23682 — Nick, pointing at the bottom-right panel: "I said change it
-      // to Votre Avion", and "this panel has NO TIME".
+      // v23682 —
+      // and "this panel has NO TIME".
       //
       // He is right on both counts. This card is the no-inbound variant and
       // carries no time at all, so titling it 'Arrival | Arrivée' labelled
       // something that is not there. It is the same panel as the merged card
-      // below, which already titles itself yourAircraftHdr on Nick's earlier
+      // below, which already titles itself yourAircraftHdr on the owner's earlier
       // ruling — recorded in the comment at _mcTitleKey: "The Banner should
       // always say ... Your Aircraft | Votre Appareil". That ruling was applied
       // to one variant and never to this one, so the panel changed its name
@@ -9782,7 +9782,7 @@ function _buildV2MapCol(ctx, vars) {
       var _niFrom = '';
       if (_niIb) {
         // v23318 — through _dispIata, like every other code chip on the board
-        // (Nick: 'BTW its Montreal | MET not YHU'). The mapping exists for
+        // The mapping exists for
         // exactly this airport and this card read the feed code raw.
         var _niFromIata = _dispIata(String(_niIb._locIata || '').toUpperCase());
         // The feed hands origin over ALREADY paired — YQM gate 3 carries
@@ -9808,7 +9808,7 @@ function _buildV2MapCol(ctx, vars) {
       // was empty too. Measured on YQM gate 3 — Porter, which HAS an emblem
       // registered — the card orb rendered as nothing while the top orb wore
       // porter-p.svg. Same derivation the builder below uses.
-      // v23404 — NEVER AN EMPTY DISC. Nick, on the YQM/AC stream: 'It's blank
+      // v23404 — NEVER AN EMPTY DISC. s blank
       // right now on the stream' — the bottom-right Arrival orb was a bare red
       // circle with nothing in it while the whole left rail showed Air Canada
       // fine. When the inbound aircraft is still 'To be confirmed' every
@@ -9830,15 +9830,15 @@ function _buildV2MapCol(ctx, vars) {
       var _niCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_niCodeRaw]) ? CALLSIGN_TO_IATA[_niCodeRaw] : _niCodeRaw;
       var _niOrbSrc = '';
       try { _niOrbSrc = _airlineOrbEmblem(_niCode) || ''; } catch (e) {}
-      // v23392 — SAME CARRIER, SAME ORB. Nick: 'unless its operated by
-      // someone else it should always match period … its a copy paste from
-      // the original which is top left'. When this inbound aircraft belongs
+      // v23392 — SAME CARRIER, SAME ORB.
+      //
+      // When this inbound aircraft belongs
       // to the gate's own carrier, take the top orb's resolved artwork
       // verbatim instead of resolving a second time — a second resolve could
       // pick a different tier (the operator re-point above prefers the
       // OPERATOR's art) and put two faces on one screen. A genuinely
       // operated-by inbound still resolves on its own code, which is the one
-      // case Nick wants them to differ.
+      // case the owner wants them to differ.
       var _niSameCarrier = !!(_niCode && _mcCode && _niCode === _mcCode);
       if (_niSameCarrier && _mcOrbSrc) _niOrbSrc = _mcOrbSrc;
       // …and the same treatment. This orb never whitened at all while the top
@@ -9868,7 +9868,7 @@ function _buildV2MapCol(ctx, vars) {
       // v23308 — THE ORB IS A CIRCLE WITH A SIZE. This wrapper carried a bare
       // `background:` and nothing else — no width, no height, no border-radius
       // — so it rendered as an empty rounded SQUARE the size of whatever the
-      // base class gave it (Nick's WestJet shot: a blank teal box). The real
+      // base class gave it. The real
       // inbound card builds _mcBadge with the full geometry; the backstop has
       // to use the same string or it is not the same orb. The accent fallback
       // is the carrier's own brand colour too, not a hardcoded navy, so a gate
@@ -9878,7 +9878,7 @@ function _buildV2MapCol(ctx, vars) {
       var _niParts = window._gateOrbParts(_niOrbArt || _niCode);
       var _niBadge = _niParts.badge + 'color:#fff;';
       // v23308 — the status line only says "to be confirmed" when something
-      // ACTUALLY is. Nick's shot printed it under 'WS812 · From: Calgary YYC':
+      // ACTUALLY is. the owner's shot printed it under 'WS812 · From: Calgary YYC':
       // 'what is to be confirmed we know the fing plane is coming from
       // Calgary'. He is right — the line was written for the case where the
       // board knows nothing, and then rendered unconditionally, contradicting
@@ -9916,8 +9916,8 @@ function _buildV2MapCol(ctx, vars) {
         +     '<div class="v2-fi-textcol">'
         +       '<div class="v2-fi-title">' + _niTitle + '</div>'
         +       '<div class="v2-fi-value">'
-        // v23313 — NEVER print '\u2014 \u00b7 From | Desde: \u2014' (Nick: 'what the
-        // hell is that?'). A From line exists only when there is a flight or
+        // v23313 — NEVER print '\u2014 \u00b7 From | Desde: \u2014'
+        // A From line exists only when there is a flight or
         // an origin to put on it; a card that knows nothing carries the
         // status line alone.
         +         (_niKnown
@@ -9934,7 +9934,7 @@ function _buildV2MapCol(ctx, vars) {
 
   // ─── AIRCRAFT BLOCK (bottom of right column, always) ──────────────────
   // "Aircraft Type:" label + value, with livery image above. This represents
-  // the equipment serving this gate. ALWAYS at the bottom per Nick's spec.
+  // the equipment serving this gate. ALWAYS at the bottom as specified's spec.
   var _aircraftBlock = '';
   try {
     var _cf = vars.currentFlight || {};
@@ -9961,9 +9961,9 @@ function _buildV2MapCol(ctx, vars) {
         if (!_ib2._reg && _inbR2.reg) _ib2._reg = _inbR2.reg;
       }
     }
-    // PAIRWISE, ONE FLIGHT (Nick: 'the airplane picture does not always
-    // match the aircraft details so it must be coming from 2 different
-    // sources' — exactly right: name and code were merged FIELD-BY-FIELD,
+    // PAIRWISE, ONE FLIGHT
+    //
+    // — exactly right: name and code were merged FIELD-BY-FIELD,
     // so an inbound carrying only the CODE (320) zipped with the
     // outbound's NAME ('Airbus A319'): the text said A319 while the image
     // drew the 320, with the reg riding along from whichever had it. Type
@@ -9981,8 +9981,8 @@ function _buildV2MapCol(ctx, vars) {
     // by GATE. This line is where the wrong aeroplane got in: the departure
     // AC7995 has no tail of its own, so it took the gate-matched arrival's
     // C-FUJA, and the type then resolved FROM that tail — an E175 — over the
-    // CRJ-900 the feed had correctly given for AC7995 itself. Nick: 'this is
-    // 2 different aircraft'. The feed was right; the borrowing was not.
+    // CRJ-900 the feed had correctly given for AC7995 itself.
+    // The feed was right; the borrowing was not.
     var _inboundIdentityOk = !(_ib2 && _ib2._identityUnverified);
     var _inboundReg = (/^history/i.test(_inboundRegSource) || !_inboundIdentityOk)
       ? '' : ((_anyInb && _ib2 && _ib2._reg) || '');
@@ -10004,8 +10004,8 @@ function _buildV2MapCol(ctx, vars) {
         window._gateRegSticky = null;
       }
     } catch (e) {}
-    // REG ↔ FLIGHT VERIFICATION (Nick: 'once a registration pops up
-    // verify that registration' — his C-GFCP portal rotation proved ADB's
+    // REG ↔ FLIGHT VERIFICATION
+    // — his C-GFCP portal rotation proved ADB's
     // FLIGHT record can claim a tail whose OWN schedule contradicts it:
     // today's AC1616 record said C-GFCP while C-GFCP's own day was the
     // Miami rotation; no airport or date guard can see that). Ask ADB what
@@ -10019,8 +10019,8 @@ function _buildV2MapCol(ctx, vars) {
     // while verification is pending the reg is withheld from display, but
     // its REGISTRY type is still the best model answer — the feed said
     // 'A320' for C-FYJE (an A319), so falling back to the feed's model made
-    // the panel flip 319↔320 on every re-verify (Nick: 'keeps flip
-    // flopping'). A positive false verdict or a sanity purge clears this
+    // the panel flip 319↔320 on every re-verify
+    // A positive false verdict or a sanity purge clears this
     // too — a refuted tail must not leave its type behind.
     var _acRegPreVerdict = _acReg;
     try {
@@ -10066,7 +10066,7 @@ function _buildV2MapCol(ctx, vars) {
     // flight number is deterministic. (Livery still keys off AC below.)
     var _mktIsAC = String(vars.airlineCode || '').toUpperCase() === 'AC';
     var _mxGate = (_mktIsAC && typeof acExpressMatrix === 'function') ? acExpressMatrix(_acFlNum) : null;
-    // THE BUG THAT BLANKED EVERY GATE'S AIRCRAFT (Nick, days of 'no
+    // THE BUG THAT BLANKED EVERY GATE'S AIRCRAFT (the owner, days of 'no
     // aircraft'): the three route-fit checks below said bare `iata` /
     // `locIata` — names that exist in uxgGateHtml but NOT in this function.
     // Every render of this block threw ReferenceError at the first check,
@@ -10156,7 +10156,7 @@ function _buildV2MapCol(ctx, vars) {
         // Impossible mainline frame on a Porter flight = cross-contaminated
         // feed data. Porter flies TWO types (Dash 8-400 AND E195-E2), so
         // substituting either one is a GUESS — PD2382 to St-Hubert showed
-        // 'Embraer E195' on a Dash 8 route (Nick: 'wrong aircraft').
+        // 'Embraer E195' on a Dash 8 route.
         // Honest Pending until real data names the airframe.
         _equipCd = '';
         _equipNm = '';
@@ -10185,10 +10185,10 @@ function _buildV2MapCol(ctx, vars) {
     // more accurate than a route-range guess (the former AC7995 DH4 error).
     // (The old 'Porter with no equipment → E195' pin is GONE: Porter flies
     // two types, so it was a guess — PD2382 to St-Hubert is a Dash 8 route
-    // and the screen said E195 (Nick: 'wrong aircraft'). No data → Pending;
+    // and the screen said E195. No data → Pending;
     // the bare-status line explains the wait.)
     // Air Canada flies NO 737NG — its only 737s are MAX 8s. ADB frequently
-    // codes the MAX as '738' / 'Boeing 737-800' (Nick caught 'Boeing 737-800
+    // codes the MAX as '738' / 'Boeing 737-800' (the owner caught 'Boeing 737-800
     // | C-GMIW' on the AC1096 inbound). Pin AC 737s to the MAX 8 label and
     // image. WestJet's REAL 737-800s are untouched — this is AC-only.
     if (String(vars.airlineCode || '').toUpperCase() === 'AC') {
@@ -10222,8 +10222,8 @@ function _buildV2MapCol(ctx, vars) {
     // Rouge has its OWN paint (321r.png) but the files live in the AC folder.
     if (_opCode === 'RV' || _opCode === 'QK') _liveryAirline = 'AC';
     // PAL Airlines flies AC Express on its OWN aircraft, in PAL's own livery —
-    // NOT the mainline-painted regional jets above (Nick: 'Air Canada aircraft
-    // operated by PAL should show the PAL aircraft'). PAL has a distinct livery
+    // NOT the mainline-painted regional jets above
+    // PAL has a distinct livery
     // folder (aircraft/PB/DH*.png), so paint the image from there. Operator is
     // resolved by registration upstream (the P-series C-F/GP** tails).
     if (_opCode === 'PB') _liveryAirline = 'PB';
@@ -10231,7 +10231,7 @@ function _buildV2MapCol(ctx, vars) {
     var _acImg = '';
     try {
       // The photo must match the TAIL, not the schedule: a MAX 8 picture next
-      // to 'Boeing 737-700 | C-FWSI' contradicts itself (Nick). When the
+      // to 'Boeing 737-700 | C-FWSI' contradicts itself. When the
       // reg-true type is known, resolve the livery image from IT.
       var _regTrueImg = (typeof _regTrueType === 'function' && _acReg) ? _regTrueType(_acReg) : '';
       // Same AC 737NG→MAX normalization for the IMAGE the reg-true type picks.
@@ -10242,15 +10242,15 @@ function _buildV2MapCol(ctx, vars) {
       if (_regTrueImg && _opCode === 'RV') {
         // Rouge: keep the Rouge paint but on the TRUE airframe — normalise the
         // reg-true type to a code and re-apply the 'r' suffix (C-FZUG is an
-        // A319 → 319r.png, not the scheduled 321r; Nick: 'showing a 320
-        // picture with 319 registration').
+        // A319 → 319r.png, not the scheduled 321r;
+        // 
         var _rcRouge = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_regTrueImg) : '';
         // Non-Airbus under RV = data error: keep the TRUE type in mainline
         // paint rather than fabricating Rouge art that doesn't exist.
         _regTrueImg = _rcRouge ? _rougeLiveryEq(_rcRouge) : '';
       }
       // v23311 — THE PLATE MUST NOT CONTRADICT THE LABEL, FOR ANY CARRIER.
-      // Nick: 'dont assume its oh one airline no its ALL'. The reg-true type
+      // The reg-true type
       // is a REGISTRY lookup on the tail, and it took precedence over the very
       // code the label was built from — so whenever the two disagreed the
       // panel named one aircraft and drew another, and usually drew nothing at
@@ -10266,7 +10266,7 @@ function _buildV2MapCol(ctx, vars) {
       // it: an airframe the carrier cannot fly is discarded outright, and a
       // reg-true type that survives is used for the picture ONLY when it means
       // the same aircraft the label names. Otherwise the label's own code
-      // draws the plate, so the two always agree — Nick's standing rule ('it
+      // draws the plate, so the two always agree — the owner's standing rule ('it
       // shouldnt say airbus 321 and show a 320 … the root of this needs to be
       // fixed'). A genuine substitution still shows through, because in that
       // case the label has already moved with it.
@@ -10276,15 +10276,15 @@ function _buildV2MapCol(ctx, vars) {
         } catch (e) {}
       }
       var _imgEq = _regTrueImg || _liveryEq;
-      // Fallback (Nick: 'it should fall back to a picture of the scheduled
-      // aircraft on paper'): no reg/equip CODE resolved, but the schedule
+      // Fallback
+      // : no reg/equip CODE resolved, but the schedule
       // NAMES a type (e.g. 'Boeing 737-800') — derive the code from that name
       // so the EXPECTED type's livery shows instead of a bare 'pending'. The
-      // label already reads that type, so image + label still agree (Nick's
+      // label already reads that type, so image + label still agree (the owner's
       // rule). Airline-specific pins above (AC 737→MAX, TS→neo) already ran.
       if (!_imgEq && _equipNm && typeof aircraftCodeToIata === 'function') {
         try { _imgEq = aircraftCodeToIata(_equipNm) || ''; } catch (e) { _imgEq = ''; }
-        // v22935 — and the Rouge paint has to survive THIS path too (Nick:
+        // v22935 — and the Rouge paint has to survive THIS path too (
         // 'wrong aircraft livery'). The suffix above is applied to _liveryEq,
         // but that branch is guarded on _liveryEq being truthy — and it is
         // empty whenever the flight carries no equipment CODE, which is the
@@ -10305,7 +10305,7 @@ function _buildV2MapCol(ctx, vars) {
     } catch(e) { _acImg = ''; }
 
     // LATCH the aircraft image so it can't flicker to "pending" on a transient
-    // feed gap (Nick: 'aircraft is in and out, it's a shit show'). The inbound
+    // feed gap. The inbound
     // tail/equipment sometimes drops out of the feed for a tick, which emptied
     // _acImg and flipped the panel to "Aircraft image pending" then back. Cache
     // the last good image per FLIGHT (stable key — the reg itself can flicker)
@@ -10327,7 +10327,7 @@ function _buildV2MapCol(ctx, vars) {
     // and aircraft-info shelves vanish together, which changed the grid and
     // looked like a broken screen. Missing data is shown honestly as pending.
     {
-      // Operated-by badge — Nick wants this on the SAME LINE as the
+      // Operated-by badge — the owner wants this on the SAME LINE as the
       // aircraft type, NOT overlaid on the plane image. Built first so it
       // can be slotted into the type-shelf row below.
       var _opBadgeInline = '';
@@ -10396,7 +10396,7 @@ function _buildV2MapCol(ctx, vars) {
       }
 
       // Aircraft type shelf — flex row: type label/value on LEFT, operator
-      // badge on RIGHT (same line per Nick's spec).
+      // badge on RIGHT (same line as specified's spec).
       var _typeShelf = '';
       if (_equipNm || _equipCd || _opBadgeInline) {
         _typeShelf =
@@ -10424,7 +10424,7 @@ function _buildV2MapCol(ctx, vars) {
           + '</div>';
       }
 
-      // Shelf 6 — Aircraft type (+reg). FULL manufacturer name per Nick
+      // Shelf 6 — Aircraft type (+reg). FULL manufacturer name as specified
       // ("De Havilland Dash 8-300", not "Dash 8-300") — the auto-fit
       // shrinks the line if it runs long.
       var _lang2b = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
@@ -10439,7 +10439,7 @@ function _buildV2MapCol(ctx, vars) {
       var _acModel = gateAircraftShortname(String(_equipNm || _equipCd || ''));
       // The REG is a specific airframe — its true type (ADB lookup, cached)
       // beats the scheduled equipment, which lies on swaps (MAX 8 vs the
-      // -700 that C-FWSI actually is, per Nick).
+      // -700 that C-FWSI actually is, as specified).
       try {
         // The verdict-withheld tail still names the TYPE (see _acRegPreVerdict
         // above) — display of the reg itself stays gated on verification.
@@ -10449,7 +10449,7 @@ function _buildV2MapCol(ctx, vars) {
         // FINAL-SAY normalization: ADB's aircraft REGISTRY also mislabels AC
         // MAXes as '737-800', and this reg-true override runs AFTER the
         // equipment pin — which is why the pin alone didn't hold on
-        // production (Nick: 'Ran however it did not work'). Air Canada flies
+        // production. Air Canada flies
         // no 737NG, ever: the last word on any AC 737 label is MAX 8.
         if (String(vars.airlineCode || '').toUpperCase() === 'AC'
             && /737/.test(String(_acModel || '')) && !/MAX/i.test(String(_acModel || ''))) {
@@ -10465,20 +10465,20 @@ function _buildV2MapCol(ctx, vars) {
         ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> '
           + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
         : '';
-      // TYPE WITHOUT A TAIL IS A PLAN, NOT A FACT (Nick: 'this is a 320
-      // showing 321' — a Delta flight 10 h out with no assigned airframe).
+      // TYPE WITHOUT A TAIL IS A PLAN, NOT A FACT
+      // — a Delta flight 10 h out with no assigned airframe).
       // Airlines swap A320/A321 on these routes right up to assignment, so
       // with no confirmed tail the scheduled/history type carries the same
       // honest 'expected' qualifier the tails do.
-      // NO-SPLIT LAW (Nick: 'certain things should never be separated on
-      // several lines such as a name or place or aircraft'): each segment
+      // NO-SPLIT LAW
+      // : each segment
       // (model, registration, qualifier) is nowrap — a line may only break
       // BETWEEN segments at the separator, never inside 'Boeing 737-800'.
       var _nbw = function (t) { return '<span style="white-space:nowrap;">' + t + '</span>'; };
       var _acTypeVal;
-      // THE REG ALWAYS TELLS YOU (Nick: 'C-GFCP is a 320 — it never should
-      // have read 319 ... because the reg will always tell you, especially
-      // the day of'). Until the registry has confirmed THIS tail's type,
+      // THE REG ALWAYS TELLS YOU
+      //
+      // Until the registry has confirmed THIS tail's type,
       // the schedule's type may contradict it — so a reg and an unverified
       // type never appear together as a confirmed pair: the 'expected'
       // qualifier stays on, and the resolver's instant rebuild replaces the
@@ -10494,10 +10494,10 @@ function _buildV2MapCol(ctx, vars) {
       } else {
         _acTypeVal = _nbw(_acModel) + (_acReg ? '  |  ' + _nbw(_acReg + _acRegTag) : '');
       }
-      // Shorter label per Nick: "Aircraft / Appareil" (was "Aircraft type").
+      // Shorter label per (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
       // Operated by — when the operating carrier differs from the marketing
-      // carrier, the bottom shelf splits into two cells (Nick's layout):
+      // carrier, the bottom shelf splits into two cells:
       //   Operated By            |  Aircraft
       //   [operator LOGO/name]   |  Airbus A319 | C-FTOD
       //   Exploité par           |  Appareil
@@ -10508,8 +10508,8 @@ function _buildV2MapCol(ctx, vars) {
           || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
         _opNm6 = String(_opNm6).replace(/[<>"']/g, '');
         // v23206 — THE WORDMARK BY ITSELF, colour or black — no chip, no
-        // roundel, no white filter (Nick: 'wordmark by itself no logo …
-        // collor or black'). v23208 — lettering-ONLY art ('the wordmark
+        // roundel, no white filter
+        // v23208 — lettering-ONLY art ('the wordmark
         // without emblem goes at operated by'): OPERATOR_WORDMARKS first,
         // since operatorLogoUrl can serve a lockup that still carries the
         // emblem; the onerror fallback is the operator's name in bold ink.
@@ -10522,10 +10522,10 @@ function _buildV2MapCol(ctx, vars) {
             + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
           : '<b>' + _opNm6 + '</b>';
       }
-      // v22958 — follows `langs` (Nick: 'Also operated by I think'). _lang2b
+      // v22958 — follows `langs`. _lang2b
       // was the FIFTH airport-keyed second-language picker found this session.
       var _frF8 = (typeof frFirstAirport === 'function') && frFirstAirport(vars.iata);
-      // v23100 — Nick's layout: each language on its OWN line with a colon,
+      // v23100 — the owner's layout: each language on its OWN line with a colon,
       // the operator mark to the right of the pair —
       //   Airbus A319 | C-FZUG
       //   Operated By:      [LOGO]
@@ -10536,17 +10536,17 @@ function _buildV2MapCol(ctx, vars) {
       // TOP: aircraft model + reg only (no "Aircraft:" label) running across.
       // BOTTOM (only if operated by another carrier): Operated By + logo, centered.
       var _pendingAircraftText = _gateLbl('acPending', _frF8, _nbw, ' <span class="v2-rc-fi-sep">|</span> ');
-      // v23204 — THE ORB BY THE AIRCRAFT IS THE OPERATOR'S (Nick: 'ITs
-      // operated under the AC name however operated by PAL that one by the
-      // Aircraft should be PAL'). The merged module builds BEFORE this block
+      // v23204 — THE ORB BY THE AIRCRAFT IS THE OPERATOR'S
+      //
+      // The merged module builds BEFORE this block
       // resolves the true operator (flight-number bands, Express matrix, PAL
       // registrations), so the module bakes the marketing carrier's mark.
       // Now that the operator is known, re-point the module's tagged orb at
       // the operator's logo.
       try {
         if (_opCode && _inboundCard && _inboundCard.indexOf('v2-fi-orb') !== -1) {
-          // v23208 — EMBLEM ONLY in the orb (Nick: 'the orb does not have
-          // wordmark … its the emblem only', all airlines — 'whoever operates
+          // v23208 — EMBLEM ONLY in the orb
+          // all airlines — 'whoever operates
           // that aircraft gets the logo'). v23207 preferred operatorLogoUrl
           // here, which for PAL served the full lockup WITH lettering into
           // the orb. No wordmark fallbacks: an operator without emblem art
@@ -10569,11 +10569,11 @@ function _buildV2MapCol(ctx, vars) {
             _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
           }
           // v23205 — the orb GROUND follows the operator's carrier colour too
-          // (Nick: 'your orb by the plane should follow the carrier colors —
-          // yellow in this case'): PAL's brand accent behind PAL's mark, not
+          //
+          // : PAL's brand accent behind PAL's mark, not
           // the marketing carrier's red. The white-vs-colour logo rule reruns
           // against the operator's ground.
-          // v23260 — PER-OPERATOR ORB GROUND, bottom-right card only (Nick:
+          // v23260 — PER-OPERATOR ORB GROUND, bottom-right card only (
           // 'red background for jazz and that burgundy for rouge / Again
           // this is only for bottom right'). The colours are the brands'
           // own script inks: jazz.svg paints #ce3728, rouge.svg #A21C37.
@@ -10607,17 +10607,17 @@ function _buildV2MapCol(ctx, vars) {
         // sky plate, not an orb: it paints the file as-is, with no whitening.
         // Art drawn for the orb can be wrong here — WestJet's mono leaf is
         // fill="currentColor", and inside an <img> that resolves to its
-        // initial value, BLACK (Nick: 'Shouldnt be a black leaf should be
-        // color'). Same reason the countdown keeps _CD_MARK and the welcome
+        // initial value, BLACK
+        // Same reason the countdown keeps _CD_MARK and the welcome
         // strip keeps _BW_EMBLEM: a light ground needs the colour cut. Scoped
         // to this plate, so the orb keeps the mono leaf it was drawn for.
-        // v23428 — NO ORB ON THIS PLATE. Nick's rule: 'ROUND ORBS ONLY GO TOP
+        // v23428 — NO ORB ON THIS PLATE. the owner's rule: 'ROUND ORBS ONLY GO TOP
         // LEFT AND BOTTOM RIGHT ALL ELSE IS ACTUAL EMBLEMS'. This sky plate is
         // neither, so it must show the carrier's real emblem — but two
         // carriers' orb art IS an orb: Delta's glossy sphere and United's
         // glossy globe. Falling through to _airlineOrbEmblem put a round
-        // glossy ball on a flat plate (Nick, on the JFK/B55 Delta gate: 'these
-        // are still not right'). Both have a flat colour emblem on disk, which
+        // glossy ball on a flat plate
+        // Both have a flat colour emblem on disk, which
         // is what belongs here — the same art the countdown uses for the same
         // reason. No other carrier resolves to orb-shaped art.
         var _HOLD_MARK = {
@@ -10634,8 +10634,8 @@ function _buildV2MapCol(ctx, vars) {
           ? '<img class="v2-rc-aircraft-hold-logo" src="' + _holdSrc + '" alt="" onerror="window._holdArtFailed(this,&quot;' + _orbMono(_holdCode) + '&quot;)">'
             + '<span class="v2-rc-aircraft-hold-code" style="display:none">' + (_holdCode || '\u2014') + '</span>'
         : '<span class="v2-rc-aircraft-hold-code">' + (_holdCode || '—') + '</span>';
-      // v23476 — LOGO ONLY (Nick: 'the Aircraft details updating Mise a jour
-      // etc just leave the logo'). The hold panel is the carrier's mark on the
+      // v23476 — LOGO ONLY
+      // The hold panel is the carrier's mark on the
       // sky plate while the aircraft type resolves. The caption under it told a
       // passenger nothing they can act on and read as a fault message on a
       // board that is otherwise all live data. TL keeps the acUpdating string,
@@ -10661,7 +10661,7 @@ function _buildV2MapCol(ctx, vars) {
         +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
         // v23181 — ONE PLATE FOR THE AIRCRAFT, NOT TWO. The type used to be its
         // own shelf below the photo, which is the extra panel on the right rail:
-        // Nick's drawing captions the photo ("Embraer-195 | C-FTOD") inside the
+        // the owner's drawing captions the photo ("Embraer-195 | C-FTOD") inside the
         // same bordered plate. Emitting it here as an overlay caption removes a
         // panel without losing the text.
         // It must NOT carry .v2-rc-acb: the v22686 fitter below copies the
@@ -10705,35 +10705,35 @@ function _buildV2MapCol(ctx, vars) {
 
   // Map area — now the TOP half of the right column, with the "Your Aircraft"
   // title overlaid at the top and the speed/altitude telemetry at the bottom
-  // (both INSIDE the map, per Nick — not separate shelves). While that map is
+  // (both INSIDE the map, as specified — not separate shelves). While that map is
   // enlarged into the centre, leave the carrier's own static emblem in this
   // temporarily vacant shelf — a brand hold, not another loading animation.
   var _mapLifeCode = String((vars && vars.airlineCode) || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
-  // v23051 — WestJet's COLOUR leaf on the small map chip too (Nick: 'THE
-  // MIDDLE AND THE RIGHT SMALL MAP'). Same pattern as the welcome strip: the
+  // v23051 — WestJet's COLOUR leaf on the small map chip too
+  // Same pattern as the welcome strip: the
   // override is per-surface, so the shared emblem map — and therefore the
   // round rail ORB — keeps its mono white leaf.
   var _MAPLIFE_EMBLEM = {
     'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
     'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-    // v23123 (reintroduced from the reverted v23113) — Nick: 'the red emblem
-    // goes in the small map space when map not there'. His colour widget.
+    // v23123 (reintroduced from the reverted v23113) —
+    // His colour widget.
     'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
     'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg'
   };
-  // v23312 — through the shared resolver. Nick's Cathay gate C30: this orb
+  // v23312 — through the shared resolver. the owner's Cathay gate C30: this orb
   // rendered a lettered 'CX' chip while the inbound card beside it wore the
   // real brushwing, because this site stopped at _AIRLINE_EMBLEM_FILES (25
   // carriers) and never reached /logos/symbols/airlines/, where CX.svg has
-  // been sitting all along. 'why change 1 orb and not the other' — because
-  // v23307 fixed two call sites and I never enumerated the rest.
+  // been sitting all along. Only one of the two orbs changed because v23307
+  // fixed two call sites and the rest were never enumerated.
   var _mapLifeSrc = _MAPLIFE_EMBLEM[_mapLifeCode]
     || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_mapLifeCode) : '') || '';
   var _mapLifeHtml = _mapLifeSrc
     ? '<img class="v2-rc-map-life-emblem" src="' + _mapLifeSrc + '" alt="" onerror="this.style.display=\'none\';if(this.nextElementSibling)this.nextElementSibling.style.display=\'flex\';">'
       + '<span class="v2-rc-map-life-code" style="display:none">' + (_mapLifeCode || '&#9992;') + '</span>'
     : '<span class="v2-rc-map-life-code">' + (_mapLifeCode || '&#9992;') + '</span>';
-  // v23192 — THE STRIP IS DOCKED UNDER THE MAP, MEASURED OFF NICK'S TARGET.
+  // v23192 — THE STRIP IS DOCKED UNDER THE MAP, MEASURED OFF THE OWNER'S TARGET.
   // His screenshot's right rail, read off its pixels (130 -> 850, slot pitch
   // ~120): map WITH the telemetry strip fused to its bottom 130 -> 490 = three
   // slots; aircraft 1; Flight 1; Status 1. The strip is ~40px of dark ground
@@ -10810,7 +10810,7 @@ function uxgGateHtml(ctx) {
   const _hdr2nd = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : 'fr');
   const _flightLbl2 = ({fr:'Vol', es:'Vuelo', en:'Flight', de:'Flug', it:'Volo', pt:'Voo'})[_hdr2nd] || 'Vol';
   const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
-  // Québec airports: French first on every bilingual pair (Nick).
+  // Québec airports: French first on every bilingual pair.
   const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
   var _flightDateContext = { dayOffset: null, labels: [], text: '' };
   try {
@@ -10908,7 +10908,7 @@ function uxgGateHtml(ctx) {
   // Hawaiian brand override: AS flights on ex-HA equipment or Hawaii routes still wear
   // the Pualani livery — display them as HA so all downstream brand assets follow suit.
   if (isHawaiianBrandedFlight(currentFlight, locIata)) airlineCode = 'HA';
-  // Delta Connection fold (Nick, repeatedly): Endeavor-coded flights (9E)
+  // Delta Connection fold: Endeavor-coded flights (9E)
   // are DELTA on the passenger side — the whole gate brands as Delta
   // (colours, logos, plates, backgrounds). 'Operated by Endeavor Air'
   // still names the operator from the flight row's own code.
@@ -10951,9 +10951,9 @@ function uxgGateHtml(ctx) {
     }
     // v23099 \u2014 the revised time carries the DIRECTION of the change so the
     // left plates can colour it like the status word (amber late, green
-    // early). Nick: 'the appropriate time has to change colours accordingly'.
+    // early).
     var _revDirCls = (stKey === 'early') ? ' g8-rev-early' : '';
-    // v23222 \u2014 NO REVISED ESTIMATE \u2260 NO TIME (Nick's WS813 shot: 'No
+    // v23222 \u2014 NO REVISED ESTIMATE \u2260 NO TIME (the owner's WS813 shot: 'No
     // departure times listed' \u2014 the Departure shelf showed a bare dash).
     // A delayed flight whose feed carries no new time was built as
     // strike(6:15pm)+revised(\u2014); the shelves strip the strike and the
@@ -11021,8 +11021,8 @@ function uxgGateHtml(ctx) {
   }
   if (_effDepForBoard) {
     var boardTs = _effDepForBoard - boardLeadMins*60000;
-    // HONESTY FLOOR (Nick: 'boarding will not happen at 7:17 — it ARRIVES
-    // at 7:17'): boarding can't be estimated before the airframe is even at
+    // HONESTY FLOOR
+    // : boarding can't be estimated before the airframe is even at
     // the gate. When the shown inbound's (revised) arrival is known and the
     // dep-minus-lead estimate lands before arrival + turn, floor it at
     // arrival + 20 min — but never later than dep − 10 min, and always at
@@ -11050,7 +11050,7 @@ function uxgGateHtml(ctx) {
         if (boardTs < _bArrTs + 5 * 60000) boardTs = _bArrTs + 5 * 60000;
       }
     } catch (e) {}
-    // FINAL GUARD (Nick: 'boarding is past departure'): the boarding base
+    // FINAL GUARD: the boarding base
     // (_effDepForBoard, from _sortTs) can diverge from the departure the field
     // actually shows (currentFlight.time), which let boarding land at/after the
     // shown departure. Clamp boarding's displayed time-of-day so it is always a
@@ -11106,8 +11106,8 @@ function uxgGateHtml(ctx) {
   var r3Right = '';
   // Check for user override message first
   var _ovMsg = getOverrideMessage(currentFlight.flight);
-  // ONE BOARDING CLOCK (Nick, Jul 26 2026: 'boarding says 1:20 for a 1:30
-  // departure and the screen at 12:50 says 2 mins to boarding'). The Boarding
+  // ONE BOARDING CLOCK
+  // The Boarding
   // FIELD above runs through the honesty floor (can't board before the inbound
   // is at the gate) and the final guard, so on that PAL turn it printed
   // dep − 10. Every countdown/threshold down here was still deriving its own
@@ -11123,7 +11123,7 @@ function uxgGateHtml(ctx) {
   }
   var minsToBoard = Math.max(0, minsToDep - _boardLeadShown);
   var showBoarding = minsToDep <= _boardLeadShown && minsToDep > -15;
-  // Nick (Jul 2026): 'boarding takes over, but less' + 'aircraft images not
+  // + 'aircraft images not
   // seen a lot'. The full-screen "Boarding begins in X" countdown used to take
   // over the whole gate 25 min BEFORE boarding even started (so ~55 min before
   // an A320's departure) — burying the aircraft image + adverts for the better
@@ -11132,21 +11132,21 @@ function uxgGateHtml(ctx) {
   // stays up until then.
   var showCountdown = minsToDep <= (_boardLeadShown + 10) && minsToDep > _boardLeadShown;
   var isGateClosedStatus = (stKey === 'gateclosed' || stKey === 'gate-closed' || stKey === 'departed')
-    // v23228 — GATE CLOSED BY THE CLOCK TOO (Nick's 7:33 shot: FINAL
+    // v23228 — GATE CLOSED BY THE CLOCK TOO (the owner's 7:33 shot: FINAL
     // BOARDING CALL still up three minutes past a 7:30 departure). The
     // handoff waited on the FEED's status flip, which can arrive late or
     // never; a gate more than two minutes past its (revised) departure
     // with no contrary status reads as closed. Cancelled/diverted keep
     // their own signs, and a revised departure moves this deadline with
     // it — minsToDep is already revised-aware.
-    // v23526 — A REAL CUT-OFF, BEFORE DEPARTURE. Nick: "lets do gate topp and
-    // a 5 min cutoff."
+    // v23526 — A REAL CUT-OFF, BEFORE DEPARTURE.
+    // 
     // This was -2, i.e. the gate only ever read closed TWO MINUTES AFTER the
     // aircraft was due to leave, which is not a cut-off at all — it was a
     // backstop for a feed whose status flip arrives late or never (v23228,
-    // Nick's 7:33 shot: FINAL BOARDING CALL still up three minutes past a 7:30
+    // the owner's 7:33 shot: FINAL BOARDING CALL still up three minutes past a 7:30
     // departure). Airlines close the door before departure, not after it:
-    // Porter publishes ten minutes, and Nick's call for this board is five.
+    // Porter publishes ten minutes, and the owner's call for this board is five.
     // GATE_CLOSE_LEAD_MIN is positive minutes BEFORE the (revised) departure,
     // and minsToDep is already revised-aware, so a delay carries the deadline
     // with it. A feed that says gateclosed/departed still wins outright above.
@@ -11170,11 +11170,11 @@ function uxgGateHtml(ctx) {
     r3Left = TL('inbDelayed');
   } else if (showBoarding) {
     // Boarding takeover carries the welcome strip + info row — the 'Now
-    // boarding. Please proceed to gate X.' strip is redundant (Nick).
+    // boarding. Please proceed to gate X.' strip is redundant.
     r3Left = '';
   } else if (showCountdown) {
     // Countdown takeover already shows the big timer — the 'will board in
-    // approximately X minutes' strip duplicated it (Nick).
+    // approximately X minutes' strip duplicated it.
     r3Left = '';
   } else if (minsToDep <= (_boardLeadShown + 55) && minsToDep > (_boardLeadShown + 25)) {
     r3Left = TL('willBoardIn') + ' ' + minsToBoard + ' ' + (minsToBoard!==1?TL('minutes').toLowerCase():TL('minute').toLowerCase()) + '.';
@@ -11202,9 +11202,9 @@ function uxgGateHtml(ctx) {
   // This used to blank the panel the moment the inbound arrived, on the
   // reasoning that it is "no longer incoming". But the passenger standing at
   // the gate has exactly one question, and the answer had just gone blank
-  // (Nick: 'if the aircraft arrived it should say something that the aircraft
-  // has arrived and is now at the gate ... its about the incoming aircraft
-  // here'). The panel already renders an arrived state in full — the arrived
+  //
+  //
+  // The panel already renders an arrived state in full — the arrived
   // badge, the 'Arrived at' row — it was simply never reached.
   //
   // So an arrived inbound now keeps the panel, with the label switched from
@@ -11378,31 +11378,31 @@ function uxgGateHtml(ctx) {
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
   var ALLIANCE_LOGOS = {
-    // Star Alliance MEMBER TILE — Nick's metallic 'STAR ALLIANCE' chip
+    // Star Alliance MEMBER TILE — the owner's metallic 'STAR ALLIANCE' chip
     // (brushed-metal square, chrome 3D star + wordmark) sat after the airline
     // wordmark on the silk band. The welcome strip swaps it for the bare
     // chrome symbol (star-3d-symbol.webp) below.
     'star':     '/logos/airlines/alliances/star-3d-tile.jpg',
     // v23251 — the CROPPED ball (viewBox tightened to the sphere's ink). The
     // original canvas is ~60% empty padding, so the ball painted at less than
-    // half its box and read tiny beside the wordmark (Nick: 'so can one
-    // world' get bigger).
+    // half its box and read tiny beside the wordmark
+    // get bigger).
     'oneworld': '/logos/airlines/alliances/Oneworld-ball.svg',
     'skyteam':  '/logos/airlines/alliances/skyteam-white.png'
   };
   var starHtml = '';
   // These carriers' banner wordmark IS the official combined
   // airline+alliance lockup — a separate mark would show the alliance twice.
-  // (UA removed — Nick wants United's globe+wordmark with the Star Alliance
+  // (UA removed — the owner wants United's globe+wordmark with the Star Alliance
   // mark shown SEPARATELY, like every other Star carrier.)
-  // v23123 — Delta joins KLM: Nick's lockup already CONTAINS SkyTeam, so a
+  // v23123 — Delta joins KLM: the owner's lockup already CONTAINS SkyTeam, so a
   // separate alliance mark would print it twice.
   var _COMBINED_ALLIANCE_LOCKUP = { 'KL': 1, 'DL': 1, 'DAL': 1 };
-  // Per-carrier alliance-mark override (Nick's official asset): United uses
+  // Per-carrier alliance-mark override: United uses
   // the official 2011 Star Alliance lockup, black backing stripped so the
   // white mark floats on the banner.
   // (UA previously overrode to the wide '2011' lockup with the tagline — on the
-  // solid banner that collided with the centred time (Nick: 'we have an issue').
+  // solid banner that collided with the centred time.
   // UA now uses the compact metallic Star Alliance tile like every star carrier.)
   var _ALLIANCE_MARK_OVERRIDE = {};
   var _allianceKey = ALLIANCE_MAP[airlineCode];
@@ -11416,13 +11416,13 @@ function uxgGateHtml(ctx) {
   }
 
   // Clean diagonal lane arrow (plain stroke SVG — the unicode arrows render
-  // as circled emoji on some platforms, per Nick).
+  // as circled emoji on some platforms, as specified).
   function _birArrowSvg(mirror) {
     return '<svg viewBox="0 0 24 24" style="width:1em;height:1em;display:block;'
       + (mirror ? 'transform:scaleX(-1);' : '')
       + '" aria-hidden="true"><path d="M18 6 L7 17 M7 17 L7 10 M7 17 L14 17" stroke="currentColor" stroke-width="2.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
   }
-  // v23130 — WORDS ARE NOT NUMERALS (Nick's Flair shot: giant '| Tout'
+  // v23130 — WORDS ARE NOT NUMERALS (the owner's Flair shot: giant '| Tout'
   // filling the whole panel). Any lane value containing letters wears
   // .g8-grp-txt — the word-size clamp Porter Reserve already uses — so
   // the 34vh numeral size only ever applies to '1 • 2' style values.
@@ -11435,22 +11435,22 @@ function uxgGateHtml(ctx) {
     return /[A-Za-zÀ-ɏ]/.test(t) ? ' g8-grp-txt' : '';
   }
 
-  // WELCOME STRIP for the boarding takeovers (Nick: 'the Welcome Bienvenue
-  // and the rondelle and Star') — like the physical AC gate sign's header:
+  // WELCOME STRIP for the boarding takeovers
+  // — like the physical AC gate sign's header:
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
   function _boardWelcomeStripHtml(_stripState) {
-    // WHITE-path emblems vanish on the white strip (Nick: United missing its
+    // WHITE-path emblems vanish on the white strip (the owner: United missing its
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
     // Swap those brands for a colored cut here, like the SkyTeam invert below.
-    // v23050 — WestJet's COLOUR leaf on the welcome strip (Nick: 'why did you
-    // take it away from the middle, it was right'). This override is the
+    // v23050 — WestJet's COLOUR leaf on the welcome strip
+    // This override is the
     // WELCOME surface only, so the colour mark lands here while the round rail
     // ORB keeps the mono white leaf it has always had ('the orb had white
     // leave it white'). The strip's ground is white, so the leaf's navy and
     // teal both read on it.
     var _BW_EMBLEM = {
       'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // v23394 one United face everywhere
-      // v23400 — SWISS's spinning boarding mark had a BLACK cross (Nick).
+      // v23400 — SWISS's spinning boarding mark had a BLACK cross.
       // symbols/airlines/LX.svg paints ONLY #e60005: the cross is a CUT-OUT,
       // so it shows whatever sits behind it. That is right in the orb, where
       // the art is whitened to a white tail and the cross reads as the orb's
@@ -11464,7 +11464,7 @@ function uxgGateHtml(ctx) {
       'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
     };
     // v22939 — AIRLINE_EMBLEM_FILES is a hand-kept list and most of the world
-    // is not on it. Korean Air is not, so on Nick's YYZ/C35 boarding screen
+    // is not on it. Korean Air is not, so on the owner's YYZ/C35 boarding screen
     // this strip rendered as a bare white band: no rondelle, just the two
     // words floating in a white slab under a fully textured banner.
     // /logos/symbols/airlines/ already ships 73 carrier symbols (KE among
@@ -11478,13 +11478,13 @@ function uxgGateHtml(ctx) {
       || _bwSym || null;
     // The strip is WHITE like the printed sign — swap the banner's metallic
     // TILE chip for the bare chrome star symbol (no box, no text) so it floats
-    // on the white strip beside 'Welcome | Bienvenue', as in Nick's design.
+    // on the white strip beside 'Welcome | Bienvenue', as in the owner's design.
     // v23131 — the strip's alliance slot is the APPROVED chrome star only
-    // (Nick's design: 'the rondelle and Star'). Oneworld/SkyTeam marks
+    // Oneworld/SkyTeam marks
     // rendered as a tiny floating disc beside the phase text (his second
     // orange box on the AA strip) — those alliances show nothing here.
     var _bwStar = (starHtml && _allianceKey === 'star') ? starHtml.replace('star-3d-tile.jpg', 'star-3d-symbol.webp') : '';
-    // v23115 \u2014 THE CLOCK LIVES HERE NOW (Nick's second mockup). It came out of
+    // v23115 \u2014 THE CLOCK LIVES HERE NOW. It came out of
     // the banner, where it was a tab competing with the airline lockup, and
     // sits at the two ends of this white strip instead: label + time on the
     // left in the first board language, label + time on the right in the
@@ -11494,14 +11494,14 @@ function uxgGateHtml(ctx) {
     // 12-hour '5:35pm', French 24-hour '17:35' \u2014 rather than one format
     // repeated twice, which is what his shot shows and what the two locales
     // actually do. Both are the same instant, from the same timezone.
-    // v23115b \u2014 the strip is STATE-AWARE (Nick):
+    // v23115b \u2014 the strip is STATE-AWARE:
     //   \u00b7 countdown (pre-boarding): Welcome \u00b7 Bienvenue in the middle
     //   \u00b7 boarding/final:           NOW BOARDING | EMBARQUEMENT EN COURS
     //   \u00b7 delayed/cancelled/diverted: a Status pair sits inboard of each
     //     clock \u2014 first language on the left, second on the right \u2014 so the
     //     abnormal state reads from either end of the strip.
-    // One board language \u2192 the SAME words on both sides (Nick: 'If its
-    // simply One Language repeat on both sides').
+    // One board language \u2192 the SAME words on both sides
+    // 
     var _bwClock = '';
     try {
       var _bwTz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
@@ -11511,9 +11511,9 @@ function uxgGateHtml(ctx) {
       var _bwL2 = _bwLangs[1] || _bwL1;                 // one language \u2192 repeat
       // Status word for the strip: the same normalized vocabulary the plates
       // use, one word per language, sentence case.
-      // v23116 — the pair is the SCHEDULE state, never the phase (Nick: 'it
-      // literally says already boarding status is not boarding again WOW its
-      // On Time'). The centre announces the phase (Welcome / Now Boarding);
+      // v23116 — the pair is the SCHEDULE state, never the phase
+      //
+      // The centre announces the phase (Welcome / Now Boarding);
       // the flanks answer the other question a passenger has — is it on
       // time? On Time green, Delayed amber, Cancelled/Diverted red. A
       // revised departure counts as delayed even while the phase is
@@ -11537,8 +11537,8 @@ function uxgGateHtml(ctx) {
         } catch (e) { return _bwStKey; }
       };
       var _bwSide = function (lang, cls) {
-        // v23211 — NO CLOCK IN THE STRIP (Nick: 'the clock was supposed to
-        // be removed and added at the top simple clock'): the flanks carry
+        // v23211 — NO CLOCK IN THE STRIP
+        // : the flanks carry
         // the status pair only, the middle banner takes the width the two
         // clocks gave up, and the simple time+date tab returns to the top
         // banner (the takeover's no-clock CSS is lifted alongside).
@@ -11559,7 +11559,7 @@ function uxgGateHtml(ctx) {
     if (/^(boarding|finalcall|final-call|final)$/.test(String(_stripState || ''))) {
       // Built from the LANGUAGE PAIR (var-hoisted from the clock block above),
       // not the dedup'd label helper — one selected language shows TWICE
-      // ('Now Boarding | Now Boarding') for symmetry (Nick). Quebec airports
+      // ('Now Boarding | Now Boarding') for symmetry. Quebec airports
       // put French first via the same pair.
       var _bwNB = _GATE_LBL.nowBoarding || {};
       var _bwNBl1 = (typeof _bwL1 === 'string' && _bwL1) ? _bwL1 : 'en';
@@ -11571,8 +11571,8 @@ function uxgGateHtml(ctx) {
       _bwMidWords = _gateLbl('welcome', _frF, function(w){ return w; }, ' <span class="g8-bw-sep">\u00b7</span> ');
     }
     // Spin phase stamped from wall-clock so the rebuild-every-tick gate DOM
-    // doesn't restart the animation at 0° (Nick: 'The rondelle is not
-    // spinning' — it was, 0% of the time it was on screen).
+    // doesn't restart the animation at 0°
+    // — it was, 0% of the time it was on screen).
     var _bwSpin = ' style="--rond-delay:-' + ((Date.now() / 1000) % 7).toFixed(2) + 's"';
     var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
       + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
@@ -11583,7 +11583,7 @@ function uxgGateHtml(ctx) {
   }
 
   // COUNTDOWN RONDELLE (v23115) — the carrier mark that sits on the number's
-  // baseline in Nick's mockup: an accent-coloured RING with the airline's own
+  // baseline in the owner's mockup: an accent-coloured RING with the airline's own
   // symbol inside it, which is how the mark is worn on a tail.
   //
   // The symbol is rendered in its NATIVE colours, not tinted. Air Canada's
@@ -11594,7 +11594,7 @@ function uxgGateHtml(ctx) {
   // leaf entirely. The ring is CSS (border + radius), so it always takes the
   // airline accent even for a carrier whose symbol is a different colour.
   //
-  // MOTION SLOT: Nick has a GIF of the rondelle swinging and wants it in the
+  // MOTION SLOT: the owner has a GIF of the rondelle swinging and wants it in the
   // middle. Register its path in GATE_RONDELLE_MOTION and it takes over the
   // slot; the ring comes off because that artwork carries its own. If the file
   // is missing or won't decode, the video removes itself and the static mark
@@ -11610,15 +11610,14 @@ function uxgGateHtml(ctx) {
         ? '/logos/symbols/airlines/' + String(airlineCode).toUpperCase() + '.svg' : null;
       // v23130 — Delta's countdown centrepiece was the WHITE widget while
       // every other Delta surface switched to the red colour widget
-      // yesterday (Nick: 'I made you change this yesterday why is this
-      // still white OMG WOW'). Same colour art as the map slot uses.
+      // yesterday
+      // Same colour art as the map slot uses.
       var _CD_MARK = {
         'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
         'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
         // v23198 — WestJet's countdown centrepiece was the dark navy leaf on
-        // the takeover's dark ground: near-invisible (Nick, on the render:
-        // 'this is shit'). Same fix Delta got in v23130 — the COLOUR art the
-        // map slot already uses.
+        // the takeover's dark ground: near-invisible on the render. Same fix
+        // Delta got in v23130 — the COLOUR art the map slot already uses.
         'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
         'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg'
       };
@@ -11633,8 +11632,8 @@ function uxgGateHtml(ctx) {
       if (!_mot) return '<span class="g8-cd-mark">' + _still + '</span>';
       return '<span class="g8-cd-mark has-motion">'
         + '<video class="g8-cd-mark-vid" src="' + _mot + '" autoplay loop muted playsinline'
-        // v23127 — wall-clock phase for the CLIP too (Nick: 'only spins a
-        // quarter turn then flips back'): the gate rebuilds this DOM every
+        // v23127 — wall-clock phase for the CLIP too
+        // : the gate rebuilds this DOM every
         // telemetry tick and a fresh <video> restarts at 0s — a few seconds
         // of swing, then a snap back, forever. Seeking each new element to
         // (now mod duration) makes the rebuild land mid-loop invisibly —
@@ -11646,14 +11645,14 @@ function uxgGateHtml(ctx) {
     } catch (e) { return ''; }
   }
 
-  // FLIGHT INFO ROW for the boarding-state takeovers (Nick: 'flight info
-  // all in a row, like the old configuration — copy what exists in the
-  // up-down configuration including icons, smaller, with the metal look').
+  // FLIGHT INFO ROW for the boarding-state takeovers
+  //
+  // 
   // Each cell is a mini rail shelf: brushed-metal card, round accent icon
   // badge, bilingual title with accent underline, big navy value.
   function _boardInfoRowHtml(statusKey) {
     var _bDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
-    // Nick: 'MONTREAL = Montreal' — the gate info row reads title-case, not the
+    // — the gate info row reads title-case, not the
     // board's ALL-CAPS. Only re-case strings that are fully upper (leave mixed
     // names like 'Fort McMurray' untouched). Word breaks on space/hyphen only,
     // so apostrophes (St. John's) keep their trailing lowercase.
@@ -11668,8 +11667,8 @@ function uxgGateHtml(ctx) {
     if (!/^[A-Z]{3,4}$/.test(_bIataOrb)) _bIataOrb = '';
     var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
     // Status VALUE carries its state colour like the vertical rail
-    // (green on-time, orange delayed... — Nick: 'the horizontal status
-    // doesn't change').
+    // (green on-time, orange delayed... —
+    // t change').
     var _stK = String(statusKey || '').toLowerCase();
     var _stCls = /delay/.test(_stK) ? ' g8-bir-st-delayed'
       : /cancel/.test(_stK) ? ' g8-bir-st-cancelled'
@@ -11678,7 +11677,7 @@ function uxgGateHtml(ctx) {
       : /ontime|early|scheduled/.test(_stK) ? ' g8-bir-st-ok' : '';
     // EN and FR each get their OWN line — free wrapping let 'Gate closed |
     // Porte fermée' break into four giant lines and balloon the whole row.
-    // v22965 — the status VALUE follows the languages (Nick's MCO shot: an
+    // v22965 — the status VALUE follows the languages (the owner's MCO shot: an
     // en+es gate reading 'Delayed / En retard' — French, not selected). Same
     // stack, words from the selected languages, de-duplicated.
     var _stTxt = '';
@@ -11695,25 +11694,25 @@ function uxgGateHtml(ctx) {
       if (!_svW.length && _stP.en) _svW.push(_stP.en);
       _stTxt = _svW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('');
     }
-    // Flair brand palette (Nick): airline icon = the plain green dot; every
+    // Flair brand palette: airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
     var _birF8 = (airlineCode === 'F8');
     // Breeze: every badge in the row wears the flight rondelle's tile navy
-    // (Nick: 'keep the color consistent so the rest same color').
+    //
     // v23438 — FLAIR'S BADGES ARE GREEN WITH BLACK MARKINGS, not black with
-    // green ones. Nick: 'Flair is supposed to have the green ball I see where
-    // this is going the other blacks are wrong they should be green with black
-    // markings'. The Flight orb stays the plain green ball (his mark IS the
+    // green ones.
+    //
+    // The Flight orb stays the plain green ball (his mark IS the
     // dot); the five glyph badges under it now carry the same green ground
     // with the glyph knocked out in Flair's near-black, so the whole column
     // reads as one set in the brand's own two colours.
     var _birBadgeStyle = _birF8 ? ' style="background:#7AFF94;color:#141414;"'
       : (airlineCode === 'MX') ? ' style="background:#001633;"'
       : '';
-    // v23115b \u2014 THE RAIL'S OWN SHELF, VERBATIM (Nick: 'copy the exact current
-    // left info panel'). Same classes, same structure, same inline badge
+    // v23115b \u2014 THE RAIL'S OWN SHELF, VERBATIM
+    // Same classes, same structure, same inline badge
     // grammar as _shelf()/_badge() in the left rail builder \u2014 the horizontal
-    // strip is the SAME component laid sideways, so every shelf style Nick
+    // strip is the SAME component laid sideways, so every shelf style
     // has approved (metal card, accent underline, per-airline artwork, and
     // whatever he changes next) applies here without a parallel copy.
     var _birAccFb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[airlineCode] && AIRLINE_BRAND[airlineCode].accent) || '#D82F2E';
@@ -11753,7 +11752,7 @@ function uxgGateHtml(ctx) {
         // code rides at the END: 'Destination | YYZ' with one language, and
         // 'Destination | Destination | YYZ' once a second one is assigned.
         // Taking only _tp[0] and _tp[1] got both wrong, in two different ways
-        // Nick reported separately:
+        // the owner reported separately:
         //
         //   two segments  -> the CODE landed in the lbl-2 span, so it rendered
         //                    as the French word and stayed plain white
@@ -11791,12 +11790,12 @@ function uxgGateHtml(ctx) {
         +   '<div class="v2-fi-value">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
-    // Nick: 'even the times should be bigger than that'. The value column is
+    // The value column is
     // WIDTH-limited, and 'AM/PM' eats ~3 of the 8 characters. Shrinking the
     // meridiem lets the shrink-to-fit grower push the DIGITS much larger
     // (they end up on par with the flight number), which is what reads as
     // 'bigger'. Wraps both times in a revised 'was \u2192 now' pair.
-    // v23115 — Nick's mockup sets these as ONE word, lowercase, tight to the
+    // v23115 — the owner's mockup sets these as ONE word, lowercase, tight to the
     // digits: '5:40pm'. The old shrink-the-meridiem trick was there to buy
     // width back from 'AM/PM' when five cells shared the row; at four cells
     // there is room, and the split was rendering '12:25' with 'PM' dropped
@@ -11809,8 +11808,8 @@ function uxgGateHtml(ctx) {
         return '<span class="g8-bir-mer">' + p.toLowerCase() + 'm</span>';
       });
     }
-    // v23219 — Nick (MIA G11): 'the times are displayed half yellow for
-    // delayed half normal which is not good'. This strip kept the struck
+    // v23219 —
+    // This strip kept the struck
     // original beside the amber revision — that struck half is the 'half
     // normal'. The left rail has always shown the revision alone; same rule
     // here, and the cell stamps v2-fi-rowrev-* so its title banner takes the
@@ -11833,17 +11832,17 @@ function uxgGateHtml(ctx) {
       return s.indexOf('g8-rev-early') !== -1 ? 'v2-fi-rowrev-early' : 'v2-fi-rowrev-delayed';
     }
     // Flight cell carries the airline RONDELLE (same emblem set as the
-    // rail) instead of the generic glyph (Nick).
+    // rail) instead of the generic glyph.
     // The horizontal (boarding) badge is a gate flight badge — it wears the
-    // gate-round override art when one exists (Nick: 'we changed the icon
-    // for united but it wasnt changed on the horizontal display'), in its
+    // gate-round override art when one exists
+    // in its
     // NATIVE colors (white-inverting the glossy orb made a white blob).
     var _birRound = (typeof GATE_TOP_ROUND_EMBLEM_FILES !== 'undefined' && GATE_TOP_ROUND_EMBLEM_FILES[airlineCode]) || null;
     // DL: the glossy white orb was the ONLY light chip in a row of accent
-    // circles (Nick: 'Delta icon does not match any others') — the strip
+    // circles — the strip
     // badge goes back to the standard treatment; the glossy art stays on
     // the other surfaces.
-    // v23225 — the null is LIFTED: Nick's new glossy sphere is Delta red
+    // v23225 — the null is LIFTED: the owner's new glossy sphere is Delta red
     // with the tilted white widget ('The Delta emblem was not changed to
     // look like this'), so it matches the accent-orb row the old white
     // sphere clashed with.
@@ -11857,8 +11856,8 @@ function uxgGateHtml(ctx) {
     // blank badge to a broken-image icon.
     // ── v23438 — THE THIRD ORB BUILDER ASKS THE SHARED RECIPE TOO.
     //
-    // Nick, on his WestJet YEG/49D gate: 'CAnnot be 2 different sizes
-    // unacceptable', and on the China Eastern gate: 'the 2 orbs dont match the
+    //
+    // and on the China Eastern gate: 'the 2 orbs dont match the
     // botom orb is right howeer the colors dont match even the blue'.
     //
     // He is right, and v23396 only joined TWO of the three builders. The rail
@@ -11888,11 +11887,11 @@ function uxgGateHtml(ctx) {
         + '" onerror="window._orbArtFailed(this,\'' + _orbMono(airlineCode) + '\')">'
       : null;
     // Flair's emblem IS the green dot — an empty lime badge, nothing inside
-    // (Nick, v23438: 'Flair is supposed to have the green ball').
+    //
     // Flight shelf wears the airline rondelle in the rail's emblem-wrap
     // grammar; falls back to the generic glyph badge exactly like the rail.
-    // v23130 — Flair's mark IS the green dot (Nick: 'The icons were changed
-    // with no mention or permission the first should be green simple'). The
+    // v23130 — Flair's mark IS the green dot
+    // The
     // rail's _emblemImg already renders F8 as a plain lime disc; this strip
     // path was wrapping the emblem FILE in the orb instead. Same plain disc.
     if (_birF8) _birFlightIcon = '';
@@ -11906,9 +11905,9 @@ function uxgGateHtml(ctx) {
       : _cell('ac-ico-flight', _gateLbl('flight', _frF, function(w){return w;}, ' | '), '', currentFlight.flight || '', true, 'v2-fi-flight');
     return '<div class="g8-board-info-row g8-bir-shelves"><div class="v2-flightinfo-block">'
       + _birFlightShelf
-      // v23526 — THE CODE RIDES THE DESTINATION LABEL. Nick: "The Top Panel
-      // shelves when it switches to boarding does not have airport code yet as
-      // requested for all airlines."
+      // v23526 — THE CODE RIDES THE DESTINATION LABEL.
+      //
+      // 
       // _cell already knows how to render it: v23472 taught it to read a
       // trailing 2-4 char all-caps segment as the code and emit it as
       // .v2-fi-code.v2-rc-iata — the same markup the rail uses, which the
@@ -11917,8 +11916,8 @@ function uxgGateHtml(ctx) {
       // so there was nothing to parse. Appending locIata is the entire fix, and
       // it is airline-agnostic because this row builds for every carrier.
       //
-      // v23688 — AND NOW IT SPEAKS THE RAIL'S GRAMMAR. Nick: "Boarding panels to
-      // reflect new changes." The rail's destination shelf changed twice this
+      // v23688 — AND NOW IT SPEAKS THE RAIL'S GRAMMAR.
+      // The rail's destination shelf changed twice this
       // week and this one followed neither: the code moved OFF the end of the
       // title and INTO the orb ("I would like the airport code to go in the orb
       // YYC for isntance"), and the title became a kept bilingual pair ("In
@@ -11938,18 +11937,18 @@ function uxgGateHtml(ctx) {
       + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(depTimeHtml)), true, _birRevCls(depTimeHtml))
       // v23115b — ALWAYS four shelves. The abnormal state (delayed /
       // cancelled / diverted) reads from the WHITE STRIP now — a Status pair
-      // sits beside each clock (Nick's sketch: 'Current Time 12:11PM  Status
+      // sits beside each clock (the owner's sketch: 'Current Time 12:11PM Status
       // Delayed … Statut En Retard  Heure actuelle 12:11') — so the fifth
       // shelf that was squeezing the four real ones is gone for good.
       + '</div></div>';
   }
 
-  // AC-family lane board per the printed signs (Nick): quarter BLACK
+  // AC-family lane board per the printed signs: quarter BLACK
   // (Zone 1 \u2192 Lane 1), quarter RED (Zone 2 \u2192 Lane 2) \u2014 priority, shown
   // at ALL times \u2014 and the right HALF as the called-zones sign ("Zones"
   // 3 \u2022 4 \u2022 5 \u2022 6, also Lane 2).
-  // v23223 \u2014 the sign says what is still to come (Nick: 'theres nothing
-  // that says zones coming up'): a small bilingual line under the called
+  // v23223 \u2014 the sign says what is still to come
+  // : a small bilingual line under the called
   // number listing the remaining zones (or Porter's next row band).
   function _comingLineHtml(comingVal) {
     if (!comingVal) return '';
@@ -11965,12 +11964,12 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
-  // Porter lane sign (Nick: 'lane 1 and 2 is priority, lane 3 and 4 is the
-  // rest' + 'Porter Reserve is priority'). LEFT half = the Porter Reserve
+  // Porter lane sign
+  // + 'Porter Reserve is priority'). LEFT half = the Porter Reserve
   // priority queue on Lanes 1\u20222 (always shown while boarding); RIGHT half =
   // the row band being called for everyone else on Lanes 3\u20224.
   // v23522 — PRE-BOARDING IS A PHASE, AND THE SIGN NOW SAYS WHO IT IS FOR.
-  // Nick sent Porter's published boarding order and said "This is important if
+  // the owner sent Porter's published boarding order and said "This is important if
   // somehow it can be integrated". The priority column named ONE of the five
   // groups entitled to pre-board — Porter Reserve — so a passenger travelling
   // with an infant, an unaccompanied minor, or anyone needing assistance had
@@ -11991,7 +11990,7 @@ function uxgGateHtml(ctx) {
     // language, so each pass shows it in one of them — the same reason the
     // roster below uses TL().
     var _prioVal = preActive ? (_gateLbl1('preboard', _frF) || 'Pre-boarding') : 'Porter Reserve';
-    // v23524 — the two product names in Porter's list get their marks. Nick
+    // v23524 — the two product names in Porter's list get their marks.
     // sent the artwork; every file in it is DARK INK (porter_reserve_logo.svg
     // is #222223, the VIPorter tier marks are black or #153993) and this sign's
     // ground is #002244, so painting them straight on would have made them
@@ -12000,15 +11999,15 @@ function uxgGateHtml(ctx) {
     // against. Each mark sits on its own light chip.
     var _prioMarks = preActive
       ? '<div class="g8-pd-preboard-marks">'
-        // v23532 — the mark Nick supplied, not the older file already in the tree.
+        // v23532 — the mark the owner supplied, not the older file already in the tree.
         // The policy line reads "Premium VIPorter MEMBERS", which is the whole
         // premium tier set, so the member wordmark is the right one of the four
         // he sent — naming a single tier would imply the other two do not
         // pre-board.
         //
         // v23688 — AND THE THREE TIERS ARE WHAT "PREMIUM VIPORTER" MEANS.
-        // Nick: "the SVGs provided never used for Porter" — said once before
-        // about this same batch ("Logos need to be used thats the point"), and
+        // Requested once before for this same batch: the supplied logos are
+        // meant to be used, and that is
         // still true of four of the eight files. Three of those four are the
         // tier marks, and v23532's reasoning is what kept them out: it treated
         // naming a tier as excluding the others. Naming ALL THREE excludes
@@ -12032,7 +12031,7 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
-  // v23224 — PAL AIRLINES OPEN-FLOW SIGN (Nick, with PAL's published
+  // v23224 — PAL AIRLINES OPEN-FLOW SIGN (the owner, with PAL's published
   // process: no zones, no rows on their Dash-8 fleet — pre-boarding for
   // those needing assistance, then ONE general call for everyone). One
   // full-width panel naming the current phase; during pre-boarding the
@@ -12060,7 +12059,7 @@ function uxgGateHtml(ctx) {
     var _grpLbl = TL('groupLabel');
     var nowVal, nextVal, _acZonesVal = '', _comingVal = '';
     if (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK') {
-      // Air Canada family boards by ZONE (Nick, per AC's published policy):
+      // Air Canada family boards by ZONE:
       // priority Zones 1•2 first, then general boarding Zone 3, then Zones
       // 4•5•6 on Mainline/Rouge — Express (Jazz/PAL) tops out at Zone 4.
       // NOTE: the local _opCode/_opName vars are declared later in this
@@ -12073,13 +12072,13 @@ function uxgGateHtml(ctx) {
              return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
            })();
       _grpLbl = 'Zone';
-      // Lane model per the physical AC gate signs (Nick): priority Zones 1
+      // Lane model per the physical AC gate signs: priority Zones 1
       // (black, Lane 1) and 2 (red, Lane 2) get their own quarter panels AT
       // ALL TIMES; the right half is the called-zones sign (3, then up to
       // 4 \u2022 5 \u2022 6 \u2014 Express tops out at 4).
       nowVal = '1'; nextVal = '2';
       // Zones are called ONE AT A TIME — 3, then 4, then 5, then 6 as
-      // departure approaches (Nick). Express tops out at Zone 4.
+      // departure approaches. Express tops out at Zone 4.
       var _zStep;
       if (minsToDep > 18) _zStep = 3;
       else if (_acExpress) _zStep = 4;
@@ -12087,14 +12086,14 @@ function uxgGateHtml(ctx) {
       else if (minsToDep > 8) _zStep = 5;
       else _zStep = 6;
       _acZonesVal = String(_zStep);
-      // v23223 — the zones still to be called (Nick: 'theres nothing that
-      // says zones coming up'). Express tops out at 4, mainline at 6.
+      // v23223 — the zones still to be called
+      // Express tops out at 4, mainline at 6.
       var _zMaxAC = _acExpress ? 4 : 6;
       var _zRestAC = [];
       for (var _zi = _zStep + 1; _zi <= _zMaxAC; _zi++) _zRestAC.push(_zi);
       _comingVal = _zRestAC.join(' • ');
     } else if (airlineCode === 'WS' || airlineCode === 'WR') {
-      // WestJet \u2014 SAME lane-sign model as the AC gate sign (Nick, more than
+      // WestJet \u2014 SAME lane-sign model as the AC gate sign (the owner, more than
       // once: 'zones 1 and 2 is 2 lanes ALL THE TIME, it's priority; zones
       // 3 to 8 is also 2 lanes, by number'). Priority Zones 1 (Lane 1) and
       // 2 (Lane 2) hold their quarter panels for the whole boarding \u2014 they
@@ -12116,10 +12115,10 @@ function uxgGateHtml(ctx) {
       for (var _wzi = _wzStep + 1; _wzi <= 8; _wzi++) _zRestWS.push(_wzi);
       _comingVal = _zRestWS.join(' • ');
     } else if (airlineCode === 'PD') {
-      // Porter boards by ROW NUMBER, back to front (Nick). Row count by
+      // Porter boards by ROW NUMBER, back to front. Row count by
       // aircraft: Dash 8-400 = 20 rows, E195-E2 = 33 rows; three bands.
       //
-      // v23520 — Nick: "the DH4 only has 20 rows not 29 for boarding",
+      // v23520 —
       // "E195 has 33". Two things were wrong. The E-jet figure was 29, which
       // called rows 20-29 on an aircraft that has 33 — the last four rows were
       // never called at all, and they are the first ones that should be, since
@@ -12131,8 +12130,8 @@ function uxgGateHtml(ctx) {
       // Punctuation is stripped before matching for that reason.
       //
       // v23688 — AND THE EQUIPMENT STRING IS USUALLY EMPTY, SO THAT TEST WAS
-      // DECIDING NOTHING. Nick, on a Porter Q400 boarding by 33 rows: "it was
-      // supposed to be fixed yesterday". It was not the matcher that was wrong
+      // DECIDING NOTHING.
+      // It was not the matcher that was wrong
       // this time — it was the input. Read live off the YHZ board: EVERY Porter
       // departure arrives with _aircraftCode:'' AND _aircraft:'' (PD202, PD470,
       // PD2195, PD204, PD465, PD2494 — all blank), because the type is resolved
@@ -12141,8 +12140,8 @@ function uxgGateHtml(ctx) {
       // to the `: 33` else-branch and was called by E195-E2 row bands — on an
       // aircraft that stops at row 20.
       //
-      // THE FLEET IS IN THE FLIGHT NUMBER. Nick: "Porter flights in general with
-      // 4 numbers always operate the DH4 and 3 numbers the jet", and "thats how
+      // THE FLEET IS IN THE FLIGHT NUMBER.
+      // and "thats how
       // you can know that and YTZ vs YYZ or western flights etc" — the 4-digit
       // series is the Billy Bishop turboprop network, the 3-digit series the
       // jets flying YYZ and west. That is data this sign always has: the flight
@@ -12178,8 +12177,8 @@ function uxgGateHtml(ctx) {
     }
     // Lane-sign mode mirrors the printed sign exactly: no now/next
     // header row, no label over the "1" quarter, and the right side titled
-    // "Zones" (Nick's design picture). WestJet uses the same sign model
-    // (confirmed by Nick), inheriting its own brand colours via the
+    // "Zones". WestJet uses the same sign model
+    // inheriting its own brand colours via the
     // banner-bg/accent vars.
     var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK'
                     || airlineCode === 'WS' || airlineCode === 'WR');
@@ -12215,7 +12214,7 @@ function uxgGateHtml(ctx) {
     // final without ever changing its header. Reuse the flag.
     var isGateClosed = isGateClosedStatus;
     // v23130 — the header is a bilingual pair like every other sign line
-    // (Nick: 'all needs to be in the 2 languages'). Each language is one
+    // Each language is one
     // nowrap span; the pipe sits between; a narrow band stacks whole lines.
     var finalHdr = _gateLbl(isGateClosed ? 'gateClosed' : 'finalCall', _frF,
       function (w) { return '<span class="g8-lane-p">' + w + '</span>'; },
@@ -12224,18 +12223,18 @@ function uxgGateHtml(ctx) {
     var finalMsg = isGateClosed ? TL('gateNowClosed') : TL('allGroups');
     var finalSub = isGateClosed ? '' : TL('proceedGate');
     if (isGateClosed) {
-      // Closed gate: no 'Welcome' strip (Nick) — just the facts. ONE
+      // Closed gate: no 'Welcome' strip — just the facts. ONE
       // statement only: the big 'GATE CLOSED' header IS the message —
       // the 'This gate is now closed' sub-line said the exact same thing a
       // second time (and the info-row status cell a third), so it's dropped
-      // (Nick: 'why do you keep putting things twice… GATE CLOSED').
+      //
       finalHtml = '<div class="g8-final active g8-final-closed">'
         + _boardInfoRowHtml('gateclosed')
         + '<div class="g8-final-hdr">' + finalHdr + '</div>'
         + '</div>';
     } else {
-      // FINAL CALL: same lane-panel format as boarding (Nick: 'the ALL
-      // zones needs the same format with arrows') — every group called.
+      // FINAL CALL: same lane-panel format as boarding
+      // — every group called.
       var _fcAcFam = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
       var _fcExpress = (airlineCode === 'QK')
         || currentFlight._opCode === 'QK' || currentFlight._opCode === 'PB'
@@ -12248,7 +12247,7 @@ function uxgGateHtml(ctx) {
       if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
       else if (airlineCode === 'PD') { _fcNextLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> '); }
       else _fcNext = _gateLbl('all', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
-      // FINAL CALL replaces the Welcome strip (Nick) — one call-out where
+      // FINAL CALL replaces the Welcome strip — one call-out where
       // the welcome sat, more room for the lane panels below.
       finalHtml = '<div class="g8-final active">'
         + _boardInfoRowHtml('final')
@@ -12258,21 +12257,21 @@ function uxgGateHtml(ctx) {
           : airlineCode === 'PD'
           /* v23100 — was `_pdLanesBodyHtml_gateLbl('all', …)`: a botched edit
              glued the two identifiers together, so Porter FINAL CALL threw a
-             ReferenceError and the whole gate render died (Nick: 'gate 3 in
-             moncton does not load'). The rows value is the 'All | Tous'
+             ReferenceError and the whole gate render died
+The rows value is the 'All | Tous'
              label _fcNext already computed for PD above. */
           ? _pdLanesBodyHtml(_fcNext)
           // v23224 — PAL final call is the general call for everyone: the
           // open-flow sign, never the priority/zones halves.
           : airlineCode === 'PB'
           ? _pbFlowBodyHtml(false)
-          // v23127 — STANDARD SIGN (Nick: 'most airlines have wrong boarding
-          // format all together... 1 and 2 is priority and 3 and 4 is
-          // everyone else'). Two halves like Porter's: left = Priority on
+          // v23127 — STANDARD SIGN
+          //
+          // Two halves like Porter's: left = Priority on
           // lanes 1·2, right = the called zones on lanes 3·4. Carriers with
           // their own sign (AC, PD) keep theirs.
-          // v23130 — TWO arrows, the approved Porter grammar (Nick: 'I also
-          // mentioned lanes and 2 yes 2 arrows thats non existent'): left
+          // v23130 — TWO arrows, the approved Porter grammar
+          // : left
           // panel leads with the down-left arrow, right panel trails with
           // the down-right — one each, mirrored. The next-panel's extra
           // leading arrow is gone (it pointed at the divider).
@@ -12287,12 +12286,12 @@ function uxgGateHtml(ctx) {
   // Build countdown panel
   var countdownHtml = '';
   if (showCountdown) {
-    // Same shell as boarding/final (Nick: 'this applies to all') — flight
+    // Same shell as boarding/final — flight
     // info row + welcome strip on every takeover, countdown included.
     countdownHtml = '<div class="g8-countdown">'
       + _boardInfoRowHtml(stKey)
       + _boardWelcomeStripHtml(stKey)
-      // v23115 — Nick's mockup. Headline above, ONE baseline carrying the
+      // v23115 — the owner's mockup. Headline above, ONE baseline carrying the
       // number + short unit + the carrier rondelle, second-language headline
       // below. Both languages show at once instead of alternating, because the
       // countdown is the whole screen and a passenger reading it in French
@@ -12307,7 +12306,7 @@ function uxgGateHtml(ctx) {
             + '<div class="g8-cd-line">' + (_cdRondelleHtml() || '') + '</div>'
             + (_cdL[1] ? '<div class="g8-cd-label g8-cd-label2">' + _cdL[1] + '</div>' : '');
         })()
-      // 'Please remain seated until your zone is called' REMOVED (Nick).
+      // 'Please remain seated until your zone is called' REMOVED.
       + '</div></div>';
   }
 
@@ -12389,7 +12388,7 @@ function uxgGateHtml(ctx) {
   // etc.) with the carrier's actual IATA code, name, and logo (if we
   // have one). When we don't have the regional's logo file, the renderer
   // falls back to a text "Operated by [Name]" line — matching the Jazz
-  // pattern Nick is happy with, and never inventing brand logos.
+  // pattern the owner is happy with, and never inventing brand logos.
   if ((!_opCode || _opCode === airlineCode) && currentFlight._aircraft) {
     // Match BOTH the full model strings AND the bare IATA codes the demo/feed
     // use (E75/E7W = E175, E70 = E170, CR9/CR7/CR2, DH4/DH8 = Dash 8) — the
@@ -12483,7 +12482,7 @@ function uxgGateHtml(ctx) {
         // the reg prints right beside the Operated-By badge, so a confirmed
         // 'YX' tail pins Republic no matter which band the number fell in
         // (UA3414 EWR-YUL lands in the SkyWest band, but N762YX is Republic
-        // metal — Nick's own photo shows both on one strip).
+        // metal — the owner's own photo shows both on one strip).
         if (/^N\d+YX$/i.test(String(currentFlight._reg || ''))) {
           _resolved = { iata:'YX', name:'Republic Airways' };
         }
@@ -12517,23 +12516,23 @@ function uxgGateHtml(ctx) {
     'QK': '/logos/airlines/canadian/air-canada-white.svg',                       // Jazz under AC
     'RV': '/logos/airlines/canadian/rouge-monochrome-white.svg',                  // Rouge on the dark banner — white variant (rouge.png was missing)
     'AA': '/logos/airlines/us-major/american-airlines-white.svg',                // AA flight symbol + white "American Airlines"
-    'DL': '/logos/airlines/us-major/delta-skyteam-lockup-white.svg',             // v23123 — Nick's own lockup: colour widget + WHITE wordmark + SkyTeam
-    // Official COMBINED airline+alliance lockups (Nick: 'there are multiple
-    // logos for alliance partners — use them'). Carriers with a combined
+    'DL': '/logos/airlines/us-major/delta-skyteam-lockup-white.svg',             // v23123 — the owner's own lockup: colour widget + WHITE wordmark + SkyTeam
+    // Official COMBINED airline+alliance lockups
+    // Carriers with a combined
     // lockup skip the separate alliance mark (see _COMBINED_ALLIANCE_LOCKUP).
-    // UA override REMOVED (Nick-approved banner: colour globe + white UNITED
+    // UA override REMOVED (approved banner: colour globe + white UNITED
     // wordmark via the emblem+wordmark path, Star Alliance as a SEPARATE mark).
     'KL': '/logos/airlines/european/KLM_Logo_2011_SkyTeam-monochrome-white.svg',
     'TS': '/logos/airlines/canadian/transat_white_wordmark.svg',                 // white wordmark + sky-blue accent
     'WG': '/logos/airlines/canadian/sunwing/Sunwing-Logo-White.png',             // Sunwing official white (Dec 2025 pack) for the dark banner
     // WestJet — navy banner: white "WestJet" lettering + colored (teal/navy) maple-leaf swoosh
     'WS': '/logos/airlines/canadian/WestJet_Logo_2018-monochrome-white-colored-leaf.svg?v=5', // white wordmark + colored leaf for the navy bar
-    // HA override REMOVED Jul 2026 (Nick: banner wordmark must be WHITE, icon
+    // HA override REMOVED Jul 2026 (the owner: banner wordmark must be WHITE, icon
     // keeps its colors) — HA flows through the emblem+wordmark pair: native
     // Pualani beside hawaiian-wordmark-light.svg (white lettering).
     'PD': '/logos/airlines/canadian/porter.svg',                                 // NAVY wordmark for the cream banner (v23120)
     'PB': '/logos/airlines/canadian-regional/pal-airlines-swoosh-white.svg?v=2', // PAL — gold swoosh + white wordmark; v2 = ink-normalized (was 31% empty canvas → read tiny)
-    // BA override REMOVED Jul 2026 (Nick: 'British Airways is not correct') —
+    // BA override REMOVED Jul 2026 —
     // BA now flows through the emblem+wordmark path: Speedmarque tile +
     // official-blue BRITISH AIRWAYS lettering.
     // 4Y override REMOVED (v23127) — emblem-only rendered as a blank tail
@@ -12542,7 +12541,7 @@ function uxgGateHtml(ctx) {
   };
   // Per-airline size overrides for banner logo
   var BANNER_SIZE_OVERRIDE = {
-    'AC': { h: 128, w: 640 },   // was 156 — a bit too big per Nick
+    'AC': { h: 128, w: 640 },   // was 156 — a bit too big as specified
     'QK': { h: 128, w: 640 },
     'RV': { h: 128, w: 640 },
     'AA': { h: 120, w: 520 },
@@ -12552,7 +12551,7 @@ function uxgGateHtml(ctx) {
     'HA': { h: 118, w: 500 },
     'PD': { h: 80, w: 320 },
     'PB': { h: 128, w: 470 },
-    'TS': { h: 156, w: 690 },   // v22989 - Nick: 'the top logo is too small as well'
+    'TS': { h: 156, w: 690 },   // v22989 -
     'NZ': { h: 120, w: 540 },
     // v23293 — sized for the STACKED lockup (2.47:1), not the one-line mark.
     // Two lines of lettering means it can stand taller in the band while
@@ -12588,7 +12587,7 @@ function uxgGateHtml(ctx) {
   // when the banner is light. Skipping the table here is what lets that branch
   // run. Scoped to YQM; every other airport resolves exactly as before.
   var _apIsYQM = String(iata || '').toUpperCase() === 'YQM';
-  // v23660 — Nick: "the logo is white on white".
+  // v23660 —
   //
   // BANNER_LOGO_OVERRIDE is a table of pre-made WHITE wordmark files —
   // air-canada-white.svg, delta-skyteam-lockup-white.svg, american-airlines-
@@ -12648,11 +12647,11 @@ function uxgGateHtml(ctx) {
   // ends share it. Everything downstream then treats YQM as a light banner
   // without a second colour test.
   // ── v23646 — EVERY BANNER IS A LIGHT BAND ─────────────────────────────
-  // Nick: "It doesnt need to be cream but it should be a lighter color".
+  //
   //
   // Moncton's banner has been the only light one: a cream #F5F1E7 field with
   // navy ink, set inline from _silkGrad below. Every other airport got the
-  // carrier's DARK r1. That is the difference Nick kept pointing at, and no
+  // carrier's DARK r1. That is the difference the owner kept pointing at, and no
   // amount of CSS could close it — the band is written as an inline style with
   // !important, which a stylesheet cannot reach.
   //
@@ -12681,7 +12680,7 @@ function uxgGateHtml(ctx) {
     // wordmark + green dot), NOT the full "flair airlines" lockup (that's
     // reserved for advertisements). The mark is already white, so no whiten.
     'F8': { src: '/logos/airlines/canadian/flair-mark-white.png', whiten: false, h: 100, w: 480 },
-    // v23293 — BA is a TWO-ROW lockup now (Nick's own supplied artwork:
+    // v23293 — BA is a TWO-ROW lockup now (the owner's own supplied artwork:
     // 'BRITISH' over 'AIRWAYS' under the speedmarque). It has to be pinned
     // here rather than in BANNER_SIZE_OVERRIDE, because the IATA_TO_WORDMARK
     // branch below hardcodes _sz = { h: 102, w: 480 } for every carrier with a
@@ -12706,7 +12705,7 @@ function uxgGateHtml(ctx) {
     'PAG': '/logos/airlines/canadian-regional/perimeter-aviation-logo-monochrome-white.svg',
     'BQ': '/logos/airlines/canadian-regional/pascan-monochrome-white.svg',
     '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg',
-    // v23468 — Encore's white lockup as a VECTOR. Nick's own artwork, outlined,
+    // v23468 — Encore's white lockup as a VECTOR. the owner's own artwork, outlined,
     // replacing the raster encore.png the banner reached through LOCAL_LOGOS.
     // Same appearance on the dark band (that PNG was already all-white and WR
     // sits in LOGO_SKIP_FILTER, so nothing was inverting it), but crisp at the
@@ -12758,7 +12757,7 @@ function uxgGateHtml(ctx) {
   // v23462 — every entry in that table is a WHITE or monochrome-white file,
   // chosen to read on a near-black banner. On Moncton's cream band it is the
   // wrong file by definition — Air Canada came out as air-canada-white.svg on
-  // cream, which is the invisible wordmark Nick would have seen. Skipping it
+  // cream, which is the invisible wordmark the owner would have seen. Skipping it
   // here lets the wordmark branch below run instead, and that branch already
   // asks for the 'dark' variant when _bannerIsLight. Scoped to YQM: no other
   // airport's banner logo changes.
@@ -12789,8 +12788,8 @@ function uxgGateHtml(ctx) {
     _bannerUsedWordmark = true;       // reuse the white-plate styling
     _bannerPlateForced = true;        // BoA-style mark genuinely needs the plate
   }
-  // Frontier (Nick, Jul 2026): 'lighter blue where Frontier is on the top with
-  // green Frontier and no F at the beginning'. The banner (r1) is a lighter
+  // Frontier
+  // The banner (r1) is a lighter
   // Frontier blue (airline-colors.js) so the green wordmark reads directly on
   // it — no white plate. Leaving _bannerWmFromBase false suppresses the F
   // emblem (the brand-pair path only appends it when the wordmark FILE is the
@@ -12808,7 +12807,7 @@ function uxgGateHtml(ctx) {
     // NO white plate: the green wordmark sits directly on the lighter-blue
     // banner. _bannerWmFromBase stays false → the green 'F' emblem is dropped.
   }
-  // v219b — Prefer the airline WORDMARK lockup in the gate header (per Nick).
+  // v219b — Prefer the airline WORDMARK lockup in the gate header.
   // Render the LOCAL dark-ink wordmark on a clean white plate: real brand type,
   // never force-whitened, never clipped, and works on a locked-down network.
   var _bannerWordmarkBase = (typeof IATA_TO_WORDMARK !== 'undefined')
@@ -12828,15 +12827,15 @@ function uxgGateHtml(ctx) {
     _bannerUsedWordmark = true;
     _bannerWmFromBase = true;         // wordmark FILE in use — ink comp applies
   }
-  // Square tile fallback REMOVED (Nick: 'get rid of these icons and start
-  // using proper wordmarks'). Carriers without a curated lockup now fall
+  // Square tile fallback REMOVED
+  // Carriers without a curated lockup now fall
   // through to the external full-lockup logo, force-whitened by the CSS —
   // the airline's real wordmark, not a badge.
   var _onPlate = _bannerUsedTile || _bannerPlateForced;
   // HARD CAP the logo height so it can NEVER exceed the banner band (which is
   // overflow:hidden and a fixed height). 76px in the 112px band leaves real
   // margins above and below — at the old 120px cap, wide all-caps marks
-  // (WESTJET) filled the band edge-to-edge and read as bulging (per Nick).
+  // (WESTJET) filled the band edge-to-edge and read as bulging.
   var _logoH = Math.min(_sz.h || 120, 76);
   // Jul 2026: the wordmark SVGs were re-cut to their true ink, so the flat
   // 76px cap (tuned against the old padded canvases) would inflate the
@@ -12851,7 +12850,7 @@ function uxgGateHtml(ctx) {
       && _BANNER_INK_COMP[_bannerWordmarkBase]) {
     _logoH = Math.round(_logoH * _BANNER_INK_COMP[_bannerWordmarkBase]);
   }
-  // Per-carrier banner-wordmark cap (Nick-approved United banner: UNITED at
+  // Per-carrier banner-wordmark cap (approved United banner: UNITED at
   // 52px beside the 88px globe, leaving room for the Star Alliance mark).
   var _WM_BANNER_CAP = { 'UA': { h: 52, w: 300 } };
   var _wmCap = _WM_BANNER_CAP[_bannerBrandCode] || _WM_BANNER_CAP[airlineCode];
@@ -12864,18 +12863,18 @@ function uxgGateHtml(ctx) {
   var _silkBanner = true;
   try { if (localStorage.getItem('fids_gate_banner_classic') === '1') _silkBanner = false; } catch (e) {}
   // Silk holds the airline wordmark on a full-height SOLID band, so it runs
-  // much BIGGER than the classic 76px tab cap (Nick: 'the words not capped' —
+  // much BIGGER than the classic 76px tab cap ( —
   // fill the band). Scale the calibrated size up and widen the vw cap so wide
   // wordmarks actually grow to the band height.
   if (_silkBanner) {
     _logoH = Math.round(_logoH * 1.7);
     _sz = { h: _sz.h, w: Math.round((_sz.w || 480) * 1.6) };
     // Ceiling so tall/wide wordmarks (e.g. Porter) fill the band without
-    // overrunning the ~118px banner (Nick: 'some airline logos are way too big
-    // now, passing the border'). 96px fills it with breathing room; compact
+    // overrunning the ~118px banner
+    // 96px fills it with breathing room; compact
     // marks that were already smaller are untouched (Math.min).
-    // v23470 — Nick, choosing between a thin line and the bar in his mockup:
-    // "The logo smaller i guess make it touch edges". On YQM the stripe grows
+    // v23470 — Requested, choosing between a thin line and a bar in the mockup:
+    // shrink the logo so the bar can touch the band edges. On YQM the stripe grows
     // from 7px to a real date bar, and the band cannot grow with it: .g8-r1 is
     // pinned to 112px by height/min-height/max-height with overflow:hidden
     // (gate-display.css:2642-2651), so the room has to come from the logo.
@@ -12914,7 +12913,7 @@ function uxgGateHtml(ctx) {
                      // v23660 — always none, never ''. An empty string lets
                      // the cascade fall to fids.css:905, which paints
                      // .g8-r1-logo white for the old near-black banner — the
-                     // second half of Nick's white-on-white. The comment above
+                     // second half of the owner's white-on-white. The comment above
                      // anticipated exactly this ("the general light-banner
                      // rollout, where _apIsYQM is false and the inline filter
                      // would otherwise be ''"). It is that rollout.
@@ -12922,7 +12921,7 @@ function uxgGateHtml(ctx) {
                  // Logo sits on a clean white rounded plate so it reads on the
                  // dark header and is never clipped by the banner band.
                  + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');
-  // Nick (Jul 2026): the gate header shows the airline EMBLEM/tile BESIDE the
+  // the owner (Jul 2026): the gate header shows the airline EMBLEM/tile BESIDE the
   // wordmark — many carriers rendered lettering alone up top. Only the
   // wordmark-file path needs the added icon; override lockups already carry
   // their symbols.
@@ -12932,8 +12931,8 @@ function uxgGateHtml(ctx) {
       var _embCode2 = _bannerBrandCode || airlineCode;
       var _embF = (typeof IATA_TO_EMBLEM !== 'undefined') ? (IATA_TO_EMBLEM[_embCode2] || IATA_TO_EMBLEM[airlineCode]) : null;
       var _embT = (typeof IATA_TO_TILE_ICAO !== 'undefined') ? (IATA_TO_TILE_ICAO[_embCode2] || IATA_TO_TILE_ICAO[airlineCode]) : null;
-      // v23470 — carriers whose BANNER is the wordmark alone. Nick: "porter
-      // does not use one with their name", and on where the emblem does
+      // v23470 — carriers whose BANNER is the wordmark alone.
+      // and on where the emblem does
       // belong, "fids bids they use it". So this is scoped to the banner: the
       // FIDS row and the BIDS tile both resolve through mkLogo(), which never
       // reads this, and keep drawing Porter's tile exactly as they do today.
@@ -12946,8 +12945,8 @@ function uxgGateHtml(ctx) {
       if (_noEmb) _bannerEmblemSrc = '';
       else if (_embF) _bannerEmblemSrc = _embF;
       else if (_embT) _bannerEmblemSrc = '/logos/airline-tiles/' + _embT + '.svg';
-      // v23440 — THE BANNER MARK IS SQUARE (Nick, on the DEN/A14 United gate:
-      // 'Logo at the top banner left should be square'). This band already
+      // v23440 — THE BANNER MARK IS SQUARE (requested on the DEN/A14 United gate:
+      // the top-banner left logo should be square). This band already
       // carries a square Star Alliance tile to the right of the wordmark;
       // United's glossy globe is a disc, so the two marks in one band read as
       // two different kinds of object. UAL-sq.svg is the same globe on
@@ -12962,7 +12961,7 @@ function uxgGateHtml(ctx) {
   var _bannerEmblemHtml = _bannerEmblemSrc
     ? (function () {
         // Per-carrier emblem size — United's colour globe renders at the
-        // wordmark height (Nick-approved: like the MileagePlus lockup).
+        // wordmark height.
         var _EMBLEM_SIZE = { 'UA': 88 };
         var _embPx = _EMBLEM_SIZE[_bannerBrandCode] || _EMBLEM_SIZE[airlineCode] || 64;
         return '<img class="g8-r1-emblem" src="' + _bannerEmblemSrc + '" alt="" style="width:' + _embPx + 'px;height:' + _embPx + 'px;min-width:' + _embPx + 'px;border-radius:12px;object-fit:contain;flex:0 0 auto;display:block;" onerror="this.remove()">';
@@ -12976,7 +12975,7 @@ function uxgGateHtml(ctx) {
     // In PAIR mode (our emblem tile already beside the wordmark) the img must
     // NEVER fall back to an external avs.io/gstatic LOCKUP — those carry the
     // carrier's symbol again, so a single failed wordmark fetch put TWO
-    // emblems in the banner (Nick saw it on Icelandair). data-pairmode makes
+    // emblems in the banner. data-pairmode makes
     // g8LogoFail go straight to the text name instead.
     r1LogoHtml = '<img class="g8-r1-logo' + (_onPlate ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
     if (_bannerEmblemHtml) {
@@ -13011,8 +13010,8 @@ function uxgGateHtml(ctx) {
     // WestJet — WHITE banner / teal swoosh / white body (matches their white fuselage)
     'WS': { r1: '#081D33', r1Text: '#FFFFFF', r2: '#00AC9D', body: '#FFFFFF', bodyText: '#00467F' },
     // Porter — WHITE banner / Porter navy / white body (matches their white fuselage with navy tail and raccoon mascot)
-    // v23120 (Nick: 'with Porter a Cream colored background for the upper and
-    // blue font') — Porter's own identity: navy type on warm latte cream.
+    // v23120
+    // — Porter's own identity: navy type on warm latte cream.
     // r1Text is the official wordmark navy (#152C53, sampled from porter.svg)
     // so the banner text and the logo are literally the same ink.
     'PD': { r1: '#EFE8DA', r1Text: '#152C53', r2: '#152C53', body: '#FFFFFF', bodyText: '#002244' }
@@ -13022,7 +13021,7 @@ function uxgGateHtml(ctx) {
   try { if (typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS) Object.assign(BANNER_COLOR_SPEC, window.AIRLINE_BRAND_COLORS); } catch (e) {}
   var _bannerSpec = BANNER_COLOR_SPEC[airlineCode];
   // ── EVERY CARRIER GETS ITS OWN BANNER COLOUR ──────────────────────────
-  // Nick's Ryanair shot of DUB: the gate banner rendered GREY while the rest
+  // the owner's Ryanair shot of DUB: the gate banner rendered GREY while the rest
   // of that board was Ryanair navy and yellow.
   //
   // Cause: BANNER_COLOR_SPEC holds exactly ten airlines — AA AC AS DL HA PD QK
@@ -13088,7 +13087,7 @@ function uxgGateHtml(ctx) {
     'QK': '/logos/airline-tiles/ACA.svg',                                         // Jazz under AC family — use AC icon
     'RV': '/logos/airline-tiles/ACA.svg',                                         // Rouge under AC family — use AC icon
     'AA': '/logos/airlines/us-major/american-flight-symbol.svg',                   // AA flight symbol (red+blue gradients)
-    'DL': '/logos/airlines/us-major/delta-widget-red.svg',                         // Delta widget, ONE flat red (Nick: 'simply red please')
+    'DL': '/logos/airlines/us-major/delta-widget-red.svg',                         // Delta widget, ONE flat red
     'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',                         // Pualani figurehead
     'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // United Globe   // v23394 one United face everywhere
     'WS': '/logos/airline-tiles/WJA.svg',                                          // WestJet white emblem on teal square
@@ -13132,7 +13131,7 @@ function uxgGateHtml(ctx) {
     if (!_apLogoTop) { try { _apLogoTop = localStorage.getItem('fids_airport_logo_' + iata); } catch (e) {} }
   } catch (e) {}
   // Original band structure (top:15%, solid frosted-white, rounded top-left),
-  // with two fixes per Nick:
+  // with two fixes as specified:
   // 1. ONE SLAB with the gate block — the band runs all the way to the screen
   //    edge (right:0) UNDERNEATH the gate block (z-index below it), so its
   //    skewed right edge is hidden and there is no wedge gap between the white
@@ -13141,22 +13140,22 @@ function uxgGateHtml(ctx) {
   // 2. Logo white-box fix — mix-blend-mode:multiply makes any white background
   //    baked into the uploaded airport-logo file disappear against the white
   //    band (coloured ink is unaffected).
-  // v223 — the top-right is a ROW OF EQUAL TABS (Nick: 'the tabs need to
-  // look the same, same curvature, same size'): every tab is the gate
+  // v223 — the top-right is a ROW OF EQUAL TABS
+  // : every tab is the gate
   // block's exact grammar — width var(--gate-rcw), skewX(-24°), 30px
   // top-left radius — each stacked UNDER the tab to its right so only its
   // rounded corner shows at the seam. Order right→left: Gate (accent) |
-  // airport band (white) | Time (blue-first per Nick — at YQM the three
+  // airport band (white) | Time (blue-first as specified — at YQM the three
   // read Acadian blue | white | red, the flag across the top).
-  // ── SILK top banner (Nick: 'match the silk banner … first Airline Logo then
-  // Time then Airport Logo then the tab already in place for gate'). Restyle
+  // ── SILK top banner
+  // Restyle
   // ROW 1 to the FIDS board's flowing fabric — one continuous band (airline
   // dark → white centre holding the airport logo → gate accent) instead of the
   // hard skewed Time/airport tabs. The gate tab is kept exactly as-is.
   // Kill-switch: localStorage fids_gate_banner_classic='1' restores the tabs.
   // (_silkBanner is computed earlier, before the logo width cap.)
-  // v23462 — MONCTON'S BANNER IS ONE COLOUR ACROSS. Nick: 'What I was
-  // proposing was for the same color all across minus the gate', 'with the
+  // v23462 — MONCTON'S BANNER IS ONE COLOUR ACROSS.
+  // 'with the
   // stripe runnning across', and 'Im open to the color changing too I just
   // think it should all be the same color'.
   //
@@ -13175,8 +13174,8 @@ function uxgGateHtml(ctx) {
   // that the wordmark stops separating from it. Moncton keeps its exact cream —
   // it was hand-picked and there is no reason to shift it.
   var _silkDark = _apIsYQM ? '#F5F1E7' : _silkTint(_silkBase, 0.12);
-  // Timebox ink adapts to the banner colour (Nick: 'Frontier — the font is all
-  // white and it's light, needs to be blue'). Frontier's sky-blue band is too
+  // Timebox ink adapts to the banner colour
+  // s light, needs to be blue'). Frontier's sky-blue band is too
   // light for white text; use a deep navy instead. Luminance > 140 → dark ink.
   var _silkLum = (function (h) {
     var m = String(h || '').replace('#', '');
@@ -13202,11 +13201,11 @@ function uxgGateHtml(ctx) {
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
   // gate tab on the right). The gate tab covers the right ~25%, so the accent
   // stop lands just before it and reads as one continuous fabric.
-  // Nick's spec: 'start out airline colour to quickly fade into white until the
+  // the owner's spec: 'start out airline colour to quickly fade into white until the
   // gate where it blends a bit.' Short airline-colour start (holds the logo) →
   // quick fade → white body (time + airport logo) → soft blend into the gate
   // accent on the right (the gate tab sits on that accent end).
-  // Nick (Jul 2026): scrap the fade-to-white silk — 'all one colour, black,
+  // the owner (Jul 2026): scrap the fade-to-white silk — 'all one colour, black,
   // all black till the gate'. The banner field is SOLID airline colour (AC
   // black) edge-to-edge; the airline accent (red) only enters in the last
   // ~16%, which sits UNDER the skewed gate tab so no black wedge shows at the
@@ -13222,7 +13221,7 @@ function uxgGateHtml(ctx) {
   var _silkGrad = _apIsYQM
     ? 'linear-gradient(180deg, #F7F4EC 0%, ' + _silkDark + ' 100%)'
     : 'linear-gradient(180deg, ' + _silkTint(_silkBase, 0.05) + ' 0%, ' + _silkDark + ' 100%)';
-  // v23123 — Nick's Delta rendition: the top strip is FLAT deep indigo
+  // v23123 — the owner's Delta rendition: the top strip is FLAT deep indigo
   // (#11063C, sampled from his image), not the gradient. Inline !important
   // background is unbeatable from a stylesheet, so the swap happens here.
   try {
@@ -13233,7 +13232,7 @@ function uxgGateHtml(ctx) {
     if (false && /^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) _silkGrad = '#11063C';
   } catch (e) {}
 
-  // Silk drops the airport LOGO (Nick's redesign): the centre now holds a
+  // Silk drops the airport LOGO: the centre now holds a
   // centred local-time block instead. Classic banner keeps the airport band.
   var _apBandTop = (_apLogoTop && !_silkBanner)
     ? '<div class="g8-r1-apband" style="position:absolute;right:0;top:0;bottom:0;box-sizing:border-box;z-index:2;display:flex;align-items:center;justify-content:center;padding:0 26px;background:rgba(248,250,252,0.97);transform:skewX(-24deg);transform-origin:bottom right;border-radius:30px 0 0 0;box-shadow:0 6px 14px rgba(0,0,0,0.16);">'
@@ -13269,7 +13268,7 @@ function uxgGateHtml(ctx) {
 
   return '<div class="g8-wrap'
        // v23115 — the boarding takeovers move the clock OUT of the banner and
-       // into the white strip (Nick's mockup). CSS can't reach up from the
+       // into the white strip. CSS can't reach up from the
        // countdown to the banner, and :has() is out — it threw on the display
        // hardware and cost us every light-board adaptation the last time it
        // was used here — so the state is marked on the wrap instead.
@@ -13291,20 +13290,20 @@ function uxgGateHtml(ctx) {
        + (iata ? ' g8-ap-' + String(iata).toUpperCase() : '')
        + '" data-pill-style="' + (window._gateStatusPillStyle || 'opaque') + '"'
        // Shared width for the three top tabs (Time | airport | Gate) — equal
-       // tabs (Nick) sized so all three still leave room for wide airline
+       // tabs sized so all three still leave room for wide airline
        // wordmarks on the left.
        + ' style="--g8-tab-w:clamp(240px,17.5vw,420px)'
        + ';--airline-accent:' + accent
        // r2 = the airline BRAND accent from airline-colors.js (green for F9,
        // red for DL…). Drives the flight-info TITLE colour so title and data
-       // read as two colours (Nick). Falls back to the icon accent. LIGHT
+       // read as two colours. Falls back to the icon accent. LIGHT
        // accents (Flair lime, Southwest gold) are darkened toward their own
-       // hue so the title/code stay legible on the LIGHT info cards (Nick,
-       // pointing at Flair: 'we cant see this'). --airline-accent-ink is the
+       // hue so the title/code stay legible on the LIGHT info cards
+       // (reported illegible on Flair). --airline-accent-ink is the
        // same treatment for the airport-code colour.
        + ';--airline-r2:' + (function (h) { return _hexIsLight(h) ? _accentInk(airlineCode, h) : h; })((_bannerSpec && _bannerSpec.r2) ? _bannerSpec.r2 : accent)
        // v23470 — r1 = the carrier's DARK brand shade, the other half of the
-       // pair r2 comes from. Nick, on the banner's date bar: "maybe it should
+       // pair r2 comes from. the owner, on the banner's date bar: "maybe it should
        // be the second color to the airline Air Canada Dark Gray or Black
        // maybe Westjet Blue" — that is exactly r1 (AC #0A0A0A, WS #003366),
        // already in airline-colors.js for every carrier.
@@ -13318,7 +13317,7 @@ function uxgGateHtml(ctx) {
        // pure white only, so Porter's r1 — #EFE8DA, the latte cream that IS
        // the Moncton band — sailed straight through and was painted onto
        // itself. Measured on the live gate: clock and date at 1.08:1 against
-       // the band, which is invisible, and that is Nick's 4:50AM photo.
+       // the band, which is invisible, and that is the owner's 4:50AM photo.
        //
        // r1Text is the carrier's own ink for exactly this case ('white if r1
        // is black, dark if r1 is white' — :12610), so a light r1 falls back to
@@ -13335,11 +13334,11 @@ function uxgGateHtml(ctx) {
        // toward black IS brown when the accent is warm — Southwest gold
        // #F9B612 came out #6e5e12 and Sunwing amber #F7941D came out #6e5017,
        // and #0a1f12 is itself green-black so it dragged the hue too. That is
-       // the brown Nick is looking at, and no choice of black fixes it.
+       // the brown the owner is looking at, and no choice of black fixes it.
        // A light accent now falls back to the CARRIER'S OWN dark brand shade,
        // so the code stays legible on the light card and stays their colour
-       // (Nick: 'they are accents that need to match ... not brown, its not
-       // their colors'). Neutral near-black only where a carrier has no dark.
+       //
+       // Neutral near-black only where a carrier has no dark.
        + ';--airline-accent-ink:' + (_hexIsLight(accent) ? _accentInk(airlineCode, accent) : accent)
        // Lane/takeover surfaces need white lettering — pre-darken accents
        // that are too light for it (Flair lime, Southwest yellow).
@@ -13375,7 +13374,7 @@ function uxgGateHtml(ctx) {
           ? ' style="background:' + _silkGrad + ' !important;background-color:' + _silkDark + ' !important;color:' + _silkInk + ' !important;"'
           : (_bannerSpec
           ? (function () {
-              // Frontier (Nick): the VISIBLE top banner is a lighter Frontier
+              // Frontier: the VISIBLE top banner is a lighter Frontier
               // sky-blue so the green wordmark reads — but _bannerSpec.r1 stays
               // deep blue because --banner-bg feeds dark card ink elsewhere.
               var _r1Vis  = (airlineCode === 'F9') ? '#5AA0DE' : _bannerSpec.r1;
@@ -13386,7 +13385,7 @@ function uxgGateHtml(ctx) {
       ) + '>'
     +   '<div class="g8-r1-logoslot">' + (function () {
           // v23252 — ONEWORLD COMPOSES LIKE THE OFFICIAL CO-BRAND LOCKUP
-          // (Nick's reference sheet: ball | thin divider | airline mark —
+          // (the owner's reference sheet: ball | thin divider | airline mark —
           // ball FIRST). Star Alliance / SkyTeam keep the approved
           // wordmark-then-mark order ('the star alone … at the END by air
           // canada').
@@ -13396,24 +13395,24 @@ function uxgGateHtml(ctx) {
           return r1LogoHtml + starHtml;
         })() + '</div>'
     +   _apBandTop
-    // TIME TAB (Nick: 'the gate needs the time — another tab exactly as the
-    // ones existing, time a different color'): a skewed box in the SAME
+    // TIME TAB
+    // : a skewed box in the SAME
     // grammar as the Gate block, sitting just left of it. At YQM it takes
     // Acadian blue + the gold star, so the top tabs read blue | white | red
-    // — the Acadian flag across the banner (Nick: 'the flag on the top in
-    // the tabs, each tab a different color'). The value carries
+    // — the Acadian flag across the banner
+    // The value carries
     // .v2-fi-clock-val + data-tz, so the global 5s clock updater keeps it
     // ticking.
     +   (function () {
           var _tbYQM = String(iata).toUpperCase() === 'YQM';
-          // Per-carrier time-tab colours (Nick's United banner: navy wordmark
+          // Per-carrier time-tab colours (the owner's United banner: navy wordmark
           // → RUNWAY GRAY time → white airport → blue gate). Light tabs flip
           // to dark ink.
           var _TB_SPEC = { 'UA': { bg: '#D0D0CE', ink: '#0C2340', inkSoft: 'rgba(12,35,64,0.82)' } };
           var _tbSpec = _TB_SPEC[(typeof airlineCode !== 'undefined' ? airlineCode : '')] || null;
           // Non-YQM default: a fixed deep slate — accent3 could match the gate
-          // accent (AC red next to red gate = 'red and red', per Nick at YHZ).
-          // (Nick: the Acadian flag doesn't belong on the GATE — no Acadian blue
+          // accent (AC red next to red gate = 'red and red', as specified at YHZ).
+          // (the owner: the Acadian flag doesn't belong on the GATE — no Acadian blue
           // tab, no gold star. The board keeps its silk-acadian theme untouched.)
           var _tbBg = _tbSpec ? _tbSpec.bg : '#1F2C44';
           var _tbInk = _tbSpec ? _tbSpec.ink : '#fff';
@@ -13431,7 +13430,7 @@ function uxgGateHtml(ctx) {
           // 2*tab-w - 24px from the right. The time tab slots left of that
           // with a 30px underlap; without a band, directly left of the gate.
           if (_silkBanner) {
-            // Silk redesign (Nick): no airport logo — a CENTRED local-time block
+            // Silk redesign: no airport logo — a CENTRED local-time block
             // fills the band's white centre. Top: '<City> Local Time · Heure
             // Locale à <City>'. Middle: the big clock. Bottom: the full weekday
             // date 'Thursday July 23 | jeudi le 23 juillet'. City = the gate
@@ -13442,11 +13441,11 @@ function uxgGateHtml(ctx) {
               _tbCity = (typeof CITY !== 'undefined' && CITY[_ci]) || (typeof AP !== 'undefined' && AP[_ci] && AP[_ci].city) || _ci;
               if (typeof normalizeDisplayCity === 'function') _tbCity = normalizeDisplayCity(_tbCity, _ci);
             } catch (e) { _tbCity = String(iata || ''); }
-            // Timebox clock/label/date are ALWAYS white (Nick: 'revert the time
-            // back to white — it was never meant to change'). v22438 tried to
+            // Timebox clock/label/date are ALWAYS white
+            // v22438 tried to
             // flip Frontier's clock to navy on its light band; that was the
-            // wrong read — 'needs to be blue' was about the DATA, not the time.
-            // Local-time TAB (Nick: 'simply the location where it's at, with a
+            // wrong read — the request for blue was about the DATA, not the time.
+            // Local-time TAB (s at, with a
             // tab ... one time format such as 7:30PM'). Just the GATE airport's
             // time — no destination panel. Label on two rows ('Time in <City>' /
             // 'Heure à <City>'), the single 12h clock to the right, and the
@@ -13458,15 +13457,15 @@ function uxgGateHtml(ctx) {
             var _tbDate1 = '', _tbDay1 = '';
             try { _tbDate1 = _ocClockDate(new Date(), _tbTz || null); } catch (e) {}
             try { _tbDay1 = _ocLocalDayKey(_tbTz || null); } catch (e) {}
-            // ATTACHED-TO-GATE tab (Nick: 'align it with the gate tab, same
-            // format as the gate — a colour and border, attached to the gate,
-            // all text justified, take as much space'). The tab's right edge
+            // ATTACHED-TO-GATE tab
+            //
+            // The tab's right edge
             // butts the gate tab's left edge; it wears the airline accent + a
             // white left border and rounded top-left, exactly the gate-tab
             // grammar, so the two read as one connected unit. Content is
             // justified across the width: label (left) ↔ clock (right), date
             // spanning below.
-            // v23036 — Nick's mockup: STACKED, centred. English label on top,
+            // v23036 — the owner's mockup: STACKED, centred. English label on top,
             // the big clock under it, the second-language label under that,
             // then the bilingual date. ('Please rearrange the time like this
             // and bigger and change the gray theres too muchngray')
@@ -13480,7 +13479,7 @@ function uxgGateHtml(ctx) {
             _gateLbl('timeIn', false, function(w,i){ _tbL[i?1:0] = '<span class="octb-'+(i?'fr':'en')+'">'+w+' '+_e(_tbCity)+'</span>'; return ''; }, '');
             return '<div class="g8-r1-timebox g8-r1-timebox-silk octb-wrap octb-attached" style="position:absolute;top:0;right:var(--gate-rcw, 25%);bottom:0;box-sizing:border-box;display:flex;align-items:stretch;z-index:4;">'
               // v23181 — A SIMPLE CLOCK. The tab stacked four lines: 'Time in
-              // <City>', the clock, 'Heure à <City>', then the date. Nick has
+              // <City>', the clock, 'Heure à <City>', then the date. the owner has
               // asked repeatedly for just the time and the date, and his mockup
               // shows exactly two lines. The city is already named by the gate
               // badge beside it, so the labels only repeated what the screen
@@ -13489,12 +13488,12 @@ function uxgGateHtml(ctx) {
               // here any more.
               + '<div class="octb octb-tab octb-stack">'
               // v23287 — the airport code rides with the time on EVERY gate,
-              // 'YHZ | 11:00PM' (Nick). YQM already carried its code inside the
+              // 'YHZ | 11:00PM'. YQM already carried its code inside the
               // gate tab; this puts every airport's beside the clock instead.
               +   '<span class="octb-clockrow">'
               // v23458 — MONCTON SHOWS ITS MARK HERE, NOT ITS LETTERS.
-              // Nick: 'For moncton only can you remove it from beside the gate
-              // simply add it where the time is where the text says YQM', then
+              //
+              // then
               // 'make the time bigger and logo beside it with the seperation'.
               // The separator stays — he asked for it explicitly — so the row
               // reads mark | time instead of YQM | time. A SPAN, not an <img>,
@@ -13517,7 +13516,7 @@ function uxgGateHtml(ctx) {
             ? 'calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 54px)'
             : 'calc(var(--gate-rcw, 25%) - 30px)';
           return '<div class="g8-r1-timebox" style="position:absolute !important;top:0 !important;right:' + _tbRight + ' !important;bottom:0 !important;width:calc(var(--g8-tab-w, var(--gate-rcw, 25%)) + 30px) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:0 26px !important;background:' + _tbBg + ' !important;transform:skewX(-24deg) !important;transform-origin:bottom right;border-radius:30px 0 0 0 !important;box-shadow:0 6px 14px rgba(0,0,0,0.16);overflow:hidden;z-index:1;">'
-            // v23287 — 'YHZ | 11:00PM' (Nick). The stacked 'Time | Heure'
+            // v23287 — 'YHZ | 11:00PM'. The stacked 'Time | Heure'
             // caption is gone: the row now reads as the airport's local clock
             // because the airport code is standing right beside the time.
             + '<span style="transform:skewX(24deg);display:flex;align-items:baseline;gap:.34em;line-height:1.05;">'
@@ -13527,16 +13526,16 @@ function uxgGateHtml(ctx) {
             + '</span>'
             + '</div>';
         })()
-    // Gate block: FULL banner height (top:0), a STRAIGHT rounded-top tab (Nick:
+    // Gate block: FULL banner height (top:0), a STRAIGHT rounded-top tab (
     // 'the gate should not be angled anymore but rounded at the top with a nice
     // separation like a border'). Flush to the right edge; the top-LEFT corner
     // is rounded and a white left border + shadow separate it from the banner
     // field. No skew, so inner spans no longer counter-skew.
     +   '<div class="g8-r1-right" style="position:absolute !important;top:0 !important;right:0 !important;bottom:0 !important;width:var(--gate-rcw, 25%) !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 30px !important;clip-path:none !important;background:var(--airline-accent,#1aa) !important;border-radius:26px 0 0 0 !important;border-left:5px solid rgba(255,255,255,0.92) !important;box-shadow:-12px 0 26px rgba(0,0,0,0.32) !important;overflow:hidden;z-index:5;' + (function(){ var i = String(iata || '').toUpperCase(); var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i); return '--ap-mark:url(/logos/airports/' + ic + '-white.svg);'; })() + '">'
     +     (function () {
-            // Airport identity ahead of the gate number (Nick: 'the logo
-            // and airport code appear in the gate before the number …
-            // engraved or seen in white'). The mark hides itself where
+            // Airport identity ahead of the gate number
+            //
+            // The mark hides itself where
             // no asset exists, taking the code with it.
             var i = String(iata || '').toUpperCase();
             if (!i) return '';
@@ -13547,7 +13546,7 @@ function uxgGateHtml(ctx) {
             var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i);
             return '<span class="g8-r1-apmark" style="visibility:hidden;">'
               // v23456 — PREFER A VECTOR MARK, FALL BACK TO THE PNG.
-              // Nick drew YQM's mark as an SVG; a vector stays crisp at every
+              // the owner drew YQM's mark as an SVG; a vector stays crisp at every
               // clamp size the banner uses and is a third of the PNG's weight.
               // Airports that only have the raster are untouched — the onerror
               // tries the .png once before giving up, so this adds a vector
@@ -13568,7 +13567,7 @@ function uxgGateHtml(ctx) {
     // (.v2-flightinfo-block) and this row has been redundant ever since — yet it
     // was still BUILT on every gate render: ~28 elements composed, inserted, and
     // then hidden by a stylesheet. Hiding the symptom instead of stopping the
-    // cause is precisely the 'stuff hidden behind' Nick can see at load.
+    // cause is precisely the 'stuff hidden behind' the owner can see at load.
     //
     // Nothing reads it: no querySelector/closest/matches anywhere targets .g8-r2.
     // The similarly-named g8-r2-strike / g8-r2-revised are UNRELATED inline spans
@@ -13580,9 +13579,9 @@ function uxgGateHtml(ctx) {
     // ROW 3+4 — CONDITIONAL: boarding/final/countdown = FULL WIDTH, else split layout
     + (boardActive || finalActive || showCountdown
       // ═══ BOARDING MODE: the takeover fills the screen; the delay/status
-      // message bar sits at the VERY BOTTOM (Nick, ~5 times: 'put the delayed
-      // banner below the flight number and times … actually at the very
-      // bottom'), NOT between the banner and the info row. ═══
+      // message bar sits at the VERY BOTTOM
+      //
+      // NOT between the banner and the info row. ═══
       ? '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
       + (r3Left ? '<div class="g8-r3 g8-r3-bottom" style="background:rgba(0,0,0,0.85);border-top:2px solid ' + (accent || '#eab308') + ';flex-shrink:0;">' + r3Left + '</div>' : '')
       // ═══ IDLE MODE ═══
@@ -13725,7 +13724,7 @@ function gateAutofit(root) {
   // shrank every value and label to the 12px floor before first paint. Their
   // normal sizes now come from CSS, with the later visible-box one-line fitter
   // handling only genuinely long flight/destination/status strings.
-  // v23546 — the inbound shelf's flight line joins the fitter. Nick, on a
+  // v23546 — the inbound shelf's flight line joins the fitter. the owner, on a
   // Frankfurt inbound: "this one in particular is spilling" — "4Y74 ·
   // Frankfurt | FRA" broke after the pipe and pushed the arrival line out of
   // the panel. It was never in this list, so it had no way to get smaller;
@@ -13785,7 +13784,7 @@ function gateAutofit(root) {
         //    The value's cell (v2-fi-textcol / v2-fi-copy) can grow wider than
         //    the rail, which clips — so a long city ('Toronto') read as
         //    'fitting' its cell while it was actually cut off by the column
-        //    (Nick: 'still see Toron…'). Measuring the element's edges against
+        // Measuring the element's edges against
         //    the rail's content box catches that and lets the shrink fire.
         var col = (el.closest && el.closest('.gad-aircraft-col')) || null;
         if (col) {
@@ -13809,7 +13808,7 @@ function gateAutofit(root) {
     });
   });
 
-  // ── MEASURE THE BOX, THEN ASSIGN THE TEXT (Nick's spec, verbatim) ──────
+  // ── MEASURE THE BOX, THEN ASSIGN THE TEXT ──────
   // Each left-rail shelf value takes the LARGEST size that fits its
   // measured box — the text column's width and the row's free height.
   // Grow-to-fit from the measurement, not shrink-from-a-CSS-guess, so a
@@ -13825,7 +13824,7 @@ function gateAutofit(root) {
   // happily picks the maximum. That is exactly how the aircraft-type panel
   // ended up rendering a 43px two-line string inside a 42px flex box, with
   // 'expected | prévu' clipped and colliding with the Operated-By row
-  // (Nick: 'these are not fitting correctly'). Opt-in, so the fitters whose
+  // Opt-in, so the fitters whose
   // boxes DO grow with their text keep their existing behaviour exactly.
   function _boxAssign(el, availW, availH, colR, skipH, strictContent) {
     if (availH < 12 || availW < 30) return;
@@ -13848,8 +13847,8 @@ function gateAutofit(root) {
     // corrections, and each pass re-measures — so a box that reads a pixel
     // narrower once (mid-transition, a font settling, the destination flip
     // swapping in a longer word) permanently ratchets the type DOWN, and the
-    // data on screen quietly shrinks over the course of a shift (Nick: 'my
-    // data keeps shrinking I dont know why'). Same text in the same box keeps
+    // data on screen quietly shrinks over the course of a shift
+    // Same text in the same box keeps
     // the size it already earned.
     try {
       var _faContentKey = _fitFlip
@@ -13859,7 +13858,7 @@ function gateAutofit(root) {
       if (el.dataset.faKey === _faKey && parseFloat(el.style.fontSize) > 0) return;
       el.dataset.faKey = _faKey;
     } catch (e) {}
-    // HYSTERESIS (Nick: 'fighting with itself'): repeated corrections can
+    // HYSTERESIS: repeated corrections can
     // re-derive the size; a result within 1px of what's already
     // applied must not repaint, or the type visibly ticks.
     var _curPx = parseFloat(el.style.fontSize) || 0;
@@ -13893,8 +13892,8 @@ function gateAutofit(root) {
     if (_curPx && Math.abs(_curPx - _finPx) <= 1) _finPx = _curPx;
     fits(_finPx);
   }
-  // v22742 — FIT THE PLATE, NOT THE ROW (Nick: 'The text pops out of boxes …
-  // on any page it's not just this one'). Since the plates arrived, the box a
+  // v22742 — FIT THE PLATE, NOT THE ROW
+  // s not just this one'). Since the plates arrived, the box a
   // passenger SEES is the ::before panel inset inside the row — but every
   // fitter still budgeted against the row's full height, so a tall value (the
   // two-line bilingual status) filled the row and overhung the plate. Audited
@@ -13918,14 +13917,14 @@ function gateAutofit(root) {
     // LEFT RAIL titles first ('so much space is wasted') — each label line
     // fits its shelf width under a 0.2-row height cap, THEN the value fit
     // below reads the title's grown offsetHeight, so the two never collide.
-    // v23125 — BOTH surfaces through the SAME title fit (Nick: 'it should be
-    // the exact same' — measured: rail titles inline-fitted to 12px while the
+    // v23125 — BOTH surfaces through the SAME title fit
+    // — measured: rail titles inline-fitted to 12px while the
     // strip sat at 16px). One selector, one budget; the 0.2-row height cap was
     // the shrink — 0.26 matches the strip's real geometry, and _boxAssign is
     // shrink-only from the shared CSS clamp, so the two surfaces can now only
     // land on the same number.
-    // v23134 — ONE SIZE, BOTH SURFACES, ALWAYS (Nick: 'they are different
-    // sizes from boarding to not I NEVER ASKED FOR THAT'). The old
+    // v23134 — ONE SIZE, BOTH SURFACES, ALWAYS
+    // The old
     // per-surface _boxAssign fit could never equalize them: the rail and
     // the boarding strip NEVER EXIST AT THE SAME TIME, so each state fitted
     // against its own geometry and landed on its own number (measured 15px
@@ -13942,8 +13941,8 @@ function gateAutofit(root) {
         el.style.setProperty('font-size', (_f - 1) + 'px', 'important');
       }
     });
-    // v23241 — THE CODE ACCENT IS PICKED PER BANNER GROUND (Nick's AC gate:
-    // 'Does this look like an accent color to you' — the hdrText gold was
+    // v23241 — THE CODE ACCENT IS PICKED PER BANNER GROUND (reported on the AC
+    // gate: the code no longer read as an accent — the hdrText gold was
     // hardcoded and vanished on Air Canada's silver banners). Bright gold on
     // dark banners, deep amber on light ones, judged by the measured banner
     // background through the same 3:1 floor as every other ink.
@@ -13951,7 +13950,7 @@ function gateAutofit(root) {
       try {
         // v23696 — A GRADIENT CHIP IS A GROUND, AND THIS WALK WAS BLIND TO IT.
         //
-        // Nick: "Air Canada airport code on the left is blue" and "Porter cannot
+        // and "Porter cannot
         // see the airport code same blue".
         //
         // Measured on the live YQM/4 Air Canada gate, which is what finally
@@ -13991,7 +13990,7 @@ function gateAutofit(root) {
         // The ink the LABEL is wearing on this same chip. Whatever the chip's
         // own CSS chose is legible on it by construction, so this is a far
         // better last resort than a hardcoded near-black — which is exactly the
-        // "#16283C" that reads as the grey Nick has ruled out ("I do not want
+        // "#16283C" that reads as the grey the owner has ruled out ("I do not want
         // any gray wording"). On American's blue chip the label is white; the
         // code now goes white with it instead of dark-navy-on-blue.
         var _lblInk = '';
@@ -14013,7 +14012,7 @@ function gateAutofit(root) {
         // the probe output the whole time — those title codes carried
         // data-ca=null, meaning the accent pass had never touched them. I read
         // "0 brown" off the body codes and reported the brown as fixed three
-        // times while the element Nick was actually pointing at was painted
+        // times while the element the owner was actually pointing at was painted
         // here, untouched.
         //
         // A darkened gold IS brown; there is no shade of it that isn't. So the
@@ -14021,9 +14020,9 @@ function gateAutofit(root) {
         // of the board already uses as its light-mode ink (.bidsv2 / light-board
         // rules use #16283C), which clears contrast on light grounds and sits
         // far outside the brown band (hue 213).
-        // v23466 — THE CODE WEARS THE AIRLINE'S OWN COLOUR. Nick: 'my colors
-        // are gone from the Destination | YYZ the YYZ shouls be colored its
-        // not anymore'.
+        // v23466 — THE CODE WEARS THE AIRLINE'S OWN COLOUR.
+        //
+        // 
         //
         // The pass offered two inks: a gold #fca825 and, when gold missed the
         // 3:1 floor, a deep navy #16283C. On Air Canada the labels sit on a
@@ -14063,7 +14062,7 @@ function gateAutofit(root) {
           // the chip is painted var(--airline-accent) and contrast(accent,
           // accent) is 1.0 by definition — for those the label ink now answers
           // instead of the navy, which is the only neutral in the chain and the
-          // one Nick keeps rejecting.
+          // one the owner keeps rejecting.
           pick = (ca >= 3) ? _acc
                : (cb >= 3) ? bright
                : (_lblInk || (cd > cb ? deep : bright));
@@ -14076,7 +14075,7 @@ function gateAutofit(root) {
         el.style.setProperty('-webkit-text-fill-color', pick, 'important');
       } catch (e) {}
     });
-    // v23245 — THE CONTOUR IS VISIBLE FOR EVERY AIRLINE (Nick: 'That's it
+    // v23245 — THE CONTOUR IS VISIBLE FOR EVERY AIRLINE (s it
     // now for all airlines please'). The frame is border-color:
     // var(--airline-accent) on both columns, and an airline whose accent
     // matches its own backdrop erased it — measured on the PAL gate: navy
@@ -14106,16 +14105,16 @@ function gateAutofit(root) {
         // Set only — NEVER remove. Removing when the measured colour cleared
         // the floor un-did this pass's own earlier substitution, flipping the
         // frame between the invisible accent and the fallback on alternate
-        // autofit passes (caught in verification — the exact flash class Nick
+        // autofit passes (caught in verification — the exact flash class
         // flagged). A colour that clears the floor is left exactly as it is.
         if (_fcPick) [_fcL, _fcR].forEach(function (el) {
           el.style.setProperty('border-color', _fcPick, 'important');
         });
       }
     } catch (e) {}
-    // v23242 — THE NOSE-UP TRIM IS PER AIRCRAFT (Nick: 'i think tahts too
-    // much it may be dependant per aircraft / the CRJ 900 was def having an
-    // issue'). A slender fuselage exaggerates any applied angle — the Jazz
+    // v23242 — THE NOSE-UP TRIM IS PER AIRCRAFT
+    //
+    // A slender fuselage exaggerates any applied angle — the Jazz
     // CRJ900 art is 5.9:1 while a Dash 8 is ~4:1 — so the trim magnitude is
     // read off the art's own proportions: long thin jets take less. The sign
     // follows the facing class so the nose is always the end that rises.
@@ -14128,13 +14127,13 @@ function gateAutofit(root) {
           // v23248 — resolve the facing BEFORE choosing the trim's sign. The
           // build-time class was empty for any art missing from PLANE_FACING
           // (the F9 fleet), so this pass read faces-right and pitched the
-          // plane nose-DOWN (Nick's MIA F5 shot). _detectPlaneFacing is
+          // plane nose-DOWN. _detectPlaneFacing is
           // idempotent: known srcs return from the map, unknown ones get the
           // canvas heuristic — either way the class is current when read.
           try { if (typeof window._detectPlaneFacing === 'function') window._detectPlaneFacing(im); } catch (e2) {}
           var left = !!(shelf && shelf.classList.contains('g8-plane-faces-left'));
           var slender = (im.naturalWidth / im.naturalHeight) > 5;
-          // v23249 — trim eased 1.8/1.2 → 1.3/1.0 (Nick's MIA D1 shot: 'the
+          // v23249 — trim eased 1.8/1.2 → 1.3/1.0 (the owner's MIA D1 shot: 'the
           // other one is stalling' — 1.8° on the big A321 plates read as too
           // steep once the diving planes were levelled; his original ask was
           // 'slightly angled up, not much just a bit').
@@ -14144,7 +14143,7 @@ function gateAutofit(root) {
       }
       if (im.complete) _setPitch(); else im.addEventListener('load', _setPitch, { once: true });
     });
-    // HARMONIZE (Nick: 'the exact same') — after the fit, every title takes
+    // HARMONIZE — after the fit, every title takes
     // the smallest size any title landed on, so there is ONE number across
     // rail and strip, always, and it cannot drift between rebuilds.
     try {
@@ -14158,7 +14157,7 @@ function gateAutofit(root) {
         });
       }
     } catch (e) {}
-    // LEFT RAIL shelves (Nick-approved v22355 behaviour, now via the helper).
+    // LEFT RAIL shelves.
     // Status value included since v22359 — its two stacked bilingual lines
     // are handled by the height check (offsetHeight measures both lines).
     // v23115b — the boarding strip is the same shelf component sideways, so
@@ -14190,7 +14189,7 @@ function gateAutofit(root) {
       // card edge on the AC rotation.
       if (row.closest && row.closest('.v2-rc-fi-pane-merged')) return;
       // ALL value cells in the row — the revised row is two label|value
-      // pairs on one line (Nick's sketch), each time at full row height.
+      // pairs on one line, each time at full row height.
       row.querySelectorAll('.v2-rc-fi-tval').forEach(function (val) {
         _boxAssign(val, val.clientWidth, Math.floor((row.clientHeight - 6) * 0.8), null, true);
       });
@@ -14201,7 +14200,7 @@ function gateAutofit(root) {
         _boxAssign(lbl, lbl.clientWidth, Math.floor((row.clientHeight - 6) * 0.44), null, true);
       });
     });
-    // v23246 — THE MERGED MODULE'S LINES FILL THE CARD (Nick's MIA D20 shot:
+    // v23246 — THE MERGED MODULE'S LINES FILL THE CARD (the owner's MIA D20 shot:
     // 'The text in the same panel needs to fill out to the borders'). The
     // three stacked lines rendered at the stylesheet's fixed clamps and left
     // half the card empty. The clamps stay as the BASE; all three then grow
@@ -14216,12 +14215,12 @@ function gateAutofit(root) {
       // v23256 — the budget is the VALUE CELL's own content width: it is the
       // element that carries overflow:hidden, and it is NARROWER than the
       // textcol (whose clientWidth includes its 15px padding) — measuring
-      // the textcol passed lines the value cell then clipped (Nick's photo:
+      // the textcol passed lines the value cell then clipped (the owner's photo:
       // 'YUL' losing its L). A 6px gutter keeps it snug, not grazing.
       var availW = Math.floor(val.clientWidth) - 6;
       if (availW < 60) return;
-      // v23258 — TRUE CONTENT WIDTH, via a Range (Nick: 'Fill the space
-      // please'). scrollWidth is floored at the element's own box width, so
+      // v23258 — TRUE CONTENT WIDTH, via a Range
+      // scrollWidth is floored at the element's own box width, so
       // a short line in a full-width grid cell measured as 'already full'
       // and the grow pass bailed — the card sat half-empty at base sizes.
       var _lnW = function (ln) {
@@ -14251,7 +14250,7 @@ function gateAutofit(root) {
       // linearly with font-size (hinting, spacing, bold runs), so the
       // projected factor could land a long delayed-status line a few percent
       // past the card edge — and these lines wear overflow:visible, so the
-      // excess SPILLED (Nick's photo: 'En retard' and the struck old time
+      // excess SPILLED (the owner's photo: 'En retard' and the struck old time
       // ran off the card). Re-measure (true content width) and shrink until
       // every line sits inside the gutter target; runs whether or not the
       // grow branch fired, so a line overflowing at base size is pulled in.
@@ -14265,8 +14264,8 @@ function gateAutofit(root) {
         });
       }
     });
-    // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL (Nick: 'FIX THE NUMBERS
-    // BOARDING IS ATTROCIOUS'). His shot: an AC express final call whose
+    // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL
+    // His shot: an AC express final call whose
     // zones value is '3 • 4 • 5 • 6' — the CSS clamp sizes purely off
     // viewport height, so a four-token value blew straight through the
     // column and the outer digits and dots were sliced off at both edges.
@@ -14315,15 +14314,15 @@ function gateAutofit(root) {
       // full client box was sliding under the gate tab.
       var w = box.clientWidth - 52 - 30;
       var h = box.clientHeight;
-      // v23124 (Nick: 'size fit as much as you can there is still lots of
-      // room') — the value's height budget grows 0.66→0.74 and the title
+      // v23124
+      // — the value's height budget grows 0.66→0.74 and the title
       // 0.24→0.26; measured ~30px of dead air above and below the values
       // in a 171px shelf. The fitter still shrinks to fit, so nothing can
       // overflow — the budgets only raise the ceiling.
       if (lbl) _boxAssign(lbl, w, Math.floor(h * 0.30), null, false);
-      if (val) _boxAssign(val, w, Math.floor(h * 0.84), null, false);   // v23126 — fill the plate (Nick's overlay)
+      if (val) _boxAssign(val, w, Math.floor(h * 0.84), null, false);   // v23126 — fill the plate
     });
-    // v23126 — BAND CENTRE FILLS ITS SLOT (Nick's overlay). Fitted against
+    // v23126 — BAND CENTRE FILLS ITS SLOT. Fitted against
     // the mid's real width minus emblem and star, so it is as big as actually
     // fits and never clips. (First cut sat in the clock-tick IIFE where
     // _boxAssign doesn't exist — the try/catch ate the ReferenceError and
@@ -14342,7 +14341,7 @@ function gateAutofit(root) {
       var w = box.clientWidth - 128; // 24px left + 104px right padding
       var bw = bil ? (bil.offsetWidth + 16) : 0;
       // v23119 — on a boarding takeover the band is TIGHTER but the gate
-      // number is NOT (Nick: 'without changing gate size'). The height feed
+      // number is NOT. The height feed
       // stays at the FULL band's budget, so the number keeps its off-takeover
       // size and simply sits proud in the shorter block; only its box got
       // slimmer. Off-takeover nothing changes.
@@ -14355,8 +14354,8 @@ function gateAutofit(root) {
     // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
     // production): wrap allowed, then the largest size whose wrapped lines
     // fit the shelf. Shares the shelf with the Operated-By row when present.
-    // v22732 — FIT THE PANEL, NOT THE SHELF (Nick: 'these are not fitting
-    // correctly', Delta YHZ 57: 'expected | prévu' rendered underneath
+    // v22732 — FIT THE PANEL, NOT THE SHELF
+    // Delta YHZ 57: 'expected | prévu' rendered underneath
     // 'Operated By'). The panel that actually holds this text is .v2-rc-acb,
     // sized by the v22686 pass to match the info pane (measured 100px) —
     // while its SHELF is far taller. Fitting to the shelf handed the type
@@ -14367,7 +14366,7 @@ function gateAutofit(root) {
     // line and the Operated-By line divide its height BETWEEN them: the
     // moment one is resized the other's box changes, and the size chosen
     // during pass 1 is measured against geometry that no longer exists once
-    // pass 1 finishes. Probed live on Nick's Delta YHZ 57: the fitter had
+    // pass 1 finishes. Probed live on the owner's Delta YHZ 57: the fitter had
     // settled on 31.31px, leaving 50px of content inside a 41px box with
     // overflow:hidden — 'expected | prévu' clipped and colliding with the
     // row below, exactly what he reported. Pass 2 re-measures the settled
@@ -14406,7 +14405,7 @@ function gateAutofit(root) {
         delete el.dataset.faKey;
         if (op) delete op.dataset.faKey;
       } catch (e) {}
-      // v22857 — THE TYPE LINE IS THE HERO (Nick's crop: tiny 'Airbus
+      // v22857 — THE TYPE LINE IS THE HERO (the owner's crop: tiny 'Airbus
       // A320' under a huge Operated-By, 'not the first time i mention
       // thise'). The old order fitted Operated-By FIRST at up to 42% of
       // the panel; the type block — which wraps to three lines with
@@ -14434,7 +14433,7 @@ function gateAutofit(root) {
       var opAvail = Math.max(12, Math.floor(h - el.offsetHeight - 6));
       if (op) _boxAssign(op, w, Math.min(opAvail, Math.floor(h * 0.30)), null, false, true);
       // v22866 — width can still squeeze a long type+registration line
-      // below the Operated-By row's size (Nick's Alaska 'Embraer 175 |
+      // below the Operated-By row's size (the owner's Alaska 'Embraer 175 |
       // N633QX' crop: 'seriously cannot see that at all'). The hierarchy
       // is enforced by measurement: the Operated-By row may never render
       // larger than 85% of the type line's settled size.
@@ -14456,7 +14455,7 @@ function gateAutofit(root) {
       _boxAssign(el, Math.floor(shelf.clientWidth * 0.88), Math.floor(shelf.clientHeight * 0.7), null, false);
     });
     // v22686 — THE THIRD PANEL MATCHES THE OTHER TWO BY MEASUREMENT.
-    // Nick: 'same size as the other 2 and alligned' + 'The panels are not
+    // + 'The panels are not
     // the same size either'. CSS could not deliver this: the fi-table
     // renders ~27px narrower than its shelf's content box (measured live;
     // clamp arithmetic never explains it because the discrepancy is the
@@ -14481,7 +14480,7 @@ function gateAutofit(root) {
       acb.style.setProperty('margin-left', Math.max(0, Math.round(pr.left - host.left - hostPad)) + 'px', 'important');
       acb.style.setProperty('width', Math.round(pr.width) + 'px', 'important');
       // v22821 — on AC the bottom plate matches the LEFT RAIL rows, not the
-      // info panes (Nick: 'the bottom panels to at least match'): the shelf
+      // info panes: the shelf
       // is rail-row-sized once the column carries the rail's bottom padding,
       // so the panel fills it and the stylesheet supplies the rail's plate
       // insets. Copying the pane height here would pin it back to the pane's
@@ -14502,7 +14501,7 @@ function gateAutofit(root) {
 }
 
 // v23476 — THE BILINGUAL GATE TITLES FIT INSTEAD OF BEING CUT.
-// Nick, on the live Moncton gate: "the top banner sticks out still". Measured
+// Measured
 // on the shipped board: 'Boarding | Embarquement' overflows its pill by 17px at
 // 1920x1080, 18px at 1600x900 and 22px at 1366x768, and 'Arriving From | En
 // provenance de' by up to 14px — so the board has been painting 'Embarquemen'.
@@ -14521,7 +14520,7 @@ function gateAutofit(root) {
 // on text+width like the Accor fitter, and shrink-only — a title that already
 // fits is never touched.
 /* v23494 — THE AIRPORT CODE KEEPS THE CARRIER'S COLOUR AND STAYS READABLE.
-   Nick, twice: "clearly not accents", then "Porter Code bottom right is still blue
+ then "Porter Code bottom right is still blue
    its almost same color as background". Both are true at once and they pull against
    each other. v23476 made the codes wear var(--airline-accent-ink) so they stop being
    a flat blue and become the CARRIER's colour — which is what he asked for. But an
@@ -14603,8 +14602,8 @@ function _gateCodeInk(root) {
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
       if (!el.isConnected || !el.getClientRects().length) continue;
-      // v23502 — DO NOT STRIP AND RE-APPLY ON EVERY PASS. Nick: "the airport codes
-      // keep flickering". This runs from gateAutofit, which fires on paint, font
+      // v23502 — DO NOT STRIP AND RE-APPLY ON EVERY PASS.
+      // This runs from gateAutofit, which fires on paint, font
       // settle, resize and a 5s heartbeat; removing the override to re-measure and
       // then putting it back repainted the code in its ORIGINAL colour for a frame
       // every single time. The un-lifted value is remembered on the element the
@@ -14623,8 +14622,8 @@ function _gateCodeInk(root) {
       if (!fg) continue;
       var base = _ocCr(fg, bg);
       if (base >= FLOOR) {                             // already legible — the accent stands
-        // v23502c — ONLY EVER UNDO OUR OWN OVERRIDE. Nick: "The airport code no
-        // longer has color". Calling removeProperty unconditionally stripped the
+        // v23502c — ONLY EVER UNDO OUR OWN OVERRIDE.
+        // Calling removeProperty unconditionally stripped the
         // inline colour the BOARD itself had set, so a code that was already
         // perfectly legible lost its accent the moment this pass looked at it —
         // and because the pass then ran again, it came back: "its still
@@ -14672,8 +14671,8 @@ function _gateTitleFit(root) {
         parts[j].style.removeProperty('font-size');           // re-measure clean
         bases.push(parseFloat(getComputedStyle(parts[j]).fontSize) || 16);
       }
-      // v23490 — SHRINK A LITTLE, THEN STACK. Nick: "Why are the title banners so
-      // low and or so small in height?". The floor was 0.62, and on the longest
+      // v23490 — SHRINK A LITTLE, THEN STACK.
+      // The floor was 0.62, and on the longest
       // title the fitter spent all of it and still lost: measured on WestJet gate
       // 1 at 1675x880, 'Your aircraft has arrived at the gate | Votre avion est
       // arrivé à la porte' came out at 8.18px AND still overflowed by 77px. So it
@@ -14705,8 +14704,8 @@ function _gateTitleFit(root) {
   } catch (e) {}
 }
 
-// ═══ BOARD AUTOFIT ═══ (Nick: 'row sizes everywhere to check and adjust',
-// 'you take the whole square inch') — the gate's measure-the-box law applied
+// ═══ BOARD AUTOFIT ═══
+// Use the whole square inch — the gate's measure-the-box law applied
 // to the MAIN BOARD table and the BAGS list:
 //   1. rows STRETCH to consume the real space above the ticker (no dead
 //      band), capped at 1.5× the theme's base row height;
@@ -14751,7 +14750,7 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
     // colSize is already >= the theme size whenever the theme size fits
     // every cell, so the -1 render slack is the only deliberate deviation.
     var finPx = Math.max(12, colSize - 1);
-    // HYSTERESIS (Nick: 'fighting with itself') at COLUMN level: if the
+    // HYSTERESIS at COLUMN level: if the
     // whole column already wears one size within 1px of the target, leave
     // it — per-cell hysteresis left mixed sizes inside a column.
     var curCol = parseFloat(cells[0] && cells[0].style.fontSize) || 0;
@@ -14763,12 +14762,12 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
   return null;
 }
 // ── v22743: FLIGHT NUMBERS FIT INSTEAD OF CLIPPING ──────────────────────────
-// Nick photographed 'WN43…' / 'DL24…' on the Tampa board; the audit measured
+// the owner photographed 'WN43…' / 'DL24…' on the Tampa board; the audit measured
 // it — DL2406 clipped by 7px, WN4041 by 10, WN4754 by 15 at 28px type. The
 // column holds a 5-character number but not the 6-character ones US carriers
 // fly all day, and nothing caught the overflow: the board autofit is switched
 // off, and this cell was deliberately removed from the legacy shrinker after
-// the two fitters oscillated against each other (Nick: 'still doing it').
+// the two fitters oscillated against each other.
 //
 // Widening the column was tried first and made it WORSE — the table
 // redistributed and the clipping grew to 24px — so the text is fitted instead.
@@ -14832,16 +14831,16 @@ try {
   })();
 } catch (e) {}
 
-// TEMPORARY KILL SWITCH (Nick: 'is there a temporary fix cause I need to
-// go and this is not working right now'). false = the board renders at the
+// TEMPORARY KILL SWITCH
+// false = the board renders at the
 // theme's own stock CSS sizes, exactly as it did before the fitter existed:
 // no measuring, no fitting, no geometry writes, nothing that can move.
 // The banner-overflow guard and wordmark backstop below stay active.
-// Re-enable ONLY with Nick's sign-off after harness proof.
+// Re-enable ONLY with the owner's sign-off after harness proof.
 var BOARD_AUTOFIT_ENABLED = false;
 
 // THE HOTEL NAME IN THE BUBBLE IS ONE LINE, WHOLE. Not wrapped to a second
-// line (Nick: 'in the bubble the hotel name cuts to the enxt line big NO NO'),
+// line,
 // and not ellipsised either — which leaves exactly one lever: the longest
 // names step down until they fit the chip's width. Keyed on text+width, so a
 // given name in a given bubble always renders at the same size; it is fitted
@@ -14851,8 +14850,8 @@ var BOARD_AUTOFIT_ENABLED = false;
 function _axrFitBubbleNames() {
   // v22717 — the never-split policy now actually has its fitter everywhere:
   // page-1 property name and the page-2/3 context name shrink to one line
-  // exactly like the bubble names (Nick: 'Names should not come across rows
-  // like that'). CSS gives them white-space:nowrap; this supplies the fit.
+  // exactly like the bubble names
+  // CSS gives them white-space:nowrap; this supplies the fit.
   var names = document.querySelectorAll('.axr-bub-name, .axr-name, .axr-page-ctx');
   for (var i = 0; i < names.length; i++) {
     var el = names[i];
@@ -14873,8 +14872,8 @@ function _axrFitBubbleNames() {
 }
 
 /* ── v23502 — THE AIRPORT LOGO FILLS THE ROOM IT ACTUALLY HAS ──────────────
-   Nick: "Can we do bigger a bit it should actualy adjust to fit as big as
-   possible", and the constraint that makes it tractable — "without taking over".
+
+and the constraint that makes it tractable — "without taking over".
 
    Every size before this was a number I picked: 84px in v23496, 104px in v23500.
    A fixed number cannot be right, because the room depends on the viewport, on
@@ -14898,7 +14897,7 @@ function _axrFitBubbleNames() {
    Shrink-only relative to the CSS ceiling it never exceeds, cached on the inputs
    so the common case is two getBoundingClientRect reads and no write. */
 /* ── v23502 — NO CELL IS LEFT UNREADABLE ON A LIGHT ROW ────────────────────
-   Nick: "Yellow with white does not go wel".
+
 
    Measured on the live board, the two delayed rows disagreed with each other:
 
@@ -14957,7 +14956,7 @@ function _fidsRowInk(root) {
         var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
         var up = _ocLum(bg) < 0.5;
         // White or near-black text has no hue to preserve, so there is nothing to
-        // be gained by stopping at the minimum. Nick's "yellow with white does not
+        // be gained by stopping at the minimum. the owner's "yellow with white does not
         // go wel" was white at 1.44:1; lifting it only to 4.6 leaves a washy mid
         // grey on the yellow. Achromatic ink goes all the way to a proper dark.
         var goal = hsl[1] < 0.12 ? 8.5 : TARGET;
@@ -14990,7 +14989,7 @@ function _fidsAirportLogoFit() {
     if (br.height < 40 || br.width < 200) return;
 
     var GAP = 28;   // clear air the logo must leave beside each neighbour
-    // v23502b — Nick: "Logos may need to be slightly smaller but not by much".
+    // v23502b —
     // 8px of vertical padding filled 88% of the band (320x112). 14px takes it to
     // 100px / 78% — a step down, not a retreat to the 84px it started at. This is
     // the one number to turn if it still wants nudging: bigger VPAD, smaller logo.
@@ -15060,8 +15059,8 @@ function boardAutofit(full) {
     if (BOARD_AUTOFIT_ENABLED && tbl && tbl.offsetParent) {
       var rows = Array.prototype.slice.call(tbl.querySelectorAll('tbody tr'));
       if (rows.length) {
-        // 1 — the ROW IS THE FIXED OBJECT (Nick: 'they should never ever
-        // move'). The AUTHORITATIVE height is the density setting's theme
+        // 1 — the ROW IS THE FIXED OBJECT
+        // The AUTHORITATIVE height is the density setting's theme
         // value — NEVER a measurement of a row our own text may have grown
         // (measuring after a fit recorded inflated heights and the rows
         // crept). Rows are PINNED to it; the text conforms.
@@ -15070,7 +15069,7 @@ function boardAutofit(full) {
           // Natural height — but only trust a SETTLED measurement. The old
           // record-once could capture a collapsed row on a half-loaded page
           // (~20px) and every fit forever capped against that phantom —
-          // Nick's 'its tiny'. Keep the largest sane measurement seen.
+          // the owner's 'its tiny'. Keep the largest sane measurement seen.
           rows.forEach(function (r) { r.style.removeProperty('height'); });
           var _meas = rows[0].offsetHeight || 0;
           var _stored = parseFloat(tbl.dataset.fidsBaseRowH) || 0;
@@ -15098,8 +15097,8 @@ function boardAutofit(full) {
         // forever. Geometry is keyed to the FLIGHT SET + container: the same
         // flights keep the same columns whatever the language or flip shows;
         // fonts adapt inside them.
-        // SEPARATE BOARDS PER LANGUAGE (Nick: 'the boards should be built
-        // separately in all languages — all different boards'). Each
+        // SEPARATE BOARDS PER LANGUAGE
+        // Each
         // language's board is measured ONCE per flight set — its own column
         // widths, its own fonts — and cached. The 12 s language cycle then
         // APPLIES that language's prebuilt geometry atomically: no probing,
@@ -15300,7 +15299,7 @@ function boardAutofit(full) {
     } catch (e) {}
     var list = document.querySelector('.bidsv2-flight-list');
     if (BOARD_AUTOFIT_ENABLED && list && list.offsetParent) {
-      // The ROW is the law and the TEXT serves it (Nick, standing rule for
+      // The ROW is the law and the TEXT serves it (the owner, standing rule for
       // months: 'its the row and the row size — the text fits inside, not
       // the other way around'). The old code recorded a 'natural' height
       // ONCE and fitted every later pass against that ghost, so switching
@@ -15308,11 +15307,11 @@ function boardAutofit(full) {
       // whatever height happened to be on screen at first paint — row size
       // changed nothing, which is exactly his complaint. The freeze existed
       // because rows once auto-grew with content and measuring an inflated
-      // row spiraled the fit ('supposed to be small its extra large');
+      // row spiraled the fit (a row set to small rendered extra large);
       // rows are HARD-FIXED by CSS now (68/98/132, overflow hidden), that
       // spiral is impossible, and the honest measure is the row itself —
       // passing no fixed height makes _boardFitCol read each cell's own
-      // live row. Places still never split across lines (Nick) — every
+      // live row. Places still never split across lines — every
       // BAGS lane fits on ONE line, whatever size that costs.
       ['.bidsv2-flight-num', '.bidsv2-col-from', '.bidsv2-col-time', '.bidsv2-col-status'].forEach(function (sel) {
         _boardFitCol(Array.prototype.slice.call(list.querySelectorAll('.bidsv2-flight-row ' + sel)), 0.55, false, null);
@@ -15332,7 +15331,7 @@ try {
 } catch (e) {}
 try { window.addEventListener('resize', function () { setTimeout(function () { boardAutofit(true); }, 120); }); } catch (e) {}
 
-// ── Banner style registry (Nick: merged time+airport banner, "changeable by
+// ── Banner style registry (the owner: merged time+airport banner, "changeable by
 // destination or screen", Acadian flag pinned for Moncton). Resolution:
 // localStorage override (fids_banner_style_<IATA>_<SCREEN>, then
 // fids_banner_style_<IATA>) → registry per-airport (a string, or an object
@@ -15343,7 +15342,7 @@ try { window.addEventListener('resize', function () { setTimeout(function () { b
 // deploy out of step, the banner falls back to today's 'tabs' look,
 // never a broken one.
 var BANNER_STYLE = {
-  // Concept A ('Silk', Nick-approved in Figma): one continuous band, colours
+  // Concept A ('Silk', approved in Figma): one continuous band, colours
   // flow like fabric. Moncton's variant IS the Acadian tricolore flowing
   // blue → white → red with the gold star at the clock. 'tabs' (the old
   // three-tab banner) remains available as a named style and is the
@@ -15352,12 +15351,12 @@ var BANNER_STYLE = {
   '*': 'silk'
 };
 // Per-airport silk accent — the band's tail colour, keyed to the airport's
-// own logo (Nick: 'match the logo on the top'). localStorage override:
+// own logo. localStorage override:
 // fids_banner_accent_<IATA>. Unlisted airports fall back to the gold.
 var BANNER_ACCENT = {
   'TPA': '#C8102E'   // Tampa roundel red
 };
-// Hand-set palettes are an OVERRIDE ONLY. Nick: 'it doesn't work for all
+// Hand-set palettes are an OVERRIDE ONLY. t work for all
 // airports… it should be automatic.' Right — so the band reads the colours
 // out of whatever logo the airport has, and this table stays empty unless
 // some airport's logo genuinely defies extraction.
@@ -15398,7 +15397,7 @@ function _hslToRgb(h, s, l) {
   else { r = c; b = x; }
   return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
 }
-// Nick: 'you can probably go even deeper in colour'. Logos carry a lot of
+// Logos carry a lot of
 // pale anti-aliased edge tint, and once a tint survives as a distinct stop
 // the band gets a washed-out patch in it. This pushes every stop toward the
 // saturated version of the hue it already is — the hue is never changed, so
@@ -15423,7 +15422,7 @@ function _hex(r, g, b) {
 // colour — the band starts there so the white board label has something to
 // sit on — then walk the colour wheel in ONE direction from that anchor.
 // On Tampa's roundel that yields deep blue → light blue → orange → red,
-// which is the order Nick read off the logo himself.
+// which is the order the owner read off the logo himself.
 function _orderBandColours(cands) {
   if (cands.length < 2) return cands;
   var sorted = cands.slice().sort(function (a, b) { return a.lum - b.lum; });
@@ -15437,7 +15436,7 @@ function _orderBandColours(cands) {
   return [anchor].concat(rest);
 }
 // Read the brand colours a VECTOR logo declares about itself, instead of
-// guessing them back out of a rasterised copy. Nick, looking at Tampa on the
+// guessing them back out of a rasterised copy. the owner, looking at Tampa on the
 // board: 'I see 4 different colors in the logo which I dont see in the image
 // — if it was for me it would follow the blue light blue orange and red'. He
 // was right, and the file agrees with him: tampa's SVG declares exactly
@@ -15707,8 +15706,8 @@ function _applyBannerStyle(iata, screen) {
         document.body.style.setProperty('--fids-silk-accent', acc);
         // Tail TINT — the accent blended 84% toward white, so the logo sits
         // on a near-white wash of the airport's own colour instead of a
-        // pasted-looking plate (Nick: 'looks pasted there and colors dont
-        // match').
+        // pasted-looking plate
+        // 
         try {
           var m = acc.replace('#', '');
           if (m.length === 3) { m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2]; }
@@ -15739,12 +15738,12 @@ function renderDedicatedScreen() {
     document.body.classList.add('uxg-gate-mode');
     // Also here, not only on the switch above: a board loaded straight into
     // gate mode (gids.html?gate=4) never runs that path, and that is the case
-    // in Nick's recording.
+    // in the owner's recording.
     _applyScreenChrome();
   }
   // Light/dark board flag on DEDICATED screens too — it only ran in the main
   // board's renderer, so every light-board rule (Revised dashes, adaptive
-  // headers, status inks) silently skipped gate/baggage screens (Nick:
+  // headers, status inks) silently skipped gate/baggage screens (
   // 'they're still white the hyphens').
   try { document.body.classList.toggle('fids-light-board', wordmarkVariant() === 'dark'); } catch (e) {}
   try {
@@ -15895,8 +15894,8 @@ const gView = document.getElementById('gateView');
       // Use AeroDataBox scheduled arrival time if available, else estimate
       let arrTimeStr = '';
       let durationStr = '';
-      // SANITY GUARD (Nick: 'Why is the departure time and arrival time the
-      // same?'): some feed records carry the DEPARTURE time in the arrival
+      // SANITY GUARD
+      // : some feed records carry the DEPARTURE time in the arrival
       // slot — every YQM gate showed e.g. 'Departure 6:15pm / Arrival 6:15pm'.
       // No real flight takes under 20 minutes, so a scheduled arrival that
       // close to (or before) the scheduled departure is bogus data → fall
@@ -15908,7 +15907,7 @@ const gView = document.getElementById('gateView');
         const _arrLocal = currentFlight._arrSchedLocal;
         arrTimeStr = adbHHMM(_arrLocal) || '';
         // A revised (later) departure makes the ORIGINAL arrival impossible —
-        // the airplane still needs the same block time (Nick's gate 4: dep
+        // the airplane still needs the same block time (the owner's gate 4: dep
         // revised to 6:20pm Moncton while arrival still read 6:20pm Montréal,
         // i.e. landing the minute it takes off). Until the feed revises the
         // arrival itself, shift the displayed arrival by the same delay.
@@ -15960,7 +15959,7 @@ const gView = document.getElementById('gateView');
         // 24-HOUR output, same shape as adbHHMM on the primary path. The old
         // getTimeInTz here emitted '08:15 PM' and the downstream 12-hour
         // formatters re-parsed the '08:15' as morning — Moncton 6:15 PM
-        // 'arrived' in Calgary at 8:15 AM (Nick).
+        // 'arrived' in Calgary at 8:15 AM.
         arrTimeStr = arrivalTs
           ? new Date(arrivalTs).toLocaleTimeString('en-GB', { timeZone: arrTz, hour: '2-digit', minute: '2-digit', hour12: false })
           : '';
@@ -16000,8 +15999,8 @@ const gView = document.getElementById('gateView');
       // 8-400, PD2381 arrived on the same type at the same gate and is sitting
       // there with status 'arrived' — and the ONLY filter rejecting it was
       // this window. The panel then had no incoming flight to show, which is
-      // what the departure-card fallback was bolted on to paper over (Nick:
-      // 'I asked for the incoming flight info NOT NOTHING').
+      // what the departure-card fallback was bolted on to paper over; the
+      // requirement is that the panel show the incoming flight, not nothing.
       // 20 hours covers a remain-overnight without reaching back to the
       // previous day's rotation. Everything else still applies — same gate,
       // same airline family, same aircraft type, not departed, arriving before
@@ -16041,7 +16040,7 @@ const gView = document.getElementById('gateView');
         // airframe for the next departure — and the ENTIRE right rail is built
         // from that one object, so the map drew its route, the plate showed its
         // type, and the card printed its cancelled status. Measured on YQM
-        // gate 2 (Nick: 'its literally fake info … nothing matches anymore'):
+        // gate 2:
         // PB925 to Wabush was pairing with PB923 from Deer Lake, CANCELLED, and
         // the rail drew YQM->YDF for a flight going to YWK.
         // v23303 is what made it reachable: widening the window 6h -> 20h for
@@ -16073,7 +16072,7 @@ const gView = document.getElementById('gateView');
         && /^(reg-lookup|flight-lookup)$/.test(String(window._gateInbound._inboundSource || ''))
         && window._gateInbound._forOutbound === currentFlight.flight) ? window._gateInbound : null;
       const inboundFlight = _verifiedInbound || _gateMatchFallback;
-      // v22928 — A SHARED GATE IS NOT A SHARED AIRFRAME (Nick, on YQM gate 4:
+      // v22928 — A SHARED GATE IS NOT A SHARED AIRFRAME (the owner, on YQM gate 4:
       // 'this is 2 different aircraft'). _gateMatchFallback picks the most
       // recent arrival at this gate, which is fine for showing that something
       // is inbound — but it was also supplying the aircraft IDENTITY, and the
@@ -16093,7 +16092,7 @@ const gView = document.getElementById('gateView');
       // PANEL PARITY for the 60 s numbers poll: when the loadFlight linking
       // never lands (quota, timing), the panel still shows the gate-match
       // fallback — but window._gateInbound stays null, so the poll idled and
-      // the shelf sat regless forever (Nick's PD2293 at v22382: 'currently i
+      // the shelf sat regless forever (the owner's PD2293 at v22382: 'currently i
       // have no registration'). Publish the EXACT object the panel rendered;
       // the poll enriches it in place, so the fetched tail is what the next
       // render reads.
@@ -16270,7 +16269,7 @@ const gView = document.getElementById('gateView');
       // poll) happened to change at the same moment — which is why the screen
       // looked "one click behind" instead of simply stuck.
       var _langTag = (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '';
-      // v23166 — THE KEY IS RE-READ AFTER THE BUILD, NOT ONLY BEFORE IT (Nick:
+      // v23166 — THE KEY IS RE-READ AFTER THE BUILD, NOT ONLY BEFORE IT (
       // 'flashes and glitches... especially on gate'). uxgGateHtml carries an
       // inbound delay over onto currentFlight.upd while it builds (~9079) — it
       // WRITES a field this key READS. So the key that authorised the rebuild
@@ -16338,7 +16337,7 @@ const gView = document.getElementById('gateView');
         // duplicate left in the DOM made getElementById hand back a node
         // Leaflet was never bound to. We then detached the WRONG node and
         // innerHTML wiped the real live container, so the map vanished while
-        // gateMap still pointed at it (Nick: 'map is glitching out').
+        // gateMap still pointed at it.
         var _savedMap = null;
         try {
           if (gateMap && typeof gateMap.getContainer === 'function') _savedMap = gateMap.getContainer();
@@ -16362,7 +16361,7 @@ const gView = document.getElementById('gateView');
         // drops the live carousel. A momentarily-blank airline field on a data
         // refresh must NOT: skipping preservation rebuilt the slot empty, and
         // the empty-slot refill then coerced the index to the bigcraft map —
-        // the 'ad flips to the map and back' storm Nick filmed near departure.
+        // the 'ad flips to the map and back' storm the owner filmed near departure.
         var _newGateAirline = (currentFlight.airline || '');
         var _gateAdAirlineSame = (!_newGateAirline || window._gateCurrentAirline === _newGateAirline);
         var _savedAd = document.getElementById('gateAdCarousel');
@@ -16370,8 +16369,8 @@ const gView = document.getElementById('gateView');
         if (_gateAdAirlineSame && _savedAd && _savedAd.firstChild) { _savedAd.remove(); }
         else { _savedAd = null; _savedAdLogo = null; }
         if (_savedAdLogo) { _savedAdLogo.remove(); }
-        // NO opacity dip on rebuild (Nick: 'the whole thing is still glitching
-        // in and out'). Every data-key change (inbound poll, status/upd tick)
+        // NO opacity dip on rebuild
+        // Every data-key change (inbound poll, status/upd tick)
         // rebuilds the gate view, and the old fade-to-0.7-and-back made the
         // WHOLE screen pulse each time. The map and ad carousel are already
         // preserved across the rebuild, so the swap is seamless — keep it at
@@ -16406,8 +16405,8 @@ const gView = document.getElementById('gateView');
               try {
                 var _wmCol = document.querySelector('.gad-map-col-v2');
                 var _wmMap = _wmCol && _wmCol.querySelector('.v2-rc-shelf-map');
-                // DEAD-BAND (Nick: 'the panels move every few seconds … the
-                // maps'). This runs every 2s and re-measures the MAP shelf; the
+                // DEAD-BAND
+                // This runs every 2s and re-measures the MAP shelf; the
                 // Leaflet map's height/width jitters by a pixel or two as tiles
                 // settle, which used to rewrite --gate-wm-top / --gate-rcw on
                 // every tick and visibly nudge the watermark band + banner gate
@@ -16431,9 +16430,9 @@ const gView = document.getElementById('gateView');
                 }
               } catch (e) {}
             };
-            // v23166 — SKIP WHILE THIS BOARD IS OFF SCREEN (Nick: 'I dont
-            // understand why multiple pages load instead of loading what is
-            // asked for').
+            // v23166 — SKIP WHILE THIS BOARD IS OFF SCREEN
+            //
+            // 
             //
             // rotate.html keeps ALL THREE boards alive at once so switching is
             // instant. That only works if a hidden board goes quiet — and this
@@ -16532,11 +16531,11 @@ const gView = document.getElementById('gateView');
       // Key the map-rebuild ONLY on the aircraft identity (flight #, or the
       // registration when known) — NOT the status. Including status meant every
       // live status tick tore the map down and the plane glide restarted from
-      // the origin, so the aircraft appeared to take off over and over (Nick:
+      // the origin, so the aircraft appeared to take off over and over (
       // 'seen the plane pass 4 times in front of the terminal taking off'). The
       // glide already tracks real progress; a status change never needs a full
       // rebuild.
-      // v23127 — FLIGHT-FIRST identity (Nick's video: PD205's map vanishing
+      // v23127 — FLIGHT-FIRST identity (the owner's video: PD205's map vanishing
       // mid-approach, replaced by the emblem card). The id was reg-first: the
       // record starts as 'PD205', an ADS-B poll learns the tail and the id
       // becomes 'C-G...', the next feed refresh rebuilds the record without
@@ -16556,7 +16555,7 @@ const gView = document.getElementById('gateView');
       // then sat on the departure-route fallback (Porter gate 3 drew YHU
       // while the panel said 'From Ottawa (YOW)') with no plane glyph, and
       // the 60 s numbers poll (which needs window._gateInbound.flight) never
-      // ran — Nick: 'the route airplane there is none its not tracking it'.
+      // ran —
       if (window._gateLastFlightKey !== currentFlight.flight) {
         window._gateAircraftSpecs = null;
         window._gateAircraftImg = null;
@@ -16566,7 +16565,7 @@ const gView = document.getElementById('gateView');
         // v23263 — the MAP subject dies with the flight it belonged to. The
         // pos/prog guards and the camera's subject key all survived a gate
         // switch, so the previous gate's route could out-stare the new
-        // gate's own data (Nick's gate 46 wearing a YHZ→LGA line). Clear
+        // gate's own data. Clear
         // them and drop the map itself; the new render rebuilds it from
         // this flight's inbound within the same tick cascade.
         window._lastMapPosKey = null;
@@ -16613,14 +16612,14 @@ const gView = document.getElementById('gateView');
       window._gateInboundId = _newInbId;
       if (_inbChanged && gateMap) { try { gateMap.remove(); } catch(e){} gateMap = null; }
       window._gateCurrentFlight = currentFlight;
-      // Per-airline gate skin hook (Nick's brushed-metal AC): CSS keys off
+      // Per-airline gate skin hook: CSS keys off
       // body[data-gate-airline="XX"], refreshed every gate render.
       // v22906: honour the Hawaiian rebrand here too. Every other surface —
       // logo, banner, emblem, board row — already maps an AS-marketed
       // Hawaiian-branded flight to HA, but this attribute did not, so the
       // gate skin was styling those flights as Alaska while the rest of the
-      // screen carried Hawaiian's purple (Nick: 'Hawaiian is def not the
-      // right color ... its teal with purple its not their colors').
+      // screen carried Hawaiian's purple
+      // 
       try {
         var _skinCode = String(currentFlight.airline || '').toUpperCase();
         if (_skinCode === 'AS' && typeof isHawaiianBrandedFlight === 'function'
@@ -16628,7 +16627,7 @@ const gView = document.getElementById('gateView');
         document.body.setAttribute('data-gate-airline', _skinCode);
       } catch (e) {}
       // v23056 — AIR-FRANCE-STYLE FLYING AIRCRAFT, behind ?acsky=1.
-      // Measured off Nick's AF reference clip: the aircraft render is STATIC
+      // Measured off the owner's AF reference clip: the aircraft render is STATIC
       // but floats ~60px vertically on a ~15s ease-in-out loop, the sky and
       // its cloud banks never move at all, and a THIRD layer of cloud drifts
       // slowly (~32px/15s) IN FRONT of the aircraft. That foreground parallax
@@ -16636,7 +16635,7 @@ const gView = document.getElementById('gateView');
       // less of it, placed precisely. Off by default; nothing changes for any
       // existing screen until the flag is on.
       try {
-        // v23087 — ON BY DEFAULT on every gate, every airport, after Nick
+        // v23087 — ON BY DEFAULT on every gate, every airport, after
         // approved the five-layer scene ("Yes this is it!!!"). ?acsky=0 turns
         // it off again on any single screen without a deploy, which is the
         // rollback lever if one display ever has trouble with it. ?acsky=1
@@ -16701,7 +16700,7 @@ const gView = document.getElementById('gateView');
         // v23099 — never rebuild while the box is HIDDEN (the bigcraft ad
         // slide display:nones it for its whole dwell). A map built in a 0x0
         // box loads ~2 tiles, and the reveal then tears it down AGAIN — the
-        // measured 2.5s of solid grey in Nick's video. Skip: the tick after
+        // measured 2.5s of solid grey in the owner's video. Skip: the tick after
         // the reveal rebuilds once, on a visible box.
         if (mb.offsetParent === null) return;
         // Ensure the map container is visible and has dimensions
@@ -16763,13 +16762,13 @@ const gView = document.getElementById('gateView');
             // shared ctx builder computes distance-based time-progress and only
             // returns progress > 0 when the FEED says the flight is flying (or
             // real altitude exists) — the phantom-plane guard lives there. The
-            // mini map thus matches the big takeover ('map still not', Nick).
+            // mini map thus matches the big takeover ('map still not', the owner).
             var _estProg = 0;
             if (inb.status !== 'arrived' && inb.status !== 'landed' && inb._locIata) {
               // Compute from THIS inbound record directly — the shared ctx
               // builder reads window._gateInbound and silently swaps to the
               // OUTBOUND leg when that global isn't set yet, which made the
-              // glyph never appear here (Nick: 'map doesn't work still').
+              // glyph never appear here.
               try {
                 // ONE airborne answer for every consumer — the spec-signal
                 // interpreter (status enum, wheels-up runwayTime, live
@@ -16778,7 +16777,7 @@ const gView = document.getElementById('gateView');
                 var _arrTMini = inb._revTs || inb._sortTs || 0;
                 // STICKY airborne: once this flight has qualified, keep the
                 // glyph through polls whose object momentarily lacks the
-                // revision markers (Nick: 'no map again — not very stable').
+                // revision markers.
                 // Expires 15 min after the effective arrival.
                 try {
                   window._miniAirSticky = window._miniAirSticky || {};
@@ -16789,7 +16788,7 @@ const gView = document.getElementById('gateView');
                 // AIRPORT_COORDS ships in a SEPARATE file (airport-coords.js)
                 // — a display with a poisoned cache of it (transient 404 kept
                 // forever, the wordmark-token failure class) silently loses
-                // the estimator and shows pins-only, no plane (Nick's WS813
+                // the estimator and shows pins-only, no plane (the owner's WS813
                 // gate: 'its under way its early... no aircraft'). Fall back
                 // to the engine's own tables so ONE stale file can't kill it.
                 var _apcMini = window.AIRPORT_COORDS || {};
@@ -16829,7 +16828,7 @@ const gView = document.getElementById('gateView');
             }
             if (_estProg > 0) {
               // Bucket the key so the glyph advances every ~2% of the route.
-              // v23263 — the key carries the LEG, not just the bucket (Nick's
+              // v23263 — the key carries the LEG, not just the bucket (the owner's
               // gate 46: a YHZ→LGA route left standing on a Houston gate).
               // Two different flights can land on the same progress bucket,
               // and a bare 'inb-est-40' matching across a gate switch is
@@ -16860,7 +16859,7 @@ const gView = document.getElementById('gateView');
         } else {
           // v23263 — `!gateMap` alone kept whatever map was already standing:
           // switch gates while the new gate's inbound is unresolved and the
-          // OLD gate's route stayed painted indefinitely (Nick's gate 46
+          // OLD gate's route stayed painted indefinitely (the owner's gate 46
           // wearing DL5324's YHZ→LGA line). The outbound preview now claims
           // the map through the same keyed guard as every other state.
           var outKey = 'out-pins-' + apIata + '>' + (dstIata || '?');
@@ -16874,7 +16873,7 @@ const gView = document.getElementById('gateView');
       setTimeout(function() { if (!gateMap) tryInitMap(); else gateMap.invalidateSize(); }, 1500);
       setTimeout(function() { if (!gateMap) tryInitMap(); else gateMap.invalidateSize(); }, 3000);
       setTimeout(function() { if (gateMap) gateMap.invalidateSize(); }, 5000);
-      // MAP TICK (Nick's first-load video: the map came up on the OUTBOUND
+      // MAP TICK (the owner's first-load video: the map came up on the OUTBOUND
       // view — EWR pin — before the inbound was identified, and nothing ever
       // re-evaluated it until a full re-render). Expose this render's
       // tryInitMap; a global 10 s interval re-runs it. The posKey/progKey
@@ -16931,8 +16930,8 @@ const gView = document.getElementById('gateView');
         var _enrichFlight = currentFlight.flight;
         loadFlight(currentFlight.flight, _todayStr, _enrichIata).then(function(data) {
           if (!data || !currentFlight) return;
-          // GATE-SWITCH GUARD (Nick: 'using the same aircraft multiple
-          // flights', 'ottawa is showing thunder bay'): this callback
+          // GATE-SWITCH GUARD
+          // 'ottawa is showing thunder bay'): this callback
           // publishes to WINDOW globals — the equipment lock, the inbound,
           // the live position. If the display moved to another gate while
           // this fetch was in flight, those writes branded the NEW gate with
@@ -16945,8 +16944,8 @@ const gView = document.getElementById('gateView');
           } catch (e) {}
           var changed = false;
 
-          // ── REAL SCHEDULED ARRIVAL (Nick: 'thats not the arrival time
-          // regardless') ─────────────────────────────────────────────────
+          // ── REAL SCHEDULED ARRIVAL
+          // ─────────────────────────────────────────────────
           // The board feed row often lacks the arrival time or carries the
           // departure time in that slot. THIS record is the flight's own ADB
           // status — data.leg.arrival.scheduledTime is the airline's actual
@@ -16968,7 +16967,7 @@ const gView = document.getElementById('gateView');
                 // backfill re-fires each time — flagging 'changed' every time
                 // forced a full gate rebuild per refresh, which wiped the
                 // stashed live speed/altitude until the next 60 s poll
-                // (Nick: 'had data and no longer shows a speed an altitude').
+                //
                 var _bfKey = String(currentFlight.flight) + '|' + _todayStr + '|' + _legArrLocal;
                 if (window._gateArrBackfilled !== _bfKey) {
                   window._gateArrBackfilled = _bfKey;
@@ -17028,7 +17027,7 @@ const gView = document.getElementById('gateView');
             return 0;
           }
           _eqIncoming.regSource = data._regSource || (data.reg ? 'today' : '');
-          // FOREIGN-LEG EVICTION (Nick at v22392: 'Still showing C-GFCP').
+          // FOREIGN-LEG EVICTION.
           // The guard stops NEW contamination, but a tail delivered by the
           // pre-guard build survives in the monotonic equip lock, the 6 h
           // sticky, and on the row itself — all three keep resurrecting it
@@ -17090,8 +17089,8 @@ const gView = document.getElementById('gateView');
               var _eqAcStr = String(_eq.aircraftCode || '') + ' ' + String(_eq.aircraft || '');
               // Judge the REG and the TYPE separately — nulling the whole
               // record for a bad tail also erased a perfectly sane type and
-              // left the panel empty (Nick: 'clearly an E95 Porter flight
-              // ... but no aircraft'). Only the offending field is dropped.
+              // left the panel empty
+              // Only the offending field is dropped.
               var _regBad = !!_eq.reg && !_equipSaneForCarrier(_mktC, _opC, _eq.reg, '');
               var _typeBad = !!_eqAcStr.trim() && !_equipSaneForCarrier(_mktC, _opC, '', _eqAcStr);
               if (_regBad || _typeBad) {
@@ -17119,7 +17118,7 @@ const gView = document.getElementById('gateView');
           // confirmed one; the strict !currentFlight._reg guard blocked that
           // upgrade on same-object retries. Manual overrides (set before
           // enrichment) differ from _eq.reg and are left alone.
-          // POLICY (Nick: 'its a patch on a patch on a patch') — a
+          // POLICY — a
           // REGISTRATION is displayed ONLY when observed on THIS flight
           // TODAY. History-majority and latest-observation tails are guesses
           // about a DIFFERENT airplane, and they produced every phantom
@@ -17352,8 +17351,8 @@ const gView = document.getElementById('gateView');
     gView.style.display = 'none';
     bView.style.display = 'flex';
     // v23317 — THE BAGGAGE SCREEN SHOWS THE BELT'S CURRENT HOUR, NOT THE DAY
-    // (Nick: 'flights that are only coming in now or within the next few
-    // minutes maybe a half hour to hour window'). Belt linkage already
+    //
+    // Belt linkage already
     // existed; the time dimension did not — a 12:08am arrival sat on the
     // carousel screen at 5pm. A flight now shows only from one hour before
     // its effective arrival until 45 minutes after it (bags on the belt),
@@ -17398,9 +17397,8 @@ const gView = document.getElementById('gateView');
                              _logoSize === 'small' ? 9 : 7;
     // The measured fit runs away: few bags -> the row auto-fit scales them
     // BIG -> a tall row is measured -> even fewer 'fit' -> taller still, until
-    // rows are ~3x and the small/medium/large choice stops mattering (Nick:
-    // 'rows are 3 times larger... forget small medium large, it's all one big
-    // shit show'). Floor the per-page count at the size-based estimate so the
+    // rows are ~3x and the small/medium/large choice stops mattering entirely.
+    // Floor the per-page count at the size-based estimate so the
     // chosen size sets the row count and the rows can't balloon; the measured
     // fit can still ADD rows on a tall screen, never remove them.
     // Rows are now a HARD FIXED height per size (CSS), so the measured fit is
@@ -17432,12 +17430,12 @@ const gView = document.getElementById('gateView');
     // White wordmarks need DARK rows; light boards (Mist) now render the
     // baggage screen LIGHT, so they need the brand-color/dark artwork.
     // Default from the light-board flag (known BEFORE first paint — kills
-    // the white-on-white flash Nick saw), then let the measured canvas of
+    // the white-on-white flash the owner saw), then let the measured canvas of
     // the previous render override for custom themes.
     var _bWmVariant = document.body.classList.contains('fids-light-board') ? 'dark' : 'light';
     try {
       // v23114 — probe the ROW, not the screen. The wordmark sits on a row,
-      // and a custom palette can put white rows on a near-black screen (Nick's
+      // and a custom palette can put white rows on a near-black screen (the owner's
       // white-on-white board): measuring the screen then picked the white
       // artwork and the airline names disappeared into the rows. Average both
       // zebra shades, same as the FIDS wordmarkVariant() probe, so a palette
@@ -17461,11 +17459,11 @@ const gView = document.getElementById('gateView');
       }
     } catch (e) {}
 
-    // Bilingual column titles — 'Flight | Vol' etc. (Nick), never a
+    // Bilingual column titles — 'Flight | Vol' etc., never a
     // rotating single language, '#' clutter dropped so titles fit one line.
     // v22962 — headers follow `langs` (the airport picker chose the second
     // language and English was pinned first — the SIXTH airport-keyed picker
-    // found; Nick's paste had EN/FR headers over Spanish values).
+    // found; the owner's paste had EN/FR headers over Spanish values).
     function _bidsHdr(key) {
       var o = (typeof LS !== 'undefined' && LS[key]) || {};
       var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
@@ -17489,7 +17487,7 @@ const gView = document.getElementById('gateView');
       }
       return /^[A-C]$/.test(t) ? t : '';
     })() : '';
-    // v23327 — Nick's approved redesign, faithful to the approved mock:
+    // v23327 — the owner's approved redesign, faithful to the approved mock:
     // his accent pattern on the panel and his light ground per belt
     // (assets in /patterns), bars in the accent's own colours. Belts cycle
     // through the set so belts differ at every airport. Yellow and red
@@ -17563,12 +17561,12 @@ const gView = document.getElementById('gateView');
     // Airport hash offsets the start of the rotation; the belt number steps
     // through it — same scheme as the approved pattern rotation, so belts at
     // one airport always differ and airports differ from each other, across
-    // ALL of Nick's patterns.
+    // ALL of the owner's patterns.
     var _bidsApHash = 0;
     try { var _apStr = String(iata || ''); for (var _ai = 0; _ai < _apStr.length; _ai++) _bidsApHash = (_bidsApHash * 31 + _apStr.charCodeAt(_ai)) % 997; } catch (e) {}
     var _bidsAcc = _bidsAccents[(_bidsApHash + Math.max(1, _bidsBeltNo) - 1) % _bidsAccents.length];
-    // APPROVAL GATE (Nick rejected v23325 on sight): the redesign mounts ONLY
-    // when explicitly enabled — flip _BIDSV3_ON to true in code once Nick has
+    // APPROVAL GATE: the redesign mounts ONLY
+    // when explicitly enabled — flip _BIDSV3_ON to true in code once the owner has
     // approved a live render, or set localStorage fids_bidsv3 = '1' on a test
     // screen. Default false = the prior design, untouched.
     var _bidsV3On = false;
@@ -17576,7 +17574,7 @@ const gView = document.getElementById('gateView');
     bView.innerHTML = `
       <div class="bidsv2-screen${_bidsV3On ? ' bidsv3' : ''}" style="--bids-accent-img:url('${_bidsAcc.img}');--bids-ground-img:url('${_bidsAcc.ground}');--bids-bar-grad:${_bidsAcc.bar};--bids-tint:${_bidsAcc.tint};">
 
-        <!-- Banner — same v2 chevron pattern as the FIDS board (Nick): time
+        <!-- Banner — same v2 chevron pattern as the FIDS board: time
              + date top-right, airport pill (logo + IATA + name) center, and
              the screen title right. Classes come from flight-display.css so every
              theme (including custom) styles it exactly like the board. -->
@@ -17588,8 +17586,8 @@ const gView = document.getElementById('gateView');
           var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
                           de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
           var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
-          // Clock matches the GATE exactly (Nick: 'Simplify the FIDS and BIDS
-          // clock similar to the Gate Minus the airport code'): the time over
+          // Clock matches the GATE exactly
+          // : the time over
           // the bilingual date, via the shared helpers.
           var _bidsTz = (AP[iata] || {}).tz || null;
           return '<div class="fids-banner bidsv2-fids-banner">'
@@ -17623,7 +17621,7 @@ const gView = document.getElementById('gateView');
 
           ${(function(){
             // v23247 — THE BELT PANEL'S TWO BARS ARE THE BOARD'S OWN LANGUAGES
-            // (Nick's MIA shot: 'the dual language is not properly working' —
+            // (the owner's MIA shot: 'the dual language is not properly working' —
             // top bar CARRUSEL from the rotating slide, bottom bar CARROUSEL
             // hardcoded French in the CSS ::after, a YQM-era EN/FR assumption
             // stamped onto an EN/ES airport). Same contract as the column
@@ -17643,7 +17641,7 @@ const gView = document.getElementById('gateView');
             // Painted through .bidsv2-carousel-number that glyph is ~44vh of
             // white fill inside a dark stroke, which does not read as "no
             // carousel" — it reads as an EMPTY WHITE BOX, and that is the box
-            // in Nick's photo. An absent number should be absent.
+            // in the owner's photo. An absent number should be absent.
             var _crslNum = (function(){
               const _m = String(subScreenVal || '').match(/^(\w+)-(.+)$/);
               const _v = _m ? _m[2] : String(subScreenVal || '');
@@ -17688,7 +17686,7 @@ const gView = document.getElementById('gateView');
                 if (_s) _flightDisp = _s;
               }
               // Real wordmark artwork instead of the typed name — same files
-              // as the FIDS board (Nick: 'the real wordmark like FIDS').
+              // as the FIDS board.
               // Baggage rows are dark on every theme, so the white 'light'
               // variant; falls back to the typed name if the image dies.
               const _bWmCode = (f.airline || '').trim().toUpperCase();
@@ -17700,7 +17698,7 @@ const gView = document.getElementById('gateView');
                 ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 'light' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
                 : '<div class="bidsv2-airline-name">' + airlineName + '</div>');
               // v23327 — the redesign renders its OWN row markup (b3-*), a
-              // clean flex bar that fully contains its content (Nick:
+              // clean flex bar that fully contains its content (
               // 'everything hangs outside the box... the info has to minimum
               // be inside centered and aligned'). The bidsv2 row below stays
               // for the un-flagged design; b3 shares all the same data.
@@ -17749,8 +17747,8 @@ const gView = document.getElementById('gateView');
           </div>
         </div>
 
-        <!-- Bottom band = scrolling info TICKER (Nick: 'the ticker info
-             messages on bags'). Bilingual baggage-hall messages loop in a
+        <!-- Bottom band = scrolling info TICKER
+Bilingual baggage-hall messages loop in a
              marquee; the track is doubled so the wrap is seamless. -->
         <div class="bidsv2-bottom-band bidsv2-ticker" aria-hidden="true">
           ${(function(){
@@ -17769,7 +17767,7 @@ const gView = document.getElementById('gateView');
     // v23329 — SCALE THE b3 BARS TO THE LIST THEY LIVE IN, before anything
     // is measured. The bar is a 1141px design; --b3u carries listWidth/1141
     // so the From cell keeps its share on a 1366 laptop or a 4K wall
-    // (Nick's Halifax shot: 'Ne… | LGA' — the city crushed to nothing).
+    //
     try { _b3FitList(bView); _b3FitBeltNumber(); } catch (e) {}
 
     // ── POST-RENDER MEASUREMENT: figure out how many rows actually fit ──
@@ -17855,8 +17853,8 @@ function _b3FitList(root) {
 }
 
 // v23454 — THE BELT ID IS MEASURED, NOT COUNTED.
-// Nick, on the SFO baggage board: 'the bag claim number bulges out the
-// assigned area' — 'B10' ran past the panel and the last character was cut.
+//
+// — 'B10' ran past the panel and the last character was cut.
 //
 // There WAS already a rule meant to prevent this: a data-len ladder (v23247)
 // that steps the numeral down for longer ids. It never fired. Its selector and
@@ -17936,7 +17934,7 @@ try {
 // The fit lives HERE and not on #baggageView: the re-render REPLACES that
 // node, so a measurement stored on it was discarded every pass and the
 // fitter re-guessed forever — the clipped bottom row came back each render
-// (Nick: 'size again no longer works and seeing bottoms now cut off').
+//
 // Keyed on logo size + viewport height, the two things that change the
 // geometry. `capped` is the oscillation guard: once a shrink was forced by
 // real overflow, the fit may not grow again under the same key — grow ->
@@ -18188,8 +18186,8 @@ try { if (typeof window !== 'undefined') window.AP = AP; } catch (e) {}
 // ── CITY NAMES ────────────────────────────────────────────────────────────
 
 // ── CITY NAME FOR AN IATA CODE ───────────────────────────────────────────
-// v23662 — Nick: "why are we still getting locations with no Names and no
-// weather", and "I can guarantee you those are not the only 4 missing ...
+// v23662 —
+// and "I can guarantee you those are not the only 4 missing ...
 // even within Canada".
 //
 // He was right, and the cause is not a short table. Every call site resolved
@@ -19029,8 +19027,7 @@ const CITY = {
   ZYI:'ZUNYI',
 
   // ── v23662 — CITY CORRECTIONS AND ADDITIONS ─────────────────────────
-  // Nick: "only Tia shows as destination ... locations with no Names", then
-  // "I can guarantee you those are not the only 4 missing". Two faults, not one.
+  // Reported: more than the four known codes were missing. Two faults, not one.
   //
   // ABSENT: TIA, OTP, RMO and BCM were in neither CITY nor AP, so they rendered
   // as a bare code.
@@ -19885,7 +19882,7 @@ const CITY_FR = {
 
 // ── AIRPORT COORDINATES ─────────────────────────────
 const COORDS = {
-  // ── v23132 — WEATHER COVERAGE GAP, audited against the LIVE feeds (Nick:
+  // ── v23132 — WEATHER COVERAGE GAP, audited against the LIVE feeds (
   //    'i cant believe airports still dohnt hae weather cause theyre not in
   //    the system espeically not in canada its unaccaeltable'). Every
   //    destination flying on YQM/YHZ/YYZ/YUL/MCO today was checked against
@@ -19909,7 +19906,7 @@ const COORDS = {
   YXL:[50.11,-91.91], YQK:[49.79,-94.36],   // Sioux Lookout, Kenora (weather)
   YAG:[48.65,-93.44],   // Fort Frances (Ontario, Central Time)
   YMU:[52.60,-90.37],   // Musselwhite Mine aerodrome (Wasaya; no IATA — matched by name)
-  KM8:[52.60,-90.37],   // Musselwhite — code KM8 as it appears in the feed (Nick)
+  KM8:[52.60,-90.37],   // Musselwhite — code KM8 as it appears in the feed
   YYZ:[43.68,-79.63], YUL:[45.47,-73.74], YVR:[49.19,-123.18], YYC:[51.11,-114.02],
   YEG:[53.31,-113.58], YOW:[45.32,-75.67], YQM:[46.11,-64.68], YHZ:[44.88,-63.51],
   YQB:[46.79,-71.39], YWG:[49.91,-97.24], YXE:[52.17,-106.70], YYJ:[48.65,-123.43],
@@ -19934,7 +19931,7 @@ const COORDS = {
   BDA:[32.36,-64.68], CUR:[12.17,-68.96], AUA:[12.50,-70.02], SXM:[18.04,-63.11],
   HAV:[22.99,-82.41], VRA:[23.03,-81.44], HOG:[20.79,-76.32], CCC:[22.46,-78.33],
   GCM:[19.29,-81.36], PLS:[21.77,-72.27],
-  YGR:[47.42,-61.78],   // Îles-de-la-Madeleine (Nick: weather)
+  YGR:[47.42,-61.78],   // Îles-de-la-Madeleine
   MEX:[19.44,-99.07], PVR:[20.68,-105.25], SJD:[23.15,-109.72], GDL:[20.52,-103.31],
   LHR:[51.47,-0.46], LGW:[51.15,-0.19], CDG:[49.01,2.55], FRA:[50.03,8.57],
   AMS:[52.31,4.76], DUB:[53.42,-6.27], MAD:[40.47,-3.57], BCN:[41.30,2.08],
@@ -20529,14 +20526,14 @@ const COORDS = {
   ZNE:[-23.42,119.8], ZOS:[-40.61,-73.06], ZQN:[-45.02,168.75], ZQZ:[40.74,114.93],
   ZSA:[24.06,-74.52], ZTH:[37.75,20.88], ZUH:[22.01,113.38], ZYI:[27.81,107.25],
   // North Africa / West Africa — YUL destinations that had NO coords, so
-  // the weather column stayed '—' for them (Nick: 'Algiers has no weather').
+  // the weather column stayed '—' for them.
   ALG:[36.69,3.22], ORN:[35.62,-0.62], CZL:[36.28,6.62], TUN:[36.85,10.23], ACC:[5.61,-0.17],
 
-  // ── v23688 — THE LAST ELEVEN. Nick: "ok so fix all of them to also have
-  //    weather", after "I can guarantee you those are not the only 4 missing".
+  // ── v23688 — THE LAST ELEVEN.
+  // Reported: the four known destinations were not the only ones missing weather.
   //
-  //    He was right, and I had the CAUSE wrong: I told him these destinations
-  //    had no weather because they were missing a TIMEZONE. They are not.
+  //    Correct — and the CAUSE was wrong too: these destinations were said to
+  //    have no weather because they were missing a TIMEZONE. They are not.
   //    fetchTomorrowWeather bails on one thing and one thing only —
   //    `if (!COORDS[iata]) return null` — so a missing lat/lon is the whole
   //    blocker, and a missing AP.tz only affects which HOUR gets picked.
@@ -20574,7 +20571,7 @@ const WX_KEY_CODE = {
 };
 
 // All destination IATAs a flight's board row can display — the primary dest
-// PLUS every through-flight leg (Nick: multi-city rows 'do not give us
+// PLUS every through-flight leg (the owner: multi-city rows 'do not give us
 // weather'). The dest chip flips leg-by-leg (_destFlipStops), but the weather
 // fetch list only had f._locIata, so the non-primary legs had no weather to
 // show when the row flipped to them. Resolve name-only legs to a code the same
@@ -20705,8 +20702,8 @@ function tioIcon(weatherCode, size) {
 // into our flat-icon sprite cell names.
 if (typeof window !== 'undefined') window.TIO_ICON = TIO_ICON;
 
-// v22959 — weather labels follow the FIRST selected language (Nick: 'weather
-// same thign'). The old resolver was `lang === 'fr' ? FR : EN` — nothing else
+// v22959 — weather labels follow the FIRST selected language
+// The old resolver was `lang === 'fr' ? FR : EN` — nothing else
 // existed and nothing else was consulted. Spanish and German tables added;
 // Italian/Portuguese/Japanese/Chinese/Arabic fall back to English until their
 // tables are written, which is stated here rather than pretended otherwise.
@@ -20765,7 +20762,7 @@ function tioLabel(weatherCode) {
 
 // ── Open-Meteo fallback (keyless, no quota) ────────────────────────────
 // Tomorrow.io's free quota can die mid-day and the whole WEATHER column
-// went '—' until it reset (Nick: 'weather doesn't work actually, on FIDS').
+// went '—' until it reset.
 // Open-Meteo returns WMO codes, which TIO_ICON already maps natively; the
 // worker's /wxdaily route set the precedent for leaning on it.
 async function _fetchOpenMeteoWx(iata) {
@@ -20777,8 +20774,8 @@ async function _fetchOpenMeteoWx(iata) {
     // clock, at full coordinate precision — nothing shared, nothing cached.
     // Between that and the equally uncached proxy route, the free daily
     // allowance was gone and the API started answering 'Daily API request
-    // limit exceeded. Please try again tomorrow.' (Nick: 'Weather doesnt work
-    // either'). /wxcurrent is the same query behind the worker's cache: one
+    // limit exceeded. Please try again tomorrow.'
+    // /wxcurrent is the same query behind the worker's cache: one
     // upstream call per airport per half hour however many screens ask, a
     // six-hour last-known-good so an outage shows the previous reading, and a
     // refusal that is never stored as if it were weather. Same origin, so no
@@ -20818,8 +20815,8 @@ async function _fetchOpenMeteoWx(iata) {
   } catch (e) { return null; }
 }
 
-// v23217 — WALL-TIME → UTC (Nick: 'Numbers don't add up something was
-// fucked' — the hourly strip showed every temperature exactly the UTC
+// v23217 — WALL-TIME → UTC. Reported as temperatures not adding up: the
+// hourly strip showed every temperature exactly the UTC
 // offset early: 4 AM wearing 8 AM's 14°C on Ottawa). The proxy's
 // /weather/forecast is open-meteo with timezone=auto, so its time strings
 // are the DESTINATION's wall clock with no zone marker; new Date() read
@@ -21109,7 +21106,7 @@ const _AIRLINE_NAME_OVERRIDE = {
   'QK':'Air Canada','RV':'Air Canada','ZX':'Air Canada',
   '9M':'Air Canada','9L':'Air Canada','SP':'PAL Airlines',
   // RJ is Royal Jordanian (oneworld) — it was wrongly listed as an AC
-  // feeder, which painted an Amman flight in Air Canada branding (Nick).
+  // feeder, which painted an Amman flight in Air Canada branding.
   'RJ':'Royal Jordanian',
   '9X':'Mokulele','W8':'Cargojet',
   'UA':'United','DL':'Delta','AA':'American','WN':'Southwest',
@@ -21166,7 +21163,7 @@ const AIRLINE_NAME = {
   '2L': 'Helvetic Airways',
   'IV': 'GP Aviation',     // NOT Air Prishtina - v23361 guessed and guessed wrong
   // ── v23356 — CODES STILL PRINTING AS LETTERS ON LIVE BOARDS ──────────────
-  // Nick: 'No airline should have codes'. Every live airport was polled and
+  // Every live airport was polled and
   // the carrier prefix taken off each flight number; 53 of them had no entry
   // here, so the board printed the raw code. These are the ones identifiable
   // with confidence, ordered by how many flights they were actually carrying.
@@ -21196,7 +21193,7 @@ const AIRLINE_NAME = {
   'BF':  'French Bee',
   'Q6':  'Volaris Costa Rica',
   'SM':  'Air Cairo',
-  // v23349 — the rest of the bare codes from Nick's boards. On a second look I
+  // v23349 — the rest of the bare codes from the owner's boards. On a second look I
   // could identify all but one of these with confidence, so they are named
   // rather than left as letters. IV (Zurich–Pristina) is still unidentified
   // and is the only one deliberately left alone.
@@ -21208,14 +21205,14 @@ const AIRLINE_NAME = {
   'ZH': 'Shenzhen Airlines',   '9C': 'Spring Airlines',
   'KA': 'Cathay Dragon',
   // v23348 — carriers whose rows printed a BARE IATA CODE because nothing here
-  // named them (Nick's Zurich board: "EW", "CJ", "IV"). Only codes I could
+  // named them. Only codes I could
   // identify with confidence are here; anything still unnamed is listed in the
   // handover notes rather than guessed at, because a wrong airline name on a
   // public board is worse than a code.
   'EW': 'Eurowings',
   // v23363 - CJ is BA CityFlyer's code, but the board should simply read
-  // BRITISH AIRWAYS on those rows (Nick: 'BA City Flyer is simply British
-  // Airways unless its operated by'). It also takes BA's emblem and wordmark.
+  // BRITISH AIRWAYS on those rows
+  // It also takes BA's emblem and wordmark.
   // Naming the operator separately belongs on the 'Operated by' line, which
   // needs CityFlyer artwork the repo does not have.
   'CJ': 'BRITISH AIRWAYS',
@@ -21225,7 +21222,7 @@ const AIRLINE_NAME = {
   'I2': 'Iberia Express',      'D8': 'Norwegian Air Sweden',
   // Regionals/internationals the map lacked — without an entry here the
   // prefix-first branding can't recognize the code and a feed row marked
-  // AC carrying 3H802 branded as Air Canada (Nick).
+  // AC carrying 3H802 branded as Air Canada.
   '3H':'Air Inuit', 'YN':'Air Creebec', 'S4':'Azores Airlines',
   'JV':'Bearskin Airlines', 'WT':'Wasaya Airways', 'YP':'Perimeter Aviation',
   'MO':'Calm Air', '5T':'Canadian North', '4N':'Air North', 'BQ':'Pascan',
@@ -21277,7 +21274,7 @@ const AIRLINE_NAME = {
   'JJ':'LATAM BRASIL','AD':'AZUL',         'LA':'LATAM',       'JA':'JETSMART',    'AR':'AEROLINEAS',
   'CM':'COPA',        'AV':'AVIANCA',      'MX':'BREEZE',      'AM':'AEROMEXICO',  'XN':'MEXICANA',  'G3':'GOL',
   'Y4':'VOLARIS',     '2T':'BERMUDAIR',    'VB':'VIVAAEROBUS', 'UP':'BAHAMASAIR',  '4C':'LATAM',
-  'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows Nick's app shot rendered as raw codes */
+  'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows the owner's app shot rendered as raw codes */
   '4T':'BEOND',       'LR':'LACSA',        'BM':'BMI',
   'UP':'BAHAMASAIR',  'BG':'BIMAN',        'DO':'SKY HIGH',
   'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',
@@ -21328,7 +21325,7 @@ function logoFallback(img) {
     img.dataset.logoSet = 'tile';
     img.src = '/logos/icao-icons/' + IATA_TO_TILE_ICAO[c] + '.svg';
   } else {
-    // All sources exhausted — MONOGRAM tile, not bare text (Nick: text/
+    // All sources exhausted — MONOGRAM tile, not bare text (the owner: text/
     // wordmark in the emblem slot 'doesn't work'). Cache so later renders
     // go straight to the monogram without re-chasing dead URLs.
     if (c) _logoFailCache[c] = true;
@@ -21365,23 +21362,23 @@ if (typeof window !== 'undefined') window.WORDMARK_OVERRIDE = WORDMARK_OVERRIDE;
 // AirlineIcons-main pack at /logos/airline-tiles/{ICAO}.svg
 // Square colored tiles with white logo on top — uniform branded look.
 // Map IATA code (what FIDS receives from the data feed) → ICAO filename.
-// Special case: PB (PAL Airlines, Newfoundland) uses Nick's custom design,
+// Special case: PB (PAL Airlines, Newfoundland) uses the owner's custom design,
 // NOT PAL.svg from the pack (PAL.svg is Philippine Airlines).
 const IATA_TO_TILE_ICAO = {
-  'BF':'FBU',   // French Bee — tile on file but was never mapped (tiny external mark, Nick)
+  'BF':'FBU',   // French Bee — tile on file but was never mapped (tiny external mark, the owner)
   // Canadian carriers
-  '3H':'AIE',   // Air Inuit — brand-vermilion square + white lockup (Nick: 'should have an emblem as well'; wordmark-as-emblem doesn't work)
-  'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — Nick: 'its black normally' (red swap was a misread, reverted)
+  '3H':'AIE',   // Air Inuit — brand-vermilion square + white lockup
+  'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — (red swap was a misread, reverted)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
-  'PB':'PB',   // ← Nick's custom PAL Airlines logo (Newfoundland)
+  'PB':'PB',   // ← the owner's custom PAL Airlines logo (Newfoundland)
   'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
   'JV':'BLS',  'WT':'WSG',  'NSA':'NSA',   // Bearskin / Wasaya / North Star — brand square + white emblem
   // US carriers
-  'UA':'UAL-sq',  'DL':'DAL-red',  'AA':'AAL',  'WN':'SWA',   // UAL-sq: square vector tile. DAL-red: white tile + ONE flat red widget (Nick: 'simply red please' — the navy DAL tile read blue-and-red)
+  'UA':'UAL-sq',  'DL':'DAL-red',  'AA':'AAL',  'WN':'SWA',   // UAL-sq: square vector tile. DAL-red: white tile + ONE flat red widget
   // NK (Spirit) — ceased operations May 2 2026
   'B6':'JBU',  'AS':'ASA',  'F9':'FFT',  'G4':'AAY',  'HA':'HAL',
   'SY':'SCX',  'OO':'SKW',  'YV':'ASH',
-  'MX':'MXY',   // Breeze — MXY.svg tile existed but the map never learned it (Nick: 'still missing the breeze Emblem icon')
+  'MX':'MXY',   // Breeze — MXY.svg tile existed but the map never learned it
   // Europe
   'LH':'DLH',  'BA':'BAW',  'AF':'AFR',  'KL':'KLM',  'VS':'VIR',
   'AZ':'AZA',  'SN':'BEL',  'LX':'SWR',  'OS':'AUA',  'SK':'SAS',
@@ -21421,8 +21418,8 @@ const IATA_TO_TILE_ICAO = {
 // of plain text. Choose -dark.svg or -light.svg based on background.
 // FIDS table uses -light.svg (white wordmarks on dark navy rows).
 // ── v23348 — THE SINGLE-FILE WORDMARKS FINALLY GET USED ──────────────
-// (Nick, on a Zurich board: "fix the airline names worldwide, it looks
-// atrocious, I need actual wordmarks".) 61 airlines had real artwork sitting
+//
+// ) 61 airlines had real artwork sitting
 // in /logos/wordmarks as one IATA-named SVG each, but IATA_TO_WORDMARK only
 // understands a BASE name with -light/-dark variants, so none of it was ever
 // reachable and those rows printed a plain text name — or worse, the bare
@@ -21497,7 +21494,7 @@ const IATA_WORDMARK_ONE = {
 try { if (typeof window !== 'undefined') window.IATA_WORDMARK_ONE = IATA_WORDMARK_ONE; } catch (e) {}
 
 const IATA_TO_WORDMARK = {
-  // v23361 - two real words-only wordmarks, both supplied by Nick.
+  // v23361 - two real words-only wordmarks, both supplied by the owner.
   // chair-wordmark-*.svg is the lowercase 'chair' logotype, no symbol.
   // swiss-wordmark-*.svg is the SWISS logotype recovered from his .curve
   // file: the export had an opaque WHITE background baked in, which would
@@ -21523,7 +21520,7 @@ const IATA_TO_WORDMARK = {
   // colours are dark (#1b358f navy, #63c7ef blue), so the -light variant is
   // the whole mark reversed to white for the dark rows.
   'LY': 'elal',
-  // v23366 - Etihad. Nick sent three files; the third is the one that works:
+  // v23366 - Etihad. the owner sent three files; the third is the one that works:
   // the single-line ETIHAD AIRWAYS logotype, already cropped, aspect 7.87.
   // The other two were a stacked Arabic-over-Latin lockup and a gold tile
   // that duplicates the ETD tile already on disk.
@@ -21587,14 +21584,14 @@ const IATA_TO_WORDMARK = {
   'RV':'air-canada',  // Air Canada Rouge → use AC wordmark
   '3H':'airinuit',    // Air Inuit — its own brand; the old 'branded as
                       // AC' alias painted real Air Inuit flights as Air
-                      // Canada (Nick: 'not sure thats an air canada flight')
+                      // Canada
   // US carriers
   'AA':'american',  'UA':'united',  'DL':'delta',
   'WN':'southwest',  'B6':'jetblue',
-  'F9':'frontier',  // Frontier Airlines — official green wordmark + emblem from Nick's upload
-  'XP':'avelo',     // Avelo Airlines — official wordmark set (white / black / purple) from Nick's upload
-  'WL':'world-atlantic',  // World Atlantic Airlines (Caribbean Sun) — official wordmark from Nick's Archive.zip
-  'LL':'level',     // LEVEL — official wordmark set from Nick; dark lettering IS the brand (like Flair), so no COLOR_WORDMARKS entry
+  'F9':'frontier',  // Frontier Airlines — official green wordmark + emblem from the owner's upload
+  'XP':'avelo',     // Avelo Airlines — official wordmark set (white / black / purple) from the owner's upload
+  'WL':'world-atlantic',  // World Atlantic Airlines (Caribbean Sun) — official wordmark from the owner's Archive.zip
+  'LL':'level',     // LEVEL — official wordmark set from the owner; dark lettering IS the brand (like Flair), so no COLOR_WORDMARKS entry
   // NK (Spirit) — ceased operations May 2 2026
   'AS':'alaska-airlines',  'HA':'hawaiian',
   'SY':'sun-country',      // Sun Country — official lockup split: sun mark → SCX tile, lettering here (Jul 2026)
@@ -21617,7 +21614,7 @@ const IATA_TO_WORDMARK = {
   'MX':'breeze-airways', // Breeze Airways (David Neeleman's airline, ICAO MXY)
   'AV':'avianca',         // Avianca (Colombian flag carrier)
   'OB':'boliviana',       // Boliviana de Aviación (BoA) — navy wordmark
-  // Latin America — wordmark-only (no emblem) per Nick
+  // Latin America — wordmark-only (no emblem) as specified
   'AM':'aeromexico',     // Aeroméxico
   'CM':'copa',           // Copa Airlines (Panama)
   'UP':'bahamasair',     // Bahamasair (Bahamas flag carrier)
@@ -21650,13 +21647,13 @@ const IATA_TO_WORDMARK = {
 // Returns 'dark' or 'light' — append it to the wordmark base to form
 // the full filename: `${base}-wordmark-${variant}.svg`.
 function wordmarkVariant() {
-  // Nick: EVERY theme (built-in, custom, future) must adapt automatically —
+  // the owner: EVERY theme (built-in, custom, future) must adapt automatically —
   // light backgrounds get the colored wordmark artwork, dark backgrounds get
   // the white variant. Measure the actual row background luminance instead
   // of maintaining a theme-name list.
   try {
     // Never probe a state-tinted or history row — a delayed/cancelled/faded
-    // first row flipped ALL wordmarks white mid-screen (Nick).
+    // first row flipped ALL wordmarks white mid-screen.
     // Class-only selector: the previous :has() version THREW on display
     // hardware whose browser predates :has() support, which skipped the
     // whole measurement and broke every light-board adaptation out there.
@@ -21682,8 +21679,8 @@ function wordmarkVariant() {
       var lv = _rowLum(tds[ti]);
       if (lv !== null) { lums.push(lv); parities[par] = 1; }
     }
-    // v23220 — BAGGAGE ROWS MEASURE TOO (Nick: 'implemented globally
-    // including the airport colors'). bids.html has no #fidsTable, so this
+    // v23220 — BAGGAGE ROWS MEASURE TOO
+    // bids.html has no #fidsTable, so this
     // measurement always came up empty there and fell to the theme-name
     // list — a light CLOUD/custom palette on the baggage screen never set
     // fids-light-board, so none of the light-board adaptations (deep status
@@ -21840,7 +21837,7 @@ function logoPath(basename) {
   return sub ? '/logos/' + sub + '/' + basename : '/logos/' + basename;
 }
 // Light-background themes must show each carrier's REAL brand-color wordmark
-// (Nick). The '-dark' files are black monochrome, and lockup files carry the
+// The '-dark' files are black monochrome, and lockup files carry the
 // symbol the tile already shows — so these are the SAME wordmark-only artwork
 // recolored to each carrier's brand lettering color. Flair stays black on
 // purpose: black IS its lettering (and never green, per policy).
@@ -21927,7 +21924,7 @@ function wordmarkSrc(base, forceVariant) {
 // WCAG relative luminance of a #hex colour (0 = black … 1 = white). Used to
 // decide whether a carrier's brand accent is legible as the TEXT name on the
 // dark board — a deep maroon/navy (Qatar #5c0931, Emirates crimson) reads as
-// an unreadable smudge or an alarm state, not a brand (Nick: 'Qatar', earlier
+// an unreadable smudge or an alarm state, not a brand ( earlier
 // 'Emirates shouldn't be red').
 function _hexLum(hex) {
   try {
@@ -21952,12 +21949,12 @@ const IATA_TO_EMBLEM = {
   // /logos/symbols/airlines/LY.svg in v23365, which is the path the GATE ORB
   // resolver reads - the board ROW uses this map instead. LY has a wordmark
   // but no tile, so the row fell straight through to no emblem at all
-  // (Nick: 'EL Al has no Emblem'). Same file, now reachable from both.
+  // Same file, now reachable from both.
   'LY': '/logos/symbols/airlines/LY.svg',   // Star of David flag device
   // v23380 - the ROW tile keeps Helvetic's full mark, black ring included,
   // because it sits on white. The gate ORB reads a different file with that
   // ring removed: on the red accent the black ring made the emblem the odd
-  // one out in a rail of red orbs (Nick: 'emblem not the same color').
+  // one out in a rail of red orbs.
   '2L': '/logos/airlines/european/helvetic-emblem-tile.svg',
   'CS': '/logos/symbols/airlines/CS.png',   // Chair tail, red fin + Swiss cross
   'EW': '/logos/symbols/airlines/EW.svg',   // Eurowings wings on their grey ground
@@ -21977,19 +21974,19 @@ const IATA_TO_EMBLEM = {
   // US majors — these render wordmark-alone (TILE_SKIP_WORDMARK_ONLY), but the
   // wordmark text by itself loses the iconic brand symbol. Show the symbol in
   // the emblem slot ALONGSIDE the existing wordmark (wordmark text untouched).
-  'DL': '/logos/airlines/us-major/delta-widget-red.svg',       // Delta widget, ONE flat red (Nick: 'simply red please')
+  'DL': '/logos/airlines/us-major/delta-widget-red.svg',       // Delta widget, ONE flat red
   'HA': '/logos/airlines/us-major/hawaiian-pualani.svg',       // Hawaiian Pualani (flower woman)
   'AA': '/logos/airlines/us-major/american-flight-symbol.svg', // American flight symbol (eagle)
   'UA': '/logos/airline-tiles/UA-globe-glossy.png?v=22350',   // United globe   // v23394 one United face everywhere
   // v23250 — LATAM had no emblem file, so the banner's pair path fell to the
   // LAN square TILE: a navy rounded plate that read as an app icon beside the
-  // wordmark (Nick's MIA J5 shot: 'unacceptable it's not what I asked for').
+  // wordmark.
   // The spark is the tile's own coral+white brandmark cut free of the navy
   // square — native colours, no plate — and latam-wordmark-light is letters
   // only, so the pair composes the official spark+LATAM lockup.
   'LA': '/logos/airlines/asian-other/latam-spark.svg',         // LATAM spark (coral + white)
-  // v23470 — Nick, on the Moncton banner: "mine has the wordmark with the
-  // rondelle without a background in full color no background", against a
+  // v23470 —
+  // against a
   // board showing "an emblem of Air Canada with black — its the emblem then
   // the wordmark". Exactly right: neither AC nor WS had an entry here, so the
   // banner fell through to IATA_TO_TILE_ICAO and drew the SQUARE TILE —
@@ -22002,19 +21999,19 @@ const IATA_TO_EMBLEM = {
   // This does NOT touch the FIDS board. mkLogo() checks IATA_TO_TILE_ICAO
   // FIRST (line ~20804) and returns there; AC and WS both have tiles, so the
   // board never reaches this map and keeps the tiles it draws today —
-  // Nick: "only if its the FIDS".
+  //
   'AC': '/logos/symbols/airlines/AC.svg',                      // roundel, no plate
   'WS': '/logos/symbols/airlines/WS.svg',                      // leaf, no plate
 };
 
 
 /* Carriers to render as wordmark-alone (skip colored tile). Emptied Jul 2026:
-   Nick wants every carrier to carry its icon ("JetBlue doesnt have a icon") —
+ the owner wants every carrier to carry its icon ("JetBlue doesnt have a icon") —
    B6 gets the navy JBU tile back, AS the ASA tile. Keep the mechanism. */
 var TILE_SKIP_WORDMARK_ONLY = new Set([]);
 
 // Monogram tile — LAST-RESORT emblem for carriers with no artwork anywhere
-// (Nick: a bare wordmark/text in the emblem slot 'doesn't work'). A brand-
+// A brand-
 // accent square with the carrier code keeps the board's tile rhythm.
 function _monogramTile(code, name) {
   var c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -22168,19 +22165,19 @@ const LS = {
   useLanes:  { en:'Use Lanes',fr:'Utilisez les voies',es:'Use carriles',de:'Spuren nutzen',it:'Usa corsie',pt:'Use faixas',ja:'\u30ec\u30fc\u30f3',zh:'\u901a\u9053',ar:'\u0645\u0645\u0631\u0627\u062a' },
   useLane:   { en:'Use Lane',fr:'Utilisez la voie',es:'Use carril',de:'Spur nutzen',it:'Usa corsia',pt:'Use faixa',ja:'レーン',zh:'通道',ar:'استخدم الممر' },
   boardBegins:{ en:'Boarding begins in',fr:"L'embarquement commence dans",es:'El embarque comienza en',de:'Boarding beginnt in',it:"L'imbarco inizia tra",pt:'Embarque começa em',ja:'搭乗開始まで',zh:'登机开始倒计时',ar:'يبدأ الصعود خلال' },
-  // v23115 — Nick's boarding-screen mockup. The countdown headline is a
+ // v23115 — the owner's boarding-screen mockup. The countdown headline is a
   // SENTENCE about the moment, not a fragment the number completes, and it
   // shows in BOTH board languages at once (his shot: English above the
   // number, French below it). Title Case in the Latin scripts, matching the
   // mockup exactly; CJK/Arabic take their natural forms.
-  // v23119 (Nick: 'maybe you have better words') — the airline-standard
+ // v23119 — the airline-standard
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
-  // own gate signage says. Title Case kept per Nick's design.
+ // own gate signage says. Title Case kept as specified's design.
   boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   // v23202 — the altimeter's labels follow the CHOSEN languages like every
-  // other label on the board (Nick: 'ALL NEEDAS TO REFLECTS LANGUAGES
-  // CHOSEN'); they were hard-coded English with a hard-coded French unit.
+  // other label on the board
+  // ; they were hard-coded English with a hard-coded French unit.
   speed: { en:'Speed', fr:'Vitesse', es:'Velocidad', de:'Geschwindigkeit', it:'Velocità', pt:'Velocidade', ja:'速度', zh:'速度', ar:'السرعة' },
   altitude: { en:'Altitude', fr:'Altitude', es:'Altitud', de:'Flughöhe', it:'Altitudine', pt:'Altitude', ja:'高度', zh:'高度', ar:'الارتفاع' },
   distance: { en:'Distance', fr:'Distance', es:'Distancia', de:'Entfernung', it:'Distanza', pt:'Distância', ja:'距離', zh:'距离', ar:'المسافة' },
@@ -22339,7 +22336,7 @@ const ES_BOARD_AIRPORTS = new Set([
 // drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
 const BOARD_LANG_DEFAULTS = {
   MCO: ['en', 'es'],
-  // v23247 — Miami runs English+Spanish (Nick's boards are assigned en/es;
+ // v23247 — Miami runs English+Spanish (the owner's boards are assigned en/es;
   // without a baked default a profile-wiped display fell back to the Canada
   // en/fr pair — French 'Carrousel' on a Miami baggage screen).
   MIA: ['en', 'es'],
@@ -22383,8 +22380,8 @@ try { if (typeof window !== 'undefined') window.boardLangsFor = boardLangsFor; }
 // Los Angeles flight: langs was correctly ['en','es'], but the card asked
 // boardLangsFor('LAX') -> ['en','fr'] and fetched language=en + language=fr.
 // The cache ended up holding LAX|en and LAX|fr and not one word of Spanish,
-// so a Miami screen ran a French Sofitel ad (Nick: 'Miami airport Sofitel ad
-// English French for Los Angeles like nooo what are you doing') — and with no
+// so a Miami screen ran a French Sofitel ad
+// — and with no
 // record in the board's second language the bilingual half had nothing to
 // draw, which is why it came out as a page and a half rather than three.
 //
@@ -22543,13 +22540,13 @@ function normalizeDisplayCity(raw, iata) {
 }
 
 // ── v22736: THE CODE CHIP WHEN THE FEED DOESN'T CARRY ONE ────────────────
-// Nick, on the live Tampa board: Breeze's 'Raleigh/Durham' and
+// Reported on the live Tampa board: Breeze's 'Raleigh/Durham' and
 // 'Gulfport/Biloxi' rows showed NO airport code while every other row on the
-// same screen had one — 'They dont have a code no' confirmed the feed simply
-// omits it for those flights. The city name is resolved back to its IATA from
-// our own airport tables so those rows read like the rest of the board.
+// same screen had one — the feed simply omits it for those flights. The city
+// name is resolved back to its IATA from our own airport tables so those rows
+// read like the rest of the board.
 //
-// AMBIGUOUS NAMES ARE NEVER GUESSED. 'Houston' is both IAH and HOU (Nick
+// AMBIGUOUS NAMES ARE NEVER GUESSED. 'Houston' is both IAH and HOU (
 // asked about exactly this pair), 'Portland' is PDX and PWM, 'Columbus' and
 // 'Charleston' repeat too. Any name that resolves to more than one code is
 // poisoned in the index and stays code-less — a missing chip is a small
@@ -22666,13 +22663,13 @@ function formatCityIata(raw, iata, langOverride) {
 // v218.14: Changed from "City-IATA" hyphen format to "City (IATA)" parens
 // format. All defensive checks that scanned for "-IATA" suffix were
 // updated to scan for " (IATA)" instead.
-// Display-only IATA overrides (Nick). The real code still drives weather,
+// Display-only IATA overrides. The real code still drives weather,
 // coords and data-iata logic; only the code CHIP shown to travellers changes.
 // YHU (Montréal Saint-Hubert) shows as the Montréal metro code MET.
 var AIRPORT_DISPLAY_IATA = { YHU: 'MET' };
 // ── CITY | CODE ──────────────────────────────────────────────────────────
-// Nick: 'ALL FIDS and BIDS listings for airports need to show as Moncton |
-// YQM … I don't want to see anywhere no longer Moncton (YQM)'. The display
+//
+// t want to see anywhere no longer Moncton (YQM)'. The display
 // format changes here, in the two helpers and the three inline sites that
 // build it — but the parentheses do NOT disappear from the codebase, because
 // the UPSTREAM FEED sends city names as 'Toronto (YYZ)' and the normalizers
@@ -22750,12 +22747,12 @@ const SLbi = k => { const o = SS[k] || {}; const en = o.en || k; return (o.fr &&
 const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
 
 // ── LANGUAGE ROTATION — flips between selected languages ─────────────────
-// ── v22949 — LANGUAGE ROTATION REMOVED (Nick: "It should be taken out",
+// ── v22949 — LANGUAGE ROTATION REMOVED (
 // "We want to get away from the rotation entirely").
 //
 // This timer flipped `lang` on its own 30-second beat while the main board's
 // paging clock flipped it too. Two owners, one value — the same shape as the
-// glide bug fixed this morning, and it produced Nick's own report recorded
+// glide bug fixed this morning, and it produced the owner's own report recorded
 // below: "15 seconds English, 1 second French depending on phase offset".
 //
 // It also does nothing useful any more. The gate has been
@@ -22777,9 +22774,9 @@ function startLangRotation() {
   // MAIN board pinned to Departures or Arrivals. There the paging clock is
   // off (dep/arr view modes clear pageTimer), so this timer was the only
   // thing alternating a two-language board between its languages — its own
-  // comment said "it now only serves screens the paging clock doesn't cover"
-  // and I removed it anyway. Nick, on a fixed hall board: "Its not rotating
-  // to the second language."
+  // comment said it now only served screens the paging clock does not cover,
+  // and it was removed anyway.
+  // 
   //
   // Restored SCOPED to that one case: main board, no paging clock, two
   // languages selected. The gate stays bilingual-simultaneous (never flips),
@@ -22795,8 +22792,8 @@ function startLangRotation() {
     // that is true only of the GATE. BIDS renders its headers and statuses in
     // ONE language (`lang`), and with tick_carousel also returning early off
     // the main board, nothing ever advanced it — a baggage screen froze in
-    // whatever language boot left behind (Nick: "Why is baggage no longer in
-    // multi languages"). Gate stays simultaneous; main still defers to its
+    // whatever language boot left behind
+    // Gate stays simultaneous; main still defers to its
     // paging clock.
     if (screenType === 'gate') return;                                   // gate: simultaneous
     if (screenType === 'main' && typeof pageTimer !== 'undefined' && pageTimer) return; // paging clock owns main
@@ -22813,7 +22810,7 @@ function _startLangRotation_WITHDRAWN() {
     // The MAIN board's paging clock (tick_carousel: EN page → FR page →
     // advance) OWNS the language there. This second timer flipping lang on
     // its own 30s beat produced '15 seconds English, 1 second French'
-    // depending on phase offset (Nick). It now only serves screens the
+ // depending on phase offset. It now only serves screens the
     // paging clock doesn't cover.
     if (screenType === 'main' && typeof pageTimer !== 'undefined' && pageTimer) return;
     langIdx = (langIdx + 1) % langs.length;
@@ -22823,7 +22820,7 @@ function _startLangRotation_WITHDRAWN() {
     if (screenType !== 'main') {
       // v22158 — do NOT force a full gate rebuild here: the v2 gate is
       // bilingual-simultaneous, and the rebuild on every 30s flip made the
-      // whole screen visibly bounce (Nick: 'still bouncing every so often').
+ // whole screen visibly bounce.
       // Widgets with their own timers (ticker, clock, ads) keep rotating.
     }
   }, 30000); // flip every 30 seconds
@@ -22836,7 +22833,7 @@ function toggleLang(l) {
     langs.splice(idx, 1);
     if (langIdx >= langs.length) langIdx = 0;
   } else {
-    // v22946 — TWO AT A TIME, ONE IF NEEDED (Nick). There was a floor of one
+ // v22946 — TWO AT A TIME, ONE IF NEEDED. There was a floor of one
     // and no ceiling at all, so a screen could be put into four or nine
     // languages. The gate status cell renders its selected languages side by
     // side in a 270px column that is sized for exactly two words — measured,
@@ -22844,8 +22841,8 @@ function toggleLang(l) {
     // force the fitter to shrink the status into illegibility to cope.
     // Picking a third replaces the OLDEST rather than being ignored, so the
     // button always does something visible instead of silently refusing.
-    // v23239 — UP TO ALL NINE (Nick: 'Make sure we’re going by the 9
-    // languages??? Whatever is assigned'). The v22946 two-language ceiling
+    // v23239 — UP TO ALL NINE
+    // The v22946 two-language ceiling
     // protected the gate’s side-by-side cells; those cells now bound
     // themselves to the first two selected, so the assignment itself can
     // carry the full set and the slide clock walks every one of them.
@@ -22854,9 +22851,9 @@ function toggleLang(l) {
     if (langIdx >= langs.length) langIdx = 0;
   }
   lang = langs[langIdx];
-  // v22961 — REMEMBER THE CHOICE PER AIRPORT (Nick: 'everytime i switch
-  // screens ... it resets the language choice ... for that airport everytime
-  // you coming in it remembers the settings'). gids/fids/bids are separate
+  // v22961 — REMEMBER THE CHOICE PER AIRPORT
+  //
+  // gids/fids/bids are separate
   // pages, so every screen switch is a fresh boot and `langs` went back to
   // the default. Saved on every toggle, restored at boot below.
   try {
@@ -22885,10 +22882,10 @@ function updateLangButtons() {
 }
 
 // ── TICKER — interleaves selected languages ──────────────────────────────
-// Baggage-hall ticker messages (Nick: 'the ticker info messages on bags').
+// Baggage-hall ticker messages.
 // Same bilingual pattern as the main-board ticker, baggage-flavoured.
 // ── v22947 — GATE LABELS FOLLOW THE SELECTED LANGUAGES ───────────────────
-// Nick: "Doesnt work. Its still all English French."
+//
 //
 // Every gate label was written as `_frF ? 'Vol' : 'Flight'` — twenty of those
 // ternaries plus forty-nine loose French strings. `_frF` is FRENCH-FIRST
@@ -22899,7 +22896,7 @@ function updateLangButtons() {
 //
 // Accent-safe title case. The \b\w idiom treats an accented letter as a word
 // BOUNDARY (\w has no é), so 'Prévu' rendered 'PréVu' on every status cell in
-// Nick's gate shots. Capitalize only at the start and after space / hyphen /
+// the owner's gate shots. Capitalize only at the start and after space / hyphen /
 // apostrophe — 'à l'heure' still becomes 'À L'Heure', accents stay inside
 // their word. Non-Latin scripts pass through toUpperCase untouched.
 function _fidsTitleCase(s) {
@@ -22916,8 +22913,8 @@ var _GATE_LBL = {
   arrival:   { en:'Arrival',       fr:'Arrivée',        es:'Llegada',      de:'Ankunft',     it:'Arrivo',      pt:'Chegada',    ja:'到着',      zh:'到达',   ar:'الوصول' },
   arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Angekommen',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصل' },
   // v23257 — the inbound card's banner names the movement, airport-PA style
-  // (Nick: 'Above simply put … arriving From | En Provenance de … Or Arrivé
-  // de'). The en-route and landed variants.
+  //
+  // The en-route and landed variants.
   arrivingFrom: { en:'Arriving From', fr:'Provenant de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
   // v23295 — _gateLbl() reads _GATE_LBL, NOT LS; a key added to LS resolves to
   // an empty string and the line silently vanishes, which is what happened on
@@ -22925,12 +22922,12 @@ var _GATE_LBL = {
   // because the bottom-right panel pairs the two when no inbound is tracked.
   arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
   // v23305 — the bottom-right panel's status line when the board has no
-  // inbound tracked yet. Nick, three times ('So now theres nothing???', 'no
+ // inbound tracked yet. the owner, three times ('So now theres nothing???', 'no
   // info', 'nothing'): the panel going BLANK is not an acceptable answer to
   // 'which aircraft is coming'. Short on purpose — this column is narrow, and
   // a bilingual sentence in it either truncates or breaks into ragged lines.
-  // v23670 — Nick: "To be confirmed | A confirmer 2 lines this simply should
-  // say something else it doesnt look professional", proposing "Information
+  // v23670 —
+  // proposing "Information
   // Currently Unavailable".
   //
   // His wording, with the French corrected. He floated "A Cette Heure" and "En
@@ -22944,9 +22941,9 @@ var _GATE_LBL = {
   // trying to be rid of. "Non disponible" already implies the present tense.
   toBeConfirmed: { en:'Information Unavailable', fr:'Information non disponible', es:'Información no disponible', de:'Information nicht verfügbar', it:'Informazione non disponibile', pt:'Informação não disponível', ja:'情報がありません', zh:'暂无信息', ar:'المعلومات غير متوفرة' },
   // v23272 — the line that replaces the countdown once the aircraft is down.
-  // v23272 — two states, not one (Nick: 'Once the aircraft arrives it should
-  // say your aircraft has arrived once at the gate it should say your
-  // aircraft has arrived at the gate'). Down on the runway and still taxiing
+  // v23272 — two states, not one
+  //
+  // Down on the runway and still taxiing
   // is not the same news as parked on the stand.
   acArrived:     { en:'Your aircraft has arrived', fr:'Votre avion est arrivé', es:'Su avión ha llegado', de:'Ihr Flugzeug ist angekommen', it:'Il vostro aereo è arrivato', pt:'O seu avião chegou', ja:'ご搭乗機が到着しました', zh:'您的飞机已到达', ar:'وصلت طائرتكم' },
   acArrivedGate: { en:'Your aircraft has arrived at the gate', fr:'Votre avion est arrivé à la porte', es:'Su avión ha llegado a la puerta', de:'Ihr Flugzeug ist am Gate angekommen', it:'Il vostro aereo è arrivato al gate', pt:'O seu avião chegou ao portão', ja:'ご搭乗機がゲートに到着しました', zh:'您的飞机已抵达登机口', ar:'وصلت طائرتكم إلى البوابة' },
@@ -22967,13 +22964,13 @@ var _GATE_LBL = {
   timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
   zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
-  // v23223 — the boarding sign says what is still to come (Nick: 'theres
-  // nothing that says zones coming up').
+  // v23223 — the boarding sign says what is still to come
+  // 
   comingUp:  { en:'Coming up',     fr:'À venir',        es:'Próximas',     de:'Als Nächstes', it:'In arrivo',  pt:'A seguir',   ja:'次',        zh:'即将',   ar:'قادم' },
   // v23224 — PAL Airlines boards OPEN-FLOW (their published process: no
   // zones, no rows — pre-boarding, then one general call).
-  // v23538 — the inbound shelf's PERMANENT header. Nick: "So The Banner should
-  // always say I like Your Aircraft | Vote Appareil".
+  // v23538 — the inbound shelf's PERMANENT header.
+  // 
   // Deliberately NOT the existing `yourAircraft`: that one lives in the TL
   // table (not _GATE_LBL, which is what _gateLbl reads — using it here would
   // have printed the raw key, exactly as `preboard` and `preboardList` did on
@@ -22983,7 +22980,7 @@ var _GATE_LBL = {
   preboard:  { en:'Pre-boarding',  fr:'Pré-embarquement', es:'Preembarque', de:'Vorab-Einstieg', it:'Preimbarco', pt:'Pré-embarque', ja:'優先搭乗', zh:'优先登机', ar:'صعود مسبق' },
   genboard:  { en:'General boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'صعود عام' },
   // v23522 — Porter's published pre-boarding list, verbatim from flyporter.com
-  // (Nick: "This is important if somehow it can be integrated"). Shown as the
+ // Shown as the
   // priority column's sub-line during the pre-boarding phase. Rendered with
   // TL(), not the bilingual _gateLbl pairing — five categories side by side in
   // two languages would not fit a gate sign, and the board already rotates its
@@ -23005,17 +23002,17 @@ var _GATE_LBL = {
   useLanes:  { en:'Use Lanes',     fr:'Utilisez les voies', es:'Use carriles', de:'Spuren nutzen', it:'Usa corsie', pt:'Use faixas', ja:'レーン',  zh:'通道',   ar:'ممرات' },
   all:       { en:'All',           fr:'Toutes',         es:'Todas',        de:'Alle',        it:'Tutte',       pt:'Todas',      ja:'全て',      zh:'全部',   ar:'الكل' },
   // Countdown headline + short unit, mirrored from LS so the boarding screen
-  // can render BOTH board languages at once (Nick's mockup puts English above
+ // can render BOTH board languages at once (the owner's mockup puts English above
   // the number and French below it) through the same _gateLbl language pick
   // every other bilingual string on this screen already uses.
-  // v23119 (Nick: 'maybe you have better words') — the airline-standard
+ // v23119 — the airline-standard
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
-  // own gate signage says. Title Case kept per Nick's design.
+ // own gate signage says. Title Case kept as specified's design.
   boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   // v23202 — the altimeter's labels follow the CHOSEN languages like every
-  // other label on the board (Nick: 'ALL NEEDAS TO REFLECTS LANGUAGES
-  // CHOSEN'); they were hard-coded English with a hard-coded French unit.
+  // other label on the board
+  // ; they were hard-coded English with a hard-coded French unit.
   speed: { en:'Speed', fr:'Vitesse', es:'Velocidad', de:'Geschwindigkeit', it:'Velocità', pt:'Velocidade', ja:'速度', zh:'速度', ar:'السرعة' },
   altitude: { en:'Altitude', fr:'Altitude', es:'Altitud', de:'Flughöhe', it:'Altitudine', pt:'Altitude', ja:'高度', zh:'高度', ar:'الارتفاع' },
   distance: { en:'Distance', fr:'Distance', es:'Distancia', de:'Entfernung', it:'Distanza', pt:'Distância', ja:'距離', zh:'距离', ar:'المسافة' },
@@ -23024,7 +23021,7 @@ var _GATE_LBL = {
   nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
-  // Clock label for the boarding screen's white strip. Nick's concept wrote
+ // Clock label for the boarding screen's white strip. the owner's concept wrote
   // 'Heure Actuelle'; corrected to French sentence capitalisation, which is
   // how the rest of the French on these screens is set.
   currentTime: { en:'Current Time', fr:'Heure actuelle', es:'Hora actual', de:'Aktuelle Zeit', it:'Ora attuale', pt:'Hora atual', ja:'現在時刻', zh:'当前时间', ar:'الوقت الحالي' }
@@ -23050,8 +23047,8 @@ function _fidsClockForLang(now, tz, lang) {
 }
 
 // v23218 — the flight TIMES follow the chosen language on the BAGGAGE board
-// too (Nick: 'the baggage — make sure language is connected there too. Not
-// the clock — the flight times'). Same split _fidsClockForLang uses: English
+// too
+// Same split _fidsClockForLang uses: English
 // reads 10:25am; the 24-hour languages keep the feed's HH:MM. Driven by the
 // FIRST board language, with the French-first-airport reorder applied.
 // Anything that is not a bare HH:MM passes through untouched.
@@ -23079,7 +23076,7 @@ function _bidsTimeForLang(t) {
 // Returns the selected languages' words for `key`, at most two, de-duplicated.
 // frFirst only reorders — it is the French-first-airport flag and has never
 // been a language choice. sep/wrap let each call site keep its own markup.
-// v23161 — 'Priority | Priorité' was clipped on the boarding sign (Nick's
+// v23161 — 'Priority | Priorité' was clipped on the boarding sign (the owner's
 // screenshot). The label is white-space:nowrap by policy — 'You never ever
 // Break a sentence' — and the stacking treatment that rescues every other
 // bilingual pair was written in CSS for this class too, but never reached it:
@@ -23123,8 +23120,8 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     var w = o[picked[i]];
     if (!w) continue;
     var k = String(w).toLowerCase();
-    // v23130 — SIGN SYMMETRY (Nick: 'all needs to be in the 2 languages and
-    // its still not there attrocious' — the AC sign's lone 'Zones'). With
+    // v23130 — SIGN SYMMETRY
+    // — the AC sign's lone 'Zones'). With
     // keepDup the pair shows even when both languages share the word:
     // 'Zones | Zones', per his stated law ('display it twice … symmetry').
     if (!keepDup && seen[k]) continue;   // 'Gate | Gate' helps nobody (chips)
@@ -23142,8 +23139,8 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
 // Lane line as a bilingual pair with the lane number in BOTH halves
 // ('Use Lane 1 | Utilisez la voie 1') — same language pick + dedup as
 // _gateLbl, because 'Use Lane 1' alone on an otherwise fully bilingual
-// sign was the one monolingual string left (Nick: 'needs to be in 2
-// languages i mentioned this').
+// sign was the one monolingual string left
+// 
 function _gateLaneLbl(nums, plural, frFirst) {
   var o = _GATE_LBL[plural ? 'useLanes' : 'useLane'];
   if (!o) return '';
@@ -23163,8 +23160,8 @@ function _gateLaneLbl(nums, plural, frFirst) {
     parts.push(w + ' ' + nums);
   }
   if (!parts.length) parts.push(o.en + ' ' + nums);
-  // v23116 — A SENTENCE NEVER BREAKS (Nick: 'dont ever let a sentence break
-  // thats a fine within Canadian law'). Each language's line is one nowrap
+  // v23116 — A SENTENCE NEVER BREAKS
+  // Each language's line is one nowrap
   // unit; when both don't fit side by side the sign STACKS them whole —
   // 'Use Lane 2' over 'Utilisez la voie 2' — and the pipe disappears. The
   // stacking decision is made by the lane-line guard in the gate fitter,
@@ -23226,7 +23223,7 @@ function _acSkyPhaseApply() {
       }
     } catch (e4) {}
     // v23063 — the sky clip is a TIMELAPSE, so at 1x its clouds boil past far
-    // faster than anything at cruise (Nick: 'not going at the right speed').
+    // faster than anything at cruise.
     // Quarter speed reads as real weather rather than a fast-forward.
     var _sv = document.querySelector('.v2-rc-shelf-illus > #gateFgVid');
     if (_sv && _sv.isConnected && _sv.playbackRate !== 0.25) {
@@ -23247,7 +23244,7 @@ function _gateLblSpans(key, frFirst) {
   // v23313 — bare sibling spans, deliberately: the separator between the two
   // languages is injected by per-container CSS (span + span::before). The
   // containers that lacked such a rule rendered the languages JAMMED
-  // ('To be confirmedPor confirmar' — Nick's screenshot); the fix is the
+  // ('To be confirmedPor confirmar' — the owner's screenshot); the fix is the
   // missing CSS rule in display-overrides.css, NOT a separator in this
   // markup, which would double up wherever the CSS rule already exists.
   return _gateLbl(key, frFirst, function (w) { return '<span>' + w + '</span>'; }, '');
@@ -23262,7 +23259,7 @@ var FIDS_BUILD_TAG = 'v23702';
 // boards inside it reload on a build-tag change (this line). Miami has had
 // no data since AeroDataBox went away, so the first board that boots with
 // the retired config sends the whole rotator (same origin) to the tour
-// (rotate.html tour=1: working airports only, Nick's call). Once there, the
+// (rotate.html tour=1: working airports only, the owner's call). Once there, the
 // boards carry ap=<tour airport>, so this never fires again.
 try {
   var _sq = new URLSearchParams(window.location.search);
@@ -23274,7 +23271,7 @@ try {
     }
   }
 } catch (e) {}
-var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to main'
+var _BIDSV3_ON = true; //
 (function(){
   try {
     // v23159 — THE AD DIAGNOSTIC IS NO LONGER ON BY DEFAULT. This started as a
@@ -23319,8 +23316,8 @@ var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to 
 
 // ── BUILD WATCHDOG ───────────────────────────────────────────────────────
 // A running page executes the build it loaded — field displays run for days,
-// so every deployed fix reached them only on a manual reload (Nick: 'its not
-// getting fixed nothing is changing' — the screen was still executing an old
+// so every deployed fix reached them only on a manual reload
+// — the screen was still executing an old
 // build). Poll our own page (served no-store), read the fids-core buster,
 // and when a newer build is live reload at a QUIET moment: no pointer/key
 // input for 5+ minutes, so an unattended kiosk updates within minutes and an
@@ -23348,7 +23345,7 @@ var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to 
     }, 180000);
 
     // v23424 — RESCUE A ROTATOR THAT CANNOT RELOAD ITSELF.
-    // Nick's stream sat on days-old code while every fix shipped past it. The
+    // the owner's stream sat on days-old code while every fix shipped past it. The
     // rotator only reloaded on an AIRPORT SWITCH, and it was pinned to one
     // airport, so that moment never came — it could not pick up a deploy under
     // any circumstances, and no amount of shipping could reach it. v23422 fixed
@@ -23372,7 +23369,7 @@ var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to 
         // v23424 keyed on window.parent.__ocRotator, which only exists from
         // v23333 onward — so a rotator OLDER than that (exactly the stuck case
         // this is meant to rescue) was invisible and the rescue never fired.
-        // Nick: 'It has not restarted'. The path is true of every version.
+        // The path is true of every version.
         var _rot = null;
         try {
           var _pp = String(window.parent.location.pathname || '');
@@ -23384,7 +23381,7 @@ var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to 
           try { _rotVer = Number(_rot.__ocRotatorVer || 0) || 0; } catch (e) {}
           // v23518 — THE BAR MOVES WITH THE ROTATOR. This was a literal 23422,
           // so it only rescued rotators older than that one fix. The copy
-          // running on Nick's boxes publishes 23424 — newer than the bar, so
+          // running on the owner's boxes publishes 23424 — newer than the bar, so
           // the rescue stayed silent — while its checkSelf was inert (no etag
           // on /rotate, see rotate.html), so it could not reload itself either.
           // Between the two it was unreachable by any deploy: exactly the
@@ -23463,7 +23460,7 @@ var _BIDSV3_ON = true; // Nick approved 2026-08-30: 'taking a chance to push to 
 // stamped day-long cache headers on FAILED upstream fetches too — so one bad
 // response poisoned a display's copy of the map engine for 24 h, initGateMap
 // bailed on its typeof L check, and every route map on that screen vanished
-// (Nick: 'the flight routes i dont see any show up whatsoever'). Probe
+// Probe
 // window.L after load; when the engine is missing, re-inject it under a
 // unique query (the worker ignores queries; browser and edge treat it as a
 // new URL) and re-run the live map init so maps return without a re-render.
@@ -23684,8 +23681,8 @@ const THEME_LOGOS = {
 };
 
 function setTheme(name, _noPersist) {
-  // v23215 — THE BOARD THEMES FINALLY WORK FROM THE PICKER (Nick: 'teal
-  // never ever works it turns out white all white'). tus-teal /
+  // v23215 — THE BOARD THEMES FINALLY WORK FROM THE PICKER
+  // tus-teal /
   // tus-teal-deep / mist are CSS-rule themes driven by
   // body[data-fids-theme]; they have NEVER existed in the legacy THEMES map
   // below, so picking one here fell through `THEMES[name] || THEMES.gold`
@@ -23781,7 +23778,7 @@ function setTheme(name, _noPersist) {
       color: ${t.rowText} !important;
     }
     /* Statuses: base = plain row ink; EARLY ALONE gets the rich green so
-       it stands out (Nick, twice revised: Scheduled and On time both read
+ it stands out (the owner, twice revised: Scheduled and On time both read
        neutral — 'On Time is still green'). */
     .td-status { color: ${t.rowText} !important; }
     .td-status.fids-status-early { color: ${t.lightRows ? '#15803D' : '#2FD467'} !important; }
@@ -23891,7 +23888,7 @@ let _renderBlockTimer = null;
 // shown or hidden, slim thead, menubar) down to the ticker's real top.
 // The old `content-area height - thead height` estimate overcounted when
 // the chrome above the table shifted, and the last row rendered half-cut
-// behind the ticker (Nick: 'big no no it cuts at the end'). Used by BOTH
+// behind the ticker. Used by BOTH
 // render() and getPageCount() so paging and painting always agree.
 function _fidsRowsAvail() {
   var _fallback = (document.querySelector('.content-area')?.offsetHeight || 600)
@@ -23916,7 +23913,7 @@ function _fidsRowsAvail() {
 
 // The chrome around the table can change size AFTER a render — the ticker
 // is 0px until its messages load, then grows to ~58px and swallows the
-// bottom half of the last row (Nick: 'this is happening again'); the
+// bottom half of the last row; the
 // banner appearing late squishes the same way. Watch both and re-count
 // rows whenever they move. render() never resizes the ticker/banner, so
 // this cannot loop.
@@ -24083,7 +24080,7 @@ function render() {
   // Apply search filter for desktop table pagination
   const allFiltered = applySearch(flights);
 
-  // v23341 — AN AIRPORT WITH NO FEED NEVER SHOWS A BLANK BOARD. Nick sent a
+  // v23341 — AN AIRPORT WITH NO FEED NEVER SHOWS A BLANK BOARD. the owner sent a
   // Vancouver departures board that was completely empty: no rows, no message,
   // just the banner over a wall of colour. YVR is one of the four airports
   // whose feed is built but whose upstream blocks our server (429), so the
@@ -24141,7 +24138,7 @@ function render() {
 
   if (currentPage >= totalPages) currentPage = 0;
 
-  // v22693 — BALANCED PAGES. Nick's long-standing 'row-count cycling'
+  // v22693 — BALANCED PAGES. the owner's long-standing 'row-count cycling'
   // (11 -> 3 -> 11): the rotation itself is by design (dep pages then arr
   // pages), but slicing every page to full capacity front-loads the list —
   // 18 departures split 11+7, 14 arrivals split 11+3 — so every second
@@ -24182,7 +24179,7 @@ function render() {
     // Every state gets a REAL row class. History fades / early-green / the
     // final-call row used to lean on tr:has(td.fids-status-*), and :has()
     // silently does nothing on older display hardware — rows colored on one
-    // screen and not another (Nick: 'colors are very glitchy').
+    // screen and not another.
     const _ROW_CLS  = { 'cancelled':'row-cancelled', 'diverted':'row-diverted', 'delayed':'row-delayed',
                         'final-call':'row-final', 'early':'row-early', 'departed':'row-departed',
                         'arrived':'row-arrived', 'gate-closed':'row-gate-closed' };
@@ -24228,8 +24225,8 @@ function render() {
       let tw = TOMORROW_WX[f._locIata];
       // Multi-city rows: the primary code often has no weather (or the row's
       // dest is a via-stop). Fall back to the first through-flight leg that
-      // DOES have weather so the column isn't a dead '—' (Nick: 'multi city
-      // does not give us weather'). _fetchBoardWeather now fetches every leg.
+      // DOES have weather so the column isn't a dead '—'
+      // _fetchBoardWeather now fetches every leg.
       if (!(tw && tw.current && tw.current.temp !== undefined) && f._stops) {
         const _codes = _flightWxCodes(f);
         for (let _ci = 0; _ci < _codes.length; _ci++) {
@@ -24272,7 +24269,7 @@ function render() {
     } catch (e) {}
     // v22873 — PORTRAIT IS ALWAYS EMBLEM-ONLY. In a 1080-wide column the
     // wordmark artwork shrinks to an illegible smudge; Pearson's own upright
-    // boards (Nick's photo) show a square carrier tile and the flight number,
+    // boards show a square carrier tile and the flight number,
     // no lettering. Overrides whatever the airport/user config asked for,
     // because the config was chosen for a landscape screen.
     try { if (document.documentElement.classList.contains('fids-portrait')) _airlineStyleForRow = 'emblem'; } catch (e) {}
@@ -24282,7 +24279,7 @@ function render() {
     // F8 (Flair): brand policy forbids their name/logo ever rendering in the
     // green accent — the text fallback stays the default row colour.
     // EK (Emirates): red accent reads as an ALARM state on the board, not a
-    // brand (Nick: 'Emirates stands out, shouldn't be red') — row ink instead.
+    // brand — row ink instead.
     let _brandColor = (_airlineCodeForLogo === 'F8' || _airlineCodeForLogo === 'EK') ? ''
       : (AIRLINE_BRAND[_airlineCodeForLogo] && AIRLINE_BRAND[_airlineCodeForLogo].accent) || '';
     // Legibility guard: on the DARK board a deep brand accent (Qatar's maroon
@@ -24294,13 +24291,13 @@ function render() {
       if (_brandColor && wordmarkVariant() === 'light' && _hexLum(_brandColor) < 0.30) _brandColor = '';
     } catch (e) {}
     // State-tinted rows (yellow DELAYED / orange FINAL) keep the row ink —
-    // brand colours clash there (TAP green/red on yellow, Nick) and the
+    // brand colours clash there (TAP green/red on yellow, the owner) and the
     // inline !important would beat any stylesheet fix.
     // Cancelled/diverted joined Jul 27: their fallback NAME was still
     // getting the brand colour inlined with !important, which beats every
     // stylesheet rule — a navy or black brand rendered black on the red
-    // block whenever the white-ink artwork failed to load (Nick: 'I
-    // guarantee you on FIDS its not white. its black').
+    // block whenever the white-ink artwork failed to load
+    // 
     const _brandInkOk = !(isDelayed || stKey === 'final-call' || isCanc || isDiv);
     const _nameStyle = (_brandColor && _brandInkOk) ? ` style="color:${_brandColor} !important;"` : '';
     // onerror: RETRY once with a unique cache-buster before falling back to the
@@ -24311,7 +24308,7 @@ function render() {
     // and blue blocks keep the white artwork (matches the approved preview).
     // CANCELLED / DIVERTED are dark crimson/blue blocks on EVERY theme, so
     // they must force the white-ink artwork — on light boards the default
-    // variant is dark ink, which read as black-on-red (Nick, three times:
+    // variant is dark ink, which read as black-on-red (the owner, three times:
     // 'airlines in general all white on red').
     const _rowWmVariant = (isDelayed || stKey === 'final-call') ? 'dark'
       : (isCanc || isDiv) ? 'light' : undefined;
@@ -24320,8 +24317,8 @@ function render() {
     // swapped by variant, so it reads on dark and light rows alike.
     // v23350 — the /logos/wordmarks files are LOCKUPS (symbol + text), not
     // wordmarks. Dropped into the narrow label slot beside the emblem they
-    // shrink to an illegible smudge and print the symbol twice (Nick, on a
-    // Dublin board: "cant see a thing" / "NO EMBLEM NO FRILLS WORDS ONLY").
+    // shrink to an illegible smudge and print the symbol twice (reported
+    // illegible on a Dublin board; this slot is to carry words only, no emblem).
     // The slot takes words only, so a lockup is not eligible: the airline's
     // NAME is drawn instead, beside its proper emblem. IATA_WORDMARK_ONE stays
     // mapped for the day those files are replaced with words-only art — flip
@@ -24333,7 +24330,7 @@ function render() {
       : _wmOne
       ? `<img class="fids-airline-wordmark fids-wm-mono" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${_wmOne}" onerror="this.outerHTML='<span class=&quot;fids-airline-name&quot;>' + this.alt + '</span>'">`
       : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
-    // (Operated-by label lives on the GATE screen only — Nick doesn't want it
+    // (Operated-by label lives on the GATE screen only — the owner doesn't want it
     // on the main board; the enforced Express matrix still drives the gate.)
     const airlineCellHtml = '<td class="td-airline"><div class="fids-cell-airline">'
       +   '<div class="fids-airline-logo">' + mkLogo(_airlineCodeForLogo, f._airlineName) + '</div>'
@@ -24342,13 +24339,13 @@ function render() {
 
     const destCellHtml = (() => {
       // Multi-stop rows (comma city list) FLIP leg by leg on the main board
-      // too — worldwide, any feed (Nick: 'I hope you understood that these
-      // changes were for worldwide'). The city normalizers below collapse
+      // too — worldwide, any feed
+      // The city normalizers below collapse
       // the list to the first stop, so branch BEFORE them using the raw
       // dest/origin. City text and IATA chip share the global lockstep tick.
       // Flip ONLY from the feed's stop-code list. Splitting display text on
       // commas fabricated multi-city out of single names ('Houston, TX' —
-      // Nick: 'multi city on one name') and is gone for good.
+      // ) and is gone for good.
       const _rowStops = (Array.isArray(f._stops) && f._stops.length > 1) ? f._stops : null;
       if (_rowStops) {
         const _fc = _destFlipStops(_rowStops, 'c');
@@ -24380,7 +24377,7 @@ function render() {
         _label = _cityPlain;
       } else if (_tailCode) {
         // Split the code off and style it — as a separator, never parentheses
-        // (Nick: 'I don't want to see anywhere no longer Moncton (YQM)').
+        //').
         _label = _cityPlain + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _tailCode.toUpperCase() + '</span>';
       } else if (_iataUp && _iataUp.length >= 2 && _iataUp.length <= 4
                  && !cityDisp.toUpperCase().includes(_iataUp)) {
@@ -24501,7 +24498,7 @@ function render() {
     // though no longer placed in the row template below).
     const timeCell2Html = '<td class="td-time fids-cell-time">' + timeCellHtml + '</td>';
     // Long statuses (French: DERNIER APPEL, EMBARQUEMENT) ellipsized in the
-    // fixed column (Nick: 'not fully read') — flag them so CSS steps the
+    // fixed column — flag them so CSS steps the
     // type down instead of cutting the word.
     // Tag-strip to a FIXPOINT (CodeQL: single-pass replace can leave
     // '<script' behind on crafted input). The result is only ever used for
@@ -24512,12 +24509,12 @@ function render() {
     var _stPlainLen = _stPlain.trim().length;
     // INLINE font-size with !important: the stylesheet route kept losing to
     // late vw-sized theme rules and the word still clipped ('DERNIER AP…',
-    // Nick, twice). Inline+important cannot be out-cascaded.
+    // the owner, twice). Inline+important cannot be out-cascaded.
     var _stLongAttrs = _stPlainLen >= 15
       ? ' st-longtext" style="font-size:18px !important;letter-spacing:0.2px !important;'
       : '';
     // v22873 — the revised time rides along on the status cell as data-rev so
-    // PORTRAIT can render Pearson's one-cell form ("DELAYED – 22:15", Nick's
+    // PORTRAIT can render Pearson's one-cell form ("DELAYED – 22:15", the owner's
     // photo) and reclaim the whole Revised column for Destination. Landscape
     // ignores the attribute entirely and keeps its two separate columns.
     // v22874 — it has to be a REAL span, not a CSS ::after. The column
@@ -24532,8 +24529,8 @@ function render() {
     var _portraitBoard = false;
     try { _portraitBoard = document.documentElement.classList.contains('fids-portrait'); } catch (e) {}
     // v22875 — PORTRAIT MERGES BOTH TIME COLUMNS INTO THE STATUS CELL
-    // (Nick: 'remove the 2 times simply have this is the last 2 columns
-    // merge into 1 Such as Delayed-10:30, On Time 10:45'). The one time a
+    //
+    // The one time a
     // passenger needs is the EFFECTIVE one: the revised time when the
     // flight has been revised, the scheduled time otherwise. Cancelled and
     // diverted rows carry no time at all — there is nothing to be on time
@@ -24572,7 +24569,7 @@ function render() {
     // Fit SYNCHRONOUSLY in the same task as the innerHTML swap: the old
     // 60 ms timer let the browser PAINT the fresh rows at theme-default
     // fonts and re-paint fitted a frame later — a visible pop on every
-    // 12 s language cycle (Nick at v22373: 'its still doing it'). One
+    // 12 s language cycle. One
     // task → one paint → the new language arrives already fitted.
     try { boardAutofit(true); } catch (e) {}
     // settle pass for late layout (web fonts, images shifting metrics)
@@ -24614,7 +24611,7 @@ function fidsRowClick(tr) {
 window.fidsRowClick = fidsRowClick;
 
 // v23336 — AN AIRPORT WITH NO FEED SAYS SO, INSTEAD OF "NO FLIGHTS IN WINDOW".
-// (Nick sent a Cancún board reading NO FLIGHTS IN WINDOW at 1:53 AM.) That
+// (the owner sent a Cancún board reading NO FLIGHTS IN WINDOW at 1:53 AM.) That
 // message means "nothing is scheduled right now, look again later", which is
 // true for a live airport at a quiet hour — and a lie for an airport that has
 // no data source at all. Since AeroDataBox ended, a board fills only when the
@@ -24645,7 +24642,7 @@ function setState(which, show) {
             + ' HAS NO FLIGHT FEED YET · SIN DATOS EN VIVO PARA ESTE AEROPUERTO</div>';
       }
       // v23430 — A DEAD BOARD SENDS ITSELF TO THE TOUR.
-      // Nick's stream spent four days on a board for an airport with no feed
+      // the owner's stream spent four days on a board for an airport with no feed
       // (OGG), showing this very panel. Every fix to the tour list missed it
       // because the stream was never pointed at the rotator at all — it loads a
       // single-airport board URL, so TOUR_DEFAULT was never consulted and no
@@ -24659,7 +24656,7 @@ function setState(which, show) {
       try {
         // v23434 — TAKE THE WHOLE PAGE, NOT JUST THIS FRAME. v23430 required
         // window.top === window, so it only fired on a board that was already
-        // top-level. Nick's OGG board sits INSIDE the old rotator, which is
+        // top-level. the owner's OGG board sits INSIDE the old rotator, which is
         // pinned and cannot reload itself — so the one case this was written
         // for was the one case it skipped, and the stream stayed dead a fourth
         // day. Navigating window.top works either way: a top-level board sends
@@ -25458,7 +25455,7 @@ const CALLSIGN_ICAO = {
 };
 
 // RJ removed from the AC family — Royal Jordanian is its own carrier; the
-// bogus mapping dressed an Amman flight in Air Canada branding (Nick, Aug 7).
+// bogus mapping dressed an Amman flight in Air Canada branding.
 const PARENT = {'QK':'AC','ZX':'AC','9M':'AC','9L':'AC','RV':'AC','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','PTR':'PD','P3':'PD','Q6':'Y4','4C':'LA'};
 const FILTER_OUT = new Set([
   // ── Major cargo carriers (IATA + ICAO) ──
@@ -25482,8 +25479,8 @@ const FILTER_OUT = new Set([
   // Nanaimo (ZNA), Victoria Harbour (YWH), Ganges (YGG), Tofino (YTP) and
   // Sechelt. Those all leave from the Vancouver Harbour Flight Centre
   // downtown, not from YVR, so a traveller at the airport can do nothing with
-  // them (Nick: 'those flights are out of Vancouver harbour they should not
-  // show it at YVR or YYJ'). H3/YHS stay — a feed that uses the published
+  // them
+  // H3/YHS stay — a feed that uses the published
   // codes must be blocked too.
   'H3','YHS','YB',  // Harbour Air Seaplanes
   // ── Cargo subsidiaries / freight ──
@@ -25528,7 +25525,7 @@ let autoRefreshTimer = null;
 // MCO/GOAA, YUL/ADM, TPA, YYZ, YHU, YTZ, PANYNJ, MIA) and adbFetch()
 // itself now live in js/feed-router.js, loaded BEFORE this file, so the
 // mobile app runs the SAME data layer instead of a private copy
-// (v23230, Nick: 'the gates are no wired … you built over it'). This
+// (v23230, ). This
 // file's later definitions (adbPacedFetch's paced queue etc.) override
 // the router's standalone shims by load order.
 // WEBHOOK AIRCRAFT MERGE for the native cyqm.ca rows. The native feed stays
@@ -25536,11 +25533,11 @@ let autoRefreshTimer = null;
 // ONLY the airframe identity (reg / Mode-S / model) it alone has, and only
 // where the native row lacks it. Window is 6 h (matches the sticky-reg
 // trust window): a same-day assignment push is still today's tail per
-// Nick's 'go by the registration — from today, never the past'; the
+// the owner's 'go by the registration — from today, never the past'; the
 // carrier/leg sanity guards downstream re-validate every reg regardless.
 // ENABLED push airports — the ONLY places the board even asks the worker's
-// webhook cache (Nick: 'It should only be Moncton no?'). A subscription
-// lives in the ADB account, never in this code; when Nick adds one for
+// webhook cache. A subscription
+// lives in the ADB account, never in this code; when the owner adds one for
 // KTPA / KMCO, enabling it here is a one-line change.
 var _WEBHOOK_PUSH_ENABLED = { 'CYQM': true };
 async function _yqmCacheAircraftMerge(list, direction, icao) {
@@ -25548,8 +25545,8 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
     if (!_WEBHOOK_PUSH_ENABLED[String(icao || '').toUpperCase()]) return;
     if (!Array.isArray(list) || !list.length) return;
     const dirParam = direction === 'Departure' ? 'dep' : 'arr';
-    // Parameterized (Nick: 'better check TPA — we may be experiencing a
-    // similar issue from the same thing that happened in moncton'): TPA's
+    // Parameterized
+    // : TPA's
     // native feed also carries ZERO aircraft data, so its gates also lean
     // entirely on the by-number lookup. Any airport with a Flight-Alert
     // PUSH subscription can merge tails the same way; an airport without
@@ -25672,7 +25669,7 @@ var _aircraftImageCache = {};
 var _regCache = {};
 var _regFetching = {}; // Guard against duplicate concurrent requests
 // ── ADB REQUEST REGULATOR ───────────────────────────────────────────────
-// Nick's MEGA plan has plenty of MONTHLY units (441k/600k left) but a
+// the owner's MEGA plan has plenty of MONTHLY units (441k/600k left) but a
 // PER-SECOND cap. The boards fire bursts (every gate asks for flight, reg,
 // history, image at once, on every screen) — the provider answers the first
 // few and throttles the rest, which is exactly the 'very rare to see an
@@ -26118,8 +26115,8 @@ function _gateStickyFix(key, lat, lng, alt, spd) {
 // The big map read ONLY the feed field — it never consulted the cache. So
 // whenever ADS-B held a fresher fix than the feed (the normal case, and the
 // entire reason the cache exists), the two maps plotted the same aircraft in
-// two different places. Nick: 'the little map and big map not synced at all,
-// very smooth just not accurate' — smooth because the sticky fix interpolates
+// two different places.
+// — smooth because the sticky fix interpolates
 // between polls, inaccurate because one of the two was reading a stale field.
 //
 // Both callers resolve through here now, so a disagreement is no longer
@@ -26127,7 +26124,7 @@ function _gateStickyFix(key, lat, lng, alt, spd) {
 // honesty gates (physical plausibility, route corridor, leg window,
 // on-ground) on top of the position it gets back.
 // v23331 — A POSITION IS ONLY THIS LEG'S IF IT IS RECENT, INSIDE THE LEG'S
-// WINDOW, AND ABLE TO REACH THIS FIELD BY ITS ETA. Nick's WS790 gate
+// WINDOW, AND ABLE TO REACH THIS FIELD BY ITS ETA. the owner's WS790 gate
 // (Edmonton → Moncton, about to land) drew the aircraft over Saskatchewan.
 // The only position source left is the ADS-B lookup, and it took the first
 // answer for the REGISTRATION before the callsign — the airframe wherever it
@@ -26452,8 +26449,8 @@ function _adsbCached(reg, callSign, flightNo, maxAgeMs, modeS) {
 }
 try { if (typeof window !== 'undefined') window._adsbCached = _adsbCached; } catch (e) {}
 
-// ── v22891 — SURROUNDING TRAFFIC (Nick: 'we should put the aircraft in the
-// immediate area'). One area query returns EVERY aircraft near the point,
+// ── v22891 — SURROUNDING TRAFFIC
+// One area query returns EVERY aircraft near the point,
 // so this is cheaper than the per-flight telemetry lookups already running:
 // one request per screen per 25 s regardless of how many aircraft are up.
 // Drawn only at airport-level zoom — at cruise it would be meaningless
@@ -26567,7 +26564,7 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
         }
       }
 
-      // FOREIGN-LEG GUARD (Nick's C-GFCP: his TPA gate's AC1661 wore the
+      // FOREIGN-LEG GUARD (the owner's C-GFCP: his TPA gate's AC1661 wore the
       // tail of ADB's AC1661 record for a DIFFERENT airport pair — the
       // MIA leg. When no leg matched the requested airport, the picker
       // fell back to whatever leg existed and its airframe identity
@@ -26587,8 +26584,8 @@ async function loadFlight(flightNumber, dateStr, airportIata) {
             try { console.warn('[FIDS] FOREIGN LEG for', flightNumber, '@' + _apReqUp, '— record is', _plDep + '\u2192' + _plArr, '; airframe identity withheld'); } catch (e2) {}
           }
         }
-        // WRONG-DAY GUARD (Nick: 'is it possible that it is assigned to the
-        // wrong date?' — yes. Evening departures cross the UTC midnight, so
+        // WRONG-DAY GUARD
+        // — yes. Evening departures cross the UTC midnight, so
         // yesterday's 9 PM EDT AC1661 lives under TODAY'S date key; querying
         // today served YESTERDAY'S completed leg — right number, right
         // route, wrong day — and its tail C-GFCP (flying MIA today per the
@@ -26987,7 +26984,7 @@ async function loadFlightHistory(flightNumber) {
   return promise;
 }
 
-// v23109 — REVISIONS LIVE ON THE NEAREST DAY (Nick, AC1986 into YQM:
+// v23109 — REVISIONS LIVE ON THE NEAREST DAY (the owner, AC1986 into YQM:
 // 'showing as 12:08AM revised at 11:48PM yet delayed?'). Around midnight
 // the feed stamps the revised/predicted local time with the SCHEDULED
 // day's date, so an arrival due 12:08 AM revised to 11:48 PM the evening
@@ -27035,7 +27032,7 @@ function adbStatus(f, mode, schedTs, nowTs) {
   else{if(minsToRef>=-30&&minsToRef<=0)base='landed';else if(minsToRef>=0&&minsToRef<=60)base='ontime';}
   if(base===null){ if(refTs<nowTs-5*60000)base=(mode==='dep'?'departed':'arrived'); else base='scheduled'; }
   // The revised time is the TRUTH for neutral statuses at ANY horizon
-  // (Nick: 'flights delayed showing on time and early should be early') —
+  // —
   // the old >30-min gate let a flight revised 40 min later read 'On time'.
   if(base==='ontime'||base==='scheduled'){
     if(updateTs && updateTs > schedTs + 5*60000) return 'delayed';
@@ -27044,7 +27041,7 @@ function adbStatus(f, mode, schedTs, nowTs) {
   return base;
 }
 // ── Row de-duplication ───────────────────────────────────────────────────
-// Nick: 'the plane 1983 has left 4 times from toronto'. The feeds repeat the
+// The feeds repeat the
 // same departure. AeroDataBox is queried withLeg=true, so a rotation comes
 // back once per leg, and the two overlapping fetch windows are merged on an
 // EXACT scheduled-UTC string — the moment an estimate is revised or a
@@ -27190,7 +27187,7 @@ function mapADB(raw, mode) {
     if(FILTER_OUT.has(fp))return null;
     // Brand by the flight-number PREFIX first — it's what passengers see.
     // A feed row marked AC carrying number 3H802 (Air Inuit) must not
-    // brand as Air Canada (Nick). Affiliates still collapse via PARENT.
+    // brand as Air Canada. Affiliates still collapse via PARENT.
     const airline = PARENT[fp] || (fp && AIRLINE_NAME[fp] ? fp : '') || PARENT[code] || code || fp;
     if(PARENT[fp])flight=flight.replace(fp,PARENT[fp]);
     // v194: Prefer our local AIRLINE_NAME mapping over the API's name field.
@@ -27267,7 +27264,7 @@ function mapADB(raw, mode) {
       };
       const _cn = _fold(cityName);
       locIata = _lookup(_cn);
-      // QUALIFIER FORMS (Nick's UA2223: 'Chicago - O'hare' had no chip and
+      // QUALIFIER FORMS (the owner's UA2223: 'Chicago - O'hare' had no chip and
       // no weather). Feeds write 'City - Airport' with ' - '; the full
       // string matches nothing. Try: (1) 'City Airport' joined \u2014 that IS
       // many airports' listed name ('Chicago O'Hare'); (2) the city segment
@@ -27305,7 +27302,7 @@ function mapADB(raw, mode) {
     // read _stops directly, static surfaces show the first stop.)
     // Connecting flights (MCO/YYZ via-rows) join the SAME flip pipeline as
     // every other multi-stop row instead of the old static "Albany via RDU"
-    // label (Nick: 'Orlando has the connecting issues as well'). _mcoViaStop
+    // label. _mcoViaStop
     // is IATA codes (MCO) or city names (YYZ); resolve codes to city names
     // and list the route in flying order, final stop last, comma-joined so
     // the board flips leg by leg.
@@ -27406,7 +27403,7 @@ function mapADB(raw, mode) {
         // YQM has exactly TWO carousels: domestic → 1, international
         // (incl. US, which clears customs) → 2. Override whatever ADB
         // returns — it reports phantom belt numbers (3,4,…) that don't exist
-        // here (Nick: 'all 1 unless it's international then 2').
+        // here.
         const _YQM_INTL_CARRIERS = new Set(['TS','WG']);
         let _isIntl;
         if (_YQM_INTL_CARRIERS.has(airline)) {
@@ -27449,7 +27446,7 @@ function mapADB(raw, mode) {
         }
       } else {
         // No belt in the feed. At multi-terminal airports NEVER fabricate
-        // Carousel 1 (Nick: 'Montreal has more than 1 carousel') — an
+        // Carousel 1 — an
         // honest '—' beats sending a traveler to the wrong belt. Small
         // single-terminal airports keep the '1' default (YQM precedent:
         // synthesized beats blank there).
@@ -27488,8 +27485,8 @@ function mapADB(raw, mode) {
     if (f.isCargo===true) return null;
     // No resolvable place: no IATA/ICAO and the feed's airport name is empty
     // or literally 'Unknown' — repositioning/ferry/private legs. A public
-    // board row reading 'Unknown' helps no traveler (Nick: 'why is there
-    // unknown places for a flight, that can't be').
+    // board row reading 'Unknown' helps no traveler
+    // t be').
     if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
     return mode==='dep'
       ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
@@ -27526,7 +27523,7 @@ async function fetchLive() {
   const iata = document.getElementById('apSel').value;
   // Only show the loading splash on the FIRST load. The 5-minute auto-refresh
   // was re-showing it EVERY time, dropping the live gate/board to the '99%'
-  // splash for ~10s on every refresh — the recurring 'glitch' Nick filmed
+  // splash for ~10s on every refresh — the recurring 'glitch' the owner filmed
   // (NOT a reload). Background refreshes now update silently behind the live
   // screen; the loader only covers the genuine cold start.
   if (window._initialFetchDone !== true) {
@@ -27628,8 +27625,8 @@ async function fetchLive() {
     // A board that changes shape on every refresh is also a board whose gate
     // list changes on every refresh, and a gate with one departure a day
     // lives out at the far end that keeps being cut — which is how gate 3
-    // kept losing its Porter flight on alternate polls (Nick: 'not catching
-    // it half the time' — half, literally).
+    // kept losing its Porter flight on alternate polls
+    // — half, literally).
     //
     // _fidsBusyCount reads the RAW feed against a fixed 12-hour horizon: the
     // same question, an answer that cannot be moved by what it sets. Applied
@@ -27669,7 +27666,7 @@ async function fetchLive() {
     // near the end of the try, AFTER both awaits. So the one case that needed
     // a retry most — the very first fetch failing — was the one case that got
     // none: no data, no timer, no route back, for the whole life of the frame.
-    // The board simply sat there. That is Nick's Ottawa: chrome, clock and
+    // The board simply sat there. That is the owner's Ottawa: chrome, clock and
     // date all painted correctly (they do not need the feed) over a body that
     // could never fill, and it stayed that way because nothing was ever going
     // to ask again. It looked like a data fault and it was a lifecycle fault.
@@ -27738,7 +27735,7 @@ function applyAirportConfigToBoard(iata) {
       _userCfg = _rawUserPrefs ? JSON.parse(_rawUserPrefs) : null;
     } catch (e) {}
   }
-  // v23214 — THE CLOUD IS THE GLOBAL TRUTH (Nick: 'Settings don't save
+  // v23214 — THE CLOUD IS THE GLOBAL TRUTH (t save
   // globally … it should save on cloudflare and colors should work
   // properly'). The Customize panel and preset grid now WRITE THROUGH to
   // the airport config; here the other half: when the cloud carries a
@@ -27808,10 +27805,10 @@ function applyAirportConfigToBoard(iata) {
   // v22970 — the saved layer is NEW. This function runs on every airport
   // switch AND re-runs when the async admin config lands, and it wrote
   // config-default langs unconditionally — so it clobbered the v22961
-  // restore on every path (Nick: 'it does not save the language to an
-  // airport btw'; measured: switch back to an airport saved de+es → en,fr).
+  // restore on every path
+  // ; measured: switch back to an airport saved de+es → en,fr).
   // v23054 — a `?langs=` URL param now sits ABOVE all of that, for unattended
-  // kiosk/stream screens (Nick: the Orlando live stream on English+Spanish).
+  // kiosk/stream screens.
   // A headless streamer has no operator to press the language toggle, and
   // pinning it in the URL is deterministic — it survives a profile wipe, a
   // droplet rebuild and an admin-config change, none of which localStorage or
@@ -27879,7 +27876,7 @@ function applyAirportConfigToBoard(iata) {
     var _dnT = _fidsDayNightTheme(_userCfg && _userCfg.dayNight, iata);
     if (_dnT) _theme = _dnT;
   } catch (e) {}
-  // Theme lineup reduced to the teal (Nick) — anything else saved on a
+  // Theme lineup reduced to the teal — anything else saved on a
   // display (old navy/sky/cream/etc.) coerces to teal; custom stays.
   var _ALLOWED_THEMES = { 'tus-teal': 1, 'tus-teal-deep': 1, 'mist': 1, 'custom': 1 };
   if (!_ALLOWED_THEMES[_theme]) _theme = 'tus-teal';
@@ -27888,8 +27885,8 @@ function applyAirportConfigToBoard(iata) {
   // theme always fell back to the airport default (teal). Pin it on the URL:
   //   ?theme=mist   (also tus-teal, tus-teal-deep). Wins over everything.
   try {
-    // v23125 — the URL pin is a BOOT DEFAULT now, not a veto (Nick: 'I dont
-    // get any colors that work properly ... i cant change it'). His stream
+    // v23125 — the URL pin is a BOOT DEFAULT now, not a veto
+    // His stream
     // URLs pin ?theme=mist, and the pin outranked everything — so changing
     // the theme in the menu on those screens did nothing, forever. The pin
     // still gives a wiped kiosk a deterministic look; the moment an operator
@@ -28048,8 +28045,8 @@ function applyAirportConfigToBoard(iata) {
       if (_existing) _existing.remove();
       var _styleEl = document.createElement('style');
       _styleEl.id = '_fidsCustomThemeRules';
-      // STATE ROWS ARE EXEMPT (Nick: 'delayed colors early etc dont work for
-      // custom and even highlight rows'): the unguarded row/td rules were
+      // STATE ROWS ARE EXEMPT
+      // : the unguarded row/td rules were
       // out-cascading the status grammar blocks (Delayed yellow, Cancelled
       // crimson, Final Call orange, history fade) and their inks. Every row
       // background/colour rule below skips state-classed rows so the blocks
@@ -28057,7 +28054,7 @@ function applyAirportConfigToBoard(iata) {
       var _nsF = ':not(.row-delayed):not(.row-cancelled):not(.row-diverted):not(.row-final):not(.row-departed):not(.row-arrived):not(.row-gate-closed)';
       var _nsB = ':not(.bidsv2-row-delayed):not(.bidsv2-row-cancelled):not(.bidsv2-row-diverted)';
       // v22975 — ARMORED, AND background-color NOT the shorthand. Measured on
-      // prod with Nick's own colors (his iPad shot: rows stayed white/grey,
+      // prod with the owner's own colors (his iPad shot: rows stayed white/grey,
       // text went blue): the plain-row background lost to the airport texture
       // rules, which are armored to 3 ID-specificity (html:not(#_) …
       // :not(#_)). The user's explicit color choice is the HIGHEST-intent
@@ -28070,7 +28067,7 @@ function applyAirportConfigToBoard(iata) {
       // Resolve every ground ONCE, then run each ink through the legibility
       // floor against the ground it actually lands on. Odd and even rows are
       // separate grounds, so the row ink is emitted twice — one white row
-      // among dark ones used to swallow its own text (Nick's white-on-white
+      // among dark ones used to swallow its own text (the owner's white-on-white
       // board), because a single `td { color: text }` rule can only be right
       // for one of the two.
       var _gBg    = _cc.bg      || '#0a1628';
@@ -28088,7 +28085,7 @@ function applyAirportConfigToBoard(iata) {
       var _inkCrsl = _fidsInk(_gBg,   _gOdd);   // carousel block paints bg-colour text on a rowOdd ground
       var _inkAcc  = _fidsInk(_iAcc,  _gHdr);
       // v23219 — STATUS COLOURS STAY SEMANTIC ON CUSTOM PALETTES (UXmatters
-      // colour-theory article Nick asked implemented: one colour = one
+      // colour-theory article the owner asked implemented: one colour = one
       // meaning, and every status ink must clear the value-contrast floor).
       // Arrived/Early were painted in the ACCENT here — a red accent made
       // 'Arrived' read as a cancellation. They are GREEN on every built-in
@@ -28126,9 +28123,9 @@ function applyAirportConfigToBoard(iata) {
         // specificity, and only source order lets the green win.
         _CA + '.bidsv2-flight-row' + _nsB + ' :is(.bidsv2-status-arrived,.bidsv2-status-early) { color:' + _okEven + ' !important; }' +
         _CA + '.bidsv2-flight-row' + _nsB + ':nth-child(odd) :is(.bidsv2-status-arrived,.bidsv2-status-early) { color:' + _okOdd + ' !important; }' +
-        // v23241 — SPAN-LEVEL INKS GO THROUGH THE FLOOR TOO (Nick's YYZ
-        // board: temps in the mist theme's slate on his navy rows — 'fuck
-        // all has been done about color'). The generic td ink only reaches
+        // v23241 — SPAN-LEVEL INKS GO THROUGH THE FLOOR TOO. Reported on a YYZ
+        // board: temps in the mist theme's slate on navy rows, with the colour
+        // correction having no visible effect. The generic td ink only reaches
         // spans by inheritance, and any DIRECT span rule beats inheritance;
         // the built-in theme's lingering .wx-temp/.td-status rules were
         // exactly that. Those are removed below, and the custom palette now
@@ -28321,7 +28318,7 @@ function onApChange() {
     } catch (e) {}
   }
   // v22968 — apply THIS airport's saved language choice on the in-page
-  // switch too (Nick: 'it does not save the language to an airport btw').
+  // switch too.
   // The v22961 restore ran only on the boot path (changeScreenType), so
   // picking a new airport from the menu/control picker kept the previous
   // airport's languages and the saved set looked like it never took.
@@ -28360,13 +28357,13 @@ function onApChange() {
 }
 
 /* ── v23498 — A REVISED FLIGHT IS ONE FLIGHT, NOT TWO ──────────────────────
-   Nick's arrivals board showed both of these at once, and they disagreed:
+ the owner's arrivals board showed both of these at once, and they disagreed:
 
      AC2040Z  YUL  Sep 8 21:38  delayed    revised 21:46
      AC2040   YUL  Sep 8 21:38  scheduled  no revision
 
-   Nick, on what the letter means: "the letter means theres been a change and
-   2040 is the initial number ... if its at z it had 26 changes from a to z".
+
+
    So the suffix is a REVISION COUNTER — A is the first change, Z the
    twenty-sixth — and the highest letter is the current truth. The un-suffixed
    row is the original, superseded. Showing both puts a contradiction in front
@@ -28454,8 +28451,8 @@ function loadDemo() {
   _fetchBoardWeather(allCodes);
 }
 
-// Bilingual date line (Nick: 'date in both languages… BIDS for sure can be
-// both languages on one screen'). French first (capitalised), then English,
+// Bilingual date line
+// French first (capitalised), then English,
 // e.g. "Mardi 21 juillet · Tuesday, Jul 21". Used by the FIDS clock and the
 // BIDS banner alike.
 function _bilingualDate(now, tz) {
@@ -28468,10 +28465,10 @@ function _bilingualDate(now, tz) {
   return fr + '  ·  ' + en;
 }
 
-// Bilingual board label (Nick: 'it should be 2 languages at once'). English
+// Bilingual board label. English
 // over French, stacked — both show at once and the longer French line
 // ('Retrait des bagages') no longer clips against the flag's white band.
-// v22962 — the stacked label follows the SELECTED languages (Nick's BIDS
+// v22962 — the stacked label follows the SELECTED languages (the owner's BIDS
 // paste: 'Baggage claim / Retrait des bagages' hardcoded EN/FR while the
 // values ran Spanish). Words come from LS like every other label; one
 // language selected = one line.
@@ -28495,8 +28492,8 @@ function _boardLabelBilingual(key) {
 // a broken board, not a deliberate one, and there is no way for staff to
 // tell the two apart from across a hall.
 // v22880 — the chip speaks the SAME 9 languages as the rest of the board
-// (Nick: 'You may as well reinstall the already exisiting multigual
-// languages'). It follows the language rotation rather than stacking a
+//
+// It follows the language rotation rather than stacking a
 // hardcoded EN/FR pair, which also keeps it to a single line — the stacked
 // version was two extra lines in a banner sized for two.
 var _BOARD_REGION_KEY = { DOM: 'f-domestic', TRANS: 'f-transborder', INTL: 'f-international' };
@@ -28530,13 +28527,13 @@ function _boardFilterChipHtml() {
 }
 
 
-// ── Shared clock format (Nick, Jul 2026) — the SAME words + format on every
+// ── Shared clock format — the SAME words + format on every
 // screen (gate / FIDS / BIDS):
 //   Time In <City> | Heure à <City>
 //   6:26PM | 18 h 26
 //   Thursday, July 23rd | Jeudi, le 23 juillet
 function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s[(v - 20) % 10] || s[v] || s[0]; }
-// Single 12h time '10:29PM' (Nick: 'one time format') — for the FIDS/BIDS
+// Single 12h time '10:29PM' — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
 function _ocClockTime1(now, tz) {
   var o = { hour: 'numeric', minute: '2-digit', hour12: true }; if (tz) o.timeZone = tz;
@@ -28551,14 +28548,14 @@ function _ocClockTime(now, tz) {
   new Intl.DateTimeFormat('en-GB', po).formatToParts(now).forEach(function (p) {
     if (p.type === 'hour') H = p.value; else if (p.type === 'minute') M = p.value;
   });
-  // Nick: '7:03PM | 19h 03'.
+  //
   return en + ' | ' + String(parseInt(H, 10)) + 'h ' + M;
 }
 function _ocClockDate(now, tz) {
-  // v22959 — the banner date follows the SELECTED languages (Nick: 'The date
-  // on top still doesnt work'). This hardcoded en-US + fr-CA — the sixth
+  // v22959 — the banner date follows the SELECTED languages
+  // This hardcoded en-US + fr-CA — the sixth
   // fixed-language surface found. Intl does the words; the per-language
-  // format rules Nick approved are kept: EN 'Thursday, July 23' (comma, no
+  // format rules the owner approved are kept: EN 'Thursday, July 23' (comma, no
   // ordinal); FR 'Jeudi 23 juillet' (capitalised weekday, no comma, no 'le');
   // other locales take their natural weekday-month-day form, capitalised.
   var eo = { weekday: 'long', month: 'long', day: 'numeric' };
@@ -28621,8 +28618,8 @@ function tick() {
   var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || (_cityForIata(_ci)) || _ci;
   if (typeof normalizeDisplayCity === 'function') _city = normalizeDisplayCity(_city, _ci);
   // v23287 — the FIDS/BIDS banner clock is now the GATE clock: the time over
-  // the bilingual date, nothing else (Nick: 'Simplify the FIDS and BIDS clock
-  // similar to the Gate Minus the airport code'). The analog dial and the
+  // the bilingual date, nothing else
+  // The analog dial and the
   // '<City> Local Time | Heure Locale à <City>' label are DELETED — markup,
   // driver and styling — not hidden.
   document.getElementById('clock').textContent = _ocClockTime1(now, tz);
@@ -28694,9 +28691,9 @@ function tick_carousel() {
   var _ap = (document.getElementById('apSel') || {}).value || '';
   var _metric  = boardMetricFor(_ap);
   // v23239 — A SLIDE PER ASSIGNED LANGUAGE, however many are assigned
-  // (Nick: 'The multi languages is supposed to run on different slides per
-  // language … Make sure we’re going by the 9 languages??? Whatever is
-  // assigned'). The old clock hard-coded a primary/second pair, so a board
+  //
+  //
+  // The old clock hard-coded a primary/second pair, so a board
   // assigned three or more languages never showed the ones past langs[1].
   // The clock now walks langs[] in order — one full slide per language —
   // and advances the page after the last one. The first slide keeps °C;
@@ -28721,14 +28718,14 @@ function startPaging() {
 }
 
 // ── COUNTRY / REGION CLASSIFICATION ──────────────────────────────
-// Nick: 'display the monitors by terminal, (filter) by airline or by
-// domestic, international transborder'. Nothing in the feeds carries a
+//
+// Nothing in the feeds carries a
 // country — not ADB, not the native airport APIs, not the proxy — so the
 // board has to classify destinations itself.
 //
 // v22886: the first cut DERIVED a US airport set from coordinate bounding
 // boxes, which needed a hand-written Mexico/Caribbean exclusion list
-// because those boxes overlap northern Mexico and the Bahamas. Nick found
+// because those boxes overlap northern Mexico and the Bahamas. the owner found
 // github.com/Jonty/airline-route-data, which publishes a real country_code
 // for every passenger airport, so the guesswork is gone: this table is the
 // factual iata → ISO country mapping extracted from it (3,908 airports,
@@ -29281,7 +29278,7 @@ function applySearch(flights) {
     list = list.filter(f => (f.terminal||'').toString().trim().toUpperCase().replace(/^T/, '') === _tWant);
   }
 
-  // Region filter — domestic / transborder / international (Nick).
+  // Region filter — domestic / transborder / international.
   if (filterRegion) {
     const _rWant = new Set(String(filterRegion).toUpperCase().split(',')
       .map(s => s.trim())
@@ -30059,8 +30056,8 @@ try {
     var _apSelEl = document.getElementById('apSel');
     if (_apSelEl) _apSelEl.value = _initAp;
   }
-  // v22878 — PER-MONITOR FILTERS (Nick: 'I can display the monitors by
-  // terminal, (filter) by airline or by domestic, internationa transborder').
+  // v22878 — PER-MONITOR FILTERS
+  // 
   // The URL is the right home for these: each screen already gets its own
   // one, they survive the kiosk's own reload, and nothing in the operator UI
   // can knock a wall display off its assignment by accident.
@@ -30163,7 +30160,7 @@ document.addEventListener('click', function(e) {
 
 // ── AIRPORT AUTOCOMPLETE ─────────────────────────────────────────────────
 // ── v23335 — THE PICKER ONLY OFFERS AIRPORTS THAT HAVE DATA ───────────────
-// (Nick: "Maui doesn't work, all airports don't work"; "that's stupid to have
+// (; "that's stupid to have
 // an airport with no feed on a list of airports that people would watch".)
 // AeroDataBox is gone. A board fills only when its airport has a handler in
 // the worker reading that airport's own authority feed. Every other airport
@@ -30218,7 +30215,7 @@ const AP_LIST = [
   {c:'DTW',n:'Detroit'},{c:'MSP',n:'Minneapolis'},{c:'PIT',n:'Pittsburgh'},
   {c:'RDU',n:'Raleigh-Durham'},{c:'BDL',n:'Hartford'},{c:'BWI',n:'Baltimore'},
   // v22736 — the Tampa destinations that had no entry here at all, which is
-  // why their rows arrived as raw feed strings with no code (Nick listed them
+  // why their rows arrived as raw feed strings with no code (the owner listed them
   // off the live board: Gulfport/Biloxi, Bentonville/Fayetteville, Pensacola,
   // Syracuse).
   {c:'GPT',n:'Gulfport-Biloxi'},{c:'XNA',n:'Northwest Arkansas'},
@@ -30529,7 +30526,7 @@ function _fetchAirportCoords(iata) {
 // Satellite = Esri World Imagery
 // All free for fair use; no API key needed.
 function _gateMapTileLayer() {
-  // Nick (Jul 2026) wants the classic OpenStreetMap street map. Served
+ // the owner (Jul 2026) wants the classic OpenStreetMap street map. Served
   // same-origin through the worker's /tiles/osm route (which sends the
   // User-Agent OSM's tile policy requires) so it still works on locked-down
   // display networks. OSM already bakes in city/town/street names, so a
@@ -30547,8 +30544,8 @@ function _gateMapTileLayer() {
   return t;
 }
 
-// v23100 — THE BIG MAP ENTERS FINISHED, NOT GREY (Nick: 'look at the map and
-// how it comes in that is terrible'). The bigcraft slide rebuilds its map
+// v23100 — THE BIG MAP ENTERS FINISHED, NOT GREY
+// The bigcraft slide rebuilds its map
 // from nothing at every entry, so the audience watched Leaflet's grey ground
 // fill in tile by tile. The container now starts hidden (bc-loading) and
 // fades in over ~0.45s once the tile layer reports every visible tile
@@ -30565,7 +30562,7 @@ function _gateMapTileLayer() {
 // is a large GREY BOX in the centre of the screen for up to two and a half
 // seconds on every takeover.
 //
-// Measured off Nick's screen recording of a Cathay gate: frame-to-frame change
+// Measured off the owner's screen recording of a Cathay gate: frame-to-frame change
 // sits at a median of 0.15 for the whole clip and spikes to 52.88 at t=18.13s,
 // holding through 18.47s — the map tearing out of the rail and the centre
 // panel going blank grey over the top of 'Welcome aboard'. 340ms of it is
@@ -30609,8 +30606,8 @@ function _bcFadeInWhenReady(tileLayer) {
 
 // v218.99.9 — overlay flags previously came from gate-theme; system removed.
 // v22712 — weather flips ON: the route map carries live precipitation
-// radar (backlog #27, Nick: 'Did you want to start working on weather on
-// that map?').
+// radar (backlog #27,
+// 
 function _gateMapShowOverlay(name) {
   return true;
 }
@@ -30633,12 +30630,12 @@ function _wxRadarAdd(m) {
       if (!m._container || !m._container.isConnected) return; // map already torn down
       // maxNativeZoom 7: RainViewer serves real tiles through z7 and a
       // 'Zoom Level Not Supported' placeholder image beyond (measured:
-      // z8+ returns the identical 1370-byte card — Nick's PB923 big map
+ // z8+ returns the identical 1370-byte card — the owner's PB923 big map
       // was papered with them). Leaflet upscales the z7 tiles instead;
       // radar blobs survive upscaling with no visible loss.
-      // v23103 — the radar draws in its own blurred pane (Nick: 'I would
-      // like to see those squares tighter together I dont want to see
-      // squares actually'). RainViewer's low-zoom tiles are coarse blocks;
+      // v23103 — the radar draws in its own blurred pane
+      //
+      // RainViewer's low-zoom tiles are coarse blocks;
       // blurring each tile img separately would show seams at tile edges,
       // so the PANE is blurred as one composite — the blocks melt into
       // soft weather shapes at every zoom.
@@ -30650,23 +30647,23 @@ function _wxRadarAdd(m) {
           _wp.style.zIndex = 350;
         }
       } catch (ep) {}
-      // v23104 — no radar at continental zooms (Nick: 'the map still has
-      // squares'): at z<=5 RainViewer cells are sub-blur speckle covering
+      // v23104 — no radar at continental zooms
+      // : at z<=5 RainViewer cells are sub-blur speckle covering
       // the whole map. The overlay only appears once the view is close
       // enough for weather shapes to mean something.
-      // v23222 — RADAR HAS A CLOSE-ZOOM CEILING TOO (Nick: 'The map clouds
-      // look terrible its squares'). Beyond z11 the z7 cells are stretched
+      // v23222 — RADAR HAS A CLOSE-ZOOM CEILING TOO
+      // Beyond z11 the z7 cells are stretched
       // 16×+ — the Toronto close-up was one giant blocky wash. Past the
       // ceiling the radar simply hides; the street/airport view stays clean.
-      // v23296 — the radar was invisible (Nick: 'the clouds are so faint for
-      // the weather you cant see FUCK ALL'). Two causes stacked: it was drawn
+      // v23296 — the radar was invisible
+      // Two causes stacked: it was drawn
       // at HALF opacity, and Leaflet 1.9 blends every tile with plus-lighter,
       // which is ADDITIVE — radar's pale blues and greens added onto a
       // near-black basemap barely move the pixels. Opacity up, and the radar
       // pane is taken off the additive blend in CSS so its colours paint as
       // themselves.
       // v23299 — 0.92 was MY over-correction in v23296b and it is what made the
-      // radar look blurry (Nick: 'the weather is so blurry', 'never was like
+ // radar look blurry ( 'never was like
       // this'). The tiles are native zoom 7 shown on a map at zoom 9: a 4x
       // enlargement that was simply invisible at the old 0.5 additive blend.
       // Turning it opaque did not add blur, it revealed it. Sharpness is
@@ -30689,16 +30686,16 @@ function _wxRadarAdd(m) {
   } catch (e) {}
 }
 
-// ── Map plane marker: Nick's real silhouettes ('NO they are for the map').
+// ── Map plane marker: the owner's real silhouettes ('NO they are for the map').
 // His Airplanes.svg carries two top-down aircraft — a jet and a turboprop —
 // split into centered, nose-up marker PNGs. Nose-up matters: the marker
 // rotates around its center by the route bearing, so an off-axis icon
 // would fly sideways. The prop set is the turboprop fleet the boards
 // actually see (Dash family, ATR, Beech/King Air, Saab, Metro, Twin
 // Otter, Caravan, PC-12); everything else gets the jet.
-// v23166 — POINT THE PLANE WHERE IT IS ACTUALLY FLYING (Nick: 'the plane half
-// the time doesnt work its flying sideways... it never does what its full
-// potential could do').
+// v23166 — POINT THE PLANE WHERE IT IS ACTUALLY FLYING
+//
+// 
 //
 // Every map marker rotated by a GREAT-CIRCLE BEARING FROM THE PLANE TO THE
 // DESTINATION. That is only the right answer when the aircraft happens to be
@@ -30728,7 +30725,7 @@ function _gateHeading(fallbackBearing) {
     // at 2 minutes. The inbound object survives across polls and can carry the
     // airframe's heading from its PREVIOUS LEG — flown in the opposite
     // direction — so the icon rendered pointing ENE while AC2003 flew WSW
-    // into Toronto (Nick: 'planes flying sideways'). Same 2-minute cap now;
+ // into Toronto. Same 2-minute cap now;
     // when both caches are stale the route-course fallback wins, which by
     // construction points along the drawn line.
     if (inb && typeof inb._liveTrack === 'number'
@@ -30742,7 +30739,7 @@ function _gateHeading(fallbackBearing) {
 // Both estimate maps took the elapsed fraction of the scheduled block and used
 // it directly as a fraction of the great-circle route. A flight does not start
 // covering distance at pushback: it taxis, and it taxis again at the far end.
-// Nick's JZA7992 (YUL→YQM, 2026-08-26): pushback 09:00, SIXTEEN minutes of
+// the owner's JZA7992 (YUL→YQM, 2026-08-26): pushback 09:00, SIXTEEN minutes of
 // taxi, wheels-up 09:16. At 09:17 FlightAware had it at 800 ft beside Montréal
 // — and the board drew it over Maine, because 17 of an 81-minute block is 21%
 // and 21% of that route lands in Maine. The times on the card were right; the
@@ -30759,7 +30756,7 @@ function _gateHeading(fallbackBearing) {
 // fraction. But every ADB row already carries departure.runwayTime — the
 // actual moment the aircraft left the ground — as _actualDepTime. We fetch it,
 // store it, and the map was inventing a 12-minute allowance beside it. On the
-// flight Nick photographed, pushback was 12:00Z and wheels-up 12:16Z: the real
+// flight the owner photographed, pushback was 12:00Z and wheels-up 12:16Z: the real
 // taxi was sixteen minutes and the number was sitting in the response.
 //
 // Absolute times rather than a fraction, so the measured start can be used
@@ -30790,7 +30787,7 @@ try { if (typeof window !== 'undefined') window._estRouteFrac = _estRouteFrac; }
 
 function _mapPlaneIcon() {
   try {
-    // v23107 — LOOK EVERYWHERE THE TYPE ACTUALLY LIVES (Nick, PD472: the
+ // v23107 — LOOK EVERYWHERE THE TYPE ACTUALLY LIVES (the owner, PD472: the
     // panel listed a Dash 8 while the map drew the jet default). This only
     // read the OUTBOUND row's display string; for regionals the type is
     // routinely known on the INBOUND row, the row's code field, or the
@@ -30818,7 +30815,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
      While a healthy same-leg live glide is flying on this map, an estimate
      redraw is only ever a downgrade (camera yanked to the continental pins
      view, plane hidden under the origin pin, then back on the next good
-     poll — Nick: 'still doing it, quite often now'). Skip it. */
+ poll — ). Skip it. */
   try {
     var _lgO = _lookupAirport(org), _lgD = _lookupAirport(dst);
     var _lgv = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.mini) || null;
@@ -30866,8 +30863,8 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
   // v23208 — DATELINE LEGS (KE76 YVR→ICN): the raw endpoint lngs sit 249°
   // apart, so fitBounds framed the whole world the LONG way round and the
   // arc (drawn dateline-unwrapped by _gcAddArc) ran off-window — a world
-  // map with no route and no plane (Nick: 'The map the aircraft everythign
-  // has started gitching agian'). Unwrap the destination lng to within 180°
+  // map with no route and no plane
+  // Unwrap the destination lng to within 180°
   // of the origin: trig is 2π-periodic so the great-circle math is
   // identical, and bounds, phase centres, pins and arc all land on one
   // continuous window (the basemap tiles repeat across world copies).
@@ -30878,7 +30875,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
   // v23099 — REUSE the map instance on the same route (the discipline the
   // live path already had). Every call used to remove() + recreate map and
   // tile layer, so each gate re-render repainted from Leaflet's grey ground
-  // — measured 2.5s of solid grey per rebuild in Nick's video. The key is
+  // — measured 2.5s of solid grey per rebuild in the owner's video. The key is
   // shared with initGateMapLive, so est↔live handoffs ALSO keep the tiles;
   // only the tracked overlays are swapped.
   var _estKey = String(org).toUpperCase() + '>' + String(dst).toUpperCase();
@@ -30943,8 +30940,8 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     // Landed: city-level on destination
     zoom = 11; center = d;
   }
-  // v23166 — ONE VIEW DECISION, NOT TWO IN A ROW (Nick: 'flashes and glitches...
-  // especially on gate'). This used to setView() to the phase-table zoom and
+  // v23166 — ONE VIEW DECISION, NOT TWO IN A ROW
+  // This used to setView() to the phase-table zoom and
   // then IMMEDIATELY fitBounds() to a different one, so a pre-departure gate
   // watched its map zoom to one level and snap to another. Measured live on
   // v23165: zoom 4 -> 6 -> back to 4 inside 1.5s on a single rebuild.
@@ -30979,14 +30976,14 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
       // just cruise: the phase table above frames the DESTINATION for
       // p>0.88 while the estimated plane still paints miles away — the
       // camera 'zooms out and the aircraft does not show on the map'
-      // (Nick). The field stays in frame anyway once the plane is close.
+      // The field stays in frame anyway once the plane is close.
       if (p >= 0.12 && p < 0.995) {
         gateMap.setView(planePos, zoom);
       }
   }_gateMapSettle(o,d,p,500);}
 
 // v23166 — THE SETTLE PASS ONLY ACTS WHEN THE CONTAINER ACTUALLY CHANGED SIZE.
-// (Nick: 'flashes and glitches... especially on gate' / 'they just keep building
+// ( / 'they just keep building
 // on top of everything and taking easy shortcuts'.)
 //
 // This replaces two copy-pasted setTimeout blocks that each ran invalidateSize()
@@ -31034,7 +31031,7 @@ function _gateMapSettle(o, d, p, delayMs) {
 // The rail grid re-tracks when the 4-row flight-info panel arrives late
 // (reg lookup, v22198) — the MAP ROW then resizes under an already-
 // initialized Leaflet, which keeps stale pixel math and shows an off-
-// centre, wrongly-zoomed crop with the plane at the frame edge (Nick:
+// centre, wrongly-zoomed crop with the plane at the frame edge (
 // 'not sure what's happening to the map'). Watch the box and re-measure:
 // invalidateSize() keeps the true centre through any late resize.
 function _gateMapWatchResize(mb) {
@@ -31046,9 +31043,9 @@ function _gateMapWatchResize(mb) {
       });
       window._gateMapRO.observe(mb);
     }
-    // v22932 — the observer alone is not enough (Nick: 'i moved the window of
-    // the GIDS and the map did not move it stayed stationary in the corner
-    // untill it refreshed'). A ResizeObserver only fires when the OBSERVED BOX
+    // v22932 — the observer alone is not enough
+    //
+    // A ResizeObserver only fires when the OBSERVED BOX
     // changes; a window move, a devicePixelRatio change, or a resize that the
     // box absorbs without changing its own computed pixel size never reaches
     // it. Leaflet then keeps drawing its panes at the offsets it measured
@@ -31114,8 +31111,8 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
   var zoom;
-  // Progressive zoom (Nick: 'ground when it leaves, then zooms out eventually …
-  // autozoom then zoom out'). On the ground at the origin → street/ground level
+  // Progressive zoom
+  // On the ground at the origin → street/ground level
   // (z15); as it climbs away the zoom eases out step by step (13 → 11 → 9) to
   // the wide cruise view; then it tightens back to ground on the destination
   // approach. Distance-from-airport IS flight progress, so this reads as a
@@ -31131,7 +31128,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   else zoom = cruiseZoom;
 
   // REUSE the map when the route is unchanged — tearing it down reloaded the
-  // heavy satellite tiles each time (Nick: 'restarting/glitchy').
+  // heavy satellite tiles each time.
   // v23099 — same key namespace as initGateMap (no 'live|' prefix), so an
   // est→live handoff on the same route REUSES the instance and its tiles.
   // Liveness for the marker watchdog is the separate _fidsLive flag.
@@ -31146,18 +31143,18 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     // straight back (see the save/re-attach pair in the gate renderer). A 10 s
     // live tick landing inside that window used to see a disconnected
     // container, conclude the map was gone, and tear it down — which is the
-    // rest of Nick's 'it comes and goes': the map really did vanish and
+    // rest of the owner's 'it comes and goes': the map really did vanish and
     // reload its whole tile set. A detached-but-same-route map is mid-move,
     // not dead, so skip this tick and let the re-attach finish.
     _liveDetached = !!(_sameRoute && _lc && !_lc.isConnected);
   } catch (e) { _liveReuse = false; _liveDetached = false; }
   if (_liveDetached) { try { setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300); } catch (e) {} return; }
-  // ANTI-JITTER (Nick: 'the map's going crazy'): on the SAME live map, HOLD the
+  // ANTI-JITTER: on the SAME live map, HOLD the
   // previous zoom when the plane has barely moved — otherwise ADS-B jitter near
   // a zoom-tier boundary flips the zoom in and out on every 10s tick. And if
   // essentially nothing changed, SKIP the whole redraw (no overlay clear, no
   // setView) so the map sits still instead of thrashing.
-  // v23042 — THE ZOOM HOLD HAS TO SURVIVE A REBUILD (Nick: 'still bobbling',
+  // v23042 — THE ZOOM HOLD HAS TO SURVIVE A REBUILD (
   // 'it comes and goes'). The hold lived only on the map INSTANCE, so it was
   // lost the moment the right column re-rendered and detached the container:
   // _liveReuse went false, the map was torn down, and the fresh build
@@ -31168,7 +31165,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // map re-seeds exactly where the old one was and the tiles stay warm.
   // v23700 — THE ZOOM HOLD WAS MEASURING ITSELF, SO IT NEVER LET GO.
   //
-  // Nick: "map issues still" — the mini map sat zoomed deep into the middle of
+  // — the mini map sat zoomed deep into the middle of
   // the route (a tight New England crop on a YHZ->LGA leg) while the big centre
   // map framed the whole thing correctly.
   //
@@ -31215,8 +31212,8 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     // static overlays and must fall through to the redraw below.
     if (_liveReuse && gateMap._fidsLive === true && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
   }
-  // v23102 — RE-ANCHOR IN PLACE (Nick: 'I want a smooth gliding plane not
-  // this bobbling crap', 'it flashed 3 times'). On a same-leg live refresh
+  // v23102 — RE-ANCHOR IN PLACE
+  // 'it flashed 3 times'). On a same-leg live refresh
   // the code below wipes every overlay, rebuilds marker + arcs, and snap-
   // setViews the camera — once per ADS-B fix. Three flashes = three wipes.
   // When the running glide already owns a healthy marker on THIS map, hand
@@ -31271,7 +31268,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     // v23102 — NEVER DESTROY A LIVING INSTANCE. A route-key change (the
     // est↔live flip during the landing transition) used to remove() the
     // whole map: measured on MCO gate 50, tiles 9→0 and a dead panel for
-    // ~9s, three times in three minutes — Nick: 'it flashed 3 times'. Same
+    // ~9s, three times in three minutes — Same
     // container → keep the map and its warm tiles, swap the overlays,
     // retarget the view below. The old tiles stay visible while the new
     // area's tiles load over them; nothing ever blanks.
@@ -31294,7 +31291,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
   try { window._GATE_MAP_FIX = { key: _liveRouteKey, lat: planeLat, lng: planeLng }; } catch (eF) {}
   gateMap.setView([planeLat, planeLng], zoom);
-  // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
+  // Normal-map behavior: the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
@@ -31303,7 +31300,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // tile layers) — otherwise reused arcs/markers/planes would pile up.
   var _ov = (gateMap._fidsOverlays = gateMap._fidsOverlays || []);
   // v23137 — the v23131 flown-track arc is WITHDRAWN. It was meant to stop
-  // the hairpin, but Nick's next shot showed NO flight path at all — a
+  // the hairpin, but the owner's next shot showed NO flight path at all — a
   // regression worse than the fault it chased. Back to the known-good
   // great-circle solid leg; the hairpin stays open, to be fixed without
   // touching what already works.
@@ -31332,7 +31329,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
              // built off the sticky-fix branch (feed coords, no ADS-B answer
              // yet — the normal case on low-altitude approach) seeded the
              // glide at 0: '[GLIDE] not started — no live speed (marker stays
-             // put)'. Nick's PD253 'nope it doesnt its stuck', reproduced in
+             // put)'. Reported on PD253: the marker sat still. Reproduced in
              // the harness. Read both keys, then the feed's own _liveSpd.
              : (window._gateMapFix && typeof window._gateMapFix.spd === 'number' && window._gateMapFix.spd > 0) ? window._gateMapFix.spd
              : (window._gateMapFix && typeof window._gateMapFix.speed === 'number') ? window._gateMapFix.speed
@@ -31413,7 +31410,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // ground speed. That is right in the air and wrong on the ground: a
   // taxiing aircraft is on taxiways, not on the line to its destination,
   // so extrapolating 60 s of movement along the departure bearing walks
-  // the icon straight off the airport. Nick watched one leave Pearson via
+  // the icon straight off the airport. the owner watched one leave Pearson via
   // Dixon Road and drive past T1.
   //
   // It only surfaced with v22887: AeroDataBox almost never returned a
@@ -31435,7 +31432,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 }
 
 // ── MOVING AIRCRAFT — dead-reckoning glide between real ADS-B fixes ─────────
-// Nick: 'make the aircraft move slowly according to the speed it's going …
+// s going …
 // it should be able to calculate approx, then adjust with the pings.' Real
 // position fixes only land every few minutes, so between them the plane sat
 // still. This advances the marker along the great-circle route at the live
@@ -31443,8 +31440,8 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 // initGateMapLive re-seeds it to the true position — a gentle correction, not
 // a jump. It ONLY nudges the marker + the two route arcs; it never re-inits,
 // re-centres, or re-renders the map, so it can't reintroduce the map thrash.
-// ── v22939 — GLIDE REBUILT (Nick: 'its bad coding ... its always been like
-// that it needs replaced simple its also going backwards').
+// ── v22939 — GLIDE REBUILT
+// 
 //
 // He is right, and his 31s screen recording proves it. Tracking the marker
 // through all 270 map-visible frames of that clip (background-subtracted
@@ -31496,7 +31493,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
 // 'mini' / 'big'. The generation token still guarantees a single live loop —
 // but that loop now renders EVERY attached surface's marker from the same
 // p(t), so the two maps agree by construction. Starting one surface no longer
-// silently freezes the other (Nick's video: the mini marker reappearing
+// silently freezes the other (the owner's video: the mini marker reappearing
 // BEHIND where the big map had it — the loop had been killed and the re-seed
 // used an older fix), and a surface going away just detaches its view.
 var _gateGlide = { timer: null, raf: null, gen: 0, views: {} };
@@ -31546,7 +31543,7 @@ function _gcNm(a, b) {
   return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
-// ── RUNWAY-ALIGNED FINAL (Nick's DL5140 video: 'its not even aligned at a
+// ── RUNWAY-ALIGNED FINAL (the owner's DL5140 video: 'its not even aligned at a
 // runway') ─────────────────────────────────────────────────────────────────
 // The remaining leg used to run straight into the AIRPORT PIN, crossing the
 // airfield diagonally. With real runway thresholds (airport-runways.js, from
@@ -31611,7 +31608,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // v23099 — the unconditional kill that used to sit here is gone. Claiming
   // the generation at the END of this function already supersedes any older
   // loop; killing at ENTRY meant an ABORTED start (no marker, speed 0) took
-  // down a healthy glide and started nothing — one of the ways Nick's maps
+  // down a healthy glide and started nothing — one of the ways the owner's maps
   // froze. Now an early return leaves whatever is running untouched.
   if (!map || !marker || typeof L === 'undefined') return;
   var _viewKey = (typeof window !== 'undefined' && map === window._bigCraftMap) ? 'big' : 'mini';
@@ -31632,8 +31629,8 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
     try { console.log('[GLIDE] not started — no live speed (marker stays put)'); } catch (e) {}
     return;
   }
-  // v22889 — GLIDE ALONG THE LINE THAT IS ACTUALLY DRAWN (Nick: 'the plane
-  // is very non linear its wobbling sideways and its not the map').
+  // v22889 — GLIDE ALONG THE LINE THAT IS ACTUALLY DRAWN
+  // 
   //
   // The map draws TWO arcs — origin→plane solid, plane→destination dashed —
   // so the drawn route bends THROUGH the aircraft's real position. The glide
@@ -31664,7 +31661,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var _vA = Math.max(2, Math.min(116, Math.round(118 * (_nmA / totalNm))));
   var _vB = Math.max(2, 118 - _vA);
   var _legA = _gcFullRoute(o, _pl, _vA);
-  // Runway-aligned final (Nick's DL5140 video): once inbound, the remaining
+  // Runway-aligned final: once inbound, the remaining
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
   // line and the animated line stay one line.
@@ -31672,7 +31669,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   var route = _legA.concat(_legB.slice(1));
   var n = route.length;
   // ── v22952 — WALK THE ROUTE BY DISTANCE, NOT BY VERTEX INDEX.
-  // Nick: "its still kind of going not straight", and his Turf.js reference
+  // and his Turf.js reference
   // names the fix: turf.along() samples the line by DISTANCE.
   //
   // p is a fraction of distance flown — it advances at speed/totalNm. But the
@@ -31701,15 +31698,15 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // longer holds the proportional-split assumption.
   var _seedP = _cum[_legA.length - 1] / _routeNm;
   var p = _seedP;
-  // v22748 — EASE THE CORRECTION, DON'T SNAP IT (Nick: 'it seems to move but
-  // also moves sideways then up at times unrealistic'). Every real ADS-B fix
+  // v22748 — EASE THE CORRECTION, DON'T SNAP IT
+  // Every real ADS-B fix
   // restarts this glide, and the marker was being placed straight onto the
   // corrected spot — a visible teleport whenever dead-reckoning had drifted.
   // If we were already tracking the SAME route and the correction is small,
   // resume from where the marker actually is and bleed the difference in over
   // a few seconds, so a fix reads as the aircraft settling rather than jumping.
   // v22927 — two faults in the resume test, both of which only bite on
-  // approach, which is exactly where Nick saw them (': it did a turn to line
+  // approach, which is exactly where the owner saw them (': it did a turn to line
   // up for the runway and started to go backwards ... its bouncing left and
   // right not a lot but noticeable').
   //
@@ -31776,9 +31773,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // over one marker (fixed by the generation token) compounded by the
   // unclamped correction rate (fixed in v22950). With both root causes gone,
   // a hard ceiling of 3 deg/sec only stops the nose keeping up with the path,
-  // which is what Nick sees as "the aircraft is flying sideways".
+  // which is what the owner sees as "the aircraft is flying sideways".
   //
-  // Nick's own reference implementation rotates off ADJACENT path points and
+  // the owner's own reference implementation rotates off ADJACENT path points and
   // applies it instantly, with no smoothing whatsoever — and it is right to,
   // because a marker moving at an honest speed never turns violently. 60
   // deg/sec keeps that behaviour for anything real (a jet's standard rate
@@ -31807,8 +31804,8 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // behind the marker the aircraft slows, it never reverses.
   // v22950 — CLAMP THE CORRECTION. Folding the fix error into the rate was
   // right in principle and unbounded in practice, and on a short leg it is
-  // ruinous. Nick, on a YQM gate: "the aircraft is flying sideways", then
-  // "not seeing it land either its not even on screen anymore".
+  // ruinous. Reported: the marker overran the route and left the
+  // visible map before the flight landed.
   //
   // The arithmetic, on YYZ->YQM (~600nm) at 400kt:
   //   honest cruise rate   400 / 3600 / 600      = 1.85e-4 route-fraction/sec
@@ -31821,7 +31818,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   //
   // One cause, both symptoms. The correction is now capped at 1.6x the honest
   // rate: an error still gets flown off, just never faster than an aircraft
-  // could plausibly be going. Nick's own reference implementation makes the
+  // could plausibly be going. the owner's own reference implementation makes the
   // same point by having no correction term at all — progress is purely
   // elapsed/duration. This keeps the correction but bounds it.
   var _MAX_RATE_MULT = 1.6;
@@ -31848,7 +31845,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // v22952 — look ahead a fixed DISTANCE, not a fixed number of vertices.
   // "Six vertices" is a different distance on every part of the route once the
   // vertices are unevenly spaced, so the heading was computed over a baseline
-  // that changed as the aircraft flew. Nick's Turf reference looks ahead 0.5%
+  // that changed as the aircraft flew. the owner's Turf reference looks ahead 0.5%
   // of the total route; same idea here, with a floor so a short leg still gets
   // a usable baseline.
   function headingAtNm(nmNow) {
@@ -31939,7 +31936,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         vmarker.setLatLng([lat, lng]);
         // ── v22953 — PUT BACK THE SUB-PIXEL LEAFLET THROWS AWAY.
         // Leaflet's Marker._setPos rounds marker positions to WHOLE PIXELS.
-        // Measured on Nick's recording the marker advances ~0.14px/frame, so
+        // Measured on the owner's recording the marker advances ~0.14px/frame, so
         // whole pixels turn the glide into a staircase — hold six frames,
         // jump a pixel — which with rotation on top reads as wobble. The
         // fraction Leaflet throws away is applied back as a transform (not
@@ -31962,13 +31959,13 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
             if (v.hdg === null || v.hdg === undefined) { v.hdg = _tgt; }
             else {
               var _dh = ((_tgt - v.hdg + 540) % 360) - 180;   // shortest way round
-              // v23106 — SNAP a large discrepancy, slew a small one (Nick's
+              // v23106 — SNAP a large discrepancy, slew a small one (the owner's
               // video: the plane joins pointing north and pans round for
               // seconds before lining up with its own track). On this route
               // the real per-frame turn is a fraction of a degree; a gap
               // beyond 35° is a bad seed or a surface re-join, not a turn —
               // holding the wrong nose while the slew catches up is exactly
-              // the 'flying sideways' Nick keeps filming.
+              // the 'flying sideways' the owner keeps filming.
               if (Math.abs(_dh) > 35) { v.hdg = _tgt; }
               else {
                 var _lim = _MAX_SLEW_DPS * (_dtMs / 1000);
@@ -32140,7 +32137,7 @@ function _gateMapTick() {
       inb.status !== 'cancelled' &&
       prog > 0.02 && (prog < 0.99 || _liveFinal)
     );
-    // v23164 — A GROUND FIX AT OUR FIELD IS A LANDING (Nick's video: 'the
+    // v23164 — A GROUND FIX AT OUR FIELD IS A LANDING (the owner's video: 'the
     // plane coming in sideways and just stopped', with the camera parked at
     // street level and 'still there now'). prog is derived from the GATE
     // time, so an EARLY arrival rolls out with prog still well under 0.99 —
@@ -32236,7 +32233,7 @@ function _gateMapTick() {
     _gateMapCamera.nextFlybackAt = now + 60000; // first flyback ~60s in
   }
 
-  // Flyback REMOVED (Nick: 'plane totally disappears comes back'). The old
+  // Flyback REMOVED. The old
   // every-60s whole-route zoom-out hid the live plane for 10s each minute —
   // reading as the aircraft vanishing. The plane now stays on screen the
   // whole time, gliding continuously between real fixes.
@@ -33012,7 +33009,7 @@ function playYouTubePlaylist(slot, playlistId) {
 // element instead of the YouTube iframe. The element is positioned over
 // the slot the same way the YT iframe is.
 // playback: { loop?: bool } — if loop, native <video> will replay automatically.
-// ── Branded FRAME behind library media (Nick: uploaded ads must sit on the
+// ── Branded FRAME behind library media (the owner: uploaded ads must sit on the
 // dots-world panel — the light brushed base + grey globe + accent handles —
 // like the aircraft-info background, not on their own baked backgrounds or
 // black). One fixed layer just under the media element; the media renders
@@ -33025,7 +33022,7 @@ function _ensureMediaFrame() {
   _mediaFrameEl.id = 'fidsMediaFrame';
   _mediaFrameEl.style.position = 'fixed';
   // z 5: the gate welcome panel paints its background at z-index 5 — a frame
-  // at 4 sat UNDER it (Nick's flat-red bands). Equal z + appended to <body>
+  // at 4 sat UNDER it. Equal z + appended to <body>
   // (later in DOM) puts the frame above the panel, and the media at 6 above
   // the frame.
   _mediaFrameEl.style.zIndex = '5';
@@ -33062,7 +33059,7 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
 
 /* Tech-frame fitter: contain-fit media draws smaller than its element box —
    shrink each .ad-tech-frame to the media's ACTUAL drawn rectangle so the
-   frame hugs the ad itself (Nick), whatever the creative's aspect ratio. */
+ frame hugs the ad itself, whatever the creative's aspect ratio. */
 (function () {
   // Frozen frame rects, keyed by creative + panel size. Module scope on
   // purpose: a slide re-render replaces BOTH the frame and its parent,
@@ -33113,13 +33110,13 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       // ONE frame per ad. Full-bleed ad: the frame sits ON the ad ('it can
       // go over it, it's fine'). Smaller ad: the frame is inflated so its
       // band sits OUTSIDE the ad — the creative is confined within it.
-      // v22595: EXACTLY the v22589 behavior Nick approved ('almost there')
+      // v22595: EXACTLY the v22589 behavior the owner approved ('almost there')
       // — the v22592 clamp and v22593 auto-shrink both moved the border
       // between builds and are gone.
       var fullW = r.width >= hb.width - 8, fullH = r.height >= hb.height - 8;
       var padX = 0, padY = 0;
-      // v23158 — PER-AXIS, AND THE FRAME NEVER LEAVES THE HOST (Nick: 'red
-      // frame missing left side'). The old test padded BOTH axes unless the
+      // v23158 — PER-AXIS, AND THE FRAME NEVER LEAVES THE HOST
+      // The old test padded BOTH axes unless the
       // creative filled BOTH — so a full-WIDTH letterboxed ad (the Bell
       // wifi card: 977 wide in a 977 host) still inflated horizontally,
       // pushed the frame 29px past each side of the overflow:hidden slide
@@ -33139,7 +33136,7 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
         padY = Math.max(0, Math.min(padY, Math.floor((hb.height - r.height) / 2)));
       }
       try { if (m.classList.contains('g8-ad-inset')) { m.classList.remove('g8-ad-inset'); delete f.dataset.geom; continue; } } catch (e) {}
-      // FREEZE (Nick: 'make sure the frames don't move'): once placed,
+      // FREEZE: once placed,
       // ignore sub-2px re-measures — rounding and image settle were able
       // to nudge the frame between ticks.
       var _gx = Math.round(r.left - hb.left - padX), _gy = Math.round(r.top - hb.top - padY);
@@ -33183,7 +33180,7 @@ function _hideMediaFrame() { if (_mediaFrameEl) _mediaFrameEl.style.display = 'n
       if (!_pend || Math.abs(_pend[0] - _gx) > 2 || Math.abs(_pend[1] - _gy) > 2
           || Math.abs(_pend[2] - _gw) > 2 || Math.abs(_pend[3] - _gh) > 2) {
         _PENDING[_mkey] = [_gx, _gy, _gw, _gh];
-        // v22852 (Nick: 'the timing seems off it appears after the add') —
+        // v22852 —
         // show the frame on the FIRST valid measure instead of holding it
         // hidden through the two-pass confirmation. The rect is not
         // committed yet: if the confirmed rect lands elsewhere it re-applies
@@ -33257,8 +33254,8 @@ function playUploadedVideo(slot, videoUrl, playback) {
     if (_nativeVideoEl.style.display === 'none') return;
     var r = _vvr || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return; // detached element
-    // Full width, tiny vertical breathing room (Nick: 'entire width, stretch
-    // a bit up not much').
+    // Full width, tiny vertical breathing room
+    // 
     var _nvIy = Math.round(r.height * 0.0125);
     _nativeVideoEl.style.left = Math.round(r.left) + 'px';
     _nativeVideoEl.style.top = Math.round(r.top + _nvIy) + 'px';
@@ -33359,8 +33356,8 @@ function playLibraryImage(slot, item) {
     if (_libImgEl.style.display === 'none') return;
     var r = _vir || liveSlot.getBoundingClientRect();
     if (r.width === 0 || r.height === 0) return;
-    // Full width, tiny vertical breathing room (Nick: 'entire width, stretch
-    // a bit up not much').
+    // Full width, tiny vertical breathing room
+    // 
     var _liIy = Math.round(r.height * 0.0125);
     _libImgEl.style.left = Math.round(r.left) + 'px';
     _libImgEl.style.top = Math.round(r.top + _liIy) + 'px';
@@ -33539,7 +33536,7 @@ var GATE_ADS_BY_AIRLINE = {
   ],
   'WS': [
     // NO headline — the logo IS the "WestJet Rewards" lockup; repeating it
-    // in type printed the name twice (Nick).
+    // in type printed the name twice.
     { bg:'linear-gradient(135deg,#00313c 0%,#00505c 100%)', headline:'', sub:'Earn WestJet dollars on every flight', logo:'/logos/airlines/canadian/westjet-2025/WestJet-Rewards-logo-colour.png' },
     { bg:'linear-gradient(135deg,#1a1a1a 0%,#2c2c2c 100%)', headline:'Free Starlink Wi-Fi', sub:'Stream & browse \u00b7 Powered by Starlink', logo:'/logos/symbols-utility/starlink.svg' },
   ],
@@ -33573,7 +33570,7 @@ var GATE_ADS_BY_AIRLINE = {
   ],
   'LH': [
     // lufthansa.svg has a baked-in white background rect \u2014 under the
-    // white-invert filter it rendered as a solid white square (Nick). The
+    // white-invert filter it rendered as a solid white square. The
     // monochrome lockup is transparent-background and filters cleanly.
     { bg:'linear-gradient(135deg,#05164D 0%,#0a2470 100%)', headline:'Miles & More', sub:'Earn award miles \u00b7 Star Alliance', logo:'/logos/airlines/european/Lufthansa_Logo_2018-monochrome-white.svg' },
   ],
@@ -33588,12 +33585,12 @@ var GATE_ADS_BY_AIRLINE = {
   ],
   'BW': [
     // Sub must not repeat "Caribbean Airlines" — the wordmark logo above
-    // already says it (Nick: name shown twice).
+    // already says it.
     { bg:'linear-gradient(135deg,#5E2554 0%,#AA4399 100%)', headline:'Caribbean Miles', sub:'Earn miles on every flight', logo:'/logos/airlines/asian-other/caribbean-wordmark-light.png' },
   ],
   'TS': [
     // NO headline — the logo is the "Air transat" wordmark; the headline
-    // duplicated the airline name under it (Nick).
+    // duplicated the airline name under it.
     { bg:'linear-gradient(135deg,#002868 0%,#004090 100%)', headline:'', sub:'Your vacation starts the moment you board', logo:'/logos/airlines/canadian/transat.svg' },
   ],
   'F8': [
@@ -33660,16 +33657,16 @@ function _accorCacheFor(iata) {
 }
 
 // Brand-level wordmarks, one per brand — NOT property lockups. The footer
-// signs every card 'brand mark | ALL' the way fairmont.com does (Nick), and a
+// signs every card 'brand mark | ALL' the way fairmont.com does, and a
 // property lockup cannot be used there: drawn for a full-height slot, it
 // clips to the first few letters at footer size — the 'Fair' beside the ALL
-// mark Nick photographed. Generated from the files actually on disk, so the
+// mark the owner photographed. Generated from the files actually on disk, so the
 // repo's own reference test catches any path that stops resolving.
 // Ink bounds for the footer brand marks. 34 of the 41 sit in a generic
 // 0 0 70 40 box with the wordmark floating inside it — Mondrian's ink is 13%
 // of its height, Fairmont's 42% — so sizing the box does nothing and the mark
-// reads tiny beside ALL however large the box gets (Nick: 'should be a bit
-// bigger the logo down by ALL'). Measured with getBBox against every file and
+// reads tiny beside ALL however large the box gets
+// Measured with getBBox against every file and
 // padded 3%; marks whose artwork already fills its box are left alone rather
 // than re-cropped. Applied through the existing lockup cropper, which inlines
 // the SVG and swaps the viewBox.
@@ -33866,8 +33863,8 @@ function ensureBrandInName(name, brandCode) {
 // Accor signs its properties with the whole postal address in the name —
 // 'Fairmont Century Plaza Los Angeles at Beverly Hills'. On a card the brand
 // wordmark already says Fairmont and the subtitle line already says the city,
-// so the headline was repeating both and running to three lines. Nick, on that
-// exact slide: 'I said Century Plaza not this whole paragraph.'
+// so the headline was repeating both and running to three lines. Decision:
+// show the property name only, not the whole address string.
 //
 // So: cut the headline at the location tail — the city (already in the
 // subtitle) or an ' at <district>' clause, whichever comes first. The cut is
@@ -33898,7 +33895,7 @@ function stripHotelLocationTail(name, city, brandCode) {
   // Never trim a name away to nothing (or to a bare article).
   if (head.length < 3) return name;
   // …and never trim it down to JUST the brand word. 'Faena New York' cut at
-  // the city leaves 'Faena', which the logo slot is already printing — Nick
+  // the city leaves 'Faena', which the logo slot is already printing —
   // saw it as 'Faena Faena'. Properties whose whole identity is the city
   // keep the city (Faena New York, Delano Miami Beach, SO/ Paris).
   try {
@@ -34096,7 +34093,7 @@ var ACCOR_DETAIL_TTL = 6 * 60 * 60 * 1000;  // 6 hours
 // (says 3, five exist), and OVERSTATES for Novotel Miami Brickell (says 9,
 // 404s at 8), Pullman Miami Airport (says 5, 404s at 4) and Sofitel Montréal
 // Golden Mile. A 404 hero paints nothing and the page comes up black — the
-// exact failure Nick has already been shown once. So every candidate is
+// exact failure the owner has already been shown once. So every candidate is
 // LOADED before it is allowed near the card, and only what actually resolves
 // is cached. Until that finishes the card behaves exactly as it does today.
 var ACCOR_PUBLIC_PHOTOS = {};        // hotelId → { ts, urls: [] }
@@ -34157,7 +34154,7 @@ function _accorVerifyPublicPhotos(hotelId, seedUrl, count) {
 // one only. Pairing the two columns by looking the hotel up in the other
 // language's list therefore finds nothing for it, the prose collapses to one
 // column, and the card runs English-only on a bilingual board — exactly what
-// Nick caught, while the Sofitel beside it (present in both lists) was fine.
+// the owner caught, while the Sofitel beside it (present in both lists) was fine.
 //
 // The single-hotel endpoint has no such gap: /hotels/<id> returns the
 // property's own description, destinationDescription and advantages in
@@ -34252,7 +34249,7 @@ function fetchAccorHotelDetail(hotelId, langWanted) {
   if (cached && (Date.now() - cached.ts) < ACCOR_DETAIL_TTL) return;
   if (window['_accorDetailPending_' + cacheKey]) return;
   window['_accorDetailPending_' + cacheKey] = true;
-  // Per Nick's docs: the working endpoint is /products/accommodations on
+  // Per the owner's docs: the working endpoint is /products/accommodations on
   // catalog/v1. Returns { accommodations: [room…] } — each room has
   // medias.photos[], amenities[] (categorized), topAmenities[] (strings).
   // language= query param duplicates the Accept-Language header so the
@@ -34267,7 +34264,7 @@ function fetchAccorHotelDetail(hotelId, langWanted) {
     .then(function(detail) {
       delete window['_accorDetailPending_' + cacheKey];
       if (!detail) return;
-      // Per Nick's docs: response is { accommodations: [room…] }. Each room
+      // Per the owner's docs: response is { accommodations: [room…] }. Each room
       // has medias.photos[], amenities[] (categorized), topAmenities[].
       // We AGGREGATE across all rooms — collect all photos + best amenities.
       var accs = (detail && detail.accommodations) || (detail && detail.rooms) || [];
@@ -34314,14 +34311,14 @@ function fetchAccorHotelDetail(hotelId, langWanted) {
       var topAmenities = Object.keys(topCount)
         // NEVER carry a breakfast amenity downstream — the API asserts it for
         // hotels that don't include it (Fairmont), and this list feeds every
-        // ad builder. Stripped at the source so no card can show it (Nick,
+        // ad builder. Stripped at the source so no card can show it (
         // repeatedly: 'it's false advertisement, remove it').
         .filter(function(a) { return !/breakfast|d[ée]jeuner/i.test(a); })
         .sort(function(a, b) { return topCount[b] - topCount[a]; })
         .slice(0, 6);
 
       // ── ROOM CATEGORIES ── walk amenities[] categories and pool the
-      //   FacilityDto names by category enum. Per Nick's sample response:
+      // FacilityDto names by category enum. Per the owner's sample response:
       //     FOOD_AND_BEVERAGE  → 'Mini Bar', 'Coffee/tea making facilities'…
       //     BATHROOM           → 'Bathrobe', 'Hair dryer in bathroom'…
       //     MEDIA_AND_TECHNOLOGY → 'High speed internet', 'Voice mail'…
@@ -34370,14 +34367,14 @@ function fetchAccorHotelDetail(hotelId, langWanted) {
 
       // ── ROOM TYPES ── the accommodations endpoint names every room class
       // ('Superior Room, 2 Queen Beds' …) with its own gallery — data we
-      // never surfaced (Nick: 'I asked for options such as menus and things
-      // we don't use'). Capture name + first photo per room class.
+      // never surfaced
+      // t use'). Capture name + first photo per room class.
       var roomsSeen = {};
       var rooms = [];
       accs.forEach(function(acc) {
         var rn = String(acc.name || acc.label || acc.title || (acc.room && (acc.room.name || acc.room.label)) || '').replace(/\s+/g, ' ').trim();
         // Accor bed codes read like fare buckets ('DBL/DBL') — spell them
-        // out (Nick: 'DBL/DBL that is 2 Double Beds').
+        // out.
         rn = rn.replace(/\bDBL\s*\/\s*DBL\b/gi, '2 Double Beds')
                .replace(/\bTWN\s*\/\s*TWN\b/gi, '2 Twin Beds')
                .replace(/\bQUE\s*\/\s*QUE\b/gi, '2 Queen Beds')
@@ -34459,7 +34456,7 @@ function fetchAccorHotelDetail(hotelId, langWanted) {
 }
 
 // ── HOTEL-LEVEL master record: REAL restaurants & bars + categorized hotel
-// photos (Nick: 'don't they offer anything else — menus, restaurant pictures,
+// photos (t they offer anything else — menus, restaurant pictures,
 // there has to be'). The accommodations endpoint above is ROOM-level; dining
 // lives on the hotel record. The exact shape varies by tenant, so this PROBES
 // candidate endpoints in order and keeps the first that yields dining data —
@@ -34542,7 +34539,7 @@ function fetchAccorHotelMaster(hotelId) {
       .then(function (data) {
         if (!data) { tryNext(i + 1); return; }
         var mined = _mine(data);
-        // Hotel-master EXTRAS (shape confirmed from Nick's real response):
+        // Hotel-master EXTRAS (shape confirmed from the owner's real response):
         // managerMessage prose, enhancedDescription, offer labels, free-amenity
         // flags, check-in/out hours — content the card never used.
         if (data && (data.id || data.brand) && !window['_accorMasterExtras_' + cacheKey]) {
@@ -34705,16 +34702,16 @@ function _processAccorData(data, destIata, langKey) {
         .replace(/,?\s*fairmont\s*$/i, '')
         .replace(/^the\s+/i, '')
         .trim();
-      // French property names (Nick: 'in French [Queen] Elizabeth is
-      // Fairmont Le Reine Elizabeth', 'use the one I provided') — on FR
+      // French property names
+      // Requested: use the supplied official art — on FR
       // boards use the OFFICIAL brand art with the French name (derived
       // from the brand-team editable file, not a runtime composition).
       var _frLockupPath = null;
       try {
         // Key on _ckLang — the language THIS processing pass is building the
         // cache for (ACCOR_HOTEL_CACHE[destIata|_ckLang]) — NOT the live global
-        // display index. The bug (Nick: 'French should be Le Reine Elizabeth on
-        // French boards'): reading langs[langIdx] baked whatever was on screen
+        // display index. The bug
+        // : reading langs[langIdx] baked whatever was on screen
         // at fetch time (usually EN) into the FR cache entry too, so FR boards
         // kept the English lockup.
         if (_ckLang === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(hotelName)) {
@@ -34728,8 +34725,8 @@ function _processAccorData(data, destIata, langKey) {
         // every feed name variant lands on its official outlined_svg_white file.
         // The exact-key lookups below are kept as a fast path; the robust
         // resolver covers everything they miss. Only a genuinely unknown
-        // property reaches the generator now (Nick: 'if the logo is available
-        // take it — the generator is terrible').
+        // property reaches the generator now
+        // 
         var _realFai = FAIRMONT_PROPERTY_LOCKUPS[_lockupKey]
           || FAIRMONT_PROPERTY_LOCKUPS[hotelName.toLowerCase().trim()]
           || (typeof resolveFairmontLockupFile === 'function' ? resolveFairmontLockupFile(hotelName) : null);
@@ -34759,9 +34756,9 @@ function _processAccorData(data, destIata, langKey) {
         _propertyLockupPath = makeEmblemsLockupSvgDataUri(_emiLockupKey || hotelName);
       }
     } else if (brand === 'SOF' && hotelName && typeof makeSofitelLockupSvgDataUri === 'function') {
-      // v23266 — MONTRÉAL IS NO LONGER EXEMPT (Nick: 'the Sofitel logos were
-      // supposed to be changed … Sofitel Golden Mile in Montreal … it wasnt
-      // changed'). It used to serve the brand-team files sofitel-montreal-
+      // v23266 — MONTRÉAL IS NO LONGER EXEMPT
+      //
+      // It used to serve the brand-team files sofitel-montreal-
       // en/fr.svg, which still carry the interlocking emblem — the very thing
       // v23246 removed everywhere else ('get rid of the icon from the logo and
       // simply have Sofitel New York but proportional'). Keeping one property
@@ -34778,7 +34775,7 @@ function _processAccorData(data, destIata, langKey) {
         }
       } catch (e) {}
       // EVERY Sofitel property renders the same way — real SOFITEL wordmark +
-      // property name in Rebelton Extended (Nick's font), no emblem.
+      // property name in Rebelton Extended, no emblem.
       // The data-URI keeps accorLockupCarriesName() working (name suppression);
       // the INLINE variant is what actually renders, so the name paints in the
       // real Rebelton font (a font can't load inside an <img>-rendered SVG).
@@ -34817,12 +34814,12 @@ function _processAccorData(data, destIata, langKey) {
       // renderer binds its LABELS to this so a slide can never come out
       // half-French/half-English: if the deck forced FR but only EN content
       // had loaded (cache fell back to |en), the labels follow the EN content
-      // instead of staying French. (Nick: 'some hotel ads are half french
-      // half english'.)
+      // instead of staying French.
+      // )
       _adLang: _ckLang,
       // The airport this list was fetched for. The card needs it to look up
       // the board's language PAIR and to find this same hotel in the OTHER
-      // language's cache, so both languages can render on one screen (Nick:
+      // language's cache, so both languages can render on one screen (
       // 'in the languages the airport is in — so the 2, if 2 languages, at the
       // same time, same screen').
       _destIata: destIata,
@@ -34836,7 +34833,7 @@ function _processAccorData(data, destIata, langKey) {
       factsheetUrl: h.factsheetUrl || ('https://all.accor.com/hotel/' + (h.id || '') + '/index.en.shtml'),
       hotelId: h.id || '',
       // Accor's own FR copy for Royal York ships a literal 'Vene z savourer'
-      // (Nick photographed it on the gate screen). Their typo, our display —
+      // Their typo, our display —
       // repaired narrowly: exactly this broken word, nothing else touched.
       description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'),
       destinationDescription: h.destinationDescription || '',
@@ -34898,7 +34895,7 @@ function _processAccorData(data, destIata, langKey) {
   // unknowns') leaked wrong-city hotels: SYR isn't in DOWNTOWN_COORDS, so the
   // Ottawa Château Laurier (259km away, Accor's nearest result) showed as the
   // ONLY ad on a Syracuse/Chicago flight, and the GPS-less El San Juan showed
-  // for Punta Cana (Nick: 'this is CHICAGO its showing OTTAWA'). New rule:
+  // for Punta Cana. New rule:
   //   1. downtown distance known  → keep iff ≤100km
   //   2. else airport distance known (COORDS has every IATA) → keep iff ≤100km
   //   3. else (no GPS at all) → DROP — better no hotel ad than the wrong city
@@ -35188,9 +35185,9 @@ function getGateAds() {
       icon: ad.icon || null
     };
   });
-  // v218.99.46 — Nick's spec: ad rotation = Aeroplan/airline-related ads
+  // v218.99.46 — the owner's spec: ad rotation = Aeroplan/airline-related ads
   // ONLY + Accor hotel ads. No generic destination ads.
-  // v22408 — Nick: 'this bullshit over the ads' (Delta 'SkyMiles / Earn miles
+  // v22408 — (Delta 'SkyMiles / Earn miles
   // on every flight' etc.). The APP-GENERATED airline promo slides (a headline
   // + tagline laid over the carrier logo) are not wanted on the guest ad area.
   // Keep only FINISHED CREATIVE image ads (imageOnly art the operator supplied)
@@ -35306,11 +35303,11 @@ function buildGateAdHtml(ad) {
   // size with every other ad layout because it wraps in _adWrap.
   if (ad.adLayout === 'left-scrim') {
     var _bgLeft = ad.bgColor || '#000000';
-    // v218.99.51 — Logo MUCH bigger (Nick: needs to match body text scale).
+    // v218.99.51 — Logo MUCH bigger.
     // Right-side image panel dropped — was rendering squished/half.
     // Photo now sits as a faded full-width background behind the text.
     // v219 — dark/colored logos render as WHITE INK on the dark scrim.
-    // Never a white card behind the logo (Nick: "never do white bandaid").
+    // Never a white card behind the logo.
     // no_filter artwork (already white/light files) renders as-is.
     var _adLogoHtml = '';
     if (ad.logo) {
@@ -35321,8 +35318,8 @@ function buildGateAdHtml(ad) {
         + '<img src="' + ad.logo + '" alt="" style="' + _lsImgStyle + '" onerror="this.style.display=\'none\';">'
         + '</div>';
     }
-    // The headline never repeats the brand the logo already says (Nick:
-    // "why is VIPorter there twice") — if the logo filename contains the
+    // The headline never repeats the brand the logo already says
+    // (VIPorter was printing twice) — if the logo filename contains the
     // normalized headline, the wordmark IS the headline; show only the sub.
     var _lsHeadline = ad.headline || '';
     try {
@@ -35381,7 +35378,7 @@ function buildGateAdHtml(ad) {
     var _vidFit = ad.objectFit || 'contain';
     window._adDiag = 'classic-vid/' + _vidFit;
     // Letterboxed ('contain') classic video ads get the branded light frame —
-    // brushed base + dots world + accent handles (Nick: the flat bgColor bands
+    // brushed base + dots world + accent handles (the owner: the flat bgColor bands
     // were exactly the look he wanted replaced). 'cover' fills, no frame.
     if (_vidFit === 'contain' && typeof _adGlobeBackdrop === 'function') {
       return _adWrap(
@@ -35469,7 +35466,7 @@ function buildGateAdHtml(ad) {
     var photoStyle;
     if (hasPhoto) {
       // v218.99.51 — Use 'contain' so the whole photo fits in the area
-      // (Nick: cover was cropping parts of the building). The dark brand
+      // The dark brand
       // tint fills any letterbox gaps from aspect-ratio mismatch.
       var _brandTintBg = (ad.brandColor) || '#0a0d14';
       photoStyle = 'background-color:' + _brandTintBg + ';'
@@ -35566,7 +35563,7 @@ function buildGateAdHtml(ad) {
       ? '' : 'filter:brightness(0) invert(1);';
 
     var _infoLines = '';
-    // v218.99.61 — TIGHT LOCKUP per Nick (10th time): logo and property
+    // v218.99.61 — TIGHT LOCKUP as specified (10th time): logo and property
     // name must read as ONE unit, no breathing space. Reference: Image 1.
     // Short version — drop address, drop downtown km label, drop review count.
     // Show only what fits on one readable line at 2 feet:
@@ -35676,7 +35673,7 @@ function buildGateAdHtml(ad) {
     // Long-form description / destinationDescription INTENTIONALLY NOT
     // added as a bullet topic — they're marketing paragraphs that read
     // as word salad once chip-truncated. We only surface clean structured
-    // data (topAmenities / restaurants / facilities) per Nick's feedback.
+    // data (topAmenities / restaurants / facilities) as specified's feedback.
     if (false && ad.description && ad.description.length > 20) {
       _topics.push({ title: 'About', items: [ad.description.slice(0, 200) + (ad.description.length > 200 ? '…' : '')] });
     }
@@ -35747,7 +35744,7 @@ function buildGateAdHtml(ad) {
       }
     }
 
-    // ── NEW LAYOUT (v218.99.71) — Per Nick's spec, Accor brand-aligned:
+    // ── NEW LAYOUT (v218.99.71) — Per the owner's spec, Accor brand-aligned:
     //   • Photo on LEFT 65% (full-bleed, image-forward)
     //   • Right 35% panel: ALWAYS dark surface (contrast for white logo + gold)
     //   • Property lockup (e.g. fairmont-royal-york-white.svg) → BIG logo only,
@@ -36009,7 +36006,7 @@ function buildGateAdHtml(ad) {
     // In the Mercure / Fairmont 300×600 examples (p.117-118), the brand
     // wordmark spans nearly the FULL width at the top of the banner — it
     // is the largest single visual element, larger than any text below it.
-    // Per Nick: 'minimum same size as below'.
+    // Per
     //   - Property lockup (Fairmont Royal York etc.):  180-280px tall
     //   - Brand-only (Novotel, Mercure, etc.):         180-280px tall
     //   - Tight lockup: NO gap before the property name beneath
@@ -36177,7 +36174,7 @@ function buildGateAdHtml(ad) {
   }
 
   // ── LAYOUT 3: STANDARD AD ──────────────────────────────────────────────
-  // v218.99.46 — Logo restored, headline + sub fonts bumped per Nick's spec.
+  // v218.99.46 — Logo restored, headline + sub fonts bumped as specified's spec.
   var bgStyle = ad.bg || 'linear-gradient(135deg,#1e2846 0%,#141e37 100%)';
   var iconHtml = ad.icon || '';
   // These standard ads always sit on a DARK brand-colour gradient, so the logo
@@ -36186,8 +36183,8 @@ function buildGateAdHtml(ad) {
   // white) to a clean white silhouette. The only light-background ad (Flair
   // lime) sets ad.fg to a dark colour — there we leave the logo as-is.
   var _adLightBg = !!ad.fg;
-  // v23053 — a logo chosen SPECIFICALLY for its colour is exempt (Nick: 'the
-  // midle leaf is still not changed'). The welcome card was already being
+  // v23053 — a logo chosen SPECIFICALLY for its colour is exempt
+  // The welcome card was already being
   // served WestJet-leaf-colour.svg — this filter was flattening it straight
   // back to a white silhouette, so the file swap looked like it had done
   // nothing. Files the logo-treatment table marks 'no_filter' keep their art;
@@ -36204,8 +36201,8 @@ function buildGateAdHtml(ad) {
     ? '<div style="flex-shrink:0;width:100%;margin-bottom:clamp(20px,3vh,40px);height:clamp(120px,20vh,230px);display:flex;align-items:center;justify-content:center;">'
       // Height-driven: the logo fills the tall box. Width is a VIEWPORT cap
       // (min(720px,80vw)) — a % max-width resolves against this shrink-wrapped
-      // flex child and collapses the logo to ~80px (Nick: 'why is the logo even
-      // smaller'). object-fit keeps aspect.
+      // flex child and collapses the logo to ~80px
+      // object-fit keeps aspect.
       + '<img src="' + ad.logo + '" alt="" '
       + 'style="height:100%;width:auto;max-width:min(720px,80vw);object-fit:contain;display:block;' + _stdLogoFilter + '" '
       + 'onerror="this.style.display=\'none\';">'
@@ -36216,7 +36213,7 @@ function buildGateAdHtml(ad) {
   var _stdFg = ad.fg || '#fff';
   var _stdSubFg = ad.subFg || 'rgba(255,255,255,0.88)';
   // The headline never repeats what the logo lockup already says — same
-  // guard as the scrim renderer (Nick: the name shown twice on one ad).
+  // guard as the scrim renderer.
   var _stdHeadline = ad.headline || '';
   try {
     if (ad.logo && _stdHeadline) {
@@ -36233,7 +36230,7 @@ function buildGateAdHtml(ad) {
     + '<div style="font-size:clamp(44px,5.2vw,78px);font-weight:800;color:' + _stdFg + ';line-height:1.08;max-width:100%;">' + _stdHeadline + '</div>'
     + (ad.subLogo
         // v23123 — the sub line renders the brand's real WORDMARK when one is
-        // supplied (Nick, Delta welcome); otherwise the plain name as before.
+        // supplied; otherwise the plain name as before.
         ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(34px,4.2vh,64px);width:auto;max-width:60%;object-fit:contain;margin:clamp(12px,2vh,22px) auto 0;display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
         : '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>')
     + '</div></div>'
@@ -36293,7 +36290,7 @@ var ACCOR_LOGO_CROP = {
   "tribe-monochrome-white.svg": "17 8 35.3 24",
 };
 
-// French-board hotel-name localization (Nick): the Accor feed ships the
+// French-board hotel-name localization: the Accor feed ships the
 // English property name, so on FR boards accent/translate the place words.
 // e.g. "Novotel Montreal Centre" -> "Novotel Montréal Centre",
 // "Novotel Montreal Airport" -> "Novotel Montréal Aéroport". English boards
@@ -36313,7 +36310,7 @@ function buildAccorAdOnlyV6(ad) {
   // Resolve labels in the AD's language (accorLang → the forced EN/FR the deck
   // chose for this slide), NOT the global board `lang` — TL() reads the board
   // lang, which is what split the card into half-French/half-English labels vs
-  // content (Nick, Novotel). Same source as the content now.
+  // content. Same source as the content now.
   function safeTL(k,f){
     try {
       var o = (typeof LS !== 'undefined' && LS[k]) ? LS[k] : null;
@@ -36325,11 +36322,11 @@ function buildAccorAdOnlyV6(ad) {
   // not the raw board language. The deck flips EN/FR per slide via
   // _accorAdForcedLang; this builder used to read the board `lang` instead, so
   // the forced-language LABELS and the board-language CONTENT disagreed and the
-  // card came out half-French/half-English (Nick, Novotel). One source now.
+  // card came out half-French/half-English. One source now.
   function accorLang(){
     // Bind LABELS to the language THIS ad's content was actually built in, so a
     // slide is never half-French/half-English. Fall back to the forced deck
-    // language only when the ad wasn't stamped. (Nick.)
+    // language only when the ad wasn't stamped.
     // v23306 — this used to test `=== 'fr' || === 'en'` literally, so a slide
     // stamped 'es' fell straight through to the deck language and the label
     // binding it exists to guarantee was lost on every Spanish board. Any
@@ -36342,12 +36339,12 @@ function buildAccorAdOnlyV6(ad) {
   function localized(obj,base){ var l=accorLang(); return first(obj[base+'_'+l],obj[base+l.toUpperCase()],obj[base+'-'+l],obj[base],''); }
   function bgUrl(bg){ var m=String(bg||'').match(/url\((['"]?)(.*?)\1\)/i); return (m&&m[2])?m[2]:''; }
 
-  // ── BILINGUAL (Nick: 'have them bilingual … in the languages the airport is
-  // in, so the 2 if 2 languages at the same time same screen') ──────────────
+  // ── BILINGUAL
+  // ──────────────
   // The card is built in the language its content arrived in (_L1) and carries
   // the board's OTHER language (_L2) beside it. Nothing is announced — no
   // 'ENGLISH'/'FRANÇAIS' headings — the two columns and the rule between them
-  // are the only separator (Nick: 'You dont need to announce English or french').
+  // are the only separator.
   // The airport decides the pair. Prefer the one stamped on the record at
   // fetch time; fall back to the gate's own destination so a card assembled
   // from anywhere still asks the right board which two languages it runs —
@@ -36475,7 +36472,7 @@ function buildAccorAdOnlyV6(ad) {
   // EVERY Accor brand, not a hand-picked dozen. The short list below silently
   // let SLS, Hyde, Delano, TRIBE, Rixos, Handwritten Collection… through, so
   // the wordmark and the name both said the brand — 'SLS' over 'SLS Baha Mar'
-  // (Nick: 'do not use the Logo and the name again SLS SLS').
+  //
   var BRAND_WORDS=['Novotel','Fairmont','Sofitel Legend','Sofitel','Pullman','Grand Mercure','Mercure','Swissotel','Movenpick','MGallery','Raffles','ibis Styles','ibis budget','ibis','Mama Shelter','Mondrian','Faena','SLS','Hyde','Delano','Morgans Originals','TRIBE','Tribe','25hours','Rixos','Banyan Tree','Mantis','Orient Express','Emblems','Art Series','Handwritten Collection','The Hoxton','Hoxton','The Sebel','Adagio','greet','JO&JOE','BreakFree','Peppers','Mantra','hotelF1','21c Museum Hotels','Angsana','Our Habitas'];
   var brandWord='';
   var _brandLowerFold=_foldAcc(brandLower);
@@ -36512,7 +36509,7 @@ function buildAccorAdOnlyV6(ad) {
     // Collection' → 'Hotel Faubourg Galant Paris,')
     return s.replace(/^[\s,·:–—-]+|[\s,·:–—-]+$/g,'').trim();
   }
-  // Brand policy (Nick): never print the brand twice — the logo slot ALWAYS
+  // Brand policy: never print the brand twice — the logo slot ALWAYS
   // carries the brand (image or text label), so the name is always stripped.
   var displayName=_accorFrName(stripBrand(hotelName));
   // Property lockups (Fairmont/Emblems per-property art, runtime-generated or
@@ -36581,15 +36578,15 @@ function buildAccorAdOnlyV6(ad) {
   // (so the logo isn't duplicated), so use ad.nameFull for the bubble/context.
   var _fullName = _accorFrName(first(ad.nameFull, hotelName));
   // French boards: the Fairmont Queen Elizabeth is "Fairmont Le Reine Elizabeth"
-  // (Nick). The feed name stays English, so localize it for the FR QR caption.
+  // The feed name stays English, so localize it for the FR QR caption.
   if (accorLang() === 'fr' && /queen\s*elizabeth|reine\s*elizabeth/i.test(_fullName)) {
     _fullName = 'Fairmont Le Reine Elizabeth';
   }
   // The caption's name line is NOT run through the shrink-to-fit fitter any
   // more. Fitting it meant the same hotel name rendered at yet another size
-  // here — Nick counted four sizes of one hotel's name inside a single ad.
+  // here — the owner counted four sizes of one hotel's name inside a single ad.
   // The bubble copy is a fixed size and wraps to two lines instead.
-  // Fairmont-style accent (Nick): first word italic sentence-case, the rest
+  // Fairmont-style accent: first word italic sentence-case, the rest
   // renders CAPS via the brand's bubble CSS — like 'SAVOR SAN JUAN flavor'.
   function _scanFor(L){
     try { var o = (typeof LS !== 'undefined' && LS.scanToDiscover) ? LS.scanToDiscover : null; if (o && o[L]) return o[L]; } catch(e){}
@@ -36671,8 +36668,8 @@ function buildAccorAdOnlyV6(ad) {
   // WORDS MUST MATCH THE CARD'S LANGUAGE. The detail cache is keyed by
   // hotelId|lang with a fallback to the unkeyed entry, so a French card was
   // picking up an English detail whenever that was the one already cached —
-  // English room names and room copy under French headings (Nick: 'Ads half
-  // french half english'). Photos are language-neutral and were merged into
+  // English room names and room copy under French headings
+  // Photos are language-neutral and were merged into
   // _photoSet already, so only the TEXT source is dropped here; the detail for
   // this card's own language is requested so the next pass has it.
   if (_detail && _detail.lang && _detail.lang !== accorLang()) {
@@ -36690,14 +36687,14 @@ function buildAccorAdOnlyV6(ad) {
   }
   function _dedupe(arr){ var seen={}, out=[]; (arr||[]).forEach(function(x){ var k=String(x||'').toLowerCase().trim(); if (x && !seen[k]) { seen[k]=1; out.push(x); } }); return out; }
   // Curate, don't just take the first six: the room-level feed leads with
-  // fixtures nobody chooses a hotel for (Nick: the card was selling 'Iron' and
+  // fixtures nobody chooses a hotel for (the owner: the card was selling 'Iron' and
   // 'Direct dial telephone'). Rank sellable amenities (pool/spa/dining/gym/…)
   // first, neutral ones next, room fixtures last — used only as filler.
   var _amenSellRx = /pool|piscine|spa\b|sauna|hammam|jacuzzi|massage|fitness|gym|restaurant|resto|\bbar\b|lounge|breakfast|d[ée]jeuner|rooftop|terrace|terrasse|view|vue\b|parking|shuttle|navette|airport transfer|pet|animaux|kids|famille|family|beach|plage|golf|concierge|room service|service aux chambres|24[\/ -]?(h|hour|heures)|business cent|meeting|ev charg|borne|wi-?fi|internet/i;
   var _amenDullRx = /\biron(ing)?\b|fer [àa] repasser|telephone|t[ée]l[ée]phone|hair ?dry|s[èe]che-cheveux|kettle|bouilloire|coffee maker|minibar|mini-bar|\btv\b|television|t[ée]l[ée]vision|radio|\bdesk\b|bureau|bathrobe|peignoir|\bsafe\b|coffre|wardrobe|armoire|blackout|rideaux|toiletries|wake-?up|r[ée]veil|air condition|climatisation|heating|chauffage|carpet|moquette/i;
   // NEVER surface a breakfast claim. The hotel API returns COMPLIMENTARY_
   // BREAKFAST / 'breakfast' for properties that do NOT include it (Fairmont —
-  // Nick, repeatedly: 'it's false advertisement, it needs removed'). The data
+  // s false advertisement, it needs removed'). The data
   // can't be trusted for this, so breakfast is stripped from every amenity /
   // dining / prose surface of the ad.
   var _isBreakfast = function (a) { return /breakfast|d[ée]jeuner/i.test(String(a || '')); };
@@ -36717,7 +36714,7 @@ function buildAccorAdOnlyV6(ad) {
   }
   var _amenRank = _rankAmen(ad, _detail, accorLang());
   var _amenSell = _amenRank.sell, _amenList = _amenRank.list;
-  // REAL hotel dining (Nick: page 3 was showing in-room kettles/fridges):
+  // REAL hotel dining:
   // prose 'advantages' that mention dining first, then hotel-level dining
   // amenities and program labels. In-room food&bev only as a last resort.
   var _dineRx = /restaurant|resto|\bbar\b|dining|breakfast|d[ée]jeuner|cuisine|lounge|caf[ée]|terrasse|patio|buffet/i;
@@ -36756,7 +36753,7 @@ function buildAccorAdOnlyV6(ad) {
     // REAL hotel dining only — from the master record. The detail endpoint's
     // 'restaurants' are IN-ROOM food & beverage fixtures (Mini Bar, Ice
     // Machine, Microwave, Coffee/tea making facilities); selling those as the
-    // hotel's restaurants is exactly what Nick keeps calling out, so they are
+    // hotel's restaurants is exactly what the owner keeps calling out, so they are
     // no longer a fallback. No real dining data → the page carries the guest
     // rating and the QR alone.
     var _mstr = null;
@@ -36769,8 +36766,8 @@ function buildAccorAdOnlyV6(ad) {
       return (typeof r === 'string') ? r : String((r && r.name) || '');
     }).filter(function (n) { return n && !_isBreakfast(n); })).slice(0, 5);
   }
-  // Hygiene/pandemic boilerplate is NEVER ad copy (Nick: the COVID notice
-  // rendering as the hotel's blurb — 'This cant happen').
+  // Hygiene/pandemic boilerplate is NEVER ad copy — the COVID notice was
+  // rendering as the hotel's blurb.
   var _covidRx = /covid|coronavirus|pand[ée]mi|sanitai?r|hygi[eè]n|propagation|all ?safe|\bvirus\b/i;
   function _mkBlurb(adX) {
   var _blurb = [adX.description, adX.destinationDescription].filter(function (t) {
@@ -36784,13 +36781,13 @@ function buildAccorAdOnlyV6(ad) {
     // there's no sentence break to land on.
     var _blMax = 170;
     if (_blurb.length > _blMax) {
-      // ALWAYS end on a complete sentence — never a "…" fragment (Nick: paying
+      // ALWAYS end on a complete sentence — never a "…" fragment (the owner: paying
       // advertisers can't have their copy chopped mid-sentence). Look a bit
       // past the cap for the sentence end; if the text has no sentence break
       // at all, drop the blurb rather than show a fragment.
       var _cut = _blurb.slice(0, Math.min(_blurb.length, _blMax + 60));
       // A period after an abbreviation is NOT a sentence end — 'steps away
-      // from the St. Lawrence Market' was being cut to '…from the St.' (Nick).
+      // from the St. Lawrence Market' was being cut to '…from the St.'.
       var _abbrRx = /(\b(?:St|Ste|Mt|Dr|Mr|Mrs|Ms|Ave|Blvd|Rd|Hwy|No|Nos|vs|etc|approx|Ft|Pt)|\b[A-Z])$/;
       function _validSentEnd(str, idx) {
         return idx > 0 && !_abbrRx.test(str.slice(0, idx));
@@ -36814,7 +36811,7 @@ function buildAccorAdOnlyV6(ad) {
         // junto a las principales atracciones como la Torre CN…'). Both leave
         // a complete main clause in front of the break, so stop there: colon
         // or semicolon first, then a comma far enough in to have said
-        // something. This is not the mid-sentence chop Nick banned — it only
+        // something. This is not the mid-sentence chop the owner banned — it only
         // ever runs where the alternative is printing nothing at all.
         var _clause = -1, _ci;
         for (_ci = 40; _ci < _cut.length; _ci++) {
@@ -36839,7 +36836,7 @@ function buildAccorAdOnlyV6(ad) {
   // destination text (what's around the hotel), or the next sentence of the
   // hotel's own copy. Without it page 3 was a logo, a name and a QR code and
   // nothing else once the in-room fixtures were banned from the dining list
-  // (Nick: 'theres barely any info at all on some of these').
+  //
   function _mkBlurb2(adX, blurbX, allowDest) {
     var _blurb2 = '';
     function _sent1(txt, skipFirst) {
@@ -36885,8 +36882,8 @@ function buildAccorAdOnlyV6(ad) {
   var _kDining = ({en:'Dining & reviews',fr:'Restauration & avis',es:'Gastronomía y reseñas',de:'Gastronomie & Bewertungen',it:'Ristorazione e recensioni',pt:'Restauração e avaliações',ja:'ダイニング＆レビュー',zh:'餐饮与评价',ar:'المطاعم والتقييمات'})[_acL] || 'Dining & reviews';
 
   function _heroImg(u){ return u ? '<div class="axr-hero-img" style="background-image:url(\''+esc(u)+'\')"></div>' : '<div class="axr-hero-img axr-hero-noimg"></div>'; }
-  // Official Accor ALL pictograms for amenity lines (Nick) — matched by
-  // keyword; unmatched lines keep the "›" chevron. Grows as Nick supplies
+  // Official Accor ALL pictograms for amenity lines — matched by
+  // keyword; unmatched lines keep the "›" chevron. Grows as the owner supplies
   // more pictos (files live in /logos/hotels/accor-pictos/, white cuts).
   var _AMEN_PICTOS = [
     { rx: /wi[\s-]?fi|internet|wireless|haut d[ée]bit|sans fil/i, ico: '/logos/hotels/accor-pictos/internet-white.svg' },
@@ -36902,7 +36899,7 @@ function buildAccorAdOnlyV6(ad) {
   function _amenPicto(s) {
     for (var i = 0; i < _AMEN_PICTOS.length; i++) if (_AMEN_PICTOS[i].rx.test(s)) return _AMEN_PICTOS[i].ico;
     // No specific pictogram → the ALL star, so every line carries an icon
-    // (Nick: 'not all categories have an icon it looks terrible').
+    //
     return '/logos/hotels/accor-pictos/star-white.svg';
   }
   function _list(items){ return items.length ? '<ul class="axr-list">'+items.map(function(i){
@@ -36910,14 +36907,14 @@ function buildAccorAdOnlyV6(ad) {
     return '<li'+(p ? ' class="axr-li-picto" style="--amen-picto:url(&quot;'+p+'&quot;)"' : '')+'>'+esc(i)+'</li>';
   }).join('')+'</ul>' : ''; }
   var _ph0 = _photoSet[0]||photo||'', _ph1 = _photoSet[1]||_ph0, _ph2 = _photoSet[2]||_ph1;
-  // Continuation pages carry the brand LOGO (Nick: 'the logo should be on
-  // all screens'), so the context name is the brand-stripped property name —
+  // Continuation pages carry the brand LOGO
+  // so the context name is the brand-stripped property name —
   // wordmark + full name would print the brand twice.
   // Property lockups already carry the property name inside the artwork —
-  // repeating it as the page context printed the name twice (Nick). Pages
+  // repeating it as the page context printed the name twice. Pages
   // with a lockup logo get no extra name line.
   var _ctxName   = lockupHasName ? '' : '<div class="axr-page-ctx">'+esc(displayName)+'</div>';
-  // IDENTITY (Nick). A property that already has its proper logo — Fairmont,
+  // IDENTITY. A property that already has its proper logo — Fairmont,
   // Sofitel, and every other property-lockup brand — DOES NOT CHANGE: the
   // artwork stays where and how it was. Everything else stops showing its
   // brand wordmark up here and simply writes the name on one line, 'Novotel
@@ -36928,7 +36925,7 @@ function buildAccorAdOnlyV6(ad) {
   // wrong twice over: a Fairmont whose lockup had not resolved yet fell to the
   // text treatment and then had its property lockup pushed into the footer,
   // where it clipped to 'Fair' beside the ALL mark; and Sofitel took the text
-  // path outright. Both are brands Nick said must not change.
+  // path outright. Both are brands the owner said must not change.
   var _hasPropertyLockup = !!(ad._propertyLockup || _inlineLockup);
   var _useTextId = !_hasPropertyLockup && !lockupHasName;
   function _idRow(nameHtml) {
@@ -36947,21 +36944,21 @@ function buildAccorAdOnlyV6(ad) {
     +   _idRow(showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '')
     +   _addrLineHtml + _locLineHtml + _starsRow
     + '</div></div>';
-  // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com (Nick:
-  // 'All hotels should be this way'): the hotel's ADVANTAGES as short caps
+  // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com: the
+  // hotel's ADVANTAGES as short caps
   // phrases in the brand's display face — 'award-winning Isla Verde Beach',
   // 'Four pristine pools' — never a commodity amenity inventory. A hotel with
   // no advantages falls back to its STANDOUT amenities only (spa, pools,
   // beach, rooftop…) in the same inline treatment; the plain amenity
   // inventory — 'Mini Bar', 'Automatic wake up call', 'Make-up mirror' —
-  // never renders (Nick, Faena New York: 'Why is that still there?').
+  // never renders.
   var _isFaiCard = String(ad.brand || '').toUpperCase() === 'FAI';
   var _featsHtml = '';
   // Commodity lines are never a selling point, wherever they come from. Accor
   // lists 'Mini Bar' among Faena New York's advantages, and with the longer
   // ones filtered out it became the hotel's ONE headline claim.
   var _dullAdvRx = /wi-?fi|internet|wireless|t[ée]l[ée]phone|telephone|mini[\s-]?bar|hair ?dry|s[èe]che-cheveux|iron(ing)?\b|fer [àa] repasser|kettle|bouilloire|coffee ?\/? ?tea|plateau (de )?th[ée]|wake[- ]?up|r[ée]veil|\btv\b|t[ée]l[ée]vision|television|\bsafe\b|coffre[- ]?fort|air ?condition|climatisation/i;
-  // v22732 — A POLICY FOOTNOTE IS NOT A HEADLINE (Nick, Sofitel New York on
+  // v22732 — A POLICY FOOTNOTE IS NOT A HEADLINE (the owner, Sofitel New York on
   // the Delta gate: 'wording and size fir this add is terrible'). Accor ships
   // advantages with their small print attached — 'Pet friendly - please
   // inquire about details.' — and that whole sentence was rendering as the
@@ -36998,7 +36995,7 @@ function buildAccorAdOnlyV6(ad) {
     // _amenSell has already separated from the in-room fixtures. Only the pure
     // commodities every hotel has (wi-fi, a telephone line) stay out; a pool, a
     // spa, a restaurant, parking or a shuttle is real information a traveller
-    // wants, and cutting it left cards with almost nothing on them (Nick:
+    // wants, and cutting it left cards with almost nothing on them (
     // 'theres barely any info at all on some of these').
     var _dullRx = _dullAdvRx;
     // Negative keys so a facilities-derived list is only ever paired with the
@@ -37038,8 +37035,8 @@ function buildAccorAdOnlyV6(ad) {
   _featsHtml = _featsOf(_advs);
   var _featsHtmlB = _featsOf(_advsB);
   // The two languages, side by side, with a hairline between them and nothing
-  // announcing which is which (Nick: 'You dont need to announce English or
-  // french'). Falls back to a single full-width column when the second
+  // announcing which is which
+  // Falls back to a single full-width column when the second
   // language hasn't loaded yet or the two records carry the same words, so
   // the card is never half empty.
   function _biAttr(L){ return ' lang="' + esc(L) + '"' + ((L === 'ar') ? ' dir="rtl"' : ''); }
@@ -37048,8 +37045,8 @@ function buildAccorAdOnlyV6(ad) {
   // field carries a one-line tagline ('Welcome to a new era of luxury.') while
   // the French carries a location paragraph ('Le Fairmont Royal York est situé
   // en centre-ville de Toronto…'). Printed side by side they read as a
-  // mistake, because they ARE two different facts (Nick: 'the english and
-  // french don't match totally different').
+  // mistake, because they ARE two different facts
+  // t match totally different').
   // A translation of the same sentence is close in length; different fields
   // are not. When the two diverge past that, the pair is dropped and the
   // fuller of the two is shown alone, full width — one true statement beats
@@ -37086,7 +37083,7 @@ function buildAccorAdOnlyV6(ad) {
     if (a && b && _biMismatch(a, b)) {
       // v23316 — WHEN ONLY ONE COLUMN CAN SHOW, IT IS THE DECK'S OWN LANGUAGE.
       // v23299 kept whichever side was LONGER, which makes the surviving
-      // language effectively random per page: measured on Nick's YQM gate 4
+      // language effectively random per page: measured on the owner's YQM gate 4
       // recording, one pass of the Royal York card ran page 1 bilingual,
       // page 2 FRENCH-ONLY (the FR location paragraph outweighed the EN one)
       // and page 3 ENGLISH-ONLY (the EN marketing blurb outweighed the FR).
@@ -37110,8 +37107,8 @@ function buildAccorAdOnlyV6(ad) {
   // is dropped from the deck rather than shown as a bare logo + name.
   var _p2a = _featsHtml  + (_blurb  ? '<p class="axr-blurb">'+esc(_blurb)+'</p>'  : '');
   var _p2b = _featsHtmlB + (_blurbB ? '<p class="axr-blurb">'+esc(_blurbB)+'</p>' : '');
-  // v23299 — the deck must never fall to two pages (Nick: 'Why is there only
-  // 2 screens unacceptable'). When Accor returns no advantages and no prose
+  // v23299 — the deck must never fall to two pages
+  // When Accor returns no advantages and no prose
   // for a property, this page used to be DROPPED, which is how a card that is
   // supposed to run three or four scenes silently became two. It now falls
   // back to facts every hotel has — the address, the distance line and the
@@ -37130,7 +37127,7 @@ function buildAccorAdOnlyV6(ad) {
   // failing all of those the address and the distances (which are facts every
   // hotel has). A page with only a wordmark on it is not an advertisement.
   // Restaurants flow inline in the advantages treatment — caps, gold middots —
-  // never as a bulleted list (Nick has rejected bullets on these cards).
+  // never as a bulleted list.
   var _restInline = _restList.length
     ? '<div class="axr-fai-feats">' + _restList.slice(0, 3).map(function (r) {
         return '<span>' + esc(r) + '</span>';
@@ -37151,21 +37148,21 @@ function buildAccorAdOnlyV6(ad) {
     +   _p3Body
     + '</div></div>';
 
-  // NO ROOM PAGES. Nick: 'remove the rooms and do as I asked' — the card is
+  // NO ROOM PAGES. — the card is
   // about what the HOTEL offers, not its bedroom inventory. The room photos
   // still feed the hero rotation (he kept those: 'you can still show the
   // pictures of rooms if its a part of the main display'); only the per-room
   // pages are gone.
 
   // Footer — the ALL mark, centered. For brands whose wordmark came out of the
-  // identity slot it now sits here beside ALL (Nick: 'the Novotel logo can go
-  // with the ALL logo at the bottom, that is approved'). Lockup brands keep
+  // identity slot it now sits here beside ALL
+  // Lockup brands keep
   // the footer they had: ALL alone.
   // EVERY brand signs the footer, Fairmont and Sofitel included — 'brand mark
-  // | ALL', the way fairmont.com signs its own pages (Nick). Always the
+  // | ALL', the way fairmont.com signs its own pages. Always the
   // BRAND-level wordmark, never the property lockup: a lockup is drawn for a
   // full-height slot and clips to its first few letters at footer size, which
-  // is the 'Fair' beside the ALL mark Nick photographed.
+  // is the 'Fair' beside the ALL mark the owner photographed.
   var _brandMark = _accorBrandMark(brandWord, brandRaw, ad.brand);
   // axr-all-svg + data-crop hands the mark to the existing lockup cropper,
   // which inlines the SVG and swaps in the ink bounds — without it most of
@@ -37192,10 +37189,10 @@ function buildAccorAdOnlyV6(ad) {
 }
 
 // ── 3D FLIGHT MAP SLIDE — context builder ─────────────────────────────
-// Nick: the big map shows ONLY the INCOMING flight — the aircraft that is
+// the owner: the big map shows ONLY the INCOMING flight — the aircraft that is
 // actually flying to this gate (origin → THIS airport, plane at its live
 // position when we have one). No inbound airborne = no map slide.
-// Live-fix sanity gate (Nick: 'a Q400 at 31,400 ft is bullshit'). ADB
+// Live-fix sanity gate. ADB
 // sometimes returns another aircraft's position for a marketing number.
 // A fix that is physically impossible for the airframe type is DISCARDED
 // everywhere — telemetry panel and map alike show nothing false.
@@ -37219,7 +37216,7 @@ function _liveFixPhysOk(inb) {
 // ── REG → TRUE AIRFRAME TYPE ────────────────────────────────────────────
 // The aircraft shelf glued the OUTBOUND's scheduled equipment to the
 // INBOUND's real tail — on an equipment swap that lies ('Boeing 737 MAX 8 |
-// C-FWSI' when C-FWSI is a 737-700, Nick). A registration IS a specific
+// C-FWSI' when C-FWSI is a 737-700, the owner). A registration IS a specific
 // airframe, so resolve its true type from ADB /aircrafts/reg/ (via the
 // proxy) and let it win. Cached permanently in localStorage — a tail's type
 // never changes — so each tail costs one lookup ever. Async: returns '' on
@@ -37235,7 +37232,7 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
     var r = String(reg || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
     var f = String(flightNo || '').toUpperCase().replace(/\s+/g, '');
     // The other leg of the same physical turn (the INBOUND the tail was
-    // observed on). Nick's WS813 console proved the one-flight check purges
+    // observed on). the owner's WS813 console proved the one-flight check purges
     // honest tails: C-GWSZ's own list read "WS748, WS747, WS812" — the
     // outbound assignment just wasn't filed yet — so "flies WS813? false"
     // killed the tail AND the equip lock, and the gate showed no aircraft,
@@ -37249,8 +37246,8 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
     var k = r + '|' + f + (f2 ? '+' + f2 : '') + '|' + day;
     var V = window._regFlightVerdicts;
     if (k in V) return V[k];
-    // v22823 — EVER-TRUE BRIDGE (Nick: 'keeps flip flopping between 320 and
-    // 319 its rediculous', C-FYJE at YQM gate 4, plane ARRIVED at the gate).
+    // v22823 — EVER-TRUE BRIDGE
+    // C-FYJE at YQM gate 4, plane ARRIVED at the gate).
     // The verdict key carries the LOCAL DAY, so at midnight a standing
     // screen's verified tail goes pending again — and the pending branch
     // hides the reg, dropping the panel to the feed's model (which for
@@ -37274,7 +37271,7 @@ function _regFlightVerdict(reg, flightNo, apIata, altFlightNo) {
       // ever repainting. The reg then sat verified IN MEMORY while the row
       // stayed blank until an unrelated feed change forced a rebuild — and
       // the verdict key carries the local day, so the trap re-armed at every
-      // midnight and page load. That is Nick's 'REG doesn't show up anymore'.
+      // midnight and page load. That is the owner's 'REG doesn't show up anymore'.
       // An empty body now reads as null → indeterminate → verdict true, down
       // the SUCCESS path with its repaint.
       .then(function (resp) { return resp && resp.ok ? resp.json().catch(function () { return null; }) : null; })
@@ -37325,7 +37322,7 @@ function _regTrueType(reg) {
     try { store = JSON.parse(localStorage.getItem(LS_KEY) || '{}') || {}; } catch (e) {}
     // Only POSITIVE answers come from the persistent store — a '' there is
     // legacy poison from a failed lookup (it made the panel flip back to the
-    // scheduled type forever, Nick: 'ouch aircraft switched again').
+    // scheduled type forever, ).
     if (store[r]) { window._regTypeCache[r] = store[r]; return store[r]; }
     // In-flight/failed sentinel lives in MEMORY only, with an expiry so a
     // transient API failure retries instead of poisoning the tail for good.
@@ -37378,7 +37375,7 @@ if (typeof window !== 'undefined') window._regTrueType = _regTrueType;
 function _map3dFlightCtx(allowEstimated) {
   try {
     var inb = window._gateInbound;
-    // OUTBOUND fallback (Nick: 'the map doesnt become big at times'): when no
+    // OUTBOUND fallback: when no
     // inbound airframe is resolvable — common now that the feed rarely
     // publishes tails, and 'expected' tails are display-only by design — the
     // takeover shows the DEPARTING flight's own route (gate → destination),
@@ -37437,7 +37434,7 @@ function _map3dFlightCtx(allowEstimated) {
     // because it is close to the route's ORIGIN. The big map then drew the
     // outbound route with the glyph riding the inbound aircraft — nose
     // toward the outbound city, dot tracking the approach, re-stepped on
-    // every fix (Nick's video: 'the plane is flying sideways', TPA gate,
+    // every fix (the owner's video: 'the plane is flying sideways', TPA gate,
     // nose to Montreal while descending from Toronto). Until the outbound
     // has actually departed, its leg has no live position by definition.
     if (fixOk && _legOut) {
@@ -37462,7 +37459,7 @@ function _map3dFlightCtx(allowEstimated) {
       // the route distance (~780 km/h + 25 min taxi/climb) instead of a flat
       // 2 h. The flat guess pinned a 5 h Calgary/Edmonton inbound at progress
       // 0 for its first 3 hours — glyph hidden under the origin pin, so the
-      // big map showed 'just dotted lines' (Nick).
+      // big map showed 'just dotted lines'.
       var _estDurMs = 0;
       try {
         _estDurMs = (_hav(oC, dC) / 13 + 25) * 60000;
@@ -37492,7 +37489,7 @@ function _map3dFlightCtx(allowEstimated) {
     // that is still at the origin gate — that was the original phantom bug.
     if (!_legOut && !fixOk && prog > 0) {
       // Same single spec-signal interpreter the mini map uses — big and
-      // small glyphs can never disagree again (same programming, Nick).
+      // small glyphs can never disagree again (same programming, the owner).
       if (!fidsInboundAirborne(inb)) prog = 0;
     }
     // Landed / at the gate → nothing to plot; the slide skips itself.
@@ -37508,7 +37505,7 @@ function _map3dFlightCtx(allowEstimated) {
         _hav([liveLat, liveLng], dC) < 46);   // km ≈ 25nm
     } catch (e) {}
     if ((prog >= 0.99 && !_bigLiveFinal) || inb.status === 'arrived' || inb.status === 'landed') return null;
-    // HONESTY RULE (Nick, Jul 2026): callers that plot a confident aircraft
+    // HONESTY RULE: callers that plot a confident aircraft
     // (the retired 3D view) get NOTHING without a real live fix. The BIG
     // Your-Aircraft slide passes allowEstimated=true and renders the same
     // schematic the mini map shows (route + glyph at time-progress), with
@@ -37535,14 +37532,14 @@ function _map3dFlightCtx(allowEstimated) {
       col: window._gateAccent || '#5fa8ff',
       progress: prog,
       // TRUE live fix [lng,lat] — the 3D plane must sit exactly where the
-      // 2D mini map shows it (Nick: 'not aligning with the other map').
+      // 2D mini map shows it.
       pos: fixOk ? [liveLng, liveLat] : null,
       speedKph: (fixOk && typeof inb._liveSpd === 'number') ? Math.round(inb._liveSpd * 1.852) : 0,
       altFt: (fixOk && typeof inb._liveAlt === 'number') ? Math.round(inb._liveAlt) : 0,
       // Same equipment resolution as the aircraft panel: prefer the
       // registration-backed OUTBOUND equipment (it's the same tail on the
       // turnaround) over the inbound row's often-generic type — the map
-      // chip said 737-800 while the panel said 737 MAX 8 (Nick).
+      // chip said 737-800 while the panel said 737 MAX 8.
       acType: ((typeof _regTrueType === 'function' && window._gateAcRegShown) ? _regTrueType(window._gateAcRegShown) : '')
            || ((window._gateCurrentFlight && window._gateCurrentFlight._aircraft) || inb._aircraft || ''),
       etaStr: etaStr,
@@ -37553,7 +37550,7 @@ function _map3dFlightCtx(allowEstimated) {
   } catch (e) { return null; }
 }
 
-// Branded LIGHT surround for ads that don't fill the panel (Nick, pointing at
+// Branded LIGHT surround for ads that don't fill the panel (the owner, pointing at
 // the Your Aircraft panel: 'a background like the aircraft info — the dots
 // world… I did like this — also the pattern'). Same recipe as that panel:
 // soft white brushed base, the dotted globe faded in grey (multiply, rising
@@ -37561,16 +37558,16 @@ function _map3dFlightCtx(allowEstimated) {
 function _adBackdropHtml(blurUrl) {
   // The surround design now lives on .gad-media-col itself (art + spots +
   // outer frame, mounted persistently below) so it bleeds to the walls
-  // UNDER the frame at all times (Nick: 'everything on the screen goes
-  // inside the frame ... minus the background abstract, the frame can just
-  // go on top of it'). Slides render transparent and sit inside the
+  // UNDER the frame at all times
+  //
+  // Slides render transparent and sit inside the
   // frame's opening; nothing per-slide to paint any more.
   return '';
 }
 
 // ── OUTER PANEL FRAME ────────────────────────────────────────────────────
-// Nick: 'a frame around the whole middle part … around the middle screen at
-// all times'. A slide-built frame dies with its slide, so this one is
+//
+// A slide-built frame dies with its slide, so this one is
 // mounted on .gad-media-col itself and re-ensured every second — it rides
 // over every slide, weather card, takeover and Accor card alike. Silver
 // finish, distinct from the accent-tinted frame hugging the advert.
@@ -37587,7 +37584,7 @@ function _adBackdropHtml(blurUrl) {
         bd.style.cssText = 'position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;isolation:isolate;';
         col.insertBefore(bd, col.firstChild);
       }
-      // 'the background needs to blend in colors' (Nick, with his mockups):
+      // 'the background needs to blend in colors':
       // the wave art renders as a luminosity layer over the gate's airline
       // accent — same treatment he approved on the first art — rebuilt only
       // when the accent actually changes.
@@ -37603,15 +37600,15 @@ function _adBackdropHtml(blurUrl) {
       if (bd.dataset.acc !== _bdAcc) {
         bd.dataset.acc = _bdAcc;
         bd.dataset.blur = '';
-        // Nick on the AC middle panel: 'I think for AC we need more of a
-        // gray inside … the gray was the middle'. The 74% red mix reads
+        //
+        // The 74% red mix reads
         // harsh, so AC's inside leans charcoal with a breath of the red;
         // every other carrier keeps the full accent wash.
         var _bdBase = /^#d82f2e$/i.test(_bdAcc)
           ? 'color-mix(in srgb, ' + _bdAcc + ' 14%, #494e57)'
           : 'color-mix(in srgb, ' + _bdAcc + ' 74%, #0b1020)';
         // 'the ad to still reflect in the background like it did before'
-        // (Nick): the current advert, blown up and blurred, IS the wall
+        //: the current advert, blown up and blurred, IS the wall
         // art — the waves show through it faintly and carry the panel
         // whenever no ad image is up (weather card, videos).
         bd.innerHTML =
@@ -37634,7 +37631,7 @@ function _adBackdropHtml(blurUrl) {
         }
       } catch (e) {}
       var rg = col.querySelector(':scope > .ad-accent-frame');
-      if (rg) rg.remove();   // the wall-nested ring is not in Nick's reference
+      if (rg) rg.remove();   // the wall-nested ring is not in the owner's reference
       var f = col.querySelector(':scope > .ad-outer-frame');
       if (!f) {
         f = document.createElement('div');
@@ -37644,12 +37641,12 @@ function _adBackdropHtml(blurUrl) {
       } else if (col.lastElementChild !== f) {
         col.appendChild(f);   // keep it on top when the col re-renders around it
       }
-      // Frame matches the airline (Nick): the silver art re-hued by the
+      // Frame matches the airline: the silver art re-hued by the
       // accent via a masked multiply layer; rebuilt only on accent change.
       if (f.dataset.acc !== _bdAcc) {
         f.dataset.acc = _bdAcc;
         // v22850 — the WALL frame keeps its original silver art ('the
-        // other frame is missing'): Nick's stream frame belongs around
+        // other frame is missing'): the owner's stream frame belongs around
         // the AD, not here. Restored to the pre-v22848 recipe.
         var _fa = '/logos/Backgrounds/ad-frame-silver.png?v=2';
         var _wMask = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
@@ -37660,7 +37657,7 @@ function _adBackdropHtml(blurUrl) {
           if (_wAl && typeof AIRLINE_ACCENT2 !== 'undefined' && AIRLINE_ACCENT2[_wAl]) _wSec = AIRLINE_ACCENT2[_wAl];
           else _wSec = '#AEB4BC';
         } catch (e) { _wSec = '#AEB4BC'; }
-        // v22860 — WestJet's frame is NAVY (Nick), not the teal accent.
+        // v22860 — WestJet's frame is NAVY, not the teal accent.
         var _wTint = (_wAl === 'WS') ? '#003366' : _bdAcc;
         f.innerHTML =
             '<div style="position:absolute;inset:0;background-image:url(' + _fa + ');background-size:100% 100%;"></div>'
@@ -37671,7 +37668,7 @@ function _adBackdropHtml(blurUrl) {
     } catch (e) {}
   }
   // A gate re-render wipes the column's children; a 1s poll then left the
-  // panel bare for up to a second — Nick saw it as a blip on every refresh.
+  // panel bare for up to a second — the owner saw it as a blip on every refresh.
   // Re-mount SYNCHRONOUSLY on any column childList change; the slow poll
   // stays as a backstop only.
   try {
@@ -37685,7 +37682,7 @@ function _adBackdropHtml(blurUrl) {
         // A re-render that REPLACES the column node mutates its parent, not
         // the column — the 45s map takeover did exactly that, and only the
         // 1.5s backstop re-mounted the frame+backdrop: a visible blip on
-        // the map (Nick: 'the map keeps blipping'). Catch the fresh column
+        // the map. Catch the fresh column
         // in addedNodes and re-mount synchronously.
         var an = muts[i].addedNodes;
         for (var j = 0; j < (an ? an.length : 0); j++) {
@@ -37703,27 +37700,27 @@ function _adBackdropHtml(blurUrl) {
 })();
 function _adGlobeBackdrop() { return _adBackdropHtml(''); }
 
-// Tech-frame border drawn AROUND contain-fit ad media (Nick: 'a border
-// around these, kinda like the tech look from earlier'). Thin light frame +
+// Tech-frame border drawn AROUND contain-fit ad media
+// Thin light frame +
 // accent corner brackets, painted ABOVE the media (append after it).
-// The carrier's SECOND colour, for the frame hugging the advert (Nick:
+// The carrier's SECOND colour, for the frame hugging the advert (
 // 'color the inside frame the second colour of the airline, so AC may be
 // gray or black'). The wall frame keeps the primary accent, so the two
 // frames read as a pair instead of one doubled line. Carriers without an
 // entry fall back to a neutral graphite, which suits every livery.
-// Nick: 'maybe go with lighter colors I think' — these are the SECOND
+// — these are the SECOND
 // line of the frame motif, so they sit lighter than the primary rather
 // than competing with it.
 var AIRLINE_ACCENT2 = {
   'AC': '#AEB4BC', 'QK': '#AEB4BC', 'RV': '#AEB4BC',   // Air Canada family: light silver-graphite
   'WS': '#7FA8CE',                                      // WestJet: light steel
-  'PD': '#A8C4E2',                                      // Porter: pale steel blue (no red — Nick)
+  'PD': '#A8C4E2',                                      // Porter: pale steel blue (no red — the owner)
   'PB': '#FFD46B',                                      // PAL: light brand yellow
   'DL': '#9DB4D6', 'UA': '#9DB4D6', 'AA': '#A9BBD3',
   'F9': '#8CC9AE', 'WG': '#BCC1C8'
 };
 function _adTechFrameHtml() {
-  // v22850 — Nick's stream frame goes HERE, around the ad ('thats not
+  // v22850 — the owner's stream frame goes HERE, around the ad ('thats not
   // around the add and the other frame is missing'): this per-ad frame
   // draws his media-player art, accent-tinted; the wall frame keeps the
   // original silver art.
@@ -37733,8 +37730,8 @@ function _adTechFrameHtml() {
     if (_fAl && AIRLINE_ACCENT2[_fAl]) _fAcc = AIRLINE_ACCENT2[_fAl];
     else if (_fAl && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl]) _fAcc = '#AEB4BC';
   } catch (e) {}
-  // Nick: 'theres 2 lines around, first outerline should be red the
-  // second gray'. The art carries a double-line motif, so it takes TWO
+  //
+  // The art carries a double-line motif, so it takes TWO
   // tints: the primary over the whole frame, then the secondary clipped
   // to the inside of the outer band so only the second line changes.
   // The band measures 1.09% of width / 1.68% of height.
@@ -37743,7 +37740,7 @@ function _adTechFrameHtml() {
     var _fAl2 = String(window._gateCurrentAirline || (window._gateCurrentFlight && window._gateCurrentFlight.code) || '').toUpperCase();
     if (_fAl2 && typeof AIRLINE_ACCENT !== 'undefined' && AIRLINE_ACCENT[_fAl2]) _fPri = AIRLINE_ACCENT[_fAl2];
   } catch (e) {}
-  // v22848 — Nick's stream-frame upload ('please change the middle frame
+  // v22848 — the owner's stream-frame upload ('please change the middle frame
   // to this one and make it match color of course'): the silver bake of
   // his media-player frame, re-hued by the airline accent. One tint layer
   // over the whole art — the old three-band clip-path split targeted the
@@ -37752,7 +37749,7 @@ function _adTechFrameHtml() {
   var _maskCss = '-webkit-mask-image:url(' + _fa + ');-webkit-mask-size:100% 100%;mask-image:url(' + _fa + ');mask-size:100% 100%;';
   var _tint = '';
   var _fTint = _fPri || _fAcc;   // the airline's PRIMARY colour ('match color of course')
-  try { if (String(window._gateCurrentAirline || '').toUpperCase() === 'WS') _fTint = '#003366'; } catch (e) {}   // v22860: WestJet frames in navy (Nick)
+  try { if (String(window._gateCurrentAirline || '').toUpperCase() === 'WS') _fTint = '#003366'; } catch (e) {}   // v22860: WestJet frames in navy
   if (_fTint) {
     _tint += '<div style="position:absolute;inset:0;background:' + _fTint + ';mix-blend-mode:multiply;opacity:.9;' + _maskCss + '"></div>';
   }
@@ -37859,7 +37856,7 @@ function renderGateAd(index) {
   // status tick (boarding → final call → gate closed); each rebuild that
   // lost the live slot repainted a DIFFERENT slide — the bigcraft map —
   // and the center flipped 'ad → map → ad' several times a second, getting
-  // worse as the updates sped up (Nick filmed exactly this). The lock makes
+  // worse as the updates sped up. The lock makes
   // those stray calls no-ops unless they target the slide already showing.
   if (!window._gateAdAuthChange
       && el.firstChild
@@ -37870,15 +37867,15 @@ function renderGateAd(index) {
 
   // Record what the carousel is ACTUALLY showing. Async repaint callbacks
   // (hotel-photo fetches) read this; before it was stamped they fell back
-  // to slide 0 and hijacked the carousel mid-ad (Nick: 'it starts the ad
-  // and fades back to the previous then back to the new').
+  // to slide 0 and hijacked the carousel mid-ad
+  // 
   window._gateAdCurrentIdx = slot;
   // Every special/full-motion scene starts clean; the eligible static paths
   // below opt back in explicitly. This prevents a class from the prior slide
   // leaking onto a map, video, weather, or hotel layout.
   _setGateStaticAdArt(el, false);
 
-  // ── YOUR AIRCRAFT — BIG (Nick, Jul 2026). The 3D map is RETIRED; once
+  // ── YOUR AIRCRAFT — BIG. The 3D map is RETIRED; once
   // per cycle the center enlarges the right column's Your Aircraft view:
   // big flat route map + all the flight info + the aircraft.
   if (slide && slide.type === 'bigcraft') {
@@ -37913,7 +37910,7 @@ function renderGateAd(index) {
   if (slide && slide.type === 'custom' && slide.item) {
     var item = slide.item;
     // Include the media file's basename so a misbehaving slide (e.g. the
-    // white/blank video from Nick's 2026-07-12 screenshot) can be identified
+    // white/blank video from the owner's 2026-07-12 screenshot) can be identified
     // straight from the corner stamp.
     var _diagBase = '';
     try { _diagBase = String(item.url || '').split('?')[0].split('/').pop().slice(-28); } catch (e) {}
@@ -37941,7 +37938,7 @@ function renderGateAd(index) {
       }
     } else if (item.type === 'video' && item.url) {
       // Letterbox bars: the DOTTED-GLOBE treatment from the Your Aircraft
-      // panel (Nick: 'a background like the aircraft info — the dots world'),
+      // panel,
       // rising from the bottom as a faint screen-blend glow over an
       // accent-tinted vignette. NOT a blurred video copy — a second decoding
       // <video> would double the decode load and OOM the small stream box.
@@ -37965,7 +37962,7 @@ function renderGateAd(index) {
     } else if (item.type === 'image' && item.url) {
       // Letterboxed ('contain') image ads sit on the BRANDED backdrop — the
       // airline-accent vignette with the dots-world globe, same as video ads
-      // (Nick: the blur-fill of a mostly-WHITE ad like AC Altitude showed
+      // (the owner: the blur-fill of a mostly-WHITE ad like AC Altitude showed
       // nothing; 'it should be similar to the one with the red, with the
       // globe pattern'). 'cover' fills the panel, no backdrop needed.
       if (fit === 'contain') {
@@ -38008,8 +38005,8 @@ function renderGateAd(index) {
   _setGateStaticAdArt(el, !!(slide && slide.data && !_isAccorSlide));
   if (slide && slide.data && slide.data.isAccorHotel && typeof buildAccorAdOnlyV6 === 'function') {
     try {
-      // ONE consistent language — the board's own language (Nick: 'the Accor
-      // ads seriously go from one french then english, it's all over the
+      // ONE consistent language — the board's own language
+      // s all over the
       // place'). The old code FLIPPED EN<->FR on every Accor appearance, so the
       // ads alternated language on screen. This display is either an EN board
       // or an FR board (Canada runs paired EN/FR screens), so following the
@@ -38040,7 +38037,7 @@ function renderGateAd(index) {
   // rotation came back round to the slide that had been showing before it,
   // the key matched, this returned, and NOTHING was ever written. The panel
   // then sat flat and empty for the slide's entire dwell — measured at 17.4 s
-  // on Nick's clip, ending only when the next takeover grew in over it.
+  // on the owner's clip, ending only when the next takeover grew in over it.
   if (el._lastKey === newKey && el.firstChild) return;
   el._lastKey = newKey;
   el.style.background = 'transparent';
@@ -38184,8 +38181,8 @@ function _buildDestHotelAdObj(info, cityName) {
         // used to call renderGateAd(_gateAdCurrentIdx || 0) with an index
         // nothing ever assigned, so every resolved photo yanked the
         // carousel back to slide 0 in the middle of whatever ad had just
-        // started (Nick: 'it starts the ad and fades back to the previous
-        // then back to the new'). If another slide is showing, the cached
+        // started
+        // If another slide is showing, the cached
         // photo is simply picked up the next time this hotel renders.
         var idx = window._gateAdCurrentIdx;
         if (typeof idx !== 'number') return;
@@ -38246,7 +38243,7 @@ function buildAdLogoPanelHtml(ad) {
     // Seasons) — a font embedded in an <img>-rendered SVG never loads. Already
     // white-filled, so no invert filter.
     var _inlineLockup = ad._sofitelInlineSvg || ad._fairmontInlineSvg;
-    // Fairmont: logo pinned LEFT (Nick); Sofitel stays centered.
+    // Fairmont: logo pinned LEFT; Sofitel stays centered.
     var _lkAlign = ad._fairmontInlineSvg ? 'flex-start' : 'center';
     if (_inlineLockup) {
       return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:' + _lkAlign + ';justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
@@ -38265,7 +38262,7 @@ function buildAdLogoPanelHtml(ad) {
                        || /\/outlined_svg_white\//i.test(ad._propertyLockup)  // Fairmont brand-team white pack
                        || /rimrock-banff\.svg/i.test(ad._propertyLockup);
     var _lockupFilter = _isAlreadyWhite ? '' : 'filter:brightness(0) invert(1);';
-    // Fairmont lockups pinned LEFT (Nick); other brands stay centered.
+    // Fairmont lockups pinned LEFT; other brands stay centered.
     var _imgAlign = (String(ad.brand || '').toUpperCase() === 'FAI') ? 'flex-start' : 'center';
     return '<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:' + _imgAlign + ';justify-content:center;padding:14px 16px;box-sizing:border-box;gap:12px;">'
       + '<img src="' + ad._propertyLockup + '" alt="' + (ad.headline || '') + '" '
@@ -38488,7 +38485,7 @@ function _buildGateAdSlideList() {
 
   // ── 1. Uploaded MEDIA (R2 library + pasted LocalMedia), airline-if-set-else-global
   //    FIDS_MEDIA resolvers are already wrapped by local-media.js to include both.
-  // Stream mode (Nick): DECODING video ads spikes memory and OOM-restarts the
+  // Stream mode: DECODING video ads spikes memory and OOM-restarts the
   // whole stream on the small box. Drop all video slides — the players are
   // never created, so no video decode. Images / text / photo ads only.
   var _noVideo = false;
@@ -38532,7 +38529,7 @@ function _buildGateAdSlideList() {
   // within ONE pass of the deck. The old loop only placed a hotel after every
   // third non-Accor item, so a short non-Accor pool (one house ad, no uploaded
   // media — United at TPA) fell through to a single accorSlides[0] and the
-  // SAME hotel played forever: Nick got Faena New York over and over and never
+  // SAME hotel played forever: the owner got Faena New York over and over and never
   // saw Sofitel New York, The Plaza or the Hard Rock a few blocks away, all of
   // which the catalog returns for that destination.
   var ACCOR_PER_PASS = 4;
@@ -38558,7 +38555,7 @@ function _buildGateAdSlideList() {
 
   // ── 5. Graceful fallback — never all-Accor, never blank. Airlines with
   // no house ads (EK, QR…) get a BRANDED welcome slide — their gradient,
-  // emblem and name — instead of the bare grey placeholder Nick flagged.
+  // emblem and name — instead of the bare grey placeholder the owner flagged.
   if (!deck.length) {
     if (accorSlides.length) deck = [accorSlides[0]];          // at most ONE Accor
     else if (airlineAdSlides.length) deck = airlineAdSlides;  // airline ads
@@ -38566,16 +38563,16 @@ function _buildGateAdSlideList() {
       var _fb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code]) || null;
       var _fbLogo = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[code]) || null;
       // Opaque full-colour TILE emblems become a solid white slab under the
-      // standard ad renderer's white-force filter (Nick's Breeze A17: giant
+      // standard ad renderer's white-force filter (the owner's Breeze A17: giant
       // white square over the Welcome slide). Those brands show their WHITE
       // wordmark here instead — already white, so the filter is an identity.
-      // WestJet: the COLOUR leaf, not the mono white one (Nick: 'instead of
-      // white logo put the color logo'). The teal/navy leaf reads on the
+      // WestJet: the COLOUR leaf, not the mono white one
+      // The teal/navy leaf reads on the
       // navy welcome card.
       var _FB_WELCOME_LOGO = {
         // v23293 — BA's mark was reaching the welcome card as a blank white
         // silhouette: the speedmarque file is colour art, so the white-force
-        // filter flattened it (Nick: 'the emblem needs color everywhere').
+        // filter flattened it.
         // The stacked reversed lockup keeps the speedmarque's RED and takes
         // only the blue to white, which is BA's own treatment on a dark
         // ground — colour that actually reads on the navy card rather than
@@ -38585,17 +38582,17 @@ function _buildGateAdSlideList() {
         'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg',
         'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
         'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-        // v23123 — Nick: 'the logo in the middle as well for the welcome =
-        // red'. His colour widget, not the white-forced mono mark.
+        // v23123 —
+        // His colour widget, not the white-forced mono mark.
         'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
         'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        // v23127 — Discover (Nick: 'no airline name white tail??? terrible'):
+        // v23127 — Discover:
         // the white-force turned their yellow+blue tail into a blank white
         // silhouette. Native colours.
         '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',
         'OCN': '/logos/airlines/european/discover-airlines-emblem.svg',
-        // v23132 — Flair's mark IS the green dot (Nick: 'the first should be
-        // green simple'). The white-force filter turned it into a blank
+        // v23132 — Flair's mark IS the green dot
+        // The white-force filter turned it into a blank
         // white disc on the welcome card; the dot file is already the brand
         // green, so it must not be filtered — see the no-filter rule in CSS.
         'F8': '/logos/airlines/canadian/flair-dot.svg?v=2',
@@ -38607,7 +38604,7 @@ function _buildGateAdSlideList() {
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
         bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
-        // v22971 — the Welcome slide follows the selected languages (Nick:
+        // v22971 — the Welcome slide follows the selected languages (
         // 'the Welcome' — it sat hardcoded EN/FR on any-language screens).
         headline: (function () {
           var _WA = { en:'Welcome aboard', fr:'Bienvenue à bord', es:'Bienvenido a bordo', de:'Willkommen an Bord', it:'Benvenuti a bordo', pt:'Bem-vindo a bordo', ja:'ご搭乗ありがとうございます', zh:'欢迎登机', ar:'أهلاً بكم على متن الرحلة' };
@@ -38621,15 +38618,15 @@ function _buildGateAdSlideList() {
             return _w.join(' · ');
           } catch (e) { return _WA.en + ' · ' + _WA.fr; }
         })(),
-        // v23412 — DON'T PRINT THE NAME TWICE. Nick: 'British Airways welcome
-        // screen has British Airways twice with 2 different emblems'. Most
+        // v23412 — DON'T PRINT THE NAME TWICE.
+        // Most
         // carriers put an EMBLEM here — a leaf, a widget, a tail — so the name
         // underneath is what identifies it. But two entries above are not
         // emblems at all: BA's welcome mark is the STACKED LOCKUP, which
         // already sets 'BRITISH AIRWAYS' under the speedmarque, and Breeze's
         // is its wordmark, which is nothing but the name.
         sub: (_fb && _fb.name && !_FB_LOGO_HAS_NAME[code]) ? _fb.name : '',
-        // v23123 — Nick: 'put the actual delta name in the middle wordmark'.
+        // v23123 —
         subLogo: (function () {
           var _SUB_WORDMARK = {
             'DL': '/logos/airlines/us-major/delta-wordmark-light.svg',
@@ -38645,7 +38642,7 @@ function _buildGateAdSlideList() {
     }
   }
 
-  // ── 6. YOUR AIRCRAFT — BIG (Nick, Jul 2026): the 3D map is RETIRED.
+  // ── 6. YOUR AIRCRAFT — BIG: the 3D map is RETIRED.
   // Once per cycle the center shows the right column's Your Aircraft
   // content ENLARGED — big flat route map + flight info + aircraft.
   // Needs a real inbound with a plottable route (same ctx the mini map
@@ -38656,7 +38653,7 @@ function _buildGateAdSlideList() {
     }
   } catch (e) {}
   // ── 7. ARRIVAL WEATHER scene — once per cycle when the destination's
-  // live weather is cached (Nick approved the card + outlook, Jul 2026).
+  // live weather is cached.
   try {
     var _wxD = window._gateCurrentFlight && window._gateCurrentFlight._locIata;
     if (_wxD && typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[String(_wxD).toUpperCase()]
@@ -38665,7 +38662,7 @@ function _buildGateAdSlideList() {
       deck.splice(Math.min(3, deck.length), 0, { type: 'wxcard' });
       // PRE-WARM the 7-day forecast now, while other slides are showing —
       // so the outlook is already cached when the weather slide appears
-      // and it paints ONCE (the cold fetch was the second 'bump', Nick).
+      // and it paints ONCE (the cold fetch was the second 'bump', the owner).
       try { _wxFetchDaily(String(_wxD).toUpperCase(), null); } catch (e2) {}
     }
   } catch (e) {}
@@ -38688,8 +38685,8 @@ function _getGateAdSlideAt(index) {
 // ── AD MEDIA PRE-WARM ──────────────────────────────────────────────────────
 // The crossfade paints the incoming slide UNDER the dissolving overlay, but a
 // fresh slide's background media (promo video / photo) still has to fetch +
-// decode — so it popped in a beat AFTER the text/solid colour (Nick: 'the
-// aircanada wifi ad came on and the background came in late'), and settling
+// decode — so it popped in a beat AFTER the text/solid colour
+// and settling
 // that media could nudge the layout ('it still bumps once in a while'). Warm
 // the NEXT slide's media while the current one is still on screen so, by the
 // time it rotates in, the browser already has it decoded and it appears in the
@@ -38713,7 +38710,7 @@ function _preloadGateAdMediaForSlide(slide) {
       // Accor hotel decks paint a PER-PAGE hero photo (.axr-hero-img
       // background) that none of the generic fields above cover. Left
       // unwarmed, each page's photo decoded a beat AFTER the slide/page
-      // appeared — the ad showed first and the photo faded in over it (Nick:
+      // appeared — the ad showed first and the photo faded in over it (
       // 'it fades in first to the ad before properly fading in'), and the
       // image settling could nudge the layout ('sometimes bumps or twitches').
       // Warm the whole deck's photo set — page 1/2/3 heroes plus the room
@@ -38775,8 +38772,8 @@ function _restartGateAdsTimer() {
     // v22504 — LATE ROOM PAGES: the Accor dwell is sized at slide start, but
     // room pages render asynchronously after the detail fetch. If the live
     // deck now has MORE pages than the pager has shown, hold the slide for
-    // the remaining pages instead of advancing mid-story (Nick: 'cut short
-    // by the map'). One extension per rendered deck.
+    // the remaining pages instead of advancing mid-story
+    // One extension per rendered deck.
     try {
       var _exWrap = document.querySelector('.axr-pages');
       var _exSt = window._axrPageSt;
@@ -38816,7 +38813,7 @@ function _restartGateAdsTimer() {
       _gateAdTimer = setTimeout(_tick, 1000);
       return;
     }
-    // v22206 — TRUE CROSSFADE (Nick, after two rounds of tightening the
+    // v22206 — TRUE CROSSFADE (the owner, after two rounds of tightening the
     // fade: 'nope it's still jumping in GIDS'; 'before it was smooth').
     // Any fade-through-dark reads as a double jump. Now the OUTGOING slide
     // is lifted into an overlay, the next slide renders at FULL opacity
@@ -38838,8 +38835,8 @@ function _restartGateAdsTimer() {
       // put on screen BEFORE the new slide renders. Previously _old was slapped
       // on only AFTER renderGateAd painted the new slide, so for one frame the
       // NEW slide was visible bare, then the old covered it, then dissolved back
-      // to new — a visible new->old->new 'double take' (Nick: 'transitions are
-      // still pitiful it double takes' / 'atrocious'). Covering FIRST means the
+      // to new — a visible new->old->new 'double take'
+      // / 'atrocious'). Covering FIRST means the
       // new slide only ever appears as the old DISSOLVES over it — one clean
       // crossfade, no flash.
       var _old = null;
@@ -38881,8 +38878,8 @@ function _restartGateAdsTimer() {
         // overlay. Nothing ever added .gad-enter, so every slide arriving
         // through THIS branch (the big route-map takeover leaves nothing in the
         // carousel to dissolve) lost its transition entirely and became a hard
-        // cut. Nick: "I dont even have those smooth transitions between slides
-        // anymore its a jolt." Marking the incoming children restores the ease
+        // cut.
+        // Marking the incoming children restores the ease
         // exactly where the crossfade cannot reach, and the class is stripped on
         // animationend so a later re-attach cannot replay it.
         try {
@@ -38923,7 +38920,7 @@ function _restartGateAdsTimer() {
         var nowSlide = _getGateAdSlideAt(_gateAdIndex);
         dwell = _getGateAdDwellMs(nowSlide);
       } catch (e) {}
-      dwell = Math.max(22000, dwell);   // Nick: slides were flicking by every 5-10s — hold each ≥22s
+      dwell = Math.max(22000, dwell);   // the owner: slides were flicking by every 5-10s — hold each ≥22s
       // Pre-warm the media for the slide that comes NEXT, during this slide's
       // dwell, so its background lands in sync (no late-pop, no load bump).
       try { _preloadGateAdMediaForSlide(_getGateAdSlideAt((_gateAdIndex + 1) % totalSlots)); } catch (e) {}
@@ -38936,7 +38933,7 @@ function _restartGateAdsTimer() {
     var firstSlide = _getGateAdSlideAt(_gateAdIndex);
     initDwell = _getGateAdDwellMs(firstSlide);
   } catch (e) {}
-  initDwell = Math.max(22000, initDwell);   // ≥22s per slide (Nick — no more 5-10s flicker)
+  initDwell = Math.max(22000, initDwell);   // ≥22s per slide
   // Warm the FIRST slide's media (and the one after) before the opening tick,
   // so the very first rotation is already in sync.
   try {
@@ -38950,7 +38947,7 @@ function _restartGateAdsTimer() {
 // First deck slot that is a REAL advert (not the bigcraft map / weather
 // takeover). Refilling an empty slot used to hardcode index 1, which is the
 // bigcraft map — so a rebuild that lost the live ad repainted the MAP and the
-// center flipped ad↔map (Nick's 'ad starts then flips to the previous' storm).
+// center flipped ad↔map.
 function _firstRealAdIndex() {
   try {
     var slides = _buildGateAdSlideList();
@@ -39452,7 +39449,7 @@ if (typeof window !== 'undefined') {
   _ocEvery(tagGidsHeaderBrightness_v21862, 1200);
 }
 
-// ── v23216 — RESUME WATCHDOG (Nick's phone: 'Nothing is loading at all' —
+// ── v23216 — RESUME WATCHDOG (the owner's phone: 'Nothing is loading at all' —
 // screenshot of a board whose LIVE clock read 11:40 a.m. on a 4:56 a.m.
 // phone, rows blank). iOS Safari freezes background tabs; a tab restored
 // hours later shows the board exactly as it was and its timers may never
@@ -39574,7 +39571,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   function _scanAndUpgrade() {
     var nodes = document.querySelectorAll('.hotel-ad-qr');
     for (var i = 0; i < nodes.length; i++) _upgradeQR(nodes[i]);
-    // One-line fields never truncate (Nick: "no more hiding words") — shrink
+    // One-line fields never truncate — shrink
     // each until it fits its box instead. Hotel names, plus the gate rail's
     // destination city, status pair, and the aircraft type+registration line.
     // setProperty('important') because the gate fields' sizes are pinned with
@@ -39584,20 +39581,20 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // gateAutofit's box-measure owns them now. This legacy shrinker strips
     // font-size and re-shrinks from the CSS base, so having both meant the
     // two fitters fought and the type+reg line kept collapsing back small
-    // (Nick: 'can you also fit this one line? Boeing 737 MAX 8 | C-GMJI').
+    //
     // #fidsTable td.fids-cell-flight REMOVED too (the soak instrument caught
     // it ticking 25px<->23px forever: this shrinker kept clearing the board
     // fitter's size and the fitter kept restoring it — the last live
-    // oscillator behind Nick's 'still doing it'). The board fitter owns ALL
+    // oscillator behind the owner's 'still doing it'). The board fitter owns ALL
     // #fidsTable cells now; the name-span fallback keeps this shrinker.
     // Room names are excluded: they wrap to two lines at a FIXED size instead
     // of being shrunk to one line, so every room card's headline is the same
-    // size (Nick: 'no consistency' — a long French room name had shrunk below
+    // size ( — a long French room name had shrunk below
     // the body copy under it).
     // NOTHING inside a hotel ad is shrink-to-fit any more. Fitting each name
     // line to its own width is precisely why one hotel's name rendered at four
-    // different sizes across the pages of a single ad (Nick: 'ALL THE SECTIONS
-    // NEED TO BE UNIFORM EVERYWHERE'). Ad type is fixed by role and wraps.
+    // different sizes across the pages of a single ad
+    // Ad type is fixed by role and wraps.
     try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
     var ones = document.querySelectorAll('.axr-one-line,'
       + ' .g8-bir-val, .g8-bir-title, .g8-board-grp-wrap,'
@@ -39611,13 +39608,13 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       // truncated whenever the previous city had already been fitted.
       // The boarding-strip cell's HEIGHT is in the stamp too: the boarding
       // takeover compresses the info row after the value was fitted tall,
-      // and a width-only stamp kept the stale size — Nick's A28 shot, the
+      // and a width-only stamp kept the stale size — the owner's A28 shot, the
       // two-line 'Embarquement/Boarding' status clipped by its plate.
       var _fpCell = el.closest ? el.closest('.g8-bir-cell') : null;
       var _fp = el.clientWidth + 'x' + (_fpCell ? _fpCell.clientHeight : 0) + ':' + (el.textContent || '').length + ':' + (el.textContent || '').slice(0, 24);
       // A value that is VISIBLY TRUNCATED right now always gets another
       // pass, memo or not — a stale stamp taken during unstable geometry
-      // could freeze an ellipsized value forever (Nick's WestJet boarding
+      // could freeze an ellipsized value forever (the owner's WestJet boarding
       // plate stuck at 'WS1…' for WS152).
       var _fpClipped = el.scrollWidth > el.clientWidth + 1;
       if ((el.dataset.fitW === _fp && !_fpClipped) || !el.clientWidth) continue;
@@ -39634,7 +39631,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         size = Math.max(_fitMin, size - Math.max(1, size * 0.07));
         el.style.setProperty('font-size', size + 'px', 'important');
       }
-      // GROW pass for the boarding info row values (Nick: the data must
+      // GROW pass for the boarding info row values (the owner: the data must
       // TAKE UP the cell, not float in it). Status cell excluded — its
       // two-line stack sets its own size.
       if (el.classList.contains('g8-bir-val')) {
@@ -39642,8 +39639,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var _gRow = el.closest ? el.closest('.g8-board-info-row') : null;
         var _gIsStatus = !!(_gCell && !_gCell.nextElementSibling);
         if (_gRow && !_gIsStatus) {
-          // v22724 cap raised 0.62 -> 0.72 (Nick: 'Just as big numbers that
-          // can take up the whole place but cannot exceed') — the width
+          // v22724 cap raised 0.62 -> 0.72
+          // — the width
           // shrink-back below plus the new plate-height check are the
           // 'cannot exceed' half of that sentence.
           var _gCap = Math.max(40, _gRow.clientHeight * 0.72);
@@ -39659,7 +39656,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
           }
         } else if (_gRow && _gIsStatus) {
           // v22985 — THE STATUS STACK GROWS TO FILL ITS PLATE like every
-          // other value (Nick: 'you shrink it … ITS been done before').
+          // other value.
           // The exclusion above left the two-line stack at its CSS base,
           // which is sized to the row's WORST case — correct as a floor,
           // small on a tall row. Measure this cell's real free height
@@ -39687,7 +39684,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
             }
           }
         }
-        // Height backstop for EVERY cell — status included (v22729, Nick's
+        // Height backstop for EVERY cell — status included (v22729, the owner's
         // WestJet shot: 'nothing alligns' — the two-line status stack
         // spilled off its plate). Walk the value down until the cell's own
         // box genuinely holds its title+value stack.
@@ -39699,8 +39696,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // 52px the text can never occupy. The backstop therefore called a
         // stack "fitting" while it was already 30-50px past the plate, and
         // the second line of a two-line status sat outside the box. That is
-        // the spill Nick has photographed on WestJet, on Air Transat and now
-        // on United ('those fucking numbers now spilling out').
+        // the spill photographed on WestJet, on Air Transat and now
+        // on United, with the numbers running outside the plate.
         var _gCellCs = window.getComputedStyle(_gCell);
         var _gAvailH = _gCell.clientHeight
           - (parseFloat(_gCellCs.paddingTop) || 0)
@@ -39713,13 +39710,13 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       el.dataset.fitW = _fp;
     }
     // ── v22743: FLIGHT NUMBERS STOP GETTING CUT ─────────────────────────────
-    // Nick photographed 'WN43…' / 'DL24…' on the Tampa board; the audit put
+    // the owner photographed 'WN43…' / 'DL24…' on the Tampa board; the audit put
     // numbers on it — DL2406 clipped by 7px, WN4041 by 10, WN4754 by 15 at
     // 28px type. The column fits a 5-character number but not the 6-character
     // ones US carriers fly all day, and nothing was catching the overflow:
     // the board autofit is switched off, and this cell was deliberately taken
     // out of the shrinker above after the two fitters oscillated against each
-    // other (Nick: 'still doing it').
+    // other.
     //
     // Widening the column was tried first and made it WORSE — the table
     // redistributed and the clipping grew to 24px — so the fix is to fit the
@@ -39728,7 +39725,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // no second fitter to fight with. Shrink-only, floored, and memoized on
     // text+width so a given number in a given column settles once.
     try { if (typeof _fitFlightCells === 'function') _fitFlightCells(); } catch (e) {}
-    // Nick: 'the 1 and 2 should align, same size — they're not.' The shrink
+    // re not.' The shrink
     // pass above fits each lane numeral to ITS OWN column, so a wide glyph
     // ('2') ends up smaller than a narrow one ('1'). Re-equalize the priority
     // lane pair (now + non-zones next) in each boarding body to their shared
@@ -39893,7 +39890,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // which replays gadSlideIn, re-grows the takeover, restarts the aircraft
     // float and drops --gate-wm-top. v23166 and the aircraft retry at :806
     // both exist to STOP those repaints; buying a date with one, unattended,
-    // at midnight, would be trading a wrong date for the glitch Nick keeps
+    // at midnight, would be trading a wrong date for the glitch the owner keeps
     // filming.
     //
     // The day key is what keeps this honest on the streaming box: the Intl
@@ -40195,7 +40192,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         .then(function (html) {
           var t = _tok(html);
           if (!t || t === _running) return;
-          // LOOP GUARD (Nick: the screen 'keeps restarting'): only reload ONCE
+          // LOOP GUARD: only reload ONCE
           // per new token. If we already reloaded for token t but came back
           // still running the old one — a proxy (Zscaler) is pinning the stale
           // HTML — do NOT reload again, or it restarts forever. sessionStorage
@@ -40224,7 +40221,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   try {
     var q = new URLSearchParams(window.location.search);
     var raw = q.get('gatecycle');
-    var enabled, secs = 60;   // hold each gate ~1 min before advancing (Nick)
+    var enabled, secs = 60;   // hold each gate ~1 min before advancing
     if (raw != null && raw !== '') {
       var n = parseInt(raw, 10);
       if (raw === '0' || n === 0) { enabled = false; }
@@ -40235,19 +40232,19 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       // / YouTube-streamed rotation walks every gate with NO manual flag — the
       // way it worked before it got over-disabled. A STANDALONE display (top
       // window) — even one using the ?stream/?yt/?compact clean layout — stays
-      // PINNED, so those never swap 'flight to flight' (Nick's original glitch).
+      // PINNED, so those never swap 'flight to flight'.
       // An explicit ?gatecycle=N / ?bagcycle=N still forces a walk regardless.
       enabled = (window.self !== window.top);
     }
     // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
-    // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
-    // numbers were rotating from flight to flight … is it the time?' — the 60s
+    // it must NEVER auto-cycle off the one the operator asked for
+    // — the 60s
     // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
     // (raw set) can still request a walk on a pinned display.
     if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
     // Walk ONLY when explicitly opted in (?gatecycle=N / ?bagcycle=N). By
     // DEFAULT a gate/baggage screen stays pinned — no walk, no glitch (that was
-    // Nick's original complaint). But the ROTATOR / lobby board opts in with
+    // the owner's original complaint). But the ROTATOR / lobby board opts in with
     // ?gatecycle=60 to cycle through every gate, so the YouTube reaches them
     // all. The earlier fix blanket-returned here, which also killed the opt-in
     // and froze the rotation on gate 1 — this gate on `enabled` restores it
@@ -40285,8 +40282,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     //    time, holding a single gate (no interval). We pick the next gate when the
     //    board goes HIDDEN (oc:'inactive'), NOT when it appears — the iframe stays
     //    alive between slots, so picking on 'active' left the PREVIOUS gate on
-    //    screen for a beat before swapping (Nick: "switched AC fraction second to
-    //    porter"). Picking while hidden means the new gate is already rendered
+    //    screen for a beat before swapping
+    // Picking while hidden means the new gate is already rendered
     //    before it fades in — no visible gate-to-gate switch.
     //  • Standalone gids (no rotator, no oc messages): cycle on a plain interval.
     var _timer = null, _pickTimer = null;
@@ -40314,7 +40311,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 // ── BAGGAGE CAROUSEL CYCLE ──────────────────────────────────────────────
 // The bids board shows ONE carousel at a time (subScreenVal). For the stream /
 // rotator, walk through every carousel so each one shows — including an EMPTY
-// Carousel 2 at YQM (international; Nick wants it always visible so travelers
+// Carousel 2 at YQM (international; the owner wants it always visible so travelers
 // see where international bags come out). Same enable rules + pause-when-hidden
 // as the gate cycle. Override with ?bagcycle=SECONDS (?bagcycle=0 to force off).
 (function () {
@@ -40332,19 +40329,19 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       // / YouTube-streamed rotation walks every gate with NO manual flag — the
       // way it worked before it got over-disabled. A STANDALONE display (top
       // window) — even one using the ?stream/?yt/?compact clean layout — stays
-      // PINNED, so those never swap 'flight to flight' (Nick's original glitch).
+      // PINNED, so those never swap 'flight to flight'.
       // An explicit ?gatecycle=N / ?bagcycle=N still forces a walk regardless.
       enabled = (window.self !== window.top);
     }
     // A display opened to a SPECIFIC gate/belt (?gate=… / ?belt=…) is PINNED —
-    // it must NEVER auto-cycle off the one the operator asked for (Nick: 'the
-    // numbers were rotating from flight to flight … is it the time?' — the 60s
+    // it must NEVER auto-cycle off the one the operator asked for
+    // — the 60s
     // walk was swapping the whole screen). Only an EXPLICIT ?gatecycle/?beltcycle
     // (raw set) can still request a walk on a pinned display.
     if ((raw == null || raw === '') && (q.get('gate') || q.get('belt'))) enabled = false;
     // Walk ONLY when explicitly opted in (?gatecycle=N / ?bagcycle=N). By
     // DEFAULT a gate/baggage screen stays pinned — no walk, no glitch (that was
-    // Nick's original complaint). But the ROTATOR / lobby board opts in with
+    // the owner's original complaint). But the ROTATOR / lobby board opts in with
     // ?gatecycle=60 to cycle through every gate, so the YouTube reaches them
     // all. The earlier fix blanket-returned here, which also killed the opt-in
     // and froze the rotation on gate 1 — this gate on `enabled` restores it
@@ -40430,7 +40427,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // the departures screen came up as a GATE ("no FIDS screen" on the stream).
     // Only the top-level, non-stream board page honours a saved screen type.
     if (window.self !== window.top || document.documentElement.classList.contains('fids-stream')) return;
-    // CROSS-DEVICE (Nick: "They need to be connected to the same devices"):
+    // CROSS-DEVICE:
     // the URL is the shareable carrier of screen state and BEATS this
     // display's own localStorage. ?screen=gate&gate=95 (aliases ?sub= /
     // ?carousel=; a bare ?gate= or ?belt= implies its screen type) lands ANY
@@ -40454,8 +40451,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       st = JSON.parse(raw);
     }
     if (!st || !st.t || st.t === 'main') return;
-    // v23136 — NEVER FLASH THE DEPARTURES BOARD ON A GATE URL (Nick: 'the
-    // old svreen shows up once in a while', with a shot of /gids?ap=YYZ&
+    // v23136 — NEVER FLASH THE DEPARTURES BOARD ON A GATE URL
+    // with a shot of /gids?ap=YYZ&
     // gate=C35 showing the YYZ Departures banner over an empty body).
     //
     // The restore below waits for window._initialFetchDone before switching
@@ -40518,7 +40515,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   } catch (e) {}
 })();
 
-// ── YOUR AIRCRAFT — BIG takeover slide (Nick, Jul 2026) ────────────────────
+// ── YOUR AIRCRAFT — BIG takeover slide ────────────────────
 // The 3D map is retired. Once per ad cycle the big center panel shows the
 // right column's Your Aircraft content ENLARGED: a full flat route map
 // (same Leaflet language as the mini map) beside the flight info table and
@@ -40534,7 +40531,7 @@ function _bigCraftTeardown() {
   // emptied the box during that window, the hidden-container guard (v23099)
   // rightly deferred the rebuild — but nothing ran it at the reveal, so the
   // rail sat on the emblem hold for up to a full 10s tick and then popped in
-  // re-framed (Nick's video: map 'cutting out' through the hotel ad, then
+  // re-framed (the owner's video: map 'cutting out' through the hotel ad, then
   // 'bobbling' back). Reset the change guards and run the map tick now, on
   // the visible box; the v23099 route-key reuse makes it cheap when the map
   // survived and instant-from-cache when it didn't.
@@ -40549,13 +40546,13 @@ function _bigCraftTeardown() {
   } catch (e) {}
 }
 function _renderBigCraft(el, ctx) {
-  // Nick: ONE panel that GROWS into the screen — never the same content
+  // the owner: ONE panel that GROWS into the screen — never the same content
   // twice. The takeover renders as an overlay spanning the center + right
   // columns with a grow-from-the-right animation, and the right column
   // hides beneath it for the duration of the slide.
   //
   // v23166 — IS THIS A NEW VISIT, OR A REPAINT OF THE ONE ALREADY SHOWING?
-  // (Nick: 'flashes and glitches... especially on gate'.) Every gate rebuild
+  // Every gate rebuild
   // re-enters here, and each re-entry tore the overlay down and built a fresh
   // one — replaying bigcraftGrow from scale(0.62)/opacity(0.55) and blanking the
   // route map while its tiles reloaded. Rebuilds land several times inside this
@@ -40578,7 +40575,7 @@ function _renderBigCraft(el, ctx) {
   // Same delay rule as the left rail / small card: a revised time (revTs later
   // than the scheduled sortTs) means DELAYED even if the raw status still reads
   // 'scheduled' — otherwise the big screen showed 'Scheduled' on a bumped
-  // flight (Nick: 'the big screen is inconsistent as well').
+  // flight.
   var _bcDelayed = !!(inb._revTs && inb._sortTs && inb._revTs > inb._sortTs);
   if (_bcDelayed && (stKey === 'scheduled' || stKey === 'ontime' || stKey === '')) stKey = 'delayed';
   var ss = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
@@ -40611,7 +40608,7 @@ function _renderBigCraft(el, ctx) {
     return '<div class="v2-rc-fi-trow"><div class="v2-rc-fi-tlbl"><span>' + l1 + '</span><span>' + l2 + '</span></div>'
          + '<div class="v2-rc-fi-tval' + (cls ? ' ' + cls : '') + '">' + val + '</div></div>';
   }
-  // NICK'S MOCKUP (his patched screenshot): the takeover covers ONLY the
+  // THE OWNER'S MOCKUP (his patched screenshot): the takeover covers ONLY the
   // CENTER column — the big route map where the ads run. The right column is
   // NOT covered and NOT rebuilt: the REAL small "Your Aircraft" panel stays
   // live beside the big map (its own mini-map collapses via CSS while
@@ -40631,8 +40628,8 @@ function _renderBigCraft(el, ctx) {
   _bcOv.style.width = Math.round(_bcElR.width) + 'px';
   _bcOv.style.height = Math.round(_bcElR.height) + 'px';
   // DON'T blank the carousel before the panel grows in — that emptied the
-  // center to dark and read as an abrupt CUT (Nick: 'abruptly cuts out …
-  // terrible transition'). Keep the previous ad visible UNDER the growing
+  // center to dark and read as an abrupt CUT
+  // Keep the previous ad visible UNDER the growing
   // overlay; clear it only once the opaque overlay has fully covered it.
   // Map only — the info lives in the REAL right-column panel beside it.
   _bcOv.innerHTML =
@@ -40642,8 +40639,8 @@ function _renderBigCraft(el, ctx) {
     // v23314 — THE MAP NAMES THE FLIGHT IT IS TRACKING. Without this caption
     // the takeover is truthful and reads as broken: an AC2046->YYT (east)
     // gate showed the inbound AC2003 from Fredericton flying WEST with
-    // nothing saying so (Nick: 'This plane is heading west but it should be
-    // east which one is it???'), and the Cathay gate's 'rural Alberta' map
+    // nothing saying so
+    // and the Cathay gate's 'rural Alberta' map
     // was CX828 inbound, unlabeled. Same chip style as the est badge beside
     // it; bilingual per the board pair like everything else.
     +     (function () {
@@ -40692,8 +40689,8 @@ function _renderBigCraft(el, ctx) {
       } catch (e) {}
     }, 720));
   } catch (e) {}
-  // THE SAME MAP AS THE MINI, ENLARGED (Nick: 'literally the same as now
-  // except enlarged'): verbatim clones of the mini-map builders rendering
+  // THE SAME MAP AS THE MINI, ENLARGED
+  // : verbatim clones of the mini-map builders rendering
   // into the big container — same tiles, phase zoom, labels, plane icon.
   try {
     if (typeof L !== 'undefined' && typeof L.map === 'function') {
@@ -40702,7 +40699,7 @@ function _renderBigCraft(el, ctx) {
       else _bigMapClone(_bcO, _bcD, ctx.progress);
     }
   } catch (e4) {}
-  // v22972 — NEVER SIT DARK (Nick's clip: 'it also goes on the blank screen
+  // v22972 — NEVER SIT DARK (the owner's clip: 'it also goes on the blank screen
   // and does nothing at times'). If the big map has ZERO loaded tiles 8s
   // into the slide's visit (tile host unreachable, Leaflet missing, map
   // build threw), the overlay is an empty dark panel for its whole ~40s
@@ -40739,7 +40736,7 @@ function _renderBigCraft(el, ctx) {
   }, _bcWait));
 }
 
-// ── ARRIVAL WEATHER scene (Nick approved section 2, Jul 2026) ───────────────
+// ── ARRIVAL WEATHER scene ───────────────
 // One slide per ad cycle: the DESTINATION city's live weather as a broadcast
 // style card — big animated Meteocons icon + temp + conditions + feels/wind/
 // humidity, beside a multi-day outlook aggregated from the cached hourly
@@ -40791,8 +40788,8 @@ function _wxHydrateSvgs(root) {
           // by url(#id) and href="#id". Inlining the SAME icon more than once
           // (e.g. several sunny days in the 7-day outlook, plus the hero) made
           // those duplicate IDs collide — the browser resolves #id to the
-          // FIRST copy, so every repeat rendered blank (Nick: 'why is there
-          // days missing icons'). A per-instance suffix keeps each copy's
+          // FIRST copy, so every repeat rendered blank
+          // A per-instance suffix keeps each copy's
           // references pointing at its own defs.
           var txt = rawTxt;
           try {
@@ -40833,7 +40830,7 @@ function _wxFetchDaily(iata, onReady) {
     // COORDS is a curated subset — fall back to the gate map's airport
     // table + cached lookups so regional destinations get a real 7-day
     // outlook instead of silently degrading to the 48h/2-day rollup
-    // (Nick: 'what happened to the 7 day forecast?').
+    //
     var C = (typeof COORDS !== 'undefined' && COORDS[iata]) || null;
     if (!C) { try { C = (typeof _lookupAirport === 'function') ? _lookupAirport(iata) : null; } catch (eL) {} }
     if (!C) return null;
@@ -40846,7 +40843,7 @@ function _wxFetchDaily(iata, onReady) {
     var _prev = hit ? hit.data : null;
     // A FAILED daily fetch must NOT cache 'no data' for the full 30 min — that
     // stuck the card on the 2-day hourly rollup after one transient failure
-    // (Nick: 'back to 2 days'). Mark failures stale in ~90s so they retry,
+    // Mark failures stale in ~90s so they retry,
     // while _prev keeps showing meanwhile.
     var _failTs = function () { return Date.now() - 1800000 + 90000; };
     window._wxDaily[iata] = { pending: true, ts: 0, data: _prev };
@@ -40877,9 +40874,9 @@ function _wxFetchDaily(iata, onReady) {
   } catch (e) { return null; }
 }
 // Labels keyed by the ICON actually shown — icon and wording can never
-// disagree (Nick saw a sun captioned 'Nuageux').
-// v22971 — the weather card follows the SELECTED LANGUAGES (Nick: 'Weather
-// has not been changed'). The old table was en/fr pairs; every condition now
+// disagree.
+// v22971 — the weather card follows the SELECTED LANGUAGES
+// The old table was en/fr pairs; every condition now
 // carries the full set the language picker offers. it/pt/ja/zh/ar reviewed
 // as plain condition words, not idioms.
 var _WXLBL = {
@@ -40923,8 +40920,8 @@ function _renderWxCard(el) {
     var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
-    // v22971 — THE CARD FOLLOWS THE SELECTED LANGUAGES (Nick: 'Weather has
-    // not been changed'). This card was its own hardcoded EN/FR world —
+    // v22971 — THE CARD FOLLOWS THE SELECTED LANGUAGES
+    // This card was its own hardcoded EN/FR world —
     // condition pair, day/month name arrays, _mlbl(en,fr) — one more retired
     // language picker. Everything now resolves from `langs` (≤2, de-duped,
     // fr-first at the French-first airports) like the rest of the build.
@@ -40941,14 +40938,14 @@ function _renderWxCard(el) {
       return w.join(_wxSep);
     };
     var cond = _wxPair(_WXLBL[ic] || { en: '' });
-    // Day cells keep Nick's approved layout — first language's day + date
+    // Day cells keep the owner's approved layout — first language's day + date
     // ABOVE the icon, second language's BELOW — via each language's own
     // locale (single language selected → no bottom line).
     var _WX_LOCALE = { en:'en-US', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt-BR', ja:'ja', zh:'zh-CN', ar:'ar' };
     var _dayLine = function (d, lg, extraCls) {
       var loc = _WX_LOCALE[lg] || 'en-US';
-      // v23558 — THREE LETTERS, STILL IN BOTH LANGUAGES (Nick: 'it needs to
-      // still be in langauges but only the 3 letters'). The short form is
+      // v23558 — THREE LETTERS, STILL IN BOTH LANGUAGES
+      // The short form is
       // locale-correct but punctuated in several of them — fr 'mer.', de
       // 'Mi.', pt 'qua.' — so strip anything that is not a letter before
       // trimming. CJK/Arabic short forms are already 1-3 glyphs and pass
@@ -40958,13 +40955,13 @@ function _renderWxCard(el) {
       // v23382 — ABBREVIATED month. A 7-across tile is roughly a seventh of the
       // card, and the long form blows straight through it: Spanish renders
       // '7 de septiembre' (15 chars), and because .wxc-dt is nowrap/overflow-
-      // visible the text ran into the neighbouring day (Nick: 'dates spilling
-      // out of weather attrociouss'). Short form caps every supported locale at
+      // visible the text ran into the neighbouring day
+      // Short form caps every supported locale at
       // 9 chars — es '7 sept', en 'Sep 7', pt '7 de set.', de '7. Sept.'.
       var date = (lg === 'en')
         ? d.toLocaleDateString(loc, { month: 'short' }) + ' ' + d.getDate()
         : d.toLocaleDateString(loc, { day: 'numeric', month: 'short' });
-      // v23558 — NO DATES (Nick: 'no need for dates just like that'). The day
+      // v23558 — NO DATES. The day
       // name alone fills the tile header band, which is what the reference
       // layout shows. `date` is left computed but unused so the abbreviated-
       // month logic above stays available if dates are ever wanted back.
@@ -41023,8 +41020,8 @@ function _renderWxCard(el) {
       });
     }
 
-    // NEXT-HOURS strip (Nick: 'add weather hourly on top of the 7 days like it
-    // was before'). Next 6 hours from the cached hourly forecast, in the
+    // NEXT-HOURS strip
+    // Next 6 hours from the cached hourly forecast, in the
     // DESTINATION's local time, sitting above the 7-day outlook.
     var hoursHtml = '';
     try {
@@ -41033,7 +41030,7 @@ function _renderWxCard(el) {
       var _hFmt = _hTz ? { timeZone: _hTz, hour: 'numeric', hour12: true } : { hour: 'numeric', hour12: true };
       var _hFmt24 = _hTz ? { timeZone: _hTz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' };
       // v23558 — FIVE PERIODS ACROSS THE DAY, not six consecutive hours
-      // (Nick: 'every few hours maybe like 5 periods throughout the day').
+      //
       // Six back-to-back hours only ever showed the next quarter-day and the
       // icons barely changed between tiles. Stepping 3h gives ~12 hours of
       // real spread — now, +3, +6, +9, +12 — so the strip actually tells you
@@ -41059,11 +41056,11 @@ function _renderWxCard(el) {
     // Split MAIN (globe + head + hero) from the STRIPS (hours + outlook):
     // the 7-day data usually lands a beat AFTER the first paint, and
     // rebuilding the whole card for it reloaded the big hero icon — the
-    // 'bump di bump, almost twice at the beginning' (Nick). With the split,
+    // 'bump di bump, almost twice at the beginning'. With the split,
     // late strip data swaps in UNDER the untouched hero.
     // ══ TWO-UP TOP: ORIGIN AT DEPARTURE | DESTINATION ═══════════════════════
-    // Nick: "I would like One side Moncton or wheever its leaving from on left
-    // at time of departure then destination on the right", "this is the top".
+    //
+    // "this is the top".
     //
     // The card already fetches BOTH airports — gate-render calls
     // fetchTomorrowWeather() for the departure and the destination (see the
@@ -41136,13 +41133,13 @@ function _renderWxCard(el) {
       var sIc = _wxAnimIcon(w.code, _wxNightAt(iata, ts));
       var when = _wxClock(iata, ts);
       // The city + time pair goes inside a .wxc-dhead, the SAME header-band
-      // element the hour and day tiles use. Nick: "BE CONSISTENT" — the top
+      // element the hour and day tiles use. — the top
       // block was the only section on the card not built as a tile, so it read
       // as a different component sitting above the forecast rather than the
       // first of three matching panels. Same wrapper here means it inherits
       // the same band styling for free and can never drift from the tiles
       // again.
-      // Nick: "I just meant like the others such as NEXT HOURS etc" — the
+      // — the
       // Departure/Arrival label is a SECTION TITLE, so it is emitted above the
       // panel exactly as .wxc-title sits above the hour and day grids, not
       // crammed into the panel's header band. That also stops the band running
@@ -41161,18 +41158,18 @@ function _renderWxCard(el) {
         + '</div></div>';
     };
 
-    // Nick: "it should be one side Departure Weather then Arrival Weather".
+    //
     // Each panel now names what it IS rather than just tagging a time, which
     // also retires the card-level "Arrival Weather" kicker above — that kicker
     // labelled the whole card as arrival even though half of it is the
     // departure airport, so it was both redundant and wrong.
     var _depLbl = _wxPair({ en:'Departure Weather', fr:'Météo au départ', es:'Clima a la salida', de:'Wetter bei Abflug', it:'Meteo alla partenza', pt:'Clima na partida', ja:'出発地の天気', zh:'出发地天气', ar:'طقس المغادرة' });
     var _arrLbl = _wxPair({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter bei Ankunft', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' });
-    // Nick: "beside the time put Departure for Monvton Arrival for Calgary".
+    //
     // The panel title carries the long form; the band carries the short one
     // next to the clock, so the line reads "Departure | Départ 6:15 PM".
     //
-    // "I do not want the text seperated unless its the full sentence" — so the
+    // Requested: never split text across the separator mid-phrase — so the
     // short label is passed through _wxPair like every other bilingual string
     // on this board, joining two COMPLETE words with the separator. Nothing
     // here is a fragment of a phrase split across the bar.
@@ -41198,8 +41195,8 @@ function _renderWxCard(el) {
       +   '</div>'
       +   _wxHeroTwoUp
       + '</div>';
-    // Nick: "you need to add for every middle and last row that its Calgary |
-    // YYC" — with the top block now showing BOTH airports, these two rows were
+    //
+    // — with the top block now showing BOTH airports, these two rows were
     // the only part of the card that did not say whose forecast it is, and a
     // reader could reasonably take them for the departure airport's.
     // The city is appended after a middot so the bilingual pair keeps the bar
@@ -41209,21 +41206,21 @@ function _renderWxCard(el) {
     var _wxStripsHtml =
         (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxForCity + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
       + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
-            // Nick: "5-DAY FORECAST Forecast is missing". The English and German
+            // The English and German
             // strings said only "5-DAY" / "5-TAGE" — a duration, not a heading —
             // while every other language here already carried the noun
             // (PRÉVISIONS, PRONÓSTICO, PREVISIONI, PREVISÃO, 予報, 预报, توقعات).
             // The two odd ones out now say what the row actually is.
             en: nDays + '-DAY FORECAST', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE-VORHERSAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
           }) + _wxForCity + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
-    // v23452 — THE SOURCE CREDIT. Nick: 'say at the bottom of the screen
-    // Weather provided generously by MET Norway'.
+    // v23452 — THE SOURCE CREDIT.
+    // 
     //
     // MET's data is dual-licensed NLOD 2.0 / CC BY 4.0 and both ask that the
     // Norwegian Meteorological Institute be named as the source. NLOD is
     // explicit that the credit need not sit beside the data — an about page
     // would satisfy it — so a line on the card itself is more than the licence
-    // requires, which is how Nick wanted it.
+    // requires, which is how the owner wanted it.
     //
     // Wording is his, with 'data' added: it is MET's open DATA the boards
     // render, and the week's highs and lows are derived from it rather than
@@ -41242,7 +41239,7 @@ function _renderWxCard(el) {
     // panels use; AC red auto-swaps to charcoal to avoid muddy maroon). Folded
     // into the cache key so an airline change re-tints.
     // ══ THE CARD'S GROUND IS THE SKY PHOTO ═════════════════════════════════
-    // Nick supplied a sun/lens-flare sky and asked for it as the background.
+    // the owner supplied a sun/lens-flare sky and asked for it as the background.
     //
     // IT HAS TO BE SET HERE, NOT IN CSS. A few lines down this value is
     // written as an INLINE style with !important — and inline !important is
@@ -41262,8 +41259,8 @@ function _renderWxCard(el) {
     // and the grass — the reason for this image over the plain sun — is the
     // first thing lost.
     var _wxSkyUrl = '/logos/Backgrounds/wx-sky-spring.jpg';
-    // Scrim lightened hard (was .62/.42/.30, top-weighted). Nick: "Doesnt seem
-    // bright enough on top weird" — correct, and the reason it was that dark
+    // Scrim lightened hard (was .62/.42/.30, top-weighted).
+    // — correct, and the reason it was that dark
     // no longer holds. The heavy top existed to keep white text legible where
     // it sat on the blown-out sky; since then every string moved onto an
     // opaque plate, so the scrim is only tinting the margins and the gaps
@@ -41276,7 +41273,7 @@ function _renderWxCard(el) {
       // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
       // same source the media frame reads) — the static AIRLINE_ACCENT table
       // misses codes and fell back to a generic blue that didn't match the
-      // board (Nick: 'the colors for the weather are not at all matching').
+      // board.
       var _wxAcc = '';
       var _wxGw = document.querySelector('.g8-wrap');
       if (_wxGw) _wxAcc = (getComputedStyle(_wxGw).getPropertyValue('--airline-accent') || '').trim();
@@ -41286,15 +41283,15 @@ function _renderWxCard(el) {
       // it moved to the tiles, which take var(--airline-r1), the airline's
       // BANNER colour (see display-overrides). That is a deliberate swap: the
       // old tint used the SECONDARY accent, which for WestJet was the same
-      // teal as the card behind it, and the same-hue-on-same-hue is what Nick
+      // teal as the card behind it, and the same-hue-on-same-hue is what
       // called "that ugly color".
       void _wxAcc;
     } catch (e) {}
     // v22199 — the accent used to be part of the rebuild signature, but it's
     // read from a LIVE computed var that is briefly empty right after a gate
     // rebuild: the signature oscillated between two values and every flip
-    // re-set innerHTML, reloading every animated SVG (Nick: 'the weather had
-    // finally stopped blinking, it's doing it again'). A background-only
+    // re-set innerHTML, reloading every animated SVG
+    // s doing it again'). A background-only
     // change now retints the existing card IN PLACE — markup is rebuilt only
     // when the weather content itself changed.
     var _wxSig = _wxHtml;
@@ -41448,7 +41445,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
   }
   // v23172 — ONE VIEW DECISION HERE TOO.
   // v23166 fixed this on the MINI map and missed the big one, which is the
-  // larger and more noticeable of the two (Nick: "the map still jolts"). This
+  // larger and more noticeable of the two. This
   // ran setView() to the phase zoom, then fitBounds() to a different zoom
   // immediately, then invalidateSize()+fitBounds() again at +100ms and again at
   // +500ms — four view changes per draw. For a pre-departure flight the bounds
@@ -41483,7 +41480,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
       L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
       // v23106 — same as the mini est map: keep the camera ON THE PLANE
       // through descent/approach; the destination-framed phases left the
-      // estimated plane off-screen (Nick's 31s clip: static camera on the
+      // estimated plane off-screen (the owner's 31s clip: static camera on the
       // field, plane sliding out of the corner).
       if (p >= 0.12 && p < 0.995) {
         window._bigCraftMap.setView(planePos, zoom);
@@ -41513,7 +41510,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // (v23102). The slide repaint re-enters this builder every few seconds;
   // each entry used to remove() the whole big map and rebuild marker, arcs
   // and camera from scratch — a visible hitch per repaint on the surface
-  // Nick films ('still choppy'). While the running glide already owns a
+  // the owner films ('still choppy'). While the running glide already owns a
   // healthy marker on THIS map for THIS leg, hand it the fresh fix and
   // keep every DOM node alive.
   try {
@@ -41550,8 +41547,8 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var nearOrg = distToOrg / totalDist;
   var nearDst = distToDst / totalDist;
   var zoom;
-  // Progressive zoom (Nick: 'ground when it leaves, then zooms out eventually …
-  // autozoom then zoom out'). On the ground at the origin → street/ground level
+  // Progressive zoom
+  // On the ground at the origin → street/ground level
   // (z15); as it climbs away the zoom eases out step by step (13 → 11 → 9) to
   // the wide cruise view; then it tightens back to ground on the destination
   // approach. Distance-from-airport IS flight progress, so this reads as a
@@ -41566,13 +41563,13 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
   window._bigCraftMap.setView([planeLat, planeLng], zoom);
-  // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
+  // Normal-map behavior: the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
   var _bcA1 = _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
-  // Runway-aligned final on the big map too (Nick's video was this surface).
+  // Runway-aligned final on the big map too.
   var _bcRwyP = _runwayFinalPath(_pp, d, dst);
   var _bcA2 = null;
   if (_bcRwyP) { try { _bcA2 = L.polyline(_bcRwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap); } catch (e) { _bcA2 = null; } }
@@ -41582,7 +41579,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // (Removed the separate 'actual flown track' polyline — it was the SAME blue
   // as the assigned route arc above, so wherever the real path differed from
   // the great-circle it drew a second parallel line = the 'double line for the
-  // trajectory' Nick flagged. The route-through-the-plane arc, solid behind +
+  // trajectory' the owner flagged. The route-through-the-plane arc, solid behind +
   // dashed ahead, is the single trajectory.)
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
@@ -41591,11 +41588,11 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
   var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
-  // SAME PROGRAMMING as the mini map (Nick: 'big screen and little screen need
-  // same programming — it's not separate'): the identical glide engine now
+  // SAME PROGRAMMING as the mini map
+  // s not separate'): the identical glide engine now
   // dead-reckons the plane along the route on the BIG map too. The big plane
-  // was a one-shot paint per slide — visibly frozen (Nick: 'no movement on
-  // the aircraft').
+  // was a one-shot paint per slide — visibly frozen
+  // 
   try {
     var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0) ? window._gateInbound._liveSpd
       // v23099 — same last-anchored-speed fallback as the mini map; this
@@ -41645,8 +41642,8 @@ var _gateMapCamera = {
 };
 
 
-// ── Board-top watchdog (Nick: 'a lot of times the top does not show up in
-// the FIDS with the time airport logo and such') ─────────────────────────
+// ── Board-top watchdog
+// ─────────────────────────
 // On kiosks the main board's banner must ALWAYS sit at the top of the
 // screen. Field failure modes this heals: (a) the TV browser ends up
 // scrolled so the banner sits above the viewport (anchor-scroll after a
@@ -41667,7 +41664,7 @@ setInterval(function () {
     }
     if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0);
     if (bn.style.display === 'none') bn.style.display = '';
-    // Third failure mode (Nick's 2026-07-12 screenshot: table at y=0, banner
+    // Third failure mode (the owner's 2026-07-12 screenshot: table at y=0, banner
     // gone entirely): the banner is COLLAPSED — hidden by a stylesheet rule
     // or a stray class rather than inline display. Inline-clearing above
     // can't heal that, so force it visible at the !important level.
@@ -41680,8 +41677,8 @@ setInterval(function () {
   } catch (e) {}
 }, 5000);
 
-// ── Day/night theme scheduling (Nick: 'no way of controlling the night vs
-// day colors') ─────────────────────────────────────────────────────────────
+// ── Day/night theme scheduling
+// ─────────────────────────────────────────────────────────────
 // Which PERIOD ('day' | 'night') the schedule is in RIGHT NOW, in the
 // airport's local time. '' means scheduling is off/unset. Kept separate from
 // the theme lookup so the watchdog can detect boundary crossings even when a
@@ -41740,7 +41737,7 @@ setInterval(function () {
 }, 60000);
 
 // ── ROW-LOCKED BOARD PATTERN ────────────────────────────────────────────────
-// Nick: 'it could work if each row was aligned to a line on the pattern'.
+//
 // The asa-no-ha tile carries a horizontal rule every 103.8px of its own
 // 1039px height — exactly ten rules per tile. Scale the tile so those ten
 // rules span exactly ten board rows and start it on the first row's top
@@ -41764,8 +41761,8 @@ setInterval(function () {
       // board the sync was measuring the HIDDEN main table's rows and
       // locking the pattern to a pitch and origin that belong to a surface
       // nobody is looking at. That is why the baggage rows never lined up
-      // (Nick: 'align the rows to the pattern otherwise its a mess to
-      // read'). offsetParent is null for a hidden element, so this picks
+      //
+      // offsetParent is null for a hidden element, so this picks
       // the visible one.
       // offsetParent is null for anything inside a position:fixed ancestor
       // even when it is plainly on screen, so it is the wrong visibility
@@ -41787,8 +41784,8 @@ setInterval(function () {
       // ONE row still has a pitch. Requiring two was why Orlando baggage
       // never locked: it often carries a single arrival, so the sync bailed
       // and the pattern kept whatever origin the other board had left in
-      // the vars (Nick: 'align the rows to the pattern otherwise its a mess
-      // to read'). Rows are hard-fixed heights with no gap between them, so
+      // the vars
+      // Rows are hard-fixed heights with no gap between them, so
       // one row's height IS the pitch; two rows only confirm it.
       var pitch = a.height;
       if (rows.length > 1) {
@@ -41812,8 +41809,8 @@ setInterval(function () {
   window.addEventListener('resize', sync);
 })();
 
-// ── v22711: BAGS CAROUSEL COLOR CODING (Nick: 'Bags I want different colors
-// for like Gate 1 maybe a pattern or colors or something then etc').
+// ── v22711: BAGS CAROUSEL COLOR CODING
+// 
 // CSS can't read the carousel digit out of the DOM, so this keeper mirrors
 // .bidsv2-carousel-number's text onto body[data-bids-carousel]; the per-
 // carousel palette lives in display-overrides.css. Same keeper shape as the
@@ -41826,7 +41823,7 @@ setInterval(function () {
       var v = el ? String(el.textContent || '').trim() : '';
       if (/^\d{1,2}$/.test(v)) document.body.setAttribute('data-bids-carousel', v);
       else document.body.removeAttribute('data-bids-carousel');
-      // v23146 — NICK'S 12 PATTERNS, ONE PER SCREEN WORLDWIDE. Every
+      // v23146 — THE OWNER'S 12 PATTERNS, ONE PER SCREEN WORLDWIDE. Every
       // airport+carousel combination hashes to one of his twelve Vecteezy
       // panels (logos/Backgrounds/patterns/p01..p12.jpg), deterministically —
       // the same screen always wears the same pattern, different screens
@@ -41836,27 +41833,26 @@ setInterval(function () {
         var _ap = document.body.getAttribute('data-fids-ap') || '';
         var _hs = 0;
         for (var _i = 0; _i < _ap.length; _i++) _hs = (_hs * 31 + _ap.charCodeAt(_i)) % 997;
-        // v23146h — per BELT (Nick: 'Belts'): the belt number steps through
+        // v23146h — per BELT: the belt number steps through
         // the set, so belts at the same airport can never match each other;
         // the airport hash offsets the start so airports differ too.
         _hs = _hs + (parseInt(v, 10) - 1);
-        // v23146e — the ROUND patterns are out (Nick: "I'd avoid the round
-        // ones. Just chuck them"): 1, 3, 4, 7, 9 and 12 are circle/half-
+        // v23146e — the ROUND patterns are out
+        // : 1, 3, 4, 7, 9 and 12 are circle/half-
         // circle sets. The rotation draws from the six non-round panels.
-        // stricter cut (Nick: "I just asked you to remove round objects"):
+        // stricter cut:
         // the rings (2), petals (8) and arches (10) are round too. Only the
         // angular sets stay.
-        // v23146g — Nick: "Let's just do 8 for now." Every screen wears
+        // v23146g — Every screen wears
         // pattern 8; the hash rotation stays here for when he widens it.
         // v23146i — the four CIRCLE patterns (3, 4, 7, 12) are chucked;
-        // the eight remaining rotate per belt (Nick: "chuck the circles" /
-        // "1 to 8 you have 8 patterns").
+        // the eight remaining rotate per belt — eight patterns in the set.
         var _CRSL_OK = [1, 2, 5, 6, 8, 9, 10, 11];
         var _pn = _CRSL_OK[_hs % _CRSL_OK.length];
         var _pv = "url('/logos/Backgrounds/patterns/p" + (_pn < 10 ? '0' : '') + _pn + ".jpg?v=23146')";
         if (document.body.style.getPropertyValue('--crsl-pattern') !== _pv) document.body.style.setProperty('--crsl-pattern', _pv);
-        // v23146c — the BOARD WEARS THE PATTERN'S OWN COLOURS (Nick: "Most
-        // your patterns don't match the background"). Each pattern's four
+        // v23146c — the BOARD WEARS THE PATTERN'S OWN COLOURS
+        // Each pattern's four
         // dominant colours, extracted offline, feed the wash gradients that
         // v23143 hardcoded to pattern 5's palette.
         var _CRSL_PAL = {1:[[233,212,193],[164,64,2],[254,187,8],[68,36,47]],2:[[254,227,184],[244,87,46],[30,135,200],[135,199,237]],3:[[119,99,171],[82,191,158],[39,50,79],[131,213,247]],4:[[191,233,231],[255,115,118],[0,154,206],[153,121,218]],5:[[79,197,201],[56,59,126],[240,95,90],[174,221,224]],6:[[213,81,56],[148,195,215],[246,237,228],[224,185,113]],7:[[117,179,226],[249,171,102],[149,209,173],[239,93,162]],8:[[196,108,0],[65,72,82],[244,166,190],[176,205,175]],9:[[3,29,66],[252,212,204],[252,236,0],[22,170,154]],10:[[28,174,160],[108,198,188],[195,190,103],[237,226,216]],11:[[240,150,72],[86,139,143],[251,215,191],[196,89,67]],12:[[207,168,39],[63,65,51],[106,118,116],[161,186,208]]};
@@ -41866,7 +41862,7 @@ setInterval(function () {
           var _wc = 'rgba(' + _wp[_wi][0] + ',' + _wp[_wi][1] + ',' + _wp[_wi][2] + ',' + _wa[_wi] + ')';
           if (document.body.style.getPropertyValue('--crsl-w' + (_wi + 1)) !== _wc) document.body.style.setProperty('--crsl-w' + (_wi + 1), _wc);
         }
-        // v23161 — THE TYPE TAKES ITS COLOUR FROM THE PATTERN (Nick's mockup:
+        // v23161 — THE TYPE TAKES ITS COLOUR FROM THE PATTERN (the owner's mockup:
         // a teal numeral and a teal-on-orange label, both lifted straight out
         // of the artwork behind them). Washing the pattern out to make room for
         // the number was the wrong move — the number should belong to the
@@ -41907,8 +41903,8 @@ setInterval(function () {
         _set('--crsl-ink', _rgb(_ink));
         _set('--crsl-pop', _rgb(_pop));
         _set('--crsl-pop-ink', _rgb(_popInk));
-        // v23325 — THE FLIGHT BARS' COLOUR (Nick: 'match a color from the
-        // panel that stands out' + 'don't use colors that could confuse').
+        // v23325 — THE FLIGHT BARS' COLOUR
+        // + 'don't use colors that could confuse').
         // The bar tone is the most saturated palette tone whose HUE cannot
         // be read as a status: yellow/orange (delayed), red (cancelled) and
         // status-green (arrived) are excluded. If the whole palette is

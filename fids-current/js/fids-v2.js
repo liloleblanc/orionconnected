@@ -39,8 +39,8 @@
 
     'st-cancelled':   { en:'Cancelled',   fr:'Annulé',        es:'Cancelado',      de:'Annulliert',       it:'Cancellato',       pt:'Cancelado',        ja:'欠航',     zh:'取消',     ar:'ملغاة' },
     'st-diverted':    { en:'Diverted',    fr:'Dérouté',       es:'Desviado',       de:'Umgeleitet',       it:'Dirottato',        pt:'Desviado',         ja:'目的地変更', zh:'改航', ar:'محول' },
-    // v22880 — filtered-board chip (Nick: 'You may as well reinstall the
-    // already exisiting multigual languages'). Same 9-language table as
+    // v22880 — filtered-board chip
+    // Same 9-language table as
     // every other board word, so a filtered monitor speaks whatever the
     // rotation is currently showing instead of a hardcoded EN/FR pair.
     terminal:         { en:'Terminal',      fr:'Aérogare',        es:'Terminal',       de:'Terminal',        it:'Terminal',       pt:'Terminal',      ja:'ターミナル', zh:'航站楼',   ar:'المبنى' },
@@ -96,7 +96,7 @@
       'arrived':     'fids-status-arrived',
       'early':       'fids-status-early',
       // Explicit classes so CSS can treat these two differently: On time
-      // stays green, Scheduled reverts to the plain row ink (Nick: the
+      // stays green, Scheduled reverts to the plain row ink (the owner: the
       // green Prévu 'is clashing with early').
       'on-time':     'fids-status-ontime',
       'scheduled':   'fids-status-scheduled'
@@ -199,14 +199,14 @@
     }
     // v223 — clean animated icon set (same icons the arrival-weather card
     // uses): the old sprite bakes a teal disc behind every icon, which
-    // clashed with every board theme (Nick: 'the colors for the weather are
-    // not at all matching'). Sprite kept below as fallback for names the
+    // clashed with every board theme
+    // Sprite kept below as fallback for names the
     // animated set doesn't cover.
     const _animSet = { 'clear-day':1,'clear-night':1,'cloudy':1,'drizzle':1,'extreme-rain':1,'extreme-snow':1,'fog':1,'hail':1,'mist':1,'overcast-day':1,'overcast':1,'partly-cloudy-day':1,'partly-cloudy-night':1,'rain':1,'sleet':1,'snow':1,'thunderstorms-day-rain':1,'thunderstorms-rain':1,'wind':1 };
     if (_animSet[nameKey]) {
       // v22674 — data-wx names the icon so CSS can swap in the dark-ink
       // variant on the light row states (Delayed, Final call). This art is
-      // drawn for a dark ground — near-white clouds, amber suns — and Nick
+      // drawn for a dark ground — near-white clouds, amber suns — and
       // was right that it 'doesn't go with light'. Callers are scattered
       // across the board, the gate screens and the arrival card and none of
       // them know the row state, so the swap has to happen in CSS, which

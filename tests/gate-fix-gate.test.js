@@ -1,4 +1,4 @@
-// v23331 — the gate map's reachability gate. Nick's WS790 gate (Edmonton →
+// v23331 — the gate map's reachability gate. the owner's WS790 gate (Edmonton →
 // Moncton, about to land) drew the aircraft over Saskatchewan: a position for
 // the AIRFRAME (registration lookup, another leg) was accepted with no check
 // that the aircraft could reach the field by its ETA. _fixCanReachByEta is the

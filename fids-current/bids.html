@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- v23159 — BOOT THEME RESOLVES BEFORE FIRST PAINT (Nick: 'when it comes on
-       it blinks like 4 or 5 times'). The loader's palette in shared.css is the
+  <!-- v23159 — BOOT THEME RESOLVES BEFORE FIRST PAINT
+The loader's palette in shared.css is the
        LIGHT one by default and only flips on [data-theme="dark"]. The script
        that set that attribute lived further down, inside <body>, ABOVE the
        #fidsLoader markup — so getElementById() returned null, the attribute
@@ -43,8 +43,8 @@
          and a white flash before they arrive is the same defect by another
          route. Matches --ld-bg-1 for each theme in css/shared.css. */
       r.style.background = _learned || 'rgb(13,77,139)';
-      /* v23159 — A ROTATION HOP IS NOT A COLD BOOT (Nick: 'transitions flashes
-         it's not just start it's all the time now'). ?rotate= navigates with
+      /* v23159 — A ROTATION HOP IS NOT A COLD BOOT
+s not just start it's all the time now'). ?rotate= navigates with
          location.href, so every dwell period the display throws the page away
          and replays the whole boot — welcome screen included. Measured: the
          board needs ~11s to populate, so a 30s dwell spends roughly a third of
@@ -126,7 +126,7 @@
       var next = (idx < 0) ? list[0] : list[(idx + 1) % list.length];
       if (!next || next === norm) return;
       /* v23159 — THE DWELL STARTS WHEN THE BOARD IS READY, NOT WHEN THE PAGE
-         LOADS (Nick: 'if it means to slow it down to catch up then fine').
+ LOADS.
          The board needs several seconds to fetch and paint, so counting from
          page load spent part of every dwell showing a screen that was still
          filling in — and on a short dwell it could rotate away before the
@@ -150,7 +150,7 @@
   })();
   </script>
   <script>
-  /* v22867 — PORTRAIT / ROTATED KIOSK MODE (Nick: upright monitors for
+  /* v22867 — PORTRAIT / ROTATED KIOSK MODE (the owner: upright monitors for
      FIDS and BAGS). Two paths, both landing on html.fids-portrait:
      · true portrait (OS rotated): auto-detected, width >= 800 so phones
        keep their own mobile layout;
@@ -211,7 +211,7 @@
   </script>
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
-     after the feed lands (Nick: 'the old svreen shows up once in a while',
+ after the feed lands (
      with a shot of a gate URL showing the Departures banner over an empty
      body). The boot restore can only switch screenType once data arrives —
      seconds on a big airport — so this stamps the intent NOW and the CSS
@@ -248,8 +248,8 @@
 </style>
 <style id="fids-preflash-guard">
 /* v23172 — DO NOT PAINT THE MAIN-BOARD CHROME ON A GATE/BAGGAGE SCREEN.
-   (Nick: "there is stuff hidden I can see it when I load like banners that
-   were from a while back are still hidden behind")
+
+
 
    This page ships the FULL main-board markup — the departures banner, the
    column headers and the baggage ticker — because one page serves every screen
@@ -274,7 +274,7 @@ html:not([data-screen-ready]) .content-area { display: none !important; }
 <body data-page="bids">
 <!--
 v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
-   (Nick: 'i just dont want flashes and glitches' / 'they just keep building on
+ ( / 'they just keep building on
    top of everything and taking easy shortcuts'.)
 
    What stood here read `fids_console_theme` — the CONSOLE's light/dark
@@ -591,7 +591,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 
   <!-- Time + date, top-right corner. Analog clock (left) + 3-line digital
        block matching the gate banner: label / big time / bilingual date
-       (Nick, Jul 2026). -->
+ -->
   <div class="fids-banner-time-block">
     <div class="fids-banner-time-text">
       <div class="fids-banner-digirow">
@@ -944,13 +944,13 @@ window.addEventListener("DOMContentLoaded", async function() {
 
     var params = new URLSearchParams(window.location.search);
     var ap = params.get('ap') || sessionStorage.getItem('fids_airport') || 'YQM';
-    // v22832 — never silently demo (Nick); ?mode=demo is the only door.
+    // v22832 — never silently demo; ?mode=demo is the only door.
     // v23170 — AND BEING SIGNED IN IMPLIES LIVE. fids_mode is written once by
     // the entry page (enterDemo() stamps 'demo') and then remembered for the
     // life of that TAB, so a single visit to the demo could outrank a later
     // admin login and quietly serve sample flights to someone who had signed in
-    // (Nick: "I will be logged in as admin and then all of a sudden it will
-    // fall to the demo"). An explicit ?mode= in the URL still wins — that is a
+    //
+    // An explicit ?mode= in the URL still wins — that is a
     // deliberate request — but a stored 'demo' no longer outranks a real
     // session.
     var _urlMode = params.get('mode');
@@ -990,8 +990,8 @@ window.addEventListener("DOMContentLoaded", async function() {
     // v23289 — stamp the SETTLED screen type in the same breath, so the
     // chrome lock is in force from the first painted frame. Releasing
     // data-screen-ready alone let the board banner paint in the frames
-    // before the gate rendered (Nick: 'First screen I saw while it loaded
-    // was the old banner').
+    // before the gate rendered
+    // 
     try { if (typeof _applyScreenChrome === 'function') _applyScreenChrome(); } catch (e) {}
 
     if (startMode === 'live') {

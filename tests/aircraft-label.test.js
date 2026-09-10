@@ -1,6 +1,6 @@
 // v23330 — aircraft label precedence. A feed's specific model string wins
 // over the bare-family code, while a bare '737' STILL means MAX 8: Air
-// Canada's whole 737 fleet is MAX 8 and reports a bare '737' (Nick: do not
+// Canada's whole 737 fleet is MAX 8 and reports a bare '737' (the owner: do not
 // flatten that entry). The bug: WS790 at YQM, feed said "Boeing 737-700",
 // the gate printed "Boeing 737 MAX 8" — formatAircraft() built the composite
 // code '73'+'7' = '737' from the dash variant and landed on the family key.

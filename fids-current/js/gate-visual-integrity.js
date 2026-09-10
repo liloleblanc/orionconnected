@@ -103,7 +103,7 @@
     if (wrapper) setSafeZone(wrapper, media);
 
     // v22559: the frame is NO LONGER masked out of the creative rectangle.
-    // Nick's silver frame deliberately sits IN FRONT of the advert ('the
+    // the owner's silver frame deliberately sits IN FRONT of the advert ('the
     // frame goes in front of the advert', Jul 26 2026) — the old safe-zone
     // mask here is exactly what kept erasing it over the ad.
   }
@@ -154,7 +154,7 @@
   // frame. Measured on the live board at v23266, in steady state with nothing
   // changing on screen: ~230 getBoundingClientRect calls per second, 93% of
   // them from this file, one 100ms+ forced-layout task per second and frame
-  // stalls to match. That is the bump Nick can see but cannot quite point at.
+  // stalls to match. That is the bump the owner can see but cannot quite point at.
   //
   // An advert's pixels do not move because a map tile loaded. Two guards:
   // relevance (below) rejects mutations that cannot affect an advert, and this

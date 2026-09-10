@@ -1,8 +1,8 @@
 'use strict';
 
-// v23498 — the suffix on a flight number is a REVISION COUNTER (Nick: "the letter
-// means theres been a change and 2040 is the initial number ... if its at z it had
-// 26 changes from a to z"). AC2040 and AC2040Z are one flight, and the board was
+// v23498 — the suffix on a flight number is a REVISION COUNTER
+//
+// AC2040 and AC2040Z are one flight, and the board was
 // showing both with contradicting statuses. This collapses them — but it must NOT
 // collapse the same flight on two different days, which the live board legitimately
 // carries (today arrived / tomorrow scheduled).

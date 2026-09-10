@@ -2,8 +2,8 @@
 
 // v23516 — WHICH AIRPORTS A STREAM PLAYS.
 //
-// Nick: "You're playing the rotation of international airports on the Moncton
-// stream." v23432 had widened the tour trigger to `q.get('stream')` — ANY
+//
+// v23432 had widened the tour trigger to `q.get('stream')` — ANY
 // stream value — so both broadcast boxes, which pass an ap= AND a stream=, had
 // their named airport overwritten with TOUR_DEFAULT.
 //
@@ -44,13 +44,13 @@ const BOX2 = 'ap=MCO&mode=live&stream=1&langs=en,es&rotate=fids,gids,bids,gids&d
 
 test('box 1 plays Moncton and nothing else', () => {
   const r = select(BOX1);
-  assert.deepEqual(r.aps, ['YQM'], 'the Moncton stream must play Moncton — this is the bug Nick reported');
+  assert.deepEqual(r.aps, ['YQM'], 'the Moncton stream must play Moncton — this is the reported bug');
   assert.equal(r.isTour, false);
 });
 
 test('the second stream tours, whatever airport its URL happens to name', () => {
-  // Nick: "it's not just Miami though or Orlando or Tampa for that matter it's
-  // an international stream". Pinning box 2 to its ap= would kill the tour.
+  //
+  // Pinning box 2 to its ap= would kill the tour.
   for (const q of ['ap=MIA&mode=live&stream=2', 'ap=MCO&mode=live&stream=2', 'mode=live&stream=2']) {
     const r = select(q);
     assert.ok(r.isTour, `${q} must tour`);

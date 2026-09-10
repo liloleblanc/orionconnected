@@ -2,7 +2,7 @@
 
 // v23518 — A DEPLOY MUST BE ABLE TO REACH A RUNNING STREAM.
 //
-// Nick, repeatedly: "it never gets done", "It has not restarted", "Nothing is
+// "It has not restarted", "Nothing is
 // fixed". Two independent mechanisms exist so a stream box picks up new code
 // without anyone touching the server, and BOTH were dead:
 //

@@ -2,7 +2,7 @@
 
 // v23522 — THE SIGN NAMES EVERYONE ENTITLED TO PRE-BOARD.
 //
-// Nick sent Porter's published boarding order and said "This is important if
+// the owner sent Porter's published boarding order and said "This is important if
 // somehow it can be integrated":
 //
 //   Pre-boarding is offered as a courtesy and is available to:

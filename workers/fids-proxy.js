@@ -555,7 +555,7 @@ async function handlePutAirport(request, env, payload, origin, code) {
                       // customColors is the one look currently applied; this
                       // is the shelf of looks they built. It lived only in
                       // localStorage, so it never left the browser it was made
-                      // in (Nick: "most presets are gone" / "it should be
+                      // in ( / "it should be
                       // saving everything globably"). The console merges by id
                       // rather than replacing, so a device holding presets the
                       // cloud has not seen yet contributes them instead of
@@ -1761,7 +1761,7 @@ const AIRLINE_NAME_IATA = {
   "AIR CANADA": "AC", "AIR CANADA EXPRESS": "AC", "AIR CANADA ROUGE": "RV",
   "PORTER": "PD", "PORTER AIRLINES": "PD", "WESTJET": "WS", "WESTJET ENCORE": "WS",
   "PAL AIRLINES": "PB", "PROVINCIAL AIRLINES": "PB", "FLAIR": "F8", "FLAIR AIRLINES": "F8",
-  "WEST JET": "WS",   // Fredericton's site writes it as two words (Nick spotted WS795 losing its identity)
+  "WEST JET": "WS",   // Fredericton's site writes it as two words
   "PASCAN": "P6", "PASCAN AVIATION": "P6", "AIR TRANSAT": "TS", "SUNWING": "WG",
   "AIR SAINT-PIERRE": "PJ", "UNITED": "UA", "UNITED AIRLINES": "UA",
   "DELTA": "DL", "DELTA AIR LINES": "DL", "AMERICAN AIRLINES": "AA", "AMERICAN": "AA"
@@ -1772,7 +1772,7 @@ const AIRLINE_NAME_IATA_SQUASHED = (() => {
   return m;
 })();
 // The reverse map, for feeds that print only a flight code — the boards
-// can then show a proper carrier name (Nick: Pascan on YSJ rendered
+// can then show a proper carrier name (the owner: Pascan on YSJ rendered
 // nameless; P6 really is Pascan, the YSJ–YHU operator, not Porter).
 const AIRLINE_IATA_NAME = {
   AC: "Air Canada", PD: "Porter Airlines", WS: "WestJet", PB: "PAL Airlines",
@@ -2544,7 +2544,7 @@ function sfoParseFeed(jsonText, dir, nowMs) {
   const want = dir === "dep" ? "Departure" : "Arrival";
   for (const r of (Array.isArray(j.data) ? j.data : [])) {
     if (!r || r.flight_kind !== want) continue;
-    // v23440 — ONE ROW PER AIRCRAFT (Nick: 'SFO shows codeshare flights').
+    // v23440 — ONE ROW PER AIRCRAFT.
     // flysfo expands every marketing partner into its own row: his shot had
     // UA2624, NZ9349 and VA8456 stacked to Portland, all 10:10 off F13, and
     // nine rows to Los Angeles at 10:12 off B22. Measured on the live feed
@@ -2612,7 +2612,7 @@ __name(_adbDeadEnrichment, "_adbDeadEnrichment");
 
 // ── v23448 — WEATHER GOES THROUGH A CACHE, AND STOPS LYING WHEN IT FAILS.
 //
-// Nick: 'Weather doesnt work either'. open-meteo is answering:
+// open-meteo is answering:
 //   {"error":true,"reason":"Daily API request limit exceeded. Please try
 //    again tomorrow."}
 //
@@ -3170,8 +3170,8 @@ __name(dtwPickOperator, "dtwPickOperator");
 // (0001-01-01) so EstimatedDateTime is the operative time; there's no
 // separate revision to show. Gate letter is the concourse.
 //
-// ONE ROW PER AIRCRAFT (Nick: 'I did not ask for you to put regional carriers
-// on the main board', and on what should show: 'it falls on the parent company
+// ONE ROW PER AIRCRAFT
+// and on what should show: 'it falls on the parent company
 // and is operated by them only').
 //
 // Detroit expands every marketing partner into its own row and gives no
@@ -3242,7 +3242,7 @@ function dtwParseFeed(jsonText, dir, nowMs, schedule) {
     // Single-row groups go through dtwPickOperator too. A lone OO3909 has no
     // codeshares to collapse, but it is still Delta Connection and still has
     // to read as Delta — that row, and OO3684 beside it, are exactly the two
-    // Nick ringed on the DTW board. Skipping groups of one left 8 SkyWest and
+    // the owner ringed on the DTW board. Skipping groups of one left 8 SkyWest and
     // 8 Endeavor rows sitting there after the first pass.
     const pick = dtwPickOperator(g);
     if (!pick) {
@@ -7034,7 +7034,7 @@ async function handleYulFids(request, env, origin, direction) {
       .concat(rv.flightsForYesterday || [], rv.flightsForToday || [], rv.flightsForTomorrow || []);
     // ── BELT ENRICHMENT (arrivals only). The list call carries no carousel,
     // but ADM's flight-details apex (getFlightHeroDetails' sibling) returns
-    // Terminal_Belt__c per flight — Nick proved it on the website. One
+ // Terminal_Belt__c per flight — the owner proved it on the website. One
     // details call per arrival is too many for the whole day, so only the
     // baggage-hall window is enriched: arrivals scheduled within the last
     // 5h or next 3h (what a carousel screen actually shows), nearest first,
@@ -7200,7 +7200,7 @@ async function handleYtzFids(request, env, origin, direction) {
     if (!list.length) return jsonResponse({ error: "YTZ page parsed to zero rows" }, 502, origin);
     // ── GATE ENRICHMENT via FlightAware AeroAPI (departures only). Billy
     // Bishop's own board publishes no gates, but FlightAware carries them
-    // (Nick confirmed on the site). Runs ONLY when the AEROAPI_KEY secret
+    // Runs ONLY when the AEROAPI_KEY secret
     // exists on the worker — without it this whole block is a no-op, so
     // the route deploys safely before the account exists. Cost control:
     // one scheduled_departures sweep (max 2 pages) per 15 minutes, cached
@@ -8140,7 +8140,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // positions age a little, nobody's flight does.
       // How long an all-providers-failed answer is remembered. Without this,
       // every board poll re-hammered feeds that were ALREADY rate-limiting
-      // us (Nick, morning of 2026-08-25: all three upstreams 429 — no
+      // us (the owner, morning of 2026-08-25: all three upstreams 429 — no
       // altimeter, no reg, no inbound panel), which keeps the throttle
       // pinned. Short on purpose: recovery is only ever this far away.
       const ADSB_NEG_TTL = 30;
@@ -8175,8 +8175,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         }
       } catch (e) {}
 
-      // v23222 — PROVIDER FAILOVER (Nick: 'The flight is no longer tracked on
-      // the map'). airplanes.live has 403'd unregistered callers since
+      // v23222 — PROVIDER FAILOVER
+      // airplanes.live has 403'd unregistered callers since
       // 2026-08-15; with a single fixed provider every board silently fell
       // back to stale clock-estimated positions — wrong spots, wrong headings
       // ('the planes go backwards'). The configured provider is tried first,
@@ -8248,7 +8248,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
             }
             // ADB answered but knows no live fix. v23255 treated a hex/reg
             // miss as authoritative and neg-cached it without consulting the
-            // community ring. v23262 withdraws that: Nick's AC2081 (LHR→YHZ,
+            // community ring. v23262 withdraws that: the owner's AC2081 (LHR→YHZ,
             // reg C-FSIL confirmed on the very panel that had no altimeter)
             // was airborne over Nova Scotia — squarely inside community
             // coverage — while ADB carried no location block for the leg at
@@ -8261,7 +8261,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         } catch (e) { /* network error → community ring */ }
       }
       // ── FR24, ON A DAILY ALLOWANCE (2026-09-05) ─────────────────────
-      // Nick bought the $9 Explorer tier to test FR24 as the position
+      // the owner bought the $9 Explorer tier to test FR24 as the position
       // source (the community ring is unapproved, anonymous, and
       // throttling us; airplanes.live REFUSED us — see the ring filter
       // below, it is a closed question, do not raise it). Explorer
@@ -8914,7 +8914,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
 
-    // PORTER GATE FEED: dead end, measured 2026-08-05. Nick found Porter's
+    // PORTER GATE FEED: dead end, measured 2026-08-05. the owner found Porter's
     // flight-status XHR (getflightsfeed) carrying YTZ arrival gates (05, 02,
     // 01 on PD2520/2522/2524). A /diag/porter probe tried eight candidate
     // paths from the WORKER — i.e. from Cloudflare's own network — and every
@@ -9085,7 +9085,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
       // ── v23450 — THE ENRICHMENT ROUTES STOP STORMING TOO.
       //
-      // Nick: 'ottawa doesnt work'. YOW's own feed is healthy — 25 departures
+      // YOW's own feed is healthy — 25 departures
       // and 34 arrivals with gates AND belts on every row — but the live board
       // sat on the boot splash. Its console was a wall of 429s, and the network
       // log named them: /flights/number/PD2339/<date>?withLocation=true and
@@ -9281,7 +9281,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       //
       // So the board asked for French, could not say so in the one place that
       // counts, and cached English under its French key. That is the whole of
-      // the recurring 'ads half french half english' (Nick, repeatedly): the
+      // the recurring 'ads half french half english': the
       // French request was never French.
       //
       // The query param is the only language signal a page CAN control, so it

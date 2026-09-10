@@ -45,7 +45,7 @@ function smSwitchTab(tabId) {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // THEME (v218.99.11)
-// Light is the default — Nick uses this during the day. Dark is a toggle
+// Light is the default — the owner uses this during the day. Dark is a toggle
 // for nighttime. Auto-pick on first open based on local time (6am-7pm =
 // light, else dark). Manual toggle wins and persists in localStorage.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -85,7 +85,7 @@ function _smInitTheme() {
 }
 
 // v23484 — THE PICKER HAS TO LIVE ON THE BODY, NOT INSIDE THE PANEL.
-// Nick: "its not on the screen". #mlPickerModal is position:fixed;inset:0, which
+// #mlPickerModal is position:fixed;inset:0, which
 // should centre it on the viewport — except it is markup inside menu.html, which
 // is injected into .ctrl, and fids.css:45 gives .ctrl.show `transform:
 // translateY(0)` for its slide-in. ANY transform other than `none` makes that
@@ -235,7 +235,7 @@ function menuSetViewMode(m) {
 }
 
 // ━━━ SCREEN SETUP — orientation + per-monitor filters ━━━━━━━━━━━━━━━━━━
-// Nick: 'We cant have that in the menu?'. Same three filters the URL takes,
+// Same three filters the URL takes,
 // driven by clicks instead. Every control writes the URL back into the
 // address bar, so the menu and the URL are never two ways of saying
 // different things — and 'Copy Screen URL' hands over exactly what to paste
@@ -1177,8 +1177,8 @@ function _acGetToken() {
 }
 
 // ── authFetch wrapper — works whether or not Auth module is loaded ───
-// v22839 — 401 RESCUE (Nick: 'Whenever I try to save info for YHU I get
-// Save failed: HTTP 401'). The token lives 24h; when it dies, every save
+// v22839 — 401 RESCUE
+// The token lives 24h; when it dies, every save
 // on the device fails with a bare HTTP 401 and no way back short of
 // knowing to re-login. A 401 now clears the stale token and pops the
 // login modal on the spot — the form keeps its values, so it's sign in
@@ -1197,8 +1197,8 @@ async function _acFetch(url, opts) {
   // with the token — an endpoint that wants a different credential, a
   // permission the account genuinely lacks, a transient upstream failure — and
   // each of those logged the operator out mid-edit for no reason. That is a
-  // large part of "I'm logged in as admin and then all of a sudden it falls to
-  // demo".
+  // large part of the reported symptom: an admin session dropping to demo
+  // with no warning.
   //
   // So decide it from the token itself, which is knowable locally: if it has
   // expired, the session really is over — clear it and prompt. If it has NOT,
@@ -1631,7 +1631,7 @@ function _cuSave(prefs) {
   try { localStorage.setItem(_cuStorageKey(), JSON.stringify(prefs)); } catch (e) {}
 }
 
-// v23214 — SETTINGS SAVE GLOBALLY (Nick: 'Settings don't save globally …
+// v23214 — SETTINGS SAVE GLOBALLY (t save globally …
 // it should save on cloudflare and colors should work properly'). The
 // Customize panel only ever wrote localStorage, so a theme picked on one
 // device never reached the other screens — the cloud channel existed (the
@@ -1641,8 +1641,8 @@ function _cuSave(prefs) {
 // REAL colours first because the cloud stores palettes, not ids. Fields the
 // worker does not carry (dayNight scheduling) stay device-local. Best
 // effort and debounced — a failed push never blocks the local save.
-// v23221 — the cloud-sync OUTCOME is visible (Nick: 'the themes dont carry
-// over other than the computer its made on it needs to be global'). When no
+// v23221 — the cloud-sync OUTCOME is visible
+// When no
 // one was signed in the push below returned in silence, and a theme that
 // looked saved lived on one device only. The note under the Theme picker
 // now says which of the two happened.
@@ -1774,8 +1774,8 @@ function _cuReadForm() {
   // Save the toggles' EXPLICIT state (true OR false) so the user can override
   // an admin-set default. Without this, unchecking the box just removes the
   // field, and the admin's airport-wide setting kicks back in.
-  // v23125 — ONLY once PAINTED (Nick: 'airlines names coming in and out of
-  // existence depending on which device'). These reads ran on EVERY save,
+  // v23125 — ONLY once PAINTED
+  // These reads ran on EVERY save,
   // including saves from the menu bar with the Customize tab never opened —
   // writing the checkboxes' default states over the device's real settings.
   // airlineStyle:'emblem' hides the airline names, so a stray save on one
@@ -1848,8 +1848,8 @@ function _cuPaintForm(prefs) {
   cuSetDisplayModeUI(prefs.displayMode || 'auto');
 }
 
-// ── Day & night scheduling (Nick: 'no way of controlling the night vs day
-// colors') — toggle reveals the schedule; any change saves through the
+// ── Day & night scheduling
+// — toggle reveals the schedule; any change saves through the
 // canonical merge path. Picking Custom for either period reveals the colour
 // editor so there's something to edit.
 function cuDayNightChanged() {
@@ -1959,7 +1959,7 @@ function _cuApplyFont(fontKey) {
       document.head.appendChild(s);
     }
     // .axr (Accor hotel ads) exempt — brand typography must survive the nuke
-    // (same guard as fids-core changeFont; Nick: 'AC Nord takes over').
+    // (same guard as fids-core changeFont; ).
     s.textContent = '*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not(.ac-ico))::before, *:where(:not(.axr):not(.axr *):not(.ac-ico))::after { font-family: ' + stack + ' !important; }';
   } else {
     st.removeProperty('--font-primary');
@@ -2155,7 +2155,7 @@ function _cuApplyDisplayMode(mode) {
 var _cuThemeExplicitDefault = false;
 function cuApplyAndSave() {
   // MERGE the form over what's saved — an unsynced/untouched control must
-  // never erase a saved setting (Nick: changing the FONT reverted the
+  // never erase a saved setting (the owner: changing the FONT reverted the
   // THEME to teal, because the theme select was sitting on '' and the
   // wholesale save dropped theme:'mist').
   var saved = {};
@@ -2165,8 +2165,8 @@ function cuApplyAndSave() {
   // Picking a NON-preset theme must retire a stale saved preset id. The
   // merge kept themePresetId forever, and the Customize repaint paths give
   // it priority over prefs.theme — so choosing Teal / Teal Deep flipped
-  // back to the old custom preset on the next menu open (Nick: 'the 2
-  // premade scenes dont seem to work').
+  // back to the old custom preset on the next menu open
+  // 
   if (form.theme && !form.themePresetId) delete prefs.themePresetId;
   // Explicitly choosing "Use airport default" is the ONE case that clears it.
   if (_cuThemeExplicitDefault) { prefs.theme = ''; delete prefs.themePresetId; _cuThemeExplicitDefault = false; }
@@ -2514,7 +2514,7 @@ if (_origPaintForm) {
         var p = JSON.parse(raw);
         // A stored customize blob with no density picked = SMALL, matching
         // BOARD_DENSITY_FALLBACK in fids-core. Without a default the
-        // row-height cap never applies at all and rows render ~90px (Nick).
+        // row-height cap never applies at all and rows render ~90px.
         _applyLogoSize((p && p.logoSize) || 'small');
       }
     } catch (e) {}
@@ -2543,7 +2543,7 @@ function _cuPresetsSave(list) {
 }
 
 /* ── v23488 — THE PRESET LIBRARY IS AIRPORT-WIDE, NOT BROWSER-WIDE ──────────
-   Nick: "most presets are gone", "it should be saving everything globably",
+ "it should be saving everything globably",
    and the tell that made it diagnosable — "I would save it and I would see it
    change on the stream so it must work to a certain point".
 
@@ -2797,10 +2797,11 @@ function _cuGreen(ground) {
   return '#34d399';
 }
 
-// v23220 — LIVE LEGIBILITY AUDIT (the UXmatters colour-theory article Nick
+// v23220 — LIVE LEGIBILITY AUDIT (the UXmatters colour-theory article
 // asked implemented, then approved for the menu). The board has always run
 // picked colours through the 3:1 legibility floor and silently substituted
-// black/white where a pair failed — which read as "my colour didn't work".
+// black/white where a pair failed — which read as the picked colour being
+// silently ignored.
 // This makes the floor visible at pick time: every text/ground pair the
 // board actually paints is measured with the same _fidsContrast, and any
 // pair below the floor gets a warning naming the substitution before it
@@ -3989,7 +3990,7 @@ function cuDeleteActivePreset() {
         thumb = '<div style="width:54px;height:36px;background:'+bg+';color:#fff;display:flex;align-items:center;justify-content:center;border-radius:4px;font-size:12px;font-weight:700;flex:0 0 auto;">'+lbl+'</div>';
       }
       var label = it.label || '(no label)';
-      // v23478 — Nick: "Its so dark make it lighter ... I CANT see". The row was
+ // v23478 — The row was
       // 12px of #e5e7eb on a hardcoded #1f2937, inside a hardcoded #18181b card
       // that never followed the console theme. Tokens now, so the picker is light
       // when the console is light, and a size you can actually read a filename at.

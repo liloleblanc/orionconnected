@@ -1,5 +1,5 @@
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   MENU BAR (Nick, Jul 2026) — the top control bar becomes a titled menu
+ MENU BAR — the top control bar becomes a titled menu
    bar (Menu / Display / Operations / Options + search) that AUTO-HIDES:
    slides away after 8s idle so it can never block the banner; a thin
    hot-zone at the top edge (or any touch at the top) brings it back.
@@ -24,7 +24,7 @@
       // panel actually render; the auto-hide below owns visibility from here.
       + 'body .ctrl.show{display:flex !important;}'
       + 'body .ap-panel:not(.hidden){display:block !important;}'
-      // the legacy ⚙ openers are gone for good (Nick) — the top hot-zone is
+      // the legacy ⚙ openers are gone for good — the top hot-zone is
       // the one way to reveal the bar.
       + '#menuBadge,#menuTrigger{display:none !important;}'
       // light-board adaptation — on light themes the bar itself goes light
@@ -37,7 +37,7 @@
       + 'body.fids-light-board .mbar-link:hover{background:rgba(13,36,64,.07);color:#0d2440;}'
       + 'body.fids-light-board .mbar-sec{color:#6b7c92;}'
       // v23215 — THE RE-PARENTED CONSOLE CONTENT GOES DARK-INK ON LIGHT
-      // BOARDS (Nick: 'the menu is not legible either — it's hidden behind
+      // BOARDS (s hidden behind
       // same colors text, for a lot of it'). The wide panels host the old
       // sidebar's sections, whose text was styled WHITE for the dark
       // sidebar; on a light board the panel is white — measured on mist:
@@ -57,7 +57,7 @@
       + '.mbar-panel.mbar-wide{width:470px;max-width:min(94vw,540px);max-height:74vh;overflow-y:auto;overscroll-behavior:contain;}'
       + '.mbar-panel.mbar-wide .sm-tab-content{display:block !important;position:static !important;max-height:none !important;overflow:visible !important;padding:0 !important;}'
       + '@media (min-width:701px){#overlayMenu{display:none !important;}}'
-      // Slim bar (Nick: 'the gray menu bar is way too tall') — the board
+      // Slim bar — the board
       // should own the screen; the admin bar is a visitor.
       + '.ctrl{transition:transform .3s ease, opacity .3s ease;padding:3px 14px !important;'
       +   'min-height:34px !important;gap:3px 10px !important;border-bottom-width:1px !important;}'
@@ -101,7 +101,7 @@
         // v22939 — repaint the moved controls from live state before showing
         // them. The sidebar syncs on openOverlayMenu(); this bar hosts the
         // same controls and never did, so whatever they were seeded with at
-        // fragment-load time is what Nick saw — a GIDS screen reporting FIDS.
+        // fragment-load time is what the owner saw — a GIDS screen reporting FIDS.
         // Cheap, and it means the panel cannot show a stale value no matter
         // which code path last changed it.
         if (!was && typeof window._syncMenu === 'function') {
@@ -167,8 +167,8 @@
     link(gOps.panel, 'Refresh live data', function () { if (typeof window.fetchLive === 'function') window.fetchLive(); });
 
     var gOptions = group('Options');
-    // Theme lives RIGHT HERE — one click, no console detour (Nick).
-    // 'Custom' is NOT in this quick list (Nick: picking it here just turned
+    // Theme lives RIGHT HERE — one click, no console detour.
+    // 'Custom' is NOT in this quick list (the owner: picking it here just turned
     // the board black — the colour editor lives in the Customize dropdown,
     // which was closed). Custom routes to Customize via the link below, so
     // exactly ONE place edits colours.
@@ -206,7 +206,7 @@
         if (typeof window.openOverlayMenu === 'function') window.openOverlayMenu();
       });
     })();
-    // ── FULL MENUS (Nick): the console's sections live IN the bar now — the
+    // ── FULL MENUS: the console's sections live IN the bar now — the
     // console overlay itself is retired on desktop. The fragment loads async,
     // so poll for it, then re-parent each tab's content into its own wide
     // dropdown. Admin-gated sections appear/disappear with their console
@@ -234,8 +234,8 @@
           if (s.gateBtn) g.root.style.display = 'none'; // until the gate says visible
           // The console modules LOAD their data on tab ACTIVATION
           // (smSwitchTab) — which the bar never fired, so Media opened to
-          // an empty shell (Nick: 'does not work for media, it stops
-          // there'). Fire the activation whenever the dropdown opens.
+          // an empty shell
+          // Fire the activation whenever the dropdown opens.
           (function (tabKey, groupEl) {
             groupEl.root.querySelector('.mbar-title').addEventListener('click', function () {
               if (groupEl.root.classList.contains('open') && typeof window.smSwitchTab === 'function') {

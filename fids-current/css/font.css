@@ -30,7 +30,7 @@
 /* JetBrains Mono — monospace for tabular figures, timestamps, codes. */
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
-/* Possibility (Bold) — Nick's brand font, bundled locally (no CDN). Single
+/* Possibility (Bold) — the owner's brand font, bundled locally (no CDN). Single
    weight mapped across the range so it always resolves regardless of the
    weight the UI requests. */
 @font-face { font-family:'Possibility'; font-weight:100 900; font-style:normal; font-display:swap; src:url('../fonts/Possibility-Bold.otf') format('opentype'); }
@@ -123,13 +123,13 @@
 .g8-wrap .gad-aircraft-col .v2-fi-icon-badge .ac-ico-time { font-size:clamp(39px,6.10vh,82px) !important; line-height:1 !important; }  /* stopwatch — ink .88 */
 
 /* ─────────────────────────────────────────────────────────────────────
-   ABC Ginto Nord (Trial) — display typeface bundled locally (OTF). Nick
+ ABC Ginto Nord (Trial) — display typeface bundled locally (OTF).
    supplied the trial family (Thin→Ultra + italics; Hairline).
    Main 'ABC Ginto Nord' maps each weight to its file; per-weight families
    (…Thin/Light/…/Ultra) force one exact weight, mirroring the AC Nord setup
    so the font picker can offer each weight on its own.
 
-   ⚠ TRIAL FILES ARE MISLABELLED (Nick: 'the only Ginto fonts are italic').
+ ⚠ TRIAL FILES ARE MISLABELLED.
    Verified by rendering every OTF: the "-Weight.otf" files contain the
    ITALIC cut and the "-WeightItalic.otf" files contain the UPRIGHT cut —
    the italic/roman filenames are swapped. So NORMAL faces intentionally
