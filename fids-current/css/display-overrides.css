@@ -17850,8 +17850,30 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    under it; v23638 keyed it to the element but lost to a rule nobody had
    connected to it. The lesson both times was that the separator's fate is
    decided by rules written for its NEIGHBOURS.
+
+   ── v23692: FOURTH ATTEMPT, AND THE LINE ABOVE WAS WRONG ────────────────────
+   "The arrived line is untouched and keeps its single bar." It was not, and it
+   did not. Nick, on the PAL Deer Lake board: "PAL bottom right shelve panel is
+   garbled its one line or 2 not halfway and no cut off". It was rendering:
+
+       11:04am | | | Your aircraft has arrived at the gate | Votre avion...
+
+   One real bar and TWO manufactured ones. The arrived branch emits four sibling
+   spans — .v2-rc-fi-evt (the time), .v2-rc-bar (a literal "|"), .v2-fi-lbl-en
+   and .v2-fi-lbl-2 — so `span + span::before` fires three times: before the
+   literal bar, before the English, and before the second language. The literal
+   and its two neighbours collapse into "| | |". Delta's board looked fine only
+   because its revised-time spans happened to carry text between the bars.
+
+   The distinction that actually separates the two cases is not the container,
+   the element, or the source order — all three of which have now been tried and
+   failed. It is the SHAPE OF THE MARKUP. _gateLblSpans (fids-core.js) emits
+   bare, CLASSLESS spans and relies on this rule for its punctuation; every span
+   on the arrived line carries a class and punctuates itself. `:not([class])`
+   names that difference directly, so the rule can no longer reach a line that
+   was never asking for it.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-mline3 .v2-rc-fi-stline > span + span::before {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-mline3 .v2-rc-fi-stline > span:not([class]) + span:not([class])::before {
   content: ' | ' !important;
   opacity: 0.55 !important;
   font-weight: 400 !important;
@@ -17899,9 +17921,37 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    Ordered after the 9vh clock rule and carrying a longer chain, so it wins
    where it applies and is silent everywhere else. A renderer without :has()
    support simply keeps today's behaviour rather than breaking.
+
+   ── v23692: AND THE LETTERED ROWS NEEDED IT MORE ────────────────────────────
+   Nick, on Halifax: "Halifax gates and others the airport code top banner cuts"
+   and "The time also cuts off too big" — the banner reads "'HZ | 12:39PM", with
+   the Y sliced off the front so its remaining stroke looks like an apostrophe.
+
+   "No airport pays for another airport's furniture" was written on the premise
+   that a row without a mark carries no furniture. It carries THREE LETTERS, and
+   they are WIDER than the mark ever was — ~129px for "YHZ" at 56px against the
+   mark's 88.6px at 1920. So the airports that got no relief were the ones with
+   the fuller row. Budget at 1920x1080, same method as the table above:
+
+       row inner   495.4px
+       code        129.0px   ("YHZ" at 56px)
+       separator    14.0px
+       clock       379.0px   ("12:39PM" at 76px)
+       spare       -37.0px   ← over-full
+
+   .octb-clockrow is overflow:hidden AND justify-content:center, so that 37px is
+   split across BOTH ends. The right half lands inside the clock's own ~19px of
+   padding and is invisible; the left half has no padding to eat it and takes
+   ~18px straight off the code. That asymmetry is the whole reason this reads as
+   "the code is broken" rather than "the row is too full".
+
+   Same step-down, same declaration, one more arm. YQM is unchanged — it matches
+   the apmark arm exactly as before.
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-apmark) .v2-fi-clock-val,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-apmark) .octb-clock {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-apmark) .octb-clock,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-ap) .v2-fi-clock-val,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-ap) .octb-clock {
   font-size: clamp(38px, 7.5vh, 64px) !important;
 }
 
@@ -18061,4 +18111,40 @@ html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
   color: #152C53 !important;
   -webkit-text-fill-color: #152C53 !important;
+}
+
+/* ══ v23692 — THE DESTINATION CODE ON A LIGHT DISC ═══════════════════════════
+   Spotted on Nick's American gate 57 board at Halifax: the Destination row
+   showed "Philadelphia" beside a completely BLANK WHITE orb. The code was
+   there the whole time — #ffffff PHL on a #ffffff disc, contrast 1:1.
+
+   The same trap that caught Porter's "p" in v23536 and its YQM code in v23688,
+   for the third time, because it is structural rather than per-carrier:
+
+     · .v2-fi-orbcode is pinned #ffffff (:17988), correct for the accent-
+       coloured discs the great majority of carriers get.
+     · _gateOrbParts has a LIGHT_DISC list — AA 2L 4Y BA CJ ET HA LY PR WN —
+       whose members get #F2F4F7 instead, and American's own rule (:15250)
+       pins its badges a step further to pure #ffffff.
+     · American's ink rule (:15254) lists `svg`, `svg path` and `.ac-ico`.
+       .v2-fi-orbcode is a SPAN, so it was never in that list and never
+       repainted.
+
+   TEN carriers are on light discs and every one of them had this. Keying the
+   fix to the LIGHT_DISC set rather than to American means the next carrier
+   added to that list arrives already fixed, instead of being the fourth
+   report of the same bug. Each takes the ink its own glyphs already use.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airline*="AMERICAN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
+  color: #0078D2 !important;
+  -webkit-text-fill-color: #0078D2 !important;
+}
+/* The other nine light-disc carriers. Same fault, same shape, and none of them
+   has a per-carrier ink rule to inherit from — so they take a dark neutral that
+   reads on #F2F4F7 rather than a guessed brand value. 2L Helvetic, 4Y Eurowings
+   Discover, BA British Airways, CJ BA CityFlyer, ET Ethiopian, HA Hawaiian,
+   LY El Al, PR Philippine, WN Southwest. */
+html body:is([data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
+  color: #1B2430 !important;
+  -webkit-text-fill-color: #1B2430 !important;
 }
