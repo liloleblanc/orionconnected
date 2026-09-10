@@ -77,7 +77,7 @@ test('the gate banner date refreshes itself over a day boundary', () => {
   assert.doesNotMatch(gateKey.slice(0, 400), /_ocLocalDayKey|fidsLocalDateKey|dayKey/);
 });
 
-test('the Moncton banner never paints text in its own background colour', () => {
+test('the gate banner never paints text in its own background colour', () => {
   // --airline-r1 is the carrier's DARK shade: it backs the date bar and inks
   // the clock. Porter's r1 is #EFE8DA, the cream the band is made of, and the
   // old guard only rejected the literal '#FFFFFF' — so it was painted onto
@@ -95,8 +95,19 @@ test('the Moncton banner never paints text in its own background colour', () => 
   assert.match(r1Pub, /_hexIsLight\(s\.r1\)/);
   assert.match(core, /\(s\.r1Text && !_hexIsLight\(s\.r1Text\)\) \? s\.r1Text : '#0c1119'/);
   // And the date, which sits ON that bar, must not be coloured with it.
-  assert.doesNotMatch(css, /\.g8-ap-YQM \.g8-r1-timebox \.octb-date \{\s*color: var\(--airline-r1/);
-  assert.match(css, /\.g8-ap-YQM \.g8-r1-timebox \.octb-clock \{\s*color: var\(--airline-r1/);
+  //
+  // v23644 — these two now read .g8-wrap, not .g8-ap-YQM. The banner treatment
+  // built for Moncton was rolled out to every airport, so the ink rules moved
+  // from airport-scoped to global. The INVARIANT is unchanged and is the whole
+  // point of this test: the clock sits on the BAND and takes --airline-r1; the
+  // date sits ON the --airline-r1 bar and must never be inked with it, or it
+  // is painted onto itself.
+  //
+  // The date assertion is deliberately left un-scoped — it now rejects that
+  // pairing anywhere in the stylesheet rather than only under one airport,
+  // which is stricter than before, not weaker.
+  assert.doesNotMatch(css, /\.octb-date \{\s*color: var\(--airline-r1/);
+  assert.match(css, /\.g8-wrap \.g8-r1-timebox \.octb-clock \{\s*color: var\(--airline-r1/);
 });
 
 test('the bilingual gate titles fit their pill instead of being cut', () => {
