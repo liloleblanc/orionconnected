@@ -16909,32 +16909,18 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   justify-content: space-between !important;
 }
 
-/* ══ THE CARD SITS ON SKY ════════════════════════════════════════════════
-   Nick supplied a sun/lens-flare sky and asked for it as the background.
+/* ══ (removed v23642) — THE DEAD SKY RULE ═════════════════════════════════
+   A .wxcard-wrap background rule pointing at wx-sky-sun.jpg used to sit here.
+   It never rendered: _renderWxCard writes the card's background as an INLINE
+   style with !important (fids-core.js:40802), which no stylesheet can beat.
+   That is exactly why the sky had to be set in JS in the first place.
 
-   THE PHOTO CANNOT CARRY TEXT ON ITS OWN. Its top-left quadrant is blown to
-   near-white around the sun, which is exactly where the departure/arrival
-   pair sits, and every label on this card is white. So the image is laid down
-   first and a scrim is composited over it: heavier at the top where the flare
-   is, easing off toward the bottom where the sky is already deep enough to
-   hold white type. That keeps the sky readable as sky while guaranteeing the
-   text never lands on a blown highlight.
-
-   background-image stacks top-layer-first, hence scrim then photo.
-
-   `cover` + `center` rather than a fixed size: the card is 575px at 1680x920
-   but the boards are not all one resolution, and a 16:9 photo in a ~4:3 box
-   has to crop somewhere — centring keeps the sun in frame at every aspect.
+   Left as a comment rather than silently deleted because the rule reads like
+   the thing that controls this background, and the next person to change the
+   card's ground will look here first. It does not. Change _wxBg in
+   _renderWxCard.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxcard-col {
-  background-color: #1c6fb0 !important;
-  background-image:
-    linear-gradient(180deg, rgba(4, 26, 48, 0.62) 0%, rgba(4, 26, 48, 0.42) 38%, rgba(4, 26, 48, 0.30) 100%),
-    url('/logos/Backgrounds/wx-sky-sun.jpg') !important;
-  background-size: auto, cover !important;
-  background-position: center, center !important;
-  background-repeat: no-repeat, no-repeat !important;
-}
+
 
 /* The decorative globe wash was drawn for the old flat-teal card and muddies
    the photo — it goes now that there is a real image behind the content. */
