@@ -1,56 +1,119 @@
 'use strict';
 
-// v23494 — the fourth contrast bug of one shape: a colour assigned per-carrier with
-// no regard for the ground it lands on (Porter cream-on-cream, the date bar in its
-// own colour, WestJet navy-on-navy, and now Porter's accent on the slate shelf).
-// _gateCodeInk is the general answer: keep the carrier's hue, move only lightness.
+// ═══════════════════════════════════════════════════════════════════════════
+// THE AIRPORT CODE MUST BE INKED FOR THE CHIP IT IS ACTUALLY ON.
+//
+// Nick: "Air Canada airport code on the left is blue" / "Porter cannot see the
+// airport code same blue" / "I do not want any gray wording".
+//
+// Both reports were ONE bug. The chip under the code (.v2-fi-title) is painted
+// with a linear-gradient on AC and Porter. A gradient lives in
+// background-IMAGE; background-COLOR stays rgba(0,0,0,0). The autofit painter's
+// ground walk read backgroundColor only, so it walked past the chip and
+// measured the near-black plate underneath — then fitted an ink to clear black
+// and painted it onto cream.
+//
+// Measured on the live YQM/4 board before the fix, the span carried BOTH:
+//     color: rgb(252,238,238) !important
+//     -webkit-text-fill-color: rgb(76,130,189) !important
+// Blink paints glyphs from the second, which is the blue he was pointing at.
+//
+// These assertions lock the two halves of the fix in place. They are structural
+// (they read the source), because the failure is invisible in a DOM-less test
+// and only shows as a colour on a live board.
+// ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const root = path.resolve(__dirname, '..', 'fids-current');
-const core = fs.readFileSync(path.join(root, 'js', 'fids-core.js'), 'utf8');
-const css = fs.readFileSync(path.join(root, 'css', 'display-overrides.css'), 'utf8');
+const SRC = fs.readFileSync(
+  path.resolve(__dirname, '..', 'fids-current', 'js', 'fids-core.js'), 'utf8');
 
-// Pull the real colour maths out and exercise it.
-const slice = core.slice(core.indexOf('function _ocColorParts('), core.indexOf('function _ocGroundOf('));
-const api = new Function(slice + '\nreturn {_ocColorParts,_ocLum,_ocCr,_ocToHsl,_ocFromHsl};')();
+// The painter that owns the rail/shelf title code.
+const PAINTER_SEL = "'.gad-aircraft-col .v2-fi-title .v2-fi-code, .g8-bir-shelves .v2-fi-title .v2-fi-code'";
 
-test('color(srgb ...) grounds parse as 0-255, not as near-black', () => {
-  // Chrome hands these back for color-mix() surfaces. Reading 0.27 as 0.27/255 made
-  // every contrast check against the shelf plate come out in the millions.
-  const parsed = api._ocColorParts('color(srgb 0.271922 0.340784 0.444)');
-  assert.deepEqual(parsed, [69, 87, 113]);
-  assert.deepEqual(api._ocColorParts('#254D87'), [37, 77, 135]);
-  assert.deepEqual(api._ocColorParts('rgb(216, 47, 46)'), [216, 47, 46]);
-  assert.equal(api._ocColorParts('rgba(0, 0, 0, 0)'), null, 'transparent is not a ground');
+function painterBody() {
+  const at = SRC.indexOf(PAINTER_SEL);
+  assert.ok(at >= 0, 'the per-code painter must still exist and still own this selector');
+  // From the selector to the two setProperty calls that end it.
+  const end = SRC.indexOf("'-webkit-text-fill-color'", at);
+  assert.ok(end > at, 'the painter must still be the writer of -webkit-text-fill-color');
+  return SRC.slice(at, end + 400);
+}
+
+// Comments in this painter necessarily DISCUSS backgroundImage and gradients at
+// length, so a body-wide word search matches the prose and passes even when the
+// behaviour is gone. Mutation-checked: blanking the read left the first version
+// of this test green. Assertions here run against comment-stripped code.
+function painterCode() {
+  return painterBody()
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').map(l => l.replace(/(^|[^:])\/\/.*$/, '$1')).join('\n');
+}
+
+test('the ground walk sees gradient chips, not just background-color', () => {
+  const code = painterCode();
+  assert.ok(code.includes('_ncs.backgroundImage'),
+    'the walk must actually READ backgroundImage off the computed style — a ' +
+    'gradient chip has NO backgroundColor, which is exactly how it measured the ' +
+    'dark plate under AC and Porter instead of the cream chip on top of it');
+  assert.ok(/\/gradient\/i\.test\(\s*_bi\s*\)/.test(code),
+    'and it must test that value for a gradient');
+  assert.ok(code.includes('_ncs.backgroundColor'),
+    'the original backgroundColor branch must still run first');
 });
 
-test('the real Porter case measures unreadable, and lifting fixes it', () => {
-  const porter = [37, 77, 135];        // --airline-accent-ink on the Porter gate
-  const slate = [69, 87, 113];         // the shelf plate it sits on
-  assert.ok(api._ocCr(porter, slate) < 1.5, 'Porter navy on slate is the reported bug');
-  const [h, s] = api._ocToHsl(porter[0], porter[1], porter[2]);
-  const lifted = api._ocFromHsl(h, s, 0.85);
-  assert.ok(api._ocCr(lifted, slate) >= 4.5, 'lifting lightness clears the floor');
-  // Hue preserved — it must still read as the carrier's colour, not as white.
-  const lh = api._ocToHsl(lifted[0], lifted[1], lifted[2])[0];
-  assert.ok(Math.abs(lh - h) < 0.02, 'the lift keeps the accent hue');
-  assert.ok(lifted[2] > lifted[0], 'still blue-dominant');
+test('a gradient stop is taken as the ground, and a transparent stop is rejected', () => {
+  const body = painterBody();
+  // Substring checks, not regex-over-regex: the thing being asserted is a
+  // regex literal in the source, and escaping one inside another is how the
+  // first version of this test failed against correct code.
+  assert.ok(body.includes('_stop = _bi.match('),
+    'the walk must extract a colour stop from the gradient string');
+  assert.ok(body.includes('_stop[0]'),
+    'and use that stop as the ground');
+  const guardAt = body.indexOf('!/,\\s*0\\)$/.test(_stop[0])');
+  assert.ok(guardAt !== -1,
+    'a fully transparent first stop is not a ground — it must keep walking ' +
+    '(same rgba(...,0) guard the backgroundColor branch already uses)');
 });
 
-test('a legible accent is left alone', () => {
-  // Air Canada red on the gate field already passes; the pass must not touch it.
-  assert.ok(api._ocCr([216, 47, 46], [0, 0, 0]) >= 3.2);
+test('the last-resort ink is the label beside it, never a hardcoded neutral', () => {
+  const body = painterBody();
+  assert.ok(body.includes('_lblInk'),
+    "the label's own ink must be in the pick chain — it is legible on that chip by construction");
+  // Anchor on the TERNARY, not the first `pick =` in the file: the var
+  // declaration `var bright = ..., deep = ..., pick = bright` also matches and
+  // put `deep` before `_lblInk` for reasons that had nothing to do with order.
+  const tern = body.indexOf('(ca >= 3)');
+  assert.ok(tern !== -1, 'the pick ternary must still exist');
+  const chain = body.slice(tern, tern + 260);
+  const lbl = chain.indexOf('_lblInk');
+  const deep = chain.indexOf('deep');
+  assert.ok(lbl !== -1, 'the pick must consider the label ink');
+  assert.ok(deep === -1 || lbl < deep,
+    'the label ink must be tried BEFORE the #16283C navy — that navy is the only ' +
+    'neutral in the chain and is the grey Nick has ruled out');
 });
 
-test('codes take the carrier accent in both places, and the pass is wired in', () => {
-  assert.match(core, /function _gateCodeInk\(root\)/);
-  assert.match(core, /_gateTitleFit\(root\);\s*\n\s*_gateCodeInk\(root\);/);
-  // The title code no longer pins a fixed gold.
-  const titleRule = css.slice(css.indexOf('.v2-fi-title .v2-fi-code {'), css.indexOf('.v2-fi-title .v2-fi-code {') + 900);
-  assert.match(titleRule, /--airline-accent-ink/);
-  assert.doesNotMatch(titleRule, /color: #fca825 !important/);
+test('the accent is still tried first — the code keeps wearing the carrier colour', () => {
+  const body = painterBody();
+  assert.match(body, /ca\s*>=\s*3\s*\)\s*\?\s*_acc/,
+    'v23466 put the airline accent first and that must survive: with the ground ' +
+    'measured correctly, AC red on its grey chip clears 3:1 and is kept');
+});
+
+test('the painter writes BOTH colour properties, so no other pass can half-override it', () => {
+  const body = painterBody();
+  assert.match(body, /setProperty\('color',\s*pick,\s*'important'\)/);
+  assert.match(body, /setProperty\('-webkit-text-fill-color',\s*pick,\s*'important'\)/);
+  // The live bug was two passes disagreeing: one wrote `color`, this one wrote
+  // the fill. Whatever else runs, this pass must never leave them split.
+  const c = body.indexOf("setProperty('color'");
+  const f = body.indexOf("setProperty('-webkit-text-fill-color'");
+  assert.ok(c !== -1 && f !== -1 && Math.abs(f - c) < 200,
+    'both writes must stay adjacent — splitting them is how the colour and the ' +
+    'painted glyph ended up different values on the live board');
 });
