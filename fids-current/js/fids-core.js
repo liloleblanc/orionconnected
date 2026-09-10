@@ -23213,7 +23213,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23698';
+var FIDS_BUILD_TAG = 'v23700';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -31123,13 +31123,46 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // two-level jump that dumps the whole tile cache and repaints from blank
   // every cycle. Remembering the view per ROUTE, on window, means a rebuilt
   // map re-seeds exactly where the old one was and the tiles stay warm.
-  var _lv = null;
+  // v23700 — THE ZOOM HOLD WAS MEASURING ITSELF, SO IT NEVER LET GO.
+  //
+  // Nick: "map issues still" — the mini map sat zoomed deep into the middle of
+  // the route (a tight New England crop on a YHZ->LGA leg) while the big centre
+  // map framed the whole thing correctly.
+  //
+  // The hold below is anti-flap: if the aircraft has barely moved since the last
+  // view, keep the zoom rather than re-deriving a tier and flapping between two
+  // levels. Sound idea, wrong reference point. `_fidsLastView` is ALSO written by
+  // the glide's follow-pan (:31945 `vmap._fidsLastView = { lat, lng, ... }`) on
+  // every eased camera move, using the CURRENT INTERPOLATED position. So by the
+  // time the next real ADS-B fix arrives, the saved lat/lng is wherever the glide
+  // last painted the aircraft — a dead-reckoning residual, not a position from
+  // one poll ago. The delta is therefore always tiny (well under the 0.05 gate,
+  // where a 60s poll of real movement is ~0.12), the hold fires EVERY time, and
+  // the hysteresis line under it is dead code because `zoom` has just been set
+  // equal to `_lv.zoom`. Whatever close-in tier the map happened to get on its
+  // first frame of the leg is the tier it keeps for the whole cruise.
+  //
+  // The big map has no hold at all (_bigMapCloneLive recomputes the tier and
+  // applies it directly), which is exactly the asymmetry he is looking at.
+  //
+  // Fix: keep the two records apart. `_fidsLastView` stays the CAMERA record —
+  // the glide owns it and a rebuilt map re-seeds from it, which is what it was
+  // added for. `_fidsLastFix` is the last REAL FIX, written only here, and it is
+  // what the movement test reads. The glide can no longer answer a question about
+  // how far the aircraft has actually flown.
+  var _lv = null, _fx = null;
   try {
     if (_liveReuse && gateMap._fidsLastView) _lv = gateMap._fidsLastView;
     else if (window._GATE_MAP_VIEW && window._GATE_MAP_VIEW.key === _liveRouteKey) _lv = window._GATE_MAP_VIEW;
+    if (_liveReuse && gateMap._fidsLastFix) _fx = gateMap._fidsLastFix;
+    else if (window._GATE_MAP_FIX && window._GATE_MAP_FIX.key === _liveRouteKey) _fx = window._GATE_MAP_FIX;
   } catch (e) {}
   if (_lv) {
-    var _dLat = Math.abs(_lv.lat - planeLat), _dLng = Math.abs(_lv.lng - planeLng);
+    // Measure against the last REAL fix. Falls back to the camera record only
+    // when no fix has been recorded yet (first frame of a leg), which is the
+    // pre-v23700 behaviour and harmless there because nothing has glided.
+    var _ref = _fx || _lv;
+    var _dLat = Math.abs(_ref.lat - planeLat), _dLng = Math.abs(_ref.lng - planeLng);
     if (_dLat < 0.05 && _dLng < 0.05) zoom = _lv.zoom;                 // hold zoom, no flap
     // Hysteresis: even on a real move, never let one tick jump more than a
     // single zoom level. A 2-level jump is what reads as the map 'going'.
@@ -31155,7 +31188,11 @@ function initGateMapLive(org,dst,planeLat,planeLng){
       if (_mv && _mv.marker && _mv.marker._map === gateMap && _mv.a1 && _mv.a2 &&
           _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
         gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+        // v23700 — the REAL fix, kept apart from the camera record above so the
+        // glide's follow-pan cannot overwrite the movement test's reference.
+        gateMap._fidsLastFix = { lat: planeLat, lng: planeLng };
         try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e0) {}
+        try { window._GATE_MAP_FIX = { key: _liveRouteKey, lat: planeLat, lng: planeLng }; } catch (e0b) {}
         // Camera: intervene only when the plane is OFF the visible window or
         // the zoom tier genuinely moved — and then ease, never jump.
         try {
@@ -31208,7 +31245,11 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   }
   gateMap._fidsLive = true;   // live map — the marker watchdog polices this one
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+  // v23700 — see the note at the zoom hold: this is the last REAL fix, and it
+  // is the only thing the movement test may measure against.
+  gateMap._fidsLastFix = { lat: planeLat, lng: planeLng };
   try { window._GATE_MAP_VIEW = { key: _liveRouteKey, lat: planeLat, lng: planeLng, zoom: zoom }; } catch (e) {}
+  try { window._GATE_MAP_FIX = { key: _liveRouteKey, lat: planeLat, lng: planeLng }; } catch (eF) {}
   gateMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior (Nick): the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
