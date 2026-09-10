@@ -3469,7 +3469,28 @@ async function _gateNumbersPoll() {
     } catch (e) {}
     var inbData = await loadFlight(flt, today, inb._locIata || iata);
     _gateNumPollBusy = false;
-    if (!inbData) return;
+    // v23708 — DO NOT RETURN ON A NULL SCHEDULE LOOKUP.
+    //
+    // Reported: FR24 is barely called (3 position lookups in 24h against a
+    // 240/day cap) and boards show no aircraft type. Both trace to this line.
+    //
+    // `loadFlight` fetches /flights/number/<n>/<date>, which the enrichment
+    // kill-list answers with HTTP 200 and a body of `{}`. `Array.isArray({})`
+    // is false, so loadFlight returns null — on every poll, on every gate,
+    // permanently. A `return` here therefore skipped everything below it,
+    // including the ADS-B position lookup (:3555) and the ADS-B aircraft-type
+    // adoption (:3601). That type adoption is the ONLY place an ADS-B type is
+    // ever written to a flight row, which is exactly why no board shows one.
+    //
+    // The two are independent sources and were never meant to be coupled: the
+    // ADS-B call reads `inb._reg`, `inb._callSign`, `flt` and `inb._modeS` —
+    // all from the flight ROW, never from `inbData`. The dependency was an
+    // ordering accident, one step happening to sit after another inside one
+    // long poll function.
+    //
+    // So the schedule enrichment below is skipped when there is nothing to
+    // enrich from, and the poll continues to the live position work. Each
+    // `inbData` read is guarded rather than the whole block returned out of.
     // Still the same flight after the await? Check against whichever source we
     // actually targeted. This guard used to demand window._gateInbound match —
     // so on a gate with NO inbound linked (the common case: the panel is
@@ -3491,7 +3512,12 @@ async function _gateNumbersPoll() {
     // a confirmed same-day reg is never overwritten by silence. One gate
     // rebuild on the transition so the shelf shows the tail now.
     try {
-      var _polledReg = String(inbData.reg || '').trim();
+      // One safe local rather than a null check on every read. inbData is null
+      // on every poll today (see the note above), so each dereference below
+      // would otherwise need its own guard and one missed guard is a throw
+      // swallowed by this try -- silent, and indistinguishable from "no data".
+      var _ind = inbData || {};
+      var _polledReg = String(_ind.reg || '').trim();
       var _inbRegHist = /^history/i.test(String(inb._regSource || ''));
       var _acqType = false;
       // THE SCHEDULED TYPE DOES NOT WAIT FOR A TAIL. A scheduled flight has a
@@ -3503,21 +3529,21 @@ async function _gateNumbersPoll() {
       //
       // Adopt it on its own, and let a real
       // registration still upgrade it later.
-      if (inbData.aircraft && (!inb._aircraft || /^history/i.test(String(inb._aircraftSource || '')))) {
-        inb._aircraft = inbData.aircraft;
+      if (_ind.aircraft && (!inb._aircraft || /^history/i.test(String(inb._aircraftSource || '')))) {
+        inb._aircraft = _ind.aircraft;
         inb._aircraftSource = 'schedule';
         _acqType = true;
       }
-      if (inbData.aircraftCode && (!inb._aircraftCode || /^history/i.test(String(inb._aircraftCodeSource || '')))) {
-        inb._aircraftCode = inbData.aircraftCode;
+      if (_ind.aircraftCode && (!inb._aircraftCode || /^history/i.test(String(inb._aircraftCodeSource || '')))) {
+        inb._aircraftCode = _ind.aircraftCode;
         inb._aircraftCodeSource = 'schedule';
         _acqType = true;
       }
       if (_polledReg && (!inb._reg || _inbRegHist)) {
         inb._reg = _polledReg;
         inb._regSource = 'loadFlight';
-        if (!inb._aircraft && inbData.aircraft) inb._aircraft = inbData.aircraft;
-        if (!inb._aircraftCode && inbData.aircraftCode) inb._aircraftCode = inbData.aircraftCode;
+        if (!inb._aircraft && _ind.aircraft) inb._aircraft = _ind.aircraft;
+        if (!inb._aircraftCode && _ind.aircraftCode) inb._aircraftCode = _ind.aircraftCode;
         if (/^history/i.test(String(inb._aircraftSource || ''))) inb._aircraftSource = '';
         if (/^history/i.test(String(inb._aircraftCodeSource || ''))) inb._aircraftCodeSource = '';
         _acqType = true;
@@ -3646,7 +3672,7 @@ async function _gateNumbersPoll() {
       return;   // fresher than anything AeroDataBox can offer
     }
 
-    var _lp = inbData.livePosition || {};
+    var _lp = (inbData && inbData.livePosition) || {};
     var _spd = (typeof _lp.speed === 'number') ? _lp.speed : null;
     var _alt = (typeof _lp.alt === 'number') ? _lp.alt : ((typeof _lp.altitude === 'number') ? _lp.altitude : null);
     if (_spd === null && _alt === null) return;
@@ -23273,7 +23299,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23706';
+var FIDS_BUILD_TAG = 'v23708';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
