@@ -2877,7 +2877,7 @@ async function setGateBg(bgDiv, locIata) {
   }
 
   // 4. Openverse — city photo fallback
-  var cityName = CITY[locIata] || (AP[locIata]||{}).city || '';
+  var cityName = CITY[locIata] || _cityForIata(locIata) || '';
   if (cityName) {
     var ovUrl = await fetchOpenversePhoto(cityName);
     if (ovUrl) {
@@ -7378,7 +7378,7 @@ function renderMobileGateHtml(ctx) {
     return s;
   }
   var _homeIata = iata || '';
-  var _homeRaw = (typeof CITY !== 'undefined' && CITY[_homeIata]) ? CITY[_homeIata] : ((AP[_homeIata] || {}).city || _homeIata);
+  var _homeRaw = (typeof CITY !== 'undefined' && CITY[_homeIata]) ? CITY[_homeIata] : (_cityForIata(_homeIata) || _homeIata);
   var _homeCity = _cleanCity(_homeRaw) || _homeIata;
   var _destCity = _cleanCity(dest) || destIata || '—';
 
@@ -8741,9 +8741,10 @@ function _buildV2AircraftCol(ctx, vars) {
       var _destCityName = '';
       try {
         var _dIata = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
-        if (typeof CITY !== 'undefined' && CITY[_dIata]) _destCityName = CITY[_dIata];
-        else if (typeof AP !== 'undefined' && AP[_dIata] && AP[_dIata].city) _destCityName = AP[_dIata].city;
-        else _destCityName = _dIata;
+        // v23678 — one resolver. The old middle branch read AP[_dIata].city,
+        // which never existed (AP carries `name`), so it fell straight through
+        // to the bare code. _cityForIata does the whole chain properly.
+        _destCityName = _cityForIata(_dIata);
         if (typeof normalizeDisplayCity === 'function') _destCityName = normalizeDisplayCity(_destCityName, _dIata);
       } catch (e) {}
 
@@ -8816,8 +8817,20 @@ function _buildV2AircraftCol(ctx, vars) {
       var _codeSeg = function (c) {
         return c ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + c + '</span>' : '';
       };
-      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ')
-        + _codeSeg(_destIataDisp);
+      // v23678 — Nick: "In French Please also add Destination even if twice
+      // Destination | Destination I would like the airport code to go in the
+      // orb YYC for isntance".
+      //
+      // Two changes in one line. keepDup (the 5th argument) makes _gateLbl
+      // print both languages even when they are the same word — it exists
+      // already, for Nick's 'Zones | Zones' ruling, and this call simply never
+      // passed it. Every other rail row goes through _railPair(), which does.
+      //
+      // And the IATA code leaves the title: it now rides in the ORB instead,
+      // so the title reads as a clean bilingual pair rather than a pair with a
+      // code stapled on. _codeSeg is left defined — the right-hand shelves
+      // still use that shape.
+      var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true);
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       // Label stays "Boarding | Embarquement" even when the time is revised —
       // the orange/amber revised time already signals the change, and prefixing
@@ -8877,7 +8890,10 @@ function _buildV2AircraftCol(ctx, vars) {
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
-        + _shelf(_badge(_svgGlobe), _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
+        + _shelf(_badge(_destIataDisp
+                          ? '<span class="v2-fi-orbcode">' + _destIataDisp + '</span>'
+                          : _svgGlobe),
+                 _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         // v23195 — the STATUS shelf's row carries the status class, so its
         // banner can take the status colour the way Nick's target shows it:
         // "Status | Statut" on an amber bar while the flight is delayed. Only
@@ -9261,7 +9277,7 @@ function _buildV2MapCol(ctx, vars) {
         arrival:  {en:'Arrival',     fr:'Arrivée',      es:'Llegada'},
         arrived:  {en:'Arrived',     fr:'Arrivé',       es:'Aterrizó'},
         delayed:  {en:'Delayed',     fr:'En retard',      es:'Retrasado'},
-        title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre appareil entrant', es:'Información de su aeronave entrante'}
+        title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre avion entrant', es:'Información de su avión entrante'}
       };
       // Status-adaptive Departure / Arrival labels
       // ETD/ETA → ATD/ATA once actually departed / arrived (status-adaptive)
@@ -9588,7 +9604,7 @@ function _buildV2MapCol(ctx, vars) {
                         // called that "too much"; v23540 answered by dropping
                         // one, which was the wrong half to cut. The banner
                         // above already carries its pair inline —
-                        // "Your Aircraft | Votre appareil" — so the sentence
+                        // "Your Aircraft | Votre avion" — so the sentence
                         // follows the same grammar: one line, one pipe, both
                         // languages, wrapping inside the panel when it needs to
                         // rather than being forced into blocks.
@@ -9702,7 +9718,18 @@ function _buildV2MapCol(ctx, vars) {
           .replace(/&/g, '&amp;').replace(/</g, '&lt;')
           .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
-      var _niTitle = _gateLbl('arrival', _frF, function (w, i4) {
+      // v23682 — Nick, pointing at the bottom-right panel: "I said change it
+      // to Votre Avion", and "this panel has NO TIME".
+      //
+      // He is right on both counts. This card is the no-inbound variant and
+      // carries no time at all, so titling it 'Arrival | Arrivée' labelled
+      // something that is not there. It is the same panel as the merged card
+      // below, which already titles itself yourAircraftHdr on Nick's earlier
+      // ruling — recorded in the comment at _mcTitleKey: "The Banner should
+      // always say ... Your Aircraft | Votre Appareil". That ruling was applied
+      // to one variant and never to this one, so the panel changed its name
+      // depending on whether the inbound was known.
+      var _niTitle = _gateLbl('yourAircraftHdr', _frF, function (w, i4) {
         return i4 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>'
                   : '<span class="v2-fi-lbl-en">' + w + '</span>';
       }, '');
@@ -11590,6 +11617,12 @@ function uxgGateHtml(ctx) {
     if (_bDest && _bDest === _bDest.toUpperCase()) {
       _bDest = _bDest.toLowerCase().replace(/(^|[\s\-])([a-zà-ÿ])/g, function (m, p, c) { return p + c.toUpperCase(); });
     }
+    // v23688 — the code the destination badge wears while boarding. Resolved
+    // exactly as the rail resolves it (:8770): through _dispIata, then held to
+    // a real 3-4 letter code, so a feed sending a city name or an em-dash
+    // leaves the glyph in place rather than printing junk in the orb.
+    var _bIataOrb = _dispIata(String(locIata || '').toUpperCase());
+    if (!/^[A-Z]{3,4}$/.test(_bIataOrb)) _bIataOrb = '';
     var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
     // Status VALUE carries its state colour like the vertical rail
     // (green on-time, orange delayed... — Nick: 'the horizontal status
@@ -11647,7 +11680,20 @@ function uxgGateHtml(ctx) {
       : 'var(--airline-accent,' + _birAccFb + ')';
     var _birRailInk = _birF8 ? '#141414' : '#fff';
     var _BIR_BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _birRailBg + ';color:' + _birRailInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
-    function _cell(icon, en, fr, val, noswap, cls) {
+    // v23688 — the last two arguments are what make the BOARDING shelves speak
+    // the rail's grammar, and both are opt-in: every existing call omits them
+    // and renders exactly as it did.
+    //   orbCode   — the badge holds this three-letter airport code instead of a
+    //               glyph, the way the rail's destination shelf does
+    //               (.v2-fi-orbcode, styled once for both).
+    //   titleHtml — title markup used VERBATIM, skipping the '|'-splitter
+    //               below. Needed because that splitter de-duplicates: it drops
+    //               any segment equal to the first, which is precisely what
+    //               "Destination | Destination" is. A caller that has already
+    //               asked _gateLbl to KEEP the duplicate hands the finished
+    //               pair over rather than fighting a rule meant for a different
+    //               case.
+    function _cell(icon, en, fr, val, noswap, cls, orbCode, titleHtml) {
       var _t1 = en, _t2 = fr;
       if (_frF && !noswap && fr && fr !== en) { _t1 = fr; _t2 = en; }
       var _sec = (_t2 && _t2 !== _t1)
@@ -11692,9 +11738,13 @@ function uxgGateHtml(ctx) {
         if (_isCode) _sec += ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _tail + '</span>';
       }
       return '<div class="v2-fi-row' + (cls ? ' ' + cls : '') + '">'
-        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '"><span class="ac-ico ' + icon + '"></span></div></div>'
+        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '">'
+        +   (orbCode
+              ? '<span class="v2-fi-orbcode">' + orbCode + '</span>'
+              : '<span class="ac-ico ' + icon + '"></span>')
+        + '</div></div>'
         + '<div class="v2-fi-textcol">'
-        +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _t1 + '</span>' + _sec + '</div>'
+        +   '<div class="v2-fi-title">' + (titleHtml || ('<span class="v2-fi-lbl-en">' + _t1 + '</span>' + _sec)) + '</div>'
         +   '<div class="v2-fi-value">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
@@ -11823,7 +11873,24 @@ function uxgGateHtml(ctx) {
       // working the whole time; this call site simply never handed it a code,
       // so there was nothing to parse. Appending locIata is the entire fix, and
       // it is airline-agnostic because this row builds for every carrier.
-      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | ') + (locIata ? ' | ' + locIata : ''), '', _bDest, true)
+      //
+      // v23688 — AND NOW IT SPEAKS THE RAIL'S GRAMMAR. Nick: "Boarding panels to
+      // reflect new changes." The rail's destination shelf changed twice this
+      // week and this one followed neither: the code moved OFF the end of the
+      // title and INTO the orb ("I would like the airport code to go in the orb
+      // YYC for isntance"), and the title became a kept bilingual pair ("In
+      // French Please also add Destination even if twice Destination |
+      // Destination"). Side by side the two states read as two different signs —
+      // the board said "Destination | YHZ" until boarding began and
+      // "Destination | Destination" with a YHZ orb after. Same two arguments the
+      // rail uses: keepDup on the label, the code passed as orbCode.
+      + _cell('ac-ico-dest', '', '', _bDest, true, '', _bIataOrb,
+              _gateLbl('dest', _frF,
+                function (w, i) {
+                  return i
+                    ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>'
+                    : '<span class="v2-fi-lbl-en">' + w + '</span>';
+                }, '', true))
       + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(boardTimeHtml)), true, _birRevCls(boardTimeHtml))
       + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(depTimeHtml)), true, _birRevCls(depTimeHtml))
       // v23115b — ALWAYS four shelves. The abnormal state (delayed /
@@ -11895,7 +11962,21 @@ function uxgGateHtml(ctx) {
         // premium tier set, so the member wordmark is the right one of the four
         // he sent — naming a single tier would imply the other two do not
         // pre-board.
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_en.svg" alt="VIPorter"></span>'
+        //
+        // v23688 — AND THE THREE TIERS ARE WHAT "PREMIUM VIPORTER" MEANS.
+        // Nick: "the SVGs provided never used for Porter" — said once before
+        // about this same batch ("Logos need to be used thats the point"), and
+        // still true of four of the eight files. Three of those four are the
+        // tier marks, and v23532's reasoning is what kept them out: it treated
+        // naming a tier as excluding the others. Naming ALL THREE excludes
+        // nobody, and it is the more useful sign — the roster line above says
+        // "Premium VIPorter", which tells a passenger nothing about whether
+        // their own card qualifies. Passport, Venture and First say it exactly.
+        // The generic member wordmark comes out because it now only repeats
+        // words already printed directly above it.
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_passport_single_line_en.svg" alt="VIPorter Passport"></span>'
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_venture_single_line_en.svg" alt="VIPorter Venture"></span>'
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_first_single_line_en.svg" alt="VIPorter First"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
         + '</div>'
       : '';
@@ -12005,8 +12086,36 @@ function uxgGateHtml(ctx) {
       // missed fell through to the E-jet branch, so a Dash 8 could be called by
       // rows that do not exist on it.
       // Punctuation is stripped before matching for that reason.
-      var _pdEq = String(equipRaw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      var _pdIsDash = /DH4|DH8|DHC8|Q400|DASH8/.test(_pdEq);
+      //
+      // v23688 — AND THE EQUIPMENT STRING IS USUALLY EMPTY, SO THAT TEST WAS
+      // DECIDING NOTHING. Nick, on a Porter Q400 boarding by 33 rows: "it was
+      // supposed to be fixed yesterday". It was not the matcher that was wrong
+      // this time — it was the input. Read live off the YHZ board: EVERY Porter
+      // departure arrives with _aircraftCode:'' AND _aircraft:'' (PD202, PD470,
+      // PD2195, PD204, PD465, PD2494 — all blank), because the type is resolved
+      // per-flight by the enrichment poll well after this sign is first built.
+      // An empty string matches no Dash 8 spelling, so every Porter flight fell
+      // to the `: 33` else-branch and was called by E195-E2 row bands — on an
+      // aircraft that stops at row 20.
+      //
+      // THE FLEET IS IN THE FLIGHT NUMBER. Nick: "Porter flights in general with
+      // 4 numbers always operate the DH4 and 3 numbers the jet", and "thats how
+      // you can know that and YTZ vs YYZ or western flights etc" — the 4-digit
+      // series is the Billy Bishop turboprop network, the 3-digit series the
+      // jets flying YYZ and west. That is data this sign always has: the flight
+      // number is the one field the feed never leaves blank.
+      //
+      // Order of trust: the flight number decides; the equipment string is the
+      // fallback for a number this rule does not describe; and anything still
+      // unknown is called as the Dash 8, because calling rows 21-33 on a 20-row
+      // aircraft sends passengers to rows that do not exist, while the reverse
+      // merely calls a jet in three smaller bands.
+      var _pdNum = String(currentFlight.flight || '').replace(/[^0-9]/g, '');
+      var _pdEq = (String(equipRaw || '') + ' ' + String(equipName || ''))
+        .toUpperCase().replace(/[^A-Z0-9]/g, '');
+      var _pdIsDash = _pdNum.length === 4 ? true
+                    : _pdNum.length === 3 ? false
+                    : !/E19|E29|E95|195|290|295|EMBRAER/.test(_pdEq);
       var _pdRows = _pdIsDash ? 20 : 33;
       var _pdBand = Math.ceil(_pdRows / 3);
       _grpLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
@@ -12436,8 +12545,20 @@ function uxgGateHtml(ctx) {
   // when the banner is light. Skipping the table here is what lets that branch
   // run. Scoped to YQM; every other airport resolves exactly as before.
   var _apIsYQM = String(iata || '').toUpperCase() === 'YQM';
-  var _bannerOverrideFile = _apIsYQM ? null
-    : (BANNER_LOGO_OVERRIDE[_bannerBrandCode] || BANNER_LOGO_OVERRIDE[airlineCode]);
+  // v23660 — Nick: "the logo is white on white".
+  //
+  // BANNER_LOGO_OVERRIDE is a table of pre-made WHITE wordmark files —
+  // air-canada-white.svg, delta-skyteam-lockup-white.svg, american-airlines-
+  // white.svg and so on. It exists for the near-black banner the boards used
+  // to have. Every banner is a LIGHT band now, so a white wordmark is
+  // invisible on all of them.
+  //
+  // Moncton has been skipping this table since its cream band shipped
+  // (_apIsYQM ? null). The condition is simply obsolete: what it really meant
+  // was "skip the white files when the band is light", and the band is now
+  // always light. The table is left in place — it is the right answer again
+  // the moment any dark banner returns.
+  var _bannerOverrideFile = null;
   var r1LogoSrc = _bannerOverrideFile || carrierLogoUrl(_bannerBrandCode || airlineCode);
   var r1LogoFallback = 'https://pics.avs.io/400/120/' + (_bannerBrandCode || airlineCode) + '.png';
   var _sz = BANNER_SIZE_OVERRIDE[_bannerBrandCode] || BANNER_SIZE_OVERRIDE[airlineCode] || { h: 140, w: 560 };
@@ -12483,7 +12604,32 @@ function uxgGateHtml(ctx) {
   // runs BEFORE that value is computed, so the flag is declared here and both
   // ends share it. Everything downstream then treats YQM as a light banner
   // without a second colour test.
-  var _bannerIsLight = _apIsYQM ? true : _hexIsLight(_bannerR1Now);
+  // ── v23646 — EVERY BANNER IS A LIGHT BAND ─────────────────────────────
+  // Nick: "It doesnt need to be cream but it should be a lighter color".
+  //
+  // Moncton's banner has been the only light one: a cream #F5F1E7 field with
+  // navy ink, set inline from _silkGrad below. Every other airport got the
+  // carrier's DARK r1. That is the difference Nick kept pointing at, and no
+  // amount of CSS could close it — the band is written as an inline style with
+  // !important, which a stylesheet cannot reach.
+  //
+  // The band is now a light TINT OF THE CARRIER'S OWN COLOUR rather than
+  // cream, so Ryanair's band is a pale Ryanair navy, Delta's a pale Delta
+  // indigo. Same treatment as Moncton, each airline's own hue.
+  //
+  // This flag has to be decided HERE, not down with _silkDark: the logo chain
+  // runs before that value exists and uses this to pick the wordmark variant.
+  // A white wordmark on a light band is invisible, so both ends must agree —
+  // which is exactly why the flag was hoisted here for YQM in v23462.
+  var _silkTint = function (hex, keep) {
+    var m = String(hex || '').replace('#', '');
+    if (m.length === 3) m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2];
+    if (!/^[0-9a-f]{6}$/i.test(m)) return '#F2F4F7';
+    var mix = function (c) { return Math.round(c * keep + 255 * (1 - keep)); };
+    var hx = function (c) { return ('0' + mix(parseInt(c, 16)).toString(16)).slice(-2); };
+    return '#' + hx(m.slice(0, 2)) + hx(m.slice(2, 4)) + hx(m.slice(4, 6));
+  };
+  var _bannerIsLight = true;
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
@@ -12699,7 +12845,11 @@ function uxgGateHtml(ctx) {
     // 82px against a 26px bar leaves the same ~2px breathing room at the top
     // that 106 left in the full 112. Scoped to YQM: every other airport keeps
     // 106 until its banner grows a bar too.
-    _logoH = Math.min(_logoH, _apIsYQM ? 76 : 106);
+    // v23660 — one cap for all. This clears the DATE BAR at the foot of the
+    // band, and every airport has that bar now, not just Moncton. 106 was the
+    // no-bar value; leaving it anywhere would push that airline's wordmark
+    // straight through its own bar.
+    _logoH = Math.min(_logoH, 76);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -12718,7 +12868,14 @@ function uxgGateHtml(ctx) {
                      // Sunwing has no entry at all and falls through to the
                      // external lockup, which is colour art and reads on cream
                      // as it is — provided nothing whitens it first.
-                     : (_apIsYQM ? 'filter:none !important;' : ''))
+                     // v23660 — always none, never ''. An empty string lets
+                     // the cascade fall to fids.css:905, which paints
+                     // .g8-r1-logo white for the old near-black banner — the
+                     // second half of Nick's white-on-white. The comment above
+                     // anticipated exactly this ("the general light-banner
+                     // rollout, where _apIsYQM is false and the inline filter
+                     // would otherwise be ''"). It is that rollout.
+                     : 'filter:none !important;')
                  // Logo sits on a clean white rounded plate so it reads on the
                  // dark header and is never clipped by the banner band.
                  + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');
@@ -12965,9 +13122,16 @@ function uxgGateHtml(ctx) {
   // cream band flips _silkLightBand true and the ink becomes the deep navy the
   // code already keeps for exactly this case. Nothing else has to be told the
   // banner went light.
-  var _silkDark = _apIsYQM ? '#F5F1E7'
-    : (airlineCode === 'F9') ? '#5AA0DE'
-    : ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119');
+  // The carrier colour the band is tinted FROM. Falls through r1 → accent →
+  // a neutral, so a carrier with no spec still gets a band rather than black.
+  var _silkBase = (_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF')
+      ? _bannerSpec.r1
+      : (((typeof AIRLINE_ACCENT !== 'undefined') && AIRLINE_ACCENT[airlineCode]) || '#0c1119');
+  // 12% of the carrier's colour against white: enough that Ryanair's band reads
+  // as a cool blue-white and Air Canada's as a warm grey-white, not so much
+  // that the wordmark stops separating from it. Moncton keeps its exact cream —
+  // it was hand-picked and there is no reason to shift it.
+  var _silkDark = _apIsYQM ? '#F5F1E7' : _silkTint(_silkBase, 0.12);
   // Timebox ink adapts to the banner colour (Nick: 'Frontier — the font is all
   // white and it's light, needs to be blue'). Frontier's sky-blue band is too
   // light for white text; use a deep navy instead. Luminance > 140 → dark ink.
@@ -12978,7 +13142,19 @@ function uxgGateHtml(ctx) {
     return 0.299 * parseInt(m.slice(0, 2), 16) + 0.587 * parseInt(m.slice(2, 4), 16) + 0.114 * parseInt(m.slice(4, 6), 16);
   })(_silkDark);
   var _silkLightBand = _silkLum > 140;
-  var _silkInk = _silkLightBand ? '#0A2E6B' : '#ffffff';
+  // On a light band the ink is the carrier's OWN dark colour, not Moncton's
+  // navy — Ryanair navy on pale Ryanair, Air Canada charcoal on pale grey.
+  // Falls back to the navy when the carrier's colour is itself too light to
+  // read (it would be painted onto its own tint).
+  var _silkInkLum = (function (h) {
+    var m = String(h || '').replace('#', '');
+    if (m.length === 3) m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2];
+    if (!/^[0-9a-f]{6}$/i.test(m)) return 255;
+    return 0.299 * parseInt(m.slice(0, 2), 16) + 0.587 * parseInt(m.slice(2, 4), 16) + 0.114 * parseInt(m.slice(4, 6), 16);
+  })(_silkBase);
+  var _silkInk = _silkLightBand
+    ? ((!_apIsYQM && _silkInkLum < 120) ? _silkBase : '#0A2E6B')
+    : '#ffffff';
   var _silkInkSoft = _silkLightBand ? 'rgba(10,46,107,0.86)' : 'rgba(255,255,255,0.82)';
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
   // gate tab on the right). The gate tab covers the right ~25%, so the accent
@@ -12995,14 +13171,23 @@ function uxgGateHtml(ctx) {
   // The standard band fades into the airline accent at 84-100% so the gate tab
   // sits on a matching edge. Moncton's is FLAT — 'all the same color' — and its
   // accent appears only as the stripe along the foot (see display-overrides).
+  // Moncton's shape for everyone: a soft VERTICAL fade, lighter at the top.
+  // The old horizontal fade ran the carrier colour into the accent at 84-100%
+  // so the gate tab sat on a matching edge — that was built for a DARK band and
+  // reads as a dirty smear across a light one. The accent still appears, as the
+  // stripe along the foot (display-overrides), which is how Moncton does it.
   var _silkGrad = _apIsYQM
     ? 'linear-gradient(180deg, #F7F4EC 0%, ' + _silkDark + ' 100%)'
-    : 'linear-gradient(90deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 84%, var(--airline-accent,#1aa) 93%, var(--airline-accent,#1aa) 100%)';
+    : 'linear-gradient(180deg, ' + _silkTint(_silkBase, 0.05) + ' 0%, ' + _silkDark + ' 100%)';
   // v23123 — Nick's Delta rendition: the top strip is FLAT deep indigo
   // (#11063C, sampled from his image), not the gradient. Inline !important
   // background is unbeatable from a stylesheet, so the swap happens here.
   try {
-    if (/^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) _silkGrad = '#11063C';
+    // v23646 — Delta's flat deep-indigo override is retired with the move to
+    // light bands. It set a DARK field while _silkDark is now a pale tint, so
+    // leaving it would give Delta a dark banner with light-band ink on it —
+    // navy on indigo. Delta now gets the same pale-indigo band as everyone.
+    if (false && /^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) _silkGrad = '#11063C';
   } catch (e) {}
 
   // Silk drops the airport LOGO (Nick's redesign): the centre now holds a
@@ -14388,7 +14573,7 @@ function _gateTitleFit(root) {
       // v23490 — SHRINK A LITTLE, THEN STACK. Nick: "Why are the title banners so
       // low and or so small in height?". The floor was 0.62, and on the longest
       // title the fitter spent all of it and still lost: measured on WestJet gate
-      // 1 at 1675x880, 'Your aircraft has arrived at the gate | Votre appareil est
+      // 1 at 1675x880, 'Your aircraft has arrived at the gate | Votre avion est
       // arrivé à la porte' came out at 8.18px AND still overflowed by 77px. So it
       // was illegible and clipped, and because the pill is sized by its text it
       // was 20px tall next to the column's 28 — the squashed look he is pointing
@@ -16002,7 +16187,7 @@ const gView = document.getElementById('gateView');
 
         if (!_showFlight) {
           // Full welcome/idle screen — replaces entire gate view
-          var _apCity = (AP[iata]||{}).city || iata;
+          var _apCity = _cityForIata(iata) || iata;
           // Build weather widget for welcome screen
           var _welcomeWx = '';
           var _tioIdle = TOMORROW_WX[iata];
@@ -16607,7 +16792,7 @@ const gView = document.getElementById('gateView');
       if (screenType === 'gate' && typeof startGateAds==='function') { startGateAds(); }
       // Fetch AI destination info for the ad carousel
       if (typeof loadDestInfoForGate === 'function') {
-        var _destCity = CITY[locIata] || (AP[locIata]||{}).city || locIata;
+        var _destCity = CITY[locIata] || _cityForIata(locIata) || locIata;
         loadDestInfoForGate(locIata, _destCity);
       }
       uxgActivateRotator();
@@ -17801,6 +17986,93 @@ const AP = {
   YKA:{ name:'Kamloops Airport',                                     tz:'America/Vancouver'  },   // v23334 — wave 5 authority feeds
   YXS:{ name:'Prince George Airport',                                tz:'America/Vancouver'  },
   YMM:{ name:'Fort McMurray International Airport',                  tz:'America/Edmonton'   },
+
+  // ── v23688 — THE SIXTY EUROPEAN DESTINATIONS THAT HAD NO TIMEZONE ────────
+  //
+  // Weather was never blocked on this — that was COORDS, and adding eleven
+  // lat/lon pairs cleared it, so all 89 destinations on the live Dublin board
+  // now resolve a forecast. What a missing tz breaks is the HOUR beside it.
+  //
+  // _wxClock and _wxNightAt (:40882, :40867) both read AP[iata].tz and fall
+  // back to the BOARD'S OWN timezone when there is none. So the two-up hero
+  // built this week — departure city on the left at time of departure,
+  // destination on the right at time of arrival — was printing the Bucharest
+  // arrival hour in Irish time, and picking its day/night icon off Irish
+  // sunset. Every one of these sixty was silently doing that.
+  //
+  // Enumerated off the live board, not guessed: none of the sixty had an AP
+  // entry at all (`hasApEntryButNoTz` came back empty), so nothing here
+  // overrides an existing value. Appended at the END of the literal, which is
+  // where a later duplicate key would win if one ever appeared — the lesson
+  // from the CITY corrections, which sat at the TOP and were overridden in
+  // silence for weeks.
+  //
+  // Britain and Ireland
+  BHX:{ name:'Birmingham Airport',                                   tz:'Europe/London'      },
+  BRS:{ name:'Bristol Airport',                                      tz:'Europe/London'      },
+  CWL:{ name:'Cardiff Airport',                                      tz:'Europe/London'      },
+  EMA:{ name:'East Midlands Airport',                                tz:'Europe/London'      },
+  EXT:{ name:'Exeter Airport',                                       tz:'Europe/London'      },
+  GLA:{ name:'Glasgow Airport',                                      tz:'Europe/London'      },
+  INV:{ name:'Inverness Airport',                                    tz:'Europe/London'      },
+  LBA:{ name:'Leeds Bradford Airport',                               tz:'Europe/London'      },
+  LPL:{ name:'Liverpool John Lennon Airport',                        tz:'Europe/London'      },
+  LTN:{ name:'London Luton Airport',                                 tz:'Europe/London'      },
+  MAN:{ name:'Manchester Airport',                                   tz:'Europe/London'      },
+  NCL:{ name:'Newcastle Airport',                                    tz:'Europe/London'      },
+  SOU:{ name:'Southampton Airport',                                  tz:'Europe/London'      },
+  STN:{ name:'London Stansted Airport',                              tz:'Europe/London'      },
+  IOM:{ name:'Isle of Man Airport',                                  tz:'Europe/Isle_of_Man' },
+  CFN:{ name:'Donegal Airport',                                      tz:'Europe/Dublin'      },
+  KIR:{ name:'Kerry Airport',                                        tz:'Europe/Dublin'      },
+  // Iberia — ACE is the Canaries, an hour behind the Spanish mainland
+  ACE:{ name:'Lanzarote Airport',                                    tz:'Atlantic/Canary'    },
+  AGP:{ name:'Málaga-Costa del Sol Airport',                         tz:'Europe/Madrid'      },
+  ALC:{ name:'Alicante-Elche Airport',                               tz:'Europe/Madrid'      },
+  BIO:{ name:'Bilbao Airport',                                       tz:'Europe/Madrid'      },
+  GRO:{ name:'Girona-Costa Brava Airport',                           tz:'Europe/Madrid'      },
+  IBZ:{ name:'Ibiza Airport',                                        tz:'Europe/Madrid'      },
+  PMI:{ name:'Palma de Mallorca Airport',                            tz:'Europe/Madrid'      },
+  REU:{ name:'Reus Airport',                                         tz:'Europe/Madrid'      },
+  RMU:{ name:'Región de Murcia International Airport',               tz:'Europe/Madrid'      },
+  SCQ:{ name:'Santiago-Rosalía de Castro Airport',                   tz:'Europe/Madrid'      },
+  SVQ:{ name:'Seville Airport',                                      tz:'Europe/Madrid'      },
+  VLC:{ name:'Valencia Airport',                                     tz:'Europe/Madrid'      },
+  FAO:{ name:'Faro Airport',                                         tz:'Europe/Lisbon'      },
+  OPO:{ name:'Porto Francisco Sá Carneiro Airport',                  tz:'Europe/Lisbon'      },
+  // France
+  BVA:{ name:'Paris Beauvais-Tillé Airport',                         tz:'Europe/Paris'       },
+  LYS:{ name:'Lyon-Saint Exupéry Airport',                           tz:'Europe/Paris'       },
+  MRS:{ name:'Marseille Provence Airport',                           tz:'Europe/Paris'       },
+  NCE:{ name:'Nice Côte d\'Azur Airport',                            tz:'Europe/Paris'       },
+  TLS:{ name:'Toulouse-Blagnac Airport',                             tz:'Europe/Paris'       },
+  // Italy
+  BDS:{ name:'Brindisi Airport',                                     tz:'Europe/Rome'        },
+  BGY:{ name:'Milan Bergamo Airport',                                tz:'Europe/Rome'        },
+  NAP:{ name:'Naples International Airport',                         tz:'Europe/Rome'        },
+  PSA:{ name:'Pisa International Airport',                           tz:'Europe/Rome'        },
+  TRS:{ name:'Trieste Airport',                                      tz:'Europe/Rome'        },
+  VCE:{ name:'Venice Marco Polo Airport',                            tz:'Europe/Rome'        },
+  VRN:{ name:'Verona Villafranca Airport',                           tz:'Europe/Rome'        },
+  // Germany, Luxembourg
+  BER:{ name:'Berlin Brandenburg Airport',                           tz:'Europe/Berlin'      },
+  MUC:{ name:'Munich Airport',                                       tz:'Europe/Berlin'      },
+  STR:{ name:'Stuttgart Airport',                                    tz:'Europe/Berlin'      },
+  LUX:{ name:'Luxembourg Findel Airport',                            tz:'Europe/Luxembourg'  },
+  // Central, eastern and southern Europe
+  BCM:{ name:'Bacău George Enescu International Airport',            tz:'Europe/Bucharest'   },
+  CLJ:{ name:'Cluj-Napoca International Airport',                    tz:'Europe/Bucharest'   },
+  OTP:{ name:'Bucharest Henri Coandă International Airport',         tz:'Europe/Bucharest'   },
+  BOJ:{ name:'Burgas Airport',                                       tz:'Europe/Sofia'       },
+  CFU:{ name:'Corfu Ioannis Kapodistrias Airport',                   tz:'Europe/Athens'      },
+  KRK:{ name:'Kraków John Paul II International Airport',            tz:'Europe/Warsaw'      },
+  LCJ:{ name:'Łódź Władysław Reymont Airport',                       tz:'Europe/Warsaw'      },
+  MLA:{ name:'Malta International Airport',                          tz:'Europe/Malta'       },
+  RIX:{ name:'Riga International Airport',                           tz:'Europe/Riga'        },
+  RMO:{ name:'Chișinău International Airport',                       tz:'Europe/Chisinau'    },
+  SPU:{ name:'Split Airport',                                        tz:'Europe/Zagreb'      },
+  TIA:{ name:'Tirana International Airport Nënë Tereza',             tz:'Europe/Tirane'      },
+  ADB:{ name:'İzmir Adnan Menderes Airport',                         tz:'Europe/Istanbul'    },
 };
 // v23265 — EXPORTED for sibling pages in the same origin. AP is declared with
 // `const`, which creates a script-scope binding and NOT a window property, so
@@ -17812,7 +18084,46 @@ const AP = {
 try { if (typeof window !== 'undefined') window.AP = AP; } catch (e) {}
 
 // ── CITY NAMES ────────────────────────────────────────────────────────────
+
+// ── CITY NAME FOR AN IATA CODE ───────────────────────────────────────────
+// v23662 — Nick: "why are we still getting locations with no Names and no
+// weather", and "I can guarantee you those are not the only 4 missing ...
+// even within Canada".
+//
+// He was right, and the cause is not a short table. Every call site resolved
+// a city as:
+//
+//     CITY[iata] || _cityForIata(iata) || ''
+//
+// but AP entries are shaped { name: 'Dublin Airport', tz: 'Europe/Dublin' } —
+// checked all 139 of them: 139 carry `name`, ZERO carry `city`. So the second
+// term is permanently undefined and the fallback has never once fired. Any
+// airport outside CITY renders BLANK even when AP knows exactly what it is,
+// which is why the gap shows up on Canadian destinations too.
+//
+// Seven call sites read `.city`. They all go through here now, so the fallback
+// chain lives in one place: the curated city name, else the airport's own name
+// with the boilerplate trimmed off ('Dublin Airport' -> 'Dublin'), else the
+// code itself so a label is never empty.
+function _cityForIata(iata) {
+  var code = String(iata || '').toUpperCase();
+  if (!code) return '';
+  try { if (typeof CITY !== 'undefined' && CITY[code]) return CITY[code]; } catch (e) {}
+  try {
+    var a = (typeof AP !== 'undefined') ? AP[code] : null;
+    if (a && a.name) {
+      return String(a.name)
+        .replace(/\s*\([^)]*\)\s*$/, '')                       // drop '(MET)' style suffixes
+        .replace(/\s+(?:International|Regional|Municipal)?\s*Airport$/i, '')
+        .trim() || code;
+    }
+  } catch (e2) {}
+  return code;
+}
+try { if (typeof window !== 'undefined') window._cityForIata = _cityForIata; } catch (e) {}
+
 const CITY = {
+
   // v23333 — destinations that appeared on the stream-tour airports' live
   // boards (Boston, Chicago, Dublin, Edinburgh, Heathrow, Keflavík, St.
   // John's…) with no name here, so the row printed the bare code.
@@ -18615,6 +18926,43 @@ const CITY = {
   ZSA:'SAN SALVADOR', ZTH:'ZAKYNTHOS', ZUH:'ZHUHAI',
   ZYI:'ZUNYI',
 
+  // ── v23662 — CITY CORRECTIONS AND ADDITIONS ─────────────────────────
+  // Nick: "only Tia shows as destination ... locations with no Names", then
+  // "I can guarantee you those are not the only 4 missing". Two faults, not one.
+  //
+  // ABSENT: TIA, OTP, RMO and BCM were in neither CITY nor AP, so they rendered
+  // as a bare code.
+  //
+  // WRONG: several entries hold the airport's VILLAGE rather than the city it
+  // serves, because the table was seeded from the feed's own location string.
+  // ADB read 'Gaziemir' (an Izmir suburb), KIR read 'Farranfore' (a Kerry
+  // village), and VRN read 'Caselle' — which is TURIN's airport town and simply
+  // wrong for Verona. A passenger reads the city, not the parish.
+  //
+  // Declared LAST on purpose. A first attempt put this block at the top of the
+  // literal with a comment claiming it would win — that is backwards: in a JS
+  // object literal the LATER duplicate key wins, so the originals silently
+  // overrode every correction and the board still read 'SAN BARTOLOME' and
+  // 'CASELLE'. Caught by resolving the live destination list rather than by
+  // trusting the edit.
+  TIA: 'Tirana',
+  OTP: 'Bucharest',
+  RMO: 'Chisinau',
+  BCM: 'Bacau',
+  ADB: 'Izmir',
+  VRN: 'Verona',
+  KIR: 'Kerry',
+  ACE: 'Lanzarote',
+  TFS: 'Tenerife',
+  BGY: 'Bergamo',
+  BVA: 'Beauvais',
+  KRK: 'Krakow',
+  RMU: 'Murcia',
+  EMA: 'East Midlands',
+  NCL: 'Newcastle',
+  LBA: 'Leeds',
+  EXT: 'Exeter',
+  CLJ: 'Cluj-Napoca',
 };
 
 // French city name overrides (used when lang === 'fr')
@@ -20082,6 +20430,29 @@ const COORDS = {
   // the weather column stayed '—' for them (Nick: 'Algiers has no weather').
   ALG:[36.69,3.22], ORN:[35.62,-0.62], CZL:[36.28,6.62], TUN:[36.85,10.23], ACC:[5.61,-0.17],
 
+  // ── v23688 — THE LAST ELEVEN. Nick: "ok so fix all of them to also have
+  //    weather", after "I can guarantee you those are not the only 4 missing".
+  //
+  //    He was right, and I had the CAUSE wrong: I told him these destinations
+  //    had no weather because they were missing a TIMEZONE. They are not.
+  //    fetchTomorrowWeather bails on one thing and one thing only —
+  //    `if (!COORDS[iata]) return null` — so a missing lat/lon is the whole
+  //    blocker, and a missing AP.tz only affects which HOUR gets picked.
+  //
+  //    Enumerated off the live Dublin board rather than guessed: of its 92
+  //    destinations, 81 already had coordinates and these eleven did not.
+  //    Eastern and southern Europe, which is where the gap was.
+  BCM:[46.522,26.910],    // Bacau, Romania
+  BOJ:[42.570,27.515],    // Burgas, Bulgaria
+  CLJ:[46.785,23.686],    // Cluj-Napoca, Romania
+  IOM:[54.083,-4.624],    // Isle of Man, Ronaldsway
+  LUX:[49.627,6.212],     // Luxembourg, Findel
+  MLA:[35.858,14.478],    // Malta, Luqa
+  OTP:[44.571,26.085],    // Bucharest, Henri Coanda
+  RIX:[56.924,23.971],    // Riga, Latvia
+  RMO:[46.928,28.931],    // Chisinau, Moldova
+  SPU:[43.539,16.298],    // Split, Croatia
+  TIA:[41.415,19.721],    // Tirana, Albania
 };
 
 // ── WEATHER SYSTEM (Tomorrow.io only) ────────────────────────────────────
@@ -20497,7 +20868,7 @@ function gateWeatherWidget(depIata, destIata, arrivalTs) {
 
   // City name helper — "Toronto YYZ" style
   function wxCityLabel(iataCode) {
-    var city = CITY[iataCode] || (AP[iataCode]||{}).city || '';
+    var city = CITY[iataCode] || _cityForIata(iataCode) || '';
     if (city) return tc(city) + ' ' + iataCode;
     return iataCode || '';
   }
@@ -21682,11 +22053,11 @@ const LS = {
   arrivingAt:{ en:'Arriving at',fr:'Arrivée à',es:'Llega a las',de:'Ankunft um',it:'Arrivo alle',pt:'Chega às',ja:'到着予定',zh:'预计到达',ar:'يصل في' },
   arrivedAt: { en:'Arrived at',fr:'Arrivé à',es:'Llegó a las',de:'Gelandet um',it:'Arrivato alle',pt:'Chegou às',ja:'到着',zh:'已到达',ar:'وصل في' },
   equipToday:{ en:'Equipment Today:',fr:"Appareil aujourd'hui :",es:'Aeronave hoy:',de:'Flugzeug heute:',it:'Aeromobile oggi:',pt:'Aeronave hoje:',ja:'本日の機材:',zh:'今日机型:',ar:':الطائرة اليوم' },
-  yourAircraft:{ en:'Your Aircraft Is Arriving From',fr:'Votre appareil arrive de',es:'Su aeronave llega desde',de:'Ihr Flugzeug kommt aus',it:'Il vostro aereo arriva da',pt:'A sua aeronave chega de',ja:'ご搭乗機の出発地',zh:'您的飞机来自',ar:'طائرتكم قادمة من' },
+  yourAircraft:{ en:'Your Aircraft Is Arriving From',fr:'Votre avion arrive de',es:'Su avión llega desde',de:'Ihr Flugzeug kommt aus',it:'Il vostro aereo arriva da',pt:'O seu avião chega de',ja:'ご搭乗機の出発地',zh:'您的飞机来自',ar:'طائرتكم قادمة من' },
   // v23272 — the same panel once the aircraft is down. 'Is Arriving From'
   // becomes a lie the moment it lands, so the label changes with it.
-  acArrived:     { en:'Your aircraft has arrived',fr:'Votre appareil est arrivé',es:'Su aeronave ha llegado',de:'Ihr Flugzeug ist angekommen',it:'Il vostro aereo è arrivato',pt:'A sua aeronave chegou',ja:'ご搭乗機が到着しました',zh:'您的飞机已到达',ar:'وصلت طائرتكم' },
-  acArrivedGate: { en:'Your aircraft has arrived at the gate',fr:'Votre appareil est arrivé à la porte',es:'Su aeronave ha llegado a la puerta',de:'Ihr Flugzeug ist am Gate angekommen',it:'Il vostro aereo è arrivato al gate',pt:'A sua aeronave chegou ao portão',ja:'ご搭乗機がゲートに到着しました',zh:'您的飞机已抵达登机口',ar:'وصلت طائرتكم إلى البوابة' },
+  acArrived:     { en:'Your aircraft has arrived',fr:'Votre avion est arrivé',es:'Su avión ha llegado',de:'Ihr Flugzeug ist angekommen',it:'Il vostro aereo è arrivato',pt:'O seu avião chegou',ja:'ご搭乗機が到着しました',zh:'您的飞机已到达',ar:'وصلت طائرتكم' },
+  acArrivedGate: { en:'Your aircraft has arrived at the gate',fr:'Votre avion est arrivé à la porte',es:'Su avión ha llegado a la puerta',de:'Ihr Flugzeug ist am Gate angekommen',it:'Il vostro aereo è arrivato al gate',pt:'O seu avião chegou ao portão',ja:'ご搭乗機がゲートに到着しました',zh:'您的飞机已抵达登机口',ar:'وصلت طائرتكم إلى البوابة' },
   welcomeTo: { en:'Welcome to',fr:'Bienvenue à',es:'Bienvenido a',de:'Willkommen in',it:'Benvenuti a',pt:'Bem-vindo a',ja:'ようこそ',zh:'欢迎来到',ar:'مرحباً بكم في' },
   nextDep:   { en:'Next departure from this gate',fr:'Prochain départ de cette porte',es:'Próxima salida desde esta puerta',de:'Nächster Abflug von diesem Gate',it:'Prossima partenza da questo gate',pt:'Próxima partida deste portão',ja:'このゲートからの次の出発',zh:'本登机口下一航班',ar:'المغادرة التالية من هذه البوابة' },
   boardNow:  { en:'Boarding now',fr:'Embarquement en cours',es:'Embarcando ahora',de:'Jetzt Boarding',it:'Imbarco in corso',pt:'Embarque agora',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
@@ -22456,14 +22827,27 @@ var _GATE_LBL = {
   // info', 'nothing'): the panel going BLANK is not an acceptable answer to
   // 'which aircraft is coming'. Short on purpose — this column is narrow, and
   // a bilingual sentence in it either truncates or breaks into ragged lines.
-  toBeConfirmed: { en:'To be confirmed', fr:'À confirmer', es:'Por confirmar', de:'Wird bestätigt', it:'Da confermare', pt:'A confirmar', ja:'確認中', zh:'待确认', ar:'قيد التأكيد' },
+  // v23670 — Nick: "To be confirmed | A confirmer 2 lines this simply should
+  // say something else it doesnt look professional", proposing "Information
+  // Currently Unavailable".
+  //
+  // His wording, with the French corrected. He floated "A Cette Heure" and "En
+  // Ce temps": the first is grammatical but reads as "at this hour", oddly
+  // literal for signage; the second is not idiomatic — it means "in that era".
+  // "Actuellement" / "pour le moment" is how French says "currently".
+  //
+  // Dropped "Currently" from the pair to keep it on ONE line, which was the
+  // actual complaint. Full form is 76 characters against 51 for this, and the
+  // panel is narrow enough that 76 wraps — reintroducing the two lines he is
+  // trying to be rid of. "Non disponible" already implies the present tense.
+  toBeConfirmed: { en:'Information Unavailable', fr:'Information non disponible', es:'Información no disponible', de:'Information nicht verfügbar', it:'Informazione non disponibile', pt:'Informação não disponível', ja:'情報がありません', zh:'暂无信息', ar:'المعلومات غير متوفرة' },
   // v23272 — the line that replaces the countdown once the aircraft is down.
   // v23272 — two states, not one (Nick: 'Once the aircraft arrives it should
   // say your aircraft has arrived once at the gate it should say your
   // aircraft has arrived at the gate'). Down on the runway and still taxiing
   // is not the same news as parked on the stand.
-  acArrived:     { en:'Your aircraft has arrived', fr:'Votre appareil est arrivé', es:'Su aeronave ha llegado', de:'Ihr Flugzeug ist angekommen', it:'Il vostro aereo è arrivato', pt:'A sua aeronave chegou', ja:'ご搭乗機が到着しました', zh:'您的飞机已到达', ar:'وصلت طائرتكم' },
-  acArrivedGate: { en:'Your aircraft has arrived at the gate', fr:'Votre appareil est arrivé à la porte', es:'Su aeronave ha llegado a la puerta', de:'Ihr Flugzeug ist am Gate angekommen', it:'Il vostro aereo è arrivato al gate', pt:'A sua aeronave chegou ao portão', ja:'ご搭乗機がゲートに到着しました', zh:'您的飞机已抵达登机口', ar:'وصلت طائرتكم إلى البوابة' },
+  acArrived:     { en:'Your aircraft has arrived', fr:'Votre avion est arrivé', es:'Su avión ha llegado', de:'Ihr Flugzeug ist angekommen', it:'Il vostro aereo è arrivato', pt:'O seu avião chegou', ja:'ご搭乗機が到着しました', zh:'您的飞机已到达', ar:'وصلت طائرتكم' },
+  acArrivedGate: { en:'Your aircraft has arrived at the gate', fr:'Votre avion est arrivé à la porte', es:'Su avión ha llegado a la puerta', de:'Ihr Flugzeug ist am Gate angekommen', it:'Il vostro aereo è arrivato al gate', pt:'O seu avião chegou ao portão', ja:'ご搭乗機がゲートに到着しました', zh:'您的飞机已抵达登机口', ar:'وصلت طائرتكم إلى البوابة' },
   // Was hardcoded English ('Time left for arrival:') in the v2 inbound block,
   // on a board whose every other label is bilingual.
   timeToArr: { en:'Time to arrival', fr:'Temps avant l’arrivée', es:'Tiempo hasta la llegada', de:'Zeit bis zur Ankunft', it:'Tempo all’arrivo', pt:'Tempo até à chegada', ja:'到着まで', zh:'距到达时间', ar:'الوقت حتى الوصول' },
@@ -22493,7 +22877,7 @@ var _GATE_LBL = {
   // have printed the raw key, exactly as `preboard` and `preboardList` did on
   // air until v23530), and its text is "Your Aircraft Is Arriving From", which
   // is a sentence about a state. This is a label about a panel.
-  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre appareil', es:'Su aeronave', de:'Ihr Flugzeug', it:'Il tuo aeromobile', pt:'Sua aeronave', ja:'\u304a\u5ba2\u69d8\u306e\u6a5f\u6750', zh:'\u60a8\u7684\u98de\u673a', ar:'\u0637\u0627\u0626\u0631\u062a\u0643' },
+  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre Avion', es:'Su Avión', de:'Ihr Flugzeug', it:'Il tuo Aereo', pt:'Seu Avião', ja:'\u3054\u642d\u4e57\u6a5f', zh:'\u60a8\u7684\u98de\u673a', ar:'\u0637\u0627\u0626\u0631\u062a\u0643' },
   preboard:  { en:'Pre-boarding',  fr:'Pré-embarquement', es:'Preembarque', de:'Vorab-Einstieg', it:'Preimbarco', pt:'Pré-embarque', ja:'優先搭乗', zh:'优先登机', ar:'صعود مسبق' },
   genboard:  { en:'General boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'صعود عام' },
   // v23522 — Porter's published pre-boarding list, verbatim from flyporter.com
@@ -22770,7 +23154,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23642';
+var FIDS_BUILD_TAG = 'v23690';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -28132,7 +28516,7 @@ function tick() {
 
   // Local-time label: '<City> Local Time | Heure Locale à <City>'.
   var _ci = String(iata || '').toUpperCase();
-  var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || ((AP[_ci] || {}).city) || _ci;
+  var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || (_cityForIata(_ci)) || _ci;
   if (typeof normalizeDisplayCity === 'function') _city = normalizeDisplayCity(_city, _ci);
   // v23287 — the FIDS/BIDS banner clock is now the GATE clock: the time over
   // the bilingual date, nothing else (Nick: 'Simplify the FIDS and BIDS clock
@@ -33405,7 +33789,7 @@ function fetchAccorHotels(destIata, langOverride) {
 
   // If COORDS missing, geocode first then fetch
   if (!COORDS[destIata]) {
-    var cityName = CITY[destIata] || (AP[destIata]||{}).city || destIata;
+    var cityName = CITY[destIata] || _cityForIata(destIata) || destIata;
     fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cityName) + '&count=1')
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(gd){

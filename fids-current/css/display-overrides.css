@@ -15338,8 +15338,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      clock does — a clipped logo is worse than a slightly smaller one. Nick's
      Air Canada gate had the Y sliced off the front. */
   min-width: 0 !important;
-  flex-shrink: 1 !important;
-  flex: 0 0 auto !important;
+  /* v23654 — THE MARK MUST BE ABLE TO SHRINK, OR IT GETS SLICED.
+     Nick: "make sure the YQM logo is not clipped". Measured on YQM gate 2:
+     .octb-clockrow is overflow:hidden and its left edge sat 8.6px inside the
+     mark's, so 8.6px of a 75.4px mark — about 11% — was cut off the front.
+
+     The clockrow's own comment (below, v23460) says the bound was added "with
+     the mark shrinking before the clock". It could not: `flex-shrink: 1` was
+     immediately cancelled by the `flex: 0 0 auto` shorthand on the next line,
+     which resets shrink to 0. The longhand never survived the shorthand, so
+     the mark held full size, overran the row and the clip took its front edge.
+
+     `flex: 0 1 auto` is that stated intent expressed once, in the shorthand,
+     with nothing after it to undo it. */
+  flex: 0 1 auto !important;
   align-self: center !important;
   background-image: url('/logos/airports/mark-CYQM-white.svg') !important;
   background-repeat: no-repeat !important;
@@ -15357,23 +15369,23 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 /* THE TIME GETS THE ROOM. The row is baseline-aligned for letters; with a
    mark in it, centre is right. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb-clockrow {
   align-items: center !important;
   gap: .28em !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-tab .octb-clock,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clockrow .v2-fi-clock-val {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-tab .octb-clock,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .v2-fi-clock-val {
   font-size: clamp(40px, 7.1vh, 94px) !important;
   line-height: .94 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clockrow .octb-apsep {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .octb-apsep {
   font-size: clamp(24px, 4.6vh, 62px) !important;
   opacity: .42 !important;
   font-weight: 400 !important;
 }
 /* AND THE DATE GOES DOWN. The stack spreads instead of bunching at the top,
    so the divide between time and date sits low and the clock owns the band. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-tab.octb-stack {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb-tab.octb-stack {
   justify-content: space-between !important;
   padding-top: clamp(2px, 0.5vh, 8px) !important;
   /* No padding under the stack: the date bar is the band's own bottom edge
@@ -15385,7 +15397,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    more room'. It is the date strip, painted in the airline's accent — it sat
    29px tall at y105 in a 138px band with a gap beneath it. Flush to the
    bottom edge and slimmer, so everything it gives up goes to the clock. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-date {
   margin-top: auto !important;
   margin-bottom: 0 !important;
   align-self: stretch !important;
@@ -15401,17 +15413,17 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    (fids-core sizes it by digit count), so only a heavier selector reaches it.
    Sized off the band rather than by digit count, with the clamp ceiling doing
    the work for 2- and 3-character gates. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-right .g8-r1-gate {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right .g8-r1-gate {
   font-size: clamp(104px, 14.6vh, 190px) !important;
   line-height: .88 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-right .g8-bilbl {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right .g8-bilbl {
   font-size: clamp(21px, 2.9vh, 38px) !important;
   line-height: 1.06 !important;
 }
 /* A longer gate id must not push the number out of its block — the label and
    number share the row, so the number gets whatever is left. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-right {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right {
   gap: clamp(10px, 1.2vw, 22px) !important;
   padding: 0 clamp(16px, 1.6vw, 34px) !important;
 }
@@ -15420,7 +15432,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    positioned at a fixed width and clips, so an overrun hides itself by slicing
    whatever sits at the front — which on Nick's Air Canada gate was the Y of
    the YQM mark. Bounded explicitly, with the mark shrinking before the clock. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clockrow {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow {
   max-width: 100% !important;
   min-width: 0 !important;
   overflow: hidden !important;
@@ -15446,10 +15458,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    stripe passes behind it and stops being visible exactly where the gate
    begins — 'all across minus the gate' without hard-coding where the gate
    starts. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1.g8-r1-bg {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1.g8-r1-bg {
   position: relative !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1.g8-r1-bg::after {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1.g8-r1-bg::after {
   content: '' !important;
   display: block !important;
   position: absolute !important;
@@ -15463,8 +15475,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* The timebox no longer needs a ground of its own — it IS the banner now.
    Its own cream panel would show as a slightly different rectangle sitting
    on the band, which is the opposite of 'all the same color'. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-tab,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox.g8-r1-timebox-silk {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-tab,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox.g8-r1-timebox-silk {
   background: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
@@ -15583,8 +15595,8 @@ html body .g8-wrap.g8-airline-WJA .g8-r1-emblem {
    White ink now, not the v23462 navy: it sits ON the accent bar rather than
    above it. Comes LAST in the file so it wins the tie against :15189.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1.g8-r1-bg::after {
-  height: clamp(20px, 3.6vh, 30px) !important;
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1.g8-r1-bg::after {
+  height: clamp(17px, 2.9vh, 25px) !important;
   /* THE SECOND COLOUR, NOT THE BRIGHT ONE. Nick: "maybe it should be the
      second color to the airline Air Canada Dark Gray or Black maybe Westjet
      Blue". That is r1 — AC #0A0A0A, WS #003366 — now published as
@@ -15613,7 +15625,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      why it reads as a faint tint rather than a rule. */
   opacity: 1 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-date {
   position: absolute !important;
   left: 0 !important;
   right: 0 !important;
@@ -15623,7 +15635,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      Measured on the live board, not guessed. Tried height:100% on the timebox
      first; something else pins it at 110 and it had no effect. */
   bottom: -2px !important;
-  height: clamp(20px, 3.6vh, 30px) !important;
+  height: clamp(17px, 2.9vh, 25px) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
@@ -15659,13 +15671,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
       Removing the duplicate IS "the entire way": the full-width layer beneath
       it already spans the band, so the design runs edge to edge, evenly.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1::before {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1::before {
   background-image: url("/logos/Backgrounds/banner-geo.jpg?v=23470") !important;
   mix-blend-mode: multiply !important;
   opacity: .55 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox::before,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-wrap::before {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox::before,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb-wrap::before {
   display: none !important;
   content: none !important;
 }
@@ -15698,23 +15710,23 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    rule loses to it silently. Matching its element path and going two deeper is
    what makes this apply at all.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1 {
-  --yqm-bar: clamp(20px, 3.6vh, 30px) !important;
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1 {
+  --yqm-bar: clamp(17px, 2.9vh, 25px) !important;
   padding-bottom: var(--yqm-bar) !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb.octb-tab.octb-stack {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb.octb-tab.octb-stack {
   justify-content: center !important;
   padding-bottom: var(--yqm-bar) !important;
   overflow: visible !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb-clockrow {
   height: auto !important;
   overflow: visible !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clockrow .v2-fi-clock-val {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .v2-fi-clock-val {
   font-size: clamp(46px, 9vh, 76px) !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-date {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-date {
   font-size: clamp(13px, 2.05vh, 19px) !important;
 }
 
@@ -15739,7 +15751,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    percentage resolved against a box the emblem was itself defining. Measured
    before and after — that is a circular reference, not a tuning problem.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-emblem {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-WS .g8-r1-emblem {
   /* Bigger than the wordmark's own box, and lifted 4px. The BOXES already
      centre level (measured midDelta 0), but WS.svg draws its leaf low inside
      its square, so matching boxes still read as a low leaf — which is what the
@@ -15872,7 +15884,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    gives 17.6:1 for AC and 11.2:1 for WS, where the bright accents give 4.3 and
    2.3. The old navy stays as the fallback for any carrier without an r1.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-clock {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clock {
   color: var(--airline-r1, #0A2E6B) !important;
   -webkit-text-fill-color: var(--airline-r1, #0A2E6B) !important;
 }
@@ -15887,7 +15899,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    The date keeps the white ink :15345 gives it, which is what puts it at
    ~10:1 on the bar. Any future 'the clock should be X' rule belongs on
    .octb-clock and .octb-apsep, never on .octb-date. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-timebox .octb-apsep {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-apsep {
   color: var(--airline-r1, #0A2E6B) !important;
   opacity: .38 !important;
 }
@@ -16041,10 +16053,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-pd-preboard-marks .g8-pd-mark img {
   /* Sized off the VIEWPORT, not em: the marks inherited the coming-up line's
-     small font and came out tiny. */
-  height: clamp(40px, 6.4vh, 96px) !important;
+     small font and came out tiny.
+     v23688 — sized for FOUR marks, not two. The generic VIPorter wordmark gave
+     way to the three tiers it stands for (Passport, Venture, First) plus
+     PorterReserve, so the row is a 2x2 in the same half-panel: each mark takes
+     just under half the width and the height comes down enough for two rows to
+     sit where one did. flex-wrap was already on, so the second row costs
+     nothing but this arithmetic. */
+  height: clamp(26px, 4.1vh, 60px) !important;
   width: auto !important;
-  max-width: min(46%, 30em) !important;
+  max-width: min(44%, 24em) !important;
   object-fit: contain !important;
   display: block !important;
   filter: brightness(0) invert(1) !important;
@@ -16264,11 +16282,24 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    already sit above its box centre because a text box carries descender space
    the numerals never use — which is why "up a bit" is a small number here.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .octb-clockrow .octb-clock {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb-clockrow .octb-clock {
   transform: translateY(-4px) !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-logoslot .g8-r1-logo {
-  /* Down 11, not 3. Nick: "wordmark still needs to come down even if the j
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-WS .g8-r1-logoslot .g8-r1-logo {
+  /* v23652 — RE-SCOPED FROM THE AIRPORT TO THE AIRLINE. Nick: "Youre logos at
+     the top left need to be centered something you have a huge difficulty
+     understanding". He was right, and the cause is this rule.
+
+     It was keyed to .g8-ap-YQM — the AIRPORT — while its own comment below
+     explains it is compensating for WESTJET ARTWORK. So every other carrier
+     flying out of Moncton inherited WestJet's nudge: measured on the PAL
+     Airlines board at YQM gate 2, the emblem and the brand pair sat dead
+     centre (offset 0) while the wordmark alone sat 11px low.
+
+     Keyed to the airline now, which is what it was always describing. WestJet
+     keeps the nudge at every airport it flies from, and nobody else gets it.
+
+     Down 11, not 3. Nick: "wordmark still needs to come down even if the j
      hits the bar" — the WESTJET J's descender crossing into the date bar is
      acceptable to him, so the ceiling here is not the bar. The wordmark is
      effectively full-bleed in its own box (ink pad 0.75% top and bottom,
@@ -17826,3 +17857,208 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-weight: 400 !important;
 }
 
+/* ══ THE ACCENT STRIP COMES DOWN, THE DATE STILL FITS ════════════════════
+   Nick: "the colored strip changed overnight its much thicker and too thick it
+   needs to be reduced a bit in height the text should still fit".
+
+   The strip is the --yqm-bar the date sits in, and it went from 30px to 25px
+   with the rest of this change. At 25px the date's INK measured 26px — 1px
+   proud — because its line-height was leaving more room than the glyphs need.
+
+   Tightening the leading rather than growing the strip back: the point of the
+   request was a thinner strip, and 1.16 on an 18.9px date gives ~22px of ink
+   inside a 25px bar. Roughly 1.5px of clearance top and bottom, and the date
+   is the only thing in there.
+
+   Line-height, not font-size, so the date stays as legible as it was — the
+   glyphs are unchanged, only the box around them.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-date {
+  line-height: 1.16 !important;
+}
+
+/* ══ THE CLOCK YIELDS TO THE MARK, ONLY WHERE THERE IS ONE ═══════════════
+   Nick: "make sure the YQM logo is not clipped".
+
+   Letting the mark shrink stopped the clipping but produced the other failure:
+   flexbox squeezed it from 75.4px to 38px, half size, because the row is
+   genuinely over-full. Measured inside .octb-clockrow at 1680x920:
+
+       row inner   433.4px
+       clock       374.3px   ("10:30AM" at 76px)
+       separator    12.2px
+       mark         38.0px   (wants 75.4)
+       spare         0.0px
+
+   The mark's full width only exists if the clock gives up about 28px. So the
+   clock steps down to ~69px — but ONLY on a row that actually contains a mark.
+   :has() scopes it to exactly that case, so Moncton's clock yields to its mark
+   and every airport without one keeps the full 76px. No airport pays for
+   another airport's furniture.
+
+   Ordered after the 9vh clock rule and carrying a longer chain, so it wins
+   where it applies and is silent everywhere else. A renderer without :has()
+   support simply keeps today's behaviour rather than breaking.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-apmark) .v2-fi-clock-val,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-apmark) .octb-clock {
+  font-size: clamp(38px, 7.5vh, 64px) !important;
+}
+
+/* ══ THE BANNER TEXTURE BECOMES VISIBLE ══════════════════════════════════
+   Nick: "there is supposed to be a background in there we dont see it at all
+   can you make it more apparent".
+
+   It was rendering the whole time — banner-geo.jpg, multiply, cover, inset 0 —
+   just too faintly to register. Two things compounded, both measured:
+
+     the image itself   luminance min 162, mean 222, max 234 (87% white)
+     opacity            0.55
+
+   Multiply with a near-white texture barely darkens anything, and halving it
+   again left a shift of ~17 RGB points on a 245-bright band. That is below
+   the threshold where a pattern reads as a pattern rather than as noise.
+
+   Opacity to 0.95 roughly doubles the shift, and a contrast lift deepens the
+   texture's OWN range before it composites — the source only spans 72 levels,
+   so stretching that is what actually makes the geometry legible rather than
+   simply making the whole band darker.
+
+   Deliberately not going heavier: this sits behind the wordmark and the clock,
+   and the point is a texture you notice, not one that competes with them.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1::before {
+  opacity: 0.95 !important;
+  filter: contrast(1.45) brightness(0.98) !important;
+}
+
+/* ══ ONE SPACE EITHER SIDE OF THE BAR ════════════════════════════════════
+   Nick: "I also asked for the banners within panels to show as Status | Statut
+   (only one spacebetween)".
+
+   The markup looked right — the separator span contains exactly " | " — but
+   those spaces never render. .v2-fi-title is a FLEX container, and a flex item
+   trims its own leading and trailing whitespace, so the span draws as a bare
+   "|". The visible spacing is entirely the container's column-gap, which sat
+   at 13.44px: about three spaces on each side.
+
+   So the fix is the gap, not the margins. 0.25em is one space at this face and
+   scales with the label instead of pinning a pixel value that drifts as the
+   fitter resizes the text.
+
+   The .v2-fi-sep margin is zeroed alongside it: it was adding a further 6px
+   per side on top of the gap, which is how the total reached 19.4px.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-textcol .v2-fi-title {
+  column-gap: 0.25em !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title .v2-fi-sep,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-value .v2-fi-sep,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-textcol .v2-fi-sep {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* ══ THE IATA CODE RIDES IN THE ORB ══════════════════════════════════════
+   Nick: "I would like the airport code to go in the orb YYC for isntance".
+
+   The destination row's orb held a globe glyph while the code sat stapled to
+   the end of the title ("Destination | YYC"). The code moves into the orb, and
+   the title goes back to being a clean bilingual pair.
+
+   Sized with cqw-free arithmetic: 0.30 of the orb's own height, so it tracks
+   the badge at every board size rather than needing its own clamp. Three
+   characters is the whole design space here — every IATA code is exactly
+   three — so it can be set tight and centred without a fitter.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-size: clamp(15px, 3.0vh, 34px) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+  line-height: 1 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  white-space: nowrap !important;
+}
+
+/* ══ THE BILINGUAL SEPARATOR, KEYED TO THE ELEMENT — THIRD TIME ══════════
+   Caught on the live YQM inbound panel: "5:20pm ArrivalArrivée".
+
+   Same root cause as the two before it. _gateLblSpans emits the two languages
+   as bare sibling spans and leaves the ' | ' to a per-container rule; the one
+   for .v2-fi-mlbl is scoped '.g8-wrap .gad-map-col-v2 .v2-fi-mlbl'
+   (display-overrides.css:14118), so it only fires where that card happens to
+   live. This panel renders outside it and the pair jams.
+
+   That is now three separate strings broken by the same pattern:
+     v23313  .v2-rc-fi-stline  scoped to a container the card moved out of
+     v23640  .v2-rc-fi-stline  and then killed outright by a neighbour's rule
+     here    .v2-fi-mlbl       scoped to a container this panel is not in
+
+   Keyed to .v2-fi-mlbl ITSELF, wherever it appears, so it travels with the
+   element. The chain is long enough to clear the v23548 mline3 kill, which is
+   the rule that silently disabled the last attempt.
+
+   The mline3 exemption still stands where it belongs: that line carries its
+   own explicit bar between the time and the sentence and must not get a
+   second. This rule targets .v2-fi-mlbl, which that line does not use.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-mlbl > span + span::before {
+  content: ' | ' !important;
+  opacity: 0.55 !important;
+  font-weight: 400 !important;
+}
+
+
+/* ══ v23688 — PORTER'S TOP-LEFT ORB JOINS THE OTHER FIVE ═════════════════════
+   Nick: "Porter orb both regular and boarding first top is still blue vs white".
+
+   Measured in the live DOM on YHZ gate 3 rather than reasoned about, because
+   these two orbs have been mixed up twice already (v23546 and v23548 both named
+   the wrong one):
+
+     .v2-fi-orbwrap     — arrival shelf orb — background rgb(255,255,255)  ✓ white
+     .v2-fi-emblem-wrap — TOP-LEFT rail orb — background rgb(37,77,135)    ✗ blue
+                          img porter-p.svg, filter brightness(0) invert(1)
+
+   So on a Porter gate five badges and the arrival orb are white discs with navy
+   artwork (v23532), and this one orb is still a blue disc with a white p. It is
+   the odd one out in its own column, which is exactly what he is looking at.
+
+   Both halves have to ship together — the lesson v23536 wrote down and which
+   still holds: swapping the artwork alone leaves a blank orb, because the
+   emblem carries a whitening filter for its old dark ground. Ground goes white,
+   art goes navy, filter comes off.
+
+   Beatable from a stylesheet because _gateOrbParts writes background/filter as
+   plain inline declarations, NOT inline !important — checked at fids-core.js
+   :7843 and :7848 before writing this rather than after rendering nothing. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-emblem-wrap:not(.v2-fi-emblem-native) {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(21, 44, 83, 0.18) !important;
+}
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-emblem-wrap:not(.v2-fi-emblem-native) img[src*="porter-p.svg"] {
+  content: url('/logos/airlines/canadian/porter/porter-p-navy.svg') !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* The same white-on-white trap one row down. The destination badge now carries
+   the IATA code instead of a glyph, and .v2-fi-orbcode is set #ffffff for the
+   accent-coloured discs every other carrier has. On Porter's white disc that is
+   invisible — the identical fault as the Departure glyph in v23532 and the p in
+   v23536. Porter's navy, the same value the glyphs already take at :16159. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
+  color: #152C53 !important;
+  -webkit-text-fill-color: #152C53 !important;
+}
