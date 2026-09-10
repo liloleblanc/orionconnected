@@ -11962,7 +11962,21 @@ function uxgGateHtml(ctx) {
         // premium tier set, so the member wordmark is the right one of the four
         // he sent — naming a single tier would imply the other two do not
         // pre-board.
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_en.svg" alt="VIPorter"></span>'
+        //
+        // v23688 — AND THE THREE TIERS ARE WHAT "PREMIUM VIPORTER" MEANS.
+        // Nick: "the SVGs provided never used for Porter" — said once before
+        // about this same batch ("Logos need to be used thats the point"), and
+        // still true of four of the eight files. Three of those four are the
+        // tier marks, and v23532's reasoning is what kept them out: it treated
+        // naming a tier as excluding the others. Naming ALL THREE excludes
+        // nobody, and it is the more useful sign — the roster line above says
+        // "Premium VIPorter", which tells a passenger nothing about whether
+        // their own card qualifies. Passport, Venture and First say it exactly.
+        // The generic member wordmark comes out because it now only repeats
+        // words already printed directly above it.
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_passport_single_line_en.svg" alt="VIPorter Passport"></span>'
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_venture_single_line_en.svg" alt="VIPorter Venture"></span>'
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_first_single_line_en.svg" alt="VIPorter First"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
         + '</div>'
       : '';

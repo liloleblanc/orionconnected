@@ -16053,10 +16053,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-pd-preboard-marks .g8-pd-mark img {
   /* Sized off the VIEWPORT, not em: the marks inherited the coming-up line's
-     small font and came out tiny. */
-  height: clamp(40px, 6.4vh, 96px) !important;
+     small font and came out tiny.
+     v23688 — sized for FOUR marks, not two. The generic VIPorter wordmark gave
+     way to the three tiers it stands for (Passport, Venture, First) plus
+     PorterReserve, so the row is a 2x2 in the same half-panel: each mark takes
+     just under half the width and the height comes down enough for two rows to
+     sit where one did. flex-wrap was already on, so the second row costs
+     nothing but this arithmetic. */
+  height: clamp(26px, 4.1vh, 60px) !important;
   width: auto !important;
-  max-width: min(46%, 30em) !important;
+  max-width: min(44%, 24em) !important;
   object-fit: contain !important;
   display: block !important;
   filter: brightness(0) invert(1) !important;
