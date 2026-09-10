@@ -8968,6 +8968,59 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // GET /flights/ytz?direction=dep|arr — Billy Bishop's server-rendered
     // board rows, parsed server-side. Must precede the generic /flights/
     // ADB passthrough.
+    // ── GET /fr24/usage?period=24h|7d|30d|1y ────────────────────────────────
+    //
+    // WHAT WE SPEND, READ FROM THE PROVIDER RATHER THAN GUESSED AT.
+    //
+    // Added 2026-09-10, the day an unattended integration was found to have been
+    // buying credits on an account Nick had closed, and nothing anywhere said so.
+    // The gap that let that run was not the cron — it was that NOTHING in this
+    // repo could answer "what has this cost". Our own counters are two KV keys
+    // (fr24:used:<day>) that increment once per HTTP CALL, while FR24 bills per
+    // RETURNED ROW at up to 8 credits a row. So the meter we had could not
+    // narrow current spend past "somewhere between 12% and 97% of the ceiling".
+    //
+    // FR24's /api/usage reports the real figures — request_count AND credits,
+    // per endpoint, over 24h/7d/30d/1y — so this route replaces that range with
+    // a number. Read-only: it performs no writes, spends no budget beyond the
+    // single call, and is safe to hit at any time.
+    //
+    // Cached 5 minutes, because the honest failure mode of a "check the spend"
+    // endpoint is somebody polling it and adding to the spend.
+    if (path === "/fr24/usage") {
+      if (!env.FR24_KEY) {
+        return jsonResponse({ error: "no FR24_KEY on this worker", hint:
+          "Flightradar24 is the approved provider; set the secret with `wrangler secret put FR24_KEY`." }, 503, origin);
+      }
+      const _per = (url.searchParams.get("period") || "30d").trim();
+      if (!["24h", "7d", "30d", "1y"].includes(_per)) {
+        return jsonResponse({ error: "bad period", allowed: ["24h", "7d", "30d", "1y"] }, 400, origin);
+      }
+      const _uKey = new Request(`https://fr24-usage/${_per}`);
+      try {
+        const hit = await caches.default.match(_uKey);
+        if (hit) {
+          const h = new Headers(hit.headers);
+          h.set("X-Fr24-Usage-Cache", "hit");
+          for (const [k, v] of Object.entries(corsHeaders(origin))) h.set(k, v);
+          return new Response(hit.body, { status: hit.status, headers: h });
+        }
+      } catch (e) {}
+      try {
+        const ur = await fetch(`https://fr24api.flightradar24.com/api/usage?period=${encodeURIComponent(_per)}`, {
+          headers: { "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" }
+        });
+        const ub = await ur.text();
+        const resp = new Response(ub, { status: ur.status, headers: {
+          "Content-Type": "application/json", "Cache-Control": "public, max-age=300",
+          "X-Fr24-Usage-Cache": "miss", ...corsHeaders(origin) } });
+        if (ur.ok) { try { await caches.default.put(_uKey, resp.clone()); } catch (e) {} }
+        return resp;
+      } catch (e) {
+        return jsonResponse({ error: "fr24 usage fetch failed", detail: e && e.message }, 502, origin);
+      }
+    }
+
     if (path === "/flights/ytz") {
       const direction = url.searchParams.get("direction") || "dep";
       return handleYtzFids(request, env, origin, direction);

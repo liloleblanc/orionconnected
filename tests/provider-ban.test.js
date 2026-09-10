@@ -137,15 +137,27 @@ test('no comment describes the airplanes.live refusal as pending or outstanding'
 
 // ── Flightradar24 — the approved feed ─────────────────────────────────────
 
-test('EVERY FR24 call site is behind a spend cap', () => {
+test('EVERY FR24 call site is BOUNDED — by a budget, or by a cache', () => {
   // Nick: "BE sparing with flight radar only 60000 a month its simple use when
   // needed but use it". The last quota was lost to unattended polling, so the
   // invariant is per-call-site, not "a budget exists somewhere in the file".
   //
-  // There are two independent gates with different local names — the DTW
-  // schedule sweep uses `used`/`cap`, the ADS-B lookup uses `_used`/`_cap`.
-  // An earlier version of this test hardcoded the second spelling, matched the
+  // There are two independent budget gates with different local names — the DTW
+  // schedule sweep uses `used`/`cap`, the ADS-B lookup uses `_used`/`_cap`. An
+  // earlier version of this test hardcoded the second spelling, matched the
   // first site by accident, and would have passed with the real cap deleted.
+  //
+  // A CACHE IS ALSO A BOUND, and insisting on the budget gate everywhere was
+  // wrong in one specific case. /fr24/usage exists to answer "what has this
+  // cost" — putting it behind the daily budget means that the moment the budget
+  // is exhausted, the one endpoint that can tell you WHY stops working. That is
+  // backwards for an observability surface, and the observability gap is what
+  // let an unattended integration spend unnoticed for fifteen days.
+  //
+  // So a site may be bounded either way, but it MUST be bounded by something
+  // structural. An edge cache with a 5-minute TTL caps that route at 288
+  // calls/day even under constant polling, which is a real ceiling, not a
+  // promise. What is forbidden is a call with no bound of any kind.
   const sites = [];
   let from = 0;
   for (;;) {
@@ -156,11 +168,25 @@ test('EVERY FR24 call site is behind a spend cap', () => {
   }
   assert.ok(sites.length > 0, 'FR24 is the approved paid feed and must still be wired');
   for (const i of sites) {
-    const window = CODE.slice(Math.max(0, i - 1400), i);
-    assert.match(window, /_?used\s*>=?\s*_?cap|_?used\s*<\s*_?cap/,
-      `the FR24 call at offset ${i} must be gated by its daily budget before it fires`);
-    assert.match(window, /FR24_DAILY_BUDGET/,
-      `the FR24 call at offset ${i} must take its cap from FR24_DAILY_BUDGET, not a literal`);
+    const before = CODE.slice(Math.max(0, i - 1400), i);
+    const budgetBound = /_?used\s*>=?\s*_?cap|_?used\s*<\s*_?cap/.test(before)
+                     && /FR24_DAILY_BUDGET/.test(before);
+    const cacheBound = /caches\.default\.match/.test(before);
+    assert.ok(budgetBound || cacheBound,
+      `the FR24 call at offset ${i} has NO bound: it must sit behind either the ` +
+      `FR24_DAILY_BUDGET counter or an edge cache. An unbounded call to a paid ` +
+      `provider is the exact shape of the incident this file exists to prevent.`);
+    if (cacheBound && !budgetBound) {
+      // A cache is only a bound if its TTL is short AND finite. Without this,
+      // "bounded by a cache" degrades into "we wrote the word caches once".
+      const after = CODE.slice(i, i + 900);
+      assert.match(after, /max-age=(\d{1,4})\b/,
+        `the cache-bounded FR24 call at offset ${i} must set an explicit max-age`);
+      const ttl = Number((after.match(/max-age=(\d{1,4})\b/) || [])[1]);
+      assert.ok(ttl > 0 && ttl <= 900,
+        `the cache TTL at offset ${i} is ${ttl}s — it must be between 1 and 900s ` +
+        `to actually cap the call rate`);
+    }
   }
 });
 
