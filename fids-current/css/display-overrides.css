@@ -9725,10 +9725,31 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-map-life:not(#_):not(#_) {
 }
 html body .g8-wrap .v2-rc-map-life-emblem:not(#_):not(#_) {
   /* Square, height-driven: the shelf is the binding dimension. */
-  height: min(94%, 420px) !important;
+  /* v23698 — 94% → 82%. Nick: "Air Canada roundel too big actually a lot of
+     airlines see Delta also".
+
+     THIS IS THE SECOND HALF OF AN OSCILLATION, AND WORTH NAMING AS ONE. The
+     designed value in gate-display.css:5144 is min(74%, 360px). v22941 raised
+     it here to min(94%, 420px) because Nick said the marks were TOO SMALL. He
+     is now saying the same element is too big, so the answer is not to revert
+     to 74% — that lands back on the complaint the 94% was written to fix — but
+     to sit between them.
+
+     Measured on the live YQM/4 board rendered at 1920x1010: the plate is
+     436x412, so 94% put the mark at ~387px tall with roughly 12px of margin,
+     which is why it reads as filling the panel edge to edge. 82% gives ~338px
+     and about 37px of breathing room top and bottom, still comfortably larger
+     than the 305px the original 74% produced.
+
+     If this is still wrong, the useful next move is NOT another guess at the
+     percentage — it is that the emblem is bounded by its SHELF (see the note
+     above: ~316px of usable height against 436px of width), so a genuinely
+     bigger mark needs height taken from one of the other three shelves. That
+     is a layout decision and Nick's to make. */
+  height: min(82%, 360px) !important;
   width: auto !important;
   aspect-ratio: 1 / 1 !important;
-  max-width: 94% !important;
+  max-width: 82% !important;
 }
 
 /* ── v22960 — DELTA BADGES: RED ORBS, WHITE MARKS (Nick: 'The icons for
