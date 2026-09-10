@@ -17765,3 +17765,45 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   line-height: 1.2 !important;
 }
 
+/* ══ A NESTED SEPARATOR MUST NEVER BE HIDDEN ═════════════════════════════
+   Nick: "does not have seperation:  |  Destination Destino PRG", and
+   "Can yyou please just do one space esample Flight | Vol".
+
+   Reproduced on the preview, and it is a shape mismatch, not a missing rule.
+   The gate titles are built in TWO different markup shapes:
+
+     A  <span class=v2-fi-lbl-en>Flight</span>
+        <span class=v2-fi-sep> | </span>            <- spaces INSIDE the span
+        <span class=v2-fi-lbl-2>Vuelo</span>
+
+     B  <span class=v2-fi-lbl-en>Destination
+          <span class=v2-fi-sep>|</span> Destino    <- spaces are text nodes
+          <span class=v2-fi-sep>|</span>               OUTSIDE the span
+          <span class=v2-fi-code>PRG</span></span>
+
+   Shape B is used by the titles that carry an IATA code (Destination,
+   Arrival). Two existing rules hide .v2-fi-sep when a title goes stacked or
+   two-line — display-overrides.css:11527 and :15970 — and for shape A that is
+   right: the languages move onto separate lines and the bar is REPLACED by the
+   line break.
+
+   Shape B cannot stack. It is a single span, so hiding its separator does not
+   replace it with anything — it just deletes the bars and leaves the spaces
+   that were sitting outside them. Verified by adding .g8-fi-title-2line to a
+   live Destination title: it rendered "Destination Destino YYC" with
+   sepDisplay:none. That is Nick's screenshot exactly.
+
+   _gateTitleFit adds .g8-fi-title-2line whenever a label still overflows at
+   its 0.82 floor, which a long trilingual string like "Destination | Destino
+   | PRG" reliably does — so this fires on real boards, not just in theory.
+
+   The fix keys on the nesting: a .v2-fi-sep INSIDE a .v2-fi-lbl-en is shape B
+   and always stays visible. A separator that is a SIBLING of the labels is
+   shape A and keeps the existing stacked behaviour untouched.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-lbl-en .v2-fi-sep {
+  display: inline !important;
+  opacity: 0.55 !important;
+  font-weight: 600 !important;
+}
+
