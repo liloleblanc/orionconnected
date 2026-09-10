@@ -13906,12 +13906,58 @@ function gateAutofit(root) {
     // background through the same 3:1 floor as every other ink.
     root.querySelectorAll('.gad-aircraft-col .v2-fi-title .v2-fi-code, .g8-bir-shelves .v2-fi-title .v2-fi-code').forEach(function (el) {
       try {
+        // v23696 — A GRADIENT CHIP IS A GROUND, AND THIS WALK WAS BLIND TO IT.
+        //
+        // Nick: "Air Canada airport code on the left is blue" and "Porter cannot
+        // see the airport code same blue".
+        //
+        // Measured on the live YQM/4 Air Canada gate, which is what finally
+        // settled it — the span carried BOTH of these inline at once:
+        //     color: rgb(252,238,238) !important          (applyCodeAccents)
+        //     -webkit-text-fill-color: rgb(76,130,189) !important   (this pass)
+        // Blink paints glyphs from -webkit-text-fill-color, so the blue is what
+        // is on screen. Meanwhile the label beside it is rgb(20,23,27), near
+        // black — because the chip they BOTH sit on is light.
+        //
+        // The chip is `.v2-fi-title`, and on AC and Porter it is painted with a
+        // LINEAR-GRADIENT (AC linear-gradient(#CFCBC2,#B6B1A7), Porter
+        // linear-gradient(#F4EEE2,#E7DECB)). A gradient lives in
+        // background-IMAGE; background-COLOR stays rgba(0,0,0,0). This loop only
+        // ever read backgroundColor, so it walked straight past the chip and
+        // measured the near-black plate underneath it. Every ink below was then
+        // fitted to clear black — and painted onto cream. That is the whole bug,
+        // and it is one bug, not the two separate carrier reports it looked like.
+        //
+        // The file already knows this test: :13866 uses
+        // /url\(|gradient/.test(backgroundImage) for the plate-inset probe. Same
+        // idea here, taking the gradient's first colour stop as the ground —
+        // these chips are shallow vertical fades, so the top stop is
+        // representative and it is the half the text sits on.
         var bg = '', n = el.parentElement;
         while (n && n !== document.body) {
-          var c = getComputedStyle(n).backgroundColor;
+          var _ncs = getComputedStyle(n);
+          var c = _ncs.backgroundColor;
           if (c && c !== 'rgba(0, 0, 0, 0)' && !/,\s*0\)$/.test(c)) { bg = c; break; }
+          var _bi = _ncs.backgroundImage;
+          if (_bi && _bi !== 'none' && /gradient/i.test(_bi)) {
+            var _stop = _bi.match(/rgba?\([^)]*\)|#[0-9a-fA-F]{3,8}/);
+            if (_stop && !/,\s*0\)$/.test(_stop[0])) { bg = _stop[0]; break; }
+          }
           n = n.parentElement;
         }
+        // The ink the LABEL is wearing on this same chip. Whatever the chip's
+        // own CSS chose is legible on it by construction, so this is a far
+        // better last resort than a hardcoded near-black — which is exactly the
+        // "#16283C" that reads as the grey Nick has ruled out ("I do not want
+        // any gray wording"). On American's blue chip the label is white; the
+        // code now goes white with it instead of dark-navy-on-blue.
+        var _lblInk = '';
+        try {
+          var _tw = el.closest ? el.closest('.v2-fi-title') : null;
+          var _lb = _tw && _tw.querySelector('.v2-fi-lbl-en, .v2-fi-lbl-2');
+          if (_lb && _lb !== el) _lblInk = (getComputedStyle(_lb).color || '').trim();
+          if (/,\s*0\)$/.test(_lblInk)) _lblInk = '';
+        } catch (eL) { _lblInk = ''; }
         // v23309 — THIS is where the brown came from. `deep` was '#8a5200' =
         // rgb(138,82,0): hue 36, saturation 1.0, lightness 0.27 — brown by any
         // measure, and byte-for-byte the colour measured on the YYC/YUL code in
@@ -13966,9 +14012,22 @@ function gateAutofit(root) {
         if (bg && typeof _fidsContrast === 'function') {
           var ca = _acc ? (_fidsContrast(_acc, bg) || 0) : 0;
           var cb = _fidsContrast(bright, bg) || 0, cd = _fidsContrast(deep, bg) || 0;
-          pick = (ca >= 3) ? _acc : (cb >= 3) ? bright : (cd > cb ? deep : bright);
+          // v23696 — the label's ink is now the last resort, ahead of the navy.
+          // With the ground measured correctly the first branch finally does
+          // what v23466 intended: AC red on its light grey chip is ~3.4:1 and is
+          // kept, Porter's navy on cream clears easily. The branch had been
+          // structurally unreachable for the generic-topper carriers too, where
+          // the chip is painted var(--airline-accent) and contrast(accent,
+          // accent) is 1.0 by definition — for those the label ink now answers
+          // instead of the navy, which is the only neutral in the chain and the
+          // one Nick keeps rejecting.
+          pick = (ca >= 3) ? _acc
+               : (cb >= 3) ? bright
+               : (_lblInk || (cd > cb ? deep : bright));
         } else if (_acc) {
           pick = _acc;
+        } else if (_lblInk) {
+          pick = _lblInk;
         }
         el.style.setProperty('color', pick, 'important');
         el.style.setProperty('-webkit-text-fill-color', pick, 'important');
@@ -23154,7 +23213,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23694';
+var FIDS_BUILD_TAG = 'v23696';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
