@@ -18254,3 +18254,39 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-size: clamp(26px, 4.4vh, 40px) !important;
   line-height: 1 !important;
 }
+
+/* ══ v23706 — UNITED'S SECOND LANE IS GREEN, NOT A SECOND BLUE ═══════════════
+   Reported: the United gate reads as too much blue, all one tone.
+
+   That is right, and the answer came from United's own signage rather than
+   from taste. Four photographs of live United gate boards (C86, C14, C111 and
+   their "Better boarding" announcement) all show the same system:
+
+       LANE 1  blue      LANE 2  GREEN
+
+   Not a darker blue, not a tint — a different HUE. That is how their sign
+   separates the two lanes at distance, and it is why ours reads flat: the
+   generic panel paints `now` from --banner-bg and `next` from
+   --airline-accent, and for United BOTH of those are blue (#0C2340 and
+   #0033A0). Every other carrier gets contrast from that pair for free; United
+   is the case where the pair collapses.
+
+   A per-carrier override is the established pattern here — Frontier already
+   has one a few rules above (F9 takes slate grey on the left because its brand
+   pair collapsed the other way).
+
+   The green is picked for legibility first: #0A7D36 against white lettering is
+   about 5.3:1, comfortably clear of the 4.5 floor the rest of the board holds
+   itself to, and dark enough that the white numerals stay the brightest thing
+   on the panel. UA and UAL both, since either can key the board. */
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-hdr-next,
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-col.next {
+  background-color: #0A7D36 !important;
+}
+/* The left lane takes United's Rhapsody Blue rather than whatever --banner-bg
+   resolves to, so the pair is an explicit blue/green and cannot drift back
+   toward one tone if the banner colour is retuned later. */
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-hdr-now,
+html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-col.now {
+  background-color: #0C2340 !important;
+}

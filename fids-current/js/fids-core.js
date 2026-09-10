@@ -12056,7 +12056,21 @@ function uxgGateHtml(ctx) {
   var boardHtml = '';
   if (boardActive) {
     var lateBoarding = minsToDep <= 18;
-    var _grpLbl = TL('groupLabel');
+    // v23706 — THE GENERIC BOARDING PANEL SPEAKS BOTH LANGUAGES.
+    //
+    // Reported on a United YUL/C80 board: the boarding sequence rendered in
+    // French only — "Groupe", "Embarquement en cours", "Prochain embarquement"
+    // — while every other element on the same screen carried its pair.
+    //
+    // Cause: two panels built at different times. The AC/WestJet lane sign
+    // (_acLanesBodyHtml) uses _gateLbl, which emits the bilingual pair. This
+    // generic panel — everything that is NOT AC, Rouge, Jazz, WestJet or
+    // Encore, so United and most of the network — used TL(), which returns ONE
+    // language, whichever the board is currently rotating through. Nothing
+    // about boarding was ever meant to be monolingual; the second builder
+    // simply never learned the pairing the first one had.
+    var _grpLbl = _gateLbl('groupLabel', _frF, function (w) { return w; },
+      ' <span class="g8-bir-sep">|</span> ') || TL('groupLabel');
     var nowVal, nextVal, _acZonesVal = '', _comingVal = '';
     if (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK') {
       // Air Canada family boards by ZONE:
@@ -12184,7 +12198,13 @@ function uxgGateHtml(ctx) {
                     || airlineCode === 'WS' || airlineCode === 'WR');
     var _nowLbl = _acLanes ? '' : _grpLbl;
     var _nextLbl = _acLanes ? 'Zones' : _grpLbl;
-    var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + TL('boardNow') + '</div><div class="g8-board-hdr-next">' + TL('boardNext') + '</div></div>';
+    // v23706 — same pairing for the two column headers. See the note at
+    // _grpLbl: these were the other half of the monolingual generic panel.
+    var _hdrNow = _gateLbl('boardNow', _frF, function (w) { return w; },
+      ' <span class="g8-bir-sep">|</span> ') || TL('boardNow');
+    var _hdrNext = _gateLbl('boardNext', _frF, function (w) { return w; },
+      ' <span class="g8-bir-sep">|</span> ') || TL('boardNext');
+    var _bHdr = _acLanes ? '' : '<div class="g8-board-hdr"><div class="g8-board-hdr-now">' + _hdrNow + '</div><div class="g8-board-hdr-next">' + _hdrNext + '</div></div>';
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
       + _boardWelcomeStripHtml('boarding')
@@ -23253,7 +23273,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23704';
+var FIDS_BUILD_TAG = 'v23706';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
