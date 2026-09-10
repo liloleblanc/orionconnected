@@ -11617,6 +11617,12 @@ function uxgGateHtml(ctx) {
     if (_bDest && _bDest === _bDest.toUpperCase()) {
       _bDest = _bDest.toLowerCase().replace(/(^|[\s\-])([a-zà-ÿ])/g, function (m, p, c) { return p + c.toUpperCase(); });
     }
+    // v23688 — the code the destination badge wears while boarding. Resolved
+    // exactly as the rail resolves it (:8770): through _dispIata, then held to
+    // a real 3-4 letter code, so a feed sending a city name or an em-dash
+    // leaves the glyph in place rather than printing junk in the orb.
+    var _bIataOrb = _dispIata(String(locIata || '').toUpperCase());
+    if (!/^[A-Z]{3,4}$/.test(_bIataOrb)) _bIataOrb = '';
     var _stP = (typeof SS !== 'undefined' && SS[statusKey]) ? SS[statusKey] : null;
     // Status VALUE carries its state colour like the vertical rail
     // (green on-time, orange delayed... — Nick: 'the horizontal status
@@ -11674,7 +11680,20 @@ function uxgGateHtml(ctx) {
       : 'var(--airline-accent,' + _birAccFb + ')';
     var _birRailInk = _birF8 ? '#141414' : '#fff';
     var _BIR_BADGE_STYLE = 'aspect-ratio:1/1;width:clamp(46px,5.6vh,76px);height:clamp(46px,5.6vh,76px);min-width:clamp(46px,5.6vh,76px);min-height:clamp(46px,5.6vh,76px);max-width:clamp(46px,5.6vh,76px);max-height:clamp(46px,5.6vh,76px);border-radius:50%;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;background:' + _birRailBg + ';color:' + _birRailInk + ';box-sizing:border-box;padding:clamp(5px,0.7vh,10px);';
-    function _cell(icon, en, fr, val, noswap, cls) {
+    // v23688 — the last two arguments are what make the BOARDING shelves speak
+    // the rail's grammar, and both are opt-in: every existing call omits them
+    // and renders exactly as it did.
+    //   orbCode   — the badge holds this three-letter airport code instead of a
+    //               glyph, the way the rail's destination shelf does
+    //               (.v2-fi-orbcode, styled once for both).
+    //   titleHtml — title markup used VERBATIM, skipping the '|'-splitter
+    //               below. Needed because that splitter de-duplicates: it drops
+    //               any segment equal to the first, which is precisely what
+    //               "Destination | Destination" is. A caller that has already
+    //               asked _gateLbl to KEEP the duplicate hands the finished
+    //               pair over rather than fighting a rule meant for a different
+    //               case.
+    function _cell(icon, en, fr, val, noswap, cls, orbCode, titleHtml) {
       var _t1 = en, _t2 = fr;
       if (_frF && !noswap && fr && fr !== en) { _t1 = fr; _t2 = en; }
       var _sec = (_t2 && _t2 !== _t1)
@@ -11719,9 +11738,13 @@ function uxgGateHtml(ctx) {
         if (_isCode) _sec += ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _tail + '</span>';
       }
       return '<div class="v2-fi-row' + (cls ? ' ' + cls : '') + '">'
-        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '"><span class="ac-ico ' + icon + '"></span></div></div>'
+        + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '">'
+        +   (orbCode
+              ? '<span class="v2-fi-orbcode">' + orbCode + '</span>'
+              : '<span class="ac-ico ' + icon + '"></span>')
+        + '</div></div>'
         + '<div class="v2-fi-textcol">'
-        +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _t1 + '</span>' + _sec + '</div>'
+        +   '<div class="v2-fi-title">' + (titleHtml || ('<span class="v2-fi-lbl-en">' + _t1 + '</span>' + _sec)) + '</div>'
         +   '<div class="v2-fi-value">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
@@ -11850,7 +11873,24 @@ function uxgGateHtml(ctx) {
       // working the whole time; this call site simply never handed it a code,
       // so there was nothing to parse. Appending locIata is the entire fix, and
       // it is airline-agnostic because this row builds for every carrier.
-      + _cell('ac-ico-dest', _gateLbl('dest', _frF, function(w){return w;}, ' | ') + (locIata ? ' | ' + locIata : ''), '', _bDest, true)
+      //
+      // v23688 — AND NOW IT SPEAKS THE RAIL'S GRAMMAR. Nick: "Boarding panels to
+      // reflect new changes." The rail's destination shelf changed twice this
+      // week and this one followed neither: the code moved OFF the end of the
+      // title and INTO the orb ("I would like the airport code to go in the orb
+      // YYC for isntance"), and the title became a kept bilingual pair ("In
+      // French Please also add Destination even if twice Destination |
+      // Destination"). Side by side the two states read as two different signs —
+      // the board said "Destination | YHZ" until boarding began and
+      // "Destination | Destination" with a YHZ orb after. Same two arguments the
+      // rail uses: keepDup on the label, the code passed as orbCode.
+      + _cell('ac-ico-dest', '', '', _bDest, true, '', _bIataOrb,
+              _gateLbl('dest', _frF,
+                function (w, i) {
+                  return i
+                    ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>'
+                    : '<span class="v2-fi-lbl-en">' + w + '</span>';
+                }, '', true))
       + _cell('ac-ico-boarding', _gateLbl('boarding', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(boardTimeHtml)), true, _birRevCls(boardTimeHtml))
       + _cell('ac-ico-depart', _gateLbl('departure', _frF, function(w){return w;}, ' | '), '', _birMerid(_birStripRev(depTimeHtml)), true, _birRevCls(depTimeHtml))
       // v23115b — ALWAYS four shelves. The abnormal state (delayed /
@@ -12032,8 +12072,36 @@ function uxgGateHtml(ctx) {
       // missed fell through to the E-jet branch, so a Dash 8 could be called by
       // rows that do not exist on it.
       // Punctuation is stripped before matching for that reason.
-      var _pdEq = String(equipRaw || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-      var _pdIsDash = /DH4|DH8|DHC8|Q400|DASH8/.test(_pdEq);
+      //
+      // v23688 — AND THE EQUIPMENT STRING IS USUALLY EMPTY, SO THAT TEST WAS
+      // DECIDING NOTHING. Nick, on a Porter Q400 boarding by 33 rows: "it was
+      // supposed to be fixed yesterday". It was not the matcher that was wrong
+      // this time — it was the input. Read live off the YHZ board: EVERY Porter
+      // departure arrives with _aircraftCode:'' AND _aircraft:'' (PD202, PD470,
+      // PD2195, PD204, PD465, PD2494 — all blank), because the type is resolved
+      // per-flight by the enrichment poll well after this sign is first built.
+      // An empty string matches no Dash 8 spelling, so every Porter flight fell
+      // to the `: 33` else-branch and was called by E195-E2 row bands — on an
+      // aircraft that stops at row 20.
+      //
+      // THE FLEET IS IN THE FLIGHT NUMBER. Nick: "Porter flights in general with
+      // 4 numbers always operate the DH4 and 3 numbers the jet", and "thats how
+      // you can know that and YTZ vs YYZ or western flights etc" — the 4-digit
+      // series is the Billy Bishop turboprop network, the 3-digit series the
+      // jets flying YYZ and west. That is data this sign always has: the flight
+      // number is the one field the feed never leaves blank.
+      //
+      // Order of trust: the flight number decides; the equipment string is the
+      // fallback for a number this rule does not describe; and anything still
+      // unknown is called as the Dash 8, because calling rows 21-33 on a 20-row
+      // aircraft sends passengers to rows that do not exist, while the reverse
+      // merely calls a jet in three smaller bands.
+      var _pdNum = String(currentFlight.flight || '').replace(/[^0-9]/g, '');
+      var _pdEq = (String(equipRaw || '') + ' ' + String(equipName || ''))
+        .toUpperCase().replace(/[^A-Z0-9]/g, '');
+      var _pdIsDash = _pdNum.length === 4 ? true
+                    : _pdNum.length === 3 ? false
+                    : !/E19|E29|E95|195|290|295|EMBRAER/.test(_pdEq);
       var _pdRows = _pdIsDash ? 20 : 33;
       var _pdBand = Math.ceil(_pdRows / 3);
       _grpLbl = _gateLbl('rows', _frF, function(w){ return w; }, ' <span class="g8-bir-sep">|</span> ');
@@ -20261,6 +20329,29 @@ const COORDS = {
   // the weather column stayed '—' for them (Nick: 'Algiers has no weather').
   ALG:[36.69,3.22], ORN:[35.62,-0.62], CZL:[36.28,6.62], TUN:[36.85,10.23], ACC:[5.61,-0.17],
 
+  // ── v23688 — THE LAST ELEVEN. Nick: "ok so fix all of them to also have
+  //    weather", after "I can guarantee you those are not the only 4 missing".
+  //
+  //    He was right, and I had the CAUSE wrong: I told him these destinations
+  //    had no weather because they were missing a TIMEZONE. They are not.
+  //    fetchTomorrowWeather bails on one thing and one thing only —
+  //    `if (!COORDS[iata]) return null` — so a missing lat/lon is the whole
+  //    blocker, and a missing AP.tz only affects which HOUR gets picked.
+  //
+  //    Enumerated off the live Dublin board rather than guessed: of its 92
+  //    destinations, 81 already had coordinates and these eleven did not.
+  //    Eastern and southern Europe, which is where the gap was.
+  BCM:[46.522,26.910],    // Bacau, Romania
+  BOJ:[42.570,27.515],    // Burgas, Bulgaria
+  CLJ:[46.785,23.686],    // Cluj-Napoca, Romania
+  IOM:[54.083,-4.624],    // Isle of Man, Ronaldsway
+  LUX:[49.627,6.212],     // Luxembourg, Findel
+  MLA:[35.858,14.478],    // Malta, Luqa
+  OTP:[44.571,26.085],    // Bucharest, Henri Coanda
+  RIX:[56.924,23.971],    // Riga, Latvia
+  RMO:[46.928,28.931],    // Chisinau, Moldova
+  SPU:[43.539,16.298],    // Split, Croatia
+  TIA:[41.415,19.721],    // Tirana, Albania
 };
 
 // ── WEATHER SYSTEM (Tomorrow.io only) ────────────────────────────────────
@@ -22962,7 +23053,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23686';
+var FIDS_BUILD_TAG = 'v23688';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

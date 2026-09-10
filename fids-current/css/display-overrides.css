@@ -18012,3 +18012,47 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-weight: 400 !important;
 }
 
+
+/* ══ v23688 — PORTER'S TOP-LEFT ORB JOINS THE OTHER FIVE ═════════════════════
+   Nick: "Porter orb both regular and boarding first top is still blue vs white".
+
+   Measured in the live DOM on YHZ gate 3 rather than reasoned about, because
+   these two orbs have been mixed up twice already (v23546 and v23548 both named
+   the wrong one):
+
+     .v2-fi-orbwrap     — arrival shelf orb — background rgb(255,255,255)  ✓ white
+     .v2-fi-emblem-wrap — TOP-LEFT rail orb — background rgb(37,77,135)    ✗ blue
+                          img porter-p.svg, filter brightness(0) invert(1)
+
+   So on a Porter gate five badges and the arrival orb are white discs with navy
+   artwork (v23532), and this one orb is still a blue disc with a white p. It is
+   the odd one out in its own column, which is exactly what he is looking at.
+
+   Both halves have to ship together — the lesson v23536 wrote down and which
+   still holds: swapping the artwork alone leaves a blank orb, because the
+   emblem carries a whitening filter for its old dark ground. Ground goes white,
+   art goes navy, filter comes off.
+
+   Beatable from a stylesheet because _gateOrbParts writes background/filter as
+   plain inline declarations, NOT inline !important — checked at fids-core.js
+   :7843 and :7848 before writing this rather than after rendering nothing. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-emblem-wrap:not(.v2-fi-emblem-native) {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(21, 44, 83, 0.18) !important;
+}
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-emblem-wrap:not(.v2-fi-emblem-native) img[src*="porter-p.svg"] {
+  content: url('/logos/airlines/canadian/porter/porter-p-navy.svg') !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+  opacity: 1 !important;
+}
+
+/* The same white-on-white trap one row down. The destination badge now carries
+   the IATA code instead of a glyph, and .v2-fi-orbcode is set #ffffff for the
+   accent-coloured discs every other carrier has. On Porter's white disc that is
+   invisible — the identical fault as the Departure glyph in v23532 and the p in
+   v23536. Porter's navy, the same value the glyphs already take at :16159. */
+html body[data-gate-airline="PD"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
+  color: #152C53 !important;
+  -webkit-text-fill-color: #152C53 !important;
+}

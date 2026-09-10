@@ -52,15 +52,35 @@ test('a label with no code is untouched', () => {
 });
 
 test('the boarding row actually passes the code, for every airline', () => {
-  const line = SRC.split('\n').find((l) => l.includes("_cell('ac-ico-dest'"));
-  assert.ok(line, 'the destination shelf must still exist');
-  assert.ok(line.includes("locIata ? ' | ' + locIata"),
-    'the destination shelf must append locIata — the parser was already there, the code never was');
-  // The row builds once for all carriers: no airline branch may gate it.
+  // v23688 — the code moved OFF the end of the title and INTO the orb, so the
+  // shape this guards changed with it (Nick: "I would like the airport code to
+  // go in the orb YYC for isntance", then "Boarding panels to reflect new
+  // changes"). What it is guarding has not changed: the boarding shelf must
+  // still hand the destination code over, for every carrier.
   const at = SRC.indexOf("_cell('ac-ico-dest'");
+  assert.ok(at >= 0, 'the destination shelf must still exist');
+  const call = SRC.slice(at, SRC.indexOf('\n      + _cell(', at + 10));
+  assert.ok(/_bIataOrb/.test(call),
+    'the destination shelf must pass the resolved code as the orb code');
+  assert.ok(/_dispIata\(String\(locIata/.test(SRC),
+    'the orb code must be resolved through _dispIata, like every other code chip');
+  // The row builds once for all carriers: no airline branch may gate it.
   const before = SRC.slice(Math.max(0, at - 1500), at);
   assert.doesNotMatch(before.slice(-260), /airlineCode === '[A-Z0-9]{2}'\s*\?[^\n]*$/,
     'the destination shelf must not be behind a per-airline branch');
+});
+
+test('the boarding destination keeps the duplicate pair the rail keeps', () => {
+  // "In French Please also add Destination even if twice Destination |
+  // Destination" — the rail passes keepDup; the boarding shelf now does too.
+  // It cannot go through _cell's '|' splitter to get there, because that
+  // splitter DROPS any segment equal to the first, which is exactly this pair.
+  const at = SRC.indexOf("_cell('ac-ico-dest'");
+  const call = SRC.slice(at, SRC.indexOf('\n      + _cell(', at + 10));
+  assert.ok(/_gateLbl\('dest'[\s\S]*\}, '', true\)/.test(call),
+    'the boarding destination label must be built with keepDup');
+  assert.ok(/v2-fi-lbl-2/.test(call) && /v2-fi-sep/.test(call),
+    'and handed over as finished rail markup, not re-split from a pipe string');
 });
 
 // ── The cut-off ──────────────────────────────────────────────────────────
