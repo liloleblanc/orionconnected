@@ -9718,7 +9718,18 @@ function _buildV2MapCol(ctx, vars) {
           .replace(/&/g, '&amp;').replace(/</g, '&lt;')
           .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
       }
-      var _niTitle = _gateLbl('arrival', _frF, function (w, i4) {
+      // v23682 — Nick, pointing at the bottom-right panel: "I said change it
+      // to Votre Avion", and "this panel has NO TIME".
+      //
+      // He is right on both counts. This card is the no-inbound variant and
+      // carries no time at all, so titling it 'Arrival | Arrivée' labelled
+      // something that is not there. It is the same panel as the merged card
+      // below, which already titles itself yourAircraftHdr on Nick's earlier
+      // ruling — recorded in the comment at _mcTitleKey: "The Banner should
+      // always say ... Your Aircraft | Votre Appareil". That ruling was applied
+      // to one variant and never to this one, so the panel changed its name
+      // depending on whether the inbound was known.
+      var _niTitle = _gateLbl('yourAircraftHdr', _frF, function (w, i4) {
         return i4 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>'
                   : '<span class="v2-fi-lbl-en">' + w + '</span>';
       }, '');
@@ -22945,7 +22956,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23680';
+var FIDS_BUILD_TAG = 'v23684';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
