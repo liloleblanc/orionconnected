@@ -1723,7 +1723,7 @@ let subScreenVal = '';
 // fids_customize_<IATA> exists), and per-airport entries here still override
 // the default, so a screen that wants medium or large can have it.
 var BOARD_DENSITY_DEFAULTS = {};
-var BOARD_DENSITY_FALLBACK = 'small';   // 44px board rows / 68px BAGS rows
+var BOARD_DENSITY_FALLBACK = 'small';   // 36px board rows / 68px BAGS rows (v23502 cut 44 -> 36)
 try {
   if (document.body && !document.body.dataset.fidsLogoSize) {
     var _densAp = '';
@@ -23299,7 +23299,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23708';
+var FIDS_BUILD_TAG = 'v23710';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -24177,7 +24177,34 @@ function render() {
   const _measuredRowH = (parseFloat(tbl.dataset.fidsBaseRowH) || 0)
     || document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
-  const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
+  // v23710 — THE 40px FLOOR WAS REJECTING THE REAL ROW HEIGHT.
+  //
+  // Reported: the board does not fill the screen, stops at about 8 rows, leaves
+  // visible empty space and rotates.
+  //
+  // This line decides how tall a row is for PAGING. The floor exists to reject a
+  // nonsense measurement — a collapsed or not-yet-laid-out row measuring 0. It
+  // was written when the smallest density tier was 44px, comfortably above it.
+  // v23502 dropped `small` to 36px (flight-display.css: --fids-row-h: 36px) and
+  // nothing revisited the floor. `small` is also the shipped default
+  // (BOARD_DENSITY_FALLBACK), so this affects every screen that has not had a
+  // density chosen by hand.
+  //
+  // 36 is not greater than 40. So the honest measurement is discarded on every
+  // render and the fallback answers 62. The board then DRAWS 36px rows while
+  // DIVIDING the space by 62 — reserving 1.7x the height of every row it paints,
+  // which is the empty band below the last row and the early rotation.
+  //
+  // The stale comment on BOARD_DENSITY_FALLBACK still reads "44px board rows",
+  // which is what makes this the kind of bug that survives review.
+  //
+  // Fixed by making the fallback track the THEME rather than a constant, and by
+  // lowering the sanity floor below the smallest real tier instead of above it.
+  // 20px is under every tier (36/66/90) and still rejects a zero or collapsed
+  // measurement. The 62 literal remains only for the case where there is no
+  // theme value at all, which is the genuine cold start.
+  const rowH = _measuredRowH > 20 ? _measuredRowH
+             : (_themeRowH > 20 ? _themeRowH : 62);
   const available = _fidsRowsAvail();
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   const totalPages = Math.ceil(allFiltered.length / rowsPerPage);
@@ -28702,7 +28729,34 @@ function getPageCount(modeKey) {
   const _measuredRowH = (parseFloat((document.getElementById('fidsTable') || { dataset: {} }).dataset.fidsBaseRowH) || 0)
     || document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
-  const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
+  // v23710 — THE 40px FLOOR WAS REJECTING THE REAL ROW HEIGHT.
+  //
+  // Reported: the board does not fill the screen, stops at about 8 rows, leaves
+  // visible empty space and rotates.
+  //
+  // This line decides how tall a row is for PAGING. The floor exists to reject a
+  // nonsense measurement — a collapsed or not-yet-laid-out row measuring 0. It
+  // was written when the smallest density tier was 44px, comfortably above it.
+  // v23502 dropped `small` to 36px (flight-display.css: --fids-row-h: 36px) and
+  // nothing revisited the floor. `small` is also the shipped default
+  // (BOARD_DENSITY_FALLBACK), so this affects every screen that has not had a
+  // density chosen by hand.
+  //
+  // 36 is not greater than 40. So the honest measurement is discarded on every
+  // render and the fallback answers 62. The board then DRAWS 36px rows while
+  // DIVIDING the space by 62 — reserving 1.7x the height of every row it paints,
+  // which is the empty band below the last row and the early rotation.
+  //
+  // The stale comment on BOARD_DENSITY_FALLBACK still reads "44px board rows",
+  // which is what makes this the kind of bug that survives review.
+  //
+  // Fixed by making the fallback track the THEME rather than a constant, and by
+  // lowering the sanity floor below the smallest real tier instead of above it.
+  // 20px is under every tier (36/66/90) and still rejects a zero or collapsed
+  // measurement. The 62 literal remains only for the case where there is no
+  // theme value at all, which is the genuine cold start.
+  const rowH = _measuredRowH > 20 ? _measuredRowH
+             : (_themeRowH > 20 ? _themeRowH : 62);
   const available = _fidsRowsAvail();
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   return Math.max(1, Math.ceil(flights.length / rowsPerPage));
