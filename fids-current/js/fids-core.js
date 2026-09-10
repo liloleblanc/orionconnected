@@ -9261,7 +9261,7 @@ function _buildV2MapCol(ctx, vars) {
         arrival:  {en:'Arrival',     fr:'Arrivée',      es:'Llegada'},
         arrived:  {en:'Arrived',     fr:'Arrivé',       es:'Aterrizó'},
         delayed:  {en:'Delayed',     fr:'En retard',      es:'Retrasado'},
-        title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre appareil entrant', es:'Información de su aeronave entrante'}
+        title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre avion entrant', es:'Información de su avión entrante'}
       };
       // Status-adaptive Departure / Arrival labels
       // ETD/ETA → ATD/ATA once actually departed / arrived (status-adaptive)
@@ -21828,11 +21828,11 @@ const LS = {
   arrivingAt:{ en:'Arriving at',fr:'Arrivée à',es:'Llega a las',de:'Ankunft um',it:'Arrivo alle',pt:'Chega às',ja:'到着予定',zh:'预计到达',ar:'يصل في' },
   arrivedAt: { en:'Arrived at',fr:'Arrivé à',es:'Llegó a las',de:'Gelandet um',it:'Arrivato alle',pt:'Chegou às',ja:'到着',zh:'已到达',ar:'وصل في' },
   equipToday:{ en:'Equipment Today:',fr:"Appareil aujourd'hui :",es:'Aeronave hoy:',de:'Flugzeug heute:',it:'Aeromobile oggi:',pt:'Aeronave hoje:',ja:'本日の機材:',zh:'今日机型:',ar:':الطائرة اليوم' },
-  yourAircraft:{ en:'Your Aircraft Is Arriving From',fr:'Votre avion arrive de',es:'Su aeronave llega desde',de:'Ihr Flugzeug kommt aus',it:'Il vostro aereo arriva da',pt:'A sua aeronave chega de',ja:'ご搭乗機の出発地',zh:'您的飞机来自',ar:'طائرتكم قادمة من' },
+  yourAircraft:{ en:'Your Aircraft Is Arriving From',fr:'Votre avion arrive de',es:'Su avión llega desde',de:'Ihr Flugzeug kommt aus',it:'Il vostro aereo arriva da',pt:'O seu avião chega de',ja:'ご搭乗機の出発地',zh:'您的飞机来自',ar:'طائرتكم قادمة من' },
   // v23272 — the same panel once the aircraft is down. 'Is Arriving From'
   // becomes a lie the moment it lands, so the label changes with it.
-  acArrived:     { en:'Your aircraft has arrived',fr:'Votre avion est arrivé',es:'Su aeronave ha llegado',de:'Ihr Flugzeug ist angekommen',it:'Il vostro aereo è arrivato',pt:'A sua aeronave chegou',ja:'ご搭乗機が到着しました',zh:'您的飞机已到达',ar:'وصلت طائرتكم' },
-  acArrivedGate: { en:'Your aircraft has arrived at the gate',fr:'Votre avion est arrivé à la porte',es:'Su aeronave ha llegado a la puerta',de:'Ihr Flugzeug ist am Gate angekommen',it:'Il vostro aereo è arrivato al gate',pt:'A sua aeronave chegou ao portão',ja:'ご搭乗機がゲートに到着しました',zh:'您的飞机已抵达登机口',ar:'وصلت طائرتكم إلى البوابة' },
+  acArrived:     { en:'Your aircraft has arrived',fr:'Votre avion est arrivé',es:'Su avión ha llegado',de:'Ihr Flugzeug ist angekommen',it:'Il vostro aereo è arrivato',pt:'O seu avião chegou',ja:'ご搭乗機が到着しました',zh:'您的飞机已到达',ar:'وصلت طائرتكم' },
+  acArrivedGate: { en:'Your aircraft has arrived at the gate',fr:'Votre avion est arrivé à la porte',es:'Su avión ha llegado a la puerta',de:'Ihr Flugzeug ist am Gate angekommen',it:'Il vostro aereo è arrivato al gate',pt:'O seu avião chegou ao portão',ja:'ご搭乗機がゲートに到着しました',zh:'您的飞机已抵达登机口',ar:'وصلت طائرتكم إلى البوابة' },
   welcomeTo: { en:'Welcome to',fr:'Bienvenue à',es:'Bienvenido a',de:'Willkommen in',it:'Benvenuti a',pt:'Bem-vindo a',ja:'ようこそ',zh:'欢迎来到',ar:'مرحباً بكم في' },
   nextDep:   { en:'Next departure from this gate',fr:'Prochain départ de cette porte',es:'Próxima salida desde esta puerta',de:'Nächster Abflug von diesem Gate',it:'Prossima partenza da questo gate',pt:'Próxima partida deste portão',ja:'このゲートからの次の出発',zh:'本登机口下一航班',ar:'المغادرة التالية من هذه البوابة' },
   boardNow:  { en:'Boarding now',fr:'Embarquement en cours',es:'Embarcando ahora',de:'Jetzt Boarding',it:'Imbarco in corso',pt:'Embarque agora',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
@@ -22621,8 +22621,8 @@ var _GATE_LBL = {
   // say your aircraft has arrived once at the gate it should say your
   // aircraft has arrived at the gate'). Down on the runway and still taxiing
   // is not the same news as parked on the stand.
-  acArrived:     { en:'Your aircraft has arrived', fr:'Votre avion est arrivé', es:'Su aeronave ha llegado', de:'Ihr Flugzeug ist angekommen', it:'Il vostro aereo è arrivato', pt:'A sua aeronave chegou', ja:'ご搭乗機が到着しました', zh:'您的飞机已到达', ar:'وصلت طائرتكم' },
-  acArrivedGate: { en:'Your aircraft has arrived at the gate', fr:'Votre avion est arrivé à la porte', es:'Su aeronave ha llegado a la puerta', de:'Ihr Flugzeug ist am Gate angekommen', it:'Il vostro aereo è arrivato al gate', pt:'A sua aeronave chegou ao portão', ja:'ご搭乗機がゲートに到着しました', zh:'您的飞机已抵达登机口', ar:'وصلت طائرتكم إلى البوابة' },
+  acArrived:     { en:'Your aircraft has arrived', fr:'Votre avion est arrivé', es:'Su avión ha llegado', de:'Ihr Flugzeug ist angekommen', it:'Il vostro aereo è arrivato', pt:'O seu avião chegou', ja:'ご搭乗機が到着しました', zh:'您的飞机已到达', ar:'وصلت طائرتكم' },
+  acArrivedGate: { en:'Your aircraft has arrived at the gate', fr:'Votre avion est arrivé à la porte', es:'Su avión ha llegado a la puerta', de:'Ihr Flugzeug ist am Gate angekommen', it:'Il vostro aereo è arrivato al gate', pt:'O seu avião chegou ao portão', ja:'ご搭乗機がゲートに到着しました', zh:'您的飞机已抵达登机口', ar:'وصلت طائرتكم إلى البوابة' },
   // Was hardcoded English ('Time left for arrival:') in the v2 inbound block,
   // on a board whose every other label is bilingual.
   timeToArr: { en:'Time to arrival', fr:'Temps avant l’arrivée', es:'Tiempo hasta la llegada', de:'Zeit bis zur Ankunft', it:'Tempo all’arrivo', pt:'Tempo até à chegada', ja:'到着まで', zh:'距到达时间', ar:'الوقت حتى الوصول' },
@@ -22652,7 +22652,7 @@ var _GATE_LBL = {
   // have printed the raw key, exactly as `preboard` and `preboardList` did on
   // air until v23530), and its text is "Your Aircraft Is Arriving From", which
   // is a sentence about a state. This is a label about a panel.
-  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre Avion', es:'Su aeronave', de:'Ihr Flugzeug', it:'Il tuo aeromobile', pt:'Sua aeronave', ja:'\u304a\u5ba2\u69d8\u306e\u6a5f\u6750', zh:'\u60a8\u7684\u98de\u673a', ar:'\u0637\u0627\u0626\u0631\u062a\u0643' },
+  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre Avion', es:'Su Avión', de:'Ihr Flugzeug', it:'Il tuo Aereo', pt:'Seu Avião', ja:'\u3054\u642d\u4e57\u6a5f', zh:'\u60a8\u7684\u98de\u673a', ar:'\u0637\u0627\u0626\u0631\u062a\u0643' },
   preboard:  { en:'Pre-boarding',  fr:'Pré-embarquement', es:'Preembarque', de:'Vorab-Einstieg', it:'Preimbarco', pt:'Pré-embarque', ja:'優先搭乗', zh:'优先登机', ar:'صعود مسبق' },
   genboard:  { en:'General boarding', fr:'Embarquement général', es:'Embarque general', de:'Allgemeines Boarding', it:'Imbarco generale', pt:'Embarque geral', ja:'一般搭乗', zh:'普通登机', ar:'صعود عام' },
   // v23522 — Porter's published pre-boarding list, verbatim from flyporter.com
@@ -22929,7 +22929,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23672';
+var FIDS_BUILD_TAG = 'v23676';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
