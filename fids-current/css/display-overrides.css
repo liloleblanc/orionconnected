@@ -17926,3 +17926,33 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   filter: contrast(1.45) brightness(0.98) !important;
 }
 
+/* ══ ONE SPACE EITHER SIDE OF THE BAR ════════════════════════════════════
+   Nick: "I also asked for the banners within panels to show as Status | Statut
+   (only one spacebetween)".
+
+   The markup looked right — the separator span contains exactly " | " — but
+   those spaces never render. .v2-fi-title is a FLEX container, and a flex item
+   trims its own leading and trailing whitespace, so the span draws as a bare
+   "|". The visible spacing is entirely the container's column-gap, which sat
+   at 13.44px: about three spaces on each side.
+
+   So the fix is the gap, not the margins. 0.25em is one space at this face and
+   scales with the label instead of pinning a pixel value that drifts as the
+   fitter resizes the text.
+
+   The .v2-fi-sep margin is zeroed alongside it: it was adding a further 6px
+   per side on top of the gap, which is how the total reached 19.4px.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-textcol .v2-fi-title {
+  column-gap: 0.25em !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-title .v2-fi-sep,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-value .v2-fi-sep,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-textcol .v2-fi-sep {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+

@@ -2877,7 +2877,7 @@ async function setGateBg(bgDiv, locIata) {
   }
 
   // 4. Openverse — city photo fallback
-  var cityName = CITY[locIata] || (AP[locIata]||{}).city || '';
+  var cityName = CITY[locIata] || _cityForIata(locIata) || '';
   if (cityName) {
     var ovUrl = await fetchOpenversePhoto(cityName);
     if (ovUrl) {
@@ -7378,7 +7378,7 @@ function renderMobileGateHtml(ctx) {
     return s;
   }
   var _homeIata = iata || '';
-  var _homeRaw = (typeof CITY !== 'undefined' && CITY[_homeIata]) ? CITY[_homeIata] : ((AP[_homeIata] || {}).city || _homeIata);
+  var _homeRaw = (typeof CITY !== 'undefined' && CITY[_homeIata]) ? CITY[_homeIata] : (_cityForIata(_homeIata) || _homeIata);
   var _homeCity = _cleanCity(_homeRaw) || _homeIata;
   var _destCity = _cleanCity(dest) || destIata || '—';
 
@@ -12436,8 +12436,20 @@ function uxgGateHtml(ctx) {
   // when the banner is light. Skipping the table here is what lets that branch
   // run. Scoped to YQM; every other airport resolves exactly as before.
   var _apIsYQM = String(iata || '').toUpperCase() === 'YQM';
-  var _bannerOverrideFile = _apIsYQM ? null
-    : (BANNER_LOGO_OVERRIDE[_bannerBrandCode] || BANNER_LOGO_OVERRIDE[airlineCode]);
+  // v23660 — Nick: "the logo is white on white".
+  //
+  // BANNER_LOGO_OVERRIDE is a table of pre-made WHITE wordmark files —
+  // air-canada-white.svg, delta-skyteam-lockup-white.svg, american-airlines-
+  // white.svg and so on. It exists for the near-black banner the boards used
+  // to have. Every banner is a LIGHT band now, so a white wordmark is
+  // invisible on all of them.
+  //
+  // Moncton has been skipping this table since its cream band shipped
+  // (_apIsYQM ? null). The condition is simply obsolete: what it really meant
+  // was "skip the white files when the band is light", and the band is now
+  // always light. The table is left in place — it is the right answer again
+  // the moment any dark banner returns.
+  var _bannerOverrideFile = null;
   var r1LogoSrc = _bannerOverrideFile || carrierLogoUrl(_bannerBrandCode || airlineCode);
   var r1LogoFallback = 'https://pics.avs.io/400/120/' + (_bannerBrandCode || airlineCode) + '.png';
   var _sz = BANNER_SIZE_OVERRIDE[_bannerBrandCode] || BANNER_SIZE_OVERRIDE[airlineCode] || { h: 140, w: 560 };
@@ -12724,7 +12736,11 @@ function uxgGateHtml(ctx) {
     // 82px against a 26px bar leaves the same ~2px breathing room at the top
     // that 106 left in the full 112. Scoped to YQM: every other airport keeps
     // 106 until its banner grows a bar too.
-    _logoH = Math.min(_logoH, _apIsYQM ? 76 : 106);
+    // v23660 — one cap for all. This clears the DATE BAR at the foot of the
+    // band, and every airport has that bar now, not just Moncton. 106 was the
+    // no-bar value; leaving it anywhere would push that airline's wordmark
+    // straight through its own bar.
+    _logoH = Math.min(_logoH, 76);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -12743,7 +12759,14 @@ function uxgGateHtml(ctx) {
                      // Sunwing has no entry at all and falls through to the
                      // external lockup, which is colour art and reads on cream
                      // as it is — provided nothing whitens it first.
-                     : (_apIsYQM ? 'filter:none !important;' : ''))
+                     // v23660 — always none, never ''. An empty string lets
+                     // the cascade fall to fids.css:905, which paints
+                     // .g8-r1-logo white for the old near-black banner — the
+                     // second half of Nick's white-on-white. The comment above
+                     // anticipated exactly this ("the general light-banner
+                     // rollout, where _apIsYQM is false and the inline filter
+                     // would otherwise be ''"). It is that rollout.
+                     : 'filter:none !important;')
                  // Logo sits on a clean white rounded plate so it reads on the
                  // dark header and is never clipped by the banner band.
                  + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');
@@ -16055,7 +16078,7 @@ const gView = document.getElementById('gateView');
 
         if (!_showFlight) {
           // Full welcome/idle screen — replaces entire gate view
-          var _apCity = (AP[iata]||{}).city || iata;
+          var _apCity = _cityForIata(iata) || iata;
           // Build weather widget for welcome screen
           var _welcomeWx = '';
           var _tioIdle = TOMORROW_WX[iata];
@@ -16660,7 +16683,7 @@ const gView = document.getElementById('gateView');
       if (screenType === 'gate' && typeof startGateAds==='function') { startGateAds(); }
       // Fetch AI destination info for the ad carousel
       if (typeof loadDestInfoForGate === 'function') {
-        var _destCity = CITY[locIata] || (AP[locIata]||{}).city || locIata;
+        var _destCity = CITY[locIata] || _cityForIata(locIata) || locIata;
         loadDestInfoForGate(locIata, _destCity);
       }
       uxgActivateRotator();
@@ -17865,7 +17888,77 @@ const AP = {
 try { if (typeof window !== 'undefined') window.AP = AP; } catch (e) {}
 
 // ── CITY NAMES ────────────────────────────────────────────────────────────
+
+// ── CITY NAME FOR AN IATA CODE ───────────────────────────────────────────
+// v23662 — Nick: "why are we still getting locations with no Names and no
+// weather", and "I can guarantee you those are not the only 4 missing ...
+// even within Canada".
+//
+// He was right, and the cause is not a short table. Every call site resolved
+// a city as:
+//
+//     CITY[iata] || _cityForIata(iata) || ''
+//
+// but AP entries are shaped { name: 'Dublin Airport', tz: 'Europe/Dublin' } —
+// checked all 139 of them: 139 carry `name`, ZERO carry `city`. So the second
+// term is permanently undefined and the fallback has never once fired. Any
+// airport outside CITY renders BLANK even when AP knows exactly what it is,
+// which is why the gap shows up on Canadian destinations too.
+//
+// Seven call sites read `.city`. They all go through here now, so the fallback
+// chain lives in one place: the curated city name, else the airport's own name
+// with the boilerplate trimmed off ('Dublin Airport' -> 'Dublin'), else the
+// code itself so a label is never empty.
+function _cityForIata(iata) {
+  var code = String(iata || '').toUpperCase();
+  if (!code) return '';
+  try { if (typeof CITY !== 'undefined' && CITY[code]) return CITY[code]; } catch (e) {}
+  try {
+    var a = (typeof AP !== 'undefined') ? AP[code] : null;
+    if (a && a.name) {
+      return String(a.name)
+        .replace(/\s*\([^)]*\)\s*$/, '')                       // drop '(MET)' style suffixes
+        .replace(/\s+(?:International|Regional|Municipal)?\s*Airport$/i, '')
+        .trim() || code;
+    }
+  } catch (e2) {}
+  return code;
+}
+try { if (typeof window !== 'undefined') window._cityForIata = _cityForIata; } catch (e) {}
+
 const CITY = {
+  // ── v23662 — CITY CORRECTIONS AND ADDITIONS ─────────────────────────
+  // Nick: "only Tia shows as destination ... locations with no Names", then
+  // "I can guarantee you those are not the only 4 missing". Two faults, not one.
+  //
+  // ABSENT: TIA, OTP, RMO and BCM were in neither CITY nor AP, so they rendered
+  // as a bare code.
+  //
+  // WRONG: several entries hold the airport's VILLAGE rather than the city it
+  // serves, because the table was seeded from the feed's own location string.
+  // ADB read 'Gaziemir' (an Izmir suburb), KIR read 'Farranfore' (a Kerry
+  // village), and VRN read 'Caselle' — which is TURIN's airport town and simply
+  // wrong for Verona. A passenger reads the city, not the parish.
+  //
+  // Declared first so these win over any later duplicate key in the literal.
+  TIA: 'Tirana',
+  OTP: 'Bucharest',
+  RMO: 'Chisinau',
+  BCM: 'Bacau',
+  ADB: 'Izmir',
+  VRN: 'Verona',
+  KIR: 'Kerry',
+  ACE: 'Lanzarote',
+  TFS: 'Tenerife',
+  BGY: 'Bergamo',
+  BVA: 'Beauvais',
+  KRK: 'Krakow',
+  RMU: 'Murcia',
+  EMA: 'East Midlands',
+  NCL: 'Newcastle',
+  LBA: 'Leeds',
+  EXT: 'Exeter',
+
   // v23333 — destinations that appeared on the stream-tour airports' live
   // boards (Boston, Chicago, Dublin, Edinburgh, Heathrow, Keflavík, St.
   // John's…) with no name here, so the row printed the bare code.
@@ -20550,7 +20643,7 @@ function gateWeatherWidget(depIata, destIata, arrivalTs) {
 
   // City name helper — "Toronto YYZ" style
   function wxCityLabel(iataCode) {
-    var city = CITY[iataCode] || (AP[iataCode]||{}).city || '';
+    var city = CITY[iataCode] || _cityForIata(iataCode) || '';
     if (city) return tc(city) + ' ' + iataCode;
     return iataCode || '';
   }
@@ -22823,7 +22916,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23658';
+var FIDS_BUILD_TAG = 'v23668';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -28185,7 +28278,7 @@ function tick() {
 
   // Local-time label: '<City> Local Time | Heure Locale à <City>'.
   var _ci = String(iata || '').toUpperCase();
-  var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || ((AP[_ci] || {}).city) || _ci;
+  var _city = (typeof CITY !== 'undefined' && CITY[_ci]) || (_cityForIata(_ci)) || _ci;
   if (typeof normalizeDisplayCity === 'function') _city = normalizeDisplayCity(_city, _ci);
   // v23287 — the FIDS/BIDS banner clock is now the GATE clock: the time over
   // the bilingual date, nothing else (Nick: 'Simplify the FIDS and BIDS clock
@@ -33458,7 +33551,7 @@ function fetchAccorHotels(destIata, langOverride) {
 
   // If COORDS missing, geocode first then fetch
   if (!COORDS[destIata]) {
-    var cityName = CITY[destIata] || (AP[destIata]||{}).city || destIata;
+    var cityName = CITY[destIata] || _cityForIata(destIata) || destIata;
     fetch('https://geocoding-api.open-meteo.com/v1/search?name=' + encodeURIComponent(cityName) + '&count=1')
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(gd){
