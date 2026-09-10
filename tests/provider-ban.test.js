@@ -3,21 +3,16 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // PROVIDER BANS ARE ENFORCED BY CI, NOT BY A COMMENT SOMEBODY MIGHT READ.
 //
-// Nick, 2026-09-10, after finding an unattended cron I had added on 2026-08-26
-// that BOUGHT API credits on an account he had settled and closed:
-//   "NO RAPID API IS NOT APPROVED GET IT??????"
-//   "ITS TOO EXPENSIVE"
-//   "anything from Rapid API disconnected RIGHT NOW this was never authorized"
-//   "I am appalled right now this is not ok this is doing things agaisnt my wish"
+// Two settled decisions, both made 2026-09-10:
+//   · RapidAPI / AeroDataBox is not approved, on cost, and is disconnected.
+//     It had been running an unattended cron — added by a Claude session on
+//     2026-08-26 — that bought API credits on a closed account.
+//   · airplanes.live declined our access request. Closed question.
 //
-// and, on the fifth time of being told:
-//   "this must be the 5th time i tell you no.... They do not do this...
-//    I emailed and I was told to fuck off."   (airplanes.live)
-//
-// Comments did not hold the line — three separate ones described the
+// Comments did not hold the line. Three separate ones described the
 // airplanes.live refusal as a "pending" registration, which is exactly why it
-// kept being re-proposed to him. These assertions do hold it: re-enabling
-// either provider turns CI red with his own words in the failure message.
+// was re-proposed session after session. These assertions do hold it:
+// re-enabling either provider turns CI red.
 //
 // See docs/FLIGHT-DATA-PROVIDERS.md.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -45,7 +40,7 @@ const CODE = WORKER
 
 test('the AeroDataBox kill switch is ON', () => {
   assert.match(WORKER, /const ADB_DISCONNECTED = true;/,
-    'ADB_DISCONNECTED must stay true — RapidAPI is not an approved provider and Nick has refused it on cost');
+    'ADB_DISCONNECTED must stay true — RapidAPI is not an approved provider and has been refused on cost');
 });
 
 test('adbFetch actually blocks, and does not fall through to fetch()', () => {
@@ -132,15 +127,15 @@ test('no comment describes the airplanes.live refusal as pending or outstanding'
     // explaining that it was a misreading.
     .filter(({ line }) => !/MISREAD|refused|closed question|do not|REFUSED/i.test(line));
   assert.deepEqual(lines.map(o => `${o.n}: ${o.line.trim()}`), [],
-    'airplanes.live is a CLOSED question — Nick emailed them and was refused. Do not describe it as pending.');
+    'airplanes.live is a CLOSED question — access was requested and refused. Do not describe it as pending.');
 });
 
 // ── Flightradar24 — the approved feed ─────────────────────────────────────
 
 test('EVERY FR24 call site is BOUNDED — by a budget, or by a cache', () => {
-  // Nick: "BE sparing with flight radar only 60000 a month its simple use when
-  // needed but use it". The last quota was lost to unattended polling, so the
-  // invariant is per-call-site, not "a budget exists somewhere in the file".
+  // The approved budget is 60,000 calls/month and the last quota was lost to
+  // unattended polling, so the invariant is per-call-site, not "a budget exists
+  // somewhere in the file".
   //
   // There are two independent budget gates with different local names — the DTW
   // schedule sweep uses `used`/`cap`, the ADS-B lookup uses `_used`/`_cap`. An

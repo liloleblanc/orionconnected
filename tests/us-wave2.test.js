@@ -43,7 +43,7 @@ test('dtw: uses EstimatedDateTime because Scheduled is a 0001 dummy', () => {
 
 test('dtw: one row per aircraft — no regional carriers, no codeshare duplicates', () => {
   const arr = dtwParseFeed(fx('dtw-arr-sample.json'), 'arr', NOW);
-  // Nick: 'I did not ask for you to put regional carriers on the main board'.
+  //
   // Delta Connection operators must never be the airline on a row.
   const regionals = arr.filter((x) => ['9E', 'OO', 'YX'].includes(x.arrival.airline.iata));
   assert.equal(regionals.length, 0, `regional carriers still shown: ${regionals.map((x) => x.number).join(', ')}`);

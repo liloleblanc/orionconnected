@@ -19,7 +19,7 @@
   --axr-display:"AC Nord Display","AC Nord Text","Montserrat","Helvetica Neue",Arial,sans-serif;
   --axr-body:"AC Nord Text","Montserrat","Avenir Next","Helvetica Neue",Arial,sans-serif;
   /* responsive logo reference — scales with the ad well height */
-  --axr-logo: clamp(24px, 3.6vh, 38px);    /* LOGO = 100% (sized down per Nick) */
+ --axr-logo: clamp(24px, 3.6vh, 38px); /* LOGO = 100% (sized down as specified) */
   --axr-name: calc(var(--axr-logo) * 0.72);/* NAME = 72% of logo (v22717: 'big on the name') */
   --axr-info: calc(var(--axr-name) * 0.85);/* INFO = 85% of name (v22717: 'tiny in the text') */
   position:relative; width:100%; height:100%; overflow:hidden;
@@ -33,13 +33,13 @@
 .axr-page{ position:absolute; inset:0; opacity:0; transition:opacity .8s ease; pointer-events:none; }
 .axr-page.axr-page-on{ opacity:1; }
 /* Page kicker (accent eyebrow) on page 3; page 2's "The hotel" label is
-   dropped (Nick, Jul 2026) — the hotel name itself is the heading there. */
+ dropped — the hotel name itself is the heading there. */
 .axr-page:nth-child(2) .axr-page-kicker{ display:none; }
 /* Page kicker + context hotel name on pages 2–3 */
 .axr-page-kicker{ font-family:var(--axr-body); font-size:calc(var(--axr-info) * 0.9);
   letter-spacing:.24em; text-transform: none;
   color:var(--all-gold); font-weight:500; margin-bottom:calc(var(--axr-info) * 0.3); }
-/* Brand policy (Nick): the hotel name is NEVER split across lines — one line,
+/* Brand policy: the hotel name is NEVER split across lines — one line,
    whole, shrunk-to-fit by the fitter in fids-core (no clamp, no ellipsis). */
 .axr-page-ctx{ font-family:var(--axr-display); font-size:calc(var(--axr-name) * 1.3); font-weight:700;
   line-height:1.05; letter-spacing:-.005em;
@@ -51,17 +51,17 @@
 .axr-list li{ position:relative; padding-left:1.65em; font-size:calc(var(--axr-info) * 1.18); font-weight:400;
   line-height:1.3; max-width:92%; letter-spacing:.005em; }
 .axr-list li::before{ content:"\00B7"; position:absolute; left:.1em; color:var(--all-gold); font-weight:700; font-size:1.35em; line-height:1; top:.04em; }
-/* Pictogram lines render the same plain gold dot (Nick: dots, not icons). */
+/* Pictogram lines render the same plain gold dot. */
 .axr-list li.axr-li-picto::before{ content:"\00B7"; background:none; width:auto; height:auto; top:.04em; }
 /* All pages use the gold chevron bullet. The old per-page icon-font glyphs
    (\e972/\e965) rendered as red ✕ marks on the amenity lists — they read
-   as "not available" (Nick's ibis shot). */
+ as "not available". */
 .axr-blurb{ margin:calc(var(--axr-info) * 0.6) 0 0; font-size:calc(var(--axr-info) * 0.98); font-weight:300; text-align:justify;
   line-height:1.46; opacity:.94; max-width:88%; letter-spacing:.01em;
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 .axr-sub-rating{ margin-top:calc(var(--axr-info) * 0.3); }
 /* ── IDENTITY ROW ─────────────────────────────────────────────────────────
-   Nick: the wordmark and the hotel name on one line, wordmark smaller. Only
+ the owner: the wordmark and the hotel name on one line, wordmark smaller. Only
    brands whose logo is a bare wordmark (Novotel, Mercure, Pullman, ibis…)
    render this row; a property lockup carries the name inside its artwork and
    never enters it, so Fairmont and Sofitel are untouched. The wordmark scales
@@ -87,8 +87,8 @@
 .axr-all .axr-all-sep{ width:1px; height:clamp(18px,2.4vh,28px);
   background:rgba(255,255,255,.3); flex:0 0 auto; }
 /* ── BILINGUAL COLUMNS ───────────────────────────────────────────────────
-   Nick: 'have them bilingual … in the languages the airport is in, so the 2
-   if 2 languages at the same time same screen'. Nothing announces which is
+
+Nothing announces which is
    which — the hairline between them is the only separator ('You dont need to
    announce English or french'). Collapses to one full-width column when the
    second language hasn't loaded, so the card is never half empty. */
@@ -128,7 +128,7 @@
 .axr-hero-img{ position:absolute; inset:0; background-size:cover; background-position:center; }
 .axr-hero-noimg{ background:linear-gradient(135deg,var(--axr-tint),var(--all-blue)); }
 /* Partial gradient — photo stays visible top/right; brand tint deepens bottom-left.
-   v22715 (Nick: Accor ads 'are very dark'): the veil was black .8→.42 across
+ v22715: the veil was black.8→.42 across
    half the card, stacked on Accor's own dusk photography — measured card
    luminance sat at 52-69/255. Lightened to .60→.25 fading out by 70%, the
    bottom tint pulled from 58% to 46% height, and the photo itself gets a
@@ -151,13 +151,13 @@
      so when the element was free to grow taller than that, the shape was
      letterboxed inside the layer: the cream box sat ~24px below the element
      top while the QR sat at the padding edge, and the QR visibly poked out
-     above it (Nick: 'sticks out'). Matching the aspect makes 'meet' exact —
-     the shape lands on the box with no distortion of Nick's curve. */
+ above it. Matching the aspect makes 'meet' exact —
+ the shape lands on the box with no distortion of the owner's curve. */
   aspect-ratio:329.655 / 74.46;
   /* extra left inset: the shape's top-left corner is one long sweeping curve,
      so copy set at an even padding would run into it */
-  /* v23305 — the RIGHT inset was the complaint (Nick: 'The barcodes are
-     sticking out of where its supposed to be'). The QR never actually crossed
+  /* v23305 — the RIGHT inset was the complaint
+The QR never actually crossed
      the cream — measured at nine viewports it sat 10–19px inside — but the
      mask's own box already ends 1.22% short of this element's right edge, so
      that inset was all the clearance the code had, against 34–60px on the
@@ -171,7 +171,7 @@
      before the mask, so the mask erased it and the card has had no shadow at
      all since the shape landed. */
   filter:drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
-/* Nick's Bubble.svg IS the container — box, sweeping top-left corner and the
+/* the owner's Bubble.svg IS the container — box, sweeping top-left corner and the
    ALL 'L' tail, one piece. Painted as a masked layer so it takes each brand's
    colour. Geometry from the file: the box occupies y 3.66→78.12 of a 122.044
    tall canvas, so to land the box exactly on this element the layer is
@@ -213,7 +213,7 @@
   bottom:clamp(22px,3.2vh,34px); z-index:3;
   /* Cap the block to the panel so tall content (many amenities + a long blurb)
      can never grow the bottom-anchored column past the top of the ad and clip
-     the LOGO off-screen (Nick: 'no logo showing' on Novotel/Sofitel Montréal —
+ the LOGO off-screen ( on Novotel/Sofitel Montréal —
      the block overflowed upward and the logo, its first child, was pushed out
      of view). Stays content-height (grounded at the bottom) until it would
      exceed the panel; then it caps and the expendable copy shrinks instead. */
@@ -245,7 +245,7 @@
 .axr-logo-text{ font-family:var(--axr-display); font-weight:700; font-size:var(--axr-logo); line-height:1;
   letter-spacing:.03em; text-transform: none; }
 /* NAME (78% of logo) — AC Nord Display */
-/* v22717 — the name follows Nick's standing brand policy (already written
+/* v22717 — the name follows the owner's standing brand policy (already written
    for .axr-page-ctx below): NEVER split across lines — one line, whole,
    shrunk-to-fit by _axrFitBubbleNames in fids-core. The v22716 balanced
    wrap was the wrong reading; the policy is no wrap at all. */
@@ -313,7 +313,7 @@
 .axr[data-brand-code="FAI"] .axr-logo img{ height:auto; max-width:min(80%,480px); max-height:clamp(96px,17vh,168px); }
 .axr[data-brand-code="FAI"] .axr-name{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.05em; font-size:calc(var(--axr-logo)*0.66); line-height:1.26; padding-bottom:.08em; text-transform:uppercase; }
 .axr[data-brand-code="FAI"] .axr-page-ctx{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-weight:400; letter-spacing:.03em; text-transform:uppercase; line-height:1.28; padding-bottom:.1em; }
-/* Room title was illegibly small in The Seasons (Nick) — the generic
+/* Room title was illegibly small in The Seasons — the generic
    .axr-room-name rule shrinks it to 1.0×; Seasons needs more body. */
 .axr[data-brand-code="FAI"] .axr-page-ctx.axr-room-name{ font-size:calc(var(--axr-name) * 2.3) !important; line-height:1.24 !important; padding-bottom:.06em; overflow:visible; color:#fff !important; opacity:1 !important; text-shadow:0 2px 14px rgba(0,0,0,.65); }
 /* Hotel-page feature phrases (ALL brands) — the brand-site tile row rebuilt
@@ -321,16 +321,16 @@
    display face by default; FAI overrides to The Seasons below. */
 .axr .axr-fai-feats{ margin:.2em 0 .3em; }
 /* The advantages line is the card's SECOND line and must never read smaller
-   than the paragraph under it (Nick: 'you should never have words in your
-   second line smaller than your third paragraph'). Sized well clear of
+   than the paragraph under it
+Sized well clear of
    .axr-blurb below, which sits at 0.98x. */
 .axr .axr-fai-feats span{ display:inline; font-family:var(--axr-display); text-transform:uppercase; font-size:calc(var(--axr-info) * 1.55); letter-spacing:.12em; line-height:1.7; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.55); font-weight:500; }
 .axr .axr-fai-feats span:not(:last-child)::after{ content:"\00B7"; color:#B88D5B; margin:0 .6em; }
 
 .axr[data-brand-code="FAI"] .axr-fai-feats{ margin:.2em 0 .3em; }
 .axr[data-brand-code="FAI"] .axr-fai-feats span{ display:inline; font-family:'FairmontName','The Seasons',Georgia,serif !important; text-transform:uppercase; font-size:calc(var(--axr-info) * 1.55); letter-spacing:.14em; line-height:1.8; color:#fff; text-shadow:0 2px 10px rgba(0,0,0,.55); }
-/* Second title line — room DETAILS in The Seasons, mixed case (Nick: 'ROOM
-   NAME / DETAILS, two sentences, Seasons font'). */
+/* Second title line — room DETAILS in The Seasons, mixed case
+*/
 .axr[data-brand-code="FAI"] .axr-room-details{ font-family:'FairmontName','The Seasons',Georgia,'Times New Roman',serif !important; font-style:italic; font-size:calc(var(--axr-name) * 1.35); line-height:1.32; color:#fff; opacity:.96; letter-spacing:.04em; text-shadow:0 2px 12px rgba(0,0,0,.6); margin:.12em 0 .3em; }
 .axr[data-brand-code="FAI"] .axr-page-kicker{ font-weight:300; letter-spacing:.3em; }
 .axr[data-brand-code="FAI"] .axr-sub{ font-size:calc(var(--axr-info)*0.88); margin-top:calc(var(--axr-info)*0.2); }
@@ -1323,8 +1323,8 @@
 .axr[data-brand-code="BKF"] .axr-amen span:not(:last-child)::after{ content:"•"; margin:0 .5em; color:#27AAE1; }
 .axr[data-brand-code="BKF"] .axr-all{ background:color-mix(in srgb, #102A3A 86%, #000); }
 
-/* Room pages — same grammar for every brand (Nick: 'All hotels should be this
-   way'): the ROOM is the subject of the page, so its name is the headline. The
+/* Room pages — same grammar for every brand
+: the ROOM is the subject of the page, so its name is the headline. The
    property line above it is an eyebrow, the details line an italic subtitle.
    Before this the property name (1.3×) outsized the room name (1.0×) and the
    body copy nearly matched both — a flat, cheap-looking block. */
@@ -1339,7 +1339,7 @@
   /* A long room name WRAPS; it is never shrunk to fit one line. The one-line
      fitter took 'Chambre avec lit King size et vue sur la cour' down past the
      size of the paragraph beneath it, so identical cards rendered their
-     headline at wildly different sizes (Nick: 'no consistency'). */
+ headline at wildly different sizes. */
   white-space: normal;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1352,7 +1352,7 @@
    page 2/3 heading, room-page eyebrow. Same face, same case, same tracking;
    only the SIZE changes with the role. Before this the same hotel read
    'New-York' in bold mixed case on one page and 'NEW-YORK' tracked caps on
-   the next (Nick: 'no consistency'). */
+ the next. */
 .axr .axr-name,
 .axr .axr-page-ctx:not(.axr-room-name),
 .axr .axr-room-hotel {
@@ -1382,7 +1382,7 @@
 }
 
 /* ── v22461 — PROPERTY-LOCKUP LOGO: consistent size, big enough, anchored ──
-   Nick: Sofitel lockup 'way too small'; the two Fairmont lockups render at
+ the owner: Sofitel lockup 'way too small'; the two Fairmont lockups render at
    different sizes. Root cause: the logos were sized height:auto with a small
    max-width (min(80%,480px)), so a VERY wide lockup (SOFITEL, ~6:1) got
    width-clamped and came out tiny, while different-aspect Fairmont SVGs hit
@@ -1418,7 +1418,7 @@
 
 /* Sofitel property-name font, declared at DOCUMENT level so the inline-SVG
    Sofitel lockups can use it (a font embedded inside an <img>-rendered SVG
-   never loads). MADE Outer Sans Light (Nick) — the closest match to the
+ never loads). MADE Outer Sans Light — the closest match to the
    Sofitel property-name cut: a light geometric that echoes the SOFITEL
    wordmark's open, spacious proportions. */
 @font-face {
@@ -1430,7 +1430,7 @@
 }
 
 /* Sofitel: the INLINE-SVG lockup (generated wordmark / name / emblem) renders
-   MUCH bigger and wider (Nick), like the Montréal art. It needs an auto-height
+ MUCH bigger and wider, like the Montréal art. It needs an auto-height
    parent so it can grow past the fixed 152px cap — but ONLY when the inline
    lockup is present. The baked-name IMG lockups (Sofitel Montréal etc.) MUST
    keep the v22461 fixed height: with height:auto the <img>'s height:100%
@@ -1439,7 +1439,7 @@
    ad panel — i.e. 'no logo showing'. Scope the override with :has() so only the
    inline case relaxes the height. */
 .axr[data-brand-code="SOF"] .axr-logo:has(.sof-inline-lockup) { height: auto !important; align-items: center !important; }
-/* v23246 — the lockup lost its emblem (wordmark over name only, per Nick's
+/* v23246 — the lockup lost its emblem (wordmark over name only, as specified's
    official Sofitel New York reference: 'The Sofitel logo is way too big …
    simply have Sofitel New York but proportional'), so the panel-filling
    94%/640px envelope tuned for the tall three-part art now oversizes a wide
@@ -1451,13 +1451,13 @@
   max-height: clamp(80px, 15vh, 130px) !important;
 }
 
-/* Fairmont TITLE font — The Seasons (Nick), the elegant high-contrast serif
+/* Fairmont TITLE font — The Seasons, the elegant high-contrast serif
    Fairmont sets its page titles in on fairmont.com. Used for text titles/names
    in a sentence (property-name heading, page context, offer/room title) and,
    in italic, for the amenity list. NOT the standalone logo lockup name — that
    stays part of the logo art. (Family kept as 'FairmontName' for continuity.) */
 /* The Seasons Regular (Elena Genova) — the REAL fairmont.com title serif,
-   proper licensed cut Nick supplied. Full glyph coverage verified (digits,
+ proper licensed cut the owner supplied. Full glyph coverage verified (digits,
    m², commas, &, accents) — replaces the Season Serif trial stand-in. */
 @font-face {
   font-family: 'FairmontName';
@@ -1467,7 +1467,7 @@
   font-display: swap;
 }
 
-/* Fairmont BODY font — Montserrat Medium (Nick), the body face on
+/* Fairmont BODY font — Montserrat Medium, the body face on
    fairmont.com. Used for the description, address, and QR caption. Scoped to a
    Fairmont-specific family name so it never changes other brands that merely
    list bare 'Montserrat' as an (unloaded) fallback. */
@@ -1479,9 +1479,9 @@
   font-display: swap;
 }
 
-/* Fairmont LOGO-NAME font — Franklin Gothic URW Book (Nick). The property
+/* Fairmont LOGO-NAME font — Franklin Gothic URW Book. The property
    name line inside the LOCKUP (under the script wordmark, e.g. 'EL SAN JUAN
-   HOTEL') is set in Franklin Gothic Book — Nick's spec for the logo name.
+ HOTEL') is set in Franklin Gothic Book — the owner's spec for the logo name.
    Distinct from titles (Season Serif) and body (Montserrat). */
 @font-face {
   font-family: 'FairmontLogoName';
@@ -1498,14 +1498,14 @@
    font-family presentation attribute has zero specificity, so the board's
    universal font override (or any stray rule) beats it. These rules pin the
    name fonts deterministically. Fairmont lockup name = Franklin Gothic Book
-   (Nick's spec for the LOGO name line); Sofitel = its property-name face. */
+ Sofitel = its property-name face. */
 .axr .fai-inline-lockup text { font-family:'FairmontLogoName','Franklin Gothic Book','ITC Franklin Gothic','Franklin Gothic Medium',Arial,sans-serif !important; }
 .axr .sof-inline-lockup text { font-family:'SofitelName',sans-serif !important; }
 .axr[data-brand-code="FAI"] .axr-logo:has(.fai-inline-lockup) { height: auto !important; align-items: center !important; }
 .axr[data-brand-code="FAI"] .axr-logo .fai-inline-lockup {
   /* Same footprint as the baked IMG lockups (.axr[FAI] .axr-logo img) so the
      generated lockup renders at the same scale as every other Fairmont logo
-     (Nick: 'the logo itself is simply way too big'). */
+ */
   height: auto !important;
   width: min(80%, 480px) !important;
   max-width: min(80%, 480px) !important;
@@ -1520,7 +1520,7 @@
    out short, a squarer one hit the height cap and came out tall); the
    property-lockup brands used a fixed 104-152px; the runtime inline lockups
    used a width with a 96-240px cap. Same card, same slot, a different size on
-   every hotel (Nick: 'I cant accept this its all different sizes').
+ every hotel.
    One height for wordmarks. Lockups — whose artwork has the property name
    built into it — get that height PLUS the name line every other brand prints
    underneath as its own row, so the wordmark inside them lands at the same
@@ -1565,7 +1565,7 @@
 
 /* ════════════════════════════════════════════════════════════════════════
    ONE SIZE PER ROLE — v22522
-   Nick counted four different sizes of the SAME hotel name inside one ad, and
+ the owner counted four different sizes of the SAME hotel name inside one ad, and
    he is right: the name was styled once per surface (page-1 headline, page-2/3
    context heading, room-page eyebrow, QR caption) and three of those were then
    run through a shrink-to-fit fitter that sized each one to its own line
@@ -1598,8 +1598,8 @@
 }
 /* The room name is the only line allowed to be bigger than the hotel name —
    but the gap to the line under it was absurd: 54px over 21px, a headline
-   shouting at a whisper (Nick: 'this should not be that big and then so small
-   its an oximoron'). The ladder is compressed so each step is a step, not a
+   shouting at a whisper
+The ladder is compressed so each step is a step, not a
    cliff: 1.45x over 0.85x reads as title-then-detail. */
 .axr .axr-page-ctx.axr-room-name{
   font-size:calc(var(--axr-name) * 1.28) !important;
@@ -1610,7 +1610,7 @@
 .axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.95) !important;
   margin:0 0 calc(var(--axr-info) * 0.14) !important; }
 /* v22732 — the caps selling line stops shouting over the prose, and the prose
-   grows to gate-legible size (Nick, Sofitel New York on the Delta gate:
+ grows to gate-legible size (the owner, Sofitel New York on the Delta gate:
    'wording and size fir this add is terrible' — measured live: a 22.8px caps
    headline sitting above a 15.7px paragraph, the hierarchy exactly inverted). */
 .axr .axr-fai-feats span{ font-size:calc(var(--axr-name) * 0.78) !important; }
@@ -1628,8 +1628,8 @@
    That is an ID selector, so it outranks anything scoped to .axr no matter how
    many !importants are on it — and page 1 is the only page whose hotel name is
    an <h1>. Result: the name rendered at 60px on the first page and 32.6px on
-   every other one (Nick: 'Toronto Centre on the first page is SUPER HUGE and
-   then its TINY'). The element is a <div> now, and these ID-scoped rules make
+   every other one
+The element is a <div> now, and these ID-scoped rules make
    sure no other headline rule in the gate CSS can reach into the card either.
    ════════════════════════════════════════════════════════════════════════ */
 .gad-media-col #gateAdCarousel .axr .axr-name,
@@ -1649,18 +1649,18 @@
 /* ── v23298 — THE PROPERTY NAME IS THE BIGGEST THING ON THE CARD ────────
    Measured on the Novotel Toronto Centre card: the name rendered at 16px —
    the SAME size as the body copy and SMALLER than the address line at 23px
-   (Nick: 'Hotel name is the same size as the text terrible'). .axr-idtext
+.axr-idtext
    already asks for var(--axr-logo) and already sets nowrap + ellipsis, so
    neither the size nor the wrapping rule was the problem: a per-brand
    [data-brand-code] block outranks it and was resetting both the size and the
    family — which is also why the name came out in AC Nord TEXT while every
    other display element on the same card correctly used AC Nord DISPLAY
-   (Nick: 'It is not the assigned font ... its not there').
+
 
    Sized off the viewport rather than --axr-logo, because that variable is what
    the per-brand blocks are overriding. nowrap + ellipsis are restated so a
    long name can never break mid-property ('Novotel Vaughan / Centre' on two
-   lines — Nick: 'big NONO'); it steps to an ellipsis instead, and the name
+ lines — ); it steps to an ellipsis instead, and the name
    line owns the full card width so that almost never triggers. */
 .axr .axr-idtext,
 .axr[data-brand-code] .axr-idtext,

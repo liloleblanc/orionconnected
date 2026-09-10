@@ -4,9 +4,9 @@
 // a per-TAB mirror (sessionStorage). Reading only the mirror means a second tab
 // is signed in for everything that uses _acGetToken and signed OUT for every
 // media call — uploads throw 'Not authenticated' and _isAdmin hides the Media
-// tab, while Customize still syncs happily to the cloud. That is the state Nick
-// hit: "Cannot add videos or pictures at all right now logos dont work", as an
-// admin with a valid token.
+// tab, while Customize still syncs happily to the cloud. That is the state
+// hit: videos and pictures cannot be added at all and logos do not work, while
+// signed in as an admin with a valid token.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');

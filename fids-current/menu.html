@@ -68,7 +68,7 @@
            always looked for menuLang_en .. menuLang_ar and got null every
            time, and menuToggleLang()/toggleLang() were both already wired and
            reachable. So the setting existed and worked, with no way to reach
-           it (Nick: 'whweres the langauige options').
+ it.
            Pick one or two — the second click adds, a third replaces the
            oldest. The cap lives in toggleLang() so it holds however the value
            is set, not just from these buttons. -->
@@ -97,7 +97,7 @@
         <button class="sm-pill active" id="menuMode_rotate" onclick="menuSetViewMode('rotate')">Rotate</button>
       </div>
 
-      <!-- ─── SCREEN SETUP (Nick: 'We cant have that in the menu?') ───
+      <!-- ─── SCREEN SETUP ───
            Orientation + the three per-monitor filters, so a screen can be
            set up by clicking instead of by hand-editing its URL. Every
            control still WRITES that URL (address bar, via replaceState),
@@ -191,7 +191,7 @@
         <optgroup label="Saved presets" id="cuPresetGroup"></optgroup>
       </select>
 
-      <!-- v23221 — cloud sync status (Nick: 'it needs to be global'): says
+      <!-- v23221 — cloud sync status: says
            whether this look reached the airport's cloud settings or stayed
            device-local because no one is signed in. Driven by _cuCloudPush. -->
       <div id="cuCloudSyncNote" data-sec="look-basic" style="display:none;margin:-8px 0 14px;font-size:12px;line-height:1.5;"></div>

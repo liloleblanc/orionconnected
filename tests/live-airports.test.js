@@ -1,5 +1,5 @@
 // v23335 — the airport picker must offer exactly the airports that have data.
-// Nick: "Maui doesn't work, all airports don't work"; "that's stupid to have an
+// "that's stupid to have an
 // airport with no feed on a list of airports that people would watch". A board
 // fills only when the worker has a handler for that airport; everything else
 // answers an empty 200 and paints blank. This test keeps the client's
@@ -24,7 +24,7 @@ const core = readFileSync(path.join(here, '..', 'fids-current', 'js', 'fids-core
 // IATA: TPA reads Tampa's own Acquia API straight from the browser; YUL, YTZ
 // and YHU call /flights/<iata>; LGA and EWR call /flights/panynj. They were
 // invisible to this test, so the rotator's roster could never list them and
-// the tour dropped them as feedless — which is exactly why Nick kept seeing
+// the tour dropped them as feedless — which is exactly why the owner kept seeing
 // airports he knew worked missing from the stream. Verified live 2026-09-07:
 // EWR 1235 rows, LGA 896, YUL 553, TPA 453, YTZ 144, YHU 51.
 //
@@ -85,7 +85,7 @@ test('every offered airport has a name and a timezone in the AP table', () => {
 });
 
 // v23338 — the mobile companion (app.html) has its own hardcoded airport
-// catalogue and its own picker, so it needs the same cut. Nick saw dead
+// catalogue and its own picker, so it needs the same cut. the owner saw dead
 // airports still on offer there after the board's picker was filtered.
 test('the mobile app offers the same live airports as the board', () => {
   const app = readFileSync(path.join(here, '..', 'fids-current', 'app.html'), 'utf8');

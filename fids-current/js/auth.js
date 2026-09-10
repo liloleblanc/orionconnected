@@ -26,8 +26,8 @@ const Auth = (() => {
   // the codebase checked for it. Its only real effect was cosmetic and
   // confusing: it was the DEFAULT value of currentRole, so every ordinary
   // signed-out moment — a closed tab, an expired token, a stray 401 — reported
-  // itself as "demo" (Nick: "I will be logged in as admin and then all of a
-  // sudden it will fall to the demo, that should not happen"). Nothing had
+  // itself as "demo"
+  // Nothing had
   // fallen anywhere; the session had simply ended, and the label made an
   // ordinary sign-out look like a mode switch.
   //

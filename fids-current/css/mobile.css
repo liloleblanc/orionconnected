@@ -44,7 +44,7 @@ html, body {
   .picker-card-title { font-size: 18px !important; letter-spacing: 3px !important; margin-bottom: 4px !important; }
   .picker-card-desc { font-size: 9px !important; line-height: 1.4 !important; }
   .picker-card-desc-fr { font-size: 8px !important; }
-  /* Trim the inline secondary description spans Nick added per card */
+ /* Trim the inline secondary description spans the owner added per card */
   .picker-card > div[style*="margin-top:12px"] {
     margin-top: 6px !important;
     font-size: 8px !important;
@@ -387,7 +387,7 @@ html, body {
   .gad-equip-img-large { max-height: 130px !important; margin-top: 6px !important; }
   .gad-equip-img-large img { max-height: 130px !important; }
 
-  /* "Operated by" line stays prominent — this is the line Nick called out */
+ /* "Operated by" line stays prominent — this is the line the owner called out */
   .gad-operator-row,
   .gad-equip-panel [data-op-row] {
     font-size: 14px !important;

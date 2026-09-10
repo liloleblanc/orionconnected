@@ -156,7 +156,7 @@ body[data-fids-logo-size="large"] .bidsv2-col-time { font-size: 30px; }
 body[data-fids-logo-size="large"] .bidsv2-col-status { font-size: 30px; }
 body[data-fids-logo-size="large"] .bidsv2-flight-row { padding: 22px 24px; }
 
-/* HARD FIXED row heights per size (Nick: 'a set size and not change, doesn't
+/* HARD FIXED row heights per size (t
    matter what's on screen — if it's 1 line it's 1 line'). Each size is an
    exact pixel height; rows never stretch or shrink with the flight count.
    Small was actually padded LARGER (12px) than medium's base, which is why the
@@ -328,7 +328,7 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   overflow: hidden;
 }
 
-/* v23440 — THE CITY COLUMN GETS THE ROOM IT NEEDS (Nick, YYC baggage:
+/* v23440 — THE CITY COLUMN GETS THE ROOM IT NEEDS (the owner, YYC baggage:
    'Words cutoff' — the board read 'Fort McMur…').
 
    Measured against the real stylesheet at board width: the origin column had
@@ -542,13 +542,13 @@ body[data-fids-theme="custom"] .bidsv2-footer-msg,
 body[data-fids-theme="custom"] .bidsv2-status-other { color: var(--fids-text, #ffffff) !important; opacity: .75; }
 body[data-fids-airline-style="emblem"] .bidsv2-airline-name { display: none !important; }
 
-/* ── Status grammar parity with the FIDS board (Nick, Jul 2026) ─────────────
+/* ── Status grammar parity with the FIDS board ─────────────
    Early = green, same family as Arrived. The renderer now normalizes raw
    feed statuses ('landed', 'late', 'ahead-of-schedule'...) before mapping
    the class, so state colors stop depending on the feed's exact wording. */
 body .bidsv2-col-status.bidsv2-status-early { color: #34d399 !important; }
 
-/* ── Baggage real wordmarks (Nick: 'should match baggage', Jul 2026) ───────
+/* ── Baggage real wordmarks ───────
    Same artwork and the same calibration as the FIDS board, ~0.66x for the
    baggage row budget. White variants on the dark rows; the airline tile
    stays in its white block on the left. */
@@ -604,7 +604,7 @@ body[data-fids-logo-size="small"] .bidsv2-airline-wordmark { transform: scale(0.
 body[data-fids-logo-size="large"] .bidsv2-airline-wordmark { transform: scale(1.2); transform-origin: left center; }
 body[data-fids-airline-style="emblem"] .bidsv2-airline-wordmark { display: none !important; }
 
-/* ══ BAGGAGE FULL-ROW STATE BLOCKS (Nick's GO, Jul 5 2026) ══════════════════
+/* ══ BAGGAGE FULL-ROW STATE BLOCKS ══════════════════
    Same grammar as the FIDS board: Delayed = whole row yellow with navy
    ink, Cancelled = crimson, Diverted = red with white ink. Identical on
    every theme (:nth-child(n) ties the zebra; body prefix beats the
@@ -620,7 +620,7 @@ body .bidsv2-flight-row.bidsv2-row-diverted, body .bidsv2-flight-row.bidsv2-row-
 /* Sun Country (SY) — Jul 2026 */
 .bidsv2-airline-wordmark[data-code="SY"] { height: 15px; }
 
-/* Nick's nudges Jul 5 2026 (~0.66x of the FIDS heights) */
+/* the owner's nudges Jul 5 2026 (~0.66x of the FIDS heights) */
 .bidsv2-airline-wordmark[data-code="B6"], .bidsv2-airline-wordmark[data-code="AS"] { height: 18px; }
 .bidsv2-airline-wordmark[data-code="F9"] { height: 15px; }
 .bidsv2-airline-wordmark[data-code="PD"] { height: 20px; }
@@ -629,7 +629,7 @@ body .bidsv2-flight-row.bidsv2-row-diverted, body .bidsv2-flight-row.bidsv2-row-
 .bidsv2-airline-wordmark[data-code="FI"] { height: 13px; }
 .bidsv2-airline-wordmark[data-code="BW"] { height: 14px; }
 
-/* ── Baggage follows LIGHT boards properly (Nick, Jul 2026): the old rule
+/* ── Baggage follows LIGHT boards properly: the old rule
    pinned a dark canvas under the white lettering; Mist now renders as
    Mist — light canvas, dark ink, brand-color wordmarks (the renderer
    picks the 'dark' artwork variant from the light-board state). ── */
@@ -650,7 +650,7 @@ body.fids-light-board .bidsv2-status-early { color: #157A43 !important; }
 body.fids-light-board .bidsv2-status-delayed { color: #A66F00 !important; }
 body.fids-light-board .bidsv2-empty { color: #3A4E66 !important; }
 
-/* ─── BOTTOM-BAND TICKER — baggage-hall info messages (Nick) ────────────── */
+/* ─── BOTTOM-BAND TICKER — baggage-hall info messages ────────────── */
 .bidsv2-bottom-band.bidsv2-ticker {
   display: flex;
   align-items: center;

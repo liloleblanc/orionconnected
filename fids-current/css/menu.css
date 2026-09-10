@@ -69,7 +69,7 @@
    media pickers append their modal to document.body, so they were never
    inside .settings-sidebar and never saw a theme at all — they sat on
    hardcoded near-black whether the console was light or dark, which is the
-   "Its so dark make it lighter" Nick is looking at. smApplyTheme stamps the
+ "Its so dark make it lighter" the owner is looking at. smApplyTheme stamps the
    root; light stays the default because :root already carries it. */
 .settings-sidebar[data-theme="dark"],
 html[data-console-theme="dark"] {
@@ -960,8 +960,8 @@ body:not(.sidebar-open) #fidsBoard {
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    v23172 — THE CONSOLE IS ISOLATED FROM BOARD STYLING
-   (Nick: "you cant even see what you are choosing and I am sure the colors
-   are screwed and half dont work for theming")
+
+
 
    The console is INJECTED INTO A BOARD PAGE, so the board's own stylesheets
    apply to it — and they win, because they are more specific than the

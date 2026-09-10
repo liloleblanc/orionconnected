@@ -2,8 +2,9 @@
 
 // v23514 — A BOARD THAT FAILED TO LOAD MUST BE ABLE TO RECOVER.
 //
-// Nick reported "Ottawa doesn't work" three times. Twice it was answered with a
-// story about the feed, and both times the feed was fine — verified again here:
+// The Ottawa board was reported as not working three times. Twice it was
+// answered with a story about the feed, and both times the feed was fine —
+// verified again here:
 // yow.ca returns 271 rows and the worker serves them with gates and belts. What
 // was actually broken was the board's own lifecycle:
 //

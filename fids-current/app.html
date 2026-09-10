@@ -176,7 +176,7 @@
   .fcard.dark .st.cancelled{color:#fca5a5;} .fcard.dark .st.boarding{color:#fff;}
   /* v23232 — a light bubble (AA/DL white spheres) carries its OWN dark ink,
      never the page theme's: in dark mode --txt is near-white, which painted
-     Tampa/20:53 white-on-white (Nick's MIA screenshot — "Colors"). Every text
+ Tampa/20:53 white-on-white. Every text
      token on a light card is pinned explicitly, mirroring how .fcard.dark pins
      white, so the phone theme can never leak onto a card. */
   .fcard.light .city,.fcard.light .time .hh{color:#0d1220;}
@@ -507,8 +507,8 @@ const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto',YTZ:'Toronto',YUL:'Mo
 // Fill any gaps from the airport catalogue so no destination ever shows as a
 // bare IATA code when we already know its name.
 for(var _ck in AIRPORTS){ if(!CITY[_ck]) CITY[_ck]=AIRPORTS[_ck].n; }
-// v23230 — THE APP SPEAKS THE BOARD'S LANGUAGE (Nick: 'The mobile version …
-// not following the same rules for some reason as main'). The board's full
+// v23230 — THE APP SPEAKS THE BOARD'S LANGUAGE
+// The board's full
 // CITY (2,400+ airports) and AIRLINE_NAME (190 carriers) maps arrive via
 // js/shared-names.js, generated from fids-core; the app's curated entries
 // win where both define a name, the shared maps fill the rest of the world —
@@ -536,7 +536,7 @@ const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':
   'CR9':'Mitsubishi CRJ-900','CR7':'Mitsubishi CRJ-700','CR2':'Bombardier CRJ-200','CR5':'Mitsubishi CRJ-550',
   'E75':'Embraer E175','E90':'Embraer E190','E95':'Embraer E195',
   'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop',
-  // v23233 — ICAO-style codes the MIA WebFIDS feed sends raw (B38M on Nick's
+  // v23233 — ICAO-style codes the MIA WebFIDS feed sends raw (B38M on the owner's
   // AC1649 screenshot), plus its house 737-800 shorthand.
   'B38M':'Boeing 737 MAX 8','B39M':'Boeing 737 MAX 9','B37M':'Boeing 737 MAX 7',
   'B737':'Boeing 737-700','B738':'Boeing 737-800','B739':'Boeing 737-900','7378W':'Boeing 737-800','B7878':'Boeing 787-8','B7879':'Boeing 787-9','B777':'Boeing 777','B767':'Boeing 767','B757':'Boeing 757','B747':'Boeing 747',
@@ -592,7 +592,7 @@ const SAMPLE=[
   {airline:'WS',flight:'WS3422',cityIata:'YYZ',schedTime:'18:05',estTime:'18:05',gate:'4',aircraft:'7M8',reg:'C-GWSV',state:'scheduled',timeliness:'onTime',operatedBy:'WestJet Encore'}
 ];
 // ── LANGUAGE (v23234) — English / Français / Español ─────────────────
-// Nick: "Is there no choices for language" — the boards are bilingual;
+// — the boards are bilingual;
 // the app now is too. Default follows the phone (auto); the globe-style
 // button in the top bar cycles EN → FR → ES and the choice persists.
 const I18N={
@@ -686,7 +686,7 @@ function wmUrls(code){
   const b=WORDMARK[code];
   if(b) return ['/logos/airlines/'+b+'-wordmark-dark.svg','/logos/airlines/'+b+'-wordmark-light.svg'];
   // v23230 — the boards' full wordmark catalogue backs the app's curated
-  // set (Nick: 'The airlines are not showing proper logos'): 47 carriers,
+  // set: 47 carriers,
   // resolved from fids-core's own maps against the real art on disk —
   // Virgin Atlantic, KLM, Icelandair, Air Inuit all render their marks.
   const sw=window.FIDS_SHARED_WORDMARK&&FIDS_SHARED_WORDMARK[code];
@@ -697,7 +697,7 @@ const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL
   UA:'#0033A0',WN:'#304CB2',B6:'#00205B',F8:'#2BA84A',F9:'#026845',PB:'#FCA404'};
 // v23232 — regionals that fly under exactly one mainline brand present AS that
 // brand, the big board's own rule (its name map: Jazz/Rouge → AIR CANADA,
-// Envoy/PSA/Piedmont → AMERICAN, Endeavor → DELTA). Nick's MIA screenshot had
+// Envoy/PSA/Piedmont → AMERICAN, Endeavor → DELTA). the owner's MIA screenshot had
 // MQ3435 on a generic dark card saying "AMERICAN" beside white American cards.
 // Multi-mainline operators (SkyWest OO, Mesa YV, GoJet G7, Republic YX) keep
 // their own identity — the board keeps them too.
@@ -909,7 +909,7 @@ function adbToCard(f,dir){
   let opCode=(((f.airline&&f.airline.iata)||'')).toUpperCase();
   // v23235 — MIA's WebFIDS splits "F9 1204" as carrier "F" + number "91204",
   // so a bare letter (or nothing) lands here and Frontier branded as "F"
-  // (Nick's screenshot). Re-derive from the flight number, preferring the
+  // Re-derive from the flight number, preferring the
   // two-char prefix whenever it names a carrier we know (F9, 9E, B6…).
   if(opCode.length<2){
     const _p2=(num.match(/^([A-Z0-9]{2})[0-9]/)||[])[1];
@@ -985,8 +985,8 @@ function _rawKey(f){
 // Fetch one direction across two back-to-back 12h windows. For airports with a
 // webhook (YQM/CYQM), overlay the fresher real-time records on the scrape.
 async function fetchDir(dir){
-  // v23230 — THE SAME DATA LAYER AS THE BOARDS (Nick: 'the gates are no
-  // wired so the connection is not made you didn't fix you you built over
+  // v23230 — THE SAME DATA LAYER AS THE BOARDS
+  // t fix you you built over
   // it'). The app used to run its own raw AeroDataBox windows and never
   // saw the per-airport authority feeds the boards use — which is exactly
   // where the gates live (YQM's cyqm feed carries TerminalGate; MCO's
@@ -1264,8 +1264,8 @@ const APP_LIVE_AIRPORTS = new Set([
 function buildAirportOptions(){
   const sel=document.getElementById('apSelect');
   const groups={CA:[],US:[],INT:[]};
-  // v23338 — ONLY AIRPORTS THAT HAVE DATA ARE OFFERED (Nick: "so are you
-  // removing anything?"). AeroDataBox is gone; a board fills only where the
+  // v23338 — ONLY AIRPORTS THAT HAVE DATA ARE OFFERED
+  // AeroDataBox is gone; a board fills only where the
   // worker has a handler for that airport, and everything else returns an
   // empty 200 forever. The board's picker was filtered in v23335; this is the
   // same list for the mobile companion. AIRPORTS keeps every entry because its
@@ -1281,8 +1281,8 @@ function buildAirportOptions(){
   sel.innerHTML=html;
 }
 buildAirportOptions();
-// ── CONNECTED BOOT (Nick: "They need to be connected to the same devices…
-// the same system"). The app joins the same URL state the boards write:
+// ── CONNECTED BOOT
+// The app joins the same URL state the boards write:
 //   ?ap=MCO                  → that airport (else the tab's fids_airport,
 //                              else the app's last airport, else YQM)
 //   ?screen=baggage / ?belt= → open the Baggage tab
@@ -1307,7 +1307,7 @@ let BOOT_GATE='';
 })();
 // Refresh whichever view is showing (every 3 min).
 setInterval(()=>{ if(curView==='bag')loadBags(); else load(); },180000);
-// v23230 — iOS RESUME WATCHDOG, same rule the boards carry (Nick's 20:05
+// v23230 — iOS RESUME WATCHDOG, same rule the boards carry (the owner's 20:05
 // screenshot: cards frozen at 18:20 — iOS suspends a background tab's
 // timers, and a frozen WebKit context never fires them again). A heartbeat
 // proves the JS context is alive; on pageshow/visibilitychange, data older

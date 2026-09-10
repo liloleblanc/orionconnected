@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // THE AIRPORT CODE MUST BE INKED FOR THE CHIP IT IS ACTUALLY ON.
 //
-// Nick: "Air Canada airport code on the left is blue" / "Porter cannot see the
-// airport code same blue" / "I do not want any gray wording".
+// Reported: the Air Canada arrival code rendered blue, and Porter's was not
+// legible at all. Grey text has been ruled out as an option.
 //
 // Both reports were ONE bug. The chip under the code (.v2-fi-title) is painted
 // with a linear-gradient on AC and Porter. A gradient lives in
@@ -95,7 +95,7 @@ test('the last-resort ink is the label beside it, never a hardcoded neutral', ()
   assert.ok(lbl !== -1, 'the pick must consider the label ink');
   assert.ok(deep === -1 || lbl < deep,
     'the label ink must be tried BEFORE the #16283C navy — that navy is the only ' +
-    'neutral in the chain and is the grey Nick has ruled out');
+    'neutral in the chain and is the grey that has been ruled out');
 });
 
 test('the accent is still tried first — the code keeps wearing the carrier colour', () => {

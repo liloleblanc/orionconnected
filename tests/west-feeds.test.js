@@ -47,7 +47,7 @@ test('sfo: gates, carousel prefix stripped, remark maps', () => {
 test('sfo: codeshare rows collapse to the operating flight', () => {
   // The fixture holds two aircraft, each expanded by flysfo into an operator
   // row plus a marketing partner: UAL2025 is UA2025 + NZ2729, UAL1434 is
-  // UA1434 + ET1358. Nick's shot of the live board had ten rows to Los
+  // UA1434 + ET1358. the owner's shot of the live board had ten rows to Los
   // Angeles on one aeroplane. Only the operator survives.
   const dep = sfoParseFeed(fx('sfo-sample.json'), 'dep', NOW);
   const arr = sfoParseFeed(fx('sfo-sample.json'), 'arr', NOW);

@@ -157,12 +157,12 @@
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
   <link rel="stylesheet" href="css/shared.css?v=23166">
   <link rel="stylesheet" href="css/menu.css?v=23478">
-  <link rel="stylesheet" href="css/fids.css?v=23702">
-  <link rel="stylesheet" href="css/flight-display.css?v=23702">
+  <link rel="stylesheet" href="css/fids.css?v=23708">
+  <link rel="stylesheet" href="css/flight-display.css?v=23708">
   <link rel="stylesheet" href="css/baggage-display.css?v=23472">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23702">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23708">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (We: 'the old svreen shows up once in a while',
@@ -238,8 +238,8 @@ body:not([data-fids-banner]) .fids-banner { opacity: 0 !important; }
 /* v23289 — THE GUARD ABOVE LIFTS TOO EARLY. It releases the moment the screen
    TYPE is settled, which is several frames before the gate has actually
    rendered — so on a gate boot the board banner painted in that gap and the
-   first thing on screen was the old departures banner (Nick: 'First screen I
-   saw while it loaded was the old banner'). data-screen-type is stamped in the
+   first thing on screen was the old departures banner
+data-screen-type is stamped in the
    SAME breath as data-screen-ready, from the type that was just decided, and
    for a gate or baggage screen it never lifts. The runtime deletion of these
    nodes still happens; this is what covers the frames before it runs. */
@@ -870,7 +870,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23702"></script>
+<script src="js/fids-core.js?v=23708"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -973,8 +973,8 @@ window.addEventListener("DOMContentLoaded", async function() {
     // v23289 — stamp the SETTLED screen type in the same breath, so the
     // chrome lock is in force from the first painted frame. Releasing
     // data-screen-ready alone let the board banner paint in the frames
-    // before the gate rendered (Nick: 'First screen I saw while it loaded
-    // was the old banner').
+    // before the gate rendered
+    // 
     try { if (typeof _applyScreenChrome === 'function') _applyScreenChrome(); } catch (e) {}
 
     if (startMode === 'live') {
@@ -1012,8 +1012,8 @@ window.addEventListener("DOMContentLoaded", async function() {
           }
         } else {
           // ── v23446 — THE TOUR STOPS LANDING ON THE SAME GATE EVERY TIME.
-          // Nick: 'Gates dont really rotate everytime its on Calgary its the
-          // same gate and everytime its in a city its thet same gate'.
+          //
+          // 
           //
           // He is right, and it is this line: with no ?gate= the board took
           // option 0. The option list is built from the feed and sorted, so

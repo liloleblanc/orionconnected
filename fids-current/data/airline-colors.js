@@ -13,12 +13,12 @@
  * ========================================================================== */
 window.AIRLINE_BRAND_COLORS = {
   /* ── Canada ─────────────────────────────────────────────────────────── */
-  'AC': { r1:'#0A0A0A', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Air Canada (gray bar per Nick)
+  'AC': { r1:'#0A0A0A', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Air Canada (gray bar as specified)
   'QK': { r1:'#0A0A0A', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // Jazz / AC Express
   'RV': { r1:'#0A0A0A', r1Text:'#FFFFFF', r2:'#D82F2E', body:'#F7FAFD', bodyText:'#0F172A' }, // AC Rouge
   'WS': { r1:'#003366', r1Text:'#FFFFFF', r2:'#00ABC2', body:'#EAF3F5', bodyText:'#003A5D' }, // WestJet (NAVY bar — white wordmark)
-  // v23120 (Nick: 'with Porter a Cream colored background for the upper and
-  // blue font') — warm latte cream banner, ink = the wordmark's own navy
+  // v23120
+  // — warm latte cream banner, ink = the wordmark's own navy
   // (#152C53, sampled from porter.svg) so text and logo share one colour.
   'PD': { r1:'#EFE8DA', r1Text:'#152C53', r2:'#152C53', r3:'#254D87', body:'#EAEDF3', bodyText:'#112855' }, // Porter — cream upper / navy ink; was Blue Zodiac #112855
   'TS': { r1:'#0F4C81', r1Text:'#FFFFFF', r2:'#00A0DF', body:'#EAF1F7', bodyText:'#0F4C81' }, // Air Transat
@@ -39,7 +39,7 @@ window.AIRLINE_BRAND_COLORS = {
   /* ── United States ──────────────────────────────────────────────────── */
   'DL': { r1:'#003366', r1Text:'#FFFFFF', r2:'#C01933', body:'#F4F6F9', bodyText:'#003366' }, // Delta (official)
   'AA': { r1:'#101820', r1Text:'#FFFFFF', r2:'#0078D2', body:'#E8EAEC', bodyText:'#0F172A' }, // American
-  'UA': { r1:'#0033A0', r1Text:'#FFFFFF', r2:'#0033A0', r3:'#69B3E7', body:'#E9EBEE', bodyText:'#0C2340' }, // United — OFFICIAL: Rhapsody Blue #0C2340 (dark) / United Blue #0033A0 / Sky Blue accent (Nick-approved)
+  'UA': { r1:'#0033A0', r1Text:'#FFFFFF', r2:'#0033A0', r3:'#69B3E7', body:'#E9EBEE', bodyText:'#0C2340' }, // United — OFFICIAL: Rhapsody Blue #0C2340 (dark) / United Blue #0033A0 / Sky Blue accent
   'AS': { r1:'#01426A', r1Text:'#FFFFFF', r2:'#2774AE', body:'#EDF2F6', bodyText:'#01426A' }, // Alaska (official)
   'WN': { r1:'#304CB2', r1Text:'#FFFFFF', r2:'#F9B612', body:'#EAEDF7', bodyText:'#304CB2' }, // Southwest
   'B6': { r1:'#003876', r1Text:'#FFFFFF', r2:'#00A1DE', body:'#EAF0F7', bodyText:'#003876' }, // JetBlue

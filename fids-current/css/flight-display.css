@@ -79,7 +79,7 @@ html, body {
      card and the right-side board block have EQUAL margin to their
      respective viewport edges. The settings cog (position:fixed) floats
      over the banner and doesn't need flex space reserved for it. */
-  /* v223 — 160px ate too much board (Nick: shrink the top sections). */
+ /* v223 — 160px ate too much board. */
   height: 128px;
   flex-shrink: 0;
   display: flex;
@@ -332,7 +332,7 @@ body[data-fids-layout="right"] .fids-banner-time-block {
   text-align: left;
   padding: 6px var(--fids-pad-x);
   color: var(--fids-header-tint);
-  /* 16px → 22px per Nick: the column headers read too small on the boards. */
+ /* 16px → 22px as specified: the column headers read too small on the boards. */
   font-size: 22px;
   font-weight: 800;
   letter-spacing: 0.4px;
@@ -632,7 +632,7 @@ body {
   overflow: hidden;
   min-width: 0;
 }
-/* Every wordmark starts at the SAME x (Nick, Jul 2026): the logo slot is
+/* Every wordmark starts at the SAME x: the logo slot is
    a constant-width spacer even when a carrier has no tile/emblem, so the
    wordmark column lines up down the whole board. (The old v194 rule
    collapsed empty slots to zero, which left tile-less carriers flush-left
@@ -738,13 +738,13 @@ body {
      color logos like Delta/KLM/Hawaiian mangles their brand colors. */
 }
 
-/* ── Per-carrier wordmark heights — REGENERATED (Nick, Jul 2026) ────────
+/* ── Per-carrier wordmark heights — REGENERATED ────────
    Every wordmark SVG's viewBox was normalized to its true rendered ink
    (measured by rasterizing + alpha-scan; see git history), so a CSS height
    here is the exact letter height on screen — no more per-file padding
    guesswork. All marks share the same left edge: no per-code padding, the
    logo slot is a constant 54px + 14px gap even when empty.
-   Heights: Nick-approved values preserved (AC 18, WS 30, PD 28, UA 23,
+ Heights: approved values preserved (AC 18, WS 30, PD 28, UA 23,
    AM 26, AV 32...), his flagged four corrected (AA/DL 23, F9 20, B6 26
    with its tile restored), the rest set by visual weight
    H = 60/sqrt(ink aspect), clamped 16-29. Regenerate with the script in
@@ -754,8 +754,8 @@ body {
    per-airline heights into fractions of --fids-row-h so they would scale with
    the tier. That was the wrong trade: at a 30px row Porter's 28px became 14.5px
    and, because a 300x99 mark can only be as wide as three times its height, it
-   rendered 65px wide beside Air Canada's 198px and read as tiny. Nick: "looks
-   like porter is too small", then "If you just put porter back the way it was it
+   rendered 65px wide beside Air Canada's 198px and read as tiny.
+then "If you just put porter back the way it was it
    was fine".
    These numbers are a designer's judgement about how marks of very different
    aspect should read next to each other, and that judgement does not scale
@@ -912,7 +912,7 @@ body {
   letter-spacing: 0.3px !important;
   text-transform: none !important;
   text-align: left !important;
-  padding: 5px 18px !important; /* v22202 — Nick circled the header band: less height */
+ padding: 5px 18px !important; /* v22202 — the owner circled the header band: less height */
   white-space: nowrap;
 }
 #fidsTable thead th.col-status {
@@ -1597,7 +1597,7 @@ body[data-fids-airline-style="emblem"] .fids-cell-airline {
 /* ── Sched/Revised dual-column treatment (Phase 4 — added later) ────────── */
 /* Scheduled time strikes through when there's a revision */
 #fidsTable td.td-time-sched.is-revised {
-  /* v22852 (Nick): original times are dimmed, never barred */
+ /* v22852: original times are dimmed, never barred */
   text-decoration: none;
   opacity: 0.55;
   font-weight: 500;
@@ -1638,8 +1638,8 @@ body[data-fids-theme="cream"] #fidsTable td.td-time-rev:empty::before {
   color: #ffffff !important;
 }
 /* No strikethrough on cancelled rows — the red row IS the signal, and the
-   struck lettering was unreadable (Nick: 'dont cross out names you neeed to
-   be able to read the cancelation'). */
+   struck lettering was unreadable
+*/
 #fidsTable tbody tr.row-cancelled td {
   text-decoration: none !important;
 }
@@ -1743,12 +1743,12 @@ body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status * {
   letter-spacing: 0.5px !important;
   line-height: 1 !important;
 }
-/* v218.9 — date removed from banner per Nick. Hide it entirely. */
+/* v218.9 — date removed from banner as specified. Hide it entirely. */
 .fids-banner-date {
   display: none !important;
 }
 
-/* Bigger column header text — v218.9 bumped to 22px per Nick (the
+/* Bigger column header text — v218.9 bumped to 22px as specified (the
    entire AIRLINE / FLIGHT # / WEATHER / TO / GATE / TIME / REVISED /
    STATUS line is now noticeably larger). */
 #fidsTable thead th {
@@ -2003,8 +2003,8 @@ body[data-fids-theme="cream"] #fidsTable tbody tr.row-delayed td.td-status * {
 #fidsTable colgroup col.col-gate      { width: 110px !important; }
 #fidsTable colgroup col.col-time      { width: 130px !important; }
 #fidsTable colgroup col.col-time-rev  { width: 130px !important; }
-/* v22204 — 180px cut the French statuses ('DERNIER AP…', Nick: 'not fully
-   read'); the destination column is auto and absorbs the difference. */
+/* v22204 — 180px cut the French statuses ('DERNIER AP…',
+; the destination column is auto and absorbs the difference. */
 #fidsTable colgroup col.col-status    { width: 215px !important; }
 #fidsTable colgroup col.col-dest      { width: auto !important; }
 /* Long statuses (>=12 chars, flagged by the renderer) step the type down
@@ -2114,8 +2114,8 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
    Measured on a live Dublin departures board at 1024px wide: the flight
    column floors at 100px, but a six-character number ("VY8723", "FR9330")
    needs 118px at that row's 20px type — so EVERY flight number on the board
-   truncated to "VY8…", "FR7…", "EK1…" (Nick, repeatedly: 'flight numbers on
-   fids still are not showing all the number attrocious').
+   truncated to "VY8…", "FR7…", "EK1…"
+
 
    The second half of the same fault: these floors summed to 1066px BEFORE
    the flexible destination column got a single pixel. On a 1024px board the
@@ -2236,14 +2236,14 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
    navy-board redefine --fids-row-h, breaking consistency. Force
    the user-picked logo size via body[data-fids-logo-size=...].
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-/* Clearly-distinct fixed row heights per size (Nick: widen the spread so Small
+/* Clearly-distinct fixed row heights per size (the owner: widen the spread so Small
    / Medium / Large actually differ — 44/52/60 read the same). */
-/* v23502 — Small is actually small now. Nick, with Small already selected:
+/* v23502 — Small is actually small now. the owner, with Small already selected:
    "So Rows are too big". Measured on his board: data-fids-logo-size="small",
    --fids-row-h 44px, rows rendering exactly 44 — the control was working, the
    tier was just not small. 34px row / 26px logo keeps the three tiers clearly
    apart (34 / 66 / 90), which is what the note above widened the spread for. */
-/* v23504f — 36px, not 30. Nick asked for four things that all need height:
+/* v23504f — 36px, not 30. the owner asked for four things that all need height:
    Porter back at its old size (30px, which spilled 1.8px out of a 30px row),
    flair "a smidge bigger" than its 29px, icons bigger than 27.6px, and
    nothing crossing a row line. At 30px those are mutually exclusive — the
@@ -3469,7 +3469,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
 }
 
 /* v218.99 — FIDS board: bigger column headers + DISTINCT header band (per
-   Nick — it read as the same colour as everything around it).
+ the owner — it read as the same colour as everything around it).
    NB: the live table has NO .fids-table class, and every THEME sets its own
    `body[data-fids-theme=…] #fidsTable thead th { font-size:16px !important }`
    — so this must match that specificity (and sit later in the file) to win. */
@@ -3511,7 +3511,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
      All three touch the banner top and bottom. Desktop only. */
   :root { --fids-hdr-block-w: 380px; --fids-hdr-accent: #FAC120; }
   .fids-banner { position: relative !important; overflow: hidden !important; }
-  /* THREE clean sections (per Nick): [navy: time+date][white: airport logo]
+ /* THREE clean sections: [navy: time+date][white: airport logo]
      [gold: Departures+icon] — slanted seams, no background stripes leaking
      between them. Deep navy complements the gold block and the header line. */
   /* Banner base — the dark strip BEHIND the three tabs; it shows through the
@@ -3534,7 +3534,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
     display: flex !important; flex-direction: column !important;
     align-items: flex-start !important; justify-content: center !important;
     padding: 0 24px 0 48px !important; box-sizing: border-box !important;
-    /* black FADES into the tab from its angled left edge (per Nick) */
+ /* black FADES into the tab from its angled left edge */
     background: linear-gradient(90deg, #0b0f16 0%, #0e2748 32%) !important;
     transform: skewX(-24deg) !important; transform-origin: bottom left !important;
     border-radius: 30px 0 0 0 !important;
@@ -3564,8 +3564,8 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
     padding: 0 40px !important;
     padding-right: calc((100vw - 60px) / 3 + 54px) !important;
     /* v22367 — OPAQUE. At 0.97 the banner's accent chevrons and gradient
-       tails ghosted through the band as visible color patches (Nick: 'in
-       the white there is something happening where its different colors'). */
+       tails ghosted through the band as visible color patches
+*/
     background: rgb(248, 250, 252) !important;
     transform: skewX(-24deg) !important; transform-origin: bottom right !important;
     border-radius: 30px 0 0 0 !important;
@@ -3582,7 +3582,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
     object-fit: contain !important;
   }
 
-  /* Accent block — GOLD, exactly the RIGHT THIRD (equal sections per Nick).
+ /* Accent block — GOLD, exactly the RIGHT THIRD (equal sections as specified).
      Bleeds 80px past the right edge so the skew shows no corner gap; the
      icon+label pair centres INSIDE the visible gold. */
   .fids-banner-board {
@@ -3630,7 +3630,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
    regenerated calibration tables. The ink-tight file + the per-code table
    in display-overrides.css govern now.) */
 
-/* ── Clock readable on EVERY theme (Nick, Jul 2026) ─────────────────────────
+/* ── Clock readable on EVERY theme ─────────────────────────
    The redesigned three-tab banner puts the clock on the dark navy tab no
    matter which theme is active. Light themes (cream/paper/light/sky) were
    still inking the time dark — black text on a navy tab. This block sits at
@@ -3642,7 +3642,7 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
   body[data-fids-theme] .fids-banner-date { color: rgba(255,255,255,0.88) !important; }
 }
 
-/* ── Headers adapt to light boards (Nick, Jul 2026) ─────────────────────────
+/* ── Headers adapt to light boards ─────────────────────────
    body.fids-light-board is set at render time from measured row-background
    luminance (same signal as the wordmark ink). White header lettering on a
    pale board becomes navy on a soft navy tint — works on every light theme,
@@ -3653,7 +3653,7 @@ body.fids-light-board #fidsTable thead th {
   border-bottom-color: #0d2440 !important;
 }
 
-/* ── MIST — the new light theme (Nick, Jul 2026) ────────────────────────────
+/* ── MIST — the new light theme ────────────────────────────
    Light but never washed out: soft blue-grey board, pale rows one step off
    white, deep navy lettering. Headers and wordmark ink adapt automatically
    via the fids-light-board luminance system; the three-tab banner keeps its
@@ -3732,7 +3732,7 @@ body[data-fids-theme="mist"] .fids-banner-board .fids-icon-arr {
   fill: #0d2440 !important;
 }
 
-/* ── Kiosk scroll lock (Nick: 'still no top') ───────────────────────────────
+/* ── Kiosk scroll lock ───────────────────────────────
    html had overflow-y auto; when a display's larger fonts made content
    exceed the viewport, any stray scroll pushed the ENTIRE banner above the
    screen — and it stayed there. Board pages never legitimately scroll on
@@ -3742,13 +3742,13 @@ body[data-fids-theme="mist"] .fids-banner-board .fids-icon-arr {
   body.fids-v2-page { overflow: hidden !important; }
 }
 
-/* ── SEMANTIC STATUS COLORS — every theme (Nick) ────────────────────────────
+/* ── SEMANTIC STATUS COLORS — every theme ────────────────────────────
    Words: good states GREEN (On time / Scheduled / Boarding / Arrivé / Early),
    Final call & Gate closed AMBER, Departed muted. Never white-on-white.
    Rows: Delayed = WHOLE ROW amber. Cancelled/Diverted = WHOLE ROW red.
    Appended last so it out-cascades every per-theme rule above. */
 /* The [data-fids-theme] variants out-specify per-theme overrides. Base
-   statuses (Scheduled/Prévu, unknowns) read in PLAIN ROW INK — Nick,
+ statuses (Scheduled/Prévu, unknowns) read in PLAIN ROW INK —
    revised: green Prévu 'is clashing with early'. Only the affirmative
    states (On time / Early, rules below) stay green. */
 body #fidsTable tbody tr td.td-status,
@@ -3759,7 +3759,7 @@ body.fids-light-board #fidsTable tbody tr td.td-status,
 body.fids-light-board #fidsTable tbody tr td.td-status *,
 body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status,
 body.fids-light-board[data-fids-theme] #fidsTable tbody tr td.td-status * { color: #16283C !important; }
-/* ON TIME: plain row ink like Scheduled (Nick: 'On Time is still green')
+/* ON TIME: plain row ink like Scheduled
    — EARLY alone keeps the green so it stands out. (The base rule above
    already covers on-time; no override needed.) */
 
@@ -3824,7 +3824,7 @@ body.fids-light-board #fidsTable td.td-time-rev.has-rev * { color: #A66F00 !impo
 /* Departed flights: the WHOLE row fades, not just the status word. */
 body #fidsTable tbody tr:has(td.fids-status-departed) { opacity: 0.55; }
 
-/* ── Tinted-row legibility (Nick: 'cant see numbers and letters') ───────────
+/* ── Tinted-row legibility ───────────
    On DELAYED/CANCELLED rows every glyph takes the row ink — including the
    revised time, the struck original, and the status word, whose own color
    rules tied with the row rules and were winning by file order. Highlight
@@ -3873,7 +3873,7 @@ body #fidsTable tbody tr.row-delayed td.td-time-sched.is-revised,
 body #fidsTable tbody tr.row-cancelled td.td-time-sched.is-revised,
 body #fidsTable tbody tr.row-diverted td.td-time-sched.is-revised { opacity: 1 !important; }
 
-/* ── Early = GREEN numbers (Nick: amber on an early time reads as a delay) ──
+/* ── Early = GREEN numbers ──
    The revised time on an EARLY flight goes green with the word; the amber
    revised color stays for everything else. */
 body #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev,
@@ -3882,7 +3882,7 @@ body.fids-light-board #fidsTable tbody tr:has(td.fids-status-early) td.td-time-r
 body.fids-light-board #fidsTable tbody tr:has(td.fids-status-early) td.td-time-rev.has-rev * { color: #157A43 !important; }
 
 /* Revised "—" dashes: darker on light boards — 0.45 alpha read as white on
-   the white zebra rows (Nick). */
+ the white zebra rows. */
 body.fids-light-board #fidsTable td.td-time-rev:not(.has-rev),
 body.fids-light-board #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(22, 40, 60, 0.68) !important; }
 
@@ -3890,7 +3890,7 @@ body.fids-light-board #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(22
 body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev),
 body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev) * { color: rgba(255, 255, 255, 0.45) !important; }
 
-/* ── Baggage design owns its canvas (Nick: washed grey baggage) ─────────────
+/* ── Baggage design owns its canvas ─────────────
    bids-v2 is built on white lettering but keyed its background to the
    THEME's --fids-bg — a light board theme (Mist) turned the whole design
    pale grey-on-grey. It gets its own dark canvas on every theme. */
@@ -3898,7 +3898,7 @@ body .bidsv2-screen,
 body #baggageView .bidsv2-screen,
 body[data-page="bids"] .bidsv2-screen { background: #0a1628 !important; }
 
-/* ══ STATUS GRAMMAR (Nick's industry review) ═══════════════════════════════
+/* ══ STATUS GRAMMAR ═══════════════════════════════
    Standard flow = quiet TEXT colors, no blocks. Irregular ops = SOLID
    blocks with white lettering. History = faded rows. Light/dark board
    adaptation unchanged underneath. Appended last: wins all prior blocks. */
@@ -3968,7 +3968,7 @@ body #fidsTable td.td-gate .gate-changed-badge {
   padding: 3px 16px; border-radius: 9px; font-weight: 800;
 }
 
-/* ── Grammar refinements (Nick) ─────────────────────────────────────────────
+/* ── Grammar refinements ─────────────────────────────────────────────
    FINAL CALL: urgent → solid amber block on the status cell (same accent as
    the NEW GATE badge). History rows sit on a darker grey band under the fade
    so they read as a recessed section, not just dimmer text. */
@@ -3991,7 +3991,7 @@ body.fids-light-board #fidsTable tbody tr:has(td.fids-status-gate-closed) td { b
 body.fids-light-board #fidsTable td.td-status.fids-status-final,
 body.fids-light-board #fidsTable td.td-status.fids-status-final * { color: #102437 !important; }
 
-/* ── Grammar polish round 2 (Nick) ──────────────────────────────────────────
+/* ── Grammar polish round 2 ──────────────────────────────────────────
    1. DELAYED: cleaner YELLOW (the dark amber read muddy brown) — dark navy
       lettering for contrast on the brighter block.
    2. Revised '—' hyphens get an actual COLOR on dark boards (soft steel
@@ -4003,7 +4003,7 @@ body #fidsTable tbody tr.row-delayed:nth-child(n),
 body #fidsTable tbody tr.row-delayed:nth-child(n) td,
 body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n),
 body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n) td { background: #EDBB00 !important; }
-/* TWO-YELLOW striping (Nick: a run of delays was one unreadable yellow
+/* TWO-YELLOW striping (the owner: a run of delays was one unreadable yellow
    slab — 'it should be 2 different yellows like the regular colors').
    Even rows go a lighter yellow, mirroring the board's teal striping. */
 body #fidsTable tbody tr.row-delayed:nth-child(even),
@@ -4019,14 +4019,14 @@ body:not(.fids-light-board) #fidsTable td.td-time-rev:not(.has-rev) * { color: r
 body .bidsv2-screen,
 body #baggageView .bidsv2-screen,
 body[data-page="bids"] .bidsv2-screen { background: var(--fids-bg, #0a1628) !important; }
-/* (Light-board dark pin REMOVED Jul 2026 — Nick: 'baggage mist does not
-   stay mist'. baggage-display.css now carries a full light-board adaptation:
+/* (Light-board dark pin REMOVED Jul 2026 —
+baggage-display.css now carries a full light-board adaptation:
    Mist canvas, dark ink, brand-color wordmarks.) */
 
 body .bidsv2-carousel-label { color: #22344D !important; opacity: 1 !important; }
 body .bidsv2-carousel-number { color: #0E2748 !important; opacity: 1 !important; }
 
-/* ── STATE RULES RE-BASED ON ROW CLASSES (Nick: 'colors are very glitchy') ──
+/* ── STATE RULES RE-BASED ON ROW CLASSES ──
    History fades, the grey band and early-green revised times leaned on
    tr:has(td.fids-status-*). :has() is unsupported on older display
    hardware — those kiosks silently skipped every one of these rules, so
@@ -4058,7 +4058,7 @@ body.fids-light-board #fidsTable tbody tr.row-early td.td-time-rev.has-rev,
 body.fids-light-board #fidsTable tbody tr.row-early td.td-time-rev.has-rev * { color: #157A43 !important; }
 body .bidsv2-clock { color: #ffffff !important; opacity: 1 !important; font-weight: 800 !important; }
 
-/* ══ FINAL CALL = WHOLE ROW ORANGE (Nick's GO, Jul 5 2026) ══════════════════
+/* ══ FINAL CALL = WHOLE ROW ORANGE ══════════════════
    Solid #F28C00 across the row — hotter than the yellow Delayed block,
    dark navy lettering, identical on every theme. The old amber STATUS-CELL
    block dissolves into the row. */
@@ -4068,7 +4068,7 @@ body.fids-light-board #fidsTable tbody tr.row-final:nth-child(n),
 body.fids-light-board #fidsTable tbody tr.row-final:nth-child(n) td { background: #F28C00 !important; }
 /* The .fids-status-final / [data-fids-theme] variants keep this row ink
    AHEAD of the bumped amber status rules — amber-on-orange was invisible
-   (Nick: 'the final call, you can't see it'). */
+ */
 body #fidsTable tbody tr.row-final td,
 body #fidsTable tbody tr.row-final td *,
 body #fidsTable tbody tr.row-final td.td-status.fids-status-final,
@@ -4091,13 +4091,13 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
 /* Sun Country (SY) — official artwork wired Jul 2026 (ink aspect 7.5). */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="SY"] { height: 22px; }
 
-/* Nick's nudges Jul 5 2026 — mirrors display-overrides.css (which governs). */
+/* the owner's nudges Jul 5 2026 — mirrors display-overrides.css (which governs). */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { height: 28px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: 22px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PD"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="P3"] { height: 30px; }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="F8"] { height: 32px; }  /* v23504f — Nick: "flair could be a smidge bigger" */
+#fidsTable.td-airline.fids-airline-wordmark[data-code="F8"] { height: 32px; } /* v23504f — */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"] { height: 23px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="FI"] { height: 19px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="BW"] { height: 21px; }
@@ -4139,8 +4139,8 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
   }
 }
 
-/* ── 'merged' refinement (Nick: 'make it fade and blend a bit more like
-   art') — the hard angled seams become feathered fades. Scoped to the
+/* ── 'merged' refinement
+— the hard angled seams become feathered fades. Scoped to the
    merged style only: YQM's flag banner stays crisp — a flag should not
    blend. ── */
 @media (min-width: 701px) {

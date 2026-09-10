@@ -2,7 +2,7 @@
 
 // v23512 — THE FIDS TICKER AND THE BIDS BOTTOM BAND MUST STAY THE SAME HEIGHT.
 //
-// Nick's original report was "orlando screens dont allign": the two boards hang
+// Originally reported as two Orlando screens not aligning: the boards hang
 // side by side and their bottom bands did not share a top edge. v22831 fixed it
 // by giving the BIDS band the FIDS ticker's geometry — but by TYPING 59px and
 // 18px a second time. v23504 then shrank the FIDS ticker to ~38px, the copy did

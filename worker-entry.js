@@ -38,8 +38,8 @@ const MAP_ENGINE = {
     'https://unpkg.com/leaflet-arc/bin/leaflet-arc.min.js',
     'https://cdn.jsdelivr.net/npm/leaflet-arc/bin/leaflet-arc.min.js',
   ],
-  // v23167 — THE 3D ENGINE STACK IS GONE (Nick: "It never was installed
-  // properly", "Remove anything not serving seriously").
+  // v23167 — THE 3D ENGINE STACK IS GONE
+  // "Remove anything not serving seriously").
   //
   // This used to proxy MapLibre GL v5, three.js r128, GLTFLoader and a
   // Cesium airliner .glb "used by the 3D route-map prototype". That prototype
@@ -90,7 +90,7 @@ const TILE_PROVIDERS = {
   // "satellite with names" view. Uses CARTO's labels-only tiles: city/town
   // text, NO boundary lines. (The old `labels` provider was Esri
   // Boundaries_and_Places, whose bold white country borders read like flight
-  // paths on the route map — Nick: 'but the line??'.) New key so the edge
+  // paths on the route map — ) New key so the edge
   // cache serves fresh tiles instead of the day-cached bordered ones. Standard
   // XYZ axes.
   citylabels: 'https://a.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}.png',
@@ -251,7 +251,7 @@ export default {
     // {"error":true,"reason":"Daily API request limit exceeded…"}. r.ok was
     // therefore TRUE, and this route forwarded that refusal AND stamped it
     // max-age=1800 — so a single refusal poisoned the week's forecast for half
-    // an hour at a time (Nick: 'Weather doesnt work either'). The status is not
+    // an hour at a time. The status is not
     // enough; the body has to be read. Coordinates are rounded to ~1km so all
     // callers for one airport share a cache entry, and a good reading is kept
     // for six hours so an outage shows last week's real numbers rather than
@@ -259,7 +259,7 @@ export default {
     // ══════════════════════════════════════════════════════════════════
     // v23452 — WEATHER COMES FROM MET NORWAY NOW.
     //
-    // Nick: 'Weather doesnt work either'. open-meteo's free tier was refusing
+    // open-meteo's free tier was refusing
     // with "Daily API request limit exceeded". v23448 cached it, which stops
     // the burn — but two things came out of researching the replacement that
     // made a cache alone the wrong answer:
@@ -290,7 +290,7 @@ export default {
     // refetching before the Expires header, which sits ~30 minutes out. The
     // cache below already satisfied the last one at 30 minutes.
     //
-    // Attribution, per Nick: a line on the board reading "Weather data
+    // Attribution, as specified: a line on the board reading "Weather data
     // generously provided by MET Norway". NLOD allows the credit to live on an
     // about page; showing it on the board itself is more than required.
     // ══════════════════════════════════════════════════════════════════

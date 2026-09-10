@@ -68,7 +68,7 @@ STREAM_URL="${STREAM_URL:-https://fids.orionconnected.com/rotate.html?ap=MIA&mod
 # Stream 2 — MIAMI, English + Spanish (was Tampa). Use with:
 #   STREAM_URL="$MIAMI_URL" MUSIC_URL="$ORION_RADIO" bash setup.sh
 MIAMI_URL="https://fids.orionconnected.com/rotate.html?ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60"
-# The station Nick uses for the stream's background audio.
+# The station used for the stream's background audio.
 ORION_RADIO="https://audio-edge-w4d68.yul.o.radiomast.io/ref-128k-mp3-stereo"
 
 # Capture size + framerate + bitrate. Defaults (below) suit a 1 vCPU server:

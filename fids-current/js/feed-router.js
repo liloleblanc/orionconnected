@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════════
 // FEED ROUTER — the boards' flight-data layer, EXTRACTED from fids-core.js
-// (v23230, Nick: 'the gates are no wired so the connection is not made you
-// didn't fix you you built over it'). One source for every surface: the
+// (v23230,
+// t fix you you built over it'). One source for every surface: the
 // per-airport authority feeds (YQM/cyqm with real gates, MCO/GOAA, YUL/ADM,
 // TPA, YYZ, YHU, YTZ, PANYNJ, MIA) with the AeroDataBox windows as the
 // fallback — the boards and the mobile app now run THIS SAME file instead
@@ -234,7 +234,7 @@ function tpaToAdbFlight(f) {
   const _c = (o) => (o && o.content != null ? String(o.content).trim() : '');
   // Codeshare rows pack linecode/number/line as LISTS (arrays or comma-joined
   // strings). Blind String() concatenation shipped flights like ",KL2385,7157"
-  // to the board — no recognizable carrier, broken logo, dead branding (Nick's
+  // to the board — no recognizable carrier, broken logo, dead branding (the owner's
   // TPA Belt 6 screenshot). Tokenize every multi-value field and pick ONE
   // primary flight instead.
   const _toks = (o) => {
@@ -272,7 +272,7 @@ function tpaToAdbFlight(f) {
   // Through-flights list EVERY stop in city (code AND content can be lists).
   // The airport code must be the FIRST stop only — "SFO,LAS" resolved to no
   // airport at all, which killed the weather column and the IATA chip on
-  // multi-stop rows (Nick: 'weather does not work'). The display name keeps
+  // multi-stop rows. The display name keeps
   // the full comma list so the destination flip can cycle leg by leg.
   const _cityCodesRaw = (f.city && f.city.code != null) ? f.city.code : '';
   const _cityCodes = (Array.isArray(_cityCodesRaw) ? _cityCodesRaw : String(_cityCodesRaw).split(','))
@@ -282,7 +282,7 @@ function tpaToAdbFlight(f) {
   // ('Houston - Intercontinental'). So a comma in city content IS a stop
   // list, array or string alike.
   // ' - Intercontinental' / ' - O'Hare' qualify the airport, not the city; a
-  // board shows the city (Nick). Dropped at ingest so every surface — row,
+  // board shows the city. Dropped at ingest so every surface — row,
   // gate rail, right card, flip — reads the same clean name.
   const _cityNames = _toks(f.city).map(function (n) {
     return (typeof _cityFromStopLabel === 'function') ? _cityFromStopLabel(n) : n;
@@ -453,7 +453,7 @@ function yulToAdbFlight(f) {
   const home = { iata: 'YUL', icao: 'CYUL', name: 'Montréal-Trudeau' };
   // The worker enriches the baggage-hall window of arrivals with
   // Terminal_Belt__c from ADM's flight-details apex — a REAL carousel
-  // number (Nick proved it on the website: WS2903 -> belt 10).
+  // number.
   const yulBelt = (!isDep && f.TerminalBelt != null && f.TerminalBelt !== '') ? String(f.TerminalBelt) : '';
   const homeSide = {
     airport: home,
@@ -1142,7 +1142,7 @@ async function adbFetch(iata, direction) {
   // Malicious Activities') instead of JSON. Measured here over 26 requests,
   // with and without a browser User-Agent: ~30% blocked, scattered rather
   // than bursty, and identical either way — so it is not bot detection we can
-  // dress around, and it hits Nick's boards exactly as it hits us.
+  // dress around, and it hits the owner's boards exactly as it hits us.
   //
   // Every one of those used to drop the WHOLE Moncton list onto the ADB
   // scrape for that cycle, and the two sources do not agree: measured on the
@@ -1182,7 +1182,7 @@ async function adbFetch(iata, direction) {
           console.log(`[FIDS] YQM cyqm.ca feed ${direction}: ${list.length} flights (attempt ${attempt})`);
           if (list.length) {
             // The CYQM webhook subscription was wired but BYPASSED the moment
-            // the native feed adopted (Nick: 'are we still using webhooks').
+            // the native feed adopted.
             // Pushes carry the reg — the exact field neither cyqm.ca nor
             // ADB's by-number endpoint served for PD2293 (console: 'Direct
             // inbound resolved: PD2293 reg: (pending)' while the portal
@@ -1222,7 +1222,7 @@ async function adbFetch(iata, direction) {
       // v23099 — ONE RETRY, SHORT BACKOFF. On a freshly rebooted stream box
       // localStorage is empty (run.sh still wipes the profile), so a single
       // dropped request used to blank the board for a whole 5-minute poll
-      // cycle with no error anywhere — Nick: 'MCO is down again'. Measured:
+      // cycle with no error anywhere — Measured:
       // the feed itself is healthy (872 dep / 761 arr, CORS correct); the
       // board just gave up on the first miss.
       let r = await fetch(mcoUrl).catch(function () { return null; });
@@ -1319,8 +1319,8 @@ async function adbFetch(iata, direction) {
         } catch (e) {
           console.warn(`[FIDS] MCO ADB enrich ${direction}: ${e.message} — feed shows without aircraft/position`);
         }
-        // Same webhook aircraft merge as Moncton/TPA (Nick: 'we best check
-        // MCO as well') — no-ops until a KMCO Flight-Alert subscription
+        // Same webhook aircraft merge as Moncton/TPA
+        // — no-ops until a KMCO Flight-Alert subscription
         // feeds the cache. MCO's window-scoped enrichment above is already
         // foreign-leg-proof (airport-scoped list, minute-keyed match); this
         // adds the push path for tails ADB's scrape misses.
@@ -1339,8 +1339,8 @@ async function adbFetch(iata, direction) {
         try { localStorage.setItem('fids_mco_lastgood_' + dir, JSON.stringify({ ts: Date.now(), out: _mcoOut })); } catch (e) {}
         return _mcoOut;
       }
-      // Non-OK — NEVER fall through to the ADB scrape (Nick: 'the two systems
-      // are fighting — Orlando vs ADB'; the gate flipped American↔United on
+      // Non-OK — NEVER fall through to the ADB scrape
+      // ; the gate flipped American↔United on
       // load). Order: this session's last-good → localStorage last-good
       // (≤15 min) → EMPTY list. An empty cycle self-heals on the next poll;
       // a wrong-airline gate does not.

@@ -332,7 +332,7 @@
   min-height: 62px !important;
   height: 62px !important;
 }
-/* v219 — smaller destination headline in the top bar (per Nick) so the bar
+/* v219 — smaller destination headline in the top bar so the bar
    reads cleaner and leaves room for the airline wordmark beside it. */
 .g8-r1 .g8-r1-dest {
   font-size: clamp(26px, 2.4vw, 44px) !important;
@@ -1620,7 +1620,7 @@ body, body.gids-page, body.gate-page{
 }
 /* NOTE: an <img> is ALWAYS :empty (no child nodes) — the old bare :empty
    selector force-hid every alliance LOGO image, which is why Star Alliance
-   never showed (Nick). Only hide empty CONTAINERS. */
+ never showed. Only hide empty CONTAINERS. */
 .g8-wrap .g8-r1-star:empty:not(img):not(svg),
 .g8-wrap .g8-r1-star:not(:has(*)):not(img):not(svg) {
   display: none !important;
@@ -1654,7 +1654,7 @@ body, body.gids-page, body.gate-page{
 /* ═════════════════════════════════════════════════════════════════════════
  * v218.99.4 — flight info moved to LEFT COLUMN, row 2 hidden.
  *
- * Per Nick's reference: the status / boarding / departure / arrival fields
+ * Per the owner's reference: the status / boarding / departure / arrival fields
  * live in the aircraft column as a vertical stack, above the brand/reg
  * blocks. The horizontal row 2 strip is killed.
  *
@@ -1732,7 +1732,7 @@ body, body.gids-page, body.gate-page{
 
 /* Strike-through and revised time pair inside .v2-fi-value */
 :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value .g8-r2-strike {
-  /* v22852 (Nick): original times are dimmed, never barred */
+ /* v22852: original times are dimmed, never barred */
   text-decoration: none;
   opacity: 0.5;
   margin-right: 0.3em;
@@ -2172,7 +2172,7 @@ body, body.gids-page, body.gate-page{
   border-radius: clamp(10px, 0.9vw, 16px) !important;
 }
 
-/* ── v221b — header refinements (per Nick) ──
+/* ── v221b — header refinements ──
    flight: "Flight / Vol" (one colour) ON TOP of a big number (wordmark-sized),
    grouped close to the logo; gate: "Gate / Porte" STACKED, bigger, big number. */
 .g8-wrap .g8-r1 {
@@ -2230,7 +2230,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .g8-r1-flightnum,
 .g8-wrap .g8-r1-gate { font-size: clamp(46px, 5vw, 74px) !important; line-height: 0.95 !important; }
 
-/* ── v221d — bigger header (per Nick) ── */
+/* ── v221d — bigger header ── */
 .g8-wrap .g8-r1 { height: 134px !important; min-height: 134px !important; max-height: 134px !important; }
 .g8-wrap .g8-r1-logoslot .g8-r1-logo,
 .g8-wrap .g8-r1-logoslot img.g8-r1-logo {
@@ -2243,7 +2243,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .g8-r1-flightnum,
 .g8-wrap .g8-r1-gate { font-size: clamp(56px, 6vw, 94px) !important; }
 
-/* ── v221e — flight block back to CENTER + even bigger logo (per Nick) ── */
+/* ── v221e — flight block back to CENTER + even bigger logo ── */
 .g8-wrap .g8-r1 {
   justify-content: space-between !important;
   height: 148px !important; min-height: 148px !important; max-height: 148px !important;
@@ -2626,7 +2626,7 @@ body, body.gids-page, body.gate-page{
 
 /* v218.99.46 — fix v218.99.45 specificity miss (existing rules had higher
    specificity and overrode my bumps). Also kill the opacity that made
-   everything look gray — Nick wants WHITE labels, gray only for (IATA). */
+ everything look gray — the owner wants WHITE labels, gray only for (IATA). */
 
 /* 1. BANNER — city name (v219: sized to fit the slim header; long Bolivian
    names like "Santa Cruz De La Sierra" were overflowing at the old 96–140px) */
@@ -2637,7 +2637,7 @@ body, body.gids-page, body.gate-page{
 }
 /* v219 — definitive slim header bar height. A .g8-wrap .g8-r1 rule (higher
    specificity than the plain .g8-r1 rules) so it actually wins the cascade.
-   140 → 112px per Nick: the banner should hug the airport-logo band and the
+ 140 → 112px as specified: the banner should hug the airport-logo band and the
    gate block (no dead space above/below them), not tower over them. */
 .g8-wrap .g8-r1 {
   height: 112px !important;
@@ -2834,7 +2834,7 @@ body, body.gids-page, body.gate-page{
 }
 
 
-/* v218.99.56 — Aircraft block layout per Nick.
+/* v218.99.56 — Aircraft block layout as specified.
    Type sits top-left, registration sits bottom-right (right-aligned).
    The aircraft image lives between them, centered. */
 .gad-map-col-v2 .v2-rc-aircraft {
@@ -2880,7 +2880,7 @@ body, body.gids-page, body.gate-page{
   display: none !important;
 }
 
-/* v218.99.57 — Nick's icon/spacing/status fixes:
+/* v218.99.57 — the owner's icon/spacing/status fixes:
    1. Icons FILL the red circle (reduce badge padding)
    2. Less space between rows
    3. Status value smaller than time values
@@ -2890,7 +2890,7 @@ body, body.gids-page, body.gate-page{
 
 
 
-/* v218.99.58 — AC rondelle + alignment per Nick:
+/* v218.99.58 — AC rondelle + alignment as specified:
    - Emblem wrap (AC roundel on Flight # row) was getting big padding,
      making the logo small inside. Fixed to match SVG badges.
    - Icons are now slightly bigger overall and aligned WITH THE VALUE
@@ -2918,7 +2918,7 @@ body, body.gids-page, body.gate-page{
    icon centered vertically in each row. Without this, the Status row
    (shorter value font) had its icon at a different Y than the time rows. */
 
-/* v218.99.61 — Aircraft block bigger, shelf-style separators per Nick.
+/* v218.99.61 — Aircraft block bigger, shelf-style separators as specified.
    Type and Registration on stacked rows below the aircraft image,
    matching the shelf style of the left column. */
 .gad-map-col-v2 .v2-rc-aircraft {
@@ -3081,7 +3081,7 @@ body, body.gids-page, body.gate-page{
   margin-left: 4px !important;
 }
 
-/* v218.99.66 — Final readability pass per Nick.
+/* v218.99.66 — Final readability pass as specified.
    NO UPPERCASE anywhere. All labels min 22px. */
 
 /* v218.99.72 — RIGHT COLUMN FINAL TYPE SCALE — TWO SIZES ONLY.
@@ -3217,7 +3217,7 @@ body, body.gids-page, body.gate-page{
   opacity: 1;
 }
 
-/* ── LABEL (small, proper case, GRAY per Nick's rule) ───────────────── */
+/* ── LABEL (small, proper case, GRAY as specified's rule) ───────────────── */
 :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row .v2-fi-label {
   font-size: clamp(19px, 2.2vh, 30px);
   font-weight: 600;
@@ -3242,7 +3242,7 @@ body, body.gids-page, body.gate-page{
 .g8-airline-PB :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-emblem-wrap,
 .g8-airline-SP :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-icon-badge,
 .g8-airline-SP :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-emblem-wrap { background: #FCA404 !important; }
-/* No exception for Flight # — Nick wants it to have the colon too */
+/* No exception for Flight # — the owner wants it to have the colon too */
 :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row .v2-fi-flight-label::after {
   content: ":";
 }
@@ -3470,7 +3470,7 @@ body, body.gids-page, body.gate-page{
 
 /* ════════════════════════════════════════════════════════════════════════
    INBOUND (right) PANEL — LIGHT with a VISIBLE airline tail/emblem + brand
-   accents (per Nick: light, brand front-and-centre, not dark). Cards go
+ accents. Cards go
    transparent over a soft-light column so the per-airline emblem watermark
    reads in the upper area; text stays dark (light-theme defaults); the kicker
    takes the airline accent for a brand pop.
@@ -3626,7 +3626,7 @@ body, body.gids-page, body.gate-page{
 }
 
 /* Gate block FLUSH to the screen: touches the top and right edges, so its
-   rounded corner IS the screen corner (per Nick — no inset gap). */
+ rounded corner IS the screen corner. */
 .g8-wrap .g8-r1-right { margin-right: 0 !important; }
 
 /* ── Flair (F8): the brand lime accent is LIGHT, so accent-backed elements
@@ -3635,8 +3635,8 @@ body, body.gids-page, body.gate-page{
 .g8-airline-F8 .g8-r1-right .g8-r1-gate { color: #1C1C1C !important; }
 .g8-airline-F8 :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row .v2-fi-svg { fill: #1C1C1C !important; }
 /* v23438 — THE BADGES ARE LIME NOW, SO THE GLYPH GOES BACK TO BRAND BLACK.
-   Nick: 'Flair is supposed to have the green ball I see where this is going
-   the other blacks are wrong they should be green with black markings'. The
+
+The
    renderer paints the rail badges #7AFF94 as of this build, so the green glyph
    this rule used to force would be green-on-green — the same invisibility it
    was written to cure, just inverted. The Flair EMBLEM badge (the green ball)
@@ -3668,8 +3668,8 @@ body, body.gids-page, body.gate-page{
   height: auto !important;
 }
 
-/* ── Gate tab final shape (Nick, Jul 2026: 'not angled anymore — rounded at
-   the top with a nice separation/border, time right next to it') ──
+/* ── Gate tab final shape
+──
    STRAIGHT tab, top-left corner rounded, a white left border + shadow to
    separate it from the banner field. No skew; the gate text sits upright. */
 .g8-wrap .g8-r1-right::before { display: none !important; }
@@ -3687,7 +3687,7 @@ body, body.gids-page, body.gate-page{
   transform: none !important;
 }
 
-/* ════════ v221f — Nick's tightening pass ════════ */
+/* ════════ v221f — the owner's tightening pass ════════ */
 /* 1. Flight NUMBER (centre) a tiny bit smaller — labels unchanged */
 .g8-wrap .g8-r1-flightnum { font-size: clamp(48px, 5.2vw, 82px) !important; }
 /* 2. Screen corner BLACK outside the gate tab's rounded corner: the banner
@@ -3783,12 +3783,12 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-val .v2-rc-opby-logo { height: clamp(26px,3.6vh,50px) !important; width: auto !important; max-width: 240px !important; object-fit: contain !important; display: block !important; }
 .g8-wrap .gad-map-col-v2 .v2-rc-opby-val b { font-size: clamp(26px,4vh,56px) !important; font-weight: 900 !important; color: #0f2238 !important; }
 
-/* ════════ Bottom banner removed (per Nick) — the main content row (g8-r4)
+/* ════════ Bottom banner removed — the main content row (g8-r4)
    is flex:1, so the three columns automatically reclaim the freed height. ════════ */
 .g8-wrap .g8-r5 { display: none !important; }
 
 /* ════════ v222 — Left column: 6 EQUAL panels filling the full height, bigger
-   type (Nick: same sizes, all bigger, fill the space). ════════ */
+ type. ════════ */
 .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-flightinfo-block {
   flex: 1 1 auto !important;
   justify-content: stretch !important;
@@ -3818,7 +3818,7 @@ body, body.gids-page, body.gate-page{
 }
 
 /* ════════ v222b — Left panels: title-top · thin divider · BIG bottom value
-   (Nick: number ~3/4, touches bottom, line under the title; between-panel
+ (the owner: number ~3/4, touches bottom, line under the title; between-panel
    dividers thinner + different colour). ════════ */
 .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-flightinfo-block > .v2-fi-row {
   flex-direction: column !important;
@@ -3855,7 +3855,7 @@ body, body.gids-page, body.gate-page{
   line-height: 0.92 !important;
 }
 
-/* ════════ v222c — Left panels per Nick's markup notes ════════
+/* ════════ v222c — Left panels as specified's markup notes ════════
    • between-panel divider = AIRLINE ACCENT, thick (like the outer frame)
    • title sits TOP-RIGHT; underline hugs the right, only under the words,
      HALF the thickness of the between-panel divider
@@ -3894,7 +3894,7 @@ body, body.gids-page, body.gate-page{
   max-width: clamp(64px,9vh,116px) !important; max-height: clamp(64px,9vh,116px) !important;
 }
 
-/* ════════ v222d — consistency pass (Nick): ════════
+/* ════════ v222d — consistency pass: ════════
    • titles: ONE colour, ONE size (no more 3 colours)
    • values: ONE uniform size across every panel, sized to FIT the longest
    • icons: never taller than the value, vertically CENTRED with the font */
@@ -3930,7 +3930,7 @@ body, body.gids-page, body.gate-page{
   justify-content: flex-end !important;
 }
 
-/* ════════ v222f — left panels matched to Nick's mockup ════════
+/* ════════ v222f — left panels matched to the owner's mockup ════════
    • title CENTERED at top, teal underline centred (consistent on all panels)
    • between-panel dividers = NAVY bar colour, thick like the outer frame
    • subtle light gradient panel background
@@ -3965,7 +3965,7 @@ body, body.gids-page, body.gate-page{
   padding: clamp(4px,0.6vh,10px) clamp(8px,0.9vw,16px) !important;
 }
 .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-flightinfo-block > .v2-fi-row:last-child { border-bottom: 0 !important; }
-/* DIAGONAL LAYOUT (Nick's picture): title TOP-RIGHT with the accent line
+/* DIAGONAL LAYOUT: title TOP-RIGHT with the accent line
    touching the right edge; big value + icon in the BOTTOM-LEFT. */
 .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-flightinfo-block > .v2-fi-row {
   flex-direction: column !important; justify-content: space-between !important; align-items: stretch !important;
@@ -4027,7 +4027,7 @@ body, body.gids-page, body.gate-page{
 }
 
 /* ════════════════════════════════════════════════════════════════════════
-   v223 — LEFT PANEL to Nick's EXACT spec (512×1024, 6 equal rows, 2 columns)
+ v223 — LEFT PANEL to the owner's EXACT spec (512×1024, 6 equal rows, 2 columns)
    Icon column 30% (icon centred) · Text column 70% (label, full-width gold
    line, big value) — ALL text left-aligned from the same X. Overrides all
    earlier v222* layout rules (this block is last → wins).
@@ -4119,7 +4119,7 @@ body, body.gids-page, body.gate-page{
 /* v223b — Destination CODE on the label line (a touch bigger); squeeze more
    size into the values (fill more of each row). */
 .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-textcol .v2-fi-code {
-  font-size: 1.45em !important; font-weight: 800 !important;       /* YYZ bigger (per Nick) */
+ font-size: 1.45em !important; font-weight: 800 !important; /* YYZ bigger */
   color: var(--airline-accent, #D82F2E) !important;               /* accent-coloured */
   vertical-align: -0.06em !important;
 }
@@ -4155,7 +4155,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-textcol .v2-fi-value.v2-fi-status-diverted { color: #c01622 !important; }
 
 /* ════════════════════════════════════════════════════════════════════════
-   v224 — RIGHT COLUMN to Nick's spec. Mirrors the left's 6-shelf rhythm:
+ v224 — RIGHT COLUMN to the owner's spec. Mirrors the left's 6-shelf rhythm:
    • MAP = top half, with the "Your Aircraft | Votre Avion" title overlaid at
      the TOP and Speed/Altitude at the BOTTOM (both inside the map).
    • Bottom half = flight info → aircraft photo (maxed) → aircraft/operated,
@@ -4405,7 +4405,7 @@ body, body.gids-page, body.gate-page{
   line-height: 1.12 !important;
 }
 
-/* ── v218.99 — reduce the left-panel icon badges by ~15% (Nick). Real prior
+/* ── v218.99 — reduce the left-panel icon badges by ~15%. Real prior
    size was clamp(56px,8.8vh,108px); ×0.85 → clamp(48px,7.48vh,92px). Targets
    the .v2-fi-iconcol selector (the actual winner) so the reduction is exactly
    15%, covering both the teal icon circles and the flight-number emblem. ── */
@@ -4438,7 +4438,7 @@ body, body.gids-page, body.gate-page{
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 5 / 6 !important; flex: none !important; min-height: 0 !important; height: auto !important; }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 / 7 !important; flex: none !important; min-height: 0 !important; }
 /* 4-row flight-info variant (Arrival row present): row 4 takes a ~45% bigger
-   track so the first row's caps don't clip behind the shelf edge (Nick:
+ track so the first row's caps don't clip behind the shelf edge (
    'capped out… can't even see it'). The map row gives up the difference;
    the class is stamped by the renderer since :has() dies on kiosk browsers. */
 .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
@@ -4523,7 +4523,7 @@ body, body.gids-page, body.gate-page{
   background: #2b2e34 !important;
 }
 
-/* ── v218.99 — Header + speed bar: neutral dark GRAY for ALL airlines (Nick:
+/* ── v218.99 — Header + speed bar: neutral dark GRAY for ALL airlines (
    gray reads cleanly on every brand; the airline-tinted version clashed). ── */
 .g8-wrap .gad-map-col-v2 .v2-rc-maptitle,
 .g8-wrap .gad-map-col-v2 .v2-rc-mapstats {
@@ -4600,13 +4600,13 @@ body, body.gids-page, body.gate-page{
 }
 
 /* ════════ v254 — Air Canada: BLACK orb badges, RED maple + red icons ════════
-   Per Nick — AC's real look: black sphere, red maple/symbols. Override the
+ Per the owner — AC's real look: black sphere, red maple/symbols. Override the
    accent-coloured badge to black, stop whitening the maple (its source fill is
    #f01428), and colour the functional icons red. AC-scoped only. */
-/* (Black-sphere AC treatment RETIRED — Nick now wants AC's vertical
+/* (Black-sphere AC treatment RETIRED — the owner now wants AC's vertical
    badges RED like every other carrier's accent badges.) */
-/* ── v23438 — THE 74% INSET IS RETIRED (Nick, WestJet YEG/49D: 'CAnnot be 2
-   different sizes unacceptable'; China Eastern: 'the 2 orbs dont match the
+/* ── v23438 — THE 74% INSET IS RETIRED
+; China Eastern: 'the 2 orbs dont match the
    botom orb is right').
 
    The gate draws one round emblem orb top-left and one bottom-right, and by
@@ -4620,7 +4620,7 @@ body, body.gids-page, body.gate-page{
 
    Written back when the wrap had no padding of its own, so the inset had to
    come from somewhere; the recipe supplies it now, and doing it twice is also
-   what Nick called 'the logos inside are tiny' in v23130. The 100% rule
+ what the owner called 'the logos inside are tiny' in v23130. The 100% rule
    further up this file governs again — which is exactly what the bottom orb
    does, and he says the bottom orb is right.
 
@@ -4635,7 +4635,7 @@ body, body.gids-page, body.gate-page{
 
 /* 1) Watermark = ONE brand mark filling the ENTIRE below-map band top-to-
    bottom (auto 100%: height spans all three lower rectangles exactly, aspect
-   kept — the logo is wider than the column so its sides crop off; Nick's
+ kept — the logo is wider than the column so its sides crop off; the owner's
    pick "B" from the treatment comparison). The band's TOP is the map's real
    bottom edge, measured per render into --gate-wm-top (fixed % left the
    logo's top hidden under the map → read as off-centre). Behind everything
@@ -4696,7 +4696,7 @@ body, body.gids-page, body.gate-page{
   transform: scaleX(-1) !important;
 }
 
-/* ── Logo overflow guards (Nick: "logos are popping out / bulging") ──
+/* ── Logo overflow guards ──
    Every right-column shelf clips its content, and the two operator-logo
    slots get hard caps so an oversized brand file can never stretch or
    spill its panel — it scales down inside instead. */
@@ -4745,7 +4745,7 @@ body, body.gids-page, body.gate-page{
   position: absolute !important; inset: 0 !important;
   width: 100% !important; height: 100% !important;
   background: url('/logos/Backgrounds/clouds-loop.gif?v=2') center center / cover no-repeat !important;
-  /* 0.85 per Nick: clouds clearly visible behind the plane, with just a
+ /* 0.85 as specified: clouds clearly visible behind the plane, with just a
      hint of the airline watermark still reading through. */
   opacity: 0.85 !important;
   -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 4%, #000 97%, transparent 100%);
@@ -4792,8 +4792,8 @@ body, body.gids-page, body.gate-page{
         sparse layer (::before). Mirroring the parent visually reverses both
         children, so those two drifted against the nose while #gateCloudsFg —
         not a child of it — kept drifting correctly. Front and back disagreeing
-        is precisely the conveyor-belt reading (Nick: "the plane that goes
-        flying right bound.. the background animation is going the wroing way").
+        is precisely the conveyor-belt reading
+
 
    The new scene reverses direction properly via --g8-dir on the shelf, so it
    needs no mirror. Keeping the rule for the flag-off path means ?acsky=0 still
@@ -4802,12 +4802,12 @@ html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-
   transform: scaleX(-1) !important;
 }
 
-/* v218.99 — GIDS banner consistency (per Nick): the gate block carries the
+/* v218.99 — GIDS banner consistency: the gate block carries the
    SAME shadow as the airport band — no shadowed-vs-flat mismatch between tabs. */
 .g8-wrap .g8-r1-right { box-shadow: 0 6px 14px rgba(0,0,0,0.16) !important; }
 
 /* v218.99 — GATE banner: the AIRPORT band and GATE block tabs match the FIDS
-   board tabs (per Nick): equal visible widths, same -24 angle, same rounded
+ board tabs: equal visible widths, same -24 angle, same rounded
    top-left tip. The airline side is untouched. */
 .g8-wrap .g8-r1-apband {
   /* Tab widths come from --g8-tab-w (set inline on .g8-wrap): three equal
@@ -4815,7 +4815,7 @@ html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-
      so each is narrower than the old --gate-rcw. The band is still double
      width: its right half runs under the gate block. */
   /* Right half runs under the GATE tab (full --gate-rcw, matching the
-     Your Aircraft column per Nick); visible half is --g8-tab-w wide. */
+ Your Aircraft column as specified); visible half is --g8-tab-w wide. */
   width: calc(var(--gate-rcw, 25%) + var(--g8-tab-w, var(--gate-rcw, 25%)) - 24px) !important;
   /* Symmetric margins in the VISIBLE half: content area = tab-w - 68,
      centred exactly on the visible-half midpoint (tab-w/2 - 12). */
@@ -4831,7 +4831,7 @@ html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-
   object-fit: contain !important;
 }
 
-/* v218.99 — text fit (per Nick: "text overflowing / missing edges"):
+/* v218.99 — text fit:
    1) right-card values ("Scheduled | Prévu") were cutting descenders at the
       bottom — taller line box + padding;
    2) left-rail shelf titles clip with an ellipsis instead of a raw mid-letter
@@ -4846,7 +4846,7 @@ html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-
   white-space: nowrap !important;
 }
 
-/* ── Fold fix (Nick, Jul 2026): the AIRCRAFT DETAILS placeholder must never
+/* ── Fold fix: the AIRCRAFT DETAILS placeholder must never
    steal rail space from the flight-info shelves. When aircraft data blips
    out after a poll rebuild, is-bare switched the placeholder on in the SAME
    column as the shelves — compressing all six rows (clipped text + dead gap)
@@ -4863,7 +4863,7 @@ html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-
 
 /* Bare aircraft column: the ::after watermark IS the column's flex filler
    (flex:1 + margin-top:auto) — hiding it collapsed the left rail's shape
-   (Nick: 'all lopsided'). Keep the filler, swap its TEXT for the honest
+ Keep the filler, swap its TEXT for the honest
    lookup state the JS writes into data-baremsg. */
 .gad-aircraft-col.is-bare[data-baremsg]::after{
   content: attr(data-baremsg);
@@ -4871,7 +4871,7 @@ html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-
 }
 
 /* ══ AIR CANADA SHELVES — exact supplied references. The opposite/left rail
-   uses Nick's dark brown-smooth texture; the three right shelves below the map
+ uses the owner's dark brown-smooth texture; the three right shelves below the map
    use the lighter 935 texture, with the cloud layer preserved over row 5. */
 html body[data-gate-airline="AC"] .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-flightinfo-block > .v2-fi-row {
   background: url('/textures/ac-left-brown-smooth.jpg?v=22351') center / cover no-repeat !important;
@@ -4887,7 +4887,7 @@ html body[data-gate-airline="AC"] .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves
   text-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
 
-/* ══ AC SHELF SKIN — Nick's verdict pass (Jul 19): code chip in AC red,
+/* ══ AC SHELF SKIN — the owner's verdict pass (Jul 19): code chip in AC red,
    status colours brighter, value clip fixed, the SAME brushed steel on the
    right column (lighter fade so its dark lettering stays readable), and
    the dot-globe watermark visible on BOTH sides. */
@@ -4895,20 +4895,20 @@ html body[data-gate-airline="AC"] .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves
   color: #e8112d !important;
 }
 /* (v22362) The brightness/saturate filter that used to sit here washed the
-   status colours into an off-neon tint (Nick: 'that green is off') — the
+ status colours into an off-neon tint — the
    palette below sets the exact inks, so no filter. */
 html body[data-gate-airline="AC"] .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value {
   letter-spacing: -0.3px !important;
 }
 /* Right column: ONE continuous grunge/distress surface spanning the whole
-   column top→bottom (Nick: 'it needs to be stretched to the top too'), tinted
-   with Air Canada's own navy+red (Nick: 'blended according to the colours
-   proper to the airline'). The grunge lives on the COLUMN; the shelves and the
+ column top→bottom, tinted
+   with Air Canada's own navy+red
+The grunge lives on the COLUMN; the shelves and the
    header go transparent so the single textured surface reads continuously
-   behind them, and a light grunge wash blends over the map/photo too (Nick:
+ behind them, and a light grunge wash blends over the map/photo too (
    'could even be blended slightly over the map'). */
 /* v22459 — AC right shelves: brushed metal, UNIFORM tone across every shelf
-   (Nick: 'make the metal below the map more uniform and the same colour'). The
+ The
    old per-shelf top→bottom gradient repeated on each shelf, so the stack banded
    warm→cool→warm. Now the silver brushed-metal texture multiplies onto ONE flat
    warm tint, so the grain reads through but the colour is identical on all
@@ -4963,7 +4963,7 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2 { position: relative 
 html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2::after { display: none !important; }
 
 /* ════════════════════════════════════════════════════════════════════════
-   v22350 — UNOBSTRUCTED AD ART + AIRLINE EMBLEM HOLD (Nick, Jul 20 2026)
+ v22350 — UNOBSTRUCTED AD ART + AIRLINE EMBLEM HOLD
    ════════════════════════════════════════════════════════════════════════ */
 
 /* Non-Accor, contained single-page ads get a restrained abstract frame. The
@@ -4990,8 +4990,8 @@ html body[data-gate-airline="AC"] .g8-wrap .gad-map-col-v2::after { display: non
 }
 .g8-wrap .gad-media-col.g8-static-page-ad::after {
   inset: 0;
-  /* Diagonal accent streak-lines REMOVED (Nick, Jul 2026: 'the main screen
-     remove the lines'). The corner glow (::before) stays for subtle depth. */
+  /* Diagonal accent streak-lines REMOVED
+The corner glow (::before) stays for subtle depth. */
   background: none;
 }
 
@@ -5148,7 +5148,7 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table.v2-rc-fi-t4 > .v2-rc-fi-trow 
 }
 /* When the map enlarges into the centre, this right-column 'brand hold' emblem
    sits on the DARK map-life panel. A MONO (dark-ink) symbol read dark-on-dark
-   (Nick: 'change the WestJet logo to white … where the map expands'). White it
+ White it
    so it reads. Colour/native emblems (AA, DL, Flair, United) keep their art. */
 .g8-wrap.g8-bigcraft-active .v2-rc-map-life-emblem[src*="airlines-mono"] {
   filter: brightness(0) invert(1) drop-shadow(0 12px 22px rgba(0,0,0,.42)) !important;
@@ -5281,8 +5281,8 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-cancelled { color: #b91c1c !important; }
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-table > .v2-rc-fi-trow > .v2-rc-fi-tval.v2-rc-status-gateclosed { color: #4b5563 !important; }
 
-/* v22361 — FULL STATUS PALETTE on the AC skin (Nick: 'make sure we do
-   colored status'). v22352 restored only Delayed; every other state was
+/* v22361 — FULL STATUS PALETTE on the AC skin
+v22352 restored only Delayed; every other state was
    still steamrolled white by the shelf-copy rules above. Each state colour
    is applied to the value AND its descendant spans (the bilingual lines are
    spans, and the white rules target spans directly), both panels. */
@@ -5426,7 +5426,7 @@ html body .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-textcol
   overflow: visible !important;
 }
 
-/* v22362 — revised arrival per Nick's sketch: ONE row, TWO label|value
+/* v22362 — revised arrival as specified's sketch: ONE row, TWO label|value
    pairs — 'Arrival  5:28PM    Revised  5:27PM' — each time at full row
    height (the box-fit sizes every cell like any other row). The old
    stacked/single-cell treatments are gone. */
@@ -5445,7 +5445,7 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-trow-rev2 > .v2-rc-fi-tval {
 }
 /* The superseded original time: struck but full-size and readable. */
 html body .g8-wrap .gad-map-col-v2 .v2-rc-fi-tval.v2-rc-tval-old {
-  /* v22852 (Nick): original times are dimmed, never barred */
+ /* v22852: original times are dimmed, never barred */
   text-decoration: none !important;
   opacity: .72 !important;
 }
