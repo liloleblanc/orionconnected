@@ -12483,7 +12483,32 @@ function uxgGateHtml(ctx) {
   // runs BEFORE that value is computed, so the flag is declared here and both
   // ends share it. Everything downstream then treats YQM as a light banner
   // without a second colour test.
-  var _bannerIsLight = _apIsYQM ? true : _hexIsLight(_bannerR1Now);
+  // ── v23646 — EVERY BANNER IS A LIGHT BAND ─────────────────────────────
+  // Nick: "It doesnt need to be cream but it should be a lighter color".
+  //
+  // Moncton's banner has been the only light one: a cream #F5F1E7 field with
+  // navy ink, set inline from _silkGrad below. Every other airport got the
+  // carrier's DARK r1. That is the difference Nick kept pointing at, and no
+  // amount of CSS could close it — the band is written as an inline style with
+  // !important, which a stylesheet cannot reach.
+  //
+  // The band is now a light TINT OF THE CARRIER'S OWN COLOUR rather than
+  // cream, so Ryanair's band is a pale Ryanair navy, Delta's a pale Delta
+  // indigo. Same treatment as Moncton, each airline's own hue.
+  //
+  // This flag has to be decided HERE, not down with _silkDark: the logo chain
+  // runs before that value exists and uses this to pick the wordmark variant.
+  // A white wordmark on a light band is invisible, so both ends must agree —
+  // which is exactly why the flag was hoisted here for YQM in v23462.
+  var _silkTint = function (hex, keep) {
+    var m = String(hex || '').replace('#', '');
+    if (m.length === 3) m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2];
+    if (!/^[0-9a-f]{6}$/i.test(m)) return '#F2F4F7';
+    var mix = function (c) { return Math.round(c * keep + 255 * (1 - keep)); };
+    var hx = function (c) { return ('0' + mix(parseInt(c, 16)).toString(16)).slice(-2); };
+    return '#' + hx(m.slice(0, 2)) + hx(m.slice(2, 4)) + hx(m.slice(4, 6));
+  };
+  var _bannerIsLight = true;
   // Carriers whose own COLOUR logo reads directly on the dark header — no white
   // plate needed, the brand colour pops on the near-black banner.
   var BANNER_DARK_LOGO = {
@@ -12965,9 +12990,16 @@ function uxgGateHtml(ctx) {
   // cream band flips _silkLightBand true and the ink becomes the deep navy the
   // code already keeps for exactly this case. Nothing else has to be told the
   // banner went light.
-  var _silkDark = _apIsYQM ? '#F5F1E7'
-    : (airlineCode === 'F9') ? '#5AA0DE'
-    : ((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119');
+  // The carrier colour the band is tinted FROM. Falls through r1 → accent →
+  // a neutral, so a carrier with no spec still gets a band rather than black.
+  var _silkBase = (_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF')
+      ? _bannerSpec.r1
+      : (((typeof AIRLINE_ACCENT !== 'undefined') && AIRLINE_ACCENT[airlineCode]) || '#0c1119');
+  // 12% of the carrier's colour against white: enough that Ryanair's band reads
+  // as a cool blue-white and Air Canada's as a warm grey-white, not so much
+  // that the wordmark stops separating from it. Moncton keeps its exact cream —
+  // it was hand-picked and there is no reason to shift it.
+  var _silkDark = _apIsYQM ? '#F5F1E7' : _silkTint(_silkBase, 0.12);
   // Timebox ink adapts to the banner colour (Nick: 'Frontier — the font is all
   // white and it's light, needs to be blue'). Frontier's sky-blue band is too
   // light for white text; use a deep navy instead. Luminance > 140 → dark ink.
@@ -12978,7 +13010,19 @@ function uxgGateHtml(ctx) {
     return 0.299 * parseInt(m.slice(0, 2), 16) + 0.587 * parseInt(m.slice(2, 4), 16) + 0.114 * parseInt(m.slice(4, 6), 16);
   })(_silkDark);
   var _silkLightBand = _silkLum > 140;
-  var _silkInk = _silkLightBand ? '#0A2E6B' : '#ffffff';
+  // On a light band the ink is the carrier's OWN dark colour, not Moncton's
+  // navy — Ryanair navy on pale Ryanair, Air Canada charcoal on pale grey.
+  // Falls back to the navy when the carrier's colour is itself too light to
+  // read (it would be painted onto its own tint).
+  var _silkInkLum = (function (h) {
+    var m = String(h || '').replace('#', '');
+    if (m.length === 3) m = m[0] + m[0] + m[1] + m[1] + m[2] + m[2];
+    if (!/^[0-9a-f]{6}$/i.test(m)) return 255;
+    return 0.299 * parseInt(m.slice(0, 2), 16) + 0.587 * parseInt(m.slice(2, 4), 16) + 0.114 * parseInt(m.slice(4, 6), 16);
+  })(_silkBase);
+  var _silkInk = _silkLightBand
+    ? ((!_apIsYQM && _silkInkLum < 120) ? _silkBase : '#0A2E6B')
+    : '#ffffff';
   var _silkInkSoft = _silkLightBand ? 'rgba(10,46,107,0.86)' : 'rgba(255,255,255,0.82)';
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
   // gate tab on the right). The gate tab covers the right ~25%, so the accent
@@ -12995,14 +13039,23 @@ function uxgGateHtml(ctx) {
   // The standard band fades into the airline accent at 84-100% so the gate tab
   // sits on a matching edge. Moncton's is FLAT — 'all the same color' — and its
   // accent appears only as the stripe along the foot (see display-overrides).
+  // Moncton's shape for everyone: a soft VERTICAL fade, lighter at the top.
+  // The old horizontal fade ran the carrier colour into the accent at 84-100%
+  // so the gate tab sat on a matching edge — that was built for a DARK band and
+  // reads as a dirty smear across a light one. The accent still appears, as the
+  // stripe along the foot (display-overrides), which is how Moncton does it.
   var _silkGrad = _apIsYQM
     ? 'linear-gradient(180deg, #F7F4EC 0%, ' + _silkDark + ' 100%)'
-    : 'linear-gradient(90deg, ' + _silkDark + ' 0%, ' + _silkDark + ' 84%, var(--airline-accent,#1aa) 93%, var(--airline-accent,#1aa) 100%)';
+    : 'linear-gradient(180deg, ' + _silkTint(_silkBase, 0.05) + ' 0%, ' + _silkDark + ' 100%)';
   // v23123 — Nick's Delta rendition: the top strip is FLAT deep indigo
   // (#11063C, sampled from his image), not the gradient. Inline !important
   // background is unbeatable from a stylesheet, so the swap happens here.
   try {
-    if (/^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) _silkGrad = '#11063C';
+    // v23646 — Delta's flat deep-indigo override is retired with the move to
+    // light bands. It set a DARK field while _silkDark is now a pale tint, so
+    // leaving it would give Delta a dark banner with light-band ink on it —
+    // navy on indigo. Delta now gets the same pale-indigo band as everyone.
+    if (false && /^(DL|DAL)$/.test(String(airlineCode || '').toUpperCase())) _silkGrad = '#11063C';
   } catch (e) {}
 
   // Silk drops the airport LOGO (Nick's redesign): the centre now holds a
@@ -22770,7 +22823,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23644';
+var FIDS_BUILD_TAG = 'v23652';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

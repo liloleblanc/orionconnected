@@ -15584,7 +15584,7 @@ html body .g8-wrap.g8-airline-WJA .g8-r1-emblem {
    above it. Comes LAST in the file so it wins the tie against :15189.
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1.g8-r1-bg::after {
-  height: clamp(20px, 3.6vh, 30px) !important;
+  height: clamp(17px, 2.9vh, 25px) !important;
   /* THE SECOND COLOUR, NOT THE BRIGHT ONE. Nick: "maybe it should be the
      second color to the airline Air Canada Dark Gray or Black maybe Westjet
      Blue". That is r1 — AC #0A0A0A, WS #003366 — now published as
@@ -15623,7 +15623,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      Measured on the live board, not guessed. Tried height:100% on the timebox
      first; something else pins it at 110 and it had no effect. */
   bottom: -2px !important;
-  height: clamp(20px, 3.6vh, 30px) !important;
+  height: clamp(17px, 2.9vh, 25px) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: flex-end !important;
@@ -15699,7 +15699,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    what makes this apply at all.
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1 {
-  --yqm-bar: clamp(20px, 3.6vh, 30px) !important;
+  --yqm-bar: clamp(17px, 2.9vh, 25px) !important;
   padding-bottom: var(--yqm-bar) !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb.octb-tab.octb-stack {
@@ -15739,7 +15739,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    percentage resolved against a box the emblem was itself defining. Measured
    before and after — that is a circular reference, not a tuning problem.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-emblem {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-WS .g8-r1-emblem {
   /* Bigger than the wordmark's own box, and lifted 4px. The BOXES already
      centre level (measured midDelta 0), but WS.svg draws its leaf low inside
      its square, so matching boxes still read as a low leaf — which is what the
@@ -16267,8 +16267,21 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb-clockrow .octb-clock {
   transform: translateY(-4px) !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-ap-YQM .g8-r1-logoslot .g8-r1-logo {
-  /* Down 11, not 3. Nick: "wordmark still needs to come down even if the j
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap.g8-airline-WS .g8-r1-logoslot .g8-r1-logo {
+  /* v23652 — RE-SCOPED FROM THE AIRPORT TO THE AIRLINE. Nick: "Youre logos at
+     the top left need to be centered something you have a huge difficulty
+     understanding". He was right, and the cause is this rule.
+
+     It was keyed to .g8-ap-YQM — the AIRPORT — while its own comment below
+     explains it is compensating for WESTJET ARTWORK. So every other carrier
+     flying out of Moncton inherited WestJet's nudge: measured on the PAL
+     Airlines board at YQM gate 2, the emblem and the brand pair sat dead
+     centre (offset 0) while the wordmark alone sat 11px low.
+
+     Keyed to the airline now, which is what it was always describing. WestJet
+     keeps the nudge at every airport it flies from, and nobody else gets it.
+
+     Down 11, not 3. Nick: "wordmark still needs to come down even if the j
      hits the bar" — the WESTJET J's descender crossing into the date bar is
      acceptable to him, so the ceiling here is not the bar. The wordmark is
      effectively full-bleed in its own box (ink pad 0.75% top and bottom,
@@ -17824,5 +17837,25 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   content: ' | ' !important;
   opacity: 0.55 !important;
   font-weight: 400 !important;
+}
+
+/* ══ THE ACCENT STRIP COMES DOWN, THE DATE STILL FITS ════════════════════
+   Nick: "the colored strip changed overnight its much thicker and too thick it
+   needs to be reduced a bit in height the text should still fit".
+
+   The strip is the --yqm-bar the date sits in, and it went from 30px to 25px
+   with the rest of this change. At 25px the date's INK measured 26px — 1px
+   proud — because its line-height was leaving more room than the glyphs need.
+
+   Tightening the leading rather than growing the strip back: the point of the
+   request was a thinner strip, and 1.16 on an 18.9px date gives ~22px of ink
+   inside a 25px bar. Roughly 1.5px of clearance top and bottom, and the date
+   is the only thing in there.
+
+   Line-height, not font-size, so the date stays as legible as it was — the
+   glyphs are unchanged, only the box around them.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-date {
+  line-height: 1.16 !important;
 }
 
