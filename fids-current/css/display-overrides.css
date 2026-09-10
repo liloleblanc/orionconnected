@@ -17653,3 +17653,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   text-wrap: balance;
 }
 
+/* ══ THE WHOLE TITLE LINE IS CAPS ════════════════════════════════════════
+   Nick: "shit you ddint change Calgary to CALGARY".
+
+   The strip titles only LOOKED uppercase because their literals are written
+   that way ('NEXT HOURS', '5-DAY FORECAST'). The city appended to them comes
+   from _wxCityOf(), which title-cases via tc(), so "Calgary" arrived in mixed
+   case and sat in the middle of an otherwise all-caps line.
+
+   text-transform on the container catches every part of the line — the
+   literal, the appended city and the IATA — so the two cannot drift apart
+   again the way they just did. Applied to .wxc-title rather than to the
+   appended fragment for that reason.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-title {
+  text-transform: uppercase !important;
+}
+
