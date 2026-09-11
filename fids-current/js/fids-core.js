@@ -41345,16 +41345,12 @@ function _renderWxCard(el) {
         // DESTINATION's timezone, and any second guess (a 19:00 window, the
         // board's own clock) drifts from it by season and by airport.
         //
-        // Dawn and dusk are a refinement WITHIN night, never an override of
-        // it: the hours either side of the boundary get their own colour so
-        // 5 AM reads as sunrise rather than as deep night, while still
-        // carrying the moon the icon logic gives it. The bands are deliberately
-        // narrow — two hours each — so a tile only turns violet when it really
-        // is on the edge of the day.
-        var hPhase = !hNight ? 'day'
-                   : (h24 >= 4 && h24 < 6) ? 'dawn'
-                   : (h24 >= 21 && h24 < 23) ? 'dusk'
-                   : 'night';
+        // Two states, not four. Dawn and dusk bands were tried — violet at
+        // 5 AM, rose at 10 PM — and dropped: on a strip of five tiles read at
+        // a glance across a concourse, a third and fourth colour stops the
+        // night-to-morning boundary from being the thing the eye catches.
+        // Dark for night, blue for day, and the transition reads instantly.
+        var hPhase = hNight ? 'night' : 'day';
         hoursHtml += '<div class="wxc-hour wxc-hr-' + hPhase + '"><div class="wxc-dhead"><div class="wxc-hr">' + lbl + '</div></div>'
           + '<img class="wxanim" data-wx="' + hic + '" src="/logos/weather/animated/' + hic + '.svg" alt="">'
           + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';

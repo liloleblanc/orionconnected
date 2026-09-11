@@ -80,13 +80,19 @@ test('the hour tile class comes from the same value as its icon', () => {
   const block = SRC.slice(at, at + 1400);
   assert.match(block, /_wxAnimIcon\(h\.code, hNight\)/,
     'hNight must still choose the icon');
-  assert.match(block, /var hPhase = !hNight \? 'day'/,
-    'the SAME hNight must decide day-versus-not for the tile class too, so ' +
-    'a tile can never be day-coloured under a moon');
+  assert.match(block, /var hPhase = hNight \? 'night' : 'day'/,
+    'the SAME hNight must set the tile class, so a tile can never be ' +
+    'day-coloured under a moon');
   assert.match(block, /wxc-hr-' \+ hPhase/, 'the class must come from hPhase');
-  // Dawn and dusk refine night; they must never be reachable when it is day.
-  assert.match(block, /'dawn'[\s\S]{0,120}'dusk'[\s\S]{0,60}'night'/,
-    'dawn and dusk must sit inside the night branch, after the !hNight test');
+  // Two states only. Dawn and dusk were tried and dropped — a third and
+  // fourth colour stopped the night-to-morning boundary being what the eye
+  // catches first on a five-tile strip.
+  // Check for emitted CLASSES, not the words — the comment above the code
+  // explains why dawn and dusk were dropped and must stay readable.
+  assert.doesNotMatch(SRC, /wxc-hr-dawn|wxc-hr-dusk/,
+    'the hours strip is night/day only');
+  assert.doesNotMatch(CSS, /wxc-hr-dawn|wxc-hr-dusk/,
+    'and no dawn/dusk rules may linger in the stylesheet');
 });
 
 test('both night and day tiles are styled, with their own ink', () => {
@@ -191,34 +197,45 @@ function bandColours() {
   return out;
 }
 
-test('all five temperature bands exist and are distinct hues', () => {
+test('the tile is ONE colour — the temperature lives in the type', () => {
   const b = bandColours();
-  const hues = b.map(x => x.tile.h);
+  const tiles = b.map(x => `${x.tile.h},${x.tile.s},${x.tile.l},${x.tile.a}`);
+  assert.equal(new Set(tiles).size, 1,
+    'all five tiles must share the panel fill; five tinted columns buried the ' +
+    'video under bands of colour, which is what it was added for');
+});
+
+test('the five band inks are distinct hues', () => {
+  const b = bandColours();
+  const hues = b.map(x => x.hi.h);
   assert.equal(new Set(hues).size, 5, 'five bands must be five different hues');
-  // Adjacent steps must be far enough apart to tell apart on a board.
   for (let i = 1; i < hues.length; i++) {
     const gap = Math.abs(hues[i] - hues[i - 1]);
     assert.ok(gap >= 30, `steps ${i - 1}->${i} differ by only ${gap} degrees of hue`);
   }
+  // The hi and lo inks of a band are the same colour — only the VALUE differs.
+  for (const x of b) {
+    assert.equal(x.hi.h, x.lo.h, 'band ' + x.i + ' hi/lo must share a hue');
+  }
 });
 
-test('every ink reads on every tile, over both grass and sky', () => {
-  // The low's band is independent of the tile's, so ANY ink can land on ANY
-  // tile — all 25 pairings have to hold, not just the matching ones.
+test('every ink reads on the tile, including over the brightest video', () => {
+  // BRIGHT is the brightest slice of clip measured behind these tiles — near
+  // white sky. It is the worst case and the reason the inks are so dark.
+  const BRIGHT = [220, 252, 253];
   const b = bandColours();
+  const t = b[0].tile;
   const fails = [];
-  for (const tile of b) {
-    for (const ground of [GRASS, SKY]) {
-      const bg = over(hslToRgb(tile.tile.h, tile.tile.s, tile.tile.l), tile.tile.a, ground);
-      for (const ink of b) {
-        for (const which of ['hi', 'lo']) {
-          const c = cr(hslToRgb(ink[which].h, ink[which].s, ink[which].l), bg);
-          if (c < 4.5) fails.push(`t${tile.i} + ${which}${ink.i} = ${c.toFixed(2)}`);
-        }
+  for (const ground of [GRASS, SKY, BRIGHT]) {
+    const bg = over(hslToRgb(t.h, t.s, t.l), t.a, ground);
+    for (const ink of b) {
+      for (const which of ['hi', 'lo']) {
+        const c = cr(hslToRgb(ink[which].h, ink[which].s, ink[which].l), bg);
+        if (c < 4.5) fails.push(`${which}${ink.i} on ${ground} = ${c.toFixed(2)}`);
       }
     }
   }
-  assert.deepEqual(fails, [], 'every tint/ink pairing must clear 4.5:1');
+  assert.deepEqual(fails, [], 'every band ink must clear 4.5:1 on the tile');
 });
 
 test('the panel sits on the clip hue, not the old cold navy', () => {
@@ -271,4 +288,14 @@ test('the manifest knows about it', () => {
   const man = fs.readFileSync(path.join(ROOT, 'fids-current/assets/asset-manifest.json'), 'utf8');
   assert.ok(man.includes('wx-grass-loop.mp4'),
     'run `npm run assets:build` — CI fails on a stale manifest');
+});
+
+test('no malformed percentages reached the stylesheet', () => {
+  // A '%%' from a generation script is invalid CSS. The browser silently drops
+  // the declaration and the element falls through to whatever rule is beneath,
+  // which looked correct on screen while being wrong in the file.
+  const bad = CSS.split('\n')
+    .map((l, i) => [i + 1, l])
+    .filter(([, l]) => /%%/.test(l) && /wxc-/.test(l));
+  assert.deepEqual(bad, [], 'malformed percentage in a weather-card rule');
 });
