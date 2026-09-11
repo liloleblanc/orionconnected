@@ -9590,6 +9590,45 @@ function _buildV2MapCol(ctx, vars) {
           _mcEvtStr = _ibArrRevStr || _ibArrSchedStr || '';
         }
       }
+      // v23720 — THE EVENT LEADS, AND EACH LANGUAGE CARRIES ITS OWN CLOCK.
+      //
+      // v23544 put the time in front of a single shared sentence:
+      //     9:20pm | Your aircraft has arrived at the gate
+      //     Votre avion est arrivé à la porte
+      // Only the English half was ever beside its time; the French line had to
+      // be read back up to the start of the line above to find out when. Both
+      // halves now end with the clock, so either line stands on its own:
+      //     Arrived at the gate | 9:20pm
+      //     Arrivé à la porte | 9:20pm
+      //
+      // On stand and still rolling take different grammar, not just different
+      // words. At the gate the time appends after a bar; taxiing, it belongs
+      // inside the clause ('Landed at 9:20pm and taxiing'), so those strings
+      // carry a {t} the substitution fills and the append is skipped.
+      //
+      // EVERY SPAN EMITTED HERE MUST CARRY A CLASS. A generic rule in
+      // display-overrides.css punctuates adjacent CLASSLESS spans inside
+      // .v2-fi-mline3 with an automatic ' | '; that rule produced the
+      // '11:04am | | |' on the live YHZ shelf and is why it is now written
+      // as span:not([class]). Nesting the time inside the language span keeps
+      // the stline's own children down to the two classed halves.
+      var _mcEvtHtml = _mcEvtStr
+        ? '<span class="v2-rc-fi-evt">' + _railT(_mcEvtStr) + '</span>'
+        : '';
+      var _mcSentKey = _mcOnStand
+        ? 'acArrivedGateShort'
+        : (_mcEvtHtml ? 'acLandedTaxi' : 'acLandedTaxiNoTime');
+      var _mcArrLine = _gateLbl(_mcSentKey, _frF, function (w, i2) {
+        var _body = String(w).indexOf('{t}') >= 0
+          ? String(w).replace('{t}', _mcEvtHtml)
+          : String(w) + (_mcEvtHtml ? ' <span class="v2-rc-bar">|</span> ' + _mcEvtHtml : '');
+        return '<span class="' + (i2 ? 'v2-fi-lbl-2 g8-arr-l2' : 'v2-fi-lbl-en') + '">' + _body + '</span>';
+      }, '');
+      // Line 1's connector. Bare text either side of one classed bar, matching
+      // how the rest of this line punctuates itself; a single-language board
+      // gets just the one word and no bar.
+      var _mcFromConn = _gateLbl('fromConn', _frF, function (w) { return w; },
+        ' <span class="v2-rc-bar">|</span> ');
       var _mcTitle = _gateLbl(_mcTitleKey, _frF, function (w, i2) {
         return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>';
       }, '');
@@ -9636,7 +9675,14 @@ function _buildV2MapCol(ctx, vars) {
         //   AC7992 \u00b7 Montreal | YUL
         //   10:48am | 10:25am  Revised | R\u00e9vis\u00e9   (times first, label after)
         //   Delayed | En retard                   (status on its own line)
-        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' <span class="v2-rc-bar">\u00b7</span> ' + _ibCityCode + '</div>'
+        // v23720 \u2014 the interpunct becomes a word. 'PD2381 \u00b7 Montreal | MET'
+        // stated a relationship it never named; the line now reads as the
+        // sentence it always was, in both languages:
+        //     PD2381 from | de Montreal | MET
+        // The two pipes on this line do different jobs and that is deliberate:
+        // the first separates the LANGUAGES of the connector, the second is
+        // _ibCityCode's own city/code divider.
+        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' ' + _mcFromConn + ' ' + _ibCityCode + '</div>'
         // v23544 — once it is down, the scheduled/revised pair steps aside.
         // the arrived panel reads "4:58pm | Your aircraft has arrived", so the
         // ONE time that matters is the one the event actually happened at, and
@@ -9681,10 +9727,10 @@ function _buildV2MapCol(ctx, vars) {
                         // second language on the line beneath. The time leads
                         // because it is the fact that changed; the sentence
                         // says what it means.
-                        ? ((_mcEvtStr ? '<span class="v2-rc-fi-evt">' + _railT(_mcEvtStr) + '</span> <span class="v2-rc-bar">|</span> ' : '')
-                           + _gateLbl(_mcOnStand ? 'acArrivedGate' : 'acArrived', _frF, function (w, i2) {
-                               return '<span class="' + (i2 ? 'v2-fi-lbl-2 g8-arr-l2' : 'v2-fi-lbl-en') + '">' + w + '</span>';
-                             }, ''))
+                        // v23720 — composed above as _mcArrLine: the event
+                        // first, the clock at the end of each language's own
+                        // line. See the note beside its construction.
+                        ? _mcArrLine
                         : _stShow)
         +           '</span></div>'
         +       '</div>'
@@ -23059,6 +23105,31 @@ var _GATE_LBL = {
   // is not the same news as parked on the stand.
   acArrived:     { en:'Your aircraft has arrived', fr:'Votre avion est arrivé', es:'Su avión ha llegado', de:'Ihr Flugzeug ist angekommen', it:'Il vostro aereo è arrivato', pt:'O seu avião chegou', ja:'ご搭乗機が到着しました', zh:'您的飞机已到达', ar:'وصلت طائرتكم' },
   acArrivedGate: { en:'Your aircraft has arrived at the gate', fr:'Votre avion est arrivé à la porte', es:'Su avión ha llegado a la puerta', de:'Ihr Flugzeug ist am Gate angekommen', it:'Il vostro aereo è arrivato al gate', pt:'O seu avião chegou ao portão', ja:'ご搭乗機がゲートに到着しました', zh:'您的飞机已抵达登机口', ar:'وصلت طائرتكم إلى البوابة' },
+  // v23720 — THE GATE PANEL'S OWN ARRIVAL WORDING.
+  //
+  // The map-column arrival shelf leads with the EVENT and puts the clock at
+  // the end of each language's own line, instead of one shared timestamp in
+  // front of a sentence that names the aircraft:
+  //     Arrived at the gate | 9:20pm
+  //     Arrivé à la porte | 9:20pm
+  // 'Your aircraft has…' is dropped there because the banner directly above
+  // already reads 'Your Aircraft | Votre Avion' — the subject was being named
+  // twice. acArrived / acArrivedGate above keep the long form and stay in use
+  // by the two other inbound panels, which have no such banner over them.
+  acArrivedGateShort: { en:'Arrived at the gate', fr:'Arrivé à la porte', es:'Llegó a la puerta', de:'Am Gate angekommen', it:'Arrivato al gate', pt:'Chegou ao portão', ja:'ゲートに到着', zh:'已到达登机口', ar:'وصلت إلى البوابة' },
+  // Still rolling: the clock sits INSIDE the sentence rather than after it, so
+  // these carry a {t} placeholder the renderer substitutes the formatted time
+  // into. Concatenating around the string cannot produce this — French puts the
+  // time mid-clause and the trailing words differ per language.
+  acLandedTaxi: { en:'Landed at {t} and taxiing', fr:'Atterri à {t} au roulage', es:'Aterrizó a las {t} y en rodaje', de:'Um {t} gelandet, rollt', it:'Atterrato alle {t}, in rullaggio', pt:'Aterrou às {t} e a taxiar', ja:'{t}に着陸、地上走行中', zh:'{t} 已着陆，滑行中', ar:'هبطت في {t} وتتحرك على المدرج' },
+  // Wheels down but no usable timestamp — the sentence must still be a sentence
+  // rather than render a literal '{t}'.
+  acLandedTaxiNoTime: { en:'Landed and taxiing', fr:'Atterri, au roulage', es:'Aterrizó y en rodaje', de:'Gelandet, rollt', it:'Atterrato, in rullaggio', pt:'Aterrou e a taxiar', ja:'着陸、地上走行中', zh:'已着陆，滑行中', ar:'هبطت وتتحرك على المدرج' },
+  // The lower-case connector that joins the flight number to its origin on
+  // line 1 ('PD2381 from | de Montreal | MET'). Distinct from `from` below,
+  // which is the capitalised FIELD LABEL used in the rail's From/De column;
+  // this one is mid-phrase and must not be capitalised.
+  fromConn: { en:'from', fr:'de', es:'desde', de:'aus', it:'da', pt:'de', ja:'発', zh:'来自', ar:'من' },
   // Was hardcoded English ('Time left for arrival:') in the v2 inbound block,
   // on a board whose every other label is bilingual.
   timeToArr: { en:'Time to arrival', fr:'Temps avant l’arrivée', es:'Tiempo hasta la llegada', de:'Zeit bis zur Ankunft', it:'Tempo all’arrivo', pt:'Tempo até à chegada', ja:'到着まで', zh:'距到达时间', ar:'الوقت حتى الوصول' },
@@ -23365,7 +23436,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23718';
+var FIDS_BUILD_TAG = 'v23720';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
