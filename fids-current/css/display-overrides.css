@@ -18468,12 +18468,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-fids-theme]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
 html body[data-fids-theme]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_) {
   background-image: url("/logos/Backgrounds/fids-world-network.png?v=1") !important;
-  /* SAT LOW, TOP CROPPED — asked for. Anchored to the bottom edge and drawn
-     taller than the board, so the composition sits under the rows and the
-     upper arcs run off the top rather than being squeezed into frame. Width
-     still fills exactly; only the vertical overflows. */
-  background-position: center bottom !important;
-  background-size: 100% 132% !important;
+  /* CROPPED TO AFRICA'S TOP EDGE — asked for, and placed by measurement
+     rather than by eye. Ink density per 5% band of the source: nothing above
+     15%, a slow rise through the arcs, then a jump from 5.4 to 43.0 at the
+     45-50% band where the landmass starts, holding until it falls away past
+     80%. The bottom fifth is empty water, which is why plain bottom-anchoring
+     wasted a fifth of the frame on nothing.
+     At 250% the board shows 40% of the image; positioning at 77% puts that
+     window over 46%-86% of the source — Africa's top edge at the first row,
+     the content running out just as the frame does. Vertical stretch is
+     deliberate and sanctioned: it keeps the whole world across the width,
+     where a uniform zoom of the same crop would be 2.5x and throw away the
+     Americas and Asia entirely. */
+  background-position: center 77% !important;
+  background-size: 100% 250% !important;
   background-repeat: no-repeat !important;
   background-attachment: fixed !important;
   /* Dark grounds: the light linework LIFTS the surface rather than replacing
