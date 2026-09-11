@@ -1723,7 +1723,7 @@ let subScreenVal = '';
 // fids_customize_<IATA> exists), and per-airport entries here still override
 // the default, so a screen that wants medium or large can have it.
 var BOARD_DENSITY_DEFAULTS = {};
-var BOARD_DENSITY_FALLBACK = 'small';   // 44px board rows / 68px BAGS rows
+var BOARD_DENSITY_FALLBACK = 'small';   // 36px board rows / 68px BAGS rows (v23502 cut 44 -> 36)
 try {
   if (document.body && !document.body.dataset.fidsLogoSize) {
     var _densAp = '';
@@ -11549,8 +11549,46 @@ function uxgGateHtml(ctx) {
         var _bwRaw = '';
         try { _bwRaw = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus((currentFlight && currentFlight.status) || '') : ''; } catch (e0) {}
         _bwRaw = _bwRaw + ' ' + String(_stripState || '');
+        // v23712 — A REVISED TIME IS NOT AUTOMATICALLY A LATE ONE.
+        //
+        // Reported: a board announcing "Delayed" beside times rendered in the
+        // on-time green. Measured on the live YUL feed, the contradiction is
+        // real and the green was the half that was right:
+        //
+        //     AC802   scheduled 20:40  ->  revised 20:30   TEN MINUTES EARLY
+        //     AC894   scheduled 20:45  ->  revised 20:35   TEN MINUTES EARLY
+        //
+        // Both were labelled "Delayed". The shelves ink a revision by DIRECTION
+        // (earlier reads green, later reads amber), which is why the digits were
+        // green — correct. This line asked only whether a revision EXISTS, so
+        // any change to a time, in either direction, produced the word
+        // "Delayed". The two surfaces disagreed because only one of them was
+        // looking at the clock.
+        //
+        // SS.early already exists in every language ('Early', 'En avance'), and
+        // display-overrides.css:11474 already carries a green rule for
+        // g8-bw-st-early that could never fire, because nothing ever set this
+        // key to 'early'. Both were written for this case and left unreachable.
+        //
+        // The direction is derived from the clock rather than the feed's status
+        // word, because the word is exactly what is unreliable here — the feed
+        // says "delayed" on AC802 while its own revised time is earlier. Minute
+        // arithmetic, wrapped for a revision that crosses midnight, and a 5
+        // minute dead band so a trivial adjustment is not announced at all.
+        var _bwEarly = false;
+        try {
+          var _oT = String((currentFlight && currentFlight.time) || '').split(':');
+          var _nT = String((currentFlight && currentFlight.upd) || '').split(':');
+          if (_oT.length === 2 && _nT.length === 2) {
+            var _dMin = (+_nT[0] * 60 + +_nT[1]) - (+_oT[0] * 60 + +_oT[1]);
+            if (_dMin < -720) _dMin += 1440;
+            if (_dMin > 720) _dMin -= 1440;
+            _bwEarly = _dMin < -5;
+          }
+        } catch (eE) { _bwEarly = false; }
         if (/cancel/.test(_bwRaw)) _bwStKey = 'cancelled';
         else if (/divert/.test(_bwRaw)) _bwStKey = 'diverted';
+        else if (_bwEarly) _bwStKey = 'early';
         else if (/delay/.test(_bwRaw) || (currentFlight && currentFlight.upd)) _bwStKey = 'delayed';
       } catch (e) {}
       var _bwAbn = true;
@@ -12023,8 +12061,28 @@ function uxgGateHtml(ctx) {
     // invisible — the same failure as the gate emblems, and the rule there
     // holds here: never recolour the artwork, put it on a plate it can be read
     // against. Each mark sits on its own light chip.
-    var _prioMarks = preActive
-      ? '<div class="g8-pd-preboard-marks">'
+    // v23718 — THE TIER MARKS SHOW FOR THE WHOLE BOARDING WINDOW, NOT FIVE
+    // MINUTES OF IT.
+    //
+    // Reported, twice: the supplied Porter class artwork is still not visible.
+    // The first time, three tier files were rendering nowhere at all. They were
+    // then wired into THIS block — which only renders while `preActive` is true,
+    // i.e. the first five minutes of the boarding window. Technically used,
+    // effectively invisible, and reported again. That is the same mistake twice:
+    // putting artwork somewhere that satisfies a grep rather than somewhere a
+    // passenger looks.
+    //
+    // They belong here for the whole window on the merits, not just to be seen.
+    // This is the LEFT column, lanes 1-2 — the priority queue. Porter Reserve
+    // and premium VIPorter are who that queue is FOR, before and after general
+    // boarding commences. The column already names Porter Reserve in words once
+    // pre-boarding ends; the marks say which VIPorter cards qualify, which is
+    // the one thing the words never say.
+    //
+    // The roster line above them stays pre-boarding-only — that list is about
+    // the courtesy groups (unaccompanied minors, families, assistance) and it
+    // genuinely does not apply later.
+    var _prioMarks = '<div class="g8-pd-preboard-marks">'
         // v23532 — the mark the owner supplied, not the older file already in the tree.
         // The policy line reads "Premium VIPorter MEMBERS", which is the whole
         // premium tier set, so the member wordmark is the right one of the four
@@ -12046,11 +12104,11 @@ function uxgGateHtml(ctx) {
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_venture_single_line_en.svg" alt="VIPorter Venture"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_first_single_line_en.svg" alt="VIPorter First"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
-        + '</div>'
-      : '';
+        + '</div>';
+    // The roster is pre-boarding only; the marks are not.
     var _prioSub = preActive
       ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1('preboardList', _frF) + '</span></div>' + _prioMarks
-      : '';
+      : _prioMarks;
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>' + _prioSub + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
       + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div>' + _comingLineHtml(comingVal) + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
@@ -12937,7 +12995,15 @@ The rows value is the 'All | Tous'
     // band, and every airport has that bar now, not just Moncton. 106 was the
     // no-bar value; leaving it anywhere would push that airline's wordmark
     // straight through its own bar.
-    _logoH = Math.min(_logoH, 76);
+    // v23714 — 76 -> 82. Reported: the wordmark reads too small beside the
+    // roundel. Measured on the live YUL/A51 Air Canada banner:
+    //     band 112px   roundel 124px (111% of the band)   wordmark 76px
+    // The roundel is TALLER THAN THE BAND it sits in, and 1.63x the wordmark.
+    // 82 is the ceiling this comment already identified as clearing the date
+    // bar with ~2px to spare; the emblem is brought to the same 82 in CSS, so
+    // the pair finally matches instead of one overflowing while the other is
+    // held back.
+    _logoH = Math.min(_logoH, 82);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -23299,7 +23365,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23708';
+var FIDS_BUILD_TAG = 'v23718';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -24177,7 +24243,34 @@ function render() {
   const _measuredRowH = (parseFloat(tbl.dataset.fidsBaseRowH) || 0)
     || document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
-  const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
+  // v23710 — THE 40px FLOOR WAS REJECTING THE REAL ROW HEIGHT.
+  //
+  // Reported: the board does not fill the screen, stops at about 8 rows, leaves
+  // visible empty space and rotates.
+  //
+  // This line decides how tall a row is for PAGING. The floor exists to reject a
+  // nonsense measurement — a collapsed or not-yet-laid-out row measuring 0. It
+  // was written when the smallest density tier was 44px, comfortably above it.
+  // v23502 dropped `small` to 36px (flight-display.css: --fids-row-h: 36px) and
+  // nothing revisited the floor. `small` is also the shipped default
+  // (BOARD_DENSITY_FALLBACK), so this affects every screen that has not had a
+  // density chosen by hand.
+  //
+  // 36 is not greater than 40. So the honest measurement is discarded on every
+  // render and the fallback answers 62. The board then DRAWS 36px rows while
+  // DIVIDING the space by 62 — reserving 1.7x the height of every row it paints,
+  // which is the empty band below the last row and the early rotation.
+  //
+  // The stale comment on BOARD_DENSITY_FALLBACK still reads "44px board rows",
+  // which is what makes this the kind of bug that survives review.
+  //
+  // Fixed by making the fallback track the THEME rather than a constant, and by
+  // lowering the sanity floor below the smallest real tier instead of above it.
+  // 20px is under every tier (36/66/90) and still rejects a zero or collapsed
+  // measurement. The 62 literal remains only for the case where there is no
+  // theme value at all, which is the genuine cold start.
+  const rowH = _measuredRowH > 20 ? _measuredRowH
+             : (_themeRowH > 20 ? _themeRowH : 62);
   const available = _fidsRowsAvail();
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   const totalPages = Math.ceil(allFiltered.length / rowsPerPage);
@@ -28702,7 +28795,34 @@ function getPageCount(modeKey) {
   const _measuredRowH = (parseFloat((document.getElementById('fidsTable') || { dataset: {} }).dataset.fidsBaseRowH) || 0)
     || document.querySelector('#fidsTable tbody tr')?.offsetHeight || 0;
   const _themeRowH = parseFloat(getComputedStyle(document.body).getPropertyValue('--fids-row-h')) || 0;
-  const rowH = _measuredRowH > 40 ? _measuredRowH : Math.max(_themeRowH, 62);
+  // v23710 — THE 40px FLOOR WAS REJECTING THE REAL ROW HEIGHT.
+  //
+  // Reported: the board does not fill the screen, stops at about 8 rows, leaves
+  // visible empty space and rotates.
+  //
+  // This line decides how tall a row is for PAGING. The floor exists to reject a
+  // nonsense measurement — a collapsed or not-yet-laid-out row measuring 0. It
+  // was written when the smallest density tier was 44px, comfortably above it.
+  // v23502 dropped `small` to 36px (flight-display.css: --fids-row-h: 36px) and
+  // nothing revisited the floor. `small` is also the shipped default
+  // (BOARD_DENSITY_FALLBACK), so this affects every screen that has not had a
+  // density chosen by hand.
+  //
+  // 36 is not greater than 40. So the honest measurement is discarded on every
+  // render and the fallback answers 62. The board then DRAWS 36px rows while
+  // DIVIDING the space by 62 — reserving 1.7x the height of every row it paints,
+  // which is the empty band below the last row and the early rotation.
+  //
+  // The stale comment on BOARD_DENSITY_FALLBACK still reads "44px board rows",
+  // which is what makes this the kind of bug that survives review.
+  //
+  // Fixed by making the fallback track the THEME rather than a constant, and by
+  // lowering the sanity floor below the smallest real tier instead of above it.
+  // 20px is under every tier (36/66/90) and still rejects a zero or collapsed
+  // measurement. The 62 literal remains only for the case where there is no
+  // theme value at all, which is the genuine cold start.
+  const rowH = _measuredRowH > 20 ? _measuredRowH
+             : (_themeRowH > 20 ? _themeRowH : 62);
   const available = _fidsRowsAvail();
   const rowsPerPage = Math.max(4, Math.floor(available / rowH));
   return Math.max(1, Math.ceil(flights.length / rowsPerPage));
@@ -30893,7 +31013,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
         try { if (gateMap) { gateMap.remove(); } } catch(e){}
         gateMap = null;
         if (mb && (_oK || _dK)) {
-          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
           _gateMapTileLayer().addTo(gateMap);
           var _kC = _oK || _dK, _kL = _oK ? org : dst, _kCol = _oK ? '#60a5fa' : '#ef4444';
           gateMap.setView([20, _kC[1]], 1);
@@ -30940,7 +31060,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     gateMap._fidsRouteKey = _estKey;
     gateMap._fidsOverlays = [];
   } else {
-    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
+    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});_gateMapTileLayer().addTo(gateMap);
     gateMap._fidsRouteKey = _estKey;
     gateMap._fidsOverlays = [];
     _gateMapWatchResize(mb);
@@ -31135,7 +31255,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
         try { if (gateMap) { gateMap.remove(); } } catch(e){}
         gateMap = null;
         if (mb && (_oK2 || _dK2)) {
-          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
           _gateMapTileLayer().addTo(gateMap);
           var _kC2 = _oK2 || _dK2, _kL2 = _oK2 ? org : dst, _kCol2 = _oK2 ? '#60a5fa' : '#ef4444';
           gateMap.setView([20, _kC2[1]], 1);
@@ -31323,7 +31443,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     gateMap._fidsOverlays = [];
   } else {
     try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
-    gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+    gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
     _gateMapTileLayer().addTo(gateMap);
     gateMap._fidsRouteKey = _liveRouteKey;
     gateMap._fidsOverlays = [];
@@ -41447,7 +41567,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
   o = [o[0], o[1]]; d = [d[0], d[1]];
   while (d[1] - o[1] > 180) d[1] -= 360;
   while (d[1] - o[1] < -180) d[1] += 360;
-  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
+  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
   /* (fade helper defined once, below at its first use in source order) */
   // Calculate total route distance for zoom scaling
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
@@ -41584,7 +41704,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
     }
   } catch (eBIP) {}
   try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
-  window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+  window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
   _bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
