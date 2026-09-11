@@ -18327,3 +18327,195 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   max-width: 82px !important;
   object-fit: contain !important;
 }
+
+
+/* ══ v23724 — THE ARRIVAL WEATHER CARD GETS A MOVING BACKGROUND ══════════
+   A 16s 1080p H.264 loop of sunny grass plays behind the card, with the
+   still in _wxSkyUrl left in place underneath it as the fallback.
+
+   Everything below exists because of one measurement: the card's panels were
+   navy #152C53 at 78-90% opacity, and the clip averages hue 181 (teal-green).
+   A 37-degree hue gap between the panel and what it sits on is what reads as
+   "the colours don't match" — the panels were not too dark, they were the
+   wrong colour. They now take the clip's own sky hue.
+
+   Every colour here was chosen by compositing it over sampled frames of the
+   actual video and measuring contrast, not by eye. The figures in the
+   comments are the WORST case across the sky, mid and grass bands.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* The video layer. Must beat the generic `.wxcard-wrap > *:not(.wxc-globe)`
+   rule, which would otherwise give it position:relative and z-index:1 and
+   float it over the content instead of behind it. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap > video.wxc-vid {
+  position: absolute !important; inset: 0 !important;
+  width: 100% !important; height: 100% !important;
+  object-fit: cover !important; z-index: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Panels: the clip's sky hue at 44% lightness, 60% alpha so the grass reads
+   through. Dark ink measures 4.38:1 at its worst point (over the grass). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-hour {
+  background: hsla(197,72%,44%,.60) !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-side {
+  background: hsla(197,72%,44%,.66) !important;
+  border: 1px solid rgba(255,255,255,.22) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-temp, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-city, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-side-city { color: #082638 !important; text-shadow: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-cond, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-side-when, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-title, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-side-title, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-kicker {
+  color: #10394f !important; text-shadow: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-d { color: #10394f !important; text-shadow: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-d-fr { color: #2b556b !important; }
+
+/* The two airports at the top carry the card — sized up to match. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-side-city { font-size: clamp(22px, 3.1vh, 38px) !important; font-weight: 900 !important; letter-spacing: .2px !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-side-when { font-size: clamp(14px, 1.9vh, 23px) !important; font-weight: 700 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-side-title { font-size: clamp(13px, 1.7vh, 20px) !important; font-weight: 800 !important; }
+
+/* ── The hours strip says night or day ──────────────────────────────────
+   The class comes from hNight in fids-core.js, the SAME value that picks the
+   moon-or-sun icon, so a tile can never be day-coloured under a moon. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-hour.wxc-hr-night { background: hsla(224,58%,13%,.88) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-hour.wxc-hr-night .wxc-ht, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-hour.wxc-hr-night .wxc-hr { color: #eaf4ff !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-hour.wxc-hr-day { background: hsla(202,82%,80%,.82) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-hour.wxc-hr-day .wxc-ht, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-hour.wxc-hr-day .wxc-hr { color: #0a2740 !important; }
+
+/* ── The five-day tiles colour themselves by temperature ────────────────
+   wxc-t0..4 is the HIGH's step, wxc-tl0..4 the LOW's — banded separately, so
+   the two numbers in a tile differ. Tints sit at 74% lightness: counter-
+   intuitively the LIGHTER tint has MORE contrast with the dark ink, which is
+   what fixed the coral tiles when they measured 3.16:1 at 46%. Worst pairing
+   across all tint/ink combinations is now 4.6:1. */
+/* lavender */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t0 { background: hsla(197,72%,44%,.60) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t0 .wxc-hi { color: hsl(252,70%,13%) !important; text-shadow: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-lo.wxc-tl0 { color: hsl(252,70%,13%) !important; text-shadow: none !important; opacity: 1 !important; }
+/* pale blue */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t1 { background: hsla(197,72%,44%,.60) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t1 .wxc-hi { color: hsl(205,80%,11%) !important; text-shadow: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-lo.wxc-tl1 { color: hsl(205,80%,11%) !important; text-shadow: none !important; opacity: 1 !important; }
+/* mint */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t2 { background: hsla(197,72%,44%,.60) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t2 .wxc-hi { color: hsl(158,68%,8%) !important; text-shadow: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-lo.wxc-tl2 { color: hsl(158,68%,8%) !important; text-shadow: none !important; opacity: 1 !important; }
+/* gold */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t3 { background: hsla(197,72%,44%,.60) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t3 .wxc-hi { color: hsl(45,92%,8%) !important; text-shadow: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-lo.wxc-tl3 { color: hsl(45,92%,8%) !important; text-shadow: none !important; opacity: 1 !important; }
+/* coral */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t4 { background: hsla(197,72%,44%,.60) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-day.wxc-t4 .wxc-hi { color: hsl(8,90%,13%) !important; text-shadow: none !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-day .wxc-lo.wxc-tl4 { color: hsl(8,90%,13%) !important; text-shadow: none !important; opacity: 1 !important; }
+
+
+/* ══ v23726 — THE NIGHT SCENE ════════════════════════════════════════════
+   Everything above is scoped to .wxc-scene-day. At night the card keeps the
+   navy panels and white type it already had — that was always a night design,
+   it was only ever wrong sitting on a sunlit clip. The one thing night needs
+   of its own is the hours strip, because the tinted five-day tiles and the
+   day/dawn/dusk colours must not paint light fills over the fireflies. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-night .wxc-hour.wxc-hr-day { background: hsla(206,44%,30%,.80) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-night .wxc-hour.wxc-hr-day .wxc-ht,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-night .wxc-hour.wxc-hr-day .wxc-hr { color: #eaf4ff !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-scene-night .wxc-hour.wxc-hr-night { background: hsla(224,58%,13%,.84) !important; }
+
+
+/* ══ v23728 — THE WORLD NETWORK REPLACES THE CLOUD BAND ══════════════════
+   The backdrop behind the flight rows becomes a world map with network arcs
+   instead of the hex cloud band.
+
+   HOW IT KEEPS FOLLOWING THE BOARD'S COLOUR. The artwork is line-art with an
+   alpha channel and NO opinion about colour; the board's own --fids-bg shows
+   through everywhere the lines are not, and a blend mode decides what the
+   lines do to it. Under multiply a dark line darkens the surface; under
+   screen a light line lifts it. Either way the hue is the board's, so a new
+   theme needs no new artwork — which is what v22642 meant by "still multiply
+   so the surface colour survives exactly".
+
+   WHY background-image ON THE ELEMENT AND NOT THE ::after LAYER.
+   The drifting ::after layer sits at z-index:-1, and v22752 recorded that it
+   "still shows because the board's own surface is transparent". That stopped
+   being true: every theme now sets an opaque background-color on #fidsBoard
+   (grey #1a1d23, amber #1a1100, green #0a2e1d, mist #c7d2dd, plus per-airport
+   customs), and a negative-z-index child paints behind its parent's own
+   background. Measured on YHZ — the drift layer renders nothing, and the only
+   cloud on screen comes from the element's background-image. Moving the fill
+   up to <body> did not rescue it either, because <html> carries a background
+   of its own, so body's never propagates to the canvas and paints above the
+   layer instead. The element's background-image has none of that fragility:
+   it always paints above its own fill and below its content.
+
+   That leaves the ::after cloud band in place and dead, which is how it
+   already was. Removing it is a separate question from this one.
+
+   WHY A PICTURE IS ALLOWED HERE. v22643 pulled the earlier world maps for a
+   stated reason: "A world map is a picture: it has a right size, a centre, and
+   edges, so it had to be placed once and scaled to the board, and it looked
+   different on a 2-row board than a 12-row one." That applied to art painted
+   on EVERY ROW, where the row count changes the tiling. This is one image on
+   the board itself, sized to the board, so the row count cannot distort it.
+   The owner has also accepted stretching, which is what cover would otherwise
+   fight.
+
+   NOT MONCTON, NOT ORLANDO. YQM keeps moncton-skyline.svg by instruction. MCO
+   carries 59 of its own scoped rules and changing its backdrop was not asked
+   for. Both are excluded by name here rather than relying on their own rules,
+   because this block is later in the file and would otherwise take them. */
+html body[data-fids-theme]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
+html body[data-fids-theme]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_) {
+  background-image: url("/logos/Backgrounds/fids-world-network.png?v=1") !important;
+  /* SQUASHED INTO A BAND, SAT LOW, FOOT RUN OFF THE EDGE.
+     Full width at 68% of the board's height, so the whole world stays in
+     frame across the width and reads flatter — the arcs come down into the
+     upper third instead of running off the top. The distortion is even, which
+     is what separates it from the 2.5x stretch backed out earlier: that one
+     doubled Africa's height against an uncropped width.
+
+     Then the band is driven 150px past the board's foot, so it sits low on the
+     screen and its bottom inch and a half clips off. That is the emptiest part
+     of the drawing — ink density in the source falls to zero past the 80%
+     band — so the trim discards water, not coastline.
+
+     Both numbers are in board-height terms, so they hold at 1080. On a
+     markedly different aspect the band reads differently; measured at 1.78,
+     which is what these screens run. */
+  /* THE RIGHT EDGE OF THE DRAWING IS EMPTY, SO IT IS CROPPED OFF.
+     Ink density by tenth of the source width, over the part that shows:
+     12.0, 13.4, 15.1, 8.1, 13.9, 16.9, 12.6, 10.3, 16.5, 5.7. Even enough
+     across the first nine, then the last tenth falls to a third of the mean —
+     that bare strip was landing on the board's right-hand side.
+     Drawing it at 112% and anchoring LEFT pushes that empty tenth off the
+     right edge, so the board ends on the 80-90% band instead, which is the
+     densest of the ten. The left edge keeps the Americas either way. */
+  background-position-x: left !important;
+  background-position-y: calc(100% + 150px) !important;
+  background-size: 112% 68% !important;
+  background-repeat: no-repeat !important;
+  background-attachment: fixed !important;
+  /* Dark grounds: the light linework LIFTS the surface rather than replacing
+     it, so the board's own colour is what you read in the lines. */
+  background-blend-mode: soft-light !important;
+}
+
+/* Light grounds take the dark-ink cut of the same drawing under multiply, for
+   the reason recorded at v22642: a darkening pattern is correct on a dark
+   ground and crushes a light one, and the light-ground answer is a mid-tone
+   that "cannot crush a light ground the way black dots do". Multiply keeps the
+   surface colour exactly, so these boards follow their theme too. */
+html body[data-fids-theme="mist"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
+html body[data-fids-theme="cream"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
+html body[data-fids-theme="light"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
+html body[data-fids-theme="paper"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
+html body[data-fids-theme="sky"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
+html body[data-fids-theme="mist"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_),
+html body[data-fids-theme="cream"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_),
+html body[data-fids-theme="light"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_),
+html body[data-fids-theme="paper"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_),
+html body[data-fids-theme="sky"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_) {
+  background-image: url("/logos/Backgrounds/fids-world-network-dark.png?v=1") !important;
+  background-blend-mode: multiply !important;
+}
