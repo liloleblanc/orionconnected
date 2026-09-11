@@ -23345,7 +23345,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23714';
+var FIDS_BUILD_TAG = 'v23716';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -30993,7 +30993,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
         try { if (gateMap) { gateMap.remove(); } } catch(e){}
         gateMap = null;
         if (mb && (_oK || _dK)) {
-          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
           _gateMapTileLayer().addTo(gateMap);
           var _kC = _oK || _dK, _kL = _oK ? org : dst, _kCol = _oK ? '#60a5fa' : '#ef4444';
           gateMap.setView([20, _kC[1]], 1);
@@ -31040,7 +31040,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     gateMap._fidsRouteKey = _estKey;
     gateMap._fidsOverlays = [];
   } else {
-    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_gateMapTileLayer().addTo(gateMap);
+    try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});_gateMapTileLayer().addTo(gateMap);
     gateMap._fidsRouteKey = _estKey;
     gateMap._fidsOverlays = [];
     _gateMapWatchResize(mb);
@@ -31235,7 +31235,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
         try { if (gateMap) { gateMap.remove(); } } catch(e){}
         gateMap = null;
         if (mb && (_oK2 || _dK2)) {
-          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
           _gateMapTileLayer().addTo(gateMap);
           var _kC2 = _oK2 || _dK2, _kL2 = _oK2 ? org : dst, _kCol2 = _oK2 ? '#60a5fa' : '#ef4444';
           gateMap.setView([20, _kC2[1]], 1);
@@ -31423,7 +31423,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     gateMap._fidsOverlays = [];
   } else {
     try{if(gateMap){gateMap.remove();}}catch(e){}gateMap=null;
-    gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+    gateMap=L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
     _gateMapTileLayer().addTo(gateMap);
     gateMap._fidsRouteKey = _liveRouteKey;
     gateMap._fidsOverlays = [];
@@ -41547,7 +41547,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
   o = [o[0], o[1]]; d = [d[0], d[1]];
   while (d[1] - o[1] > 180) d[1] -= 360;
   while (d[1] - o[1] < -180) d[1] += 360;
-  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
+  try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
   /* (fade helper defined once, below at its first use in source order) */
   // Calculate total route distance for zoom scaling
   var totalDist = Math.sqrt(Math.pow(o[0]-d[0],2)+Math.pow(o[1]-d[1],2));
@@ -41684,7 +41684,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
     }
   } catch (eBIP) {}
   try{if(window._bigCraftMap){window._bigCraftMap.remove();}}catch(e){}window._bigCraftMap=null;
-  window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false});
+  window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
   _bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
   var distToDst = Math.sqrt(Math.pow(planeLat-d[0],2)+Math.pow(planeLng-d[1],2));
