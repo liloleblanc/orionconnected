@@ -190,9 +190,11 @@ test('the composition is the one mline3 actually renders', () => {
 test('line 1 names the relationship instead of an interpunct', () => {
   const conn = makeConn(false, gateLbl);
   assert.equal(strip(conn).trim(), 'from | de');
-  // Two cards build a v2-fi-mline1 into the same shelf: this one (the known
-  // inbound, _ib*/_mc*) and the "next inbound" card (_ni*), which is a
-  // label:value line — 'AC123 · From | De: Toronto' — and is left as it was.
+  // Two cards build a v2-fi-mline1 into this shelf: the real inbound card
+  // (_ib*/_mc*) and the BACKSTOP (_ni*). They are not alternatives shown in
+  // different places — the backstop is gated on `if (!_inboundCard)`, so it
+  // fills the SAME rectangle whenever the real builder bails or throws. Both
+  // must carry the same grammar; the backstop is asserted separately below.
   const m1 = SRC.split('\n').filter(l =>
     l.indexOf('v2-fi-mline1">') >= 0 && l.indexOf('_ibCityCode') >= 0);
   assert.equal(m1.length, 1, 'exactly one line builds the arrived card\'s mline1');
@@ -254,4 +256,47 @@ test('the new keys carry the full language set', () => {
     assert.doesNotMatch(dict.acLandedTaxiNoTime[l], /\{t\}/,
       'acLandedTaxiNoTime.' + l + ' must not');
   }
+});
+
+// ── The backstop shares the slot, so it shares the grammar ───────────────
+
+test('the backstop card uses the same connector, not the old interpunct', () => {
+  // `if (!_inboundCard)` — this is the same shelf, not a different panel. A
+  // viewer can meet both within minutes on one gate, so a stale grammar here
+  // is visible as an inconsistency rather than hidden behind a rare state.
+  const at = SRC.indexOf('PANEL BACKSTOP');
+  assert.ok(at >= 0, 'the backstop block must still be identifiable');
+  assert.ok(/if \(!_inboundCard\)/.test(SRC.slice(at, at + 2000)),
+    'the backstop must still be keyed to an empty card, not to "no inbound"');
+
+  const line = SRC.split('\n').filter(l =>
+    l.indexOf('v2-fi-mline1">') >= 0 && l.indexOf('_niFlt') >= 0);
+  assert.equal(line.length, 1, 'exactly one line builds the backstop mline1');
+  assert.ok(line[0].indexOf('_niFromConn') >= 0,
+    'the backstop must use the shared connector');
+  assert.ok(line[0].indexOf('<span class="v2-rc-bar">\u00b7</span>') < 0,
+    'the interpunct must be gone from the backstop too');
+});
+
+test('both cards build the connector identically', () => {
+  // Built from the same key, with the same separator markup, in both places —
+  // so they cannot drift.
+  const conn = makeConn(false, gateLbl);
+  const niAt = SRC.indexOf('var _niFromConn = _gateLbl(');
+  assert.ok(niAt >= 0, 'the backstop must define its own _niFromConn');
+  const niSrc = SRC.slice(niAt, SRC.indexOf(';', SRC.indexOf('</span> \'', niAt)) + 1);
+  const niConn = new Function('_frF', '_gateLbl', niSrc + '\nreturn _niFromConn;')(false, gateLbl);
+  assert.equal(niConn, conn, 'the two connectors must render identically');
+  assert.equal(strip(niConn).trim(), 'from | de');
+});
+
+test('the backstop keeps the labelled form when there is no flight number', () => {
+  // 'from | de Montreal' with nothing in front of it is a fragment, so the
+  // flightless case keeps 'From | De: Montreal'.
+  const line = SRC.split('\n').filter(l =>
+    l.indexOf('v2-fi-mline1">') >= 0 && l.indexOf('_niFlt') >= 0)[0];
+  assert.ok(/_niFlt \? _niFrom :/.test(line),
+    'with a flight the origin stands alone after the connector');
+  assert.ok(line.indexOf("_gateLbl('from', _frF") >= 0,
+    'without one it falls back to the capitalised From | De label');
 });

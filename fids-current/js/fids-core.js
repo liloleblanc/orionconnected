@@ -9848,6 +9848,10 @@ function _buildV2MapCol(ctx, vars) {
         return i4 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>'
                   : '<span class="v2-fi-lbl-en">' + w + '</span>';
       }, '');
+      // v23720 — same connector the real card uses, built the same way, so the
+      // two cannot drift apart in the one slot they share.
+      var _niFromConn = _gateLbl('fromConn', _frF, function (w) { return w; },
+        ' <span class="v2-rc-bar">|</span> ');
       // Whatever the feed DID give us for the inbound still goes on the card —
       // an unbuildable card is not the same as an unknown aircraft.
       var _niFlt = _niIb ? String(_niIb.flight || '').trim() : '';
@@ -9993,7 +9997,21 @@ function _buildV2MapCol(ctx, vars) {
         // an origin to put on it; a card that knows nothing carries the
         // status line alone.
         +         (_niKnown
-                    ? '<div class="v2-fi-mline1">' + (_niFlt ? _niEsc(_niFlt) : '') + (_niFlt && _niFrom ? ' <span class="v2-rc-bar">\u00b7</span> ' : '') + (_niFrom ? '<span class="v2-fi-mlbl">' + _gateLbl('from', _frF, function (w, iF) { return iF ? '<span class="v2-fi-sep"> | </span><span>' + w + '</span>' : '<span>' + w + '</span>'; }, '') + '</span><span class="v2-fi-mcolon">:</span> ' + _niFrom : '') + '</div>'
+                    // v23720 \u2014 the backstop follows the real card's line 1.
+                    // This is NOT a different panel: the condition above is
+                    // `!_inboundCard`, so this renders into the SAME shelf and
+                    // the same pixels whenever the builder bails or throws \u2014
+                    // which the note at the top of this block records happening
+                    // on a photographed gate. Left on the old grammar it was
+                    // the one place a viewer could still meet
+                    // 'PD2381 \u00b7 From | De: Montreal' minutes after seeing
+                    // 'PD2381 from | de Montreal' in the same rectangle.
+                    //
+                    // With no flight number there is nothing for the connector
+                    // to join, so that case keeps the labelled 'From | De:'
+                    // form \u2014 'from | de Montreal' with no flight reads as a
+                    // fragment.
+                    ? '<div class="v2-fi-mline1">' + (_niFlt ? _niEsc(_niFlt) : '') + (_niFlt && _niFrom ? ' ' + _niFromConn + ' ' : '') + (_niFrom ? (_niFlt ? _niFrom : '<span class="v2-fi-mlbl">' + _gateLbl('from', _frF, function (w, iF) { return iF ? '<span class="v2-fi-sep"> | </span><span>' + w + '</span>' : '<span>' + w + '</span>'; }, '') + '</span><span class="v2-fi-mcolon">:</span> ' + _niFrom) : '') + '</div>'
                     : '')
         +         _niStatusLine
         +       '</div>'
