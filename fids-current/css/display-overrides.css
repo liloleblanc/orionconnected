@@ -18044,7 +18044,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    characters is the whole design space here — every IATA code is exactly
    three — so it can be set tight and centred without a fitter.
    ═════════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -18164,7 +18164,7 @@ html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airli
    reads on #F2F4F7 rather than a guessed brand value. 2L Helvetic, 4Y Eurowings
    Discover, BA British Airways, CJ BA CityFlyer, ET Ethiopian, HA Hawaiian,
    LY El Al, PR Philippine, WN Southwest. */
-html body:is([data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode {
+html body:is([data-gate-airline="2L"],[data-gate-airline="4Y"],[data-gate-airline="BA"],[data-gate-airline="CJ"],[data-gate-airline="ET"],[data-gate-airline="HA"],[data-gate-airline="LY"],[data-gate-airline="PR"],[data-gate-airline="WN"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
   color: #1B2430 !important;
   -webkit-text-fill-color: #1B2430 !important;
 }
@@ -18554,3 +18554,23 @@ html body[data-fids-theme="sky"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MC
    At 1920x1080 the width term yields 65.3px and the 64px cap still governs,
    so wide boards are untouched. The overflow:hidden stays as a last-resort
    guard, but it should no longer have anything to clip. */
+/* ══ v23734 — DARK ORB INK BELONGS TO THE DISC, NOT TO THE AIRLINE ═══════
+   Reported: Hawaiian's destination badge showed HNL in black on its purple
+   disc.
+
+   v23692 gave ten carriers dark ink on their orb code, correctly: those ten
+   get a LIGHT #F2F4F7 disc from _gateOrbParts, and white-on-white had made
+   the code invisible three times running. But it keyed the ink to
+   data-gate-airline, and only the RAIL's orb takes that light disc. The
+   boarding shelf builds its badge from _BIR_BADGE_STYLE, which paints
+   var(--airline-accent) and inks it white — so the dark rule landed on an
+   accent disc and undid the white.
+
+   Measured accents for the ten: AA #0078D2, HA #582C83, BA #2E5DA4, WN
+   #F9A01B — every one dark enough that white is the right ink there. So this
+   was wrong on all ten, not only Hawaiian. American was the worst and had
+   gone unreported: ink #0078D2 on accent #0078D2 is the same colour, the
+   exact white-on-white fault v23692 was written to end, in the other place.
+
+   The markup now says which surface it is on and the ink follows that. Nothing
+   changes for the rail's light disc, which is what v23692 was actually about. */

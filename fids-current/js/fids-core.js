@@ -11909,8 +11909,19 @@ function uxgGateHtml(ctx) {
       }
       return '<div class="v2-fi-row' + (cls ? ' ' + cls : '') + '">'
         + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '">'
+        // v23734 — THIS ORB IS ON THE ACCENT, NOT ON A LIGHT DISC.
+        // _BIR_BADGE_STYLE paints this badge var(--airline-accent) and inks it
+        // white. The rail's orb is different: _gateOrbParts gives ten carriers
+        // (AA 2L 4Y BA CJ ET HA LY PR WN) a light #F2F4F7 disc instead, and
+        // v23692 added dark ink for those so the code could be read on it.
+        // That rule keys on the CARRIER, so it also landed on this badge —
+        // #1B2430 on Hawaiian's #582C83 purple, which is the black HNL that
+        // was reported. American had it worse and unnoticed: its ink is
+        // #0078D2, its accent is #0078D2, so the code was invisible.
+        // The class says which disc this actually is, so the ink can follow
+        // the surface instead of the airline.
         +   (orbCode
-              ? '<span class="v2-fi-orbcode">' + orbCode + '</span>'
+              ? '<span class="v2-fi-orbcode v2-fi-orbcode-onaccent">' + orbCode + '</span>'
               : '<span class="ac-ico ' + icon + '"></span>')
         + '</div></div>'
         + '<div class="v2-fi-textcol">'
@@ -23454,7 +23465,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23732';
+var FIDS_BUILD_TAG = 'v23734';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
