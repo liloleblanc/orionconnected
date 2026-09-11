@@ -11549,8 +11549,46 @@ function uxgGateHtml(ctx) {
         var _bwRaw = '';
         try { _bwRaw = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus((currentFlight && currentFlight.status) || '') : ''; } catch (e0) {}
         _bwRaw = _bwRaw + ' ' + String(_stripState || '');
+        // v23712 — A REVISED TIME IS NOT AUTOMATICALLY A LATE ONE.
+        //
+        // Reported: a board announcing "Delayed" beside times rendered in the
+        // on-time green. Measured on the live YUL feed, the contradiction is
+        // real and the green was the half that was right:
+        //
+        //     AC802   scheduled 20:40  ->  revised 20:30   TEN MINUTES EARLY
+        //     AC894   scheduled 20:45  ->  revised 20:35   TEN MINUTES EARLY
+        //
+        // Both were labelled "Delayed". The shelves ink a revision by DIRECTION
+        // (earlier reads green, later reads amber), which is why the digits were
+        // green — correct. This line asked only whether a revision EXISTS, so
+        // any change to a time, in either direction, produced the word
+        // "Delayed". The two surfaces disagreed because only one of them was
+        // looking at the clock.
+        //
+        // SS.early already exists in every language ('Early', 'En avance'), and
+        // display-overrides.css:11474 already carries a green rule for
+        // g8-bw-st-early that could never fire, because nothing ever set this
+        // key to 'early'. Both were written for this case and left unreachable.
+        //
+        // The direction is derived from the clock rather than the feed's status
+        // word, because the word is exactly what is unreliable here — the feed
+        // says "delayed" on AC802 while its own revised time is earlier. Minute
+        // arithmetic, wrapped for a revision that crosses midnight, and a 5
+        // minute dead band so a trivial adjustment is not announced at all.
+        var _bwEarly = false;
+        try {
+          var _oT = String((currentFlight && currentFlight.time) || '').split(':');
+          var _nT = String((currentFlight && currentFlight.upd) || '').split(':');
+          if (_oT.length === 2 && _nT.length === 2) {
+            var _dMin = (+_nT[0] * 60 + +_nT[1]) - (+_oT[0] * 60 + +_oT[1]);
+            if (_dMin < -720) _dMin += 1440;
+            if (_dMin > 720) _dMin -= 1440;
+            _bwEarly = _dMin < -5;
+          }
+        } catch (eE) { _bwEarly = false; }
         if (/cancel/.test(_bwRaw)) _bwStKey = 'cancelled';
         else if (/divert/.test(_bwRaw)) _bwStKey = 'diverted';
+        else if (_bwEarly) _bwStKey = 'early';
         else if (/delay/.test(_bwRaw) || (currentFlight && currentFlight.upd)) _bwStKey = 'delayed';
       } catch (e) {}
       var _bwAbn = true;
@@ -23299,7 +23337,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23710';
+var FIDS_BUILD_TAG = 'v23712';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
