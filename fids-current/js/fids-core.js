@@ -12975,7 +12975,15 @@ The rows value is the 'All | Tous'
     // band, and every airport has that bar now, not just Moncton. 106 was the
     // no-bar value; leaving it anywhere would push that airline's wordmark
     // straight through its own bar.
-    _logoH = Math.min(_logoH, 76);
+    // v23714 — 76 -> 82. Reported: the wordmark reads too small beside the
+    // roundel. Measured on the live YUL/A51 Air Canada banner:
+    //     band 112px   roundel 124px (111% of the band)   wordmark 76px
+    // The roundel is TALLER THAN THE BAND it sits in, and 1.63x the wordmark.
+    // 82 is the ceiling this comment already identified as clearing the date
+    // bar with ~2px to spare; the emblem is brought to the same 82 in CSS, so
+    // the pair finally matches instead of one overflowing while the other is
+    // held back.
+    _logoH = Math.min(_logoH, 82);
   }
   var _logoStyle = 'height:' + _logoH + 'px !important;max-height:' + _logoH + 'px !important;'
                  + 'width:auto;max-width:' + (_silkBanner ? 'min(' + _sz.w + 'px, 32vw)' : (_sz.w + 'px')) + ' !important;object-fit:contain;'
@@ -23337,7 +23345,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23712';
+var FIDS_BUILD_TAG = 'v23714';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

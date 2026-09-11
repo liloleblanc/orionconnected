@@ -18290,3 +18290,40 @@ html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"]):not(#_):not(#_)
 html body:is([data-gate-airline="UA"],[data-gate-airline="UAL"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-col.now {
   background-color: #0C2340 !important;
 }
+
+/* ══ v23714 — THE BANNER ROUNDEL STOPS OVERFLOWING ITS OWN BAND ══════════════
+   Reported: the Air Canada logo is too big and the wordmark too small.
+
+   Measured on the live YUL/A51 banner at 1920x1010:
+       banner band   112px
+       roundel       124px   <- 111% of the band, taller than the thing it is in
+       wordmark       76px   <- 68%
+       ratio         1.63x
+
+   The two are sized by different mechanisms, which is how they drifted this far
+   apart. The wordmark is capped in JS (fids-core.js, `_logoH = Math.min(...)`)
+   with inline !important, deliberately, so it clears the date bar at the foot of
+   the band. The roundel is sized here by the shared rule
+
+       .g8-r1-silk .g8-r1-logoslot img:not(.g8-r1-star)
+         { height: clamp(90px, 12.5vh, 124px) }
+
+   which at this viewport resolves to 124px and has NO awareness of the band
+   height or the date bar. Nothing capped it, so it grew past both.
+
+   82px is the ceiling the JS comment already identified as clearing the date bar
+   with a couple of pixels to spare. Putting the emblem there too makes the pair
+   match by construction rather than by coincidence, and it cannot overflow the
+   band at any viewport because it is a fixed value, not a vh clamp.
+
+   Chain long enough to beat the clamp above it, and scoped to the EMBLEM only —
+   the wordmark keeps its JS cap, which is the one that knows about the bar. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-silk .g8-r1-emblem,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1 .g8-r1-emblem {
+  height: 82px !important;
+  max-height: 82px !important;
+  width: 82px !important;
+  min-width: 82px !important;
+  max-width: 82px !important;
+  object-fit: contain !important;
+}
