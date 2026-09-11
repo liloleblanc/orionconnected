@@ -2,11 +2,11 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2611,
+    "total": 2613,
     "by_category": {
       "ad": 10,
       "airline": 1411,
-      "background": 106,
+      "background": 108,
       "brand": 2,
       "hotel": 884,
       "livery": 96,
@@ -16790,6 +16790,28 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-fireflies-night.mp4",
+      "file": "wx-fireflies-night.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx fireflies night",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-grass-loop.mp4",
+      "file": "wx-grass-loop.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx grass loop",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
     },
     {
       "path": "/logos/Backgrounds/wx-sky-beach.jpg",

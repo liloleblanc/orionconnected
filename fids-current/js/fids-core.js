@@ -23454,7 +23454,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23722';
+var FIDS_BUILD_TAG = 'v23726';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41241,14 +41241,47 @@ function _renderWxCard(el) {
       try { if (el && el.isConnected && el.querySelector('.wxcard-wrap')) _renderWxCard(el); } catch (eR) {}
     });
     if (daily && daily.time && daily.time.length) {
+      // v23724 — THE WEEK COLOURS ITSELF.
+      //
+      // Each tile takes one of five steps — lavender, pale blue, mint, gold,
+      // coral — and the highs and lows are banded SEPARATELY, against their
+      // own spread, so the two numbers in a tile carry different colours.
+      //
+      // The scale is RELATIVE to the week on screen, not to absolute degrees.
+      // That is a deliberate trade and the reason for it is worth stating,
+      // because the obvious implementation is the other one: fixed thresholds
+      // make a settled week render five tiles of the same colour, which is
+      // what a forecast strip is least useful for. Anchoring to the week's own
+      // min and max means the card always shows how the week MOVES. The cost
+      // is that a given reading is not the same colour in every week — 21° is
+      // the coolest day here and the warmest in November.
+      //
+      // Degenerate weeks are handled: when every day is the same temperature
+      // the span collapses, and _wxBand returns the middle step rather than
+      // dividing by zero.
+      var _wxHis = [], _wxLos = [];
+      for (var _bi = 0; _bi < Math.min(5, daily.time.length); _bi++) {
+        var _bh = daily.temperature_2m_max[_bi], _bl = daily.temperature_2m_min[_bi];
+        if (typeof _bh === 'number' && isFinite(_bh)) _wxHis.push(_bh);
+        if (typeof _bl === 'number' && isFinite(_bl)) _wxLos.push(_bl);
+      }
+      var _wxBand = function (v, arr) {
+        if (!arr.length || typeof v !== 'number' || !isFinite(v)) return 2;
+        var mn = Math.min.apply(null, arr), mx = Math.max.apply(null, arr);
+        if (!(mx - mn > 0.5)) return 2;            // a flat week sits mid-scale
+        var f = (v - mn) / (mx - mn);
+        return Math.max(0, Math.min(4, Math.round(f * 4)));
+      };
       for (var i = 0; i < Math.min(5, daily.time.length); i++) {
         var dt = new Date(daily.time[i] + 'T12:00:00');
         var icd = _wmoAnimIcon(daily.weather_code[i]);
-        tiles += '<div class="wxc-day">'
+        var _tbHi = _wxBand(daily.temperature_2m_max[i], _wxHis);
+        var _tbLo = _wxBand(daily.temperature_2m_min[i], _wxLos);
+        tiles += '<div class="wxc-day wxc-t' + _tbHi + '">'
           + '<div class="wxc-dhead">' + _dayTopEn(dt) + _dayBotFr(dt) + '</div>'
           + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
           + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
-          + '<div class="wxc-lo">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
+          + '<div class="wxc-lo wxc-tl' + _tbLo + '">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
         nDays++;
       }
     } else {
@@ -41303,7 +41336,26 @@ function _renderWxCard(el) {
         var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
         var hNight = h24 < 6 || h24 >= 21;
         var hic = _wxAnimIcon(h.code, hNight);
-        hoursHtml += '<div class="wxc-hour"><div class="wxc-dhead"><div class="wxc-hr">' + lbl + '</div></div>'
+        // v23724 — the tile says what part of the day it is, not just the icon.
+        //
+        // hNight is the SAME value that chose the moon-or-sun above, and it
+        // still decides day-versus-not here, so the tile and its icon cannot
+        // contradict each other. Deriving night again from the label would
+        // reintroduce exactly that: the icon threshold is 21:00 in the
+        // DESTINATION's timezone, and any second guess (a 19:00 window, the
+        // board's own clock) drifts from it by season and by airport.
+        //
+        // Dawn and dusk are a refinement WITHIN night, never an override of
+        // it: the hours either side of the boundary get their own colour so
+        // 5 AM reads as sunrise rather than as deep night, while still
+        // carrying the moon the icon logic gives it. The bands are deliberately
+        // narrow — two hours each — so a tile only turns violet when it really
+        // is on the edge of the day.
+        var hPhase = !hNight ? 'day'
+                   : (h24 >= 4 && h24 < 6) ? 'dawn'
+                   : (h24 >= 21 && h24 < 23) ? 'dusk'
+                   : 'night';
+        hoursHtml += '<div class="wxc-hour wxc-hr-' + hPhase + '"><div class="wxc-dhead"><div class="wxc-hr">' + lbl + '</div></div>'
           + '<img class="wxanim" data-wx="' + hic + '" src="/logos/weather/animated/' + hic + '.svg" alt="">'
           + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
       });
@@ -41484,7 +41536,60 @@ function _renderWxCard(el) {
     // endorses or produced these boards — the one thing their trademark terms
     // ask you not to suggest.
     var _wxCredit = '<div class="wxc-credit">Weather data generously provided by MET Norway</div>';
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col">' + _wxMainHtml + _wxStripsHtml + _wxCredit + '</div>';
+    // v23724 — THE BACKGROUND MOVES.
+    //
+    // A 16s 1920x1080 H.264 loop of sunny grass, layered OVER the still in
+    // _wxSkyUrl rather than replacing it: the CSS background stays exactly
+    // where it was and becomes the fallback, so a failed or blocked video
+    // leaves the card as it is today instead of bare.
+    //
+    // Why grass and not one of the other clips that were tried: the card's own
+    // panels cover most of this layer, and the only part a viewer ever sees is
+    // the band along the foot and the gaps between the forecast columns. A
+    // bright or high-contrast scene reads as stray colour in those slivers, and
+    // the brighter ones bleached the type straight through the panels. Grass is
+    // what the still already shows in that band, so the motion lands where the
+    // eye expects it.
+    //
+    // It costs nothing while off screen: the slide rotation replaces this
+    // element's innerHTML when it moves to the next slide (:38247, :38303),
+    // which destroys the <video> and stops the decode. The card is up 24s of a
+    // 132s cycle, so this decodes about 18% of the time and needs no separate
+    // pause-on-hidden wiring.
+    //
+    // `muted` is set as a PROPERTY after insertion, not trusted from the
+    // attribute: markup injected through innerHTML does not reliably reflect
+    // muted to the property, and an unmuted video is refused autoplay outright.
+    // v23726 — DAY AND NIGHT ARE DIFFERENT SCENES, NOT THE SAME ONE DIMMED.
+    //
+    // Sunny grass by day, fireflies after dark, chosen off the board's own
+    // clock through _gateDayNightTheme() (:99) — the switch the gate board
+    // already uses, so the card turns over at the same moment the rest of the
+    // screen does and honours the same manual override and ?theme= pin.
+    //
+    // Deliberately the BOARD's clock and not the destination's, even though
+    // the card's content is all about the destination: this layer is ambient,
+    // it is behind the reader's own screen, and a firefly scene at a stand in
+    // daylight because the far end is dark would read as a fault. The hour
+    // tiles below still follow the destination — those are data, this is not.
+    //
+    // The treatment has to move with the clip, not just the file. The light
+    // panels and dark ink introduced for the grass are unreadable over a dark
+    // scene, so the scene class carries them: wxc-scene-day gets the new
+    // light treatment, wxc-scene-night falls through to the card's original
+    // navy panels and white type, which were already a night design.
+    var _wxNightScene = false;
+    try { _wxNightScene = (typeof _gateDayNightTheme === 'function') && _gateDayNightTheme() === 'dark'; } catch (e) {}
+    var _wxVidSrc = _wxNightScene
+      ? '/logos/Backgrounds/video/wx-fireflies-night.mp4'
+      : '/logos/Backgrounds/video/wx-grass-loop.mp4';
+    var _wxVid = '<video class="wxc-vid" autoplay loop muted playsinline preload="auto" '
+               + 'src="' + _wxVidSrc + '"></video>';
+    var _wxSceneCls = _wxNightScene ? ' wxc-scene-night' : ' wxc-scene-day';
+    // The scene is part of the rebuild signature further down (_wxSig is the
+    // whole markup string), so crossing 06:00 or 19:00 swaps the clip on the
+    // next render rather than needing its own timer.
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxSceneCls + '">' + _wxVid + _wxMainHtml + _wxStripsHtml + _wxCredit + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
@@ -41587,7 +41692,15 @@ function _renderWxCard(el) {
     if (_wxWrapP && el._wxMainHtml === _wxMainHtml) {
       try {
         _wxWrapP.querySelectorAll(':scope > .wxc-strip').forEach(function (n) { n.remove(); });
-        _wxWrapP.insertAdjacentHTML('beforeend', _wxStripsHtml);
+        // v23724 — PUT THEM BACK WHERE THEY WERE, NOT AT THE END.
+        // 'beforeend' appended the strips AFTER the credit, so every
+        // strips-only refresh walked the MET attribution one slot up the card
+        // until it sat between the hero and the hours. The credit is the last
+        // child by construction and has margin-top:auto to hold it at the
+        // foot; re-inserting ahead of it keeps both facts true.
+        var _wxCreditEl = _wxWrapP.querySelector(':scope > .wxc-credit');
+        if (_wxCreditEl) _wxCreditEl.insertAdjacentHTML('beforebegin', _wxStripsHtml);
+        else _wxWrapP.insertAdjacentHTML('beforeend', _wxStripsHtml);
         el._wxLastHtml = _wxSig;
         if (el._wxLastBg !== _wxBg) { _wxWrapP.style.setProperty('background', _wxBg, 'important'); el._wxLastBg = _wxBg; }
         _wxHydrateSvgs(_wxWrapP);
