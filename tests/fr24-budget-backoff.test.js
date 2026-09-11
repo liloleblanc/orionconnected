@@ -186,3 +186,66 @@ test('both spenders share one cool-off key', () => {
   const reads = [...SRC.matchAll(/get\(`fr24:cool:\$\{(\w+)\}`\)/g)];
   assert.ok(reads.length >= 2, 'both paths must read it back');
 });
+
+// ── The expensive endpoint cannot drain the pool ─────────────────────────
+// The concern this answers, in the owner's words: "I just dont want to see it
+// flush out like last time." Last time an unattended cron BOUGHT credits and
+// emptied the quota, and every board lost aircraft data for days.
+//
+// Nothing here buys anything — that cron is gone and this code only ever
+// spends calls the plan already includes. But the two endpoints cost very
+// differently (2.7 credits a call for a position, 59 for a summary), so the
+// summary sweep is the one that could empty a credit pool. It gets its own
+// ceiling so it can never take the cheap lookups' room.
+
+test('the summary sweep has a budget of its own, separate from the shared one', () => {
+  assert.match(SRC, /fr24:sweep:/,
+    'the expensive endpoint must count against its own key');
+  assert.match(SRC, /FR24_SUMMARY_DAILY_CALLS \|\| (\d+)/,
+    'and have its own configurable cap');
+  assert.match(SRC, /if \(sweepUsed >= sweepCap\) return/,
+    'and bail out once that cap is reached');
+});
+
+test('the sweep cap is small next to the shared budget', () => {
+  const m = SRC.match(/FR24_SUMMARY_DAILY_CALLS \|\| (\d+)/);
+  assert.ok(m);
+  const sweepCap = Number(m[1]);
+  const d = SRC.match(/Number\(env\.FR24_DAILY_BUDGET \|\| (\d+)\)/);
+  assert.ok(d);
+  // At 59 vs 2.7 credits a call, the sweep must stay a minority of the burn.
+  const sweepCredits = sweepCap * 59;
+  const posCredits = 1800 * 2.7;         // the configured shared cap
+  assert.ok(sweepCredits < posCredits,
+    `${sweepCap} summary calls is ${sweepCredits} credits against ${posCredits} ` +
+    'for the position lookups — the expensive endpoint must not dominate');
+  assert.ok(sweepCap >= 30,
+    'but it must still allow a full sweep (DTW_FR24_MAX_CALLS) plus a retry');
+});
+
+test('the sweep still writes back what it actually spent', () => {
+  assert.match(SRC, /put\(sweepKey, String\(sweepUsed \+ calls\)/,
+    'its own counter must advance by the calls made, or the cap never bites');
+});
+
+test('nothing in this path purchases anything', () => {
+  // The 2026-08-26 incident was a cron that BOUGHT credits. Both are gone and
+  // must stay gone: this code may spend the plan, never top it up.
+  //
+  // Scanned with COMMENTS STRIPPED. The first draft flagged the word "billing"
+  // inside its own explanatory comment — a guard that reads prose as if it were
+  // code reports the documentation, not the behaviour.
+  const at = SRC.indexOf('dtwFr24Schedule');
+  const around = SRC.slice(Math.max(0, at - 2000), at + 6000)
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+  assert.doesNotMatch(around, /\b(purchase|topUp|top_up|buyCredits|creditBalance)\b/i,
+    'this path must never buy credits — that is what emptied the quota before');
+  // And the removed cron must stay removed.
+  const W = fs.readFileSync(
+    path.resolve(__dirname, '..', 'workers', 'wrangler.fids-proxy.jsonc'), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
+  assert.doesNotMatch(W, /"crons"\s*:/,
+    'no cron on this worker — an unattended schedule is what spent the money');
+});
