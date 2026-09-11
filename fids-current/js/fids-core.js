@@ -23454,7 +23454,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23720';
+var FIDS_BUILD_TAG = 'v23722';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41508,12 +41508,33 @@ function _renderWxCard(el) {
     // and every label on this card is white — so a dark wash is composited
     // over the image, heavier at the top where the flare is and easing toward
     // the bottom where the sky is already deep enough to carry white type.
-    // Spring sky — sun rays from the top with a grass band along the foot.
-    // 'center bottom' keeps that grass in frame: with cover on a card that is
-    // squarer than the 4:3 source, a centred crop cuts the bottom quarter off
-    // and the grass — the reason for this image over the plain sun — is the
-    // first thing lost.
-    var _wxSkyUrl = '/logos/Backgrounds/wx-sky-spring.jpg';
+    // v23722 — a paper-cut beach scene replaces the spring photograph: sun and
+    // clouds in a flat blue sky, sea bands across the middle, sand along the
+    // foot. 1920x1079, Vecteezy Pro licence (no attribution required, so no
+    // credit line is owed for the art — the MET credit at the foot of the card
+    // is for the DATA and is unrelated).
+    //
+    // The scrim and the 'center bottom' position below are DELIBERATELY left as
+    // they were for the previous image, on the owner's instruction to change the
+    // background and nothing else. Two consequences, measured rather than
+    // guessed, so whoever reads this next is not surprised by them:
+    //
+    //   · The sun sits at 12.5–22.4% of the source width. This card is about
+    //     1.28:1 against a 1.78:1 source, so `cover` crops ~539px horizontally
+    //     and `center` puts the window's left edge at source x=269 — about 29px
+    //     into the sun, which renders as a sliced disc at the card edge.
+    //     A position of 25% or less clears it (the sun is fully in frame while
+    //     the left edge is <= 240).
+    //
+    //   · The sand band averages #EFE2 59 at luminance 0.735. Under the current
+    //     scrim the forecast tiles (rgba(255,255,255,.16)) carry white type at
+    //     about 1.8:1 — below any legibility threshold. Making the tiles a navy
+    //     plate rather than a white wash reaches ~8:1 without touching the art,
+    //     if that is ever wanted.
+    //
+    // The previous image is kept on disk beside this one, so reverting is this
+    // one line.
+    var _wxSkyUrl = '/logos/Backgrounds/wx-sky-beach.jpg';
     // Scrim lightened hard (was .62/.42/.30, top-weighted).
     // — correct, and the reason it was that dark
     // no longer holds. The heavy top existed to keep white text legible where
