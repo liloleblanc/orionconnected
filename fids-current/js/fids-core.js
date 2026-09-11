@@ -12061,8 +12061,28 @@ function uxgGateHtml(ctx) {
     // invisible — the same failure as the gate emblems, and the rule there
     // holds here: never recolour the artwork, put it on a plate it can be read
     // against. Each mark sits on its own light chip.
-    var _prioMarks = preActive
-      ? '<div class="g8-pd-preboard-marks">'
+    // v23718 — THE TIER MARKS SHOW FOR THE WHOLE BOARDING WINDOW, NOT FIVE
+    // MINUTES OF IT.
+    //
+    // Reported, twice: the supplied Porter class artwork is still not visible.
+    // The first time, three tier files were rendering nowhere at all. They were
+    // then wired into THIS block — which only renders while `preActive` is true,
+    // i.e. the first five minutes of the boarding window. Technically used,
+    // effectively invisible, and reported again. That is the same mistake twice:
+    // putting artwork somewhere that satisfies a grep rather than somewhere a
+    // passenger looks.
+    //
+    // They belong here for the whole window on the merits, not just to be seen.
+    // This is the LEFT column, lanes 1-2 — the priority queue. Porter Reserve
+    // and premium VIPorter are who that queue is FOR, before and after general
+    // boarding commences. The column already names Porter Reserve in words once
+    // pre-boarding ends; the marks say which VIPorter cards qualify, which is
+    // the one thing the words never say.
+    //
+    // The roster line above them stays pre-boarding-only — that list is about
+    // the courtesy groups (unaccompanied minors, families, assistance) and it
+    // genuinely does not apply later.
+    var _prioMarks = '<div class="g8-pd-preboard-marks">'
         // v23532 — the mark the owner supplied, not the older file already in the tree.
         // The policy line reads "Premium VIPorter MEMBERS", which is the whole
         // premium tier set, so the member wordmark is the right one of the four
@@ -12084,11 +12104,11 @@ function uxgGateHtml(ctx) {
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_venture_single_line_en.svg" alt="VIPorter Venture"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_first_single_line_en.svg" alt="VIPorter First"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
-        + '</div>'
-      : '';
+        + '</div>';
+    // The roster is pre-boarding only; the marks are not.
     var _prioSub = preActive
       ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1('preboardList', _frF) + '</span></div>' + _prioMarks
-      : '';
+      : _prioMarks;
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>' + _prioSub + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
       + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div>' + _comingLineHtml(comingVal) + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
@@ -23345,7 +23365,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23716';
+var FIDS_BUILD_TAG = 'v23718';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
