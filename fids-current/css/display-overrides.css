@@ -18468,11 +18468,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-fids-theme]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
 html body[data-fids-theme]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_) {
   background-image: url("/logos/Backgrounds/fids-world-network.png?v=1") !important;
-  /* No stretch. cover scales the drawing by its own proportions and crops
-     whatever does not fit, so the map is never distorted — the 2.5x vertical
-     squash of the previous crop is gone. Centred, which is the neutral
-     starting point; position is one value to move from here. */
-  background-position: center !important;
+  /* No stretch: cover scales the drawing by its own proportions and crops
+     whatever does not fit, so the map is never distorted.
+
+     PUSHED DOWN, BOTTOM TRIMMED. The source is 1920x1284 against a 1920x1080
+     board, so cover leaves 204px of height over — about two inches on a panel
+     of this size. Centred, that was split as ~102px off each end. Anchored to
+     the top instead, the whole 204px comes off the BOTTOM and the drawing
+     moves down the screen by the ~102px it used to lose off the top. That is
+     the inch removed from the foot and the push down, in one value.
+
+     It also lands where the art wants it: the bottom fifth of the source is
+     empty water (measured — ink density falls to zero past the 80% band), so
+     what the trim discards is blank. */
+  background-position: center top !important;
   background-size: cover !important;
   background-repeat: no-repeat !important;
   background-attachment: fixed !important;
