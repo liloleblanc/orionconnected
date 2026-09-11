@@ -2,11 +2,11 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2613,
+    "total": 2615,
     "by_category": {
       "ad": 10,
       "airline": 1411,
-      "background": 108,
+      "background": 110,
       "brand": 2,
       "hotel": 884,
       "livery": 96,
@@ -16347,6 +16347,28 @@
       "subcategory": "airline-bg",
       "group": "Backgrounds (airline-themed)",
       "name": "fids tris uniform",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/Backgrounds/fids-world-network-dark.png",
+      "file": "fids-world-network-dark.png",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "fids world network dark",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/Backgrounds/fids-world-network.png",
+      "file": "fids-world-network.png",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "fids world network",
       "iata": "",
       "country": "",
       "ext": "png"
