@@ -8305,14 +8305,44 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           const _bKey = `fr24:used:${_day}`;
           const _cap = Math.max(0, Number(env.FR24_DAILY_BUDGET || 240));
           const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
-          if (_used < _cap) {
+          // A recent 429/403 sets a short cool-off instead of burning the day.
+          const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
+          if (_used < _cap && Date.now() >= _coolUntil) {
             const _param = kind === "callsign" ? "callsigns" : "registrations";
             const _fr = await fetch(
               `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
               { headers: { "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } }
             );
-            const _spend = (_fr.status === 402 || _fr.status === 429 || _fr.status === 403) ? _cap : _used + 1;
+            // A TRANSIENT ERROR MUST NOT COST THE WHOLE DAY.
+            //
+            // This burned the full daily cap on 402 OR 429 OR 403, which is
+            // right for exactly one of the three. 402 means the credit pool is
+            // actually empty and there is nothing left to spend, so stopping
+            // for the day is correct. 429 is a RATE limit — it says "slower",
+            // not "stop" — and 403 on this endpoint is usually a momentary
+            // auth/edge refusal. Treating either as a dead pool takes the
+            // provider off the board until the next UTC midnight.
+            //
+            // That is what was happening here. With FR24 silent, every lookup
+            // falls through to the community ADS-B ring, which answers a
+            // Cloudflare Worker with 403/429 no matter what (verified: the same
+            // query returns HTTP 200 from a home IP and is refused from the
+            // Worker — they block datacenter egress, not the account). The ring
+            // carries reg, type and track, so losing FR24 loses all three: the
+            // aircraft panel goes blank and the map icon falls back to
+            // bearing-toward-airport, which is the "plane pointing sideways".
+            //
+            // Now: 402 still stops for the day. 429/403 costs a normal call and
+            // a short cool-off, so the next poll a few minutes later can try
+            // again instead of the board going dark until midnight. The cap
+            // itself is unchanged — this never spends more than FR24_DAILY_BUDGET.
+            const _hardStop = (_fr.status === 402);
+            const _spend = _hardStop ? _cap : _used + 1;
             try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
+            if (!_hardStop && (_fr.status === 429 || _fr.status === 403)) {
+              // Cool off for 5 minutes rather than for the day.
+              try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
+            }
             if (_fr.ok) {
               const _fj = await _fr.json().catch(() => null);
               const _rows = (_fj && Array.isArray(_fj.data)) ? _fj.data : [];
