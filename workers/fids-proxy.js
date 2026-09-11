@@ -2143,15 +2143,42 @@ __name(yegParseBoard, "yegParseBoard");
 // is one spoofed Origin header. Times come dated in UTC (sans Z) and
 // local; the status rides in aircraftMovementStatus with the revised
 // time inside the message ("Expected 04:37", "Landed 04:33, bags
-// delivered on belt 02" — the belt included). Operator rows only:
-// codeShareStatus NORMAL_FLIGHT.
+// delivered on belt 02" — the belt included).
+//
+// OPERATOR ROWS ONLY — AND THERE ARE TWO KINDS OF THEM.
+//
+// This filter was written as `!== "NORMAL_FLIGHT"` on the understanding
+// that NORMAL_FLIGHT meant "the operator's row". It does not. Heathrow
+// uses three values, and NORMAL_FLIGHT is the narrowest of them: a
+// flight carrying no codeshares at all. A flight that IS codeshared —
+// which at Heathrow is most of them — files its operator row under
+// CODESHARE_OPERATING_FLIGHT instead, and that was being discarded with
+// the marketing duplicates. Measured on a live payload:
+//
+//   departures  1984 MARKETING / 620 OPERATING / 56 NORMAL   (2660)
+//   arrivals    1910 MARKETING / 609 OPERATING / 67 NORMAL   (2586)
+//
+// So the board was drawing 56 of 676 real departures and 67 of 676
+// arrivals — about 9% of the airport, with British Airways showing 17
+// departures instead of 344.
+//
+// Admitting the operating rows is a pure addition, not a risk of
+// doubling up: their flight identifiers do not intersect the
+// NORMAL_FLIGHT set at all (0 of 620 on departures, 0 of 609 on
+// arrivals). MARKETING rows stay out — those are the same aircraft sold
+// under a partner's number, which is exactly what this filter is for.
+//
+// Kept as an ALLOW-LIST rather than a "drop MARKETING" test so that any
+// fourth status Heathrow invents later is excluded until it has been
+// looked at, which is the behaviour this filter has always had.
+const LHR_OPERATOR_ROWS = { NORMAL_FLIGHT: 1, CODESHARE_OPERATING_FLIGHT: 1 };
 function lhrParseFeed(jsonText, dir, nowMs) {
   const out = [];
   let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
   const arr = Array.isArray(j) ? j : [];
   for (const rec of arr) {
     const fs = rec && rec.flightService;
-    if (!fs || String(fs.codeShareStatus || "") !== "NORMAL_FLIGHT") continue;
+    if (!fs || !LHR_OPERATOR_ROWS[String(fs.codeShareStatus || "")]) continue;
     const wantAD = dir === "dep" ? "D" : "A";
     if (String(fs.arrivalOrDeparture || "") !== wantAD) continue;
     const pocs = (((fs.aircraftMovement || {}).route || {}).portsOfCall) || [];
