@@ -86,7 +86,15 @@ function arrivalLine(opts) {
   return makeArrLine(!!opts.onStand, opts.evt || '', railT, false, gateLbl);
 }
 
-const strip = (html) => html.replace(/<[^>]+>/g, '');
+// Strip to a FIXPOINT, not in one pass. A single .replace(/<[^>]+>/g,'') is
+// incomplete — removing the inner tag from '<<a>script' yields '<script', so
+// one pass can manufacture a tag it just removed. Nothing here is attacker
+// controlled, but a half-working strip in a test is a half-working assertion.
+const strip = (html) => {
+  let s = String(html), prev;
+  do { prev = s; s = s.replace(/<[^>]+>/g, ''); } while (s !== prev);
+  return s;
+};
 
 // The English span closes before the second-language span opens, so the open
 // tag of the latter is a clean split point even though both nest a time span.
