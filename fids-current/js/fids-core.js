@@ -2032,7 +2032,29 @@ function updateSubScreens() {
     subSel.appendChild(opt);
   });
   if (_pinned != null) { subSel.value = _pinned; subScreenVal = _pinned; return; }
-  if (locations.includes(oldVal)) { subSel.value = oldVal; subScreenVal = oldVal; }
+  // v23736 — A WALKING DISPLAY ONLY EVER SITS ON A GATE THAT HAS A FLIGHT.
+  //
+  // Two separate ways the stream ended up on a dead gate, both fixed here:
+  //
+  //  1. The random first pick (below) ran over `locations`, which is every
+  //     gate in the feed window — departed ones included. At Ottawa that was
+  //     23 gates for 11 live ones, so the rotator opened on a gate whose last
+  //     flight had gone roughly half the time.
+  //
+  //  2. This list is rebuilt on EVERY refresh, and a dead gate is still IN it,
+  //     so `locations.includes(oldVal)` kept restoring it. That also undid the
+  //     cycle's own correction: pickGate() hops to a live gate, the next
+  //     refresh reads the stale <select> value and drags the screen back.
+  //
+  // `_live` is empty on a genuinely quiet airport — the middle of the night,
+  // or a field with one flight a day — and then the old behaviour stands and
+  // the screen shows a gate with its honest empty state. This only narrows
+  // the choice when there is something better to choose. A pinned display
+  // returned above and never reaches any of it.
+  var _walk = useGate && _gateWalkActive();
+  var _live = _walk ? _gateLiveGates(flights) : [];
+  var _stale = _walk && _live.length && _live.indexOf(oldVal) === -1;
+  if (locations.includes(oldVal) && !_stale) { subSel.value = oldVal; subScreenVal = oldVal; }
   else {
     // A CYCLING display must not always open on the same gate. `locations` is
     // sorted, so locations[0] is the lowest gate number — which is why every
@@ -2041,9 +2063,10 @@ function updateSubScreens() {
     // The per-cycle pick is already random; only this
     // FIRST gate was ordered. A pinned or operator-driven screen keeps the
     // deterministic first entry — the dropdown must open on a predictable one.
+    var _pool = (_walk && _live.length) ? _live : locations;
     var _start = 0;
-    if (useGate && _gateWalkActive()) _start = Math.floor(Math.random() * locations.length);
-    subSel.value = locations[_start]; subScreenVal = locations[_start];
+    if (_walk) _start = Math.floor(Math.random() * _pool.length);
+    subSel.value = _pool[_start]; subScreenVal = _pool[_start];
   }
 }
 
@@ -2257,6 +2280,36 @@ function _gateWalkActive() {
     if (q.get('gate') || q.get('belt')) return false;   // pinned to one gate
     return window.self !== window.top;                  // inside the rotator
   } catch (e) { return false; }
+}
+
+// v23736 — THE GATES A WALKING DISPLAY MAY LAND ON.
+//
+// The feed window is several hours deep on BOTH sides of now, so the gate
+// list built from it is mostly history. Measured at Ottawa, 20:03 local:
+// 23 gates in the window, 11 with a flight that had not gone yet — 52% of
+// the list was dead. A walking display picking uniformly from all 23 opened
+// on a departed gate about half the time and rendered "Awaiting Next Flight"
+// over a board holding eleven live departures.
+//
+// The gate cycle below already had the right test and used it on every hop;
+// the FIRST pick never saw it. Hoisting it here gives both the same rule, so
+// the opening gate and every gate after it are chosen from the same set.
+//
+// Returns the sorted, de-duplicated gates with a departure that is still to
+// come: not cancelled, not departed, and not more than ten minutes past its
+// effective time (a flight sitting at the gate a few minutes late is still
+// that gate's flight).
+function _gateLiveGates(flights, nowMs) {
+  var now = nowMs || Date.now();
+  var out = [];
+  (flights || []).forEach(function (f) {
+    if (!f || !f.gate || f.gate === '—') return;
+    if (f.status === 'cancelled' || f.status === 'departed') return;
+    var eff = f._revTs || f._sortTs || 0;
+    if (eff && (now - eff) > 10 * 60000) return;
+    if (out.indexOf(f.gate) === -1) out.push(f.gate);
+  });
+  return out.sort();
 }
 
 // ── TEST FLIGHT ENTRY ─────────────────────────────────────────────────────
@@ -23465,7 +23518,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23734';
+var FIDS_BUILD_TAG = 'v23736';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -40523,21 +40576,25 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       try {
         if (typeof screenType === 'undefined' || screenType !== 'gate') return;
         if (typeof data === 'undefined' || !data) return;
-        var now = Date.now();
-        var gates = (data.dep || []).filter(function (f) {
-          if (!f.gate || f.gate === '—') return false;
-          if (f.status === 'cancelled' || f.status === 'departed') return false;
-          var eff = f._revTs || f._sortTs || 0;
-          if (eff && (now - eff) > 10 * 60000) return false;
-          return true;
-        }).map(function (f) { return f.gate; });
-        gates = gates.filter(function (g, i) { return gates.indexOf(g) === i; }).sort();
+        // v23736 — the live-gate test now lives in _gateLiveGates(), shared
+        // with the FIRST pick in updateSubScreens(). It was only ever applied
+        // here, so the opening gate came from the unfiltered list.
+        var gates = _gateLiveGates(data.dep);
         if (gates.length < 1) return;
         var pool = gates.filter(function (g) { return g !== subScreenVal; });
         if (!pool.length) return;                      // only one live gate — leave it
         var pick = pool[Math.floor(Math.random() * pool.length)];
         if (pick && pick !== subScreenVal) {
           subScreenVal = pick;
+          // v23736 — AND TELL THE DROPDOWN. updateSubScreens() reads
+          // subScreenSel.value as the "keep what we were on" value on every
+          // data refresh; leaving it on the previous gate meant the next
+          // refresh — seconds away — pulled the screen straight back to the
+          // gate this hop just left, which on a dead gate is where it stuck.
+          try {
+            var _ss = document.getElementById('subScreenSel');
+            if (_ss) _ss.value = pick;
+          } catch (e2) {}
           if (typeof render === 'function') render();
         }
       } catch (e) {}
