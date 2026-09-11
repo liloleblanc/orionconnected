@@ -48,7 +48,30 @@
   // fids-proxy.js already honours it (see _adbFirst). Schedule/FIDS window
   // data is unaffected and still uses ADB. Delete this var (or set "adb")
   // only together with real position caching, or the burn resumes.
-  "vars": { "ADSB_SOURCE": "community" },
+  // ── FR24 DAILY BUDGET RAISED 2026-09-11, ON THE OWNER'S INSTRUCTION ──
+  // Was the code default of 240/day. Measured spend at the time of the change,
+  // from FR24's own usage endpoint over 24h:
+  //
+  //   live/flight-positions/full    552 calls   1476 credits   (2.7 per call)
+  //   flight-summary/full            10 calls    587 credits   (59 per call)
+  //   total                         562 calls   2063 credits
+  //
+  // So real demand is already more than double the 240 cap, which is why the
+  // budget was being exhausted daily and FR24 going quiet — taking registration,
+  // aircraft type and track with it (see v23732).
+  //
+  // 900/day = 27,000 calls/month, about 45% of the agreed 60,000/month CALL
+  // budget. That leaves real headroom above the observed 562 without
+  // approaching the ceiling.
+  //
+  // THE TWO METERS ARE NOT THE SAME THING and only one of them is capped here.
+  // This counter increments once per HTTP CALL. FR24 bills per RETURNED ROW,
+  // and at the observed 3.7 credits/call a 900/day cap implies roughly 99,000
+  // credits a month. If the plan's credit pool is smaller than that, the pool
+  // will run out before this cap does — and a 402 still stops for the day, by
+  // design. The expensive endpoint is flight-summary at 59 credits a call, not
+  // the position lookups at 2.7.
+  "vars": { "ADSB_SOURCE": "community", "FR24_DAILY_BUDGET": "900" },
 
   // ── CRON REMOVED 2026-09-10 ─────────────────────────────────────────────
   // It used to read "17 5,17 * * *" — 05:17 and 17:17 UTC daily. Its ONLY job
