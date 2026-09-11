@@ -3080,6 +3080,10 @@ async function dtwFr24Schedule(env) {
     const cap = Math.max(0, Number(env.FR24_DAILY_BUDGET || 240));
     let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
     if (used >= cap) return (cached && cached.map) || null;
+    // Respect a cool-off set by either path — a burst is the last thing a
+    // rate-limited plan needs.
+    const coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${day}`)) || 0;
+    if (Date.now() < coolUntil) return (cached && cached.map) || null;
 
     const endTs = Date.now() - 30 * 60000;          // wheels-up needs to have happened
     const iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
@@ -3097,8 +3101,29 @@ async function dtwFr24Schedule(env) {
           "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } });
       } catch (e) { break; }
       calls += 1;
-      // A hard no from the plan burns the rest of the day, same as the ADSB path.
-      if (r.status === 402 || r.status === 429 || r.status === 403) { used = cap; break; }
+      // A hard no from the plan stops THIS sweep. Only an empty credit pool
+      // (402) stops the day.
+      //
+      // This was the single worst thing in the FR24 path and it is worth being
+      // explicit about why. This sweep fires up to DTW_FR24_MAX_CALLS (30)
+      // requests back to back, which is exactly the shape that trips a rate
+      // limiter. It then wrote used = cap into the SHARED fr24:used:<day> key —
+      // the same key every aircraft-identity lookup checks, for every airport.
+      // So one burst of Detroit schedule refreshes hitting a 429 blinded the
+      // registration, aircraft type and heading on every gate board in the
+      // system until the next UTC midnight. That is the "half the time there
+      // is no airplane data": it works after the 00:00 UTC reset and dies
+      // whenever this sweep next trips.
+      //
+      // 402 still burns the day, because an empty pool really is empty. A 429
+      // or 403 now ends this sweep only, costs the calls actually made, and
+      // sets the same short cool-off the ADSB path uses so the next attempt is
+      // minutes away rather than hours.
+      if (r.status === 402) { used = cap; break; }
+      if (r.status === 429 || r.status === 403) {
+        try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
+        break;
+      }
       used += 1;
       if (!r.ok) break;
       const j = await r.json().catch(() => null);

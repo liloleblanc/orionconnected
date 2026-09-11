@@ -136,3 +136,52 @@ test('the reasoning for the cap is recorded next to it', () => {
   assert.match(above, /60,?000/,
     'the comment must state the monthly ceiling it was sized against');
 });
+
+// ── The second spender: the Detroit schedule sweep ───────────────────────
+// This is the one that actually caused "half the time there is no airplane
+// data". It fires up to 30 requests back to back — the shape that trips a rate
+// limiter — and wrote used = cap into the SHARED fr24:used:<day> key, blinding
+// registration, type and heading on EVERY gate board until the next UTC
+// midnight. Fixing only the /adsb/ path would have left this untouched.
+
+function dtwBlock() {
+  const at = SRC.indexOf('DTW_FR24_MAX_CALLS');
+  assert.ok(at >= 0, 'the Detroit sweep must still exist');
+  const start = SRC.indexOf('while (cursor < endTs', at);
+  assert.ok(start >= 0, 'its loop must still exist');
+  return SRC.slice(start, start + 1800);
+}
+
+test('the Detroit sweep only burns the day on an empty pool', () => {
+  const b = dtwBlock();
+  assert.match(b, /if \(r\.status === 402\) \{ used = cap; break; \}/,
+    '402 alone should stop the day');
+  assert.doesNotMatch(b, /r\.status === 402 \|\| r\.status === 429/,
+    'a rate limit from a 30-call burst must not blind every board for the day');
+});
+
+test('a rate limit ends the sweep and sets the shared cool-off', () => {
+  const b = dtwBlock();
+  assert.match(b, /r\.status === 429 \|\| r\.status === 403/,
+    'a rate limit must be handled explicitly');
+  assert.match(b, /fr24:cool:/,
+    'and must set the same cool-off the other path honours');
+  assert.match(b, /break;/, 'and end this sweep');
+});
+
+test('the sweep respects a cool-off before starting a burst', () => {
+  const at = SRC.indexOf('DTW_FR24_CACHE_KEY');
+  const seg = SRC.slice(at, at + 4000);
+  assert.match(seg, /coolUntil/,
+    'the sweep must check the cool-off before firing 30 requests');
+  assert.match(seg, /if \(Date\.now\(\) < coolUntil\) return/,
+    'and bail out while it is in force');
+});
+
+test('both spenders share one cool-off key', () => {
+  // Two different keys would let each path burst past the other's back-off.
+  const keys = [...SRC.matchAll(/fr24:cool:\$\{(\w+)\}/g)].map(m => m[1]);
+  assert.ok(keys.length >= 2, 'both paths must write a cool-off');
+  const reads = [...SRC.matchAll(/get\(`fr24:cool:\$\{(\w+)\}`\)/g)];
+  assert.ok(reads.length >= 2, 'both paths must read it back');
+});
