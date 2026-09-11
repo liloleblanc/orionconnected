@@ -19,8 +19,10 @@
 //     With no track, _gateHeading() falls back to bearing-toward-airport —
 //     which is the sideways plane.
 //
-// This pins the distinction. It does NOT change the cap: spend is still capped
-// by FR24_DAILY_BUDGET, and 402 still stops for the day.
+// This pins the distinction, and separately raises the cap on instruction:
+// real demand was already 562 calls/day against a 240/day cap, so the budget
+// was being exhausted daily regardless of the back-off. 402 still stops for
+// the day, and the CODE default stays 240 so a missing config fails safe.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -74,15 +76,14 @@ test('the cool-off is actually honoured before spending', () => {
     'the budget gate must check both the cap and the cool-off');
 });
 
-test('the daily cap itself is unchanged', () => {
-  // This fix must not increase spend. The cap is the owner's decision.
+test('the cap still gates every call', () => {
+  // Raising the cap is one thing; removing the gate would be another. Both
+  // spend sites must still refuse to call once the day's allowance is used.
   const caps = SRC.match(/Number\(env\.FR24_DAILY_BUDGET \|\| (\d+)\)/g) || [];
   assert.ok(caps.length >= 2, 'both spend sites must still read the cap');
-  for (const c of caps) {
-    assert.match(c, /\|\| 240\)/,
-      'the default cap must stay at 240 — raising it is a spend decision');
-  }
   assert.match(SRC, /if \(_used < _cap/, 'the cap must still gate the call');
+  assert.match(SRC, /if \(used >= cap\) return/,
+    'the second spend site must bail once the allowance is gone');
 });
 
 test('FR24 stays the only paid provider in this path', () => {
@@ -94,4 +95,44 @@ test('FR24 stays the only paid provider in this path', () => {
     'RapidAPI/AeroDataBox is not an approved provider');
   assert.doesNotMatch(around, /airplanes\.live/i,
     'airplanes.live declined access — it is a closed question');
+});
+
+// ── The configured cap ───────────────────────────────────────────────────
+
+test('the code default stays a conservative floor', () => {
+  // The default is what applies if the var is ever removed. It must stay low
+  // so a missing config fails safe rather than spending freely.
+  const caps = SRC.match(/Number\(env\.FR24_DAILY_BUDGET \|\| (\d+)\)/g) || [];
+  assert.ok(caps.length >= 2, 'both spend sites must read the cap');
+  for (const c of caps) {
+    assert.match(c, /\|\| 240\)/, 'the fail-safe default must stay 240');
+  }
+});
+
+test('the configured cap is explicit, and inside the agreed call budget', () => {
+  // Raised on instruction 2026-09-11. The ceiling is 60,000 CALLS a month.
+  const W = fs.readFileSync(
+    path.resolve(__dirname, '..', 'workers', 'wrangler.fids-proxy.jsonc'), 'utf8');
+  const m = W.match(/"FR24_DAILY_BUDGET"\s*:\s*"(\d+)"/);
+  assert.ok(m, 'the cap must be set explicitly in wrangler, not left to the default');
+  const perDay = Number(m[1]);
+  const perMonth = perDay * 30;
+  assert.ok(perMonth <= 60000,
+    `${perDay}/day is ${perMonth}/month, past the agreed 60,000 call ceiling`);
+  assert.ok(perDay > 562,
+    `${perDay}/day is below the 562 calls/day already being made, so the ` +
+    'budget would still be exhausted daily');
+});
+
+test('the reasoning for the cap is recorded next to it', () => {
+  // This number is the owner\'s money. A bare value invites a future edit to
+  // move it without knowing what it was measured against.
+  const W = fs.readFileSync(
+    path.resolve(__dirname, '..', 'workers', 'wrangler.fids-proxy.jsonc'), 'utf8');
+  const at = W.indexOf('"FR24_DAILY_BUDGET"');
+  const above = W.slice(Math.max(0, at - 1600), at);
+  assert.match(above, /credits/i,
+    'the comment must note that calls and credits are different meters');
+  assert.match(above, /60,?000/,
+    'the comment must state the monthly ceiling it was sized against');
 });
