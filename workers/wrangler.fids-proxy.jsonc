@@ -60,9 +60,13 @@
   // budget was being exhausted daily and FR24 going quiet — taking registration,
   // aircraft type and track with it (see v23732).
   //
-  // 900/day = 27,000 calls/month, about 45% of the agreed 60,000/month CALL
-  // budget. That leaves real headroom above the observed 562 without
-  // approaching the ceiling.
+  // RAISED AGAIN 2026-09-11: an unused allowance is money already spent, so
+  // the cap should sit near the ceiling rather than leave half of it idle.
+  //
+  // 1,800/day is 55,800 in a 31-day month — 93% of the agreed 60,000/month
+  // CALL budget, with the remaining 7% as headroom for a busy day. Against the
+  // observed 562/day that is better than 3x the room, which is what stops an
+  // ordinary day's lookups from ever hitting the gate.
   //
   // THE TWO METERS ARE NOT THE SAME THING and only one of them is capped here.
   // This counter increments once per HTTP CALL. FR24 bills per RETURNED ROW,
@@ -71,7 +75,7 @@
   // will run out before this cap does — and a 402 still stops for the day, by
   // design. The expensive endpoint is flight-summary at 59 credits a call, not
   // the position lookups at 2.7.
-  "vars": { "ADSB_SOURCE": "community", "FR24_DAILY_BUDGET": "900" },
+  "vars": { "ADSB_SOURCE": "community", "FR24_DAILY_BUDGET": "1800" },
 
   // ── CRON REMOVED 2026-09-10 ─────────────────────────────────────────────
   // It used to read "17 5,17 * * *" — 05:17 and 17:17 UTC daily. Its ONLY job
