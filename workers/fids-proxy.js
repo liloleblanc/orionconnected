@@ -3058,6 +3058,30 @@ async function dtwFr24Schedule(env) {
     const coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${day}`)) || 0;
     if (Date.now() < coolUntil) return (cached && cached.map) || null;
 
+    // ── THIS ENDPOINT GETS ITS OWN CEILING ──────────────────────────────
+    // The two FR24 endpoints do not cost remotely the same. Measured from
+    // FR24's own usage meter:
+    //
+    //   live/flight-positions/full    2.7 credits per call
+    //   flight-summary/full          59   credits per call
+    //
+    // FR24 bills per returned ROW, so one sweep of 30 summary calls is ~1,770
+    // credits — more than 650 position lookups. The call budget cannot be
+    // blown (1,800/day is 55,800 in a 31-day month against a 60,000 ceiling),
+    // but the CREDIT pool is a different meter and this endpoint is what
+    // drains it.
+    //
+    // The 20-hour cache above already means one sweep a day in practice. This
+    // makes that a rule rather than a happy accident: a bug, a cache miss
+    // storm or a retry loop cannot turn a once-a-day sweep into the thing that
+    // empties the pool and leaves every board with no aircraft data for the
+    // rest of the billing period. The cheap lookups keep the generous budget;
+    // the expensive one is boxed.
+    const sweepKey = `fr24:sweep:${day}`;
+    const sweepCap = Math.max(0, Number(env.FR24_SUMMARY_DAILY_CALLS || 40));
+    const sweepUsed = Number(await env.FIDS_LIVE_FLIGHTS.get(sweepKey)) || 0;
+    if (sweepUsed >= sweepCap) return (cached && cached.map) || null;
+
     const endTs = Date.now() - 30 * 60000;          // wheels-up needs to have happened
     const iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
     const map = {};
@@ -3121,6 +3145,7 @@ async function dtwFr24Schedule(env) {
     }
 
     try { await env.FIDS_LIVE_FLIGHTS.put(bKey, String(used), { expirationTtl: 172800 }); } catch (e) {}
+    try { await env.FIDS_LIVE_FLIGHTS.put(sweepKey, String(sweepUsed + calls), { expirationTtl: 172800 }); } catch (e) {}
     if (Object.keys(map).length) {
       try { await env.FIDS_LIVE_FLIGHTS.put(DTW_FR24_CACHE_KEY, JSON.stringify({ at: Date.now(), map }), { expirationTtl: 172800 }); } catch (e) {}
       return map;
