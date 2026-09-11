@@ -18468,21 +18468,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-fids-theme]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) #fidsBoard:not(#_),
 html body[data-fids-theme]:not([data-fids-ap="YQM"]):not([data-fids-ap="MCO"]) .bidsv2-screen:not(#_) {
   background-image: url("/logos/Backgrounds/fids-world-network.png?v=1") !important;
-  /* No stretch: cover scales the drawing by its own proportions and crops
-     whatever does not fit, so the map is never distorted.
-
-     PUSHED DOWN, BOTTOM TRIMMED. The source is 1920x1284 against a 1920x1080
-     board, so cover leaves 204px of height over — about two inches on a panel
-     of this size. Centred, that was split as ~102px off each end. Anchored to
-     the top instead, the whole 204px comes off the BOTTOM and the drawing
-     moves down the screen by the ~102px it used to lose off the top. That is
-     the inch removed from the foot and the push down, in one value.
-
-     It also lands where the art wants it: the bottom fifth of the source is
-     empty water (measured — ink density falls to zero past the 80% band), so
-     what the trim discards is blank. */
-  background-position: center top !important;
-  background-size: cover !important;
+  /* SQUASHED VERTICALLY AND SAT LOW — asked for.
+     Full width, 68% of the board's height, anchored to the bottom edge. The
+     drawing is compressed rather than cropped, so the whole world stays in
+     frame across the full width and simply reads flatter — the arcs come down
+     into the upper third instead of running off the top.
+     This is a deliberate distortion, unlike the 2.5x stretch that was backed
+     out earlier: that one doubled Africa's height against an uncropped width,
+     this flattens everything evenly and reads as a band rather than a globe. */
+  background-position: center bottom !important;
+  background-size: 100% 68% !important;
   background-repeat: no-repeat !important;
   background-attachment: fixed !important;
   /* Dark grounds: the light linework LIFTS the surface rather than replacing
