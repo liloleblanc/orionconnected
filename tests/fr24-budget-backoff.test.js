@@ -116,12 +116,13 @@ test('the configured cap is explicit, and inside the agreed call budget', () => 
   const m = W.match(/"FR24_DAILY_BUDGET"\s*:\s*"(\d+)"/);
   assert.ok(m, 'the cap must be set explicitly in wrangler, not left to the default');
   const perDay = Number(m[1]);
-  const perMonth = perDay * 30;
+  // A 31-day month is the one that has to fit, not an average one.
+  const perMonth = perDay * 31;
   assert.ok(perMonth <= 60000,
-    `${perDay}/day is ${perMonth}/month, past the agreed 60,000 call ceiling`);
-  assert.ok(perDay > 562,
-    `${perDay}/day is below the 562 calls/day already being made, so the ` +
-    'budget would still be exhausted daily');
+    `${perDay}/day is ${perMonth} in a 31-day month, past the agreed 60,000 ceiling`);
+  assert.ok(perDay > 562 * 2,
+    `${perDay}/day leaves too little room above the observed 562 calls/day — ` +
+    'an allowance that is never reached is the point, and an unused one is waste');
 });
 
 test('the reasoning for the cap is recorded next to it', () => {
