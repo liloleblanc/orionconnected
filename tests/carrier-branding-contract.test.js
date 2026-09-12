@@ -109,9 +109,9 @@ const tilePath = (icao) => path.join(root, 'logos', 'airline-tiles', icao + '.sv
 // already on disk unreferenced; OK has no tile at all, because Czech Airlines
 // is filtered out of the feeds entirely.
 //
-// TO left it next, and needed no new artwork either — only the observation
-// that TO and HV are the same airline. See the sister-code test below.
-const KNOWN_LETTERMARK_TILES = ['BQ', 'D8', 'DY', 'JJ', 'QZ', 'SG', 'X3', 'YP', 'YV'];
+// TO and QZ left it next, and neither needed new artwork invented — only the
+// observation that TO is HV and QZ is AK. See the sister-code test below.
+const KNOWN_LETTERMARK_TILES = ['BQ', 'D8', 'DY', 'JJ', 'SG', 'X3', 'YP', 'YV'];
 
 test('IATA_TO_TILE_ICAO maps every carrier to a file that exists', () => {
   const missing = Object.entries(TILE_MAP).filter(([, icao]) => !fs.existsSync(tilePath(icao)));
@@ -329,6 +329,10 @@ test('AZ draws ITA Airways, the airline that actually holds the code', () => {
   assert.ok(!fs.existsSync(tilePath('AZA')), 'the Alitalia lettermark is back on disk');
 });
 
+// Carriers that file under two IATA codes. Both tests below walk this list, so
+// adding a pair here is enough to protect it.
+const SISTERS = [['HV', 'TO', 'Transavia'], ['AK', 'QZ', 'AirAsia']];
+
 test('sister codes of one brand draw one tile', () => {
   // A carrier that files under two IATA codes must not be drawn two ways.
   // Transavia is the case that prompted this: HV (Netherlands) had the real
@@ -337,7 +341,6 @@ test('sister codes of one brand draw one tile', () => {
   // green. A passenger seeing both orbs would not read them as one airline.
   //
   // The repo already had the right artwork; nothing was pointing TO at it.
-  const SISTERS = [['HV', 'TO', 'Transavia']];
   for (const [a, b, who] of SISTERS) {
     assert.ok(TILE_MAP[a], `${who}: ${a} has no tile`);
     assert.ok(TILE_MAP[b], `${who}: ${b} has no tile`);
@@ -350,18 +353,25 @@ test('a brand drawn under two codes is drawn in one colour', () => {
   // Belt and braces on the above, measured rather than assumed: read the ground
   // fill straight off the shared tile and confirm both codes land on it. This
   // is what actually failed before — the two greens, not the two filenames.
+  // Every sister pair, not just the one that prompted the test — an assertion
+  // that names one carrier stops protecting the next one added beside it.
+  for (const [a, b, who] of SISTERS) {
+    const tile = fs.readFileSync(tilePath(TILE_MAP[a]), 'utf8');
+    const g = (tile.match(/fill="(#[0-9A-Fa-f]{6})"/i) || [])[1];
+    assert.ok(g, `${who}: the shared tile has no ground fill to read`);
+    assert.ok(ACCENTS[a] && ACCENTS[b], `${who}: one of ${a}/${b} has no accent`);
+    assert.equal(ACCENTS[a].toUpperCase(), ACCENTS[b].toUpperCase(),
+      `${who}: ${a} is ${ACCENTS[a]} but ${b} is ${ACCENTS[b]} — one brand, two colours`);
+    assert.ok(deltaE(ACCENTS[a], g) < 2,
+      `${who}: accent ${ACCENTS[a]} does not match the tile ground ${g}, so orb and rail draw different colours`);
+  }
+
   const [a, b] = ['HV', 'TO'];
   const svg = fs.readFileSync(tilePath(TILE_MAP[a]), 'utf8');
   const ground = (svg.match(/fill="(#[0-9A-Fa-f]{6})"/) || [])[1];
-  assert.ok(ground, 'the Transavia tile has no ground fill to read');
-  assert.equal(TILE_MAP[b], TILE_MAP[a]);
-
   // The tile, the accent and the wordmark must all be the same green. Three
   // surfaces disagreeing is precisely what this carrier arrived in.
   assert.equal(ground.toUpperCase(), '#05CE78');
-  assert.equal(ACCENTS[a], ACCENTS[b]);
-  assert.ok(deltaE(ACCENTS[a], ground) < 1,
-    `accent ${ACCENTS[a]} does not match the tile ground ${ground}`);
 
   // Neither retired green may come back. '#00D66C' is the real pre-October-2025
   // brand green — a value that was correct for a decade, which is exactly why
