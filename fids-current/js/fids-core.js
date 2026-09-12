@@ -5922,6 +5922,14 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Air France. Was '#002157'. The 2014 guidelines name PANTONE 296C — CMYK
+  // 100/75/0/60, RGB 5/16/57, '#051039' — as "la couleur identitaire de la
+  // Compagnie", and AFR.svg has painted its ground '#071037' all along. Those
+  // two agree at deltaE 1.50, below the threshold of noticing, while the
+  // accent sat 11.25 from the guide and 12.33 from the tile: the tightest
+  // corroboration and the widest gap of any carrier checked this session.
+  // (The guide's institutional red is PANTONE 032 C, a literal '#FF0000'.)
+  'AF':'#051039',
   // Etihad. Was '#C89801', the odd one out of three golds. Etihad's 2014
   // guidelines print the logotype gold as CMYK 7/33/99/19 / RGB 196,146,27 /
   // '#C4921B', and ETD.svg paints its ground '#BD8B13' — those two agree at
@@ -5988,7 +5996,7 @@ const AIRLINE_ACCENT = {
   // Navy taken from their aircraft titles; swap in the exact hex when
   // an official kit turns up, same arc Avelo followed.
   'WL':'#004280',
-  'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
+  'AF':'#051039','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
