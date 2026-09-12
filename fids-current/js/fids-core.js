@@ -5909,6 +5909,14 @@ function wwayUrl(code, w, h) {
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   '8P':'#0C3473',   // Pacific Coastal — its midnight blue, not the generic navy
+  // v23740 — Air New Zealand. Roughly 260 flights across the network, almost
+  // all of them at San Francisco, and with no entry here it fell through to
+  // getAirlineAccent()'s last resort '#0033A1' — a blue belonging to no
+  // airline. '#231F20' is not a guess and not plain black: it is the exact
+  // ground its own emblem is painted on, a rich near-black, and the same ink
+  // the wordmark uses. A very dark accent is normal on this board rather than
+  // a new risk — SAS '#000066' and Lufthansa '#05164D' are both darker.
+  'NZ':'#231F20',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
@@ -8004,6 +8012,17 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right as specified; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
+        // v23740 — Air New Zealand. A finished square tile: full-bleed #231F20
+        // with the koru knocked out in white, so the art BECOMES the orb.
+        // The airline-tiles folder in this path is what the isTile test keys
+        // on — naming the identical copy under airlines/asian-other/ instead
+        // would earn it an accent disc and a brightness(0) invert(1), which
+        // flattens the square to a white blob. Measured on a canvas rather
+        // than from the path data: the furthest WHITE pixel lands at 394.3 of
+        // the 400 radius, so nothing clips. The raw coordinates suggest 412
+        // and appear to overhang, but those are bezier CONTROL points, which
+        // sit outside the curve they steer.
+        'NZ':  '/logos/airline-tiles/NZ-Emblem.svg',   // Air New Zealand
         // US majors — symbol-only emblems (rendered white on the accent badge)
         // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
         // NOTHING else. Every surface falling through to this map drew a white
@@ -21686,6 +21705,7 @@ const IATA_TO_WORDMARK = {
   // FIDS table uses on dark rows) is the same single path reversed to white.
   // One path, one fill: the reversal is exact, not a filter approximation.
   'WK': 'edelweiss',
+  'NZ': 'NZ',              // v23740 — resolver appends -wordmark-dark/-light.svg
   // v23363 - the easyJet family. One orange logotype, no symbol, so every
   // code in the family points at it: the mainline, the three subsidiaries,
   // and EZY, the ICAO form the Edinburgh feed puts in the flight NUMBER.
@@ -21906,6 +21926,7 @@ const LOGO_SUBFOLDER = {
   'elal-wordmark-light.svg':'airlines/european', 'elal-wordmark-dark.svg':'airlines/european',
   'etihad-wordmark-light.svg':'airlines/asian-other', 'etihad-wordmark-dark.svg':'airlines/asian-other',
   'emirates-wordmark-light.svg':'airlines/asian-other', 'emirates-wordmark-dark.svg':'airlines/asian-other',
+  'NZ-wordmark-light.svg':'airlines/asian-other', 'NZ-wordmark-dark.svg':'airlines/asian-other',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
   'condor-wordmark-light.svg':'airlines/european', 'condor-wordmark-dark.svg':'airlines/european',
   'lufthansa-wordmark-light.svg':'airlines/european', 'lufthansa-wordmark-dark.svg':'airlines/european',
@@ -23454,7 +23475,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23728';
+var FIDS_BUILD_TAG = 'v23740';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
