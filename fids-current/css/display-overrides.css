@@ -17972,7 +17972,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-apmark) .octb-clock,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-ap) .v2-fi-clock-val,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow:has(.octb-ap) .octb-clock {
-  font-size: clamp(38px, 7.5vh, 64px) !important;
+  font-size: clamp(38px, min(7.5vh, 3.4vw), 64px) !important;
 }
 
 /* ══ THE BANNER TEXTURE BECOMES VISIBLE ══════════════════════════════════
@@ -18241,7 +18241,7 @@ html body:is([data-gate-airline="AA"],[data-gate-airline="AAL"],[data-gate-airli
    Chain length matches the clock rule it is pairing with (34), so the two
    cannot be separated by a later edit to one of them. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .octb-ap {
-  font-size: clamp(38px, 7.5vh, 64px) !important;
+  font-size: clamp(38px, min(7.5vh, 3.4vw), 64px) !important;
   line-height: 1 !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .v2-fi-clock-val,
@@ -18251,7 +18251,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* The divider yields the width the code just took. It is punctuation, not a
    peer of the two values it sits between. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-timebox .octb-clockrow .octb-apsep {
-  font-size: clamp(26px, 4.4vh, 40px) !important;
+  font-size: clamp(26px, min(4.4vh, 2.0vw), 40px) !important;
   line-height: 1 !important;
 }
 
@@ -18519,3 +18519,38 @@ html body[data-fids-theme="sky"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MC
   background-image: url("/logos/Backgrounds/fids-world-network-dark.png?v=1") !important;
   background-blend-mode: multiply !important;
 }
+
+/* ══ v23730 — THE AIRPORT CODE STOPS LOSING ITS FIRST LETTER ═════════════
+   Reported on a live MCO gate: the banner read "VICO" instead of "MCO".
+
+   Not a font fault and not a missing glyph — measured on the live board, the
+   M is a real 58.4px glyph in a loaded face, and .octb-ap has overflow
+   visible, no clip-path, no transform, scrollWidth == width. The clipping is
+   the PARENT's.
+
+   .octb-clockrow is overflow:hidden and justify-content:center, so when the
+   row is over-full the excess is split across both ends. The comment above
+   this one already worked that out and noted the asymmetry: the right half
+   lands inside the clock's own padding and is invisible, the left half has no
+   padding to absorb it and comes straight off the code's first letter.
+
+   What that earlier fix missed is WHEN the row goes over-full. Its step-down
+   is clamp(38px, 7.5vh, 64px) — keyed to viewport HEIGHT only. The row's
+   available WIDTH shrinks with a narrower board while 7.5vh does not, so on
+   any board that is narrower without being shorter the type stays at its 64px
+   cap and overflows. Measured on the live board at 1680x1050:
+
+     .octb-clockrow clientWidth   454px
+     content scrollWidth          479px   ← over by 25
+     code's left edge             -16px relative to the row  ← the cut M
+
+   At 1920x1080 the same content fits in 513px and nothing clips, which is why
+   this never showed in testing on a 16:9 board.
+
+   Adding a width term fixes the cause rather than the symptom: min() takes
+   whichever of height or width is the tighter constraint. 3.4vw is set from
+   the measurement — the row gets 27.0% of viewport width, and content at 64px
+   needs 479px, so the largest safe size is 3.61vw; 3.4 leaves ~6% margin.
+   At 1920x1080 the width term yields 65.3px and the 64px cap still governs,
+   so wide boards are untouched. The overflow:hidden stays as a last-resort
+   guard, but it should no longer have anything to clip. */
