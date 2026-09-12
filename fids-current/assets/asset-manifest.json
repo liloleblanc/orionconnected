@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2624,
+    "total": 2626,
     "by_category": {
       "ad": 10,
-      "airline": 1420,
+      "airline": 1422,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -6980,6 +6980,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/european/ita-airways-wordmark-dark.svg",
+      "file": "ita-airways-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "ita airways wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/ita-airways-wordmark-light.svg",
+      "file": "ita-airways-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "ita airways wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/european/klm-wordmark-color.svg",
       "file": "klm-wordmark-color.svg",
       "category": "airline",
@@ -7415,6 +7437,28 @@
       "subcategory": "european",
       "group": "Airlines — European",
       "name": "testing",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/transavia-wordmark-dark.svg",
+      "file": "transavia-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "transavia wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/transavia-wordmark-light.svg",
+      "file": "transavia-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "transavia wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -11886,17 +11930,6 @@
       "ext": "svg"
     },
     {
-      "path": "/logos/airline-tiles/TVF.svg",
-      "file": "TVF.svg",
-      "category": "airline",
-      "subcategory": "tile",
-      "group": "Airline tile logos (row icons)",
-      "name": "TVF",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
       "path": "/logos/airline-tiles/TVS.svg",
       "file": "TVS.svg",
       "category": "airline",
@@ -14719,17 +14752,6 @@
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "GA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks/HV.svg",
-      "file": "HV.svg",
-      "category": "airline",
-      "subcategory": "wordmark",
-      "group": "Airline wordmarks",
-      "name": "HV",
       "iata": "",
       "country": "",
       "ext": "svg"

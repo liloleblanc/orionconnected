@@ -108,7 +108,10 @@ const tilePath = (icao) => path.join(root, 'logos', 'airline-tiles', icao + '.sv
 // ITY.svg, because the code belongs to ITA Airways and that artwork was
 // already on disk unreferenced; OK has no tile at all, because Czech Airlines
 // is filtered out of the feeds entirely.
-const KNOWN_LETTERMARK_TILES = ['BQ', 'D8', 'DY', 'JJ', 'QZ', 'SG', 'TO', 'X3', 'YP', 'YV'];
+//
+// TO left it next, and needed no new artwork either — only the observation
+// that TO and HV are the same airline. See the sister-code test below.
+const KNOWN_LETTERMARK_TILES = ['BQ', 'D8', 'DY', 'JJ', 'QZ', 'SG', 'X3', 'YP', 'YV'];
 
 test('IATA_TO_TILE_ICAO maps every carrier to a file that exists', () => {
   const missing = Object.entries(TILE_MAP).filter(([, icao]) => !fs.existsSync(tilePath(icao)));
@@ -324,4 +327,89 @@ test('AZ draws ITA Airways, the airline that actually holds the code', () => {
   // And the name surfaces agree, so the orb and the row cannot disagree.
   assert.equal(pairs('AIRLINE_NAME')['AZ'], 'ITA');
   assert.ok(!fs.existsSync(tilePath('AZA')), 'the Alitalia lettermark is back on disk');
+});
+
+test('sister codes of one brand draw one tile', () => {
+  // A carrier that files under two IATA codes must not be drawn two ways.
+  // Transavia is the case that prompted this: HV (Netherlands) had the real
+  // 't' roundel on #00D66C while TO (France) had an Arial 'TO' on #1A9E5F —
+  // deltaE 30.6 apart, which is not a shade difference, it is a different
+  // green. A passenger seeing both orbs would not read them as one airline.
+  //
+  // The repo already had the right artwork; nothing was pointing TO at it.
+  const SISTERS = [['HV', 'TO', 'Transavia']];
+  for (const [a, b, who] of SISTERS) {
+    assert.ok(TILE_MAP[a], `${who}: ${a} has no tile`);
+    assert.ok(TILE_MAP[b], `${who}: ${b} has no tile`);
+    assert.equal(TILE_MAP[a], TILE_MAP[b],
+      `${who} draws two different tiles: ${a}->${TILE_MAP[a]}.svg vs ${b}->${TILE_MAP[b]}.svg`);
+  }
+});
+
+test('a brand drawn under two codes is drawn in one colour', () => {
+  // Belt and braces on the above, measured rather than assumed: read the ground
+  // fill straight off the shared tile and confirm both codes land on it. This
+  // is what actually failed before — the two greens, not the two filenames.
+  const [a, b] = ['HV', 'TO'];
+  const svg = fs.readFileSync(tilePath(TILE_MAP[a]), 'utf8');
+  const ground = (svg.match(/fill="(#[0-9A-Fa-f]{6})"/) || [])[1];
+  assert.ok(ground, 'the Transavia tile has no ground fill to read');
+  assert.equal(TILE_MAP[b], TILE_MAP[a]);
+
+  // The tile, the accent and the wordmark must all be the same green. Three
+  // surfaces disagreeing is precisely what this carrier arrived in.
+  assert.equal(ground.toUpperCase(), '#05CE78');
+  assert.equal(ACCENTS[a], ACCENTS[b]);
+  assert.ok(deltaE(ACCENTS[a], ground) < 1,
+    `accent ${ACCENTS[a]} does not match the tile ground ${ground}`);
+
+  // Neither retired green may come back. '#00D66C' is the real pre-October-2025
+  // brand green — a value that was correct for a decade, which is exactly why
+  // it would pass an eyeball check; '#1A9E5F' never matched any Transavia era.
+  for (const dead of ['#00D66C', '#1A9E5F']) {
+    assert.ok(deltaE(ground, dead) > 8, `the tile ground is back on the retired ${dead}`);
+    assert.doesNotMatch(svg, new RegExp(dead, 'i'), `${dead} is back in the tile art`);
+  }
+  // And not the accessible UI green either — that one paints text, not the mark.
+  assert.ok(deltaE(ground, '#00AB61') > 8,
+    'the tile is painted in Transavia product-green, which is the UI colour, not the mark');
+});
+
+test('ITA Airways takes the blue its own design system declares', () => {
+  // Held back when the tile was wired: the only value available then was the
+  // tile's own ground, and a tile agreeing with itself is the TAP failure mode.
+  // ITA publishes a design system, and the value is a declared token in it —
+  //   --maui-color-brand-ita-deepblue: #0171cf
+  //   --maui-color-brand-primary: var(--maui-color-brand-ita-deepblue)
+  // so the airline names both the value and the accent role.
+  const accent = ACCENTS['AZ'];
+  assert.ok(accent, "AIRLINE_ACCENT is missing 'AZ'");
+  assert.equal(accent.toUpperCase(), '#0171CF');
+  // Not the fallback a missing entry lands on.
+  assert.notEqual(accent.toUpperCase(), '#0033A1');
+  // Tile ground and accent agree, so the orb and the rails draw one blue.
+  const tile = fs.readFileSync(tilePath(TILE_MAP['AZ']), 'utf8');
+  const ground = (tile.match(/fill="(#[0-9A-Fa-f]{6})"/i) || [])[1];
+  assert.ok(deltaE(accent, ground) < 1, `accent ${accent} vs tile ground ${ground}`);
+});
+
+test('a wordmark pair is two files that differ only in ink', () => {
+  // -light is the variant the FIDS table uses on dark rows, so it must be
+  // reversed to white; -dark carries the brand colour for light grounds. A
+  // pair that is byte-identical means one of them was never re-cut, and the
+  // banner would draw dark ink on a dark row — invisible, and silent.
+  const dir = path.join(root, 'logos', 'airlines', 'european');
+  for (const slug of ['ita-airways', 'transavia']) {
+    const lt = fs.readFileSync(path.join(dir, `${slug}-wordmark-light.svg`), 'utf8');
+    const dk = fs.readFileSync(path.join(dir, `${slug}-wordmark-dark.svg`), 'utf8');
+    assert.notEqual(lt, dk, `${slug}: the two variants are identical`);
+    // Same drawing: identical path geometry, so only the fills were changed.
+    const geom = (s) => (s.match(/\sd="[^"]+"/g) || []).join('|');
+    assert.equal(geom(lt), geom(dk), `${slug}: the pair is not the same artwork`);
+    // The light variant carries white ink and no dark ink.
+    assert.match(lt, /#FFFFFF/i, `${slug}-wordmark-light.svg has no white ink`);
+    // Live <text> renders in the viewer's font — wrong on a signage box.
+    assert.doesNotMatch(lt, /<text\b/, `${slug}-wordmark-light.svg contains live text`);
+    assert.doesNotMatch(dk, /<text\b/, `${slug}-wordmark-dark.svg contains live text`);
+  }
 });
