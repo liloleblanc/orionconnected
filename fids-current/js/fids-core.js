@@ -5922,6 +5922,21 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Avelo. '#502E90' is PMS 268 C, with '#1CBED1' (319 C) and '#FFCE04'
+  // (116 C) alongside it. The accent was '#492C92', deltaE 3.12 off — small,
+  // but the right value was already written down: the COLOR_WORDMARKS comment
+  // for 'avelo' reads "Avelo purple #502E91", which is deltaE 0.57 from the
+  // real one. Someone knew it and the table kept a different number anyway.
+  'XP':'#502E90',
+  // Norwegian. Had no accent under either key it is filed as — the repo names
+  // it under both 'DI' and 'DY', and AIRLINE_EMBLEM_FILES uses 'DI' — so both
+  // get one. '#EB0324' is PMS 185 C, and it clears 3.97:1 on the dark board.
+  //
+  // Its tile stays a KNOWN placeholder: NAX.svg is a red square with "DY" set
+  // in Arial, baselined as such in the branding contract test. The ground has
+  // been corrected from '#d81939' (deltaE 17.34 off) so the wrong artwork is
+  // at least the right red, but this still needs a real emblem.
+  'DI':'#EB0324','DY':'#EB0324',
   // Singapore. Its palette is Yellow '#FCB130' (PMS 143 C) and Blue '#1D4886'
   // (PMS 7687 C). The accent was '#F0AB00', deltaE 7.83 off the yellow.
   //
@@ -6010,7 +6025,7 @@ const AIRLINE_ACCENT = {
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#00B3F0',
-  'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
+  'HA':'#582C83','XP':'#502E90','LL':'#00B7C8',
   // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
   // operator at Miami
   // Navy taken from their aircraft titles; swap in the exact hex when
