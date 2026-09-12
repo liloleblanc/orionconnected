@@ -3055,6 +3055,47 @@ const DTW_FR24_CACHE_KEY = "dtw:fr24:sched:v2";
 const DTW_FR24_MAX_CALLS = 30;
 const DTW_FR24_WINDOW_MIN = 75;   // wheels-up lands within this of schedule
 
+// ── WHAT AN FR24 CALL ACTUALLY COSTS ────────────────────────────────────────
+//
+// FR24 bills PER RETURNED ENTITY, not per request. Their FAQ says so outright:
+// "the API charges per returned entity, not per call", and an empty response is
+// still a flat 1 credit.
+//
+// Both budget counters in this file were incrementing by ONE PER REQUEST, so
+// FR24_DAILY_BUDGET was not capping spend — it was capping request count, which
+// is a different and much larger number. A single flight-summary page returning
+// 20 rows registered as 1 against the cap while actually costing 60.
+//
+// That is the same shape as the September AeroDataBox incident: a budget that
+// looked enforced, wasn't, and was only discovered from the provider's side.
+// The account's own /api/usage confirms the model — 1,615 position requests for
+// 3,912 credits is 2.42 each, which solves exactly as 8x + 1(1-x) with x = 0.20:
+// four calls in five return nothing and pay the empty fee anyway.
+//
+// Published rates, from fr24api.flightradar24.com/docs/credit-overview:
+//   live/flight-positions/full    8 per returned flight
+//   live/flight-positions/light   6
+//   flight-summary/full           2 live · 3 historic <30d · 6 historic >30d
+//   flight-summary/light          1 live · 2 historic <30d · 3 historic >30d
+//   empty response                1, flat
+//
+// Where a rate depends on whether the flight has ended, the HIGHER rate is
+// charged here. Over-estimating makes the cap bite early, which costs coverage;
+// under-estimating overspends real money, which is the failure being fixed.
+const FR24_ROW_PRICE = {
+  "live/flight-positions/full": 8,
+  "live/flight-positions/light": 6,
+  "flight-summary/full": 3,
+  "flight-summary/light": 2
+};
+
+function fr24Charge(endpoint, rowCount) {
+  const n = Number(rowCount) || 0;
+  if (n <= 0) return 1;                                   // empty is still billed
+  return n * (FR24_ROW_PRICE[endpoint] || 8);             // unknown endpoint: assume dearest
+}
+__name(fr24Charge, "fr24Charge");
+
 // Minutes past local midnight in Detroit for a UTC millisecond stamp.
 function dtwLocalMinutes(ts) {
   try {
@@ -3148,10 +3189,12 @@ async function dtwFr24Schedule(env) {
         try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
         break;
       }
-      used += 1;
-      if (!r.ok) break;
+      if (!r.ok) { used += fr24Charge("flight-summary/full", 0); break; }
       const j = await r.json().catch(() => null);
       const rows = (j && Array.isArray(j.data)) ? j.data : [];
+      // Charged on what came back, not on the fact that a request was made.
+      // A 20-row page is 60 credits, and used to register as 1.
+      used += fr24Charge("flight-summary/full", rows.length);
       if (!rows.length) break;
 
       let maxTs = cursor;
@@ -3164,7 +3207,18 @@ async function dtwFr24Schedule(env) {
         if (!dest || !flight || isNaN(ts)) continue;
         const mins = dtwLocalMinutes(ts);
         if (mins === null) continue;
-        (map[dest] = map[dest] || []).push({ m: mins, f: flight, op: String((f && f.operating_as) || "") || null });
+        // `t` is free. This response is flight-summary/FULL, already paid for
+        // at 3 credits a row, and it carries the ICAO type designator that the
+        // boards lost with AeroDataBox — it was simply being discarded here.
+        // Kept as the raw ICAO (B739, A21N): formatAircraft routes 4-character
+        // codes through aircraftCodeToIata, so the composite survives and the
+        // 737-800/MAX-8 family must never be flattened on the way.
+        (map[dest] = map[dest] || []).push({
+          m: mins,
+          f: flight,
+          op: String((f && f.operating_as) || "") || null,
+          t: String((f && f.type) || "").toUpperCase() || null
+        });
       }
       if (rows.length < 20) break;          // last page
       if (maxTs <= cursor) break;           // no forward progress; stop rather than spin
@@ -3344,6 +3398,10 @@ function dtwParseFeed(jsonText, dir, nowMs, schedule) {
           airlineIata: parent,
           airlineName: parent === "DL" ? "Delta Air Lines" : null,
           opCode: opIata || null,
+          // The sweep already paid for this row, and the ICAO type was on it.
+          // authorityFlight turns it into aircraft:{model}, which is the shape
+          // every other feed delivers and the boards already read.
+          aircraftModel: hit.t || null,
           sched: localIsoObj("America/Detroit", lead.EstimatedDateTime), revised: null
         }));
         continue;
@@ -8451,15 +8509,25 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
             // again instead of the board going dark until midnight. The cap
             // itself is unchanged — this never spends more than FR24_DAILY_BUDGET.
             const _hardStop = (_fr.status === 402);
-            const _spend = _hardStop ? _cap : _used + 1;
+            // The body has to be read BEFORE the charge can be known, because
+            // FR24 prices per returned row. A refusal or an unparseable body
+            // yields zero rows, which is exactly the flat 1-credit empty charge
+            // FR24 bills for one. This is the call that was costing 2.42 credits
+            // on average and recording 1.
+            let _fj = null, _rows = [];
+            if (_fr.ok) {
+              _fj = await _fr.json().catch(() => null);
+              _rows = (_fj && Array.isArray(_fj.data)) ? _fj.data : [];
+            }
+            const _spend = _hardStop
+              ? _cap
+              : _used + fr24Charge("live/flight-positions/full", _rows.length);
             try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
             if (!_hardStop && (_fr.status === 429 || _fr.status === 403)) {
               // Cool off for 5 minutes rather than for the day.
               try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
             }
             if (_fr.ok) {
-              const _fj = await _fr.json().catch(() => null);
-              const _rows = (_fj && Array.isArray(_fj.data)) ? _fj.data : [];
               const _p = _rows[0];
               if (_p && typeof _p.lat === "number" && typeof _p.lon === "number") {
                 const _ageS = _p.timestamp ? Math.max(0, Math.round((Date.now() - Date.parse(_p.timestamp)) / 1000)) : null;

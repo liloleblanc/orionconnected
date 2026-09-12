@@ -35,15 +35,25 @@ const SRC = fs.readFileSync(
 function spendBlock() {
   const at = SRC.indexOf('const _hardStop');
   assert.ok(at >= 0, 'the FR24 spend decision must still exist');
-  return SRC.slice(at - 200, at + 900);
+  // Widened from 900: the spend decision now reads the response body before it
+  // can price the call, so the block it lives in is longer than it was.
+  return SRC.slice(at - 200, at + 1800);
 }
 
 test('only 402 burns the whole day', () => {
   const b = spendBlock();
   assert.match(b, /const _hardStop = \(_fr\.status === 402\);/,
     'a dead credit pool (402) is the only thing that should stop for the day');
-  assert.match(b, /const _spend = _hardStop \? _cap : _used \+ 1;/,
-    'anything else costs one ordinary call');
+  // This used to pin the literal `_used + 1`, which was itself the defect: FR24
+  // bills per returned row, so counting one per request meant FR24_DAILY_BUDGET
+  // capped request COUNT and not spend. The INTENT of this assertion — that
+  // anything short of 402 costs one ordinary call rather than the whole day —
+  // is unchanged and is what is checked now; only the price of that call is
+  // correct. See fr24-credit-accounting.test.js for the arithmetic.
+  assert.match(b, /_spend = _hardStop\s*\?\s*_cap\s*:\s*_used \+ fr24Charge\(/,
+    'a non-402 must cost one call at its real price, not the whole cap');
+  assert.doesNotMatch(b, /_used \+ 1;/,
+    'the per-request counter is back — the cap would stop capping spend');
 });
 
 test('a rate limit no longer costs the day', () => {
