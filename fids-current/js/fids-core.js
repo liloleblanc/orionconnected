@@ -5967,9 +5967,14 @@ const AIRLINE_ACCENT = {
   // '#0033A1' — a blue belonging to no airline and one digit off United's
   // '#0033A0'. Its orbs, rails, gate tab and countdown were therefore drawn
   // in almost exactly United's colour on a carrier whose entire identity is
-  // red. The value is not chosen: it is the fill its own artwork already
-  // uses, in both the emblem and the wordmark on disk.
-  '5T':'#CD163F',
+  // red. The value is Pantone 200 C from Canadian North's own 2019 Visual
+  // Identity Guidelines, which also supply the complementary greys
+  // (#A2AAAD light, #7C878E medium) and a dark red #91002F. The artwork that
+  // arrived here was drawn in '#CD163F' — a deltaE of 7.05 from the official
+  // red, visible side by side — so the emblem and the wordmark were recoloured
+  // to the guideline value rather than the accent being bent to match art
+  // that was already off-brand.
+  '5T':'#BA0C2F',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
