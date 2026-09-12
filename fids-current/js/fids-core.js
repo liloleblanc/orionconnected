@@ -5996,6 +5996,18 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Hawaiian. Was '#582C83', deltaE 5.68 off. The palette is purple
+  // '#4B2D89' (PMS 268 C), fuchsia '#CE0C88' (219 C) and coral '#F9423A'
+  // (Warm Red C). HAL.svg's gradient was off on two of the three — purple by
+  // 5.75 and coral by 5.37, fuchsia close at 1.70 — and all three stops are
+  // brought to the palette here.
+  //
+  // Worth recording because it breaks a check I might otherwise have trusted:
+  // Avelo's purple is ALSO PMS 268 C, and renders '#502E90' against Hawaiian's
+  // '#4B2D89' — deltaE 3.55 apart. A Pantone number does not pin an sRGB
+  // value, so two carriers sharing a spot colour are not expected to share a
+  // hex, and a mismatch there proves nothing either way.
+  'HA':'#4B2D89',
   // ANA. Was '#003370', deltaE 22.04 from the airline's blue. The palette is
   // '#0B318F' (PMS 661 C) and light blue '#00A3E6' (PMS 299 C).
   //
@@ -6129,7 +6141,7 @@ const AIRLINE_ACCENT = {
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#00B3F0',
-  'HA':'#582C83','XP':'#502E90','LL':'#00B7C8',
+  'HA':'#4B2D89','XP':'#502E90','LL':'#00B7C8',
   // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
   // operator at Miami
   // Navy taken from their aircraft titles; swap in the exact hex when
