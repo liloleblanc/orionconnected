@@ -1,1 +1,811 @@
-[{"flightService":{"iataFlightIdentifier":"WB712","icaoFlightIdentifier":"RWD712","flightNumber":"712","arrivalOrDeparture":"A","codeShareStatus":"NORMAL_FLIGHT","aircraftMovement":{"scheduledFlightDurationMinutes":565,"aircraftMovementStatus":[{"name":"DestinationStatus","message":"On time 07:05","statusCode":"SH","statusData":[{"localisationKey":"OnTime","data":"07:05"}]}],"route":{"internationalOrDomestic":"I","portsOfCall":[{"portOfCallType":"ORIGIN","airportFacility":{"iataIdentifier":"KGL","icaoIdentifier":"HRYR","name":"Kigali International Airport","airportCityLocation":{"name":"Kigali"},"terminalFacility":{},"standFacility":{}},"operatingTimes":{"scheduled":{"utc":"2026-09-04T20:40:00","local":"2026-09-04T22:40:00"}}},{"portOfCallType":"DESTINATION","airportFacility":{"iataIdentifier":"LHR","name":"Heathrow Airport","airportCityLocation":{"name":"London"},"terminalFacility":{"code":"4","checkInZoneFacility":{},"gateFacility":{}},"standFacility":{"provisionalStandNumber":"414"}},"operatingTimes":{"scheduled":{"utc":"2026-09-05T06:05:00","local":"2026-09-05T07:05:00"}}}]},"stops":0},"airlineParty":{"iataIdentifier":"WB","icaoIdentifier":"RWD","name":"RwandAir","tailfinImageUrl":"https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/WB-tailfin.png"},"aircraftTransport":{"iataTypeCode":"332","icaoTypeCode":"A332","description":"Airbus A330-200 Passenger","type":"Jet-engined aircraft","class":"332"}}},{"flightService":{"iataFlightIdentifier":"QF219","icaoFlightIdentifier":"QFA219","flightNumber":"219","arrivalOrDeparture":"A","codeShareStatus":"NORMAL_FLIGHT","aircraftMovement":{"scheduledFlightDurationMinutes":1325,"aircraftMovementStatus":[{"name":"DestinationStatus","message":"Expected 04:37","statusCode":"EX","statusData":[{"localisationKey":"Expected","data":"04:37"}]}],"route":{"internationalOrDomestic":"I","portsOfCall":[{"portOfCallType":"ORIGIN","airportFacility":{"iataIdentifier":"PER","icaoIdentifier":"YPPH","name":"Perth International Airport","airportCityLocation":{"name":"Perth"},"terminalFacility":{},"standFacility":{}},"operatingTimes":{"scheduled":{"utc":"2026-09-04T06:00:00","local":"2026-09-04T14:00:00"}}},{"portOfCallType":"STOP","airportFacility":{"iataIdentifier":"SIN","icaoIdentifier":"WSSS","name":"Changi Airport","airportCityLocation":{"name":"Singapore"},"terminalFacility":{},"standFacility":{}},"operatingTimes":{}},{"portOfCallType":"DESTINATION","airportFacility":{"iataIdentifier":"LHR","name":"Heathrow Airport","airportCityLocation":{"name":"London"},"terminalFacility":{"code":"3","checkInZoneFacility":{},"gateFacility":{}},"standFacility":{"standNumber":"301","provisionalStandNumber":"301"}},"operatingTimes":{"scheduled":{"utc":"2026-09-05T04:05:00","local":"2026-09-05T05:05:00"}}}]},"stops":1},"airlineParty":{"iataIdentifier":"QF","icaoIdentifier":"QFA","name":"Qantas","tailfinImageUrl":"https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/QF-tailfin.png"},"aircraftTransport":{"iataTypeCode":"789","icaoTypeCode":"B789","description":"Boeing 787-9","type":"Jet-engined aircraft","class":"789"}}},{"flightService":{"iataFlightIdentifier":"BA670","icaoFlightIdentifier":"BAW670","flightNumber":"670","arrivalOrDeparture":"D","codeShareStatus":"NORMAL_FLIGHT","aircraftMovement":{"scheduledFlightDurationMinutes":200,"aircraftMovementStatus":[{"name":"OriginStatus","message":"On time 06:05, check-in Zone D","statusCode":"EX","statusData":[{"localisationKey":"OnTime","data":"06:05"},{"localisationKey":"CheckInZone","data":"D"}]}],"route":{"internationalOrDomestic":"I","portsOfCall":[{"portOfCallType":"ORIGIN","airportFacility":{"iataIdentifier":"LHR","name":"Heathrow Airport","airportCityLocation":{"name":"London"},"terminalFacility":{"code":"5","checkInZoneFacility":{"identifier":"D","checkInStartTime":{"utc":"2026-09-05T02:45:00","local":"2026-09-05T03:45:00"}},"gateFacility":{"gateNumber":"C62","gateShownFrom":{"utc":"2026-09-05T04:05:00","local":"2026-09-05T05:05:00"},"pierCode":"C "}},"standFacility":{"standNumber":"562","provisionalStandNumber":"562"}},"operatingTimes":{"scheduled":{"utc":"2026-09-05T05:05:00","local":"2026-09-05T06:05:00"}}},{"portOfCallType":"DESTINATION","airportFacility":{"iataIdentifier":"SKG","icaoIdentifier":"LGTS","name":"Thessaloniki Airport","airportCityLocation":{"name":"Thessaloniki"},"terminalFacility":{},"standFacility":{}},"operatingTimes":{"scheduled":{"utc":"2026-09-05T08:25:00","local":"2026-09-05T11:25:00"}}}]},"stops":0},"airlineParty":{"iataIdentifier":"BA","icaoIdentifier":"BAW","name":"British Airways","tailfinImageUrl":"https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/BA-tailfin.png"},"aircraftTransport":{"iataTypeCode":"32Q","icaoTypeCode":"A21N","description":"Airbus A321neo","type":"Jet-engined aircraft","class":"32Q"}}},{"flightService":{"iataFlightIdentifier":"BA716","icaoFlightIdentifier":"BAW716","flightNumber":"716","arrivalOrDeparture":"D","codeShareStatus":"NORMAL_FLIGHT","aircraftMovement":{"scheduledFlightDurationMinutes":235,"aircraftMovementStatus":[{"name":"OriginStatus","message":"On time 06:10, check-in Zone D","statusCode":"EX","statusData":[{"localisationKey":"OnTime","data":"06:10"},{"localisationKey":"CheckInZone","data":"D"}]}],"route":{"internationalOrDomestic":"I","portsOfCall":[{"portOfCallType":"ORIGIN","airportFacility":{"iataIdentifier":"LHR","name":"Heathrow Airport","airportCityLocation":{"name":"London"},"terminalFacility":{"code":"5","checkInZoneFacility":{"identifier":"D","checkInStartTime":{"utc":"2026-09-05T02:45:00","local":"2026-09-05T03:45:00"}},"gateFacility":{"gateNumber":"B45","gateShownFrom":{"utc":"2026-09-05T04:10:00","local":"2026-09-05T05:10:00"},"pierCode":"B "}},"standFacility":{"standNumber":"545R","provisionalStandNumber":"545R"}},"operatingTimes":{"scheduled":{"utc":"2026-09-05T05:10:00","local":"2026-09-05T06:10:00"}}},{"portOfCallType":"DESTINATION","airportFacility":{"iataIdentifier":"IST","icaoIdentifier":"LTFM","name":"Istanbul Airport","airportCityLocation":{"name":"Istanbul"},"terminalFacility":{},"standFacility":{}},"operatingTimes":{"scheduled":{"utc":"2026-09-05T09:05:00","local":"2026-09-05T12:05:00"}}}]},"stops":0},"airlineParty":{"iataIdentifier":"BA","icaoIdentifier":"BAW","name":"British Airways","tailfinImageUrl":"https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/BA-tailfin.png"},"aircraftTransport":{"iataTypeCode":"32N","icaoTypeCode":"A20N","description":"Airbus A320neo","type":"Jet-engined aircraft","class":"32N"}}}]
+[
+ {
+  "flightService": {
+   "iataFlightIdentifier": "WB712",
+   "icaoFlightIdentifier": "RWD712",
+   "flightNumber": "712",
+   "arrivalOrDeparture": "A",
+   "codeShareStatus": "NORMAL_FLIGHT",
+   "aircraftMovement": {
+    "scheduledFlightDurationMinutes": 565,
+    "aircraftMovementStatus": [
+     {
+      "name": "DestinationStatus",
+      "message": "On time 07:05",
+      "statusCode": "SH",
+      "statusData": [
+       {
+        "localisationKey": "OnTime",
+        "data": "07:05"
+       }
+      ]
+     }
+    ],
+    "route": {
+     "internationalOrDomestic": "I",
+     "portsOfCall": [
+      {
+       "portOfCallType": "ORIGIN",
+       "airportFacility": {
+        "iataIdentifier": "KGL",
+        "icaoIdentifier": "HRYR",
+        "name": "Kigali International Airport",
+        "airportCityLocation": {
+         "name": "Kigali"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-04T20:40:00",
+         "local": "2026-09-04T22:40:00"
+        }
+       }
+      },
+      {
+       "portOfCallType": "DESTINATION",
+       "airportFacility": {
+        "iataIdentifier": "LHR",
+        "name": "Heathrow Airport",
+        "airportCityLocation": {
+         "name": "London"
+        },
+        "terminalFacility": {
+         "code": "4",
+         "checkInZoneFacility": {},
+         "gateFacility": {}
+        },
+        "standFacility": {
+         "provisionalStandNumber": "414"
+        }
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-05T06:05:00",
+         "local": "2026-09-05T07:05:00"
+        }
+       }
+      }
+     ]
+    },
+    "stops": 0
+   },
+   "airlineParty": {
+    "iataIdentifier": "WB",
+    "icaoIdentifier": "RWD",
+    "name": "RwandAir",
+    "tailfinImageUrl": "https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/WB-tailfin.png"
+   },
+   "aircraftTransport": {
+    "iataTypeCode": "332",
+    "icaoTypeCode": "A332",
+    "description": "Airbus A330-200 Passenger",
+    "type": "Jet-engined aircraft",
+    "class": "332"
+   }
+  }
+ },
+ {
+  "flightService": {
+   "iataFlightIdentifier": "QF219",
+   "icaoFlightIdentifier": "QFA219",
+   "flightNumber": "219",
+   "arrivalOrDeparture": "A",
+   "codeShareStatus": "NORMAL_FLIGHT",
+   "aircraftMovement": {
+    "scheduledFlightDurationMinutes": 1325,
+    "aircraftMovementStatus": [
+     {
+      "name": "DestinationStatus",
+      "message": "Expected 04:37",
+      "statusCode": "EX",
+      "statusData": [
+       {
+        "localisationKey": "Expected",
+        "data": "04:37"
+       }
+      ]
+     }
+    ],
+    "route": {
+     "internationalOrDomestic": "I",
+     "portsOfCall": [
+      {
+       "portOfCallType": "ORIGIN",
+       "airportFacility": {
+        "iataIdentifier": "PER",
+        "icaoIdentifier": "YPPH",
+        "name": "Perth International Airport",
+        "airportCityLocation": {
+         "name": "Perth"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-04T06:00:00",
+         "local": "2026-09-04T14:00:00"
+        }
+       }
+      },
+      {
+       "portOfCallType": "STOP",
+       "airportFacility": {
+        "iataIdentifier": "SIN",
+        "icaoIdentifier": "WSSS",
+        "name": "Changi Airport",
+        "airportCityLocation": {
+         "name": "Singapore"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {}
+      },
+      {
+       "portOfCallType": "DESTINATION",
+       "airportFacility": {
+        "iataIdentifier": "LHR",
+        "name": "Heathrow Airport",
+        "airportCityLocation": {
+         "name": "London"
+        },
+        "terminalFacility": {
+         "code": "3",
+         "checkInZoneFacility": {},
+         "gateFacility": {}
+        },
+        "standFacility": {
+         "standNumber": "301",
+         "provisionalStandNumber": "301"
+        }
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-05T04:05:00",
+         "local": "2026-09-05T05:05:00"
+        }
+       }
+      }
+     ]
+    },
+    "stops": 1
+   },
+   "airlineParty": {
+    "iataIdentifier": "QF",
+    "icaoIdentifier": "QFA",
+    "name": "Qantas",
+    "tailfinImageUrl": "https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/QF-tailfin.png"
+   },
+   "aircraftTransport": {
+    "iataTypeCode": "789",
+    "icaoTypeCode": "B789",
+    "description": "Boeing 787-9",
+    "type": "Jet-engined aircraft",
+    "class": "789"
+   }
+  }
+ },
+ {
+  "flightService": {
+   "iataFlightIdentifier": "BA670",
+   "icaoFlightIdentifier": "BAW670",
+   "flightNumber": "670",
+   "arrivalOrDeparture": "D",
+   "codeShareStatus": "NORMAL_FLIGHT",
+   "aircraftMovement": {
+    "scheduledFlightDurationMinutes": 200,
+    "aircraftMovementStatus": [
+     {
+      "name": "OriginStatus",
+      "message": "On time 06:05, check-in Zone D",
+      "statusCode": "EX",
+      "statusData": [
+       {
+        "localisationKey": "OnTime",
+        "data": "06:05"
+       },
+       {
+        "localisationKey": "CheckInZone",
+        "data": "D"
+       }
+      ]
+     }
+    ],
+    "route": {
+     "internationalOrDomestic": "I",
+     "portsOfCall": [
+      {
+       "portOfCallType": "ORIGIN",
+       "airportFacility": {
+        "iataIdentifier": "LHR",
+        "name": "Heathrow Airport",
+        "airportCityLocation": {
+         "name": "London"
+        },
+        "terminalFacility": {
+         "code": "5",
+         "checkInZoneFacility": {
+          "identifier": "D",
+          "checkInStartTime": {
+           "utc": "2026-09-05T02:45:00",
+           "local": "2026-09-05T03:45:00"
+          }
+         },
+         "gateFacility": {
+          "gateNumber": "C62",
+          "gateShownFrom": {
+           "utc": "2026-09-05T04:05:00",
+           "local": "2026-09-05T05:05:00"
+          },
+          "pierCode": "C "
+         }
+        },
+        "standFacility": {
+         "standNumber": "562",
+         "provisionalStandNumber": "562"
+        }
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-05T05:05:00",
+         "local": "2026-09-05T06:05:00"
+        }
+       }
+      },
+      {
+       "portOfCallType": "DESTINATION",
+       "airportFacility": {
+        "iataIdentifier": "SKG",
+        "icaoIdentifier": "LGTS",
+        "name": "Thessaloniki Airport",
+        "airportCityLocation": {
+         "name": "Thessaloniki"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-05T08:25:00",
+         "local": "2026-09-05T11:25:00"
+        }
+       }
+      }
+     ]
+    },
+    "stops": 0
+   },
+   "airlineParty": {
+    "iataIdentifier": "BA",
+    "icaoIdentifier": "BAW",
+    "name": "British Airways",
+    "tailfinImageUrl": "https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/BA-tailfin.png"
+   },
+   "aircraftTransport": {
+    "iataTypeCode": "32Q",
+    "icaoTypeCode": "A21N",
+    "description": "Airbus A321neo",
+    "type": "Jet-engined aircraft",
+    "class": "32Q"
+   }
+  }
+ },
+ {
+  "flightService": {
+   "iataFlightIdentifier": "BA716",
+   "icaoFlightIdentifier": "BAW716",
+   "flightNumber": "716",
+   "arrivalOrDeparture": "D",
+   "codeShareStatus": "NORMAL_FLIGHT",
+   "aircraftMovement": {
+    "scheduledFlightDurationMinutes": 235,
+    "aircraftMovementStatus": [
+     {
+      "name": "OriginStatus",
+      "message": "On time 06:10, check-in Zone D",
+      "statusCode": "EX",
+      "statusData": [
+       {
+        "localisationKey": "OnTime",
+        "data": "06:10"
+       },
+       {
+        "localisationKey": "CheckInZone",
+        "data": "D"
+       }
+      ]
+     }
+    ],
+    "route": {
+     "internationalOrDomestic": "I",
+     "portsOfCall": [
+      {
+       "portOfCallType": "ORIGIN",
+       "airportFacility": {
+        "iataIdentifier": "LHR",
+        "name": "Heathrow Airport",
+        "airportCityLocation": {
+         "name": "London"
+        },
+        "terminalFacility": {
+         "code": "5",
+         "checkInZoneFacility": {
+          "identifier": "D",
+          "checkInStartTime": {
+           "utc": "2026-09-05T02:45:00",
+           "local": "2026-09-05T03:45:00"
+          }
+         },
+         "gateFacility": {
+          "gateNumber": "B45",
+          "gateShownFrom": {
+           "utc": "2026-09-05T04:10:00",
+           "local": "2026-09-05T05:10:00"
+          },
+          "pierCode": "B "
+         }
+        },
+        "standFacility": {
+         "standNumber": "545R",
+         "provisionalStandNumber": "545R"
+        }
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-05T05:10:00",
+         "local": "2026-09-05T06:10:00"
+        }
+       }
+      },
+      {
+       "portOfCallType": "DESTINATION",
+       "airportFacility": {
+        "iataIdentifier": "IST",
+        "icaoIdentifier": "LTFM",
+        "name": "Istanbul Airport",
+        "airportCityLocation": {
+         "name": "Istanbul"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-05T09:05:00",
+         "local": "2026-09-05T12:05:00"
+        }
+       }
+      }
+     ]
+    },
+    "stops": 0
+   },
+   "airlineParty": {
+    "iataIdentifier": "BA",
+    "icaoIdentifier": "BAW",
+    "name": "British Airways",
+    "tailfinImageUrl": "https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/BA-tailfin.png"
+   },
+   "aircraftTransport": {
+    "iataTypeCode": "32N",
+    "icaoTypeCode": "A20N",
+    "description": "Airbus A320neo",
+    "type": "Jet-engined aircraft",
+    "class": "32N"
+   }
+  }
+ },
+ {
+  "flightService": {
+   "iataFlightIdentifier": "TP1363",
+   "icaoFlightIdentifier": "TAP1363",
+   "flightNumber": "1363",
+   "arrivalOrDeparture": "D",
+   "codeShareStatus": "CODESHARE_OPERATING_FLIGHT",
+   "codeShareSummary": "AC2686,AD7232,AI7913,S48050,SQ2783,UA6857",
+   "aircraftMovement": {
+    "scheduledFlightDurationMinutes": 170,
+    "aircraftMovementStatus": [
+     {
+      "name": "OriginStatus",
+      "message": "Departed 06:17",
+      "statusCode": "AB",
+      "statusData": [
+       {
+        "localisationKey": "Departed",
+        "data": "06:17"
+       }
+      ]
+     }
+    ],
+    "route": {
+     "internationalOrDomestic": "I",
+     "portsOfCall": [
+      {
+       "portOfCallType": "ORIGIN",
+       "airportFacility": {
+        "iataIdentifier": "LHR",
+        "name": "Heathrow Airport",
+        "airportCityLocation": {
+         "name": "London"
+        },
+        "terminalFacility": {
+         "code": "2",
+         "checkInZoneFacility": {
+          "identifier": "B",
+          "checkInStartTime": {
+           "utc": "2026-09-11T02:30:00",
+           "local": "2026-09-11T03:30:00"
+          }
+         },
+         "gateFacility": {
+          "gateNumber": "B37",
+          "gateShownFrom": {
+           "utc": "2026-09-11T04:15:00",
+           "local": "2026-09-11T05:15:00"
+          },
+          "pierCode": "2B"
+         }
+        },
+        "standFacility": {
+         "standNumber": "237L",
+         "provisionalStandNumber": "237L"
+        }
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-11T05:00:00",
+         "local": "2026-09-11T06:00:00"
+        }
+       }
+      },
+      {
+       "portOfCallType": "DESTINATION",
+       "airportFacility": {
+        "iataIdentifier": "LIS",
+        "icaoIdentifier": "LPPT",
+        "name": "Lisbon Airport",
+        "airportCityLocation": {
+         "name": "Lisbon"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-11T07:50:00",
+         "local": "2026-09-11T08:50:00"
+        }
+       }
+      }
+     ]
+    },
+    "stops": 0
+   },
+   "airlineParty": {
+    "iataIdentifier": "TP",
+    "icaoIdentifier": "TAP",
+    "name": "TAP Portugal",
+    "tailfinImageUrl": "https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/TP-tailfin.png"
+   },
+   "aircraftTransport": {
+    "iataTypeCode": "32N",
+    "icaoTypeCode": "A20N",
+    "description": "Airbus A320neo",
+    "type": "Jet-engined aircraft",
+    "class": "32N"
+   }
+  }
+ },
+ {
+  "flightService": {
+   "iataFlightIdentifier": "AC2686",
+   "flightNumber": "2686",
+   "arrivalOrDeparture": "D",
+   "codeShareStatus": "CODESHARE_MARKETING_FLIGHT",
+   "codeShareSummary": "TP1363",
+   "codeShares": [
+    {
+     "iataIdentifier": "TP1363",
+     "icaoIdentifier": "TAP1363",
+     "flightNumber": "1363",
+     "airlineParty": {
+      "iataIdentifier": "TP",
+      "icaoIdentifier": "TAP",
+      "name": "TAP Portugal"
+     },
+     "showToPublic": true
+    }
+   ],
+   "aircraftMovement": {
+    "scheduledFlightDurationMinutes": 170,
+    "aircraftMovementStatus": [
+     {
+      "name": "OriginStatus",
+      "message": "Departed 06:17",
+      "statusCode": "AB",
+      "statusData": [
+       {
+        "localisationKey": "Departed",
+        "data": "06:17"
+       }
+      ]
+     }
+    ],
+    "route": {
+     "internationalOrDomestic": "I",
+     "portsOfCall": [
+      {
+       "portOfCallType": "ORIGIN",
+       "airportFacility": {
+        "iataIdentifier": "LHR",
+        "name": "Heathrow Airport",
+        "airportCityLocation": {
+         "name": "London"
+        },
+        "terminalFacility": {
+         "code": "2",
+         "checkInZoneFacility": {
+          "identifier": "B",
+          "checkInStartTime": {
+           "utc": "2026-09-11T02:30:00",
+           "local": "2026-09-11T03:30:00"
+          }
+         },
+         "gateFacility": {
+          "gateNumber": "B37",
+          "gateShownFrom": {
+           "utc": "2026-09-11T04:15:00",
+           "local": "2026-09-11T05:15:00"
+          },
+          "pierCode": "2B"
+         }
+        },
+        "standFacility": {
+         "standNumber": "237L",
+         "provisionalStandNumber": "237L"
+        }
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-11T05:00:00",
+         "local": "2026-09-11T06:00:00"
+        }
+       }
+      },
+      {
+       "portOfCallType": "DESTINATION",
+       "airportFacility": {
+        "iataIdentifier": "LIS",
+        "icaoIdentifier": "LPPT",
+        "name": "Lisbon Airport",
+        "airportCityLocation": {
+         "name": "Lisbon"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-11T07:50:00",
+         "local": "2026-09-11T08:50:00"
+        }
+       }
+      }
+     ]
+    },
+    "stops": 0
+   },
+   "airlineParty": {
+    "iataIdentifier": "AC",
+    "name": "Air Canada",
+    "tailfinImageUrl": "https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/AC-tailfin.png"
+   },
+   "aircraftTransport": {
+    "iataTypeCode": "32N",
+    "icaoTypeCode": "A20N",
+    "description": "Airbus A320neo",
+    "type": "Jet-engined aircraft",
+    "class": "32N"
+   }
+  }
+ },
+ {
+  "flightService": {
+   "iataFlightIdentifier": "BA472",
+   "icaoFlightIdentifier": "BAW472",
+   "flightNumber": "472",
+   "arrivalOrDeparture": "D",
+   "codeShareStatus": "CODESHARE_OPERATING_FLIGHT",
+   "codeShareSummary": "AA6811,IB3655",
+   "aircraftMovement": {
+    "scheduledFlightDurationMinutes": 130,
+    "aircraftMovementStatus": [
+     {
+      "name": "OriginStatus",
+      "message": "Departed 06:45",
+      "statusCode": "AB",
+      "statusData": [
+       {
+        "localisationKey": "Departed",
+        "data": "06:45"
+       }
+      ]
+     }
+    ],
+    "route": {
+     "internationalOrDomestic": "I",
+     "portsOfCall": [
+      {
+       "portOfCallType": "ORIGIN",
+       "airportFacility": {
+        "iataIdentifier": "LHR",
+        "name": "Heathrow Airport",
+        "airportCityLocation": {
+         "name": "London"
+        },
+        "terminalFacility": {
+         "code": "5",
+         "checkInZoneFacility": {
+          "identifier": "F",
+          "checkInStartTime": {
+           "utc": "2026-09-11T02:30:00",
+           "local": "2026-09-11T03:30:00"
+          }
+         },
+         "gateFacility": {
+          "gateNumber": "A7",
+          "gateShownFrom": {
+           "utc": "2026-09-11T04:35:00",
+           "local": "2026-09-11T05:35:00"
+          },
+          "pierCode": "A "
+         }
+        },
+        "standFacility": {
+         "standNumber": "507",
+         "provisionalStandNumber": "507"
+        }
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-11T05:15:00",
+         "local": "2026-09-11T06:15:00"
+        }
+       }
+      },
+      {
+       "portOfCallType": "DESTINATION",
+       "airportFacility": {
+        "iataIdentifier": "BCN",
+        "icaoIdentifier": "LEBL",
+        "name": "Barcelona Airport",
+        "airportCityLocation": {
+         "name": "Barcelona"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-11T07:25:00",
+         "local": "2026-09-11T09:25:00"
+        }
+       }
+      }
+     ]
+    },
+    "stops": 0
+   },
+   "airlineParty": {
+    "iataIdentifier": "BA",
+    "icaoIdentifier": "BAW",
+    "name": "British Airways",
+    "tailfinImageUrl": "https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/BA-tailfin.png"
+   },
+   "aircraftTransport": {
+    "iataTypeCode": "32Q",
+    "icaoTypeCode": "A21N",
+    "description": "Airbus A321neo",
+    "type": "Jet-engined aircraft",
+    "class": "32Q"
+   }
+  }
+ },
+ {
+  "flightService": {
+   "iataFlightIdentifier": "BA074",
+   "icaoFlightIdentifier": "BAW74",
+   "flightNumber": "074",
+   "arrivalOrDeparture": "A",
+   "codeShareStatus": "CODESHARE_OPERATING_FLIGHT",
+   "codeShareSummary": "AA6846,AY5904",
+   "aircraftMovement": {
+    "scheduledFlightDurationMinutes": 390,
+    "aircraftMovementStatus": [
+     {
+      "name": "DestinationStatus",
+      "message": "Landed 05:09, bags delivered on belt 5",
+      "statusCode": "LB",
+      "statusData": [
+       {
+        "localisationKey": "Landed",
+        "data": "05:09"
+       },
+       {
+        "localisationKey": "BagsDeliveredPrimary",
+        "data": "5"
+       }
+      ]
+     }
+    ],
+    "route": {
+     "internationalOrDomestic": "I",
+     "portsOfCall": [
+      {
+       "portOfCallType": "ORIGIN",
+       "airportFacility": {
+        "iataIdentifier": "LOS",
+        "icaoIdentifier": "DNMM",
+        "name": "Murtala Muhammed International Airport",
+        "airportCityLocation": {
+         "name": "Lagos"
+        },
+        "terminalFacility": {},
+        "standFacility": {}
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-10T21:50:00",
+         "local": "2026-09-10T22:50:00"
+        }
+       }
+      },
+      {
+       "portOfCallType": "DESTINATION",
+       "airportFacility": {
+        "iataIdentifier": "LHR",
+        "name": "Heathrow Airport",
+        "airportCityLocation": {
+         "name": "London"
+        },
+        "terminalFacility": {
+         "code": "5",
+         "checkInZoneFacility": {},
+         "gateFacility": {}
+        },
+        "standFacility": {
+         "standNumber": "534",
+         "provisionalStandNumber": "534"
+        }
+       },
+       "operatingTimes": {
+        "scheduled": {
+         "utc": "2026-09-11T04:20:00",
+         "local": "2026-09-11T05:20:00"
+        }
+       }
+      }
+     ]
+    },
+    "stops": 0
+   },
+   "airlineParty": {
+    "iataIdentifier": "BA",
+    "icaoIdentifier": "BAW",
+    "name": "British Airways",
+    "tailfinImageUrl": "https://www.heathrow.com/content/dam/heathrow/web/common/images/airline/tailfin/BA-tailfin.png"
+   },
+   "aircraftTransport": {
+    "iataTypeCode": "781",
+    "icaoTypeCode": "B78X",
+    "description": "Boeing 787-10",
+    "type": "Jet-engined aircraft",
+    "class": "781"
+   }
+  }
+ }
+]
