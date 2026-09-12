@@ -5996,6 +5996,23 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Singapore. Its palette is Yellow '#FCB130' (PMS 143 C) and Blue '#1D4886'
+  // (PMS 7687 C). The accent was '#F0AB00', deltaE 7.83 off the yellow.
+  //
+  // Keeping it YELLOW rather than moving it to the blue is deliberate and
+  // measured: on the dark board the yellow clears 9.95:1 while the blue
+  // manages 2.02 and the tile's old navy 1.31. Whoever chose the hue was
+  // right; only the value had drifted. SIA.svg is brought to the same palette
+  // — its bird was '#f99f1c' on a '#00276C' navy that appears nowhere in the
+  // palette — and the bird still reads at 4.94:1 on the stated blue, down
+  // from 6.64 but well clear of the 3:1 floor.
+  'SQ':'#FCB130',
+  // LOT. No entry at all, so it drew on the generic navy. '#252668' is PMS
+  // 2756 C, and LOT.svg has painted exactly that hex all along — the tile was
+  // right and only the table was missing. At 1.35:1 on the dark board this is
+  // a dim rail, but it is the airline's own colour and no worse than SAS
+  // '#000066', which already ships.
+  'LO':'#252668',
   // Air France. Was '#002157'. The 2014 guidelines name PANTONE 296C — CMYK
   // 100/75/0/60, RGB 5/16/57, '#051039' — as "la couleur identitaire de la
   // Compagnie", and AFR.svg has painted its ground '#071037' all along. Those
@@ -6074,7 +6091,7 @@ const AIRLINE_ACCENT = {
   // an official kit turns up, same arc Avelo followed.
   'WL':'#004280',
   'AF':'#051039','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
-  'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
+  'QR':'#5C0632','EK':'#C8102E','SQ':'#FCB130','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
   'AY':'#0B1560','IB':'#D71920','TP':'#46A41A','EI':'#009A44',
