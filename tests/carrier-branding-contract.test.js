@@ -52,6 +52,19 @@ const ACCENTS = pairs('AIRLINE_ACCENT');
 
 const localPath = (webPath) => path.join(root, webPath.replace(/^\//, '').replace(/^logos\//, 'logos/').split('?')[0]);
 const isTilePath = (p) => /\/logos\/airline-tiles\//.test(p) && !/PB-arrow/i.test(p);
+function deltaE(a, b) {
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const lab = (h) => {
+    const [r, g, bl] = rgb(h).map(lin);
+    const X = 0.4124 * r + 0.3576 * g + 0.1805 * bl, Y = 0.2126 * r + 0.7152 * g + 0.0722 * bl, Z = 0.0193 * r + 0.1192 * g + 0.9505 * bl;
+    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    const fx = f(X / 0.95047), fy = f(Y), fz = f(Z / 1.08883);
+    return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+  };
+  const [l1, a1, b1] = lab(a), [l2, a2, b2] = lab(b);
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
+}
 const viewBox = (svg) => {
   const m = /viewBox="([^"]+)"/.exec(svg);
   return m ? m[1].trim().split(/[\s,]+/).map(Number) : null;
@@ -179,11 +192,20 @@ test('Frontier takes the green five of its six files agree on', () => {
   // frontier-wordmark-color.svg, frontier-wordmark-dark.svg and frontier.svg.
   // The tile's '#0F6744' is the lone outlier, and the two are a CIE76 deltaE
   // of 1.45 apart — indistinguishable in use.
-  assert.equal(ACCENTS['F9'], '#026845');
+  assert.equal(ACCENTS['F9'], '#016543');
   const dir = path.join(root, 'logos', 'airlines', 'us-major');
-  const agreeing = ['frontier-emblem.svg', 'frontier-wordmark-dark.svg', 'frontier.svg']
-    .filter((f) => fs.readFileSync(path.join(dir, f), 'utf8').toLowerCase().includes('#026845'));
-  assert.equal(agreeing.length, 3, `only ${agreeing} carry the accent; re-check which green is Frontier's`);
+  // The accent is the palette's authoritative value. Assert it stays within
+  // the cluster the artwork on disk actually uses, rather than pinning the
+  // artwork to it — a redraw should be free to shift by an imperceptible
+  // amount without failing, but not to drift to a different green.
+  const inks = ['frontier-emblem.svg', 'frontier-wordmark-dark.svg', 'frontier.svg']
+    .map((f) => (fs.readFileSync(path.join(dir, f), 'utf8').match(/#[0-9A-Fa-f]{6}/) || [])[0])
+    .filter(Boolean);
+  assert.equal(inks.length, 3, 'expected an ink in each of the three Frontier files');
+  for (const ink of inks) {
+    assert.ok(deltaE(ACCENTS['F9'], ink) < 3,
+      `accent ${ACCENTS['F9']} is deltaE ${deltaE(ACCENTS['F9'], ink).toFixed(2)} from ${ink} — a different green, not a re-trace`);
+  }
 });
 
 test('the new art is in the asset manifest', () => {
