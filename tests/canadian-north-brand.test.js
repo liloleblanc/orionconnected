@@ -60,6 +60,40 @@ test('the accent is the colour the artwork itself is painted in', () => {
   assert.ok((word.match(/#[0-9A-Fa-f]{6}/g) || []).map((h) => h.toUpperCase()).includes(accent));
 });
 
+test('the red is the one the brand guidelines specify, not the one the art arrived in', () => {
+  // Canadian North's 2019 Visual Identity Guidelines name Pantone 200 C,
+  // HEX BA0C2F, as the corporate red (with #91002F dark red and #A2AAAD /
+  // #7C878E greys as complementary). The artwork supplied here was drawn in
+  // '#CD163F', a CIE76 deltaE of 7.05 away — far enough to read as a
+  // different red side by side — so both the emblem and the wordmark were
+  // recoloured to the guideline value. The test above proves accent and
+  // artwork AGREE; this one proves they agree on the RIGHT red, which
+  // reverting both together would otherwise satisfy.
+  assert.equal(entry('AIRLINE_ACCENT', '5T').toUpperCase(), '#BA0C2F');
+  const off = '#CD163F';
+  assert.ok(deltaE('#BA0C2F', off) > 5, 'sanity: the two reds should be far apart');
+  for (const f of ['logos/airline-tiles/CanadianNorth-Emblem.svg',
+                   'logos/airlines/canadian-regional/CanadianNorth-Emblem.svg',
+                   'logos/airlines/canadian-regional/Canadian-North-Wordmark-FullRed.svg']) {
+    const svg = fs.readFileSync(path.join(root, f), 'utf8');
+    assert.doesNotMatch(svg, /#cd163f/i, `${f} still carries the off-brand red`);
+  }
+});
+
+function deltaE(a, b) {
+  const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const lin = (c) => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); };
+  const lab = (h) => {
+    const [r, g, bl] = rgb(h).map(lin);
+    const X = 0.4124 * r + 0.3576 * g + 0.1805 * bl, Y = 0.2126 * r + 0.7152 * g + 0.0722 * bl, Z = 0.0193 * r + 0.1192 * g + 0.9505 * bl;
+    const f = (t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+    const fx = f(X / 0.95047), fy = f(Y), fz = f(Z / 1.08883);
+    return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+  };
+  const [l1, a1, b1] = lab(a), [l2, a2, b2] = lab(b);
+  return Math.hypot(l1 - l2, a1 - a2, b1 - b2);
+}
+
 test('the emblem is named at the airline-tiles path, which is what keeps it red', () => {
   const p = entry('AIRLINE_EMBLEM_FILES', '5T');
   assert.ok(p, "AIRLINE_EMBLEM_FILES is missing '5T'");
