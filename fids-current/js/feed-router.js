@@ -519,7 +519,11 @@ function yhuToAdbFlight(f) {
   const homeSide = {
     airport: home,
     terminal: null,
-    gate: null,                                       // MET publishes no gate field
+    // MET publishes no gate field. The proxy derives a stable stand for these
+    // rows (see synthGateFor) and hands it back as `synthGate`, so the gate
+    // screens have something to cycle; a real gate, if MET ever adds one,
+    // would arrive as `gate` and is preferred here.
+    gate: String(f.gate || f.synthGate || '').trim() || null,
     ...(belt ? { baggageBelt: belt } : {}),           // real belt on arrivals
     scheduledTime: sched,
     ...(revised ? { revisedTime: revised } : {}),
