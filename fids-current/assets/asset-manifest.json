@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2626,
+    "total": 2625,
     "by_category": {
       "ad": 10,
-      "airline": 1422,
+      "airline": 1421,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -9595,17 +9595,6 @@
       "name": "Overland Airways",
       "iata": "OF",
       "country": "Nigeria",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/airline-tiles/AWQ.svg",
-      "file": "AWQ.svg",
-      "category": "airline",
-      "subcategory": "tile",
-      "group": "Airline tile logos (row icons)",
-      "name": "AWQ",
-      "iata": "",
-      "country": "",
       "ext": "svg"
     },
     {

@@ -6035,6 +6035,23 @@ const AIRLINE_ACCENT = {
   // it is the one that dominates their pages, which makes it the easy wrong
   // pick off a screenshot. It is not the mark.
   'HV':'#05CE78', 'TO':'#05CE78',
+  // AirAsia, both codes. Neither had an accent, so a red airline was drawing
+  // the generic '#0033A1' navy.
+  //
+  // Their own brand guide contradicts itself. One line of page 12 reads
+  // "AirAsia Red / Pantone 485C / C0 M95 Y100 K0 / R255 G0 B0" — but 485 C is
+  // '#DA291C' in sRGB, deltaE 22.3 from pure red. A guide cannot be followed
+  // on both halves of that line, and 'R255 G0 B0' is the crude screen stand-in
+  // older guides print rather than a measured conversion.
+  //
+  // '#E32526' — what AXM.svg and the supplied emblem both paint — is deltaE
+  // 4.8 from the stated Pantone and 22.0 from the stated RGB, so the artwork
+  // is the faithful rendering of the guide's own specification. It also spares
+  // a 24/7 board a pure-red fill, which vibrates against dark rows.
+  //
+  // Recorded as a judgement, not a fact: a later reader may reasonably prefer
+  // the literal '#FF0000'. AWQ.svg was painting exactly that.
+  'AK':'#E32526', 'QZ':'#E32526',
   // Emirates. Was '#C8102E' — the generic red it shared with Japan Airlines
   // and Turkish, three unrelated carriers on one value. UAE.svg paints
   // '#d71a21' and its icao-icons twin '#D71921', deltaE 0.19 apart.
@@ -21933,7 +21950,10 @@ const IATA_TO_TILE_ICAO = {
   'NZ':'ANZ',  'AI':'AIC',  '6E':'IGO',  'BR':'EVA',  'CI':'CAL',
   'CZ':'CSN',  'CA':'CCA',  'MU':'CES',  'HU':'CHH',  'KE':'KAL',
   'OZ':'AAR',  'TG':'THA',  'GA':'GIA',  'MH':'MAS',  'PR':'PAL',
-  'SG':'SEJ',  'VN':'HVN',  'QZ':'AWQ',  'AK':'AXM',  'TR':'TGW',
+  // QZ and AK are one brand — Indonesia AirAsia and AirAsia Malaysia. QZ was
+  // an Arial 'QZ' on pure #FF0000 while AK already had real artwork, the same
+  // split Transavia arrived in. Both now draw the AirAsia script wordmark.
+  'SG':'SEJ',  'VN':'HVN',  'QZ':'AXM',  'AK':'AXM',  'TR':'TGW',
   'JQ':'JST',  'VA':'VOZ',
   // Latin America
   'JJ':'TAM',  'AD':'AZU',  'LA':'LAN',  'AR':'ARG',  'CM':'CMP',
