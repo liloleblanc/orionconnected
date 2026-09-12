@@ -5922,6 +5922,15 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Frontier. Two greens sit in the repo and they are not a choice: the tile
+  // is '#0F6744', everything else — the emblem, the colour wordmark, the dark
+  // wordmark and frontier.svg — is '#026845'. Measured, they differ by 13 of
+  // 255 on red alone and by one point on each of green and blue, a CIE76
+  // deltaE of 1.45, which is the threshold a trained eye can just detect on
+  // adjacent patches and invisible anywhere these are actually used. Five
+  // files to one, so the tile is the outlier — a slightly off re-trace, not a
+  // second brand colour.
+  'F9':'#026845',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
