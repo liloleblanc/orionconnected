@@ -5922,6 +5922,14 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Etihad. Was '#C89801', the odd one out of three golds. Etihad's 2014
+  // guidelines print the logotype gold as CMYK 7/33/99/19 / RGB 196,146,27 /
+  // '#C4921B', and ETD.svg paints its ground '#BD8B13' — those two agree at
+  // deltaE 2.66 while the accent sat 6.82 and 8.40 away. The guide's printed
+  // hex is taken over the tile because it is stated rather than derived; the
+  // 2.66 between them is below noticing, so the orb and rails still read as
+  // one colour.
+  'EY':'#C4921B',
   // Mokulele. Had no accent at all, so it drew on the generic '#0033A1'.
   // Its 2015 brand guidelines give the wordmark red as CMYK 7/99/94/0 —
   // '#ED030F' — with '#ED870F' for the plumeria's orange. The repo's
@@ -5993,7 +6001,7 @@ const AIRLINE_ACCENT = {
   'FR':'#073590','RK':'#073590',
   // v23365 - El Al had no accent, so its orbs fell to the generic default.
   'LY':'#1b358f',
-  'EY':'#C89801',   // Etihad gold
+  'EY':'#C4921B',   // Etihad gold
   'I2':'#D71920',   // Iberia Express takes Iberia's red
   'DE':'#F08200',   // Condor orange, taken from its own emblem
   'CS':'#FF0000',   // Chair red, from its own wordmark
