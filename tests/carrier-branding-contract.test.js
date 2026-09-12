@@ -82,6 +82,54 @@ const KNOWN_BROKEN_WORDMARK = [
   '3H:dark', '3H:light', 'BW:dark', 'BW:light', 'JV:dark', 'WL:dark', 'WL:light', 'WT:dark',
 ];
 
+// ── the tiles reached WITHOUT a path: IATA_TO_TILE_ICAO ────────────────────
+// The tests below this block walk AIRLINE_EMBLEM_FILES, which names its files
+// outright. But most tile art is reached by CONSTRUCTION — the board builds
+// '/logos/airline-tiles/' + IATA_TO_TILE_ICAO[code] + '.svg' at four separate
+// call sites, and that map covers 121 carriers against AIRLINE_EMBLEM_FILES'
+// 45. Nothing was checking the larger population, and it was hiding exactly
+// the kind of defect these tests exist to catch: Condor's tile at 39.83x40.00
+// and Emirates' at 503.89x533.33, both non-square, both invisible to a test
+// that only reads literal paths.
+const TILE_MAP = (() => {
+  const b = objectBody('IATA_TO_TILE_ICAO');
+  const out = {};
+  for (const m of b.matchAll(/'([A-Z0-9]{2})'\s*:\s*'([A-Za-z0-9_-]+)'/g)) out[m[1]] = m[2];
+  return out;
+})();
+const tilePath = (icao) => path.join(root, 'logos', 'airline-tiles', icao + '.svg');
+
+// Live lettermark placeholders: a coloured square with the carrier's code set
+// in Arial. Real artwork exists on disk for several of these. Shrink this list,
+// never grow it.
+const KNOWN_LETTERMARK_TILES = ['AZ', 'BQ', 'D8', 'DY', 'JJ', 'OK', 'QZ', 'SG', 'TO', 'X3', 'YP', 'YV'];
+
+test('IATA_TO_TILE_ICAO maps every carrier to a file that exists', () => {
+  const missing = Object.entries(TILE_MAP).filter(([, icao]) => !fs.existsSync(tilePath(icao)));
+  assert.deepEqual(missing, [], `mapped to files that are not there: ${JSON.stringify(missing)}`);
+});
+
+test('every constructed tile is square', () => {
+  // Not baselined — this one must stay empty. A non-square tile is scaled with
+  // object-fit:cover and clipped to a circle, so any transparent region shows
+  // the board through the orb.
+  const bad = [];
+  for (const [iata, icao] of Object.entries(TILE_MAP)) {
+    const vb = viewBox(fs.readFileSync(tilePath(icao), 'utf8'));
+    if (vb && Math.abs(vb[2] - vb[3]) > 0.01) bad.push(`${iata}->${icao}.svg ${vb[2]}x${vb[3]}`);
+  }
+  assert.deepEqual(bad, [], `non-square tiles would show a bite out of the orb:\n${bad.join('\n')}`);
+});
+
+test('no MORE constructed tiles are Arial lettermarks than already were', () => {
+  const found = [];
+  for (const [iata, icao] of Object.entries(TILE_MAP)) {
+    if (/<text\b/.test(fs.readFileSync(tilePath(icao), 'utf8'))) found.push(iata);
+  }
+  assert.deepEqual(found.sort(), [...KNOWN_LETTERMARK_TILES].sort(),
+    `the set of lettermark tiles changed.\nfound:    ${found.sort().join(' ')}\nbaseline: ${[...KNOWN_LETTERMARK_TILES].sort().join(' ')}`);
+});
+
 test('every tile-path emblem points at a file that exists', () => {
   const missing = [];
   for (const [code, p] of Object.entries(EMBLEMS)) {
