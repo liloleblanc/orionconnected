@@ -423,3 +423,101 @@ test('a wordmark pair is two files that differ only in ink', () => {
     assert.doesNotMatch(dk, /<text\b/, `${slug}-wordmark-dark.svg contains live text`);
   }
 });
+
+// ── the path that actually draws most orbs: /logos/symbols/airlines/ ────────
+// _airlineOrbEmblem hands back '/logos/symbols/airlines/<IATA>.svg'
+// OPTIMISTICALLY, without checking the file exists, and _orbArtFailed catches
+// the 404 and retries through IATA_TO_TILE_ICAO. So a MISSING symbols file is
+// the designed route to the tile — but a PRESENT one wins, and the tile is
+// never drawn. 54 carriers are in that position.
+//
+// Usually harmless, because symbol art is inked white on the accent disc. It
+// is NOT harmless for a carrier in _CARD_COLOR_EMBLEMS, whose art keeps its
+// own colours: then the orb paints the file while every other surface paints
+// AIRLINE_ACCENT, and the two can disagree without anything noticing.
+//
+// Both cases found here were corrections made to the accent that never reached
+// the art: TAP's orb held '#72BF44' after the accent moved to '#46A41A'
+// (deltaE 12.6), and Condor's held '#FF7E27' after '#F08200' (deltaE 10.9).
+// Neither was visible to any test above, because those only walk airline-tiles.
+const KEEPS_COLOUR = (() => {
+  // Declared as `window._CARD_COLOR_EMBLEMS = {`, not with var/const/let, so
+  // objectBody's declaration form does not match it.
+  const m = /window\._CARD_COLOR_EMBLEMS\s*=\s*\{/.exec(core);
+  assert.ok(m, 'fids-core.js must declare window._CARD_COLOR_EMBLEMS');
+  const start = core.indexOf('{', m.index);
+  let depth = 0, body = '';
+  for (let i = start; i < core.length; i++) {
+    if (core[i] === '{') depth++;
+    else if (core[i] === '}') { depth--; if (depth === 0) { body = core.slice(start, i + 1); break; } }
+  }
+  const set = new Set([...body.matchAll(/'([A-Z0-9]{2})'\s*:/g)].map((x) => x[1]));
+  assert.ok(set.size > 0, '_CARD_COLOR_EMBLEMS parsed empty — the extractor has drifted');
+  return set;
+})();
+
+// Pre-existing drift, baselined by name so it cannot grow. NOT fixed here:
+// each of these needs its own sourcing pass, and guessing at a replacement is
+// the failure this whole file exists to prevent.
+//   UA  accent #0033A0 vs art #1414D2 (42.8) — the glossy globe; a style call
+//   PC  accent #FDC300 vs art #C30B0B (77.1) — yellow accent, red art. One of
+//       the two is simply wrong for Pegasus; which one is unresearched.
+//   EI  accent #009A44 vs art #3CB14A (11.2) — two Aer Lingus greens
+//   QR  accent #5C0632 vs art #662046 (8.5)  — two Qatar burgundies
+//   TK  accent #C8102E vs art #C90019 (11.1) — the accent is the KNOWN
+//       placeholder red Turkish shared with Japan Airlines before JAL was
+//       corrected away from it. Its own art disagreeing is evidence the
+//       placeholder is wrong, but not evidence of what is right.
+const KNOWN_ORB_COLOUR_DRIFT = ['EI', 'PC', 'QR', 'TK', 'UA'];
+
+test('colour-keeping orb art agrees with the carrier accent', () => {
+  const dir = path.join(root, 'logos', 'symbols', 'airlines');
+  const bad = [];
+  for (const code of KEEPS_COLOUR) {
+    if (KNOWN_ORB_COLOUR_DRIFT.includes(code)) continue;
+    const f = path.join(dir, code + '.svg');
+    if (!fs.existsSync(f)) continue;              // falls through to the tile
+    const accent = ACCENTS[code];
+    if (!accent) continue;
+    const fills = [...new Set((fs.readFileSync(f, 'utf8').match(/#[0-9A-Fa-f]{6}/g) || []))];
+    if (!fills.length) continue;
+    // Some marks are legitimately multicolour, so the accent need only match
+    // ONE fill — the carrier's own colour must appear somewhere in its art.
+    const nearest = fills.map((h) => ({ h, d: deltaE(accent, h) })).sort((a, b) => a.d - b.d)[0];
+    if (nearest.d > 8) {
+      bad.push(`${code}: accent ${accent} is deltaE ${nearest.d.toFixed(1)} from its nearest art fill ${nearest.h} [${fills.join(' ')}]`);
+    }
+  }
+  assert.deepEqual(bad, [],
+    `these carriers keep their orb art's colours, so the orb and the rails draw different colours:\n${bad.join('\n')}`);
+});
+
+test('a symbols file that shadows a tile is deliberate, not accidental', () => {
+  // Not a failure — 54 carriers are legitimately in this position. The test
+  // exists so the COUNT cannot grow silently: adding a symbols file for a
+  // carrier that already has a tile silently retires that tile.
+  const dir = path.join(root, 'logos', 'symbols', 'airlines');
+  const shadowing = fs.readdirSync(dir)
+    .filter((f) => /^[A-Z0-9]{2}\.(svg|png)$/.test(f))
+    .map((f) => f.replace(/\.(svg|png)$/, ''))
+    .filter((c) => TILE_MAP[c]);
+  assert.ok(shadowing.length <= 54,
+    `${shadowing.length} symbols files now shadow a tile, up from 54. Newly shadowed: ${shadowing.join(' ')}`);
+});
+
+test('the baselined orb-colour drift is real, not a stale list', () => {
+  // A baseline that no longer describes anything is worse than no baseline —
+  // it silently excuses a carrier that has since been fixed. Every name here
+  // must still be drifting; when one is corrected, it must leave this list.
+  const dir = path.join(root, 'logos', 'symbols', 'airlines');
+  const notDrifting = [];
+  for (const code of KNOWN_ORB_COLOUR_DRIFT) {
+    const f = path.join(dir, code + '.svg');
+    if (!fs.existsSync(f) || !ACCENTS[code]) { notDrifting.push(`${code} (no art or no accent)`); continue; }
+    const fills = [...new Set((fs.readFileSync(f, 'utf8').match(/#[0-9A-Fa-f]{6}/g) || []))];
+    const nearest = Math.min(...fills.map((h) => deltaE(ACCENTS[code], h)));
+    if (nearest <= 8) notDrifting.push(`${code} (now only ${nearest.toFixed(1)} — remove it)`);
+  }
+  assert.deepEqual(notDrifting, [],
+    `these are baselined as drifting but no longer are:\n${notDrifting.join('\n')}`);
+});
