@@ -5996,6 +5996,26 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // SWISS. Was '#E2001A'; the airline's red is '#E60005', which SWR.svg has
+  // always painted exactly. See the emblem note below — the tile's COLOUR was
+  // never the problem, its geometry was.
+  'LX':'#E60005',
+  // Lufthansa. Was '#05164D', deltaE 17.67 from '#0A1D3D'. DLH.svg carries the
+  // same old value, so tile and table agreed with each other and both were
+  // wrong — the TAP failure mode exactly. Corrected on the stated value alone.
+  // At 1.09:1 on the dark board this is the dimmest rail in the table, but it
+  // is Lufthansa's own navy and the alternative is inventing one.
+  'LH':'#0A1D3D',
+  // Wizz. No entry; '#D3007F' is the magenta end of its gradient (WZZ.svg runs
+  // '#161998' to '#cd2b86'), and '#312782' the purple. The magenta is taken —
+  // 3.54:1 against the purple's far dimmer showing, and it is the end of the
+  // ramp the wordmark reads as.
+  'W6':'#D3007F',
+  // Jetstar. No entry. '#FF5115', and JST.svg already paints '#ff5111' —
+  // deltaE 1.06, the same colour. Clears 5.59:1.
+  'JQ':'#FF5115',
+  // easyJet. '#FF5E00' with white; EZY.svg is already orange.
+  'U2':'#FF5E00',
   // Hawaiian. Was '#582C83', deltaE 5.68 off. The palette is purple
   // '#4B2D89' (PMS 268 C), fuchsia '#CE0C88' (219 C) and coral '#F9423A'
   // (Warm Red C). HAL.svg's gradient was off on two of the three — purple by
@@ -6147,10 +6167,10 @@ const AIRLINE_ACCENT = {
   // Navy taken from their aircraft titles; swap in the exact hex when
   // an official kit turns up, same arc Avelo followed.
   'WL':'#004280',
-  'AF':'#051039','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
+  'AF':'#051039','BA':'#2E5DA4','LH':'#0A1D3D','KL':'#00A2DF',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#FCB130','CX':'#006564',
   'JL':'#CC0000','NH':'#0B318F','KE':'#00256C','OZ':'#008FD5',
-  'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
+  'TK':'#C8102E','LX':'#E60005','OS':'#E20A17','SK':'#000066',
   'AY':'#0B1560','IB':'#D71920','TP':'#46A41A','EI':'#009A44',
   // v23360 - Ryanair had NO accent, so getAirlineAccent fell to its '#0033A1'
   // default: a generic blue that belongs to no airline, sitting on a navy

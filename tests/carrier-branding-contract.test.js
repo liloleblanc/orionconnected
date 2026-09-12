@@ -71,10 +71,12 @@ const viewBox = (svg) => {
 };
 
 // ── baselines: known violations, by carrier. Shrink these, never grow them. ──
-// SWR.svg, 37.3x27.8 with a trapezoid fill. Wired under BOTH keys —
-// AIRLINE_EMBLEM_FILES carries four ICAO-form keys (AC1, EZY, ROU, SWR)
-// alongside the IATA ones, so fixing SWISS means fixing two entries.
-const KNOWN_NON_SQUARE = ['LX', 'SWR'];
+// EMPTY, and it should stay that way. SWISS used to sit here: SWR.svg was
+// the 37.3x27.8 TAILFIN, a red parallelogram, so cover-and-clip left a bite
+// out of the orb on a 416-flight carrier. It has been redrawn as a square
+// full-bleed tile reusing the official cross path, so every tile-path emblem
+// in the repo is now square. Anything appearing in this list is a regression.
+const KNOWN_NON_SQUARE = [];
 const KNOWN_TEXT_EMBLEM = ['DI'];         // NAX.svg — Arial lettermark
 const KNOWN_BROKEN_WORDMARK = [
   '3H:dark', '3H:light', 'BW:dark', 'BW:light', 'JV:dark', 'WL:dark', 'WL:light', 'WT:dark',
