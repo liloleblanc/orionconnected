@@ -5996,15 +5996,24 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
-  // Frontier. Two greens sit in the repo and they are not a choice: the tile
-  // is '#0F6744', everything else — the emblem, the colour wordmark, the dark
-  // wordmark and frontier.svg — is '#026845'. Measured, they differ by 13 of
-  // 255 on red alone and by one point on each of green and blue, a CIE76
-  // deltaE of 1.45, which is the threshold a trained eye can just detect on
-  // adjacent patches and invisible anywhere these are actually used. Five
-  // files to one, so the tile is the outlier — a slightly off re-trace, not a
-  // second brand colour.
-  'F9':'#026845',
+  // Frontier. Three dark greens exist for this airline and none of them is a
+  // choice: the brand palette's '#016543', the repo's '#026845' across four
+  // files, and the tile's '#0F6744' are a CIE76 deltaE of 1.33 to 1.45 apart —
+  // roughly the threshold a trained eye can just detect on adjacent patches,
+  // and they never appear adjacent. The palette value is used here because it
+  // is the authoritative one rather than a re-trace of it.
+  //
+  // The palette also carries '#75C542', and that IS a different colour. It was
+  // considered for the accent and rejected: measured against the four board
+  // grounds, the bright green clears 3:1 easily on the three dark themes
+  // (7.9-8.7) but collapses to 1.39 on mist, while the dark green holds 4.65
+  // on mist and sits at 2.4-2.7 on the dark themes — dim, but legible, and no
+  // worse than SAS '#000066' or Lufthansa '#05164D' which already ship. Only
+  // the dark green is acceptable on BOTH, so the bright one stays a highlight
+  // rather than the accent. Note the automatic contrast walk
+  // (CODE_ACCENT_MIN_CONTRAST) rescues only the city CODES; rails, the gate
+  // tab and the countdown read --airline-accent raw.
+  'F9':'#016543',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
