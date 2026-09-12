@@ -174,6 +174,18 @@ test('Icelandair needed only the accent — its art was already on disk', () => 
   }
 });
 
+test('Frontier takes the green five of its six files agree on', () => {
+  // Not a judgement call: '#026845' is the ink in frontier-emblem.svg,
+  // frontier-wordmark-color.svg, frontier-wordmark-dark.svg and frontier.svg.
+  // The tile's '#0F6744' is the lone outlier, and the two are a CIE76 deltaE
+  // of 1.45 apart — indistinguishable in use.
+  assert.equal(ACCENTS['F9'], '#026845');
+  const dir = path.join(root, 'logos', 'airlines', 'us-major');
+  const agreeing = ['frontier-emblem.svg', 'frontier-wordmark-dark.svg', 'frontier.svg']
+    .filter((f) => fs.readFileSync(path.join(dir, f), 'utf8').toLowerCase().includes('#026845'));
+  assert.equal(agreeing.length, 3, `only ${agreeing} carry the accent; re-check which green is Frontier's`);
+});
+
 test('the new art is in the asset manifest', () => {
   const manifest = fs.readFileSync(path.join(root, 'assets', 'asset-manifest.json'), 'utf8');
   for (const f of ['AirNorth-Emblem.svg', 'airnorth-wordmark-dark.svg', 'airnorth-wordmark-light.svg']) {
