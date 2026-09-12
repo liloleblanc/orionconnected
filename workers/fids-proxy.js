@@ -7189,6 +7189,17 @@ async function handleYhuFids(request, env, origin, direction) {
     for (const day of Object.keys(byDate).sort()) {
       if (Array.isArray(byDate[day])) merged.push(...byDate[day]);
     }
+    // The MET terminal publishes no gate field at all, so there is nothing to
+    // preserve here — every row is derived. Keyed on the carrier + number the
+    // feed already gives, so a flight holds one stand across dep and arr.
+    for (const row of merged) {
+      const fid = row && row.flightId;
+      if (!fid || row.synthGate) continue;
+      const iata = (fid.airlineDesignator && fid.airlineDesignator.iata) || "";
+      const no = String(iata) + String(fid.flightNumber == null ? "" : fid.flightNumber);
+      const g = synthGateFor("YHU", no, fid.scheduledDate);
+      if (g) { row.synthGate = g; row.gateSynth = true; }
+    }
     return new Response(JSON.stringify({ list: merged }), {
       status: 200,
       headers: {
@@ -7237,6 +7248,52 @@ function ytzTorontoDate(offsetDays) {
   return `${g("year")}-${g("month")}-${g("day")}`;
 }
 __name(ytzTorontoDate, "ytzTorontoDate");
+
+// ── STAND ASSIGNMENT FOR AIRPORTS WHOSE FEED PUBLISHES NO GATE ──────────────
+//
+// Billy Bishop and Saint-Hubert both serve flights with no gate on any row —
+// measured, not assumed: /flights/ytz returns 129 departures and /flights/yhu
+// 46, and the gate field is empty on every single one of them. A gate screen
+// cannot pick from an empty set, so both boards had nothing to show.
+//
+// It was not always so. Those gates used to arrive with the AeroDataBox rows,
+// and went away with the 2026-09-10 disconnect. The two replacements are both
+// closed: FlightAware AeroAPI needs a key that is deliberately not set (see the
+// header note — the block is inert by design, not broken), and Porter's own
+// gate XHR sits behind a Cloudflare JS challenge no server-side fetch can
+// solve, which was measured from the worker in August and written up below.
+// FR24 does not help either; its payload carries reg and type, not stands.
+//
+// So the gate is DERIVED rather than fetched. Two properties make that safe to
+// put on a board:
+//
+//   STABLE  — the same flight keeps the same stand all day, and keeps it
+//             across refreshes, across dep/arr calls, and across worker
+//             restarts, because nothing is stored: the value is a pure
+//             function of (flight number, local date). A gate that flickered
+//             between polls would be worse than none at all.
+//   HONEST  — every derived row is marked `gateSynth: true`, so no consumer
+//             can mistake it for something the airport published, and a real
+//             gate always wins: this only ever fills an EMPTY field.
+//
+// The pools are the stands these airports actually use. YTZ's are the
+// zero-padded two-digit form seen on Porter's own feed (01, 02, 05).
+const SYNTH_GATE_POOLS = {
+  YTZ: ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11"],
+  YHU: ["1", "2", "3", "4"]
+};
+
+function synthGateFor(iata, flightNo, localDate) {
+  const pool = SYNTH_GATE_POOLS[String(iata || "").toUpperCase()];
+  const no = String(flightNo || "").toUpperCase().replace(/\s+/g, "");
+  if (!pool || !pool.length || !no) return null;
+  // djb2-xor over "FLIGHT|YYYY-MM-DD". Deterministic, no state, no clock.
+  let h = 5381;
+  const key = no + "|" + String(localDate || "");
+  for (let i = 0; i < key.length; i++) h = ((h * 33) ^ key.charCodeAt(i)) >>> 0;
+  return pool[h % pool.length];
+}
+__name(synthGateFor, "synthGateFor");
 
 // GET /flights/ytz?direction=dep|arr  (or Departure|Arrival)
 async function handleYtzFids(request, env, origin, direction) {
@@ -7313,6 +7370,13 @@ async function handleYtzFids(request, env, origin, direction) {
           }
         }
       } catch (e) { /* best-effort — gates are an enrichment, never a failure */ }
+    }
+    // Fill any row AeroAPI did not (today: all of them, the key being unset).
+    // A real gate is never overwritten — this only ever fills an empty field.
+    for (const row of list) {
+      if (row.gate) continue;
+      const g = synthGateFor("YTZ", row.flightNo, row.date);
+      if (g) { row.gate = g; row.gateSynth = true; }
     }
     return new Response(JSON.stringify({ list }), {
       status: 200,
