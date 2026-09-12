@@ -5958,15 +5958,21 @@ const AIRLINE_ACCENT = {
   // the rails. That needs replacement artwork, not a table entry. At 21
   // flights across ZRH, SEA and SFO it is low priority, and the accent moving
   // to the published value is an improvement either way.
-  // TAP. Was '#096' — '#009966', a teal-green that is deltaE 34 from the
-  // airline's actual colour and the only three-digit shorthand in this table,
-  // which is what drew attention to it. Two independent sources agree it was
-  // wrong: TAP's own identity guidelines put the wordmark green at about
-  // '#6CB644', and the repo's TAP.svg tile has always painted its ground
-  // '#72BF44' — deltaE 4.91 apart, i.e. the same colour twice. The tile value
-  // is taken rather than the sampled one because it is an exact hex in a
-  // vector file instead of a pixel read off a render, and because matching the
-  // ground means the orb and the rails draw the same green.
+  // TAP. '#46A41A' is the mid green of TAP Air Portugal's four-colour
+  // palette (lime '#BFD730', mid green '#46A41A', red '#ED1C24', dark red
+  // '#BA141A'). The repo's TAP.svg already carried that red EXACTLY; only its
+  // green was off, and it has been recoloured here to match.
+  //
+  // This entry has now been wrong twice, in instructive ways. It started as
+  // '#096' — '#009966', a teal deltaE 34 from anything TAP uses. That was
+  // corrected to '#72BF44' on the strength of two agreeing sources: the tile's
+  // own ground, and a sample taken off the cover of TAP's M&E identity guide.
+  // They agreed with each other to within deltaE 5 — and were BOTH about 12.6
+  // from the real brand green.
+  //
+  // Two sources agreeing is not proof when both may descend from the same bad
+  // original, and a render sample carries roughly this much error anyway.
+  // Corroboration raises confidence; only a stated value settles it.
   // Frontier. '#0F6744' is Frontier Green — the named brand colour, used as
   // the type colour on light grounds and as the BACKGROUND on dark ones, with
   // Cool Gray '#9A9B9C' for supporting copy.
@@ -5997,7 +6003,7 @@ const AIRLINE_ACCENT = {
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
-  'AY':'#0B1560','IB':'#D71920','TP':'#72BF44','EI':'#009A44',
+  'AY':'#0B1560','IB':'#D71920','TP':'#46A41A','EI':'#009A44',
   // v23360 - Ryanair had NO accent, so getAirlineAccent fell to its '#0033A1'
   // default: a generic blue that belongs to no airline, sitting on a navy
   // board, which is why its whole gate rail disappeared. This is Ryanair's own
