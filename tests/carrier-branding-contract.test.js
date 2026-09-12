@@ -102,7 +102,13 @@ const tilePath = (icao) => path.join(root, 'logos', 'airline-tiles', icao + '.sv
 // Live lettermark placeholders: a coloured square with the carrier's code set
 // in Arial. Real artwork exists on disk for several of these. Shrink this list,
 // never grow it.
-const KNOWN_LETTERMARK_TILES = ['AZ', 'BQ', 'D8', 'DY', 'JJ', 'OK', 'QZ', 'SG', 'TO', 'X3', 'YP', 'YV'];
+//
+// AZ and OK left it together, for the same reason in opposite directions: both
+// named a lettermark for an airline that no longer flies. AZ now draws
+// ITY.svg, because the code belongs to ITA Airways and that artwork was
+// already on disk unreferenced; OK has no tile at all, because Czech Airlines
+// is filtered out of the feeds entirely.
+const KNOWN_LETTERMARK_TILES = ['BQ', 'D8', 'DY', 'JJ', 'QZ', 'SG', 'TO', 'X3', 'YP', 'YV'];
 
 test('IATA_TO_TILE_ICAO maps every carrier to a file that exists', () => {
   const missing = Object.entries(TILE_MAP).filter(([, icao]) => !fs.existsSync(tilePath(icao)));
@@ -276,4 +282,46 @@ test('the new art is in the asset manifest', () => {
   for (const f of ['AirNorth-Emblem.svg', 'airnorth-wordmark-dark.svg', 'airnorth-wordmark-light.svg']) {
     assert.ok(manifest.includes(f), `${f} missing from asset-manifest.json — run npm run assets:build`);
   }
+});
+
+// ── Carriers that stopped flying ────────────────────────────────────────────
+// A dead airline leaves two traces: rows in a feed that has not caught up, and
+// entries in these tables pointing at artwork nobody will ever see correctly.
+// The repo already has a shape for the first — FILTER_OUT, with the carrier's
+// last day in the comment. These tests hold both halves in place.
+
+test('a carrier that no longer flies is filtered out under both its codes', () => {
+  // FILTER_OUT is matched against whichever code the feed happens to use, so
+  // listing only the IATA form leaves the ICAO rows coming through.
+  const m = /const FILTER_OUT = new Set\(\[([\s\S]*?)\]\)/.exec(core);
+  assert.ok(m, 'could not find FILTER_OUT');
+  const codes = new Set([...m[1].matchAll(/'([A-Z0-9]{2,3})'/g)].map((x) => x[1]));
+  for (const [iata, icao, who] of [['NK', 'NKS', 'Spirit'], ['OK', 'CSA', 'Czech Airlines']]) {
+    assert.ok(codes.has(iata), `${who} (${iata}) is not filtered out`);
+    assert.ok(codes.has(icao), `${who}'s ICAO form ${icao} is not filtered out — feeds that use it still get through`);
+  }
+});
+
+test('a filtered-out carrier keeps no tile pointer', () => {
+  // Belt and braces: a tile mapping for a carrier that can never reach the
+  // board is dead weight, and the file it names is a candidate for deletion
+  // that nothing will flag while the pointer survives.
+  const m = /const FILTER_OUT = new Set\(\[([\s\S]*?)\]\)/.exec(core);
+  const filtered = new Set([...m[1].matchAll(/'([A-Z0-9]{2,3})'/g)].map((x) => x[1]));
+  const stale = Object.keys(TILE_MAP).filter((iata) => filtered.has(iata));
+  assert.deepEqual(stale, [], `these carriers are filtered out but still map to a tile: ${stale.join(' ')}`);
+});
+
+test('AZ draws ITA Airways, the airline that actually holds the code', () => {
+  // Alitalia stopped flying in October 2021 and ITA Airways took AZ. Both name
+  // tables and the ICAO normaliser were already updated; the tile pointer was
+  // the last thing still naming the old carrier, and it named a lettermark.
+  assert.equal(TILE_MAP['AZ'], 'ITY');
+  const svg = fs.readFileSync(tilePath('ITY'), 'utf8');
+  assert.doesNotMatch(svg, /<text\b/, 'the ITA tile is drawn art, not a code set in Arial');
+  const vb = viewBox(svg);
+  assert.ok(vb && Math.abs(vb[2] - vb[3]) < 0.01, `ITA tile must be square, got ${vb && vb[2]}x${vb && vb[3]}`);
+  // And the name surfaces agree, so the orb and the row cannot disagree.
+  assert.equal(pairs('AIRLINE_NAME')['AZ'], 'ITA');
+  assert.ok(!fs.existsSync(tilePath('AZA')), 'the Alitalia lettermark is back on disk');
 });

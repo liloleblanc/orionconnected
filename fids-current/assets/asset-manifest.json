@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2626,
+    "total": 2624,
     "by_category": {
       "ad": 10,
-      "airline": 1422,
+      "airline": 1420,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -9576,17 +9576,6 @@
       "ext": "svg"
     },
     {
-      "path": "/logos/airline-tiles/AZA.svg",
-      "file": "AZA.svg",
-      "category": "airline",
-      "subcategory": "tile",
-      "group": "Airline tile logos (row icons)",
-      "name": "AZA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
       "path": "/logos/airline-tiles/AZU.svg",
       "file": "AZU.svg",
       "category": "airline",
@@ -9991,17 +9980,6 @@
       "name": "Cathay Dragon",
       "iata": "KA",
       "country": "Hong Kong",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/airline-tiles/CSA.svg",
-      "file": "CSA.svg",
-      "category": "airline",
-      "subcategory": "tile",
-      "group": "Airline tile logos (row icons)",
-      "name": "CSA",
-      "iata": "",
-      "country": "",
       "ext": "svg"
     },
     {
