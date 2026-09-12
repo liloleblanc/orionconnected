@@ -5996,6 +5996,16 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Emirates. Was '#C8102E' — the generic red it shared with Japan Airlines
+  // and Turkish, three unrelated carriers on one value. UAE.svg paints
+  // '#d71a21' and its icao-icons twin '#D71921', deltaE 0.19 apart.
+  //
+  // Those two are NOT independent: icao-icons is a byte-copy of airline-tiles
+  // for 273 of its 283 files, so this is one source seen twice, which is the
+  // TAP failure mode. It is taken anyway because the value it replaces is a
+  // demonstrable placeholder rather than a rival reading — but it is derived,
+  // not stated, and a published Emirates value should overrule it.
+  'EK':'#D71A21',
   // SWISS. Was '#E2001A'; the airline's red is '#E60005', which SWR.svg has
   // always painted exactly. See the emblem note below — the tile's COLOUR was
   // never the problem, its geometry was.
@@ -6168,7 +6178,7 @@ const AIRLINE_ACCENT = {
   // an official kit turns up, same arc Avelo followed.
   'WL':'#004280',
   'AF':'#051039','BA':'#2E5DA4','LH':'#0A1D3D','KL':'#00A2DF',
-  'QR':'#5C0632','EK':'#C8102E','SQ':'#FCB130','CX':'#006564',
+  'QR':'#5C0632','EK':'#D71A21','SQ':'#FCB130','CX':'#006564',
   'JL':'#CC0000','NH':'#0B318F','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E60005','OS':'#E20A17','SK':'#000066',
   'AY':'#0B1560','IB':'#D71920','TP':'#46A41A','EI':'#009A44',
