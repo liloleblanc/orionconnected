@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2615,
+    "total": 2618,
     "by_category": {
       "ad": 10,
-      "airline": 1411,
+      "airline": 1414,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -5726,12 +5726,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian-regional/Canadian-North-Wordmark-FullRed.svg",
+      "file": "Canadian-North-Wordmark-FullRed.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "Canadian North Wordmark FullRed",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian-regional/canadian-north.svg",
       "file": "canadian-north.svg",
       "category": "airline",
       "subcategory": "canadian-regional",
       "group": "Airlines — Canadian regional",
       "name": "canadian north",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/CanadianNorth-Emblem.svg",
+      "file": "CanadianNorth-Emblem.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "CanadianNorth Emblem",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -9705,6 +9727,17 @@
       "name": "China Airlines",
       "iata": "CI",
       "country": "Taiwan",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airline-tiles/CanadianNorth-Emblem.svg",
+      "file": "CanadianNorth-Emblem.svg",
+      "category": "airline",
+      "subcategory": "tile",
+      "group": "Airline tile logos (row icons)",
+      "name": "CanadianNorth Emblem",
+      "iata": "",
+      "country": "",
       "ext": "svg"
     },
     {
