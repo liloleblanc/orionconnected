@@ -5962,6 +5962,14 @@ function wwayUrl(code, w, h) {
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   '8P':'#0C3473',   // Pacific Coastal — its midnight blue, not the generic navy
+  // v23738 — Canadian North. Roughly ten departures a day at Ottawa alone,
+  // and with no entry here getAirlineAccent() fell all the way through to
+  // '#0033A1' — a blue belonging to no airline and one digit off United's
+  // '#0033A0'. Its orbs, rails, gate tab and countdown were therefore drawn
+  // in almost exactly United's colour on a carrier whose entire identity is
+  // red. The value is not chosen: it is the fill its own artwork already
+  // uses, in both the emblem and the wordmark on disk.
+  '5T':'#CD163F',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
@@ -8057,6 +8065,22 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right as specified; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
+        // v23738 — Canadian North had no emblem at all, so its orb came up
+        // empty. The art is a FINISHED SQUARE TILE: a full-bleed #CD163F
+        // ground with the mark knocked out of it in white.
+        //
+        // THE FOLDER IN THE PATH IS THE BEHAVIOUR, not a filing choice. The
+        // isTile test above is `/\/logos\/airline-tiles\//` — a tile gets a
+        // transparent badge, object-fit:cover and NO whitening, so the red
+        // ground simply becomes the orb. The identical file also sits in
+        // logos/airlines/canadian-regional/ for the wordmark surfaces, and
+        // naming THAT copy here would fail the test, hand the art an accent
+        // disc and a `brightness(0) invert(1)`, and flatten the whole square
+        // to a solid white blob — whitening an emblem, which is the one
+        // treatment that is never allowed. Measured for the circular crop:
+        // the mark's furthest point is 306 units from centre against the
+        // inscribed circle's 400, so nothing clips.
+        '5T':  '/logos/airline-tiles/CanadianNorth-Emblem.svg',   // Canadian North
         // US majors — symbol-only emblems (rendered white on the accent badge)
         // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
         // NOTHING else. Every surface falling through to this map drew a white
@@ -23518,7 +23542,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23736';
+var FIDS_BUILD_TAG = 'v23738';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
