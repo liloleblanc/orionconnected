@@ -5983,6 +5983,19 @@ const AIRLINE_ACCENT = {
   // the wordmark uses. A very dark accent is normal on this board rather than
   // a new risk — SAS '#000066' and Lufthansa '#05164D' are both darker.
   'NZ':'#231F20',
+  // v23742 — two carriers that were falling through to getAirlineAccent()'s
+  // last resort '#0033A1', a blue belonging to no airline.
+  //
+  // Air North: '#F47B21' is the ground its own emblem is painted on. Its mark
+  // and wordmark are '#1268B2', so either could have been the accent; the
+  // orange is the distinctive half. Every other carrier on the Canadian
+  // boards is red, teal or navy, so a blue rail would have read as one more
+  // of those while the orange is unmistakably this airline.
+  //
+  // Icelandair: '#001B71' with no judgement needed at all — the tile ground,
+  // the dark wordmark and the accent are already the same single value.
+  '4N':'#F47B21',
+  'FI':'#001B71',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
@@ -8105,6 +8118,16 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // and appear to overhang, but those are bezier CONTROL points, which
         // sit outside the curve they steer.
         'NZ':  '/logos/airline-tiles/NZ-Emblem.svg',   // Air New Zealand
+        // v23742 — Air North. A finished square tile: full-bleed '#F47B21'
+        // with the mark knocked out in '#1268B2'. Named at the airline-tiles
+        // path because that folder is what the isTile test keys on; the
+        // identical copy under airlines/canadian-regional/ would earn an
+        // accent disc and a brightness(0) invert(1) instead, flattening the
+        // square to a white blob. Measured on a canvas: all four corners
+        // opaque, and 5 of 27,522 ink pixels fall outside the circle — one
+        // spoke tip, invisible at orb size and well inside the tolerance the
+        // other emblems were accepted under.
+        '4N':  '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North
         // US majors — symbol-only emblems (rendered white on the accent badge)
         // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
         // NOTHING else. Every surface falling through to this map drew a white
@@ -21799,6 +21822,7 @@ const IATA_TO_WORDMARK = {
   // One path, one fill: the reversal is exact, not a filter approximation.
   'WK': 'edelweiss',
   'NZ': 'NZ',              // v23740 — resolver appends -wordmark-dark/-light.svg
+  '4N': 'airnorth',        // v23742 — resolver appends -wordmark-dark/-light.svg
   // v23363 - the easyJet family. One orange logotype, no symbol, so every
   // code in the family points at it: the mainline, the three subsidiaries,
   // and EZY, the ICAO form the Edinburgh feed puts in the flight NUMBER.
@@ -22020,6 +22044,7 @@ const LOGO_SUBFOLDER = {
   'etihad-wordmark-light.svg':'airlines/asian-other', 'etihad-wordmark-dark.svg':'airlines/asian-other',
   'emirates-wordmark-light.svg':'airlines/asian-other', 'emirates-wordmark-dark.svg':'airlines/asian-other',
   'NZ-wordmark-light.svg':'airlines/asian-other', 'NZ-wordmark-dark.svg':'airlines/asian-other',
+  'airnorth-wordmark-light.svg':'airlines/canadian-regional', 'airnorth-wordmark-dark.svg':'airlines/canadian-regional',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
   'condor-wordmark-light.svg':'airlines/european', 'condor-wordmark-dark.svg':'airlines/european',
   'lufthansa-wordmark-light.svg':'airlines/european', 'lufthansa-wordmark-dark.svg':'airlines/european',
@@ -23568,7 +23593,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23740';
+var FIDS_BUILD_TAG = 'v23742';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
