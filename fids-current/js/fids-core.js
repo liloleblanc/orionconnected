@@ -5909,6 +5909,19 @@ function wwayUrl(code, w, h) {
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   '8P':'#0C3473',   // Pacific Coastal — its midnight blue, not the generic navy
+  // v23742 — two carriers that were falling through to getAirlineAccent()'s
+  // last resort '#0033A1', a blue belonging to no airline.
+  //
+  // Air North: '#F47B21' is the ground its own emblem is painted on. Its mark
+  // and wordmark are '#1268B2', so either could have been the accent; the
+  // orange is the distinctive half. Every other carrier on the Canadian
+  // boards is red, teal or navy, so a blue rail would have read as one more
+  // of those while the orange is unmistakably this airline.
+  //
+  // Icelandair: '#001B71' with no judgement needed at all — the tile ground,
+  // the dark wordmark and the accent are already the same single value.
+  '4N':'#F47B21',
+  'FI':'#001B71',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
@@ -8004,6 +8017,16 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right as specified; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
+        // v23742 — Air North. A finished square tile: full-bleed '#F47B21'
+        // with the mark knocked out in '#1268B2'. Named at the airline-tiles
+        // path because that folder is what the isTile test keys on; the
+        // identical copy under airlines/canadian-regional/ would earn an
+        // accent disc and a brightness(0) invert(1) instead, flattening the
+        // square to a white blob. Measured on a canvas: all four corners
+        // opaque, and 5 of 27,522 ink pixels fall outside the circle — one
+        // spoke tip, invisible at orb size and well inside the tolerance the
+        // other emblems were accepted under.
+        '4N':  '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North
         // US majors — symbol-only emblems (rendered white on the accent badge)
         // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
         // NOTHING else. Every surface falling through to this map drew a white
@@ -21686,6 +21709,7 @@ const IATA_TO_WORDMARK = {
   // FIDS table uses on dark rows) is the same single path reversed to white.
   // One path, one fill: the reversal is exact, not a filter approximation.
   'WK': 'edelweiss',
+  '4N': 'airnorth',        // v23742 — resolver appends -wordmark-dark/-light.svg
   // v23363 - the easyJet family. One orange logotype, no symbol, so every
   // code in the family points at it: the mainline, the three subsidiaries,
   // and EZY, the ICAO form the Edinburgh feed puts in the flight NUMBER.
@@ -21906,6 +21930,7 @@ const LOGO_SUBFOLDER = {
   'elal-wordmark-light.svg':'airlines/european', 'elal-wordmark-dark.svg':'airlines/european',
   'etihad-wordmark-light.svg':'airlines/asian-other', 'etihad-wordmark-dark.svg':'airlines/asian-other',
   'emirates-wordmark-light.svg':'airlines/asian-other', 'emirates-wordmark-dark.svg':'airlines/asian-other',
+  'airnorth-wordmark-light.svg':'airlines/canadian-regional', 'airnorth-wordmark-dark.svg':'airlines/canadian-regional',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
   'condor-wordmark-light.svg':'airlines/european', 'condor-wordmark-dark.svg':'airlines/european',
   'lufthansa-wordmark-light.svg':'airlines/european', 'lufthansa-wordmark-dark.svg':'airlines/european',
@@ -23454,7 +23479,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23728';
+var FIDS_BUILD_TAG = 'v23742';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2615,
+    "total": 2619,
     "by_category": {
       "ad": 10,
-      "airline": 1411,
+      "airline": 1415,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -5605,6 +5605,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian-regional/AirNorth-Emblem.svg",
+      "file": "AirNorth-Emblem.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "AirNorth Emblem",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian-regional/airnorth-monochrome-black.svg",
       "file": "airnorth-monochrome-black.svg",
       "category": "airline",
@@ -5622,6 +5633,28 @@
       "subcategory": "canadian-regional",
       "group": "Airlines — Canadian regional",
       "name": "airnorth monochrome white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/airnorth-wordmark-dark.svg",
+      "file": "airnorth-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "airnorth wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/airnorth-wordmark-light.svg",
+      "file": "airnorth-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "airnorth wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -9200,6 +9233,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/airline-tiles/AirNorth-Emblem.svg",
+      "file": "AirNorth-Emblem.svg",
+      "category": "airline",
+      "subcategory": "tile",
+      "group": "Airline tile logos (row icons)",
+      "name": "AirNorth Emblem",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/airline-tiles/AKJ.svg",
