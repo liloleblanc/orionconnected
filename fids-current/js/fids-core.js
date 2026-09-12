@@ -21750,9 +21750,16 @@ const IATA_TO_TILE_ICAO = {
   'MX':'MXY',   // Breeze — MXY.svg tile existed but the map never learned it
   // Europe
   'LH':'DLH',  'BA':'BAW',  'AF':'AFR',  'KL':'KLM',  'VS':'VIR',
-  'AZ':'AZA',  'SN':'BEL',  'LX':'SWR',  'OS':'AUA',  'SK':'SAS',
+  // AZ is ITA Airways, not Alitalia: Alitalia stopped flying in October 2021
+  // and ITA took over the code. Both name tables already said ITA and the ICAO
+  // normaliser already folded ITY into AZ — only this pointer still named
+  // AZA.svg, an Arial 'AZ' on Alitalia navy, while the real ITA tile sat on
+  // disk unreferenced. AZA.svg is gone; a defunct carrier's lettermark is not
+  // a fallback worth keeping.
+  'AZ':'ITY',  'SN':'BEL',  'LX':'SWR',  'OS':'AUA',  'SK':'SAS',
   'AY':'FIN',  'IB':'IBE',  'TP':'TAP',  'EI':'EIN',  'LO':'LOT',
-  'OK':'CSA',  'RO':'ROT',  'BT':'BTI',  'FI':'ICE',  'DY':'NAX',
+  // OK (Czech Airlines) — ceased operations, see FILTER_OUT
+  'RO':'ROT',  'BT':'BTI',  'FI':'ICE',  'DY':'NAX',
   'U2':'EZY',  'FR':'RYR',  'W6':'WZZ',  'VY':'VLG',  'WK':'EDW',
   // v23333 — sister codes that share a parent's tile (seen on the Dublin,
   // Edinburgh and Keflavík boards with no tile at all): Ryanair UK, easyJet
@@ -25889,6 +25896,7 @@ const FILTER_OUT = new Set([
   'CK','CKK',     // China Cargo Airlines
   // ── Defunct passenger carriers (data feed still serves stale flights) ──
   'NK','NKS',     // Spirit Airlines — ceased operations May 2 2026 after second bankruptcy
+  'OK','CSA',     // Czech Airlines (ČSA) — wound down into Smartwings, last flight October 2024
   // ── Private jet / fractional ownership ──
   'ASP','KO','KOW','LXJ','EJA','EJM','ENJ','XOJ','JTL','NJA','EJ','LJ','XO',
   'PKC','LEG','RVJ','TVP','DCM','CFS','RSP','SWQ','TWY',
