@@ -5996,6 +5996,19 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // ANA. Was '#003370', deltaE 22.04 from the airline's blue. The palette is
+  // '#0B318F' (PMS 661 C) and light blue '#00A3E6' (PMS 299 C).
+  //
+  // The dark blue is kept as the accent rather than the far more legible light
+  // one — 1.61:1 against 6.41:1 on the dark board — because it is ANA's
+  // primary and because the repo had already chosen that hue family; only the
+  // value was wrong. Dim, but no worse than LOT '#252668' or SAS '#000066'.
+  //
+  // ANA.svg was off on both fills (6.82 and 7.70) and has been brought to the
+  // palette. Its light blue was '#00B3F0' — byte-identical to Air Transat's
+  // brand blue, so another value borrowed from a neighbour rather than drawn
+  // from ANA's own, the same tell as the '#C8102E' shared by EK, JL and TK.
+  'NH':'#0B318F',
   // Brussels. No entry, so it drew on the generic navy. '#E5002B' is PMS
   // 185 C and BEL.svg already paints exactly that hex — tile right, table
   // empty, the same pattern as LOT. Its other brand colour '#051446' manages
@@ -6124,7 +6137,7 @@ const AIRLINE_ACCENT = {
   'WL':'#004280',
   'AF':'#051039','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#FCB130','CX':'#006564',
-  'JL':'#CC0000','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
+  'JL':'#CC0000','NH':'#0B318F','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
   'AY':'#0B1560','IB':'#D71920','TP':'#46A41A','EI':'#009A44',
   // v23360 - Ryanair had NO accent, so getAirlineAccent fell to its '#0033A1'
