@@ -5922,6 +5922,18 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Condor. Was '#FF7E27', deltaE 10.9 from anything in the airline's own
+  // guidelines — further off than the Canadian North error. Condor's identity
+  // is a gradient rather than a flat colour: dark tone '#F08200' to bright
+  // '#FBB900', with TC SUN (Pantone 130 C) '#F8AC00' as the corporate gold.
+  // The dark tone is taken because a rail is flat and it is the more saturated
+  // anchor; the bright tone is deltaE 38 away and reads yellow, not orange.
+  //
+  // NOT FIXED HERE: the tile CFG.svg paints its ground '#594D46', a brown-grey
+  // that is in no part of Condor's palette, so the orb still does not match
+  // the rails. That needs replacement artwork, not a table entry. At 21
+  // flights across ZRH, SEA and SFO it is low priority, and the accent moving
+  // to the published value is an improvement either way.
   // TAP. Was '#096' — '#009966', a teal-green that is deltaE 34 from the
   // airline's actual colour and the only three-digit shorthand in this table,
   // which is what drew attention to it. Two independent sources agree it was
@@ -5975,7 +5987,7 @@ const AIRLINE_ACCENT = {
   'LY':'#1b358f',
   'EY':'#C89801',   // Etihad gold
   'I2':'#D71920',   // Iberia Express takes Iberia's red
-  'DE':'#FF7E27',   // Condor orange, taken from its own emblem
+  'DE':'#F08200',   // Condor orange, taken from its own emblem
   'CS':'#FF0000',   // Chair red, from its own wordmark
   '2L':'#CF0018',   // Helvetic red, from its own emblem
   'EW':'#7C2045',   // Eurowings burgundy, from its own wordmark
