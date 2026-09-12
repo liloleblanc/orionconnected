@@ -5922,6 +5922,45 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // ITA Airways. Held back when the tile was wired, because the only value
+  // available then was the tile's own ground — and a tile agreeing with itself
+  // is the TAP failure mode, not evidence.
+  //
+  // It is no longer derived. ITA publishes a design system, and this value is
+  // a declared token in it rather than anything sampled off a picture:
+  //   ita-airways.com/digitalhangar/design-system/releases/v1.36.0/standalone/css/ita.css
+  //     --maui-color-brand-ita-deepblue: #0171cf
+  //     --maui-color-brand-primary:   var(--maui-color-brand-ita-deepblue)
+  //     --maui-color-interaction-buttonprimary: var(--maui-color-brand-ita-deepblue)
+  // The airline names both the value AND the accent role, which is the exact
+  // question this table answers. ITY.svg was already painting it.
+  //
+  // Contrast, since this lands on a dark board: 3.8:1 on near-black. Fine for
+  // a rail or an orb ring, under the 4.5:1 bar for small text.
+  'AZ':'#0171CF',
+  // Transavia, both codes. The board had THREE greens for one airline: the HV
+  // tile on '#00D66C', the TO tile on '#1A9E5F' (deltaE 30.6 from it), and the
+  // owner's new artwork on '#08CE78'.
+  //
+  // Transavia refreshed its identity in October 2025 for its 60th anniversary,
+  // and the green moved. Their live stylesheet settles it — the class is named
+  // for the job:
+  //     .List_fill-brand-green{fill:#05CE78}
+  //     .List_fill-product-green{fill:#00AB61}
+  // '#00D66C' appears nowhere in it, so the tile the repo had been drawing was
+  // eleven months stale. '#1A9E5F' matches no Transavia green in any era and
+  // was an invented placeholder — its 3.4:1 contrast suggests someone darkened
+  // a green for legibility, which is exactly the mistake the product token
+  // exists to prevent.
+  //
+  // The owner's artwork is deltaE 0.11 from the published token — the same
+  // colour, off by eyedropper rounding — so the art is kept and the value
+  // snapped to what Transavia publishes.
+  //
+  // NOT '#00AB61'. That is the accessible UI green for text and surfaces, and
+  // it is the one that dominates their pages, which makes it the easy wrong
+  // pick off a screenshot. It is not the mark.
+  'HV':'#05CE78', 'TO':'#05CE78',
   // Emirates. Was '#C8102E' — the generic red it shared with Japan Airlines
   // and Turkish, three unrelated carriers on one value. UAE.svg paints
   // '#d71a21' and its icao-icons twin '#D71921', deltaE 0.19 apart.
@@ -21767,7 +21806,12 @@ const IATA_TO_TILE_ICAO = {
   // Jet2 and Loganair (their own tiles were on disk, never mapped).
   'RK':'RYR',  'EC':'EZY',  'EJU':'EZY', 'EZS':'EZY', 'D8':'NAX',  'I2':'IBE',  'W4':'WZZ',  'LS':'EXS',  'LM':'LOG',
   'DE':'CFG',  'X3':'TUI',  'A3':'AEE',  'OU':'CTN',  'JU':'ASL',
-  'PC':'PGT',  'TK':'THY',  'TO':'TVF',  'HV':'TRA',  'EW':'EWG',
+  // TO and HV are one brand — Transavia France and Transavia Netherlands — and
+  // the board was drawing them as two. HV had the real 't' roundel on #00D66C;
+  // TO had an Arial 'TO' on #1A9E5F, a green deltaE 30.6 away, which is far
+  // enough that nobody would take the two orbs for the same airline. They now
+  // share the one tile, so the brand can only ever be drawn one way.
+  'PC':'PGT',  'TK':'THY',  'TO':'TRA',  'HV':'TRA',  'EW':'EWG',
   // Middle East / Africa
   'EK':'UAE',  'QR':'QTR',  'EY':'ETD',  'GF':'GFA',  'WY':'OMA',
   'SV':'SVA',  'ME':'MEA',  'SA':'SAA',  'ET':'ETH',  'MS':'MSR',  'RJ':'RJA',
@@ -21822,7 +21866,6 @@ const IATA_WORDMARK_ONE = {
   'FR': '/logos/wordmarks/FR.svg',
   'FY': '/logos/wordmarks/FY.svg',
   'GA': '/logos/wordmarks/GA.svg',
-  'HV': '/logos/wordmarks/HV.svg',
   'IB': '/logos/wordmarks/IB.svg',
   'J2': '/logos/wordmarks/J2.svg',
   'JL': '/logos/wordmarks/JL.svg',
@@ -21887,6 +21930,24 @@ const IATA_TO_WORDMARK = {
   // One path, one fill: the reversal is exact, not a filter approximation.
   'WK': 'edelweiss',
   '4N': 'airnorth',        // v23742 — resolver appends -wordmark-dark/-light.svg
+  // ITA Airways. The supplied art is the official positive lockup — genuine
+  // ITA artwork, an Illustrator export whose own layer id is 'Livello_1' —
+  // but it is drawn in the 2021 launch green, and green is gone from ITA's
+  // current identity: their design system has no '#006e44' anywhere in it,
+  // and its one green token is demoted to a success/on-time status colour.
+  // Their live logo is white on the deep blue.
+  //
+  // So the GEOMETRY is kept and only the green is re-cut, which is the same
+  // thing done for Edelweiss just above: -light reversed to white for the
+  // board's dark rows, -dark in the brand blue for light grounds. The red
+  // crossbar is left exactly as supplied — every candidate replacement for it
+  // is contested between sources, and it is a few pixels wide at banner size.
+  'AZ': 'ita-airways',
+  // Transavia, both codes. Replaces /logos/wordmarks/HV.svg, which was a wide
+  // logotype inside a 64x64 SQUARE viewBox — so the banner, sizing to the box
+  // rather than the ink, drew it at roughly a quarter of the height it should
+  // have had. The new art is 125.7x17.5, cropped to the letterforms.
+  'HV': 'transavia', 'TO': 'transavia',
   // v23363 - the easyJet family. One orange logotype, no symbol, so every
   // code in the family points at it: the mainline, the three subsidiaries,
   // and EZY, the ICAO form the Edinburgh feed puts in the flight NUMBER.
@@ -22109,6 +22170,8 @@ const LOGO_SUBFOLDER = {
   'emirates-wordmark-light.svg':'airlines/asian-other', 'emirates-wordmark-dark.svg':'airlines/asian-other',
   'airnorth-wordmark-light.svg':'airlines/canadian-regional', 'airnorth-wordmark-dark.svg':'airlines/canadian-regional',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
+  'ita-airways-wordmark-light.svg':'airlines/european', 'ita-airways-wordmark-dark.svg':'airlines/european',
+  'transavia-wordmark-light.svg':'airlines/european', 'transavia-wordmark-dark.svg':'airlines/european',
   'condor-wordmark-light.svg':'airlines/european', 'condor-wordmark-dark.svg':'airlines/european',
   'lufthansa-wordmark-light.svg':'airlines/european', 'lufthansa-wordmark-dark.svg':'airlines/european',
   'austrian-wordmark-light.svg':'airlines/european', 'austrian-wordmark-dark.svg':'airlines/european',
