@@ -5922,6 +5922,14 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Mokulele. Had no accent at all, so it drew on the generic '#0033A1'.
+  // Its 2015 brand guidelines give the wordmark red as CMYK 7/99/94/0 —
+  // '#ED030F' — with '#ED870F' for the plumeria's orange. The repo's
+  // mokulele-emblem.svg was painted '#ED1C24', deltaE 8.29 off, so the emblem
+  // was recoloured to the guideline value the same way Canadian North's was.
+  // One flight on the surveyed network, so this is housekeeping rather than a
+  // fix, but it costs a line and the value is now the published one.
+  '9X':'#ED030F',
   // Condor. Was '#FF7E27', deltaE 10.9 from anything in the airline's own
   // guidelines — further off than the Canadian North error. Condor's identity
   // is a gradient rather than a flat colour: dark tone '#F08200' to bright
