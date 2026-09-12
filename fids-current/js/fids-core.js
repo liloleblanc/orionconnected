@@ -5996,6 +5996,23 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // Brussels. No entry, so it drew on the generic navy. '#E5002B' is PMS
+  // 185 C and BEL.svg already paints exactly that hex — tile right, table
+  // empty, the same pattern as LOT. Its other brand colour '#051446' manages
+  // 1.04:1 on the dark board, so the red is the only usable one anyway.
+  'SN':'#E5002B',
+  // Japan Airlines. Was '#C8102E' — and that value is SHARED with Emirates
+  // and Turkish, three unrelated airlines wearing one red, which is the
+  // signature of a generic placeholder rather than anyone's brand colour.
+  // JAL's is '#CC0000', PMS 2347 C, deltaE 21.18 from the placeholder.
+  //
+  // JAL.svg paints '#E50012', itself deltaE 8.27 from the stated value, so the
+  // tile does not corroborate either — this rests on the stated value alone,
+  // which after the TAP lesson is the stronger evidence anyway.
+  //
+  // EK and TK still carry '#C8102E'. Neither is checked here; both are now
+  // known suspects.
+  'JL':'#CC0000',
   // Avelo. '#502E90' is PMS 268 C, with '#1CBED1' (319 C) and '#FFCE04'
   // (116 C) alongside it. The accent was '#492C92', deltaE 3.12 off — small,
   // but the right value was already written down: the COLOR_WORDMARKS comment
@@ -6107,7 +6124,7 @@ const AIRLINE_ACCENT = {
   'WL':'#004280',
   'AF':'#051039','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
   'QR':'#5C0632','EK':'#C8102E','SQ':'#FCB130','CX':'#006564',
-  'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
+  'JL':'#CC0000','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
   'AY':'#0B1560','IB':'#D71920','TP':'#46A41A','EI':'#009A44',
   // v23360 - Ryanair had NO accent, so getAirlineAccent fell to its '#0033A1'
