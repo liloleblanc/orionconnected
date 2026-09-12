@@ -5967,24 +5967,21 @@ const AIRLINE_ACCENT = {
   // is taken rather than the sampled one because it is an exact hex in a
   // vector file instead of a pixel read off a render, and because matching the
   // ground means the orb and the rails draw the same green.
-  // Frontier. Three dark greens exist for this airline and none of them is a
-  // choice: the brand palette's '#016543', the repo's '#026845' across four
-  // files, and the tile's '#0F6744' are a CIE76 deltaE of 1.33 to 1.45 apart —
-  // roughly the threshold a trained eye can just detect on adjacent patches,
-  // and they never appear adjacent. The palette value is used here because it
-  // is the authoritative one rather than a re-trace of it.
+  // Frontier. '#0F6744' is Frontier Green — the named brand colour, used as
+  // the type colour on light grounds and as the BACKGROUND on dark ones, with
+  // Cool Gray '#9A9B9C' for supporting copy.
   //
-  // The palette also carries '#75C542', and that IS a different colour. It was
-  // considered for the accent and rejected: measured against the four board
-  // grounds, the bright green clears 3:1 easily on the three dark themes
-  // (7.9-8.7) but collapses to 1.39 on mist, while the dark green holds 4.65
-  // on mist and sits at 2.4-2.7 on the dark themes — dim, but legible, and no
-  // worse than SAS '#000066' or Lufthansa '#05164D' which already ship. Only
-  // the dark green is acceptable on BOTH, so the bright one stays a highlight
-  // rather than the accent. Note the automatic contrast walk
-  // (CODE_ACCENT_MIN_CONTRAST) rescues only the city CODES; rails, the gate
-  // tab and the countdown read --airline-accent raw.
-  'F9':'#016543',
+  // An earlier pass here shipped '#016543' and called this value "the lone
+  // outlier, a slightly off re-trace" because four files in the repo carry
+  // '#026845' against the tile's one. That reasoning was wrong: FFT.svg was
+  // right and the count was measuring how often a value had been copied, not
+  // whether it was correct. Frequency is not authority.
+  //
+  // It changes nothing visible either way — the three greens are a CIE76
+  // deltaE of 1.33 to 1.45 apart, about the threshold a trained eye can just
+  // detect on adjacent patches, and they never appear adjacent. The point of
+  // using this one is that it is the value with a name.
+  'F9':'#0F6744',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',

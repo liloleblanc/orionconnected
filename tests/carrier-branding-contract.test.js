@@ -187,12 +187,13 @@ test('Icelandair needed only the accent — its art was already on disk', () => 
   }
 });
 
-test('Frontier takes the green five of its six files agree on', () => {
-  // Not a judgement call: '#026845' is the ink in frontier-emblem.svg,
-  // frontier-wordmark-color.svg, frontier-wordmark-dark.svg and frontier.svg.
-  // The tile's '#0F6744' is the lone outlier, and the two are a CIE76 deltaE
-  // of 1.45 apart — indistinguishable in use.
-  assert.equal(ACCENTS['F9'], '#016543');
+test('Frontier takes Frontier Green, the value with a name', () => {
+  // '#0F6744' is Frontier Green, the named brand colour and the ink FFT.svg
+  // has always used. Four other files carry '#026845', but that counts how
+  // often a value was copied, not whether it is right. The two are deltaE 1.45
+  // apart and never appear adjacent, so the assertion below stays a proximity
+  // check: a redraw may drift imperceptibly, but not to a different green.
+  assert.equal(ACCENTS['F9'], '#0F6744');
   const dir = path.join(root, 'logos', 'airlines', 'us-major');
   // The accent is the palette's authoritative value. Assert it stays within
   // the cluster the artwork on disk actually uses, rather than pinning the
