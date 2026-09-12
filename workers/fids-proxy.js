@@ -3080,6 +3080,34 @@ async function dtwFr24Schedule(env) {
     const cap = Math.max(0, Number(env.FR24_DAILY_BUDGET || 240));
     let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
     if (used >= cap) return (cached && cached.map) || null;
+    // Respect a cool-off set by either path — a burst is the last thing a
+    // rate-limited plan needs.
+    const coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${day}`)) || 0;
+    if (Date.now() < coolUntil) return (cached && cached.map) || null;
+
+    // ── THIS ENDPOINT GETS ITS OWN CEILING ──────────────────────────────
+    // The two FR24 endpoints do not cost remotely the same. Measured from
+    // FR24's own usage meter:
+    //
+    //   live/flight-positions/full    2.7 credits per call
+    //   flight-summary/full          59   credits per call
+    //
+    // FR24 bills per returned ROW, so one sweep of 30 summary calls is ~1,770
+    // credits — more than 650 position lookups. The call budget cannot be
+    // blown (1,800/day is 55,800 in a 31-day month against a 60,000 ceiling),
+    // but the CREDIT pool is a different meter and this endpoint is what
+    // drains it.
+    //
+    // The 20-hour cache above already means one sweep a day in practice. This
+    // makes that a rule rather than a happy accident: a bug, a cache miss
+    // storm or a retry loop cannot turn a once-a-day sweep into the thing that
+    // empties the pool and leaves every board with no aircraft data for the
+    // rest of the billing period. The cheap lookups keep the generous budget;
+    // the expensive one is boxed.
+    const sweepKey = `fr24:sweep:${day}`;
+    const sweepCap = Math.max(0, Number(env.FR24_SUMMARY_DAILY_CALLS || 40));
+    const sweepUsed = Number(await env.FIDS_LIVE_FLIGHTS.get(sweepKey)) || 0;
+    if (sweepUsed >= sweepCap) return (cached && cached.map) || null;
 
     const endTs = Date.now() - 30 * 60000;          // wheels-up needs to have happened
     const iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
@@ -3097,8 +3125,29 @@ async function dtwFr24Schedule(env) {
           "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } });
       } catch (e) { break; }
       calls += 1;
-      // A hard no from the plan burns the rest of the day, same as the ADSB path.
-      if (r.status === 402 || r.status === 429 || r.status === 403) { used = cap; break; }
+      // A hard no from the plan stops THIS sweep. Only an empty credit pool
+      // (402) stops the day.
+      //
+      // This was the single worst thing in the FR24 path and it is worth being
+      // explicit about why. This sweep fires up to DTW_FR24_MAX_CALLS (30)
+      // requests back to back, which is exactly the shape that trips a rate
+      // limiter. It then wrote used = cap into the SHARED fr24:used:<day> key —
+      // the same key every aircraft-identity lookup checks, for every airport.
+      // So one burst of Detroit schedule refreshes hitting a 429 blinded the
+      // registration, aircraft type and heading on every gate board in the
+      // system until the next UTC midnight. That is the "half the time there
+      // is no airplane data": it works after the 00:00 UTC reset and dies
+      // whenever this sweep next trips.
+      //
+      // 402 still burns the day, because an empty pool really is empty. A 429
+      // or 403 now ends this sweep only, costs the calls actually made, and
+      // sets the same short cool-off the ADSB path uses so the next attempt is
+      // minutes away rather than hours.
+      if (r.status === 402) { used = cap; break; }
+      if (r.status === 429 || r.status === 403) {
+        try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
+        break;
+      }
       used += 1;
       if (!r.ok) break;
       const j = await r.json().catch(() => null);
@@ -3123,6 +3172,7 @@ async function dtwFr24Schedule(env) {
     }
 
     try { await env.FIDS_LIVE_FLIGHTS.put(bKey, String(used), { expirationTtl: 172800 }); } catch (e) {}
+    try { await env.FIDS_LIVE_FLIGHTS.put(sweepKey, String(sweepUsed + calls), { expirationTtl: 172800 }); } catch (e) {}
     if (Object.keys(map).length) {
       try { await env.FIDS_LIVE_FLIGHTS.put(DTW_FR24_CACHE_KEY, JSON.stringify({ at: Date.now(), map }), { expirationTtl: 172800 }); } catch (e) {}
       return map;
@@ -8305,14 +8355,44 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           const _bKey = `fr24:used:${_day}`;
           const _cap = Math.max(0, Number(env.FR24_DAILY_BUDGET || 240));
           const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
-          if (_used < _cap) {
+          // A recent 429/403 sets a short cool-off instead of burning the day.
+          const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
+          if (_used < _cap && Date.now() >= _coolUntil) {
             const _param = kind === "callsign" ? "callsigns" : "registrations";
             const _fr = await fetch(
               `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
               { headers: { "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } }
             );
-            const _spend = (_fr.status === 402 || _fr.status === 429 || _fr.status === 403) ? _cap : _used + 1;
+            // A TRANSIENT ERROR MUST NOT COST THE WHOLE DAY.
+            //
+            // This burned the full daily cap on 402 OR 429 OR 403, which is
+            // right for exactly one of the three. 402 means the credit pool is
+            // actually empty and there is nothing left to spend, so stopping
+            // for the day is correct. 429 is a RATE limit — it says "slower",
+            // not "stop" — and 403 on this endpoint is usually a momentary
+            // auth/edge refusal. Treating either as a dead pool takes the
+            // provider off the board until the next UTC midnight.
+            //
+            // That is what was happening here. With FR24 silent, every lookup
+            // falls through to the community ADS-B ring, which answers a
+            // Cloudflare Worker with 403/429 no matter what (verified: the same
+            // query returns HTTP 200 from a home IP and is refused from the
+            // Worker — they block datacenter egress, not the account). The ring
+            // carries reg, type and track, so losing FR24 loses all three: the
+            // aircraft panel goes blank and the map icon falls back to
+            // bearing-toward-airport, which is the "plane pointing sideways".
+            //
+            // Now: 402 still stops for the day. 429/403 costs a normal call and
+            // a short cool-off, so the next poll a few minutes later can try
+            // again instead of the board going dark until midnight. The cap
+            // itself is unchanged — this never spends more than FR24_DAILY_BUDGET.
+            const _hardStop = (_fr.status === 402);
+            const _spend = _hardStop ? _cap : _used + 1;
             try { await env.FIDS_LIVE_FLIGHTS.put(_bKey, String(_spend), { expirationTtl: 172800 }); } catch (e) {}
+            if (!_hardStop && (_fr.status === 429 || _fr.status === 403)) {
+              // Cool off for 5 minutes rather than for the day.
+              try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${_day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
+            }
             if (_fr.ok) {
               const _fj = await _fr.json().catch(() => null);
               const _rows = (_fj && Array.isArray(_fj.data)) ? _fj.data : [];

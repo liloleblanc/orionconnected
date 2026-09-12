@@ -157,12 +157,12 @@
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
   <link rel="stylesheet" href="css/shared.css?v=23166">
   <link rel="stylesheet" href="css/menu.css?v=23478">
-  <link rel="stylesheet" href="css/fids.css?v=23730">
-  <link rel="stylesheet" href="css/flight-display.css?v=23730">
+  <link rel="stylesheet" href="css/fids.css?v=23734">
+  <link rel="stylesheet" href="css/flight-display.css?v=23734">
   <link rel="stylesheet" href="css/baggage-display.css?v=23472">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23730">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23734">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (We: 'the old svreen shows up once in a while',
@@ -870,7 +870,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23730"></script>
+<script src="js/fids-core.js?v=23742"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -1036,15 +1036,49 @@ window.addEventListener("DOMContentLoaded", async function() {
           try { _cyc = params.get('gatecycle'); } catch (e) {}
           var _willCycle = (_cyc != null && _cyc !== '' && _cyc !== '0')
                         || (window.self !== window.top);
+          // ── v23736 — AND ONLY ON A GATE THAT HAS A FLIGHT.
+          //
+          // The option list is the entire feed window, and most of that window
+          // is already in the past: measured at Ottawa, 23 gates were listed
+          // and 11 had a departure still to come. Picking uniformly across all
+          // 23 opened the tour on a finished gate about half the time, and the
+          // screen then showed "Awaiting Next Flight" over a board holding
+          // eleven live departures. On the stream that reads as the airport
+          // being broken, and it was reported that way.
+          //
+          // _gateLiveGates() is the same test the gate view itself applies
+          // before deciding it has nothing to show, so a gate that passes it
+          // is a gate that will render a flight. This is the THIRD and last
+          // place a gate gets chosen; the other two (updateSubScreens' first
+          // pick and the cycler's hop) went through the same rule in v23736.
+          // This one runs 300 ms after them and overrode both, so fixing only
+          // those changed nothing on a real boot.
+          //
+          // With no live gates — the small hours, or a field with one flight a
+          // day — _live is empty and the old full-list behaviour stands, so a
+          // quiet airport still shows a gate and its honest empty state.
           if (_willCycle && sel.options.length > 1) {
             var _key = 'ocLastGate:' + String(ap || '').toUpperCase();
             var _last = null;
             try { _last = window.sessionStorage.getItem(_key); } catch (e) {}
-            var _idx = [];
+            var _live = [];
+            try {
+              if (typeof _gateLiveGates === 'function' && typeof data !== 'undefined' && data) {
+                _live = _gateLiveGates(data.dep) || [];
+              }
+            } catch (e) {}
+            var _pool = [];
             for (var _g = 0; _g < sel.options.length; _g++) {
-              if (String(sel.options[_g].value).toUpperCase() !== String(_last || '').toUpperCase()) _idx.push(_g);
+              if (!_live.length || _live.indexOf(String(sel.options[_g].value)) !== -1) _pool.push(_g);
             }
-            if (!_idx.length) for (var _h = 0; _h < sel.options.length; _h++) _idx.push(_h);
+            if (!_pool.length) for (var _h = 0; _h < sel.options.length; _h++) _pool.push(_h);
+            // Never the gate this tab showed last for this airport — but not
+            // at the cost of landing on a dead one, so the no-repeat rule is
+            // dropped rather than the live filter when only one gate is left.
+            var _idx = _pool.filter(function (_i) {
+              return String(sel.options[_i].value).toUpperCase() !== String(_last || '').toUpperCase();
+            });
+            if (!_idx.length) _idx = _pool;
             pickedIndex = _idx[Math.floor(Math.random() * _idx.length)];
             try { window.sessionStorage.setItem(_key, String(sel.options[pickedIndex].value)); } catch (e) {}
           }

@@ -2032,7 +2032,29 @@ function updateSubScreens() {
     subSel.appendChild(opt);
   });
   if (_pinned != null) { subSel.value = _pinned; subScreenVal = _pinned; return; }
-  if (locations.includes(oldVal)) { subSel.value = oldVal; subScreenVal = oldVal; }
+  // v23736 — A WALKING DISPLAY ONLY EVER SITS ON A GATE THAT HAS A FLIGHT.
+  //
+  // Two separate ways the stream ended up on a dead gate, both fixed here:
+  //
+  //  1. The random first pick (below) ran over `locations`, which is every
+  //     gate in the feed window — departed ones included. At Ottawa that was
+  //     23 gates for 11 live ones, so the rotator opened on a gate whose last
+  //     flight had gone roughly half the time.
+  //
+  //  2. This list is rebuilt on EVERY refresh, and a dead gate is still IN it,
+  //     so `locations.includes(oldVal)` kept restoring it. That also undid the
+  //     cycle's own correction: pickGate() hops to a live gate, the next
+  //     refresh reads the stale <select> value and drags the screen back.
+  //
+  // `_live` is empty on a genuinely quiet airport — the middle of the night,
+  // or a field with one flight a day — and then the old behaviour stands and
+  // the screen shows a gate with its honest empty state. This only narrows
+  // the choice when there is something better to choose. A pinned display
+  // returned above and never reaches any of it.
+  var _walk = useGate && _gateWalkActive();
+  var _live = _walk ? _gateLiveGates(flights) : [];
+  var _stale = _walk && _live.length && _live.indexOf(oldVal) === -1;
+  if (locations.includes(oldVal) && !_stale) { subSel.value = oldVal; subScreenVal = oldVal; }
   else {
     // A CYCLING display must not always open on the same gate. `locations` is
     // sorted, so locations[0] is the lowest gate number — which is why every
@@ -2041,9 +2063,10 @@ function updateSubScreens() {
     // The per-cycle pick is already random; only this
     // FIRST gate was ordered. A pinned or operator-driven screen keeps the
     // deterministic first entry — the dropdown must open on a predictable one.
+    var _pool = (_walk && _live.length) ? _live : locations;
     var _start = 0;
-    if (useGate && _gateWalkActive()) _start = Math.floor(Math.random() * locations.length);
-    subSel.value = locations[_start]; subScreenVal = locations[_start];
+    if (_walk) _start = Math.floor(Math.random() * _pool.length);
+    subSel.value = _pool[_start]; subScreenVal = _pool[_start];
   }
 }
 
@@ -2257,6 +2280,36 @@ function _gateWalkActive() {
     if (q.get('gate') || q.get('belt')) return false;   // pinned to one gate
     return window.self !== window.top;                  // inside the rotator
   } catch (e) { return false; }
+}
+
+// v23736 — THE GATES A WALKING DISPLAY MAY LAND ON.
+//
+// The feed window is several hours deep on BOTH sides of now, so the gate
+// list built from it is mostly history. Measured at Ottawa, 20:03 local:
+// 23 gates in the window, 11 with a flight that had not gone yet — 52% of
+// the list was dead. A walking display picking uniformly from all 23 opened
+// on a departed gate about half the time and rendered "Awaiting Next Flight"
+// over a board holding eleven live departures.
+//
+// The gate cycle below already had the right test and used it on every hop;
+// the FIRST pick never saw it. Hoisting it here gives both the same rule, so
+// the opening gate and every gate after it are chosen from the same set.
+//
+// Returns the sorted, de-duplicated gates with a departure that is still to
+// come: not cancelled, not departed, and not more than ten minutes past its
+// effective time (a flight sitting at the gate a few minutes late is still
+// that gate's flight).
+function _gateLiveGates(flights, nowMs) {
+  var now = nowMs || Date.now();
+  var out = [];
+  (flights || []).forEach(function (f) {
+    if (!f || !f.gate || f.gate === '—') return;
+    if (f.status === 'cancelled' || f.status === 'departed') return;
+    var eff = f._revTs || f._sortTs || 0;
+    if (eff && (now - eff) > 10 * 60000) return;
+    if (out.indexOf(f.gate) === -1) out.push(f.gate);
+  });
+  return out.sort();
 }
 
 // ── TEST FLIGHT ENTRY ─────────────────────────────────────────────────────
@@ -5909,22 +5962,282 @@ function wwayUrl(code, w, h) {
 const AIRLINE_ACCENT = {
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   '8P':'#0C3473',   // Pacific Coastal — its midnight blue, not the generic navy
+  // v23738 — Canadian North. Roughly ten departures a day at Ottawa alone,
+  // and with no entry here getAirlineAccent() fell all the way through to
+  // '#0033A1' — a blue belonging to no airline and one digit off United's
+  // '#0033A0'. Its orbs, rails, gate tab and countdown were therefore drawn
+  // in almost exactly United's colour on a carrier whose entire identity is
+  // red. The value is Pantone 200 C from Canadian North's own 2019 Visual
+  // Identity Guidelines, which also supply the complementary greys
+  // (#A2AAAD light, #7C878E medium) and a dark red #91002F. The artwork that
+  // arrived here was drawn in '#CD163F' — a deltaE of 7.05 from the official
+  // red, visible side by side — so the emblem and the wordmark were recoloured
+  // to the guideline value rather than the accent being bent to match art
+  // that was already off-brand.
+  '5T':'#BA0C2F',
+  // v23740 — Air New Zealand. Roughly 260 flights across the network, almost
+  // all of them at San Francisco, and with no entry here it fell through to
+  // getAirlineAccent()'s last resort '#0033A1' — a blue belonging to no
+  // airline. '#231F20' is not a guess and not plain black: it is the exact
+  // ground its own emblem is painted on, a rich near-black, and the same ink
+  // the wordmark uses. A very dark accent is normal on this board rather than
+  // a new risk — SAS '#000066' and Lufthansa '#05164D' are both darker.
+  'NZ':'#231F20',
+  // v23742 — two carriers that were falling through to getAirlineAccent()'s
+  // last resort '#0033A1', a blue belonging to no airline.
+  //
+  // Air North: '#F47B21' is the ground its own emblem is painted on. Its mark
+  // and wordmark are '#1268B2', so either could have been the accent; the
+  // orange is the distinctive half. Every other carrier on the Canadian
+  // boards is red, teal or navy, so a blue rail would have read as one more
+  // of those while the orange is unmistakably this airline.
+  //
+  // Icelandair: '#001B71' with no judgement needed at all — the tile ground,
+  // the dark wordmark and the accent are already the same single value.
+  '4N':'#F47B21',
+  'FI':'#001B71',
+  // ITA Airways. Held back when the tile was wired, because the only value
+  // available then was the tile's own ground — and a tile agreeing with itself
+  // is the TAP failure mode, not evidence.
+  //
+  // It is no longer derived. ITA publishes a design system, and this value is
+  // a declared token in it rather than anything sampled off a picture:
+  //   ita-airways.com/digitalhangar/design-system/releases/v1.36.0/standalone/css/ita.css
+  //     --maui-color-brand-ita-deepblue: #0171cf
+  //     --maui-color-brand-primary:   var(--maui-color-brand-ita-deepblue)
+  //     --maui-color-interaction-buttonprimary: var(--maui-color-brand-ita-deepblue)
+  // The airline names both the value AND the accent role, which is the exact
+  // question this table answers. ITY.svg was already painting it.
+  //
+  // Contrast, since this lands on a dark board: 3.8:1 on near-black. Fine for
+  // a rail or an orb ring, under the 4.5:1 bar for small text.
+  'AZ':'#0171CF',
+  // Transavia, both codes. The board had THREE greens for one airline: the HV
+  // tile on '#00D66C', the TO tile on '#1A9E5F' (deltaE 30.6 from it), and the
+  // owner's new artwork on '#08CE78'.
+  //
+  // Transavia refreshed its identity in October 2025 for its 60th anniversary,
+  // and the green moved. Their live stylesheet settles it — the class is named
+  // for the job:
+  //     .List_fill-brand-green{fill:#05CE78}
+  //     .List_fill-product-green{fill:#00AB61}
+  // '#00D66C' appears nowhere in it, so the tile the repo had been drawing was
+  // eleven months stale. '#1A9E5F' matches no Transavia green in any era and
+  // was an invented placeholder — its 3.4:1 contrast suggests someone darkened
+  // a green for legibility, which is exactly the mistake the product token
+  // exists to prevent.
+  //
+  // The owner's artwork is deltaE 0.11 from the published token — the same
+  // colour, off by eyedropper rounding — so the art is kept and the value
+  // snapped to what Transavia publishes.
+  //
+  // NOT '#00AB61'. That is the accessible UI green for text and surfaces, and
+  // it is the one that dominates their pages, which makes it the easy wrong
+  // pick off a screenshot. It is not the mark.
+  'HV':'#05CE78', 'TO':'#05CE78',
+  // AirAsia, both codes. Neither had an accent, so a red airline was drawing
+  // the generic '#0033A1' navy.
+  //
+  // Their own brand guide contradicts itself. One line of page 12 reads
+  // "AirAsia Red / Pantone 485C / C0 M95 Y100 K0 / R255 G0 B0" — but 485 C is
+  // '#DA291C' in sRGB, deltaE 22.3 from pure red. A guide cannot be followed
+  // on both halves of that line, and 'R255 G0 B0' is the crude screen stand-in
+  // older guides print rather than a measured conversion.
+  //
+  // '#E32526' — what AXM.svg and the supplied emblem both paint — is deltaE
+  // 4.8 from the stated Pantone and 22.0 from the stated RGB, so the artwork
+  // is the faithful rendering of the guide's own specification. It also spares
+  // a 24/7 board a pure-red fill, which vibrates against dark rows.
+  //
+  // Recorded as a judgement, not a fact: a later reader may reasonably prefer
+  // the literal '#FF0000'. AWQ.svg was painting exactly that.
+  'AK':'#E32526', 'QZ':'#E32526',
+  // Emirates. Was '#C8102E' — the generic red it shared with Japan Airlines
+  // and Turkish, three unrelated carriers on one value. UAE.svg paints
+  // '#d71a21' and its icao-icons twin '#D71921', deltaE 0.19 apart.
+  //
+  // Those two are NOT independent: icao-icons is a byte-copy of airline-tiles
+  // for 273 of its 283 files, so this is one source seen twice, which is the
+  // TAP failure mode. It is taken anyway because the value it replaces is a
+  // demonstrable placeholder rather than a rival reading — but it is derived,
+  // not stated, and a published Emirates value should overrule it.
+  'EK':'#D71A21',
+  // SWISS. Was '#E2001A'; the airline's red is '#E60005', which SWR.svg has
+  // always painted exactly. See the emblem note below — the tile's COLOUR was
+  // never the problem, its geometry was.
+  'LX':'#E60005',
+  // Lufthansa. Was '#05164D', deltaE 17.67 from '#0A1D3D'. DLH.svg carries the
+  // same old value, so tile and table agreed with each other and both were
+  // wrong — the TAP failure mode exactly. Corrected on the stated value alone.
+  // At 1.09:1 on the dark board this is the dimmest rail in the table, but it
+  // is Lufthansa's own navy and the alternative is inventing one.
+  'LH':'#0A1D3D',
+  // Wizz. No entry; '#D3007F' is the magenta end of its gradient (WZZ.svg runs
+  // '#161998' to '#cd2b86'), and '#312782' the purple. The magenta is taken —
+  // 3.54:1 against the purple's far dimmer showing, and it is the end of the
+  // ramp the wordmark reads as.
+  'W6':'#D3007F',
+  // Jetstar. No entry. '#FF5115', and JST.svg already paints '#ff5111' —
+  // deltaE 1.06, the same colour. Clears 5.59:1.
+  'JQ':'#FF5115',
+  // easyJet. '#FF5E00' with white; EZY.svg is already orange.
+  'U2':'#FF5E00',
+  // Hawaiian. Was '#582C83', deltaE 5.68 off. The palette is purple
+  // '#4B2D89' (PMS 268 C), fuchsia '#CE0C88' (219 C) and coral '#F9423A'
+  // (Warm Red C). HAL.svg's gradient was off on two of the three — purple by
+  // 5.75 and coral by 5.37, fuchsia close at 1.70 — and all three stops are
+  // brought to the palette here.
+  //
+  // Worth recording because it breaks a check I might otherwise have trusted:
+  // Avelo's purple is ALSO PMS 268 C, and renders '#502E90' against Hawaiian's
+  // '#4B2D89' — deltaE 3.55 apart. A Pantone number does not pin an sRGB
+  // value, so two carriers sharing a spot colour are not expected to share a
+  // hex, and a mismatch there proves nothing either way.
+  'HA':'#4B2D89',
+  // ANA. Was '#003370', deltaE 22.04 from the airline's blue. The palette is
+  // '#0B318F' (PMS 661 C) and light blue '#00A3E6' (PMS 299 C).
+  //
+  // The dark blue is kept as the accent rather than the far more legible light
+  // one — 1.61:1 against 6.41:1 on the dark board — because it is ANA's
+  // primary and because the repo had already chosen that hue family; only the
+  // value was wrong. Dim, but no worse than LOT '#252668' or SAS '#000066'.
+  //
+  // ANA.svg was off on both fills (6.82 and 7.70) and has been brought to the
+  // palette. Its light blue was '#00B3F0' — byte-identical to Air Transat's
+  // brand blue, so another value borrowed from a neighbour rather than drawn
+  // from ANA's own, the same tell as the '#C8102E' shared by EK, JL and TK.
+  'NH':'#0B318F',
+  // Brussels. No entry, so it drew on the generic navy. '#E5002B' is PMS
+  // 185 C and BEL.svg already paints exactly that hex — tile right, table
+  // empty, the same pattern as LOT. Its other brand colour '#051446' manages
+  // 1.04:1 on the dark board, so the red is the only usable one anyway.
+  'SN':'#E5002B',
+  // Japan Airlines. Was '#C8102E' — and that value is SHARED with Emirates
+  // and Turkish, three unrelated airlines wearing one red, which is the
+  // signature of a generic placeholder rather than anyone's brand colour.
+  // JAL's is '#CC0000', PMS 2347 C, deltaE 21.18 from the placeholder.
+  //
+  // JAL.svg paints '#E50012', itself deltaE 8.27 from the stated value, so the
+  // tile does not corroborate either — this rests on the stated value alone,
+  // which after the TAP lesson is the stronger evidence anyway.
+  //
+  // EK and TK still carry '#C8102E'. Neither is checked here; both are now
+  // known suspects.
+  'JL':'#CC0000',
+  // Avelo. '#502E90' is PMS 268 C, with '#1CBED1' (319 C) and '#FFCE04'
+  // (116 C) alongside it. The accent was '#492C92', deltaE 3.12 off — small,
+  // but the right value was already written down: the COLOR_WORDMARKS comment
+  // for 'avelo' reads "Avelo purple #502E91", which is deltaE 0.57 from the
+  // real one. Someone knew it and the table kept a different number anyway.
+  'XP':'#502E90',
+  // Norwegian. Had no accent under either key it is filed as — the repo names
+  // it under both 'DI' and 'DY', and AIRLINE_EMBLEM_FILES uses 'DI' — so both
+  // get one. '#EB0324' is PMS 185 C, and it clears 3.97:1 on the dark board.
+  //
+  // Its tile stays a KNOWN placeholder: NAX.svg is a red square with "DY" set
+  // in Arial, baselined as such in the branding contract test. The ground has
+  // been corrected from '#d81939' (deltaE 17.34 off) so the wrong artwork is
+  // at least the right red, but this still needs a real emblem.
+  'DI':'#EB0324','DY':'#EB0324',
+  // Singapore. Its palette is Yellow '#FCB130' (PMS 143 C) and Blue '#1D4886'
+  // (PMS 7687 C). The accent was '#F0AB00', deltaE 7.83 off the yellow.
+  //
+  // Keeping it YELLOW rather than moving it to the blue is deliberate and
+  // measured: on the dark board the yellow clears 9.95:1 while the blue
+  // manages 2.02 and the tile's old navy 1.31. Whoever chose the hue was
+  // right; only the value had drifted. SIA.svg is brought to the same palette
+  // — its bird was '#f99f1c' on a '#00276C' navy that appears nowhere in the
+  // palette — and the bird still reads at 4.94:1 on the stated blue, down
+  // from 6.64 but well clear of the 3:1 floor.
+  'SQ':'#FCB130',
+  // LOT. No entry at all, so it drew on the generic navy. '#252668' is PMS
+  // 2756 C, and LOT.svg has painted exactly that hex all along — the tile was
+  // right and only the table was missing. At 1.35:1 on the dark board this is
+  // a dim rail, but it is the airline's own colour and no worse than SAS
+  // '#000066', which already ships.
+  'LO':'#252668',
+  // Air France. Was '#002157'. The 2014 guidelines name PANTONE 296C — CMYK
+  // 100/75/0/60, RGB 5/16/57, '#051039' — as "la couleur identitaire de la
+  // Compagnie", and AFR.svg has painted its ground '#071037' all along. Those
+  // two agree at deltaE 1.50, below the threshold of noticing, while the
+  // accent sat 11.25 from the guide and 12.33 from the tile: the tightest
+  // corroboration and the widest gap of any carrier checked this session.
+  // (The guide's institutional red is PANTONE 032 C, a literal '#FF0000'.)
+  'AF':'#051039',
+  // Etihad. Was '#C89801', the odd one out of three golds. Etihad's 2014
+  // guidelines print the logotype gold as CMYK 7/33/99/19 / RGB 196,146,27 /
+  // '#C4921B', and ETD.svg paints its ground '#BD8B13' — those two agree at
+  // deltaE 2.66 while the accent sat 6.82 and 8.40 away. The guide's printed
+  // hex is taken over the tile because it is stated rather than derived; the
+  // 2.66 between them is below noticing, so the orb and rails still read as
+  // one colour.
+  'EY':'#C4921B',
+  // Mokulele. Had no accent at all, so it drew on the generic '#0033A1'.
+  // Its 2015 brand guidelines give the wordmark red as CMYK 7/99/94/0 —
+  // '#ED030F' — with '#ED870F' for the plumeria's orange. The repo's
+  // mokulele-emblem.svg was painted '#ED1C24', deltaE 8.29 off, so the emblem
+  // was recoloured to the guideline value the same way Canadian North's was.
+  // One flight on the surveyed network, so this is housekeeping rather than a
+  // fix, but it costs a line and the value is now the published one.
+  '9X':'#ED030F',
+  // Condor. Was '#FF7E27', deltaE 10.9 from anything in the airline's own
+  // guidelines — further off than the Canadian North error. Condor's identity
+  // is a gradient rather than a flat colour: dark tone '#F08200' to bright
+  // '#FBB900', with TC SUN (Pantone 130 C) '#F8AC00' as the corporate gold.
+  // The dark tone is taken because a rail is flat and it is the more saturated
+  // anchor; the bright tone is deltaE 38 away and reads yellow, not orange.
+  //
+  // NOT FIXED HERE: the tile CFG.svg paints its ground '#594D46', a brown-grey
+  // that is in no part of Condor's palette, so the orb still does not match
+  // the rails. That needs replacement artwork, not a table entry. At 21
+  // flights across ZRH, SEA and SFO it is low priority, and the accent moving
+  // to the published value is an improvement either way.
+  // TAP. '#46A41A' is the mid green of TAP Air Portugal's four-colour
+  // palette (lime '#BFD730', mid green '#46A41A', red '#ED1C24', dark red
+  // '#BA141A'). The repo's TAP.svg already carried that red EXACTLY; only its
+  // green was off, and it has been recoloured here to match.
+  //
+  // This entry has now been wrong twice, in instructive ways. It started as
+  // '#096' — '#009966', a teal deltaE 34 from anything TAP uses. That was
+  // corrected to '#72BF44' on the strength of two agreeing sources: the tile's
+  // own ground, and a sample taken off the cover of TAP's M&E identity guide.
+  // They agreed with each other to within deltaE 5 — and were BOTH about 12.6
+  // from the real brand green.
+  //
+  // Two sources agreeing is not proof when both may descend from the same bad
+  // original, and a render sample carries roughly this much error anyway.
+  // Corroboration raises confidence; only a stated value settles it.
+  // Frontier. '#0F6744' is Frontier Green — the named brand colour, used as
+  // the type colour on light grounds and as the BACKGROUND on dark ones, with
+  // Cool Gray '#9A9B9C' for supporting copy.
+  //
+  // An earlier pass here shipped '#016543' and called this value "the lone
+  // outlier, a slightly off re-trace" because four files in the repo carry
+  // '#026845' against the tile's one. That reasoning was wrong: FFT.svg was
+  // right and the count was measuring how often a value had been copied, not
+  // whether it was correct. Frequency is not authority.
+  //
+  // It changes nothing visible either way — the three greens are a CIE76
+  // deltaE of 1.33 to 1.45 apart, about the threshold a trained eye can just
+  // detect on adjacent patches, and they never appear adjacent. The point of
+  // using this one is that it is the value with a name.
+  'F9':'#0F6744',
   // WestJet's own regional brands were resolving to the generic navy —
   // an accent that is nobody's colour. They wear WestJet's teal.
   'WR':'#00B2A9','WEN':'#00B2A9','WJA':'#00B2A9',
   'DL':'#003366','AA':'#0078D2','UA':'#0033A0','WN':'#F9A01B',
   'AS':'#01426A','B6':'#003876','TS':'#00B3F0',
-  'HA':'#582C83','XP':'#492C92','LL':'#00B7C8',
+  'HA':'#4B2D89','XP':'#502E90','LL':'#00B7C8',
   // v22737 — World Atlantic (Caribbean Sun Airlines), the MD-83 charter
   // operator at Miami
   // Navy taken from their aircraft titles; swap in the exact hex when
   // an official kit turns up, same arc Avelo followed.
   'WL':'#004280',
-  'AF':'#002157','BA':'#2E5DA4','LH':'#05164D','KL':'#00A1DE',
-  'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
-  'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
-  'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
-  'AY':'#0B1560','IB':'#D71920','TP':'#096','EI':'#009A44',
+  'AF':'#051039','BA':'#2E5DA4','LH':'#0A1D3D','KL':'#00A2DF',
+  'QR':'#5C0632','EK':'#D71A21','SQ':'#FCB130','CX':'#006564',
+  'JL':'#CC0000','NH':'#0B318F','KE':'#00256C','OZ':'#008FD5',
+  'TK':'#C8102E','LX':'#E60005','OS':'#E20A17','SK':'#000066',
+  'AY':'#0B1560','IB':'#D71920','TP':'#46A41A','EI':'#009A44',
   // v23360 - Ryanair had NO accent, so getAirlineAccent fell to its '#0033A1'
   // default: a generic blue that belongs to no airline, sitting on a navy
   // board, which is why its whole gate rail disappeared. This is Ryanair's own
@@ -5933,9 +6246,9 @@ const AIRLINE_ACCENT = {
   'FR':'#073590','RK':'#073590',
   // v23365 - El Al had no accent, so its orbs fell to the generic default.
   'LY':'#1b358f',
-  'EY':'#C89801',   // Etihad gold
+  'EY':'#C4921B',   // Etihad gold
   'I2':'#D71920',   // Iberia Express takes Iberia's red
-  'DE':'#FF7E27',   // Condor orange, taken from its own emblem
+  'DE':'#F08200',   // Condor orange, taken from its own emblem
   'CS':'#FF0000',   // Chair red, from its own wordmark
   '2L':'#CF0018',   // Helvetic red, from its own emblem
   'EW':'#7C2045',   // Eurowings burgundy, from its own wordmark
@@ -8004,6 +8317,43 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'PD':  '/logos/airlines/canadian/porter-p.svg',   // Porter "p" monogram (white on the accent circle)
         'PB':  '/logos/airline-tiles/PB-arrow.svg?v=3',   // PAL — arrow SYMBOL only, size "Y", MIRRORED left-to-right as specified; white on the standard glossy gold badge like the other icons
         'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',   // Flair — the brand GREEN dot is the emblem (?v bust on recolor)
+        // v23738 — Canadian North had no emblem at all, so its orb came up
+        // empty. The art is a FINISHED SQUARE TILE: a full-bleed #CD163F
+        // ground with the mark knocked out of it in white.
+        //
+        // THE FOLDER IN THE PATH IS THE BEHAVIOUR, not a filing choice. The
+        // isTile test above is `/\/logos\/airline-tiles\//` — a tile gets a
+        // transparent badge, object-fit:cover and NO whitening, so the red
+        // ground simply becomes the orb. The identical file also sits in
+        // logos/airlines/canadian-regional/ for the wordmark surfaces, and
+        // naming THAT copy here would fail the test, hand the art an accent
+        // disc and a `brightness(0) invert(1)`, and flatten the whole square
+        // to a solid white blob — whitening an emblem, which is the one
+        // treatment that is never allowed. Measured for the circular crop:
+        // the mark's furthest point is 306 units from centre against the
+        // inscribed circle's 400, so nothing clips.
+        '5T':  '/logos/airline-tiles/CanadianNorth-Emblem.svg',   // Canadian North
+        // v23740 — Air New Zealand. A finished square tile: full-bleed #231F20
+        // with the koru knocked out in white, so the art BECOMES the orb.
+        // The airline-tiles folder in this path is what the isTile test keys
+        // on — naming the identical copy under airlines/asian-other/ instead
+        // would earn it an accent disc and a brightness(0) invert(1), which
+        // flattens the square to a white blob. Measured on a canvas rather
+        // than from the path data: the furthest WHITE pixel lands at 394.3 of
+        // the 400 radius, so nothing clips. The raw coordinates suggest 412
+        // and appear to overhang, but those are bezier CONTROL points, which
+        // sit outside the curve they steer.
+        'NZ':  '/logos/airline-tiles/NZ-Emblem.svg',   // Air New Zealand
+        // v23742 — Air North. A finished square tile: full-bleed '#F47B21'
+        // with the mark knocked out in '#1268B2'. Named at the airline-tiles
+        // path because that folder is what the isTile test keys on; the
+        // identical copy under airlines/canadian-regional/ would earn an
+        // accent disc and a brightness(0) invert(1) instead, flattening the
+        // square to a white blob. Measured on a canvas: all four corners
+        // opaque, and 5 of 27,522 ink pixels fall outside the circle — one
+        // spoke tip, invisible at orb size and well inside the tolerance the
+        // other emblems were accepted under.
+        '4N':  '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North
         // US majors — symbol-only emblems (rendered white on the accent badge)
         // v23394 — was united-globe-clean.svg, which is fill="#FFFFFF" and
         // NOTHING else. Every surface falling through to this map drew a white
@@ -11909,8 +12259,19 @@ function uxgGateHtml(ctx) {
       }
       return '<div class="v2-fi-row' + (cls ? ' ' + cls : '') + '">'
         + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '">'
+        // v23734 — THIS ORB IS ON THE ACCENT, NOT ON A LIGHT DISC.
+        // _BIR_BADGE_STYLE paints this badge var(--airline-accent) and inks it
+        // white. The rail's orb is different: _gateOrbParts gives ten carriers
+        // (AA 2L 4Y BA CJ ET HA LY PR WN) a light #F2F4F7 disc instead, and
+        // v23692 added dark ink for those so the code could be read on it.
+        // That rule keys on the CARRIER, so it also landed on this badge —
+        // #1B2430 on Hawaiian's #582C83 purple, which is the black HNL that
+        // was reported. American had it worse and unnoticed: its ink is
+        // #0078D2, its accent is #0078D2, so the code was invisible.
+        // The class says which disc this actually is, so the ink can follow
+        // the surface instead of the airline.
         +   (orbCode
-              ? '<span class="v2-fi-orbcode">' + orbCode + '</span>'
+              ? '<span class="v2-fi-orbcode v2-fi-orbcode-onaccent">' + orbCode + '</span>'
               : '<span class="ac-ico ' + icon + '"></span>')
         + '</div></div>'
         + '<div class="v2-fi-textcol">'
@@ -21557,9 +21918,16 @@ const IATA_TO_TILE_ICAO = {
   'MX':'MXY',   // Breeze — MXY.svg tile existed but the map never learned it
   // Europe
   'LH':'DLH',  'BA':'BAW',  'AF':'AFR',  'KL':'KLM',  'VS':'VIR',
-  'AZ':'AZA',  'SN':'BEL',  'LX':'SWR',  'OS':'AUA',  'SK':'SAS',
+  // AZ is ITA Airways, not Alitalia: Alitalia stopped flying in October 2021
+  // and ITA took over the code. Both name tables already said ITA and the ICAO
+  // normaliser already folded ITY into AZ — only this pointer still named
+  // AZA.svg, an Arial 'AZ' on Alitalia navy, while the real ITA tile sat on
+  // disk unreferenced. AZA.svg is gone; a defunct carrier's lettermark is not
+  // a fallback worth keeping.
+  'AZ':'ITY',  'SN':'BEL',  'LX':'SWR',  'OS':'AUA',  'SK':'SAS',
   'AY':'FIN',  'IB':'IBE',  'TP':'TAP',  'EI':'EIN',  'LO':'LOT',
-  'OK':'CSA',  'RO':'ROT',  'BT':'BTI',  'FI':'ICE',  'DY':'NAX',
+  // OK (Czech Airlines) — ceased operations, see FILTER_OUT
+  'RO':'ROT',  'BT':'BTI',  'FI':'ICE',  'DY':'NAX',
   'U2':'EZY',  'FR':'RYR',  'W6':'WZZ',  'VY':'VLG',  'WK':'EDW',
   // v23333 — sister codes that share a parent's tile (seen on the Dublin,
   // Edinburgh and Keflavík boards with no tile at all): Ryanair UK, easyJet
@@ -21567,7 +21935,12 @@ const IATA_TO_TILE_ICAO = {
   // Jet2 and Loganair (their own tiles were on disk, never mapped).
   'RK':'RYR',  'EC':'EZY',  'EJU':'EZY', 'EZS':'EZY', 'D8':'NAX',  'I2':'IBE',  'W4':'WZZ',  'LS':'EXS',  'LM':'LOG',
   'DE':'CFG',  'X3':'TUI',  'A3':'AEE',  'OU':'CTN',  'JU':'ASL',
-  'PC':'PGT',  'TK':'THY',  'TO':'TVF',  'HV':'TRA',  'EW':'EWG',
+  // TO and HV are one brand — Transavia France and Transavia Netherlands — and
+  // the board was drawing them as two. HV had the real 't' roundel on #00D66C;
+  // TO had an Arial 'TO' on #1A9E5F, a green deltaE 30.6 away, which is far
+  // enough that nobody would take the two orbs for the same airline. They now
+  // share the one tile, so the brand can only ever be drawn one way.
+  'PC':'PGT',  'TK':'THY',  'TO':'TRA',  'HV':'TRA',  'EW':'EWG',
   // Middle East / Africa
   'EK':'UAE',  'QR':'QTR',  'EY':'ETD',  'GF':'GFA',  'WY':'OMA',
   'SV':'SVA',  'ME':'MEA',  'SA':'SAA',  'ET':'ETH',  'MS':'MSR',  'RJ':'RJA',
@@ -21577,7 +21950,10 @@ const IATA_TO_TILE_ICAO = {
   'NZ':'ANZ',  'AI':'AIC',  '6E':'IGO',  'BR':'EVA',  'CI':'CAL',
   'CZ':'CSN',  'CA':'CCA',  'MU':'CES',  'HU':'CHH',  'KE':'KAL',
   'OZ':'AAR',  'TG':'THA',  'GA':'GIA',  'MH':'MAS',  'PR':'PAL',
-  'SG':'SEJ',  'VN':'HVN',  'QZ':'AWQ',  'AK':'AXM',  'TR':'TGW',
+  // QZ and AK are one brand — Indonesia AirAsia and AirAsia Malaysia. QZ was
+  // an Arial 'QZ' on pure #FF0000 while AK already had real artwork, the same
+  // split Transavia arrived in. Both now draw the AirAsia script wordmark.
+  'SG':'SEJ',  'VN':'HVN',  'QZ':'AXM',  'AK':'AXM',  'TR':'TGW',
   'JQ':'JST',  'VA':'VOZ',
   // Latin America
   'JJ':'TAM',  'AD':'AZU',  'LA':'LAN',  'AR':'ARG',  'CM':'CMP',
@@ -21622,7 +21998,6 @@ const IATA_WORDMARK_ONE = {
   'FR': '/logos/wordmarks/FR.svg',
   'FY': '/logos/wordmarks/FY.svg',
   'GA': '/logos/wordmarks/GA.svg',
-  'HV': '/logos/wordmarks/HV.svg',
   'IB': '/logos/wordmarks/IB.svg',
   'J2': '/logos/wordmarks/J2.svg',
   'JL': '/logos/wordmarks/JL.svg',
@@ -21686,6 +22061,26 @@ const IATA_TO_WORDMARK = {
   // FIDS table uses on dark rows) is the same single path reversed to white.
   // One path, one fill: the reversal is exact, not a filter approximation.
   'WK': 'edelweiss',
+  'NZ': 'NZ',              // v23740 — resolver appends -wordmark-dark/-light.svg
+  '4N': 'airnorth',        // v23742 — resolver appends -wordmark-dark/-light.svg
+  // ITA Airways. The supplied art is the official positive lockup — genuine
+  // ITA artwork, an Illustrator export whose own layer id is 'Livello_1' —
+  // but it is drawn in the 2021 launch green, and green is gone from ITA's
+  // current identity: their design system has no '#006e44' anywhere in it,
+  // and its one green token is demoted to a success/on-time status colour.
+  // Their live logo is white on the deep blue.
+  //
+  // So the GEOMETRY is kept and only the green is re-cut, which is the same
+  // thing done for Edelweiss just above: -light reversed to white for the
+  // board's dark rows, -dark in the brand blue for light grounds. The red
+  // crossbar is left exactly as supplied — every candidate replacement for it
+  // is contested between sources, and it is a few pixels wide at banner size.
+  'AZ': 'ita-airways',
+  // Transavia, both codes. Replaces /logos/wordmarks/HV.svg, which was a wide
+  // logotype inside a 64x64 SQUARE viewBox — so the banner, sizing to the box
+  // rather than the ink, drew it at roughly a quarter of the height it should
+  // have had. The new art is 125.7x17.5, cropped to the letterforms.
+  'HV': 'transavia', 'TO': 'transavia',
   // v23363 - the easyJet family. One orange logotype, no symbol, so every
   // code in the family points at it: the mainline, the three subsidiaries,
   // and EZY, the ICAO form the Edinburgh feed puts in the flight NUMBER.
@@ -21906,7 +22301,11 @@ const LOGO_SUBFOLDER = {
   'elal-wordmark-light.svg':'airlines/european', 'elal-wordmark-dark.svg':'airlines/european',
   'etihad-wordmark-light.svg':'airlines/asian-other', 'etihad-wordmark-dark.svg':'airlines/asian-other',
   'emirates-wordmark-light.svg':'airlines/asian-other', 'emirates-wordmark-dark.svg':'airlines/asian-other',
+  'NZ-wordmark-light.svg':'airlines/asian-other', 'NZ-wordmark-dark.svg':'airlines/asian-other',
+  'airnorth-wordmark-light.svg':'airlines/canadian-regional', 'airnorth-wordmark-dark.svg':'airlines/canadian-regional',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
+  'ita-airways-wordmark-light.svg':'airlines/european', 'ita-airways-wordmark-dark.svg':'airlines/european',
+  'transavia-wordmark-light.svg':'airlines/european', 'transavia-wordmark-dark.svg':'airlines/european',
   'condor-wordmark-light.svg':'airlines/european', 'condor-wordmark-dark.svg':'airlines/european',
   'lufthansa-wordmark-light.svg':'airlines/european', 'lufthansa-wordmark-dark.svg':'airlines/european',
   'austrian-wordmark-light.svg':'airlines/european', 'austrian-wordmark-dark.svg':'airlines/european',
@@ -23454,7 +23853,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23730';
+var FIDS_BUILD_TAG = 'v23742';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -25694,6 +26093,7 @@ const FILTER_OUT = new Set([
   'CK','CKK',     // China Cargo Airlines
   // ── Defunct passenger carriers (data feed still serves stale flights) ──
   'NK','NKS',     // Spirit Airlines — ceased operations May 2 2026 after second bankruptcy
+  'OK','CSA',     // Czech Airlines (ČSA) — wound down into Smartwings, last flight October 2024
   // ── Private jet / fractional ownership ──
   'ASP','KO','KOW','LXJ','EJA','EJM','ENJ','XOJ','JTL','NJA','EJ','LJ','XO',
   'PKC','LEG','RVJ','TVP','DCM','CFS','RSP','SWQ','TWY',
@@ -40512,21 +40912,25 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
       try {
         if (typeof screenType === 'undefined' || screenType !== 'gate') return;
         if (typeof data === 'undefined' || !data) return;
-        var now = Date.now();
-        var gates = (data.dep || []).filter(function (f) {
-          if (!f.gate || f.gate === '—') return false;
-          if (f.status === 'cancelled' || f.status === 'departed') return false;
-          var eff = f._revTs || f._sortTs || 0;
-          if (eff && (now - eff) > 10 * 60000) return false;
-          return true;
-        }).map(function (f) { return f.gate; });
-        gates = gates.filter(function (g, i) { return gates.indexOf(g) === i; }).sort();
+        // v23736 — the live-gate test now lives in _gateLiveGates(), shared
+        // with the FIRST pick in updateSubScreens(). It was only ever applied
+        // here, so the opening gate came from the unfiltered list.
+        var gates = _gateLiveGates(data.dep);
         if (gates.length < 1) return;
         var pool = gates.filter(function (g) { return g !== subScreenVal; });
         if (!pool.length) return;                      // only one live gate — leave it
         var pick = pool[Math.floor(Math.random() * pool.length)];
         if (pick && pick !== subScreenVal) {
           subScreenVal = pick;
+          // v23736 — AND TELL THE DROPDOWN. updateSubScreens() reads
+          // subScreenSel.value as the "keep what we were on" value on every
+          // data refresh; leaving it on the previous gate meant the next
+          // refresh — seconds away — pulled the screen straight back to the
+          // gate this hop just left, which on a dead gate is where it stuck.
+          try {
+            var _ss = document.getElementById('subScreenSel');
+            if (_ss) _ss.value = pick;
+          } catch (e2) {}
           if (typeof render === 'function') render();
         }
       } catch (e) {}

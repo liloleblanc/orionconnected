@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with Linearity Curve (http://linearity.io/curve) -->
+<svg height="100%" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="198.428 0 800 800" width="100%" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs/>
+<g id="Layer" vectornator:layerName="Layer">
+<g opacity="1" vectornator:layerName="Group 2">
+<path d="M198.428 0L998.428 0L998.428 800L198.428 800L198.428 0Z" fill="#BA0C2F" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Rectangle 1"/>
+<path d="M514.155 403.576L406.1 606.194L507.307 606.194L562.315 489.689L574.66 482.638L588.762 606.194L690.351 606.194L653.034 372.013L514.155 403.576ZM375.81 316.267L402.944 376.187L810.038 342.231L824.19 316.267L375.81 316.267ZM655.071 293.969L563.918 293.969L577.715 215.391L672.813 193.806L655.071 293.969Z" fill="#ffffff" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Curve 14"/>
+</g>
+</g>
+</svg>

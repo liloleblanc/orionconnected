@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with Linearity Curve (http://linearity.io/curve) -->
+<svg height="100%" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="321.057 -155.696 800 800" width="100%" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs/>
+<g id="Layer" vectornator:layerName="Layer">
+<g opacity="1" vectornator:layerName="Group 3">
+<g opacity="1" vectornator:layerName="Group 3">
+<path d="M321.057-155.696L1121.06-155.696L1121.06 644.304L321.057 644.304L321.057-155.696Z" fill="#231f20" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Rectangle 1"/>
+</g>
+<g opacity="1" vectornator:layerName="Group 1">
+<path d="M806.758-128.579C723.203-128.579 645.863-68.5233 601.911-24.9614C445.559 129.324 362.923 233.731 362.923 233.731L1059.68 233.731L1091.04 163.243L528.752 163.243C528.752 163.243 571.198 104.427 662.529 17.3316C685.467-4.37879 745.527-58.7959 806.758-58.7959C846.975-58.7959 878.524-33.3636 878.524 1.1193C878.524 35.2357 849.957 44.8221 849.957 44.8221C852.939 30.2451 843.268-9.45396 805.365-9.45396C766.067-9.45396 749.624 20.8843 749.624 41.2977C749.624 83.2524 787.36 113.196 831.145 113.196C915.341 113.196 954.471 52.6322 954.471-5.92954C954.471-65.027 897.532-128.579 806.758-128.579ZM351.079 270.385C351.079 270.385 387.644 376.766 436.083 478.326C477.136 564.858 545.223 617.188 628.388 617.188C706.536 617.188 759.379 557.047 759.379 499.473C759.379 434.313 710.383 391.625 652.078 391.625C589.899 391.625 576.828 438.909 576.828 450.835C576.828 478.326 599.57 503.702 628.388 503.702C673.761 503.702 677.161 467.048 677.161 467.048C677.161 467.048 691.096 476.07 691.096 499.473C691.096 521.972 672.256 550.929 628.388 550.929C593.383 550.929 541.934 532.264 506.456 456.475C464.734 367.744 461.863 341.578 461.863 341.578L1011.6 341.578L1042.96 270.385L351.079 270.385Z" fill="#ffffff" fill-rule="nonzero" opacity="1" stroke="none" vectornator:layerName="Curve 2"/>
+</g>
+</g>
+</g>
+</svg>

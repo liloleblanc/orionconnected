@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2615,
+    "total": 2625,
     "by_category": {
       "ad": 10,
-      "airline": 1411,
+      "airline": 1421,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -3922,6 +3922,39 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/asian-other/NZ-Emblem.svg",
+      "file": "NZ-Emblem.svg",
+      "category": "airline",
+      "subcategory": "asian-other",
+      "group": "Airlines — Asian & other",
+      "name": "NZ Emblem",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/asian-other/NZ-wordmark-dark.svg",
+      "file": "NZ-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "asian-other",
+      "group": "Airlines — Asian & other",
+      "name": "NZ wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/asian-other/NZ-wordmark-light.svg",
+      "file": "NZ-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "asian-other",
+      "group": "Airlines — Asian & other",
+      "name": "NZ wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/asian-other/qantas-ff.png",
       "file": "qantas-ff.png",
       "category": "airline",
@@ -5605,6 +5638,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian-regional/AirNorth-Emblem.svg",
+      "file": "AirNorth-Emblem.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "AirNorth Emblem",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian-regional/airnorth-monochrome-black.svg",
       "file": "airnorth-monochrome-black.svg",
       "category": "airline",
@@ -5622,6 +5666,28 @@
       "subcategory": "canadian-regional",
       "group": "Airlines — Canadian regional",
       "name": "airnorth monochrome white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/airnorth-wordmark-dark.svg",
+      "file": "airnorth-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "airnorth wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/airnorth-wordmark-light.svg",
+      "file": "airnorth-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "airnorth wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -5726,12 +5792,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian-regional/Canadian-North-Wordmark-FullRed.svg",
+      "file": "Canadian-North-Wordmark-FullRed.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "Canadian North Wordmark FullRed",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian-regional/canadian-north.svg",
       "file": "canadian-north.svg",
       "category": "airline",
       "subcategory": "canadian-regional",
       "group": "Airlines — Canadian regional",
       "name": "canadian north",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/CanadianNorth-Emblem.svg",
+      "file": "CanadianNorth-Emblem.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "CanadianNorth Emblem",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -6892,6 +6980,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/european/ita-airways-wordmark-dark.svg",
+      "file": "ita-airways-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "ita airways wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/ita-airways-wordmark-light.svg",
+      "file": "ita-airways-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "ita airways wordmark light",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/european/klm-wordmark-color.svg",
       "file": "klm-wordmark-color.svg",
       "category": "airline",
@@ -7327,6 +7437,28 @@
       "subcategory": "european",
       "group": "Airlines — European",
       "name": "testing",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/transavia-wordmark-dark.svg",
+      "file": "transavia-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "transavia wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/european/transavia-wordmark-light.svg",
+      "file": "transavia-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "european",
+      "group": "Airlines — European",
+      "name": "transavia wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -9202,6 +9334,17 @@
       "ext": "png"
     },
     {
+      "path": "/logos/airline-tiles/AirNorth-Emblem.svg",
+      "file": "AirNorth-Emblem.svg",
+      "category": "airline",
+      "subcategory": "tile",
+      "group": "Airline tile logos (row icons)",
+      "name": "AirNorth Emblem",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airline-tiles/AKJ.svg",
       "file": "AKJ.svg",
       "category": "airline",
@@ -9455,17 +9598,6 @@
       "ext": "svg"
     },
     {
-      "path": "/logos/airline-tiles/AWQ.svg",
-      "file": "AWQ.svg",
-      "category": "airline",
-      "subcategory": "tile",
-      "group": "Airline tile logos (row icons)",
-      "name": "AWQ",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
       "path": "/logos/airline-tiles/AXM.svg",
       "file": "AXM.svg",
       "category": "airline",
@@ -9474,17 +9606,6 @@
       "name": "AirAsia",
       "iata": "AK",
       "country": "Malaysia",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/airline-tiles/AZA.svg",
-      "file": "AZA.svg",
-      "category": "airline",
-      "subcategory": "tile",
-      "group": "Airline tile logos (row icons)",
-      "name": "AZA",
-      "iata": "",
-      "country": "",
       "ext": "svg"
     },
     {
@@ -9708,6 +9829,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airline-tiles/CanadianNorth-Emblem.svg",
+      "file": "CanadianNorth-Emblem.svg",
+      "category": "airline",
+      "subcategory": "tile",
+      "group": "Airline tile logos (row icons)",
+      "name": "CanadianNorth Emblem",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airline-tiles/glossy-png-pack/cathay-pacific.png",
       "file": "cathay-pacific.png",
       "category": "airline",
@@ -9881,17 +10013,6 @@
       "name": "Cathay Dragon",
       "iata": "KA",
       "country": "Hong Kong",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/airline-tiles/CSA.svg",
-      "file": "CSA.svg",
-      "category": "airline",
-      "subcategory": "tile",
-      "group": "Airline tile logos (row icons)",
-      "name": "CSA",
-      "iata": "",
-      "country": "",
       "ext": "svg"
     },
     {
@@ -11061,6 +11182,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airline-tiles/NZ-Emblem.svg",
+      "file": "NZ-Emblem.svg",
+      "category": "airline",
+      "subcategory": "tile",
+      "group": "Airline tile logos (row icons)",
+      "name": "NZ Emblem",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airline-tiles/OMA.svg",
       "file": "OMA.svg",
       "category": "airline",
@@ -11782,17 +11914,6 @@
       "subcategory": "tile",
       "group": "Airline tile logos (row icons)",
       "name": "TUI",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/airline-tiles/TVF.svg",
-      "file": "TVF.svg",
-      "category": "airline",
-      "subcategory": "tile",
-      "group": "Airline tile logos (row icons)",
-      "name": "TVF",
       "iata": "",
       "country": "",
       "ext": "svg"
@@ -14620,17 +14741,6 @@
       "subcategory": "wordmark",
       "group": "Airline wordmarks",
       "name": "GA",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/wordmarks/HV.svg",
-      "file": "HV.svg",
-      "category": "airline",
-      "subcategory": "wordmark",
-      "group": "Airline wordmarks",
-      "name": "HV",
       "iata": "",
       "country": "",
       "ext": "svg"
