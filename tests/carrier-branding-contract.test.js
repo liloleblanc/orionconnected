@@ -208,6 +208,18 @@ test('Frontier takes the green five of its six files agree on', () => {
   }
 });
 
+test('TAP takes the green its own tile is painted, not the teal it had', () => {
+  // '#009966' sat in this table as the shorthand '#096' and is deltaE 34 from
+  // both TAP's identity guidelines and the tile the board already draws.
+  const accent = ACCENTS['TP'];
+  const tile = fs.readFileSync(path.join(root, 'logos', 'airline-tiles', 'TAP.svg'), 'utf8');
+  const ground = (tile.match(/fill="(#[0-9A-Fa-f]{6})"/) || [])[1];
+  assert.ok(ground, 'TAP.svg has no ground fill to compare against');
+  assert.ok(deltaE(accent, ground) < 3,
+    `accent ${accent} is deltaE ${deltaE(accent, ground).toFixed(2)} from the tile ground ${ground} — the orb and the rails would draw different greens`);
+  assert.ok(deltaE(accent, '#009966') > 20, 'this is the teal the accent used to be');
+});
+
 test('the new art is in the asset manifest', () => {
   const manifest = fs.readFileSync(path.join(root, 'assets', 'asset-manifest.json'), 'utf8');
   for (const f of ['AirNorth-Emblem.svg', 'airnorth-wordmark-dark.svg', 'airnorth-wordmark-light.svg']) {

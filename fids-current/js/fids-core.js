@@ -5996,6 +5996,15 @@ const AIRLINE_ACCENT = {
   // the dark wordmark and the accent are already the same single value.
   '4N':'#F47B21',
   'FI':'#001B71',
+  // TAP. Was '#096' — '#009966', a teal-green that is deltaE 34 from the
+  // airline's actual colour and the only three-digit shorthand in this table,
+  // which is what drew attention to it. Two independent sources agree it was
+  // wrong: TAP's own identity guidelines put the wordmark green at about
+  // '#6CB644', and the repo's TAP.svg tile has always painted its ground
+  // '#72BF44' — deltaE 4.91 apart, i.e. the same colour twice. The tile value
+  // is taken rather than the sampled one because it is an exact hex in a
+  // vector file instead of a pixel read off a render, and because matching the
+  // ground means the orb and the rails draw the same green.
   // Frontier. Three dark greens exist for this airline and none of them is a
   // choice: the brand palette's '#016543', the repo's '#026845' across four
   // files, and the tile's '#0F6744' are a CIE76 deltaE of 1.33 to 1.45 apart —
@@ -6029,7 +6038,7 @@ const AIRLINE_ACCENT = {
   'QR':'#5C0632','EK':'#C8102E','SQ':'#F0AB00','CX':'#006564',
   'JL':'#C8102E','NH':'#003370','KE':'#00256C','OZ':'#008FD5',
   'TK':'#C8102E','LX':'#E2001A','OS':'#E20A17','SK':'#000066',
-  'AY':'#0B1560','IB':'#D71920','TP':'#096','EI':'#009A44',
+  'AY':'#0B1560','IB':'#D71920','TP':'#72BF44','EI':'#009A44',
   // v23360 - Ryanair had NO accent, so getAirlineAccent fell to its '#0033A1'
   // default: a generic blue that belongs to no airline, sitting on a navy
   // board, which is why its whole gate rail disappeared. This is Ryanair's own
