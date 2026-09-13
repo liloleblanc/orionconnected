@@ -1878,6 +1878,35 @@ function scheduleGateControlsAutoHide() {
 // airport, screen type and gate/belt. localStorage stays the per-display
 // memory across reloads; the URL is the cross-device carrier and WINS on
 // load (see SCREEN-STATE RESTORE near the end of this file).
+// v23766 — WHO IS ALLOWED TO REMEMBER A SCREEN.
+//
+// fids_screen_state is ONE key shared by every board on this origin, so a page
+// that writes it is writing for all of them. SCREEN-STATE RESTORE already
+// refuses to READ it unless this page is the top-level generic board — its
+// comment records why: gids stamping 'gate' into the shared key made the
+// departures screen come up as a gate.
+//
+// The WRITE side was never given the same rule, so the leak survived that fix
+// in the other direction. The rotator runs fids, gids and bids as iframes on
+// this origin; each one announces its type on boot through changeScreenType,
+// each stamps the shared key, and a real top-level departures board on the
+// same browser then restores whichever frame the rotator happened to pass
+// through last. That is the on-again-off-again: nothing about the airport, the
+// feed or the config — just which frame wrote last before the board booted.
+//
+// One predicate now answers it for both sides, so they cannot drift apart
+// again: a page may remember a screen only if it is also allowed to restore
+// one. Dedicated gids/bids pages are excluded too — they own their type from
+// their own URL and have nothing to gain from the shared key.
+function _fidsOwnsScreenState() {
+  try {
+    if (window.self !== window.top) return false;                              // rotator iframe
+    if (document.documentElement.classList.contains('fids-stream')) return false;
+    if (document.body && document.body.getAttribute('data-page')) return false; // gids/bids
+    return true;
+  } catch (e) { return false; }
+}
+
 function _fidsSyncUrl(t, s) {
   try {
     if (window.self !== window.top) return;   // rotator iframe — leave frame URLs alone
@@ -1960,7 +1989,12 @@ function changeScreenType(val) {
   // Survive the self-update reloads: a screen put into gate/baggage mode via
   // the MENU (no URL param) was being dumped back to the main board on every
   // deploy.
-  try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: val, s: (typeof subScreenVal !== 'undefined' ? subScreenVal : '') })); } catch (e) {}
+  // v23766 — only a page that may RESTORE a screen may remember one; see
+  // _fidsOwnsScreenState. An iframe writing here poisons every board on the
+  // origin, which is the whole on-again-off-again.
+  if (_fidsOwnsScreenState()) {
+    try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: val, s: (typeof subScreenVal !== 'undefined' ? subScreenVal : '') })); } catch (e) {}
+  }
   document.body.classList.toggle('uxg-gate-mode', val === 'gate');
   if (val !== 'gate') { if (typeof stopGateAds==='function') stopGateAds(); } else { if (typeof startGateAds==='function' && !_gateAdTimer) startGateAds(); }
   
@@ -2000,7 +2034,10 @@ function changeScreenType(val) {
 }
 
 function changeSubScreen(val) {
-  try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: (typeof screenType !== 'undefined' ? screenType : 'main'), s: val })); } catch (e) {}
+  // v23766 — same rule as changeScreenType: see _fidsOwnsScreenState.
+  if (_fidsOwnsScreenState()) {
+    try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: (typeof screenType !== 'undefined' ? screenType : 'main'), s: val })); } catch (e) {}
+  }
   subScreenVal = _fidsSafeSub(val);
   _fidsSyncUrl((typeof screenType !== 'undefined' ? screenType : 'main'), subScreenVal);
   render();
@@ -23376,6 +23413,25 @@ const ES_BOARD_AIRPORTS = new Set([
 // Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
 // drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
 const BOARD_LANG_DEFAULTS = {
+  // v23767 — QUÉBEC BOARDS LEAD IN FRENCH.
+  //
+  // Everything else in this table picks WHICH two languages a board speaks.
+  // These two pick the ORDER, and the order is the point: in Québec French is
+  // not the translation, it is the first language a passenger reads. The
+  // en/fr fallback below put English first on a Montréal board, which is the
+  // wrong way round for the province it is standing in.
+  //
+  // Both live Québec airports are named rather than derived, because there is
+  // no province field to derive from — the board knows IATA codes, not
+  // jurisdictions. Add a code here when a Québec airport goes live; YMX
+  // (Mirabel) and YRJ (Roberval) are deliberately absent, being referenced as
+  // destinations only and served by no feed.
+  //
+  // The saved per-airport choice and ?langs= still sit above this, so an
+  // operator can still put English first on a specific screen.
+  YUL: ['fr', 'en'],
+  YQB: ['fr', 'en'],
+
   MCO: ['en', 'es'],
  // v23247 — Miami runs English+Spanish (the owner's boards are assigned en/es;
   // without a baked default a profile-wiped display fell back to the Canada
@@ -24357,7 +24413,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23765';
+var FIDS_BUILD_TAG = 'v23767';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -37578,7 +37634,7 @@ function buildGateAdHtml(ad) {
     + (ad.subLogo
         // v23123 — the sub line renders the brand's real WORDMARK when one is
         // supplied; otherwise the plain name as before.
-        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(34px,4.2vh,64px);width:auto;max-width:60%;object-fit:contain;margin:clamp(12px,2vh,22px) auto 0;display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
+        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(44px,5.2vw,78px);width:auto;max-width:82%;object-fit:contain;margin:clamp(12px,2vh,22px) auto 0;display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
         : '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>')
     + '</div></div>'
   );
@@ -41849,7 +41905,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // its 'gate' screen type into fids_screen_state leaked into fids on restore —
     // the departures screen came up as a GATE ("no FIDS screen" on the stream).
     // Only the top-level, non-stream board page honours a saved screen type.
-    if (window.self !== window.top || document.documentElement.classList.contains('fids-stream')) return;
+    // v23766 — one predicate for both sides, so read and write cannot drift.
+    if (!_fidsOwnsScreenState()) return;
     // CROSS-DEVICE:
     // the URL is the shareable carrier of screen state and BEATS this
     // display's own localStorage. ?screen=gate&gate=95 (aliases ?sub= /
@@ -42557,6 +42614,28 @@ function _renderWxCard(el) {
       }
       return w.join(_wxSep);
     };
+    // v23767 — TITLES NEED ADDRESSABLE HALVES.
+    // _wxPair returns the two languages as BARE text either side of a
+    // separator span, so a title is one text run and the browser breaks it
+    // wherever the width runs out. That is why .wxc-side-title had to be
+    // nowrap + ellipsis — and why the ellipsis then ate the French
+    // ("MÉTÉO AU DÉPA…" on a live Abbotsford board). Letting it wrap instead
+    // had been tried and stranded the separator at the head of line two.
+    // Neither is acceptable under the rule that a phrase is never cut in half.
+    // Wrapping each language makes it an unbreakable unit, so the only break
+    // on offer is the one at the separator — where a reader would break it.
+    // Titles only: _wxPair's other callers are condition words and day labels,
+    // which are single words and want no extra boxes.
+    var _wxPairT = function (obj) {
+      var w = [], seen = {};
+      for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
+        var t = obj[_wxLangs[_wi]] || obj.en;
+        if (!t || seen[String(t).toLowerCase()]) continue;
+        seen[String(t).toLowerCase()] = 1;
+        w.push('<span class="wxc-t-part">' + t + '</span>');
+      }
+      return w.join(_wxSep);
+    };
     var cond = _wxPair(_WXLBL[ic] || { en: '' });
     // Day cells keep the owner's approved layout — first language's day + date
     // ABOVE the icon, second language's BELOW — via each language's own
@@ -42867,8 +42946,8 @@ function _renderWxCard(el) {
     // also retires the card-level "Arrival Weather" kicker above — that kicker
     // labelled the whole card as arrival even though half of it is the
     // departure airport, so it was both redundant and wrong.
-    var _depLbl = _wxPair({ en:'Departure Weather', fr:'Météo au départ', es:'Clima a la salida', de:'Wetter bei Abflug', it:'Meteo alla partenza', pt:'Clima na partida', ja:'出発地の天気', zh:'出发地天气', ar:'طقس المغادرة' });
-    var _arrLbl = _wxPair({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter bei Ankunft', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' });
+    var _depLbl = _wxPairT({ en:'Departure Weather', fr:'Météo au départ', es:'Clima a la salida', de:'Wetter bei Abflug', it:'Meteo alla partenza', pt:'Clima na partida', ja:'出発地の天気', zh:'出发地天气', ar:'طقس المغادرة' });
+    var _arrLbl = _wxPairT({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter bei Ankunft', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' });
     //
     // The panel title carries the long form; the band carries the short one
     // next to the clock, so the line reads "Departure | Départ 6:15 PM".
@@ -42906,9 +42985,19 @@ function _renderWxCard(el) {
     // The city is appended after a middot so the bilingual pair keeps the bar
     // to itself ("I do not want the text seperated unless its the full
     // sentence") rather than chaining three bars in one line.
-    var _wxForCity = ' <span class="wxc-bar">|</span> ' + _wxCityOf(dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest);
+    // v23767 — THE PLACE TRAVELS AS ONE PIECE.
+    // This header is a four-part chain: EN label, FR label, city, IATA. It was
+    // one text run, so the browser broke it wherever the width ran out —
+    // measured on a Flair board at Abbotsford it left 'ABBOTSFORD |' hanging
+    // and orphaned 'YXX' alone on the second line. The rule the owner states
+    // is that a line may be two lines, but never a phrase cut in half.
+    // The city and its code are now one unbreakable unit, so the only place
+    // the header can break is between the label pair and the place.
+    var _wxForCity = ' <span class="wxc-bar">|</span> <span class="wxc-t-place">'
+      + _wxCityOf(dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest)
+      + '</span>';
     var _wxStripsHtml =
-        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxForCity + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
+        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPairT({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxForCity + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
       + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
             // The English and German
             // strings said only "5-DAY" / "5-TAGE" — a duration, not a heading —

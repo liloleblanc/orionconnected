@@ -18944,3 +18944,122 @@ html body[data-gate-airline="QTR"] .v2-fi-icon-wrap {
   background-position: center;
   background-repeat: no-repeat;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23767 — FLAIR'S DESTINATION CODE WAS WHITE ON MINT.
+
+   Reported from a lit Flair gate: the YVR in the destination orb could not be
+   read. Measured, white on Flair's accent #7AFF94 is 1.27:1 — the same
+   white-on-light trap this file has already fixed twice, for Porter's white
+   disc at :18131 and for the nine light-disc carriers at :18167.
+
+   Flair reaches it by a different road, which is why neither of those caught
+   it. Those carriers are in LIGHT_DISC (fids-core.js:8395) and sit on the
+   shared near-white #F2F4F7; Flair is NOT in that set, so its orb wears its
+   own accent — and that accent happens to be a bright mint, light enough for
+   white to disappear on it just the same. A carrier can arrive at this fault
+   without being on a "light disc" at all.
+
+   Same remedy as the nine: the dark neutral rather than a guessed brand
+   value, which measures 12.34:1 here against 14.21:1 in the case it was
+   chosen for. Scoped to the code chip only — the orb, the glyph badges and
+   everything else on the Flair skin are untouched.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body[data-gate-airline="F8"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent),
+html body[data-gate-airline="FLE"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-fi-iconcol .v2-fi-orbcode:not(.v2-fi-orbcode-onaccent) {
+  color: #1B2430 !important;
+  -webkit-text-fill-color: #1B2430 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23767 — A LINE MAY BE TWO LINES. A PHRASE MAY NOT BE CUT IN HALF.
+
+   Two boards, same fault, photographed on a Flair gate:
+
+     "Information Unavailable | Information
+      non disponible"                            — the French cut mid-phrase
+
+     "NEXT HOURS | PROCHAINES HEURES | ABBOTSFORD |
+      YXX"                                       — the code orphaned alone
+
+   Both are bilingual pairs rendered as ONE text run, so the browser breaks
+   them wherever the width happens to run out — which lands mid-phrase far more
+   often than at the separator.
+
+   The repo has met this before and answered it by SHORTENING the words: the
+   note above toBeConfirmed (fids-core.js) records dropping "Currently" from
+   the pair "to keep it on ONE line, which was the actual complaint". That buys
+   one width and loses it again at the next, and it costs vocabulary.
+
+   The owner's rule is better and is what this implements: two lines are fine,
+   a severed phrase is not. Each language becomes an unbreakable unit, so the
+   only break the browser is offered is the one between them. When the pair
+   fits it stays on one line, exactly as now; when it does not, it breaks where
+   a reader would break it.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body .v2-rc-fi-stline > span,
+html body .v2-fi-mlbl > span,
+html body .v2-rc-fi-tlbl > span {
+  display: inline-block;
+  white-space: nowrap;
+}
+/* The weather header's place — city and code — is one phrase and travels
+   together; the bar before it is the break point. */
+html body .wxc-title .wxc-t-place {
+  display: inline-block;
+  white-space: nowrap;
+}
+/* A phrase wider than the panel still has to go somewhere: let that one wrap
+   rather than overflow the card. Only bites when a single language on its own
+   exceeds the width, which is a different problem from this one. */
+html body .v2-rc-fi-stline > span,
+html body .v2-fi-mlbl > span,
+html body .v2-rc-fi-tlbl > span,
+html body .wxc-title .wxc-t-place { max-width: 100%; overflow-wrap: break-word; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23767 — THE PANEL TITLE STOPS BEING TRUNCATED.
+
+   Photographed on a live board: "DEPARTURE WEATHER | MÉTÉO AU DÉPA…", the
+   French label cut mid-word by an ellipsis.
+
+   The block above at :17796 chose that ellipsis on purpose, and its note says
+   why: letting the title WRAP had stranded the separator at the head of the
+   second line ("DEPARTURE WEATHER |" / "| MÉTÉO AU DÉPART"). Its own words are
+   that this "traded one bad outcome for another" — and it did, because both
+   outcomes break the same rule. An ellipsis through a word is a severed
+   phrase just as much as a mid-phrase line break is.
+
+   Neither was the answer, because the title had no seams: _wxPair returned
+   both languages as bare text, so nowrap-and-clip was the only lever CSS had.
+   _wxPairT now wraps each language in .wxc-t-part, which gives the browser
+   exactly one place it may break — the separator — and none inside a word.
+
+   So the title may take two lines and keeps every letter. The separator trails
+   line one rather than leading line two, which is the half of the earlier
+   complaint that was right.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title .wxc-t-part,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title .wxc-t-part {
+  display: inline-block !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+  overflow-wrap: break-word !important;
+}
+/* Two lines is the ceiling: a title needing three is a sizing problem, not a
+   wrapping one, and three would push the grid below it off the panel.
+   NOTE the guard chain — the rule this overrides at :17796 carries 43 of them,
+   and a shorter selector with !important still loses to it. Written short
+   first, and it computed to nowrap exactly as before: a silent no-op. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap .wxc-side-title {
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
