@@ -14638,9 +14638,32 @@ function gateAutofit(root) {
   // have them: the stacked bilingual status, and the 'Your Aircraft' line.
   // Those keep the integer test, which is what they had before; this answers
   // only for the single-line values, which is where the reported clipping was.
+  //
+  // v23754 — AND ONLY WHERE CLIPPING CAN ACTUALLY HAPPEN.
+  //
+  // v23753 shipped this test without that condition and pinned the GATE NUMBER
+  // at the 12px floor on every live board — the largest, most important glyph
+  // on a gate sign, reduced to nothing.
+  //
+  // .g8-r1-gate is a shrink-to-fit flex item: `flex: 0 1 auto` with no width,
+  // so its box is exactly as wide as its text at every font size (measured:
+  // 8.66px box, 8.66px text). `text > inner - 0.5` is therefore true for any
+  // size at all, the search fails all the way down, and the value lands on its
+  // floor. Any element whose width is content-determined behaves this way.
+  //
+  // The condition that makes the whole measurement meaningful is the one that
+  // was missing: an element only ellipsizes or clips when its overflow is not
+  // visible. The gate number is `overflow: visible; text-overflow: clip` — it
+  // cannot clip, it simply overhangs, so there was never anything here to
+  // measure. Asking that question first excludes every shrink-to-fit box that
+  // has nothing to do with this bug, and keeps the test pointed at the
+  // clipping values it was written for.
   function _textOverflowsFractionally(el) {
     try {
       if (!el || !el.getBoundingClientRect) return false;
+      var ecs = window.getComputedStyle(el);
+      var ox = ecs.overflowX || ecs.overflow;
+      if (ox === 'visible') return false;          // cannot clip — nothing to judge
       for (var i = 0; i < el.children.length; i++) {
         var d = window.getComputedStyle(el.children[i]).display;
         if (d !== 'inline' && d !== 'inline-block' && d !== 'contents') return false;
@@ -14654,9 +14677,8 @@ function gateAutofit(root) {
       // tidier and was measurably wrong: it shrank every padded value a step or
       // two below the size it had been rendering at perfectly well (AC1983 73px
       // -> 71px in preview, with no clipping at either).
-      var cs = window.getComputedStyle(el);
       var inner = box
-        - (parseFloat(cs.borderLeftWidth) || 0) - (parseFloat(cs.borderRightWidth) || 0);
+        - (parseFloat(ecs.borderLeftWidth) || 0) - (parseFloat(ecs.borderRightWidth) || 0);
       if (!(inner > 0)) return false;
       var r = document.createRange();
       r.selectNodeContents(el);
@@ -24201,7 +24223,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23753';
+var FIDS_BUILD_TAG = 'v23754';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
