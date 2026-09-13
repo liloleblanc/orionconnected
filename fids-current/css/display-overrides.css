@@ -18915,3 +18915,32 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
     transform: none !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23762 — QATAR'S SPEED LINES BEHIND THE GATE RAIL'S BADGE COLUMN.
+
+   The rail is a column of seven discs: the carrier emblem on top, then the six
+   glyph badges. They are all the same white circle, which left the emblem disc
+   as the only one carrying any artwork and the other six reading as blanks
+   beside it.
+
+   Qatar's own mark has a field of grey speed lines running behind the oryx.
+   Lifting that field out as a ground ties the column together — the emblem is
+   no longer the only decorated disc, and the texture comes from the carrier's
+   own artwork rather than being invented.
+
+   SCOPED TO QATAR ON PURPOSE. These lines are Qatar's brand element, not a
+   neutral texture: behind Air Canada's leaf or Delta's widget they would be
+   another airline's graphic on the wrong board. The gate skin already keys on
+   data-gate-airline, so this follows it and every other carrier is untouched.
+
+   The glyphs sit above the ground, so the pattern must never be given to the
+   img/svg inside a badge — only to the wrap.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body[data-gate-airline="QR"] .v2-fi-icon-wrap,
+html body[data-gate-airline="QTR"] .v2-fi-icon-wrap {
+  background-image: url('/logos/airlines/asian-other/qatar-speedlines.svg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}

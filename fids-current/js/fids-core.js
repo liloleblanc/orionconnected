@@ -8394,6 +8394,20 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         'MQ':  '/logos/airlines/us-major/american-flight-symbol.svg',         // Envoy → American
         'OH':  '/logos/airlines/us-major/american-flight-symbol.svg',         // PSA → American
         'SP':  '/logos/airline-tiles/PB.svg',          // SATA/PAL express → PAL Airlines
+        // v23762 — QATAR. Without an entry here the resolver falls through to
+        // '/logos/symbols/airlines/QR.svg', which is the FULL lockup: the oryx
+        // AND the grey speed lines beside it. That mark is drawn for a page,
+        // not a 48px disc — at orb size the lines collapse into a smudge and
+        // squeeze the oryx down to something unidentifiable. The tile is the
+        // same artwork cropped to the oryx alone, so it survives the size.
+        //
+        // It points at the TILE folder deliberately. /logos/airline-tiles/
+        // makes _gateOrbParts treat the file as a tile: object-fit:cover, and
+        // no white-force filter — which is what keeps the oryx burgundy
+        // instead of flattening a real brand mark into a white silhouette.
+        // Naming the same art under airlines/<region>/ would do the opposite.
+        'QR':  '/logos/airline-tiles/QTR.svg',
+        'QTR': '/logos/airline-tiles/QTR.svg',
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
@@ -24271,7 +24285,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23761';
+var FIDS_BUILD_TAG = 'v23762';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
