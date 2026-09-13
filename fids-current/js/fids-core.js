@@ -6069,10 +6069,6 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
-  // v23759 — heritage demonstration carriers. Their real IATA codes, which
-  // are free now that they have ceased operating, so the banner/name/accent
-  // machinery brands a heritage gate with no special-casing.
-  '9A': '#061d40',   // Air Atlantic
 
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   '8P':'#0C3473',   // Pacific Coastal — its midnight blue, not the generic navy
@@ -13536,13 +13532,16 @@ The rows value is the 'All | Tous'
     // lockup and clips at the single-line 108x620 default — the same caveat
     // already recorded against the dark entry.
     'F8':  { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 },
-    // v23759 — heritage demonstration carrier. Navy ink drawn for paper, so it
-    // belongs in the LIGHT table for the same reason Flair's black mark does.
-    '9A':  { src: '/logos/airlines/canadian/heritage/air-atlantic.svg', h: 96, w: 460 },
     'FLE': { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 }
   };
+  // v23760 — the heritage area is asked FIRST and answers only on a heritage
+  // page. Everywhere else _heritageBannerMark returns null and this line reads
+  // exactly as it always did. Keeping the artwork in the heritage block rather
+  // than seeded through BANNER_LIGHT_LOGO is what makes the separation real:
+  // a live board never has a heritage entry to match against in the first place.
   var _lightLogo = _bannerIsLight
-    ? (BANNER_LIGHT_LOGO[_bannerBrandCode] || BANNER_LIGHT_LOGO[airlineCode])
+    ? ((typeof _heritageBannerMark === 'function' && _heritageBannerMark(_bannerBrandCode || airlineCode))
+        || BANNER_LIGHT_LOGO[_bannerBrandCode] || BANNER_LIGHT_LOGO[airlineCode])
     : null;
   if (!_useOverrideFile && _lightLogo) {
     // v23755 — entries may be a plain path or {src,h,w}, matching the shape
@@ -22053,7 +22052,6 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
-  '9A': 'Air Atlantic',   // v23759 — heritage demonstration; ceased 1998
 
   // v23361 - Zurich's two remaining bare codes. IV601/IV600 run ZRH<->Pristina:
   // that is Air Prishtina, whose Swiss-Kosovo flights Chair Airlines operates,
@@ -24258,7 +24256,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23759';
+var FIDS_BUILD_TAG = 'v23760';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -26223,6 +26221,7 @@ var HERITAGE_CARRIERS = {
     era: 'until 1998',
     eraFr: 'jusqu’en 1998',
     fleet: 'BAe 146-200 · Dash 8-100',
+    bannerH: 96, bannerW: 460,
     // Its real network. Flight NUMBERS are illustrative — the destinations and
     // the aircraft are real, the specific numbers are not published anywhere
     // this could check, and the board says DEMONSTRATION beside them.
@@ -26235,8 +26234,65 @@ var HERITAGE_CARRIERS = {
       { c: 'YOW', n: 'OTTAWA' },       { c: 'YUL', n: 'MONTREAL' },
       { c: 'BOS', n: 'BOSTON' }
     ]
+  },
+  // Canadian Airlines International. Formed 27 March 1987 when Pacific Western
+  // bought CP Air; became an Air Canada subsidiary on 1 January 2001. Calgary.
+  //
+  // 'CDX' IS A SYNTHETIC CODE AND NOT THIS CARRIER'S DESIGNATOR. Its real ones
+  // are both unavailable: IATA CP now belongs to Compass, and ICAO CDN sits in
+  // FILTER_OUT — mislabelled there as Air Creebec, which is in fact YN/CRQ, so
+  // the entry is wrong, but it is not this change's business to move it.
+  //
+  // A heritage gate takes over whatever code its flights carry, so the code
+  // must belong to nobody. CDX was chosen by scanning every quoted 2-3
+  // character token in the codebase and picking one that appeared nowhere, and
+  // tests/heritage-demo.test.js re-runs that scan so a future collision fails
+  // the suite instead of quietly repainting a live carrier.
+  'CDX': {
+    name: 'Canadian Airlines',
+    mark: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
+    accent: '#061d40',
+    home: 'YYC',
+    era: '1987–2001',
+    eraFr: '1987–2001',
+    fleet: 'Boeing 737 · 767 · 747',
+    bannerH: 92, bannerW: 520,
+    // A national network: the domestic trunk plus the Pacific routes it was
+    // known for. Destinations are real; flight numbers are illustrative.
+    dests: [
+      { c: 'YVR', n: 'VANCOUVER' },   { c: 'YYZ', n: 'TORONTO' },
+      { c: 'YYC', n: 'CALGARY' },     { c: 'YUL', n: 'MONTREAL' },
+      { c: 'YEG', n: 'EDMONTON' },    { c: 'YWG', n: 'WINNIPEG' },
+      { c: 'YOW', n: 'OTTAWA' },      { c: 'YHZ', n: 'HALIFAX' },
+      { c: 'HKG', n: 'HONG KONG' },   { c: 'NRT', n: 'TOKYO' },
+      { c: 'LHR', n: 'LONDON' }
+    ]
   }
 };
+// ── THE HERITAGE AREA SUPPLIES ITS OWN BRANDING ────────────────────────────
+// v23760 — this is for historical purposes and must not reach the main feed,
+// so none of it is seeded into the live tables. AIRLINE_ACCENT, AIRLINE_NAME
+// and BANNER_LIGHT_LOGO carry no heritage entry at all: an ordinary board has
+// nothing to match against, which is a stronger guarantee than a code that
+// merely happens to be unused.
+//
+// Instead the accent and the name are written into those tables AT RUNTIME,
+// once, and only on a page that asked for a heritage carrier. The banner asks
+// _heritageBannerMark directly and gets null everywhere else.
+function _heritageBannerMark(code) {
+  var c = HERITAGE_CARRIERS[String(code || '').toUpperCase()];
+  if (!c || !_heritageCode()) return null;
+  return { src: c.mark, h: c.bannerH || 96, w: c.bannerW || 480 };
+}
+function _heritageInstallBranding() {
+  try {
+    var code = _heritageCode();
+    if (!code) return;
+    var c = HERITAGE_CARRIERS[code];
+    if (typeof AIRLINE_ACCENT !== 'undefined' && c.accent) AIRLINE_ACCENT[code] = c.accent;
+    if (typeof AIRLINE_NAME !== 'undefined' && c.name) AIRLINE_NAME[code] = c.name;
+  } catch (e) {}
+}
 // The carrier a heritage gate is currently pretending to be, or ''.
 function _heritageCode() {
   try {
@@ -26281,6 +26337,7 @@ function _heritageMarkBoard() {
     var code = _heritageCode();
     if (!code) return;
     document.documentElement.setAttribute('data-heritage', code);
+    _heritageInstallBranding();
     if (document.getElementById('heritageStamp')) return;
     var car = HERITAGE_CARRIERS[code];
     var el = document.createElement('div');
@@ -42196,6 +42253,23 @@ var HERITAGE_MARKS = [
     fr: 'St. John’s (Terre-Neuve) · partenaire de Canadien · jusqu’en 1998',
     // The Atlantic network, plus the three central-Canada cities it reached.
     airports: ['YYT', 'YHZ', 'YQX', 'YQM', 'YSJ', 'YFC', 'YDF', 'YQY', 'YYG', 'YYZ', 'YOW', 'YUL']
+  },
+  {
+    // v23760 — Canadian Airlines gets its own card now that its OWN wordmark
+    // is in the archive. It could not have one before: the only Canadian
+    // artwork held was the Partner endorsement, which is the mark a feeder
+    // carried and not this carrier's identity. Using it here would have said
+    // something false, which is why the earlier card carried Air Atlantic's
+    // endorsement instead of pretending to be Canadian.
+    //
+    // Formed 27 March 1987 when Pacific Western bought CP Air; became an Air
+    // Canada subsidiary on 1 January 2001. Both ends confirmed, so both print.
+    key: 'canadian-airlines',
+    file: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
+    name: 'Canadian Airlines',
+    en: 'Calgary · 1987–2001',
+    fr: 'Calgary · 1987–2001',
+    airports: '*CA'
   }
 ];
 // Canadian airports get the national carrier's card; the regional card is
