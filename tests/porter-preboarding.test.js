@@ -237,3 +237,29 @@ test('the tier collective name is renamed in French, not translated', () => {
   // other Porter name on this sign.
   assert.doesNotMatch(lbl.en, /Avid Traveller/);
 });
+
+test('all four elite tiers are named, Ascent included', () => {
+  // Porter publishes FOUR elite levels. Ascent sits between Venture and First
+  // and had no artwork at all, so a member of that tier read the marks and
+  // found their status named nowhere on the sign.
+  const body = lift('_pdLanesBodyHtml');
+  for (const tier of ['passport', 'venture', 'ascent', 'first']) {
+    assert.match(body, new RegExp('viporter_' + tier + '_single_line'),
+      `the ${tier} tier must be on the priority marks`);
+  }
+  // And the base member is NOT among them — it belongs with general boarding.
+  const prio = body.slice(body.indexOf('_prioMarks ='), body.indexOf('_prioSub'));
+  assert.doesNotMatch(prio, /viporter_member_single_line/,
+    'a plain member does not pre-board, so the mark belongs in the other column');
+});
+
+test('every tier mark points at a file that exists', () => {
+  // A missing mark fails silently — the img just does not draw, and the sign
+  // looks fine with one fewer tier on it. That is how Ascent went unnoticed.
+  const dir = path.resolve(__dirname, '..', 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
+  const body = lift('_pdLanesBodyHtml') + lift('_pdClassicMark');
+  const refs = [...body.matchAll(/\/logos\/airlines\/canadian\/porter\/([\w.-]+\.svg)/g)].map((m) => m[1]);
+  assert.ok(refs.length >= 5, `expected the five marks, found ${refs.length}`);
+  const missing = refs.filter((f) => !fs.existsSync(path.join(dir, f)));
+  assert.deepEqual(missing, [], `these marks are referenced but not on disk: ${missing.join(', ')}`);
+});

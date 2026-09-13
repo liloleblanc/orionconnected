@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2625,
+    "total": 2626,
     "by_category": {
       "ad": 10,
-      "airline": 1421,
+      "airline": 1422,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -5193,6 +5193,17 @@
       "subcategory": "canadian",
       "group": "Airlines — Canadian",
       "name": "viporter",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/porter/viporter_ascent_single_line_en.svg",
+      "file": "viporter_ascent_single_line_en.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "viporter ascent single line en",
       "iata": "",
       "country": "",
       "ext": "svg"

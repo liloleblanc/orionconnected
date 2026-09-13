@@ -12552,6 +12552,14 @@ function uxgGateHtml(ctx) {
         // words already printed directly above it.
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_passport_single_line_en.svg" alt="VIPorter Passport"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_venture_single_line_en.svg" alt="VIPorter Venture"></span>'
+        // v23748 — ASCENT, the tier that was never on the sign. Porter
+        // publishes FOUR elite levels and this one sits between Venture and
+        // First, so an Ascent member reading the marks found their status
+        // named nowhere. Its #332768 lands exactly where the progression
+        // predicts — member #027AC0, passport #1457BC, venture #153993,
+        // ascent #332768, first black — which is a decent check that the file
+        // is the real one rather than a look-alike.
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_ascent_single_line_en.svg" alt="VIPorter Ascent"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_first_single_line_en.svg" alt="VIPorter First"></span>'
         + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
         + '</div>';
