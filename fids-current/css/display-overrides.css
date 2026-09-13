@@ -18721,3 +18721,83 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-ma
   color: rgba(255,255,255,.62) !important;
   margin: .25em 0 .12em !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23758 — FROM THE ARCHIVE: the heritage card.
+
+   An archive label, not an advert. Every mark in
+   /logos/airlines/canadian/heritage/ is dark ink drawn for paper — navy
+   #061d40 on these two — so the card is LIGHT by construction and the
+   artwork is never recoloured. That is the same rule the gate orbs follow:
+   give the art a ground it can be read against rather than repainting it.
+
+   Appended, not spliced, per the standing rule for this file.
+
+   Every clamp carries a width term through min(), per the v23730 rule. A
+   vh-only clamp sizes off height alone and overflows the moment a board is
+   narrower than the geometry it was tuned on.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(6px, min(1.1vh, 1.2vw), 18px) !important;
+  /* Warm paper, not a white box: the marks were drawn for print stock. */
+  background: linear-gradient(180deg, #F6F3EC 0%, #EFEAE0 100%) !important;
+  padding: clamp(18px, min(4vh, 4.4vw), 64px) !important;
+  box-sizing: border-box !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap .hcard-kicker {
+  font-size: clamp(11px, min(1.5vh, 1.6vw), 20px) !important;
+  letter-spacing: .22em !important;
+  text-transform: uppercase !important;
+  font-weight: 700 !important;
+  color: rgba(6,29,64,.46) !important;
+  margin-bottom: clamp(4px, min(1.4vh, 1.5vw), 22px) !important;
+}
+/* The mark sits alone, at its own proportions. max-width keeps a wide
+   lockup (the Canadian Partner one is 3217x816) from touching the edges;
+   max-height keeps a squarer mark from crowding the caption. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap .hcard-plate {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 74% !important;
+  margin-bottom: clamp(8px, min(2.2vh, 2.4vw), 34px) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap .hcard-mark {
+  width: auto !important;
+  max-width: 100% !important;
+  max-height: clamp(52px, min(16vh, 17vw), 200px) !important;
+  object-fit: contain !important;
+  display: block !important;
+  filter: none !important;          /* never recolour the artwork */
+}
+/* The hairline is the only structure on the card: it separates the mark
+   from the facts, the way a museum label does. It was an ::after on a name
+   element that has since been removed as redundant, so it is now its own
+   element rather than hanging off something that no longer exists. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap .hcard-rule {
+  width: clamp(28px, min(5vh, 5.4vw), 70px) !important;
+  height: 2px !important;
+  margin: 0 0 clamp(8px, min(1.6vh, 1.7vw), 22px) !important;
+  background: #EF1A2E !important;   /* the chevron red, used exactly once */
+  flex: 0 0 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap .hcard-line {
+  font-size: clamp(12px, min(1.9vh, 2.1vw), 28px) !important;
+  font-weight: 600 !important;
+  color: rgba(6,29,64,.78) !important;
+  line-height: 1.35 !important;
+  max-width: 84% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .hcard-wrap .hcard-line-2 {
+  color: rgba(6,29,64,.5) !important;
+  font-weight: 500 !important;
+}
