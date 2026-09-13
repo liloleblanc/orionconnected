@@ -313,8 +313,8 @@ test('the upload still reaches the network when the session is good', async () =
 // ── the loop that made it unrecoverable ────────────────────────────────────
 
 test('signing in on a board writes BOTH copies, not just the one nobody reads first', () => {
-  // The loop behind "it keeps throwing me out", and why signing in again never
-  // helped. The board's own login wrote sessionStorage alone, while
+  // The loop behind the repeated ejections, and behind signing in again never
+  // helping. The board's own login wrote sessionStorage alone, while
   // _fidsAuthToken() reads localStorage FIRST (v23492). A stale durable token —
   // left by an earlier sign-in on index.html or picker.html, where auth.js DOES
   // write localStorage — outranked every fresh login done on the board. So:
