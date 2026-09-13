@@ -22496,6 +22496,20 @@ const IATA_TO_WORDMARK = {
   // itself never appears in any feed, which is why Chair was nowhere to be
   // seen despite its artwork being installed.
   'EK': 'emirates',
+  // v23764 — Qatar. The lettering alone, Latin and Arabic, drawn by the owner
+  // because nothing in the tree could fill this slot.
+  //
+  // NOT /logos/wordmarks/QR.svg, which already exists and is already wired
+  // into IATA_WORDMARK_ONE: that file is a LOCKUP, the words with the oryx
+  // beside them. A lockup here puts the carrier's symbol on a row that
+  // already draws the symbol in its orb, which is the duplication v23350 had
+  // to revert for SWISS. Letters only is the whole point of this table.
+  //
+  // The pair reverses the way the others do — the burgundy goes white for
+  // dark rows, the grey stays. QR grey measures 5.04:1 on the board's rows,
+  // so it survives, and keeping it is what holds QATAR and AIRWAYS apart as
+  // two words instead of flattening them into one white slab.
+  'QR': 'qatar-airways', 'QTR': 'qatar-airways',
   // v23373 - chair moves from IV to CS. IV is GP Aviation and should never
   // have worn Chair's mark.
   'CS': 'chair',      '2L': 'helvetic',
@@ -22695,6 +22709,12 @@ const LOGO_SUBFOLDER = {
   'elal-wordmark-light.svg':'airlines/european', 'elal-wordmark-dark.svg':'airlines/european',
   'etihad-wordmark-light.svg':'airlines/asian-other', 'etihad-wordmark-dark.svg':'airlines/asian-other',
   'emirates-wordmark-light.svg':'airlines/asian-other', 'emirates-wordmark-dark.svg':'airlines/asian-other',
+  // v23764 — Qatar. logoPath() resolves a bare filename through this table, so
+  // a pair that exists on disk but is not listed here is a DEAD POINTER: the
+  // banner quietly draws the carrier's name as text instead of the logo, with
+  // no error anywhere. The contract test walks the same table, which is what
+  // caught this one.
+  'qatar-airways-wordmark-light.svg':'airlines/asian-other', 'qatar-airways-wordmark-dark.svg':'airlines/asian-other',
   'NZ-wordmark-light.svg':'airlines/asian-other', 'NZ-wordmark-dark.svg':'airlines/asian-other',
   'airnorth-wordmark-light.svg':'airlines/canadian-regional', 'airnorth-wordmark-dark.svg':'airlines/canadian-regional',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
@@ -24285,7 +24305,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23762';
+var FIDS_BUILD_TAG = 'v23764';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

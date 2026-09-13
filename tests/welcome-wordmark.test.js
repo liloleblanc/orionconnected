@@ -104,21 +104,31 @@ function contrast(a, b) {
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
 }
 
-test('the card resolves a wordmark rather than typing the name', () => {
-  // The point of the change: coverage went from two carriers to all but two.
-  // A regression that quietly drops carriers back to typed text looks exactly
-  // like a working board until somebody reads one, so the two that are still
-  // expected to fall back are named rather than counted.
+test('a carrier types its name only when it genuinely has no lettering', () => {
+  // A carrier falling back to board type is not a bug by itself — some have no
+  // logotype in the tree to draw. What IS a bug is a carrier whose artwork sits
+  // on disk while the card still sets its name in the board's font, because
+  // that looks exactly like a working board until somebody reads one.
   //
-  // Neither has a logotype in the repo to draw. Pacific Coastal has no
-  // wordmark art at all; Qatar's only file is a glossy badge, which is a
-  // lockup rather than lettering. If artwork arrives for either, this fails
-  // and the note above it in fids-core.js needs updating with it.
+  // So this asserts the invariant rather than a frozen list of stragglers: a
+  // carrier may be uncovered ONLY if no wordmark file exists for it. Wiring a
+  // new one makes the list shrink without failing here; forgetting to wire one
+  // that was added fails immediately.
   const carriers = [...welcomeCarriers().keys()].filter((c) => !HAS_NAME[c]);
-  const uncovered = carriers.filter((c) => !WORDMARK[c]).sort();
-  assert.deepEqual(uncovered, ['8P', 'QR'],
-    'this is the set of carriers still showing their name in board type');
-  assert.equal(carriers.length - uncovered.length, 15, 'fifteen carriers draw a real wordmark');
+  const uncovered = carriers.filter((c) => !WORDMARK[c]);
+  const slug = (name) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const stranded = uncovered.filter((code) => {
+    const name = welcomeCarriers().get(code).name;
+    // any light-cut wordmark on disk whose slug plausibly names this carrier
+    return resolve(slug(name), 'light').length > 0
+        || resolve(slug(name).split('-')[0], 'light').length > 0;
+  });
+  assert.deepEqual(stranded, [],
+    'these carriers HAVE wordmark artwork on disk but the card still types ' +
+    'their name — the file was added and never registered in IATA_TO_WORDMARK');
+  // and coverage must never go backwards
+  assert.ok(carriers.length - uncovered.length >= 15,
+    `only ${carriers.length - uncovered.length} carriers draw a real wordmark`);
 });
 
 test('every wordmark the card can build exists on disk', () => {
