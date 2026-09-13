@@ -25,18 +25,29 @@ const path = require('node:path');
 const SRC = fs.readFileSync(
   path.resolve(__dirname, '..', 'fids-current', 'js', 'fids-core.js'), 'utf8');
 
+// Brace-matched source of a named function, so the harness lifts the REAL
+// implementation rather than a copy that can drift from it.
+function lift(name) {
+  const at = SRC.indexOf('function ' + name + '(');
+  assert.ok(at >= 0, `fids-core.js must still define ${name}`);
+  let depth = 0;
+  for (let k = SRC.indexOf('{', at); k < SRC.length; k++) {
+    if (SRC[k] === '{') depth++;
+    else if (SRC[k] === '}') { depth--; if (depth === 0) return SRC.slice(at, k + 1); }
+  }
+  throw new Error('unterminated ' + name);
+}
+
 // Lift the real builder and give it the collaborators it calls.
 function build(preActive, lang) {
-  const at = SRC.indexOf('function _pdLanesBodyHtml(');
-  assert.ok(at >= 0, 'fids-core.js must still define _pdLanesBodyHtml');
-  let i = SRC.indexOf('{', at), depth = 0, end = -1;
-  for (let k = i; k < SRC.length; k++) {
-    if (SRC[k] === '{') depth++;
-    else if (SRC[k] === '}') { depth--; if (depth === 0) { end = k + 1; break; } }
-  }
+  // v23746 — the builder gained three helpers of its own (the cabin heading and
+  // its status strip, the split lane row, and the base-tier mark on the general
+  // side). They live beside it rather than inside it, so they have to be lifted
+  // with it or the function throws on the first call.
+  const helpers = ['_pdCabinHdr', '_pdLaneRow', '_pdClassicMark'].map(lift).join('\n');
   const fn = new Function(
     '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF',
-    SRC.slice(at, end) + '\nreturn _pdLanesBodyHtml;',
+    helpers + '\n' + lift('_pdLanesBodyHtml') + '\nreturn _pdLanesBodyHtml;',
   )(
     (key) => '[' + key + ']',
     // v23530 — the sign reads ONE language from _GATE_LBL for the phase name
@@ -103,4 +114,94 @@ test('the French sign says it in French', () => {
   const html = build(true, 'fr');
   assert.ok(html.includes('Mineurs non accompagn'));
   assert.ok(html.includes('PorterReserve'), 'brand names stay as Porter writes them');
+});
+
+// ── v23746 — THE COLUMNS ARE HEADED BY THE CABIN, AND THE CABIN LOCALISES ───
+//
+// The columns used to be headed by the queueing concept — "Priority", "Rows".
+// A passenger knows which fare they bought, not which concept applies to them,
+// so the heading is now the cabin and the functional label sits under it.
+//
+// Porter LOCALISES these names. flyporter.com writes PorterReserve /
+// PorterClassic in English and PorterRéserve / PorterClassique on its fr-ca
+// pages, so a bilingual sign cannot print the English form twice. That is the
+// specific thing these tests hold.
+
+function cabinNames() {
+  const at = SRC.indexOf('  pdReserve: {');
+  assert.ok(at >= 0, 'fids-core.js must declare the pdReserve cabin label');
+  const end = SRC.indexOf('  photoId: {', at);
+  assert.ok(end > at, 'expected pdClassic and photoId to follow pdReserve');
+  return new Function('return {' + SRC.slice(at, end) + '};')();
+}
+
+test('the cabin names are the closed-up forms Porter publishes', () => {
+  const n = cabinNames();
+  assert.equal(n.pdReserve.en, 'PorterReserve');
+  assert.equal(n.pdClassic.en, 'PorterClassic');
+  // Spaced forms appear nowhere on flyporter.com; all 17 instances are closed up.
+  assert.doesNotMatch(n.pdReserve.en, /Porter Reserve/);
+  assert.doesNotMatch(n.pdClassic.en, /Porter Classic/);
+});
+
+test('the French side uses the French cabin names, accents and all', () => {
+  const n = cabinNames();
+  assert.equal(n.pdReserve.fr, 'PorterRéserve');
+  assert.equal(n.pdClassic.fr, 'PorterClassique');
+  // The failure this prevents: printing the English brand on the French half.
+  assert.notEqual(n.pdReserve.fr, n.pdReserve.en);
+  assert.notEqual(n.pdClassic.fr, n.pdClassic.en);
+});
+
+test('"Avid Traveller" is not used as a cabin subtitle', () => {
+  // It was drawn under PorterReserve in the supplied design. Porter's own
+  // footnote defines it as the VIPorter elite tiers — "Avid Traveller refers to
+  // Passport, Venture, Ascent and First membership levels" — not as a name for
+  // the cabin. Cabin and status are independent: an Avid Traveller can be
+  // seated in PorterClassic, and PorterReserve can be bought with no status.
+  // Printing it as a cabin subtitle would state something untrue about who the
+  // cabin is for, and the sign already carries the term correctly in the marks.
+  const hdr = lift('_pdCabinHdr');
+  assert.doesNotMatch(hdr, /Avid\s*Traveller/i,
+    'the cabin heading must not carry the loyalty-status term');
+});
+
+test('each cabin says whether IT is boarding', () => {
+  // The best idea in the supplied design: nothing on the old sign told a
+  // passenger whether their own cabin was being called — they had to infer it
+  // from the row band.
+  const hdr = lift('_pdCabinHdr');
+  assert.match(hdr, /nowBoarding/, 'a live cabin must read Now Boarding');
+  assert.match(hdr, /boardSoon/, 'a cabin not yet called must say so');
+  // Reserve is live for the whole window; Classic only once general boarding
+  // has commenced.
+  const body = lift('_pdLanesBodyHtml');
+  assert.match(body, /_pdCabinHdr\('pdReserve',\s*true\)/,
+    'PorterReserve pre-boards and its queue stays open, so it is always live');
+  assert.match(body, /_pdCabinHdr\('pdClassic',\s*!preActive\)/,
+    'PorterClassic is not boarding while pre-boarding is still running');
+});
+
+test('each lane numeral carries its own arrow', () => {
+  const row = lift('_pdLaneRow');
+  // "1 • 2" in one element could only ever be pointed at once.
+  assert.match(row, /g8-pd-arr dl/, 'the left lane needs a down-left arrow');
+  assert.match(row, /g8-pd-arr dr/, 'the right lane needs a down-right arrow');
+  const body = lift('_pdLanesBodyHtml');
+  assert.match(body, /_pdLaneRow\('1',\s*'2'\)/, 'the priority queue is lanes 1 and 2');
+  assert.match(body, /_pdLaneRow\('3',\s*'4'\)/, 'general boarding is lanes 3 and 4');
+});
+
+test('the base VIPorter tier sits with general boarding, not with priority', () => {
+  // Three elite marks are in the priority column because those tiers pre-board.
+  // A plain member does not, so the mark belongs where they actually queue.
+  const classic = lift('_pdClassicMark');
+  assert.match(classic, /viporter_member_single_line/,
+    'the base tier mark belongs on the PorterClassic side');
+  const body = lift('_pdLanesBodyHtml');
+  const prioAt = body.indexOf('g8-pd-prio');
+  const markAt = body.indexOf('_pdClassicMark');
+  const rowsAt = body.indexOf('g8-pd-rows');
+  assert.ok(rowsAt > prioAt && markAt > rowsAt,
+    'the member mark must be emitted inside the general-boarding column');
 });

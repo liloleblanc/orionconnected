@@ -12535,8 +12535,86 @@ function uxgGateHtml(ctx) {
       ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1('preboardList', _frF) + '</span></div>' + _prioMarks
       : _prioMarks;
     return '<div class="g8-board-body g8-lanes-pd">'
-      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>' + _prioSub + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
-      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div>' + _comingLineHtml(comingVal) + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
+      + '<div class="g8-board-col now g8-pd-prio">'
+        + _pdCabinHdr('pdReserve', true)
+        + '<div class="g8-board-grp-label">' + _prioT + '</div>'
+        + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>'
+        + _prioSub
+        + _pdLaneRow('1', '2')
+        + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div>'
+        + '<div class="g8-pd-idnote"><i class="ac-ico ac-ico-flight" aria-hidden="true"></i><span>' + _gateLbl('photoId', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ') + '</span></div>'
+      + '</div>'
+      + '<div class="g8-board-col next g8-pd-rows">'
+        + _pdCabinHdr('pdClassic', !preActive)
+        + '<div class="g8-board-grp-label">' + _rowsLbl + '</div>'
+        + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div></div>'
+        + _pdClassicMark()
+        + _pdLaneRow('3', '4')
+        + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div>'
+        + _comingLineHtml(comingVal)
+      + '</div>'
+      + '</div>';
+  }
+
+  // \u2500\u2500 THE CABIN HEADING, AND WHETHER THAT CABIN IS BEING CALLED \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  //
+  // The columns used to be headed by the QUEUEING CONCEPT \u2014 'Priority' and
+  // 'Rows'. A passenger knows which fare they bought, not which concept
+  // applies to them, so they are now headed by the cabin: PorterReserve and
+  // PorterClassic. The functional label stays underneath, where it explains
+  // the heading rather than replacing it.
+  //
+  // Porter LOCALISES these. The French side reads PorterR\u00e9serve and
+  // PorterClassique, so the name comes from _GATE_LBL like every other string
+  // and swaps with the language instead of printing the English form twice.
+  //
+  // NOT 'Avid Traveller'. It was drawn under PorterReserve in the mock-up, but
+  // Porter's own footnote defines it as the VIPorter elite tiers \u2014 "Avid
+  // Traveller refers to Passport, Venture, Ascent and First membership levels"
+  // \u2014 not as a name for this cabin. Cabin and status are independent at Porter:
+  // an Avid Traveller can be sitting in PorterClassic, and a PorterReserve
+  // ticket can be bought with no status at all. Printing it as a cabin subtitle
+  // would state something untrue about who the cabin is for, and the sign
+  // already carries the term correctly in the tier marks below.
+  //
+  // The status strip is the mock-up's best idea. Nothing on the sign currently
+  // tells a passenger whether THEIR cabin is being called \u2014 they have to infer
+  // it from the row band. Now it says so outright. PorterReserve is live for
+  // the whole window (it pre-boards, and the priority queue stays open after);
+  // PorterClassic reads "boarding will begin shortly" until general boarding
+  // commences.
+  function _pdCabinHdr(key, live) {
+    var name = _gateLbl1(key, _frF) || (key === 'pdReserve' ? 'PorterReserve' : 'PorterClassic');
+    var st = live
+      ? _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ')
+      : _gateLbl('boardSoon', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
+    return '<div class="g8-pd-cabin">' + name + '</div>'
+      + '<div class="g8-pd-status' + (live ? ' is-live' : '') + '">' + st + '</div>';
+  }
+
+  // The two lanes as separate numerals, each with its own arrow pointing at the
+  // lane it names. '1 \u2022 2' in one element could only ever be pointed at once;
+  // split, each numeral points where a passenger actually has to walk.
+  //
+  // The arrows are the ac-icons diagonal (e929) rotated \u2014 the kit ships exactly
+  // one diagonal, so the down-left is the same glyph turned 180\u00b0. Using the
+  // kit's own arrow rather than the inline SVG keeps this sign's arrows
+  // identical to every other arrow on the boards.
+  function _pdLaneRow(a, b) {
+    return '<div class="g8-pd-lanerow">'
+      + '<span class="g8-pd-lane"><i class="ac-ico g8-pd-arr dl" aria-hidden="true"></i><b>' + a + '</b></span>'
+      + '<span class="g8-pd-lanelbl">' + _gateLbl('useLanes', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ') + '</span>'
+      + '<span class="g8-pd-lane"><b>' + b + '</b><i class="ac-ico g8-pd-arr dr" aria-hidden="true"></i></span>'
+      + '</div>';
+  }
+
+  // The base VIPorter tier belongs on the RIGHT. The three elite marks in the
+  // priority column are who pre-boards; a plain VIPorter member does not, so
+  // their mark sits with general boarding where they actually queue. The file
+  // was already in the tree and had never been wired to anything.
+  function _pdClassicMark() {
+    return '<div class="g8-pd-preboard-marks g8-pd-marks-classic">'
+      + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_en.svg" alt="VIPorter"></span>'
       + '</div>';
   }
 
@@ -23585,6 +23663,30 @@ var _GATE_LBL = {
   // TL(), not the bilingual _gateLbl pairing — five categories side by side in
   // two languages would not fit a gate sign, and the board already rotates its
   // language, so each pass shows the whole list in one of them.
+  // v23746 — the cabin names, which Porter LOCALISES. The English forms are
+  // closed up with an internal capital ('PorterReserve', not 'Porter Reserve')
+  // and every one of the 17 instances on flyporter.com agrees. The French side
+  // is NOT the same string: Porter writes 'PorterRéserve' and 'PorterClassique'
+  // on its fr-ca pages, so a bilingual sign has to swap the brand name with the
+  // language rather than print the English one twice.
+  pdReserve: {
+    en:'PorterReserve', fr:'PorterRéserve',
+    es:'PorterReserve', de:'PorterReserve', it:'PorterReserve', pt:'PorterReserve'
+  },
+  pdClassic: {
+    en:'PorterClassic', fr:'PorterClassique',
+    es:'PorterClassic', de:'PorterClassic', it:'PorterClassic', pt:'PorterClassic'
+  },
+  // The ID reminder. Kept generic rather than Porter-branded: it is an airport
+  // instruction, not a product, and it applies at every gate the sign serves.
+  photoId: {
+    en:'Have your photo ID ready',
+    fr:'Ayez votre pièce d’identité avec photo prête',
+    es:'Tenga su identificación con foto lista',
+    de:'Halten Sie Ihren Lichtbildausweis bereit',
+    it:'Tenete pronto un documento con foto',
+    pt:'Tenha sua identificação com foto pronta'
+  },
   preboardList: {
     en:'Passengers with disabilities \u00b7 Unaccompanied minors \u00b7 Families with children 2 and under \u00b7 Premium VIPorter \u00b7 PorterReserve',
     fr:'Passagers handicap\u00e9s \u00b7 Mineurs non accompagn\u00e9s \u00b7 Familles avec enfants de 2 ans et moins \u00b7 VIPorter Premium \u00b7 PorterReserve',
