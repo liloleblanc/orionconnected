@@ -197,7 +197,7 @@ test('a 401 on a token that has NOT expired leaves the session alone', () => {
   assert.equal(rescue(env, 401), false,
     'a live token means the 401 was about this request, not the session');
   assert.equal(env.localStorage.getItem('fids_token'), LIVE,
-    'the session must survive — losing it here is the "it throws me out" report');
+    'the session must survive — losing it here is the reported ejection');
   assert.equal(env.sessionStorage.getItem('fids_token'), LIVE);
   assert.equal(env.shown, 0, 'and no login modal, because the login is fine');
 });
