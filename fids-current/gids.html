@@ -870,7 +870,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23758"></script>
+<script src="js/fids-core.js?v=23759"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -938,6 +938,24 @@ window.addEventListener("DOMContentLoaded", async function() {
     var _signedIn = false;
     try { _signedIn = !!(localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token')); } catch (e) {}
     var startMode = _urlMode || (_signedIn ? 'live' : (sessionStorage.getItem('fids_mode') || 'live'));
+    // v23759 — a heritage gate is a DEMONSTRATION by definition: every carrier
+    // it can show has ceased operating, so there is no live data for it and
+    // asking for any would be meaningless. Force demo regardless of mode or a
+    // stored session, and stamp the board so it can never be mistaken for the
+    // real one.
+    try {
+      if (typeof _heritageCode === 'function' && _heritageCode()) {
+        startMode = 'demo';
+        // LIVE_MODE is set true at core load for anyone holding a session
+        // token (the restore at fids-core.js), independently of startMode. On
+        // a heritage gate that left the board asking a live feed for a
+        // carrier that stopped flying in 1998 and painting 'Awaiting Next
+        // Flight'. Clear it explicitly: a signed-in operator must get the
+        // demonstration too, because there is nothing else to get.
+        LIVE_MODE = false;
+        _heritageMarkBoard();
+      }
+    } catch (e) {}
     var requestedGate = params.get('gate') || '';   // e.g. C77, A4, 12
 
     var apSel = document.getElementById('apSel');

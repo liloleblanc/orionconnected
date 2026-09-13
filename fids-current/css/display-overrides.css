@@ -18824,3 +18824,46 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   display: block !important;
   filter: none !important;          /* never recolour the artwork */
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23759 — THE HERITAGE DEMONSTRATION STAMP.
+
+   Every carrier a heritage gate can show has ceased operating. An unmarked
+   board of its flights would not read as nostalgia — it would read as a
+   fault, or as the feed having gone wrong. So the stamp is permanent, it is
+   bilingual like everything else a passenger reads here, and it sits above
+   the board rather than inside it so no gate re-render can drop it.
+
+   Deliberately NOT subtle. It is the one element on this page whose job is
+   to be noticed.
+   ═══════════════════════════════════════════════════════════════════════ */
+html[data-heritage] #heritageStamp {
+  position: fixed !important;
+  left: 0 !important; right: 0 !important; bottom: 0 !important;
+  z-index: 2147483000 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  padding: clamp(6px, min(1.1vh, 1.2vw), 16px) clamp(10px, min(2vh, 2.2vw), 30px) !important;
+  background: repeating-linear-gradient(135deg, #7f1d1d 0 14px, #6b1717 14px 28px) !important;
+  color: #fff !important;
+  font-family: inherit !important;
+  text-align: center !important;
+  letter-spacing: .16em !important;
+  box-shadow: 0 -6px 24px rgba(0,0,0,.4) !important;
+  pointer-events: none !important;
+}
+html[data-heritage] #heritageStamp b {
+  font-size: clamp(12px, min(1.9vh, 2.1vw), 26px) !important;
+  font-weight: 900 !important;
+  letter-spacing: .22em !important;
+}
+html[data-heritage] #heritageStamp span {
+  font-size: clamp(9px, min(1.3vh, 1.4vw), 17px) !important;
+  font-weight: 600 !important;
+  letter-spacing: .08em !important;
+  opacity: .88 !important;
+}
