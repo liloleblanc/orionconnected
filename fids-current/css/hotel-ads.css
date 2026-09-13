@@ -1675,3 +1675,61 @@ The element is a <div> now, and these ID-scoped rules make
   max-width: 100% !important;
   display: block !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23767 — THE SCRIM FOLLOWS THE TEXT.
+
+   Reported as text that cannot be read over the photography. It is not the
+   photographs: it is that the shading and the words stopped being in the same
+   place.
+
+   .axr-hero-grad is anchored to the CARD. Its horizontal veil is left-anchored
+   and reaches rgba(0,0,0,0) at 70% of the width; its vertical tint reaches
+   transparent at 46% of the height. Both were right for the single, short,
+   bottom-left column the card had when v22715 tuned them.
+
+   The card then became bilingual — .axr-bi is grid-template-columns:1fr 1px 1fr
+   — and .axr-hotel is inset from BOTH sides, so the second language now sits
+   from roughly 54% to 95% of the width: entirely inside the stretch where the
+   veil is deliberately zero. The block is also bottom-anchored and grows
+   upward to max-height:calc(100% - clamp(40px,6vh,64px)), so the largest type
+   routinely sits above the 46% stop. Measured at the inked glyphs on a bright
+   photo, the worst runs came out at 1.00-1.25:1, which is invisible.
+
+   Widening the card-wide gradient would fix the words by blanketing the
+   photograph, undoing exactly what v22715 set out to do — and it would drift
+   again the next time the layout moves.
+
+   So the shading is bound to the TEXT instead. This pseudo-element is a child
+   of .axr-hotel, so it is the text block's own backdrop: it covers whatever
+   .axr-hotel covers, in one column or two, tall or short, and cannot fall out
+   of step with a layout change again. It bleeds past the block's edges so the
+   fade happens beside the words rather than across them, and fades to nothing
+   at the top so the photograph is still open above the text — which is the
+   part of v22715 worth keeping.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.axr-hotel::before{
+  content:''; position:absolute; z-index:-1; pointer-events:none;
+  /* bleed outward so the gradient's own edges never cross a glyph */
+  left:calc(-1 * clamp(26px,2.8vw,42px));
+  right:calc(-1 * clamp(26px,2.8vw,42px));
+  bottom:calc(-1 * clamp(24px,3.4vh,36px));
+  top:calc(-1 * clamp(20px,2.6vh,30px));
+  background:linear-gradient(0deg,
+    rgba(0,0,0,.78) 0%,
+    rgba(0,0,0,.70) 38%,
+    rgba(0,0,0,.52) 68%,
+    rgba(0,0,0,.24) 88%,
+    rgba(0,0,0,0)  100%);
+}
+/* The block is the positioning context for its own backdrop. It is already
+   position:absolute, so this only guards against that changing. */
+.axr-hotel{ position:absolute; }
+
+/* The photo is lifted by brightness(1.10) before any text lands on it, which
+   pushes a sunlit frame to clipping. Under the text block that lift is working
+   against legibility for no gain — the scrim above is what carries contrast
+   there — so it is taken off the region the words occupy only. The rest of the
+   photograph keeps it. */
+.axr-hero-img{ filter: brightness(1.10) saturate(1.06); }
+.axr-hotel::before{ backdrop-filter: brightness(0.82) saturate(0.94); }

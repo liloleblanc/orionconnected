@@ -23413,6 +23413,25 @@ const ES_BOARD_AIRPORTS = new Set([
 // Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
 // drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
 const BOARD_LANG_DEFAULTS = {
+  // v23767 — QUÉBEC BOARDS LEAD IN FRENCH.
+  //
+  // Everything else in this table picks WHICH two languages a board speaks.
+  // These two pick the ORDER, and the order is the point: in Québec French is
+  // not the translation, it is the first language a passenger reads. The
+  // en/fr fallback below put English first on a Montréal board, which is the
+  // wrong way round for the province it is standing in.
+  //
+  // Both live Québec airports are named rather than derived, because there is
+  // no province field to derive from — the board knows IATA codes, not
+  // jurisdictions. Add a code here when a Québec airport goes live; YMX
+  // (Mirabel) and YRJ (Roberval) are deliberately absent, being referenced as
+  // destinations only and served by no feed.
+  //
+  // The saved per-airport choice and ?langs= still sit above this, so an
+  // operator can still put English first on a specific screen.
+  YUL: ['fr', 'en'],
+  YQB: ['fr', 'en'],
+
   MCO: ['en', 'es'],
  // v23247 — Miami runs English+Spanish (the owner's boards are assigned en/es;
   // without a baked default a profile-wiped display fell back to the Canada
@@ -24394,7 +24413,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23766';
+var FIDS_BUILD_TAG = 'v23767';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -37615,7 +37634,7 @@ function buildGateAdHtml(ad) {
     + (ad.subLogo
         // v23123 — the sub line renders the brand's real WORDMARK when one is
         // supplied; otherwise the plain name as before.
-        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(34px,4.2vh,64px);width:auto;max-width:60%;object-fit:contain;margin:clamp(12px,2vh,22px) auto 0;display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
+        ? '<img src="' + ad.subLogo + '" alt="' + (ad.sub || '') + '" style="height:clamp(44px,5.2vw,78px);width:auto;max-width:82%;object-fit:contain;margin:clamp(12px,2vh,22px) auto 0;display:block;" onerror="this.outerHTML=\'<div style=&quot;font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);&quot;>' + (ad.sub || '') + '</div>\'">'
         : '<div style="font-size:clamp(28px,3.4vw,50px);font-weight:600;color:' + _stdSubFg + ';margin-top:clamp(12px,2vh,22px);line-height:1.25;letter-spacing:0.2px;">' + (ad.sub || '') + '</div>')
     + '</div></div>'
   );
@@ -42944,7 +42963,17 @@ function _renderWxCard(el) {
     // The city is appended after a middot so the bilingual pair keeps the bar
     // to itself ("I do not want the text seperated unless its the full
     // sentence") rather than chaining three bars in one line.
-    var _wxForCity = ' <span class="wxc-bar">|</span> ' + _wxCityOf(dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest);
+    // v23767 — THE PLACE TRAVELS AS ONE PIECE.
+    // This header is a four-part chain: EN label, FR label, city, IATA. It was
+    // one text run, so the browser broke it wherever the width ran out —
+    // measured on a Flair board at Abbotsford it left 'ABBOTSFORD |' hanging
+    // and orphaned 'YXX' alone on the second line. The rule the owner states
+    // is that a line may be two lines, but never a phrase cut in half.
+    // The city and its code are now one unbreakable unit, so the only place
+    // the header can break is between the label pair and the place.
+    var _wxForCity = ' <span class="wxc-bar">|</span> <span class="wxc-t-place">'
+      + _wxCityOf(dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest)
+      + '</span>';
     var _wxStripsHtml =
         (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxForCity + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
       + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
