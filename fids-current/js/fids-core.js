@@ -24248,7 +24248,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23757';
+var FIDS_BUILD_TAG = 'v23758';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38944,6 +38944,15 @@ function renderGateAd(index) {
   }
   // Any non-bigcraft slide: tear the takeover down (overlay + map + class).
   try { if (typeof _bigCraftTeardown === 'function') _bigCraftTeardown(); } catch (e) {}
+  // FROM THE ARCHIVE — heritage mark. Skips itself the same way the weather
+  // card does when there is nothing true to show for this airport.
+  if (slide && slide.type === 'heritage') {
+    if (typeof _renderHeritageCard === 'function' && _renderHeritageCard(el)) return;
+    slot = (slot + 1) % totalSlots;
+    _gateAdIndex = slot;
+    window._gateAdCurrentIdx = slot;
+    slide = slides[slot] || slide;
+  }
   // ARRIVAL WEATHER scene (destination card + outlook).
   if (slide && slide.type === 'wxcard') {
     if (typeof _renderWxCard === 'function' && _renderWxCard(el)) return;
@@ -39456,6 +39465,8 @@ function _getGateAdDwellMs(slide) {
   // aboard to map, thats it, really bumping' cadence.
   if (slide.type === 'bigcraft') return 45000;
   if (slide.type === 'wxcard') return 24000;
+  // Long enough to read a name and two caption lines without lingering.
+  if (slide.type === 'heritage') return 14000;
   // v218.96: custom slides from the Gate Theme editor carry their own
   // configured duration. Clamp to a sensible 2s–600s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day, while
@@ -39714,6 +39725,19 @@ function _buildGateAdSlideList() {
       // so the outlook is already cached when the weather slide appears
       // and it paints ONCE (the cold fetch was the second 'bump', the owner).
       try { _wxFetchDaily(String(_wxD).toUpperCase(), null); } catch (e2) {}
+    }
+  } catch (e) {}
+  // ── 8. FROM THE ARCHIVE — one heritage mark, once per cycle, only where
+  // that carrier actually flew. _heritagePick returns null everywhere else
+  // and the slide is simply not added, so no gate has to skip a dead slot.
+  try {
+    var _hIa = '';
+    try { _hIa = String(window._gateIata || '').toUpperCase(); } catch (eH2) {}
+    if (_hIa && typeof _heritagePick === 'function' && _heritagePick.peek !== false) {
+      var _hHas = HERITAGE_MARKS.some(function (m) {
+        return (m.airports === '*CA') ? _heritageIsCanadian(_hIa) : m.airports.indexOf(_hIa) !== -1;
+      });
+      if (_hHas) deck.push({ type: 'heritage' });
     }
   } catch (e) {}
 
@@ -42009,6 +42033,131 @@ var _WXLBL = {
   'thunderstorms-rain':     { en:'Thunderstorm', fr:'Orage', es:'Tormenta', de:'Gewitter', it:'Temporale', pt:'Trovoada', ja:'雷雨', zh:'雷暴', ar:'عاصفة رعدية' },
   'wind': { en:'Windy', fr:'Venteux', es:'Ventoso', de:'Windig', it:'Ventoso', pt:'Ventoso', ja:'強風', zh:'大风', ar:'عاصف' }
 };
+
+// ── FROM THE ARCHIVE — a heritage mark, captioned ──────────────────────────
+// v23758 — the tree already carried heritage airline artwork under
+// /logos/airlines/canadian/heritage/ and nothing had ever rendered it. This
+// is the surface it was waiting for.
+//
+// An ARCHIVE CARD, not an advertisement. Cream stock, the mark at its own
+// size, a short factual caption, and nothing that pretends to sell anything.
+// Every mark in the set is dark ink drawn for paper — navy #061d40 for the
+// two here — so the card is light by construction and the artwork is never
+// recoloured, which is the same rule the gate orbs follow.
+//
+// CAPTIONS ARE CHECKED FACTS, and this goes out on a public stream. Only
+// carriers whose history could be confirmed are listed, with the dates that
+// agree across sources; where sources disagreed the claim was dropped rather
+// than hedged. Air Atlantic's founding year is reported as both 1985 and 1986
+// in different places, so it is not printed at all — the card says what it
+// was and when it ended, both of which are solid.
+//
+// It is scoped to airports the carrier actually served. A heritage card for
+// an Atlantic Canada feeder at a European gate would be a non sequitur, and
+// worse, would read as a data error.
+var HERITAGE_MARKS = [
+  {
+    key: 'air-atlantic',
+    file: '/logos/airlines/canadian/heritage/air-atlantic.svg',
+    name: 'Air Atlantic',
+    // THE ENDORSEMENT IS NOT A SECOND CARRIER.
+    //
+    // canadian-airlines-partner.svg is the bilingual 'Partenaire / Canadian
+    // Airlines / Partner' lockup — the mark a FEEDER carried to show whose
+    // network it fed. It is not Canadian Airlines' own identity, and an
+    // earlier version of this card used it as one, captioning it 'Canadian
+    // Airlines · Calgary · 1987-2001'. That put a partner endorsement on a
+    // board as if it were the mainline carrier's logo, which is precisely the
+    // kind of thing a heritage card exists to get right.
+    //
+    // Air Atlantic fed Canadian Pacific Air Lines and then Canadian Airlines
+    // International, so the two marks belong on ONE card, in the relationship
+    // they actually had: the carrier's own wordmark, with the endorsement
+    // smaller beneath it, the way it sat on the aircraft.
+    //
+    // A card for Canadian itself would need Canadian's OWN wordmark, which
+    // this folder does not have.
+    endorsement: '/logos/airlines/canadian/heritage/canadian-airlines-partner.svg',
+    en: 'St. John’s, Newfoundland · a Canadian Partner · until 1998',
+    fr: 'St. John’s (Terre-Neuve) · partenaire de Canadien · jusqu’en 1998',
+    // The Atlantic network, plus the three central-Canada cities it reached.
+    airports: ['YYT', 'YHZ', 'YQX', 'YQM', 'YSJ', 'YFC', 'YDF', 'YQY', 'YYG', 'YYZ', 'YOW', 'YUL']
+  }
+];
+// Canadian airports get the national carrier's card; the regional card is
+// scoped to its own network above.
+function _heritageIsCanadian(iata) {
+  try {
+    var c = (AP[iata] || {}).country || '';
+    if (c) return /^(CA|CAN|Canada)$/i.test(String(c));
+  } catch (e) {}
+  // AP carries no country for every entry, so fall back to the transport
+  // canada prefix: Canadian airports are the Y-codes on this roster.
+  return /^Y/.test(String(iata || '').toUpperCase());
+}
+function _heritagePick(iata) {
+  var ia = String(iata || '').toUpperCase();
+  if (!ia) return null;
+  var pool = HERITAGE_MARKS.filter(function (m) {
+    if (m.airports === '*CA') return _heritageIsCanadian(ia);
+    return m.airports.indexOf(ia) !== -1;
+  });
+  if (!pool.length) return null;
+  // Rotate through whatever is true for this airport, one per cycle, so a
+  // board that runs all day does not show the same card every time. Keyed off
+  // the airport so two screens at one gate stay in step.
+  window._heritageIdx = window._heritageIdx || {};
+  var n = window._heritageIdx[ia] || 0;
+  window._heritageIdx[ia] = (n + 1) % pool.length;
+  return pool[n % pool.length];
+}
+function _renderHeritageCard(el) {
+  try {
+    if (!el) return false;
+    var ia = '';
+    try { ia = String(window._gateIata || '').toUpperCase(); } catch (e) {}
+    var mark = _heritagePick(ia);
+    if (!mark) return false;                       // nothing true here — skip
+    var frF = false;
+    try { frF = (typeof frFirstAirport === 'function') && frFirstAirport(ia); } catch (e2) {}
+    var esc = function (s) {
+      return String(s == null ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    };
+    // Both lines, French first at the French-first airports — the same order
+    // every other bilingual surface on this board uses.
+    var l1 = frF ? mark.fr : mark.en;
+    var l2 = frF ? mark.en : mark.fr;
+    var kicker = frF ? 'Depuis les archives &nbsp;|&nbsp; From the archive'
+                     : 'From the archive &nbsp;|&nbsp; Depuis les archives';
+    var html =
+      '<div class="hcard-wrap">'
+      +   '<div class="hcard-kicker">' + kicker + '</div>'
+      +   '<div class="hcard-plate">'
+      +     '<img class="hcard-mark" src="' + esc(mark.file) + '" alt="' + esc(mark.name) + '">'
+      +   '</div>'
+      // The endorsement, smaller and beneath — the relationship it actually
+      // had, not a second carrier given equal billing.
+      +   (mark.endorsement
+            ? '<div class="hcard-endorse"><img src="' + esc(mark.endorsement)
+              + '" alt="Canadian Partner"></div>'
+            : '')
+      // NO name line. Every mark in this set is a WORDMARK — it already
+      // says 'Air Atlantic' or 'Canadian Airlines' in the carrier's own
+      // lettering. Setting the name again underneath it in the board's font
+      // was redundant the moment it was on screen, and it competed with the
+      // artwork it was supposed to introduce. The mark names the carrier;
+      // the label carries the facts. `alt` keeps the name for anything that
+      // cannot render the image.
+      +   '<div class="hcard-rule" aria-hidden="true"></div>'
+      +   '<div class="hcard-line">' + esc(l1) + '</div>'
+      +   (l2 && l2 !== l1 ? '<div class="hcard-line hcard-line-2">' + esc(l2) + '</div>' : '')
+      + '</div>';
+    if (el.innerHTML !== html) el.innerHTML = html;
+    return true;
+  } catch (e) { return false; }
+}
+
 function _renderWxCard(el) {
   try {
     var cf = window._gateCurrentFlight;
