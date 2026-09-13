@@ -8408,6 +8408,20 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // Naming the same art under airlines/<region>/ would do the opposite.
         'QR':  '/logos/airline-tiles/QTR.svg',
         'QTR': '/logos/airline-tiles/QTR.svg',
+        // v23763 — PACIFIC COASTAL. The carrier had no artwork anywhere in the
+        // repo: absent from every emblem, tile and wordmark table, so its orb
+        // fell through to the monogram and its banner to the bare name. The
+        // tile is a hand-drawn reconstruction of the mark, because no usable
+        // source file for this airline exists to be sourced or traced from.
+        //
+        // It follows the tile convention exactly, which is why it needs no
+        // special handling: square canvas, full-bleed brand ground, aircraft
+        // knocked out in white. Measured on a raster rather than from the path
+        // data — the white ink reaches 88.5% of the inscribed radius, inside
+        // the ~95% the circular crop allows, so the mark survives the orb with
+        // room to spare while the ground is clipped, which is its job.
+        '8P':  '/logos/airline-tiles/PCO.svg',
+        'PCO': '/logos/airline-tiles/PCO.svg',
         // Canadian carriers
         'AC':  '/logos/airlines/canadian/AC.TO.svg',
         'AC1': '/logos/airlines/canadian/AC.TO.svg',
@@ -24285,7 +24299,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23762';
+var FIDS_BUILD_TAG = 'v23763';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
