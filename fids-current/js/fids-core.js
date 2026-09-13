@@ -14602,6 +14602,71 @@ function gateAutofit(root) {
   // 'expected | prévu' clipped and colliding with the Operated-By row
   // Opt-in, so the fitters whose
   // boxes DO grow with their text keep their existing behaviour exactly.
+  // v23753 — THE OVERFLOW THAT TRUNCATES IS TOO SMALL FOR scrollWidth TO SEE.
+  //
+  // Reported on a YQM gate 4 sign: the destination read 'Toron…' with the panel
+  // obviously wide enough. Measured on the live board at 1680x1050 — the fitter
+  // had settled on 72px, where 'Toronto' lays out at 267.27px inside a 266.91px
+  // box. A genuine overflow of a quarter of a pixel, and the browser ellipsizes
+  // on exactly that fractional value.
+  //
+  // Every width test in the fitters used scrollWidth vs clientWidth, and both
+  // are INTEGERS. Both rounded to 267, so the test read `267 > 267` and the
+  // search concluded it fit. The content+box cache key had not changed either,
+  // so it kept that size on every later pass. Each step agreed with itself and
+  // the sign stayed wrong.
+  //
+  // scrollWidth cannot be made to answer this. For a block element it never
+  // drops below clientWidth — it is 267 at 12px and at 72px alike — so it
+  // reports only that content has spilled OUTSIDE the box, in whole pixels. It
+  // can never report how much room is left inside one. (Demanding
+  // `scrollWidth <= clientWidth - 1` looks like a fix and is unsatisfiable: it
+  // pins every value at the 12px floor. Verified in preview.)
+  //
+  // A Range over the contents does answer it, fractionally, which is the same
+  // geometry the layout engine ellipsizes against. Half a pixel of slack keeps
+  // the comparison off the exact boundary.
+  //
+  // Whether the clipping shows at all depends on font rasterisation, DPI and
+  // zoom — which is why one screen truncates and another does not on the same
+  // build, and why this survived: it is not reproducible by looking elsewhere.
+  //
+  // INLINE CONTENT ONLY. A Range over block-level children returns the union of
+  // their boxes, and a block child is as wide as its parent whatever the font
+  // size — so the measurement would read 'overflowing' at every size and pin
+  // the value at its 12px floor. Caught in preview on the two elements that
+  // have them: the stacked bilingual status, and the 'Your Aircraft' line.
+  // Those keep the integer test, which is what they had before; this answers
+  // only for the single-line values, which is where the reported clipping was.
+  function _textOverflowsFractionally(el) {
+    try {
+      if (!el || !el.getBoundingClientRect) return false;
+      for (var i = 0; i < el.children.length; i++) {
+        var d = window.getComputedStyle(el.children[i]).display;
+        if (d !== 'inline' && d !== 'inline-block' && d !== 'contents') return false;
+      }
+      var box = el.getBoundingClientRect().width;
+      if (!(box > 0)) return false;              // not laid out — nothing to judge
+      // The PADDING box, not the content box. overflow:hidden clips at the
+      // padding edge, so text legitimately runs into the padding before it is
+      // cut — which is the fractional twin of clientWidth, the thing the old
+      // integer test compared against. Subtracting padding as well looked
+      // tidier and was measurably wrong: it shrank every padded value a step or
+      // two below the size it had been rendering at perfectly well (AC1983 73px
+      // -> 71px in preview, with no clipping at either).
+      var cs = window.getComputedStyle(el);
+      var inner = box
+        - (parseFloat(cs.borderLeftWidth) || 0) - (parseFloat(cs.borderRightWidth) || 0);
+      if (!(inner > 0)) return false;
+      var r = document.createRange();
+      r.selectNodeContents(el);
+      var text = r.getBoundingClientRect().width;
+      r.detach && r.detach();
+      if (!(text > 0)) return false;             // empty or unmeasurable
+      return text > inner - 0.5;
+    } catch (e) { return false; }                // never let measurement break a fit
+  }
+
   function _boxAssign(el, availW, availH, colR, skipH, strictContent) {
     if (availH < 12 || availW < 30) return;
     // Multi-city values rotate after paint. Measure every alternate now and
@@ -14641,6 +14706,7 @@ function gateAutofit(root) {
     function _fitsCurrentContent() {
       if (el.scrollWidth > el.clientWidth) return false;
       if (el.scrollWidth > availW) return false;
+      if (_textOverflowsFractionally(el)) return false;
       if (!skipH && el.offsetHeight > availH) return false;
       if (strictContent && el.scrollHeight > el.clientHeight + 2) return false;
       if (colR && el.getBoundingClientRect().right > colR) return false;
@@ -15510,7 +15576,12 @@ function _boardFitCol(cells, capRatio, allowWrap, fixedRowH) {
       el.style.setProperty('white-space', allowWrap ? 'normal' : 'nowrap', 'important');
       function fits(px) {
         el.style.setProperty('font-size', px + 'px', 'important');
+        // v23753 — one whole pixel of headroom, for the same reason as the
+        // gate fitter above: scrollWidth and clientWidth are integers, so an
+        // overflow of a fraction of a pixel rounds away and reads as a fit
+        // while the layout engine ellipsizes on exactly that fraction.
         if (el.scrollWidth > el.clientWidth) return false;
+        if (_textOverflowsFractionally(el)) return false;
         if (el.scrollHeight > rowH) return false;
         return true;
       }
@@ -24130,7 +24201,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23752';
+var FIDS_BUILD_TAG = 'v23753';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
