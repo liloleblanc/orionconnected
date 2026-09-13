@@ -13365,6 +13365,15 @@ The rows value is the 'All | Tous'
   };
   // Per-airline size overrides for banner logo
   var BANNER_SIZE_OVERRIDE = {
+    // v23765 — Canadian North. Its lockup is a long horizontal one, inukshuk
+    // and wordmark side by side at roughly 5.3:1, so at the shared 76px height
+    // cap it runs 400px wide — against Calm Air's 217 and Air North's 132 in
+    // the same band. Nothing was overflowing; it simply outweighed every
+    // neighbour. Height and width are locked to the artwork's aspect (the
+    // banner forces height and lets width follow), so trimming the footprint
+    // means trimming the height: 60 puts it at 316 wide, still comfortably
+    // readable at board distance and no longer the loudest thing on screen.
+    '5T': { h: 60, w: 560 },
     'AC': { h: 128, w: 640 },   // was 156 — a bit too big as specified
     'QK': { h: 128, w: 640 },
     'RV': { h: 128, w: 640 },
@@ -22328,7 +22337,11 @@ const IATA_TO_TILE_ICAO = {
   'AC':'ACA-black',  'WS':'WJA',  'TS':'TSC',  'PD':'PTR',  'F8':'FLE',   // AC tile is the BLACK variant — (red swap was a misread, reverted)
   'QK':'JZA',   // Jazz — the script 'J' (Jazz's own favicon crop of the official wordmark)
   'PB':'PB',   // ← the owner's custom PAL Airlines logo (Newfoundland)
-  'MO':'MPE',  'YP':'PCM',  'BQ':'PSC',
+  // v23765 - Calm Air's tile was filed as MPE.svg, which is CANADIAN NORTH's
+  // ICAO, not Calm Air's. It resolved only because this line pointed at it;
+  // anyone giving 5T a tile under its real ICAO would have been handed Calm
+  // Air's monogram. Renamed to CAV, which is Calm Air's own ICAO.
+  'MO':'CAV',  'YP':'PCM',  'BQ':'PSC',
   'JV':'BLS',  'WT':'WSG',  'NSA':'NSA',   // Bearskin / Wasaya / North Star — brand square + white emblem
   // US carriers
   'UA':'UAL-sq',  'DL':'DAL-red',  'AA':'AAL',  'WN':'SWA',   // UAL-sq: square vector tile. DAL-red: white tile + ONE flat red widget
@@ -24344,7 +24357,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23764';
+var FIDS_BUILD_TAG = 'v23765';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -26737,9 +26750,23 @@ const CALLSIGN_ICAO = {
   'CPZ':'CP','CSN':'CZ','DAL':'DL','DLH':'LH','EDV':'9E',
   'EIN':'EI','ENY':'MQ','ETH':'ET','FFT':'F9','FLE':'F8',
   'GIA':'GA','GJS':'G7','JAL':'JL','JBU':'B6','JZA':'QK',
-  'KAL':'KE','KLM':'KL','MAS':'MH','MPE':'MP',
+  'KAL':'KE','KLM':'KL','MAS':'MH',
+  // v23765 - MPE is CANADIAN NORTH. It was mapped to MP (Martinair), whose
+  // ICAO is MPH - the value two lines into FILTER_OUT's cargo list. A
+  // Canadian North flight arriving under its own ICAO therefore resolved to
+  // Martinair and would have worn Martinair's branding. Latent rather than
+  // live, because no adapter currently emits MPE, but Canadian North is the
+  // largest carrier at Yellowknife and this sits directly in its path.
+  'MPE':'5T',
   // NKS (Spirit) — ceased operations May 2 2026
-  'PAK':'PK','PAL':'PB','PDT':'PT','POE':'PD','PSA':'OH',
+  'PAK':'PK',
+  // v23765 - PAL is PHILIPPINE AIRLINES' ICAO, and this sent it to PB, the
+  // Canadian PAL Airlines, whose ICAO is PVL. The repo already knew the
+  // difference - the comment above IATA_TO_TILE_ICAO says plainly 'PAL.svg
+  // is Philippine Airlines' - but this map did not. Same shape as the MPE
+  // error above: an ICAO handed to the airline with the similar NAME.
+  'PAL':'PR', 'PVL':'PB',
+  'PDT':'PT','POE':'PD','PSA':'OH',
   'QFA':'QF','QTR':'QR','QXE':'QX','ROU':'RV','RPA':'YV',
   'SIA':'SQ','SKW':'OO','SUN':'SY','SWA':'WN','TCF':'TC',
   'THA':'TG','TSC':'TS','UAE':'EK','UAL':'UA','VRD':'VX',
