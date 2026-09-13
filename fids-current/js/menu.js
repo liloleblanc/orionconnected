@@ -4007,23 +4007,113 @@ function cuDeleteActivePreset() {
     else delete _pickerSelected[itemId];
   };
 
+  // v23752 — ADD SELECTED MUST NEVER DISCARD THE SELECTION IN SILENCE.
+  //
+  // Reported as the picker throwing the operator out the moment Add Selected
+  // was pressed, with nothing assigned and no message. This function was the
+  // reason it was undiagnosable: if either piece of picker state had gone
+  // missing it called mediaPickerClose() and returned — closing the dialog,
+  // dropping every tick, and saying nothing. From the outside that is
+  // indistinguishable from a crash, a logout, or a misclick, which is why it
+  // was first reported as an auth problem.
+  //
+  // Two changes. It now RECOVERS rather than surrendering: the airline is
+  // re-read from the visible <select> and its entry rebuilt if the working copy
+  // lost it (_onMediaTabOpen replaces _assignWorking wholesale and nulls
+  // _currentAirline, so anything that re-enters the Media tab while the picker
+  // is open strands it exactly this way). And when it genuinely cannot
+  // proceed, it says so and LEAVES THE DIALOG OPEN with the ticks intact,
+  // rather than throwing the work away.
   window.mediaPickerConfirm = function() {
-    if (!_currentAirline || !_pickerSlot) return mediaPickerClose();
-    var entry = _assignWorking.airlines[_currentAirline][_pickerSlot];
-    Object.keys(_pickerSelected).forEach(function(id) {
-      if (entry.itemIds.indexOf(id) === -1) entry.itemIds.push(id);
-    });
-    if (!entry.primaryId && entry.itemIds.length) entry.primaryId = entry.itemIds[0];
-    _renderAssignList(_pickerSlot);
-    mediaPickerClose();
+    try {
+      var slot = _pickerSlot;
+      if (!slot) {
+        return _pickerFlash('Pick images or videos first, then press Add Selected.');
+      }
+      // Recover the airline from the control that is actually on screen.
+      var code = _currentAirline;
+      if (!code) {
+        var sel = document.getElementById('mlAssignAirline');
+        code = sel && sel.value ? String(sel.value).toUpperCase().trim() : '';
+      }
+      if (!code) {
+        return _pickerFlash('No airline is selected. Close this, choose an airline, then try again.');
+      }
+      // Rebuild the working entry if it went missing, so a reloaded
+      // assignments doc cannot strand a selection that is already made.
+      if (!_assignWorking) _assignWorking = { airlines: {} };
+      if (!_assignWorking.airlines) _assignWorking.airlines = {};
+      if (!_assignWorking.airlines[code]) {
+        _assignWorking.airlines[code] = {
+          videos: { mode: 'rotate', itemIds: [], primaryId: null },
+          images: { mode: 'rotate', itemIds: [], primaryId: null }
+        };
+      }
+      if (!_assignWorking.airlines[code][slot]) {
+        _assignWorking.airlines[code][slot] = { mode: 'rotate', itemIds: [], primaryId: null };
+      }
+      _currentAirline = code;
+
+      var entry = _assignWorking.airlines[code][slot];
+      if (!Array.isArray(entry.itemIds)) entry.itemIds = [];
+      var added = 0;
+      Object.keys(_pickerSelected).forEach(function(id) {
+        if (entry.itemIds.indexOf(id) === -1) { entry.itemIds.push(id); added++; }
+      });
+      if (!added) {
+        return _pickerFlash('Nothing new was ticked — those items are already assigned.');
+      }
+      if (!entry.primaryId && entry.itemIds.length) entry.primaryId = entry.itemIds[0];
+      _renderAssignList(slot);
+      mediaPickerClose();
+      _assignFlash('Added ' + added + ' item' + (added === 1 ? '' : 's') +
+        ' to ' + code + '. Press Save Assignments to keep it.', 'success');
+    } catch (e) {
+      // Anything unforeseen is now readable instead of being a dialog that
+      // vanishes. The selection stays ticked so nothing has to be redone.
+      _pickerFlash('Could not add: ' + (e && e.message ? e.message : String(e)));
+      try { console.error('[media assign] Add Selected failed', e); } catch (e2) {}
+    }
   };
+
+  // The picker had no way to say anything. Without one, every failure above
+  // could only be expressed by closing the dialog.
+  function _pickerFlash(msg) {
+    var el = document.getElementById('mlPickerFlash');
+    if (!el) {
+      // The modal's markup is replaced wholesale by the library editor, so the
+      // flash element can genuinely be absent. Rebuild it rather than going
+      // silent — going silent is the defect this whole change exists to fix.
+      var host = document.getElementById('mlPickerModal');
+      var anchor = host && (host.querySelector('#mlPickerFooter')
+        || host.querySelector('div[style*="margin-top:12px"]'));
+      if (!anchor || !anchor.parentNode) {
+        try { console.warn('[media assign] ' + msg); } catch (e) {}
+        try { alert(msg); } catch (e) {}   // last resort: never lose the reason
+        return;
+      }
+      el = document.createElement('div');
+      el.id = 'mlPickerFlash';
+      el.style.cssText = 'margin-top:10px;padding:8px 10px;border-radius:4px;'
+        + 'font-size:12px;background:#7f1d1d;color:#fca5a5;';
+      anchor.parentNode.insertBefore(el, anchor);
+    }
+    el.style.display = '';
+    el.textContent = msg;
+  }
 
   window.mediaPickerClose = function() {
     var modal = document.getElementById('mlPickerModal');
     if (modal) modal.style.display = 'none';
+    _pickerClearFlash();
     _pickerSlot = null;
     _pickerSelected = {};
   };
+
+  function _pickerClearFlash() {
+    var el = document.getElementById('mlPickerFlash');
+    if (el) { el.style.display = 'none'; el.textContent = ''; }
+  }
 
   window.mediaAssignSave = async function() {
     if (!_assignWorking) return _assignFlash('Nothing to save.', 'error');
