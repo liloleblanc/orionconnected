@@ -92,18 +92,35 @@ test('every Qatar asset exists and is square where the orb needs it to be', () =
     `the orb crops a circle out of this frame, so it must be square — got ${w} x ${h}`);
 });
 
+/**
+ * The fill values a file actually paints with.
+ *
+ * Read the fill attributes rather than searching the file text: each of these
+ * SVGs carries a header comment that NAMES the superseded colours, so a plain
+ * substring search finds them in prose and fails a correct file. Matching the
+ * attribute is also the more honest test — it checks what renders.
+ */
+function fills(file) {
+  const text = fs.readFileSync(file, 'utf8');
+  const found = new Set();
+  const re = /\sfill="([^"]*)"/g;
+  let m;
+  while ((m = re.exec(text))) found.add(m[1].trim().toUpperCase());
+  return found;
+}
+
 test('the artwork carries the guideline colours, not the sampled ones', () => {
   for (const f of [TILE, LINES, LOCKUP]) {
-    const text = fs.readFileSync(f, 'utf8');
-    const body = text.replace(/<!--[\s\S]*?-->/g, '');   // the comment names them
+    const painted = fills(f);
+    assert.ok(painted.size > 0, path.basename(f) + ' paints nothing');
     for (const bad of SAMPLED) {
-      assert.ok(!body.includes(bad),
+      assert.ok(!painted.has(bad.toUpperCase()),
         `${path.basename(f)} still paints ${bad}; Qatar's guideline states ` +
-        `${BURGUNDY} and ${GREY}`);
+        `${BURGUNDY} (Pantone 229 C) and ${GREY} (Pantone 430 C)`);
     }
   }
-  assert.ok(fs.readFileSync(TILE, 'utf8').includes(BURGUNDY), 'the oryx must be the brand burgundy');
-  assert.ok(fs.readFileSync(LINES, 'utf8').includes(GREY), 'the lines must be the brand grey');
+  assert.ok(fills(TILE).has(BURGUNDY.toUpperCase()), 'the oryx must be the brand burgundy');
+  assert.ok(fills(LINES).has(GREY.toUpperCase()), 'the lines must be the brand grey');
 });
 
 test('the speed lines are scoped to Qatar and reach only the disc, not the glyph', () => {
