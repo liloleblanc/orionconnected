@@ -13512,15 +13512,40 @@ The rows value is the 'All | Tous'
     'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
     'WEN': '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
     'YP':  '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg',
-    'PAG': '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg'
+    'PAG': '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg',
+    // v23755 — FLAIR'S WHITE MARK WAS SITTING ON THE LIGHT BANNER.
+    //
+    // Measured on the live YYC A19 sign: flair-mark-white.png, filter none, on
+    // a banner painted rgb(228,228,228). A white wordmark on near-white — only
+    // the green dot showed, so the sign read as a brand mark that had failed to
+    // load rather than one that was present and invisible.
+    //
+    // F8's only banner entry was in BANNER_DARK_LOGO, whose comment is explicit
+    // that the mark 'reads on the dark sky'. That branch is gated on the AIRPORT
+    // (skipped for YQM) and not on the banner's own tone, so at every other
+    // airport it applied the white file to a light band. The light branch runs
+    // first and is the one that asks the right question, so the entry belongs
+    // here. Both files ship; only the pairing was missing.
+    //
+    // Object form keeps the dark entry's 100x480 box: the mark is a two-row
+    // lockup and clips at the single-line 108x620 default — the same caveat
+    // already recorded against the dark entry.
+    'F8':  { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 },
+    'FLE': { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 }
   };
   var _lightLogo = _bannerIsLight
     ? (BANNER_LIGHT_LOGO[_bannerBrandCode] || BANNER_LIGHT_LOGO[airlineCode])
     : null;
   if (!_useOverrideFile && _lightLogo) {
-    r1LogoSrc = _lightLogo;
+    // v23755 — entries may be a plain path or {src,h,w}, matching the shape
+    // BANNER_DARK_LOGO already accepts. A two-row lockup clips at the
+    // single-line default, so it has to be able to state its own box.
+    r1LogoSrc = (typeof _lightLogo === 'object') ? _lightLogo.src : _lightLogo;
     _useOverrideFile = true;          // real colours — never whiten onto a light band
-    _sz = { h: 108, w: 620 };         // same band fill as the dark-logo branch
+    _sz = {
+      h: (typeof _lightLogo === 'object' && _lightLogo.h) ? _lightLogo.h : 108,
+      w: (typeof _lightLogo === 'object' && _lightLogo.w) ? _lightLogo.w : 620
+    };                                // default is the same band fill as the dark branch
   }
   // v23462 — every entry in that table is a WHITE or monochrome-white file,
   // chosen to read on a near-black banner. On Moncton's cream band it is the
@@ -24223,7 +24248,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23754';
+var FIDS_BUILD_TAG = 'v23755';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
