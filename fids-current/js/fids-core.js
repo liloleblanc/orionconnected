@@ -8189,10 +8189,25 @@ function buildV2GateLayout(ctx, vars) {
 // slot. Until a carrier is listed, its boarding screen shows the static ring
 // + symbol, which is what the mockup draws anyway; nothing waits on an asset.
 var GATE_RONDELLE_MOTION = window._GATE_RONDELLE_MOTION = {
-  // the owner's TCA→AC evolution clip, cut to the MODERN segment on black (his
-  // instruction: 'remove the older logos simply keep the modern part where
-  // its black') and ping-ponged so the swing loops seamlessly. 81KB.
-  'AC': '/logos/motion/AC-rondelle-swing.mp4'
+  // v23761 — EMPTY, AND THE SLOT STAYS FOR A REASON.
+  //
+  // Air Canada's clip was withdrawn. It was cut on a BLACK ground and an mp4
+  // carries no alpha, so on the boarding screen it rendered as a black box
+  // around the rondelle — visible as a hard rectangle against the takeover.
+  // A clip cannot be made transparent after the fact; only a format with an
+  // alpha channel could be, and re-cutting the source is a separate job.
+  //
+  // Worse, a registered clip HIDES the still (.g8-cd-mark.has-motion
+  // .g8-cd-mark-still is display:none), so the CSS coin-turn never ran for AC
+  // at all. What was on screen was the clip's own swing, not the animation
+  // the stylesheet defines — which is why the rondelle 'was not rotating
+  // properly'. Removing the entry restores the still and its spin, and the
+  // still is an SVG, so it is transparent by construction.
+  //
+  // The mechanism is kept: drop a file under /logos/motion/, name it here and
+  // it takes over again. A replacement must have a real alpha channel (webm
+  // with VP9 alpha, or an animated SVG) — an mp4 on any solid ground will
+  // reproduce exactly this box.
 };
 
 // v23246 — CARD ORBS THAT KEEP THEIR COLOUR ART (the owner's MIA D20 shot: 'the
@@ -24256,7 +24271,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23760';
+var FIDS_BUILD_TAG = 'v23761';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
