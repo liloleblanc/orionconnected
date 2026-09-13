@@ -117,3 +117,35 @@ test('these carriers keep a lockup in the banner and no second emblem', () => {
     assert.match(body, new RegExp(`'${code}'\\s*:`), `${code} should still take a banner lockup`);
   }
 });
+
+test('Canadian North is sized to sit with its neighbours, not over them', () => {
+  // Its lockup is ~5.3:1, so at the shared 76px height cap it runs 400px wide
+  // against Calm Air's 217 and Air North's 132. The banner forces height and
+  // lets width follow the aspect, so the footprint is trimmed by trimming the
+  // height. Cropping the canvas (above) fixed it being too SMALL; this keeps
+  // that from overshooting into too LARGE.
+  const at = SRC.indexOf('var BANNER_SIZE_OVERRIDE = {');
+  assert.ok(at >= 0, 'BANNER_SIZE_OVERRIDE must exist');
+  const from = SRC.indexOf('{', at);
+  let depth = 0, line = false, quote = '';
+  let body = null;
+  for (let i = from; i < SRC.length; i++) {
+    const c = SRC[i], n = SRC[i + 1];
+    if (line) { if (c === '\n') line = false; continue; }
+    if (quote) { if (c === '\\') i++; else if (c === quote) quote = ''; continue; }
+    if (c === '/' && n === '/') { line = true; i++; continue; }
+    if (c === "'" || c === '"') { quote = c; continue; }
+    if (c === '{') depth++;
+    else if (c === '}' && --depth === 0) { body = new Function('return ' + SRC.slice(from, i + 1) + ';')(); break; }
+  }
+  assert.ok(body, 'could not read BANNER_SIZE_OVERRIDE');
+  const sz = body['5T'];
+  assert.ok(sz, "Canadian North needs a size override, or it renders 400px wide");
+  const logoH = Math.min(sz.h || 120, 76);
+  const widthAtAspect = logoH * 5.27;          // measured aspect of the lockup
+  assert.ok(logoH <= 64,
+    `height ${logoH} puts the lockup at ${Math.round(widthAtAspect)}px wide; ` +
+    'its neighbours in the same band are 217 and 132');
+  assert.ok(logoH >= 44,
+    `height ${logoH} is small enough that "Fly the Arctic" stops being readable`);
+});

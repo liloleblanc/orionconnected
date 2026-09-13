@@ -13365,6 +13365,15 @@ The rows value is the 'All | Tous'
   };
   // Per-airline size overrides for banner logo
   var BANNER_SIZE_OVERRIDE = {
+    // v23765 — Canadian North. Its lockup is a long horizontal one, inukshuk
+    // and wordmark side by side at roughly 5.3:1, so at the shared 76px height
+    // cap it runs 400px wide — against Calm Air's 217 and Air North's 132 in
+    // the same band. Nothing was overflowing; it simply outweighed every
+    // neighbour. Height and width are locked to the artwork's aspect (the
+    // banner forces height and lets width follow), so trimming the footprint
+    // means trimming the height: 60 puts it at 316 wide, still comfortably
+    // readable at board distance and no longer the loudest thing on screen.
+    '5T': { h: 60, w: 560 },
     'AC': { h: 128, w: 640 },   // was 156 — a bit too big as specified
     'QK': { h: 128, w: 640 },
     'RV': { h: 128, w: 640 },
