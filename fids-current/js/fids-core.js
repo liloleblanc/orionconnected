@@ -42060,25 +42060,28 @@ var HERITAGE_MARKS = [
     key: 'air-atlantic',
     file: '/logos/airlines/canadian/heritage/air-atlantic.svg',
     name: 'Air Atlantic',
-    // Feeder for Canadian Pacific Air Lines and then Canadian Airlines
-    // International; based at St. John's; ceased October 1998. The
-    // 'Canadian Partner' lockup in this same folder is the other half of
-    // this story, which is why the two sit together in the set.
+    // THE ENDORSEMENT IS NOT A SECOND CARRIER.
+    //
+    // canadian-airlines-partner.svg is the bilingual 'Partenaire / Canadian
+    // Airlines / Partner' lockup — the mark a FEEDER carried to show whose
+    // network it fed. It is not Canadian Airlines' own identity, and an
+    // earlier version of this card used it as one, captioning it 'Canadian
+    // Airlines · Calgary · 1987-2001'. That put a partner endorsement on a
+    // board as if it were the mainline carrier's logo, which is precisely the
+    // kind of thing a heritage card exists to get right.
+    //
+    // Air Atlantic fed Canadian Pacific Air Lines and then Canadian Airlines
+    // International, so the two marks belong on ONE card, in the relationship
+    // they actually had: the carrier's own wordmark, with the endorsement
+    // smaller beneath it, the way it sat on the aircraft.
+    //
+    // A card for Canadian itself would need Canadian's OWN wordmark, which
+    // this folder does not have.
+    endorsement: '/logos/airlines/canadian/heritage/canadian-airlines-partner.svg',
     en: 'St. John’s, Newfoundland · a Canadian Partner · until 1998',
     fr: 'St. John’s (Terre-Neuve) · partenaire de Canadien · jusqu’en 1998',
     // The Atlantic network, plus the three central-Canada cities it reached.
     airports: ['YYT', 'YHZ', 'YQX', 'YQM', 'YSJ', 'YFC', 'YDF', 'YQY', 'YYG', 'YYZ', 'YOW', 'YUL']
-  },
-  {
-    key: 'canadian-airlines',
-    file: '/logos/airlines/canadian/heritage/canadian-airlines-partner.svg',
-    name: 'Canadian Airlines',
-    // Formed 27 March 1987 when Pacific Western bought CP Air; became an
-    // Air Canada subsidiary on 1 January 2001.
-    en: 'Calgary · 1987–2001',
-    fr: 'Calgary · 1987–2001',
-    // National carrier: any Canadian airport on the roster is true.
-    airports: '*CA'
   }
 ];
 // Canadian airports get the national carrier's card; the regional card is
@@ -42133,6 +42136,12 @@ function _renderHeritageCard(el) {
       +   '<div class="hcard-plate">'
       +     '<img class="hcard-mark" src="' + esc(mark.file) + '" alt="' + esc(mark.name) + '">'
       +   '</div>'
+      // The endorsement, smaller and beneath — the relationship it actually
+      // had, not a second carrier given equal billing.
+      +   (mark.endorsement
+            ? '<div class="hcard-endorse"><img src="' + esc(mark.endorsement)
+              + '" alt="Canadian Partner"></div>'
+            : '')
       // NO name line. Every mark in this set is a WORDMARK — it already
       // says 'Air Atlantic' or 'Canadian Airlines' in the carrier's own
       // lettering. Setting the name again underneath it in the board's font

@@ -54,7 +54,13 @@ test('every file in the heritage folder is either used or deliberately not', () 
   // is not, and a half-dated pair is worse than none.
   const dir = path.join(ROOT, 'fids-current', 'logos', 'airlines', 'canadian', 'heritage');
   const onDisk = fs.readdirSync(dir).filter((f) => f.endsWith('.svg')).sort();
-  const used = marks().map((m) => path.basename(m.file)).sort();
+  // A file counts as used in EITHER role — as a carrier's own wordmark, or as
+  // the partner endorsement riding on one.
+  const used = marks()
+    .flatMap((m) => [m.file, m.endorsement])
+    .filter(Boolean)
+    .map((f) => path.basename(f))
+    .sort();
   const unused = onDisk.filter((f) => !used.includes(f));
   assert.deepEqual(unused, ['air-canada-1964.svg', 'air-canada-1988.svg'],
     'an unused heritage file must be a recorded decision — if a mark is added ' +
@@ -68,8 +74,10 @@ test('no card claims a date its sources disagree on', () => {
   assert.doesNotMatch(byKey['air-atlantic'].en, /198[56]\s*[–-]/,
     'Air Atlantic must not print a founding year — the sources disagree');
   assert.match(byKey['air-atlantic'].en, /1998/, 'the ceasing year is solid and is printed');
-  // Formed 27 March 1987; became an Air Canada subsidiary 1 January 2001.
-  assert.match(byKey['canadian-airlines'].en, /1987–2001/, 'both ends are confirmed');
+  // There is no Canadian Airlines card: the only Canadian mark in this folder
+  // is the PARTNER endorsement, which is not that carrier's identity.
+  assert.equal(byKey['canadian-airlines'], undefined,
+    'a partner endorsement must not be captioned as the mainline carrier');
 });
 
 // ── it only appears where it is true ───────────────────────────────────────
@@ -110,20 +118,35 @@ test('Air Atlantic appears on its own Atlantic network', () => {
   }
 });
 
-test('the national carrier appears at Canadian airports generally', () => {
-  const { pick } = picker();
-  const seen = new Set();
-  for (let i = 0; i < 6; i++) { const m = pick('YYZ'); if (m) seen.add(m.key); }
-  assert.ok(seen.has('canadian-airlines'), 'Canadian Airlines was national');
+test('the partner endorsement rides on the carrier, not as its own card', () => {
+  // canadian-airlines-partner.svg is the bilingual 'Partenaire / Canadian
+  // Airlines / Partner' lockup — the mark a FEEDER carried to show whose
+  // network it fed. An earlier version of this card used it as a standalone
+  // carrier, captioned 'Canadian Airlines · Calgary · 1987–2001', which put a
+  // partner endorsement on a public board as if it were the mainline
+  // carrier's own logo.
+  const all = marks();
+  assert.equal(all.length, 1, 'one carrier in the set, not two');
+  assert.equal(all[0].key, 'air-atlantic');
+  assert.match(all[0].endorsement, /canadian-airlines-partner\.svg$/,
+    'the endorsement belongs to Air Atlantic, which really was a Canadian Partner');
+  for (const m of all) {
+    assert.notEqual(m.file, m.endorsement, 'the two marks are distinct roles');
+  }
 });
 
-test('where both are true the card alternates rather than repeating', () => {
-  // A board runs all day; showing one card every cycle would wear out fast.
-  const { pick } = picker();
-  const seq = [];
-  for (let i = 0; i < 4; i++) { const m = pick('YHZ'); if (m) seq.push(m.key); }
-  assert.equal(new Set(seq).size, 2, 'both cards that are true at YHZ get shown');
-  assert.notEqual(seq[0], seq[1], 'and they alternate rather than repeating');
+test('the endorsement is drawn smaller than the carrier it endorses', () => {
+  // Equal billing would state something false about the relationship.
+  const grab = (sel) => {
+    const at = CSS.indexOf(sel);
+    assert.ok(at >= 0, sel + ' must be styled');
+    const seg = CSS.slice(at, CSS.indexOf('}', at));
+    const m = /max-height:\s*clamp\(\s*(\d+)px/.exec(seg);
+    assert.ok(m, sel + ' must cap its height');
+    return Number(m[1]);
+  };
+  assert.ok(grab('.hcard-endorse img') < grab('.hcard-mark'),
+    'the endorsement must be visibly subordinate to the wordmark');
 });
 
 // ── the label itself ───────────────────────────────────────────────────────
