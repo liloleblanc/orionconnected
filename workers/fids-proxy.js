@@ -8343,6 +8343,31 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // altimeter, no reg, no inbound panel), which keeps the throttle
       // pinned. Short on purpose: recovery is only ever this far away.
       const ADSB_NEG_TTL = 30;
+      // ── AN AIRCRAFT THAT IS NOT TRANSMITTING WILL STILL NOT BE IN 90 SECONDS
+      //
+      // The ring returns on ANY ok response, including one carrying zero
+      // aircraft, and that empty answer was cached at ADSB_TTL — 90 seconds,
+      // a value chosen for how fast a POSITION goes stale. But an empty answer
+      // is not a stale position, it is the absence of one, and the commonest
+      // reason for it is an aircraft sitting on a stand. Those sit for hours.
+      //
+      // So every board poll re-asked, and because FR24 is tried ahead of the
+      // ring, every re-ask was a paid call that could only ever return nothing.
+      // One flight, two hours on stand, roughly four callsign/reg variants
+      // tried: 80 lookups per variant, ~320 credits, to establish that a
+      // parked aeroplane is parked. That is where the 80% empty-response rate
+      // in the account's usage figures comes from.
+      //
+      // Five minutes rather than ten: the cost curve is already flat by then
+      // (80 calls -> 24), and the exposure is that a departure which starts
+      // transmitting just after a miss was cached waits up to this long for
+      // its aircraft panel. Five minutes of that is tolerable; ten is not.
+      //
+      // Deliberately NOT applied to the all-providers-failed path above, which
+      // keeps ADSB_NEG_TTL: a 429 wants to be retried soon, and conflating
+      // "everyone is rate-limiting us" with "this aeroplane is parked" would
+      // turn a transient outage into a five-minute one.
+      const ADSB_EMPTY_TTL = 300;
       const PROVIDERS = {
         "airplanes.live": "https://api.airplanes.live/v2",
         "adsb.fi":        "https://opendata.adsb.fi/api/v2",
@@ -8471,6 +8496,12 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // A 402/429 from FR24 (credits gone) burns the whole day's budget
       // at once so a dead pool is never hammered. Budget accounting is
       // KV read-modify-write: approximate under races, and that's fine.
+      // Set when FR24 answers cleanly and carries no aircraft — i.e. "nothing
+      // is transmitting under that callsign", which is a fact about the world
+      // and not a transient failure. It decides how long the miss below is
+      // remembered, and it is the difference between paying FR24 twice a
+      // minute for a parked aeroplane and paying it twice an hour.
+      let _fr24SaidNothing = false;
       if (env.FR24_KEY && (kind === "callsign" || kind === "reg") && env.FIDS_LIVE_FLIGHTS) {
         try {
           const _day = new Date().toISOString().slice(0, 10);
@@ -8518,6 +8549,10 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
             if (_fr.ok) {
               _fj = await _fr.json().catch(() => null);
               _rows = (_fj && Array.isArray(_fj.data)) ? _fj.data : [];
+              // A clean 200 with an empty data array is FR24 telling us this
+              // aircraft is not transmitting — worth remembering for minutes,
+              // not seconds. A malformed body is NOT that, so it is excluded.
+              _fr24SaidNothing = !!(_fj && Array.isArray(_fj.data) && _fj.data.length === 0);
             }
             const _spend = _hardStop
               ? _cap
@@ -8613,13 +8648,23 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           const r = await fetch(`${PROVIDERS[prov]}/${kind}/${encodeURIComponent(subject)}`, { headers });
           if (!r.ok) { lastStatus = r.status; continue; }
           const payload = await r.text();
+          // An answer with no aircraft in it is remembered for longer — see
+          // ADSB_EMPTY_TTL. Parsed defensively: an unreadable body is treated
+          // as a normal answer and keeps the short TTL, because guessing
+          // "empty" from a parse failure would suppress a real position.
+          let _empty = false;
+          try {
+            const _j = JSON.parse(payload);
+            _empty = !!(_j && Array.isArray(_j.ac) && _j.ac.length === 0);
+          } catch (e) { _empty = false; }
+          const _ttl = _empty ? ADSB_EMPTY_TTL : ADSB_TTL;
           try {
             await cache.put(cacheKey, new Response(payload, { headers: {
-              "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
+              "Content-Type": "application/json", "Cache-Control": `public, max-age=${_ttl}` } }));
           } catch (e) {}
           return new Response(payload, { status: 200, headers: {
-            "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
-            "X-Adsb-Cache": "miss", "X-Adsb-Provider": prov, ...corsHeaders(origin) } });
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${_ttl}`,
+            "X-Adsb-Cache": _empty ? "empty" : "miss", "X-Adsb-Provider": prov, ...corsHeaders(origin) } });
         } catch (e) { /* network error → try the next feed */ }
       }
       // Every feed failed — shaped like a success with no aircraft so the
@@ -8627,14 +8672,35 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // cached now, briefly (ADSB_NEG_TTL) — an uncached miss meant every
       // board poll re-hit feeds that were already rate-limiting us, keeping
       // the 429s alive. The stampede stops; recovery costs at most 30s.
-      const _negBody = JSON.stringify({ ac: [], _upstreamStatus: lastStatus, _provider: ring.join(",") });
+      //
+      // But TWO different things land here, and they want different answers.
+      // The community ring is blocked from a Cloudflare Worker and answers 429
+      // essentially always, so reaching this point says nothing on its own.
+      // What matters is what FR24 said on the way past:
+      //
+      //   FR24 answered, carrying nothing  → the aircraft is not transmitting.
+      //     A parked aeroplane stays parked; re-asking in 30s buys nothing and
+      //     costs a credit every time. Remember it for ADSB_EMPTY_TTL.
+      //   FR24 was skipped, over budget, or errored → we do not actually know.
+      //     Keep the short TTL so recovery stays 30s away.
+      //
+      // Measured before this change: a non-transmitting subject came back
+      // `max-age=30, x-adsb-cache: neg, _upstreamStatus: 429`, so a flight
+      // sitting two hours on stand was re-asked 240 times per callsign variant
+      // — and FR24 is tried ahead of the ring, so every one of those was paid.
+      // That is the origin of the 80% empty-response rate in the usage figures.
+      const _negTtl = _fr24SaidNothing ? ADSB_EMPTY_TTL : ADSB_NEG_TTL;
+      const _negBody = JSON.stringify({
+        ac: [], _upstreamStatus: lastStatus, _provider: ring.join(","),
+        ...(_fr24SaidNothing ? { _quiet: true } : {})
+      });
       try {
         await cache.put(cacheKey, new Response(_negBody, { headers: {
-          "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_NEG_TTL}` } }));
+          "Content-Type": "application/json", "Cache-Control": `public, max-age=${_negTtl}` } }));
       } catch (e) {}
       return new Response(_negBody, { status: 200, headers: {
-        "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_NEG_TTL}`,
-        "X-Adsb-Cache": "neg", ...corsHeaders(origin) } });
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${_negTtl}`,
+        "X-Adsb-Cache": _fr24SaidNothing ? "quiet" : "neg", ...corsHeaders(origin) } });
     }
 
     // ── Vecteezy connectivity self-test ─────────────────────────────────
