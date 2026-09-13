@@ -12526,7 +12526,12 @@ function uxgGateHtml(ctx) {
     // PorterReserve, PorterClassic, VIPorter. Note flyporter.com itself spaces
     // it; Porter is inconsistent across channels, and if the spaced form is
     // ever preferred this is one string to change.
-    var _prioMarksHdr = '<div class="g8-pd-marks-hdr">AvidTraveller</div>';
+    // It is a LABEL, not a literal. Porter renames it in French — their own
+    // footnote reads "Grand Voyageur fait référence aux niveaux d'adhésion
+    // Passeport, Horizon, Essor et Première" — so a hardcoded 'AvidTraveller'
+    // would print English on the French half of a bilingual sign.
+    var _prioMarksHdr = '<div class="g8-pd-marks-hdr">'
+      + (_gateLbl1('avidTraveller', _frF) || 'AvidTraveller') + '</div>';
     var _prioMarks = _prioMarksHdr + '<div class="g8-pd-preboard-marks">'
         // v23532 — the mark the owner supplied, not the older file already in the tree.
         // The policy line reads "Premium VIPorter MEMBERS", which is the whole
@@ -23696,6 +23701,20 @@ var _GATE_LBL = {
   pdClassic: {
     en:'PorterClassic', fr:'PorterClassique',
     es:'PorterClassic', de:'PorterClassic', it:'PorterClassic', pt:'PorterClassic'
+  },
+  // The collective name for the VIPorter elite tiers, which heads their marks.
+  // Porter RENAMES it in French rather than translating it: their footnote
+  // reads "Grand Voyageur fait référence aux niveaux d'adhésion Passeport,
+  // Horizon, Essor et Première". The English is closed up to match Porter's
+  // own press usage ("VIPorter AvidTraveller") and the house pattern the rest
+  // of this sign follows; flyporter.com spaces it, so if the spaced form is
+  // ever preferred, this is the one string.
+  //
+  // Other languages fall back to the English: it is a brand name, and no
+  // Porter rendering exists for them to be wrong against.
+  avidTraveller: {
+    en:'AvidTraveller', fr:'Grand Voyageur',
+    es:'AvidTraveller', de:'AvidTraveller', it:'AvidTraveller', pt:'AvidTraveller'
   },
   // The ID reminder. Kept generic rather than Porter-branded: it is an airport
   // instruction, not a product, and it applies at every gate the sign serves.

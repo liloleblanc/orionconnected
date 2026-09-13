@@ -213,16 +213,27 @@ test('AvidTraveller labels the tier marks, which is where it is true', () => {
   // and First membership levels". It is the collective name for exactly the
   // marks it now sits above, which until this change were unlabelled.
   const body = lift('_pdLanesBodyHtml');
-  assert.match(body, /g8-pd-marks-hdr">AvidTraveller</,
-    'the marks row must be headed with the name');
+  assert.match(body, /g8-pd-marks-hdr/, 'the marks row must be headed');
+  assert.match(body, /_gateLbl1\('avidTraveller'/,
+    'the name is a LABEL, not a literal — the sign is bilingual');
   // Above the marks, not floating elsewhere in the column.
   const hdrAt = body.indexOf('g8-pd-marks-hdr');
   const marksAt = body.indexOf('g8-pd-preboard-marks');
   assert.ok(hdrAt > 0 && marksAt > hdrAt,
     'the heading must be emitted immediately before the marks it names');
-  // Closed up, matching Porter's press usage and every other Porter name on
-  // this sign. flyporter.com spaces it; if that form is ever preferred this is
-  // the one string to change.
-  assert.doesNotMatch(body, /g8-pd-marks-hdr">Avid Traveller</,
-    'the sign uses the closed-up form for Porter names');
+});
+
+test('the tier collective name is renamed in French, not translated', () => {
+  // Porter does not translate it, it renames it: "Grand Voyageur fait
+  // référence aux niveaux d'adhésion Passeport, Horizon, Essor et Première".
+  // Hardcoding the English would print it on the French half of the sign.
+  const at = SRC.indexOf('  avidTraveller: {');
+  assert.ok(at >= 0, 'fids-core.js must declare the avidTraveller label');
+  const lbl = new Function('return {' + SRC.slice(at, SRC.indexOf('},', at) + 2) + '}.avidTraveller;')();
+  assert.equal(lbl.en, 'AvidTraveller');
+  assert.equal(lbl.fr, 'Grand Voyageur');
+  assert.notEqual(lbl.fr, lbl.en, 'the French side must not print the English brand');
+  // Closed up on the English side, matching Porter's press usage and every
+  // other Porter name on this sign.
+  assert.doesNotMatch(lbl.en, /Avid Traveller/);
 });
