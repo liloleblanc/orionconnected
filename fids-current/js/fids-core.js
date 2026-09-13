@@ -388,11 +388,75 @@ function getAirlineAdImages(airlineCode) {
 // every save die with a bare 'Save failed: HTTP 401' (the owner hit it saving
 // YHU info). Clear the stale token and pop the login modal so the path
 // back is visible; the caller's form keeps its values.
+//
+// v23751 — IT HAS TO CLEAR THE DURABLE COPY, OR IT CLEARS NOTHING THAT MATTERS.
+//
+// This was written when the token lived in sessionStorage alone. v23170 added
+// the localStorage copy and v23492 taught _fidsAuthToken() to read localStorage
+// FIRST — but this kept clearing only the per-tab mirror. So the rescue ran,
+// popped the modal, and _fidsAuthToken() went straight back to the same expired
+// token in localStorage. It reported a rescue it had not performed.
+//
+// v23751 — AND ONLY AN ACTUALLY-DEAD TOKEN MAY END THE SESSION.
+//
+// Reported: uploading works, then assigning that media to an airline throws
+// the operator out. saveMediaAssignments already called this rescue, and this
+// rescue ended the session on ANY 401 — so a 401 raised for reasons that have
+// nothing to do with the token logs you out mid-edit and loses the assignment.
+//
+// _acFetch (menu.js:1207) learned this in v23170 and decides it from the token
+// itself, which is knowable locally. The lesson was never carried across to
+// here. It is the same rule: if the token has expired the session really is
+// over, so clear it and prompt; if it has NOT, the 401 was about this
+// particular request — report that and leave the session alone.
+//
+// Returning false for a live-token 401 matters: callers fall through to their
+// own 'HTTP 401' message, which is the truthful one. It also means widening
+// this rescue to the other admin writes cannot cost anyone their session.
 function _fidsSaveAuthRescue(res) {
   if (!res || res.status !== 401) return false;
+  var tok = null;
+  try { tok = localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token'); } catch (e) {}
+  // No readable token at all => the session is already gone; treat as dead.
+  if (tok && !_fidsTokenExpired(tok)) return false;
+  // Both copies, durable first — the order _fidsAuthToken reads them in.
+  try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
   try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+  try { if (typeof Auth !== 'undefined' && Auth.logout) Auth.logout(); } catch (e) {}
   try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
   return true;
+}
+
+// v23751 — AN EXPIRED TOKEN IS NOT A TOKEN.
+//
+// Reported as media uploads no longer working. Nothing was wrong with the
+// upload: the 24h token had aged out and every admin write was 401ing, while
+// the board still presented as signed in — so an ended session read as a
+// broken feature.
+//
+// The expiry check that exists lives in auth.js (loadToken, which clears the
+// token and returns false). auth.js is loaded by index.html and picker.html —
+// the pages you SIGN IN on — and by neither fids.html, gids.html nor bids.html,
+// which are the pages the media menu actually runs on. menu.js:1004 says so in
+// as many words. So on a board, Auth is undefined, loadToken never runs, and
+// the seven direct localStorage readers hand out a dead token indefinitely.
+//
+// Checking it here puts the check on the read path every board uses, so a dead
+// token can no longer be handed to a caller that is about to spend a 40MB
+// upload on it. _acFetch (menu.js:1207) already decides expiry this way; this
+// is the same rule moved one step earlier, from the failed response to the read.
+function _fidsTokenExpired(tok) {
+  if (!tok) return false;                  // absent is not expired; callers handle null
+  try {
+    var p = JSON.parse(atob(String(tok).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    // No exp claim means we cannot say it is dead — let the server decide.
+    if (!p || !p.exp) return false;
+    return (Date.now() / 1000) > p.exp;
+  } catch (e) {
+    // Unparseable is not the same as expired: a malformed token still gets one
+    // round trip so the server's own 401 (and its rescue) is what ends it.
+    return false;
+  }
 }
 
 // v23492 — ONE PLACE THAT KNOWS WHERE THE TOKEN LIVES.
@@ -409,8 +473,20 @@ function _fidsSaveAuthRescue(res) {
 //
 // Durable first, per-tab mirror second, same order as _acGetToken.
 function _fidsAuthToken() {
-  try { return localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token') || null; }
-  catch (e) { try { return sessionStorage.getItem('fids_token') || null; } catch (e2) { return null; } }
+  var tok = null;
+  try { tok = localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token') || null; }
+  catch (e) { try { tok = sessionStorage.getItem('fids_token') || null; } catch (e2) { return null; } }
+  // v23751 — hand back nothing rather than something dead. Callers already all
+  // guard on a falsy token with 'Not authenticated', so this turns a doomed
+  // request into an honest refusal, and drops the stale copies so the board
+  // stops claiming a session it does not have.
+  if (tok && _fidsTokenExpired(tok)) {
+    try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
+    try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
+    try { if (typeof showLoginModal === 'function') showLoginModal(); } catch (e) {}
+    return null;
+  }
+  return tok;
 }
 
 // Admin-only write — caller must have a valid Bearer token in
@@ -519,6 +595,9 @@ async function addYouTubeLibraryItem(ytType, ytId, label) {
     body: JSON.stringify({ ytType: ytType, ytId: ytId, label: label || '' })
   });
   if (!res.ok) {
+    // v23751 — an expired token is much the commonest cause of a 401 here,
+    // and a bare HTTP 401 leaves no way back. Prompt for a sign-in instead.
+    if (_fidsSaveAuthRescue(res)) throw new Error('Your login expired — sign in, then try again');
     var err = ''; try { err = (await res.json()).error || ''; } catch (e) {}
     throw new Error('Add failed: HTTP ' + res.status + (err ? ' — ' + err : ''));
   }
@@ -541,6 +620,9 @@ async function uploadLibraryFile(file, label, category) {
     body: file
   });
   if (!res.ok) {
+    // v23751 — an expired token is much the commonest cause of a 401 here,
+    // and a bare HTTP 401 leaves no way back. Prompt for a sign-in instead.
+    if (_fidsSaveAuthRescue(res)) throw new Error('Your login expired — sign in, then try again');
     var err = ''; try { err = (await res.json()).error || ''; } catch (e) {}
     throw new Error('Upload failed: HTTP ' + res.status + (err ? ' — ' + err : ''));
   }
@@ -567,6 +649,7 @@ async function vecteezySearchStock(params) {
   });
   var json = null; try { json = await res.json(); } catch (e) {}
   if (!res.ok) {
+    if (_fidsSaveAuthRescue(res)) throw new Error('Your login expired — sign in, then try again');
     var msg = (json && json.error) || ('Search failed: HTTP ' + res.status);
     if (json && json.status) msg += ' (Vecteezy HTTP ' + json.status + ')';
     if (json && json.detail) msg += ' — ' + String(json.detail).slice(0, 200);
@@ -594,6 +677,7 @@ async function vecteezyImportLibraryItem(resourceId, label, category, contentTyp
   });
   var json = null; try { json = await res.json(); } catch (e) {}
   if (!res.ok) {
+    if (_fidsSaveAuthRescue(res)) throw new Error('Your login expired — sign in, then try again');
     var msg = (json && json.error) || ('Import failed: HTTP ' + res.status);
     if (json && json.status) msg += ' (Vecteezy HTTP ' + json.status + ')';
     if (json && json.detail) msg += ' — ' + String(json.detail).slice(0, 200);
@@ -615,6 +699,9 @@ async function updateLibraryItem(itemId, patch) {
     body: JSON.stringify(patch || {})
   });
   if (!res.ok) {
+    // v23751 — an expired token is much the commonest cause of a 401 here,
+    // and a bare HTTP 401 leaves no way back. Prompt for a sign-in instead.
+    if (_fidsSaveAuthRescue(res)) throw new Error('Your login expired — sign in, then try again');
     var err = ''; try { err = (await res.json()).error || ''; } catch (e) {}
     throw new Error('Update failed: HTTP ' + res.status + (err ? ' — ' + err : ''));
   }
@@ -632,6 +719,9 @@ async function deleteLibraryItem(itemId) {
     headers: { 'Authorization': 'Bearer ' + token }
   });
   if (!res.ok) {
+    // v23751 — an expired token is much the commonest cause of a 401 here,
+    // and a bare HTTP 401 leaves no way back. Prompt for a sign-in instead.
+    if (_fidsSaveAuthRescue(res)) throw new Error('Your login expired — sign in, then try again');
     var err = ''; try { err = (await res.json()).error || ''; } catch (e) {}
     throw new Error('Delete failed: HTTP ' + res.status + (err ? ' — ' + err : ''));
   }
@@ -1609,8 +1699,27 @@ async function attemptLogin() {
     });
     const data = await resp.json();
     if (resp.ok && data.token) {
+      // v23751 — WRITE BOTH COPIES, BECAUSE THE READER PREFERS THE OTHER ONE.
+      //
+      // This wrote sessionStorage alone while _fidsAuthToken() reads
+      // localStorage FIRST (v23492). A stale durable token — left by an
+      // earlier sign-in on index.html or picker.html, where auth.js does write
+      // localStorage — therefore outranked every fresh login done here. Signing
+      // in appeared to succeed, and the very next admin write still sent the
+      // OLD token, 401'd, and threw the operator back to this modal. Logging in
+      // again could not help: it kept refreshing the copy nobody reads first.
+      // That is the loop behind media assignments repeatedly ejecting the
+      // operator while other work carried on unaffected.
+      //
+      // auth.js saveToken() has written both since v23170; this is the same
+      // thing for the login that lives on the boards themselves.
+      var _userJson = JSON.stringify(data.user || { username: u });
+      try {
+        localStorage.setItem('fids_token', data.token);
+        localStorage.setItem('fids_user', _userJson);
+      } catch (e) { /* storage unavailable — the session lasts this tab only */ }
       sessionStorage.setItem('fids_token', data.token);
-      sessionStorage.setItem('fids_user', JSON.stringify(data.user || { username: u }));
+      sessionStorage.setItem('fids_user', _userJson);
       LIVE_MODE = true;
       if (typeof demoRebuildTimer !== 'undefined' && demoRebuildTimer) {
         clearInterval(demoRebuildTimer); demoRebuildTimer = null;
@@ -24021,7 +24130,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23750';
+var FIDS_BUILD_TAG = 'v23751';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
