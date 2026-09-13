@@ -12532,36 +12532,50 @@ function uxgGateHtml(ctx) {
     // would print English on the French half of a bilingual sign.
     var _prioMarksHdr = '<div class="g8-pd-marks-hdr">'
       + (_gateLbl1('avidTraveller', _frF) || 'AvidTraveller') + '</div>';
+    // v23749 — THE MARKS FOLLOW THE LANGUAGE.
+    //
+    // Porter does not translate the tier names, it RENAMES them, so the French
+    // marks are different artwork rather than colour variants:
+    //   Passport → Passeport    Venture → Horizon
+    //   Ascent   → Essor        First   → Première
+    // A French sign showing "Ascent" is wrong, not merely untranslated.
+    //
+    // The files key on the ENGLISH tier with a language suffix, so the tier is
+    // the identity and the language is a swap. _PD_MARK_FR names the tiers whose
+    // French artwork actually exists, and names them with the word Porter itself
+    // uses. All four are covered today; the table stays because the fallback it
+    // drives is the safe direction — a tier missing from it draws its English
+    // file, which is the wrong language but PRESENT, whereas a constructed path
+    // pointing at nothing draws nothing and the tier silently vanishes from the
+    // sign. That is exactly how Ascent went unnoticed for so long.
+    var _PD_MARK_FR = {
+      passport: 'Passeport', venture: 'Horizon', ascent: 'Essor', first: 'Première',
+    };
+    function _pdMark(tier, label) {
+      // The French name doubles as the alt text, so a file that fails to load
+      // falls back to the word on Porter's own French card rather than to a
+      // tier name their French members have never seen.
+      var fr = _frF && _PD_MARK_FR[tier];
+      return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
+        + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="VIPorter '
+        + (fr || label) + '"></span>';
+    }
+    // All four elite tiers. Porter's pre-boarding list says "Premium VIPorter
+    // members", which tells a passenger nothing about whether their own card
+    // qualifies; naming every tier says it exactly, and excludes nobody.
     var _prioMarks = _prioMarksHdr + '<div class="g8-pd-preboard-marks">'
-        // v23532 — the mark the owner supplied, not the older file already in the tree.
-        // The policy line reads "Premium VIPorter MEMBERS", which is the whole
-        // premium tier set, so the member wordmark is the right one of the four
-        // he sent — naming a single tier would imply the other two do not
-        // pre-board.
-        //
-        // v23688 — AND THE THREE TIERS ARE WHAT "PREMIUM VIPORTER" MEANS.
-        // Requested once before for this same batch: the supplied logos are
-        // meant to be used, and that is
-        // still true of four of the eight files. Three of those four are the
-        // tier marks, and v23532's reasoning is what kept them out: it treated
-        // naming a tier as excluding the others. Naming ALL THREE excludes
-        // nobody, and it is the more useful sign — the roster line above says
-        // "Premium VIPorter", which tells a passenger nothing about whether
-        // their own card qualifies. Passport, Venture and First say it exactly.
-        // The generic member wordmark comes out because it now only repeats
-        // words already printed directly above it.
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_passport_single_line_en.svg" alt="VIPorter Passport"></span>'
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_venture_single_line_en.svg" alt="VIPorter Venture"></span>'
-        // v23748 — ASCENT, the tier that was never on the sign. Porter
-        // publishes FOUR elite levels and this one sits between Venture and
-        // First, so an Ascent member reading the marks found their status
-        // named nowhere. Its #332768 lands exactly where the progression
-        // predicts — member #027AC0, passport #1457BC, venture #153993,
-        // ascent #332768, first black — which is a decent check that the file
-        // is the real one rather than a look-alike.
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_ascent_single_line_en.svg" alt="VIPorter Ascent"></span>'
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_first_single_line_en.svg" alt="VIPorter First"></span>'
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
+        + _pdMark('passport', 'Passport')
+        + _pdMark('venture', 'Venture')
+        + _pdMark('ascent', 'Ascent')
+        + _pdMark('first', 'First')
+        // PorterReserve is the FIFTH entry in Porter's published pre-boarding
+        // list, after the four elite tiers — "Premium VIPorter members,
+        // PorterReserve passengers" — so its mark belongs in this row as an
+        // entitlement, not as the column heading. (The heading above names the
+        // cabin; this says the fare pre-boards.) It has both languages, so it
+        // follows the sign like the tiers do.
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo'
+          + (_frF ? '_fr' : '') + '.svg" alt="PorterReserve"></span>'
         + '</div>';
     // The roster is pre-boarding only; the marks are not.
     var _prioSub = preActive
@@ -12641,13 +12655,18 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
-  // The base VIPorter tier belongs on the RIGHT. The three elite marks in the
+  // The base VIPorter tier belongs on the RIGHT. The four elite marks in the
   // priority column are who pre-boards; a plain VIPorter member does not, so
   // their mark sits with general boarding where they actually queue. The file
   // was already in the tree and had never been wired to anything.
+  //
+  // It follows the sign's language like the elite marks do. 'Member' is the one
+  // VIPorter name whose French form is a plain translation — membre — rather
+  // than a rename, but it is still the wrong word to print on a French sign.
   function _pdClassicMark() {
     return '<div class="g8-pd-preboard-marks g8-pd-marks-classic">'
-      + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_en.svg" alt="VIPorter"></span>'
+      + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_'
+        + (_frF ? 'fr' : 'en') + '.svg" alt="VIPorter"></span>'
       + '</div>';
   }
 
@@ -24002,7 +24021,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23742';
+var FIDS_BUILD_TAG = 'v23750';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

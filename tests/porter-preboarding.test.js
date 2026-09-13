@@ -58,7 +58,12 @@ function build(preActive, lang) {
     (key) => '[' + key + ']',
     (v) => '<coming>' + v + '</coming>',
     () => '',
-    false,
+    // v23750 — _frF has to track the language the caller asked for. It was
+    // pinned to false, so every "the French sign says X" test below was really
+    // rendering an English sign that happened to look up a French roster. The
+    // artwork picks its language off THIS flag, so with it pinned no test could
+    // ever have caught a mark stuck in the wrong language.
+    lang === 'fr',
   );
   return fn('23–33', '12–22', preActive);
 }
@@ -243,9 +248,13 @@ test('all four elite tiers are named, Ascent included', () => {
   // and had no artwork at all, so a member of that tier read the marks and
   // found their status named nowhere on the sign.
   const body = lift('_pdLanesBodyHtml');
+  // The marks are BUILT, not written out — '..._' + tier + '_single_line_' +
+  // lang + '.svg' — so a literal search finds none of them. Read the tier list
+  // off the calls instead, the way the branding contract resolves constructed
+  // tile paths rather than grepping for filenames that no longer appear.
+  const tiers = [...body.matchAll(/_pdMark\('(\w+)'/g)].map((m) => m[1]);
   for (const tier of ['passport', 'venture', 'ascent', 'first']) {
-    assert.match(body, new RegExp('viporter_' + tier + '_single_line'),
-      `the ${tier} tier must be on the priority marks`);
+    assert.ok(tiers.includes(tier), `the ${tier} tier must be on the priority marks`);
   }
   // And the base member is NOT among them — it belongs with general boarding.
   const prio = body.slice(body.indexOf('_prioMarks ='), body.indexOf('_prioSub'));
@@ -258,8 +267,99 @@ test('every tier mark points at a file that exists', () => {
   // looks fine with one fewer tier on it. That is how Ascent went unnoticed.
   const dir = path.resolve(__dirname, '..', 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
   const body = lift('_pdLanesBodyHtml') + lift('_pdClassicMark');
-  const refs = [...body.matchAll(/\/logos\/airlines\/canadian\/porter\/([\w.-]+\.svg)/g)].map((m) => m[1]);
-  assert.ok(refs.length >= 5, `expected the five marks, found ${refs.length}`);
-  const missing = refs.filter((f) => !fs.existsSync(path.join(dir, f)));
+  // Resolve what the renderer BUILDS, in every language it can build it in —
+  // a constructed path that points at nothing draws nothing, and the tier just
+  // vanishes from the sign with no error. That is how Ascent went unnoticed.
+  const fr = new Function('return ' + /_PD_MARK_FR = (\{[^}]*\})/.exec(body)[1] + ';')();
+  const refs = [];
+  for (const m of body.matchAll(/_pdMark\('(\w+)'/g)) {
+    refs.push(`viporter_${m[1]}_single_line_en.svg`);
+    if (fr[m[1]]) refs.push(`viporter_${m[1]}_single_line_fr.svg`);
+  }
+  // The literally-named ones, plus the Reserve logo's language variants.
+  for (const m of body.matchAll(/porter\/([\w.-]+)\.svg/g)) refs.push(m[1] + '.svg');
+  if (/porter_reserve_logo'\s*\+/.test(body)) refs.push('porter_reserve_logo.svg', 'porter_reserve_logo_fr.svg');
+  const uniq = [...new Set(refs)];
+  assert.ok(uniq.length >= 6, `expected at least six marks, found ${uniq.length}`);
+  const missing = uniq.filter((f) => !fs.existsSync(path.join(dir, f)));
   assert.deepEqual(missing, [], `these marks are referenced but not on disk: ${missing.join(', ')}`);
+});
+
+// Run the real _pdMark in a chosen language rather than grepping for the shape
+// of its source. An earlier version of this test matched the exact expression
+// the function was written with, so renaming one local variable failed it while
+// the sign kept rendering perfectly — a test of the spelling, not the output.
+function mark(tier, label, fr) {
+  const src = lift('_pdLanesBodyHtml');
+  const decl = /var _PD_MARK_FR = \{[^}]*\};/.exec(src);
+  assert.ok(decl, 'the set of tiers with French art must be declared explicitly');
+  const at = src.indexOf('function _pdMark(');
+  assert.ok(at >= 0, '_pdMark must still exist');
+  const body = src.slice(at, src.indexOf('\n    }', at) + 6);
+  return new Function('_frF', decl[0] + '\n' + body + '\nreturn _pdMark;')(fr)(tier, label);
+}
+
+test('the tier marks follow the language where French art exists', () => {
+  // Porter RENAMES the tiers rather than translating them — Ascent is Essor and
+  // First is Première — so the French files are different artwork, not colour
+  // variants. The filenames key on the English tier with a language suffix, so
+  // the tier is the identity and the language is a swap.
+  assert.match(mark('ascent', 'Ascent', false), /viporter_ascent_single_line_en\.svg/,
+    'the English sign must show the English tier artwork');
+  assert.match(mark('ascent', 'Ascent', true), /viporter_ascent_single_line_fr\.svg/,
+    'the French sign must swap in the French artwork, not merely recolour it');
+  // And the alt text — what a passenger reads if the file ever fails to load —
+  // must be the word on their own card, not the tier name in the other language.
+  assert.match(mark('ascent', 'Ascent', true), /alt="VIPorter Essor"/,
+    'a French sign falling back to text must say Essor, never Ascent');
+});
+
+test('a French sign shows no English mark that has a French file on disk', () => {
+  // One rule over the WHOLE panel rather than one assertion per mark. Every
+  // previous version of this check named the marks it knew about, so each mark
+  // added later — the base-tier member mark on the general-boarding side was the
+  // last one — arrived with no language coverage at all and nobody noticed.
+  // This reads the rendered French panel and asks the only question that
+  // matters: is anything still in English that did not have to be?
+  //
+  // Two naming conventions are in play and BOTH have to be handled: the tier
+  // marks suffix the language on every file (`..._en.svg` / `..._fr.svg`), while
+  // the Reserve logo leaves English bare and suffixes only the French
+  // (`porter_reserve_logo.svg` / `..._fr.svg`). A check that only understood the
+  // first convention let a stranded Reserve logo through.
+  const dir = path.resolve(__dirname, '..', 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
+  const html = build(false, 'fr') + build(true, 'fr');
+  const stranded = [...new Set([...html.matchAll(/porter\/([\w.-]+)\.svg/g)].map((m) => m[1]))]
+    .filter((stem) => !stem.endsWith('_fr'))
+    .filter((stem) => fs.existsSync(
+      path.join(dir, (stem.endsWith('_en') ? stem.slice(0, -3) : stem) + '_fr.svg')));
+  assert.deepEqual(stranded, [],
+    'these marks render their English artwork on a French sign even though the ' +
+    'French file is sitting in the tree beside it: ' + stranded.join(', '));
+});
+
+test('an English sign never reaches for the French artwork', () => {
+  // The other direction, which a one-way check would miss entirely.
+  const html = build(false, 'en') + build(true, 'en');
+  assert.doesNotMatch(html, /_fr\.svg/,
+    'the English sign must not print French artwork');
+});
+
+test('a tier without French art falls back to English, never to nothing', () => {
+  // This is the important half. A missing image draws nothing at all and the
+  // tier silently vanishes from the sign — exactly how Ascent went unnoticed.
+  // Wrong-language-but-present beats absent.
+  const src = lift('_pdLanesBodyHtml');
+  const frSet = new Function('return ' + /(_PD_MARK_FR = )(\{[^}]*\})/.exec(src)[2] + ';')();
+  const dir = path.resolve(__dirname, '..', 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
+  for (const tier of ['passport', 'venture', 'ascent', 'first']) {
+    // Every tier must have English art — that is the fallback.
+    assert.ok(fs.existsSync(path.join(dir, `viporter_${tier}_single_line_en.svg`)),
+      `${tier} has no English art to fall back to`);
+    // And any tier CLAIMING French art must actually have it on disk.
+    if (frSet[tier]) {
+      assert.ok(fs.existsSync(path.join(dir, `viporter_${tier}_single_line_fr.svg`)),
+        `${tier} is listed as having French art but the file is not there`);
+    }
+  }
 });
