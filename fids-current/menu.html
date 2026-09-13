@@ -764,7 +764,13 @@
             <button onclick="mediaPickerClose()" style="background:transparent;color:var(--console-text-3);border:none;font-size:20px;cursor:pointer;line-height:1;">×</button>
           </div>
           <div id="mlPickerList"></div>
-          <div style="margin-top:12px;display:flex;gap:8px;">
+          <!-- v23752 — the picker had no way to report a failure, so its only
+               way of failing was to close and discard the whole selection. -->
+          <div id="mlPickerFlash" style="display:none;margin-top:10px;padding:8px 10px;border-radius:4px;font-size:12px;background:#7f1d1d;color:#fca5a5;"></div>
+          <!-- The id is new; the style attribute must stay byte-identical,
+               because menu.js finds this element with
+               div[style*="margin-top:12px"] to swap the footer buttons. -->
+          <div id="mlPickerFooter" style="margin-top:12px;display:flex;gap:8px;">
             <button onclick="mediaPickerConfirm()" class="sm-btn sm-btn-primary sm-btn-sm" style="flex:1;">Add Selected</button>
             <button onclick="mediaPickerClose()" class="sm-btn sm-btn-secondary sm-btn-sm">Cancel</button>
           </div>
