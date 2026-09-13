@@ -24271,7 +24271,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23761';
+var FIDS_BUILD_TAG = 'v23762';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39859,6 +39859,23 @@ function _buildGateAdSlideList() {
       // Welcome marks that ALREADY carry the carrier's name, so the sub line
       // below must stay empty or the card says it twice.
       var _FB_LOGO_HAS_NAME = { 'BA':1, 'BAW':1, 'MX':1 };
+      // v23762 — ICAO forms for the wordmark lookup below.
+      // `code` is whatever the feed published, and the feeds are not
+      // consistent: most carry IATA, some carry ICAO (the emblem table above
+      // already keeps both forms for the carriers it covers, which is why
+      // BAW, DAL, OCN and FLE sit in it beside their IATA twins).
+      // IATA_TO_WORDMARK is keyed on IATA, so without this an ICAO-coded feed
+      // would find no base and drop silently back to the typed name — the
+      // exact failure this change removes, reappearing on a subset of
+      // airports rather than everywhere.
+      // WR is the odd one: Encore's own IATA code, not an ICAO form, mapped
+      // to WestJet because Encore flies in WestJet's identity — the emblem
+      // table above hands it the same leaf for the same reason.
+      var _FB_WM_ICAO = {
+        'ACA':'AC', 'WJA':'WS', 'WEN':'WS', 'WR':'WS', 'TSC':'TS', 'POE':'PD',
+        'PVL':'PB', 'JZA':'QK', 'AAL':'AA', 'DAL':'DL', 'UAL':'UA', 'SWA':'WN',
+        'JBU':'B6', 'FLE':'F8', 'DLH':'LH', 'AFR':'AF', 'UAE':'EK', 'OCN':'4Y'
+      };
       if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
       deck = [{ type: 'ad', data: {
         bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
@@ -39885,15 +39902,46 @@ function _buildGateAdSlideList() {
         // is its wordmark, which is nothing but the name.
         sub: (_fb && _fb.name && !_FB_LOGO_HAS_NAME[code]) ? _fb.name : '',
         // v23123 —
+        // v23762 — THE SUB LINE DRAWS THE CARRIER'S REAL WORDMARK.
+        //
+        // This slot used to hold a hand-kept table of four entries: Delta and
+        // Discover. Every other airline fell through to `sub` above and had
+        // its name TYPED OUT in the board font — the board's lettering
+        // standing in for the brand's own logotype. On a card whose whole job
+        // is to present the carrier, an approximation of its name sits beside
+        // its real emblem and reads as wrong, which is what got noticed on
+        // WestJet: the 2025 leaf above, and 'WestJet' set in board type below
+        // it, instead of the wordmark that belongs with that leaf.
+        //
+        // The board already keeps this centrally. IATA_TO_WORDMARK names each
+        // carrier's wordmark base, and wordmarkSrc() turns a base into a file
+        // — picking the light or dark cut, handling the raster-only carriers,
+        // and carrying the build token so a transient 404 can't poison a
+        // kiosk cache. Going through them rather than keeping a second table
+        // here means this card shows the same lettering as the banners and
+        // the rows, and a carrier added there needs no second edit to appear.
+        // It also covers 15 of the 17 carriers that can take one here, where
+        // the hand-kept table covered two. The two it misses have no logotype
+        // in the repo to draw — Pacific Coastal has no wordmark art at all,
+        // and Qatar's only file is a glossy badge, which is a lockup, not
+        // lettering. Those keep the typed name until real artwork arrives.
+        //
+        // The variant is FORCED to light rather than measured, because this
+        // card's ground is not the board's: it is the carrier's own dark
+        // brand gradient set just above. All 18 are dark — the palest is
+        // WestJet's #003366, where white still measures 12.6:1 — so the white
+        // cut is always the correct one here.
         subLogo: (function () {
-          var _SUB_WORDMARK = {
-            'DL': '/logos/airlines/us-major/delta-wordmark-light.svg',
-            'DAL': '/logos/airlines/us-major/delta-wordmark-light.svg',
-            // v23127 — Discover's name was missing entirely under the tail
-            '4Y': '/logos/airlines/european/discover-airlines-wordmark-light.svg',
-            'OCN': '/logos/airlines/european/discover-airlines-wordmark-light.svg'
-          };
-          return _SUB_WORDMARK[code] || '';
+          try {
+            if (typeof IATA_TO_WORDMARK === 'undefined'
+              || typeof wordmarkSrc !== 'function') return '';
+            // The emblem above already SETS the name for these, so a wordmark
+            // beneath it would print the name twice — the same rule that
+            // keeps the typed line empty for them.
+            if (_FB_LOGO_HAS_NAME[code]) return '';
+            var _base = IATA_TO_WORDMARK[code] || IATA_TO_WORDMARK[_FB_WM_ICAO[code] || ''];
+            return _base ? wordmarkSrc(_base, 'light') : '';
+          } catch (e) { return ''; }
         })(),
         logo: _fbLogo
       } }];
