@@ -233,3 +233,18 @@ test('every heritage code is unique across the entire codebase', () => {
     }
   }
 });
+
+test('the flight number carries no carrier prefix', () => {
+  // PERIOD ACCURACY, not a workaround: airport boards of this era did not
+  // print the two-letter airline code against the flight number — that
+  // convention is recent. 'CDX508' would be wrong for the decade being
+  // depicted even before you notice the code is invented.
+  const at = SRC.indexOf('function _heritageSchedule');
+  const body = SRC.slice(at, at + 2200);
+  assert.match(body, /flight: String\(500 \+ i \* 2\)/,
+    'the displayed number must be the number alone');
+  assert.doesNotMatch(body, /flight: code \+/,
+    'the carrier code must not be concatenated onto what a passenger reads');
+  // The code still has to reach the entry, or nothing brands the board.
+  assert.match(body, /al: code/, 'the code still rides on the entry, for branding');
+});
