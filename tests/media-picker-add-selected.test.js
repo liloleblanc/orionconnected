@@ -269,11 +269,16 @@ test('the markup carries the flash element and the footer keeps its selector', (
   // buttons for the library editor. Adding an id is safe; changing that style
   // attribute is not, and would silently break the editor instead.
   const at = HTML.indexOf('id="mlPickerModal"');
-  const seg = HTML.slice(at, at + 2600).replace(/<!--[\s\S]*?-->/g, '');
-  const hits = seg.split('margin-top:12px').length - 1;
+  const seg = HTML.slice(at, at + 2600);
+  // Count opening TAGS that carry the style, rather than stripping comments
+  // first. querySelector only ever sees elements, so matching element syntax is
+  // both the accurate test and avoids a comment-stripping regex — CodeQL flags
+  // that shape as incomplete sanitization, and it is right that it is not a
+  // technique to reach for even in a fixture count.
+  const hits = (seg.match(/<div[^>]*style="margin-top:12px/g) || []).length;
   assert.equal(hits, 1,
     'exactly one ELEMENT in the picker modal may carry margin-top:12px, or the ' +
     "library editor's footer lookup becomes ambiguous");
-  assert.match(seg, /id="mlPickerFooter"[^>]*style="margin-top:12px;/,
+  assert.match(seg, /<div id="mlPickerFooter" style="margin-top:12px;/,
     'the footer keeps both its new id and its original style attribute');
 });
