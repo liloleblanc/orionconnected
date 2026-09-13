@@ -18867,3 +18867,51 @@ html[data-heritage] #heritageStamp span {
   letter-spacing: .08em !important;
   opacity: .88 !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23761 — THE RONDELLE TURNS LIKE A COIN, NOT LIKE A METRONOME.
+
+   The motion asked for: start slow, gather momentum, decelerate into a stop
+   FACE ON, rest there a beat, go again.
+
+   The previous curve turned in the first 18% of a 7s cycle — 1.26s for a full
+   revolution — and then sat still for the remaining 5.7s. Fast flick, long
+   stare. Redefining the keyframes here rather than editing them in place, per
+   the append-only rule for this file; a later @keyframes of the same name
+   replaces the earlier one outright.
+
+   The turn now takes 65% of the cycle (4.55s) under a curve that is slow off
+   the mark and eases out at the end, then holds face-on for 2.45s. The hold
+   lands on 360deg, which is the same face as 0deg, so the rest is always the
+   front of the mark and never its edge or its back.
+
+   The 7s period is unchanged ON PURPOSE: fids-core.js stamps --rond-delay
+   from wall-clock as (Date.now()/1000) % 7 so the turn survives the gate
+   rebuilding its DOM every telemetry tick. Changing the duration here without
+   changing that modulus would drop every rebuild at the wrong phase.
+   ═══════════════════════════════════════════════════════════════════════ */
+@keyframes g8RondSpin {
+  0%   { transform: rotateY(0deg); animation-timing-function: cubic-bezier(.42, 0, .18, 1); }
+  65%  { transform: rotateY(360deg); animation-timing-function: linear; }
+  100% { transform: rotateY(360deg); }
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked .g8-bw-emblem,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-cd-mark .g8-cd-mark-still {
+  /* linear on the shorthand so the per-keyframe curves above govern the turn;
+     the hold segment is flat either way. */
+  animation: g8RondSpin 7s linear infinite !important;
+  animation-delay: var(--rond-delay, 0s) !important;
+  backface-visibility: visible !important;
+  transform-origin: 50% 50% !important;
+  will-change: transform !important;
+}
+/* A spinning mark is decoration, and decoration is the first thing to go for
+   anyone who has asked the system to stop moving things. */
+@media (prefers-reduced-motion: reduce) {
+  html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-bw-clocked .g8-bw-emblem,
+  html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-cd-mark .g8-cd-mark-still {
+    animation: none !important;
+    transform: none !important;
+  }
+}
