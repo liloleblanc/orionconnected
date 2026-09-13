@@ -24248,7 +24248,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23755';
+var FIDS_BUILD_TAG = 'v23756';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -42357,10 +42357,10 @@ function _renderWxCard(el) {
     // muted to the property, and an unmuted video is refused autoplay outright.
     // v23726 — DAY AND NIGHT ARE DIFFERENT SCENES, NOT THE SAME ONE DIMMED.
     //
-    // Sunny grass by day, fireflies after dark, chosen off the board's own
-    // clock through _gateDayNightTheme() (:99) — the switch the gate board
-    // already uses, so the card turns over at the same moment the rest of the
-    // screen does and honours the same manual override and ?theme= pin.
+    // Sunny grass by day, fireflies after dark, chosen off the hour at the
+    // board's OWN AIRPORT — see the v23756 note at the assignment below for
+    // why this no longer goes through _gateDayNightTheme(), and why the
+    // manual override and ?theme= pin deliberately no longer reach it.
     //
     // Deliberately the BOARD's clock and not the destination's, even though
     // the card's content is all about the destination: this layer is ambient,
@@ -42373,8 +42373,31 @@ function _renderWxCard(el) {
     // scene, so the scene class carries them: wxc-scene-day gets the new
     // light treatment, wxc-scene-night falls through to the card's original
     // navy panels and white type, which were already a night design.
+    // v23756 — 'THE BOARD'S CLOCK' WAS NEVER THE BOARD'S CLOCK.
+    //
+    // Reported: the card is sometimes light when it should be dark, and the
+    // reverse. The intent above is right; the mechanism under it was not.
+    //
+    // _gateDayNightTheme() ends at `new Date().getHours()` — the clock of the
+    // MACHINE RUNNING THE BROWSER. That is the same thing as the board's clock
+    // only when the player happens to sit in the airport's timezone. It does
+    // not: the tour streams 26 airports spanning Los Angeles to Zurich through
+    // ONE browser on ONE host, so the scene was painted from that host's hour
+    // for every airport in the rotation.
+    //
+    // _wxNightAt (declared above) reads AP[iata].tz — the same airport table
+    // the board's own day/night scheduling uses — so there is no second source
+    // of truth here, only the right one.
+    //
+    // Two things fall out of this. The scene and the hour tiles now share ONE
+    // threshold (_wxNightAt's 06/21) instead of disagreeing between 19:00 and
+    // 21:00 every night. And a ?theme= pin can no longer reach the scene: that
+    // pin exists to hold the gate UI to a light PALETTE when the board is
+    // mist, which is a statement about styling and not about whether the sun
+    // is up — it was previously locking the card to the day clip around the
+    // clock.
     var _wxNightScene = false;
-    try { _wxNightScene = (typeof _gateDayNightTheme === 'function') && _gateDayNightTheme() === 'dark'; } catch (e) {}
+    try { _wxNightScene = _wxNightAt(_wxOrig || dest); } catch (e) {}
     var _wxVidSrc = _wxNightScene
       ? '/logos/Backgrounds/video/wx-fireflies-night.mp4'
       : '/logos/Backgrounds/video/wx-grass-loop.mp4';
