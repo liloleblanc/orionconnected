@@ -26315,7 +26315,18 @@ function _heritageSchedule(iata) {
     var d = pool[i % pool.length];
     return {
       m: offset,
-      flight: code + (500 + i * 2),
+      // NUMBER ONLY, no carrier prefix — and this is period accuracy, not a
+      // workaround. Airport boards of this era did not print the two-letter
+      // airline code against the flight number; that convention is recent.
+      // A board showing 'CDX508' would be wrong for the decade it is
+      // depicting even before you notice the code is invented.
+      //
+      // It also removes a second problem: Air Atlantic's 9A is real but long
+      // retired and Canadian's CDX is synthetic outright, so either one
+      // printed here would read as a real designator that happens to be
+      // wrong. The code still rides on the entry below, where the branding
+      // needs it — this is only what a passenger reads.
+      flight: String(500 + i * 2),
       dest: d.n, origin: d.n, di: d.c, oi: d.c,
       al: code,
       gate: String(1 + (i % 4)),
