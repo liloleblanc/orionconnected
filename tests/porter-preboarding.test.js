@@ -205,3 +205,24 @@ test('the base VIPorter tier sits with general boarding, not with priority', () 
   assert.ok(rowsAt > prioAt && markAt > rowsAt,
     'the member mark must be emitted inside the general-boarding column');
 });
+
+test('AvidTraveller labels the tier marks, which is where it is true', () => {
+  // Requested on the board because the term is everywhere in Porter's
+  // marketing — and it belongs here rather than under the cabin heading.
+  // Porter's own footnote: "Avid Traveller refers to Passport, Venture, Ascent
+  // and First membership levels". It is the collective name for exactly the
+  // marks it now sits above, which until this change were unlabelled.
+  const body = lift('_pdLanesBodyHtml');
+  assert.match(body, /g8-pd-marks-hdr">AvidTraveller</,
+    'the marks row must be headed with the name');
+  // Above the marks, not floating elsewhere in the column.
+  const hdrAt = body.indexOf('g8-pd-marks-hdr');
+  const marksAt = body.indexOf('g8-pd-preboard-marks');
+  assert.ok(hdrAt > 0 && marksAt > hdrAt,
+    'the heading must be emitted immediately before the marks it names');
+  // Closed up, matching Porter's press usage and every other Porter name on
+  // this sign. flyporter.com spaces it; if that form is ever preferred this is
+  // the one string to change.
+  assert.doesNotMatch(body, /g8-pd-marks-hdr">Avid Traveller</,
+    'the sign uses the closed-up form for Porter names');
+});

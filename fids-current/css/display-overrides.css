@@ -18708,3 +18708,16 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-ma
   justify-content: center !important;
   margin: .1em 0 .2em !important;
 }
+
+/* v23747 — the collective name for the tier marks below it. Small and quiet:
+   it labels the row, it is not competing with the cabin heading above. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-marks-hdr {
+  font-weight: 800 !important;
+  font-size: clamp(9px, min(1.2vh, 1vw), 16px) !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  color: rgba(255,255,255,.62) !important;
+  margin: .25em 0 .12em !important;
+}

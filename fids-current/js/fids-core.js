@@ -12507,7 +12507,27 @@ function uxgGateHtml(ctx) {
     // The roster line above them stays pre-boarding-only — that list is about
     // the courtesy groups (unaccompanied minors, families, assistance) and it
     // genuinely does not apply later.
-    var _prioMarks = '<div class="g8-pd-preboard-marks">'
+    // v23747 — AND THE MARKS GET THEIR NAME.
+    //
+    // 'AvidTraveller' was drawn as a subtitle under the PorterReserve cabin
+    // heading. It does not belong there: Porter's own footnote defines it as
+    // the loyalty tiers — "Avid Traveller refers to Passport, Venture, Ascent
+    // and First membership levels" — and cabin and status are independent, so
+    // an AvidTraveller can be sitting in PorterClassic.
+    //
+    // But it IS all over Porter's marketing, and it belongs on the sign. Here
+    // is where it is true: it is the collective name for exactly the marks
+    // underneath it, which until now sat unlabelled. A passenger who knows
+    // they are an AvidTraveller but not which tier qualifies can now read the
+    // heading and the tiers together and place themselves.
+    //
+    // Closed up, matching Porter's own press usage ("VIPorter AvidTraveller")
+    // and the house pattern every other Porter name on this sign follows —
+    // PorterReserve, PorterClassic, VIPorter. Note flyporter.com itself spaces
+    // it; Porter is inconsistent across channels, and if the spaced form is
+    // ever preferred this is one string to change.
+    var _prioMarksHdr = '<div class="g8-pd-marks-hdr">AvidTraveller</div>';
+    var _prioMarks = _prioMarksHdr + '<div class="g8-pd-preboard-marks">'
         // v23532 — the mark the owner supplied, not the older file already in the tree.
         // The policy line reads "Premium VIPorter MEMBERS", which is the whole
         // premium tier set, so the member wordmark is the right one of the four
