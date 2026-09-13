@@ -83,7 +83,8 @@ function authToken(env) {
 function rescue(env, status) {
   const fn = new Function(
     'localStorage', 'sessionStorage', 'showLoginModal', 'Auth',
-    lift('_fidsSaveAuthRescue') + '\nreturn _fidsSaveAuthRescue;',
+    lift('_fidsTokenExpired') + '\n' + lift('_fidsSaveAuthRescue')
+      + '\nreturn _fidsSaveAuthRescue;',
   )(env.localStorage, env.sessionStorage, () => { env.shown++; }, undefined);
   return fn({ status });
 }
@@ -167,11 +168,55 @@ test('the 401 rescue clears the DURABLE copy, not just the mirror', () => {
 });
 
 test('the rescue ignores every status that is not 401', () => {
+  // Deliberately run these with an EXPIRED token. With a live one the newer
+  // token check would decline the rescue anyway, and the test would pass
+  // without the status guard doing any work at all — it would still be green
+  // with `status !== 401` widened to `status < 400`. An expired token removes
+  // that cover, so only the status guard can keep the session.
   for (const status of [200, 403, 413, 500]) {
-    const env = sandbox({ local: { fids_token: LIVE }, session: {} });
+    const env = sandbox({ local: { fids_token: DEAD, fids_user: '{}' }, session: {} });
     assert.equal(rescue(env, status), false, `${status} is not an auth failure`);
-    assert.equal(env.localStorage.getItem('fids_token'), LIVE,
-      `a ${status} must not end the session — 413 in particular is "file too large"`);
+    assert.equal(env.localStorage.getItem('fids_token'), DEAD,
+      `a ${status} must not trigger the session teardown — 413 in particular is ` +
+      '"file too large", and losing an admin session over an oversized ad is absurd');
+    assert.equal(env.shown, 0, `a ${status} must not pop the login modal`);
+  }
+});
+
+test('a 401 on a token that has NOT expired leaves the session alone', () => {
+  // Reported: uploading a file works, then assigning it to an airline throws
+  // the operator out. saveMediaAssignments already called this rescue, and the
+  // rescue ended the session on ANY 401 — so a refusal raised for reasons that
+  // have nothing to do with the token (a permission the account lacks, a
+  // transient upstream failure, an endpoint wanting a different credential)
+  // logged the operator out mid-edit and lost the assignment.
+  //
+  // _acFetch (menu.js:1207) learned this in v23170. This is the same rule.
+  const env = sandbox({ local: { fids_token: LIVE, fids_user: '{}' },
+                        session: { fids_token: LIVE, fids_user: '{}' } });
+  assert.equal(rescue(env, 401), false,
+    'a live token means the 401 was about this request, not the session');
+  assert.equal(env.localStorage.getItem('fids_token'), LIVE,
+    'the session must survive — losing it here is the "it throws me out" report');
+  assert.equal(env.sessionStorage.getItem('fids_token'), LIVE);
+  assert.equal(env.shown, 0, 'and no login modal, because the login is fine');
+});
+
+test('a 401 with no token at all still counts as a dead session', () => {
+  // Nothing readable to judge: the session is already gone, so prompt.
+  const env = sandbox({ local: {}, session: {} });
+  assert.equal(rescue(env, 401), true);
+  assert.equal(env.shown, 1);
+});
+
+test('widening the rescue cannot cost a session it could not cost before', () => {
+  // The six writes that gained the rescue must be no more dangerous than the
+  // two that always had it. With a live token every one of them declines to
+  // end the session, so a bad 401 anywhere is a message, never a logout.
+  for (const tok of [LIVE, jwt(1)]) {
+    const env = sandbox({ local: { fids_token: tok }, session: {} });
+    assert.equal(rescue(env, 401), false);
+    assert.equal(env.localStorage.getItem('fids_token'), tok);
   }
 });
 
@@ -233,20 +278,21 @@ test('an expired session refuses the upload BEFORE spending the bytes', async ()
   assert.equal(env.shown, 1, 'and the operator is shown the way back');
 });
 
-test('a server 401 on a token that still looks live pops the login prompt', async () => {
-  // The other order of events: the token has not expired by our clock but the
-  // server rejects it anyway (revoked, clock skew, secret rotated). The old
-  // code threw a bare 'Upload failed: HTTP 401' with no prompt — which is what
-  // made this look like a broken uploader rather than an ended session.
+test('a server 401 on a LIVE token reports the refusal without ending the session', async () => {
+  // The other order of events: the server refuses while our token is still
+  // good by its own clock. That is a refusal of this request, not of the
+  // session — a permission the account lacks, a transient upstream failure —
+  // and the operator must keep their login and their unsaved work.
   const env = sandbox({ local: { fids_token: LIVE }, session: {} });
   const { fn, calls } = runUpload(env);
   await assert.rejects(
     () => fn({ type: 'image/png' }, 'promo', 'ads'),
-    /login expired/i,
-    'a 401 must tell the operator to sign in, not just quote a status code');
+    /Upload failed: HTTP 401/,
+    'report what the server said rather than blaming the session');
   assert.equal(calls.length, 1, 'this one does get sent — we could not know in advance');
-  assert.equal(env.shown, 1, 'the login modal must appear');
-  assert.equal(env.localStorage.getItem('fids_token'), null, 'and the dead token is dropped');
+  assert.equal(env.shown, 0, 'no login modal: the login is not the problem');
+  assert.equal(env.localStorage.getItem('fids_token'), LIVE,
+    'the session must survive a refusal that was never about the token');
 });
 
 test('the upload still reaches the network when the session is good', async () => {

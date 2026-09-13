@@ -396,8 +396,29 @@ function getAirlineAdImages(airlineCode) {
 // FIRST — but this kept clearing only the per-tab mirror. So the rescue ran,
 // popped the modal, and _fidsAuthToken() went straight back to the same expired
 // token in localStorage. It reported a rescue it had not performed.
+//
+// v23751 — AND ONLY AN ACTUALLY-DEAD TOKEN MAY END THE SESSION.
+//
+// Reported: uploading works, then assigning that media to an airline throws
+// the operator out. saveMediaAssignments already called this rescue, and this
+// rescue ended the session on ANY 401 — so a 401 raised for reasons that have
+// nothing to do with the token logs you out mid-edit and loses the assignment.
+//
+// _acFetch (menu.js:1207) learned this in v23170 and decides it from the token
+// itself, which is knowable locally. The lesson was never carried across to
+// here. It is the same rule: if the token has expired the session really is
+// over, so clear it and prompt; if it has NOT, the 401 was about this
+// particular request — report that and leave the session alone.
+//
+// Returning false for a live-token 401 matters: callers fall through to their
+// own 'HTTP 401' message, which is the truthful one. It also means widening
+// this rescue to the other admin writes cannot cost anyone their session.
 function _fidsSaveAuthRescue(res) {
   if (!res || res.status !== 401) return false;
+  var tok = null;
+  try { tok = localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token'); } catch (e) {}
+  // No readable token at all => the session is already gone; treat as dead.
+  if (tok && !_fidsTokenExpired(tok)) return false;
   // Both copies, durable first — the order _fidsAuthToken reads them in.
   try { localStorage.removeItem('fids_token'); localStorage.removeItem('fids_user'); } catch (e) {}
   try { sessionStorage.removeItem('fids_token'); sessionStorage.removeItem('fids_user'); } catch (e) {}
