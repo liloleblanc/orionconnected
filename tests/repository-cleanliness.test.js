@@ -44,6 +44,12 @@ test('only supported production pages sit at the public root', () => {
     .sort();
   assert.deepEqual(pages, [
     'app.html', 'bids.html', 'designer.html', 'fids.html', 'gids.html',
+    // v23759 — the heritage archive: a chooser for carriers that no longer
+    // fly, each opening a gate board rendered in that carrier's identity with
+    // an invented schedule. Deliberately standalone — it pulls its own small
+    // script rather than fids-core.js, so the archive cannot be broken by a
+    // change to the live boards.
+    'heritage.html',
     'index.html', 'menu.html', 'picker.html', 'rotate.html',
     // v23265 — the multi-airport tour: rotate.html's scene rotation plus an
     // airport layer and an arrival card between them.

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heritage Gates — Orion</title>
+<link rel="stylesheet" href="css/font.css?v=23759">
+<style>
+  /* An archive room, not a product page. Paper ground, navy ink, one accent —
+     the same treatment the heritage card uses, so the two read as one idea. */
+  :root {
+    --paper: #F6F3EC;
+    --paper-2: #EFEAE0;
+    --ink: #061d40;
+    --ink-60: rgba(6,29,64,.62);
+    --ink-38: rgba(6,29,64,.38);
+    --accent: #EF1A2E;
+    --rule: rgba(6,29,64,.14);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
+    color: var(--ink);
+    font-family: 'AC Nord Text', 'RocGrotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    padding: clamp(22px, min(5vh, 5vw), 70px) clamp(16px, min(4vh, 4vw), 56px);
+  }
+  header { max-width: 1100px; margin: 0 auto clamp(22px, min(4vh, 4vw), 54px); }
+  .kick {
+    font-size: clamp(10px, min(1.4vh, 1.5vw), 14px);
+    letter-spacing: .24em; text-transform: uppercase;
+    font-weight: 700; color: var(--ink-38);
+  }
+  h1 {
+    font-size: clamp(26px, min(5vh, 5.2vw), 58px);
+    font-weight: 800; letter-spacing: -.01em; line-height: 1.04;
+    margin: clamp(6px, min(1.2vh, 1.3vw), 16px) 0 0;
+    text-wrap: balance;
+  }
+  h1 .fr { display: block; color: var(--ink-38); font-weight: 600; }
+  .lede {
+    max-width: 62ch; margin: clamp(10px, min(2vh, 2.2vw), 22px) 0 0;
+    font-size: clamp(13px, min(1.9vh, 2vw), 19px); line-height: 1.55; color: var(--ink-60);
+  }
+  .rule { width: 46px; height: 3px; background: var(--accent); margin: clamp(14px, min(2.4vh, 2.6vw), 28px) 0 0; }
+
+  .grid {
+    max-width: 1100px; margin: 0 auto;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: clamp(14px, min(2.6vh, 2.8vw), 30px);
+  }
+  .card {
+    background: #FFFDF8;
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: clamp(18px, min(3.4vh, 3.6vw), 38px);
+    display: flex; flex-direction: column;
+    text-decoration: none; color: inherit;
+  }
+  .card .markbox {
+    display: flex; align-items: center; justify-content: center;
+    min-height: clamp(56px, min(11vh, 12vw), 130px);
+    margin-bottom: clamp(8px, min(1.6vh, 1.8vw), 20px);
+  }
+  .card .markbox img { max-width: 84%; max-height: clamp(46px, min(9vh, 10vw), 110px); }
+  .card .endorse { display: flex; justify-content: center; margin-bottom: clamp(8px, min(1.6vh, 1.7vw), 18px); }
+  .card .endorse img { max-width: 40%; opacity: .85; }
+  .meta {
+    font-size: clamp(11px, min(1.5vh, 1.6vw), 15px);
+    color: var(--ink-60); line-height: 1.5; margin-bottom: clamp(12px, min(2.2vh, 2.4vw), 26px);
+  }
+  .meta b { color: var(--ink); font-weight: 700; }
+  .go {
+    margin-top: auto; align-self: flex-start;
+    background: var(--ink); color: #fff;
+    padding: clamp(8px, min(1.4vh, 1.5vw), 14px) clamp(14px, min(2.4vh, 2.6vw), 26px);
+    border-radius: 4px; font-weight: 700;
+    font-size: clamp(11px, min(1.5vh, 1.6vw), 15px);
+    letter-spacing: .08em; text-transform: uppercase;
+  }
+  .card:hover .go { background: var(--accent); }
+  .card:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  .note {
+    max-width: 1100px; margin: clamp(24px, min(4.5vh, 4.7vw), 56px) auto 0;
+    padding-top: clamp(14px, min(2.6vh, 2.8vw), 28px);
+    border-top: 1px solid var(--rule);
+    font-size: clamp(11px, min(1.5vh, 1.6vw), 15px);
+    color: var(--ink-60); line-height: 1.6; max-width: 76ch;
+  }
+  .note b { color: var(--ink); }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="kick">From the archive &nbsp;·&nbsp; Depuis les archives</div>
+  <h1>Heritage gates<span class="fr">Portes d’époque</span></h1>
+  <p class="lede">
+    Gate boards rendered in the identity of carriers that no longer fly.
+    Every flight shown is invented for the demonstration — these airlines
+    ceased operating, so none of it is live, and each board says so.
+  </p>
+  <div class="rule"></div>
+</header>
+
+<main class="grid" id="grid"></main>
+
+<p class="note" id="note"></p>
+
+<script src="js/heritage-index.js?v=23759"></script>
+</body>
+</html>
