@@ -436,6 +436,144 @@ export default {
       };
     };
 
+    // ── /wxsun — REAL SUNRISE AND SUNSET, NOT A FIXED WINDOW ────────────
+    // v23757 — day/night on the boards was a hardcoded 06:00-21:00 guess.
+    // Measured against MET's own figures, that window is wrong by hours for
+    // much of the year and absurd at the northern airports:
+    //
+    //   KEF 21 Jun   sunrise 03:01  sunset 00:02   dusk off by 21 hours
+    //   KEF 21 Dec   sunrise 11:22  sunset 15:34   dawn off 5h22, dusk 5h26
+    //   ZRH 21 Dec   sunrise 08:10  sunset 16:37   dawn off 2h10, dusk 4h23
+    //   YDF 21 Dec   sunrise 08:11  sunset 16:23   dawn off 2h11, dusk 4h37
+    //
+    // MET's Sunrise 3.0 answers this exactly, and it is the SAME publisher,
+    // the same keyless access and the same NLOD 2.0 / CC BY 4.0 licence as the
+    // forecast route below — so it carries no new licence question, no account
+    // and no quota. (open-meteo also publishes sunrise/sunset, but its free
+    // tier is non-commercial only and these boards carry advertising; that is
+    // why v23452 moved off it, and it stays off it here.)
+    //
+    // Everything below deliberately mirrors the forecast route: the same UA,
+    // gzip, 2-decimal rounding so every board at one airport shares one cache
+    // entry and one upstream call, and the same fresh / last-known-good /
+    // negative cache trio. Only the durations differ, because sunrise moves
+    // once a day rather than every half hour.
+    //
+    // POLAR DAY AND POLAR NIGHT are real answers, not failures. Above the
+    // circle MET returns sunrise.time and sunset.time as null and the state is
+    // carried by solarnoon instead — disc_centre_elevation 35.22 / visible
+    // true at Longyearbyen in June, -11.66 / visible false in December. Those
+    // are normalised to explicit flags here so the client never has to infer
+    // "no sunrise" from a missing field, which is the same shape as an error.
+    if (path === '/wxsun') {
+      const loc = url.searchParams.get('location') || '';
+      const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(loc);
+      if (!m) return new Response('Bad location', { status: 400 });
+      const rnd = (v) => { const n = Number(v); return Number.isFinite(n) ? n.toFixed(2) : null; };
+      const la = rnd(m[1]), lo = rnd(m[2]);
+      if (la == null || lo == null) return new Response('Bad location', { status: 400 });
+      // The date is the caller's LOCAL date at the airport — the client knows
+      // the timezone, the worker does not, so it is passed rather than guessed.
+      const dq = url.searchParams.get('date') || '';
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(dq) ? dq : new Date().toISOString().slice(0, 10);
+      const sunUrl = 'https://api.met.no/weatherapi/sunrise/3.0/sun?lat=' + la + '&lon=' + lo + '&date=' + date;
+      const base = 'https://wx.cache.invalid/wxsun?lat=' + la + '&lng=' + lo + '&d=' + date;
+      const kFresh = new Request(base);
+      const kLkg = new Request(base + '&lkg=1');
+      const kNeg = new Request(base + '&neg=1');
+      const ok = (txt, age, state) => new Response(txt, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=' + age,
+          'X-Weather-State': state,
+          'Access-Control-Allow-Origin': '*',
+        },
+      });
+      let cache = null;
+      try { cache = caches.default; } catch (e) {}
+      const lastGood = async () => {
+        if (!cache) return null;
+        const old = await cache.match(kLkg).catch(() => null);
+        return old ? await old.text().catch(() => null) : null;
+      };
+      try {
+        if (cache) {
+          const hit = await cache.match(kFresh).catch(() => null);
+          if (hit) return ok(await hit.text(), 21600, 'fresh');
+          const neg = await cache.match(kNeg).catch(() => null);
+          if (neg) {
+            const lg = await lastGood();
+            return lg ? ok(lg, 300, 'stale')
+                      : ok(JSON.stringify({ error: true, reason: 'sunrise upstream unavailable' }), 300, 'unavailable');
+          }
+        }
+        const r = await fetch(sunUrl, {
+          headers: { 'User-Agent': MET_UA, 'Accept': 'application/json', 'Accept-Encoding': 'gzip' }
+        });
+        if (r.status === 203) console.warn('[wx] MET Norway signalled deprecation (HTTP 203) for /wxsun');
+        const raw = await r.text();
+        let met = null; try { met = JSON.parse(raw); } catch (e) {}
+        let body = null;
+        try {
+          const p = (met && met.properties) || null;
+          if (p) {
+            const sr = (p.sunrise && p.sunrise.time) || null;
+            const ss = (p.sunset && p.sunset.time) || null;
+            const noon = p.solarnoon || {};
+            // Above the circle there is no rise or set to report; solarnoon
+            // carries the state instead. Prefer the explicit `visible` flag and
+            // fall back to the elevation's sign, which says the same thing.
+            const sunUpAtNoon = (typeof noon.visible === 'boolean')
+              ? noon.visible
+              : (typeof noon.disc_centre_elevation === 'number' ? noon.disc_centre_elevation > 0 : null);
+            const polar = (!sr && !ss);
+            body = {
+              date: date,
+              sunrise: sr,
+              sunset: ss,
+              polarDay: polar && sunUpAtNoon === true,
+              polarNight: polar && sunUpAtNoon === false,
+              _src: 'met-norway-sunrise-3.0'
+            };
+            // A response with neither a rise/set pair nor a usable solarnoon
+            // tells us nothing; treat it as upstream failure rather than
+            // silently reporting a polar state we did not establish.
+            if (!sr && !ss && sunUpAtNoon === null) body = null;
+          }
+        } catch (e) { body = null; }
+        const txt = body ? JSON.stringify(body) : raw;
+        if (!r.ok || !body) {
+          if (cache) {
+            await cache.put(kNeg, new Response('1', { headers: { 'Cache-Control': 'public, max-age=300' } })).catch(() => {});
+          }
+          const lg = await lastGood();
+          if (lg) return ok(lg, 300, 'stale');
+          return ok(JSON.stringify({
+            error: true,
+            reason: (met && met.reason) || ('MET Norway sunrise upstream ' + r.status)
+          }), 300, 'unavailable');
+        }
+        if (cache) {
+          // Six hours fresh: the figures move once a day, and a board that
+          // boots at any hour still gets today's. Two days of last-known-good
+          // so an outage degrades to yesterday's times — minutes out at worst,
+          // where the fixed window was hours out.
+          await cache.put(kFresh, new Response(txt, {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=21600' }
+          })).catch(() => {});
+          await cache.put(kLkg, new Response(txt, {
+            headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=172800' }
+          })).catch(() => {});
+        }
+        return ok(txt, 21600, 'fresh');
+      } catch (e) {
+        const lg = await lastGood();
+        if (lg) return ok(lg, 300, 'stale');
+        return new Response('wxsun fetch failed', { status: 502, headers: NO_STORE });
+      }
+    }
+
     if (path === '/wxdaily' || path === '/wxcurrent') {
       const loc = url.searchParams.get('location') || '';
       const m = /^(-?[\d.]+),(-?[\d.]+)$/.exec(loc);

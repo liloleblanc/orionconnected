@@ -24248,7 +24248,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23756';
+var FIDS_BUILD_TAG = 'v23757';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41927,6 +41927,61 @@ function _wxFetchDaily(iata, onReady) {
     return _prev;
   } catch (e) { return null; }
 }
+
+// ── REAL SUNRISE AND SUNSET, PER AIRPORT ───────────────────────────────────
+// v23757 — day and night were a hardcoded 06:00-21:00 window. Measured
+// against MET's own figures that is wrong by hours for much of the year, and
+// absurd where this roster actually flies:
+//
+//   KEF 21 Jun   sunrise 03:01  sunset 00:02   dusk off by 21 hours
+//   KEF 21 Dec   sunrise 11:22  sunset 15:34   dawn off 5h22, dusk off 5h26
+//   ZRH 21 Dec   sunrise 08:10  sunset 16:37   dawn off 2h10, dusk off 4h23
+//   YDF 21 Dec   sunrise 08:11  sunset 16:23   dawn off 2h11, dusk off 4h37
+//
+// Same publisher, same keyless access and the same NLOD 2.0 / CC BY 4.0
+// licence as the forecast, through the worker's /wxsun route — so no new
+// account, quota or licence question. Shaped exactly like _wxFetchDaily
+// above: one in-flight guard, stale served while refreshing, failures marked
+// for early retry rather than cached as 'no data'.
+//
+// Keyed by airport AND local date, because the answer changes at the
+// airport's own midnight and a board runs for weeks without reloading.
+window._wxSun = window._wxSun || {};
+function _wxLocalDate(iata, ts) {
+  // en-CA formats as YYYY-MM-DD, which is both the cache key and the exact
+  // form MET's date parameter wants.
+  try {
+    var z = (typeof AP !== 'undefined' && AP[iata] || {}).tz;
+    var d = ts ? new Date(ts) : new Date();
+    return d.toLocaleDateString('en-CA', z ? { timeZone: z } : undefined);
+  } catch (e) { return ''; }
+}
+function _wxFetchSun(iata, ts) {
+  try {
+    if (!iata) return null;
+    var day = _wxLocalDate(iata, ts);
+    if (!day) return null;
+    var key = iata + '|' + day;
+    var hit = window._wxSun[key];
+    if (hit && hit.pending) return hit.data || null;
+    if (hit && hit.data) return hit.data;          // solar times do not drift within a day
+    if (hit && (Date.now() - hit.ts) < 90000) return null;   // recent failure — do not hammer
+    var C = (typeof COORDS !== 'undefined' && COORDS[iata]) || null;
+    if (!C) { try { C = (typeof _lookupAirport === 'function') ? _lookupAirport(iata) : null; } catch (eL) {} }
+    if (!C) return null;
+    window._wxSun[key] = { pending: true, ts: 0, data: null };
+    fetch('/wxsun?location=' + C[0] + ',' + C[1] + '&date=' + day)
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; })
+      .then(function (j) {
+        // An 'unavailable' body is a documented answer from the route, not a
+        // reading — keep it out of the cache so the next pass retries.
+        var good = j && !j.error && (j.sunrise || j.sunset || j.polarDay || j.polarNight);
+        window._wxSun[key] = { pending: false, ts: Date.now(), data: good ? j : null };
+      });
+    return null;
+  } catch (e) { return null; }
+}
 // Labels keyed by the ICON actually shown — icon and wording can never
 // disagree.
 // v22971 — the weather card follows the SELECTED LANGUAGES
@@ -42205,8 +42260,44 @@ function _renderWxCard(el) {
       }
       return (w.current && typeof w.current.temp === 'number') ? w.current : null;
     };
+    // v23757 — the real sun, with the old window kept as the fallback.
+    //
+    // This stays the ONE place the card decides day from night, so the scene,
+    // the destination icon and every hour tile continue to agree. Only what it
+    // consults has changed: MET's published sunrise and sunset for that
+    // airport and that local date, and the 06:00-21:00 guess only when no
+    // reading is available yet.
+    //
+    // The fallback matters more than it looks. The fetch is asynchronous and
+    // the card renders immediately, so the FIRST paint after a cold boot is
+    // always the guess; asking for the data here is what makes the next one
+    // right. Degrading to exactly the previous behaviour — rather than to a
+    // blank or a crash — is why that is acceptable.
+    //
+    // Polar day and polar night are explicit answers from the route, not
+    // missing data: above the circle MET reports no rise and no set, and the
+    // state comes from solar noon instead. Checked before the times, because
+    // in those cases there are no times to compare against.
     var _wxNightAt = function (iata, ts) {
       try {
+        var sun = (typeof _wxFetchSun === 'function') ? _wxFetchSun(iata, ts) : null;
+        if (sun) {
+          if (sun.polarDay) return false;
+          if (sun.polarNight) return true;
+          if (sun.sunrise && sun.sunset) {
+            var now = ts ? new Date(ts).getTime() : Date.now();
+            var rise = Date.parse(sun.sunrise), set = Date.parse(sun.sunset);
+            if (isFinite(rise) && isFinite(set)) {
+              // No same-day wrap is needed. A sunset past midnight is dated on
+              // the FOLLOWING calendar day by MET — Reykjavik on 21 June comes
+              // back as sunrise 2026-06-21T03:01 and sunset 2026-06-22T00:02 —
+              // so the parsed pair is always in order. Verified against the
+              // live API rather than assumed; a wrap here would be code that
+              // can never run and implies a hazard that does not exist.
+              return now < rise || now >= set;
+            }
+          }
+        }
         var z = (AP[iata] || {}).tz;
         var d = ts ? new Date(ts) : new Date();
         var h = Number(d.toLocaleTimeString('en-GB', z ? { timeZone: z, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }).slice(0, 2));
