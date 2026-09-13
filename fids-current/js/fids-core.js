@@ -6069,6 +6069,11 @@ function wwayUrl(code, w, h) {
 // Zone counts: { airline: { narrowbody, widebody, regional } }
 
 const AIRLINE_ACCENT = {
+  // v23759 — heritage demonstration carriers. Their real IATA codes, which
+  // are free now that they have ceased operating, so the banner/name/accent
+  // machinery brands a heritage gate with no special-casing.
+  '9A': '#061d40',   // Air Atlantic
+
   'AC':'#D82F2E','WS':'#00B2A9', 'WG':'#F7941D','PD':'#254D87','PB':'#1F3876','F8':'#7AFF94',
   '8P':'#0C3473',   // Pacific Coastal — its midnight blue, not the generic navy
   // v23738 — Canadian North. Roughly ten departures a day at Ottawa alone,
@@ -13531,6 +13536,9 @@ The rows value is the 'All | Tous'
     // lockup and clips at the single-line 108x620 default — the same caveat
     // already recorded against the dark entry.
     'F8':  { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 },
+    // v23759 — heritage demonstration carrier. Navy ink drawn for paper, so it
+    // belongs in the LIGHT table for the same reason Flair's black mark does.
+    '9A':  { src: '/logos/airlines/canadian/heritage/air-atlantic.svg', h: 96, w: 460 },
     'FLE': { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 }
   };
   var _lightLogo = _bannerIsLight
@@ -22045,6 +22053,8 @@ if (typeof window !== 'undefined') window.fidsTcAirline = tcAirline;
 
 
 const AIRLINE_NAME = {
+  '9A': 'Air Atlantic',   // v23759 — heritage demonstration; ceased 1998
+
   // v23361 - Zurich's two remaining bare codes. IV601/IV600 run ZRH<->Pristina:
   // that is Air Prishtina, whose Swiss-Kosovo flights Chair Airlines operates,
   // which is why Chair's artwork arrived alongside. IV was the one code v23349
@@ -24248,7 +24258,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23758';
+var FIDS_BUILD_TAG = 'v23759';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -26180,8 +26190,112 @@ function buildDemoStatus(minsFromNow, isDep, isDelayed, delayMins) {
   }
 }
 
+
+// ── HERITAGE DEMONSTRATION GATES ───────────────────────────────────────────
+// v23759 — a gate board rendered in a past carrier's identity, reachable at
+// gids.html?heritage=9A (and listed on heritage.html).
+//
+// It is a DEMONSTRATION and says so on screen, permanently. Every carrier here
+// ceased operating, so an unmarked board showing its flights would not read as
+// nostalgia — it would read as a fault, or as the feed having gone wrong. The
+// marker is not decoration; it is the thing that makes the page honest.
+//
+// The identity comes from the carrier's REAL IATA code where that code is now
+// free. Air Atlantic was 9A, and nothing live uses it, so the existing banner,
+// accent and name tables brand the board with no special-casing at all — the
+// heritage gate is just a gate whose airline happens to be 9A.
+//
+// Only carriers whose code is genuinely free can be offered. Air Canada's
+// heritage marks are in the same folder, but its code is AC and AC is very
+// much in service: adding a heritage entry under it would repaint the live
+// carrier. Those two marks stay out of this until they have a key that cannot
+// collide, and heritage.html says so rather than quietly omitting them.
+var HERITAGE_CARRIERS = {
+  '9A': {
+    name: 'Air Atlantic',
+    mark: '/logos/airlines/canadian/heritage/air-atlantic.svg',
+    endorsement: '/logos/airlines/canadian/heritage/canadian-airlines-partner.svg',
+    accent: '#061d40',
+    // Verified: St. John's, Newfoundland; feeder for Canadian Pacific Air Lines
+    // and then Canadian Airlines International; ceased October 1998. The
+    // founding year is reported as both 1985 and 1986, so it is not claimed.
+    home: 'YYT',
+    era: 'until 1998',
+    eraFr: 'jusqu’en 1998',
+    fleet: 'BAe 146-200 · Dash 8-100',
+    // Its real network. Flight NUMBERS are illustrative — the destinations and
+    // the aircraft are real, the specific numbers are not published anywhere
+    // this could check, and the board says DEMONSTRATION beside them.
+    dests: [
+      { c: 'YHZ', n: 'HALIFAX' },      { c: 'YYT', n: 'ST JOHN’S' },
+      { c: 'YQX', n: 'GANDER' },       { c: 'YQM', n: 'MONCTON' },
+      { c: 'YSJ', n: 'SAINT JOHN' },   { c: 'YFC', n: 'FREDERICTON' },
+      { c: 'YDF', n: 'DEER LAKE' },    { c: 'YQY', n: 'SYDNEY' },
+      { c: 'YYG', n: 'CHARLOTTETOWN' },{ c: 'YYZ', n: 'TORONTO' },
+      { c: 'YOW', n: 'OTTAWA' },       { c: 'YUL', n: 'MONTREAL' },
+      { c: 'BOS', n: 'BOSTON' }
+    ]
+  }
+};
+// The carrier a heritage gate is currently pretending to be, or ''.
+function _heritageCode() {
+  try {
+    var q = String(new URLSearchParams(window.location.search).get('heritage') || '').toUpperCase();
+    return HERITAGE_CARRIERS[q] ? q : '';
+  } catch (e) { return ''; }
+}
+// A demo board for that carrier, in the shape DEMO_SCHEDULES already uses, so
+// everything downstream — times, statuses, sorting, the gate screen itself —
+// works exactly as it does for any other demo airport.
+function _heritageSchedule(iata) {
+  var code = _heritageCode();
+  if (!code) return null;
+  var car = HERITAGE_CARRIERS[code];
+  var ia = String(iata || '').toUpperCase();
+  // Never show a destination that is also the origin.
+  var pool = car.dests.filter(function (d) { return d.c !== ia; });
+  if (!pool.length) return null;
+  var mk = function (offset, i, isDep) {
+    var d = pool[i % pool.length];
+    return {
+      m: offset,
+      flight: code + (500 + i * 2),
+      dest: d.n, origin: d.n, di: d.c, oi: d.c,
+      al: code,
+      gate: String(1 + (i % 4)),
+      terminal: '—'
+    };
+  };
+  var dep = [], arr = [];
+  var offsets = [-95, -60, -30, -8, 15, 40, 75, 110, 155, 200];
+  for (var i = 0; i < offsets.length; i++) {
+    dep.push(mk(offsets[i], i, true));
+    arr.push(mk(offsets[i] + 12, i + 3, false));
+  }
+  return { dep: dep, arr: arr };
+}
+// A marker the board carries for as long as it is pretending. Added once and
+// re-asserted on rebuild, because the gate re-renders constantly.
+function _heritageMarkBoard() {
+  try {
+    var code = _heritageCode();
+    if (!code) return;
+    document.documentElement.setAttribute('data-heritage', code);
+    if (document.getElementById('heritageStamp')) return;
+    var car = HERITAGE_CARRIERS[code];
+    var el = document.createElement('div');
+    el.id = 'heritageStamp';
+    el.innerHTML = '<b>DEMONSTRATION</b> · DÉMONSTRATION'
+      + '<span>' + car.name + ' · ' + car.era + ' · not a live flight / vol fictif</span>';
+    (document.body || document.documentElement).appendChild(el);
+  } catch (e) {}
+}
+
 function buildDemoFlights(iata) {
-  const sched = DEMO_SCHEDULES[iata];
+  // A heritage demonstration substitutes its own board here, so every
+  // downstream step — times, statuses, sorting, the gate screen — is the
+  // same code path an ordinary demo airport takes.
+  const sched = _heritageSchedule(iata) || DEMO_SCHEDULES[iata];
   if (!sched) return buildRandomFlights(iata);   // ← rich random generator for all others
   const now = Date.now();
   const tz  = (AP[iata] || {}).tz;
