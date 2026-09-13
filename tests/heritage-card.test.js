@@ -74,10 +74,18 @@ test('no card claims a date its sources disagree on', () => {
   assert.doesNotMatch(byKey['air-atlantic'].en, /198[56]\s*[–-]/,
     'Air Atlantic must not print a founding year — the sources disagree');
   assert.match(byKey['air-atlantic'].en, /1998/, 'the ceasing year is solid and is printed');
-  // There is no Canadian Airlines card: the only Canadian mark in this folder
-  // is the PARTNER endorsement, which is not that carrier's identity.
-  assert.equal(byKey['canadian-airlines'], undefined,
-    'a partner endorsement must not be captioned as the mainline carrier');
+  // Canadian Airlines may have a card, but ONLY on its own wordmark. The
+  // partner endorsement is the mark a feeder carried, not this carrier's
+  // identity, and an earlier version captioned it as the mainline airline.
+  const ca = byKey['canadian-airlines'];
+  if (ca) {
+    assert.match(ca.file, /canadian-airlines\.svg$/,
+      'a Canadian Airlines card must use Canadian s OWN wordmark');
+    assert.doesNotMatch(ca.file, /partner/i,
+      'the partner endorsement must never stand in for the mainline carrier');
+    // Formed 27 March 1987; Air Canada subsidiary 1 January 2001.
+    assert.match(ca.en, /1987–2001/, 'both ends are confirmed, so both print');
+  }
 });
 
 // ── it only appears where it is true ───────────────────────────────────────
@@ -126,12 +134,15 @@ test('the partner endorsement rides on the carrier, not as its own card', () => 
   // partner endorsement on a public board as if it were the mainline
   // carrier's own logo.
   const all = marks();
-  assert.equal(all.length, 1, 'one carrier in the set, not two');
-  assert.equal(all[0].key, 'air-atlantic');
-  assert.match(all[0].endorsement, /canadian-airlines-partner\.svg$/,
-    'the endorsement belongs to Air Atlantic, which really was a Canadian Partner');
+  const byK = Object.fromEntries(all.map((m) => [m.key, m]));
+  // The endorsement rides on Air Atlantic, which really was a Canadian Partner.
+  assert.match(byK['air-atlantic'].endorsement, /canadian-airlines-partner\.svg$/);
+  // And it is never a carrier's own mark, for anyone.
   for (const m of all) {
-    assert.notEqual(m.file, m.endorsement, 'the two marks are distinct roles');
+    assert.doesNotMatch(m.file, /canadian-airlines-partner/,
+      `${m.key} uses the partner endorsement as its own identity — that lockup ` +
+      'is what a feeder carried, not any carrier s own mark');
+    if (m.endorsement) assert.notEqual(m.file, m.endorsement, 'distinct roles');
   }
 });
 

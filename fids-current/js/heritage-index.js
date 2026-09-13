@@ -27,6 +27,15 @@
       // Founding year is reported as both 1985 and 1986, so it is not claimed.
       meta: '<b>St. John’s, Newfoundland</b> · a Canadian Partner · until 1998<br>'
           + 'BAe 146-200 · Dash 8-100'
+    },
+    {
+      code: 'CDX',
+      name: 'Canadian Airlines',
+      mark: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
+      home: 'YYC',
+      // Checked: formed 27 March 1987 when Pacific Western bought CP Air;
+      // became an Air Canada subsidiary on 1 January 2001.
+      meta: '<b>Calgary</b> · 1987–2001<br>Boeing 737 · 767 · 747'
     }
   ];
 
@@ -34,11 +43,12 @@
   // loud is better than an archive page that silently omits half its folder.
   var WITHHELD =
     'Two Air Canada marks sit in the same archive — the 1964 rondelle and a later '
-    + 'variant — and are not offered here for two reasons. A heritage gate takes over '
-    + 'a carrier’s IATA code, and <b>AC is very much in service</b>, so a heritage '
-    + 'entry under it would repaint the live airline. And the second mark’s date '
-    + 'could not be confirmed: the rondelle’s 1964 origin is well documented, that '
-    + 'one is not, and nothing goes on a board here that has not been checked.';
+    + 'variant — and are not offered here. A heritage gate takes over whatever code '
+    + 'its flights carry, and <b>AC is very much in service</b>, so an entry under it '
+    + 'would repaint the live airline; unlike the carriers above, there is no free '
+    + 'code to move it to while the mark still reads as Air Canada. The second mark’s '
+    + 'date could not be confirmed either — the rondelle’s 1964 origin is well '
+    + 'documented, that one is not, and nothing goes on a board here unchecked.';
 
   function esc(s) {
     return String(s == null ? '' : s)
