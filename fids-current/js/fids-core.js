@@ -42614,6 +42614,28 @@ function _renderWxCard(el) {
       }
       return w.join(_wxSep);
     };
+    // v23767 — TITLES NEED ADDRESSABLE HALVES.
+    // _wxPair returns the two languages as BARE text either side of a
+    // separator span, so a title is one text run and the browser breaks it
+    // wherever the width runs out. That is why .wxc-side-title had to be
+    // nowrap + ellipsis — and why the ellipsis then ate the French
+    // ("MÉTÉO AU DÉPA…" on a live Abbotsford board). Letting it wrap instead
+    // had been tried and stranded the separator at the head of line two.
+    // Neither is acceptable under the rule that a phrase is never cut in half.
+    // Wrapping each language makes it an unbreakable unit, so the only break
+    // on offer is the one at the separator — where a reader would break it.
+    // Titles only: _wxPair's other callers are condition words and day labels,
+    // which are single words and want no extra boxes.
+    var _wxPairT = function (obj) {
+      var w = [], seen = {};
+      for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
+        var t = obj[_wxLangs[_wi]] || obj.en;
+        if (!t || seen[String(t).toLowerCase()]) continue;
+        seen[String(t).toLowerCase()] = 1;
+        w.push('<span class="wxc-t-part">' + t + '</span>');
+      }
+      return w.join(_wxSep);
+    };
     var cond = _wxPair(_WXLBL[ic] || { en: '' });
     // Day cells keep the owner's approved layout — first language's day + date
     // ABOVE the icon, second language's BELOW — via each language's own
@@ -42924,8 +42946,8 @@ function _renderWxCard(el) {
     // also retires the card-level "Arrival Weather" kicker above — that kicker
     // labelled the whole card as arrival even though half of it is the
     // departure airport, so it was both redundant and wrong.
-    var _depLbl = _wxPair({ en:'Departure Weather', fr:'Météo au départ', es:'Clima a la salida', de:'Wetter bei Abflug', it:'Meteo alla partenza', pt:'Clima na partida', ja:'出発地の天気', zh:'出发地天气', ar:'طقس المغادرة' });
-    var _arrLbl = _wxPair({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter bei Ankunft', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' });
+    var _depLbl = _wxPairT({ en:'Departure Weather', fr:'Météo au départ', es:'Clima a la salida', de:'Wetter bei Abflug', it:'Meteo alla partenza', pt:'Clima na partida', ja:'出発地の天気', zh:'出发地天气', ar:'طقس المغادرة' });
+    var _arrLbl = _wxPairT({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter bei Ankunft', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' });
     //
     // The panel title carries the long form; the band carries the short one
     // next to the clock, so the line reads "Departure | Départ 6:15 PM".
@@ -42975,7 +42997,7 @@ function _renderWxCard(el) {
       + _wxCityOf(dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest)
       + '</span>';
     var _wxStripsHtml =
-        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPair({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxForCity + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
+        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPairT({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxForCity + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
       + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
             // The English and German
             // strings said only "5-DAY" / "5-TAGE" — a duration, not a heading —
