@@ -1878,6 +1878,35 @@ function scheduleGateControlsAutoHide() {
 // airport, screen type and gate/belt. localStorage stays the per-display
 // memory across reloads; the URL is the cross-device carrier and WINS on
 // load (see SCREEN-STATE RESTORE near the end of this file).
+// v23766 — WHO IS ALLOWED TO REMEMBER A SCREEN.
+//
+// fids_screen_state is ONE key shared by every board on this origin, so a page
+// that writes it is writing for all of them. SCREEN-STATE RESTORE already
+// refuses to READ it unless this page is the top-level generic board — its
+// comment records why: gids stamping 'gate' into the shared key made the
+// departures screen come up as a gate.
+//
+// The WRITE side was never given the same rule, so the leak survived that fix
+// in the other direction. The rotator runs fids, gids and bids as iframes on
+// this origin; each one announces its type on boot through changeScreenType,
+// each stamps the shared key, and a real top-level departures board on the
+// same browser then restores whichever frame the rotator happened to pass
+// through last. That is the on-again-off-again: nothing about the airport, the
+// feed or the config — just which frame wrote last before the board booted.
+//
+// One predicate now answers it for both sides, so they cannot drift apart
+// again: a page may remember a screen only if it is also allowed to restore
+// one. Dedicated gids/bids pages are excluded too — they own their type from
+// their own URL and have nothing to gain from the shared key.
+function _fidsOwnsScreenState() {
+  try {
+    if (window.self !== window.top) return false;                              // rotator iframe
+    if (document.documentElement.classList.contains('fids-stream')) return false;
+    if (document.body && document.body.getAttribute('data-page')) return false; // gids/bids
+    return true;
+  } catch (e) { return false; }
+}
+
 function _fidsSyncUrl(t, s) {
   try {
     if (window.self !== window.top) return;   // rotator iframe — leave frame URLs alone
@@ -1960,7 +1989,12 @@ function changeScreenType(val) {
   // Survive the self-update reloads: a screen put into gate/baggage mode via
   // the MENU (no URL param) was being dumped back to the main board on every
   // deploy.
-  try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: val, s: (typeof subScreenVal !== 'undefined' ? subScreenVal : '') })); } catch (e) {}
+  // v23766 — only a page that may RESTORE a screen may remember one; see
+  // _fidsOwnsScreenState. An iframe writing here poisons every board on the
+  // origin, which is the whole on-again-off-again.
+  if (_fidsOwnsScreenState()) {
+    try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: val, s: (typeof subScreenVal !== 'undefined' ? subScreenVal : '') })); } catch (e) {}
+  }
   document.body.classList.toggle('uxg-gate-mode', val === 'gate');
   if (val !== 'gate') { if (typeof stopGateAds==='function') stopGateAds(); } else { if (typeof startGateAds==='function' && !_gateAdTimer) startGateAds(); }
   
@@ -2000,7 +2034,10 @@ function changeScreenType(val) {
 }
 
 function changeSubScreen(val) {
-  try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: (typeof screenType !== 'undefined' ? screenType : 'main'), s: val })); } catch (e) {}
+  // v23766 — same rule as changeScreenType: see _fidsOwnsScreenState.
+  if (_fidsOwnsScreenState()) {
+    try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: (typeof screenType !== 'undefined' ? screenType : 'main'), s: val })); } catch (e) {}
+  }
   subScreenVal = _fidsSafeSub(val);
   _fidsSyncUrl((typeof screenType !== 'undefined' ? screenType : 'main'), subScreenVal);
   render();
@@ -24357,7 +24394,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23765';
+var FIDS_BUILD_TAG = 'v23766';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41849,7 +41886,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
     // its 'gate' screen type into fids_screen_state leaked into fids on restore —
     // the departures screen came up as a GATE ("no FIDS screen" on the stream).
     // Only the top-level, non-stream board page honours a saved screen type.
-    if (window.self !== window.top || document.documentElement.classList.contains('fids-stream')) return;
+    // v23766 — one predicate for both sides, so read and write cannot drift.
+    if (!_fidsOwnsScreenState()) return;
     // CROSS-DEVICE:
     // the URL is the shareable carrier of screen state and BEATS this
     // display's own localStorage. ?screen=gate&gate=95 (aliases ?sub= /
