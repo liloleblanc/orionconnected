@@ -116,12 +116,20 @@ test('the heritage board reuses the ordinary demo path', () => {
     'the heritage board must substitute at the schedule, not fork the renderer');
 });
 
-test('the carrier is branded through the tables that already exist', () => {
-  const c = Object.keys(coreCarriers())[0];
-  assert.match(SRC, new RegExp("'" + c + "': '#"), 'it needs an accent colour');
-  assert.match(SRC, new RegExp("'" + c + "': 'Air Atlantic'"), 'and a name');
-  assert.match(SRC, new RegExp("'" + c + "':\\s*\\{ src: '/logos/airlines/canadian/heritage/"),
-    'and a banner mark, in the LIGHT table — the artwork is navy ink drawn for paper');
+test('each carrier carries its own branding, inside the heritage area', () => {
+  // An earlier version seeded these into AIRLINE_ACCENT, AIRLINE_NAME and
+  // BANNER_LIGHT_LOGO. That worked, but it put historical carriers in tables
+  // an ordinary board reads. The data now lives with the carrier and is
+  // handed over only on a heritage page.
+  for (const [code, c] of Object.entries(coreCarriers())) {
+    assert.match(c.accent, /^#[0-9a-f]{6}$/i, `${code} needs its own accent`);
+    assert.ok(c.name, `${code} needs its own name`);
+    assert.match(c.mark, /^\/logos\/airlines\/canadian\/heritage\//,
+      `${code}'s mark must come from the archive folder`);
+    assert.ok(c.bannerH > 0 && c.bannerW > 0,
+      `${code} must state its own banner box — these are wordmarks of very ` +
+      'different proportions and one shared default clips them');
+  }
 });
 
 test('the chooser says what it is withholding, rather than quietly omitting it', () => {
@@ -141,4 +149,102 @@ test('the chooser is standalone and does not pull the board engine', () => {
   assert.doesNotMatch(PAGE, /fids-core\.js/,
     'the archive needs a list and some artwork, not a 42,000-line board engine — ' +
     'staying independent means a change to the live boards cannot break it');
+});
+
+// ── IT STAYS OUT OF THE MAIN FEED ──────────────────────────────────────────
+//
+// This is for historical purposes. The guarantee is structural, not a matter
+// of the codes merely happening to be unused: the live tables carry no
+// heritage entry at all, so an ordinary board has nothing to match against.
+// The accent and name are written in at RUNTIME, once, only on a page that
+// asked for a heritage carrier, and the banner asks the heritage area
+// directly and is answered null everywhere else.
+
+function tableBody(decl) {
+  const at = SRC.search(decl);
+  assert.ok(at >= 0, decl + ' must exist');
+  let d = 0;
+  for (let k = SRC.indexOf('{', at); k < SRC.length; k++) {
+    if (SRC[k] === '{') d++;
+    else if (SRC[k] === '}') { d--; if (d === 0) return SRC.slice(at, k + 1); }
+  }
+  throw new Error('unterminated');
+}
+
+test('no live branding table carries a heritage code', () => {
+  const codes = Object.keys(coreCarriers());
+  for (const decl of [/const AIRLINE_ACCENT = \{/, /const AIRLINE_NAME = \{/, /var BANNER_LIGHT_LOGO = \{/]) {
+    const body = tableBody(decl);
+    for (const c of codes) {
+      assert.ok(!body.includes("'" + c + "'"),
+        `${c} is seeded into ${String(decl)} — a heritage carrier must not exist ` +
+        'in a table an ordinary board reads. Supply it from the heritage area instead.');
+    }
+  }
+});
+
+test('the branding is installed at runtime, and only on a heritage page', () => {
+  const at = SRC.indexOf('function _heritageInstallBranding');
+  assert.ok(at >= 0, 'the heritage area must install its own branding');
+  const body = SRC.slice(at, at + 700);
+  assert.match(body, /if \(!code\) return;/,
+    'it must do nothing when no heritage carrier was asked for');
+  assert.match(body, /AIRLINE_ACCENT\[code\] = c\.accent/);
+  assert.match(body, /AIRLINE_NAME\[code\] = c\.name/);
+
+  const mk = SRC.indexOf('function _heritageBannerMark');
+  assert.ok(mk >= 0, 'the banner mark must come from the heritage area');
+  assert.match(SRC.slice(mk, mk + 400), /!_heritageCode\(\)\) return null/,
+    'and answer null on every ordinary board');
+});
+
+test('a board that asked for no heritage carrier gets no heritage schedule', () => {
+  const at = SRC.indexOf('function _heritageSchedule');
+  const body = SRC.slice(at, at + 500);
+  assert.match(body, /if \(!code\) return null;/,
+    'buildDemoFlights falls through to the ordinary demo schedule');
+});
+
+test('every heritage code is unique across the entire codebase', () => {
+  // "Assign it a code no one has" — enforced, not assumed. A heritage gate
+  // takes over whatever code its flights carry, so a collision would repaint
+  // a real carrier. Air Atlantic's 9A is its own, genuinely retired. Canadian
+  // Airlines' real codes were both occupied — IATA CP is Compass, ICAO CDN
+  // sits in FILTER_OUT — so CDX is synthetic, chosen by scanning for a token
+  // that appeared nowhere. This re-runs that scan.
+  const files = ['fids-current/js/fids-core.js', 'fids-current/js/fids-v2.js',
+                 'fids-current/js/menu.js', 'worker-entry.js'];
+  const codes = Object.keys(coreCarriers());
+  for (const code of codes) {
+    for (const rel of files) {
+      const full = path.join(ROOT, rel);
+      if (!fs.existsSync(full)) continue;
+      let text = fs.readFileSync(full, 'utf8');
+      if (rel.endsWith('fids-core.js')) {
+        // Strip the heritage area itself — it is allowed to name its own codes.
+        const at = text.indexOf('var HERITAGE_CARRIERS = {');
+        const end = text.indexOf('function _renderWxCard');
+        if (at >= 0 && end > at) text = text.slice(0, at) + text.slice(end);
+      }
+      const hits = (text.match(new RegExp("['\"]" + code + "['\"]", 'g')) || []).length;
+      assert.equal(hits, 0,
+        `${code} appears ${hits}x in ${rel} outside the heritage area — it belongs ` +
+        'to something real, and a heritage gate would repaint it');
+    }
+  }
+});
+
+test('the flight number carries no carrier prefix', () => {
+  // PERIOD ACCURACY, not a workaround: airport boards of this era did not
+  // print the two-letter airline code against the flight number — that
+  // convention is recent. 'CDX508' would be wrong for the decade being
+  // depicted even before you notice the code is invented.
+  const at = SRC.indexOf('function _heritageSchedule');
+  const body = SRC.slice(at, at + 2200);
+  assert.match(body, /flight: String\(500 \+ i \* 2\)/,
+    'the displayed number must be the number alone');
+  assert.doesNotMatch(body, /flight: code \+/,
+    'the carrier code must not be concatenated onto what a passenger reads');
+  // The code still has to reach the entry, or nothing brands the board.
+  assert.match(body, /al: code/, 'the code still rides on the entry, for branding');
 });

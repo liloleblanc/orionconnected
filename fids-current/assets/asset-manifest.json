@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2635,
+    "total": 2636,
     "by_category": {
       "ad": 10,
-      "airline": 1431,
+      "airline": 1432,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -4577,6 +4577,17 @@
       "subcategory": "canadian",
       "group": "Airlines — Canadian",
       "name": "canadian airlines partner",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/heritage/canadian-airlines.svg",
+      "file": "canadian-airlines.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "canadian airlines",
       "iata": "",
       "country": "",
       "ext": "svg"
