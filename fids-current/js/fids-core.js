@@ -6406,7 +6406,19 @@ var AIRLINE_DOMAIN = {
 // carriers straight to their wordmark
 // Add a code here only when the airline genuinely has no
 // symbol, never to paper over a missing file.
-var _g8LogoCache = { '8P': 'text' };
+//
+// v23765 — EMPTY NOW, and 8P is why. Pacific Coastal was seeded here in
+// v23291 on exactly the reasoning above: its identity is lettering, it has no
+// symbol, so there was no image to resolve and the request would only 404 on
+// its way to the text fallback.
+//
+// That held until the airline's own wordmark was installed. The seed is not a
+// statement that a carrier HAS no artwork — it is a shortcut past a fetch
+// known to fail — so once the file exists the shortcut is what keeps the
+// board setting the name in its own font instead of the airline's. Seeding a
+// code whose wordmark resolves would silently discard that artwork, which is
+// the failure this comment warns about, arriving from the other direction.
+var _g8LogoCache = {};
 function g8LogoFail(img) {
   var code = img.getAttribute('data-code') || '';
   var fb = img.getAttribute('data-fb');
@@ -22541,6 +22553,15 @@ const IATA_TO_WORDMARK = {
   // Canadian carriers
   'AC':'air-canada',  'WS':'westjet',  'PD':'porter',  'TS':'transat',
   'PB':'pal-airlines',
+  // v23765 — Pacific Coastal. This carrier's identity IS its lettering; it has
+  // no separate symbol, which is why v23291 sent it straight to the banner's
+  // text path and seeded _g8LogoCache with 'text'. That was right while there
+  // was no file to resolve, but it meant the board set the name in ITS OWN
+  // font — the board's letterforms standing in for the airline's, the same
+  // substitution the Welcome card was making for every other carrier.
+  // The wordmark now resolves, so the seed comes out below and the real
+  // lettering is drawn instead.
+  '8P':'pacific-coastal', 'PCO':'pacific-coastal',
   'JV':'bearskin',      // Bearskin Airlines
   'WT':'wasaya',        // Wasaya Airways
   'NSA':'north-star',   // North Star Air (no IATA — keyed on ICAO; confirm feed code)
@@ -22777,6 +22798,10 @@ const LOGO_SUBFOLDER = {
   'morgans-originals.svg':'hotels/accor-premium', 'motel-6.png':'hotels/wyndham', 'movenpick.svg':'hotels/accor-premium', 'movenpick.webp':'hotels/accor-premium',
   'mr-porter-logo.svg':'airlines/canadian', 'novotel.png':'hotels/accor-midscale', 'novotel.svg':'hotels/accor-midscale', 'orient-express.svg':'hotels/accor-luxury',
   'our-habitas.svg':'hotels/accor-premium', 'pal-airlines-wordmark-dark.svg':'airlines/canadian-regional', 'pal-airlines-wordmark-light.svg':'airlines/canadian-regional', 'pal-square.svg':'airlines/canadian-regional', 'pal-symbol.svg':'airlines/canadian-regional',
+  // v23765 — Pacific Coastal. logoPath() resolves bare filenames through this
+  // table, so a pair on disk but unlisted here is a dead pointer: the banner
+  // falls silently back to text and nothing errors.
+  'pacific-coastal-wordmark-dark.svg':'airlines/canadian-regional', 'pacific-coastal-wordmark-light.svg':'airlines/canadian-regional',
   'park-inn.png':'hotels/wyndham', 'pearl-continental.png':'hotels/other-chains', 'peppers.svg':'hotels/accor-premium', 'piedmont-wordmark-dark.svg':'airlines/us-regional',
   'piedmont-wordmark-light.svg':'airlines/us-regional', 'piedmont.svg':'airlines/us-regional', 'porter-white.svg':'airlines/canadian', 'porter-wordmark-dark.svg':'airlines/canadian',
   'porter-wordmark-light.svg':'airlines/canadian', 'porter.svg':'airlines/canadian', 'porter_classic_logo.svg':'airlines/canadian', 'premier-inn.png':'airlines/other', 'pullman.png':'hotels/accor-premium', 'pullman.svg':'hotels/accor-premium', 'qantas-ff.png':'airlines/asian-other',
@@ -24285,7 +24310,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23762';
+var FIDS_BUILD_TAG = 'v23765';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
