@@ -42,10 +42,50 @@ test('every class mark exists on disk', () => {
   }
 });
 
-test('every class mark is referenced by the renderer', () => {
-  for (const f of CLASS_MARKS) {
-    assert.ok(SRC.includes(f), `${f} is on disk but nothing renders it`);
+// v23749 — the tier marks are now built rather than written out: the renderer
+// composes '..._' + tier + '_single_line_' + lang + '.svg' so the French art can
+// swap in per tier. A literal search therefore finds none of them, which is the
+// same blind spot the carrier-branding contract hit with constructed tile paths.
+// Resolve the construction instead of grepping for strings.
+function renderedMarks() {
+  const tiers = [...SRC.matchAll(/_pdMark\('(\w+)'/g)].map((m) => m[1]);
+  assert.ok(tiers.length >= 4, `expected the four elite tiers, found ${tiers.length}`);
+  const frm = /_PD_MARK_FR = (\{[^}]*\})/.exec(SRC);
+  assert.ok(frm, 'the set of tiers with French art must be declared');
+  const fr = new Function('return ' + frm[1] + ';')();
+  const out = [];
+  for (const t of tiers) {
+    out.push(`viporter_${t}_single_line_en.svg`);
+    if (fr[t]) out.push(`viporter_${t}_single_line_fr.svg`);
   }
+  // Plus the ones still written out literally.
+  for (const m of SRC.matchAll(/porter\/([\w.-]+\.svg)/g)) out.push(m[1]);
+  // The Reserve logo and the base-tier member mark are built the same way, with
+  // the language suffix concatenated onto the stem — so the path regex above
+  // cannot see either of them.
+  if (/porter_reserve_logo'\s*\+/.test(SRC)) {
+    out.push('porter_reserve_logo.svg', 'porter_reserve_logo_fr.svg');
+  }
+  if (/viporter_member_single_line_'\s*\+/.test(SRC)) {
+    out.push('viporter_member_single_line_en.svg', 'viporter_member_single_line_fr.svg');
+  }
+  return [...new Set(out)];
+}
+
+test('every class mark is referenced by the renderer', () => {
+  const rendered = renderedMarks();
+  for (const f of CLASS_MARKS) {
+    assert.ok(rendered.includes(f), `${f} is on disk but nothing renders it`);
+  }
+});
+
+test('every mark the renderer builds is actually on disk', () => {
+  // The other direction, and the one that matters more: a constructed path that
+  // points at nothing draws nothing, and the tier just disappears from the sign
+  // with no error anywhere. That is how Ascent went unnoticed.
+  const dir = path.join(ROOT, 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
+  const missing = renderedMarks().filter((f) => !fs.existsSync(path.join(dir, f)));
+  assert.deepEqual(missing, [], `the renderer builds these paths but the files are absent: ${missing.join(', ')}`);
 });
 
 test('the marks are NOT gated on the pre-boarding phase', () => {

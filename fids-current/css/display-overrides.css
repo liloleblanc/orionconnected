@@ -18574,3 +18574,150 @@ html body[data-fids-theme="sky"]:not([data-fids-ap="YQM"]):not([data-fids-ap="MC
 
    The markup now says which surface it is on and the ink follows that. Nothing
    changes for the rail's light disc, which is what v23692 was actually about. */
+
+/* ══ v23746 — PORTER BOARDING: CABIN NAMES, PER-CABIN STATUS, SPLIT LANES ═══
+   The columns were headed by the queueing concept ("Priority", "Rows"). They
+   are now headed by the CABIN, because that is what a passenger knows they
+   bought. The functional label stays underneath rather than being replaced.
+
+   Appended rather than spliced: this file is ~18.6k lines and a scripted
+   splice into it once duplicated an 18,000-line region, so new rules go at the
+   end where last-wins also suits the cascade.
+
+   Specificity follows the local convention — the surrounding rules escalate
+   with repeated :not(#_) because several earlier rules in this file already
+   won on !important, and a plainly-written rule here would lose to them. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-cabin {
+  font-weight: 800 !important;
+  font-size: clamp(20px, min(3.1vh, 2.6vw), 44px) !important;
+  line-height: 1.02 !important;
+  letter-spacing: -0.01em !important;
+  text-align: center !important;
+  margin: 0 0 .18em !important;
+  white-space: nowrap !important;
+  /* The name is the widest fixed string in the column; let it shrink rather
+     than wrap, because "PorterClassique" wrapped reads as two products. */
+  max-width: 100% !important;
+  /* SET the colour, never inherit it. Caught in preview: the heading came out
+     dark ink on the dark priority column and was all but invisible, because
+     something upstream in this file already colours text inside .g8-board-col.
+     Both Porter columns are dark grounds, so the name is stated white here
+     rather than left to whatever wins the cascade that day. */
+  color: #FFFFFF !important;
+}
+
+/* Is THIS cabin being called? The one thing the old sign never said. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-status {
+  font-weight: 800 !important;
+  font-size: clamp(11px, min(1.55vh, 1.3vw), 22px) !important;
+  line-height: 1.12 !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  letter-spacing: .04em !important;
+  padding: .28em .5em !important;
+  margin: 0 0 .38em !important;
+  border-radius: .28em !important;
+  /* Not-yet-boarding is deliberately quiet: it is information, not an alert. */
+  background: rgba(255,255,255,.09) !important;
+  color: rgba(255,255,255,.72) !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-status.is-live {
+  background: #F5C518 !important;
+  color: #1A1A1A !important;
+}
+
+/* The lanes, split. Each numeral carries its own arrow pointing at the lane it
+   names — "1 • 2" in one element could only ever be pointed at once. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-lanerow {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: .5em !important;
+  margin: .1em 0 .06em !important;
+  min-width: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-lane {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: .12em !important;
+  flex: 0 0 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-lane b {
+  font-weight: 800 !important;
+  font-size: clamp(30px, min(5.6vh, 4.6vw), 82px) !important;
+  line-height: .92 !important;
+  font-variant-numeric: tabular-nums !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-lanelbl {
+  font-weight: 700 !important;
+  font-size: clamp(10px, min(1.4vh, 1.15vw), 19px) !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  opacity: .92 !important;
+  min-width: 0 !important;
+}
+/* ac-icons ships exactly ONE diagonal (e929, up-right), so the other three
+   directions are that glyph rotated. Using the kit's arrow rather than the
+   inline SVG keeps these identical to every other arrow on the boards. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr {
+  font-family: 'ac-icons' !important;
+  font-style: normal !important;
+  font-weight: normal !important;
+  font-size: clamp(18px, min(3.2vh, 2.7vw), 46px) !important;
+  line-height: 1 !important;
+  display: inline-block !important;
+  opacity: .95 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr::before { content: "\e929" !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr.dl { transform: rotate(180deg) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-arr.dr { transform: rotate(90deg) !important; }
+
+/* The ID reminder. An airport instruction rather than a Porter product, so it
+   is worded generically and sits at the foot of the column a passenger is
+   already reading while they queue. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-idnote {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: .4em !important;
+  margin-top: auto !important;
+  padding: .3em .5em !important;
+  border-radius: .25em !important;
+  background: rgba(255,255,255,.10) !important;
+  font-weight: 700 !important;
+  font-size: clamp(9px, min(1.25vh, 1.05vw), 17px) !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-idnote i {
+  font-size: 1.15em !important;
+  flex: 0 0 auto !important;
+  opacity: .9 !important;
+}
+/* The column is a flex stack so `margin-top:auto` can push the note to the
+   bottom; without this it sits directly under the lanes. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-board-col {
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 0 !important;
+}
+
+/* The base VIPorter mark on the general-boarding side. One mark, so it does not
+   need the elite row's wrapping. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-marks-classic {
+  justify-content: center !important;
+  margin: .1em 0 .2em !important;
+}
+
+/* v23747 — the collective name for the tier marks below it. Small and quiet:
+   it labels the row, it is not competing with the cabin heading above. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-lanes-pd .g8-pd-marks-hdr {
+  font-weight: 800 !important;
+  font-size: clamp(9px, min(1.2vh, 1vw), 16px) !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  color: rgba(255,255,255,.62) !important;
+  margin: .25em 0 .12em !important;
+}

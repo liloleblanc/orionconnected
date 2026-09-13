@@ -12507,36 +12507,166 @@ function uxgGateHtml(ctx) {
     // The roster line above them stays pre-boarding-only — that list is about
     // the courtesy groups (unaccompanied minors, families, assistance) and it
     // genuinely does not apply later.
-    var _prioMarks = '<div class="g8-pd-preboard-marks">'
-        // v23532 — the mark the owner supplied, not the older file already in the tree.
-        // The policy line reads "Premium VIPorter MEMBERS", which is the whole
-        // premium tier set, so the member wordmark is the right one of the four
-        // he sent — naming a single tier would imply the other two do not
-        // pre-board.
-        //
-        // v23688 — AND THE THREE TIERS ARE WHAT "PREMIUM VIPORTER" MEANS.
-        // Requested once before for this same batch: the supplied logos are
-        // meant to be used, and that is
-        // still true of four of the eight files. Three of those four are the
-        // tier marks, and v23532's reasoning is what kept them out: it treated
-        // naming a tier as excluding the others. Naming ALL THREE excludes
-        // nobody, and it is the more useful sign — the roster line above says
-        // "Premium VIPorter", which tells a passenger nothing about whether
-        // their own card qualifies. Passport, Venture and First say it exactly.
-        // The generic member wordmark comes out because it now only repeats
-        // words already printed directly above it.
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_passport_single_line_en.svg" alt="VIPorter Passport"></span>'
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_venture_single_line_en.svg" alt="VIPorter Venture"></span>'
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_first_single_line_en.svg" alt="VIPorter First"></span>'
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo.svg" alt="PorterReserve"></span>'
+    // v23747 — AND THE MARKS GET THEIR NAME.
+    //
+    // 'AvidTraveller' was drawn as a subtitle under the PorterReserve cabin
+    // heading. It does not belong there: Porter's own footnote defines it as
+    // the loyalty tiers — "Avid Traveller refers to Passport, Venture, Ascent
+    // and First membership levels" — and cabin and status are independent, so
+    // an AvidTraveller can be sitting in PorterClassic.
+    //
+    // But it IS all over Porter's marketing, and it belongs on the sign. Here
+    // is where it is true: it is the collective name for exactly the marks
+    // underneath it, which until now sat unlabelled. A passenger who knows
+    // they are an AvidTraveller but not which tier qualifies can now read the
+    // heading and the tiers together and place themselves.
+    //
+    // Closed up, matching Porter's own press usage ("VIPorter AvidTraveller")
+    // and the house pattern every other Porter name on this sign follows —
+    // PorterReserve, PorterClassic, VIPorter. Note flyporter.com itself spaces
+    // it; Porter is inconsistent across channels, and if the spaced form is
+    // ever preferred this is one string to change.
+    // It is a LABEL, not a literal. Porter renames it in French — their own
+    // footnote reads "Grand Voyageur fait référence aux niveaux d'adhésion
+    // Passeport, Horizon, Essor et Première" — so a hardcoded 'AvidTraveller'
+    // would print English on the French half of a bilingual sign.
+    var _prioMarksHdr = '<div class="g8-pd-marks-hdr">'
+      + (_gateLbl1('avidTraveller', _frF) || 'AvidTraveller') + '</div>';
+    // v23749 — THE MARKS FOLLOW THE LANGUAGE.
+    //
+    // Porter does not translate the tier names, it RENAMES them, so the French
+    // marks are different artwork rather than colour variants:
+    //   Passport → Passeport    Venture → Horizon
+    //   Ascent   → Essor        First   → Première
+    // A French sign showing "Ascent" is wrong, not merely untranslated.
+    //
+    // The files key on the ENGLISH tier with a language suffix, so the tier is
+    // the identity and the language is a swap. _PD_MARK_FR names the tiers whose
+    // French artwork actually exists, and names them with the word Porter itself
+    // uses. All four are covered today; the table stays because the fallback it
+    // drives is the safe direction — a tier missing from it draws its English
+    // file, which is the wrong language but PRESENT, whereas a constructed path
+    // pointing at nothing draws nothing and the tier silently vanishes from the
+    // sign. That is exactly how Ascent went unnoticed for so long.
+    var _PD_MARK_FR = {
+      passport: 'Passeport', venture: 'Horizon', ascent: 'Essor', first: 'Première',
+    };
+    function _pdMark(tier, label) {
+      // The French name doubles as the alt text, so a file that fails to load
+      // falls back to the word on Porter's own French card rather than to a
+      // tier name their French members have never seen.
+      var fr = _frF && _PD_MARK_FR[tier];
+      return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
+        + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="VIPorter '
+        + (fr || label) + '"></span>';
+    }
+    // All four elite tiers. Porter's pre-boarding list says "Premium VIPorter
+    // members", which tells a passenger nothing about whether their own card
+    // qualifies; naming every tier says it exactly, and excludes nobody.
+    var _prioMarks = _prioMarksHdr + '<div class="g8-pd-preboard-marks">'
+        + _pdMark('passport', 'Passport')
+        + _pdMark('venture', 'Venture')
+        + _pdMark('ascent', 'Ascent')
+        + _pdMark('first', 'First')
+        // PorterReserve is the FIFTH entry in Porter's published pre-boarding
+        // list, after the four elite tiers — "Premium VIPorter members,
+        // PorterReserve passengers" — so its mark belongs in this row as an
+        // entitlement, not as the column heading. (The heading above names the
+        // cabin; this says the fare pre-boards.) It has both languages, so it
+        // follows the sign like the tiers do.
+        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo'
+          + (_frF ? '_fr' : '') + '.svg" alt="PorterReserve"></span>'
         + '</div>';
     // The roster is pre-boarding only; the marks are not.
     var _prioSub = preActive
       ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1('preboardList', _frF) + '</span></div>' + _prioMarks
       : _prioMarks;
     return '<div class="g8-board-body g8-lanes-pd">'
-      + '<div class="g8-board-col now g8-pd-prio"><div class="g8-board-grp-label">' + _prioT + '</div><div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>' + _prioSub + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div></div>'
-      + '<div class="g8-board-col next g8-pd-rows"><div class="g8-board-grp-label">' + _rowsLbl + '</div><div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div>' + _comingLineHtml(comingVal) + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div></div>'
+      + '<div class="g8-board-col now g8-pd-prio">'
+        + _pdCabinHdr('pdReserve', true)
+        + '<div class="g8-board-grp-label">' + _prioT + '</div>'
+        + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num g8-grp-txt">' + _prioVal + '</div></div>'
+        + _prioSub
+        + _pdLaneRow('1', '2')
+        + '<div class="g8-board-lane">' + _gateLaneLbl('1 \u2022 2', true) + '</div>'
+        + '<div class="g8-pd-idnote"><i class="ac-ico ac-ico-flight" aria-hidden="true"></i><span>' + _gateLbl('photoId', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ') + '</span></div>'
+      + '</div>'
+      + '<div class="g8-board-col next g8-pd-rows">'
+        + _pdCabinHdr('pdClassic', !preActive)
+        + '<div class="g8-board-grp-label">' + _rowsLbl + '</div>'
+        + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(rowsVal) + '">' + rowsVal + '</div></div>'
+        + _pdClassicMark()
+        + _pdLaneRow('3', '4')
+        + '<div class="g8-board-lane">' + _gateLaneLbl('3 \u2022 4', true) + '</div>'
+        + _comingLineHtml(comingVal)
+      + '</div>'
+      + '</div>';
+  }
+
+  // \u2500\u2500 THE CABIN HEADING, AND WHETHER THAT CABIN IS BEING CALLED \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500
+  //
+  // The columns used to be headed by the QUEUEING CONCEPT \u2014 'Priority' and
+  // 'Rows'. A passenger knows which fare they bought, not which concept
+  // applies to them, so they are now headed by the cabin: PorterReserve and
+  // PorterClassic. The functional label stays underneath, where it explains
+  // the heading rather than replacing it.
+  //
+  // Porter LOCALISES these. The French side reads PorterR\u00e9serve and
+  // PorterClassique, so the name comes from _GATE_LBL like every other string
+  // and swaps with the language instead of printing the English form twice.
+  //
+  // NOT 'Avid Traveller'. It was drawn under PorterReserve in the mock-up, but
+  // Porter's own footnote defines it as the VIPorter elite tiers \u2014 "Avid
+  // Traveller refers to Passport, Venture, Ascent and First membership levels"
+  // \u2014 not as a name for this cabin. Cabin and status are independent at Porter:
+  // an Avid Traveller can be sitting in PorterClassic, and a PorterReserve
+  // ticket can be bought with no status at all. Printing it as a cabin subtitle
+  // would state something untrue about who the cabin is for, and the sign
+  // already carries the term correctly in the tier marks below.
+  //
+  // The status strip is the mock-up's best idea. Nothing on the sign currently
+  // tells a passenger whether THEIR cabin is being called \u2014 they have to infer
+  // it from the row band. Now it says so outright. PorterReserve is live for
+  // the whole window (it pre-boards, and the priority queue stays open after);
+  // PorterClassic reads "boarding will begin shortly" until general boarding
+  // commences.
+  function _pdCabinHdr(key, live) {
+    var name = _gateLbl1(key, _frF) || (key === 'pdReserve' ? 'PorterReserve' : 'PorterClassic');
+    var st = live
+      ? _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ')
+      : _gateLbl('boardSoon', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
+    return '<div class="g8-pd-cabin">' + name + '</div>'
+      + '<div class="g8-pd-status' + (live ? ' is-live' : '') + '">' + st + '</div>';
+  }
+
+  // The two lanes as separate numerals, each with its own arrow pointing at the
+  // lane it names. '1 \u2022 2' in one element could only ever be pointed at once;
+  // split, each numeral points where a passenger actually has to walk.
+  //
+  // The arrows are the ac-icons diagonal (e929) rotated \u2014 the kit ships exactly
+  // one diagonal, so the down-left is the same glyph turned 180\u00b0. Using the
+  // kit's own arrow rather than the inline SVG keeps this sign's arrows
+  // identical to every other arrow on the boards.
+  function _pdLaneRow(a, b) {
+    return '<div class="g8-pd-lanerow">'
+      + '<span class="g8-pd-lane"><i class="ac-ico g8-pd-arr dl" aria-hidden="true"></i><b>' + a + '</b></span>'
+      + '<span class="g8-pd-lanelbl">' + _gateLbl('useLanes', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ') + '</span>'
+      + '<span class="g8-pd-lane"><b>' + b + '</b><i class="ac-ico g8-pd-arr dr" aria-hidden="true"></i></span>'
+      + '</div>';
+  }
+
+  // The base VIPorter tier belongs on the RIGHT. The four elite marks in the
+  // priority column are who pre-boards; a plain VIPorter member does not, so
+  // their mark sits with general boarding where they actually queue. The file
+  // was already in the tree and had never been wired to anything.
+  //
+  // It follows the sign's language like the elite marks do. 'Member' is the one
+  // VIPorter name whose French form is a plain translation — membre — rather
+  // than a rename, but it is still the wrong word to print on a French sign.
+  function _pdClassicMark() {
+    return '<div class="g8-pd-preboard-marks g8-pd-marks-classic">'
+      + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_'
+        + (_frF ? 'fr' : 'en') + '.svg" alt="VIPorter"></span>'
       + '</div>';
   }
 
@@ -23585,6 +23715,44 @@ var _GATE_LBL = {
   // TL(), not the bilingual _gateLbl pairing — five categories side by side in
   // two languages would not fit a gate sign, and the board already rotates its
   // language, so each pass shows the whole list in one of them.
+  // v23746 — the cabin names, which Porter LOCALISES. The English forms are
+  // closed up with an internal capital ('PorterReserve', not 'Porter Reserve')
+  // and every one of the 17 instances on flyporter.com agrees. The French side
+  // is NOT the same string: Porter writes 'PorterRéserve' and 'PorterClassique'
+  // on its fr-ca pages, so a bilingual sign has to swap the brand name with the
+  // language rather than print the English one twice.
+  pdReserve: {
+    en:'PorterReserve', fr:'PorterRéserve',
+    es:'PorterReserve', de:'PorterReserve', it:'PorterReserve', pt:'PorterReserve'
+  },
+  pdClassic: {
+    en:'PorterClassic', fr:'PorterClassique',
+    es:'PorterClassic', de:'PorterClassic', it:'PorterClassic', pt:'PorterClassic'
+  },
+  // The collective name for the VIPorter elite tiers, which heads their marks.
+  // Porter RENAMES it in French rather than translating it: their footnote
+  // reads "Grand Voyageur fait référence aux niveaux d'adhésion Passeport,
+  // Horizon, Essor et Première". The English is closed up to match Porter's
+  // own press usage ("VIPorter AvidTraveller") and the house pattern the rest
+  // of this sign follows; flyporter.com spaces it, so if the spaced form is
+  // ever preferred, this is the one string.
+  //
+  // Other languages fall back to the English: it is a brand name, and no
+  // Porter rendering exists for them to be wrong against.
+  avidTraveller: {
+    en:'AvidTraveller', fr:'Grand Voyageur',
+    es:'AvidTraveller', de:'AvidTraveller', it:'AvidTraveller', pt:'AvidTraveller'
+  },
+  // The ID reminder. Kept generic rather than Porter-branded: it is an airport
+  // instruction, not a product, and it applies at every gate the sign serves.
+  photoId: {
+    en:'Have your photo ID ready',
+    fr:'Ayez votre pièce d’identité avec photo prête',
+    es:'Tenga su identificación con foto lista',
+    de:'Halten Sie Ihren Lichtbildausweis bereit',
+    it:'Tenete pronto un documento con foto',
+    pt:'Tenha sua identificação com foto pronta'
+  },
   preboardList: {
     en:'Passengers with disabilities \u00b7 Unaccompanied minors \u00b7 Families with children 2 and under \u00b7 Premium VIPorter \u00b7 PorterReserve',
     fr:'Passagers handicap\u00e9s \u00b7 Mineurs non accompagn\u00e9s \u00b7 Familles avec enfants de 2 ans et moins \u00b7 VIPorter Premium \u00b7 PorterReserve',
@@ -23853,7 +24021,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23742';
+var FIDS_BUILD_TAG = 'v23750';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
