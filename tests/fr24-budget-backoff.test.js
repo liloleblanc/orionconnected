@@ -119,8 +119,18 @@ test('the code default stays a conservative floor', () => {
   }
 });
 
-test('the configured cap is explicit, and inside the agreed call budget', () => {
-  // Raised on instruction 2026-09-11. The ceiling is 60,000 CALLS a month.
+test('the configured cap is explicit, and inside the permanent credit allowance', () => {
+  // THE UNIT OF THIS TEST CHANGED. It used to compare the cap against 60,000
+  // CALLS a month and against an observed 562 calls/day, which was right while
+  // the counter incremented once per request. #803 made the counter accumulate
+  // real credits, so both comparators stopped describing anything and the
+  // assertion had to be re-based rather than relaxed.
+  //
+  // The ceiling that matters is the PERMANENT one. The account has 60,000/month
+  // only until the end of the year — that is an Early Access promotion on top
+  // of the $9 Explorer tier's published 30,000 — and credits do not roll over,
+  // so nothing is banked to cushion the drop. A cap sized to the promotion
+  // silently becomes a 2x overspend in January.
   const W = fs.readFileSync(
     path.resolve(__dirname, '..', 'workers', 'wrangler.fids-proxy.jsonc'), 'utf8');
   const m = W.match(/"FR24_DAILY_BUDGET"\s*:\s*"(\d+)"/);
@@ -128,11 +138,14 @@ test('the configured cap is explicit, and inside the agreed call budget', () => 
   const perDay = Number(m[1]);
   // A 31-day month is the one that has to fit, not an average one.
   const perMonth = perDay * 31;
-  assert.ok(perMonth <= 60000,
-    `${perDay}/day is ${perMonth} in a 31-day month, past the agreed 60,000 ceiling`);
-  assert.ok(perDay > 562 * 2,
-    `${perDay}/day leaves too little room above the observed 562 calls/day — ` +
-    'an allowance that is never reached is the point, and an unused one is waste');
+  assert.ok(perMonth <= 30000,
+    `${perDay}/day is ${perMonth} credits in a 31-day month, past the permanent ` +
+    '30,000 allowance — it may fit while the promotion lasts and will not in January');
+  // And not throttled to the point of uselessness: the cap tripping is meant to
+  // be the exception, not the daily routine.
+  assert.ok(perDay >= 500,
+    `${perDay}/day is too tight — FR24 would cut out most days and the aircraft ` +
+    'panel, registration and map headings would go with it');
 });
 
 test('the reasoning for the cap is recorded next to it', () => {
