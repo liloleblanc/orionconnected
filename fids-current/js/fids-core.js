@@ -1699,8 +1699,27 @@ async function attemptLogin() {
     });
     const data = await resp.json();
     if (resp.ok && data.token) {
+      // v23751 — WRITE BOTH COPIES, BECAUSE THE READER PREFERS THE OTHER ONE.
+      //
+      // This wrote sessionStorage alone while _fidsAuthToken() reads
+      // localStorage FIRST (v23492). A stale durable token — left by an
+      // earlier sign-in on index.html or picker.html, where auth.js does write
+      // localStorage — therefore outranked every fresh login done here. Signing
+      // in appeared to succeed, and the very next admin write still sent the
+      // OLD token, 401'd, and threw the operator back to this modal. Logging in
+      // again could not help: it kept refreshing the copy nobody reads first.
+      // That is the loop behind media assignments repeatedly ejecting the
+      // operator while other work carried on unaffected.
+      //
+      // auth.js saveToken() has written both since v23170; this is the same
+      // thing for the login that lives on the boards themselves.
+      var _userJson = JSON.stringify(data.user || { username: u });
+      try {
+        localStorage.setItem('fids_token', data.token);
+        localStorage.setItem('fids_user', _userJson);
+      } catch (e) { /* storage unavailable — the session lasts this tab only */ }
       sessionStorage.setItem('fids_token', data.token);
-      sessionStorage.setItem('fids_user', JSON.stringify(data.user || { username: u }));
+      sessionStorage.setItem('fids_user', _userJson);
       LIVE_MODE = true;
       if (typeof demoRebuildTimer !== 'undefined' && demoRebuildTimer) {
         clearInterval(demoRebuildTimer); demoRebuildTimer = null;

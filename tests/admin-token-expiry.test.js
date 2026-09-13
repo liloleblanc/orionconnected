@@ -226,11 +226,17 @@ test('EVERY admin write handles a 401, not just the two that used to', () => {
   // Six of eight had no rescue: addYouTube, upload, vecteezySearch,
   // vecteezyImport, updateItem, deleteItem. Uploading ads was one of them,
   // which is how this was reported.
+  // attemptLogin is not an admin write. A 401 there means the password was
+  // wrong, and the rescue's job is to POP the login modal — which is already
+  // open, and which the operator is typing into. Sending it through the rescue
+  // would clear the token they are in the middle of replacing.
+  const NOT_A_WRITE = new Set(['attemptLogin']);
   const missing = [];
   const re = /async function (\w+)\([^)]*\)\s*\{/g;
   let m;
   while ((m = re.exec(SRC))) {
     const name = m[1];
+    if (NOT_A_WRITE.has(name)) continue;
     let depth = 0; let body = null;
     for (let k = SRC.indexOf('{', m.index); k < SRC.length; k++) {
       if (SRC[k] === '{') depth++;
@@ -302,6 +308,45 @@ test('the upload still reaches the network when the session is good', async () =
   assert.equal(calls.length, 1, 'a valid session must not be blocked');
   assert.match(calls[0].url, /category=ads/, 'and it still asks for the right category');
   assert.equal(calls[0].opts.headers.Authorization, 'Bearer ' + LIVE);
+});
+
+// ── the loop that made it unrecoverable ────────────────────────────────────
+
+test('signing in on a board writes BOTH copies, not just the one nobody reads first', () => {
+  // The loop behind "it keeps throwing me out", and why signing in again never
+  // helped. The board's own login wrote sessionStorage alone, while
+  // _fidsAuthToken() reads localStorage FIRST (v23492). A stale durable token —
+  // left by an earlier sign-in on index.html or picker.html, where auth.js DOES
+  // write localStorage — outranked every fresh login done on the board. So:
+  //   sign in -> fresh token into sessionStorage
+  //   next admin write -> _fidsAuthToken returns the OLD localStorage token
+  //   401 -> thrown back to the modal -> sign in again -> identical outcome
+  // Refreshing the copy nobody reads first cannot break that cycle.
+  // Anchor on the login POST itself. 'LIVE_MODE = true' appears earlier in the
+  // file (the session-restore block), so slicing to its first occurrence ran
+  // backwards and searched an empty string — the test failed while the code was
+  // correct, which is its own kind of useless.
+  const at = SRC.indexOf("/auth/login'");
+  assert.ok(at >= 0, 'the board login POST must still exist');
+  const src = SRC.slice(at, at + 2000);
+  assert.match(src, /localStorage\.setItem\('fids_token'/,
+    'the board login must write the DURABLE copy — it is the one read first, ' +
+    'so a login that skips it can be outranked by an expired token forever');
+  assert.match(src, /sessionStorage\.setItem\('fids_token'/,
+    'and the per-tab mirror, which thirteen direct readers still use');
+});
+
+test('a fresh login beats a stale durable token', () => {
+  // End to end over the two real functions: the expired durable copy must not
+  // be able to shadow a good session.
+  const env = sandbox({ local: { fids_token: DEAD, fids_user: '{}' }, session: {} });
+  // _fidsAuthToken clears the dead durable copy rather than returning it...
+  assert.equal(authToken(env), null);
+  assert.equal(env.localStorage.getItem('fids_token'), null);
+  // ...so a subsequent login writing both copies is what the next read sees.
+  env.localStorage.setItem('fids_token', LIVE);
+  env.sessionStorage.setItem('fids_token', LIVE);
+  assert.equal(authToken(env), LIVE, 'the fresh token must win once the dead one is gone');
 });
 
 test('the expiry check is on the read path the boards actually use', () => {
