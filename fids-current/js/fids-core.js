@@ -12730,6 +12730,32 @@ function uxgGateHtml(ctx) {
   // "Pre-boarding" and carries the full published list; once general boarding
   // commences it returns to the Porter Reserve priority queue, which is what
   // lanes 1-2 are for from then on.
+  // v23769 — the priority panel's marks, as one function the unified sign can
+  // call. This is the v23749 logic moved out of _pdLanesBodyHtml unchanged:
+  // the AvidTraveller header, the four VIPorter tiers by their English
+  // identity with the French artwork swapped in where Porter RENAMES the tier
+  // (Passport → Passeport, Venture → Horizon, Ascent → Essor, First →
+  // Première), and the PorterReserve mark. The v23718 rule holds — the marks
+  // show for the whole boarding window, not five minutes of it.
+  function _pdPrioMarksHtml() {
+    var hdr = '<div class="g8-pd-marks-hdr">'
+      + (_gateLbl1('avidTraveller', _frF) || 'AvidTraveller') + '</div>';
+    var FR = { passport: 'Passeport', venture: 'Horizon', ascent: 'Essor', first: 'Première' };
+    function mark(tier, label) {
+      var fr = _frF && FR[tier];
+      return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
+        + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="VIPorter '
+        + (fr || label) + '"></span>';
+    }
+    return hdr + '<div class="g8-pd-preboard-marks">'
+      + mark('passport', 'Passport')
+      + mark('venture', 'Venture')
+      + mark('ascent', 'Ascent')
+      + mark('first', 'First')
+      + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo'
+        + (_frF ? '_fr' : '') + '.svg" alt="PorterReserve"></span>'
+      + '</div>';
+  }
   function _pdLanesBodyHtml(rowsVal, comingVal, preActive) {
     // v23530 — the HEADER keeps saying Priority; only the VALUE names the
     // phase. v23522 put the same bilingual 'Pre-boarding | Pre-embarquement'
@@ -12954,6 +12980,107 @@ function uxgGateHtml(ctx) {
       + '</div>';
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // v23769 — ONE SIGN FOR EVERY AIRLINE.
+  //
+  // The boarding panel had four bodies: three quarter-columns for Air Canada
+  // and WestJet with each label split into two stacked halves — 'Priority'
+  // over 'Priorité', the thing the owner drew a line under — two halves for
+  // Porter, one flow column for PAL, and a now/next pair for everyone else.
+  //
+  // The approved mock fixes ONE frame for all of them, and the words stay
+  // each airline's own. Two panels: LEFT is the priority group, RIGHT is the
+  // group being called. In each, a title pair on one line, an optional second
+  // pair (a cabin, or 'Rows | Rangées'), the big value, a note or a 'Next:'
+  // line as whole phrases one per language, the lane line, and the same two
+  // arrow discs in the bottom corners.
+  //
+  // Nothing about WHAT is called changes. Zones still step with minutes to
+  // departure, WestJet still runs to zone 8, Porter still boards by row band
+  // from its fleet, PAL still has its two phases, groups still count as they
+  // did. Those values are computed exactly where they were; this only changes
+  // the HTML they are poured into.
+  //
+  // Pairs are two unbreakable halves round a bar — the Welcome headline's
+  // .g8-pair-h / .g8-pair-sep — so the runtime pass that already measures
+  // those decides: one line when it fits, two WHOLE phrases when it does not.
+  // The halves can never break inside themselves, so the stacked-halves
+  // form cannot come back through this builder.
+  function _g8SignPair(key, keepDup, short) {
+    var halves = [];
+    var html = _gateLbl(key, _frF,
+      function (w) { halves.push(w); return '<span class="g8-pair-h">' + w + '</span>'; },
+      '<span class="g8-pair-sep">|</span>', !!keepDup);
+    // The mock writes 'PorterReserve | Réserve': when the second half repeats
+    // the first half's brand prefix, it drops it, so a cabin pair holds one
+    // line. Only asked for on cabin names; every other pair is left whole.
+    if (short && halves.length === 2) {
+      var m = /^([A-Z][a-z]+)(?=[A-Z])/.exec(halves[0]);
+      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) {
+        html = html.replace('<span class="g8-pair-h">' + halves[1] + '</span>',
+                            '<span class="g8-pair-h">' + halves[1].slice(m[1].length) + '</span>');
+      }
+    }
+    return html;
+  }
+  function _g8SignLines(key) {
+    return _gateLbl(key, _frF, function (w) { return '<span class="g8-sign-line">' + w + '</span>'; }, '');
+  }
+  // 'Next: Rows 8-16' / 'Prochain : Rangées 8-16' — each language a whole
+  // line, the group word in that language, French with its space before the
+  // colon.
+  function _g8SignNext(groupKey, value) {
+    if (!value) return '';
+    var L = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+    if (_frF) { var fi = L.indexOf('fr'); if (fi > 0) { L.splice(fi, 1); L.unshift('fr'); } }
+    var T = (typeof _GATE_LBL !== 'undefined') ? _GATE_LBL : {};
+    var nx = T.nextUp || { en: 'Next' }, grp = groupKey ? (T[groupKey] || {}) : {};
+    var seen = {}, out = '';
+    for (var i = 0; i < L.length; i++) {
+      var lg = L[i], gw = grp[lg] || grp.en || '';
+      var line = (nx[lg] || nx.en) + (lg === 'fr' ? ' : ' : ': ') + (gw ? gw + ' ' : '') + value;
+      if (seen[line]) continue;
+      seen[line] = 1;
+      out += '<span class="g8-sign-line">' + line + '</span>';
+    }
+    return out;
+  }
+  // The arrow disc from the owner's arrow pack (Pro licence held): the dark
+  // disc and the white arrow, flat, rotated to point down-left or down-right.
+  var _G8_ARROW_PATH = 'M138.2 91.7 L111.3 118.6 L111.3 49.6 L100 49.6 L88.7 49.6 L88.7 118.6 L61.8 91.7 L51.6 101.9 L100 150.4 L148.5 101.9 Z';
+  function _g8ArrowDisc(dir) {
+    var rot = dir === 'dl' ? 45 : -45;
+    return '<svg class="g8-sign-disc" viewBox="0 0 200 200" aria-hidden="true">'
+      + '<circle cx="100" cy="100" r="96" fill="#414042"/>'
+      + '<path d="' + _G8_ARROW_PATH + '" fill="#fff" transform="rotate(' + rot + ' 100 100)"/>'
+      + '</svg>';
+  }
+  function _g8ArrowGlyph() {
+    return '<svg viewBox="0 0 200 200" aria-hidden="true"><path d="' + _G8_ARROW_PATH
+      + '" fill="currentColor" transform="rotate(-45 100 100)"/></svg>';
+  }
+  function _g8SignCol(side, S) {
+    var h = '<div class="g8-board-col ' + (side === 'left' ? 'now' : 'next') + ' g8-sign-col g8-sign-' + side + '">';
+    if (S.title) h += '<div class="g8-sign-title">' + S.title + '</div>';
+    if (S.sub) h += '<div class="g8-sign-sub">' + S.sub + '</div>';
+    if (S.value) {
+      var _txt = _g8GrpValCls(S.value);
+      h += '<div class="g8-sign-value' + _txt + '">' + S.value
+        + ((side === 'right' && !_txt) ? '<span class="g8-sign-valarrow">' + _g8ArrowGlyph() + '</span>' : '')
+        + '</div>';
+    }
+    if (S.note) h += '<div class="g8-sign-note">' + S.note + '</div>';
+    if (S.marks) h += '<div class="g8-sign-marks">' + S.marks + '</div>';
+    if (S.lanes) h += '<div class="g8-sign-lanes">' + S.lanes + '</div>';
+    if (S.next) h += '<div class="g8-sign-next">' + S.next + '</div>';
+    h += '<span class="g8-sign-arrow l">' + _g8ArrowDisc('dl') + '</span>'
+       + '<span class="g8-sign-arrow r">' + _g8ArrowDisc('dr') + '</span>';
+    return h + '</div>';
+  }
+  function _g8SignHtml(L, R) {
+    return '<div class="g8-board-body g8-sign">' + _g8SignCol('left', L) + _g8SignCol('right', R) + '</div>';
+  }
+
   // Build boarding panel HTML
   var boardHtml = '';
   if (boardActive) {
@@ -13110,21 +13237,55 @@ function uxgGateHtml(ctx) {
     boardHtml = '<div class="g8-board active">'
       + _boardInfoRowHtml('boarding')
       + _boardWelcomeStripHtml('boarding')
-      + (_acLanes
-          ? _acLanesBodyHtml(_acZonesVal, _comingVal)
-          : airlineCode === 'PD'
-          // Pre-boarding runs for the first five minutes of the boarding
-          // window; after that Porter's general boarding has commenced.
-          ? _pdLanesBodyHtml(nowVal, _comingVal, minsToDep > (_boardLeadShown - 5))
-          // v23224 — PAL's open-flow sign: pre-boarding for the first
-          // stretch of the window, then the one general call.
-          : airlineCode === 'PB'
-          ? _pbFlowBodyHtml(minsToDep > 20)
-          : _bHdr
-            + '<div class="g8-board-body">'
-            + '<div class="g8-board-col now">' + (_nowLbl ? '<div class="g8-board-grp-label">' + _nowLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><span class="g8-board-arrow">' + _birArrowSvg(false) + '</span><div class="g8-board-grp-num' + _g8GrpValCls(nowVal) + '">' + nowVal + '</div></div><div class="g8-board-lane">' + _gateLaneLbl('1', false) + '</div></div>'
-            + '<div class="g8-board-col next">' + (_nextLbl ? '<div class="g8-board-grp-label">' + _nextLbl + '</div>' : '') + '<div class="g8-board-grp-wrap"><div class="g8-board-grp-num' + _g8GrpValCls(nextVal) + '">' + nextVal + '</div><span class="g8-board-arrow">' + _birArrowSvg(true) + '</span></div><div class="g8-board-lane">' + _gateLaneLbl('2', false) + '</div></div>'
-            + '</div>')
+      + (function () {
+          // v23769 — each family's own words and values, poured into the one
+          // frame. The values are the ones computed above: nothing about
+          // timing, aircraft or the order of calls is decided here.
+          var _prioT = _g8SignPair('priority');
+          var _L, _R;
+          if (_acLanes) {
+            // Air Canada family and WestJet: priority Zones 1 • 2 on the left
+            // for the whole window; the called zone on the right, with the
+            // zones still to come as the Next line.
+            _L = { title: _prioT, value: '1 \u2022 2', lanes: _gateLaneLbl('1 \u2022 2', true) };
+            _R = { title: _g8SignPair('zones', true), value: _acZonesVal,
+                   lanes: _gateLaneLbl('3 \u2022 4', true),
+                   next: _g8SignNext('zones', _comingVal) };
+          } else if (airlineCode === 'PD') {
+            // Porter: the Reserve cabin pre-boards, then boards at its
+            // convenience, on Lanes 1 • 2; Classic boards by row band on
+            // Lanes 3 • 4 with the next band as the Next line. Pre-boarding
+            // runs for the first five minutes of the window.
+            var _pdPre = minsToDep > (_boardLeadShown - 5);
+            _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true),
+                   note: _pdPre
+                     ? _g8SignLines('preboard') + '<span class="g8-sign-line">' + (_gateLbl1('preboardList', _frF) || '') + '</span>'
+                     : _g8SignLines('boardConv'),
+                   marks: _pdPrioMarksHtml(),
+                   lanes: _gateLaneLbl('1 \u2022 2', true) };
+            _R = { title: _g8SignPair('pdClassic', false, true), sub: _g8SignPair('rows'), value: nowVal,
+                   marks: _pdClassicMark(),
+                   lanes: _gateLaneLbl('3 \u2022 4', true),
+                   next: _g8SignNext('rows', _comingVal) };
+          } else if (airlineCode === 'PB') {
+            // PAL's open flow: pre-boarding for the first stretch of the
+            // window, then the one general call. One lane.
+            var _pbPre = minsToDep > 20;
+            _L = { title: _prioT, note: _g8SignLines('preboard'), lanes: _gateLaneLbl('1', false) };
+            _R = { title: _g8SignPair('boarding'),
+                   value: _g8SignPair(_pbPre ? 'preboard' : 'genboard'),
+                   note: _pbPre ? _g8SignLines('genboard') : _g8SignLines('allPax'),
+                   lanes: _gateLaneLbl('1', false) };
+          } else {
+            // Everyone else boards by group: pre-boarding on the left, the
+            // called group on the right, the next group as the Next line.
+            _L = { title: _prioT, note: _g8SignLines('preboard'), lanes: _gateLaneLbl('1 \u2022 2', true) };
+            _R = { title: _g8SignPair('groupLabel'), value: String(nowVal),
+                   lanes: _gateLaneLbl('3 \u2022 4', true),
+                   next: _g8SignNext('groupLabel', nextVal) };
+          }
+          return _g8SignHtml(_L, _R);
+        })()
       + '</div>';
   }
 
@@ -13259,7 +13420,7 @@ The rows value is the 'All | Tous'
   var _opCode = currentFlight._opCode || null;
   var _opName = currentFlight._opName || null;
   var _callSign = currentFlight._callSign || '';
-  var _OPNAMES = {'QK':'Jazz Aviation','RV':'Air Canada Rouge','WR':'WestJet Encore','9X':'Mokulele','MQ':'Envoy Air','OH':'PSA Airlines','PT':'Piedmont Airlines','9E':'Endeavor Air','OO':'SkyWest Airlines','YV':'Mesa Airlines','G7':'GoJet Airlines','YX':'Republic Airways','QX':'Horizon Air','ENY':'Envoy Air','PSA':'PSA Airlines','PDT':'Piedmont Airlines','EDV':'Endeavor Air','SKW':'SkyWest Airlines','ASH':'Mesa Airlines','GJS':'GoJet Airlines','RPA':'Republic Airways','JZA':'Jazz Aviation','WEN':'WestJet Encore','ROU':'Air Canada Rouge','SOU':'Mokulele','MHO':'Mokulele'};
+  var _OPNAMES = {'QK':'Jazz Aviation','RV':'Air Canada Rouge','WR':'WestJet Encore','9X':'Mokulele','MQ':'Envoy Air','OH':'PSA Airlines','PT':'Piedmont Airlines','9E':'Endeavor Air','OO':'SkyWest Airlines','YV':'Mesa Airlines','G7':'GoJet Airlines','YX':'Republic Airways','QX':'Horizon Air','ENY':'Envoy Air','PSA':'PSA Airlines','PDT':'Piedmont Airlines','EDV':'Endeavor Air','SKW':'SkyWest Airlines','ASH':'Mesa Airlines','GJS':'GoJet Airlines','RPA':'Republic Airways','JZA':'Jazz Aviation','WEN':'WestJet Encore','ROU':'Air Canada Rouge','FDY':'Mokulele','MHO':'Mokulele'};
   // Derive operator from callsign if _opCode is empty
   if ((!_opCode || _opCode === airlineCode) && _callSign) {
     var _csP = _callSign.replace(/\d.*/,'').trim().toUpperCase();
@@ -18628,6 +18789,31 @@ const gView = document.getElementById('gateView');
     var _bidsApHash = 0;
     try { var _apStr = String(iata || ''); for (var _ai = 0; _ai < _apStr.length; _ai++) _bidsApHash = (_bidsApHash * 31 + _apStr.charCodeAt(_ai)) % 997; } catch (e) {}
     var _bidsAcc = _bidsAccents[(_bidsApHash + Math.max(1, _bidsBeltNo) - 1) % _bidsAccents.length];
+    // v23769 — DIFFERENT NUMBERS, DIFFERENT COLOURS. The belt sign's palette
+    // (band, body, disc, suitcase, handle, conveyor dots, ink for the number)
+    // is chosen by the belt NUMBER alone — no airport hash — so belt 1 wears
+    // the mock's colours at every airport, belt 2 the next set, and the same
+    // number reads the same colour wherever the stream happens to be. Entry
+    // 0 is the approved mock exactly; the rest keep its structure — dark
+    // band, mid body, bright disc, a suitcase a shade off the body, a pale
+    // handle, dots a shade under the disc, dark ink — in other hues. Yellow
+    // and red are still the status pills' own, so nothing here leans on them
+    // beyond the mock's marigold.
+    var _BIDS_CARD_PALETTES = [
+      { band: '#8A1C2B', body: '#D9696B', disc: '#F4C15C', suitcase: '#E27A6E', handle: '#F6EBD3', dots: '#E3A455', ink: '#2C1A6B' }, // 1 — the mock
+      { band: '#14264B', body: '#3E6FB8', disc: '#9FD3F5', suitcase: '#5A8FD6', handle: '#EEF6FF', dots: '#6FB1E0', ink: '#0C1A3A' }, // 2 — navy / sky
+      { band: '#1E4D2B', body: '#4F9A5E', disc: '#CDE38B', suitcase: '#6BB479', handle: '#F1F8E6', dots: '#A8C96A', ink: '#123320' }, // 3 — forest / lime
+      { band: '#4A1B4E', body: '#9B5AA3', disc: '#F7C7A3', suitcase: '#B27AB9', handle: '#FFF1E8', dots: '#E9A57C', ink: '#2B0E30' }, // 4 — plum / peach
+      { band: '#0F4C50', body: '#2F8F8E', disc: '#F1DFA6', suitcase: '#4FAAA7', handle: '#FBF7EA', dots: '#D9C27A', ink: '#082E31' }, // 5 — teal / sand
+      { band: '#6E2A0E', body: '#C9683B', disc: '#F8E3B0', suitcase: '#D9825A', handle: '#FFF7E6', dots: '#E2BC7A', ink: '#3A1607' }, // 6 — rust / cream
+      { band: '#2B3A4F', body: '#6B7F99', disc: '#FFB3A0', suitcase: '#8798B0', handle: '#FFF3EE', dots: '#F08A72', ink: '#16202E' }, // 7 — slate / coral
+      { band: '#2D2A7A', body: '#6A63C9', disc: '#F6D26A', suitcase: '#857FDA', handle: '#FFFBE8', dots: '#E5B93F', ink: '#1A1848' }  // 8 — indigo / gold
+    ];
+    var _bidsCard = _BIDS_CARD_PALETTES[(Math.max(1, _bidsBeltNo) - 1) % _BIDS_CARD_PALETTES.length];
+    var _bidsCardVars = '--card-band:' + _bidsCard.band + ';--card-body:' + _bidsCard.body
+      + ';--card-disc:' + _bidsCard.disc + ';--card-case:' + _bidsCard.suitcase
+      + ';--card-handle:' + _bidsCard.handle + ';--card-dots:' + _bidsCard.dots
+      + ';--card-ink:' + _bidsCard.ink + ';';
     // APPROVAL GATE: the redesign mounts ONLY
     // when explicitly enabled — flip _BIDSV3_ON to true in code once the owner has
     // approved a live render, or set localStorage fids_bidsv3 = '1' on a test
@@ -18635,7 +18821,7 @@ const gView = document.getElementById('gateView');
     var _bidsV3On = false;
     try { _bidsV3On = _BIDSV3_ON === true || localStorage.getItem('fids_bidsv3') === '1'; } catch (e) {}
     bView.innerHTML = `
-      <div class="bidsv2-screen${_bidsV3On ? ' bidsv3' : ''}" style="--bids-accent-img:url('${_bidsAcc.img}');--bids-ground-img:url('${_bidsAcc.ground}');--bids-bar-grad:${_bidsAcc.bar};--bids-tint:${_bidsAcc.tint};">
+      <div class="bidsv2-screen${_bidsV3On ? ' bidsv3' : ''}" style="${_bidsCardVars}--bids-accent-img:url('${_bidsAcc.img}');--bids-ground-img:url('${_bidsAcc.ground}');--bids-bar-grad:${_bidsAcc.bar};--bids-tint:${_bidsAcc.tint};">
 
         <!-- Banner — same v2 chevron pattern as the FIDS board: time
              + date top-right, airport pill (logo + IATA + name) center, and
@@ -18710,8 +18896,40 @@ const gView = document.getElementById('gateView');
               const _v = _m ? _m[2] : String(subScreenVal || '');
               return (_v && _v !== '—') ? _v : '';
             })();
+            // v23769 — THE BELT SIGN, FROM THE OWNER'S MOCK. On the b3 surface
+            // the panel carries a disc with the baggage-claim pictogram, and
+            // the belt number sits INSIDE the suitcase on that disc. The art
+            // is a real element rather than a CSS background so the flat
+            // rule ("no background images") stays literally true, and so the
+            // number stays its own div for the fitter. Grid rows in CSS put
+            // the art and the number in the same cell; the SVG centres the
+            // suitcase body on the disc, so centring the number on the art
+            // centres it in the suitcase with no offset to tune. Gated on
+            // the flag exactly like the class stamp: the prior design never
+            // receives it.
+            //
+            // INLINE, not an <img>: the fills read the --card-* variables the
+            // screen stamps per belt, and an external SVG document cannot see
+            // the page's custom properties. Geometry is from the licensed
+            // Vecteezy icon 34544733 (Pro licence held), suitcase scaled 1.2
+            // so it fills the disc the way the mock draws it; the mock's
+            // colours are the fallbacks.
+            var _crslArt = _bidsV3On
+              ? '<svg class="bidsv2-carousel-art" viewBox="0 0 1000 1000" aria-hidden="true" focusable="false">'
+                + '<circle cx="500" cy="500" r="490" style="fill:var(--card-disc,#F4C15C)"/>'
+                + '<g transform="translate(500 500) scale(1.2) translate(-500 -500)">'
+                +   '<rect x="368" y="235" width="264" height="170" rx="46" style="fill:none;stroke:var(--card-handle,#F6EBD3);stroke-width:32"/>'
+                +   '<rect x="319" y="338" width="362" height="338" rx="26" style="fill:var(--card-case,#E27A6E)"/>'
+                +   '<rect x="211" y="338" width="78" height="338" rx="22" style="fill:var(--card-case,#E27A6E)"/>'
+                +   '<rect x="711" y="338" width="78" height="338" rx="22" style="fill:var(--card-case,#E27A6E)"/>'
+                +   [255, 353, 451, 549, 647, 745].map(function (x) {
+                      return '<circle cx="' + x + '" cy="750" r="29" style="fill:var(--card-dots,#E3A455)"/>';
+                    }).join('')
+                + '</g></svg>'
+              : '';
             return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
               + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
+              + _crslArt
               + '<div class="bidsv2-carousel-number" data-len="' + String(_crslNum).length + '">' + _crslNum + '</div>'
               + (_mcoBagTerm ? '<div class="bidsv2-carousel-terminal">Terminal ' + _mcoBagTerm + '</div>' : '')
               + '</div>';
@@ -22119,7 +22337,14 @@ function addTioWeatherLayer(map) {
 // field is ambiguous (e.g. returns the marketing carrier on a codeshare).
 const CALLSIGN_TO_IATA = {
   // ── Air Canada family ──
-  'ACA':'AC', 'ROU':'RV', 'JZA':'QK', 'GGN':'RV',
+  // v23769 - GGN dropped. It was Air Georgian, which flew Air Canada EXPRESS
+  // (not Rouge) until it ceased in May 2020; the designator passed to Pivot
+  // and is now Great North Airlines, an independent regional out of Waterloo
+  // with no Air Canada connection at all. Mapping it to RV named a GGN flight
+  // as Air Canada Rouge. Remapping to its real IATA, ZX, is no better today,
+  // because AIRLINE_NAME still calls ZX 'AIR CANADA' from the Air Georgian
+  // era - Great North needs its own branding before that row can point at it.
+  'ACA':'AC', 'ROU':'RV', 'JZA':'QK',
   // ── WestJet family ──
   'WJA':'WS', 'WEN':'WR',
   // ── Other Canadian ──
@@ -22134,9 +22359,16 @@ const CALLSIGN_TO_IATA = {
   // ── US regionals (all keep their own IATA for logo purposes) ──
   'SKW':'OO', 'ENY':'MQ', 'JIA':'OH', 'PDT':'PT', 'EDV':'9E',
   'ASH':'YV', 'GJS':'G7', 'RPA':'YX', 'QXE':'QX', 'UCA':'C5',
-  'AWI':'ZW', 'CPZ':'CP', 'EJA':'EV',
+  // v23769 - EJA dropped: it is NetJets (callsign EXECJET), business
+  // aviation with no IATA designator, and EV was ExpressJet, which stopped
+  // flying in August 2022. Neither belongs on a passenger board.
+  'AWI':'ZW', 'CPZ':'CP',
   // ── Hawaii inter-island regional ──
-  'MHO':'9X', 'SOU':'9X',  // Mokulele (Surf Air Mobility / Southern Airways Express)
+  // v23769 - SOU rekeyed to FDY. Southern Airways Express flies under FDY
+  // (telephony FRIENDLY); SOU was the original Southern Airways, gone since its
+  // 1979 merger into Republic, and is now parked on a Hong Kong carrier that
+  // never started flying. Same target, so nothing about the display changes.
+  'MHO':'9X', 'FDY':'9X',  // Mokulele (Surf Air Mobility / Southern Airways Express)
   // ── European (most common) ──
   'DLH':'LH', 'BAW':'BA', 'AFR':'AF', 'KLM':'KL',
   'VIR':'VS', 'ITY':'AZ', 'BEL':'SN', 'SWR':'LX',
@@ -22465,6 +22697,16 @@ const IATA_TO_TILE_ICAO = {
   // Europe/Switzerland, Norwegian Air Sweden, Iberia Express, Wizz Malta,
   // Jet2 and Loganair (their own tiles were on disk, never mapped).
   'RK':'RYR',  'EC':'EZY',  'EJU':'EZY', 'EZS':'EZY', 'D8':'NAX',  'I2':'IBE',  'W4':'WZZ',  'LS':'EXS',  'LM':'LOG',
+  // v23769 — and the PARENT, which that pass missed while mapping its three
+  // children. U2 is above, so easyJet was assumed covered; but Edinburgh does
+  // not send U2. It puts the ICAO form in the carrier slot, and 36 live EDI
+  // flights arrive as airline 'EZY'. The v23356 note by easyJet's AIRLINE_NAME
+  // entry already records this feed's habit — that fix gave the code a NAME, so
+  // the wordmark and the name came out right and nothing pointed at the missing
+  // tile. mkLogo() then took its wordmark branch and returned the empty string,
+  // and easyJet ran at Edinburgh with no orange square while Ryanair, KLM and
+  // Air France beside it each had one.
+  'EZY':'EZY',
   'DE':'CFG',  'X3':'TUI',  'A3':'AEE',  'OU':'CTN',  'JU':'ASL',
   // TO and HV are one brand — Transavia France and Transavia Netherlands — and
   // the board was drawing them as two. HV had the real 't' roundel on #00D66C;
@@ -23102,6 +23344,38 @@ const IATA_TO_EMBLEM = {
   'JV': '/logos/airlines/canadian-regional/bearskin-emblem.svg',      // Bearskin bear-paw emblem
   'WT': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
   'NSA': '/logos/airlines/canadian-regional/north-star-emblem.svg',   // North Star Air emblem
+  // v23769 — three more carriers arriving at the hole the LY note above
+  // describes: a wordmark but no tile, so mkLogo() reached `return ''` and the
+  // emblem slot came out EMPTY. Their artwork was never missing — each tile is
+  // registered in AIRLINE_EMBLEM_FILES and resolves 200 for the gate ORB, which
+  // reads that map. The row and the BIDS cell read THIS one, and nothing joined
+  // the two, so the orb drew the mark and the row drew nothing.
+  //
+  // Pointed at the SAME file the orb uses rather than an ICAO-named copy under
+  // IATA_TO_TILE_ICAO: that table builds its path from the filename, so it would
+  // need a duplicate per carrier, and the pair already sitting in this repo
+  // (ANZ.svg / NZ-Emblem.svg) has silently drifted apart. One file, both
+  // surfaces. The path still names /logos/airline-tiles/, which is what the
+  // isTile test keys on, so the tile keeps object-fit:cover and no whitening.
+  //
+  // None of the three carries a wordmark inside the square, so pairing it with
+  // the wordmark image cannot print the carrier's name twice.
+  //
+  // 4N's BANNER is untouched: BANNER_DARK_LOGO hands it a STACKED lockup
+  // (symbol over wordmark — airnorth-wordmark-light.svg is that file's lower
+  // band, cropped), which short-circuits before _bannerWmFromBase, so the
+  // banner never reads this map. 8P and SP have no such entry, so for them this
+  // also restores the emblem beside the banner wordmark.
+  '4N': '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North — blue mark on its orange ground
+  '8P': '/logos/airline-tiles/PCO.svg',               // Pacific Coastal
+  'SP': '/logos/airline-tiles/PB.svg',                // PAL express affiliate — PAL Airlines tile
+  // The ICAO forms of two of the above. Not hypothetical: Edinburgh puts the
+  // ICAO designator in the carrier slot rather than the IATA code, which is how
+  // 36 easyJet flights a day arrive as 'EZY' instead of 'U2' (see the EZY entry
+  // in IATA_TO_TILE_ICAO). Any feed can do the same to these two, and the cost
+  // of covering it is one line each against a file that already exists.
+  'QTR': '/logos/airline-tiles/QTR.svg',              // Qatar Airways, ICAO form of QR
+  'PCO': '/logos/airline-tiles/PCO.svg',              // Pacific Coastal, ICAO form of 8P
   '9X': '/logos/airlines/us-major/mokulele-emblem.svg',  // Mokulele plumeria flower
   '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',  // Discover Airlines tail-fin emblem (yellow + blue gradient)
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark
@@ -24204,7 +24478,10 @@ var _GATE_LBL = {
     es:'Tenga su identificación con foto lista',
     de:'Halten Sie Ihren Lichtbildausweis bereit',
     it:'Tenete pronto un documento con foto',
-    pt:'Tenha sua identificação com foto pronta'
+    pt:'Tenha sua identificação com foto pronta',
+    ja:'写真付き身分証明書をご用意ください',
+    zh:'请准备好带照片的身份证件',
+    ar:'يرجى تجهيز بطاقة هوية تحمل صورة'
   },
   preboardList: {
     en:'Passengers with disabilities \u00b7 Unaccompanied minors \u00b7 Families with children 2 and under \u00b7 Premium VIPorter \u00b7 PorterReserve',
@@ -24216,6 +24493,18 @@ var _GATE_LBL = {
     ja:'\u304a\u624b\u4f1d\u3044\u304c\u5fc5\u8981\u306a\u304a\u5ba2\u69d8 \u00b7 \u304a\u5b50\u69d8\u306e\u3072\u3068\u308a\u65c5 \u00b7 2\u6b73\u4ee5\u4e0b\u306e\u304a\u5b50\u69d8\u9023\u308c \u00b7 \u30d7\u30ec\u30df\u30a2\u30e0VIPorter \u00b7 PorterReserve',
     zh:'\u9700\u534f\u52a9\u65c5\u5ba2 \u00b7 \u65e0\u4eba\u966a\u4f34\u513f\u7ae5 \u00b7 \u643a2\u5c81\u53ca\u4ee5\u4e0b\u513f\u7ae5\u7684\u5bb6\u5ead \u00b7 \u9ad8\u7ea7VIPorter \u00b7 PorterReserve',
     ar:'\u0627\u0644\u0631\u0643\u0627\u0628 \u0630\u0648\u0648 \u0627\u0644\u0625\u0639\u0627\u0642\u0629 \u00b7 \u0627\u0644\u0642\u0627\u0635\u0631\u0648\u0646 \u063a\u064a\u0631 \u0627\u0644\u0645\u0635\u062d\u0648\u0628\u064a\u0646 \u00b7 \u0627\u0644\u0639\u0627\u0626\u0644\u0627\u062a \u0645\u0639 \u0623\u0637\u0641\u0627\u0644 \u062d\u062a\u0649 \u0633\u0646\u062a\u064a\u0646 \u00b7 VIPorter \u0628\u0631\u064a\u0645\u064a\u0648\u0645 \u00b7 PorterReserve' },
+  // v23769 — two words the unified boarding sign needs. 'Next' heads the
+  // second-language lines under the called group ('Next: Rows 8-16' /
+  // 'Prochain : Rangées 8-16'); 'boardConv' is the standing note on the
+  // priority panel once pre-boarding is over.
+  // 'Group' and 'Boarding' existed only in the board's LS table, which the
+  // gate's pair builder does not read — so the generic sign's called panel
+  // came up with no title at all, and its Next line read 'Next: 6' with no
+  // word for what 6 was. Same values as LS, here where _gateLbl looks.
+  groupLabel:{ en:'Group', fr:'Groupe', es:'Grupo', de:'Gruppe', it:'Gruppo', pt:'Grupo', ja:'グループ', zh:'组', ar:'المجموعة' },
+  boarding:  { en:'Boarding', fr:'Embarquement', es:'Embarque', de:'Boarding', it:'Imbarco', pt:'Embarque', ja:'搭乗', zh:'登机', ar:'الصعود' },
+  nextUp:    { en:'Next', fr:'Prochain', es:'Siguiente', de:'Nächste', it:'Prossimo', pt:'Próximo', ja:'次', zh:'下一个', ar:'التالي' },
+  boardConv: { en:'Board at your convenience', fr:'Embarquez à votre convenance', es:'Embarque cuando desee', de:'Boarding jederzeit möglich', it:'Imbarco quando preferisce', pt:'Embarque quando quiser', ja:'ご都合の良い時にご搭乗ください', zh:'随时登机', ar:'اصعد في الوقت المناسب لك' },
   allPax:    { en:'All passengers', fr:'Tous les passagers', es:'Todos los pasajeros', de:'Alle Passagiere', it:'Tutti i passeggeri', pt:'Todos os passageiros', ja:'全てのお客様', zh:'所有乘客', ar:'جميع الركاب' },
   finalCall: { en:'FINAL BOARDING CALL', fr:'DERNIER APPEL', es:'ÚLTIMA LLAMADA', de:'LETZTER AUFRUF', it:'ULTIMA CHIAMATA', pt:'ÚLTIMA CHAMADA', ja:'最終搭乗案内', zh:'最后登机广播', ar:'النداء الأخير للصعود' },
   gateClosed:{ en:'GATE CLOSED',   fr:'PORTE FERMÉE',   es:'PUERTA CERRADA', de:'GATE GESCHLOSSEN', it:'GATE CHIUSO', pt:'PORTÃO FECHADO', ja:'ゲート閉鎖', zh:'登机口已关闭', ar:'البوابة مغلقة' },
@@ -24474,7 +24763,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23768';
+var FIDS_BUILD_TAG = 'v23769';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -26863,7 +27152,17 @@ function buildRandomFlights(iata) {
 // Callsign prefix (ICAO telephony) → operating airline IATA code
 const CALLSIGN_ICAO = {
   'AAL':'AA','ACA':'AC','AFR':'AF','ANA':'NH','ASA':'AS',
-  'AWI':'AW','BAW':'BA','CCA':'CA','CES':'MU','CHQ':'MQ',
+  // v23769 - AWI is AIR WISCONSIN, whose IATA code is ZW. It was mapped to AW,
+  // which belongs to Africa World Airlines of Accra (ICAO AFW) - a different
+  // carrier on a different continent. The giveaway was already in the repo:
+  // nothing is registered under AW at all, so an AWI flight resolved an
+  // operator code with no name behind it and the band printed the bare
+  // letters. CALLSIGN_TO_IATA has carried the correct ZW the whole time; the
+  // two tables simply disagreed, and this one is the one the operator line
+  // reads.
+  // CHQ dropped: Chautauqua Airlines, whose last day was 31 Dec 2014, and
+  // whose own IATA was RP - it never held MQ. Envoy's real row is ENY below.
+  'AWI':'ZW','BAW':'BA','CCA':'CA','CES':'MU',
   'CPZ':'CP','CSN':'CZ','DAL':'DL','DLH':'LH','EDV':'9E',
   'EIN':'EI','ENY':'MQ','ETH':'ET','FFT':'F9','FLE':'F8',
   'GIA':'GA','GJS':'G7','JAL':'JL','JBU':'B6','JZA':'QK',
@@ -26876,18 +27175,64 @@ const CALLSIGN_ICAO = {
   // largest carrier at Yellowknife and this sits directly in its path.
   'MPE':'5T',
   // NKS (Spirit) — ceased operations May 2 2026
-  'PAK':'PK',
+  // v23769 - PIA's designator is PIA, not PAK. PAK is Pacific Alaska
+  // Airlines of Fairbanks. Pakistan International serves Toronto, Heathrow and
+  // Manchester, all of them live boards, so the wrong key meant a real PIA
+  // callsign matched nothing at all.
+  'PIA':'PK',
   // v23765 - PAL is PHILIPPINE AIRLINES' ICAO, and this sent it to PB, the
   // Canadian PAL Airlines, whose ICAO is PVL. The repo already knew the
   // difference - the comment above IATA_TO_TILE_ICAO says plainly 'PAL.svg
   // is Philippine Airlines' - but this map did not. Same shape as the MPE
   // error above: an ICAO handed to the airline with the similar NAME.
   'PAL':'PR', 'PVL':'PB',
-  'PDT':'PT','POE':'PD','PSA':'OH',
-  'QFA':'QF','QTR':'QR','QXE':'QX','ROU':'RV','RPA':'YV',
-  'SIA':'SQ','SKW':'OO','SUN':'SY','SWA':'WN','TCF':'TC',
-  'THA':'TG','TSC':'TS','UAE':'EK','UAL':'UA','VRD':'VX',
-  'WEN':'WR','WJA':'WS','KRS':'KV','SVR':'ZX','TIF':'4N','PTR':'PD',
+  // PSA rekeyed to JIA. PSA Airlines flies as JIA (telephony BLUE STREAK);
+  // the three letters PSA last belonged to Pacific Island Aviation of Saipan,
+  // which ceased in 2005. CALLSIGN_TO_IATA had JIA all along, but THIS is the
+  // table the operator line reads, and it only had the dead key - so a real
+  // PSA Airlines callsign has never once resolved on the band.
+  'PDT':'PT','POE':'PD','JIA':'OH',
+  // v23769 - RPA is REPUBLIC AIRWAYS (IATA YX, callsign BRICKYARD). It was
+  // mapped to YV, which is MESA AIRLINES - a different carrier, whose own ICAO
+  // is ASH and which this table already carries correctly. Republic flies for
+  // American, Delta and United, so the wrong name would have gone out on the
+  // operator line of somebody else's mainline flight. The 2025 Republic/Mesa
+  // merger does not rescue it: the two still hold separate designators, and
+  // the board resolves a code, not a corporate parent. CALLSIGN_TO_IATA has
+  // said YX all along.
+  'QFA':'QF','QTR':'QR','QXE':'QX','ROU':'RV','RPA':'YX',
+  // v23769 - TCF and VRD dropped. Each resolved an operator code that nothing
+  // in the repo can put a NAME to, so the band had nothing to print but the
+  // two raw letters. TCF is Shuttle America, folded into Republic in 2017 and
+  // mapped here to TC, which is Air Tanzania; VRD and VX are both Virgin
+  // America, gone since 2018. Removing a row is the safe direction: the
+  // operator line simply falls back to the marketing carrier, where a bad row
+  // would have named the wrong airline or printed letters.
+  // SUN rekeyed to SCX. Sun Country's designator is SCX (telephony SUN
+  // COUNTRY); SUN itself was a defunct Dominican carrier. Sun Country is on
+  // the SFO board today, and CALLSIGN_TO_IATA has said SCX all along - this
+  // is the row the operator line reads, and it now agrees.
+  'SIA':'SQ','SKW':'OO','SCX':'SY','SWA':'WN',
+  'THA':'TG','TSC':'TS','UAE':'EK','UAL':'UA',
+  // v23769 - AIR NORTH'S ICAO IS ANT, NOT TIF.
+  //
+  // TIF is not an ICAO airline designator at all. It is absent from the FAA's
+  // three-letter-identifier list (which runs TIA, TIB, TIC, TIE, TIG, TIH,
+  // TIL, TIM, TIN, TIP, TIR, TIS, TIV, TIW, TIX and skips TIF), absent from
+  // Wikipedia's list, and absent from OpenFlights. What TIF actually is, is
+  // the IATA code for Taif airport in Saudi Arabia - an AIRPORT code that
+  // found its way into an airline table, which is very likely how it got here.
+  //
+  // Nothing failed visibly, because no feed emits TIF, so the row waited
+  // instead of misfiring. The cost of leaving it is the opposite one: a real
+  // Air North flight arriving as ANT matches nothing, and the operator line
+  // falls back to the marketing carrier.
+  // KRS dropped for the same reason as TCF and VRD above: it is not an
+  // assigned ICAO designator, and KV has no name anywhere in the repo.
+  // SVR dropped: it is Ural Airlines of Yekaterinburg (IATA U6), which this
+  // board has no branding for and which serves none of its airports. Mapped
+  // to ZX it would have named a Ural flight as Air Canada.
+  'WEN':'WR','WJA':'WS','ANT':'4N','PTR':'PD',
 };
 
 // RJ removed from the AC family — Royal Jordanian is its own carrier; the
