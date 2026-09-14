@@ -161,3 +161,44 @@
 @font-face { font-family:'ABC Ginto Nord Black';   font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-BlackItalic.otf') format('opentype'); }
 @font-face { font-family:'ABC Ginto Nord Ultra';   font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-UltraItalic.otf') format('opentype'); }
 @font-face { font-family:'ABC Ginto Nord Hairline';font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/ginto-nord/ABCGintoNordTrial-HairlineItalic.otf') format('opentype'); }
+
+
+/* ── ABC Areal (Dinamo, 2026-09-14) ──────────────────────────────────────
+   Three families from the same download: Areal, Areal Semi Mono, Areal Mono.
+   Each is registered twice: as a real family with its own weights (for
+   text that asks for 400/500/700), and, the Ginto way, as one named face per
+   weight spanning 1–1000, so a stack can pin a weight the board's !important
+   rules cannot change. WOFF2 only; the TTF/VAR files stay out of the tree. */
+
+/* ABC Areal */
+@font-face { font-family:'ABC Areal'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-Regular.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal'; font-weight:400; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-RegularItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-Medium.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal'; font-weight:500; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-MediumItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-Bold.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal'; font-weight:700; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-BoldItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Regular'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-Regular.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Medium'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-Medium.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Bold'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCAreal-Bold.woff2') format('woff2'); }
+
+/* ABC Areal Semi Mono */
+@font-face { font-family:'ABC Areal Semi Mono'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-Regular.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Semi Mono'; font-weight:400; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-RegularItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Semi Mono'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-Medium.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Semi Mono'; font-weight:500; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-MediumItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Semi Mono'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-Bold.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Semi Mono'; font-weight:700; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-BoldItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Semi Mono Regular'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-Regular.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Semi Mono Medium'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-Medium.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Semi Mono Bold'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealSemiMono-Bold.woff2') format('woff2'); }
+
+/* ABC Areal Mono */
+@font-face { font-family:'ABC Areal Mono'; font-weight:400; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-Regular.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Mono'; font-weight:400; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-RegularItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Mono'; font-weight:500; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-Medium.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Mono'; font-weight:500; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-MediumItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Mono'; font-weight:700; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-Bold.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Mono'; font-weight:700; font-style:italic; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-BoldItalic.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Mono Regular'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-Regular.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Mono Medium'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-Medium.woff2') format('woff2'); }
+@font-face { font-family:'ABC Areal Mono Bold'; font-weight:1 1000; font-style:normal; font-display:swap; src:url('../fonts/abc-areal/ABCArealMono-Bold.woff2') format('woff2'); }
