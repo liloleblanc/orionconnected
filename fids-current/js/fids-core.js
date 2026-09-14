@@ -1541,7 +1541,68 @@ function manageCustomBgUrls() {
     + 'padding:20px;min-width:420px;max-width:600px;max-height:80vh;overflow:auto;'
     + 'font-family:Helvetica,Arial,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,0.6);';
 
-  function render() {
+  // ── v23768 — A SEPARATOR EARNS ITS PLACE ONLY ON ONE LINE ──────────────────
+// A bilingual pair reads "Your Aircraft | Votre Avion" on one line, where the
+// bar is what tells the two apart. Stacked onto two rows the row break already
+// does that, and the bar becomes a mark with no job — stranded at the head of
+// the second line, which is exactly what the v23767 note was complaining about
+// when it chose an ellipsis over wrapping.
+//
+// CSS cannot ask which line a span landed on, so this measures: if the first
+// and last half of a pair sit at different offsetTop, the pair has stacked and
+// the container is marked. The stylesheet hides the separator from there.
+//
+// Cheap on purpose — two reads per pair, no writes unless the state changed,
+// and only over containers that actually hold a pair.
+function _fidsPairSeparators(root) {
+  try {
+    var scope = root || document;
+    var SEL = '.v2-rc-fi-stline, .v2-fi-mlbl, .v2-rc-fi-tlbl, .wxc-title, .g8-pair';
+    var nodes = scope.querySelectorAll(SEL);
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var halves = el.querySelectorAll('.wxc-t-part, .g8-pair-h');
+      if (!halves.length) halves = el.children;
+      if (!halves || halves.length < 2) continue;
+      var a = halves[0].getBoundingClientRect();
+      var b = halves[halves.length - 1].getBoundingClientRect();
+      // a row apart, not a sub-pixel baseline wobble
+      var stacked = Math.abs(b.top - a.top) > Math.max(4, a.height * 0.5);
+      if (el.classList.contains('is-stacked') !== stacked) {
+        el.classList.toggle('is-stacked', stacked);
+      }
+    }
+  } catch (e) {}
+}
+try { if (typeof window !== 'undefined') window._fidsPairSeparators = _fidsPairSeparators; } catch (e) {}
+
+// One pass per settled frame. The board re-renders constantly, so this is
+// scheduled rather than called inline: a rAF collapses a burst of renders into
+// a single measurement, and a MutationObserver catches the renders that do not
+// route through render() at all (the gate ad deck swaps its own markup).
+var _fidsPairT = null;
+function _fidsSchedulePairPass() {
+  if (_fidsPairT) return;
+  _fidsPairT = requestAnimationFrame(function () {
+    _fidsPairT = null;
+    _fidsPairSeparators(document);
+  });
+}
+try {
+  if (typeof window !== 'undefined' && typeof MutationObserver === 'function' && !window._fidsPairMO) {
+    window._fidsPairMO = new MutationObserver(_fidsSchedulePairPass);
+    var _startPairMO = function () {
+      if (!document.body) return;
+      window._fidsPairMO.observe(document.body, { childList: true, subtree: true, characterData: true });
+      _fidsSchedulePairPass();
+    };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _startPairMO);
+    else _startPairMO();
+    window.addEventListener('resize', _fidsSchedulePairPass);
+  }
+} catch (e) {}
+
+function render() {
     var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">'
       +   '<h3 style="margin:0;font-size:16px;font-weight:700;">Custom Background URLs</h3>'
       +   '<button onclick="document.getElementById(\'customBgManager\').remove()" style="background:transparent;border:none;color:#a1a1aa;font-size:22px;cursor:pointer;line-height:1;">&times;</button>'
@@ -40126,8 +40187,11 @@ function _buildGateAdSlideList() {
               var _t = _WA[_ls[_wi2]] || _WA.en;
               if (!_t || _seen[_t]) continue; _seen[_t] = 1; _w.push(_t);
             }
-            return _w.join(' · ');
-          } catch (e) { return _WA.en + ' · ' + _WA.fr; }
+            // v23768 — the halves and the separator are addressable, so the
+            // separator can be dropped when the pair stacks onto two rows.
+            return _w.map(function (t) { return '<span class="g8-pair-h">' + t + '</span>'; })
+                     .join('<span class="g8-pair-sep"> · </span>');
+          } catch (e) { return _WA.en + '<span class="g8-pair-sep"> · </span>' + _WA.fr; }
         })(),
         // v23412 — DON'T PRINT THE NAME TWICE.
         // Most
