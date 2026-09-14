@@ -1567,6 +1567,12 @@ function _fidsPairSeparators(root) {
       // in vh/cqw and moves with the screen.
       if (el.classList.contains('g8-pair') && el.closest && el.closest('.g8-sign') && el.parentElement) {
         var col = el.parentElement;
+        // v23773 — a word that shares a row with its number (.g8-sign-row)
+        // is measured against the COLUMN, less the number and the gap: the
+        // row itself is as wide as its content, so measured against it the
+        // word always "fits" while it runs under the digits.
+        var rowEl = col.classList.contains('g8-sign-row') ? col : null;
+        if (rowEl && rowEl.parentElement) col = rowEl.parentElement;
         var base = parseFloat(el.getAttribute('data-g8-base')) || 0;
         if (!base) {
           el.style.removeProperty('font-size');
@@ -1581,6 +1587,10 @@ function _fidsPairSeparators(root) {
           var cur = parseFloat(getComputedStyle(el).fontSize) || base;
           var cs = getComputedStyle(col);
           var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+          if (rowEl) {
+            var sib = rowEl.querySelector('.g8-sign-value');
+            if (sib && sib !== el) avail -= sib.getBoundingClientRect().width + (parseFloat(getComputedStyle(rowEl).columnGap) || 0);
+          }
           var need = 0, kids = el.children;
           for (var k = 0; k < kids.length; k++) {
             // the separator's room is its margins (0 .22em), which a rect leaves out
@@ -12192,6 +12202,18 @@ function uxgGateHtml(ctx) {
   // WELCOME STRIP for the boarding takeovers
   // — like the physical AC gate sign's header:
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
+  // v23773 — THE PHOTO-ID REMINDER, in one place: Porter, once general
+  // boarding is on (never during pre-boarding — the same five-minute rule
+  // the sign uses). The strip prints it under NOW BOARDING; the final-call
+  // header prints it under FINAL CALL, so it does not vanish for the last
+  // minutes, when it matters most.
+  function _pdIdNote(cls) {
+    try {
+      if (airlineCode !== 'PD' || (minsToDep > (_boardLeadShown - 5))) return '';
+      var t = _gateLbl('photoId', _frF, function (w) { return w; }, ' <span class="g8-bw-sep">|</span> ');
+      return t ? '<div class="g8-bw-note' + (cls ? ' ' + cls : '') + '">' + t + '</div>' : '';
+    } catch (e) { return ''; }
+  }
   function _boardWelcomeStripHtml(_stripState) {
     // WHITE-path emblems vanish on the white strip (the owner: United missing its
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
@@ -12366,8 +12388,15 @@ function uxgGateHtml(ctx) {
     // doesn't restart the animation at 0°
     // — it was, 0% of the time it was on screen).
     var _bwSpin = ' style="--rond-delay:-' + ((Date.now() / 1000) % 7).toFixed(2) + 's"';
+    // v23773 — THE PHOTO-ID REMINDER RIDES THE STRIP, under NOW BOARDING.
+    // It used to sit in the priority column's note; the owner's picture puts
+    // it here, on the band every passenger reads first, in an attention
+    // colour that is not red. Porter's general phase only — the same
+    // window the sign's note used — so it never prints during
+    // pre-boarding, and never for a carrier that does not ask for it.
+    var _bwNote = (String(_stripState || '') === 'boarding') ? _pdIdNote() : '';
     var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="g8-bw-text">' + _bwMidWords + '</div>'
+      + '<div class="g8-bw-text">' + _bwMidWords + _bwNote + '</div>'
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
     return '<div class="g8-board-welcome g8-bw-clocked">'
       + _bwClock.replace('::MID::', '<div class="g8-bw-mid">' + _bwMid + '</div>')
@@ -13060,20 +13089,22 @@ function uxgGateHtml(ctx) {
   // A word that is the same in both languages — Zones — is printed once;
   // the pair only doubles when the second language actually differs.
   function _g8SignPair(key, keepDup, short) {
-    var halves = [];
-    var html = _gateLbl(key, _frF,
-      function (w) { halves.push(w); return '<span class="g8-pair-h">' + w + '</span>'; },
-      '<span class="g8-pair-sep">|</span>', !!keepDup);
+    var halves = [], langsOf = [];
+    _gateLbl(key, _frF, function (w, i, lang) { halves.push(w); langsOf.push(lang || ''); return w; }, '', !!keepDup);
+    if (!halves.length) return '';
     // The mock writes 'PorterReserve | Réserve': when the second half repeats
     // the first half's brand prefix, it drops it, so a cabin pair holds one
     // line. Only asked for on cabin names; every other pair is left whole.
     if (short && halves.length === 2) {
       var m = /^([A-Z][a-z]+)(?=[A-Z])/.exec(halves[0]);
-      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) {
-        html = html.replace('<span class="g8-pair-h">' + halves[1] + '</span>',
-                            '<span class="g8-pair-h">' + halves[1].slice(m[1].length) + '</span>');
-      }
+      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) halves[1] = halves[1].slice(m[1].length);
     }
+    // v23773 — each half carries its language, so the French half can be
+    // coloured wherever it sits: second at most airports, FIRST at the
+    // French-first ones (YUL, YQB…). Position says nothing about language.
+    var html = halves.map(function (w, i) {
+      return '<span class="g8-pair-h"' + (langsOf[i] ? ' lang="' + langsOf[i] + '"' : '') + '>' + w + '</span>';
+    }).join('<span class="g8-pair-sep">|</span>');
     return html;
   }
   // The lane line as a pair, like the titles: each half one unit, the pair on
@@ -13145,22 +13176,27 @@ function uxgGateHtml(ctx) {
   }
   function _g8SignCol(side, S) {
     var h = '<div class="g8-board-col ' + (side === 'left' ? 'now' : 'next') + ' g8-sign-col g8-sign-' + side
-      + ((S.note || S.roster) ? ' has-note' : '') + (S.marks ? ' has-marks' : '') + '">';
+      + ((S.note || S.roster) ? ' has-note' : '') + (S.roster ? ' has-roster' : '') + '">';
     // g8-pair puts these on _fidsPairSeparators' radar, so a pair that has
     // to go to two rows loses its bar. g8-board-lane on the lane line gives it
     // back the nowrap armour and the stacking guard it always had.
     if (S.title) h += '<div class="g8-sign-title g8-pair">' + S.title + '</div>';
     if (S.sub) h += '<div class="g8-sign-sub g8-pair">' + S.sub + '</div>';
-    if (S.kicker) h += '<div class="g8-sign-kicker g8-pair">' + S.kicker + '</div>';
     if (S.value) {
       var _txt = _g8GrpValCls(S.value);
-      h += '<div class="g8-sign-value' + _txt + (_txt ? ' g8-pair' : '') + '">' + S.value
+      var _val = '<div class="g8-sign-value' + _txt + (_txt ? ' g8-pair' : '') + '">' + S.value
         + ((side === 'right' && !_txt) ? '<span class="g8-sign-valarrow">' + _g8ArrowGlyph() + '</span>' : '')
         + '</div>';
+      // v23773 — the group word and its number share ONE row, the word to
+      // the left of the number (Rows | Rangées  1–7), as the owner's picture
+      // draws it. Only a NUMERAL earns the row: a word value (the final
+      // call's All | Toutes) keeps its own size under its word, or the
+      // row's numeral size would blow it past the column.
+      h += (S.label && !_txt) ? '<div class="g8-sign-row"><div class="g8-sign-label g8-pair">' + S.label + '</div>' + _val + '</div>'
+         : ((S.label ? '<div class="g8-sign-label g8-pair">' + S.label + '</div>' : '') + _val);
     }
     if (S.note) h += '<div class="g8-sign-note">' + S.note + '</div>';
     if (S.roster) h += '<div class="g8-sign-roster">' + S.roster + '</div>';
-    if (S.marks) h += '<div class="g8-sign-marks">' + S.marks + '</div>';
     if (S.lanes) h += '<div class="g8-sign-lanes g8-pair">' + S.lanes + '</div>';
     if (S.next) h += '<div class="g8-sign-next">' + S.next + '</div>';
     h += '<span class="g8-sign-arrow l">' + _g8ArrowDisc('dl') + '</span>'
@@ -13337,8 +13373,8 @@ function uxgGateHtml(ctx) {
             // Air Canada family and WestJet: priority Zones 1 • 2 on the left
             // for the whole window; the called zone on the right, with the
             // zones still to come as the Next line.
-            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), kicker: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair('zones'), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair('zones') : '', value: _acZonesVal,
+            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), label: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair('zones'), value: _acZonesVal,
                    lanes: _g8SignLanes('3 \u2022 4', true),
                    next: _g8SignNext('zones', _comingVal) };
           } else if (airlineCode === 'PD') {
@@ -13349,19 +13385,24 @@ function uxgGateHtml(ctx) {
             var _pdPre = minsToDep > (_boardLeadShown - 5);
             // The roster is a LIST and wraps in its own slot — poured into a
             // nowrap line it lost three of its five groups. The photo-ID
-            // reminder rides the general phase, where there is room for it.
+            // reminder now rides the strip (see _boardWelcomeStripHtml); the
+            // tier marks are off the sign — the owner's picture has neither.
             _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true),
-                   note: _pdPre ? _g8SignLines('preboard') : _g8SignLines('boardConv') + _g8SignLines('photoId'),
+                   note: _pdPre ? _g8SignLines('preboard') : _g8SignLines('boardConv'),
                    roster: _pdPre ? (_gateLbl1('preboardList', _frF) || '') : '',
-                   marks: _pdPrioMarksHtml(),
                    lanes: _g8SignLanes('1 \u2022 2', true) };
             // During pre-boarding the Classic panel is not being called yet;
-            // it says so, the way the retired cabin strip did.
-            _R = { title: _g8SignPair('pdClassic', false, true), sub: _g8SignPair('rows'), value: nowVal,
-                   note: _pdPre ? _g8SignLines('boardSoon') : '',
-                   marks: _pdClassicMark(),
-                   lanes: _g8SignLanes('3 \u2022 4', true),
-                   next: _g8SignNext('rows', _comingVal) };
+            // it says so. Once general boarding is on, the panel is titled
+            // General boarding with the cabin under it, and the row band
+            // shares a row with its word.
+            _R = _pdPre
+              ? { title: _g8SignPair('pdClassic', false, true), label: _g8SignPair('rows'), value: nowVal,
+                  note: _g8SignLines('boardSoon'),
+                  lanes: _g8SignLanes('3 \u2022 4', true),
+                  next: _g8SignNext('rows', _comingVal) }
+              : { title: _g8SignPair('genboard'), sub: _g8SignPair('pdClassic', false, true), label: _g8SignPair('rows'), value: nowVal,
+                  lanes: _g8SignLanes('3 \u2022 4', true),
+                  next: _g8SignNext('rows', _comingVal) };
           } else if (airlineCode === 'PB') {
             // PAL's open flow: pre-boarding for the first stretch of the
             // window, then the one general call. One lane.
@@ -13382,7 +13423,7 @@ function uxgGateHtml(ctx) {
             // Zones, not Group — Air North, for one.
             var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).label === 'Zone') ? 'zones' : 'groupLabel';
             _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair(_gkey), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair(_gkey) : '', value: String(nowVal),
+            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair(_gkey), value: String(nowVal),
                    lanes: _g8SignLanes('3 \u2022 4', true),
                    next: _g8SignNext(_gkey, nextVal) };
           }
@@ -13436,7 +13477,7 @@ function uxgGateHtml(ctx) {
       // the welcome sat, more room for the lane panels below.
       finalHtml = '<div class="g8-final active">'
         + _boardInfoRowHtml('final')
-        + '<div class="g8-final-hdr">' + finalHdr + '</div>'
+        + '<div class="g8-final-hdr">' + finalHdr + _pdIdNote('g8-final-note') + '</div>'
         // v23771 — the final call goes through the one sign as well. Left is
         // the priority group as during boarding; right is everyone: all the
         // zones (AC family, WestJet's 2 – 9), all rows for Porter, the general
@@ -13448,17 +13489,17 @@ function uxgGateHtml(ctx) {
           var _prioT = _g8SignPair('priority');
           var _L, _R;
           if (_fcAcFam) {
-            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), kicker: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair('zones'), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair('zones') : '', value: _fcExpress ? '3 \u2022 4' : '3 \u2022 4 \u2022 5 \u2022 6',
+            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), label: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair('zones'), value: _fcExpress ? '3 \u2022 4' : '3 \u2022 4 \u2022 5 \u2022 6',
                    lanes: _g8SignLanes('3 \u2022 4', true) };
           } else if (airlineCode === 'WS' || airlineCode === 'WR') {
-            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), kicker: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair('zones'), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair('zones') : '', value: _fcNext, lanes: _g8SignLanes('3 \u2022 4', true) };
+            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), label: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair('zones'), value: _fcNext, lanes: _g8SignLanes('3 \u2022 4', true) };
           } else if (airlineCode === 'PD') {
-            _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true), note: _g8SignLines('boardConv') + _g8SignLines('photoId'),
-                   marks: _pdPrioMarksHtml(), lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('pdClassic', false, true), sub: _g8SignPair('rows'), value: _g8SignPair('all'),
-                   marks: _pdClassicMark(), lanes: _g8SignLanes('3 \u2022 4', true) };
+            _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true), note: _g8SignLines('boardConv'),
+                   lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8SignPair('genboard'), sub: _g8SignPair('pdClassic', false, true), label: _g8SignPair('rows'), value: _g8SignPair('all'),
+                   lanes: _g8SignLanes('3 \u2022 4', true) };
           } else if (airlineCode === 'PB') {
             _L = { title: _prioT, note: _g8SignLines('preboard'), lanes: _g8SignLanes('1', false) };
             _R = { title: _g8SignPair('boarding'), value: _g8SignPair('genboard'), note: _g8SignLines('allPax'),
@@ -13466,7 +13507,7 @@ function uxgGateHtml(ctx) {
           } else {
             var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).label === 'Zone') ? 'zones' : 'groupLabel';
             _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair(_gkey), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair(_gkey) : '', value: _g8SignPair('all'),
+            _R = { title: _g8SignPair('genboard'), sub: _g8CabinPair(airlineCode, 1), label: _g8SignPair(_gkey), value: _g8SignPair('all'),
                    lanes: _g8SignLanes('3 \u2022 4', true) };
           }
           return _g8SignHtml(_L, _R);
@@ -23657,7 +23698,7 @@ const LS = {
   status:  { en:'Status',fr:'Statut',es:'Estado',de:'Status',it:'Stato',pt:'Status',ja:'状態',zh:'状态',ar:'الحالة' },
   boardsIn: { en:'BOARDS IN',fr:'EMBARQUEMENT DANS',es:'EMBARQUE EN',de:'BOARDING IN',it:'IMBARCO TRA',pt:'EMBARQUE EM',ja:'搭乗まで',zh:'登机倒计时',ar:'الصعود خلال' },
   depBoards: { en:'Departs in',fr:'Départ dans',es:'Sale en',de:'Abflug in',it:'Parte tra',pt:'Sai em',ja:'出発まで',zh:'出发倒计时',ar:'يغادر خلال' },
-  nowBoarding:{ en:'NOW BOARDING',fr:'EMBARQUEMENT EN COURS',es:'EMBARCANDO AHORA',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
+  nowBoarding:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO AHORA',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
   arrivesAt: { en:'Arrives',fr:'Arrivée',es:'Llega',de:'Ankunft',it:'Arrivo',pt:'Chega',ja:'到着',zh:'到达',ar:'وصول' },
   flightDur: { en:'flight',fr:'de vol',es:'de vuelo',de:'Flug',it:'di volo',pt:'de voo',ja:'飛行',zh:'飞行',ar:'الرحلة' },
   duration:  { en:'Duration',fr:'Durée',es:'Duración',de:'Dauer',it:'Durata',pt:'Duração',ja:'所要時間',zh:'飞行时间',ar:'المدة' },
@@ -24542,7 +24583,7 @@ var _GATE_LBL = {
   acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
   welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
-  priority:  { en:'Priority',      fr:'Priorité',       es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
+  priority:  { en:'Priority',      fr:'Prioritaire',    es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
   rows:      { en:'Rows',          fr:'Rangées',        es:'Filas',        de:'Reihen',      it:'File',        pt:'Fileiras',   ja:'列',        zh:'排',     ar:'صفوف' },
   timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
@@ -24599,8 +24640,8 @@ var _GATE_LBL = {
   // The ID reminder. Kept generic rather than Porter-branded: it is an airport
   // instruction, not a product, and it applies at every gate the sign serves.
   photoId: {
-    en:'Have your photo ID ready',
-    fr:'Ayez votre pièce d’identité avec photo prête',
+    en:'Have your ID ready for presentation',
+    fr:'Veuillez avoir votre pièce d’identité prête',
     es:'Tenga su identificación con foto lista',
     de:'Halten Sie Ihren Lichtbildausweis bereit',
     it:'Tenete pronto un documento con foto',
@@ -24668,7 +24709,7 @@ var _GATE_LBL = {
   distance: { en:'Distance', fr:'Distance', es:'Distancia', de:'Entfernung', it:'Distanza', pt:'Distância', ja:'距離', zh:'距离', ar:'المسافة' },
   feetUnit: { en:'Feet', fr:'Pieds', es:'Pies', de:'Fuß', it:'Piedi', pt:'Pés', ja:'フィート', zh:'英尺', ar:'قدم' },
   estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
-  nowBoarding: { en:'Now Boarding', fr:'Embarquement en cours', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
+  nowBoarding: { en:'Now Boarding', fr:'Embarquement', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
   minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
  // Clock label for the boarding screen's white strip. the owner's concept wrote
@@ -24765,7 +24806,7 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     var _fi = picked.indexOf('fr');
     if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
   }
-  var seen = Object.create(null), parts = [];
+  var seen = Object.create(null), parts = [], partLangs = [];
   for (var i = 0; i < picked.length && parts.length < 2; i++) {
     var w = o[picked[i]];
     if (!w) continue;
@@ -24776,14 +24817,16 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     // 'Zones | Zones', per his stated law ('display it twice … symmetry').
     if (!keepDup && seen[k]) continue;   // 'Gate | Gate' helps nobody (chips)
     seen[k] = 1;
-    parts.push(w);
+    parts.push(w); partLangs.push(picked[i]);
   }
-  if (!parts.length) parts.push(o.en);
+  if (!parts.length) { parts.push(o.en); partLangs.push('en'); }
   // v23161 — wrap() now receives the index. The lane labels need their two
   // halves in addressable spans so they can STACK when they cannot share a
   // line; without that the pair is bare text and CSS has nothing to move.
   // Existing callers that ignore the second argument are unaffected.
-  if (typeof wrap === 'function') return parts.map(function (w, i) { return wrap(w, i); }).join(sep || '');
+  // v23773 — and the language of the half (third argument), so a rule can
+  // find the French half wherever the airport puts it.
+  if (typeof wrap === 'function') return parts.map(function (w, i) { return wrap(w, i, partLangs[i]); }).join(sep || '');
   return parts.join(sep || ' ');
 }
 // Lane line as a bilingual pair with the lane number in BOTH halves
@@ -24903,7 +24946,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23771';
+var FIDS_BUILD_TAG = 'v23773';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

@@ -132,7 +132,10 @@ test('a tile is never white-forced on the Welcome card', () => {
   const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
   const at = CSS.lastIndexOf('TILES ARE NEVER WHITE-FORCED ON THE WELCOME CARD');
   assert.ok(at >= 0, 'the exemption block must exist');
-  const rules = CSS.slice(at).replace(/\/\*[\s\S]*?\*\//g, '');
+  // bounded to this block: the stylesheet is append-only, so the next
+  // versioned block header ends it
+  const end = CSS.indexOf('\n/* ═', at);
+  const rules = CSS.slice(at, end > at ? end : undefined).replace(/\/\*[\s\S]*?\*\//g, '');
   const sels = [...rules.matchAll(/^html[^{]*?(?=\s*[{,])/gm)].map((m) => m[0]);
   assert.ok(sels.length >= 3, 'the exemption must cover the gate ad logo and the ad renderer image');
   for (const s of sels) {
