@@ -1,7 +1,7 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v23768 — AN EMBLEM THE ROW CANNOT REACH IS AN EMBLEM THAT IS NOT THERE.
+// v23769 — AN EMBLEM THE ROW CANNOT REACH IS AN EMBLEM THAT IS NOT THERE.
 //
 // Two maps hold the same artwork for two different surfaces:
 //

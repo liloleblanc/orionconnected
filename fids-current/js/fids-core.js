@@ -23041,7 +23041,7 @@ const IATA_TO_EMBLEM = {
   'JV': '/logos/airlines/canadian-regional/bearskin-emblem.svg',      // Bearskin bear-paw emblem
   'WT': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
   'NSA': '/logos/airlines/canadian-regional/north-star-emblem.svg',   // North Star Air emblem
-  // v23768 — three more carriers arriving at the hole the LY note above
+  // v23769 — three more carriers arriving at the hole the LY note above
   // describes: a wordmark but no tile, so mkLogo() reached `return ''` and the
   // emblem slot came out EMPTY. Their artwork was never missing — each tile is
   // registered in AIRLINE_EMBLEM_FILES and resolves 200 for the gate ORB, which
@@ -24438,7 +24438,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23768';
+var FIDS_BUILD_TAG = 'v23769';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
