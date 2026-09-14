@@ -19391,3 +19391,33 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-arrow.l { left: 3% !important; right: auto !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-arrow.r { right: 3% !important; left: auto !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-disc { width: 100% !important; height: 100% !important; display: block !important; }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23770 — TILES ARE NEVER WHITE-FORCED ON THE WELCOME CARD.
+
+   The Welcome slide's fallback logo is the carrier's emblem from
+   AIRLINE_EMBLEM_FILES, drawn through the gate ad renderer's white-force
+   filter — brightness(0) invert(1), meant for a symbol on a transparent
+   ground. A full-bleed TILE (a coloured square with the mark knocked out of
+   it) has no transparent ground, so the filter turns the whole square white:
+   the owner's Canadian North gate showed a white slab over the card, and
+   dragging it showed the red tile underneath. The same happened for Breeze
+   in v23100-something, and was answered then by naming Breeze in
+   _FB_WELCOME_LOGO; since then Air North, Air New Zealand, Qatar, Pacific
+   Coastal, Calm Air and Canadian North all gained tiles, and none was named.
+
+   The folder is the treatment, as it is everywhere else on the board: a
+   file from /logos/airline-tiles/ is a finished tile and is never filtered.
+   Rounded like the orb so it sits as a mark, not a swatch. ×14 over the ×12
+   per-airline exemption that Flair carries. _FB_WELCOME_LOGO still wins for
+   carriers that want something other than their tile there.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) img.gad-ad-logo[src*="/logos/airline-tiles/"],
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .axr-logo img[src*="/logos/airline-tiles/"],
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) img.axr-hotel-svg[src*="/logos/airline-tiles/"] {
+  filter: none !important;
+  -webkit-filter: none !important;
+  border-radius: 16% !important;
+  object-fit: cover !important;
+}
