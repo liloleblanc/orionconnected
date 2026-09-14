@@ -70,8 +70,33 @@ test('it removes every image rather than swapping one for another', () => {
   // The screen and the panel both get a whole new background, not a patch.
   assert.match(BLOCK, /\.bidsv3\.bidsv2-screen \{\s*background: #eef3f8 !important;/,
     'the ground must be the flat tone the images sat over');
-  assert.match(BLOCK, /\.bidsv3 \.bidsv2-carousel-block \{\s*background: var\(--bids-bar-grad/,
-    'the panel must take the belt bar gradient — colours the renderer already stamps');
+  assert.match(BLOCK, /\.bidsv3 \.bidsv2-carousel-block \{\s*background: #D9696B !important;/,
+    "the panel must be the mock's flat salmon — a colour, not a var that could carry an image");
+});
+
+test('the belt sign is built to the mock: band, disc, number in the suitcase', () => {
+  // The pictogram is a real element the renderer emits, gated on the flag,
+  // so the prior design never receives it and the CSS carries no url().
+  assert.match(SRC, /var _crslArt = _bidsV3On\s*\?\s*'<img class="bidsv2-carousel-art" src="\/logos\/symbols-utility\/baggage-claim-disc\.svg"/,
+    'the renderer must emit the art on the b3 surface only');
+  assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', 'logos', 'symbols-utility', 'baggage-claim-disc.svg')),
+    'the disc SVG must be on disk');
+  // Art and number share one grid cell — that is what puts the number in
+  // the suitcase without an offset.
+  assert.match(RULES, /\.bidsv2-carousel-art \{[^}]*grid-row: 3 !important;/);
+  assert.match(RULES, /\.bidsv2-carousel-number \{[^}]*grid-row: 3 !important;/);
+  assert.match(RULES, /\.bidsv2-carousel-number \{[^}]*--crsl-num-cap: 22vh/,
+    'the numeral ceiling must come down to fit inside the suitcase, via the var the fitter reads');
+  // Both languages in the band, one under the other.
+  assert.match(RULES, /\.bidsv2-carousel-label \{[^}]*grid-row: 1 !important;/);
+  assert.match(RULES, /\.bidsv2-carousel-block::after \{[^}]*grid-row: 2 !important;/);
+  // A single-language board must still be able to drop the FR bar: the
+  // display MUST stay routed through --crsl-l2-disp, or every EN/ES airport
+  // grows a phantom second line.
+  assert.match(RULES, /\.bidsv2-carousel-block::after \{[^}]*display: var\(--crsl-l2-disp, block\) !important;/,
+    'the second-language bar must keep honouring --crsl-l2-disp');
+  assert.match(RULES, /\[style\*="--crsl-l2-disp:none"\] \.bidsv2-carousel-label \{[^}]*padding-bottom/,
+    'and the label must close the band when that bar is gone');
 });
 
 test('it is scoped to the b3 surface and nothing else', () => {
@@ -96,5 +121,8 @@ test('the correct French is still rendered underneath', () => {
   assert.match(SRC, /bagClaim:\{ en:'Baggage claim',fr:'Retrait des bagages'/,
     "LS.bagClaim.fr must be 'Retrait des bagages'");
   assert.doesNotMatch(RULES, /content:\s*['"]/, 'the block must not replace the label text');
-  assert.doesNotMatch(RULES, /--crsl-l2/, 'nor reach into the second-language var');
+  // --crsl-l2 carries the WORDS and must not be read here; --crsl-l2-disp is
+  // the separate show/hide toggle, which the band layout is required to
+  // honour, so it is the one exception.
+  assert.doesNotMatch(RULES, /--crsl-l2(?!-disp)/, 'nor reach into the second-language words');
 });

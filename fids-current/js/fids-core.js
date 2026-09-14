@@ -18710,8 +18710,23 @@ const gView = document.getElementById('gateView');
               const _v = _m ? _m[2] : String(subScreenVal || '');
               return (_v && _v !== '—') ? _v : '';
             })();
+            // v23769 — THE BELT SIGN, FROM THE OWNER'S MOCK. On the b3 surface
+            // the panel carries a disc with the baggage-claim pictogram, and
+            // the belt number sits INSIDE the suitcase on that disc. The art
+            // is a real element rather than a CSS background so the flat
+            // rule ("no background images") stays literally true, and so the
+            // number stays its own div for the fitter. Grid rows in CSS put
+            // the art and the number in the same cell; the SVG centres the
+            // suitcase body on the disc, so centring the number on the art
+            // centres it in the suitcase with no offset to tune. Gated on
+            // the flag exactly like the class stamp: the prior design never
+            // receives it.
+            var _crslArt = _bidsV3On
+              ? '<img class="bidsv2-carousel-art" src="/logos/symbols-utility/baggage-claim-disc.svg" alt="" draggable="false" onerror="this.remove()">'
+              : '';
             return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
               + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
+              + _crslArt
               + '<div class="bidsv2-carousel-number" data-len="' + String(_crslNum).length + '">' + _crslNum + '</div>'
               + (_mcoBagTerm ? '<div class="bidsv2-carousel-terminal">Terminal ' + _mcoBagTerm + '</div>' : '')
               + '</div>';

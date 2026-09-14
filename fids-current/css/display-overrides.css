@@ -19098,37 +19098,142 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
 /* ═══════════════════════════════════════════════════════════════════════
    v23769 — FLAT BIDS: COLOURS ONLY, NO PATTERN ART, FOR NOW.
+   THE BELT SIGN, FROM THE OWNER'S MOCK.
 
    The v23327 block above paints two images per belt — a ground texture
    behind the whole screen and an accent artwork filling the belt panel —
    and stamps a white numeral with a black outline on top so it survives
-   whatever the artwork is doing underneath. The direction now is the other
-   way round: colours only and no pictures, for the time being.
+   whatever the artwork is doing underneath. The direction now is colours
+   only and no pictures, and the panel is built to the approved mock:
 
-   This block removes every image from the b3 surface and lets the colours
-   carry it: the ground is the flat tone the images always sat over, and the
-   panel wears the belt's own bar gradient — the same two colours the flight
-   bars already use, so panel and rows read as one palette and belts still
-   differ at every airport. With nothing behind the type, the outlines and
-   shadows come off; a flat surface does not need armour.
+     a dark-red band across the top carrying BOTH languages, one under the
+     other; a salmon body; a marigold disc with the baggage-claim pictogram
+     on it; and the belt number sitting INSIDE the suitcase, in deep indigo.
 
-   Nothing structural changes. The label, the second-language ::after, the
-   numeral and the fitter are untouched, and both languages keep coming from
-   LS.bagClaim — so the words on the panel are the board's own, with nothing
-   painted over them. Scoped to .bidsv3 exactly as v23327 is; ×16 to beat
-   its ×14. Remove this block and the artwork returns.
+   The pictogram is a real <img> the renderer emits (bidsv2-carousel-art),
+   not a CSS background, so "no background images" stays literally true.
+   The block becomes a four-row grid: band EN, band FR, disc, terminal —
+   and the art and the number share the third cell, both centred, so the
+   number lands in the suitcase without an offset to tune (the SVG centres
+   the suitcase body on the disc for exactly that reason).
+
+   Kept from before, on purpose: the second-language ::after still displays
+   through --crsl-l2-disp, so a board with one language loses the FR bar and
+   the band closes up (the label takes the bottom padding instead). The
+   numeral's ceiling still lives in --crsl-num-cap so the fitter reads the
+   same constant. Nothing else is touched — the words come from LS.bagClaim,
+   with nothing painted over them.
+
+   Scoped to .bidsv3 exactly as v23327 is; ×16 to beat its ×14. Remove this
+   block and the pattern design returns.
    ═══════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3.bidsv2-screen {
   background: #eef3f8 !important;
 }
+
+/* The card: salmon body, no border, everything clipped to the radius */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block {
-  background: var(--bids-bar-grad, linear-gradient(100deg, #0d2a52 0%, #2769e9 100%)) !important;
-  box-shadow: 0 18px 50px rgba(6, 40, 96, .22) !important;
+  background: #D9696B !important;
+  border: 0 !important;
+  outline: none !important;
+  border-radius: 26px !important;
+  overflow: hidden !important;
+  box-shadow: 0 18px 50px rgba(80, 20, 30, .28) !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-template-rows: auto auto 1fr auto !important;
+  align-items: center !important;
+  justify-items: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::before {
   content: none !important;
   display: none !important;
 }
+
+/* The band, row 1: first language */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-label {
+  grid-row: 1 !important;
+  grid-column: 1 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: #8A1C2B !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-size: 5.4vh !important;
+  font-weight: 800 !important;
+  line-height: 1.12 !important;
+  text-align: center !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  padding: 2.6vh 4% .3vh !important;
+  margin: 0 !important;
+  align-self: stretch !important;
+}
+/* One language only: the FR bar is gone, so the label closes the band */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block[style*="--crsl-l2-disp:none"] .bidsv2-carousel-label {
+  padding-bottom: 2.6vh !important;
+}
+
+/* The band, row 2: second language, from the board's own --crsl-l2 */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::after {
+  grid-row: 2 !important;
+  grid-column: 1 !important;
+  display: var(--crsl-l2-disp, block) !important;
+  position: static !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  background: #8A1C2B !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  font-size: 5.4vh !important;
+  font-weight: 800 !important;
+  line-height: 1.12 !important;
+  text-align: center !important;
+  padding: .3vh 4% 2.6vh !important;
+  margin: 0 !important;
+}
+
+/* Row 3: the disc, and the number in the suitcase on it */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-art {
+  grid-row: 3 !important;
+  grid-column: 1 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  display: block !important;
+  width: min(84%, 62vh) !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  z-index: 1 !important;
+  pointer-events: none !important;
+  margin: 2vh 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-number {
+  grid-row: 3 !important;
+  grid-column: 1 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  z-index: 2 !important;
+  --crsl-num-cap: 22vh !important;
+  color: #2C1A6B !important;
+  -webkit-text-fill-color: #2C1A6B !important;
+  line-height: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+}
+
+/* Row 4, MCO only: the terminal line, dark on the salmon body */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-terminal {
+  grid-row: 4 !important;
+  grid-column: 1 !important;
+  color: #2C1A6B !important;
+  -webkit-text-fill-color: #2C1A6B !important;
+  padding: 0 0 2vh !important;
+}
+
+/* On a flat surface the type needs no armour */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-label,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::after,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-terminal,

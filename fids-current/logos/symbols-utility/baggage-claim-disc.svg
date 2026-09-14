@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000">
+  <!-- Baggage-claim disc for the b3 belt panel (v23769). Geometry taken from
+       the licensed Vecteezy icon 34544733 (Pro licence held), recoloured to
+       the approved mock: flat marigold disc, salmon suitcase, cream handle,
+       darker-marigold conveyor dots. The suitcase body is centred on the disc
+       so a belt number centred on this art lands inside the suitcase. -->
+  <circle cx="500" cy="500" r="490" fill="#F4C15C"/>
+  <g transform="translate(500 500) scale(1.2) translate(-500 -500)">
+    <!-- handle: a rounded outline whose lower half sits behind the body -->
+    <rect x="368" y="235" width="264" height="170" rx="46" fill="none" stroke="#F6EBD3" stroke-width="32"/>
+    <!-- body -->
+    <rect x="319" y="338" width="362" height="338" rx="26" fill="#E27A6E"/>
+    <!-- side panels -->
+    <rect x="211" y="338" width="78" height="338" rx="22" fill="#E27A6E"/>
+    <rect x="711" y="338" width="78" height="338" rx="22" fill="#E27A6E"/>
+    <!-- conveyor -->
+    <circle cx="255" cy="750" r="29" fill="#E3A455"/>
+    <circle cx="353" cy="750" r="29" fill="#E3A455"/>
+    <circle cx="451" cy="750" r="29" fill="#E3A455"/>
+    <circle cx="549" cy="750" r="29" fill="#E3A455"/>
+    <circle cx="647" cy="750" r="29" fill="#E3A455"/>
+    <circle cx="745" cy="750" r="29" fill="#E3A455"/>
+  </g>
+</svg>
