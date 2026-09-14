@@ -24542,7 +24542,7 @@ var _GATE_LBL = {
   acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
   welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
-  priority:  { en:'Priority',      fr:'Priorité',       es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
+  priority:  { en:'Priority',      fr:'Prioritaire',    es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
   rows:      { en:'Rows',          fr:'Rangées',        es:'Filas',        de:'Reihen',      it:'File',        pt:'Fileiras',   ja:'列',        zh:'排',     ar:'صفوف' },
   timeIn:    { en:'Time in',       fr:'Heure à',        es:'Hora en',      de:'Zeit in',     it:'Ora a',       pt:'Hora em',    ja:'現地時刻',  zh:'当地时间', ar:'التوقيت في' },
   time:      { en:'Time',          fr:'Heure',          es:'Hora',         de:'Zeit',        it:'Ora',         pt:'Hora',       ja:'時刻',      zh:'时间',   ar:'الوقت' },
@@ -24600,7 +24600,7 @@ var _GATE_LBL = {
   // instruction, not a product, and it applies at every gate the sign serves.
   photoId: {
     en:'Have your photo ID ready',
-    fr:'Ayez votre pièce d’identité avec photo prête',
+    fr:'Veuillez avoir votre identification photo disponible',
     es:'Tenga su identificación con foto lista',
     de:'Halten Sie Ihren Lichtbildausweis bereit',
     it:'Tenete pronto un documento con foto',
