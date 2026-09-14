@@ -23041,6 +23041,31 @@ const IATA_TO_EMBLEM = {
   'JV': '/logos/airlines/canadian-regional/bearskin-emblem.svg',      // Bearskin bear-paw emblem
   'WT': '/logos/airlines/canadian-regional/wasaya-emblem.svg',        // Wasaya emblem
   'NSA': '/logos/airlines/canadian-regional/north-star-emblem.svg',   // North Star Air emblem
+  // v23768 — three more carriers arriving at the hole the LY note above
+  // describes: a wordmark but no tile, so mkLogo() reached `return ''` and the
+  // emblem slot came out EMPTY. Their artwork was never missing — each tile is
+  // registered in AIRLINE_EMBLEM_FILES and resolves 200 for the gate ORB, which
+  // reads that map. The row and the BIDS cell read THIS one, and nothing joined
+  // the two, so the orb drew the mark and the row drew nothing.
+  //
+  // Pointed at the SAME file the orb uses rather than an ICAO-named copy under
+  // IATA_TO_TILE_ICAO: that table builds its path from the filename, so it would
+  // need a duplicate per carrier, and the pair already sitting in this repo
+  // (ANZ.svg / NZ-Emblem.svg) has silently drifted apart. One file, both
+  // surfaces. The path still names /logos/airline-tiles/, which is what the
+  // isTile test keys on, so the tile keeps object-fit:cover and no whitening.
+  //
+  // None of the three carries a wordmark inside the square, so pairing it with
+  // the wordmark image cannot print the carrier's name twice.
+  //
+  // 4N's BANNER is untouched: BANNER_DARK_LOGO hands it a STACKED lockup
+  // (symbol over wordmark — airnorth-wordmark-light.svg is that file's lower
+  // band, cropped), which short-circuits before _bannerWmFromBase, so the
+  // banner never reads this map. 8P and SP have no such entry, so for them this
+  // also restores the emblem beside the banner wordmark.
+  '4N': '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North — blue mark on its orange ground
+  '8P': '/logos/airline-tiles/PCO.svg',               // Pacific Coastal
+  'SP': '/logos/airline-tiles/PB.svg',                // PAL express affiliate — PAL Airlines tile
   '9X': '/logos/airlines/us-major/mokulele-emblem.svg',  // Mokulele plumeria flower
   '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',  // Discover Airlines tail-fin emblem (yellow + blue gradient)
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark
@@ -24413,7 +24438,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23767';
+var FIDS_BUILD_TAG = 'v23768';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
