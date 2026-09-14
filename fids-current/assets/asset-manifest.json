@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2643,
+    "total": 2645,
     "by_category": {
       "ad": 10,
-      "airline": 1439,
+      "airline": 1441,
       "background": 110,
       "brand": 2,
       "hotel": 884,
@@ -5957,12 +5957,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/airlines/canadian-regional/canadian-north-wordmark-dark.svg",
+      "file": "canadian-north-wordmark-dark.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "canadian north wordmark dark",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/airlines/canadian-regional/Canadian-North-Wordmark-FullRed.svg",
       "file": "Canadian-North-Wordmark-FullRed.svg",
       "category": "airline",
       "subcategory": "canadian-regional",
       "group": "Airlines — Canadian regional",
       "name": "Canadian North Wordmark FullRed",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian-regional/canadian-north-wordmark-light.svg",
+      "file": "canadian-north-wordmark-light.svg",
+      "category": "airline",
+      "subcategory": "canadian-regional",
+      "group": "Airlines — Canadian regional",
+      "name": "canadian north wordmark light",
       "iata": "",
       "country": "",
       "ext": "svg"

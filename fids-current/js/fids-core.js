@@ -13942,6 +13942,12 @@ function uxgGateHtml(ctx) {
   // fids.css .g8-r1-logo whitening — that matters for the general light-banner
   // rollout, where _apIsYQM is false and the inline filter would otherwise be ''.
   var BANNER_LIGHT_LOGO = {
+    // v23770 — Canadian North's own banner is WHITE, and the only mark it had
+    // was the white lockup meant for dark bands, so the banner came out
+    // washed instead of the red-and-grey colour mark. The colour file is the
+    // same artwork on the same cropped canvas as the white one.
+    '5T':  { src: '/logos/airlines/canadian-regional/canadian-north.svg', h: 60, w: 560 },
+    'MPE': { src: '/logos/airlines/canadian-regional/canadian-north.svg', h: 60, w: 560 },
     'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
     'WEN': '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
     'YP':  '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg',
@@ -22945,6 +22951,12 @@ const IATA_TO_WORDMARK = {
   'WK': 'edelweiss',
   'NZ': 'NZ',              // v23740 — resolver appends -wordmark-dark/-light.svg
   '4N': 'airnorth',        // v23742 — resolver appends -wordmark-dark/-light.svg
+  // v23770 — Canadian North had no wordmark at all, so the row fell back to
+  // the colour lockup under the whitening filter (white on a light ground),
+  // the Welcome card drew nothing, and the BIDS cell drew nothing. The dark
+  // variant is the supplied red text-only wordmark; the light one is the same
+  // letters in white. The tile beside it carries the symbol.
+  '5T': 'canadian-north', 'MPE': 'canadian-north',
   // ITA Airways. The supplied art is the official positive lockup — genuine
   // ITA artwork, an Illustrator export whose own layer id is 'Livello_1' —
   // but it is drawn in the 2021 launch green, and green is gone from ITA's
@@ -23214,6 +23226,7 @@ const LOGO_SUBFOLDER = {
   'qatar-airways-wordmark-light.svg':'airlines/asian-other', 'qatar-airways-wordmark-dark.svg':'airlines/asian-other',
   'NZ-wordmark-light.svg':'airlines/asian-other', 'NZ-wordmark-dark.svg':'airlines/asian-other',
   'airnorth-wordmark-light.svg':'airlines/canadian-regional', 'airnorth-wordmark-dark.svg':'airlines/canadian-regional',
+  'canadian-north-wordmark-light.svg':'airlines/canadian-regional', 'canadian-north-wordmark-dark.svg':'airlines/canadian-regional',
   'iberia-wordmark-light.svg':'airlines/european', 'iberia-wordmark-dark.svg':'airlines/european',
   'ita-airways-wordmark-light.svg':'airlines/european', 'ita-airways-wordmark-dark.svg':'airlines/european',
   'transavia-wordmark-light.svg':'airlines/european', 'transavia-wordmark-dark.svg':'airlines/european',
@@ -23476,6 +23489,10 @@ const IATA_TO_EMBLEM = {
   // banner never reads this map. 8P and SP have no such entry, so for them this
   // also restores the emblem beside the banner wordmark.
   '4N': '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North — blue mark on its orange ground
+  // v23770 — Canadian North, the same hole: the orb had this tile since
+  // v23738 and the row never did. Both forms, as the feeds send either.
+  '5T': '/logos/airline-tiles/CanadianNorth-Emblem.svg',   // Canadian North — white mark on its red ground
+  'MPE': '/logos/airline-tiles/CanadianNorth-Emblem.svg',
   '8P': '/logos/airline-tiles/PCO.svg',               // Pacific Coastal
   'SP': '/logos/airline-tiles/PB.svg',                // PAL express affiliate — PAL Airlines tile
   // The ICAO forms of two of the above. Not hypothetical: Edinburgh puts the
@@ -40557,6 +40574,7 @@ function _buildGateAdSlideList() {
       // to WestJet because Encore flies in WestJet's identity — the emblem
       // table above hands it the same leaf for the same reason.
       var _FB_WM_ICAO = {
+        'MPE': '5T',   // v23770 — Canadian North
         'ACA':'AC', 'WJA':'WS', 'WEN':'WS', 'WR':'WS', 'TSC':'TS', 'POE':'PD',
         'PVL':'PB', 'JZA':'QK', 'AAL':'AA', 'DAL':'DL', 'UAL':'UA', 'SWA':'WN',
         'JBU':'B6', 'FLE':'F8', 'DLH':'LH', 'AFR':'AF', 'UAE':'EK', 'OCN':'4Y'
