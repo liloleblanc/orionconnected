@@ -111,6 +111,36 @@ test('every title the sign asks for exists where the gate looks', () => {
   assert.match(T, /^  boarding:\s*\{ en:'Boarding', fr:'Embarquement'/m, "'Boarding' must read in both languages");
 });
 
+test('every word the sign can say, it can say in all nine languages', () => {
+  // The board offers en fr es de it pt ja zh ar, and a gate speaks whichever
+  // two its airport assigns. A label missing a language falls back to English
+  // through _gateLbl1, silently — so the only way to know the languages are
+  // connected is to count them. Brand names are the one exemption: Porter
+  // publishes PorterReserve, PorterClassic and AvidTraveller in English and
+  // French only, and a brand is not translated.
+  const at = SRC.indexOf('var _GATE_LBL = {');
+  const T = SRC.slice(at, at + 60000);
+  const FULL = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
+  const BRAND = new Set(['pdReserve', 'pdClassic', 'avidTraveller']);
+  const KEYS = ['priority', 'zones', 'rows', 'groupLabel', 'boarding', 'preboard', 'genboard', 'allPax',
+    'nextUp', 'boardConv', 'useLanes', 'useLane', 'comingUp', 'nowBoarding', 'boardSoon', 'preboardList',
+    'photoId', 'pdReserve', 'pdClassic', 'avidTraveller'];
+  const short = [];
+  for (const k of KEYS) {
+    const m = new RegExp('^  ' + k + ':\\s*\\{([\\s\\S]*?)\\n  \\}|^  ' + k + ':\\s*\\{([^\\n]*)\\}', 'm').exec(T);
+    assert.ok(m, `_GATE_LBL must carry '${k}'`);
+    const body = m[1] || m[2] || '';
+    const have = FULL.filter((l) => new RegExp('(^|[\\s,{])' + l + ':').test(body));
+    const missing = FULL.filter((l) => !have.includes(l));
+    if (missing.length && !BRAND.has(k)) short.push(`${k}: ${missing.join(' ')}`);
+    if (BRAND.has(k)) assert.ok(have.includes('en') && have.includes('fr'), `${k} must at least carry en and fr`);
+  }
+  assert.deepEqual(short, [], 'these labels are missing languages the board offers:\n  ' + short.join('\n  '));
+  // and the fallback that hides a gap really is there, so a missing language
+  // shows English rather than nothing
+  assert.match(SRC, /function _gateLbl1\([\s\S]{0,400}return t\.en \|\| '';/, '_gateLbl1 must fall back to English');
+});
+
 test('the Next line is whole phrases, one per language', () => {
   const n = fn('_g8SignNext');
   assert.match(n, /nextUp/, "reads the 'Next' label");

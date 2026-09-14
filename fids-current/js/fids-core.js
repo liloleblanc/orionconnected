@@ -24478,7 +24478,10 @@ var _GATE_LBL = {
     es:'Tenga su identificación con foto lista',
     de:'Halten Sie Ihren Lichtbildausweis bereit',
     it:'Tenete pronto un documento con foto',
-    pt:'Tenha sua identificação com foto pronta'
+    pt:'Tenha sua identificação com foto pronta',
+    ja:'写真付き身分証明書をご用意ください',
+    zh:'请准备好带照片的身份证件',
+    ar:'يرجى تجهيز بطاقة هوية تحمل صورة'
   },
   preboardList: {
     en:'Passengers with disabilities \u00b7 Unaccompanied minors \u00b7 Families with children 2 and under \u00b7 Premium VIPorter \u00b7 PorterReserve',
