@@ -19491,3 +19491,60 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   border-radius: 16% !important;
   object-fit: cover !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23773 — THE SIGN, TO THE PICTURE.
+
+   The owner's picture of the Porter gate, drawn over the v23742 board: the
+   group word and its number on ONE row (Rows | Rangées  1–7), the word to
+   the left; the called panel titled General boarding with the cabin under
+   it; the second half of a Porter cabin pair in Porter blue; no tier marks;
+   and the photo-ID reminder gone from the column to the strip, under NOW
+   BOARDING, in an attention colour that is not red ("it's not an
+   emergency"). ×16 so it outranks the ×14 sign block.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;   /* the word sits at the middle of the number, as drawn */
+  justify-content: center !important;
+  gap: min(2.6vh, 3.2cqw) !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-label {
+  font-size: min(4.6vh, 8cqw) !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  white-space: nowrap !important;
+  flex: 0 1 auto !important;
+  min-width: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-row .g8-sign-value {
+  font-size: min(18vh, 30cqw) !important;
+  line-height: .95 !important;
+  flex: 0 0 auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-left .g8-sign-row .g8-sign-value { font-size: min(13vh, 26cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-row .g8-sign-value { font-size: min(13vh, 24cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-label { font-size: min(4.2vh, 7.5cqw) !important; }
+/* the picture has no tier marks and no kicker */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-marks, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-kicker { display: none !important; }
+/* Porter: the French half of the cabin name in Porter blue, as drawn */
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-sub .g8-pair-sep + .g8-pair-h { color: #2e86de !important; }
+/* the strip's reminder: under the phase words, smaller, attention-coloured */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-text .g8-bw-note {
+  display: block !important;
+  font-size: .58em !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  margin-top: .12em !important;
+  color: #c2410c !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  max-width: 100% !important;
+}
