@@ -13833,6 +13833,12 @@ The rows value is the 'All | Tous'
   // fids.css .g8-r1-logo whitening — that matters for the general light-banner
   // rollout, where _apIsYQM is false and the inline filter would otherwise be ''.
   var BANNER_LIGHT_LOGO = {
+    // v23770 — Canadian North's own banner is WHITE, and the only mark it had
+    // was the white lockup meant for dark bands, so the banner came out
+    // washed instead of the red-and-grey colour mark. The colour file is the
+    // same artwork on the same cropped canvas as the white one.
+    '5T':  { src: '/logos/airlines/canadian-regional/canadian-north.svg', h: 60, w: 560 },
+    'MPE': { src: '/logos/airlines/canadian-regional/canadian-north.svg', h: 60, w: 560 },
     'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
     'WEN': '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
     'YP':  '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg',

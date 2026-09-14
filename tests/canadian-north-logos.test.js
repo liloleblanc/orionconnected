@@ -102,3 +102,48 @@ test('no whitening filter is left in the path', () => {
   assert.match(body, /if \(IATA_TO_WORDMARK\[c\]\) \{/, 'the wordmark branch must still come first');
   assert.match(body, /if \(IATA_TO_EMBLEM\[c\]\) \{/, 'and read IATA_TO_EMBLEM for the tile');
 });
+
+test("the light banner gets the colour mark, on the same canvas as the white one", () => {
+  // Canadian North's own banner is white. The only mark it had was the white
+  // lockup meant for dark bands, so it came out washed instead of red and
+  // grey. The colour file is the same artwork and must sit on the same
+  // cropped canvas, or it drowns in its own box the way the white one did
+  // before v23765.
+  const at = SRC.indexOf('var BANNER_LIGHT_LOGO = {');
+  assert.ok(at >= 0);
+  const T = SRC.slice(at, at + 4000);
+  assert.match(T, /'5T':\s*\{ src: '\/logos\/airlines\/canadian-regional\/canadian-north\.svg', h: 60, w: 560 \}/);
+  assert.match(T, /'MPE':\s*\{ src: '\/logos\/airlines\/canadian-regional\/canadian-north\.svg'/);
+  const colour = fs.readFileSync(path.join(DIR, 'canadian-north.svg'), 'utf8');
+  const white = fs.readFileSync(path.join(DIR, 'canadian-north-monochrome-white.svg'), 'utf8');
+  const vb = (s) => (/viewBox="([^"]+)"/.exec(s) || [])[1];
+  assert.equal(vb(colour), vb(white), 'both lockups must share the cropped canvas');
+  assert.doesNotMatch(colour, /\s(width|height)="\d/, 'no width/height pair to letterbox it inside its own box');
+  assert.match(colour, /#cd163f/i, 'the colour file keeps its red');
+});
+
+test('a tile is never white-forced on the Welcome card', () => {
+  // The Welcome slide's fallback logo is the carrier's tile, drawn through
+  // the ad renderer's white-force filter — which turns a coloured square
+  // into a white one. The rule is the board's usual one: a file from
+  // /logos/airline-tiles/ is a finished tile and is never filtered. Held for
+  // every tile carrier at once, so the next one added is not the next
+  // white square.
+  const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
+  const at = CSS.lastIndexOf('TILES ARE NEVER WHITE-FORCED ON THE WELCOME CARD');
+  assert.ok(at >= 0, 'the exemption block must exist');
+  const rules = CSS.slice(at).replace(/\/\*[\s\S]*?\*\//g, '');
+  const sels = [...rules.matchAll(/^html[^{]*?(?=\s*[{,])/gm)].map((m) => m[0]);
+  assert.ok(sels.length >= 3, 'the exemption must cover the gate ad logo and the ad renderer image');
+  for (const s of sels) {
+    assert.match(s, /\[src\*="\/logos\/airline-tiles\/"\]/, `"${s.slice(-60)}" must key on the tiles folder`);
+    assert.ok((s.match(/:not\(#_\)/g) || []).length >= 14, 'must outrank the ×12 per-airline exemption');
+  }
+  assert.match(rules, /filter: none !important;/);
+  // and every tile carrier the Welcome card can fall back to is covered by
+  // it, because the rule keys on the folder and not on a name
+  const EMBLEM_FILES = table('var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {');
+  const tiles = Object.entries(EMBLEM_FILES).filter(([, f]) => typeof f === 'string' && f.includes('/logos/airline-tiles/'));
+  assert.ok(tiles.length >= 6, `expected the tile carriers (5T, 4N, NZ, QR, 8P, MO…), found ${tiles.length}`);
+  assert.ok(tiles.some(([c]) => c === '5T'), "Canadian North's orb tile is one of them");
+});
