@@ -1,0 +1,180 @@
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=departure&terminalType=international&date=2026-09-15  captured 2026-09-14T16:15:49Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:15:48 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmUUHtJSwMEBug=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 421f55bf919c48fdb315cf78c5d6e1dc.cloudfront.net (CloudFront), 1.1 0b747b384dcf4955c35701c58efbe99a.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=departure&terminalType=domestic&date=2026-09-15  captured 2026-09-14T16:15:50Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:15:50 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmUhEDvSwMEDfg=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 7211dc525b86f4a3fdf1dbeb59791392.cloudfront.net (CloudFront), 1.1 1a6126cfe41767261c5d3839e7cc3ae2.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=arrival&terminalType=international&date=2026-09-15  captured 2026-09-14T16:15:52Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:15:51 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmUxHG-SwMEpTA=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 52163f11ff65fb823b681e4c11a62116.cloudfront.net (CloudFront), 1.1 af88a9fe36a270a032e7b509430eba58.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=arrival&terminalType=domestic&date=2026-09-15  captured 2026-09-14T16:15:53Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:15:52 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmU4F_yywMEkMg=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 52163f11ff65fb823b681e4c11a62116.cloudfront.net (CloudFront), 1.1 10958524dd572b571b69f94d644733fa.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=departure&terminalType=international&date=2026-09-16  captured 2026-09-14T16:15:54Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:15:53 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmVIGyYSwMEknA=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 52163f11ff65fb823b681e4c11a62116.cloudfront.net (CloudFront), 1.1 2a4d036aba4a1955167423d6350211ac.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=departure&terminalType=domestic&date=2026-09-16  captured 2026-09-14T16:15:55Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:15:55 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmVTGh-SwMEYJA=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 7211dc525b86f4a3fdf1dbeb59791392.cloudfront.net (CloudFront), 1.1 54282fa250f4f19230baaf3e7fff3fc8.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=arrival&terminalType=international&date=2026-09-16  captured 2026-09-14T16:15:57Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:15:56 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmViFxEywMEIsQ=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 7211dc525b86f4a3fdf1dbeb59791392.cloudfront.net (CloudFront), 1.1 871c32501d3d8475b80027845e14806a.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=arrival&terminalType=domestic&date=2026-09-16  captured 2026-09-14T16:15:58Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:15:57 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmVuHG6ywMEGhg=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 32ea9b2b7eaaba833294021989c78c08.cloudfront.net (CloudFront), 1.1 871c32501d3d8475b80027845e14806a.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=departure&terminalType=international&date=2026-09-14  captured 2026-09-14T16:17:04Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:17:03 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: Dsmf_F5vSwMEB3A=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 fbdc01f132101cb05310363b09502a86.cloudfront.net (CloudFront), 1.1 6379d6b929e2547683abd72037eea242.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=departure&terminalType=domestic&date=2026-09-14  captured 2026-09-14T16:17:05Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:17:04 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmgNFZLywMEknA=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 95a3dd023df73736e8ea01cca5036ec0.cloudfront.net (CloudFront), 1.1 7f7ba1ba4e83d353909c5d9c69a68218.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=arrival&terminalType=international&date=2026-09-14  captured 2026-09-14T16:17:06Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:17:06 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmgbGRoywMEYAQ=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 95a3dd023df73736e8ea01cca5036ec0.cloudfront.net (CloudFront), 1.1 e7ebfb9cbbe33f2c9648abfd86e6defc.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
+=== GET https://www.sydneyairport.com.au/_a/flights?flightType=arrival&terminalType=domestic&date=2026-09-14  captured 2026-09-14T16:17:08Z
+HTTP/2 200 
+content-type: application/json
+content-encoding: gzip
+vary: Accept-Encoding
+date: Mon, 14 Sep 2026 16:17:07 GMT
+access-control-allow-origin: *
+access-control-allow-headers: Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,cache-control
+x-amz-apigw-id: DsmgnGO4SwMEpcw=
+access-control-allow-methods: GET,POST,PUT,DELETE,OPTIONS
+via: 1.1 32ea9b2b7eaaba833294021989c78c08.cloudfront.net (CloudFront), 1.1 871c32501d3d8475b80027845e14806a.cloudfront.net (CloudFront)
+x-amz-cf-pop: YUL62-P1
+x-cache: Miss from cloudfront
+x-amz-cf-pop: YUL62-P3
+
