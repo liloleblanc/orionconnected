@@ -26844,7 +26844,15 @@ function buildRandomFlights(iata) {
 // Callsign prefix (ICAO telephony) → operating airline IATA code
 const CALLSIGN_ICAO = {
   'AAL':'AA','ACA':'AC','AFR':'AF','ANA':'NH','ASA':'AS',
-  'AWI':'AW','BAW':'BA','CCA':'CA','CES':'MU','CHQ':'MQ',
+  // v23769 - AWI is AIR WISCONSIN, whose IATA code is ZW. It was mapped to AW,
+  // which belongs to Africa World Airlines of Accra (ICAO AFW) - a different
+  // carrier on a different continent. The giveaway was already in the repo:
+  // nothing is registered under AW at all, so an AWI flight resolved an
+  // operator code with no name behind it and the band printed the bare
+  // letters. CALLSIGN_TO_IATA has carried the correct ZW the whole time; the
+  // two tables simply disagreed, and this one is the one the operator line
+  // reads.
+  'AWI':'ZW','BAW':'BA','CCA':'CA','CES':'MU','CHQ':'MQ',
   'CPZ':'CP','CSN':'CZ','DAL':'DL','DLH':'LH','EDV':'9E',
   'EIN':'EI','ENY':'MQ','ETH':'ET','FFT':'F9','FLE':'F8',
   'GIA':'GA','GJS':'G7','JAL':'JL','JBU':'B6','JZA':'QK',
@@ -26865,10 +26873,40 @@ const CALLSIGN_ICAO = {
   // error above: an ICAO handed to the airline with the similar NAME.
   'PAL':'PR', 'PVL':'PB',
   'PDT':'PT','POE':'PD','PSA':'OH',
-  'QFA':'QF','QTR':'QR','QXE':'QX','ROU':'RV','RPA':'YV',
-  'SIA':'SQ','SKW':'OO','SUN':'SY','SWA':'WN','TCF':'TC',
-  'THA':'TG','TSC':'TS','UAE':'EK','UAL':'UA','VRD':'VX',
-  'WEN':'WR','WJA':'WS','KRS':'KV','SVR':'ZX','TIF':'4N','PTR':'PD',
+  // v23769 - RPA is REPUBLIC AIRWAYS (IATA YX, callsign BRICKYARD). It was
+  // mapped to YV, which is MESA AIRLINES - a different carrier, whose own ICAO
+  // is ASH and which this table already carries correctly. Republic flies for
+  // American, Delta and United, so the wrong name would have gone out on the
+  // operator line of somebody else's mainline flight. The 2025 Republic/Mesa
+  // merger does not rescue it: the two still hold separate designators, and
+  // the board resolves a code, not a corporate parent. CALLSIGN_TO_IATA has
+  // said YX all along.
+  'QFA':'QF','QTR':'QR','QXE':'QX','ROU':'RV','RPA':'YX',
+  // v23769 - TCF and VRD dropped. Each resolved an operator code that nothing
+  // in the repo can put a NAME to, so the band had nothing to print but the
+  // two raw letters. TCF is Shuttle America, folded into Republic in 2017 and
+  // mapped here to TC, which is Air Tanzania; VRD and VX are both Virgin
+  // America, gone since 2018. Removing a row is the safe direction: the
+  // operator line simply falls back to the marketing carrier, where a bad row
+  // would have named the wrong airline or printed letters.
+  'SIA':'SQ','SKW':'OO','SUN':'SY','SWA':'WN',
+  'THA':'TG','TSC':'TS','UAE':'EK','UAL':'UA',
+  // v23769 - AIR NORTH'S ICAO IS ANT, NOT TIF.
+  //
+  // TIF is not an ICAO airline designator at all. It is absent from the FAA's
+  // three-letter-identifier list (which runs TIA, TIB, TIC, TIE, TIG, TIH,
+  // TIL, TIM, TIN, TIP, TIR, TIS, TIV, TIW, TIX and skips TIF), absent from
+  // Wikipedia's list, and absent from OpenFlights. What TIF actually is, is
+  // the IATA code for Taif airport in Saudi Arabia - an AIRPORT code that
+  // found its way into an airline table, which is very likely how it got here.
+  //
+  // Nothing failed visibly, because no feed emits TIF, so the row waited
+  // instead of misfiring. The cost of leaving it is the opposite one: a real
+  // Air North flight arriving as ANT matches nothing, and the operator line
+  // falls back to the marketing carrier.
+  // KRS dropped for the same reason as TCF and VRD above: it is not an
+  // assigned ICAO designator, and KV has no name anywhere in the repo.
+  'WEN':'WR','WJA':'WS','SVR':'ZX','ANT':'4N','PTR':'PD',
 };
 
 // RJ removed from the AC family — Royal Jordanian is its own carrier; the
