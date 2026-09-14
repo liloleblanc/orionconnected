@@ -22404,6 +22404,16 @@ const IATA_TO_TILE_ICAO = {
   // Europe/Switzerland, Norwegian Air Sweden, Iberia Express, Wizz Malta,
   // Jet2 and Loganair (their own tiles were on disk, never mapped).
   'RK':'RYR',  'EC':'EZY',  'EJU':'EZY', 'EZS':'EZY', 'D8':'NAX',  'I2':'IBE',  'W4':'WZZ',  'LS':'EXS',  'LM':'LOG',
+  // v23769 — and the PARENT, which that pass missed while mapping its three
+  // children. U2 is above, so easyJet was assumed covered; but Edinburgh does
+  // not send U2. It puts the ICAO form in the carrier slot, and 36 live EDI
+  // flights arrive as airline 'EZY'. The v23356 note by easyJet's AIRLINE_NAME
+  // entry already records this feed's habit — that fix gave the code a NAME, so
+  // the wordmark and the name came out right and nothing pointed at the missing
+  // tile. mkLogo() then took its wordmark branch and returned the empty string,
+  // and easyJet ran at Edinburgh with no orange square while Ryanair, KLM and
+  // Air France beside it each had one.
+  'EZY':'EZY',
   'DE':'CFG',  'X3':'TUI',  'A3':'AEE',  'OU':'CTN',  'JU':'ASL',
   // TO and HV are one brand — Transavia France and Transavia Netherlands — and
   // the board was drawing them as two. HV had the real 't' roundel on #00D66C;
@@ -23066,6 +23076,13 @@ const IATA_TO_EMBLEM = {
   '4N': '/logos/airline-tiles/AirNorth-Emblem.svg',   // Air North — blue mark on its orange ground
   '8P': '/logos/airline-tiles/PCO.svg',               // Pacific Coastal
   'SP': '/logos/airline-tiles/PB.svg',                // PAL express affiliate — PAL Airlines tile
+  // The ICAO forms of two of the above. Not hypothetical: Edinburgh puts the
+  // ICAO designator in the carrier slot rather than the IATA code, which is how
+  // 36 easyJet flights a day arrive as 'EZY' instead of 'U2' (see the EZY entry
+  // in IATA_TO_TILE_ICAO). Any feed can do the same to these two, and the cost
+  // of covering it is one line each against a file that already exists.
+  'QTR': '/logos/airline-tiles/QTR.svg',              // Qatar Airways, ICAO form of QR
+  'PCO': '/logos/airline-tiles/PCO.svg',              // Pacific Coastal, ICAO form of 8P
   '9X': '/logos/airlines/us-major/mokulele-emblem.svg',  // Mokulele plumeria flower
   '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',  // Discover Airlines tail-fin emblem (yellow + blue gradient)
   'F9': '/logos/airlines/us-major/frontier-emblem.svg',  // Frontier Airlines green stylized "F" mark

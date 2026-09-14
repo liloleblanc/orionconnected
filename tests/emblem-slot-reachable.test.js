@@ -16,11 +16,14 @@
 // the file — and an empty slot in the row. Every probe says the artwork is
 // fine, because on the surface the probe asks about it is.
 //
-// This has now landed four times: LY (v23372, whose note above IATA_TO_EMBLEM
-// describes it), then 4N, 8P and SP together. Three of those were reported as
-// artwork "not being used", and the wrong thing was verified each time.
+// This has now landed five times: LY (v23372, whose note above IATA_TO_EMBLEM
+// describes it), the easyJet sister codes (v23333, which mapped EC/EJU/EZS and
+// missed their parent EZY), and 4N, 8P and SP together. Several were reported
+// as artwork "not being used", and the wrong thing was verified each time.
 //
-// So this walks the whole map instead of the carriers known about today.
+// So this walks the whole map instead of the carriers known about today — and
+// with no filter on the SHAPE of the key either, which is the mistake that let
+// EZY through a first draft of this very file.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -57,10 +60,15 @@ const WORDMARK = table('const IATA_TO_WORDMARK = {');
 const EMBLEM = table('const IATA_TO_EMBLEM = {');
 const TILE = table('const IATA_TO_TILE_ICAO = {');
 
-// mkLogo() is called with the IATA code off the flight, so three-letter ICAO
-// aliases in these maps are reached only as a fallback and never hit the
-// early branch. Checking them too would report carriers that in fact render.
-const isIata = (c) => /^[A-Z0-9]{2}$/.test(c);
+// An earlier draft of this file skipped three-letter keys, on the reasoning
+// that mkLogo() is called with the IATA code off the flight and so would never
+// see an ICAO designator. That is FALSE, and the live boards say so: Edinburgh
+// puts the ICAO form in the carrier slot, and 36 easyJet flights a day arrive
+// as airline 'EZY'. mkLogo() handed every one of them an empty emblem slot
+// while its three sister codes — EC, EJU, EZS — drew the tile correctly.
+//
+// The filter that hid it was this test's own, so there is no length filter
+// now: any key with a wordmark and an unreachable tile is reported.
 
 test('mkLogo still ends its wordmark branch in a bare return', () => {
   // The whole premise. If this branch ever grows a fallback to
@@ -79,7 +87,6 @@ test('mkLogo still ends its wordmark branch in a bare return', () => {
 test('every carrier with a tile and a wordmark can reach it from the row', () => {
   const stranded = [];
   for (const code of Object.keys(EMBLEM_FILES)) {
-    if (!isIata(code)) continue;
     const file = EMBLEM_FILES[code];
     if (typeof file !== 'string') continue;
     // Only square TILES — the folder is the treatment. A symbol filed
@@ -95,8 +102,21 @@ test('every carrier with a tile and a wordmark can reach it from the row', () =>
     '\nadd each to IATA_TO_EMBLEM with the same path');
 });
 
-test('the three carriers this shipped for resolve to files that exist', () => {
-  for (const code of ['4N', '8P', 'SP']) {
+test('easyJet is reachable under the form Edinburgh actually sends', () => {
+  // EDI sends the ICAO designator as the carrier code. U2 being mapped is not
+  // enough, and was the reason this went unnoticed: the code that reaches the
+  // board is EZY. Its three sister codes were mapped in v23333 and the parent
+  // was not, so easyJet was the one easyJet-family carrier with no tile.
+  assert.ok(TILE['EZY'] || EMBLEM['EZY'],
+    "EZY must resolve a tile — it is the carrier code 36 EDI flights arrive under");
+  for (const sib of ['EC', 'EJU', 'EZS', 'U2']) {
+    assert.ok(TILE[sib] || EMBLEM[sib], `${sib} should still resolve alongside it`);
+  }
+  assert.equal(TILE['EZY'], 'EZY', 'and it should take easyJet\'s own tile file');
+});
+
+test('the carriers this shipped for resolve to files that exist', () => {
+  for (const code of ['4N', '8P', 'SP', 'QTR', 'PCO']) {
     const p = EMBLEM[code];
     assert.ok(p, `${code} must be in IATA_TO_EMBLEM`);
     assert.ok(fs.existsSync(path.join(WEB, p.replace(/^\//, '').split('?')[0])),
@@ -113,7 +133,7 @@ test('pairing a tile with a wordmark cannot print the name twice', () => {
   // The tile sits BESIDE the wordmark image. A tile carrying its own lettering
   // would render the carrier's name twice in one cell — the duplication the
   // wordmark table refuses for Qatar and SWISS.
-  for (const code of ['4N', '8P', 'SP']) {
+  for (const code of ['4N', '8P', 'SP', 'QTR', 'PCO']) {
     const svg = fs.readFileSync(
       path.join(WEB, EMBLEM[code].replace(/^\//, '').split('?')[0]), 'utf8');
     assert.doesNotMatch(svg, /<text[\s>]|<textPath[\s>]/,
