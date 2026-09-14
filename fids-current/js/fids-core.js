@@ -13259,7 +13259,7 @@ The rows value is the 'All | Tous'
   var _opCode = currentFlight._opCode || null;
   var _opName = currentFlight._opName || null;
   var _callSign = currentFlight._callSign || '';
-  var _OPNAMES = {'QK':'Jazz Aviation','RV':'Air Canada Rouge','WR':'WestJet Encore','9X':'Mokulele','MQ':'Envoy Air','OH':'PSA Airlines','PT':'Piedmont Airlines','9E':'Endeavor Air','OO':'SkyWest Airlines','YV':'Mesa Airlines','G7':'GoJet Airlines','YX':'Republic Airways','QX':'Horizon Air','ENY':'Envoy Air','PSA':'PSA Airlines','PDT':'Piedmont Airlines','EDV':'Endeavor Air','SKW':'SkyWest Airlines','ASH':'Mesa Airlines','GJS':'GoJet Airlines','RPA':'Republic Airways','JZA':'Jazz Aviation','WEN':'WestJet Encore','ROU':'Air Canada Rouge','SOU':'Mokulele','MHO':'Mokulele'};
+  var _OPNAMES = {'QK':'Jazz Aviation','RV':'Air Canada Rouge','WR':'WestJet Encore','9X':'Mokulele','MQ':'Envoy Air','OH':'PSA Airlines','PT':'Piedmont Airlines','9E':'Endeavor Air','OO':'SkyWest Airlines','YV':'Mesa Airlines','G7':'GoJet Airlines','YX':'Republic Airways','QX':'Horizon Air','ENY':'Envoy Air','PSA':'PSA Airlines','PDT':'Piedmont Airlines','EDV':'Endeavor Air','SKW':'SkyWest Airlines','ASH':'Mesa Airlines','GJS':'GoJet Airlines','RPA':'Republic Airways','JZA':'Jazz Aviation','WEN':'WestJet Encore','ROU':'Air Canada Rouge','FDY':'Mokulele','MHO':'Mokulele'};
   // Derive operator from callsign if _opCode is empty
   if ((!_opCode || _opCode === airlineCode) && _callSign) {
     var _csP = _callSign.replace(/\d.*/,'').trim().toUpperCase();
@@ -22119,7 +22119,14 @@ function addTioWeatherLayer(map) {
 // field is ambiguous (e.g. returns the marketing carrier on a codeshare).
 const CALLSIGN_TO_IATA = {
   // ── Air Canada family ──
-  'ACA':'AC', 'ROU':'RV', 'JZA':'QK', 'GGN':'RV',
+  // v23769 - GGN dropped. It was Air Georgian, which flew Air Canada EXPRESS
+  // (not Rouge) until it ceased in May 2020; the designator passed to Pivot
+  // and is now Great North Airlines, an independent regional out of Waterloo
+  // with no Air Canada connection at all. Mapping it to RV named a GGN flight
+  // as Air Canada Rouge. Remapping to its real IATA, ZX, is no better today,
+  // because AIRLINE_NAME still calls ZX 'AIR CANADA' from the Air Georgian
+  // era - Great North needs its own branding before that row can point at it.
+  'ACA':'AC', 'ROU':'RV', 'JZA':'QK',
   // ── WestJet family ──
   'WJA':'WS', 'WEN':'WR',
   // ── Other Canadian ──
@@ -22134,9 +22141,16 @@ const CALLSIGN_TO_IATA = {
   // ── US regionals (all keep their own IATA for logo purposes) ──
   'SKW':'OO', 'ENY':'MQ', 'JIA':'OH', 'PDT':'PT', 'EDV':'9E',
   'ASH':'YV', 'GJS':'G7', 'RPA':'YX', 'QXE':'QX', 'UCA':'C5',
-  'AWI':'ZW', 'CPZ':'CP', 'EJA':'EV',
+  // v23769 - EJA dropped: it is NetJets (callsign EXECJET), business
+  // aviation with no IATA designator, and EV was ExpressJet, which stopped
+  // flying in August 2022. Neither belongs on a passenger board.
+  'AWI':'ZW', 'CPZ':'CP',
   // ── Hawaii inter-island regional ──
-  'MHO':'9X', 'SOU':'9X',  // Mokulele (Surf Air Mobility / Southern Airways Express)
+  // v23769 - SOU rekeyed to FDY. Southern Airways Express flies under FDY
+  // (telephony FRIENDLY); SOU was the original Southern Airways, gone since its
+  // 1979 merger into Republic, and is now parked on a Hong Kong carrier that
+  // never started flying. Same target, so nothing about the display changes.
+  'MHO':'9X', 'FDY':'9X',  // Mokulele (Surf Air Mobility / Southern Airways Express)
   // ── European (most common) ──
   'DLH':'LH', 'BAW':'BA', 'AFR':'AF', 'KLM':'KL',
   'VIR':'VS', 'ITY':'AZ', 'BEL':'SN', 'SWR':'LX',
@@ -26913,7 +26927,9 @@ const CALLSIGN_ICAO = {
   // letters. CALLSIGN_TO_IATA has carried the correct ZW the whole time; the
   // two tables simply disagreed, and this one is the one the operator line
   // reads.
-  'AWI':'ZW','BAW':'BA','CCA':'CA','CES':'MU','CHQ':'MQ',
+  // CHQ dropped: Chautauqua Airlines, whose last day was 31 Dec 2014, and
+  // whose own IATA was RP - it never held MQ. Envoy's real row is ENY below.
+  'AWI':'ZW','BAW':'BA','CCA':'CA','CES':'MU',
   'CPZ':'CP','CSN':'CZ','DAL':'DL','DLH':'LH','EDV':'9E',
   'EIN':'EI','ENY':'MQ','ETH':'ET','FFT':'F9','FLE':'F8',
   'GIA':'GA','GJS':'G7','JAL':'JL','JBU':'B6','JZA':'QK',
@@ -26926,14 +26942,23 @@ const CALLSIGN_ICAO = {
   // largest carrier at Yellowknife and this sits directly in its path.
   'MPE':'5T',
   // NKS (Spirit) — ceased operations May 2 2026
-  'PAK':'PK',
+  // v23769 - PIA's designator is PIA, not PAK. PAK is Pacific Alaska
+  // Airlines of Fairbanks. Pakistan International serves Toronto, Heathrow and
+  // Manchester, all of them live boards, so the wrong key meant a real PIA
+  // callsign matched nothing at all.
+  'PIA':'PK',
   // v23765 - PAL is PHILIPPINE AIRLINES' ICAO, and this sent it to PB, the
   // Canadian PAL Airlines, whose ICAO is PVL. The repo already knew the
   // difference - the comment above IATA_TO_TILE_ICAO says plainly 'PAL.svg
   // is Philippine Airlines' - but this map did not. Same shape as the MPE
   // error above: an ICAO handed to the airline with the similar NAME.
   'PAL':'PR', 'PVL':'PB',
-  'PDT':'PT','POE':'PD','PSA':'OH',
+  // PSA rekeyed to JIA. PSA Airlines flies as JIA (telephony BLUE STREAK);
+  // the three letters PSA last belonged to Pacific Island Aviation of Saipan,
+  // which ceased in 2005. CALLSIGN_TO_IATA had JIA all along, but THIS is the
+  // table the operator line reads, and it only had the dead key - so a real
+  // PSA Airlines callsign has never once resolved on the band.
+  'PDT':'PT','POE':'PD','JIA':'OH',
   // v23769 - RPA is REPUBLIC AIRWAYS (IATA YX, callsign BRICKYARD). It was
   // mapped to YV, which is MESA AIRLINES - a different carrier, whose own ICAO
   // is ASH and which this table already carries correctly. Republic flies for
@@ -26950,7 +26975,11 @@ const CALLSIGN_ICAO = {
   // America, gone since 2018. Removing a row is the safe direction: the
   // operator line simply falls back to the marketing carrier, where a bad row
   // would have named the wrong airline or printed letters.
-  'SIA':'SQ','SKW':'OO','SUN':'SY','SWA':'WN',
+  // SUN rekeyed to SCX. Sun Country's designator is SCX (telephony SUN
+  // COUNTRY); SUN itself was a defunct Dominican carrier. Sun Country is on
+  // the SFO board today, and CALLSIGN_TO_IATA has said SCX all along - this
+  // is the row the operator line reads, and it now agrees.
+  'SIA':'SQ','SKW':'OO','SCX':'SY','SWA':'WN',
   'THA':'TG','TSC':'TS','UAE':'EK','UAL':'UA',
   // v23769 - AIR NORTH'S ICAO IS ANT, NOT TIF.
   //
@@ -26967,7 +26996,10 @@ const CALLSIGN_ICAO = {
   // falls back to the marketing carrier.
   // KRS dropped for the same reason as TCF and VRD above: it is not an
   // assigned ICAO designator, and KV has no name anywhere in the repo.
-  'WEN':'WR','WJA':'WS','SVR':'ZX','ANT':'4N','PTR':'PD',
+  // SVR dropped: it is Ural Airlines of Yekaterinburg (IATA U6), which this
+  // board has no branding for and which serves none of its airports. Mapped
+  // to ZX it would have named a Ural flight as Air Canada.
+  'WEN':'WR','WJA':'WS','ANT':'4N','PTR':'PD',
 };
 
 // RJ removed from the AC family — Royal Jordanian is its own carrier; the

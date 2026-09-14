@@ -9,17 +9,43 @@
 // ANOTHER AIRLINE'S NAME on somebody's flight.
 //
 // All 101 rows across CALLSIGN_ICAO, CALLSIGN_TO_IATA and _FB_WM_ICAO were
-// checked against ICAO/IATA records. Three are corrected here:
+// checked against ICAO/IATA records, and each suspected error was then put to
+// two independent checks. What survived, and what was done about it:
 //
+//   CORRECTED
 //   AWI  Air Wisconsin is ZW. It was AW — Africa World Airlines, Accra.
 //   RPA  Republic Airways is YX. It was YV — Mesa, a different carrier.
 //   TIF  is not an airline designator at all. It is the IATA code for Taif
 //        airport, Saudi Arabia. Air North's ICAO is ANT.
 //
-// The first two were already provable from inside the repo: CALLSIGN_TO_IATA
+//   REKEYED — right target, wrong three letters in front of it
+//   PAK -> PIA   Pakistan International flies as PIA; PAK is Pacific Alaska.
+//   SUN -> SCX   Sun Country flies as SCX; SUN was a defunct Dominican carrier.
+//   SOU -> FDY   Southern Airways Express flies as FDY; SOU died in 1979.
+//   PSA -> JIA   PSA Airlines flies as JIA (BLUE STREAK); PSA was Pacific
+//                Island Aviation, gone 2005. The first draft of this fix
+//                REMOVED the row on the belief JIA was "already mapped" — it
+//                was, but only in CALLSIGN_TO_IATA, not in the table the
+//                operator line reads. This test's own assertion caught it.
+//
+//   REMOVED — the row could only ever name the wrong airline, or nothing
+//   CHQ  Chautauqua, defunct 2014, and its IATA was RP not MQ.
+//   EJA  NetJets. Business aviation, no IATA code. EV was ExpressJet, gone 2022.
+//   SVR  Ural Airlines, no branding here, serves none of these airports.
+//   GGN  Air Georgian, ceased 2020; now Great North, unrelated to Air Canada.
+//   TCF, VRD, KRS  each resolved a code nothing in the repo can name.
+//
+//   LEFT ALONE ON PURPOSE
+//   PAG -> YP    Perimeter's IATA is JV, not YP. But YP prints PERIMETER and
+//                JV prints BEARSKIN, so the "correct" code would put the wrong
+//                name on a Perimeter flight. Fixing it means giving Perimeter
+//                its own name under JV first — a branding decision, not a
+//                table edit.
+//
+// AWI and RPA were already provable from inside the repo: CALLSIGN_TO_IATA
 // carried the right value while CALLSIGN_ICAO carried the wrong one, and the
 // operator line reads CALLSIGN_ICAO. That disagreement is the cheapest signal
-// available here, so the last test below keeps the two tables honest with each
+// available here, so one test below keeps the two tables honest with each
 // other rather than only pinning the rows known about today.
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -115,4 +141,42 @@ test('no callsign row points at an airport code', () => {
   const bad = AIRPORTISH.filter((c) => c in CS_ICAO || c in CS_IATA);
   assert.deepEqual(bad, [],
     'these keys are airport codes, not airline designators: ' + bad.join(', '));
+});
+
+test('the rekeyed rows sit under the designator the airline actually flies', () => {
+  assert.equal(CS_ICAO['PIA'], 'PK', 'Pakistan International flies as PIA');
+  assert.ok(!('PAK' in CS_ICAO), 'PAK is Pacific Alaska Airlines, not PIA');
+  assert.equal(CS_ICAO['SCX'], 'SY', 'Sun Country flies as SCX');
+  assert.ok(!('SUN' in CS_ICAO), 'SUN was never Sun Country');
+  assert.equal(CS_IATA['FDY'], '9X', 'Southern Airways Express flies as FDY');
+  assert.ok(!('SOU' in CS_IATA), 'SOU has not flown since 1979');
+  // and the operator-name lookup that was keyed by the old prefix moved with it
+  const opAt = SRC.indexOf('var _OPNAMES = {');
+  const OPNAMES = new Function(
+    'return ' + SRC.slice(SRC.indexOf('{', opAt), SRC.indexOf('}', opAt) + 1) + ';')();
+  assert.ok(OPNAMES['FDY'], '_OPNAMES must follow the rekey, or the name is lost');
+  assert.ok(!OPNAMES['SOU'], 'and not keep a copy under the dead prefix');
+});
+
+test('rows that could only name the wrong airline are gone', () => {
+  for (const dead of ['CHQ', 'PSA', 'SVR']) {
+    assert.ok(!(dead in CS_ICAO), `${dead} must not be in CALLSIGN_ICAO`);
+  }
+  for (const dead of ['EJA', 'GGN']) {
+    assert.ok(!(dead in CS_IATA), `${dead} must not be in CALLSIGN_TO_IATA`);
+  }
+  // The carriers they were confused with keep their own, correct rows.
+  assert.equal(CS_ICAO['ENY'], 'MQ', 'Envoy is the real MQ row');
+  assert.equal(CS_ICAO['JIA'], 'OH', 'PSA Airlines is reachable as JIA');
+  assert.equal(CS_IATA['ROU'], 'RV', 'Rouge keeps its own row');
+});
+
+test('Perimeter is deliberately still YP', () => {
+  // Wrong code, right name. JV is Perimeter's real IATA, but the repo names
+  // JV as Bearskin, so switching would put BEARSKIN on a Perimeter flight.
+  // Locked here so the audit finding is not "fixed" without first giving
+  // Perimeter its own name under JV.
+  assert.equal(CS_IATA['PAG'], 'YP');
+  assert.equal(NAME['YP'], 'PERIMETER', 'the reason YP is kept: it prints the right name');
+  assert.notEqual(NAME['JV'], 'PERIMETER', 'when JV names Perimeter, this test can retire');
 });
