@@ -70,17 +70,60 @@ test('it removes every image rather than swapping one for another', () => {
   // The screen and the panel both get a whole new background, not a patch.
   assert.match(BLOCK, /\.bidsv3\.bidsv2-screen \{\s*background: #eef3f8 !important;/,
     'the ground must be the flat tone the images sat over');
-  assert.match(BLOCK, /\.bidsv3 \.bidsv2-carousel-block \{\s*background: #D9696B !important;/,
-    "the panel must be the mock's flat salmon — a colour, not a var that could carry an image");
+  assert.match(BLOCK, /\.bidsv3 \.bidsv2-carousel-block \{\s*background: var\(--card-body, #D9696B\) !important;/,
+    "the panel must be the belt's body colour, with the mock's salmon as the fallback");
+});
+
+test('different numbers, different colours', () => {
+  // The palette is chosen by the belt NUMBER alone, so belt 1 is the mock at
+  // every airport and the same number reads the same colour everywhere.
+  const at0 = SRC.indexOf('var _BIDS_CARD_PALETTES = [');
+  assert.ok(at0 >= 0, 'the palette table must exist');
+  const from = SRC.indexOf('[', at0);
+  let depth = 0, line = false, quote = '', end = -1;
+  for (let i = from; i < SRC.length; i++) {
+    const c = SRC[i], n = SRC[i + 1];
+    if (line) { if (c === '\n') line = false; continue; }
+    if (quote) { if (c === '\\') i++; else if (c === quote) quote = ''; continue; }
+    if (c === '/' && n === '/') { line = true; i++; continue; }
+    if (c === "'" || c === '"') { quote = c; continue; }
+    if (c === '[') depth++;
+    else if (c === ']' && --depth === 0) { end = i; break; }
+  }
+  assert.ok(end > from, 'could not close the palette table');
+  const P = new Function('return ' + SRC.slice(from, end + 1) + ';')();
+  const KEYS = ['band', 'body', 'disc', 'suitcase', 'handle', 'dots', 'ink'];
+  assert.ok(P.length >= 6, `${P.length} palettes is not enough for an airport's belts to differ`);
+  for (const [i, p] of P.entries()) {
+    for (const k of KEYS) assert.match(String(p[k] || ''), /^#[0-9A-Fa-f]{6}$/, `palette ${i + 1} is missing ${k}`);
+  }
+  assert.deepEqual(P[0], { band: '#8A1C2B', body: '#D9696B', disc: '#F4C15C', suitcase: '#E27A6E', handle: '#F6EBD3', dots: '#E3A455', ink: '#2C1A6B' },
+    'palette 1 must be the approved mock, exactly');
+  // "different colours" has to be literally true: no two belts share a body.
+  const bodies = P.map((p) => p.body.toUpperCase());
+  assert.equal(new Set(bodies).size, bodies.length, 'two palettes share a body colour');
+  // selection is by number alone — no airport hash in it
+  assert.match(SRC, /var _bidsCard = _BIDS_CARD_PALETTES\[\(Math\.max\(1, _bidsBeltNo\) - 1\) % _BIDS_CARD_PALETTES\.length\];/,
+    'the palette must be picked from the belt number only');
+  // the screen stamps the vars, and the CSS reads them
+  assert.match(SRC, /class="bidsv2-screen\$\{_bidsV3On \? ' bidsv3' : ''\}" style="\$\{_bidsCardVars\}/,
+    'the screen must stamp the card vars');
+  for (const v of ['--card-band', '--card-body', '--card-ink']) {
+    assert.match(RULES, new RegExp('var\\(' + v + ', #[0-9A-F]{6}\\)'), `the CSS must read ${v} with the mock as fallback`);
+  }
 });
 
 test('the belt sign is built to the mock: band, disc, number in the suitcase', () => {
   // The pictogram is a real element the renderer emits, gated on the flag,
   // so the prior design never receives it and the CSS carries no url().
-  assert.match(SRC, /var _crslArt = _bidsV3On\s*\?\s*'<img class="bidsv2-carousel-art" src="\/logos\/symbols-utility\/baggage-claim-disc\.svg"/,
-    'the renderer must emit the art on the b3 surface only');
-  assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', 'logos', 'symbols-utility', 'baggage-claim-disc.svg')),
-    'the disc SVG must be on disk');
+  assert.match(SRC, /var _crslArt = _bidsV3On\s*\?\s*'<svg class="bidsv2-carousel-art"/,
+    'the renderer must emit the art on the b3 surface only, inline');
+  // Inline, because an external SVG document cannot see the page's custom
+  // properties — an <img src=…svg> would freeze every belt in one palette.
+  assert.doesNotMatch(SRC, /<img class="bidsv2-carousel-art"/, 'the art must not be an <img>');
+  for (const v of ['--card-disc', '--card-case', '--card-handle', '--card-dots']) {
+    assert.match(SRC, new RegExp('style="[^"]*var\\(' + v + ','), `the art's fills must read ${v}`);
+  }
   // Art and number share one grid cell — that is what puts the number in
   // the suitcase without an offset.
   assert.match(RULES, /\.bidsv2-carousel-art \{[^}]*grid-row: 3 !important;/);

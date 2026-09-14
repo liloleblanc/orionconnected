@@ -18628,6 +18628,31 @@ const gView = document.getElementById('gateView');
     var _bidsApHash = 0;
     try { var _apStr = String(iata || ''); for (var _ai = 0; _ai < _apStr.length; _ai++) _bidsApHash = (_bidsApHash * 31 + _apStr.charCodeAt(_ai)) % 997; } catch (e) {}
     var _bidsAcc = _bidsAccents[(_bidsApHash + Math.max(1, _bidsBeltNo) - 1) % _bidsAccents.length];
+    // v23769 — DIFFERENT NUMBERS, DIFFERENT COLOURS. The belt sign's palette
+    // (band, body, disc, suitcase, handle, conveyor dots, ink for the number)
+    // is chosen by the belt NUMBER alone — no airport hash — so belt 1 wears
+    // the mock's colours at every airport, belt 2 the next set, and the same
+    // number reads the same colour wherever the stream happens to be. Entry
+    // 0 is the approved mock exactly; the rest keep its structure — dark
+    // band, mid body, bright disc, a suitcase a shade off the body, a pale
+    // handle, dots a shade under the disc, dark ink — in other hues. Yellow
+    // and red are still the status pills' own, so nothing here leans on them
+    // beyond the mock's marigold.
+    var _BIDS_CARD_PALETTES = [
+      { band: '#8A1C2B', body: '#D9696B', disc: '#F4C15C', suitcase: '#E27A6E', handle: '#F6EBD3', dots: '#E3A455', ink: '#2C1A6B' }, // 1 — the mock
+      { band: '#14264B', body: '#3E6FB8', disc: '#9FD3F5', suitcase: '#5A8FD6', handle: '#EEF6FF', dots: '#6FB1E0', ink: '#0C1A3A' }, // 2 — navy / sky
+      { band: '#1E4D2B', body: '#4F9A5E', disc: '#CDE38B', suitcase: '#6BB479', handle: '#F1F8E6', dots: '#A8C96A', ink: '#123320' }, // 3 — forest / lime
+      { band: '#4A1B4E', body: '#9B5AA3', disc: '#F7C7A3', suitcase: '#B27AB9', handle: '#FFF1E8', dots: '#E9A57C', ink: '#2B0E30' }, // 4 — plum / peach
+      { band: '#0F4C50', body: '#2F8F8E', disc: '#F1DFA6', suitcase: '#4FAAA7', handle: '#FBF7EA', dots: '#D9C27A', ink: '#082E31' }, // 5 — teal / sand
+      { band: '#6E2A0E', body: '#C9683B', disc: '#F8E3B0', suitcase: '#D9825A', handle: '#FFF7E6', dots: '#E2BC7A', ink: '#3A1607' }, // 6 — rust / cream
+      { band: '#2B3A4F', body: '#6B7F99', disc: '#FFB3A0', suitcase: '#8798B0', handle: '#FFF3EE', dots: '#F08A72', ink: '#16202E' }, // 7 — slate / coral
+      { band: '#2D2A7A', body: '#6A63C9', disc: '#F6D26A', suitcase: '#857FDA', handle: '#FFFBE8', dots: '#E5B93F', ink: '#1A1848' }  // 8 — indigo / gold
+    ];
+    var _bidsCard = _BIDS_CARD_PALETTES[(Math.max(1, _bidsBeltNo) - 1) % _BIDS_CARD_PALETTES.length];
+    var _bidsCardVars = '--card-band:' + _bidsCard.band + ';--card-body:' + _bidsCard.body
+      + ';--card-disc:' + _bidsCard.disc + ';--card-case:' + _bidsCard.suitcase
+      + ';--card-handle:' + _bidsCard.handle + ';--card-dots:' + _bidsCard.dots
+      + ';--card-ink:' + _bidsCard.ink + ';';
     // APPROVAL GATE: the redesign mounts ONLY
     // when explicitly enabled — flip _BIDSV3_ON to true in code once the owner has
     // approved a live render, or set localStorage fids_bidsv3 = '1' on a test
@@ -18635,7 +18660,7 @@ const gView = document.getElementById('gateView');
     var _bidsV3On = false;
     try { _bidsV3On = _BIDSV3_ON === true || localStorage.getItem('fids_bidsv3') === '1'; } catch (e) {}
     bView.innerHTML = `
-      <div class="bidsv2-screen${_bidsV3On ? ' bidsv3' : ''}" style="--bids-accent-img:url('${_bidsAcc.img}');--bids-ground-img:url('${_bidsAcc.ground}');--bids-bar-grad:${_bidsAcc.bar};--bids-tint:${_bidsAcc.tint};">
+      <div class="bidsv2-screen${_bidsV3On ? ' bidsv3' : ''}" style="${_bidsCardVars}--bids-accent-img:url('${_bidsAcc.img}');--bids-ground-img:url('${_bidsAcc.ground}');--bids-bar-grad:${_bidsAcc.bar};--bids-tint:${_bidsAcc.tint};">
 
         <!-- Banner — same v2 chevron pattern as the FIDS board: time
              + date top-right, airport pill (logo + IATA + name) center, and
@@ -18721,8 +18746,25 @@ const gView = document.getElementById('gateView');
             // centres it in the suitcase with no offset to tune. Gated on
             // the flag exactly like the class stamp: the prior design never
             // receives it.
+            //
+            // INLINE, not an <img>: the fills read the --card-* variables the
+            // screen stamps per belt, and an external SVG document cannot see
+            // the page's custom properties. Geometry is from the licensed
+            // Vecteezy icon 34544733 (Pro licence held), suitcase scaled 1.2
+            // so it fills the disc the way the mock draws it; the mock's
+            // colours are the fallbacks.
             var _crslArt = _bidsV3On
-              ? '<img class="bidsv2-carousel-art" src="/logos/symbols-utility/baggage-claim-disc.svg" alt="" draggable="false" onerror="this.remove()">'
+              ? '<svg class="bidsv2-carousel-art" viewBox="0 0 1000 1000" aria-hidden="true" focusable="false">'
+                + '<circle cx="500" cy="500" r="490" style="fill:var(--card-disc,#F4C15C)"/>'
+                + '<g transform="translate(500 500) scale(1.2) translate(-500 -500)">'
+                +   '<rect x="368" y="235" width="264" height="170" rx="46" style="fill:none;stroke:var(--card-handle,#F6EBD3);stroke-width:32"/>'
+                +   '<rect x="319" y="338" width="362" height="338" rx="26" style="fill:var(--card-case,#E27A6E)"/>'
+                +   '<rect x="211" y="338" width="78" height="338" rx="22" style="fill:var(--card-case,#E27A6E)"/>'
+                +   '<rect x="711" y="338" width="78" height="338" rx="22" style="fill:var(--card-case,#E27A6E)"/>'
+                +   [255, 353, 451, 549, 647, 745].map(function (x) {
+                      return '<circle cx="' + x + '" cy="750" r="29" style="fill:var(--card-dots,#E3A455)"/>';
+                    }).join('')
+                + '</g></svg>'
               : '';
             return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
               + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'

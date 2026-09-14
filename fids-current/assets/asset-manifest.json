@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2644,
+    "total": 2643,
     "by_category": {
       "ad": 10,
       "airline": 1439,
@@ -11,7 +11,7 @@
       "hotel": 884,
       "livery": 96,
       "misc": 15,
-      "symbol": 5,
+      "symbol": 4,
       "weather": 83
     }
   },
@@ -28128,17 +28128,6 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "priority pass",
-      "iata": "",
-      "country": "",
-      "ext": "svg"
-    },
-    {
-      "path": "/logos/symbols-utility/baggage-claim-disc.svg",
-      "file": "baggage-claim-disc.svg",
-      "category": "symbol",
-      "subcategory": "utility",
-      "group": "Utility symbols",
-      "name": "baggage claim disc",
       "iata": "",
       "country": "",
       "ext": "svg"

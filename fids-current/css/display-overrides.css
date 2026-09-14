@@ -19124,6 +19124,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    same constant. Nothing else is touched — the words come from LS.bagClaim,
    with nothing painted over them.
 
+   DIFFERENT NUMBERS, DIFFERENT COLOURS. The renderer stamps --card-band,
+   -body, -disc, -case, -handle, -dots and -ink per belt from
+   _BIDS_CARD_PALETTES, chosen by the belt NUMBER alone: belt 1 is the mock
+   at every airport, belt 2 the next set, so the same number reads the same
+   colour wherever the stream is. The values written here are the mock, as
+   the fallback for anything un-stamped; the disc art is inline SVG so its
+   fills read the same variables.
+
    Scoped to .bidsv3 exactly as v23327 is; ×16 to beat its ×14. Remove this
    block and the pattern design returns.
    ═══════════════════════════════════════════════════════════════════════ */
@@ -19133,12 +19141,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
 /* The card: salmon body, no border, everything clipped to the radius */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block {
-  background: #D9696B !important;
+  background: var(--card-body, #D9696B) !important;
   border: 0 !important;
   outline: none !important;
   border-radius: 26px !important;
   overflow: hidden !important;
-  box-shadow: 0 18px 50px rgba(80, 20, 30, .28) !important;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .25) !important;
   display: grid !important;
   grid-template-columns: 1fr !important;
   grid-template-rows: auto auto 1fr auto !important;
@@ -19158,7 +19166,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   grid-column: 1 !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  background: #8A1C2B !important;
+  background: var(--card-band, #8A1C2B) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   font-size: 5.4vh !important;
@@ -19184,7 +19192,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   position: static !important;
   width: 100% !important;
   box-sizing: border-box !important;
-  background: #8A1C2B !important;
+  background: var(--card-band, #8A1C2B) !important;
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   font-size: 5.4vh !important;
@@ -19216,8 +19224,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   justify-self: center !important;
   z-index: 2 !important;
   --crsl-num-cap: 22vh !important;
-  color: #2C1A6B !important;
-  -webkit-text-fill-color: #2C1A6B !important;
+  color: var(--card-ink, #2C1A6B) !important;
+  -webkit-text-fill-color: var(--card-ink, #2C1A6B) !important;
   line-height: 1 !important;
   padding: 0 !important;
   margin: 0 !important;
@@ -19228,8 +19236,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-terminal {
   grid-row: 4 !important;
   grid-column: 1 !important;
-  color: #2C1A6B !important;
-  -webkit-text-fill-color: #2C1A6B !important;
+  color: var(--card-ink, #2C1A6B) !important;
+  -webkit-text-fill-color: var(--card-ink, #2C1A6B) !important;
   padding: 0 0 2vh !important;
 }
 
