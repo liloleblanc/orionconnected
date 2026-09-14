@@ -86,13 +86,13 @@ test("each family still says its own words, with a lane line each side", () => {
   assert.match(a, /_g8SignPair\('pdClassic'/, "and the called panel the Classic cabin");
   assert.match(a, /_g8SignPair\('rows'/, 'titled Rows');
   assert.match(a, /_g8SignNext\('rows', _comingVal\)/, 'with the next row band as a Next line');
-  // PAL: open flow
-  assert.match(a, /_g8SignPair\(_pbPre \? 'preboard' : 'genboard'/, "PAL's called panel names the phase");
-  // generic: groups
-  assert.match(a, /_g8SignPair\('groupLabel'/, 'everyone else is titled Group');
-  assert.match(a, /_g8SignNext\('groupLabel', /, 'with the next group as a Next line');
+  // PAL: open flow — 'will begin shortly' then the general call
+  assert.match(a, /_g8SignPair\(_pbPre \? 'boardSoon' : 'genboard'/, "PAL's called panel names the phase");
+  // generic: groups, or zones for a carrier AIRLINE_ZONES says boards by zone
+  assert.match(a, /_g8SignPair\(_gkey, _gkey === 'zones'\)/, 'everyone else is titled Group or Zones by their own model');
+  assert.match(a, /_g8SignNext\(_gkey, nextVal\)/, 'with the next group as a Next line');
   // lanes: every family passes one on each side
-  const lanes = (a.match(/lanes: _gateLaneLbl\(/g) || []).length;
+  const lanes = (a.match(/lanes: _g8SignLanes\(/g) || []).length;
   assert.ok(lanes >= 8, `expected a lane line on both panels of all four families, found ${lanes}`);
 });
 
@@ -108,7 +108,8 @@ test('every title the sign asks for exists where the gate looks', () => {
     assert.match(T, new RegExp('^  ' + key + ':\\s*\\{', 'm'), `_GATE_LBL must carry '${key}' — the sign asks for it`);
   }
   assert.match(T, /^  groupLabel:\{ en:'Group', fr:'Groupe'/m, "'Group' must read in both languages");
-  assert.match(T, /^  boarding:\s*\{ en:'Boarding', fr:'Embarquement'/m, "'Boarding' must read in both languages");
+  // the table's own entry is column-aligned, so the spacing is loose here
+  assert.match(T, /^  boarding:\s*\{ en:'Boarding',\s+fr:'Embarquement'/m, "'Boarding' must read in both languages");
 });
 
 test('every word the sign can say, it can say in all nine languages', () => {
@@ -151,10 +152,103 @@ test('the Next line is whole phrases, one per language', () => {
     'and so does the standing priority note');
 });
 
+test('what the review found, held so it stays fixed', () => {
+  // Reviewed after v23769 by six independent readers; these are the things
+  // that survived their own skeptics.
+  const col = fn('_g8SignCol');
+  // The pair-measuring pass looks for .g8-pair. Without it a pair that has
+  // to go to two rows keeps its bar, stranded — the exact defect the pair
+  // machinery exists to remove.
+  assert.match(col, /class="g8-sign-title g8-pair"/, 'the title must be on the pass\'s radar');
+  assert.match(col, /class="g8-sign-sub g8-pair"/, 'and the sub');
+  assert.match(col, /\(_txt \? ' g8-pair' : ''\)/, 'and a value made of words');
+  assert.match(SRC, /var SEL = '[^']*\.g8-pair'/, 'the pass must still select .g8-pair');
+  // And the pass must actually RUN. It was appended in v23768 inside
+  // manageCustomBgUrls() by accident, so it installed itself only when an
+  // operator opened the custom-background dialog and never on a live board
+  // or gate — found on a gate at 4:3, where a stacked lane pair kept its bar.
+  const passAt = SRC.indexOf('function _fidsPairSeparators(root)');
+  const hostAt = SRC.indexOf('function manageCustomBgUrls() {');
+  assert.ok(passAt >= 0 && hostAt >= 0);
+  assert.ok(passAt < hostAt, 'the pair pass must be defined at top level, before manageCustomBgUrls, not inside it');
+  const hostBody = SRC.slice(hostAt, SRC.indexOf('function render() {', hostAt));
+  assert.doesNotMatch(hostBody, /_fidsPairSeparators|_fidsPairMO/, 'nothing of the pass may live inside the dialog');
+  assert.match(SRC, /window\._fidsPairMO\.observe\(document\.body, \{ childList: true, subtree: true, characterData: true \}\)/,
+    'and it must watch the whole document, which is how it reaches the gate');
+  // The lane line lost its nowrap armour and its stacking guard when it got
+  // a new container: on 4:3 and portrait screens 'Utilisez les voies 1 • 2'
+  // broke after the bullet, and once armoured it stacked with its bar
+  // stranded, because the old guard is keyed on a container this sign does
+  // not have. So the lane line is a PAIR like the titles — one mechanism
+  // for every pair on the sign, and it honours French-first the way the
+  // titles do.
+  assert.match(col, /class="g8-sign-lanes g8-pair"/, 'the lane line must be a pair container');
+  assert.match(fn('_g8SignLanes'), /'useLanes' : 'useLane'/, 'built from the lane labels');
+  assert.match(fn('_g8SignLanes'), /_gateLbl\([^,]+, _frF,/, 'French-first like every other pair');
+  assert.match(fn('_g8SignLanes'), /g8-pair-h[^']*' \+ w \+ ' ' \+ nums/, 'each half is the phrase plus the lane numbers, one unit');
+  const a = assembly();
+  const laneCalls = a.match(/lanes: _g8SignLanes\(/g) || [];
+  assert.ok(laneCalls.length >= 8, `expected the eight lane lines, found ${laneCalls.length}`);
+  assert.ok(!a.includes('_gateLaneLbl('), 'the old lane markup must not reach the sign');
+  // A column carrying a note or roster or marks says so, so the CSS can make
+  // room — Porter's pre-boarding overflowed both columns without it.
+  assert.match(col, /\(S\.note \|\| S\.roster\) \? ' has-note' : ''/);
+  assert.match(col, /S\.marks \? ' has-marks' : ''/);
+  // The roster is a list and wraps in its own slot; poured into a nowrap
+  // line it lost three of its five groups.
+  assert.match(a, /roster: _pdPre \? \(_gateLbl1\('preboardList', _frF\) \|\| ''\) : ''/, 'the roster has its own slot');
+  assert.match(col, /if \(S\.roster\) h \+= '<div class="g8-sign-roster">'/, 'which the column renders');
+  // During pre-boarding the Classic panel says it is not being called yet.
+  assert.match(a, /note: _pdPre \? _g8SignLines\('boardSoon'\) : ''/, "Porter's called panel says 'will begin shortly' during pre-boarding");
+  // PAL says 'Pre-boarding' once, not on both panels.
+  assert.match(a, /value: _g8SignPair\(_pbPre \? 'boardSoon' : 'genboard'\)/);
+  assert.match(a, /next: _pbPre \? _g8SignNext\(null, null, 'genboard'\) : ''/);
+  // Zone carriers are titled Zones, and a single zone is singular.
+  assert.match(a, /AIRLINE_ZONES\[airlineCode\] \|\| \{\}\)\.label === 'Zone'\) \? 'zones' : 'groupLabel'/);
+  assert.match(fn('_g8SignNext'), /groupKey = 'zone'/, 'a single number takes the singular');
+  assert.match(SRC, /^  zone:\s*\{ en:'Zone', fr:'Zone'/m, "and the singular exists");
+  // the duplicate 'boarding' key is gone — the gate table had it all along
+  const gl = SRC.indexOf('var _GATE_LBL = {');
+  const dup = (SRC.slice(gl, gl + 60000).match(/^  boarding:\s*\{/gm) || []).length;
+  assert.equal(dup, 1, `'boarding' appears ${dup} times in _GATE_LBL`);
+});
+
+test('the final call goes through the same sign', () => {
+  // Without this an AC gate flipped from the sign back to three
+  // quarter-columns with stacked halves for the last minutes of boarding.
+  const at = SRC.indexOf("finalHtml = '<div class=\"g8-final active\">'");
+  assert.ok(at >= 0, 'the final-call assembly must exist');
+  const f = SRC.slice(at, SRC.indexOf('\n    }\n', at));
+  assert.match(f, /_g8SignHtml\(_L, _R\)/, 'the final call must use the builder');
+  for (const old of ['_acLanesBodyHtml(', '_pdLanesBodyHtml(', '_pbFlowBodyHtml(', 'g8-lanes-std', '_gateLblHalf']) {
+    assert.ok(!f.includes(old), `${old} must not be rendered at the final call`);
+  }
+  assert.match(f, /_fcExpress \? '3 \\u2022 4' : '3 \\u2022 4 \\u2022 5 \\u2022 6'/, 'AC family: all zones');
+  assert.match(f, /value: _fcNext, lanes/, "WestJet: its own '2 – 9'");
+  assert.match(f, /value: _g8SignPair\('all'\)/, "everyone else: 'All | Tous'");
+  assert.doesNotMatch(f, /next:/, 'nothing comes after the final call');
+});
+
 test('the CSS wins, and keeps the halves unbreakable', () => {
   const at = CSS.lastIndexOf('ONE SIGN FOR EVERY AIRLINE');
   assert.ok(at >= 0, 'the sign block must exist');
-  const block = CSS.slice(at);
+  // to the next versioned block, or the end — never the whole tail
+  const nextAt = (() => { const m = /\n\/\* ═+\n\s+v\d{5}/g; m.lastIndex = at + 30; const r = m.exec(CSS); return r ? r.index : CSS.length; })();
+  const block = CSS.slice(at, nextAt);
+  // sizes are bounded by the column so a 4:3 or portrait column cannot
+  // overflow; the ellipsis that could sever a phrase is gone; the roster
+  // wraps; the lane halves keep their armour; the marks caption is styled
+  assert.match(block, /\.g8-sign-value \{[^}]*font-size: min\(22vh, 40cqw\)/);
+  assert.match(block, /\.g8-sign-title \{[^}]*font-size: min\(5\.2vh, 9cqw\)/);
+  assert.doesNotMatch(block.replace(/\/\*[\s\S]*?\*\//g, ''), /text-overflow: ellipsis/, 'an ellipsis is a mid-phrase sever');
+  assert.match(block, /\.g8-sign-roster \{[^}]*white-space: normal !important;/);
+  assert.match(block, /\.g8-sign \.g8-pd-marks-hdr \{/, 'the marks caption keeps its treatment inside the sign');
+  // the Next line lives between the discs, clear of them at any column width
+  assert.match(block, /\.g8-sign \.g8-sign-next \{[^}]*position: absolute !important;/);
+  assert.match(block, /\.g8-sign \.g8-sign-next \{[^}]*left: calc\(3% \+ min\(11vh, 20cqw\) \+ 1vh\)/, 'its margin is the disc plus a breath');
+  assert.match(block, /\.g8-sign-arrow \{[^}]*width: min\(11vh, 20cqw\)/, 'and the disc is that size');
+  // a column with a note gives its number back some room
+  assert.match(block, /\.g8-sign-col\.has-note \.g8-sign-value \{[^}]*font-size: min\(14vh, 30cqw\)/);
   const rules = block.replace(/\/\*[\s\S]*?\*\//g, '');
   const sels = [...rules.matchAll(/^html[^{]*?(?=\s*[{,])/gm)].map((m) => m[0]);
   assert.ok(sels.length >= 15, `found only ${sels.length} selectors`);
