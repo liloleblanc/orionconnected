@@ -277,7 +277,7 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   // shortly" as the note.
   const a = assembly();
   assert.equal((a.match(/title: _g8SignPair\('genboard'\)/g) || []).length, 3, 'AC/WS, PD, generic during boarding');
-  assert.equal((SRC.match(/title: _g8SignPair\('genboard'\)/g) || []).length, 6, 'and the same three at the final call');
+  assert.equal((SRC.match(/title: _g8SignPair\('genboard'\)/g) || []).length, 7, 'and four more at the final call — AC, WS, PD, generic');
   assert.match(a, /_R = _pdPre\s*\? \{ title: _g8SignPair\('pdClassic', false, true\), label: _g8SignPair\('rows'\), value: nowVal,\s*note: _g8SignLines\('boardSoon'\)/);
   assert.match(a, /: \{ title: _g8SignPair\('genboard'\), sub: _g8SignPair\('pdClassic', false, true\), label: _g8SignPair\('rows'\), value: nowVal/);
   // CSS: the row, the Porter blue half, the note's colour — none of them red.
