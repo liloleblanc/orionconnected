@@ -19512,7 +19512,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   gap: min(2.6vh, 3.2cqw) !important;
   max-width: 100% !important;
   min-width: 0 !important;
+  /* the row floats the way the number alone did (its auto margin is inert
+     inside the row), so the lanes line stays at the bottom on both panels */
+  margin: auto 0 !important;
 }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-row { margin: .4vh 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-row .g8-sign-value { margin: 0 !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-label {
   font-size: min(4.6vh, 8cqw) !important;
   font-weight: 800 !important;
@@ -19521,18 +19526,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex: 0 1 auto !important;
   min-width: 0 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-row .g8-sign-value {
-  font-size: min(18vh, 30cqw) !important;
+/* numerals only — capped by the column so the row fits 4:3 and portrait */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-row .g8-sign-value:not(.g8-grp-txt) {
+  font-size: min(18vh, 22cqw) !important;
   line-height: .95 !important;
   flex: 0 0 auto !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-left .g8-sign-row .g8-sign-value { font-size: min(13vh, 26cqw) !important; }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-row .g8-sign-value { font-size: min(13vh, 24cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-left .g8-sign-row .g8-sign-value:not(.g8-grp-txt) { font-size: min(13vh, 20cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-row .g8-sign-value:not(.g8-grp-txt) { font-size: min(13vh, 20cqw) !important; }
+/* a word value (the final call's All | Toutes) is never a numeral's size */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value.g8-grp-txt { font-size: 6.6vh !important; }
+/* a one-line note leaves the title and cabin at full size; only a roster
+   column (Porter pre-boarding) needs the shrink */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note:not(.has-roster) .g8-sign-title { font-size: min(5.2vh, 9cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note:not(.has-roster) .g8-sign-sub { font-size: min(4.6vh, 8cqw) !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-label { font-size: min(4.2vh, 7.5cqw) !important; }
 /* the picture has no tier marks and no kicker */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-marks, html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-kicker { display: none !important; }
-/* Porter: the French half of the cabin name in Porter blue, as drawn */
-html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-sub .g8-pair-sep + .g8-pair-h { color: #2e86de !important; }
+/* Porter: the FRENCH half of the cabin name in Porter blue, as drawn — by
+   language, not position: a French-first airport puts it first */
+html body:is([data-gate-airline="PD"],[data-gate-airline*="PORTER"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-sub .g8-pair-h[lang="fr"] { color: #2e86de !important; }
 /* the strip's reminder: under the phase words, smaller, attention-coloured */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board-welcome .g8-bw-text .g8-bw-note {
   display: block !important;
@@ -19540,6 +19553,21 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-weight: 700 !important;
   line-height: 1.15 !important;
   margin-top: .12em !important;
+  color: #c2410c !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+  max-width: 100% !important;
+}
+/* the final-call header carries the same reminder under FINAL CALL */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-final-hdr .g8-bw-note {
+  display: block !important;
+  font-size: .42em !important;
+  font-weight: 700 !important;
+  line-height: 1.15 !important;
+  margin-top: .15em !important;
   color: #c2410c !important;
   text-transform: none !important;
   letter-spacing: 0 !important;

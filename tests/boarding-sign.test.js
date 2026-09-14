@@ -266,12 +266,33 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(T, /photoId: \{\s*en:'Have your ID ready for presentation',\s*fr:'Veuillez avoir votre pièce d’identité prête',/, 'the reminder, in both languages');
   // The strip carries the reminder for Porter's general phase only, gated by
   // the same five-minute rule the sign uses for pre-boarding.
+  const noteFn = fn('_pdIdNote');
+  assert.match(noteFn, /if \(airlineCode !== 'PD' \|\| \(minsToDep > \(_boardLeadShown - 5\)\)\) return '';/, 'Porter, and never during pre-boarding');
+  assert.match(noteFn, /_gateLbl\('photoId', _frF/, 'it is the photoId label');
   const stripAt = SRC.indexOf('function _boardWelcomeStripHtml(');
   const strip = SRC.slice(stripAt, SRC.indexOf('\n  }\n', stripAt));
-  assert.match(strip, /airlineCode === 'PD' && String\(_stripState \|\| ''\) === 'boarding' && !\(minsToDep > \(_boardLeadShown - 5\)\)/, 'Porter, boarding, not pre-boarding');
-  assert.match(strip, /_bwNote = _gateLbl\('photoId', _frF/, 'it is the photoId label');
-  assert.match(strip, /_bwMidWords \+ \(_bwNote \? '<div class="g8-bw-note">' \+ _bwNote \+ '<\/div>' : ''\)/, 'under the phase words');
+  assert.match(strip, /var _bwNote = \(String\(_stripState \|\| ''\) === 'boarding'\) \? _pdIdNote\(\) : '';/, 'the strip prints it while boarding');
+  assert.match(strip, /'<div class="g8-bw-text">' \+ _bwMidWords \+ _bwNote \+ '<\/div>'/, 'under the phase words');
+  assert.match(SRC, /'<div class="g8-final-hdr">' \+ finalHdr \+ _pdIdNote\('g8-final-note'\) \+ '<\/div>'/, 'and the final-call header prints it too — it must not vanish for the last minutes');
   assert.doesNotMatch(assembly(), /_g8SignLines\('photoId'\)/, 'and no longer in the column');
+  // Only a numeral earns the row; a word value (All | Toutes at the final
+  // call) keeps its own size under its word, or the row's numeral size
+  // would blow it past the column.
+  const colFn = fn('_g8SignCol');
+  assert.match(colFn, /h \+= \(S\.label && !_txt\) \? '<div class="g8-sign-row">/, 'a row only for a numeral');
+  assert.match(colFn, /: \(\(S\.label \? '<div class="g8-sign-label g8-pair">' \+ S\.label \+ '<\/div>' : ''\) \+ _val\)/, 'a word value stands under its word');
+  assert.match(colFn, /\(S\.roster \? ' has-roster' : ''\)/, 'a roster column says so, so only it is shrunk');
+  const fc = SRC.slice(SRC.indexOf("finalHtml = '<div class=\"g8-final active\">'"));
+  assert.match(fc, /label: _g8SignPair\('rows'\), value: _g8SignPair\('all'\)/, "Porter's final call: Rows beside All | Toutes");
+  assert.match(fc, /label: _g8SignPair\(_gkey\), value: _g8SignPair\('all'\)/, 'and the generic one');
+  // Each half of a pair carries its language, so Porter blue lands on the
+  // French half wherever the airport puts it (first at YUL/YQB).
+  assert.match(fn('_g8SignPair'), /' lang="' \+ langsOf\[i\] \+ '"'/, 'halves carry lang=');
+  assert.match(SRC, /return wrap\(w, i, partLangs\[i\]\);/, '_gateLbl hands the language to wrap()');
+  // The fitter measures a row's word against the column less the number.
+  const pairPass = SRC.slice(SRC.indexOf('function _fidsPairSeparators('), SRC.indexOf('\n}\n', SRC.indexOf('function _fidsPairSeparators(')));
+  assert.match(pairPass, /var rowEl = col\.classList\.contains\('g8-sign-row'\) \? col : null;/);
+  assert.match(pairPass, /avail -= sib\.getBoundingClientRect\(\)\.width \+ \(parseFloat\(getComputedStyle\(rowEl\)\.columnGap\) \|\| 0\);/);
   // The general phase panels are titled General boarding with the cabin under
   // it; Porter's pre-boarding keeps the cabin as the title with "will begin
   // shortly" as the note.
@@ -285,14 +306,22 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   const bAt = CSS.lastIndexOf('v23773 — THE SIGN, TO THE PICTURE');
   assert.ok(bAt >= 0, 'the block must exist');
   const block = CSS.slice(bAt);
-  for (const sel of ['.g8-sign .g8-sign-row {', '.g8-sign .g8-sign-label {', '.g8-sign .g8-sign-sub .g8-pair-sep + .g8-pair-h {', '.g8-board-welcome .g8-bw-text .g8-bw-note {']) {
-    const i = block.indexOf(sel);
-    assert.ok(i >= 0, sel + ' must be styled');
-    const lineStart = block.lastIndexOf('\n', i) + 1;
-    assert.ok((block.slice(lineStart, i).match(/:not\(#_\)/g) || []).length >= 16, sel + ' must outrank the ×14 sign block');
+  // every selector in the block outranks the ×14 sign block — all of them,
+  // not a sample
+  const sels = [...block.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/^html[^{]*?(?=\s*\{)/gm)].map((m) => m[0]);
+  assert.ok(sels.length >= 12, `expected the block's selectors, found ${sels.length}`);
+  for (const s of sels) assert.ok((s.match(/:not\(#_\)/g) || []).length >= 16, `"${s.slice(-70)}" must carry 16 guards`);
+  for (const sel of ['.g8-sign .g8-sign-row {', '.g8-sign .g8-sign-label {', '.g8-sign .g8-sign-sub .g8-pair-h[lang="fr"] {', '.g8-board-welcome .g8-bw-text .g8-bw-note {', '.g8-final-hdr .g8-bw-note {', '.g8-sign .g8-sign-value.g8-grp-txt {', '.g8-sign .g8-sign-col.has-note:not(.has-roster) .g8-sign-title {']) {
+    assert.ok(block.indexOf(sel) >= 0, sel + ' must be styled');
   }
-  assert.match(block, /\.g8-sign-row \{[^}]*flex-direction: row !important;[^}]*align-items: center !important;/s, 'the word beside the number, centred on it');
-  assert.match(block, /\.g8-sign-sub \.g8-pair-sep \+ \.g8-pair-h \{ color: #2e86de !important; \}/, "Porter's French half in Porter blue");
+  assert.match(block, /\.g8-sign-row \{[^}]*flex-direction: row !important;[^}]*align-items: center !important;[^}]*margin: auto 0 !important;/s, 'the word beside the number, centred on it, and the row floats like the number did');
+  assert.match(block, /\.g8-sign \.g8-sign-row \.g8-sign-value \{ margin: 0 !important; \}/, "the number's own auto margin is inert inside the row");
+  assert.match(block, /\.g8-sign-row \.g8-sign-value:not\(\.g8-grp-txt\) \{\s*font-size: min\(18vh, 22cqw\) !important;/, 'numerals only, capped by the column');
+  assert.doesNotMatch(block, /\.g8-sign-row \.g8-sign-value \{\s*font-size/, 'no row size that a word value could inherit');
+  assert.match(block, /\.g8-sign-value\.g8-grp-txt \{ font-size: 6\.6vh !important; \}/, 'a word value keeps the size the sign gave it');
+  assert.match(block, /\.g8-sign-label \{[^}]*white-space: nowrap !important;/s, 'the word never wraps');
+  assert.match(block, /\.g8-sign-sub \.g8-pair-h\[lang="fr"\] \{ color: #2e86de !important; \}/, "Porter's French half in Porter blue, by language");
+  assert.doesNotMatch(block, /\.g8-pair-sep \+ \.g8-pair-h \{ color/, 'never by position');
   assert.match(block, /\[data-gate-airline="PD"\]/, 'scoped to Porter');
   const note = block.slice(block.indexOf('.g8-bw-note {'), block.indexOf('}', block.indexOf('.g8-bw-note {')));
   assert.match(note, /color: #c2410c !important;/, 'an attention colour');
@@ -308,7 +337,7 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(pass, /data-g8-base/, 'measured against the stylesheet size, not its own earlier shrink');
   assert.match(pass, /Math\.max\(base \* 0\.68, base \* ratio \* 0\.985\)/, 'floor of 68%');
   assert.match(pass, /el\.style\.setProperty\('font-size', target \+ 'px', 'important'\)/, "the stylesheet's size is !important — a plain inline value loses to it");
-  assert.match(pass, /el\.classList\.remove\('is-stacked'\);[\s\S]{0,400}var need = 0/, 'a pair once stacked is re-judged at the new size, not left stacked by its own class');
+  assert.match(pass, /el\.classList\.remove\('is-stacked'\);[\s\S]{0,900}var need = 0/, 'a pair once stacked is re-judged at the new size, not left stacked by its own class');
   assert.match(pass, /parseFloat\(ks\.marginLeft\)/, "the separator's margins are part of what has to fit");
   assert.match(SRC, /\.g8-sign \.g8-pair\[data-g8-base\]'\);[\s\S]{0,300}removeAttribute\('data-g8-base'\)/, 'a resize clears the stored base');
   assert.match(SRC, /^  zone:\s*\{ en:'Zone', fr:'Zone'/m, "and the singular exists");

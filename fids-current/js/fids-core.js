@@ -1567,6 +1567,12 @@ function _fidsPairSeparators(root) {
       // in vh/cqw and moves with the screen.
       if (el.classList.contains('g8-pair') && el.closest && el.closest('.g8-sign') && el.parentElement) {
         var col = el.parentElement;
+        // v23773 — a word that shares a row with its number (.g8-sign-row)
+        // is measured against the COLUMN, less the number and the gap: the
+        // row itself is as wide as its content, so measured against it the
+        // word always "fits" while it runs under the digits.
+        var rowEl = col.classList.contains('g8-sign-row') ? col : null;
+        if (rowEl && rowEl.parentElement) col = rowEl.parentElement;
         var base = parseFloat(el.getAttribute('data-g8-base')) || 0;
         if (!base) {
           el.style.removeProperty('font-size');
@@ -1581,6 +1587,10 @@ function _fidsPairSeparators(root) {
           var cur = parseFloat(getComputedStyle(el).fontSize) || base;
           var cs = getComputedStyle(col);
           var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+          if (rowEl) {
+            var sib = rowEl.querySelector('.g8-sign-value');
+            if (sib && sib !== el) avail -= sib.getBoundingClientRect().width + (parseFloat(getComputedStyle(rowEl).columnGap) || 0);
+          }
           var need = 0, kids = el.children;
           for (var k = 0; k < kids.length; k++) {
             // the separator's room is its margins (0 .22em), which a rect leaves out
@@ -12192,6 +12202,18 @@ function uxgGateHtml(ctx) {
   // WELCOME STRIP for the boarding takeovers
   // — like the physical AC gate sign's header:
   // airline rondelle · Welcome | Bienvenue · alliance lockup.
+  // v23773 — THE PHOTO-ID REMINDER, in one place: Porter, once general
+  // boarding is on (never during pre-boarding — the same five-minute rule
+  // the sign uses). The strip prints it under NOW BOARDING; the final-call
+  // header prints it under FINAL CALL, so it does not vanish for the last
+  // minutes, when it matters most.
+  function _pdIdNote(cls) {
+    try {
+      if (airlineCode !== 'PD' || (minsToDep > (_boardLeadShown - 5))) return '';
+      var t = _gateLbl('photoId', _frF, function (w) { return w; }, ' <span class="g8-bw-sep">|</span> ');
+      return t ? '<div class="g8-bw-note' + (cls ? ' ' + cls : '') + '">' + t + '</div>' : '';
+    } catch (e) { return ''; }
+  }
   function _boardWelcomeStripHtml(_stripState) {
     // WHITE-path emblems vanish on the white strip (the owner: United missing its
     // logo beside Welcome·Bienvenue — united-globe-clean is white-only).
@@ -12372,14 +12394,9 @@ function uxgGateHtml(ctx) {
     // colour that is not red. Porter's general phase only — the same
     // window the sign's note used — so it never prints during
     // pre-boarding, and never for a carrier that does not ask for it.
-    var _bwNote = '';
-    try {
-      if (airlineCode === 'PD' && String(_stripState || '') === 'boarding' && !(minsToDep > (_boardLeadShown - 5))) {
-        _bwNote = _gateLbl('photoId', _frF, function (w) { return w; }, ' <span class="g8-bw-sep">|</span> ');
-      }
-    } catch (eN) { _bwNote = ''; }
+    var _bwNote = (String(_stripState || '') === 'boarding') ? _pdIdNote() : '';
     var _bwMid = (_bwEmb ? '<img class="g8-bw-emblem"' + _bwSpin + ' src="' + _bwEmb + '" alt="" onerror="this.style.display=\'none\'">' : '')
-      + '<div class="g8-bw-text">' + _bwMidWords + (_bwNote ? '<div class="g8-bw-note">' + _bwNote + '</div>' : '') + '</div>'
+      + '<div class="g8-bw-text">' + _bwMidWords + _bwNote + '</div>'
       + (_bwStar ? '<span class="g8-bw-star">' + _bwStar + '</span>' : '');
     return '<div class="g8-board-welcome g8-bw-clocked">'
       + _bwClock.replace('::MID::', '<div class="g8-bw-mid">' + _bwMid + '</div>')
@@ -13072,20 +13089,22 @@ function uxgGateHtml(ctx) {
   // A word that is the same in both languages — Zones — is printed once;
   // the pair only doubles when the second language actually differs.
   function _g8SignPair(key, keepDup, short) {
-    var halves = [];
-    var html = _gateLbl(key, _frF,
-      function (w) { halves.push(w); return '<span class="g8-pair-h">' + w + '</span>'; },
-      '<span class="g8-pair-sep">|</span>', !!keepDup);
+    var halves = [], langsOf = [];
+    _gateLbl(key, _frF, function (w, i, lang) { halves.push(w); langsOf.push(lang || ''); return w; }, '', !!keepDup);
+    if (!halves.length) return '';
     // The mock writes 'PorterReserve | Réserve': when the second half repeats
     // the first half's brand prefix, it drops it, so a cabin pair holds one
     // line. Only asked for on cabin names; every other pair is left whole.
     if (short && halves.length === 2) {
       var m = /^([A-Z][a-z]+)(?=[A-Z])/.exec(halves[0]);
-      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) {
-        html = html.replace('<span class="g8-pair-h">' + halves[1] + '</span>',
-                            '<span class="g8-pair-h">' + halves[1].slice(m[1].length) + '</span>');
-      }
+      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) halves[1] = halves[1].slice(m[1].length);
     }
+    // v23773 — each half carries its language, so the French half can be
+    // coloured wherever it sits: second at most airports, FIRST at the
+    // French-first ones (YUL, YQB…). Position says nothing about language.
+    var html = halves.map(function (w, i) {
+      return '<span class="g8-pair-h"' + (langsOf[i] ? ' lang="' + langsOf[i] + '"' : '') + '>' + w + '</span>';
+    }).join('<span class="g8-pair-sep">|</span>');
     return html;
   }
   // The lane line as a pair, like the titles: each half one unit, the pair on
@@ -13157,7 +13176,7 @@ function uxgGateHtml(ctx) {
   }
   function _g8SignCol(side, S) {
     var h = '<div class="g8-board-col ' + (side === 'left' ? 'now' : 'next') + ' g8-sign-col g8-sign-' + side
-      + ((S.note || S.roster) ? ' has-note' : '') + '">';
+      + ((S.note || S.roster) ? ' has-note' : '') + (S.roster ? ' has-roster' : '') + '">';
     // g8-pair puts these on _fidsPairSeparators' radar, so a pair that has
     // to go to two rows loses its bar. g8-board-lane on the lane line gives it
     // back the nowrap armour and the stacking guard it always had.
@@ -13170,8 +13189,11 @@ function uxgGateHtml(ctx) {
         + '</div>';
       // v23773 — the group word and its number share ONE row, the word to
       // the left of the number (Rows | Rangées  1–7), as the owner's picture
-      // draws it. A value with no word (Porter's All | Tous) stands alone.
-      h += S.label ? '<div class="g8-sign-row"><div class="g8-sign-label g8-pair">' + S.label + '</div>' + _val + '</div>' : _val;
+      // draws it. Only a NUMERAL earns the row: a word value (the final
+      // call's All | Toutes) keeps its own size under its word, or the
+      // row's numeral size would blow it past the column.
+      h += (S.label && !_txt) ? '<div class="g8-sign-row"><div class="g8-sign-label g8-pair">' + S.label + '</div>' + _val + '</div>'
+         : ((S.label ? '<div class="g8-sign-label g8-pair">' + S.label + '</div>' : '') + _val);
     }
     if (S.note) h += '<div class="g8-sign-note">' + S.note + '</div>';
     if (S.roster) h += '<div class="g8-sign-roster">' + S.roster + '</div>';
@@ -13455,7 +13477,7 @@ function uxgGateHtml(ctx) {
       // the welcome sat, more room for the lane panels below.
       finalHtml = '<div class="g8-final active">'
         + _boardInfoRowHtml('final')
-        + '<div class="g8-final-hdr">' + finalHdr + '</div>'
+        + '<div class="g8-final-hdr">' + finalHdr + _pdIdNote('g8-final-note') + '</div>'
         // v23771 — the final call goes through the one sign as well. Left is
         // the priority group as during boarding; right is everyone: all the
         // zones (AC family, WestJet's 2 – 9), all rows for Porter, the general
@@ -24784,7 +24806,7 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     var _fi = picked.indexOf('fr');
     if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
   }
-  var seen = Object.create(null), parts = [];
+  var seen = Object.create(null), parts = [], partLangs = [];
   for (var i = 0; i < picked.length && parts.length < 2; i++) {
     var w = o[picked[i]];
     if (!w) continue;
@@ -24795,14 +24817,16 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     // 'Zones | Zones', per his stated law ('display it twice … symmetry').
     if (!keepDup && seen[k]) continue;   // 'Gate | Gate' helps nobody (chips)
     seen[k] = 1;
-    parts.push(w);
+    parts.push(w); partLangs.push(picked[i]);
   }
-  if (!parts.length) parts.push(o.en);
+  if (!parts.length) { parts.push(o.en); partLangs.push('en'); }
   // v23161 — wrap() now receives the index. The lane labels need their two
   // halves in addressable spans so they can STACK when they cannot share a
   // line; without that the pair is bare text and CSS has nothing to move.
   // Existing callers that ignore the second argument are unaffected.
-  if (typeof wrap === 'function') return parts.map(function (w, i) { return wrap(w, i); }).join(sep || '');
+  // v23773 — and the language of the half (third argument), so a rule can
+  // find the French half wherever the airport puts it.
+  if (typeof wrap === 'function') return parts.map(function (w, i) { return wrap(w, i, partLangs[i]); }).join(sep || '');
   return parts.join(sep || ' ');
 }
 // Lane line as a bilingual pair with the lane number in BOTH halves
