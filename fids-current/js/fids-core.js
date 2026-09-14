@@ -1557,6 +1557,43 @@ function _fidsPairSeparators(root) {
       var halves = el.querySelectorAll('.wxc-t-part, .g8-pair-h');
       if (!halves.length) halves = el.children;
       if (!halves || halves.length < 2) continue;
+      // v23771 — A SIGN PAIR SHRINKS BEFORE IT STACKS. The sign's rule is one
+      // line per pair (Priority | Priorité, never one over the other) and
+      // that is worth more than its type size: a long cabin pair (Economy
+      // Class | Classe économique) is scaled to its column, down to a floor
+      // of 68%, and only stacks past that. The stylesheet's size is kept in
+      // data-g8-base so a later pass measures against it, not against its
+      // own earlier shrink; a resize clears it (below) because the base is
+      // in vh/cqw and moves with the screen.
+      if (el.classList.contains('g8-pair') && el.closest && el.closest('.g8-sign') && el.parentElement) {
+        var col = el.parentElement;
+        var base = parseFloat(el.getAttribute('data-g8-base')) || 0;
+        if (!base) {
+          el.style.removeProperty('font-size');
+          base = parseFloat(getComputedStyle(el).fontSize) || 0;
+          if (base) el.setAttribute('data-g8-base', String(base));
+        }
+        if (base) {
+          // is-stacked forces the halves to block, so a pair once stacked
+          // would measure as stacked forever; lift it and let the new size
+          // be judged on its own wrap
+          el.classList.remove('is-stacked');
+          var cur = parseFloat(getComputedStyle(el).fontSize) || base;
+          var cs = getComputedStyle(col);
+          var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+          var need = 0, kids = el.children;
+          for (var k = 0; k < kids.length; k++) {
+            // the separator's room is its margins (0 .22em), which a rect leaves out
+            var ks = getComputedStyle(kids[k]);
+            need += kids[k].getBoundingClientRect().width + (parseFloat(ks.marginLeft) || 0) + (parseFloat(ks.marginRight) || 0);
+          }
+          var ratio = need ? avail / (need * base / cur) : 1;
+          var target = ratio >= 1 ? base : Math.max(base * 0.68, base * ratio * 0.985);
+          // the stylesheet's size is !important (it has to outrank the brand
+          // skins), so a plain inline value would lose to it
+          if (Math.abs(target - cur) > 0.5) el.style.setProperty('font-size', target + 'px', 'important');
+        }
+      }
       var a = halves[0].getBoundingClientRect();
       var b = halves[halves.length - 1].getBoundingClientRect();
       // a row apart, not a sub-pixel baseline wobble
@@ -1591,7 +1628,14 @@ try {
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _startPairMO);
     else _startPairMO();
-    window.addEventListener('resize', _fidsSchedulePairPass);
+    window.addEventListener('resize', function () {
+      // the sign pairs' stored base size is in screen units — measure afresh
+      try {
+        var _sp = document.querySelectorAll('.g8-sign .g8-pair[data-g8-base]');
+        for (var _i = 0; _i < _sp.length; _i++) { _sp[_i].removeAttribute('data-g8-base'); _sp[_i].style.removeProperty('font-size'); }
+      } catch (e) {}
+      _fidsSchedulePairPass();
+    });
   }
 } catch (e) {}
 
@@ -13013,6 +13057,8 @@ function uxgGateHtml(ctx) {
   // those decides: one line when it fits, two WHOLE phrases when it does not.
   // The halves can never break inside themselves, so the stacked-halves
   // form cannot come back through this builder.
+  // A word that is the same in both languages — Zones — is printed once;
+  // the pair only doubles when the second language actually differs.
   function _g8SignPair(key, keepDup, short) {
     var halves = [];
     var html = _gateLbl(key, _frF,
@@ -13040,6 +13086,22 @@ function uxgGateHtml(ctx) {
     return _gateLbl(plural ? 'useLanes' : 'useLane', _frF,
       function (w) { return '<span class="g8-pair-h">' + w + ' ' + nums + '</span>'; },
       '<span class="g8-pair-sep">|</span>');
+  }
+  // Which cabin each airline sells as premium and as economy — the words the
+  // sign uses over its two panels. A carrier with one cabin (Flair, PAL,
+  // Encore) has no entry and gets no cabin line. Jazz flies Air Canada's
+  // cabins; Rouge has its own.
+  var _G8_CABINS = {
+    'AC': ['cabinBiz', 'cabinEcon'], 'QK': ['cabinBiz', 'cabinEcon'],
+    'RV': ['cabinPremRouge', 'cabinEcon'],
+    'WS': ['cabinPremiumWS', 'cabinEconWS'],
+    'UA': ['cabinUnitedFirst', 'cabinUnitedEcon'],
+    'DL': ['cabinFirst', 'cabinEcon'], 'AA': ['cabinFirst', 'cabinEcon'], 'AS': ['cabinFirst', 'cabinEcon'],
+    'TS': ['cabinClub', 'cabinEcon']
+  };
+  function _g8CabinPair(code, which) {
+    var c = _G8_CABINS[code];
+    return (c && c[which]) ? _g8SignPair(c[which]) : '';
   }
   function _g8SignLines(key) {
     return _gateLbl(key, _frF, function (w) { return '<span class="g8-sign-line">' + w + '</span>'; }, '');
@@ -13089,6 +13151,7 @@ function uxgGateHtml(ctx) {
     // back the nowrap armour and the stacking guard it always had.
     if (S.title) h += '<div class="g8-sign-title g8-pair">' + S.title + '</div>';
     if (S.sub) h += '<div class="g8-sign-sub g8-pair">' + S.sub + '</div>';
+    if (S.kicker) h += '<div class="g8-sign-kicker g8-pair">' + S.kicker + '</div>';
     if (S.value) {
       var _txt = _g8GrpValCls(S.value);
       h += '<div class="g8-sign-value' + _txt + (_txt ? ' g8-pair' : '') + '">' + S.value
@@ -13274,8 +13337,8 @@ function uxgGateHtml(ctx) {
             // Air Canada family and WestJet: priority Zones 1 • 2 on the left
             // for the whole window; the called zone on the right, with the
             // zones still to come as the Next line.
-            _L = { title: _prioT, value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('zones', true), value: _acZonesVal,
+            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), kicker: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair('zones'), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair('zones') : '', value: _acZonesVal,
                    lanes: _g8SignLanes('3 \u2022 4', true),
                    next: _g8SignNext('zones', _comingVal) };
           } else if (airlineCode === 'PD') {
@@ -13318,8 +13381,8 @@ function uxgGateHtml(ctx) {
             // A carrier that boards by ZONE (AIRLINE_ZONES says so) is titled
             // Zones, not Group — Air North, for one.
             var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).label === 'Zone') ? 'zones' : 'groupLabel';
-            _L = { title: _prioT, note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair(_gkey, _gkey === 'zones'), value: String(nowVal),
+            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair(_gkey), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair(_gkey) : '', value: String(nowVal),
                    lanes: _g8SignLanes('3 \u2022 4', true),
                    next: _g8SignNext(_gkey, nextVal) };
           }
@@ -13385,12 +13448,12 @@ function uxgGateHtml(ctx) {
           var _prioT = _g8SignPair('priority');
           var _L, _R;
           if (_fcAcFam) {
-            _L = { title: _prioT, value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('zones', true), value: _fcExpress ? '3 \u2022 4' : '3 \u2022 4 \u2022 5 \u2022 6',
+            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), kicker: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair('zones'), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair('zones') : '', value: _fcExpress ? '3 \u2022 4' : '3 \u2022 4 \u2022 5 \u2022 6',
                    lanes: _g8SignLanes('3 \u2022 4', true) };
           } else if (airlineCode === 'WS' || airlineCode === 'WR') {
-            _L = { title: _prioT, value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair('zones', true), value: _fcNext, lanes: _g8SignLanes('3 \u2022 4', true) };
+            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), kicker: _g8SignPair('zones'), value: '1 \u2022 2', lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair('zones'), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair('zones') : '', value: _fcNext, lanes: _g8SignLanes('3 \u2022 4', true) };
           } else if (airlineCode === 'PD') {
             _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true), note: _g8SignLines('boardConv') + _g8SignLines('photoId'),
                    marks: _pdPrioMarksHtml(), lanes: _g8SignLanes('1 \u2022 2', true) };
@@ -13402,8 +13465,8 @@ function uxgGateHtml(ctx) {
                    lanes: _g8SignLanes('1', false) };
           } else {
             var _gkey = ((typeof AIRLINE_ZONES !== 'undefined' && AIRLINE_ZONES[airlineCode] || {}).label === 'Zone') ? 'zones' : 'groupLabel';
-            _L = { title: _prioT, note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
-            _R = { title: _g8SignPair(_gkey, _gkey === 'zones'), value: _g8SignPair('all'),
+            _L = { title: _prioT, sub: _g8CabinPair(airlineCode, 0), note: _g8SignLines('preboard'), lanes: _g8SignLanes('1 \u2022 2', true) };
+            _R = { title: _g8CabinPair(airlineCode, 1) || _g8SignPair(_gkey), sub: _g8CabinPair(airlineCode, 1) ? _g8SignPair(_gkey) : '', value: _g8SignPair('all'),
                    lanes: _g8SignLanes('3 \u2022 4', true) };
           }
           return _g8SignHtml(_L, _R);
@@ -24549,6 +24612,19 @@ var _GATE_LBL = {
   // 6 was. Same values as LS, here where _gateLbl looks. 'zone' is the
   // singular for a Next line naming one zone.
   groupLabel:{ en:'Group', fr:'Groupe', es:'Grupo', de:'Gruppe', it:'Gruppo', pt:'Grupo', ja:'グループ', zh:'组', ar:'المجموعة' },
+  // v23771 — the cabins, named the way each airline names them, so the
+  // priority panel can say who it is for (Porter's PorterReserve line, for
+  // everyone). Brand terms (Premium Rouge, United First) are the same in every
+  // language on purpose.
+  cabinBiz:       { en:'Business Class', fr:'Classe affaires', es:'Clase Ejecutiva', de:'Business Class', it:'Business Class', pt:'Classe Executiva', ja:'ビジネスクラス', zh:'商务舱', ar:'درجة رجال الأعمال' },
+  cabinFirst:     { en:'First Class', fr:'Première classe', es:'Primera Clase', de:'First Class', it:'Prima Classe', pt:'Primeira Classe', ja:'ファーストクラス', zh:'头等舱', ar:'الدرجة الأولى' },
+  cabinClub:      { en:'Club Class', fr:'Classe Club', es:'Clase Club', de:'Club Class', it:'Classe Club', pt:'Classe Club', ja:'クラブクラス', zh:'俱乐部舱', ar:'درجة كلوب' },
+  cabinEcon:      { en:'Economy Class', fr:'Classe économique', es:'Clase Económica', de:'Economy Class', it:'Classe Economica', pt:'Classe Económica', ja:'エコノミークラス', zh:'经济舱', ar:'الدرجة السياحية' },
+  cabinPremiumWS: { en:'Premium', fr:'Premium', es:'Premium', de:'Premium', it:'Premium', pt:'Premium', ja:'プレミアム', zh:'高级舱', ar:'بريميوم' },
+  cabinEconWS:    { en:'Economy', fr:'Économie', es:'Económica', de:'Economy', it:'Economica', pt:'Económica', ja:'エコノミー', zh:'经济舱', ar:'اقتصادي' },
+  cabinPremRouge: { en:'Premium Rouge', fr:'Premium Rouge', es:'Premium Rouge', de:'Premium Rouge', it:'Premium Rouge', pt:'Premium Rouge', ja:'Premium Rouge', zh:'Premium Rouge', ar:'Premium Rouge' },
+  cabinUnitedFirst:{ en:'United First', fr:'United First', es:'United First', de:'United First', it:'United First', pt:'United First', ja:'United First', zh:'United First', ar:'United First' },
+  cabinUnitedEcon:{ en:'United Economy', fr:'United Economy', es:'United Economy', de:'United Economy', it:'United Economy', pt:'United Economy', ja:'United Economy', zh:'United Economy', ar:'United Economy' },
   zone:      { en:'Zone', fr:'Zone', es:'Zona', de:'Zone', it:'Zona', pt:'Zona', ja:'ゾーン', zh:'区', ar:'المنطقة' },
   nextUp:    { en:'Next', fr:'Prochain', es:'Siguiente', de:'Nächste', it:'Prossimo', pt:'Próximo', ja:'次', zh:'下一个', ar:'التالي' },
   boardConv: { en:'Board at your convenience', fr:'Embarquez à votre convenance', es:'Embarque cuando desee', de:'Boarding jederzeit möglich', it:'Imbarco quando preferisce', pt:'Embarque quando quiser', ja:'ご都合の良い時にご搭乗ください', zh:'随时登机', ar:'اصعد في الوقت المناسب لك' },

@@ -19336,6 +19336,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   line-height: 1.06 !important;
   max-width: 100% !important;
 }
+/* the group word over the number, under the cabin line */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-kicker {
+  font-size: min(3.6vh, 6.5cqw) !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  opacity: .85 !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-kicker { font-size: min(3.2vh, 6cqw) !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value {
   display: flex !important;
   align-items: center !important;

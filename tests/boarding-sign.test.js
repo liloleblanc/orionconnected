@@ -89,7 +89,7 @@ test("each family still says its own words, with a lane line each side", () => {
   // PAL: open flow — 'will begin shortly' then the general call
   assert.match(a, /_g8SignPair\(_pbPre \? 'boardSoon' : 'genboard'/, "PAL's called panel names the phase");
   // generic: groups, or zones for a carrier AIRLINE_ZONES says boards by zone
-  assert.match(a, /_g8SignPair\(_gkey, _gkey === 'zones'\)/, 'everyone else is titled Group or Zones by their own model');
+  assert.match(a, /_g8SignPair\(_gkey\)/, 'everyone else is titled Group or Zones by their own model');
   assert.match(a, /_g8SignNext\(_gkey, nextVal\)/, 'with the next group as a Next line');
   // lanes: every family passes one on each side
   const lanes = (a.match(/lanes: _g8SignLanes\(/g) || []).length;
@@ -122,10 +122,11 @@ test('every word the sign can say, it can say in all nine languages', () => {
   const at = SRC.indexOf('var _GATE_LBL = {');
   const T = SRC.slice(at, at + 60000);
   const FULL = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
-  const BRAND = new Set(['pdReserve', 'pdClassic', 'avidTraveller']);
-  const KEYS = ['priority', 'zones', 'rows', 'groupLabel', 'boarding', 'preboard', 'genboard', 'allPax',
+  const BRAND = new Set(['pdReserve', 'pdClassic', 'avidTraveller', 'cabinPremRouge', 'cabinUnitedFirst', 'cabinUnitedEcon', 'cabinPremiumWS']);
+  const KEYS = ['priority', 'zones', 'zone', 'rows', 'groupLabel', 'boarding', 'preboard', 'genboard', 'allPax',
     'nextUp', 'boardConv', 'useLanes', 'useLane', 'comingUp', 'nowBoarding', 'boardSoon', 'preboardList',
-    'photoId', 'pdReserve', 'pdClassic', 'avidTraveller'];
+    'photoId', 'pdReserve', 'pdClassic', 'avidTraveller',
+    'cabinBiz', 'cabinFirst', 'cabinClub', 'cabinEcon', 'cabinEconWS', 'cabinPremiumWS', 'cabinPremRouge', 'cabinUnitedFirst', 'cabinUnitedEcon'];
   const short = [];
   for (const k of KEYS) {
     const m = new RegExp('^  ' + k + ':\\s*\\{([\\s\\S]*?)\\n  \\}|^  ' + k + ':\\s*\\{([^\\n]*)\\}', 'm').exec(T);
@@ -206,6 +207,54 @@ test('what the review found, held so it stays fixed', () => {
   // Zone carriers are titled Zones, and a single zone is singular.
   assert.match(a, /AIRLINE_ZONES\[airlineCode\] \|\| \{\}\)\.label === 'Zone'\) \? 'zones' : 'groupLabel'/);
   assert.match(fn('_g8SignNext'), /groupKey = 'zone'/, 'a single number takes the singular');
+  // A word that is the same in both languages is printed once — 'Zones', not
+  // 'Zones | Zones' — and only doubles when the second language differs.
+  assert.doesNotMatch(SRC, /_g8SignPair\('zones', true\)/, "'Zones' must not be kept twice");
+  assert.doesNotMatch(SRC, /_g8SignPair\(_gkey, _gkey === 'zones'\)/);
+  // And the priority panel names what its 1 • 2 are, under the cabin line.
+  const zoneLeft = (SRC.match(/_L = \{ title: _prioT, sub: _g8CabinPair\(airlineCode, 0\), kicker: _g8SignPair\('zones'\), value: '1 \\u2022 2'/g) || []).length;
+  assert.equal(zoneLeft, 3, `the AC/WS priority panel must say Zones above 1 • 2 during boarding and at the final call (found ${zoneLeft})`);
+});
+
+test("each airline's cabins, named the way it names them", () => {
+  // The priority panel says who it is for — Porter's PorterReserve line, for
+  // everyone that sells a premium cabin — and the called panel is titled by
+  // the economy cabin with the group word under it. One-cabin carriers get
+  // no cabin line and keep the group word as the title.
+  const m = SRC.indexOf('var _G8_CABINS = {');
+  assert.ok(m >= 0, 'the cabin map must exist');
+  const map = new Function('return ' + SRC.slice(SRC.indexOf('{', m), SRC.indexOf('};', m) + 1) + ';')();
+  assert.deepEqual(map['AC'], ['cabinBiz', 'cabinEcon'], 'Air Canada sells Business Class');
+  assert.deepEqual(map['QK'], ['cabinBiz', 'cabinEcon'], 'Jazz flies Air Canada cabins');
+  assert.deepEqual(map['RV'], ['cabinPremRouge', 'cabinEcon'], 'Rouge has its own');
+  assert.deepEqual(map['WS'], ['cabinPremiumWS', 'cabinEconWS']);
+  assert.deepEqual(map['UA'], ['cabinUnitedFirst', 'cabinUnitedEcon']);
+  assert.deepEqual(map['TS'], ['cabinClub', 'cabinEcon']);
+  for (const one of ['F8', 'PB', 'WR', 'PD']) assert.ok(!map[one], `${one} has one cabin (or its own sign) and no entry`);
+  // every key the map names exists in _GATE_LBL
+  const lblAt = SRC.indexOf('var _GATE_LBL = {');
+  const T = SRC.slice(lblAt, lblAt + 80000);
+  for (const [, pair] of Object.entries(map)) for (const k of pair) assert.match(T, new RegExp('^  ' + k + ':\\s*\\{', 'm'), `${k} must be a gate label`);
+  // the helper is what the panels read, and a missing cabin is an empty string
+  assert.match(fn('_g8CabinPair'), /return \(c && c\[which\]\) \? _g8SignPair\(c\[which\]\) : '';/);
+  const a = assembly();
+  assert.match(a, /title: _g8CabinPair\(airlineCode, 1\) \|\| _g8SignPair\('zones'\), sub: _g8CabinPair\(airlineCode, 1\) \? _g8SignPair\('zones'\) : ''/,
+    'the called panel is titled by the economy cabin, with Zones under it, or by Zones alone');
+  assert.match(a, /sub: _g8CabinPair\(airlineCode, 0\), note: _g8SignLines\('preboard'\)/, 'the generic priority panel names its premium cabin');
+  assert.match(fn('_g8SignCol'), /class="g8-sign-kicker g8-pair"/, 'the group word sits in its own slot over the number');
+  // A cabin pair can be long (Economy Class | Classe économique). The rule is
+  // one line per pair, so the pass shrinks a sign pair to its column before
+  // it lets it stack — and never below 68% of the stylesheet's size.
+  const pAt = SRC.indexOf('function _fidsPairSeparators(');
+  assert.ok(pAt >= 0, 'the pair pass must exist');
+  const pass = SRC.slice(pAt, SRC.indexOf('\n}\n', pAt));
+  assert.match(pass, /el\.closest\('\.g8-sign'\)/, 'the shrink is scoped to the sign');
+  assert.match(pass, /data-g8-base/, 'measured against the stylesheet size, not its own earlier shrink');
+  assert.match(pass, /Math\.max\(base \* 0\.68, base \* ratio \* 0\.985\)/, 'floor of 68%');
+  assert.match(pass, /el\.style\.setProperty\('font-size', target \+ 'px', 'important'\)/, "the stylesheet's size is !important — a plain inline value loses to it");
+  assert.match(pass, /el\.classList\.remove\('is-stacked'\);[\s\S]{0,400}var need = 0/, 'a pair once stacked is re-judged at the new size, not left stacked by its own class');
+  assert.match(pass, /parseFloat\(ks\.marginLeft\)/, "the separator's margins are part of what has to fit");
+  assert.match(SRC, /\.g8-sign \.g8-pair\[data-g8-base\]'\);[\s\S]{0,300}removeAttribute\('data-g8-base'\)/, 'a resize clears the stored base');
   assert.match(SRC, /^  zone:\s*\{ en:'Zone', fr:'Zone'/m, "and the singular exists");
   // the duplicate 'boarding' key is gone — the gate table had it all along
   const gl = SRC.indexOf('var _GATE_LBL = {');
