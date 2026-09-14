@@ -29,19 +29,31 @@ const SRC = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'
 
 const MARK = 'FLAT BIDS: COLOURS ONLY, NO PATTERN ART, FOR NOW.';
 const at = CSS.lastIndexOf(MARK);
-const BLOCK = at >= 0 ? CSS.slice(at) : '';
+// The block runs to the next versioned block's opening comment, or the end of
+// the file. A first draft sliced to the end of the file and so read every
+// later block's selectors as this one's — the unified boarding sign appended
+// after it failed three assertions here that were never about it.
+const nextAt = (() => {
+  const m = /\n\/\* ═+\n\s+v\d{5}/g;
+  m.lastIndex = Math.max(0, at + MARK.length);
+  const r = m.exec(CSS);
+  return r ? r.index : CSS.length;
+})();
+const BLOCK = at >= 0 ? CSS.slice(at, nextAt) : '';
 // The rules alone. The block's own comment is free to NAME the things the
 // rules must not touch, so every "must not contain" check below reads this.
 const RULES = BLOCK.replace(/\/\*[\s\S]*?\*\//g, '');
 const guards = (sel) => (sel.match(/:not\(#_\)/g) || []).length;
 const selectors = () => [...BLOCK.matchAll(/^html[^{]*?(?=\s*[{,])/gm)].map((m) => m[0]);
 
-test('the block exists and is the last word in the file', () => {
+test('the block exists and no later block reaches back into the b3 surface', () => {
   assert.ok(at >= 0, 'the flat-BIDS block must exist');
-  // Appended, never spliced: nothing may follow it, or a later rule with
-  // equal weight would win by source order.
-  assert.doesNotMatch(BLOCK.slice(MARK.length), /^\s*\/\*\s*═+\s*v\d{5}/m,
-    'another versioned block was appended after this one — it must stay last');
+  // Later blocks are fine — other surfaces get appended after this one —
+  // but a later rule that styles the BIDS surface would win by source order
+  // at equal weight, and this block would be silently undone.
+  const after = CSS.slice(nextAt).replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.doesNotMatch(after, /\.bidsv3|\.bidsv2-/,
+    'a block appended after this one styles the BIDS surface');
 });
 
 test('every selector outranks the v23327 rules it overrides', () => {

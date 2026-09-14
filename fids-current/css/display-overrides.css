@@ -19249,3 +19249,145 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   -webkit-text-stroke: 0 !important;
   text-shadow: none !important;
 }
+
+
+/* ═══════════════════════════════════════════════════════════════════════
+   v23769 — ONE SIGN FOR EVERY AIRLINE.
+
+   The boarding panel had four bodies: three quarter-columns for Air Canada
+   and WestJet with each label split into two stacked halves; two halves for
+   Porter; one flow column for PAL; and a now/next pair for everyone else.
+   The owner's mock fixes one frame for all of them and the words stay each
+   airline's own:
+
+     two panels — LEFT is the priority group, RIGHT is the group being
+     called. In each: a title pair on ONE line ('Priority | Prioritaire'),
+     an optional second pair (a cabin name, or 'Rows | Rangées'), the big
+     value, a note or a 'Next:' line as whole phrases one per language, the
+     lane line, and the same two arrow discs in the bottom corners.
+
+   Pairs are two unbreakable halves round a separator (.g8-pair-h and
+   .g8-pair-sep, the Welcome headline's own classes), so the runtime pass
+   that already measures those decides: one line when it fits, two WHOLE
+   phrases when it does not, and the bar disappears in the stacked case.
+   Nothing here can put 'Priority' over 'Priorité' — the halves are never
+   allowed to break inside themselves.
+
+   Backgrounds are left alone on purpose: .g8-board-col.now/.next keep every
+   airline's own brand rules, so the frame is shared and the colours are not.
+   ×14 — the heaviest .g8-board rule above carries 12.
+   ═══════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board.active .g8-board-body.g8-sign {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  grid-template-rows: 1fr !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  min-height: 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 1.1vh !important;
+  padding: 3.2vh 4% 16vh !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  text-align: center !important;
+  overflow: hidden !important;
+  color: #ffffff !important;
+}
+
+/* Pairs: each half unbreakable, the pair as a whole may go to two lines */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-pair-h {
+  display: inline-block !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-pair-sep {
+  opacity: .55 !important;
+  margin: 0 .22em !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .is-stacked > .g8-pair-h { display: block !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .is-stacked > .g8-pair-sep { display: none !important; }
+
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-title {
+  font-size: 5.2vh !important;
+  font-weight: 800 !important;
+  line-height: 1.06 !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-sub {
+  font-size: 4.6vh !important;
+  font-weight: 800 !important;
+  line-height: 1.06 !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: .12em !important;
+  font-size: 22vh !important;
+  font-weight: 900 !important;
+  line-height: .95 !important;
+  letter-spacing: -.02em !important;
+  font-variant-numeric: tabular-nums !important;
+  margin: auto 0 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-left .g8-sign-value { font-size: 14vh !important; }
+/* a value made of words (a phase, not a number) is a pair like the title */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value.g8-grp-txt {
+  display: block !important;
+  font-size: 6.6vh !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0 !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-valarrow { display: inline-flex !important; align-items: center !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-valarrow svg { width: .42em !important; height: .42em !important; display: block !important; fill: currentColor !important; }
+
+/* whole phrases, one per language */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-note,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-next {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: .3vh !important;
+  font-size: 3.9vh !important;
+  font-weight: 700 !important;
+  line-height: 1.12 !important;
+  opacity: .94 !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-note { margin: auto 0 !important; }
+/* a Next line under a value that already floats keeps to the bottom */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value ~ .g8-sign-next,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-note ~ .g8-sign-next { margin: 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-line { display: block !important; white-space: nowrap !important; max-width: 100% !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-lanes {
+  margin-top: 0 !important;
+  font-size: 3.5vh !important;
+  font-weight: 600 !important;
+  line-height: 1.1 !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-marks { display: flex !important; gap: 1.4vh !important; align-items: center !important; justify-content: center !important; flex-wrap: wrap !important; }
+
+/* the arrow discs — same two, same place, on every airline */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-arrow {
+  position: absolute !important;
+  bottom: 2.4vh !important;
+  width: 12vh !important;
+  height: 12vh !important;
+  display: block !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-arrow.l { left: 3% !important; right: auto !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-arrow.r { right: 3% !important; left: auto !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-disc { width: 100% !important; height: 100% !important; display: block !important; }

@@ -111,7 +111,9 @@ test('once general boarding commences it returns to the Reserve priority queue',
 });
 
 test('the phase is driven by the real boarding window, not a magic number', () => {
-  assert.match(SRC, /_pdLanesBodyHtml\(nowVal, _comingVal, minsToDep > \(_boardLeadShown - 5\)\)/,
+  // v23769 — the phase now feeds the unified sign through _pdPre, computed
+  // from the same lead; the invariant is the expression, not the callee.
+  assert.match(SRC, /var _pdPre = minsToDep > \(_boardLeadShown - 5\);/,
     'pre-boarding must key off the boarding lead the sign already computes, so it moves with the aircraft type');
 });
 
