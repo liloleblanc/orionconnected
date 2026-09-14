@@ -1709,23 +1709,45 @@ __name(maybeServeYqmCache, "maybeServeYqmCache");
 // window-filters per request. A handler that returns null (source down,
 // zero rows — for a scraped page zero usually means a redesign) falls
 // through to the ADB passthrough untouched.
-function tzOffsetFor(tz, y, mo, d) {
+// The zone's offset at one instant, as "+HH:MM". One formatter per zone:
+// a parse walks thousands of rows and asks for each of them twice.
+const _tzOffsetFmt = new Map();
+function tzOffsetAt(tz, ts) {
   try {
-    const probe = new Date(Date.UTC(y, mo - 1, d, 15, 0, 0));
-    const parts = new Intl.DateTimeFormat("en-CA", { timeZone: tz, timeZoneName: "shortOffset" }).formatToParts(probe);
+    let f = _tzOffsetFmt.get(tz);
+    if (!f) { f = new Intl.DateTimeFormat("en-CA", { timeZone: tz, timeZoneName: "shortOffset" }); _tzOffsetFmt.set(tz, f); }
+    const parts = f.formatToParts(new Date(ts));
     const name = ((parts.find((p) => p.type === "timeZoneName") || {}).value || "");
     const m = name.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
     if (m) return `${m[1]}${m[2].padStart(2, "0")}:${m[3] || "00"}`;
   } catch (e) {}
   return "+00:00";
 }
+__name(tzOffsetAt, "tzOffsetAt");
+// The offset in force for most of a calendar day (probed at 15:00Z, clear
+// of any 02:00 switch). On a change day this is the POST-switch offset,
+// so it is a first guess for a wall clock, never the answer — see
+// localTimeObjIn.
+function tzOffsetFor(tz, y, mo, d) {
+  return tzOffsetAt(tz, Date.UTC(y, mo - 1, d, 15, 0, 0));
+}
 __name(tzOffsetFor, "tzOffsetFor");
+// A wall clock in a zone → time object. The offset is resolved at the
+// instant, not the date: the date's offset is only a first guess, and on
+// a change day the hours before the switch carry the other one (Sydney
+// 01:30 on 2026-10-04 is still +10 although the day is +11 from 03:00).
+// The guess is re-read at the instant it lands on and corrected once: a
+// clock the switch skipped resolves to the instant an hour on, an
+// ambiguous one to its second occurrence.
 function localTimeObjIn(tz, y, mo, d, hh, mm) {
   const p2 = (n) => String(n).padStart(2, "0");
   const norm = new Date(Date.UTC(y, mo - 1, d, 12));
   y = norm.getUTCFullYear(); mo = norm.getUTCMonth() + 1; d = norm.getUTCDate();
-  const off = tzOffsetFor(tz, y, mo, d);
-  const ts = Date.parse(`${y}-${p2(mo)}-${p2(d)}T${p2(hh)}:${p2(mm)}:00${off}`);
+  const wall = `${y}-${p2(mo)}-${p2(d)}T${p2(hh)}:${p2(mm)}:00`;
+  let off = tzOffsetFor(tz, y, mo, d);
+  let ts = Date.parse(wall + off);
+  const at = tzOffsetAt(tz, ts);
+  if (at !== off) { off = at; ts = Date.parse(wall + off); }
   const iso = new Date(ts).toISOString();
   return {
     local: `${y}-${p2(mo)}-${p2(d)} ${p2(hh)}:${p2(mm)}:00${off}`,
@@ -1735,11 +1757,12 @@ function localTimeObjIn(tz, y, mo, d, hh, mm) {
 }
 __name(localTimeObjIn, "localTimeObjIn");
 // fmt12 sends window bounds in the AIRPORT'S local clock; parse them in
-// that airport's zone (Newfoundland's half-hour offset included).
+// that airport's zone (Newfoundland's half-hour offset included), at the
+// instant's own offset like any other wall clock.
 function windowTsIn(tz, s) {
   const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
   if (!m) return NaN;
-  return Date.parse(`${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}:00${tzOffsetFor(tz, Number(m[1]), Number(m[2]), Number(m[3]))}`);
+  return localTimeObjIn(tz, Number(m[1]), Number(m[2]), Number(m[3]), Number(m[4]), Number(m[5])).ts;
 }
 __name(windowTsIn, "windowTsIn");
 // A month-day with no year: the year that lands nearest to now wins,
@@ -1851,7 +1874,7 @@ function localTimeObjFromTs(tz, ts) {
   const parts = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d);
   const g = (t) => (parts.find((p) => p.type === t) || {}).value || "00";
   let hh = g("hour"); if (hh === "24") hh = "00";
-  const off = tzOffsetFor(tz, Number(g("year")), Number(g("month")), Number(g("day")));
+  const off = tzOffsetAt(tz, ts);   // the instant is known: its own offset, not the date's
   return {
     local: `${g("year")}-${g("month")}-${g("day")} ${hh}:${g("minute")}:00${off}`,
     utc: d.toISOString().slice(0, 19).replace("T", " ") + "+00:00",
@@ -6255,17 +6278,32 @@ __name(jfkFetchList, "jfkFetchList");
 //  • Every clock is Sydney wall-clock "HH:MM" beside its own "YYYY-MM-DD"
 //    (scheduledDate / estimatedDate), never an offset — and Sydney keeps
 //    DST (AEST +10 / AEDT +11, first Sunday of October and April), so the
-//    offset is derived per date, never fixed.
+//    offset is resolved per instant through localTimeObjIn, never fixed:
+//    01:30 on the October switch day is still +10, 01:30 on the April one
+//    still +11, and a late-evening estimate that slips past midnight into
+//    the switch keeps its true delay.
 //  • estimatedTime "-" is no estimate; when set, estimatedDate is set
-//    beside it (a cross-midnight estimate names the next day outright),
-//    and Departed / Arrived rows keep the actual off/on-blocks clock
-//    there. An estimate equal to the schedule is no revision.
+//    beside it (on every one of the capture's 585, the schedule's own
+//    day — none crossed midnight). An estimate the feed dates to another
+//    day is taken as written (the curfew makes an overnight re-time
+//    real); one dated the schedule's own day is settled across midnight
+//    like a dateless clock, so a wrapped 00:10 on a 23:50 schedule can
+//    never print a day early. Arrived rows carry the on-blocks clock
+//    there (400 of 401); Departed rows carry off-blocks on about a third
+//    (145 of 405) and print "-" on the rest, so most departed rows show
+//    their scheduled time. An estimate equal to the schedule is no
+//    revision.
 //  • destinations[] is the routing, not one city: [far end, stops…] on a
-//    departure, [origin, stops…] on an arrival, and Rex's round robins
-//    (SYD–MYA–MIM–SYD) list "Sydney" itself in slot 0 because the flight
-//    comes home. The far end here is the first non-Sydney city on a
-//    departure and the last on an arrival; a row with nothing but Sydney
-//    in it is dropped, so a SYD→SYD row can never reach a board.
+//    departure (QF1 SYD→SIN→LHR prints ["London","Singapore"]: the route
+//    reversed), [origin, stops…] on an arrival, and Rex's round robins
+//    list "Sydney" itself in slot 0 because the flight comes home
+//    (ZL6117 SYD→MIM→MYA→SYD departs as ["Sydney","Moruya","Merimbula"]
+//    and lands as ["Sydney","Merimbula","Moruya"]). The far end here is
+//    the first non-Sydney city on a departure and the last on an
+//    arrival — on a loop that is the last outstation before the turn for
+//    home (Moruya), on both boards, the same rule that gives QF1 London
+//    rather than Singapore. A row with nothing but Sydney in it is
+//    dropped, so a SYD→SYD row can never reach a board.
 //  • flightNumbers[0] is the operating flight (airlineCode matched it on
 //    every row); the rest are marketing codeshares — QF654 carries nine.
 //    One row per aircraft, as everywhere else: the marketing list is not
@@ -6284,7 +6322,10 @@ __name(jfkFetchList, "jfkFetchList");
 //  • status is free text beside a colour: On Time / Departed / Arrived /
 //    Cancelled seen live; Landed, Delayed, Gate Open, Boarding, Final
 //    Call, Gate Closed and Diverted in archived daytime captures of the
-//    same endpoint. Anything new falls back to the text.
+//    same endpoint (the capture itself, taken in the curfew, carries only
+//    the four). The raw text never reaches a board: anything outside the
+//    map is sniffed for those same words and otherwise lands on
+//    scheduled, where the revision drives early/delayed.
 // The site's website terms (3.3.8/3.3.9) reserve automated retrieval and
 // republication to written permission; the endpoint itself is anonymous
 // and CORS-open. Recorded here so the decision stays visible.
@@ -6297,34 +6338,44 @@ const SYD_STATUS = {
   "CANCELLED": "cancelled", "DELAYED": "delayed", "DIVERTED": "diverted",
   "GATE OPEN": "boarding", "BOARDING": "boarding", "FINAL CALL": "boarding", "GATE CLOSED": "gateclosed"
 };
+// Outside the map, whole words only: "Check-in Closed" is not the gate,
+// "Not Departed" is still on the ground, "Landing" is not yet arrived.
+// Whatever is left is scheduled, never the text.
 function sydStatus(text) {
   const key = String(text || "").replace(/\s+/g, " ").trim().toUpperCase();
   if (SYD_STATUS[key]) return SYD_STATUS[key];
   const s = key.toLowerCase();
+  if (s.includes("cancel")) return "cancelled";
   if (s.includes("divert")) return "diverted";
-  if (s.includes("closed")) return "gateclosed";
-  if (s.includes("board") || s.includes("final call") || s.includes("gate open")) return "boarding";
-  return yhzStatus(s);
+  if (/\bgate closed\b/.test(s)) return "gateclosed";
+  if (/\bboard|\bfinal call\b|\bgate open\b/.test(s)) return "boarding";
+  if (/\bdelay/.test(s)) return "delayed";
+  if (/\bnot\b/.test(s)) return "scheduled";
+  if (/\bdeparted\b/.test(s)) return "departed";
+  if (/\barrived\b|\blanded\b/.test(s)) return "arrived";
+  return "scheduled";
 }
 __name(sydStatus, "sydStatus");
 // The three carriers whose airline field is "" in the feed.
 const SYD_AIRLINE_NAMES = { FP: "FlyPelican", QN: "Skytrans", VJ: "VietJet Air" };
-// City → IATA for every name the feed printed over three days (97, each
+// City → IATA for every name the feed printed over three days (96, each
 // verified against the airport's published airline/destination table)
 // plus the routes that table says start within the season, keyed
 // uppercase on the feed's own spelling. The feed prints an airport name
 // where a city has more than one (Haneda, Incheon, Avalon, Sunshine
-// Coast, Whitsunday Coast, Ayers Rock, Hainan); "Newcastle" is
-// Williamtown NSW, FlyPelican's base — never the UK. This table is
-// terminal: nothing falls through to YHZ_CITY_IATA, where SYDNEY is Cape
-// Breton, HAMILTON is Ontario and VICTORIA is BC. An unknown name still
-// renders by name with no code, as every other feed's does.
+// Coast, Whitsunday Coast, Ayers Rock, Hainan, Hamilton Island — bare
+// "Hamilton" is deliberately absent, the feed never printed it and the
+// Atlantic table reads it as Ontario); "Newcastle" is Williamtown NSW,
+// FlyPelican's base — never the UK. This table is terminal: nothing
+// falls through to YHZ_CITY_IATA, where SYDNEY is Cape Breton, HAMILTON
+// is Ontario and VICTORIA is BC. An unknown name still renders by name
+// with no code, as every other feed's does.
 const SYD_CITY_IATA = {
   // Australia
   "MELBOURNE": "MEL", "BRISBANE": "BNE", "CANBERRA": "CBR", "GOLD COAST": "OOL", "ADELAIDE": "ADL",
   "PERTH": "PER", "CAIRNS": "CNS", "HOBART": "HBA", "LAUNCESTON": "LST", "DARWIN": "DRW",
   "ALICE SPRINGS": "ASP", "AYERS ROCK": "AYQ", "BROOME": "BME", "TOWNSVILLE": "TSV",
-  "HAMILTON ISLAND": "HTI", "HAMILTON": "HTI", "WHITSUNDAY COAST": "PPP", "SUNSHINE COAST": "MCY",
+  "HAMILTON ISLAND": "HTI", "WHITSUNDAY COAST": "PPP", "SUNSHINE COAST": "MCY",
   "HERVEY BAY": "HVB", "TOOWOOMBA": "WTB", "AVALON": "AVV", "BENDIGO": "BXG", "MILDURA": "MQL",
   "ALBURY": "ABX", "WAGGA WAGGA": "WGA", "GRIFFITH": "GFF", "NARRANDERA": "NRA", "PARKES": "PKE",
   "ORANGE": "OAG", "DUBBO": "DBO", "BROKEN HILL": "BHQ", "COBAR": "CAZ", "MOREE": "MRZ",
@@ -6393,10 +6444,14 @@ function sydParseFeed(jsonText, dir, nowMs) {
     const et = String(r.estimatedTime || "").trim();
     if (/^\d{2}:\d{2}$/.test(et)) {
       const ed = String(r.estimatedDate || "").trim();
-      // The feed dates its estimates; a dateless one (never seen, but
-      // "-" is what it prints for absent fields) is settled toward the
-      // schedule across midnight like any other dateless clock.
-      revised = /^\d{4}-\d{2}-\d{2}$/.test(ed)
+      // A date of the feed's own choosing is taken as written: it named
+      // another day on purpose. The schedule's own day (every capture
+      // row) tells nothing a dateless clock would not, and a dateless one
+      // (never seen; "-" is what the feed prints for absent fields) is
+      // possible — both are settled toward the schedule across midnight,
+      // so a 00:10 wrapped under a 23:50 schedule's date is 20 minutes
+      // late, never a day early.
+      revised = /^\d{4}-\d{2}-\d{2}$/.test(ed) && ed !== schedDate
         ? localIsoObj(SYD_TZ, `${ed}T${et}`)
         : settleRevised(localIsoObj(SYD_TZ, `${schedDate}T${et}`), sched, SYD_TZ);
       if (revised && revised.ts === sched.ts) revised = null;
@@ -6423,6 +6478,24 @@ function sydParseFeed(jsonText, dir, nowMs) {
   return out;
 }
 __name(sydParseFeed, "sydParseFeed");
+// The GETs one direction needs at this moment: each day file the board's
+// window touches × the two terminal types, each its own edge-cache key.
+// Pure; exported for the node tests, which pin two slices for a lone day
+// and four when yesterday or tomorrow rides along.
+function sydSlices(dir, nowMs) {
+  const flightType = dir === "dep" ? "departure" : "arrival";
+  const out = [];
+  for (const day of sydFeedDays(nowMs)) {
+    for (const terminalType of ["international", "domestic"]) {
+      out.push({
+        key: `syd/${day}/${dir}/${terminalType}`,
+        url: `https://www.sydneyairport.com.au/_a/flights?flightType=${flightType}&terminalType=${terminalType}&date=${day}`
+      });
+    }
+  }
+  return out;
+}
+__name(sydSlices, "sydSlices");
 
 const AUTHORITY_HANDLERS = {
   jfk: { tz: "America/New_York", source: "jfk-authority", list: async (dir, env) => {
@@ -6525,23 +6598,24 @@ const AUTHORITY_HANDLERS = {
     // because terminalType is required and there is no dateless form;
     // one edge-cache key per slice, so every screen shares the same
     // GETs per TTL. sydFeedDays adds yesterday for the first two hours
-    // and tomorrow from 06:00, so the board's now-2h..now+22h window is
-    // always covered: two to six ~8 KB GETs a direction. The Worker
-    // inflates the gzip body before .text(); the marker survives an
-    // empty day, which caches as an answer rather than an outage.
+    // or tomorrow from 06:00 (never both), so the board's now-2h..now+22h
+    // window is always covered: two or four ~8 KB GETs a direction. The
+    // Worker inflates the gzip body before .text(); the marker survives
+    // an empty day, which caches as an answer rather than an outage.
+    // A slice that does fail (5xx, egress, a CloudFront error page with
+    // no marker) fails the whole direction: half an airport served as a
+    // complete 200 would replace every warm board with the half, whereas
+    // null falls through to the 429 the client preserves last-good on,
+    // and the negative cache re-probes the slice in 30 s.
     const out = [], seen = new Set();
-    const flightType = dir === "dep" ? "departure" : "arrival";
-    for (const day of sydFeedDays(Date.now())) {
-      for (const terminalType of ["international", "domestic"]) {
-        const t = await fetchAuthorityText(`syd/${day}/${dir}/${terminalType}`,
-          `https://www.sydneyairport.com.au/_a/flights?flightType=${flightType}&terminalType=${terminalType}&date=${day}`,
-          '"flightData"', 90, { headers: { "Accept": "application/json", "Accept-Encoding": "gzip" } });
-        if (!t) continue;
-        for (const f of sydParseFeed(t, dir, Date.now())) {
-          const k = `${f.number}|${f._authTs}`;
-          if (seen.has(k)) continue;
-          seen.add(k); out.push(f);
-        }
+    for (const s of sydSlices(dir, Date.now())) {
+      const t = await fetchAuthorityText(s.key, s.url, '"flightData"', 90,
+        { headers: { "Accept": "application/json", "Accept-Encoding": "gzip" } });
+      if (!t) return null;
+      for (const f of sydParseFeed(t, dir, Date.now())) {
+        const k = `${f.number}|${f._authTs}`;
+        if (seen.has(k)) continue;
+        seen.add(k); out.push(f);
       }
     }
     return out.length ? out : null;
@@ -10034,6 +10108,8 @@ export {
   jfkRangeStrings,
   sydParseFeed,
   sydFeedDays,
+  sydSlices,
   sydStatus,
+  AUTHORITY_HANDLERS as _authorityHandlers,
   _authorityRosterHas
 };
