@@ -291,7 +291,7 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(SRC, /return wrap\(w, i, partLangs\[i\]\);/, '_gateLbl hands the language to wrap()');
   // The fitter measures a row's word against the column less the number.
   const pairPass = SRC.slice(SRC.indexOf('function _fidsPairSeparators('), SRC.indexOf('\n}\n', SRC.indexOf('function _fidsPairSeparators(')));
-  assert.match(pairPass, /var rowEl = col\.classList\.contains\('g8-sign-row'\) \? col : null;/);
+  assert.match(pairPass, /var rowEl = col\.classList\.contains\('g8-sign-row'\) \? col : null;\s*if \(rowEl && rowEl\.parentElement\) col = rowEl\.parentElement;/, 'a row word is measured against the column, not the row');
   assert.match(pairPass, /avail -= sib\.getBoundingClientRect\(\)\.width \+ \(parseFloat\(getComputedStyle\(rowEl\)\.columnGap\) \|\| 0\);/);
   // The general phase panels are titled General boarding with the cabin under
   // it; Porter's pre-boarding keeps the cabin as the title with "will begin
