@@ -19276,6 +19276,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    Backgrounds are left alone on purpose: .g8-board-col.now/.next keep every
    airline's own brand rules, so the frame is shared and the colours are not.
    ×14 — the heaviest .g8-board rule above carries 12.
+
+   v23771, after review: the pair containers carry .g8-pair so the runtime
+   pass actually measures them; the lane line is a .g8-board-lane again so
+   its nowrap armour and stacking guard apply; every size is bounded by the
+   column in cqw so a 4:3 or portrait column cannot overflow; the roster has a
+   wrapping slot; the final call goes through the same sign. The rules above
+   for the retired bodies (.g8-lanes3, .g8-lanes-pd, .g8-lanes-pb, the
+   grp-label/grp-wrap/board-lane set) now have no consumer on the gate.
    ═══════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-board.active .g8-board-body.g8-sign {
   display: grid !important;
@@ -19292,8 +19300,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex-direction: column !important;
   align-items: center !important;
   justify-content: flex-start !important;
-  gap: 1.1vh !important;
-  padding: 3.2vh 4% 16vh !important;
+  gap: min(1vh, 1.2cqh) !important;
+  padding: 3.2vh 4% calc(2.4vh + min(11vh, 20cqw) + 1.2vh) !important;
   min-height: 0 !important;
   min-width: 0 !important;
   text-align: center !important;
@@ -19315,7 +19323,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .is-stacked > .g8-pair-sep { display: none !important; }
 
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-title {
-  font-size: 5.2vh !important;
+  font-size: min(5.2vh, 9cqw) !important;
   font-weight: 800 !important;
   line-height: 1.06 !important;
   letter-spacing: 0 !important;
@@ -19323,24 +19331,41 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   max-width: 100% !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-sub {
-  font-size: 4.6vh !important;
+  font-size: min(4.6vh, 8cqw) !important;
   font-weight: 800 !important;
   line-height: 1.06 !important;
   max-width: 100% !important;
 }
+/* the group word over the number, under the cabin line */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-kicker {
+  font-size: min(3.6vh, 6.5cqw) !important;
+  font-weight: 700 !important;
+  line-height: 1.1 !important;
+  opacity: .85 !important;
+  max-width: 100% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-kicker { font-size: min(3.2vh, 6cqw) !important; }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   gap: .12em !important;
-  font-size: 22vh !important;
+  font-size: min(22vh, 40cqw) !important;
   font-weight: 900 !important;
   line-height: .95 !important;
   letter-spacing: -.02em !important;
   font-variant-numeric: tabular-nums !important;
   margin: auto 0 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-left .g8-sign-value { font-size: 14vh !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-left .g8-sign-value { font-size: min(14vh, 34cqw) !important; }
+/* a column that also carries a note or a roster (Porter's pre-boarding, PAL's
+   general call) gives its number back some room, so nothing overflows */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-value { font-size: min(14vh, 30cqw) !important; margin: .4vh 0 !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-note { font-size: min(3vh, 5.5cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-title { font-size: min(4.8vh, 8.5cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-sub { font-size: min(4.2vh, 7.5cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-note .g8-sign-roster { font-size: min(2.4vh, 4.2cqw) !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-col.has-marks .g8-sign-marks img { height: min(3vh, 5cqw) !important; width: auto !important; }
 /* a value made of words (a phase, not a number) is a pair like the title */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value.g8-grp-txt {
   display: block !important;
@@ -19359,7 +19384,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   flex-direction: column !important;
   align-items: center !important;
   gap: .3vh !important;
-  font-size: 3.9vh !important;
+  font-size: min(3.9vh, 7cqw) !important;
   font-weight: 700 !important;
   line-height: 1.12 !important;
   opacity: .94 !important;
@@ -19369,23 +19394,68 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 /* a Next line under a value that already floats keeps to the bottom */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-value ~ .g8-sign-next,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-note ~ .g8-sign-next { margin: 0 !important; }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-line { display: block !important; white-space: nowrap !important; max-width: 100% !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-line { display: block !important; white-space: nowrap !important; max-width: 100% !important; overflow: hidden !important; text-overflow: clip !important; }
+/* the pre-boarding roster is a LIST: it wraps, smaller and quieter */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-roster {
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  overflow-wrap: anywhere !important;
+  font-size: min(2.6vh, 4.4cqw) !important;
+  font-weight: 600 !important;
+  line-height: 1.25 !important;
+  opacity: .9 !important;
+  max-width: 92% !important;
+}
+/* the lane line keeps the armour it had in every earlier body: each half
+   one unit, the pair on one line, whole lines when it must stack */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-lanes .g8-lane-p { display: inline-block !important; white-space: nowrap !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-lanes.g8-lane-stacked .g8-lane-p { display: block !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-lanes.g8-lane-stacked .g8-lane-sep { display: none !important; }
+/* the marks caption and the row under it, as they were in the Porter body */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-marks { flex-direction: column !important; gap: .2vh !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-marks .g8-pd-preboard-marks { display: flex !important; flex-wrap: wrap !important; justify-content: center !important; gap: 1.4vh !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-pd-marks-hdr {
+  font-weight: 800 !important;
+  font-size: clamp(9px, min(1.2vh, 1vw), 16px) !important;
+  line-height: 1.1 !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  letter-spacing: .07em !important;
+  color: rgba(255,255,255,.62) !important;
+  margin: .25em 0 .12em !important;
+}
 
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-lanes {
   margin-top: 0 !important;
-  font-size: 3.5vh !important;
+  font-size: min(3.5vh, 6.5cqw) !important;
   font-weight: 600 !important;
   line-height: 1.1 !important;
   max-width: 100% !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-marks { display: flex !important; gap: 1.4vh !important; align-items: center !important; justify-content: center !important; flex-wrap: wrap !important; }
 
+/* the Next line lives in the band between the two discs, as the mock draws
+   it — out of the flow, so it can never push the lanes down or land under a
+   disc when a column is short (4:3, portrait); its size is bounded by the
+   column so the longest of them ('Prochain : Zones 4 • 5 • 6') fits between
+   the discs */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-next {
+  position: absolute !important;
+  left: calc(3% + min(11vh, 20cqw) + 1vh) !important;
+  right: calc(3% + min(11vh, 20cqw) + 1vh) !important;
+  bottom: 4.2vh !important;
+  margin: 0 !important;
+  font-size: min(3.9vh, 3.6cqw) !important;
+  z-index: 2 !important;
+}
+
 /* the arrow discs — same two, same place, on every airline */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-arrow {
   position: absolute !important;
   bottom: 2.4vh !important;
-  width: 12vh !important;
-  height: 12vh !important;
+  width: min(11vh, 20cqw) !important;
+  height: min(11vh, 20cqw) !important;
   display: block !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-sign .g8-sign-arrow.l { left: 3% !important; right: auto !important; }
