@@ -1677,6 +1677,15 @@ The element is a <div> now, and these ID-scoped rules make
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   v23768 — THE SCRIM MOVES TO ::after, WHERE NOTHING ELSE LIVES.
+
+   Shipped on ::before in v23767, which was already taken: :235 defines
+   .axr-hotel::before as the gold accent bar above the content block, and
+   EIGHTEEN brand blocks override it (`height:1px; width:clamp(48px,4.4vw,
+   72px)` for the luxury marks). Setting insets on it turned every one of
+   those bars into a full-bleed gradient — the bar vanished from every Accor
+   card. ::after was free; checked before using it this time.
+
    v23767 — THE SCRIM FOLLOWS THE TEXT.
 
    Reported as text that cannot be read over the photography. It is not the
@@ -1708,7 +1717,7 @@ The element is a <div> now, and these ID-scoped rules make
    at the top so the photograph is still open above the text — which is the
    part of v22715 worth keeping.
    ═══════════════════════════════════════════════════════════════════════════ */
-.axr-hotel::before{
+.axr-hotel::after{
   content:''; position:absolute; z-index:-1; pointer-events:none;
   /* bleed outward so the gradient's own edges never cross a glyph */
   left:calc(-1 * clamp(26px,2.8vw,42px));
@@ -1732,4 +1741,4 @@ The element is a <div> now, and these ID-scoped rules make
    there — so it is taken off the region the words occupy only. The rest of the
    photograph keeps it. */
 .axr-hero-img{ filter: brightness(1.10) saturate(1.06); }
-.axr-hotel::before{ backdrop-filter: brightness(0.82) saturate(0.94); }
+.axr-hotel::after{ backdrop-filter: brightness(0.82) saturate(0.94); }
