@@ -488,7 +488,8 @@ const AIRPORTS={
   FRA:{n:'Frankfurt',tz:'Europe/Berlin',r:'INT'},
   AMS:{n:'Amsterdam',tz:'Europe/Amsterdam',r:'INT'},
   DUB:{n:'Dublin',tz:'Europe/Dublin',r:'INT'},
-  KEF:{n:'Reykjavík (Keflavík)',tz:'Atlantic/Reykjavik',r:'INT'}
+  KEF:{n:'Reykjavík (Keflavík)',tz:'Atlantic/Reykjavik',r:'INT'},
+  SYD:{n:'Sydney',tz:'Australia/Sydney',r:'INT'}
 };
 const REGION_LABEL={CA:'Canada',US:'United States',INT:'Sun & International'};
 const AP_NAME={}; for(var _ak in AIRPORTS) AP_NAME[_ak]=AIRPORTS[_ak].n;
@@ -1258,7 +1259,8 @@ const APP_LIVE_AIRPORTS = new Set([
   'ZRH',
   'JFK',
   'IAH','MCO',
-  'LHR','DUB','EDI','KEF'
+  'LHR','DUB','EDI','KEF',
+  'SYD'   // v23772
 ]);
 // Build the airport picker from the catalogue, grouped by region.
 function buildAirportOptions(){
