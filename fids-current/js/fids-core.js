@@ -25176,7 +25176,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23803';
+var FIDS_BUILD_TAG = 'v23804';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -26612,8 +26612,17 @@ function setState(which, show) {
         // day. Navigating window.top works either way: a top-level board sends
         // itself, and a framed board takes the stale rotator with it instead of
         // waiting for the rotator to cooperate.
+        // v23804 — NOT WHEN THE ADDRESS NAMED THE AIRPORT.
+        // yyz.orionconnected.com quietly became a rotating tour of other
+        // airports, because Toronto blocks the Worker's IP and has no feed.
+        // The rescue is right for a screen left pointed at a dead airport; it
+        // is wrong when someone typed that airport's name, because the address
+        // says Toronto and the screen would show Halifax. A host-named board
+        // says it has no live data and stays put, which is the same reasoning
+        // that keeps a docked airport reachable by direct link.
         if (!window.__ocDeadTour
             && ap && !_fidsAirportHasFeed(ap)
+            && !window.__ocFromHost
             && !/[?&]norotate=1/.test(location.search)) {
           window.__ocDeadTour = setTimeout(function () {
             try {
@@ -32431,10 +32440,22 @@ document.addEventListener('click', function(e) {
 // YVR, MAN, DCA, IAD. tests/live-airports.test.js keeps this in step with the
 // worker; adding a handler there fails the suite until the code lands here.
 const FIDS_LIVE_AIRPORTS = new Set([
-  // v23805 — DCA and IAD are back. Both were parked because the Washington
-  // authority feed 429d the Worker's datacenter IP; the same window endpoint
-  // now answers 200 with 241 and 161 flights respectively, twice running.
-  // Nothing here changed — the other end did, exactly as with YYZ.
+  // v23804 — YYZ, at last. It was held out because Toronto's bot manager
+  // blocked the Worker's datacenter IP and /flights/yyz answered {"list":[]}.
+  // That block has lifted: the same route now returns 974 rows, three calls
+  // running, which is roughly double Montréal. Nothing about our code changed
+  // — the egress reputation did — so the only thing that was still wrong was
+  // this list. Canada's busiest airport was missing from every picker and
+  // every tour, and a board opened on it decided it was dead and sent itself
+  // away.
+  'YYZ',
+  // v23805 — DCA and IAD are back, for the same reason and on the same
+  // evidence. Both were parked because the Washington authority feed 429d the
+  // Worker's datacenter IP; the same window endpoint now answers 200 with 241
+  // and 161 flights respectively, twice running. Nothing here changed — the
+  // other end did. Three airports in two days came back without a line of our
+  // code moving, which is the argument for re-checking anything parked on an
+  // upstream reason rather than waiting to be reminded of it.
   'DCA', 'IAD',
   // v23420 — dedicated-route feeds (not the window endpoint): TPA fetches
   // Tampa's Acquia API client-side; YUL/YTZ/YHU use /flights/<iata>; LGA/EWR

@@ -28,12 +28,24 @@ const core = readFileSync(path.join(here, '..', 'fids-current', 'js', 'fids-core
 // airports he knew worked missing from the stream. Verified live 2026-09-07:
 // EWR 1235 rows, LGA 896, YUL 553, TPA 453, YTZ 144, YHU 51.
 //
-// YYZ has such a route too but is NOT listed: /flights/yyz returns {"list":[]}
-// because Toronto's Radware bot manager blocks the Worker's datacenter IP. The
-// identical request with identical headers returns 548 rows from a residential
-// IP, so it is egress reputation, not a header bug. Add YYZ here the day it
-// has a working egress.
-const EXTRA = ['YQM', 'YHZ', 'TPA', 'YUL', 'LGA', 'EWR', 'YTZ', 'YHU'];
+// v23804 — YYZ IS IN, AND THE REASON IT WAS OUT IS WORTH KEEPING.
+// It was held out because Toronto's Radware bot manager blocked the Worker's
+// DATACENTER IP: /flights/yyz answered {"list":[]} while the identical request
+// from a residential IP returned 548 rows. Egress reputation, not a header bug
+// — so there was nothing in this repo to fix and nothing to do but wait.
+//
+// That block has lifted. The same route now returns 974 rows, three calls
+// running, about double Montréal. Nothing here changed; the other end did.
+//
+// The lesson worth keeping: an airport parked for an upstream reason has no
+// alarm on it. Canada's busiest airport sat out of every picker and every tour
+// for as long as it took someone to try it by hand. If another code is ever
+// parked this way, it needs re-checking on a schedule, not on a hunch.
+// DCA and IAD are here for the same reason YYZ is: a code that came back from
+// an upstream block needs a POSITIVE assertion, or the only record that it
+// returned is a comment, and a comment does not fail when someone quietly drops
+// it out of a roster again.
+const EXTRA = ['YQM', 'YHZ', 'TPA', 'YUL', 'LGA', 'EWR', 'YTZ', 'YHU', 'YYZ', 'DCA', 'IAD'];
 
 // Airports held out of the pickers, and WHY — because the why decides what,
 // if anything, would ever bring them back.
