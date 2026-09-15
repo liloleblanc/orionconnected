@@ -11461,6 +11461,7 @@ function _buildV2MapCol(ctx, vars) {
               ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
                 + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
         +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
+        +   '<i id="gateNightSky" aria-hidden="true"></i>'
         // v23181 — ONE PLATE FOR THE AIRCRAFT, NOT TWO. The type used to be its
         // own shelf below the photo, which is the extra panel on the right rail:
         // the owner's drawing captions the photo ("Embraer-195 | C-FTOD") inside the
@@ -11499,6 +11500,7 @@ function _buildV2MapCol(ctx, vars) {
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
               + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
+        +   '<i id="gateNightSky" aria-hidden="true"></i>'
       +   '<div class="v2-rc-acb-cap">'
       +     '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
       +   '</div>'
@@ -24947,7 +24949,34 @@ try { if (typeof window !== 'undefined') window._gateLaneLbl = _gateLaneLbl; } c
 // its cycle. A rebuild is then invisible — the aircraft keeps floating from
 // where it was, rather than snapping back to the top of the loop.
 var _acSkyPhaseTimer = null;
+// v23789 — THE AIRCRAFT SHELF KNOWS WHAT TIME IT IS.
+// The five-layer sky is daylight footage and was daylight footage at two in
+// the morning, which is the same complaint the weather card's beach backdrop
+// drew. Same boundaries as that card uses, so the two panels never disagree
+// on screen: night from 21:00 to 06:00, by the GATE's own clock — the
+// aircraft is arriving here, and here is where anyone reading the board is
+// standing.
+function _acSkyIsNight() {
+  try {
+    var ia = (typeof window !== 'undefined' && window._gateIata) || '';
+    var tz = '';
+    try { tz = (typeof AP !== 'undefined' && AP[ia] && AP[ia].tz) || ''; } catch (eT) {}
+    var hh = Number(new Date().toLocaleTimeString('en-GB', tz
+      ? { timeZone: tz, hour12: false, hour: '2-digit' }
+      : { hour12: false, hour: '2-digit' }).slice(0, 2));
+    if (!isFinite(hh)) return false;
+    return hh < 6 || hh >= 21;
+  } catch (e) { return false; }
+}
+
 function _acSkyPhaseApply() {
+  // Toggled ABOVE the gate-acsky guard below: if the scene is switched off
+  // with ?acsky=0 while the class is on, it must come off too rather than
+  // leaving a night veil over a panel that no longer has a sky.
+  try {
+    document.body.classList.toggle('gate-acsky-night',
+      document.body.classList.contains('gate-acsky') && _acSkyIsNight());
+  } catch (eN) {}
   try {
     if (!document.body || !document.body.classList.contains('gate-acsky')) return;
     var t = Date.now() / 1000;
@@ -25016,7 +25045,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23791';
+var FIDS_BUILD_TAG = 'v23793';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43456,7 +43485,7 @@ function _wxSpeed() {
 }
 // Base lengths at _wxSpeed() === 1, from the CSS block: arrival runs to 17.3s,
 // exit to 4.2s. Both are rounded up so a deadline outlives its last frame.
-var _WXC_ENTRANCE_MS = 18700;
+var _WXC_ENTRANCE_MS = 21000;
 // How long the title overlay is on screen. The CSS animations are written
 // against this same six seconds; it is named here so the backdrop's pacing
 // cannot drift from it.
@@ -43553,11 +43582,33 @@ function _wxWantsIntro() {
 // Text drawn by the board costs a few hundred bytes instead of twenty
 // megabytes, re-reads crisp at any panel size, follows the board typeface,
 // and can be reordered — which the French-first airports require.
-// The motion behind the title: an animated globe, 1920x1080. Its own
-// lettering does not enter until about 5.2s, and the rate below keeps the
-// title inside the clean stretch before that, so the backdrop is pure motion
-// and every word on screen is one the board drew.
-var _WX_INTRO_BG = '/logos/Backgrounds/video/wx-title-globe.mp4';
+// What plays behind the title.
+//
+//   'sky'  — the night sky, drawn by the board. No file, no licence, no
+//            watermark, and dark by construction, which is the one property
+//            every stock candidate failed on: the type has to read over it.
+//   'clip' — _WX_INTRO_CLIP below, an animated globe. Kept because it is
+//            already committed and the switch is this one word.
+//
+var _WX_INTRO_BACKDROP = 'clip';
+var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-globe.mp4';
+
+// An airliner at night is a handful of lights crossing, not an airframe —
+// that is what anyone standing under one actually sees. The silhouette is
+// there at low opacity to give the lights something to belong to.
+function _wxIntroBackdropHtml() {
+  if (_WX_INTRO_BACKDROP !== 'sky') {
+    return '<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" '
+         + 'src="' + _WX_INTRO_CLIP + '"></video>';
+  }
+  return '<div class="wxc-intro-bg wxc-sky">'
+       + '<i class="wxc-sky-far"></i>'
+       + '<i class="wxc-sky-near"></i>'
+       + '<div class="wxc-sky-plane">'
+       + '<i class="wxc-sky-body"></i><i class="wxc-sky-strobe"></i>'
+       + '</div>'
+       + '</div>';
+}
 
 // Seconds of clip consumed across the whole title, whatever the speed dial is
 // set to. The clip is longer than the title and its headline slides in at
@@ -43626,9 +43677,11 @@ function _wxIntroHtml(frFirst) {
   // the clip plays, the scrim knocks it back, the panel blooms, the stack
   // settles out of a tilt, the ink fades up, the block drifts through the
   // hold, and a light crosses it.
-  return '<div class="wxc-intro" aria-hidden="true">'
-       + '<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" '
-       + 'src="' + _WX_INTRO_BG + '"></video>'
+  // A drawn sky needs far less knocking back than footage does, so the
+  // overlay says which it got and the scrim and the plate soften to match.
+  var _sky = (_WX_INTRO_BACKDROP === 'sky');
+  return '<div class="wxc-intro' + (_sky ? ' wxc-intro-drawn' : '') + '" aria-hidden="true">'
+       + _wxIntroBackdropHtml()
        + '<i class="wxc-intro-scrim"></i>'
        + '<i class="wxc-intro-panel"></i>'
        + '<div class="wxc-intro-stack"><div class="wxc-intro-lines">' + h + '</div></div>'
