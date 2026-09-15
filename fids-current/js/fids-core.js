@@ -24999,7 +24999,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23780';
+var FIDS_BUILD_TAG = 'v23781';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -40558,7 +40558,12 @@ function _getGateAdDwellMs(slide) {
   // minute and every scene ticked at the same flat interval — the 'welcome
   // aboard to map, thats it, really bumping' cadence.
   if (slide.type === 'bigcraft') return 45000;
-  if (slide.type === 'wxcard') return 24000;
+  // v23781 — 24s no longer covers this card. Its staged arrival runs 17.3s at
+  // the default speed, which would have left six seconds of stillness before it
+  // began leaving again — the card would never be read. 42s leaves 22s at rest
+  // after the last band, more than the whole slide used to be. Scaled with
+  // ?wxspeed= so dialling the pacing cannot starve it.
+  if (slide.type === 'wxcard') return Math.round(42000 * _wxSpeed());
   // Long enough to read a name and two caption lines without lingering.
   if (slide.type === 'heritage') return 14000;
   // v218.96: custom slides from the Gate Theme editor carry their own
@@ -41085,7 +41090,10 @@ function _restartGateAdsTimer() {
               if (_old.querySelector('.wxcard-wrap')) {
                 _old.setAttribute('data-wx-leaving', '1');
                 var _wxLeaveWrap = _old.querySelector('.wxcard-wrap');
-                if (_wxLeaveWrap) { _wxLeaveWrap.classList.remove('wxc-entering'); _wxLeaveWrap.classList.add('wxc-leaving'); }
+                if (_wxLeaveWrap) {
+                  try { var _spL = _wxSpeed(); if (_spL !== 1) _wxLeaveWrap.style.setProperty('--wxc-t', String(_spL)); } catch (eS2) {}
+                  _wxLeaveWrap.classList.remove('wxc-entering'); _wxLeaveWrap.classList.add('wxc-leaving');
+                }
               }
             } catch (eWxL) {}
             // The children moved out — bust the per-slide DOM caches so a
@@ -41151,7 +41159,7 @@ function _restartGateAdsTimer() {
             // transition is cleared so nothing fades the group as a whole.
             _old.style.transition = 'none';
             _old.style.opacity = '1';
-            setTimeout(function () { try { _old.remove(); } catch (e2) {} }, _WXC_EXIT_MS + 120);
+            setTimeout(function () { try { _old.remove(); } catch (e2) {} }, Math.round(_WXC_EXIT_MS * _wxSpeed()) + 120);
           } else {
             _old.style.opacity = '0';
             setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 1050);
@@ -43412,12 +43420,29 @@ function _renderHeritageCard(el) {
 // held during the delay by animation-fill-mode, and reachable only while the
 // class is on the wrap. A weather card that misses its trigger is unanimated,
 // never invisible, which on a public display is the only acceptable way round.
-var _WXC_ENTRANCE_MS = 9600;
+// v23781 — ONE DIAL FOR THE WHOLE SEQUENCE.
+// Three cuts of this animation were rejected as too fast, so rather than guess
+// a fourth, the pacing is a multiplier: ?wxspeed=1.4 stretches every delay and
+// duration, the holds with them, so the shape is preserved at any speed. The
+// value rides a CSS custom property (--wxc-t) that every timing in the
+// entrance block is a calc() against, and it scales the JS deadlines and this
+// card's dwell to match. Clamped to 0.5-4 so a typo cannot park a slide for an
+// hour or flicker it past. Inert without the parameter.
+function _wxSpeed() {
+  try {
+    var v = parseFloat(new URLSearchParams(location.search).get('wxspeed'));
+    if (isFinite(v) && v >= 0.5 && v <= 4) return v;
+  } catch (e) {}
+  return 1;
+}
+// Base lengths at _wxSpeed() === 1, from the CSS block: arrival runs to 17.3s,
+// exit to 4.2s. Both are rounded up so a deadline outlives its last frame.
+var _WXC_ENTRANCE_MS = 17600;
 // The staged exit: the four content bands leave 0.34s apart at 0.62s each, then
 // the scene alone over 1.1s — 3.36s, rounded up so the cover outlives the last
 // frame of it. The entrance is longer because arriving is the part being read;
 // leaving only has to feel of a piece with it.
-var _WXC_EXIT_MS = 3400;   // last band lands at 1.84s; slack, then strip
+var _WXC_EXIT_MS = 4400;
 
 // Ends the sequence wherever it has got to, and cancels the deadline.
 //
@@ -43461,12 +43486,13 @@ function _wxArmEntrance(wrap) {
     var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
     if (window._wxEntrancePlayedSeq === seq) return false;   // already played for this visit
     window._wxEntrancePlayedSeq = seq;
+    try { var _sp = _wxSpeed(); if (_sp !== 1) wrap.style.setProperty('--wxc-t', String(_sp)); } catch (eS) {}
     wrap.classList.add('wxc-entering');
     if (window._wxEntranceTimer) { try { clearTimeout(window._wxEntranceTimer); } catch (eC) {} }
     window._wxEntranceTimer = setTimeout(function () {
       window._wxEntranceTimer = null;
       _wxEndEntrance();
-    }, _WXC_ENTRANCE_MS);
+    }, Math.round(_WXC_ENTRANCE_MS * _wxSpeed()));
     return true;
   } catch (e) { return false; }
 }

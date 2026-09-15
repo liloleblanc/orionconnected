@@ -54,7 +54,7 @@ const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/display-overrides.
 // The block is appended at the foot of an append-only file, so everything from
 // the comment that opens it is ours. Starting at the `/*` and not at the title
 // matters: the comment-stripping below needs the opener to strip the header.
-const TITLE_AT = CSS.indexOf('THE WEATHER CARD ARRIVES IN ORDER.');
+const TITLE_AT = CSS.indexOf('THE WEATHER CARD ARRIVES IN ORDER');
 const BLOCK_AT = TITLE_AT >= 0 ? CSS.lastIndexOf('/*', TITLE_AT) : -1;
 const BLOCK = BLOCK_AT >= 0 ? CSS.slice(BLOCK_AT) : '';
 
@@ -85,8 +85,14 @@ function keyframe(name) {
 
 const seconds = v => parseFloat(v);
 const animOf = child => ruleFor(child).match(/animation:\s*([\w-]+)/)[1];
-const delayOf = child => seconds(ruleFor(child).match(/animation-delay:\s*([\d.]+)s/)[1]);
-const durOf = child => seconds(ruleFor(child).match(/animation:\s*[\w-]+\s+([\d.]+)s/)[1]);
+// v23781 — every timing is now calc(<base>s * var(--wxc-t, 1)), so the dial can
+// stretch the whole sequence from the URL without the shape changing. These
+// read the BASE, which is what every assertion here is about: the dial only
+// scales, and its own clamp is tested separately.
+const TIME = '(?:([\\d.]+)s|calc\\(\\s*([\\d.]+)s\\s*\\*\\s*var\\(--wxc-t[^)]*\\)\\s*\\))';
+const pick = m => seconds(m[1] !== undefined ? m[1] : m[2]);
+const delayOf = child => pick(ruleFor(child).match(new RegExp('animation-delay:\\s*' + TIME)));
+const durOf = child => pick(ruleFor(child).match(new RegExp('animation:\\s*[\\w-]+\\s+' + TIME)));
 
 // The block's prose names .wxc-globe (to say it is deliberately absent) and
 // .wxc-entering (to explain what drives the thing), so anything asking what
@@ -110,9 +116,9 @@ test('all five layers are staged, and nothing else is', () => {
 test('the delays run video → top → hours → 5-day → credit, ascending', () => {
   const delays = STAGES.map(([name, child]) => {
     const rule = ruleFor(child);
-    const m = rule.match(/animation-delay:\s*([\d.]+)s/);
+    const m = rule.match(new RegExp('animation-delay:\\s*' + TIME));
     assert.ok(m, `${name} must carry an animation-delay`);
-    return [name, seconds(m[1])];
+    return [name, pick(m)];
   });
   for (let i = 1; i < delays.length; i++) {
     assert.ok(delays[i][1] > delays[i - 1][1],
@@ -162,12 +168,20 @@ test('the whole sequence finishes well inside the slide', () => {
   // the sequence is long on purpose and the pauses between bands carry as much
   // of it as the movement. What still has to hold is that the card spends most
   // of its turn STILL — the slide's floor is 22s.
-  assert.ok(last < 11,
-    `the last band lands at ${last.toFixed(2)}s — past 11s the card is arriving
-     for half its slide, and a board that is never at rest cannot be read`);
+  // Four cuts were rejected as hurried: 1.9s, 5.7s, 9.3s. The bound that
+  // matters is not a fixed number of seconds — it is that the card is STILL
+  // for longer than it spends arriving, which is what makes it readable. The
+  // dwell was raised with the sequence for exactly that reason, so the two are
+  // checked against each other rather than against a guess.
+  const dwellSrc = SRC.match(/slide\.type === 'wxcard'\) return Math\.round\((\d+) \* _wxSpeed\(\)\)/);
+  assert.ok(dwellSrc, "this card's dwell must be its own, and scale with the dial");
+  const dwell = Number(dwellSrc[1]) / 1000;
+  assert.ok(last < dwell / 2,
+    `the arrival runs ${last.toFixed(2)}s against a ${dwell}s dwell — the card ` +
+    'must be at rest for longer than it spends arriving, or it cannot be read');
   assert.ok(last > 7,
-    `the last band lands at ${last.toFixed(2)}s — under 7s is the pacing that
-     was rejected as too fast; this entrance is meant to be unhurried`);
+    `the last band lands at ${last.toFixed(2)}s — under 7s is pacing that was ` +
+    'rejected as too fast; this entrance is meant to be unhurried');
 });
 
 test('the video opens in the clear, not under the outgoing slide', () => {
@@ -466,8 +480,9 @@ test('the exit can only ever hide a copy that is on its way out', () => {
   assert.ok(fade >= 0, 'the dissolve must special-case the marked copy');
   const tail = SRC.slice(fade, fade + 700);
   assert.match(tail, /_old\.remove\(\)/, 'and must still remove it');
-  assert.match(tail, /_WXC_EXIT_MS \+ 120/,
-    'on a deadline past the end of the sequence, so the last frame is not cut');
+  assert.match(tail, /Math\.round\(_WXC_EXIT_MS \* _wxSpeed\(\)\) \+ 120/,
+    'on a deadline past the end of the sequence — and scaled by the dial, or ' +
+    'a slowed exit would have its cover pulled part-way through');
   const ms = /var _WXC_EXIT_MS = (\d+);/.exec(SRC);
   assert.ok(ms, '_WXC_EXIT_MS must be declared');
   const last = Math.max(...[...BLOCK.matchAll(/wxc-leaving[^{]*\{[^}]*?animation: wxcLeave\w* ([\d.]+)s[^}]*?animation-delay: ([\d.]+)s/gs)]
@@ -616,17 +631,21 @@ function harness() {
   const timers = new Map();
   let nextId = 0;
   const w = { _gateAdVisitSeq: 1 };
+  // _wxSpeed reads location.search; the dial itself is tested separately, so
+  // here it is held at 1 and the harness is about the lifecycle only.
   const api = new Function('window', 'document', 'setTimeout', 'clearTimeout',
-    '_WXC_ENTRANCE_MS',
+    '_WXC_ENTRANCE_MS', '_wxSpeed',
     endSrc[0] + '\n' + armSrc[0] + '\nreturn { arm: _wxArmEntrance, end: _wxEndEntrance };')(
     w, doc, fn => { timers.set(++nextId, fn); return nextId; },
-    id => timers.delete(id), Number(msSrc[1]));
+    id => timers.delete(id), Number(msSrc[1]), () => 1);
 
   const wrap = () => {
     const c = new Set();
     const n = {
       c,
       classList: { add: x => c.add(x), remove: x => c.delete(x), contains: x => c.has(x) },
+      // arming stamps the speed dial on the wrap when it is not 1
+      style: { props: {}, setProperty(k, v) { this.props[k] = v; } },
       querySelectorAll: () => [],
     };
     all.push(n);
@@ -720,6 +739,7 @@ test('ending the sequence reaches a DETACHED carousel too', () => {
       add(x) { orphan.c.add(x); }, remove(x) { orphan.c.delete(x); },
       contains: x => orphan.c.has(x),
     },
+    style: { props: {}, setProperty(k, v) { this.props[k] = v; } },
     querySelectorAll: () => [],
   };
   h.end(orphan);
@@ -818,4 +838,38 @@ test('the class the JS sets is the class the CSS animates', () => {
     'fids-core.js must mark the wrap with the class display-overrides selects');
   assert.match(SRC, /classList\.remove\('wxc-entering'\)/,
     'and must take it off again when the sequence is over');
+});
+
+// ── The dial ─────────────────────────────────────────────────────────────
+
+test('?wxspeed stretches the whole sequence, and refuses nonsense', () => {
+  // Three cuts of this animation were rejected as too fast. The dial exists so
+  // the next number can be found by looking at a board instead of by another
+  // round trip, which only works if it is honest: one multiplier over every
+  // delay, every duration and every hold, plus the JS deadlines and the dwell,
+  // so the SHAPE is identical at any speed and only the clock changes.
+  const src = SRC.match(/function _wxSpeed\(\) \{[\s\S]*?\n\}/);
+  assert.ok(src, '_wxSpeed must exist');
+  const make = q => new Function('location',
+    src[0] + '\nreturn _wxSpeed();')({ search: q });
+  assert.equal(make(''), 1, 'no parameter is the tuned pacing, untouched');
+  assert.equal(make('?wxspeed=1.4'), 1.4);
+  assert.equal(make('?wxspeed=0.5'), 0.5, 'the fast end of the clamp is allowed');
+  assert.equal(make('?wxspeed=4'), 4, 'and the slow end');
+  assert.equal(make('?wxspeed=0.1'), 1, 'below the clamp falls back to 1');
+  assert.equal(make('?wxspeed=99'), 1, 'and above it — a typo must not park a slide for an hour');
+  assert.equal(make('?wxspeed=slow'), 1, 'and so must a word');
+
+  // Every timing in the block rides the property, or the dial would stretch
+  // some layers and not others and the whole shape would come apart.
+  const timed = RULES_ONLY.match(/animation(?:-delay)?:[^;]+/g) || [];
+  const clocked = timed.filter(t => /[\d.]+s/.test(t) && !/^animation:\s*none/.test(t));
+  for (const t of clocked) {
+    assert.match(t, /var\(--wxc-t/,
+      `every timing must ride the dial, this one does not: ${t.trim().slice(0, 70)}`);
+  }
+  // and the two JS deadlines and the dwell scale with it too
+  assert.match(SRC, /Math\.round\(_WXC_ENTRANCE_MS \* _wxSpeed\(\)\)/);
+  assert.match(SRC, /Math\.round\(_WXC_EXIT_MS \* _wxSpeed\(\)\)/);
+  assert.match(SRC, /slide\.type === 'wxcard'\) return Math\.round\(\d+ \* _wxSpeed\(\)\)/);
 });
