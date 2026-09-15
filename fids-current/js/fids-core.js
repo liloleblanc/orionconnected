@@ -25045,7 +25045,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23792';
+var FIDS_BUILD_TAG = 'v23793';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43485,7 +43485,7 @@ function _wxSpeed() {
 }
 // Base lengths at _wxSpeed() === 1, from the CSS block: arrival runs to 17.3s,
 // exit to 4.2s. Both are rounded up so a deadline outlives its last frame.
-var _WXC_ENTRANCE_MS = 18700;
+var _WXC_ENTRANCE_MS = 21000;
 // How long the title overlay is on screen. The CSS animations are written
 // against this same six seconds; it is named here so the backdrop's pacing
 // cannot drift from it.

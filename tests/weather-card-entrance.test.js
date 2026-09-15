@@ -331,15 +331,53 @@ test('it sweeps in from off the card, turning, and fades the whole way', () => {
   assert.match(BLOCK, /perspective: \d+px !important/,
     'a rotateY with no perspective on the parent is a flat squash, not a turn');
 
-  // The fade and the sweep run together, everywhere.
+  // v23793 — THE TRAVEL IS QUICK AND THE FADE IS MIST.
+  // These used to be pinned to the same duration, on the reasoning that a
+  // layer which stops moving while still appearing looks broken. That was
+  // right for a slow sweep and wrong for the effect actually wanted: the panel
+  // should ARRIVE quickly and then take its time materialising, the way mist
+  // does. So they are deliberately different now, and the requirement flips —
+  // the fade must OUTLAST the travel, never the other way round.
   const pairs = [...BLOCK.matchAll(
     /animation: (wxcFade\w*) calc\(([\d.]+)s[\s\S]*?both, (wxcRise\w*) calc\(([\d.]+)s/g)];
   assert.ok(pairs.length >= 5, `expected the staged layers, found ${pairs.length}`);
   for (const [, , fade, , rise] of pairs) {
-    assert.equal(rise, fade,
-      `a layer fades for ${fade}s but only sweeps for ${rise}s — it would stop ` +
-      'moving and carry on appearing, which is the thing that was rejected');
+    assert.ok(Number(rise) < Number(fade),
+      `a layer travels for ${rise}s and fades for ${fade}s — the travel has to ` +
+      'be the shorter of the two, or it is drifting rather than arriving');
+    assert.ok(Number(fade) / Number(rise) >= 2.5,
+      `fade ${fade}s over travel ${rise}s is only ${(Number(fade)/Number(rise)).toFixed(1)}x — ` +
+      'too close to read as settling into place and then misting in');
   }
+});
+
+test('nothing is still fading when the entrance ends', () => {
+  // The layers are staged, so the LAST one starts late. Lengthening the fade
+  // without lengthening the window leaves that layer mid-fade when
+  // _wxEndEntrance strips the class, and it snaps to full opacity — a pop at
+  // the end of a sequence whose whole point is that it does not pop.
+  const core = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
+  const windowMs = Number((core.match(/var _WXC_ENTRANCE_MS = (\d+);/) || [])[1]);
+  assert.ok(windowMs > 0, 'the entrance window must be declared');
+
+  const lines = BLOCK.split('\n');
+  let worst = 0, worstAt = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const a = lines[i].match(/animation: wxc\w+ calc\(([\d.]+)s/);
+    if (!a) continue;
+    for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
+      const d = lines[j].match(/animation-delay: calc\(\(([\d.]+)s/);
+      if (d) {
+        const end = Number(d[1]) + Number(a[1]);
+        if (end > worst) { worst = end; worstAt = Number(d[1]); }
+        break;
+      }
+    }
+  }
+  assert.ok(worst > 0, 'the staged delays must be readable');
+  assert.ok(worst <= windowMs / 1000,
+    `the last layer starts at ${worstAt}s and finishes at ${worst.toFixed(2)}s, ` +
+    `past the ${(windowMs / 1000).toFixed(2)}s entrance — it would be cut off mid-fade`);
 });
 
 test('every stage fills BOTH ways', () => {
