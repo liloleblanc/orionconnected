@@ -91,3 +91,102 @@ test('no supplied mark carries its background plate', () => {
       "the artwork");
   }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23807 — THE ALARM MOVES FROM THE FILES TO THE ROSTER.
+//
+// The test above only fires once a mark EXISTS under a dead ICAO. That is one
+// step too late: the wrong indicator is decided the moment an airport joins the
+// roster, and it sits there silently until somebody draws a logo for it.
+//
+// So classify instead. The two rules are each valid in exactly one place:
+//
+//     C + IATA   Canada, for the Y-prefixed codes
+//     K + IATA   the CONTIGUOUS 48 states, and nowhere else
+//
+// K is not even all of the US. Alaska and Hawaii are P — the north Pacific
+// region — so Anchorage is PANC and Honolulu is PHNL, and the K rule would
+// invent KANC and KHNL for them. The south Pacific is a different letter again
+// (N: NZAA Auckland, NFFN Nadi), which is why "Pacific" alone does not settle
+// a prefix either.
+//
+// Everywhere else the indicator has to be looked up, because the two systems
+// were built in different eras from different inputs and were never reconciled:
+// ICAO indicators grew out of the geographic blocks used for weather and radio
+// stations, many of them predating the airport that now carries the code, and
+// they encode where the station sat rather than what the field is called. The
+// trailing letters are frequently unrelated to the IATA code as a result —
+// LHR is EGLL, KEF is BIKF, ZRH is LSZH, EDI is EGPH.
+//
+// Verified against the live roster: every one of the 58 codes resolves
+// correctly under this classification.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** The roster the boards actually serve. */
+function rosterCodes() {
+  const m = CORE.match(/const FIDS_LIVE_AIRPORTS = new Set\(\[([\s\S]*?)\]\)/);
+  assert.ok(m, 'FIDS_LIVE_AIRPORTS must exist');
+  return [...m[1].matchAll(/'([A-Z]{3})'/g)].map((x) => x[1]);
+}
+
+// The lower 48, written down. Being on this list is a claim that K + IATA is
+// the real indicator — not a guess that it probably is.
+const CONTIGUOUS_US = new Set([
+  'TPA', 'LGA', 'EWR', 'BOS', 'ORD', 'SFO', 'SEA', 'DEN', 'LAS', 'AUS',
+  'SLC', 'PHL', 'MSP', 'IAH', 'MCO', 'JFK', 'CLT', 'MCI', 'RDU', 'SAN',
+  'PDX', 'DTW', 'MSY', 'PHX', 'MIA',
+  // Washington National and Dulles, both in Virginia. Listed ahead of the
+  // roster change that brings them in, so the two land in either order
+  // without tripping this.
+  'DCA', 'IAD'
+]);
+
+/** Codes the derivation would have to GUESS at. Empty is the only safe answer. */
+function unclassified(codes) {
+  const named = new Set(
+    [...CORE.match(/const FIDS_ICAO_EXCEPTIONS = \{([\s\S]*?)\};/)[1]
+      .matchAll(/([A-Z]{3}):\s*'[A-Z]{4}'/g)].map((m) => m[1])
+  );
+  return codes.filter((c) => !named.has(c) && !/^Y/.test(c) && !CONTIGUOUS_US.has(c));
+}
+
+test('no airport in the roster has its ICAO guessed', () => {
+  const guessed = unclassified(rosterCodes());
+  assert.deepEqual(guessed, [],
+    guessed.length
+      ? `${guessed.join(', ')} would fall through to the K rule, which is only ` +
+        'valid for the contiguous 48. Look the real indicator up and add it to ' +
+        'FIDS_ICAO_EXCEPTIONS in fids-core.js — or, if it genuinely is a lower-48 ' +
+        'airport, add it to CONTIGUOUS_US here.'
+      : '');
+});
+
+test('the alarm bites', () => {
+  // A guard nobody has seen fail is a guard nobody knows works. These are the
+  // shapes that would otherwise ship a silently wrong indicator: two US states
+  // outside K, a territory, and two airports in regions the rule never
+  // considered.
+  assert.deepEqual(
+    unclassified(['ANC', 'HNL', 'GUM', 'AKL', 'FRA']).sort(),
+    ['AKL', 'ANC', 'FRA', 'GUM', 'HNL'],
+    'every one of these must be caught — none is reachable by the K rule'
+  );
+  // And it must not cry wolf over the codes that are genuinely fine.
+  assert.deepEqual(unclassified(['YQM', 'YYZ', 'JFK', 'SYD', 'LHR']), []);
+});
+
+test('the named table and the lower-48 list do not overlap', () => {
+  // An airport in both is a contradiction: one of the two says K is right and
+  // the other says it is not.
+  const named = new Set(
+    [...CORE.match(/const FIDS_ICAO_EXCEPTIONS = \{([\s\S]*?)\};/)[1]
+      .matchAll(/([A-Z]{3}):\s*'[A-Z]{4}'/g)].map((m) => m[1])
+  );
+  const both = [...named].filter((c) => CONTIGUOUS_US.has(c));
+  assert.deepEqual(both, [], `${both.join(', ')} is claimed by both lists`);
+  for (const c of named) {
+    assert.notEqual(icaoFor(c), 'K' + c,
+      `${c} is in the exceptions table but resolves to K${c} anyway — either the ` +
+      'entry is wrong or it does not belong there');
+  }
+});
