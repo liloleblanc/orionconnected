@@ -513,6 +513,10 @@ test('nothing is left hidden if the entrance never runs', () => {
   // card has — so it is taken out of the layout as well as made transparent.
   const hides = [...outside.matchAll(/([^\n{]*)\{[^}]*display:\s*none[^}]*\}/g)].map(m => m[1]);
   for (const sel of hides) {
+    // This block is no longer the last thing in the stylesheet, and the rules
+    // that follow it belong to other panels. Only the weather card is this
+    // test's business.
+    if (!/wxcard-wrap/.test(sel)) continue;
     assert.match(sel, /wxc-intro/,
       `only the title overlay may be display:none; this is not it: ${sel.trim().slice(-60)}`);
   }
@@ -520,7 +524,8 @@ test('nothing is left hidden if the entrance never runs', () => {
     'and nothing may be hidden by visibility either');
   // The hidden state is reachable only while the class is present, which means
   // every animation rule must be scoped to it.
-  const scoped = [...BLOCK.matchAll(/\n(html body[^\n{]*)\{/g)].map(m => m[1]);
+  const scoped = [...BLOCK.matchAll(/\n(html body[^\n{]*)\{/g)].map(m => m[1])
+    .filter((sel) => /wxcard-wrap/.test(sel));   // ditto — other panels are not this test's business
   for (const sel of scoped) {
     // The title overlay's base rule is the one exception, and it has to be:
     // it positions the clip over the card, and its safety comes from the
