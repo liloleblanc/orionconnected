@@ -1274,6 +1274,27 @@ var FIDS_FONT_STACKS = {
   'abc-areal-semi-mono-bold': "'ABC Areal Semi Mono Bold', 'ABC Areal Semi Mono', sans-serif",
   'abc-areal-mono': "'ABC Areal Mono', 'ABC Areal', monospace",
   'abc-areal-mono-bold': "'ABC Areal Mono Bold', 'ABC Areal Mono', monospace",
+  // v23775 — Dinamo trials: Ginto Rounded + Gravity (see font.css)
+  'abc-ginto-rounded': "'ABC Ginto Rounded', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-ginto-rounded-bold': "'ABC Ginto Rounded Bold', 'ABC Ginto Rounded', sans-serif",
+  'abc-ginto-rounded-black': "'ABC Ginto Rounded Black', 'ABC Ginto Rounded', sans-serif",
+  'abc-ginto-rounded-ultra': "'ABC Ginto Rounded Ultra', 'ABC Ginto Rounded', sans-serif",
+  'abc-ginto-rounded-nord': "'ABC Ginto Rounded Nord', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-ginto-rounded-nord-bold': "'ABC Ginto Rounded Nord Bold', 'ABC Ginto Rounded Nord', sans-serif",
+  'abc-ginto-rounded-nord-black': "'ABC Ginto Rounded Nord Black', 'ABC Ginto Rounded Nord', sans-serif",
+  'abc-ginto-rounded-nord-ultra': "'ABC Ginto Rounded Nord Ultra', 'ABC Ginto Rounded Nord', sans-serif",
+  'abc-ginto-rounded-nord-condensed': "'ABC Ginto Rounded Nord Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-gravity': "'ABC Gravity', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-gravity-bold': "'ABC Gravity Bold', 'ABC Gravity', sans-serif",
+  'abc-gravity-black': "'ABC Gravity Black', 'ABC Gravity', sans-serif",
+  'abc-gravity-ultra': "'ABC Gravity Ultra', 'ABC Gravity', sans-serif",
+  'abc-gravity-compressed': "'ABC Gravity Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-gravity-condensed': "'ABC Gravity Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-gravity-expanded': "'ABC Gravity Expanded', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-gravity-extra-condensed': "'ABC Gravity Extra Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-gravity-wide': "'ABC Gravity Wide', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-gravity-xx-compressed': "'ABC Gravity XX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-gravity-xxxx-compressed': "'ABC Gravity XXXX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
   'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
   'inter':         "'Inter', system-ui, -apple-system, sans-serif",
@@ -24963,7 +24984,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23774';
+var FIDS_BUILD_TAG = 'v23775';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -29934,6 +29955,26 @@ function applyAirportConfigToBoard(iata) {
       'abc-areal-semi-mono-bold': "'ABC Areal Semi Mono Bold', 'ABC Areal Semi Mono', sans-serif",
       'abc-areal-mono': "'ABC Areal Mono', 'ABC Areal', monospace",
       'abc-areal-mono-bold': "'ABC Areal Mono Bold', 'ABC Areal Mono', monospace",
+      'abc-ginto-rounded': "'ABC Ginto Rounded', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-ginto-rounded-bold': "'ABC Ginto Rounded Bold', 'ABC Ginto Rounded', sans-serif",
+      'abc-ginto-rounded-black': "'ABC Ginto Rounded Black', 'ABC Ginto Rounded', sans-serif",
+      'abc-ginto-rounded-ultra': "'ABC Ginto Rounded Ultra', 'ABC Ginto Rounded', sans-serif",
+      'abc-ginto-rounded-nord': "'ABC Ginto Rounded Nord', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-ginto-rounded-nord-bold': "'ABC Ginto Rounded Nord Bold', 'ABC Ginto Rounded Nord', sans-serif",
+      'abc-ginto-rounded-nord-black': "'ABC Ginto Rounded Nord Black', 'ABC Ginto Rounded Nord', sans-serif",
+      'abc-ginto-rounded-nord-ultra': "'ABC Ginto Rounded Nord Ultra', 'ABC Ginto Rounded Nord', sans-serif",
+      'abc-ginto-rounded-nord-condensed': "'ABC Ginto Rounded Nord Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-gravity': "'ABC Gravity', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-gravity-bold': "'ABC Gravity Bold', 'ABC Gravity', sans-serif",
+      'abc-gravity-black': "'ABC Gravity Black', 'ABC Gravity', sans-serif",
+      'abc-gravity-ultra': "'ABC Gravity Ultra', 'ABC Gravity', sans-serif",
+      'abc-gravity-compressed': "'ABC Gravity Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-gravity-condensed': "'ABC Gravity Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-gravity-expanded': "'ABC Gravity Expanded', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-gravity-extra-condensed': "'ABC Gravity Extra Condensed', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-gravity-wide': "'ABC Gravity Wide', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-gravity-xx-compressed': "'ABC Gravity XX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-gravity-xxxx-compressed': "'ABC Gravity XXXX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
       'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",

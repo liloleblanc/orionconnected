@@ -32,9 +32,14 @@ function shouldSkip(value) {
 function addReference(found, source, raw, kind) {
   const value = cleanReference(raw.trim());
   if (shouldSkip(value)) return;
-  const target = value.startsWith('/')
-    ? path.join(staticRoot, value.slice(1))
-    : path.resolve(path.dirname(source), value);
+  // A URL is percent-encoded; the file on disk is not. Folders with spaces
+  // in their names (the Dinamo trial fonts) are only reachable as %20, so
+  // decode before resolving or every one of them reads as missing.
+  let onDisk = value;
+  try { onDisk = decodeURIComponent(value); } catch (e) { /* leave it as written */ }
+  const target = onDisk.startsWith('/')
+    ? path.join(staticRoot, onDisk.slice(1))
+    : path.resolve(path.dirname(source), onDisk);
   found.push({ source, value, target, kind });
 }
 
