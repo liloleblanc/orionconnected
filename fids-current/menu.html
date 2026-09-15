@@ -555,6 +555,33 @@
 
     <div id="smTab_airport" class="sm-tab-content">
 
+      <!-- ── DRY DOCK ────────────────────────────────────────────────────
+           Airports being integrated or repaired. Docked means "not offered":
+           out of every picker and off the stream tours, still reachable by
+           direct link so it can be built and tested.
+
+           This control is DECORATION as far as security goes. Every
+           "is this an admin" test available to the browser is forgeable, and
+           one of them reports admin when nobody is signed in at all — so the
+           panel can be made to appear by anyone who wants to. The 403 from
+           the worker is what actually stops a write, and the status line
+           below reports that refusal rather than pretending it worked. -->
+      <div class="sm-label" style="margin-top:4px;">Dry Dock</div>
+      <div class="sm-field" style="margin-bottom:14px;">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:8px;">
+          Docked airports are hidden from the airport picker and never tour on the
+          streams. They keep their feed and stay reachable by direct link.
+        </div>
+        <div class="sm-row" style="align-items:center;gap:8px;">
+          <input id="ddCode" type="text" maxlength="4" placeholder="IATA"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 style="width:84px;text-transform:uppercase;background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 10px;border-radius:6px;">
+          <button id="ddAdd" class="sm-btn" onclick="ddDock()">Dock</button>
+          <span id="ddStatus" style="font-size:11px;color:#9ca3af;"></span>
+        </div>
+        <div id="ddList" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
+
       <div class="sm-label">Current Airport</div>
       <div class="sm-field" style="margin-bottom:14px;">
         <div class="sm-row" style="align-items:center;gap:8px;">

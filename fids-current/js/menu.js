@@ -44,6 +44,128 @@ function smSwitchTab(tabId) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// DRY DOCK (v23797)
+//
+// Airports being integrated or repaired: out of every picker, off the stream
+// tours, still reachable by direct link.
+//
+// This panel is NOT a security boundary and is not written as if it were. The
+// three "is this an admin" checks available here all read unsigned local state
+// — one of them reports admin when nobody is signed in at all — so anyone who
+// wants the panel can have it. What stops a write is the worker returning 403,
+// and the job of this code is to REPORT that honestly rather than leave a
+// docked airport on screen as though the save had landed.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+var _ddDocked = null;          // null until the first read answers
+var _ddBusy = false;
+
+function _ddApi() {
+  try { if (typeof FIDS_API_BASE !== 'undefined') return FIDS_API_BASE; } catch (e) {}
+  return 'https://fids-proxy.n-leblanc1984.workers.dev';
+}
+function _ddSay(msg, bad) {
+  var el = document.getElementById('ddStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = bad ? '#f87171' : '#9ca3af';
+}
+
+function _ddRender() {
+  var box = document.getElementById('ddList');
+  if (!box) return;
+  if (_ddDocked === null) { box.innerHTML = '<span style="font-size:11px;color:#6b7280;">loading…</span>'; return; }
+  if (!_ddDocked.length) { box.innerHTML = '<span style="font-size:11px;color:#6b7280;">nothing docked</span>'; return; }
+  box.innerHTML = _ddDocked.map(function (c) {
+    return '<span style="display:inline-flex;align-items:center;gap:6px;background:#27272a;border:1px solid #52525b;'
+         + 'border-radius:12px;padding:3px 6px 3px 10px;font-size:12px;color:#e5e7eb;letter-spacing:.5px;">' + c
+         + '<button title="Undock ' + c + '" onclick="ddUndock(\'' + c + '\')" '
+         + 'style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:14px;line-height:1;padding:0 4px;">×</button></span>';
+  }).join('');
+}
+
+async function ddLoad() {
+  try {
+    var res = await fetch(_ddApi() + '/api/dry-dock?_oc=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) { _ddSay('Could not read the dock (HTTP ' + res.status + ')', true); return; }
+    var doc = await res.json();
+    // Same rule as every other reader: only a correctly shaped document is
+    // allowed to become the list. A malformed body that parses to an empty
+    // array would show "nothing docked" over a dock that is not empty, and the
+    // next save would write that emptiness back.
+    if (!doc || typeof doc !== 'object' || !Array.isArray(doc.docked)) {
+      _ddSay('The dock came back in a shape this cannot read — not touching it', true);
+      return;
+    }
+    _ddDocked = doc.docked.slice();
+    _ddRender();
+    _ddSay(doc.seeded ? 'Showing the starting list — no admin has saved one yet.' : '');
+  } catch (e) {
+    _ddSay('Could not read the dock: ' + e.message, true);
+  }
+}
+
+async function _ddSave(next, what) {
+  if (_ddBusy) return;
+  _ddBusy = true;
+  var before = _ddDocked ? _ddDocked.slice() : null;
+  try {
+    _ddSay(what + '…');
+    var res = await _acFetch(_ddApi() + '/api/dry-dock', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ docked: next })
+    });
+    if (!res.ok) {
+      var err = await res.json().catch(function () { return {}; });
+      // The refusal is the point. Put the list back to what the server still
+      // holds rather than leaving the screen showing a change that did not
+      // happen — that is the failure this panel exists to avoid.
+      _ddDocked = before;
+      _ddRender();
+      _ddSay(res.status === 403 ? 'Refused: this account is not an admin.'
+           : res.status === 401 ? 'Refused: sign in again.'
+           : ('Save failed: ' + (err.error || ('HTTP ' + res.status))), true);
+      return;
+    }
+    var out = await res.json().catch(function () { return null; });
+    _ddDocked = (out && out.config && Array.isArray(out.config.docked)) ? out.config.docked.slice() : next.slice();
+    _ddRender();
+    _ddSay('Saved.');
+  } catch (e) {
+    _ddDocked = before;
+    _ddRender();
+    _ddSay('Save failed: ' + e.message, true);
+  } finally { _ddBusy = false; }
+}
+
+function ddDock() {
+  var inp = document.getElementById('ddCode');
+  if (!inp) return;
+  var c = String(inp.value || '').trim().toUpperCase();
+  if (!/^[A-Z0-9]{3,4}$/.test(c)) { _ddSay('That is not an airport code.', true); return; }
+  if (_ddDocked === null) { _ddSay('Still reading the dock — try again in a moment.', true); return; }
+  if (_ddDocked.indexOf(c) !== -1) { _ddSay(c + ' is already docked.', true); return; }
+  inp.value = '';
+  _ddSave(_ddDocked.concat([c]), 'Docking ' + c);
+}
+function ddUndock(code) {
+  if (_ddDocked === null) return;
+  _ddSave(_ddDocked.filter(function (x) { return x !== code; }), 'Undocking ' + code);
+}
+try {
+  if (typeof window !== 'undefined') { window.ddDock = ddDock; window.ddUndock = ddUndock; window.ddLoad = ddLoad; }
+} catch (e) {}
+
+// Read it when the Airport tab is opened, the way Media loads on its own tab.
+try {
+  var _ddOrigSwitch = window.smSwitchTab;
+  window.smSwitchTab = function (tabId) {
+    if (typeof _ddOrigSwitch === 'function') _ddOrigSwitch(tabId);
+    if (tabId === 'airport') { try { ddLoad(); } catch (e) {} }
+  };
+} catch (e) {}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // THEME (v218.99.11)
 // Light is the default — the owner uses this during the day. Dark is a toggle
 // for nighttime. Auto-pick on first open based on local time (6am-7pm =

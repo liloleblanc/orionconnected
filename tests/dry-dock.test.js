@@ -149,3 +149,80 @@ test('Sydney is the first inhabitant, and an admin can evict it', () => {
     'and once one has, it is returned verbatim — the default is a starting ' +
     'position, not a floor, and must never re-add a code an admin removed');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23797 — THE ADMIN PANEL.
+//
+// Written on the understanding that it is NOT a security boundary. All three
+// "is this an admin" checks available to the browser read unsigned local
+// state, and one of them reports admin when nobody is signed in at all — so
+// the panel can be made to appear by anyone who wants it. The worker's 403 is
+// the only thing that stops a write, and the panel's job is to report that
+// refusal rather than leave a change on screen that never happened.
+//
+// Verified live before shipping: reading returned the seeded {docked:["SYD"]},
+// and a write with the token removed left the list unchanged and said
+// "Refused: sign in again." rather than showing the code as docked.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const MENU_JS = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'menu.js'), 'utf8');
+const MENU_HTML = fs.readFileSync(path.join(ROOT, 'fids-current', 'menu.html'), 'utf8');
+
+test('the panel lives behind the admin tab it belongs to', () => {
+  const at = MENU_HTML.indexOf('<div id="smTab_airport"');
+  const end = MENU_HTML.indexOf('<div id="smTab_media"', at);
+  assert.ok(at > 0 && end > at, 'the airport pane must be readable');
+  const pane = MENU_HTML.slice(at, end);
+  assert.match(pane, /id="ddList"/, 'the dock list renders in the Airport pane');
+  assert.match(pane, /id="ddCode"/);
+  assert.match(pane, /onclick="ddDock\(\)"/);
+});
+
+test('a refused write is reported, not faked', () => {
+  // The failure this panel exists to avoid: showing an airport as docked when
+  // the server refused the write, so the operator believes it is off the
+  // streams when it is not.
+  const at = MENU_JS.indexOf('async function _ddSave');
+  assert.ok(at > 0, 'the save must exist');
+  const body = MENU_JS.slice(at, MENU_JS.indexOf('\n}', MENU_JS.indexOf('finally { _ddBusy = false; }', at)));
+  assert.match(body, /var before = _ddDocked \? _ddDocked\.slice\(\) : null;/,
+    'the previous list is kept so it can be put back');
+  assert.match(body, /if \(!res\.ok\) \{[\s\S]*?_ddDocked = before;/,
+    'a refusal restores the list the server still holds');
+  assert.match(body, /res\.status === 403 \? 'Refused: this account is not an admin\.'/,
+    'and says so plainly — 403 is the admin refusal');
+  assert.match(body, /res\.status === 401 \? 'Refused: sign in again\.'/,
+    'and 401 is an expired or missing token, which is a different fix');
+  assert.match(body, /catch \(e\) \{\s*_ddDocked = before;/,
+    'a thrown request restores it too');
+});
+
+test('the panel reads through the same shape guard as every other reader', () => {
+  const at = MENU_JS.indexOf('async function ddLoad');
+  const body = MENU_JS.slice(at, MENU_JS.indexOf('\n}', at));
+  assert.match(body, /!Array\.isArray\(doc\.docked\)/,
+    'a malformed body must not become the list — it would show "nothing docked" ' +
+    'over a dock that is not empty, and the next save would write that back');
+  assert.match(body, /cache: 'no-store'/);
+  assert.match(body, /_oc=' \+ Date\.now\(\)/);
+});
+
+test('the write goes through the helper that carries the token', () => {
+  const at = MENU_JS.indexOf('async function _ddSave');
+  const body = MENU_JS.slice(at, MENU_JS.indexOf('\n}', MENU_JS.indexOf('finally { _ddBusy = false; }', at)));
+  assert.match(body, /_acFetch\(_ddApi\(\) \+ '\/api\/dry-dock'/,
+    'it must use _acFetch — a bare fetch sends no Authorization header and ' +
+    'every save would 401');
+  assert.match(body, /method: 'PUT'/);
+  assert.doesNotMatch(body, /await fetch\(/, 'no unauthenticated write path');
+});
+
+test('the panel never claims to be the thing that enforces admin', () => {
+  // A comment, but a load-bearing one: the next person to touch this needs to
+  // know the visibility check is decoration before they lean on it.
+  const at = MENU_JS.indexOf('// DRY DOCK (v23797)');
+  assert.ok(at > 0, 'the block must be documented');
+  const header = MENU_JS.slice(at, at + 1200);
+  assert.match(header, /NOT a security boundary/i);
+  assert.match(header, /403/, 'and must name what actually stops a write');
+});
