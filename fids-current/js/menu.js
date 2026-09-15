@@ -458,10 +458,27 @@ var _DEFAULT_PRESETS = [
   { id: 'slate',    name: 'Slate Blue',     accent: '#0ea5e9', bg: '#f0f4f8', text: '#1e293b', logo: '', builtin: true }
 ];
 
+// v23776 — ONE LIBRARY, TWO LISTS.
+// There are two preset stores: this one ('fids_user_presets', the sidebar
+// swatches, flat accent/bg/text) and the Customize library ('fids_presets',
+// {colors:{…}}), which is the one that syncs to the airport config and
+// therefore the one that survives a new browser. Only the second was ever
+// pulled from the cloud, so a signed-in operator on a fresh profile saw an
+// empty sidebar while the airport held dozens of palettes. The sidebar reads
+// both now; a cloud palette is mapped onto the flat shape the swatches draw.
+function _presetFromLibrary(p) {
+  var c = (p && p.colors) || {};
+  return { id: p.id, name: p.name, accent: c.accent || c.hdr || '#eab308',
+           bg: c.bg || '#0c0c0e', text: c.text || '#ffffff', logo: '', savedAt: p.savedAt || 0 };
+}
 function _getPresets() {
   var user = [];
   try { user = JSON.parse(localStorage.getItem(_PRESETS_KEY) || '[]'); } catch(e) {}
-  return _DEFAULT_PRESETS.concat(user);
+  var lib = [];
+  try { lib = (typeof _cuPresetsAll === 'function' ? _cuPresetsAll() : []).map(_presetFromLibrary); } catch(e) {}
+  var byId = {}, out = [];
+  user.concat(lib).forEach(function (p) { if (p && p.id && !byId[p.id]) { byId[p.id] = 1; out.push(p); } });
+  return _DEFAULT_PRESETS.concat(out);
 }
 
 function _getUserPresets() {
@@ -2632,9 +2649,14 @@ function _cuPresetsPull() {
         if (!cfg || !Array.isArray(cfg.presets) || !cfg.presets.length) return;
         var local = _cuPresetsAll();
         var merged = _cuPresetsMerge(local, cfg.presets);
-        if (merged.length === local.length) return;      // nothing new to add
-        try { localStorage.setItem('fids_presets', JSON.stringify(merged)); } catch (e) {}
+        // v23776 — the early return skipped the RENDER as well, so a browser
+        // that already held the palettes could still show an empty list if
+        // nothing had drawn it yet. Only the write is conditional now.
+        if (merged.length !== local.length) {
+          try { localStorage.setItem('fids_presets', JSON.stringify(merged)); } catch (e) {}
+        }
         try { _cuRenderPresetGroup(); } catch (e) {}
+        try { if (typeof smRenderPresets === 'function') smRenderPresets(); } catch (e) {}
         try { console.log('[FIDS Presets] merged ' + (merged.length - local.length) + ' from the cloud'); } catch (e) {}
       })
       .catch(function () {});
@@ -2648,6 +2670,18 @@ function _cuPresetsPull() {
     if (typeof _origSw === 'function') _origSw.apply(this, arguments);
     if (tabId === 'customize') { try { _cuPresetsPull(); } catch (e) {} }
   };
+  // v23776 — and once on load. The tab hook only fires if somebody opens
+  // Customize; the sidebar swatches are on screen before that, and a screen
+  // that never opens the panel still deserves its airport's palettes.
+  function _cuPullOnce() { try { _cuPresetsPull(); } catch (e) {} }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _cuPullOnce);
+  else setTimeout(_cuPullOnce, 0);
+  // The picker can change airport after load, and the library is per airport.
+  try {
+    window.addEventListener('fids-airport-config-ready', _cuPullOnce);
+    var _apSel = document.getElementById('apSel');
+    if (_apSel) _apSel.addEventListener('change', function () { setTimeout(_cuPullOnce, 50); });
+  } catch (e) {}
 })();
 
 function _cuRenderPresetGroup() {
