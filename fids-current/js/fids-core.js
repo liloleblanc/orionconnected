@@ -24999,7 +24999,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23779';
+var FIDS_BUILD_TAG = 'v23780';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41072,6 +41072,22 @@ function _restartGateAdsTimer() {
             _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
               + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.95s ease-in-out;overflow:hidden;';
             while (el3.firstChild) _old.appendChild(el3.firstChild);
+            // v23780 — THE WEATHER CARD LEAVES THE WAY IT ARRIVED.
+            // Every other slide dissolves as one rectangle, which is right for
+            // a photograph. This card was built up a layer at a time and is
+            // asked to go the same way, so the overlay does NOT fade as a
+            // whole: it is held opaque and marked, and the layers inside it
+            // animate out in reverse — credit, 5-day, hours, top, and the
+            // scene last, alone, the way it came in first. The overlay is
+            // removed when the sequence is over (_WXC_EXIT_MS below), so the
+            // incoming slide is uncovered at the same moment either way.
+            try {
+              if (_old.querySelector('.wxcard-wrap')) {
+                _old.setAttribute('data-wx-leaving', '1');
+                var _wxLeaveWrap = _old.querySelector('.wxcard-wrap');
+                if (_wxLeaveWrap) { _wxLeaveWrap.classList.remove('wxc-entering'); _wxLeaveWrap.classList.add('wxc-leaving'); }
+              }
+            } catch (eWxL) {}
             // The children moved out — bust the per-slide DOM caches so a
             // same-content render can't early-return into an empty carousel.
             el3._lastKey = null;
@@ -41129,8 +41145,17 @@ function _restartGateAdsTimer() {
       if (_old) {
         try {
           void _old.offsetWidth; // new is painted UNDER the cover; now dissolve
-          _old.style.opacity = '0';
-          setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 1050);
+          if (_old.getAttribute('data-wx-leaving')) {
+            // The layers dissolve themselves, one at a time; the cover stays
+            // opaque underneath them until the last one is gone. Its own
+            // transition is cleared so nothing fades the group as a whole.
+            _old.style.transition = 'none';
+            _old.style.opacity = '1';
+            setTimeout(function () { try { _old.remove(); } catch (e2) {} }, _WXC_EXIT_MS + 120);
+          } else {
+            _old.style.opacity = '0';
+            setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 1050);
+          }
         } catch (e) { try { if (_old.parentNode) _old.remove(); } catch (e2) {} }
       }
       // Schedule the NEXT tick using the dwell of the slide we just
@@ -43387,7 +43412,12 @@ function _renderHeritageCard(el) {
 // held during the delay by animation-fill-mode, and reachable only while the
 // class is on the wrap. A weather card that misses its trigger is unanimated,
 // never invisible, which on a public display is the only acceptable way round.
-var _WXC_ENTRANCE_MS = 6000;   // last band lands at 1.84s; slack, then strip
+var _WXC_ENTRANCE_MS = 9600;
+// The staged exit: the four content bands leave 0.34s apart at 0.62s each, then
+// the scene alone over 1.1s — 3.36s, rounded up so the cover outlives the last
+// frame of it. The entrance is longer because arriving is the part being read;
+// leaving only has to feel of a piece with it.
+var _WXC_EXIT_MS = 3400;   // last band lands at 1.84s; slack, then strip
 
 // Ends the sequence wherever it has got to, and cancels the deadline.
 //

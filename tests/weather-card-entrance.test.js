@@ -121,6 +121,34 @@ test('the delays run video → top → hours → 5-day → credit, ascending', (
   }
 });
 
+test('the scene is held alone, and no band ever overlaps another', () => {
+  // This is the fault that was reported twice — "it flies", "better but too
+  // fast" — and both times the cause was the same: bands running into each
+  // other, and the scene given a fraction of a second to itself before the
+  // hero landed on it. It is not a matter of taste that can be nudged later;
+  // it is the whole of what was asked for, so it is pinned as arithmetic.
+  const order = ['> video.wxc-vid', '> .wxcard-main',
+    '> .wxc-strip:not(.wxcard-outlook)', '> .wxcard-outlook', '> .wxc-credit'];
+  const start = c => delayOf(c);
+  const end = c => delayOf(c) + durOf(c);
+
+  // The scene finishes, and is then alone for a real beat before anything
+  // else begins. Under half a second is not a hold, it is a gap.
+  const hold = start(order[1]) - end(order[0]);
+  assert.ok(hold >= 0.6,
+    `the scene is left alone for ${hold.toFixed(2)}s before the top block ` +
+    'arrives — the request was that the scene be SEEN first, and under 0.6s ' +
+    'it reads as the next thing landing on top of it rather than as a beat');
+
+  // And from there each band waits for the one before it to finish.
+  for (let i = 1; i < order.length - 1; i++) {
+    const gap = start(order[i + 1]) - end(order[i]);
+    assert.ok(gap >= 0,
+      `${order[i + 1]} starts ${(-gap).toFixed(2)}s BEFORE ${order[i]} has ` +
+      'finished — one row at a time means one at a time');
+  }
+});
+
 test('the whole sequence finishes well inside the slide', () => {
   let last = 0;
   for (const [, child] of STAGES) last = Math.max(last, delayOf(child) + durOf(child));
@@ -129,13 +157,17 @@ test('the whole sequence finishes well inside the slide', () => {
   // ask is the opposite — the scene SEEN, then filled one row at a time,
   // settling. That costs seconds, and they are well spent against a 22s floor;
   // what still matters is that the card spends most of its slide STILL.
-  assert.ok(last < 7,
-    `the last band lands at ${last.toFixed(2)}s — past 7s the card would be
-     arriving for a third of its slide, which is a slow board, not an entrance`);
-  assert.ok(last > 3,
-    `the last band lands at ${last.toFixed(2)}s — under 3s the bands are back
-     to overlapping and the scene is never seen on its own, which is the
-     failure this pacing replaced`);
+  // Two cuts were rejected for being hurried before this one: 1.9s read as a
+  // flurry, 5.7s as "better but too fast". The ask is a majestic arrival, so
+  // the sequence is long on purpose and the pauses between bands carry as much
+  // of it as the movement. What still has to hold is that the card spends most
+  // of its turn STILL — the slide's floor is 22s.
+  assert.ok(last < 11,
+    `the last band lands at ${last.toFixed(2)}s — past 11s the card is arriving
+     for half its slide, and a board that is never at rest cannot be read`);
+  assert.ok(last > 7,
+    `the last band lands at ${last.toFixed(2)}s — under 7s is the pacing that
+     was rejected as too fast; this entrance is meant to be unhurried`);
 });
 
 test('the video opens in the clear, not under the outgoing slide', () => {
@@ -228,10 +260,16 @@ test('the travel is a settle, not a slide', () => {
   const travels = [...BLOCK.matchAll(/translate3d\(0,\s*(-?[\d.]+)px,\s*0\)/g)]
     .map(m => Math.abs(parseFloat(m[1])));
   assert.ok(travels.length >= 1, 'the content bands must rise into place');
-  assert.ok(Math.max(...travels) <= 24,
+  // 26px, paired with a scale that starts slightly OVER and settles back. The
+  // scale is what makes the larger rise safe: the band over-covers its box on
+  // the way in rather than leaving a gap at the edge, which is what a bare
+  // 26px translate on a clipped wrap would show.
+  assert.ok(Math.max(...travels) <= 28,
     `the rise is ${Math.max(...travels)}px — the wrap clips its overflow and ` +
-    'carries as little as 8px of bottom padding, so anything much larger ' +
-    'draws the credit half-cut against the card edge on its way in');
+    'carries as little as 8px of bottom padding, so past roughly 28px the ' +
+    'credit is drawn half-cut against the card edge on its way in');
+  assert.match(BLOCK, /translate3d\(0, 26px, 0\) scale\(1\.03\)/,
+    'the rise must travel with the scale that covers for it');
 });
 
 test('every stage fills BOTH ways', () => {
@@ -400,10 +438,42 @@ test('nothing is left hidden if the entrance never runs', () => {
   // every animation rule must be scoped to it.
   const scoped = [...BLOCK.matchAll(/\n(html body[^\n{]*)\{/g)].map(m => m[1]);
   for (const sel of scoped) {
-    assert.ok(sel.includes('.wxc-entering'),
-      'every rule in this block must be scoped to .wxc-entering, or its ' +
-      `hidden start state outlives the entrance: ${sel.slice(-70).trim()}`);
+    assert.ok(sel.includes('.wxc-entering') || sel.includes('.wxc-leaving'),
+      'every rule in this block must be scoped to .wxc-entering or ' +
+      '.wxc-leaving, or its hidden state outlives the animation: ' +
+      `${sel.slice(-70).trim()}`);
   }
+});
+
+test('the exit can only ever hide a copy that is on its way out', () => {
+  // The exit keyframes END at opacity 0 with fill `both`, which is the one
+  // place in this family where a stuck class WOULD leave something invisible.
+  // It is safe only because .wxc-leaving is never put on the live card: the
+  // carousel first MOVES the outgoing slide's DOM into a throwaway overlay,
+  // and the class goes on the copy inside it. That copy is removed on a timer
+  // whatever happens. Both halves of that are load-bearing, so both are pinned.
+  const lift = SRC.indexOf('while (el3.firstChild) _old.appendChild(el3.firstChild);');
+  assert.ok(lift >= 0, 'the carousel must still lift the outgoing slide into an overlay');
+  const after = SRC.slice(lift, lift + 1400);
+  assert.match(after, /_old\.querySelector\('\.wxcard-wrap'\)/,
+    'the mark must be decided from the lifted COPY, never from the live carousel');
+  assert.match(after, /_wxLeaveWrap\.classList\.add\('wxc-leaving'\)/);
+  assert.match(after, /_wxLeaveWrap\.classList\.remove\('wxc-entering'\)/,
+    'and an entrance still running on that copy has to be called off, or the ' +
+    'two sequences fight over the same layers');
+  // The copy is always removed — no path leaves it on screen at opacity 0.
+  const fade = SRC.indexOf("if (_old.getAttribute('data-wx-leaving'))");
+  assert.ok(fade >= 0, 'the dissolve must special-case the marked copy');
+  const tail = SRC.slice(fade, fade + 700);
+  assert.match(tail, /_old\.remove\(\)/, 'and must still remove it');
+  assert.match(tail, /_WXC_EXIT_MS \+ 120/,
+    'on a deadline past the end of the sequence, so the last frame is not cut');
+  const ms = /var _WXC_EXIT_MS = (\d+);/.exec(SRC);
+  assert.ok(ms, '_WXC_EXIT_MS must be declared');
+  const last = Math.max(...[...BLOCK.matchAll(/wxc-leaving[^{]*\{[^}]*?animation: wxcLeave\w* ([\d.]+)s[^}]*?animation-delay: ([\d.]+)s/gs)]
+    .map(m => parseFloat(m[1]) + parseFloat(m[2])));
+  assert.ok(Number(ms[1]) / 1000 >= last,
+    `the cover is pulled at ${Number(ms[1]) / 1000}s but the exit runs to ${last}s`);
 });
 
 // ── The guard chain ──────────────────────────────────────────────────────
