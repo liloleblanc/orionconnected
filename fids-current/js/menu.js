@@ -166,6 +166,146 @@ try {
 } catch (e) {}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// SCREENS (v23798)
+//
+// Every TV that has been claimed. A screen carries its own six-character code
+// and asks the server what to show; this panel is where that question gets an
+// answer. Nothing is configured on the TV itself.
+//
+// Same posture as the dry dock: the visibility of this panel is not what
+// enforces admin — every such check in the browser is forgeable. The worker's
+// 403 is. A refused change is reported and the list put back, never left
+// showing something that did not happen.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+var _scScreens = null;
+var _scBusy = false;
+var SC_BOARDS = { gids: 'Gate board', fids: 'Departures', bids: 'Baggage' };
+
+function _scSay(msg, bad) {
+  var el = document.getElementById('scStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.style.color = bad ? '#f87171' : '#9ca3af';
+}
+
+function _scRender() {
+  var box = document.getElementById('scList');
+  if (!box) return;
+  if (_scScreens === null) { box.innerHTML = '<span style="font-size:11px;color:#6b7280;">loading…</span>'; return; }
+  var ids = Object.keys(_scScreens);
+  if (!ids.length) { box.innerHTML = '<span style="font-size:11px;color:#6b7280;">no screens claimed yet</span>'; return; }
+  ids.sort(function (a, b) {
+    var A = _scScreens[a], B = _scScreens[b];
+    return (A.airport + A.name).localeCompare(B.airport + B.name);
+  });
+  box.innerHTML = ids.map(function (id) {
+    var s = _scScreens[id];
+    return '<div style="display:flex;align-items:center;gap:10px;background:#27272a;border:1px solid #3f3f46;'
+      + 'border-radius:6px;padding:7px 10px;font-size:12.5px;color:#e5e7eb;">'
+      + '<span style="font-family:ui-monospace,Menlo,monospace;color:#f0b429;letter-spacing:1px;">' + id + '</span>'
+      + '<span style="font-weight:600;">' + _scEsc(s.name || '—') + '</span>'
+      + '<span style="color:#9ca3af;">' + _scEsc(s.airport || '') + ' · ' + (SC_BOARDS[s.board] || s.board || '') + '</span>'
+      + '<button title="Forget this screen" onclick="scForget(\'' + id + '\')" '
+      + 'style="margin-left:auto;background:none;border:none;color:#9ca3af;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;">×</button>'
+      + '</div>';
+  }).join('');
+}
+function _scEsc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+  });
+}
+
+async function scLoad() {
+  try {
+    var res = await _acFetch(_ddApi() + '/api/screens?_oc=' + Date.now(), { cache: 'no-store' });
+    if (res.status === 403) { _scSay('Sign in as an admin to see the screens.', true); return; }
+    if (!res.ok) { _scSay('Could not read the screens (HTTP ' + res.status + ')', true); return; }
+    var doc = await res.json();
+    // Same rule as everywhere else: only a correctly shaped document becomes
+    // the list. A malformed body that parsed to {} would show "no screens
+    // claimed yet" over a building full of them.
+    if (!doc || typeof doc !== 'object' || !doc.screens || typeof doc.screens !== 'object') {
+      _scSay('The registry came back in a shape this cannot read — not touching it', true);
+      return;
+    }
+    _scScreens = doc.screens;
+    _scRender();
+    _scSay('');
+  } catch (e) { _scSay('Could not read the screens: ' + e.message, true); }
+}
+
+async function _scWrite(id, payload, what, method) {
+  if (_scBusy) return;
+  _scBusy = true;
+  var before = _scScreens ? JSON.parse(JSON.stringify(_scScreens)) : null;
+  try {
+    _scSay(what + '…');
+    var opts = { method: method || 'PUT', headers: { 'Content-Type': 'application/json' } };
+    if (payload) opts.body = JSON.stringify(payload);
+    var res = await _acFetch(_ddApi() + '/api/screens/' + encodeURIComponent(id), opts);
+    if (!res.ok) {
+      var err = await res.json().catch(function () { return {}; });
+      _scScreens = before;                       // the server did not change; nor does the screen
+      _scRender();
+      _scSay(res.status === 403 ? 'Refused: this account is not an admin.'
+           : res.status === 401 ? 'Refused: sign in again.'
+           : ('Failed: ' + (err.error || ('HTTP ' + res.status))), true);
+      return false;
+    }
+    await scLoad();
+    _scSay('Saved. The display picks this up within a few seconds.');
+    return true;
+  } catch (e) {
+    _scScreens = before;
+    _scRender();
+    _scSay('Failed: ' + e.message, true);
+    return false;
+  } finally { _scBusy = false; }
+}
+
+function scClaim() {
+  var code = (document.getElementById('scCode') || {}).value || '';
+  var name = (document.getElementById('scName') || {}).value || '';
+  var ap = (document.getElementById('scAp') || {}).value || '';
+  var board = (document.getElementById('scBoard') || {}).value || 'gids';
+  code = String(code).trim().toUpperCase();
+  ap = String(ap).trim().toUpperCase();
+  name = String(name).trim();
+  // The alphabet has no I, O, 0 or 1 — they are the characters read back wrong
+  // off a television, so rejecting them here is a clearer error than a 400.
+  if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) { _scSay('That is not a screen code — six characters, no I, O, 0 or 1.', true); return; }
+  if (!/^[A-Z0-9]{3,4}$/.test(ap)) { _scSay('That is not an airport code.', true); return; }
+  if (!name) { _scSay('Give the screen a name — it is how you will find it later.', true); return; }
+  _scWrite(code, { name: name, airport: ap, board: board }, 'Claiming ' + code).then(function (ok) {
+    if (!ok) return;
+    try {
+      document.getElementById('scCode').value = '';
+      document.getElementById('scName').value = '';
+    } catch (e) {}
+  });
+}
+
+function scForget(id) {
+  _scWrite(id, null, 'Forgetting ' + id, 'DELETE');
+}
+
+try {
+  if (typeof window !== 'undefined') {
+    window.scClaim = scClaim; window.scForget = scForget; window.scLoad = scLoad;
+  }
+} catch (e) {}
+
+// Loaded with the Airport tab, beside the dock.
+try {
+  var _scOrigSwitch = window.smSwitchTab;
+  window.smSwitchTab = function (tabId) {
+    if (typeof _scOrigSwitch === 'function') _scOrigSwitch(tabId);
+    if (tabId === 'airport') { try { scLoad(); } catch (e) {} }
+  };
+} catch (e) {}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // THEME (v218.99.11)
 // Light is the default — the owner uses this during the day. Dark is a toggle
 // for nighttime. Auto-pick on first open based on local time (6am-7pm =

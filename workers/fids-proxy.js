@@ -839,6 +839,103 @@ async function handleGetDryDock(env, origin) {
 }
 __name(handleGetDryDock, "handleGetDryDock");
 
+// ── SCREEN REGISTRY ───────────────────────────────────────────────────────
+// A screen is a TV somewhere with a name we gave it. It carries its own
+// identity — a code it generated once and shows on itself until someone
+// claims it — and asks what to display. Nothing about the screen's network
+// identifies it: every screen at one airport shares a public IP, and DHCP
+// moves it anyway, so the screen has to say who it is.
+//
+// NOTHING HERE IS AN UNAUTHENTICATED WRITE. A screen only ever READS its own
+// assignment; claiming and changing are admin. That is why the code is six
+// characters rather than four — the code IS the identity, so it has to be
+// long enough that guessing another screen's is not worth trying (32^6, about
+// a billion), while still being readable off a TV across a room.
+const SCREEN_ID_RE = /^[A-HJ-NP-Z2-9]{6}$/;   // no I/O/0/1 — they are read wrong off a screen
+
+async function _screensDoc(env) {
+  const raw = await env.FIDS_USERS.get("screens");
+  if (!raw) return { v: 1, screens: {}, updatedAt: null };
+  try {
+    const d = JSON.parse(raw);
+    if (!d || typeof d !== "object" || !d.screens || typeof d.screens !== "object") {
+      return { v: 1, screens: {}, updatedAt: null };
+    }
+    return d;
+  } catch (e) { return null; }   // corrupt: the caller decides, never silently empty
+}
+
+// PUBLIC. A screen reads this with no credentials, on a loop, forever.
+async function handleGetScreen(env, origin, id) {
+  if (!SCREEN_ID_RE.test(id)) return jsonResponse({ error: "Bad screen id" }, 400, origin);
+  const doc = await _screensDoc(env);
+  if (!doc) return jsonResponse({ error: "Corrupt registry" }, 500, origin);
+  const scr = doc.screens[id];
+  // Unclaimed is a normal answer, not an error: it is what a new TV sees while
+  // it waits to be claimed, and it must not look like a failure.
+  if (!scr) return jsonResponse({ claimed: false, id }, 200, origin);
+  return jsonResponse({ claimed: true, id, name: scr.name, airport: scr.airport, board: scr.board }, 200, origin);
+}
+__name(handleGetScreen, "handleGetScreen");
+
+// ADMIN. The whole estate — what is where and showing what.
+async function handleListScreens(env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const doc = await _screensDoc(env);
+  if (!doc) return jsonResponse({ error: "Corrupt registry" }, 500, origin);
+  return jsonResponse(doc, 200, origin);
+}
+__name(handleListScreens, "handleListScreens");
+
+async function handlePutScreen(request, env, payload, origin, id) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  if (!SCREEN_ID_RE.test(id)) return jsonResponse({ error: "Bad screen id" }, 400, origin);
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") return jsonResponse({ error: "Body must be an object" }, 400, origin);
+
+  const airport = String(body.airport || "").trim().toUpperCase();
+  const board = String(body.board || "").trim().toLowerCase();
+  const name = String(body.name || "").trim().slice(0, 48);
+  if (!/^[A-Z0-9]{3,4}$/.test(airport)) return jsonResponse({ error: "airport must be an IATA code" }, 400, origin);
+  if (["fids", "gids", "bids"].indexOf(board) === -1) {
+    return jsonResponse({ error: "board must be fids, gids or bids" }, 400, origin);
+  }
+  if (!name) return jsonResponse({ error: "name is required" }, 400, origin);
+
+  const doc = await _screensDoc(env);
+  // A corrupt registry must NOT be replaced by a fresh one holding a single
+  // screen — that silently unclaims every other TV in the building.
+  if (!doc) return jsonResponse({ error: "Registry unreadable — refusing to overwrite it" }, 500, origin);
+
+  const was = doc.screens[id];
+  doc.screens[id] = {
+    name, airport, board,
+    claimedAt: (was && was.claimedAt) || Date.now(),
+    updatedAt: Date.now(),
+    updatedBy: payload.sub || "admin"
+  };
+  doc.v = 1;
+  doc.updatedAt = Date.now();
+  await env.FIDS_USERS.put("screens", JSON.stringify(doc));
+  return jsonResponse({ success: true, id, screen: doc.screens[id] }, 200, origin);
+}
+__name(handlePutScreen, "handlePutScreen");
+
+async function handleDeleteScreen(env, payload, origin, id) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  if (!SCREEN_ID_RE.test(id)) return jsonResponse({ error: "Bad screen id" }, 400, origin);
+  const doc = await _screensDoc(env);
+  if (!doc) return jsonResponse({ error: "Registry unreadable — refusing to overwrite it" }, 500, origin);
+  if (!doc.screens[id]) return jsonResponse({ success: true, id, removed: false }, 200, origin);
+  delete doc.screens[id];
+  doc.updatedAt = Date.now();
+  await env.FIDS_USERS.put("screens", JSON.stringify(doc));
+  // The TV goes back to showing its code. Nothing is pushed to it; it finds out
+  // on its next poll, which is the only way a screen ever learns anything.
+  return jsonResponse({ success: true, id, removed: true }, 200, origin);
+}
+__name(handleDeleteScreen, "handleDeleteScreen");
+
 async function handlePutDryDock(request, env, payload, origin) {
   if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
   const body = await request.json();
@@ -8204,6 +8301,13 @@ var fids_proxy_default = {
       if (path === "/api/dry-dock" && request.method === "GET") {
         return handleGetDryDock(env, origin);
       }
+      // A screen reads its OWN assignment with no credentials — it has never
+      // had a token and never will. Only the single-screen form is public; the
+      // list of every screen is admin, below the gate.
+      {
+        const ms = path.match(/^\/api\/screens\/([A-Za-z0-9]+)$/);
+        if (ms && request.method === "GET") return handleGetScreen(env, origin, ms[1].toUpperCase());
+      }
     }
 
     // ⚠️ THIS GATE IS OPT-IN, NOT DEFAULT-DENY. It only protects paths under
@@ -8282,6 +8386,18 @@ var fids_proxy_default = {
       // is signed in at all.
       if (path === "/api/dry-dock" && request.method === "PUT") {
         return handlePutDryDock(request, env, payload, origin);
+      }
+      if (path === "/api/screens" && request.method === "GET") {
+        return handleListScreens(env, payload, origin);
+      }
+      {
+        const ms2 = path.match(/^\/api\/screens\/([A-Za-z0-9]+)$/);
+        if (ms2 && request.method === "PUT") {
+          return handlePutScreen(request, env, payload, origin, ms2[1].toUpperCase());
+        }
+        if (ms2 && request.method === "DELETE") {
+          return handleDeleteScreen(env, payload, origin, ms2[1].toUpperCase());
+        }
       }
       if (path === "/api/media-assignments" && request.method === "PUT") {
         return handlePutMediaAssignments(request, env, payload, origin);
