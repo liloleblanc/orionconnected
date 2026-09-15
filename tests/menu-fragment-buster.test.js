@@ -9,9 +9,9 @@
 //
 // The two are ONE UNIT: the script reads elements the fragment declares. A
 // stale fragment against a fresh script is a console whose newest controls are
-// simply absent, with no error to explain it — which is exactly the shape of
-// the report that led here ("the Gate field isn't there" for a field that had
-// shipped).
+// simply absent, with no error to explain it — which is the shape of the fault
+// that led here: a control reported missing from a console, after the build
+// that added it had already shipped.
 //
 // no-cache asks for revalidation and the edge sets must-revalidate, so this was
 // usually survivable. Usually is not a guarantee.
