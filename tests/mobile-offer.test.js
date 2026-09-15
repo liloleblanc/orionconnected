@@ -331,3 +331,49 @@ test('a display still reaches the board without the override', () => {
   assert.doesNotMatch(String(r.to), /nomobile/,
     'a wall display is not a phone and needs no escape hatch');
 });
+
+// ── nothing else may navigate while the question is open ──────────────────
+// The offer holds the page instead of leaving it, and that is a change of KIND,
+// not degree. Every other script on the opener was written when the head had
+// already redirected a phone away before the body ran — so anything that
+// navigates on load was, on a phone, unreachable code.
+//
+// It is reachable now. A signed-in session hitting `if (Auth.init())` at the
+// bottom of the body threw the page to picker.html out from under the offer:
+// the question painted and was gone before it could be answered. Only phones
+// saw it, because only phones are asked, and only while signed in.
+
+/** Run the opener's bottom script with a signed-in session. */
+function bottomScript({ offering }) {
+  const hit = scriptBlocks(INDEX).filter((b) => b.includes("Auth.init()"));
+  assert.equal(hit.length, 1, 'expected exactly one session-check script');
+  let went = null;
+  const html = {
+    getAttribute: (k) => (k === 'data-oc-offer' && offering ? '1' : null)
+  };
+  const ctx = {
+    Auth: { init: () => true },                       // signed in
+    document: { documentElement: html, addEventListener() {}, getElementById: () => ({}) },
+    sessionStorage: { setItem() {}, getItem: () => null },
+    setTimeout() {}
+  };
+  ctx.window = ctx;
+  ctx.window.location = { href: '', assign(u) { went = u; } };
+  Object.defineProperty(ctx.window.location, 'href', {
+    get: () => '', set: (u) => { went = u; }
+  });
+  ctx.location = ctx.window.location;
+  vm.createContext(ctx);
+  vm.runInContext(hit[0], ctx);
+  return went;
+}
+
+test('a signed-in session does not jump to the picker while the offer is up', () => {
+  assert.equal(bottomScript({ offering: true }), null,
+    'the page belongs to the question until it is answered');
+});
+
+test('a signed-in session still reaches the picker when nothing is being asked', () => {
+  assert.equal(bottomScript({ offering: false }), 'picker.html',
+    'desktop behaviour must be exactly what it always was');
+});
