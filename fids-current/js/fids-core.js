@@ -24999,7 +24999,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23781';
+var FIDS_BUILD_TAG = 'v23782';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43437,12 +43437,12 @@ function _wxSpeed() {
 }
 // Base lengths at _wxSpeed() === 1, from the CSS block: arrival runs to 17.3s,
 // exit to 4.2s. Both are rounded up so a deadline outlives its last frame.
-var _WXC_ENTRANCE_MS = 17600;
+var _WXC_ENTRANCE_MS = 16200;
 // The staged exit: the four content bands leave 0.34s apart at 0.62s each, then
 // the scene alone over 1.1s — 3.36s, rounded up so the cover outlives the last
 // frame of it. The entrance is longer because arriving is the part being read;
 // leaving only has to feel of a piece with it.
-var _WXC_EXIT_MS = 4400;
+var _WXC_EXIT_MS = 4200;
 
 // Ends the sequence wherever it has got to, and cancels the deadline.
 //

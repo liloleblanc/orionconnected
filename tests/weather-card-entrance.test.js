@@ -84,7 +84,14 @@ function keyframe(name) {
 }
 
 const seconds = v => parseFloat(v);
+// v23782 — each layer now runs TWO animations: the fade (an even curve, so it
+// is actually seen) and the rise (exponential, so it settles). animOf is the
+// fade, riseOf the settle.
 const animOf = child => ruleFor(child).match(/animation:\s*([\w-]+)/)[1];
+const riseOf = child => {
+  const m = ruleFor(child).match(/animation:[^;]*?,\s*([\w-]+)\s/);
+  return m ? m[1] : null;
+};
 // v23781 — every timing is now calc(<base>s * var(--wxc-t, 1)), so the dial can
 // stretch the whole sequence from the URL without the shape changing. These
 // read the BASE, which is what every assertion here is about: the dial only
@@ -146,12 +153,24 @@ test('the scene is held alone, and no band ever overlaps another', () => {
     'arrives — the request was that the scene be SEEN first, and under 0.6s ' +
     'it reads as the next thing landing on top of it rather than as a beat');
 
-  // And from there each band waits for the one before it to finish.
+  // Bands MAY now overlap, and that is the v23782 change: when the fade itself
+  // is slow and even, a band starting while the one before it is most of the
+  // way faded still reads as arriving after it, and the card gains a
+  // continuous cascade instead of five events with dead air between. What has
+  // to hold is that the ORDER is never in doubt — each band starts a clear
+  // beat after the one before it, not alongside it.
   for (let i = 1; i < order.length - 1; i++) {
-    const gap = start(order[i + 1]) - end(order[i]);
-    assert.ok(gap >= 0,
-      `${order[i + 1]} starts ${(-gap).toFixed(2)}s BEFORE ${order[i]} has ` +
-      'finished — one row at a time means one at a time');
+    const step = start(order[i + 1]) - start(order[i]);
+    assert.ok(step >= 2,
+      `${order[i + 1]} starts only ${step.toFixed(2)}s after ${order[i]} — ` +
+      'under two seconds they read as one event rather than a sequence');
+  }
+  // …and no band may be fully up before the next begins either, or the dead
+  // air the overlap was meant to remove comes straight back.
+  for (let i = 1; i < order.length - 1; i++) {
+    assert.ok(start(order[i + 1]) < end(order[i]),
+      `${order[i + 1]} waits for ${order[i]} to finish completely — the ` +
+      'cascade is meant to be continuous');
   }
 });
 
@@ -304,17 +323,22 @@ test('three bands share ONE keyframe, and the two that cannot say why', () => {
   assert.equal(new Set(shared).size, 1,
     'the top, the hours and the 5-day band differ only by delay, so they ' +
     'take one keyframe between them rather than three near-copies');
-  assert.notEqual(animOf('> video.wxc-vid'), shared[0],
-    'the video sits inset:0 / object-fit:cover BEHIND everything, so the ' +
-    "bands' small rise would slide its own cover edge into frame");
+  // The video shares the FADE — the fade is the point and every layer should
+  // be seen doing it at the same rate — but not the rise: it sits inset:0 /
+  // object-fit:cover behind everything, so the bands' translate would slide
+  // its own cover edge into frame. It scales instead.
+  assert.equal(animOf('> video.wxc-vid'), shared[0],
+    'the video fades on the same curve as the bands');
+  assert.notEqual(riseOf('> video.wxc-vid'), riseOf('> .wxcard-main'),
+    'but it must not take the bands\' translate');
   assert.notEqual(animOf('> .wxc-credit'), shared[0],
     'the credit cannot share either — its opacity is pinned !important ' +
     'elsewhere in the file, so its fade has to ride a custom property');
 });
 
 test('the video gets its own opening and is not left mid-transform', () => {
-  const frame = keyframe(animOf('> video.wxc-vid'));
-  assert.ok(frame, 'the video keyframe must exist');
+  const frame = keyframe(riseOf('> video.wxc-vid'));
+  assert.ok(frame, 'the video settle keyframe must exist');
   assert.match(frame, /to\s*\{[^}]*transform:\s*scale\(1\)/,
     'the video must settle on scale(1): it is the layer everything else sits ' +
     'on, and a transform left part-applied shifts the whole card');
