@@ -98,7 +98,10 @@ const riseOf = child => {
 // stretch the whole sequence from the URL without the shape changing. These
 // read the BASE, which is what every assertion here is about: the dial only
 // scales, and its own clamp is tested separately.
-const TIME = '(?:([\\d.]+)s|calc\\(\\s*([\\d.]+)s\\s*\\*\\s*var\\(--wxc-t[^)]*\\)\\s*\\))';
+// A delay also carries the resume offset — calc((Xs - var(--wxc-el, 0s)) * …)
+// — so a rebuild can pick the sequence up where it left off instead of
+// snapping it to the end. Either form reads back the same base.
+const TIME = '(?:([\\d.]+)s|calc\\(\\(?\\s*([\\d.]+)s(?:\\s*-\\s*var\\(--wxc-el[^)]*\\))?\\s*\\)?\\s*\\*\\s*var\\(--wxc-t[^)]*\\)\\s*\\))';
 const pick = m => seconds(m[1] !== undefined ? m[1] : m[2]);
 const delayOf = child => pick(ruleFor(child).match(new RegExp('animation-delay:\\s*' + TIME)));
 const durOf = child => pick(ruleFor(child).match(new RegExp('animation:\\s*[\\w-]+\\s+' + TIME)));
@@ -292,44 +295,43 @@ test('the keyframes move transform and opacity, nothing else', () => {
   }
 });
 
-test('it flies in from the side, and fades the whole way in', () => {
-  // v23784 — asked for in three notes: "it should fly in from the side",
-  // "and appear fade in", "as it flys in". So the movement is horizontal, and
-  // the fade and the flight are the SAME length — the panel is still arriving
-  // for as long as it is still appearing, rather than sliding into place and
-  // then continuing to fade in a spot it already occupies.
-  // a zero offset is written bare (`0`), not `0px`
-  const travels = [...BLOCK.matchAll(/translate3d\((-?[\d.]+)(?:px)?,\s*(-?[\d.]+)(?:px)?,\s*0\)/g)]
-    .map(m => ({ x: parseFloat(m[1]), y: parseFloat(m[2]) }));
-  assert.ok(travels.length >= 1, 'the layers must travel');
-  for (const { x, y } of travels) {
-    assert.equal(y, 0, `the travel is horizontal now, this one moves ${y}px vertically`);
-    assert.ok(Math.abs(x) >= 40,
-      `${x}px is not a flight across the frame — under about 40px it reads as ` +
-      'a nudge rather than an arrival at board scale');
-    assert.ok(Math.abs(x) <= 130,
-      `${x}px — the wrap clips its overflow, so a longer run spends its first ` +
-      'frames drawing a panel half outside its own box. The ceiling is this ' +
-      'high because the panel is under a tenth visible for the first quarter ' +
-      'of its travel: what is clipped is not yet on screen to be seen clipped.');
+test('it sweeps in from off the card, turning, and fades the whole way', () => {
+  // v23786 — the entrance was asked to be grand. 104px was a nudge. A band now starts entirely OUTSIDE the card and sweeps
+  // the full width in, turning as it comes; the wrap clips, so what is still
+  // outside is simply not drawn and the eye sees a panel crossing the frame.
+  const travels = [...BLOCK.matchAll(/translate3d\((-?[\d.]+)(%|px),\s*(-?[\d.]+)(?:px)?,\s*0\)/g)]
+    .map(m => ({ v: parseFloat(m[1]), unit: m[2], y: parseFloat(m[3]) }));
+  assert.ok(travels.length >= 3, 'the layers must travel');
+  for (const { v, unit, y } of travels) {
+    assert.equal(y, 0, `the sweep is horizontal, this one moves ${y}px vertically`);
+    assert.equal(unit, '%',
+      `${v}${unit} — the travel is a share of the panel's OWN width, so it ` +
+      'starts fully off the card at any board size; a fixed pixel run is a ' +
+      'nudge on a 1920 panel and a leap on a narrow one');
+    assert.ok(Math.abs(v) >= 100,
+      `${v}% does not clear the card — under 100% the panel is already ` +
+      'partly in frame when it starts, which is the nudge this replaced');
   }
-  // arrives from one side, leaves towards the other
-  const arrive = [...BLOCK.matchAll(/@keyframes wxcRise \{[\s\S]*?translate3d\((-?[\d.]+)px/g)].map(m => parseFloat(m[1]));
-  const leave = [...BLOCK.matchAll(/@keyframes wxcLeave\w* \{[\s\S]*?translate3d\((-?[\d.]+)px/g)].map(m => parseFloat(m[1]));
+  // arrives from one side, leaves by the other, and turns both times
+  const arrive = [...BLOCK.matchAll(/@keyframes wxcRise \{[\s\S]*?translate3d\((-?[\d.]+)%/g)].map(m => parseFloat(m[1]));
+  const leave = [...BLOCK.matchAll(/@keyframes wxcLeave\w* \{[\s\S]*?translate3d\((-?[\d.]+)%/g)].map(m => parseFloat(m[1]));
   assert.ok(arrive.length && leave.length, 'both directions must be declared');
   assert.ok(arrive.every(v => v < 0) && leave.every(v => v > 0),
-    'it comes in from the left and goes out to the right — arriving and ' +
-    'departing on the same side would look like it bounced');
+    'in from the left, out to the right — arriving and departing on the same ' +
+    'side would look like it bounced');
+  assert.match(BLOCK, /@keyframes wxcRise \{[\s\S]*?rotateY\(\d/,
+    'and it turns as it comes, which is what makes it read as swinging in ' +
+    'rather than sliding');
+  assert.match(BLOCK, /perspective: \d+px !important/,
+    'a rotateY with no perspective on the parent is a flat squash, not a turn');
 
-  // The fade and the flight run together, everywhere.
-  // the shorthand carries a cubic-bezier with its own commas, so the gap
-  // between the two animations cannot be matched with [^,]*
+  // The fade and the sweep run together, everywhere.
   const pairs = [...BLOCK.matchAll(
     /animation: (wxcFade\w*) calc\(([\d.]+)s[\s\S]*?both, (wxcRise\w*) calc\(([\d.]+)s/g)];
   assert.ok(pairs.length >= 5, `expected the staged layers, found ${pairs.length}`);
   for (const [, , fade, , rise] of pairs) {
     assert.equal(rise, fade,
-      `a layer fades for ${fade}s but only flies for ${rise}s — it would stop ` +
+      `a layer fades for ${fade}s but only sweeps for ${rise}s — it would stop ` +
       'moving and carry on appearing, which is the thing that was rejected');
   }
 });
@@ -706,10 +708,10 @@ function harness() {
   // _wxSpeed reads location.search; the dial itself is tested separately, so
   // here it is held at 1 and the harness is about the lifecycle only.
   const api = new Function('window', 'document', 'setTimeout', 'clearTimeout',
-    '_WXC_ENTRANCE_MS', '_wxSpeed',
+    '_WXC_ENTRANCE_MS', '_wxSpeed', '_wxHoldSceneForIntro',
     endSrc[0] + '\n' + armSrc[0] + '\nreturn { arm: _wxArmEntrance, end: _wxEndEntrance };')(
     w, doc, fn => { timers.set(++nextId, fn); return nextId; },
-    id => timers.delete(id), Number(msSrc[1]), () => 1);
+    id => timers.delete(id), Number(msSrc[1]), () => 1, () => {});
 
   const wrap = () => {
     const c = new Set();
@@ -883,26 +885,38 @@ test('the strips-only swap abandons the sequence instead of restarting it', () =
     'the slide has nothing to abandon and must not pay for a DOM sweep');
 });
 
-test('a gate rebuild abandons the sequence on the way back in', () => {
+test('a gate rebuild resumes the sequence rather than snapping it', () => {
   // The rebuild detaches the live carousel and re-attaches it to survive the
-  // innerHTML wipe. Re-inserting a node RESTARTS its CSS animations — the
-  // v23166 note in display-overrides measured exactly that on this carousel,
-  // where it turned the largest panel on the screen into a navy rectangle on
-  // every rebuild. All five stages would replay from zero against a deadline
-  // that did not move, and no JS is re-entered to notice: the refill only
-  // repaints a CHILDLESS carousel, and a preserved one is not childless.
+  // innerHTML wipe, and re-inserting a node RESTARTS its CSS animations — the
+  // v23166 note in display-overrides measured exactly that on this carousel.
+  // The first fix stripped the mark so the card landed whole, which was
+  // correct and looked wrong: every layer mid-flight jumped to its final
+  // position in a single frame, and the gate rebuilds often enough to be
+  // seen. Every delay is written as (base - var(--wxc-el)), so stamping the
+  // elapsed time makes the restarted animations resume where they were.
   const detach = SRC.indexOf("if (_gateAdAirlineSame && _savedAd && _savedAd.firstChild) { _savedAd.remove(); }");
   const reattach = SRC.indexOf('_newAd.replaceWith(_savedAd);');
   assert.ok(detach >= 0 && reattach > detach,
     'the gate rebuild must still preserve the carousel across the wipe');
   const between = SRC.slice(detach, reattach);
-  const ends = between.lastIndexOf('_wxEndEntrance(_savedAd)');
-  assert.ok(ends >= 0,
-    'the mark must be stripped before the carousel goes back in, or the ' +
-    'entrance replays on a telemetry tick and is then cut off mid-sequence');
-  assert.match(between.slice(ends - 200, ends + 60), /wxcard-wrap\.wxc-entering/,
-    'and it must look for a card that is actually mid-entrance rather than ' +
+  assert.match(between, /wxcard-wrap\.wxc-entering/,
+    'it must look for a card that is actually mid-entrance rather than ' +
     'sweeping the DOM on every rebuild');
+  assert.match(between, /setProperty\('--wxc-el'/,
+    'and stamp the elapsed time, which is what lets the restarted animations ' +
+    'pick up where they were instead of starting over or snapping to the end');
+  assert.match(between, /_wxEndEntrance\(_savedAd\)/,
+    'past the end of the sequence there is nothing to resume, so the mark ' +
+    'still comes off — that is the case the first fix was written for');
+  assert.match(between, /_wxEl > 0 && _wxEl < _wxSpan/,
+    'the choice between resuming and ending must be made on the clock, not ' +
+    'assumed either way');
+  // The offset only makes sense if the stylesheet actually reads it.
+  assert.match(BLOCK, /animation-delay: calc\(\([\d.]+s - var\(--wxc-el, 0s\)\)/,
+    'every delay must carry the resume offset, or a rebuild lands the card ' +
+    'at the wrong point in its own sequence');
+  assert.match(SRC, /window\._wxEntranceAt = Date\.now\(\);/,
+    'and the arm must record when it started');
 });
 
 test('the class the JS sets is the class the CSS animates', () => {

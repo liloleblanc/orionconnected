@@ -17886,8 +17886,25 @@ const gView = document.getElementById('gateView');
         // _renderWxCard is never called. Strip the mark instead, and the card
         // comes back whole.
         try {
-          if (_savedAd && typeof _wxEndEntrance === 'function'
-              && _savedAd.querySelector('.wxcard-wrap.wxc-entering')) _wxEndEntrance(_savedAd);
+          var _wxR = _savedAd && _savedAd.querySelector('.wxcard-wrap.wxc-entering');
+          if (_wxR && typeof _wxEndEntrance === 'function') {
+            // v23786 — A REBUILD RESUMES THE SEQUENCE, IT NO LONGER ENDS IT.
+            // Re-inserting a node restarts its CSS animations, so this used to
+            // strip the class instead and let the card land whole — correct,
+            // but it SNAPPED: every layer still mid-flight jumped to its
+            // final position in one frame, and the gate rebuilds often enough
+            // that a viewer sees it. Every delay in the block is written as
+            // (base - var(--wxc-el)), so stamping the elapsed time here makes
+            // the restarted animations pick up exactly where they were. Past
+            // the end of the sequence there is nothing to resume and the mark
+            // comes off, which is the old behaviour for the case that needed
+            // it. (Negative delay as a phase anchor is the same idiom the
+            // rondelle uses; here it is an elapsed offset instead.)
+            var _wxEl = (Date.now() - (window._wxEntranceAt || 0)) / 1000;
+            var _wxSpan = (_WXC_ENTRANCE_MS * _wxSpeed()) / 1000;
+            if (_wxEl > 0 && _wxEl < _wxSpan) _wxR.style.setProperty('--wxc-el', _wxEl.toFixed(2) + 's');
+            else _wxEndEntrance(_savedAd);
+          }
         } catch (eWx) {}
         if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
         var _newAdLogo = document.getElementById('gateAdLogo');
@@ -24999,7 +25016,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23785';
+var FIDS_BUILD_TAG = 'v23786';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43485,6 +43502,22 @@ function _wxEndEntrance(root) {
 // can carry the intro only on the paint that will actually play it. A
 // re-render inside the same visit (a re-tint, a strips swap, a gate rebuild)
 // answers false and the titles are simply not emitted.
+// v23786 — ONE VIDEO DECODES AT A TIME.
+// The titles and the scene are both 1920x1080. Playing them together was two
+// simultaneous decodes on top of fifteen animating layers, which is the kind
+// of load that shows up as dropped frames rather than as an error. The scene
+// is held until the titles are nearly gone — it is invisible behind them
+// until then anyway, and its own fade does not begin until 3.2s.
+function _wxHoldSceneForIntro(wrap) {
+  try {
+    var vid = wrap && wrap.querySelector(':scope > video.wxc-vid');
+    var intro = wrap && wrap.querySelector(':scope > video.wxc-intro');
+    if (!vid || !intro) return;
+    try { vid.pause(); } catch (e) {}
+    setTimeout(function () { try { vid.play(); } catch (e) {} }, Math.round(2600 * _wxSpeed()));
+  } catch (e) {}
+}
+
 function _wxWantsIntro() {
   try {
     var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
@@ -43499,7 +43532,10 @@ function _wxArmEntrance(wrap) {
     if (window._wxEntrancePlayedSeq === seq) return false;   // already played for this visit
     window._wxEntrancePlayedSeq = seq;
     try { var _sp = _wxSpeed(); if (_sp !== 1) wrap.style.setProperty('--wxc-t', String(_sp)); } catch (eS) {}
+    // When it started, so a rebuild can resume the sequence rather than end it.
+    window._wxEntranceAt = Date.now();
     wrap.classList.add('wxc-entering');
+    _wxHoldSceneForIntro(wrap);
     if (window._wxEntranceTimer) { try { clearTimeout(window._wxEntranceTimer); } catch (eC) {} }
     window._wxEntranceTimer = setTimeout(function () {
       window._wxEntranceTimer = null;
