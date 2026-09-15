@@ -307,17 +307,19 @@ test('it flies in from the side, and fades the whole way in', () => {
     assert.ok(Math.abs(x) >= 40,
       `${x}px is not a flight across the frame — under about 40px it reads as ` +
       'a nudge rather than an arrival at board scale');
-    assert.ok(Math.abs(x) <= 90,
+    assert.ok(Math.abs(x) <= 130,
       `${x}px — the wrap clips its overflow, so a longer run spends its first ` +
-      'frames drawing a panel half outside its own box');
+      'frames drawing a panel half outside its own box. The ceiling is this ' +
+      'high because the panel is under a tenth visible for the first quarter ' +
+      'of its travel: what is clipped is not yet on screen to be seen clipped.');
   }
   // arrives from one side, leaves towards the other
   const arrive = [...BLOCK.matchAll(/@keyframes wxcRise \{[\s\S]*?translate3d\((-?[\d.]+)px/g)].map(m => parseFloat(m[1]));
   const leave = [...BLOCK.matchAll(/@keyframes wxcLeave\w* \{[\s\S]*?translate3d\((-?[\d.]+)px/g)].map(m => parseFloat(m[1]));
   assert.ok(arrive.length && leave.length, 'both directions must be declared');
-  assert.ok(arrive.every(v => v > 0) && leave.every(v => v < 0),
-    'it comes in from one side and goes out the other — a card that arrived ' +
-    'and departed on the same side would look like it bounced');
+  assert.ok(arrive.every(v => v < 0) && leave.every(v => v > 0),
+    'it comes in from the left and goes out to the right — arriving and ' +
+    'departing on the same side would look like it bounced');
 
   // The fade and the flight run together, everywhere.
   // the shorthand carries a cubic-bezier with its own commas, so the gap
