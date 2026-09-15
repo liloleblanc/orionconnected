@@ -138,3 +138,61 @@ test('the console escapes what it renders', () => {
   assert.match(body, /_scEsc\(s\.name/, 'the name is escaped');
   assert.match(body, /_scEsc\(s\.airport/, 'and so is the airport');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23799 — WHICH GATE.
+//
+// Reported after the first real use: a screen claimed as "Gate 4" showed
+// gate 2. The name was ours and the gate was the board's own guess — a gate
+// board with no gate picks one. gids.html has always read ?gate= (C77, A4,
+// 12); nothing was carrying it, which made the name decorative.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('a gate board is given its gate, not left to choose', () => {
+  const at = PAGE.indexOf('function boardUrl');
+  const body = PAGE.slice(at, PAGE.indexOf('\n  }', at));
+  assert.match(body, /if \(a\.gate\) u \+= '&gate=' \+ encodeURIComponent\(a\.gate\)/,
+    'the assigned gate must reach the board — without it the name says Gate 4 ' +
+    'and the screen shows whichever gate the board picked');
+  // and the board really does read it
+  const GIDS = fs.readFileSync(path.join(ROOT, 'fids-current', 'gids.html'), 'utf8');
+  assert.match(GIDS, /params\.get\('gate'\)/,
+    'gids.html must still be reading the parameter this relies on');
+});
+
+test('the gate is stored, returned, and only where it means something', () => {
+  const put = WORKER.indexOf('async function handlePutScreen');
+  const body = WORKER.slice(put, WORKER.indexOf('return jsonResponse({ success: true', put));
+  assert.match(body, /const gate = String\(body\.gate \|\| ""\)\.trim\(\)\.toUpperCase\(\)/);
+  assert.match(body, /if \(gate && board !== "gids"\)/,
+    'only a gate board has a gate — a departures screen with one is a mistake ' +
+    'worth naming rather than silently ignoring');
+  assert.match(body, /\^\[A-Z\]\?\[0-9\]\{1,3\}\[A-Z\]\?\$/, 'and the shape is checked');
+  assert.match(body, /name, airport, board, gate,/, 'it is stored');
+
+  const get = WORKER.indexOf('async function handleGetScreen');
+  const gb = WORKER.slice(get, WORKER.indexOf('\n}', get));
+  assert.match(gb, /gate: scr\.gate \|\| ""/, 'and returned, so the screen can use it');
+});
+
+test('an empty gate still means "let the board choose"', () => {
+  // fids and bids boards have no gate, and a gate board without one must behave
+  // exactly as it did before this existed.
+  const at = PAGE.indexOf('function boardUrl');
+  const body = PAGE.slice(at, PAGE.indexOf('\n  }', at));
+  assert.match(body, /if \(a\.gate\)/, 'the parameter is conditional, never sent empty');
+  assert.doesNotMatch(body, /gate=' \+ encodeURIComponent\(a\.gate \|\| ''\)/,
+    'an empty gate= is not the same as no gate= and must not be sent');
+});
+
+test('the console explains the field rather than letting the server refuse it', () => {
+  const at = MENU_JS.indexOf('function scClaim');
+  const body = MENU_JS.slice(at, MENU_JS.indexOf('\n}', at));
+  assert.match(body, /if \(gate && board !== 'gids'\)/,
+    'the useful message is about what the field is for, not a 400');
+  assert.match(body, /Gate should look like 4, A4, C77 or 12B/);
+  assert.match(body, /gate: gate/, 'and it is actually sent');
+  const render = MENU_JS.slice(MENU_JS.indexOf('function _scRender'));
+  assert.match(render.slice(0, render.indexOf('\n}')), /s\.gate \? ' · gate ' \+ _scEsc\(s\.gate\)/,
+    'and shown in the list, so a wrong gate is visible without walking to the TV');
+});

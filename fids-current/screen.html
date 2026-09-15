@@ -123,7 +123,11 @@
     var page = a.board === 'fids' ? 'fids.html' : a.board === 'bids' ? 'bids.html' : 'gids.html';
     // The screen id rides along so the board can keep polling its own
     // assignment later; ?screen= is inert on a board that does not read it.
-    return '/' + page + '?ap=' + encodeURIComponent(a.airport) + '&screen=' + encodeURIComponent(ID);
+    var u = '/' + page + '?ap=' + encodeURIComponent(a.airport) + '&screen=' + encodeURIComponent(ID);
+    // A gate board with no gate picks one for itself. Passing it through is the
+    // difference between a screen that IS gate 4 and one merely named after it.
+    if (a.gate) u += '&gate=' + encodeURIComponent(a.gate);
+    return u;
   }
 
   var failures = 0;
