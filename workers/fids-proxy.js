@@ -811,6 +811,64 @@ async function handleGetMediaAssignments(env, origin) {
 }
 __name(handleGetMediaAssignments, "handleGetMediaAssignments");
 
+// ── DRY DOCK ──────────────────────────────────────────────────────────────
+// Airports that are being integrated or repaired. A docked airport is absent
+// from every picker and from the stream tours, and still reachable by direct
+// link so it can be built and tested — which is the whole point of it.
+//
+// It is deliberately NOT "this airport has no feed": _fidsAirportHasFeed
+// drives the dead-board rescue that navigates a board to the tour after 45s,
+// so a docked airport stays in FIDS_LIVE_AIRPORTS and the dock is a separate,
+// narrower fact.
+//
+// Same shape as media-assignments: one KV doc, public GET so a board or the
+// stream box can read it on boot with no credentials, admin-only PUT.
+// The dock before anyone has ever written one. Sydney is here because it is
+// merged but unannounced: the airport has not answered the permission request,
+// so it stays off every list and off the streams while it is reachable by
+// direct link. The FIRST admin write replaces this entirely — this is a
+// starting position, not a floor, and nothing re-adds a code once an admin has
+// taken it out.
+const DRY_DOCK_DEFAULT = ["SYD"];
+
+async function handleGetDryDock(env, origin) {
+  const data = await env.FIDS_USERS.get("dry-dock");
+  if (!data) return jsonResponse({ v: 1, docked: DRY_DOCK_DEFAULT.slice(), updatedAt: null, seeded: true }, 200, origin);
+  try { return jsonResponse(JSON.parse(data), 200, origin); }
+  catch (e) { return jsonResponse({ error: "Corrupt dry dock" }, 500, origin); }
+}
+__name(handleGetDryDock, "handleGetDryDock");
+
+async function handlePutDryDock(request, env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const body = await request.json();
+  if (typeof body !== "object" || body === null) {
+    return jsonResponse({ error: "Body must be an object" }, 400, origin);
+  }
+  if (!Array.isArray(body.docked)) {
+    return jsonResponse({ error: "docked must be an array of IATA codes" }, 400, origin);
+  }
+  // Normalised here rather than trusted: the readers compare against upper-case
+  // codes, and one lower-case entry would silently dock nothing.
+  const seen = Object.create(null);
+  const docked = [];
+  for (const raw of body.docked) {
+    const c = String(raw || "").trim().toUpperCase();
+    if (!/^[A-Z0-9]{3,4}$/.test(c) || seen[c]) continue;
+    seen[c] = 1;
+    docked.push(c);
+  }
+  const cfg = {
+    v: 1,
+    docked,
+    updatedAt: Date.now(),
+    updatedBy: payload.sub || "admin"
+  };
+  await env.FIDS_USERS.put("dry-dock", JSON.stringify(cfg));
+  return jsonResponse({ success: true, config: cfg }, 200, origin);
+}
+__name(handlePutDryDock, "handlePutDryDock");
+
 async function handlePutMediaAssignments(request, env, payload, origin) {
   if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
   const body = await request.json();
@@ -8139,6 +8197,13 @@ var fids_proxy_default = {
       if (path === "/api/media-assignments" && request.method === "GET") {
         return handleGetMediaAssignments(env, origin);
       }
+      // The dry dock has to be readable with no credentials: the boards read
+      // it on boot and the stream box reads it from a page that has never had
+      // a token. Registering it below the gate instead would 401 the rotator
+      // and silently put a docked airport back on air.
+      if (path === "/api/dry-dock" && request.method === "GET") {
+        return handleGetDryDock(env, origin);
+      }
     }
 
     // ⚠️ THIS GATE IS OPT-IN, NOT DEFAULT-DENY. It only protects paths under
@@ -8210,6 +8275,13 @@ var fids_proxy_default = {
       }
       if (libDelMatch && request.method === "PATCH") {
         return handlePatchLibraryItem(request, env, payload, origin, libDelMatch[1]);
+      }
+      // PUT /api/dry-dock — admin only. The 403 inside the handler is the
+      // only thing that actually stops a write: every "is this an admin" check
+      // in the browser is forgeable, and one of them reports admin when nobody
+      // is signed in at all.
+      if (path === "/api/dry-dock" && request.method === "PUT") {
+        return handlePutDryDock(request, env, payload, origin);
       }
       if (path === "/api/media-assignments" && request.method === "PUT") {
         return handlePutMediaAssignments(request, env, payload, origin);

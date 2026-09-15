@@ -245,6 +245,32 @@
         aps = aps.filter(function (c) { return LIVE[c]; });
         try { console.warn('[TOUR] no feed for ' + dropped.join(', ') + ' — dropped from this tour'); } catch (e) {}
       }
+      // v23796 — AND NOT THE ONES IN DRY DOCK.
+      // Docked airports are being built or repaired: they keep their feed and
+      // stay reachable by direct link, they simply do not go on air. The list
+      // is read from localStorage rather than fetched, because this block runs
+      // synchronously; the poll further down keeps that copy fresh and asks
+      // for a reload when it changes, which is how a deploy already reaches
+      // this page.
+      try {
+        var _dockRaw = localStorage.getItem('oc_dry_dock');
+        var _dock = _dockRaw ? JSON.parse(_dockRaw) : null;
+        var _docked = (_dock && Array.isArray(_dock.docked)) ? _dock.docked : [];
+        if (_docked.length && aps.length) {
+          var _keep = aps.filter(function (c) { return _docked.indexOf(c) === -1; });
+          // If the dock would empty the run, keep the run. A frozen or black
+          // stream is a worse outcome than one docked board, and the list is
+          // curation, not a safety gate.
+          if (_keep.length) {
+            var _lost = aps.filter(function (c) { return _docked.indexOf(c) !== -1; });
+            if (_lost.length) { try { console.warn('[DOCK] in dry dock, not touring: ' + _lost.join(', ')); } catch (e) {} }
+            aps = _keep;
+          } else {
+            try { console.warn('[DOCK] every airport in this run is docked — touring anyway'); } catch (e) {}
+          }
+        }
+      } catch (e) {}
+
       // v23414 — NO AIRPORT NAMED, SO TOUR.
       // 
       // The tour was built and the list was right, but it only ran when the URL
@@ -411,6 +437,43 @@
       }
       checkSelf();
       setInterval(checkSelf, 30 * 60000);
+
+      // ── DRY DOCK ────────────────────────────────────────────────────────
+      // The same call shape as checkSelf, for the same reason: this origin's
+      // GETs are served from the edge cache with no validators, so without
+      // BOTH the cache-buster and no-store the box polls a frozen list.
+      //
+      // It never applies the list to the running rotation — it caches it and
+      // raises reloadPending, so the change lands at the next board switch
+      // through the reload path that already exists. Nothing mutates `aps`
+      // while advance() is indexing it.
+      var DOCK_URL = 'https://fids-proxy.n-leblanc1984.workers.dev/api/dry-dock';
+      function checkDock() {
+        try {
+          fetch(DOCK_URL + '?_oc=' + Date.now(), { cache: 'no-store' }).then(function (r) {
+            if (!r || !r.ok) return null;
+            return r.json();
+          }).then(function (doc) {
+            // A 502 or a truncated body can parse to something that looks like
+            // an empty dock, which is indistinguishable from "nothing is
+            // docked" — and would put a docked airport back on air. Only a
+            // correctly shaped document is allowed to replace the cached one.
+            if (!doc || typeof doc !== 'object' || !Array.isArray(doc.docked)) return;
+            var next = JSON.stringify({ docked: doc.docked });
+            var prev = localStorage.getItem('oc_dry_dock');
+            if (prev === next) return;
+            localStorage.setItem('oc_dry_dock', next);
+            // First sight of any list on a cold page is not a change worth a
+            // reload if it docks nothing — that is the ordinary empty case.
+            if (prev !== null || doc.docked.length) {
+              try { console.log('[DOCK] list changed — reloading at the next switch'); } catch (e) {}
+              reloadPending = true;
+            }
+          }, function () {});
+        } catch (e) {}
+      }
+      checkDock();
+      setInterval(checkDock, 90000);
 
       // ── Timing ────────────────────────────────────────────────────────────
       // Every screen shows for at least `dwell`. A non-gate board (fids/bids)

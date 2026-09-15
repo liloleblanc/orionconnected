@@ -585,6 +585,60 @@ async function loadMediaAssignments(force) {
 }
 function getMediaAssignments() { return _mediaAssignCache; }
 
+// ── DRY DOCK ──────────────────────────────────────────────────────────────
+// Airports being integrated or repaired. Docked means "do not OFFER this" —
+// it is not "this has no feed", which is a different fact that drives the
+// dead-board rescue at _fidsAirportHasFeed. A docked airport keeps its feed,
+// keeps working by direct link, and simply stops appearing in lists.
+//
+// Read on boot like the media docs, and polled, because the whole point is
+// that docking takes effect without a deploy.
+var _dryDockCache = null;
+var _dryDockInflight = null;
+var FIDS_DRY_DOCK_POLL_MS = 60000;
+
+/** The docked codes, upper-case. Empty until the first load answers. */
+function fidsDryDock() {
+  return (_dryDockCache && Array.isArray(_dryDockCache.docked)) ? _dryDockCache.docked : [];
+}
+function fidsIsDocked(code) {
+  var c = String(code || '').trim().toUpperCase();
+  if (!c) return false;
+  return fidsDryDock().indexOf(c) !== -1;
+}
+
+async function loadDryDock(force) {
+  if (!force && _dryDockCache) return _dryDockCache;
+  if (_dryDockInflight) return _dryDockInflight;
+  _dryDockInflight = (async () => {
+    try {
+      var res = await fetch(FIDS_API_BASE + '/api/dry-dock?_oc=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) return _dryDockCache;              // keep the last good list
+      var doc = await res.json();
+      // A 502 or a truncated body can parse to something that LOOKS like an
+      // empty dock, which is indistinguishable from "nothing is docked" and
+      // would put a docked airport straight back into every picker. Only a
+      // correctly shaped document is allowed to replace the previous one.
+      if (!doc || typeof doc !== 'object' || !Array.isArray(doc.docked)) return _dryDockCache;
+      _dryDockCache = doc;
+      try { window.dispatchEvent(new CustomEvent('fids-dry-dock-ready', { detail: doc })); } catch (e) {}
+      return _dryDockCache;
+    } catch (e) {
+      console.warn('[FIDS_DOCK] dry dock load failed:', e.message);
+      return _dryDockCache;                            // last known good, never a blank one
+    } finally { _dryDockInflight = null; }
+  })();
+  return _dryDockInflight;
+}
+
+try {
+  if (typeof window !== 'undefined') {
+    window.fidsDryDock = fidsDryDock;
+    window.fidsIsDocked = fidsIsDocked;
+    window.loadDryDock = loadDryDock;
+  }
+} catch (e) {}
+
 // Admin: add a YouTube ref to the library. Returns the new item.
 async function addYouTubeLibraryItem(ytType, ytId, label) {
   var token = _fidsAuthToken();
@@ -777,6 +831,12 @@ function getAssignedImagesForAirline(code) { return _resolveAssignedItems(code, 
 try { loadMediaConfig(); } catch (e) {}
 try { loadMediaLibrary(); } catch (e) {}
 try { loadMediaAssignments(); } catch (e) {}
+try { loadDryDock(); } catch (e) {}
+// Polled, not just read once: an airport docked while a board is up has to
+// leave that board's picker without anyone touching the screen.
+try {
+  setInterval(function () { try { loadDryDock(true); } catch (e) {} }, FIDS_DRY_DOCK_POLL_MS);
+} catch (e) {}
 
 // ── GATE OVERRIDE SYSTEM (localStorage-backed) ────────────────────────
 var _GATE_OVERRIDES_KEY = 'fids_gate_overrides';
@@ -25045,7 +25105,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23793';
+var FIDS_BUILD_TAG = 'v23796';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -32422,8 +32482,11 @@ function apAutoSearch(q, ctx) {
   // Local results instantly
   const vUp = v.toUpperCase();
   // v23335 — only airports that actually have a feed (see FIDS_LIVE_AIRPORTS).
+  // v23796 — and not the ones in dry dock. Docked is a NARROWER fact than
+  // "has a feed": the airport still works and is still reachable by direct
+  // link, it is simply not offered while it is being built or repaired.
   const local = AP_LIST.filter(a =>
-    FIDS_LIVE_AIRPORTS.has(a.c) && (a.c.startsWith(vUp) || a.n.toUpperCase().includes(vUp))
+    FIDS_LIVE_AIRPORTS.has(a.c) && !fidsIsDocked(a.c) && (a.c.startsWith(vUp) || a.n.toUpperCase().includes(vUp))
   ).slice(0, 10).map(a => ({c:a.c, n:a.n, city:''}));
   renderMatches(local);
 
@@ -32439,7 +32502,8 @@ function apAutoSearch(q, ctx) {
         if (!data || !data.items || !data.items.length) return;
         var results = data.items
           .filter(function(a) { return a.iata; })
-          .map(function(a) { return {
+          .filter(function(a) { return !fidsIsDocked(a.iata); })   // docked airports are not offered
+        .map(function(a) { return {
             c: a.iata,
             n: a.shortName || a.municipalityName || a.name || a.iata,
             city: a.municipalityName || ''
