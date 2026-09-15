@@ -32449,6 +32449,14 @@ const FIDS_LIVE_AIRPORTS = new Set([
   // every tour, and a board opened on it decided it was dead and sent itself
   // away.
   'YYZ',
+  // v23805 — DCA and IAD are back, for the same reason and on the same
+  // evidence. Both were parked because the Washington authority feed 429d the
+  // Worker's datacenter IP; the same window endpoint now answers 200 with 241
+  // and 161 flights respectively, twice running. Nothing here changed — the
+  // other end did. Three airports in two days came back without a line of our
+  // code moving, which is the argument for re-checking anything parked on an
+  // upstream reason rather than waiting to be reminded of it.
+  'DCA', 'IAD',
   // v23420 — dedicated-route feeds (not the window endpoint): TPA fetches
   // Tampa's Acquia API client-side; YUL/YTZ/YHU use /flights/<iata>; LGA/EWR
   // use /flights/panynj. Verified live: EWR 1235, LGA 896, YUL 553, TPA 453,

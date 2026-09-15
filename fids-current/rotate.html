@@ -178,9 +178,10 @@
       // residential IP, so this is egress reputation, not a header bug — it
       // needs a different egress, not a code change.
       // v23804 — YYZ joins: its block lifted and /flights/yyz returns 974 rows.
-      // ROSTER is the filter a hand-typed ap=/tour= list is checked against, so
-      // until now a stream could not be pointed at Toronto even deliberately.
-      var ROSTER = ['YYZ','YQM','YHZ','YYT','YSJ','YFC','YQY','YQX','YYG','YDF',
+      // v23805 — DCA and IAD likewise, their 429 lifted. ROSTER is the filter a
+      // hand-typed ap=/tour= list is checked against, so until now a stream
+      // could not be pointed at any of the three even deliberately.
+      var ROSTER = ['YYZ','DCA','IAD','YQM','YHZ','YYT','YSJ','YFC','YQY','YQX','YYG','YDF',
         'TPA','YUL','LGA','EWR','YTZ','YHU',
         'YOW','YQB','YQT','YHM','YXX','YLW','YQR','YXE','YYC','YEG',
         'YYJ','YKA','YXS','YMM',

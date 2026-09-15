@@ -41,12 +41,34 @@ const core = readFileSync(path.join(here, '..', 'fids-current', 'js', 'fids-core
 // alarm on it. Canada's busiest airport sat out of every picker and every tour
 // for as long as it took someone to try it by hand. If another code is ever
 // parked this way, it needs re-checking on a schedule, not on a hunch.
-const EXTRA = ['YQM', 'YHZ', 'TPA', 'YUL', 'LGA', 'EWR', 'YTZ', 'YHU', 'YYZ'];
+// DCA and IAD are here for the same reason YYZ is: a code that came back from
+// an upstream block needs a POSITIVE assertion, or the only record that it
+// returned is a comment, and a comment does not fail when someone quietly drops
+// it out of a roster again.
+const EXTRA = ['YQM', 'YHZ', 'TPA', 'YUL', 'LGA', 'EWR', 'YTZ', 'YHU', 'YYZ', 'DCA', 'IAD'];
 
-// Handlers that exist and parse correctly, but whose upstream blocks the
-// Worker's datacenter IP: every request 429s, so the board would be blank.
-// Verified live 2026-09-06. Remove a code here the day its block lifts.
-const EGRESS_BLOCKED = ['YVR', 'MAN', 'DCA', 'IAD'];
+// Airports held out of the pickers, and WHY — because the why decides what,
+// if anything, would ever bring them back.
+//
+// The old note here said these were 429d by their upstream's bot manager. That
+// was true when it was written and is not true now. Re-checked 2026-09-15: YVR
+// and MAN answer 503 with {"error":"aerodatabox-disconnected","since":
+// "2026-09-10"}. They were never on an authority feed at all — they were served
+// by AeroDataBox, which is gone deliberately and is not coming back.
+//
+// So there is no block to lift and nothing to wait for. Listing them beside a
+// genuine egress block invites someone to re-test them forever. They need an
+// authority handler written, the way SYD and ZRH were; until someone does that,
+// they have no feed and belong out of the pickers.
+// v23805 — RE-CHECKED, and two came back. DCA and IAD now answer 200 with 241
+// and 161 flights; they are in the rosters. YVR and MAN still 503 with
+// {"error","since"}, so they stay here.
+//
+// This list is the one that needs re-checking on a schedule. Nothing watches
+// it — YYZ sat out for months on a block that had already lifted, and these two
+// were found only because someone thought to look. A code parked here is not
+// broken forever, it is broken until somebody tries it.
+const EGRESS_BLOCKED = ['YVR', 'MAN'];
 
 function registryCodes() {
   const start = worker.indexOf('const AUTHORITY_HANDLERS = {');
