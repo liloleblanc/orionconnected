@@ -24999,7 +24999,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23782';
+var FIDS_BUILD_TAG = 'v23783';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43437,7 +43437,7 @@ function _wxSpeed() {
 }
 // Base lengths at _wxSpeed() === 1, from the CSS block: arrival runs to 17.3s,
 // exit to 4.2s. Both are rounded up so a deadline outlives its last frame.
-var _WXC_ENTRANCE_MS = 16200;
+var _WXC_ENTRANCE_MS = 18700;
 // The staged exit: the four content bands leave 0.34s apart at 0.62s each, then
 // the scene alone over 1.1s — 3.36s, rounded up so the cover outlives the last
 // frame of it. The entrance is longer because arriving is the part being read;
@@ -43477,6 +43477,18 @@ function _wxEndEntrance(root) {
       } catch (eS) {}
     }
     return true;
+  } catch (e) { return false; }
+}
+
+// True when the paint about to happen is a fresh ARRIVAL of the weather slide
+// — the same test _wxArmEntrance makes, asked one step earlier so the markup
+// can carry the intro only on the paint that will actually play it. A
+// re-render inside the same visit (a re-tint, a strips swap, a gate rebuild)
+// answers false and the titles are simply not emitted.
+function _wxWantsIntro() {
+  try {
+    var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
+    return window._wxEntrancePlayedSeq !== seq;
   } catch (e) { return false; }
 }
 
@@ -44014,11 +44026,24 @@ function _renderWxCard(el) {
       : '/logos/Backgrounds/video/wx-grass-loop.mp4';
     var _wxVid = '<video class="wxc-vid" autoplay loop muted playsinline preload="auto" '
                + 'src="' + _wxVidSrc + '"></video>';
+    // v23783 — THE BROADCAST INTRO PLAYS OVER THE CARD AS IT ARRIVES.
+    // A six-second title on black, supplied for this card. It sits ABOVE
+    // every layer, plays once, and fades out as the card's own sequence
+    // comes up underneath it — so the card is revealed by the intro
+    // clearing rather than appearing beside it. muted and playsinline
+    // because the boards are silent and iOS will not autoplay otherwise;
+    // NOT looped, because it is a title and not a scene. It is emitted only
+    // while the entrance is arming: on a re-render mid-slide the card must
+    // not replay its own titles.
+    var _wxIntro = _wxWantsIntro()
+      ? '<video class="wxc-intro" autoplay muted playsinline preload="auto" '
+        + 'src="/logos/Backgrounds/video/wx-report-intro.mp4"></video>'
+      : '';
     var _wxSceneCls = _wxNightScene ? ' wxc-scene-night' : ' wxc-scene-day';
     // The scene is part of the rebuild signature further down (_wxSig is the
     // whole markup string), so crossing 06:00 or 19:00 swaps the clip on the
     // next render rather than needing its own timer.
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxSceneCls + '">' + _wxVid + _wxMainHtml + _wxStripsHtml + _wxCredit + '</div>';
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxSceneCls + '">' + _wxVid + _wxMainHtml + _wxStripsHtml + _wxCredit + _wxIntro + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually

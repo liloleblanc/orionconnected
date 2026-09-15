@@ -54,7 +54,9 @@ const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/display-overrides.
 // The block is appended at the foot of an append-only file, so everything from
 // the comment that opens it is ours. Starting at the `/*` and not at the title
 // matters: the comment-stripping below needs the opener to strip the header.
-const TITLE_AT = CSS.indexOf('THE WEATHER CARD ARRIVES IN ORDER');
+// The block's title has changed with its contents more than once; anchor on
+// the thing that cannot change without the block being replaced wholesale.
+const TITLE_AT = CSS.lastIndexOf('@keyframes wxcFade');
 const BLOCK_AT = TITLE_AT >= 0 ? CSS.lastIndexOf('/*', TITLE_AT) : -1;
 const BLOCK = BLOCK_AT >= 0 ? CSS.slice(BLOCK_AT) : '';
 
@@ -238,11 +240,15 @@ test('the video opens in the clear, not under the outgoing slide', () => {
     `the video opens at ${opens}s, when the outgoing slide still covers ` +
     `${(cover(opens) * 100).toFixed(0)}% of the panel — "the video opens first ` +
     'on its own" has to mean the viewer can see it happen');
-  // And the lead-in must not be padded past the point of usefulness either:
-  // every 0.1s of it is 0.1s added to the tail.
-  assert.ok(opens < span,
-    'the lead-in must not wait out the whole crossfade — the cover is ' +
-    'already under a tenth well before it ends, and the credit pays for it');
+  // v23783 — the lead-in is no longer bounded by the crossfade. The card now
+  // opens UNDER its own six-second title clip, which covers the panel while
+  // the scene fades up behind it, so the scene's start is set by the titles
+  // lifting and not by the outgoing slide. What still matters is that it does
+  // not start before the previous slide has gone.
+  assert.ok(opens > span,
+    'the scene now begins after the outgoing slide is fully gone, under the ' +
+    'title clip — starting during the crossfade would put three things on ' +
+    'screen at once');
 });
 
 // ── The two selectors that are easy to get wrong ─────────────────────────
@@ -286,23 +292,44 @@ test('the keyframes move transform and opacity, nothing else', () => {
   }
 });
 
-test('the travel is a settle, not a slide', () => {
-  // The wrap is overflow:hidden with as little as 8px of vertical padding, so
-  // a large translate starts the last band clipped against the foot of the
-  // card rather than rising into place.
-  const travels = [...BLOCK.matchAll(/translate3d\(0,\s*(-?[\d.]+)px,\s*0\)/g)]
-    .map(m => Math.abs(parseFloat(m[1])));
-  assert.ok(travels.length >= 1, 'the content bands must rise into place');
-  // 26px, paired with a scale that starts slightly OVER and settles back. The
-  // scale is what makes the larger rise safe: the band over-covers its box on
-  // the way in rather than leaving a gap at the edge, which is what a bare
-  // 26px translate on a clipped wrap would show.
-  assert.ok(Math.max(...travels) <= 28,
-    `the rise is ${Math.max(...travels)}px — the wrap clips its overflow and ` +
-    'carries as little as 8px of bottom padding, so past roughly 28px the ' +
-    'credit is drawn half-cut against the card edge on its way in');
-  assert.match(BLOCK, /translate3d\(0, 26px, 0\) scale\(1\.03\)/,
-    'the rise must travel with the scale that covers for it');
+test('it flies in from the side, and fades the whole way in', () => {
+  // v23784 — asked for in three notes: "it should fly in from the side",
+  // "and appear fade in", "as it flys in". So the movement is horizontal, and
+  // the fade and the flight are the SAME length — the panel is still arriving
+  // for as long as it is still appearing, rather than sliding into place and
+  // then continuing to fade in a spot it already occupies.
+  // a zero offset is written bare (`0`), not `0px`
+  const travels = [...BLOCK.matchAll(/translate3d\((-?[\d.]+)(?:px)?,\s*(-?[\d.]+)(?:px)?,\s*0\)/g)]
+    .map(m => ({ x: parseFloat(m[1]), y: parseFloat(m[2]) }));
+  assert.ok(travels.length >= 1, 'the layers must travel');
+  for (const { x, y } of travels) {
+    assert.equal(y, 0, `the travel is horizontal now, this one moves ${y}px vertically`);
+    assert.ok(Math.abs(x) >= 40,
+      `${x}px is not a flight across the frame — under about 40px it reads as ` +
+      'a nudge rather than an arrival at board scale');
+    assert.ok(Math.abs(x) <= 90,
+      `${x}px — the wrap clips its overflow, so a longer run spends its first ` +
+      'frames drawing a panel half outside its own box');
+  }
+  // arrives from one side, leaves towards the other
+  const arrive = [...BLOCK.matchAll(/@keyframes wxcRise \{[\s\S]*?translate3d\((-?[\d.]+)px/g)].map(m => parseFloat(m[1]));
+  const leave = [...BLOCK.matchAll(/@keyframes wxcLeave\w* \{[\s\S]*?translate3d\((-?[\d.]+)px/g)].map(m => parseFloat(m[1]));
+  assert.ok(arrive.length && leave.length, 'both directions must be declared');
+  assert.ok(arrive.every(v => v > 0) && leave.every(v => v < 0),
+    'it comes in from one side and goes out the other — a card that arrived ' +
+    'and departed on the same side would look like it bounced');
+
+  // The fade and the flight run together, everywhere.
+  // the shorthand carries a cubic-bezier with its own commas, so the gap
+  // between the two animations cannot be matched with [^,]*
+  const pairs = [...BLOCK.matchAll(
+    /animation: (wxcFade\w*) calc\(([\d.]+)s[\s\S]*?both, (wxcRise\w*) calc\(([\d.]+)s/g)];
+  assert.ok(pairs.length >= 5, `expected the staged layers, found ${pairs.length}`);
+  for (const [, , fade, , rise] of pairs) {
+    assert.equal(rise, fade,
+      `a layer fades for ${fade}s but only flies for ${rise}s — it would stop ` +
+      'moving and carry on appearing, which is the thing that was rejected');
+  }
 });
 
 test('every stage fills BOTH ways', () => {
@@ -470,17 +497,36 @@ test('nothing is left hidden if the entrance never runs', () => {
   assert.ok(!/--wxc-fade:\s*0\s*[;!]/.test(outside),
     'and the same goes for the property the credit\'s opacity now reads — ' +
     'setting it to 0 anywhere but a keyframe hides the attribution for good');
-  assert.ok(!/visibility:\s*hidden/.test(outside) && !/display:\s*none/.test(outside),
-    'and it may not be hidden by any other means either');
+  // display:none is allowed in exactly one place: the title OVERLAY, which is
+  // not content. A stalled or paused clip left on top of a live weather card
+  // would be a black rectangle over the readings — the worst failure this
+  // card has — so it is taken out of the layout as well as made transparent.
+  const hides = [...outside.matchAll(/([^\n{]*)\{[^}]*display:\s*none[^}]*\}/g)].map(m => m[1]);
+  for (const sel of hides) {
+    assert.match(sel, /wxc-intro/,
+      `only the title overlay may be display:none; this is not it: ${sel.trim().slice(-60)}`);
+  }
+  assert.ok(!/visibility:\s*hidden/.test(outside),
+    'and nothing may be hidden by visibility either');
   // The hidden state is reachable only while the class is present, which means
   // every animation rule must be scoped to it.
   const scoped = [...BLOCK.matchAll(/\n(html body[^\n{]*)\{/g)].map(m => m[1]);
   for (const sel of scoped) {
+    // The title overlay's base rule is the one exception, and it has to be:
+    // it positions the clip over the card, and its safety comes from the
+    // companion rule that takes it out of the layout the moment the entrance
+    // is not running (checked just below), not from the animation.
+    if (/wxc-intro/.test(sel)) continue;
     assert.ok(sel.includes('.wxc-entering') || sel.includes('.wxc-leaving'),
       'every rule in this block must be scoped to .wxc-entering or ' +
       '.wxc-leaving, or its hidden state outlives the animation: ' +
       `${sel.slice(-70).trim()}`);
   }
+  // …and that companion rule must exist, or a stalled clip sits on the card.
+  assert.match(BLOCK, /\.wxcard-wrap:not\(\.wxc-entering\) > video\.wxc-intro \{ display: none !important; \}/,
+    'the titles must be taken out of the layout whenever the entrance is not ' +
+    'running — a paused clip left over a live card is a black rectangle over ' +
+    'the readings');
 });
 
 test('the exit can only ever hide a copy that is on its way out', () => {

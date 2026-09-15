@@ -101,7 +101,10 @@ test('the scene is decided by the airport helper, not the console theme', () => 
 
 test('the scene class and the video are both driven by that one flag', () => {
   const at = SRC.indexOf('var _wxNightScene');
-  const block = SRC.slice(at, at + 900);
+  // Widened past 900: the title-clip block (v23783) sits between the flag and
+  // the scene class, and the slice is a reading window, not a claim about how
+  // close together the two have to be written.
+  const block = SRC.slice(at, at + 2600);
   assert.match(block, /wx-fireflies-night\.mp4/);
   assert.match(block, /wx-grass-loop\.mp4/);
   assert.match(block, /_wxSceneCls = _wxNightScene \? ' wxc-scene-night' : ' wxc-scene-day'/,
