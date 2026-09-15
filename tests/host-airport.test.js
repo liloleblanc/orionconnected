@@ -123,8 +123,13 @@ test('it runs before anything reads the airport', () => {
 const INDEX = fs.readFileSync(path.join(ROOT, 'fids-current', 'index.html'), 'utf8');
 
 test('the .app domain opens the app', () => {
-  assert.match(INDEX, /h === "orionconnected\.app" \|\| h === "www\.orionconnected\.app"/,
-    'both the apex and www, since a wildcard makes www resolve too');
+  // v23808 — widened from the apex and www to EVERY host in the zone, which is
+  // what makes yqm.orionconnected.app the app for Moncton rather than its
+  // board. The behaviour this pins is exercised properly in mobile-offer.test.js,
+  // which runs the handover against a list of hostnames instead of reading it.
+  assert.match(INDEX, /h === "orionconnected\.app" \|\| \/\\\.orionconnected\\\.app\$\/\.test\(h\)/,
+    'the apex plus any host in the zone — a domain that means the app at one ' +
+    'level and the board a level down is a trap');
   assert.match(INDEX, /location\.replace\("\/app"/,
     'replace, not assign — the opener must not sit in history, or Back from ' +
     'the app lands on a page whose only job is to leave again');
