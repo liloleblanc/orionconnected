@@ -32431,6 +32431,11 @@ document.addEventListener('click', function(e) {
 // YVR, MAN, DCA, IAD. tests/live-airports.test.js keeps this in step with the
 // worker; adding a handler there fails the suite until the code lands here.
 const FIDS_LIVE_AIRPORTS = new Set([
+  // v23805 — DCA and IAD are back. Both were parked because the Washington
+  // authority feed 429d the Worker's datacenter IP; the same window endpoint
+  // now answers 200 with 241 and 161 flights respectively, twice running.
+  // Nothing here changed — the other end did, exactly as with YYZ.
+  'DCA', 'IAD',
   // v23420 — dedicated-route feeds (not the window endpoint): TPA fetches
   // Tampa's Acquia API client-side; YUL/YTZ/YHU use /flights/<iata>; LGA/EWR
   // use /flights/panynj. Verified live: EWR 1235, LGA 896, YUL 553, TPA 453,
