@@ -309,9 +309,35 @@ function scForget(id) {
   _scWrite(id, null, 'Forgetting ' + id, 'DELETE');
 }
 
+// v23801 — THE GATE FIELD SHOWS WHEN IT APPLIES.
+// It only means something on a gate board, and the first version enforced that
+// by REFUSING the claim — so a screen set to Departures with a gate typed in
+// saved nothing, and the reason only appeared after pressing Claim. A rule you
+// discover by failing is a bad rule. The field now enables and disables with
+// the board type, so the constraint is visible before it is hit.
+function _scSyncGateField() {
+  try {
+    var board = (document.getElementById('scBoard') || {}).value || 'gids';
+    var g = document.getElementById('scGate');
+    if (!g) return;
+    var on = (board === 'gids');
+    g.disabled = !on;
+    g.style.opacity = on ? '' : '.35';
+    g.placeholder = on ? 'Gate' : '—';
+    g.title = on ? 'Gate boards only — 4, A4, C77. Leave empty to let the board choose.'
+                 : 'Only a gate board has a gate.';
+    if (!on) g.value = '';      // so a leftover value cannot refuse the next claim
+  } catch (e) {}
+}
+try {
+  document.addEventListener('change', function (e) {
+    if (e && e.target && e.target.id === 'scBoard') _scSyncGateField();
+  });
+} catch (e) {}
+
 try {
   if (typeof window !== 'undefined') {
-    window.scClaim = scClaim; window.scForget = scForget; window.scLoad = scLoad;
+    window.scClaim = scClaim; window.scForget = scForget; window.scLoad = scLoad; window._scSyncGateField = _scSyncGateField;
   }
 } catch (e) {}
 
@@ -321,6 +347,7 @@ try {
   window.smSwitchTab = function (tabId) {
     if (typeof _scOrigSwitch === 'function') _scOrigSwitch(tabId);
     if (tabId === 'airport') { try { scLoad(); } catch (e) {} }
+    if (tabId === 'airport') { try { _scSyncGateField(); } catch (e) {} }
   };
 } catch (e) {}
 
