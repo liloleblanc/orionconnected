@@ -54,12 +54,16 @@ test('the clip is the backdrop; the words are drawn by the board', () => {
     'it is built here, and it is handed the French-first flag');
 
   const body = JS.slice(JS.indexOf('function _wxIntroHtml('));
-  const ret = body.slice(body.indexOf("return '<div class=\"wxc-intro\""), body.indexOf('\n}'));
-  assert.match(ret, /class="wxc-intro-bg"[\s\S]*?src="' \+ _WX_INTRO_BG/,
-    'the clip is a backdrop layer, named once');
+  const ret = body.slice(body.indexOf("return '<div class=\"wxc-intro'"), body.indexOf('\n}'));
+  assert.match(ret, /_wxIntroBackdropHtml\(\)/,
+    'the backdrop is one layer, chosen in one place');
   assert.match(ret, /class="wxc-intro-scrim"/,
-    'and it is knocked back by a scrim — the clip carries its own English ' +
-    'lettering, which must read as texture and not as a second headline');
+    'and it is knocked back by a scrim — footage carries its own lettering, ' +
+    'which must read as texture and not as a second headline');
+  const bd = JS.slice(JS.indexOf('function _wxIntroBackdropHtml()'));
+  const bdBody = bd.slice(0, bd.indexOf('\n}'));
+  assert.match(bdBody, /class="wxc-intro-bg wxc-sky"/, 'sky mode draws the sky');
+  assert.match(bdBody, /src="' \+ _WX_INTRO_CLIP/, 'clip mode plays the clip');
   // every phrase is still TEXT, not pixels
   for (const r of lines()) {
     assert.ok(ret.indexOf('wxc-intro-line') >= 0, 'the phrases are elements');
@@ -381,14 +385,17 @@ test('the clip that carried a headline over the type is gone', () => {
     'the previous backdrop put WEATHER REPORT in full-frame letters directly ' +
     'behind the nine phrases, and a full-frame sun through the middle of the ' +
     'title — it must not be referenced any more');
-  const bg = (JS.match(/var _WX_INTRO_BG = '([^']+)'/) || [])[1];
-  assert.ok(bg && bg.endsWith('.mp4'), 'the backdrop is named once, as a path');
-  assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', bg.replace(/^\//, ''))),
-    `the backdrop must be committed: ${bg}`);
-  const mb = fs.statSync(path.join(ROOT, 'fids-current', bg.replace(/^\//, ''))).size / 1024 / 1024;
-  assert.ok(mb < 18, `the backdrop is ${mb.toFixed(1)}MB — it loads on every board that shows the card`);
+  const mode = (JS.match(/var _WX_INTRO_BACKDROP = '(\w+)';/) || [])[1];
+  assert.ok(mode === 'sky' || mode === 'clip', `unknown backdrop mode: ${mode}`);
+  // whichever it is, the clip it can fall back to has to be real and committed
+  const clip = (JS.match(/var _WX_INTRO_CLIP = '([^']+)'/) || [])[1];
+  assert.ok(clip && clip.endsWith('.mp4'), 'the clip is named once, as a path');
+  const full = path.join(ROOT, 'fids-current', clip.replace(/^\//, ''));
+  assert.ok(fs.existsSync(full), `the clip must be committed: ${clip}`);
+  const mb = fs.statSync(full).size / 1024 / 1024;
+  assert.ok(mb < 18, `the clip is ${mb.toFixed(1)}MB — it loads on every board that shows the card`);
   const man = fs.readFileSync(path.join(ROOT, 'fids-current/assets/asset-manifest.json'), 'utf8');
-  assert.ok(man.includes(bg.split('/').pop()), 'and the manifest must know about it');
+  assert.ok(man.includes(clip.split('/').pop()), 'and the manifest must know about it');
 });
 
 test('the backdrop stops when the title is taken out of the layout', () => {
@@ -421,4 +428,115 @@ test('the backdrop stops when the title is taken out of the layout', () => {
     'and arming rewinds too: the card does not always rebuild between visits, ' +
     'so the element can be the one the last title used');
   assert.match(ab, /_bg\.play\(\)/, 'and starts it');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23788 — THE NIGHT SKY THE BOARD DRAWS.
+//
+// Five stock clips were measured on this panel and four failed on one thing:
+// brightness behind the type. A drawn sky cannot fail that way, because its
+// darkness is a number in this file rather than a property of footage.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SKY_AT = CSS.lastIndexOf('@keyframes wxcSkyDrift');
+const SKY = SKY_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', SKY_AT)) : '';
+
+/** sRGB relative luminance of a #rrggbb, 0-255. */
+function lum(hex) {
+  const v = hex.replace('#', '');
+  const r = parseInt(v.slice(0, 2), 16), g = parseInt(v.slice(2, 4), 16), b = parseInt(v.slice(4, 6), 16);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+test('the sky is dark enough for white type, by construction', () => {
+  const at = SKY.indexOf('.wxc-intro-bg.wxc-sky {');
+  assert.ok(at >= 0, 'the sky must have a ground');
+  const rule = SKY.slice(at, SKY.indexOf('}', at));
+  const stops = [...rule.matchAll(/#([0-9a-f]{6})\b/gi)].map((m) => '#' + m[1]);
+  assert.ok(stops.length >= 4, 'the gradient must actually be declared');
+  for (const s of stops) {
+    assert.ok(lum(s) < 46,
+      `${s} has luminance ${lum(s).toFixed(0)} — the stock clips that failed ` +
+      'this panel measured 118-217 in the band the phrases sit in, and the one ' +
+      'that worked measured 70-87. A drawn sky has no excuse to be near that.');
+  }
+});
+
+test('the aircraft crosses once and is gone', () => {
+  const kf = SKY.slice(SKY.indexOf('@keyframes wxcSkyCross'));
+  const body = kf.slice(0, kf.indexOf('}\n}') + 3);
+  const pts = [...body.matchAll(/translate3d\((-?[\d.]+)%,\s*(-?[\d.]+)%/g)]
+    .map((m) => ({ x: Number(m[1]), y: Number(m[2]) }));
+  assert.equal(pts.length, 2, 'from somewhere to somewhere');
+  assert.ok(pts[0].x < 0 && pts[1].x > 100,
+    'it starts off one edge and ends past the other — a plane that appears ' +
+    'or vanishes inside the frame reads as a glitch');
+  assert.ok(pts[0].y > pts[1].y, 'and it climbs, rather than sliding flat');
+
+  const rule = SKY.slice(SKY.indexOf('> .wxc-sky-plane {'));
+  assert.doesNotMatch(rule.slice(0, rule.indexOf('}')), /(?:^|[;{\s])transform\s*:/,
+    'the wrapper must not pin a transform — the crossing is the animation, ' +
+    'and an !important static one would outrank it');
+  const bodyRule = SKY.slice(SKY.indexOf('> .wxc-sky-plane > .wxc-sky-body'));
+  assert.match(bodyRule.slice(0, bodyRule.indexOf('}')), /transform: rotate\(\d+deg\)/,
+    'the heading lives on the silhouette inside, so the animation writes only ' +
+    'a translate');
+  // it runs exactly as long as the title
+  assert.match(SKY, /animation: wxcSkyCross calc\(6\.00s \* var\(--wxc-t, 1\)\)/,
+    'and it crosses over the whole six seconds, not a fraction of them');
+});
+
+test('the sky costs the board nothing it cannot afford', () => {
+  // The entire point of drawing it rather than decoding a clip.
+  const anims = [...SKY.matchAll(/@keyframes (wxcSky\w+) \{([\s\S]*?)\n\}/g)];
+  assert.ok(anims.length >= 4, 'stars near and far, the crossing, the strobe');
+  for (const [, name, body] of anims) {
+    for (const m of body.matchAll(/^\s*([a-z-]+)\s*:/gm)) {
+      assert.ok(['transform', 'opacity'].includes(m[1]),
+        `${name} animates ${m[1]} — only transform and opacity composite, and ` +
+        'this plays while the board is also decoding the scene clip');
+    }
+  }
+  assert.doesNotMatch(SKY, /\.mp4/, 'and it fetches nothing');
+  assert.match(SKY, /url\("data:image\/svg\+xml/,
+    'the silhouette is inline, so it cannot 404 on a board');
+});
+
+test('a drawn sky is knocked back less than footage', () => {
+  // Softening the scrim is the whole dividend: the sky is already dark where
+  // the type goes, so more of it can show than a bright clip could.
+  const drawn = SKY.slice(SKY.indexOf('.wxc-intro.wxc-intro-drawn > .wxc-intro-scrim'));
+  const a = Number((drawn.slice(0, drawn.indexOf('}')).match(/rgba\(4,11,24,([\d.]+)\)/) || [])[1]);
+  const footage = BLOCK.slice(BLOCK.indexOf('> .wxc-intro > .wxc-intro-scrim'));
+  const b = Number((footage.slice(0, footage.indexOf('}')).match(/rgba\(4,11,24,([\d.]+)\)/) || [])[1]);
+  assert.ok(a > 0 && b > 0, 'both scrims must be declared');
+  assert.ok(a < b, `the drawn scrim (${a}) must be lighter than the footage one (${b})`);
+  // and the class that selects it is actually emitted
+  assert.match(JS, /_sky \? ' wxc-intro-drawn' : ''/,
+    'the overlay has to say which backdrop it got');
+});
+
+test('the aircraft crosses the PANEL, not its own box', () => {
+  // A percentage translate resolves against the element's own border box. The
+  // first cut sized the wrapper to the aircraft (52px) and translated it 150%,
+  // which crossed 78px of a 408px panel — a twitch, not a crossing, and it
+  // read as a stationary dot. The wrapper is the panel now and the aircraft is
+  // placed inside it, so the percentages mean what they read as.
+  const rule = SKY.slice(SKY.indexOf('> .wxc-sky > .wxc-sky-plane {'));
+  const decl = rule.slice(0, rule.indexOf('}'));
+  assert.match(decl, /inset: 0/,
+    'the animated wrapper must be panel-sized, or its percentage travel is ' +
+    'measured against the aircraft instead of the sky');
+  assert.doesNotMatch(decl, /width: clamp/,
+    'sizing the wrapper to the aircraft is exactly the bug this replaced');
+  const body = SKY.slice(SKY.indexOf('> .wxc-sky-plane > .wxc-sky-body'));
+  assert.match(body.slice(0, body.indexOf('}')), /width: var\(--wxc-craft\)/,
+    'the aircraft takes its size from a variable on the wrapper');
+  // the strobe rides the same box, so the two cannot drift apart
+  const strobe = SKY.slice(SKY.indexOf('> .wxc-sky-plane > .wxc-sky-strobe'));
+  const sd = strobe.slice(0, strobe.indexOf('}'));
+  assert.match(sd, /left: 4%/, 'anchored where the airframe is');
+  assert.match(sd, /top: 64%/);
+  assert.match(sd, /width: var\(--wxc-craft\)/,
+    'and the same size, so the light stays on the aircraft as it crosses');
 });

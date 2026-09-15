@@ -299,7 +299,13 @@ test('it sweeps in from off the card, turning, and fades the whole way', () => {
   // v23786 — the entrance was asked to be grand. 104px was a nudge. A band now starts entirely OUTSIDE the card and sweeps
   // the full width in, turning as it comes; the wrap clips, so what is still
   // outside is simply not drawn and the eye sees a panel crossing the frame.
-  const travels = [...BLOCK.matchAll(/translate3d\((-?[\d.]+)(%|px),\s*(-?[\d.]+)(?:px)?,\s*0\)/g)]
+  // Scoped to the CARD's own keyframes. This block is no longer the only
+  // thing at the end of the stylesheet — the title and the night sky live
+  // here too, and their travel is theirs to choose. Policing every
+  // translate3d in the file made this fail on a star drift.
+  const cardKf = [...BLOCK.matchAll(/@keyframes (wxcRise\w*|wxcLeave\w*) \{([\s\S]*?)\n\}/g)]
+    .map(m => m[2]).join("\n");
+  const travels = [...cardKf.matchAll(/translate3d\((-?[\d.]+)(%|px),\s*(-?[\d.]+)(?:px)?,\s*0\)/g)]
     .map(m => ({ v: parseFloat(m[1]), unit: m[2], y: parseFloat(m[3]) }));
   assert.ok(travels.length >= 3, 'the layers must travel');
   for (const { v, unit, y } of travels) {

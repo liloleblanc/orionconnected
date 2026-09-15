@@ -25016,7 +25016,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23791';
+var FIDS_BUILD_TAG = 'v23792';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43553,11 +43553,33 @@ function _wxWantsIntro() {
 // Text drawn by the board costs a few hundred bytes instead of twenty
 // megabytes, re-reads crisp at any panel size, follows the board typeface,
 // and can be reordered — which the French-first airports require.
-// The motion behind the title: an animated globe, 1920x1080. Its own
-// lettering does not enter until about 5.2s, and the rate below keeps the
-// title inside the clean stretch before that, so the backdrop is pure motion
-// and every word on screen is one the board drew.
-var _WX_INTRO_BG = '/logos/Backgrounds/video/wx-title-globe.mp4';
+// What plays behind the title.
+//
+//   'sky'  — the night sky, drawn by the board. No file, no licence, no
+//            watermark, and dark by construction, which is the one property
+//            every stock candidate failed on: the type has to read over it.
+//   'clip' — _WX_INTRO_CLIP below, an animated globe. Kept because it is
+//            already committed and the switch is this one word.
+//
+var _WX_INTRO_BACKDROP = 'sky';
+var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-globe.mp4';
+
+// An airliner at night is a handful of lights crossing, not an airframe —
+// that is what anyone standing under one actually sees. The silhouette is
+// there at low opacity to give the lights something to belong to.
+function _wxIntroBackdropHtml() {
+  if (_WX_INTRO_BACKDROP !== 'sky') {
+    return '<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" '
+         + 'src="' + _WX_INTRO_CLIP + '"></video>';
+  }
+  return '<div class="wxc-intro-bg wxc-sky">'
+       + '<i class="wxc-sky-far"></i>'
+       + '<i class="wxc-sky-near"></i>'
+       + '<div class="wxc-sky-plane">'
+       + '<i class="wxc-sky-body"></i><i class="wxc-sky-strobe"></i>'
+       + '</div>'
+       + '</div>';
+}
 
 // Seconds of clip consumed across the whole title, whatever the speed dial is
 // set to. The clip is longer than the title and its headline slides in at
@@ -43626,9 +43648,11 @@ function _wxIntroHtml(frFirst) {
   // the clip plays, the scrim knocks it back, the panel blooms, the stack
   // settles out of a tilt, the ink fades up, the block drifts through the
   // hold, and a light crosses it.
-  return '<div class="wxc-intro" aria-hidden="true">'
-       + '<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" '
-       + 'src="' + _WX_INTRO_BG + '"></video>'
+  // A drawn sky needs far less knocking back than footage does, so the
+  // overlay says which it got and the scrim and the plate soften to match.
+  var _sky = (_WX_INTRO_BACKDROP === 'sky');
+  return '<div class="wxc-intro' + (_sky ? ' wxc-intro-drawn' : '') + '" aria-hidden="true">'
+       + _wxIntroBackdropHtml()
        + '<i class="wxc-intro-scrim"></i>'
        + '<i class="wxc-intro-panel"></i>'
        + '<div class="wxc-intro-stack"><div class="wxc-intro-lines">' + h + '</div></div>'
