@@ -75,11 +75,18 @@ test('?font=<key> previews a stack for this load only and never writes a pick', 
   assert.match(body, /if \(_iata \|\| _urlFont\) \{/, 'works on a screen with no airport yet');
 });
 
-test('the busters moved with the stylesheet', () => {
+test('the busters moved with the stylesheet, and the three shells agree', () => {
+  // Never pinned to a literal: the next font bump would turn this red for
+  // no reason. What matters is that all three shells ask for the same
+  // font.css, and that it is past the version this landed on.
+  const v = [];
   for (const sh of ['fids', 'gids', 'bids']) {
-    const h = rd(`fids-current/${sh}.html`);
-    assert.match(h, /css\/font\.css\?v=329/, `${sh}.html reloads font.css`);
+    const m = /css\/font\.css\?v=(\d+)/.exec(rd(`fids-current/${sh}.html`));
+    assert.ok(m, `${sh}.html must load font.css with a cache token`);
+    v.push(Number(m[1]));
   }
+  assert.equal(new Set(v).size, 1, `the three shells disagree on font.css: ${v.join(', ')}`);
+  assert.ok(v[0] >= 329, `font.css token went backwards (${v[0]})`);
 });
 
 test('the airport-config pass honours ?font= too, or it would put the airport font back', () => {
