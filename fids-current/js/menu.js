@@ -6,7 +6,19 @@
 // Fetch-based loader. Init runs after the fragment is in the DOM — no timeout races.
 (async function loadMenuFragment() {
   try {
-    const res = await fetch('menu.html', { cache: 'no-cache' });
+    // v23800 — THE MARKUP IS BUSTED LIKE EVERYTHING ELSE.
+    // menu.js carries ?v=<build tag> from the HTML; this fragment carried
+    // nothing. The two are one unit — the script reads elements the fragment
+    // declares — so a stale fragment against a fresh script is a console whose
+    // newest controls simply are not there, with no error to explain it. That
+    // is the shape of the report that led here: a field that had shipped, on a
+    // page that had not.
+    //
+    // no-cache already asks for a revalidation, and must-revalidate is set at
+    // the edge, so this is usually survivable. Usually is not a guarantee, and
+    // the cost of the guarantee is nine characters.
+    const _mv = (typeof FIDS_BUILD_TAG !== 'undefined') ? FIDS_BUILD_TAG : Date.now();
+    const res = await fetch('menu.html?v=' + encodeURIComponent(_mv), { cache: 'no-cache' });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const html = await res.text();
     const container = document.createElement('div');
