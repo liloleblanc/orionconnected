@@ -51,6 +51,13 @@ test('only supported production pages sit at the public root', () => {
     // change to the live boards.
     'heritage.html',
     'index.html', 'menu.html', 'picker.html', 'rotate.html',
+    // v23798 — the page a TV opens once and never again. It generates a
+    // six-character identity, keeps it, and shows it until an admin claims the
+    // screen from the console; then it hands over to the board it was assigned.
+    // Deliberately standalone and tiny: it is the first thing a new display
+    // ever loads, often over an airport network, and it must work when the
+    // registry does not answer.
+    'screen.html',
     // v23265 — the multi-airport tour: rotate.html's scene rotation plus an
     // airport layer and an arrival card between them.
     'tour.html'

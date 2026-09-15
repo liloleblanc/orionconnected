@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Orion Connected — Screen</title>
+<!--
+  THE PAGE A TV OPENS, ONCE, AND NEVER AGAIN.
+
+  A screen carries its own identity: a six-character code it generates the
+  first time it runs and keeps in localStorage. Nothing about the network
+  identifies it — every screen at one airport shares a public IP, and DHCP
+  moves it — so the screen has to say who it is.
+
+  While it is unclaimed it shows that code, large, and asks the server what to
+  do every few seconds. The moment an admin claims it, the next poll answers
+  with an airport and a board, and this page hands over to the real one.
+
+  It never writes anything. Claiming is done from the console, by an admin,
+  against a token. This page only ever reads.
+-->
+<style>
+  :root{
+    --ground:#0b1420; --ink:#e8eef7; --muted:#8aa0ba; --faint:#5b708a;
+    --amber:#f0b429; --line:#1e3149;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; background:
+      radial-gradient(120% 78% at 50% 18%, #12233a 0%, #0b1420 58%, #070e18 100%);
+    color:var(--ink);
+    font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    -webkit-font-smoothing:antialiased; overflow:hidden;
+  }
+  .card{padding:6vh 5vw; max-width:900px}
+  .sub{
+    font-size:clamp(11px,1.5vh,15px); letter-spacing:.24em; text-transform:uppercase;
+    color:var(--faint); margin:0 0 clamp(14px,3vh,30px);
+  }
+  .code{
+    font:700 clamp(56px,17vh,190px)/1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    letter-spacing:clamp(6px,1.6vh,22px); color:var(--amber);
+    margin:0 0 clamp(14px,3vh,28px); text-indent:clamp(6px,1.6vh,22px);
+  }
+  .host{font-size:clamp(12px,1.8vh,18px); color:var(--muted); margin:0}
+  .hint{
+    font-size:clamp(11px,1.5vh,15px); color:var(--faint);
+    margin:clamp(18px,4vh,40px) 0 0; line-height:1.7;
+  }
+  .state{
+    position:fixed; left:14px; bottom:12px;
+    font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:#2f4560;
+  }
+  .err{color:#f2784b}
+</style>
+</head>
+<body>
+  <div class="card">
+    <p class="sub" id="sub">Waiting to be claimed</p>
+    <p class="code" id="code">····</p>
+    <p class="host" id="host"></p>
+    <p class="hint">
+      Open the console, go to <strong>Screens</strong>, and enter this code to tell
+      this display what to show.
+    </p>
+  </div>
+  <div class="state" id="state"></div>
+
+<script>
+(function () {
+  'use strict';
+
+  var API = 'https://fids-proxy.n-leblanc1984.workers.dev';
+  var KEY = 'oc_screen_id';
+  // No I, O, 0 or 1: those are the characters someone reads back wrong off a
+  // television across a room, and a mistyped code claims nothing.
+  var ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  var POLL_MS = 5000;
+
+  function newId() {
+    var out = '', i, buf;
+    try {
+      buf = new Uint32Array(6);
+      crypto.getRandomValues(buf);
+      for (i = 0; i < 6; i++) out += ALPHABET[buf[i] % ALPHABET.length];
+      return out;
+    } catch (e) {
+      for (i = 0; i < 6; i++) out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+      return out;
+    }
+  }
+
+  function screenId() {
+    var id = null;
+    try { id = localStorage.getItem(KEY); } catch (e) {}
+    if (id && /^[A-HJ-NP-Z2-9]{6}$/.test(id)) return id;
+    id = newId();
+    // If storage is unavailable the screen still works — it simply gets a new
+    // code on every reload, which is visible and self-explanatory rather than
+    // silently broken.
+    try { localStorage.setItem(KEY, id); } catch (e) {}
+    return id;
+  }
+
+  var ID = screenId();
+  var el = {
+    sub: document.getElementById('sub'),
+    code: document.getElementById('code'),
+    host: document.getElementById('host'),
+    state: document.getElementById('state')
+  };
+  el.code.textContent = ID;
+  try { el.host.textContent = location.host; } catch (e) {}
+
+  function say(msg, bad) {
+    el.state.textContent = msg || '';
+    el.state.className = 'state' + (bad ? ' err' : '');
+  }
+
+  function boardUrl(a) {
+    var page = a.board === 'fids' ? 'fids.html' : a.board === 'bids' ? 'bids.html' : 'gids.html';
+    // The screen id rides along so the board can keep polling its own
+    // assignment later; ?screen= is inert on a board that does not read it.
+    return '/' + page + '?ap=' + encodeURIComponent(a.airport) + '&screen=' + encodeURIComponent(ID);
+  }
+
+  var failures = 0;
+  function poll() {
+    fetch(API + '/api/screens/' + ID + '?_oc=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (doc) {
+        if (!doc || typeof doc !== 'object') { throw new Error('unreadable'); }
+        failures = 0;
+        if (!doc.claimed) { say('unclaimed · checking every ' + (POLL_MS / 1000) + 's'); return; }
+        if (!doc.airport || !doc.board) { say('claimed but not configured', true); return; }
+        // Claimed. Hand over — and do it with replace() so the TV cannot be
+        // walked back here with a Back button.
+        el.sub.textContent = doc.name || 'Claimed';
+        say('opening ' + doc.airport + ' ' + doc.board);
+        setTimeout(function () { location.replace(boardUrl(doc)); }, 600);
+      })
+      .catch(function () {
+        failures++;
+        // A screen on an airport network may be offline for a while. It keeps
+        // showing its code and keeps trying; there is nothing else it could
+        // usefully do, and a blank or error screen on a wall is worse.
+        say('offline · retrying (' + failures + ')', true);
+      });
+  }
+
+  poll();
+  setInterval(poll, POLL_MS);
+})();
+</script>
+</body>
+</html>

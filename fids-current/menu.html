@@ -582,6 +582,39 @@
         <div id="ddList" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;"></div>
       </div>
 
+      <!-- ── SCREENS ─────────────────────────────────────────────────────
+           Every TV that has been claimed, and what it shows. A screen carries
+           its own six-character code; you type that code here once, name it,
+           and say what it displays. Nothing is configured on the TV.
+
+           Like the dry dock above, this control is not what enforces admin —
+           the worker's 403 is. A refused change is reported, never faked. -->
+      <div class="sm-label">Screens</div>
+      <div class="sm-field" style="margin-bottom:14px;">
+        <div style="font-size:11px;color:#9ca3af;margin-bottom:8px;">
+          A new display shows a six-character code. Enter it here to claim it.
+        </div>
+        <div class="sm-row" style="align-items:center;gap:8px;flex-wrap:wrap;">
+          <input id="scCode" type="text" maxlength="6" placeholder="CODE"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 style="width:96px;text-transform:uppercase;letter-spacing:2px;background:#27272a;color:#f0b429;border:1px solid #52525b;padding:5px 10px;border-radius:6px;">
+          <input id="scName" type="text" maxlength="48" placeholder="Name, e.g. Gate 2"
+                 autocomplete="off"
+                 style="width:150px;background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 10px;border-radius:6px;">
+          <input id="scAp" type="text" maxlength="4" placeholder="IATA"
+                 autocomplete="off" autocorrect="off" spellcheck="false"
+                 style="width:74px;text-transform:uppercase;background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 10px;border-radius:6px;">
+          <select id="scBoard" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 8px;border-radius:6px;">
+            <option value="gids">Gate board</option>
+            <option value="fids">Departures</option>
+            <option value="bids">Baggage</option>
+          </select>
+          <button id="scAdd" class="sm-btn" onclick="scClaim()">Claim</button>
+        </div>
+        <div id="scStatus" style="font-size:11px;color:#9ca3af;margin-top:6px;"></div>
+        <div id="scList" style="margin-top:10px;display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+
       <div class="sm-label">Current Airport</div>
       <div class="sm-field" style="margin-bottom:14px;">
         <div class="sm-row" style="align-items:center;gap:8px;">
