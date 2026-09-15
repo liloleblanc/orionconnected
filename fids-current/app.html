@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#ffffff">
+<!-- v23808 — yqm.orionconnected.app OPENS MONCTON'S APP.
+     The boards have read their airport from the hostname since v23803; the app
+     never has, so a per-airport .app link would have opened on whatever airport
+     this device happened to look at last. It only needed the file: the app
+     already resolves ?ap= → sessionStorage.fids_airport → default, and
+     fids_airport is exactly the key host-airport.js writes.
+
+     Loaded rather than re-parsed. The hostname parse has one home on purpose —
+     the studio's own copy of it read fids.orionconnected.com as an airport
+     called FIDS, which is the failure this file exists to prevent. It must come
+     before the app resolves its airport, hence the head. -->
+<script src="js/host-airport.js?v=23804"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">

@@ -15,7 +15,13 @@
   (function () {
     try {
       var h = String(location.hostname || "").toLowerCase();
-      if (h === "orionconnected.app" || h === "www.orionconnected.app") {
+      // v23808 — .app MEANS THE APP ALL THE WAY DOWN, not just at the root.
+      // It was the apex and www only, which made the domain mean the app at one
+      // level and the board at every other. A domain that changes its mind a
+      // level down is not a shortcut, it is a trap — and the per-airport form is
+      // the one worth handing out: yqm.orionconnected.app is what goes on a
+      // poster or a QR code at a gate. The board keeps yqm.orionconnected.com.
+      if (h === "orionconnected.app" || /\.orionconnected\.app$/.test(h)) {
         // replace(), not assign(): the opener must not sit in history, or Back
         // from the app lands on a page whose only job is to leave again.
         location.replace("/app" + location.search + location.hash);
@@ -74,30 +80,148 @@
   <title>FIDS — Airport Display System v8</title>
   <!-- Auto-router for fids.orionconnected.com (runs in <head> before paint so
        the entry screen never flashes):
-         • phones / tablets  → app.html  (colored-bubble passenger app)
+         • phones / tablets  → ASK, then the app on .app, or stay on the board
          • desktop / displays → fids.html?mode=live  (LIVE main FIDS board)
        Escape hatches: ?entry=1 keeps the DEMO/LOGIN entry screen (admin),
-       ?nomobile=1 forces the desktop board on a phone. -->
+       ?nomobile=1 forces the desktop board on a phone.
+
+       v23808 — THE MOBILE BRANCH ASKS NOW INSTEAD OF DECIDING.
+       It used to location.replace() a phone straight to app.html, silently, on
+       whatever domain it arrived on. Two things were wrong with that.
+
+       The redirect was a hijack. Board links get shared deliberately — someone
+       on a phone checking a departure board, or looking at a screen they are
+       about to point a TV at, was taken somewhere else with no way back except
+       a query string they would have to know about.
+
+       And the test below is wider than "a phone": `w < 700` catches a desktop
+       browser in a narrow window, which is a real way to end up in the
+       passenger app while sitting at a keyboard. That was invisible because
+       there was nothing to notice — the entry screen never painted.
+
+       So it offers, and the offer remembers. Answer once and you are never
+       asked again on that domain; ?nomobile=1 still forces the board without
+       asking at all, for anything scripted.
+
+       The app lives on .app, so YES leaves this origin. That means the two
+       domains remember separately — a preference is per-origin and cannot be
+       read across — which is the right shape anyway: the answer to "do you want
+       the app" is only meaningful on the domain that is not the app. -->
   <script>
     (function(){
       try{
         var qs = location.search || '';
         if (/[?&]entry=1/.test(qs)) return;           // admin: keep the entry/login screen
+        var apM = qs.match(/[?&]ap=([^&]+)/);
+        var board = 'fids.html?mode=live' + (apM ? '&ap=' + apM[1] : '');
+
         var ua = navigator.userAgent || '';
         var w  = window.innerWidth || document.documentElement.clientWidth || 0;
         var isMobile = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(ua) || w < 700;
-        if (isMobile && !/[?&]nomobile=1/.test(qs)) {
-          location.replace('app.html' + qs);          // mobile → colored bubbles
+
+        // Desktop/displays → LIVE main board. Don't force an airport: carry a
+        // root ?ap= if present, otherwise let the board use its own
+        // saved/selected airport (works for ALL airports, not locked to YQM).
+        if (!isMobile) { location.replace(board); return; }
+
+        /* Everything past here is a phone, or a window narrow enough to look
+           like one — and THE BOARD HANDS PHONES OFF TOO. fids-core.js runs its
+           own handoff on every board page (fids/gids/bids) and replaces itself
+           with app.html for any real phone. So "go to the board" from here is
+           not enough on its own: without the override the board bounces
+           straight back into the app, and "stay on the regular site" becomes a
+           button that does the opposite of what it says.
+
+           That handoff reads the same ?nomobile=1 this page does, so carrying
+           it forward is the whole fix — and it repairs ?nomobile=1 from the
+           root as a side effect. It was dropped when this page built the board
+           URL, so on a real phone the documented escape hatch got you to
+           fids.html and no further: the board handed you to the app a moment
+           later. It only ever worked if you typed fids.html yourself. */
+        var stay = board + '&nomobile=1';
+
+        if (/[?&]nomobile=1/.test(qs)) { location.replace(stay); return; }
+
+        /* Where the app lives, for whoever is standing on this domain.
+
+           The pretty form is yqm.orionconnected.app, and that is what this
+           becomes the day the wildcard DNS record exists on the .app zone.
+           Until then the subdomain does not resolve AT ALL — no record, so it
+           never even reaches Cloudflare — and sending a phone there would be a
+           dead host. The apex does resolve, and carries the airport just as
+           well in a query string, so that is the honest target for now.
+
+           The label is read crudely on purpose. host-airport.js is the
+           authority for anything that routes a BOARD, and it is deliberately
+           not loaded here: it would be a blocking request in the head of the
+           one page whose whole job is to paint the right colour and leave. The
+           cost of being wrong here is only that the app opens on its own saved
+           airport, because app.html sanitises ?ap= and falls back on anything
+           it does not recognise. A wrong guess is a soft landing, not a wrong
+           board. */
+        var host = String(location.hostname || '').toLowerCase();
+        var parts = host.split('.');
+        var label = parts.length > 2 ? parts[0] : '';
+        if (label === 'www' || label === 'fids' || label === 'app') label = '';
+        var ap = apM ? decodeURIComponent(apM[1]) : label;
+        var app = 'https://orionconnected.app/'
+                + (ap ? '?ap=' + encodeURIComponent(String(ap).toUpperCase()) : '');
+
+        // An answer is durable, so there has to be a way back to the question.
+        // Without one, "stay on the regular site" is a decision you can only
+        // undo by knowing how to clear site data.
+        var pref = '';
+        if (/[?&]mobile=ask/.test(qs)) {
+          try { localStorage.removeItem('oc_mobile_pref'); } catch(e){}
         } else {
-          // Desktop/displays → LIVE main board. Don't force an airport: carry a
-          // root ?ap= if present, otherwise let the board use its own
-          // saved/selected airport (works for ALL airports, not locked to YQM).
-          var apM = qs.match(/[?&]ap=([^&]+)/);
-          location.replace('fids.html?mode=live' + (apM ? '&ap=' + apM[1] : ''));
+          try { pref = localStorage.getItem('oc_mobile_pref') || ''; } catch(e){}
         }
+        if (pref === 'site') { location.replace(stay); return; }
+        if (pref === 'app')  { location.replace(app);   return; }
+
+        // Undecided. Hold the page and let the offer paint over the board's own
+        // ground, which the theme script above has already put up — so this
+        // reads as the page arriving, not as a flash then a dialog.
+        window.__ocOffer = { app: app, board: stay };
+        document.documentElement.setAttribute('data-oc-offer', '1');
       }catch(e){}
     })();
   </script>
+  <style>
+    /* The entry screen is the admin DEMO/LOGIN page. While the offer is up it
+       must not be behind it — [hidden] is not used because the entry screen's
+       own stylesheet sets display on these elements. */
+    html[data-oc-offer="1"] body > *:not(#ocOffer) { display: none !important; }
+    #ocOffer { display: none; }
+    html[data-oc-offer="1"] #ocOffer {
+      display: flex; position: fixed; inset: 0; z-index: 2147483647;
+      flex-direction: column; align-items: center; justify-content: center;
+      gap: clamp(18px, 5vw, 28px); padding: clamp(22px, 7vw, 40px);
+      background: rgb(13,77,139); color: #fff;
+      font-family: 'DM Sans', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      text-align: center; -webkit-font-smoothing: antialiased;
+    }
+    #ocOffer .ocq { font-size: clamp(19px, 5.4vw, 26px); font-weight: 700; line-height: 1.3; max-width: 22ch; }
+    /* Every bilingual pair is two LINES. Inline, the two languages run into each
+       other — "Use the mobile appUtiliser l’application mobile" — which reads as
+       one broken string rather than the same thing said twice. The buttons need
+       this as much as the heading; it was the heading only, and the buttons are
+       where it showed. */
+    #ocOffer .ocq span, #ocOffer button span { display: block; }
+    #ocOffer .ocq span + span,
+    #ocOffer button span + span { margin-top: .32em; font-weight: 400; opacity: .78; font-size: .84em; }
+    #ocOffer .nb { white-space: nowrap; }
+    #ocOffer .ocbtns { display: flex; flex-direction: column; gap: clamp(10px, 2.6vw, 14px); width: min(340px, 100%); }
+    #ocOffer button {
+      font: inherit; font-size: clamp(15px, 4.2vw, 17px); font-weight: 700;
+      padding: clamp(13px, 3.6vw, 16px) 20px; border-radius: 12px; cursor: pointer;
+      border: 1px solid transparent; line-height: 1.25;
+    }
+    #ocOffer .ocyes { background: #fff; color: rgb(13,77,139); }
+    #ocOffer .ocno  { background: transparent; color: #fff; border-color: rgba(255,255,255,.45); font-weight: 400; }
+    #ocOffer button:focus-visible { outline: 3px solid #ffd54a; outline-offset: 3px; }
+    #ocOffer small { opacity: .62; font-size: clamp(11px, 3vw, 12.5px); max-width: 30ch; line-height: 1.45; }
+  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
@@ -108,6 +232,78 @@
   <link rel="stylesheet" href="css/mobile.css?v=1">
 </head>
 <body>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+     v23808 — THE MOBILE OFFER. Only ever painted when the head script above
+     decided this is a phone AND nobody has answered on this domain before.
+
+     Both languages, always. French first at the Québec airports, which is the
+     standing rule for anything a passenger reads; everywhere else English
+     leads and French follows. This is the only passenger-facing prompt on the
+     opener, so it is the one place that rule could go unnoticed.
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<div id="ocOffer" role="dialog" aria-modal="true" aria-labelledby="ocOfferQ">
+  <div class="ocq" id="ocOfferQ"></div>
+  <div class="ocbtns">
+    <button type="button" class="ocyes" id="ocOfferYes"></button>
+    <button type="button" class="ocno"  id="ocOfferNo"></button>
+  </div>
+  <small id="ocOfferNote"></small>
+</div>
+<script>
+(function () {
+  try {
+    if (document.documentElement.getAttribute('data-oc-offer') !== '1') return;
+    var o = window.__ocOffer || {};
+
+    // Québec. The rule is about the province, not the language of the device —
+    // a phone set to English standing in Montréal still reads French first.
+    var QC = { YUL: 1, YQB: 1, YHU: 1, YMX: 1 };
+    var ap = '';
+    try { ap = (new URL(o.app, location.href)).searchParams.get('ap') || ''; } catch (e) {}
+    var frFirst = !!QC[ap.toUpperCase()];
+
+    var EN = {
+      q: 'Open the mobile app?',
+      yes: 'Use the mobile app',
+      no: 'Stay on the regular site',
+      note: 'We’ll remember your choice. Add <b class="nb">?mobile=ask</b> to be asked again.'
+    };
+    var FR = {
+      q: 'Ouvrir l’application mobile ?',
+      yes: 'Utiliser l’application mobile',
+      no: 'Rester sur le site normal',
+      note: 'Votre choix sera retenu. Ajoutez <b class="nb">?mobile=ask</b> pour qu’on vous redemande.'
+    };
+    var a = frFirst ? FR : EN, b = frFirst ? EN : FR;
+
+    function two(k) {
+      return '<span>' + a[k] + '</span><span>' + b[k] + '</span>';
+    }
+    document.getElementById('ocOfferQ').innerHTML = two('q');
+    document.getElementById('ocOfferYes').innerHTML = two('yes');
+    document.getElementById('ocOfferNo').innerHTML = two('no');
+    document.getElementById('ocOfferNote').innerHTML = a.note;
+
+    function answer(pref, to) {
+      try { localStorage.setItem('oc_mobile_pref', pref); } catch (e) {}
+      // replace(), not assign(): the offer must not sit in history, or Back
+      // from either destination lands on a question already answered.
+      location.replace(to);
+    }
+    document.getElementById('ocOfferYes').addEventListener('click', function () { answer('app', o.app); });
+    document.getElementById('ocOfferNo').addEventListener('click', function () { answer('site', o.board); });
+    document.getElementById('ocOfferYes').focus();
+  } catch (e) {
+    // If anything here fails the question can never be answered, so fall back
+    // to the destination that loses nothing: the board this domain is for.
+    try {
+      document.documentElement.removeAttribute('data-oc-offer');
+      location.replace((window.__ocOffer || {}).board || 'fids.html?mode=live');
+    } catch (e2) {}
+  }
+})();
+</script>
 
 <!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      ENTRY SCREEN — Two buttons: DEMO and LOGIN

@@ -1,0 +1,309 @@
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23808 — THE OPENER ASKS A PHONE INSTEAD OF DECIDING FOR IT.
+//
+// index.html used to location.replace() a phone straight to app.html on
+// whatever domain it arrived on, before anything painted. That was a hijack of
+// a deliberately shared link, and its test for "a phone" — `w < 700` — also
+// catches a desktop browser in a narrow window.
+//
+// These tests RUN the router rather than reading it. The whole thing is a
+// decision tree over hostname, user agent, viewport, query string and a stored
+// preference, and the failures that matter are combinations: a display that
+// gets asked, an escape hatch that stops working, a preference that traps
+// someone on a choice they cannot undo. A regex over the source proves none of
+// that.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const ROOT = path.resolve(__dirname, '..');
+const INDEX = fs.readFileSync(path.join(ROOT, 'fids-current', 'index.html'), 'utf8');
+const APP = fs.readFileSync(path.join(ROOT, 'fids-current', 'app.html'), 'utf8');
+
+/** The head script that decides where an arrival goes. */
+function routerSource() {
+  const blocks = [...INDEX.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  const hit = blocks.filter((b) => b.includes("data-oc-offer") && b.includes('nomobile'));
+  assert.equal(hit.length, 1, 'expected exactly one router script in index.html');
+  return hit[0];
+}
+
+const UA_IPHONE = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15';
+const UA_DESKTOP = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/128';
+
+/**
+ * Run the router and report what it did.
+ * @returns {{to: string|null, asked: boolean, app: string|null, stored: object}}
+ */
+function route({ host = 'fids.orionconnected.com', search = '', ua = UA_DESKTOP, width = 1440, pref = null } = {}) {
+  const store = pref === null ? {} : { oc_mobile_pref: pref };
+  let to = null;
+  const html = {
+    _attr: {},
+    setAttribute(k, v) { this._attr[k] = v; },
+    getAttribute(k) { return Object.prototype.hasOwnProperty.call(this._attr, k) ? this._attr[k] : null; },
+    clientWidth: width
+  };
+  const ctx = {
+    location: { hostname: host, search, hash: '', replace(u) { if (to === null) to = u; } },
+    navigator: { userAgent: ua },
+    document: { documentElement: html },
+    localStorage: {
+      getItem: (k) => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: (k) => { delete store[k]; }
+    }
+  };
+  ctx.window = ctx;
+  ctx.window.innerWidth = width;
+  vm.createContext(ctx);
+  vm.runInContext(routerSource(), ctx);
+  return {
+    to,
+    asked: html.getAttribute('data-oc-offer') === '1',
+    app: ctx.__ocOffer ? ctx.__ocOffer.app : null,
+    board: ctx.__ocOffer ? ctx.__ocOffer.board : null,
+    stored: store
+  };
+}
+
+// ── the thing that changed ────────────────────────────────────────────────
+
+test('a phone is asked, not redirected', () => {
+  const r = route({ ua: UA_IPHONE, width: 390 });
+  assert.equal(r.asked, true, 'the offer must be raised');
+  assert.equal(r.to, null, 'nothing may navigate while the question is open');
+});
+
+test('a phone is never silently sent to app.html any more', () => {
+  const r = route({ ua: UA_IPHONE, width: 390 });
+  assert.doesNotMatch(String(r.to), /app\.html/);
+});
+
+test('a narrow desktop window is asked rather than thrown into the app', () => {
+  // This is the case that used to be invisible: a real keyboard, a small
+  // window, and no entry screen painted to notice it happening.
+  const r = route({ ua: UA_DESKTOP, width: 640 });
+  assert.equal(r.asked, true);
+  assert.equal(r.to, null);
+});
+
+// ── what must NOT be asked ────────────────────────────────────────────────
+
+test('a display goes straight to the live board and is never asked', () => {
+  const r = route({ ua: UA_DESKTOP, width: 1920 });
+  assert.equal(r.asked, false, 'a screen on a wall must never be shown a question');
+  assert.match(String(r.to), /^fids\.html\?mode=live/);
+});
+
+test('?nomobile=1 still forces the board on a phone, with no question', () => {
+  const r = route({ ua: UA_IPHONE, width: 390, search: '?nomobile=1' });
+  assert.equal(r.asked, false, 'an explicit override must not be second-guessed');
+  assert.match(String(r.to), /^fids\.html\?mode=live/);
+  assert.match(String(r.to), /nomobile=1/,
+    'and it must survive the hop, or the board hands the phone straight back');
+});
+
+test('?entry=1 still reaches the admin entry screen from a phone', () => {
+  const r = route({ ua: UA_IPHONE, width: 390, search: '?entry=1' });
+  assert.equal(r.to, null);
+  assert.equal(r.asked, false, 'the entry screen must not be hidden behind the offer');
+});
+
+// ── the answer sticks, and can be taken back ──────────────────────────────
+
+test('an answered phone is not asked twice', () => {
+  const stay = route({ ua: UA_IPHONE, width: 390, pref: 'site' });
+  assert.equal(stay.asked, false);
+  assert.match(String(stay.to), /^fids\.html\?mode=live/);
+  assert.match(String(stay.to), /nomobile=1/);
+
+  const app = route({ ua: UA_IPHONE, width: 390, pref: 'app' });
+  assert.equal(app.asked, false);
+  assert.match(String(app.to), /^https:\/\/orionconnected\.app\//);
+});
+
+test('?mobile=ask takes the answer back', () => {
+  const r = route({ ua: UA_IPHONE, width: 390, pref: 'site', search: '?mobile=ask' });
+  assert.equal(r.asked, true, 'the question must be reachable again');
+  assert.equal(r.to, null);
+  assert.equal('oc_mobile_pref' in r.stored, false, 'the stored answer must be cleared');
+});
+
+test('a preference never overrides an explicit override', () => {
+  const r = route({ ua: UA_IPHONE, width: 390, pref: 'app', search: '?nomobile=1' });
+  assert.match(String(r.to), /^fids\.html\?mode=live/,
+    'nomobile=1 is the caller being explicit and outranks a remembered answer');
+});
+
+// ── where YES actually goes ───────────────────────────────────────────────
+
+test('the app target is a host that resolves today', () => {
+  // yqm.orionconnected.app is the address worth handing out, and it is what
+  // this becomes once the wildcard record exists on the .app zone. Until then
+  // it has no DNS record at all, so pointing a phone at it would be a dead
+  // host — the apex resolves and carries the airport just as well.
+  const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390 });
+  assert.equal(new URL(r.app).hostname, 'orionconnected.app');
+  assert.notEqual(new URL(r.app).hostname, 'yqm.orionconnected.app');
+});
+
+test('the airport rides across to the app', () => {
+  const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390 });
+  assert.equal(new URL(r.app).searchParams.get('ap'), 'YQM',
+    'a phone on Moncton’s domain must land on Moncton’s app');
+});
+
+test('an explicit ?ap= beats the hostname', () => {
+  const r = route({ host: 'yqm.orionconnected.com', search: '?ap=YHZ', ua: UA_IPHONE, width: 390 });
+  assert.equal(new URL(r.app).searchParams.get('ap'), 'YHZ');
+});
+
+test('our own hostnames are not mistaken for airports', () => {
+  for (const h of ['fids.orionconnected.com', 'www.orionconnected.com', 'app.orionconnected.com']) {
+    const r = route({ host: h, ua: UA_IPHONE, width: 390 });
+    assert.equal(new URL(r.app).searchParams.get('ap'), null,
+      `${h} is a site, not an airport — it must not become ?ap=`);
+  }
+  const apex = route({ host: 'orionconnected.com', ua: UA_IPHONE, width: 390 });
+  assert.equal(new URL(apex.app).searchParams.get('ap'), null);
+});
+
+// ── .app means the app all the way down ───────────────────────────────────
+
+/** Run the .app handover for one hostname and report where it sent us. */
+function handover(host, search = '') {
+  const blocks = [...INDEX.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
+  const hit = blocks.filter((b) => b.includes('orionconnected.app') && b.includes('location.replace("/app"'));
+  assert.equal(hit.length, 1, 'expected exactly one .app handover script');
+  let to = null;
+  const ctx = { location: { hostname: host, search, hash: '', replace(u) { if (to === null) to = u; } } };
+  ctx.window = ctx;
+  vm.createContext(ctx);
+  vm.runInContext(hit[0], ctx);
+  return to;
+}
+
+test('every .app host hands over to the app, not just the root', () => {
+  for (const h of ['orionconnected.app', 'www.orionconnected.app',
+                   'yqm.orionconnected.app', 'yhz.orionconnected.app']) {
+    assert.equal(handover(h), '/app', `${h} must hand over to the app`);
+  }
+});
+
+test('the handover does not reach past its own zone', () => {
+  for (const h of ['orionconnected.com', 'yqm.orionconnected.com', 'orionconnected.ca',
+                   'orionconnected.app.example.com', 'notorionconnected.app']) {
+    assert.equal(handover(h), null, `${h} must NOT be treated as the app domain`);
+  }
+});
+
+test('the handover carries the query string and hash across', () => {
+  assert.equal(handover('yqm.orionconnected.app', '?ap=YHZ'), '/app?ap=YHZ');
+});
+
+test('the app can see the hostname at all', () => {
+  // Without this the pretty per-airport .app link opens on whatever airport the
+  // device looked at last, which is worse than not offering the link.
+  assert.match(APP, /<script src="js\/host-airport\.js\?v=\d+"><\/script>/,
+    'app.html must load host-airport.js');
+  const at = APP.indexOf('js/host-airport.js');
+  const resolves = APP.indexOf("sessionStorage.getItem('fids_airport')");
+  assert.ok(at > 0 && resolves > at,
+    'host-airport.js must load before the app resolves its airport');
+});
+
+test('the hostname parse still has exactly one home', () => {
+  // The router builds a query string from a crude label on purpose, and says
+  // so. What must not appear is a second implementation of the real parse.
+  assert.equal((APP.match(/function hostAirport\s*\(/g) || []).length, 0,
+    'app.html must not re-implement the parse — it loads the file that owns it');
+});
+
+// ── both languages, and the order of them ─────────────────────────────────
+
+test('the offer is bilingual', () => {
+  for (const s of ['Use the mobile app', 'Stay on the regular site',
+                   'Utiliser l’application mobile', 'Rester sur le site normal']) {
+    assert.ok(INDEX.includes(s), `the offer is missing: ${s}`);
+  }
+});
+
+test('French leads at the Quebec airports', () => {
+  const m = INDEX.match(/var QC = \{([^}]*)\}/);
+  assert.ok(m, 'the offer must know which airports read French first');
+  for (const c of ['YUL', 'YQB', 'YHU']) {
+    assert.match(m[1], new RegExp(`\\b${c}\\b`), `${c} is in Quebec and must lead in French`);
+  }
+  assert.doesNotMatch(m[1], /\bYQM\b/,
+    'Moncton is in New Brunswick — bilingual, but not French-first under this rule');
+});
+
+// ── the shape of the thing ────────────────────────────────────────────────
+
+test('neither answer leaves the question in history', () => {
+  const body = INDEX.slice(INDEX.indexOf('id="ocOffer"'));
+  assert.doesNotMatch(body.slice(0, 4000), /location\.(assign|href\s*=)/,
+    'Back from either destination must not land on a question already answered');
+});
+
+test('the entry screen cannot sit behind the offer', () => {
+  assert.match(INDEX, /html\[data-oc-offer="1"\] body > \*:not\(#ocOffer\) \{ display: none !important; \}/,
+    'the admin DEMO/LOGIN screen must be hidden while the offer is up');
+});
+
+// ── the two handoffs have to agree ────────────────────────────────────────
+// There are TWO phone handoffs in this codebase, and they are in different
+// files. index.html routes an arrival at "/", and fids-core.js hands a phone
+// off again on every board page it loads. Neither knows about the other.
+//
+// That is how "stay on the regular site" came to land on app.html: the opener
+// honoured the answer, sent the phone to the board, and the board sent it
+// straight into the app a moment later. The button did the exact opposite of
+// what it said, and nothing failed.
+//
+// So this test does not check a string. It takes the URL the opener hands a
+// phone and runs fids-core's OWN guard against it.
+
+const CORE = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
+
+/** fids-core's phone handoff: does it let this URL through to the board? */
+function boardKeepsIt(url) {
+  const m = CORE.match(/if \(\/\[\?&\]\((nomobile\|[a-z|]+)\)\(\[=&\]\|\$\)\/\.test\(_hq\)\) return;/);
+  assert.ok(m, 'fids-core.js must still guard its phone handoff on a query string');
+  const guard = new RegExp('[?&](' + m[1] + ')([=&]|$)');
+  const search = url.indexOf('?') >= 0 ? url.slice(url.indexOf('?')) : '';
+  return guard.test(search);
+}
+
+test('the board does not undo the answer', () => {
+  const r = route({ ua: UA_IPHONE, width: 390 });
+  assert.ok(boardKeepsIt(r.board),
+    'a phone that chose to stay must survive arriving at the board — otherwise ' +
+    'fids-core hands it to app.html and the button lied');
+});
+
+test('every route to the board from a phone survives the board', () => {
+  for (const c of [
+    { label: 'remembered answer', opts: { pref: 'site' } },
+    { label: '?nomobile=1 from the root', opts: { search: '?nomobile=1' } },
+    { label: 'override beating a remembered app answer', opts: { pref: 'app', search: '?nomobile=1' } }
+  ]) {
+    const r = route(Object.assign({ ua: UA_IPHONE, width: 390 }, c.opts));
+    assert.ok(boardKeepsIt(String(r.to)), `${c.label}: the board would hand it back`);
+  }
+});
+
+test('a display still reaches the board without the override', () => {
+  // The override is only needed where fids-core would act. Adding it to every
+  // URL would put a meaningless query string on every screen in the estate.
+  const r = route({ ua: UA_DESKTOP, width: 1920 });
+  assert.doesNotMatch(String(r.to), /nomobile/,
+    'a wall display is not a phone and needs no escape hatch');
+});
