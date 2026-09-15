@@ -874,7 +874,10 @@ async function handleGetScreen(env, origin, id) {
   // Unclaimed is a normal answer, not an error: it is what a new TV sees while
   // it waits to be claimed, and it must not look like a failure.
   if (!scr) return jsonResponse({ claimed: false, id }, 200, origin);
-  return jsonResponse({ claimed: true, id, name: scr.name, airport: scr.airport, board: scr.board }, 200, origin);
+  return jsonResponse({
+    claimed: true, id, name: scr.name, airport: scr.airport, board: scr.board,
+    gate: scr.gate || ""
+  }, 200, origin);
 }
 __name(handleGetScreen, "handleGetScreen");
 
@@ -901,6 +904,19 @@ async function handlePutScreen(request, env, payload, origin, id) {
     return jsonResponse({ error: "board must be fids, gids or bids" }, 400, origin);
   }
   if (!name) return jsonResponse({ error: "name is required" }, 400, origin);
+  // v23799 — WHICH gate. A gate board with no gate picks one itself, which is
+  // how a screen claimed as "Gate 4" ended up showing gate 2: the name was
+  // ours, the gate was the board's guess. gids.html has always read ?gate=
+  // (C77, A4, 12) — nothing was carrying it. Optional, because fids and bids
+  // boards have no gate, and empty means "let the board choose" exactly as
+  // before.
+  const gate = String(body.gate || "").trim().toUpperCase();
+  if (gate && !/^[A-Z]?[0-9]{1,3}[A-Z]?$/.test(gate)) {
+    return jsonResponse({ error: "gate should look like 4, A4, C77 or 12B" }, 400, origin);
+  }
+  if (gate && board !== "gids") {
+    return jsonResponse({ error: "only a gate board has a gate" }, 400, origin);
+  }
 
   const doc = await _screensDoc(env);
   // A corrupt registry must NOT be replaced by a fresh one holding a single
@@ -909,7 +925,7 @@ async function handlePutScreen(request, env, payload, origin, id) {
 
   const was = doc.screens[id];
   doc.screens[id] = {
-    name, airport, board,
+    name, airport, board, gate,
     claimedAt: (was && was.claimedAt) || Date.now(),
     updatedAt: Date.now(),
     updatedBy: payload.sub || "admin"

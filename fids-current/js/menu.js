@@ -204,7 +204,8 @@ function _scRender() {
       + 'border-radius:6px;padding:7px 10px;font-size:12.5px;color:#e5e7eb;">'
       + '<span style="font-family:ui-monospace,Menlo,monospace;color:#f0b429;letter-spacing:1px;">' + id + '</span>'
       + '<span style="font-weight:600;">' + _scEsc(s.name || '—') + '</span>'
-      + '<span style="color:#9ca3af;">' + _scEsc(s.airport || '') + ' · ' + (SC_BOARDS[s.board] || s.board || '') + '</span>'
+      + '<span style="color:#9ca3af;">' + _scEsc(s.airport || '') + ' · ' + (SC_BOARDS[s.board] || s.board || '')
+        + (s.gate ? ' · gate ' + _scEsc(s.gate) : '') + '</span>'
       + '<button title="Forget this screen" onclick="scForget(\'' + id + '\')" '
       + 'style="margin-left:auto;background:none;border:none;color:#9ca3af;cursor:pointer;font-size:15px;line-height:1;padding:0 4px;">×</button>'
       + '</div>';
@@ -269,6 +270,7 @@ function scClaim() {
   var name = (document.getElementById('scName') || {}).value || '';
   var ap = (document.getElementById('scAp') || {}).value || '';
   var board = (document.getElementById('scBoard') || {}).value || 'gids';
+  var gate = String((document.getElementById('scGate') || {}).value || '').trim().toUpperCase();
   code = String(code).trim().toUpperCase();
   ap = String(ap).trim().toUpperCase();
   name = String(name).trim();
@@ -277,11 +279,16 @@ function scClaim() {
   if (!/^[A-HJ-NP-Z2-9]{6}$/.test(code)) { _scSay('That is not a screen code — six characters, no I, O, 0 or 1.', true); return; }
   if (!/^[A-Z0-9]{3,4}$/.test(ap)) { _scSay('That is not an airport code.', true); return; }
   if (!name) { _scSay('Give the screen a name — it is how you will find it later.', true); return; }
-  _scWrite(code, { name: name, airport: ap, board: board }, 'Claiming ' + code).then(function (ok) {
+  // Caught here rather than as a 400, because the useful message is about what
+  // the field is FOR: a name of "Gate 4" does not make a screen show gate 4.
+  if (gate && board !== 'gids') { _scSay('Only a gate board has a gate — clear it, or choose Gate board.', true); return; }
+  if (gate && !/^[A-Z]?[0-9]{1,3}[A-Z]?$/.test(gate)) { _scSay('Gate should look like 4, A4, C77 or 12B.', true); return; }
+  _scWrite(code, { name: name, airport: ap, board: board, gate: gate }, 'Claiming ' + code).then(function (ok) {
     if (!ok) return;
     try {
       document.getElementById('scCode').value = '';
       document.getElementById('scName').value = '';
+      document.getElementById('scGate').value = '';
     } catch (e) {}
   });
 }
