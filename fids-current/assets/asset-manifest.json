@@ -2,12 +2,12 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2645,
+    "total": 2647,
     "by_category": {
       "ad": 10,
       "airline": 1441,
       "background": 110,
-      "brand": 2,
+      "brand": 4,
       "hotel": 884,
       "livery": 96,
       "misc": 15,
@@ -17194,6 +17194,28 @@
       "subcategory": "orion",
       "group": "Orion Connected brand",
       "name": "orion connected color",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/brand/orion-connected-colors.png",
+      "file": "orion-connected-colors.png",
+      "category": "brand",
+      "subcategory": "orion",
+      "group": "Orion Connected brand",
+      "name": "orion connected colors",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
+      "path": "/logos/brand/orion-connected-colors.svg",
+      "file": "orion-connected-colors.svg",
+      "category": "brand",
+      "subcategory": "orion",
+      "group": "Orion Connected brand",
+      "name": "orion connected colors",
       "iata": "",
       "country": "",
       "ext": "svg"
