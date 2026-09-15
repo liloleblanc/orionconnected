@@ -124,10 +124,18 @@ test('the delays run video → top → hours → 5-day → credit, ascending', (
 test('the whole sequence finishes well inside the slide', () => {
   let last = 0;
   for (const [, child] of STAGES) last = Math.max(last, delayOf(child) + durOf(child));
-  assert.ok(last < 2,
-    `the last band must land under 2s (measured ${last.toFixed(2)}s) — the ` +
-    'slide holds for 22s at minimum, but a card still assembling seconds in ' +
-    'reads as a slow board rather than as an entrance');
+  // The first cut held this under 2s and the owner rejected the result: every
+  // band overlapped the one before it and the scene got 0.23s to itself. The
+  // ask is the opposite — the scene SEEN, then filled one row at a time,
+  // settling. That costs seconds, and they are well spent against a 22s floor;
+  // what still matters is that the card spends most of its slide STILL.
+  assert.ok(last < 7,
+    `the last band lands at ${last.toFixed(2)}s — past 7s the card would be
+     arriving for a third of its slide, which is a slow board, not an entrance`);
+  assert.ok(last > 3,
+    `the last band lands at ${last.toFixed(2)}s — under 3s the bands are back
+     to overlapping and the scene is never seen on its own, which is the
+     failure this pacing replaced`);
 });
 
 test('the video opens in the clear, not under the outgoing slide', () => {

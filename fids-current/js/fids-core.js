@@ -24999,7 +24999,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23778';
+var FIDS_BUILD_TAG = 'v23779';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43387,7 +43387,7 @@ function _renderHeritageCard(el) {
 // held during the delay by animation-fill-mode, and reachable only while the
 // class is on the wrap. A weather card that misses its trigger is unanimated,
 // never invisible, which on a public display is the only acceptable way round.
-var _WXC_ENTRANCE_MS = 2050;   // last band lands at 1.84s; slack, then strip
+var _WXC_ENTRANCE_MS = 6000;   // last band lands at 1.84s; slack, then strip
 
 // Ends the sequence wherever it has got to, and cancels the deadline.
 //
@@ -44012,7 +44012,15 @@ function _renderWxCard(el) {
     //
     // The previous image is kept on disk beside this one, so reverting is this
     // one line.
-    var _wxSkyUrl = '/logos/Backgrounds/wx-sky-beach.jpg';
+    // v23779 — THE NIGHT SCENE IS NOT A DAYLIT BEACH.
+    // The sky plate was one hardcoded image whatever the hour, so a card
+    // flagged night — night video, night palette — still had a bright
+    // midday beach sitting behind it. There is no night photograph in the
+    // repo and inventing one is not this change's job, so at night the
+    // plate is dropped and the deep gradient carries it: the fireflies clip
+    // is then the only thing behind the plates, which is what the scene is
+    // for. Day is untouched.
+    var _wxSkyUrl = _wxNightScene ? '' : '/logos/Backgrounds/wx-sky-beach.jpg';
     // Scrim lightened hard (was .62/.42/.30, top-weighted).
     // — correct, and the reason it was that dark
     // no longer holds. The heavy top existed to keep white text legible where
@@ -44021,8 +44029,12 @@ function _renderWxCard(el) {
     // between tiles. It now does the one job still left — stopping the sky
     // from competing with the plates — at roughly a third of the strength,
     // and no longer leans on the top.
-    var _wxBg = 'linear-gradient(180deg, rgba(4,26,48,0.16) 0%, rgba(4,26,48,0.14) 45%, rgba(4,26,48,0.20) 100%) center/cover no-repeat,'
-              + " url('" + _wxSkyUrl + "') center bottom/cover no-repeat, #1c6fb0";
+    // Night carries a deeper scrim and no photo; day keeps the plate and the
+    // light one it was tuned against.
+    var _wxBg = _wxNightScene
+      ? 'linear-gradient(180deg, rgba(3,14,32,0.55) 0%, rgba(4,20,44,0.42) 45%, rgba(2,10,26,0.62) 100%) center/cover no-repeat, #06152e'
+      : 'linear-gradient(180deg, rgba(4,26,48,0.16) 0%, rgba(4,26,48,0.14) 45%, rgba(4,26,48,0.20) 100%) center/cover no-repeat,'
+        + " url('" + _wxSkyUrl + "') center bottom/cover no-repeat, #1c6fb0";
     try {
       // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
       // same source the media frame reads) — the static AIRLINE_ACCENT table
