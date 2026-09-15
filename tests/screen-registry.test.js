@@ -215,3 +215,59 @@ test('the gate field shows only when it applies', () => {
   assert.match(MENU_JS, /if \(tabId === 'airport'\) \{ try \{ _scSyncGateField\(\); \} catch \(e\) \{\} \}/,
     'and is correct the moment the tab opens, not only after a change');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23802 — A CLAIMED SCREEN KEEPS ASKING.
+//
+// screen.html polled until it was claimed and then handed over. That was the
+// whole of it — which made the handover the END of the conversation. The board
+// does not poll, so re-assigning a screen from the console changed the registry
+// and nothing else: the television carried on showing whatever it was given
+// first, and the only way to move it was to walk to that TV and send it back to
+// /screen.
+//
+// That is the opposite of the point. The point is that a screen is decided from
+// the console, more than once.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const CORE = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
+
+test('a board that arrived with a screen id keeps asking', () => {
+  assert.match(CORE, /function _fidsScreenFollow/, 'the follower must exist');
+  assert.match(CORE, /setInterval\(_fidsScreenFollow, FIDS_SCREEN_FOLLOW_MS\)/,
+    'and actually run on a timer');
+  assert.match(CORE, /if \(typeof window !== 'undefined' && _fidsScreenId\(\)\)/,
+    'only for a board that IS a claimed screen — every other board must not poll');
+});
+
+test('it compares against the URL it is on, not remembered state', () => {
+  // So a reload, a crash or a stale tab all settle to the same answer, and a
+  // screen that has not been re-assigned never navigates.
+  const at = CORE.indexOf('function _fidsScreenDrift');
+  const body = CORE.slice(at, CORE.indexOf('\n}', at));
+  assert.match(body, /window\.location\.pathname/, 'the current page is the comparison');
+  assert.match(body, /p\.get\('ap'\)/);
+  assert.match(body, /p\.get\('gate'\)/, 'the gate counts too — a re-gated screen must move');
+  assert.match(body, /if \(sameBoard && sameAp && sameGate\) return '';/,
+    'no drift, no navigation — otherwise every poll reloads the board');
+});
+
+test('a forgotten screen goes back to showing its code', () => {
+  const at = CORE.indexOf('function _fidsScreenFollow');
+  const body = CORE.slice(at, CORE.indexOf('\n}', CORE.indexOf('.catch(function () {}', at)));
+  assert.match(body, /if \(!doc\.claimed\) \{[\s\S]*?location\.replace\('\/screen\.html'\)/,
+    'unclaimed from the console means the display is assigned nothing, and ' +
+    'saying so is more honest than leaving a board up');
+});
+
+test('a board offline or given nonsense stays where it is', () => {
+  const at = CORE.indexOf('function _fidsScreenFollow');
+  const body = CORE.slice(at, CORE.indexOf('\n}', CORE.indexOf('.catch(function () {}', at)));
+  assert.match(body, /if \(!doc \|\| typeof doc !== 'object'\) return;/,
+    'an unreadable answer must not move a working board');
+  assert.match(body, /\.catch\(function \(\) \{\}\)/,
+    'and neither must a failed request — a terminal display that navigates ' +
+    'itself away on a network blip is worse than one that is briefly stale');
+  assert.match(body, /cache: 'no-store'/);
+  assert.match(body, /_oc=' \+ Date\.now\(\)/);
+});
