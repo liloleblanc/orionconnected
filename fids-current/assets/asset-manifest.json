@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2648,
+    "total": 2650,
     "by_category": {
       "ad": 10,
       "airline": 1441,
@@ -10,7 +10,7 @@
       "brand": 4,
       "hotel": 884,
       "livery": 96,
-      "misc": 15,
+      "misc": 17,
       "symbol": 4,
       "weather": 83
     }
@@ -28172,6 +28172,28 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "mark CYQM white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airports/mark-YSSY-colour.svg",
+      "file": "mark-YSSY-colour.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "mark YSSY colour",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airports/mark-YSSY-white.svg",
+      "file": "mark-YSSY-white.svg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "mark YSSY white",
       "iata": "",
       "country": "",
       "ext": "svg"
