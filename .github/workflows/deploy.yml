@@ -1,0 +1,92 @@
+# Deploy the display site — a button, not a terminal.
+#
+# Actions → "Deploy display site" → Run workflow. That is the whole procedure.
+#
+# WHY A BUTTON AND NOT ON EVERY MERGE: the boards are on a stream that runs
+# around the clock. Deploying the instant something merges means a regression
+# reaches the screens before anyone has looked at it. Merging and shipping stay
+# separate on purpose — to make it automatic instead, add
+#   push:
+#     branches: [main]
+# to the triggers below.
+#
+# IT ALWAYS SHIPS origin/main, never a laptop. That is the other half of the
+# point: a local checkout drifts behind, carries half-finished work, and needs
+# wrangler installed before it can do anything. None of that applies here.
+#
+# ONLY THE SITE WORKER. The root wrangler.jsonc configures `fids`, the static
+# display site. workers/fids-proxy.js is a separate Worker with its own
+# bindings and secrets and is NOT deployed by this — see docs/DEPLOYMENT.md.
+name: Deploy display site
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "deploy" to confirm this goes to production'
+        required: true
+        default: ''
+
+permissions:
+  contents: read
+
+# One deploy at a time. Two overlapping runs can land in either order and the
+# later-finishing one wins, which is not necessarily the newer one.
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the confirmation
+        if: inputs.confirm != 'deploy'
+        run: |
+          echo "::error::Type 'deploy' in the confirmation box to ship to production."
+          exit 1
+
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      # The same gate docs/DEPLOYMENT.md asks for by hand, in the one place it
+      # cannot be skipped in a hurry.
+      - name: Tests
+        run: npm test
+
+      - name: Asset manifest is current
+        run: npm run assets:check
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      # Proves the deploy actually replaced what is being served, rather than
+      # reporting success because the upload succeeded. Reads the live site and
+      # fails if the commit that just shipped is not the one answering.
+      - name: Smoke check the live site
+        run: |
+          set -euo pipefail
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /tmp/live.html -w '%{http_code}' \
+              https://fids.orionconnected.com/index.html || echo 000)
+            if [ "$code" = "200" ] && grep -q "FIDS" /tmp/live.html; then
+              echo "live site answered 200 and looks like the board"
+              exit 0
+            fi
+            echo "attempt $i: got $code, waiting for the edge to settle"
+            sleep 10
+          done
+          echo "::error::the site did not answer correctly after the deploy"
+          exit 1
