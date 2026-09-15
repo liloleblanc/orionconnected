@@ -43455,6 +43455,10 @@ function _wxSpeed() {
 // Base lengths at _wxSpeed() === 1, from the CSS block: arrival runs to 17.3s,
 // exit to 4.2s. Both are rounded up so a deadline outlives its last frame.
 var _WXC_ENTRANCE_MS = 18700;
+// How long the title overlay is on screen. The CSS animations are written
+// against this same six seconds; it is named here so the backdrop's pacing
+// cannot drift from it.
+var _WXC_ENTRANCE_INTRO_S = 6;
 // The staged exit: the four content bands leave 0.34s apart at 0.62s each, then
 // the scene alone over 1.1s — 3.36s, rounded up so the cover outlives the last
 // frame of it. The entrance is longer because arriving is the part being read;
@@ -43492,6 +43496,19 @@ function _wxEndEntrance(root) {
         if (roots[r].classList && roots[r].classList.contains('wxc-entering')
             && roots[r].classList.contains('wxcard-wrap')) roots[r].classList.remove('wxc-entering');
       } catch (eS) {}
+      // Taking the overlay out of the layout does NOT stop the clip inside it.
+      // Left alone it runs to its own end — measured at 11.58s of a 12s clip —
+      // decoding 1080p behind a hidden element on a box that is also encoding
+      // a stream. Rewound as well as paused, so a second visit within the same
+      // card starts the backdrop at the beginning rather than wherever it
+      // happened to stop.
+      try {
+        var _bgs = roots[r].querySelectorAll ? roots[r].querySelectorAll('video.wxc-intro-bg') : [];
+        for (var b = 0; b < _bgs.length; b++) {
+          try { _bgs[b].pause(); } catch (eP) {}
+          try { _bgs[b].currentTime = 0; } catch (eT) {}
+        }
+      } catch (eB) {}
     }
     return true;
   } catch (e) { return false; }
@@ -43534,9 +43551,17 @@ function _wxWantsIntro() {
 // Text drawn by the board costs a few hundred bytes instead of twenty
 // megabytes, re-reads crisp at any panel size, follows the board typeface,
 // and can be reordered — which the French-first airports require.
-// The motion behind the title. Six seconds, 1920x1080, which is exactly the
-// window the title runs in — so it plays once and is never seen to loop.
-var _WX_INTRO_BG = '/logos/Backgrounds/video/wx-report-intro.mp4';
+// The motion behind the title: an animated globe, 1920x1080. Its own
+// lettering does not enter until about 5.2s, and the rate below keeps the
+// title inside the clean stretch before that, so the backdrop is pure motion
+// and every word on screen is one the board drew.
+var _WX_INTRO_BG = '/logos/Backgrounds/video/wx-title-globe.mp4';
+
+// Seconds of clip consumed across the whole title, whatever the speed dial is
+// set to. The clip is longer than the title and its headline slides in at
+// ~5.2s; holding the consumption to 4.5s keeps that headline off the screen
+// and slows the globe a little, which suits a title better than real time.
+var _WX_INTRO_BG_SPAN = 4.5;
 
 var _WX_INTRO_LINES = [
   { l: 'en', d: 'ltr', t: 'Weather Report' },
@@ -43619,6 +43644,31 @@ function _wxArmEntrance(wrap) {
     window._wxEntranceAt = Date.now();
     wrap.classList.add('wxc-entering');
     _wxHoldSceneForIntro(wrap);
+    // The backdrop is paced to the title, not the other way round: whatever
+    // _wxSpeed() does to the six seconds, the same 4.5s of clip is consumed.
+    try {
+      var _bg = wrap.querySelector(':scope > .wxc-intro > video.wxc-intro-bg');
+      if (_bg) {
+        var _introMs = (_WXC_ENTRANCE_INTRO_S || 6) * 1000 * _wxSpeed();
+        _bg.playbackRate = _WX_INTRO_BG_SPAN / (_introMs / 1000);
+        // The card does not always rebuild between visits, so the element can
+        // be the one the last title used. Rewind before playing or the
+        // backdrop opens partway through — past the clean stretch.
+        try { _bg.currentTime = 0; } catch (eT) {}
+        try { _bg.play(); } catch (eP) {}
+        // Stop it when it stops being SEEN, which is the end of the title at
+        // six seconds — not the end of the entrance at eighteen. The overlay
+        // is transparent from then on but stays in the layout, so without
+        // this the clip decodes 1080p for another twelve seconds behind
+        // nothing, on a box that is also encoding a stream.
+        if (window._wxIntroBgTimer) { try { clearTimeout(window._wxIntroBgTimer); } catch (eK) {} }
+        window._wxIntroBgTimer = setTimeout(function () {
+          window._wxIntroBgTimer = null;
+          try { _bg.pause(); } catch (eQ) {}
+          try { _bg.currentTime = 0; } catch (eU) {}
+        }, Math.round(_introMs));
+      }
+    } catch (eR) {}
     if (window._wxEntranceTimer) { try { clearTimeout(window._wxEntranceTimer); } catch (eC) {} }
     window._wxEntranceTimer = setTimeout(function () {
       window._wxEntranceTimer = null;

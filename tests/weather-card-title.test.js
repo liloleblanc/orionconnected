@@ -343,3 +343,82 @@ test('no static !important outranks these keyframes', () => {
   }
   assert.ok(checked >= 8, `only ${checked} property/animation pairs checked — the walk is not finding the rules`);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// The backdrop is chosen and PACED so that every word on the panel is one the
+// board drew. The clip carries its own headline — they all do — but it slides
+// in at about 5.2s, and the title only ever consumes the clean stretch before
+// that. Measured on the 408 x 792 crop: luminance 70-87 through 5.21s with no
+// blown pixels in the band the type sits in, then the lettering enters.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('the backdrop is paced to stay inside its clean stretch', () => {
+  const span = Number((JS.match(/var _WX_INTRO_BG_SPAN = ([\d.]+);/) || [])[1]);
+  assert.ok(span > 0, 'the span must be named');
+  assert.ok(span <= 5.0,
+    `${span}s of clip is consumed, but this clip's own headline slides in at ` +
+    'about 5.2s — anything past that puts a second, English-only headline ' +
+    'behind nine languages');
+
+  const arm = JS.slice(JS.indexOf('function _wxArmEntrance(wrap)'));
+  const body = arm.slice(0, arm.indexOf('\n}'));
+  assert.match(body, /_introMs = \(_WXC_ENTRANCE_INTRO_S \|\| 6\) \* 1000 \* _wxSpeed\(\)/,
+    'the window the rate is derived from follows the speed dial');
+  assert.match(body, /_bg\.playbackRate = _WX_INTRO_BG_SPAN \/ \(_introMs \/ 1000\)/,
+    'so the same span of clip is consumed however long the title runs — ' +
+    'without this, a slowed title runs straight into the clip headline');
+  // …and the window it is paced against is the one the CSS animates over
+  const intro = Number((JS.match(/var _WXC_ENTRANCE_INTRO_S = (\d+);/) || [])[1]);
+  assert.equal(intro, 6, 'six seconds, the same window every keyframe uses');
+  for (const a of timed()) {
+    assert.ok(a.delay + a.dur <= intro + 1e-9,
+      `${a.name} outlives the window the backdrop is paced against`);
+  }
+});
+
+test('the clip that carried a headline over the type is gone', () => {
+  assert.doesNotMatch(JS, /wx-report-intro\.mp4/,
+    'the previous backdrop put WEATHER REPORT in full-frame letters directly ' +
+    'behind the nine phrases, and a full-frame sun through the middle of the ' +
+    'title — it must not be referenced any more');
+  const bg = (JS.match(/var _WX_INTRO_BG = '([^']+)'/) || [])[1];
+  assert.ok(bg && bg.endsWith('.mp4'), 'the backdrop is named once, as a path');
+  assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', bg.replace(/^\//, ''))),
+    `the backdrop must be committed: ${bg}`);
+  const mb = fs.statSync(path.join(ROOT, 'fids-current', bg.replace(/^\//, ''))).size / 1024 / 1024;
+  assert.ok(mb < 18, `the backdrop is ${mb.toFixed(1)}MB — it loads on every board that shows the card`);
+  const man = fs.readFileSync(path.join(ROOT, 'fids-current/assets/asset-manifest.json'), 'utf8');
+  assert.ok(man.includes(bg.split('/').pop()), 'and the manifest must know about it');
+});
+
+test('the backdrop stops when the title is taken out of the layout', () => {
+  // display:none on the overlay does not stop a clip inside it. Measured on a
+  // live board: the backdrop ran on to 11.58s of a 12s clip after the title
+  // was hidden — 1080p decoding behind nothing, on a box that is also
+  // encoding a stream.
+  const at = JS.indexOf('function _wxEndEntrance(root)');
+  assert.ok(at >= 0, 'the teardown must exist');
+  const body = JS.slice(at, JS.indexOf('\n}', at));
+  assert.match(body, /querySelectorAll\('video\.wxc-intro-bg'\)/,
+    'the teardown has to find the backdrop');
+  assert.match(body, /\.pause\(\)/, 'and pause it');
+  assert.match(body, /\.currentTime = 0/,
+    'and rewind it — a second visit inside the same card would otherwise open ' +
+    'the backdrop wherever it stopped, which is past the clean stretch');
+
+  const arm = JS.slice(JS.indexOf('function _wxArmEntrance(wrap)'));
+  const ab = arm.slice(0, arm.indexOf('\n}'));
+  // …and it stops at the end of the TITLE (6s), not the end of the entrance
+  // (18.7s). The overlay is transparent from 6s but stays in the layout, so
+  // the clip would otherwise decode for another twelve seconds behind nothing.
+  assert.match(ab, /window\._wxIntroBgTimer = setTimeout/,
+    'a timer stops the backdrop when it stops being seen');
+  assert.match(ab, /\}, Math\.round\(_introMs\)\);/,
+    'and that timer is the title window, not the entrance');
+  assert.match(ab, /_introMs = \(_WXC_ENTRANCE_INTRO_S \|\| 6\) \* 1000 \* _wxSpeed\(\)/,
+    'which follows the speed dial like everything else');
+  assert.match(ab, /_bg\.currentTime = 0/,
+    'and arming rewinds too: the card does not always rebuild between visits, ' +
+    'so the element can be the one the last title used');
+  assert.match(ab, /_bg\.play\(\)/, 'and starts it');
+});
