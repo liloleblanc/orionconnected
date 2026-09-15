@@ -17874,6 +17874,38 @@ const gView = document.getElementById('gateView');
         // Re-attach the preserved ad carousel BEFORE autofit/paint so the
         // playing video is never interrupted and the slot is never empty.
         var _newAd = document.getElementById('gateAdCarousel');
+        // v23777 — A REBUILD ABANDONS THE WEATHER CARD'S ENTRANCE.
+        // Re-inserting a node restarts its CSS animations (the v23166 note in
+        // display-overrides measured that on this very carousel). The weather
+        // card's five stages are staggered by animation-delay against a
+        // deadline that is absolute from the arm, so a rebuild landing inside
+        // the window would replay all five from zero and then have the class
+        // stripped part-way through — the later bands still at opacity 0.
+        // Nothing here is re-entered to notice: the carousel is preserved with
+        // its children, so startGateAds' refill sees a non-empty element and
+        // _renderWxCard is never called. Strip the mark instead, and the card
+        // comes back whole.
+        try {
+          var _wxR = _savedAd && _savedAd.querySelector('.wxcard-wrap.wxc-entering');
+          if (_wxR && typeof _wxEndEntrance === 'function') {
+            // v23786 — A REBUILD RESUMES THE SEQUENCE, IT NO LONGER ENDS IT.
+            // Re-inserting a node restarts its CSS animations, so this used to
+            // strip the class instead and let the card land whole — correct,
+            // but it SNAPPED: every layer still mid-flight jumped to its
+            // final position in one frame, and the gate rebuilds often enough
+            // that a viewer sees it. Every delay in the block is written as
+            // (base - var(--wxc-el)), so stamping the elapsed time here makes
+            // the restarted animations pick up exactly where they were. Past
+            // the end of the sequence there is nothing to resume and the mark
+            // comes off, which is the old behaviour for the case that needed
+            // it. (Negative delay as a phase anchor is the same idiom the
+            // rondelle uses; here it is an elapsed offset instead.)
+            var _wxEl = (Date.now() - (window._wxEntranceAt || 0)) / 1000;
+            var _wxSpan = (_WXC_ENTRANCE_MS * _wxSpeed()) / 1000;
+            if (_wxEl > 0 && _wxEl < _wxSpan) _wxR.style.setProperty('--wxc-el', _wxEl.toFixed(2) + 's');
+            else _wxEndEntrance(_savedAd);
+          }
+        } catch (eWx) {}
         if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
         var _newAdLogo = document.getElementById('gateAdLogo');
         if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
@@ -24984,7 +25016,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23776';
+var FIDS_BUILD_TAG = 'v23787';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39871,6 +39903,13 @@ function renderGateAd(index) {
   var totalSlots = slides.length;
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
 
+  // v23777 — WHAT WAS ON SCREEN WHEN THIS CALL BEGAN. Read here, and not at
+  // the visit counter further down that consumes it, because the scene pin
+  // immediately below writes window._gateAdCurrentIdx itself: reading it after
+  // that made a pinned board's FIRST paint look like a repaint, and the one
+  // thing ?scene=wx exists for is looking at that card.
+  var _prevShownSlot = window._gateAdCurrentIdx;
+
   // ── SCENE PIN (?scene=) — REVIEW AID, OFF UNLESS ASKED FOR ─────────────
   // The centre panel cycles every few minutes, which makes reviewing any one
   // scene a matter of waiting for it to come round again. With ?scene=wx (or
@@ -39888,6 +39927,18 @@ function renderGateAd(index) {
         if (slides[_pi] && String(slides[_pi].type || '').toLowerCase() === String(_pin).toLowerCase()) { _pinIdx = _pi; break; }
       }
       if (_pinIdx >= 0) {
+        // v23777 — A PINNED SCENE STILL ARRIVES.
+        // The pin stamps the slot itself, so from the counter's point of view
+        // the parked slide never changes and never re-arrives: the weather
+        // card's entrance played once at first paint and then never again for
+        // the life of the page, while the rotation tick went on crossfading
+        // the card to an identical, un-animated copy of itself every 22s.
+        // Since ?scene= exists to review a scene, and the thing under review
+        // here is an entrance, an authorised tick under the pin counts as an
+        // arrival. Inert without the query string, like the rest of this block.
+        if (window._gateAdAuthChange) {
+          window._gateAdVisitSeq = (window._gateAdVisitSeq || 0) + 1;
+        }
         slot = _pinIdx; _gateAdIndex = _pinIdx; window._gateAdCurrentIdx = _pinIdx;
         // A pinned scene can be asked for before its data exists — the weather
         // card returns false until the forecast lands, and the dispatcher's
@@ -39932,7 +39983,53 @@ function renderGateAd(index) {
   // Record what the carousel is ACTUALLY showing. Async repaint callbacks
   // (hotel-photo fetches) read this; before it was stamped they fell back
   // to slide 0 and hijacked the carousel mid-ad
-  // 
+  //
+  // v23777 — A SLIDE VISIT IS AN ARRIVAL, NOT A REPAINT.
+  //
+  // The weather card's staged entrance has to run when the card BECOMES
+  // VISIBLE, once, and nothing here answered that question. renderGateAd is
+  // called many times per slide — the gate rebuilds its DOM on telemetry
+  // ticks and repaints whatever is showing — so "the card was just rendered"
+  // and "the card just arrived" are different facts, and an entrance keyed on
+  // the first would re-assemble the card in front of a reader every few
+  // seconds.
+  //
+  // A visit is counted on exactly two events:
+  //
+  //   1. An AUTHORISED move to a different slot. The rotation tick and the pin
+  //      recovery are the only callers allowed to change which slide is on
+  //      screen, and both announce themselves with _gateAdAuthChange — the
+  //      same flag the slide lock above already trusts.
+  //   2. The first paint of the session, when no slot has ever been shown.
+  //      That is a genuine arrival and it cannot recur.
+  //
+  // Deliberately NOT counted: an empty carousel element. Emptiness is a fact
+  // about the DOM, not about the deck, and the two come apart constantly.
+  //
+  // WHAT A GATE REBUILD ACTUALLY DOES — worth stating plainly, because the
+  // first version of this note had it backwards and pointed the next reader
+  // away from the only event that really breaks the entrance. The rebuild
+  // PRESERVES the live carousel: it lifts #gateAdCarousel out of the DOM
+  // before the innerHTML wipe and puts that same element back afterwards,
+  // children and element properties and all. So nothing here is re-entered —
+  // startGateAds' refill only repaints when the element is childless, and
+  // after a preserving rebuild it is not. The element is only rebuilt fresh
+  // and childless on a real CARRIER change, which re-indexes the deck to slot
+  // 0 with its own authorised render, so the weather slide is not up for it.
+  //
+  // That is exactly why the entrance cannot be left to CSS alone: the
+  // detach/re-attach restarts every animation on the card underneath a
+  // trigger that never fires. The gate render strips the mark on the way
+  // back in; see the note at the re-attach.
+  //
+  // The counter lives on `window` on its own merit — it is a fact about the
+  // carousel, not about any one card, and it has to outlive both.
+  //
+  // _prevShownSlot is read at the top of this function, ahead of the scene pin.
+  if (typeof _prevShownSlot !== 'number'
+      || (window._gateAdAuthChange && _prevShownSlot !== slot)) {
+    window._gateAdVisitSeq = (window._gateAdVisitSeq || 0) + 1;
+  }
   window._gateAdCurrentIdx = slot;
   // Every special/full-motion scene starts clean; the eligible static paths
   // below opt back in explicitly. This prevents a class from the prior slide
@@ -40478,7 +40575,12 @@ function _getGateAdDwellMs(slide) {
   // minute and every scene ticked at the same flat interval — the 'welcome
   // aboard to map, thats it, really bumping' cadence.
   if (slide.type === 'bigcraft') return 45000;
-  if (slide.type === 'wxcard') return 24000;
+  // v23781 — 24s no longer covers this card. Its staged arrival runs 17.3s at
+  // the default speed, which would have left six seconds of stillness before it
+  // began leaving again — the card would never be read. 42s leaves 22s at rest
+  // after the last band, more than the whole slide used to be. Scaled with
+  // ?wxspeed= so dialling the pacing cannot starve it.
+  if (slide.type === 'wxcard') return Math.round(42000 * _wxSpeed());
   // Long enough to read a name and two caption lines without lingering.
   if (slide.type === 'heritage') return 14000;
   // v218.96: custom slides from the Gate Theme editor carry their own
@@ -40992,6 +41094,25 @@ function _restartGateAdsTimer() {
             _old.style.cssText = 'position:absolute;left:' + (_er.left - _prr.left) + 'px;top:' + (_er.top - _prr.top)
               + 'px;width:' + _er.width + 'px;height:' + _er.height + 'px;z-index:60;pointer-events:none;opacity:1;transition:opacity 0.95s ease-in-out;overflow:hidden;';
             while (el3.firstChild) _old.appendChild(el3.firstChild);
+            // v23780 — THE WEATHER CARD LEAVES THE WAY IT ARRIVED.
+            // Every other slide dissolves as one rectangle, which is right for
+            // a photograph. This card was built up a layer at a time and is
+            // asked to go the same way, so the overlay does NOT fade as a
+            // whole: it is held opaque and marked, and the layers inside it
+            // animate out in reverse — credit, 5-day, hours, top, and the
+            // scene last, alone, the way it came in first. The overlay is
+            // removed when the sequence is over (_WXC_EXIT_MS below), so the
+            // incoming slide is uncovered at the same moment either way.
+            try {
+              if (_old.querySelector('.wxcard-wrap')) {
+                _old.setAttribute('data-wx-leaving', '1');
+                var _wxLeaveWrap = _old.querySelector('.wxcard-wrap');
+                if (_wxLeaveWrap) {
+                  try { var _spL = _wxSpeed(); if (_spL !== 1) _wxLeaveWrap.style.setProperty('--wxc-t', String(_spL)); } catch (eS2) {}
+                  _wxLeaveWrap.classList.remove('wxc-entering'); _wxLeaveWrap.classList.add('wxc-leaving');
+                }
+              }
+            } catch (eWxL) {}
             // The children moved out — bust the per-slide DOM caches so a
             // same-content render can't early-return into an empty carousel.
             el3._lastKey = null;
@@ -41049,8 +41170,17 @@ function _restartGateAdsTimer() {
       if (_old) {
         try {
           void _old.offsetWidth; // new is painted UNDER the cover; now dissolve
-          _old.style.opacity = '0';
-          setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 1050);
+          if (_old.getAttribute('data-wx-leaving')) {
+            // The layers dissolve themselves, one at a time; the cover stays
+            // opaque underneath them until the last one is gone. Its own
+            // transition is cleared so nothing fades the group as a whole.
+            _old.style.transition = 'none';
+            _old.style.opacity = '1';
+            setTimeout(function () { try { _old.remove(); } catch (e2) {} }, Math.round(_WXC_EXIT_MS * _wxSpeed()) + 120);
+          } else {
+            _old.style.opacity = '0';
+            setTimeout(function () { try { _old.remove(); } catch (e2) {} }, 1050);
+          }
         } catch (e) { try { if (_old.parentNode) _old.remove(); } catch (e2) {} }
       }
       // Schedule the NEXT tick using the dwell of the slide we just
@@ -43242,6 +43372,312 @@ function _renderHeritageCard(el) {
   } catch (e) { return false; }
 }
 
+// ══ v23777 — THE WEATHER CARD ARRIVES IN ORDER ═══════════════════════════
+//
+// Asked for: the card should not appear all at once. The video opens on its
+// own, then the top, then NEXT HOURS, then the 5-day band, then the credit.
+//
+// The stagger itself is CSS (display-overrides.css, "THE WEATHER CARD ARRIVES
+// IN ORDER"): one keyframe for the four content bands plus per-band
+// animation-delay, and a second, scale-only keyframe for the video, which
+// cannot take the bands' small rise without sliding its own cover edge into
+// frame. This function is the other half — the part that decides WHEN.
+//
+// The hard problem is not the motion, it is the trigger, because this card
+// re-renders constantly and under its own power:
+//
+//   · an unchanged-signature early return that only re-tints,
+//   · a strips-only swap when late hourly/7-day data lands, which removes and
+//     re-inserts both strips under an untouched hero,
+//   · a full innerHTML rebuild whenever the weather content changes,
+//
+// and on top of those the gate rebuilds its DOM on telemetry ticks. An
+// entrance keyed on "the wrap is new" or "the class is absent" replays on
+// every one of them, and the card is then seen assembling itself over and
+// over in the middle of its own slide.
+//
+// So the entrance is keyed on the CAROUSEL VISIT instead (see the counter in
+// renderGateAd): the sequence plays once per arrival of the weather slide and
+// cannot play again until the slide has genuinely left and come back. Both
+// the counter and the played-marker are on `window`, so a gate rebuild —
+// which discards the carousel element — cannot reset either.
+//
+// All three render paths call this. None of them has to reason about the
+// entrance: the visit number decides, and asking twice for the same visit is
+// a no-op.
+//
+// The class is stripped once the sequence is over, which is what keeps a LATE
+// strips-only refresh from replaying those two bands minutes into the slide.
+//
+// ANY DOM CHURN DURING THE SEQUENCE ABANDONS IT — ONE RULE, TWO PLACES.
+// The first cut let a mid-sequence change ride, on the reasoning that new
+// nodes arriving is honest rather than a replay. The arithmetic says
+// otherwise: the removal deadline is absolute from the arm, while every
+// animation's delay restarts from its own node's insertion.
+//
+//   · A strips-only refresh at t=1.0s restarts both strips from there, so
+//     NEXT HOURS would not begin until 2.14s — but the class comes off at
+//     2.05s. Neither animation ever starts. Both bands hold the keyframe's
+//     opacity:0 through the backwards fill and then snap in, so two thirds of
+//     the card is blank for a second and then pops.
+//   · A gate rebuild is worse. It DETACHES the live carousel and re-attaches
+//     it to survive the innerHTML wipe, and re-inserting a node restarts its
+//     CSS animations — the same fact the v23166 note in display-overrides
+//     records, where it turned the largest panel on the screen into a navy
+//     rectangle on every rebuild. All five stages would replay from zero
+//     against a deadline that did not move, leaving the card blank at the
+//     moment the class was stripped.
+//
+// So both paths call _wxEndEntrance() instead and the card lands WHOLE. A
+// part-faded band snapping to full is a far smaller fault than two bands
+// blanking, and it is the same answer the fallback rule below gives.
+//
+// FALLBACK: if this never runs, the card is fully visible. Nothing is hidden
+// at rest — the only opacity:0 in the whole family is inside the keyframes,
+// held during the delay by animation-fill-mode, and reachable only while the
+// class is on the wrap. A weather card that misses its trigger is unanimated,
+// never invisible, which on a public display is the only acceptable way round.
+// v23781 — ONE DIAL FOR THE WHOLE SEQUENCE.
+// Three cuts of this animation were rejected as too fast, so rather than guess
+// a fourth, the pacing is a multiplier: ?wxspeed=1.4 stretches every delay and
+// duration, the holds with them, so the shape is preserved at any speed. The
+// value rides a CSS custom property (--wxc-t) that every timing in the
+// entrance block is a calc() against, and it scales the JS deadlines and this
+// card's dwell to match. Clamped to 0.5-4 so a typo cannot park a slide for an
+// hour or flicker it past. Inert without the parameter.
+function _wxSpeed() {
+  try {
+    var v = parseFloat(new URLSearchParams(location.search).get('wxspeed'));
+    if (isFinite(v) && v >= 0.5 && v <= 4) return v;
+  } catch (e) {}
+  return 1;
+}
+// Base lengths at _wxSpeed() === 1, from the CSS block: arrival runs to 17.3s,
+// exit to 4.2s. Both are rounded up so a deadline outlives its last frame.
+var _WXC_ENTRANCE_MS = 18700;
+// How long the title overlay is on screen. The CSS animations are written
+// against this same six seconds; it is named here so the backdrop's pacing
+// cannot drift from it.
+var _WXC_ENTRANCE_INTRO_S = 6;
+// The staged exit: the four content bands leave 0.34s apart at 0.62s each, then
+// the scene alone over 1.1s — 3.36s, rounded up so the cover outlives the last
+// frame of it. The entrance is longer because arriving is the part being read;
+// leaving only has to feel of a piece with it.
+var _WXC_EXIT_MS = 4200;
+
+// Ends the sequence wherever it has got to, and cancels the deadline.
+//
+// Deliberately NOT scoped to a wrap. The timer used to close over the one
+// wrap it was armed for, out of a single global slot — so a second arm inside
+// the window cleared the first timer and left the EARLIER wrap marked with
+// nothing left to strip it. Nothing reaches that today (the shortest gap
+// between two authorised slot changes is well outside the window), but a
+// stranded class plus a later detach/re-attach is the one outcome this whole
+// design exists to prevent: animations restarting with no deadline to end
+// them, holding the bands at opacity 0 for as long as the card is up.
+// Clearing by selector costs the same and cannot strand anything.
+//
+// `root` is for the one caller that needs it: the gate rebuild hands us the
+// carousel while it is DETACHED, and a detached subtree is not reachable from
+// document. Callers with a live card pass nothing.
+function _wxEndEntrance(root) {
+  try {
+    if (window._wxEntranceTimer) { try { clearTimeout(window._wxEntranceTimer); } catch (eC) {} }
+    window._wxEntranceTimer = null;
+    var roots = [document];
+    if (root && root.querySelectorAll) roots.push(root);
+    for (var r = 0; r < roots.length; r++) {
+      var marked = roots[r].querySelectorAll('.wxcard-wrap.wxc-entering');
+      for (var i = 0; i < marked.length; i++) {
+        try { marked[i].classList.remove('wxc-entering'); } catch (eR) {}
+      }
+      // querySelectorAll does not match the root itself.
+      try {
+        if (roots[r].classList && roots[r].classList.contains('wxc-entering')
+            && roots[r].classList.contains('wxcard-wrap')) roots[r].classList.remove('wxc-entering');
+      } catch (eS) {}
+      // Taking the overlay out of the layout does NOT stop the clip inside it.
+      // Left alone it runs to its own end — measured at 11.58s of a 12s clip —
+      // decoding 1080p behind a hidden element on a box that is also encoding
+      // a stream. Rewound as well as paused, so a second visit within the same
+      // card starts the backdrop at the beginning rather than wherever it
+      // happened to stop.
+      try {
+        var _bgs = roots[r].querySelectorAll ? roots[r].querySelectorAll('video.wxc-intro-bg') : [];
+        for (var b = 0; b < _bgs.length; b++) {
+          try { _bgs[b].pause(); } catch (eP) {}
+          try { _bgs[b].currentTime = 0; } catch (eT) {}
+        }
+      } catch (eB) {}
+    }
+    return true;
+  } catch (e) { return false; }
+}
+
+// True when the paint about to happen is a fresh ARRIVAL of the weather slide
+// — the same test _wxArmEntrance makes, asked one step earlier so the markup
+// can carry the intro only on the paint that will actually play it. A
+// re-render inside the same visit (a re-tint, a strips swap, a gate rebuild)
+// answers false and the titles are simply not emitted.
+// v23786 — ONE VIDEO DECODES AT A TIME.
+// The title's backdrop and the scene are both 1920x1080. Playing them
+// together was two simultaneous decodes on top of fifteen animating layers,
+// which is the kind of load that shows up as dropped frames rather than as an
+// error. The scene is held until the title is nearly gone — it is behind the
+// backdrop and the scrim until then anyway, and its own fade does not begin
+// until 3.2s.
+function _wxHoldSceneForIntro(wrap) {
+  try {
+    var vid = wrap && wrap.querySelector(':scope > video.wxc-vid');
+    var intro = wrap && wrap.querySelector(':scope > .wxc-intro');
+    if (!vid || !intro) return;
+    try { vid.pause(); } catch (e) {}
+    setTimeout(function () { try { vid.play(); } catch (e) {} }, Math.round(2600 * _wxSpeed()));
+  } catch (e) {}
+}
+
+function _wxWantsIntro() {
+  try {
+    var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
+    return window._wxEntrancePlayedSeq !== seq;
+  } catch (e) { return false; }
+}
+
+// v23787 — THE OPENING TITLE IS BUILT IN THE PAGE, NOT SHOT AS FOOTAGE.
+// One phrase, every language at once, arriving together. Drawn here rather
+// than played from a clip because a clip cannot be corrected: the generated
+// footage carried a misspelling baked into the centre of frame, a permanent
+// watermark, 720p on a 1080p board, and ten seconds for a six-second slot.
+// Text drawn by the board costs a few hundred bytes instead of twenty
+// megabytes, re-reads crisp at any panel size, follows the board typeface,
+// and can be reordered — which the French-first airports require.
+// The motion behind the title: an animated globe, 1920x1080. Its own
+// lettering does not enter until about 5.2s, and the rate below keeps the
+// title inside the clean stretch before that, so the backdrop is pure motion
+// and every word on screen is one the board drew.
+var _WX_INTRO_BG = '/logos/Backgrounds/video/wx-title-globe.mp4';
+
+// Seconds of clip consumed across the whole title, whatever the speed dial is
+// set to. The clip is longer than the title and its headline slides in at
+// ~5.2s; holding the consumption to 4.5s keeps that headline off the screen
+// and slows the globe a little, which suits a title better than real time.
+var _WX_INTRO_BG_SPAN = 4.5;
+
+var _WX_INTRO_LINES = [
+  { l: 'en', d: 'ltr', t: 'Weather Report' },
+  { l: 'fr', d: 'ltr', t: 'Bulletin m\u00e9t\u00e9o' },
+  { l: 'es', d: 'ltr', t: 'Informe del clima' },
+  { l: 'de', d: 'ltr', t: 'Wetterbericht' },
+  { l: 'it', d: 'ltr', t: 'Bollettino meteo' },
+  { l: 'pt', d: 'ltr', t: 'Boletim meteorol\u00f3gico' },
+  { l: 'ja', d: 'ltr', t: '\u5929\u6c17\u4e88\u5831' },
+  { l: 'zh', d: 'ltr', t: '\u5929\u6c14\u9884\u62a5' },
+  { l: 'ar', d: 'rtl', t: '\u0646\u0634\u0631\u0629 \u0627\u0644\u0637\u0642\u0633' }
+];
+
+// A board with no font for a script draws .notdef boxes, and a row of empty
+// rectangles on a public display is worse than one language fewer. Every
+// missing glyph in a given font has the SAME advance as every other, so a
+// string with no coverage measures exactly as wide as the same number of
+// deliberately-unassigned codepoints. Spaces are dropped from both sides:
+// a space always has a real advance and would mask the comparison.
+function _wxIntroHasGlyphs(s) {
+  try {
+    var cv = _wxIntroHasGlyphs._cv;
+    if (!cv) { cv = _wxIntroHasGlyphs._cv = document.createElement("canvas"); }
+    var cx = cv.getContext("2d");
+    if (!cx) return true;
+    var fam = "";
+    try { fam = getComputedStyle(document.body).fontFamily || ""; } catch (e0) {}
+    cx.font = "48px " + (fam || "sans-serif");
+    var t = String(s).replace(/\s+/g, "");
+    if (!t) return true;
+    var miss = "";
+    for (var i = 0; i < t.length; i++) miss += "\uFFFF";
+    return Math.abs(cx.measureText(t).width - cx.measureText(miss).width) > 0.5;
+  } catch (e) { return true; }
+}
+
+function _wxIntroHtml(frFirst) {
+  var rows = _WX_INTRO_LINES.slice();
+  if (frFirst) {
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].l === 'fr') { rows.unshift(rows.splice(i, 1)[0]); break; }
+    }
+  }
+  var h = '';
+  for (var j = 0; j < rows.length; j++) {
+    var r = rows[j];
+    if (!_wxIntroHasGlyphs(r.t)) continue;
+    h += '<div class="wxc-intro-line" lang="' + r.l + '"'
+       + (r.d === 'rtl' ? ' dir="rtl"' : '') + '>' + r.t + '</div>';
+  }
+  if (!h) return '';
+  // The supplied clip is the BACKDROP, and only that: its own lettering is
+  // English-only and is knocked back by the scrim to read as texture, while
+  // the languages are drawn over it as type. That is the split that makes
+  // both halves work — motion from the clip, words from the board, so the
+  // words can be spelled correctly, ordered French-first, and stay crisp at
+  // whatever size the panel is.
+  //
+  // Six layers, at most one animation each, so nothing fights over transform:
+  // the clip plays, the scrim knocks it back, the panel blooms, the stack
+  // settles out of a tilt, the ink fades up, the block drifts through the
+  // hold, and a light crosses it.
+  return '<div class="wxc-intro" aria-hidden="true">'
+       + '<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" '
+       + 'src="' + _WX_INTRO_BG + '"></video>'
+       + '<i class="wxc-intro-scrim"></i>'
+       + '<i class="wxc-intro-panel"></i>'
+       + '<div class="wxc-intro-stack"><div class="wxc-intro-lines">' + h + '</div></div>'
+       + '<i class="wxc-intro-sheen"></i></div>';
+}
+
+function _wxArmEntrance(wrap) {
+  try {
+    if (!wrap || !wrap.classList) return false;
+    var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
+    if (window._wxEntrancePlayedSeq === seq) return false;   // already played for this visit
+    window._wxEntrancePlayedSeq = seq;
+    try { var _sp = _wxSpeed(); if (_sp !== 1) wrap.style.setProperty('--wxc-t', String(_sp)); } catch (eS) {}
+    // When it started, so a rebuild can resume the sequence rather than end it.
+    window._wxEntranceAt = Date.now();
+    wrap.classList.add('wxc-entering');
+    _wxHoldSceneForIntro(wrap);
+    // The backdrop is paced to the title, not the other way round: whatever
+    // _wxSpeed() does to the six seconds, the same 4.5s of clip is consumed.
+    try {
+      var _bg = wrap.querySelector(':scope > .wxc-intro > video.wxc-intro-bg');
+      if (_bg) {
+        var _introMs = (_WXC_ENTRANCE_INTRO_S || 6) * 1000 * _wxSpeed();
+        _bg.playbackRate = _WX_INTRO_BG_SPAN / (_introMs / 1000);
+        // The card does not always rebuild between visits, so the element can
+        // be the one the last title used. Rewind before playing or the
+        // backdrop opens partway through — past the clean stretch.
+        try { _bg.currentTime = 0; } catch (eT) {}
+        try { _bg.play(); } catch (eP) {}
+        // Stop it when it stops being SEEN, which is the end of the title at
+        // six seconds — not the end of the entrance at eighteen. The overlay
+        // is transparent from then on but stays in the layout, so without
+        // this the clip decodes 1080p for another twelve seconds behind
+        // nothing, on a box that is also encoding a stream.
+        if (window._wxIntroBgTimer) { try { clearTimeout(window._wxIntroBgTimer); } catch (eK) {} }
+        window._wxIntroBgTimer = setTimeout(function () {
+          window._wxIntroBgTimer = null;
+          try { _bg.pause(); } catch (eQ) {}
+          try { _bg.currentTime = 0; } catch (eU) {}
+        }, Math.round(_introMs));
+      }
+    } catch (eR) {}
+    if (window._wxEntranceTimer) { try { clearTimeout(window._wxEntranceTimer); } catch (eC) {} }
+    window._wxEntranceTimer = setTimeout(function () {
+      window._wxEntranceTimer = null;
+      _wxEndEntrance();
+    }, Math.round(_WXC_ENTRANCE_MS * _wxSpeed()));
+    return true;
+  } catch (e) { return false; }
+}
+
 function _renderWxCard(el) {
   try {
     var cf = window._gateCurrentFlight;
@@ -43759,11 +44195,18 @@ function _renderWxCard(el) {
       : '/logos/Backgrounds/video/wx-grass-loop.mp4';
     var _wxVid = '<video class="wxc-vid" autoplay loop muted playsinline preload="auto" '
                + 'src="' + _wxVidSrc + '"></video>';
+    // v23787 — THE TITLE PLAYS OVER THE CARD AS IT ARRIVES.
+    // A six-second title on black. It sits ABOVE every layer, runs once,
+    // and fades out as the card's own sequence comes up underneath it — so
+    // the card is revealed by the title clearing rather than appearing
+    // beside it. It is emitted only while the entrance is arming: on a
+    // re-render mid-slide the card must not replay its own titles.
+    var _wxIntro = _wxWantsIntro() ? _wxIntroHtml(_wxFrF) : '';
     var _wxSceneCls = _wxNightScene ? ' wxc-scene-night' : ' wxc-scene-day';
     // The scene is part of the rebuild signature further down (_wxSig is the
     // whole markup string), so crossing 06:00 or 19:00 swaps the clip on the
     // next render rather than needing its own timer.
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxSceneCls + '">' + _wxVid + _wxMainHtml + _wxStripsHtml + _wxCredit + '</div>';
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxSceneCls + '">' + _wxVid + _wxMainHtml + _wxStripsHtml + _wxCredit + _wxIntro + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
@@ -43813,7 +44256,15 @@ function _renderWxCard(el) {
     //
     // The previous image is kept on disk beside this one, so reverting is this
     // one line.
-    var _wxSkyUrl = '/logos/Backgrounds/wx-sky-beach.jpg';
+    // v23779 — THE NIGHT SCENE IS NOT A DAYLIT BEACH.
+    // The sky plate was one hardcoded image whatever the hour, so a card
+    // flagged night — night video, night palette — still had a bright
+    // midday beach sitting behind it. There is no night photograph in the
+    // repo and inventing one is not this change's job, so at night the
+    // plate is dropped and the deep gradient carries it: the fireflies clip
+    // is then the only thing behind the plates, which is what the scene is
+    // for. Day is untouched.
+    var _wxSkyUrl = _wxNightScene ? '' : '/logos/Backgrounds/wx-sky-beach.jpg';
     // Scrim lightened hard (was .62/.42/.30, top-weighted).
     // — correct, and the reason it was that dark
     // no longer holds. The heavy top existed to keep white text legible where
@@ -43822,8 +44273,12 @@ function _renderWxCard(el) {
     // between tiles. It now does the one job still left — stopping the sky
     // from competing with the plates — at roughly a third of the strength,
     // and no longer leans on the top.
-    var _wxBg = 'linear-gradient(180deg, rgba(4,26,48,0.16) 0%, rgba(4,26,48,0.14) 45%, rgba(4,26,48,0.20) 100%) center/cover no-repeat,'
-              + " url('" + _wxSkyUrl + "') center bottom/cover no-repeat, #1c6fb0";
+    // Night carries a deeper scrim and no photo; day keeps the plate and the
+    // light one it was tuned against.
+    var _wxBg = _wxNightScene
+      ? 'linear-gradient(180deg, rgba(3,14,32,0.55) 0%, rgba(4,20,44,0.42) 45%, rgba(2,10,26,0.62) 100%) center/cover no-repeat, #06152e'
+      : 'linear-gradient(180deg, rgba(4,26,48,0.16) 0%, rgba(4,26,48,0.14) 45%, rgba(4,26,48,0.20) 100%) center/cover no-repeat,'
+        + " url('" + _wxSkyUrl + "') center bottom/cover no-repeat, #1c6fb0";
     try {
       // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
       // same source the media frame reads) — the static AIRLINE_ACCENT table
@@ -43856,6 +44311,10 @@ function _renderWxCard(el) {
         if (_wxWrapT) _wxWrapT.style.setProperty('background', _wxBg, 'important');
         el._wxLastBg = _wxBg;
       }
+      // RE-RENDER PATH 1 — nothing changed but the tint. Asking is harmless:
+      // the visit number is the same one this card already played on, so this
+      // is a no-op. It is here so no path has to know the rule.
+      _wxArmEntrance(el.querySelector('.wxcard-wrap'));
       return true;
     }
     // Strips-only change (late-arriving 7-day/hourly data): swap the strips
@@ -43865,6 +44324,14 @@ function _renderWxCard(el) {
     var _wxWrapP = el.querySelector ? el.querySelector('.wxcard-wrap') : null;
     if (_wxWrapP && el._wxMainHtml === _wxMainHtml) {
       try {
+        // If the entrance is still running, ABANDON IT before the swap.
+        // The two strips about to be inserted would start their delays from
+        // HERE while the removal deadline stayed where it was armed, so they
+        // would be held at the keyframe's opacity:0 and then snap in with no
+        // fade at all — a blank-and-pop of two of the card's three bands,
+        // mid-slide, on a public board. Landing the card whole is the honest
+        // answer, and it is what a gate rebuild does too.
+        if (_wxWrapP.classList && _wxWrapP.classList.contains('wxc-entering')) _wxEndEntrance();
         _wxWrapP.querySelectorAll(':scope > .wxc-strip').forEach(function (n) { n.remove(); });
         // v23724 — PUT THEM BACK WHERE THEY WERE, NOT AT THE END.
         // 'beforeend' appended the strips AFTER the credit, so every
@@ -43878,6 +44345,10 @@ function _renderWxCard(el) {
         el._wxLastHtml = _wxSig;
         if (el._wxLastBg !== _wxBg) { _wxWrapP.style.setProperty('background', _wxBg, 'important'); el._wxLastBg = _wxBg; }
         _wxHydrateSvgs(_wxWrapP);
+        // RE-RENDER PATH 2 — the strips were swapped under an untouched hero.
+        // This fires whenever late 7-day/hourly data lands, which is often, so
+        // it MUST NOT re-arm: the visit number has not moved, so it does not.
+        _wxArmEntrance(_wxWrapP);
         return true;
       } catch (e) {}
     }
@@ -43888,6 +44359,15 @@ function _renderWxCard(el) {
     var _wxWrap = el.querySelector('.wxcard-wrap');
     if (_wxWrap) _wxWrap.style.setProperty('background', _wxBg, 'important');
     _wxHydrateSvgs(el);
+    // RE-RENDER PATH 3 — a full rebuild. This is the path a real arrival takes
+    // (the rotation tick empties the carousel, so there is no wrap to reuse),
+    // and also the path a plain weather-content change takes mid-slide. The
+    // visit number tells the two apart; freshness of the wrap does not.
+    //
+    // Marked synchronously, in the same task as the insert, so the class is on
+    // the wrap before the browser paints — otherwise the card shows complete
+    // for one frame and then snaps back to the start of the sequence.
+    _wxArmEntrance(_wxWrap);
     return true;
   } catch (e) { return false; }
 }

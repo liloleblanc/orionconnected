@@ -64,12 +64,30 @@ test('the video layer beats the rule that would float it over the content', () =
     'is given position:relative/z-index:1 and covers the forecast');
 });
 
-test('the still stays underneath as the fallback', () => {
-  assert.match(SRC, /var _wxSkyUrl = '\/logos\/Backgrounds\/[^']+'/,
-    'the CSS background image must still be set — it is what shows if the ' +
-    'video is blocked or fails to load');
+test('the still stays underneath as the fallback, and it is not a daylit one at night', () => {
+  // The still is what shows if the video is blocked or fails to load, so the
+  // wrap must never be left bare. By DAY that is the sky photograph, as
+  // before. At NIGHT it is a deep gradient over a solid: the only sky plates
+  // in the repo are daytime, and one of them sitting behind a night card was
+  // the reported fault — a bright midday beach under the fireflies clip and a
+  // night palette. A flat night ground is a worse photograph and a far better
+  // answer than the wrong time of day.
+  assert.match(SRC, /var _wxSkyUrl = _wxNightScene \? '' : '\/logos\/Backgrounds\/[^']+'/,
+    'the day plate must still be named, and must be dropped at night');
   assert.match(SRC, /url\('" \+ _wxSkyUrl \+ "'\)/,
-    'and must still be composed into the wrap background');
+    'and must still be composed into the wrap background by day');
+  // Whichever branch runs, something opaque is always underneath.
+  const at = SRC.indexOf('var _wxBg = _wxNightScene');
+  assert.ok(at >= 0, 'the background must branch on the scene');
+  const bg = SRC.slice(at, SRC.indexOf(';', at));
+  const night = bg.slice(0, bg.indexOf(': '));
+  assert.match(night, /linear-gradient\([^)]*rgba\([^)]*\)[^)]*\)/,
+    'the night ground must still be a real gradient, not nothing');
+  assert.match(night, /#[0-9a-f]{6}/i,
+    'and must end in a solid colour, so a failed gradient still leaves the ' +
+    'card opaque rather than showing whatever is behind the carousel');
+  assert.ok(!/wx-sky-beach|wx-sky-spring/.test(night),
+    'no daytime plate may appear on the night branch');
 });
 
 // ── Night / day on the hours strip ───────────────────────────────────────

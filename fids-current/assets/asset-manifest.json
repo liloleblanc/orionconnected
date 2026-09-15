@@ -2,11 +2,11 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2647,
+    "total": 2648,
     "by_category": {
       "ad": 10,
       "airline": 1441,
-      "background": 110,
+      "background": 111,
       "brand": 4,
       "hotel": 884,
       "livery": 96,
@@ -17186,6 +17186,17 @@
       "iata": "",
       "country": "",
       "ext": "jpg"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-title-globe.mp4",
+      "file": "wx-title-globe.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx title globe",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
     },
     {
       "path": "/logos/brand/orion-connected-color.svg",
