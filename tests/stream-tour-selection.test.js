@@ -81,10 +81,25 @@ test('a bare rotate.html with no airport still tours', () => {
 });
 
 test('an airport with no feed is dropped and the tour takes over', () => {
-  // YYZ is deliberately absent from ROSTER (Radware blocks the Worker's egress).
-  const r = select('ap=YYZ&mode=live&stream=1&rotate=fids');
-  assert.ok(!r.aps.includes('YYZ'), 'a dead airport must never be streamed');
+  // v23804 — this used YYZ, which was absent from ROSTER because Toronto
+  // blocked the Worker's egress. That block lifted, YYZ joined the roster, and
+  // this test failed — correctly, because its PREMISE had expired rather than
+  // its subject.
+  //
+  // Substituting another real airport would only move the expiry date: any code
+  // parked for an upstream reason can come back, and this test would rot again
+  // the day it did. ZZZ is not an airport and never will be, so it tests the
+  // rule — a code absent from ROSTER is dropped and the run tours — without
+  // depending on anyone else's bot manager.
+  const r = select('ap=ZZZ&mode=live&stream=1&rotate=fids');
+  assert.ok(!r.aps.includes('ZZZ'), 'a dead airport must never be streamed');
   assert.ok(r.isTour, 'v23432 protection: pointing a stream at a dead airport must still tour');
+  // …and the airport this test used to name is now live, which is the whole
+  // reason it changed. If YYZ ever leaves ROSTER again, that is a regression.
+  const t = select('ap=YYZ&mode=live&stream=1&rotate=fids');
+  assert.ok(t.aps.includes('YYZ'),
+    'YYZ returns 974 rows and belongs in ROSTER — dropping it again would hide ' +
+    'the busiest airport in the country from every picker and every tour');
 });
 
 test('tour=1 still forces the tour, tour=0 still opts out, tour=LIST still works', () => {
