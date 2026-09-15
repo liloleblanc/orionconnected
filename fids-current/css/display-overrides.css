@@ -19611,25 +19611,69 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    Said plainly so the next reader does not take them for a phase anchor and
    "fix" them.
 
-   THE NUMBERS. 0.30 · 0.55 · 0.73 · 0.91 · 1.09, the last band landing at
-   1.51s. Two constraints set them:
+   THE NUMBERS. 0.75 · 0.98 · 1.14 · 1.30 · 1.46, the last band landing at
+   1.84s. Two constraints set them:
 
      · The whole sequence has to be well inside the slide's dwell, which is 22s
-       at minimum. 1.51s is, comfortably.
-     · The 0.30s lead-in is not padding. On a real slide change the carousel
-       lifts the OUTGOING slide into an overlay and dissolves it over this card
-       across 0.95s (fids-core.js, the _tick crossfade), so a sequence starting
-       at zero spends its opening under a cover. 0.30s buys the video's fade a
-       mostly-clear frame. Waiting out the full 0.95s was the other option and
-       was rejected: it puts the credit past 2.2s, and the card is then still
-       assembling long after the slide change has finished.
+       at minimum. 1.84s is, comfortably.
+     · THE LEAD-IN IS SET BY THE CROSSFADE, AND THE FIRST VERSION HAD THE
+       ARITHMETIC WRONG. On a real slide change the carousel lifts the OUTGOING
+       slide into an overlay and dissolves it over this card — `transition:
+       opacity 0.95s ease-in-out`, driven to 0 in the same task as the render
+       (fids-core.js, the _tick crossfade). Both clocks therefore start on the
+       same frame, and the cover's opacity is 1 − easeInOut(t / 0.95):
 
-   TWO KEYFRAMES, NOT FIVE. The four content bands share wxcArrive and differ
-   only by delay. The video cannot use it: it is an inset:0 / object-fit:cover
-   layer behind everything, and a translateY on a layer that exactly covers its
-   box slides its own edge into frame. It gets wxcArriveVid — a fade with a
-   slight scale settle, which over-covers rather than under-covers — and lands
-   on scale(1), so it is never left mid-transform under the content.
+           t = 0.30s → 0.79     t = 0.55s → 0.37     t = 0.75s → 0.09
+
+       The first cut opened the video at 0.30s and called that "a mostly-clear
+       frame". It is not: at 0.30s the panel is still 79% the PREVIOUS slide,
+       and the video's whole 0.50s fade finished while the cover was still
+       coming down. The beat the owner named first had no visible window at
+       all — the first stage anyone could actually see was the hero.
+
+       So the sequence now opens at 0.75s, where the cover is under a tenth and
+       the video's fade happens in the clear, and the four bands follow at 0.16s
+       apart. The credit lands at 1.84s, which is still under a tenth of the
+       slide's 22s floor. Waiting the full 0.95s was the other option and buys
+       nothing the eye can tell apart from 0.75s while costing 0.2s of tail.
+
+   THREE KEYFRAMES, NOT FIVE — AND THE THIRD IS A CASCADE FIX, NOT A DESIGN
+   CHOICE. The top, NEXT HOURS and the 5-day band share wxcArrive and differ
+   only by delay. Two layers cannot use it:
+
+     · THE VIDEO. It is an inset:0 / object-fit:cover layer behind everything,
+       and a translateY on a layer that exactly covers its box slides its own
+       edge into frame. It gets wxcArriveVid — a fade with a slight scale
+       settle, which over-covers rather than under-covers — and lands on
+       scale(1), so it is never left mid-transform under the content.
+
+     · THE CREDIT, because an animation CANNOT fade it. Two rules already in
+       this file pin the MET attribution's opacity with !important — the
+       readability fix on `.wxc-credit, .wxc-credit *` and the foot-of-card
+       layout rule on `.wxcard-wrap .wxc-credit`. In the cascade an important
+       author declaration outranks the ANIMATION origin outright (Cascading
+       L4 §6.1), so the `opacity: 0 → 1` inside a keyframe is simply discarded
+       for this element. Weight is no lever here: 241 × :not(#_) against their
+       48 changes nothing, because the loss is by ORIGIN, not by specificity.
+       The first cut animated the credit anyway, so only its translate applied
+       — the attribution line sat fully opaque from frame 0, 16px low, on an
+       otherwise empty panel, and then jumped. The last beat of the sequence
+       was the first thing on screen.
+
+       This file is append-only, so those two rules cannot be removed. The fade
+       is therefore re-declared AT !important LEVEL and driven by a registered
+       custom property: `opacity: var(--wxc-fade, 1) !important` on the entering
+       credit, with wxcArriveCredit animating --wxc-fade from 0 to 1 alongside
+       the translate. @property gives it syntax '<number>' so it interpolates,
+       and initial-value 1 so the at-rest credit is opaque — the no-hidden-at-
+       rest guarantee survives. On a browser with no @property support the var
+       falls back to 1 and the credit simply does not fade, which is exactly
+       today's behaviour and still visible.
+
+       .wxc-credit is the ONLY staged layer in this state; the other four carry
+       no important opacity anywhere in the file. There is a test that re-checks
+       that for all five, so a layer that acquires a pin later fails loudly
+       instead of silently losing its stage.
 
    Transform and opacity only, per the rule this file has kept since the
    background-position measurement at the g8FgDrift note: those two composite
@@ -19640,6 +19684,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    Every selector below names its layer as a direct child, so there is no
    wildcard that could sweep the decoy in.
    ═══════════════════════════════════════════════════════════════════════════ */
+/* Registered so it INTERPOLATES. An unregistered custom property animates
+   discretely — it would flip at the halfway mark instead of fading. The
+   initial value is 1, so a credit that never enters is opaque. */
+@property --wxc-fade {
+  syntax: '<number>';
+  inherits: false;
+  initial-value: 1;
+}
 @keyframes wxcArrive {
   from { opacity: 0; transform: translate3d(0, 16px, 0); }
   to   { opacity: 1; transform: translate3d(0, 0, 0); }
@@ -19648,34 +19700,46 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   from { opacity: 0; transform: scale(1.035); }
   to   { opacity: 1; transform: scale(1); }
 }
+/* Same motion as wxcArrive, but the fade rides --wxc-fade because an
+   animation's own opacity loses to the two !important pins on this element.
+   See the CREDIT paragraph above. */
+@keyframes wxcArriveCredit {
+  from { --wxc-fade: 0; transform: translate3d(0, 16px, 0); }
+  to   { --wxc-fade: 1; transform: translate3d(0, 0, 0); }
+}
 /* the ground opens on its own */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-entering > video.wxc-vid {
-  animation: wxcArriveVid .50s cubic-bezier(.22, .61, .36, 1) both !important;
-  animation-delay: .30s !important;
+  animation: wxcArriveVid .45s cubic-bezier(.22, .61, .36, 1) both !important;
+  animation-delay: .75s !important;
   will-change: transform, opacity !important;
 }
 /* then the top */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-entering > .wxcard-main {
-  animation: wxcArrive .42s cubic-bezier(.22, .61, .36, 1) both !important;
-  animation-delay: .55s !important;
+  animation: wxcArrive .38s cubic-bezier(.22, .61, .36, 1) both !important;
+  animation-delay: .98s !important;
   will-change: transform, opacity !important;
 }
 /* then NEXT HOURS */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-entering > .wxc-strip:not(.wxcard-outlook) {
-  animation: wxcArrive .42s cubic-bezier(.22, .61, .36, 1) both !important;
-  animation-delay: .73s !important;
+  animation: wxcArrive .38s cubic-bezier(.22, .61, .36, 1) both !important;
+  animation-delay: 1.14s !important;
   will-change: transform, opacity !important;
 }
 /* then the 5-day band */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-entering > .wxcard-outlook {
-  animation: wxcArrive .42s cubic-bezier(.22, .61, .36, 1) both !important;
-  animation-delay: .91s !important;
+  animation: wxcArrive .38s cubic-bezier(.22, .61, .36, 1) both !important;
+  animation-delay: 1.30s !important;
   will-change: transform, opacity !important;
 }
 /* and the credit last */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxcard-wrap.wxc-entering > .wxc-credit {
-  animation: wxcArrive .42s cubic-bezier(.22, .61, .36, 1) both !important;
-  animation-delay: 1.09s !important;
+  animation: wxcArriveCredit .38s cubic-bezier(.22, .61, .36, 1) both !important;
+  animation-delay: 1.46s !important;
+  /* NOT decoration. Two !important rules earlier in this file pin this
+     element's opacity, and an important author declaration outranks the
+     animation origin — so the fade has to be re-declared here, at the same
+     importance and a heavier chain, reading the animated custom property. */
+  opacity: var(--wxc-fade, 1) !important;
   will-change: transform, opacity !important;
 }
 /* An entrance is motion for its own sake, and motion for its own sake is the
@@ -19690,5 +19754,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+    /* The credit's opacity reads the custom property, so switching the
+       animation off has to assert the property as well as the opacity —
+       otherwise the one layer that does not fade by ordinary means is the
+       one layer reduced motion fails to restore. */
+    --wxc-fade: 1 !important;
   }
 }

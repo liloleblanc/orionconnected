@@ -17874,6 +17874,21 @@ const gView = document.getElementById('gateView');
         // Re-attach the preserved ad carousel BEFORE autofit/paint so the
         // playing video is never interrupted and the slot is never empty.
         var _newAd = document.getElementById('gateAdCarousel');
+        // v23777 — A REBUILD ABANDONS THE WEATHER CARD'S ENTRANCE.
+        // Re-inserting a node restarts its CSS animations (the v23166 note in
+        // display-overrides measured that on this very carousel). The weather
+        // card's five stages are staggered by animation-delay against a
+        // deadline that is absolute from the arm, so a rebuild landing inside
+        // the window would replay all five from zero and then have the class
+        // stripped part-way through — the later bands still at opacity 0.
+        // Nothing here is re-entered to notice: the carousel is preserved with
+        // its children, so startGateAds' refill sees a non-empty element and
+        // _renderWxCard is never called. Strip the mark instead, and the card
+        // comes back whole.
+        try {
+          if (_savedAd && typeof _wxEndEntrance === 'function'
+              && _savedAd.querySelector('.wxcard-wrap.wxc-entering')) _wxEndEntrance(_savedAd);
+        } catch (eWx) {}
         if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
         var _newAdLogo = document.getElementById('gateAdLogo');
         if (_savedAdLogo && _newAdLogo) { _newAdLogo.replaceWith(_savedAdLogo); }
@@ -24984,7 +24999,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23777';
+var FIDS_BUILD_TAG = 'v23778';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39895,6 +39910,18 @@ function renderGateAd(index) {
         if (slides[_pi] && String(slides[_pi].type || '').toLowerCase() === String(_pin).toLowerCase()) { _pinIdx = _pi; break; }
       }
       if (_pinIdx >= 0) {
+        // v23777 — A PINNED SCENE STILL ARRIVES.
+        // The pin stamps the slot itself, so from the counter's point of view
+        // the parked slide never changes and never re-arrives: the weather
+        // card's entrance played once at first paint and then never again for
+        // the life of the page, while the rotation tick went on crossfading
+        // the card to an identical, un-animated copy of itself every 22s.
+        // Since ?scene= exists to review a scene, and the thing under review
+        // here is an entrance, an authorised tick under the pin counts as an
+        // arrival. Inert without the query string, like the rest of this block.
+        if (window._gateAdAuthChange) {
+          window._gateAdVisitSeq = (window._gateAdVisitSeq || 0) + 1;
+        }
         slot = _pinIdx; _gateAdIndex = _pinIdx; window._gateAdCurrentIdx = _pinIdx;
         // A pinned scene can be asked for before its data exists — the weather
         // card returns false until the forecast lands, and the dispatcher's
@@ -39959,14 +39986,27 @@ function renderGateAd(index) {
   //   2. The first paint of the session, when no slot has ever been shown.
   //      That is a genuine arrival and it cannot recur.
   //
-  // Deliberately NOT counted: an empty carousel element. A gate rebuild hands
-  // this function a fresh, childless element several times a minute while the
-  // SAME slide stays on screen — keying off emptiness is exactly the replay
-  // this counter exists to prevent.
+  // Deliberately NOT counted: an empty carousel element. Emptiness is a fact
+  // about the DOM, not about the deck, and the two come apart constantly.
   //
-  // The counter lives on `window`, not on the element, for the same reason: a
-  // rebuild throws the element away, and a per-element flag would come back
-  // blank and re-arm.
+  // WHAT A GATE REBUILD ACTUALLY DOES — worth stating plainly, because the
+  // first version of this note had it backwards and pointed the next reader
+  // away from the only event that really breaks the entrance. The rebuild
+  // PRESERVES the live carousel: it lifts #gateAdCarousel out of the DOM
+  // before the innerHTML wipe and puts that same element back afterwards,
+  // children and element properties and all. So nothing here is re-entered —
+  // startGateAds' refill only repaints when the element is childless, and
+  // after a preserving rebuild it is not. The element is only rebuilt fresh
+  // and childless on a real CARRIER change, which re-indexes the deck to slot
+  // 0 with its own authorised render, so the weather slide is not up for it.
+  //
+  // That is exactly why the entrance cannot be left to CSS alone: the
+  // detach/re-attach restarts every animation on the card underneath a
+  // trigger that never fires. The gate render strips the mark on the way
+  // back in; see the note at the re-attach.
+  //
+  // The counter lives on `window` on its own merit — it is a fact about the
+  // carousel, not about any one card, and it has to outlive both.
   //
   // _prevShownSlot is read at the top of this function, ahead of the scene pin.
   if (typeof _prevShownSlot !== 'number'
@@ -43318,17 +43358,73 @@ function _renderHeritageCard(el) {
 //
 // The class is stripped once the sequence is over, which is what keeps a LATE
 // strips-only refresh from replaying those two bands minutes into the slide.
-// A strips-only refresh landing DURING the sequence does let the two new
-// strips play their own entry from where they are inserted — they are new
-// nodes arriving, so that is honest rather than a replay, and the window for
-// it is the first 1.7s of a 22s-minimum slide.
+//
+// ANY DOM CHURN DURING THE SEQUENCE ABANDONS IT — ONE RULE, TWO PLACES.
+// The first cut let a mid-sequence change ride, on the reasoning that new
+// nodes arriving is honest rather than a replay. The arithmetic says
+// otherwise: the removal deadline is absolute from the arm, while every
+// animation's delay restarts from its own node's insertion.
+//
+//   · A strips-only refresh at t=1.0s restarts both strips from there, so
+//     NEXT HOURS would not begin until 2.14s — but the class comes off at
+//     2.05s. Neither animation ever starts. Both bands hold the keyframe's
+//     opacity:0 through the backwards fill and then snap in, so two thirds of
+//     the card is blank for a second and then pops.
+//   · A gate rebuild is worse. It DETACHES the live carousel and re-attaches
+//     it to survive the innerHTML wipe, and re-inserting a node restarts its
+//     CSS animations — the same fact the v23166 note in display-overrides
+//     records, where it turned the largest panel on the screen into a navy
+//     rectangle on every rebuild. All five stages would replay from zero
+//     against a deadline that did not move, leaving the card blank at the
+//     moment the class was stripped.
+//
+// So both paths call _wxEndEntrance() instead and the card lands WHOLE. A
+// part-faded band snapping to full is a far smaller fault than two bands
+// blanking, and it is the same answer the fallback rule below gives.
 //
 // FALLBACK: if this never runs, the card is fully visible. Nothing is hidden
 // at rest — the only opacity:0 in the whole family is inside the keyframes,
 // held during the delay by animation-fill-mode, and reachable only while the
 // class is on the wrap. A weather card that misses its trigger is unanimated,
 // never invisible, which on a public display is the only acceptable way round.
-var _WXC_ENTRANCE_MS = 1700;   // last band lands at 1.51s; slack, then strip
+var _WXC_ENTRANCE_MS = 2050;   // last band lands at 1.84s; slack, then strip
+
+// Ends the sequence wherever it has got to, and cancels the deadline.
+//
+// Deliberately NOT scoped to a wrap. The timer used to close over the one
+// wrap it was armed for, out of a single global slot — so a second arm inside
+// the window cleared the first timer and left the EARLIER wrap marked with
+// nothing left to strip it. Nothing reaches that today (the shortest gap
+// between two authorised slot changes is well outside the window), but a
+// stranded class plus a later detach/re-attach is the one outcome this whole
+// design exists to prevent: animations restarting with no deadline to end
+// them, holding the bands at opacity 0 for as long as the card is up.
+// Clearing by selector costs the same and cannot strand anything.
+//
+// `root` is for the one caller that needs it: the gate rebuild hands us the
+// carousel while it is DETACHED, and a detached subtree is not reachable from
+// document. Callers with a live card pass nothing.
+function _wxEndEntrance(root) {
+  try {
+    if (window._wxEntranceTimer) { try { clearTimeout(window._wxEntranceTimer); } catch (eC) {} }
+    window._wxEntranceTimer = null;
+    var roots = [document];
+    if (root && root.querySelectorAll) roots.push(root);
+    for (var r = 0; r < roots.length; r++) {
+      var marked = roots[r].querySelectorAll('.wxcard-wrap.wxc-entering');
+      for (var i = 0; i < marked.length; i++) {
+        try { marked[i].classList.remove('wxc-entering'); } catch (eR) {}
+      }
+      // querySelectorAll does not match the root itself.
+      try {
+        if (roots[r].classList && roots[r].classList.contains('wxc-entering')
+            && roots[r].classList.contains('wxcard-wrap')) roots[r].classList.remove('wxc-entering');
+      } catch (eS) {}
+    }
+    return true;
+  } catch (e) { return false; }
+}
+
 function _wxArmEntrance(wrap) {
   try {
     if (!wrap || !wrap.classList) return false;
@@ -43339,7 +43435,7 @@ function _wxArmEntrance(wrap) {
     if (window._wxEntranceTimer) { try { clearTimeout(window._wxEntranceTimer); } catch (eC) {} }
     window._wxEntranceTimer = setTimeout(function () {
       window._wxEntranceTimer = null;
-      try { wrap.classList.remove('wxc-entering'); } catch (eR) {}
+      _wxEndEntrance();
     }, _WXC_ENTRANCE_MS);
     return true;
   } catch (e) { return false; }
@@ -43972,6 +44068,14 @@ function _renderWxCard(el) {
     var _wxWrapP = el.querySelector ? el.querySelector('.wxcard-wrap') : null;
     if (_wxWrapP && el._wxMainHtml === _wxMainHtml) {
       try {
+        // If the entrance is still running, ABANDON IT before the swap.
+        // The two strips about to be inserted would start their delays from
+        // HERE while the removal deadline stayed where it was armed, so they
+        // would be held at the keyframe's opacity:0 and then snap in with no
+        // fade at all — a blank-and-pop of two of the card's three bands,
+        // mid-slide, on a public board. Landing the card whole is the honest
+        // answer, and it is what a gate rebuild does too.
+        if (_wxWrapP.classList && _wxWrapP.classList.contains('wxc-entering')) _wxEndEntrance();
         _wxWrapP.querySelectorAll(':scope > .wxc-strip').forEach(function (n) { n.remove(); });
         // v23724 — PUT THEM BACK WHERE THEY WERE, NOT AT THE END.
         // 'beforeend' appended the strips AFTER the credit, so every
