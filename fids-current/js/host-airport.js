@@ -61,6 +61,11 @@
       // Only as the DEFAULT. An explicit ?ap= is the caller saying what they
       // want, and it must keep winning.
       try { sessionStorage.setItem('fids_airport', code); } catch (e) {}
+      // The ADDRESS is the request. A board reached this way must not quietly
+      // become a tour of other airports when this one has no feed — the URL
+      // would say one airport and the screen would show another. Read by the
+      // dead-board rescue in fids-core.js.
+      window.__ocFromHost = code;
     }
     // Exposed so a board, a test or the console can ask the same question
     // rather than re-implementing the parse — which is how the studio's copy
