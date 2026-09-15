@@ -28,7 +28,9 @@ const ROOT = path.resolve(__dirname, '..');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
 
 const AT = CSS.lastIndexOf('v23790 — THE AIRCRAFT TYPE STOPS BEING SEVERED');
-const BLOCK = AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', AT)) : '';
+const START = AT >= 0 ? CSS.lastIndexOf('/*', AT) : -1;
+const NEXT = START >= 0 ? CSS.indexOf('/* ══', AT) : -1;
+const BLOCK = START >= 0 ? CSS.slice(START, NEXT > START ? NEXT : undefined) : '';
 
 /** The declarations of the first rule whose selector ends with `tail`. */
 function ruleFor(tail) {

@@ -25045,7 +25045,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23793';
+var FIDS_BUILD_TAG = 'v23795';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44319,7 +44319,12 @@ function _renderWxCard(el) {
     // plate is dropped and the deep gradient carries it: the fireflies clip
     // is then the only thing behind the plates, which is what the scene is
     // for. Day is untouched.
-    var _wxSkyUrl = _wxNightScene ? '' : '/logos/Backgrounds/wx-sky-beach.jpg';
+    // v23795 — NO BEACH. A holiday shoreline behind an airport's weather is
+    // the wrong picture, and it was only ever there in daylight: v23779
+    // already dropped it at night and let the gradient carry the card. This
+    // extends that decision to day for the same reason, rather than leaving
+    // the card two different things depending on the hour. The file stays on
+    // disk; restoring it is this declaration and the layer below.
     // Scrim lightened hard (was .62/.42/.30, top-weighted).
     // — correct, and the reason it was that dark
     // no longer holds. The heavy top existed to keep white text legible where
@@ -44332,8 +44337,7 @@ function _renderWxCard(el) {
     // light one it was tuned against.
     var _wxBg = _wxNightScene
       ? 'linear-gradient(180deg, rgba(3,14,32,0.55) 0%, rgba(4,20,44,0.42) 45%, rgba(2,10,26,0.62) 100%) center/cover no-repeat, #06152e'
-      : 'linear-gradient(180deg, rgba(4,26,48,0.16) 0%, rgba(4,26,48,0.14) 45%, rgba(4,26,48,0.20) 100%) center/cover no-repeat,'
-        + " url('" + _wxSkyUrl + "') center bottom/cover no-repeat, #1c6fb0";
+      : 'linear-gradient(180deg, rgba(6,40,78,0.34) 0%, rgba(14,80,140,0.14) 46%, rgba(5,34,68,0.42) 100%) center/cover no-repeat, #1c6fb0';
     try {
       // Use the LIVE gate theme (the .g8-wrap inline --airline-accent var,
       // same source the media frame reads) — the static AIRLINE_ACCENT table

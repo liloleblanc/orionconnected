@@ -64,30 +64,44 @@ test('the video layer beats the rule that would float it over the content', () =
     'is given position:relative/z-index:1 and covers the forecast');
 });
 
-test('the still stays underneath as the fallback, and it is not a daylit one at night', () => {
-  // The still is what shows if the video is blocked or fails to load, so the
-  // wrap must never be left bare. By DAY that is the sky photograph, as
-  // before. At NIGHT it is a deep gradient over a solid: the only sky plates
-  // in the repo are daytime, and one of them sitting behind a night card was
-  // the reported fault — a bright midday beach under the fireflies clip and a
-  // night palette. A flat night ground is a worse photograph and a far better
-  // answer than the wrong time of day.
-  assert.match(SRC, /var _wxSkyUrl = _wxNightScene \? '' : '\/logos\/Backgrounds\/[^']+'/,
-    'the day plate must still be named, and must be dropped at night');
-  assert.match(SRC, /url\('" \+ _wxSkyUrl \+ "'\)/,
-    'and must still be composed into the wrap background by day');
-  // Whichever branch runs, something opaque is always underneath.
+test('something opaque is always underneath, and it is never a photograph', () => {
+  // The ground is what shows if the video is blocked or fails to load, so the
+  // wrap must never be left bare.
+  //
+  // v23779 dropped the daytime sky photograph at NIGHT, because the only sky
+  // plates in the repo are daylit and one of them sitting under the fireflies
+  // clip was the reported fault. v23795 drops it by day too: a holiday
+  // shoreline behind an airport's weather is the wrong picture at any hour,
+  // and leaving it on one branch made the card two different things depending
+  // on the time. Both branches are now a gradient over a solid.
+  //
+  // The file is still on disk. What this test pins is that nothing composes a
+  // photograph back into the card without someone deciding to.
+  assert.ok(!/_wxSkyUrl\s*=/.test(SRC),
+    'the sky-plate variable must be gone, not merely emptied — an empty one ' +
+    "composes url('') into the background and takes the whole declaration " +
+    'with it');
+  assert.ok(!/url\('\" \+ _wx\w*SkyUrl/.test(SRC),
+    'and nothing may compose it back in');
+
   const at = SRC.indexOf('var _wxBg = _wxNightScene');
   assert.ok(at >= 0, 'the background must branch on the scene');
   const bg = SRC.slice(at, SRC.indexOf(';', at));
   const night = bg.slice(0, bg.indexOf(': '));
-  assert.match(night, /linear-gradient\([^)]*rgba\([^)]*\)[^)]*\)/,
-    'the night ground must still be a real gradient, not nothing');
-  assert.match(night, /#[0-9a-f]{6}/i,
-    'and must end in a solid colour, so a failed gradient still leaves the ' +
-    'card opaque rather than showing whatever is behind the carousel');
-  assert.ok(!/wx-sky-beach|wx-sky-spring/.test(night),
-    'no daytime plate may appear on the night branch');
+  const day = bg.slice(bg.indexOf(': '));
+
+  for (const [name, branch] of [['night', night], ['day', day]]) {
+    assert.match(branch, /linear-gradient\([^)]*rgba\([^)]*\)[^)]*\)/,
+      `the ${name} ground must be a real gradient, not nothing`);
+    assert.match(branch, /#[0-9a-f]{6}/i,
+      `the ${name} ground must end in a solid colour, so a failed gradient ` +
+      'still leaves the card opaque rather than showing the carousel behind it');
+    assert.ok(!/\.jpg|\.png|\.webp/i.test(branch),
+      `no photograph may be composed into the ${name} ground`);
+  }
+  // …and the two branches must still differ, or the night work is undone
+  assert.notEqual(night.trim(), day.trim(),
+    'night and day share a shape now, but they are not the same ground');
 });
 
 // ── Night / day on the hours strip ───────────────────────────────────────
