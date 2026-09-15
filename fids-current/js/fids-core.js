@@ -15001,7 +15001,15 @@ function uxgGateHtml(ctx) {
             // above); showing it here as well would put the same logo on the
             // banner twice, a few centimetres apart.
             if (i === 'YQM') return '';
-            var ic = /^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i);
+            // v23806 — THE ICAO IS DERIVED, AND THE DERIVATION ONLY KNOWS
+            // NORTH AMERICA. Y-prefix means Canada and anything else
+            // three letters gets a K, which is right for YQM and DCA and
+            // wrong for every airport we serve outside the continent:
+            // ZRH would look for KZRH, LHR for KLHR, SYD for KSYD. It has
+            // never shown because none of them had a mark. Sydney is the
+            // first, so the exceptions are named rather than guessed.
+            var ic = (FIDS_ICAO_EXCEPTIONS[i])
+                   || (/^Y/.test(i) ? ('C' + i) : (i.length === 3 ? ('K' + i) : i));
             return '<span class="g8-r1-apmark" style="visibility:hidden;">'
               // v23456 — PREFER A VECTOR MARK, FALL BACK TO THE PNG.
               // the owner drew YQM's mark as an SVG; a vector stays crisp at every
@@ -32439,6 +32447,16 @@ document.addEventListener('click', function(e) {
 // blocks the Worker's datacenter IP — they answer 429, so they are NOT live:
 // YVR, MAN, DCA, IAD. tests/live-airports.test.js keeps this in step with the
 // worker; adding a handler there fails the suite until the code lands here.
+// Airports whose ICAO cannot be derived from the IATA code. The rule below —
+// Y means Canada, otherwise prefix K — covers North America and nothing else.
+// Only codes we actually serve are listed; a missing one falls back to the
+// rule, which is what happened before this existed.
+const FIDS_ICAO_EXCEPTIONS = {
+  SYD: 'YSSY',   // Sydney Kingsford Smith — S, so the K rule would claim it
+  LHR: 'EGLL', DUB: 'EIDW', EDI: 'EGPH', KEF: 'BIKF', ZRH: 'LSZH'
+};
+try { if (typeof window !== 'undefined') window.FIDS_ICAO_EXCEPTIONS = FIDS_ICAO_EXCEPTIONS; } catch (e) {}
+
 const FIDS_LIVE_AIRPORTS = new Set([
   // v23804 — YYZ, at last. It was held out because Toronto's bot manager
   // blocked the Worker's datacenter IP and /flights/yyz answered {"list":[]}.
