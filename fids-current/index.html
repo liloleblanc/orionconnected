@@ -1,6 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- v23803 — orionconnected.app IS THE APP.
+       This page is the opener: it paints, then replaces itself with a board.
+       On the .app domain it should hand over to the Airport Companion instead.
+       Done here rather than in the Worker because static assets are served
+       BEFORE the Worker runs — no run_worker_first — so the Worker never sees
+       a request for "/" at all and cannot route on the Host header.
+
+       First in the head, ahead of even the theme resolve: on .app the theme
+       belongs to the page we are leaving, and reading it first only delays the
+       handover by a frame. -->
+  <script>
+  (function () {
+    try {
+      var h = String(location.hostname || "").toLowerCase();
+      if (h === "orionconnected.app" || h === "www.orionconnected.app") {
+        // replace(), not assign(): the opener must not sit in history, or Back
+        // from the app lands on a page whose only job is to leave again.
+        location.replace("/app" + location.search + location.hash);
+      }
+    } catch (e) {}
+  })();
+  </script>
+
   <!-- v23161 — BOOT THEME RESOLVES BEFORE FIRST PAINT. Same treatment as
        fids/gids/bids. This page was missed in v23159, and it is the page a
        display actually OPENS on: index.html paints, then location.replace()s to
