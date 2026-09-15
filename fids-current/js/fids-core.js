@@ -24984,7 +24984,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23776';
+var FIDS_BUILD_TAG = 'v23777';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39871,6 +39871,13 @@ function renderGateAd(index) {
   var totalSlots = slides.length;
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
 
+  // v23777 — WHAT WAS ON SCREEN WHEN THIS CALL BEGAN. Read here, and not at
+  // the visit counter further down that consumes it, because the scene pin
+  // immediately below writes window._gateAdCurrentIdx itself: reading it after
+  // that made a pinned board's FIRST paint look like a repaint, and the one
+  // thing ?scene=wx exists for is looking at that card.
+  var _prevShownSlot = window._gateAdCurrentIdx;
+
   // ── SCENE PIN (?scene=) — REVIEW AID, OFF UNLESS ASKED FOR ─────────────
   // The centre panel cycles every few minutes, which makes reviewing any one
   // scene a matter of waiting for it to come round again. With ?scene=wx (or
@@ -39932,7 +39939,40 @@ function renderGateAd(index) {
   // Record what the carousel is ACTUALLY showing. Async repaint callbacks
   // (hotel-photo fetches) read this; before it was stamped they fell back
   // to slide 0 and hijacked the carousel mid-ad
-  // 
+  //
+  // v23777 — A SLIDE VISIT IS AN ARRIVAL, NOT A REPAINT.
+  //
+  // The weather card's staged entrance has to run when the card BECOMES
+  // VISIBLE, once, and nothing here answered that question. renderGateAd is
+  // called many times per slide — the gate rebuilds its DOM on telemetry
+  // ticks and repaints whatever is showing — so "the card was just rendered"
+  // and "the card just arrived" are different facts, and an entrance keyed on
+  // the first would re-assemble the card in front of a reader every few
+  // seconds.
+  //
+  // A visit is counted on exactly two events:
+  //
+  //   1. An AUTHORISED move to a different slot. The rotation tick and the pin
+  //      recovery are the only callers allowed to change which slide is on
+  //      screen, and both announce themselves with _gateAdAuthChange — the
+  //      same flag the slide lock above already trusts.
+  //   2. The first paint of the session, when no slot has ever been shown.
+  //      That is a genuine arrival and it cannot recur.
+  //
+  // Deliberately NOT counted: an empty carousel element. A gate rebuild hands
+  // this function a fresh, childless element several times a minute while the
+  // SAME slide stays on screen — keying off emptiness is exactly the replay
+  // this counter exists to prevent.
+  //
+  // The counter lives on `window`, not on the element, for the same reason: a
+  // rebuild throws the element away, and a per-element flag would come back
+  // blank and re-arm.
+  //
+  // _prevShownSlot is read at the top of this function, ahead of the scene pin.
+  if (typeof _prevShownSlot !== 'number'
+      || (window._gateAdAuthChange && _prevShownSlot !== slot)) {
+    window._gateAdVisitSeq = (window._gateAdVisitSeq || 0) + 1;
+  }
   window._gateAdCurrentIdx = slot;
   // Every special/full-motion scene starts clean; the eligible static paths
   // below opt back in explicitly. This prevents a class from the prior slide
@@ -43242,6 +43282,69 @@ function _renderHeritageCard(el) {
   } catch (e) { return false; }
 }
 
+// ══ v23777 — THE WEATHER CARD ARRIVES IN ORDER ═══════════════════════════
+//
+// Asked for: the card should not appear all at once. The video opens on its
+// own, then the top, then NEXT HOURS, then the 5-day band, then the credit.
+//
+// The stagger itself is CSS (display-overrides.css, "THE WEATHER CARD ARRIVES
+// IN ORDER"): one keyframe for the four content bands plus per-band
+// animation-delay, and a second, scale-only keyframe for the video, which
+// cannot take the bands' small rise without sliding its own cover edge into
+// frame. This function is the other half — the part that decides WHEN.
+//
+// The hard problem is not the motion, it is the trigger, because this card
+// re-renders constantly and under its own power:
+//
+//   · an unchanged-signature early return that only re-tints,
+//   · a strips-only swap when late hourly/7-day data lands, which removes and
+//     re-inserts both strips under an untouched hero,
+//   · a full innerHTML rebuild whenever the weather content changes,
+//
+// and on top of those the gate rebuilds its DOM on telemetry ticks. An
+// entrance keyed on "the wrap is new" or "the class is absent" replays on
+// every one of them, and the card is then seen assembling itself over and
+// over in the middle of its own slide.
+//
+// So the entrance is keyed on the CAROUSEL VISIT instead (see the counter in
+// renderGateAd): the sequence plays once per arrival of the weather slide and
+// cannot play again until the slide has genuinely left and come back. Both
+// the counter and the played-marker are on `window`, so a gate rebuild —
+// which discards the carousel element — cannot reset either.
+//
+// All three render paths call this. None of them has to reason about the
+// entrance: the visit number decides, and asking twice for the same visit is
+// a no-op.
+//
+// The class is stripped once the sequence is over, which is what keeps a LATE
+// strips-only refresh from replaying those two bands minutes into the slide.
+// A strips-only refresh landing DURING the sequence does let the two new
+// strips play their own entry from where they are inserted — they are new
+// nodes arriving, so that is honest rather than a replay, and the window for
+// it is the first 1.7s of a 22s-minimum slide.
+//
+// FALLBACK: if this never runs, the card is fully visible. Nothing is hidden
+// at rest — the only opacity:0 in the whole family is inside the keyframes,
+// held during the delay by animation-fill-mode, and reachable only while the
+// class is on the wrap. A weather card that misses its trigger is unanimated,
+// never invisible, which on a public display is the only acceptable way round.
+var _WXC_ENTRANCE_MS = 1700;   // last band lands at 1.51s; slack, then strip
+function _wxArmEntrance(wrap) {
+  try {
+    if (!wrap || !wrap.classList) return false;
+    var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
+    if (window._wxEntrancePlayedSeq === seq) return false;   // already played for this visit
+    window._wxEntrancePlayedSeq = seq;
+    wrap.classList.add('wxc-entering');
+    if (window._wxEntranceTimer) { try { clearTimeout(window._wxEntranceTimer); } catch (eC) {} }
+    window._wxEntranceTimer = setTimeout(function () {
+      window._wxEntranceTimer = null;
+      try { wrap.classList.remove('wxc-entering'); } catch (eR) {}
+    }, _WXC_ENTRANCE_MS);
+    return true;
+  } catch (e) { return false; }
+}
+
 function _renderWxCard(el) {
   try {
     var cf = window._gateCurrentFlight;
@@ -43856,6 +43959,10 @@ function _renderWxCard(el) {
         if (_wxWrapT) _wxWrapT.style.setProperty('background', _wxBg, 'important');
         el._wxLastBg = _wxBg;
       }
+      // RE-RENDER PATH 1 — nothing changed but the tint. Asking is harmless:
+      // the visit number is the same one this card already played on, so this
+      // is a no-op. It is here so no path has to know the rule.
+      _wxArmEntrance(el.querySelector('.wxcard-wrap'));
       return true;
     }
     // Strips-only change (late-arriving 7-day/hourly data): swap the strips
@@ -43878,6 +43985,10 @@ function _renderWxCard(el) {
         el._wxLastHtml = _wxSig;
         if (el._wxLastBg !== _wxBg) { _wxWrapP.style.setProperty('background', _wxBg, 'important'); el._wxLastBg = _wxBg; }
         _wxHydrateSvgs(_wxWrapP);
+        // RE-RENDER PATH 2 — the strips were swapped under an untouched hero.
+        // This fires whenever late 7-day/hourly data lands, which is often, so
+        // it MUST NOT re-arm: the visit number has not moved, so it does not.
+        _wxArmEntrance(_wxWrapP);
         return true;
       } catch (e) {}
     }
@@ -43888,6 +43999,15 @@ function _renderWxCard(el) {
     var _wxWrap = el.querySelector('.wxcard-wrap');
     if (_wxWrap) _wxWrap.style.setProperty('background', _wxBg, 'important');
     _wxHydrateSvgs(el);
+    // RE-RENDER PATH 3 — a full rebuild. This is the path a real arrival takes
+    // (the rotation tick empties the carousel, so there is no wrap to reuse),
+    // and also the path a plain weather-content change takes mid-slide. The
+    // visit number tells the two apart; freshness of the wrap does not.
+    //
+    // Marked synchronously, in the same task as the insert, so the class is on
+    // the wrap before the browser paints — otherwise the card shows complete
+    // for one frame and then snaps back to the start of the sequence.
+    _wxArmEntrance(_wxWrap);
     return true;
   } catch (e) { return false; }
 }
