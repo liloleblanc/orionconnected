@@ -69,6 +69,13 @@ jobs:
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
         with:
+          # PIN THIS. The action's own default is wrangler 3.90.0, which cannot
+          # read a .jsonc config at all — it does not fail with "bad config",
+          # it fails with "Missing entry-point", because as far as it is
+          # concerned wrangler.jsonc does not exist and there is no `main`.
+          # Found by pressing the button: the first real run died here, and the
+          # error names the wrong thing entirely.
+          wranglerVersion: '4.132.0'
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
