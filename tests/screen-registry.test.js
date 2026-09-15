@@ -196,3 +196,22 @@ test('the console explains the field rather than letting the server refuse it', 
   assert.match(render.slice(0, render.indexOf('\n}')), /s\.gate \? ' · gate ' \+ _scEsc\(s\.gate\)/,
     'and shown in the list, so a wrong gate is visible without walking to the TV');
 });
+
+test('the gate field shows only when it applies', () => {
+  // v23801 — the constraint was previously enforced by REFUSING the claim, so
+  // a screen set to Departures with a gate typed in saved nothing and the
+  // reason appeared only after pressing Claim. A rule you discover by failing
+  // is a bad rule.
+  const at = MENU_JS.indexOf('function _scSyncGateField');
+  assert.ok(at > 0, 'the sync must exist');
+  const body = MENU_JS.slice(at, MENU_JS.indexOf('\n}', at));
+  assert.match(body, /var on = \(board === 'gids'\)/, 'gate boards only');
+  assert.match(body, /g\.disabled = !on/, 'the field is disabled rather than silently ignored');
+  assert.match(body, /if \(!on\) g\.value = ''/,
+    'and cleared — a leftover value would refuse the NEXT claim for a reason ' +
+    'that is no longer on screen');
+  assert.match(MENU_JS, /e\.target\.id === 'scBoard'\) _scSyncGateField\(\)/,
+    'it follows the board type as it changes');
+  assert.match(MENU_JS, /if \(tabId === 'airport'\) \{ try \{ _scSyncGateField\(\); \} catch \(e\) \{\} \}/,
+    'and is correct the moment the tab opens, not only after a change');
+});
