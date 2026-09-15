@@ -25016,7 +25016,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23786';
+var FIDS_BUILD_TAG = 'v23787';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43503,15 +43503,16 @@ function _wxEndEntrance(root) {
 // re-render inside the same visit (a re-tint, a strips swap, a gate rebuild)
 // answers false and the titles are simply not emitted.
 // v23786 — ONE VIDEO DECODES AT A TIME.
-// The titles and the scene are both 1920x1080. Playing them together was two
-// simultaneous decodes on top of fifteen animating layers, which is the kind
-// of load that shows up as dropped frames rather than as an error. The scene
-// is held until the titles are nearly gone — it is invisible behind them
-// until then anyway, and its own fade does not begin until 3.2s.
+// The title's backdrop and the scene are both 1920x1080. Playing them
+// together was two simultaneous decodes on top of fifteen animating layers,
+// which is the kind of load that shows up as dropped frames rather than as an
+// error. The scene is held until the title is nearly gone — it is behind the
+// backdrop and the scrim until then anyway, and its own fade does not begin
+// until 3.2s.
 function _wxHoldSceneForIntro(wrap) {
   try {
     var vid = wrap && wrap.querySelector(':scope > video.wxc-vid');
-    var intro = wrap && wrap.querySelector(':scope > video.wxc-intro');
+    var intro = wrap && wrap.querySelector(':scope > .wxc-intro');
     if (!vid || !intro) return;
     try { vid.pause(); } catch (e) {}
     setTimeout(function () { try { vid.play(); } catch (e) {} }, Math.round(2600 * _wxSpeed()));
@@ -43523,6 +43524,88 @@ function _wxWantsIntro() {
     var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
     return window._wxEntrancePlayedSeq !== seq;
   } catch (e) { return false; }
+}
+
+// v23787 — THE OPENING TITLE IS BUILT IN THE PAGE, NOT SHOT AS FOOTAGE.
+// One phrase, every language at once, arriving together. Drawn here rather
+// than played from a clip because a clip cannot be corrected: the generated
+// footage carried a misspelling baked into the centre of frame, a permanent
+// watermark, 720p on a 1080p board, and ten seconds for a six-second slot.
+// Text drawn by the board costs a few hundred bytes instead of twenty
+// megabytes, re-reads crisp at any panel size, follows the board typeface,
+// and can be reordered — which the French-first airports require.
+// The motion behind the title. Six seconds, 1920x1080, which is exactly the
+// window the title runs in — so it plays once and is never seen to loop.
+var _WX_INTRO_BG = '/logos/Backgrounds/video/wx-report-intro.mp4';
+
+var _WX_INTRO_LINES = [
+  { l: 'en', d: 'ltr', t: 'Weather Report' },
+  { l: 'fr', d: 'ltr', t: 'Bulletin m\u00e9t\u00e9o' },
+  { l: 'es', d: 'ltr', t: 'Informe del clima' },
+  { l: 'de', d: 'ltr', t: 'Wetterbericht' },
+  { l: 'it', d: 'ltr', t: 'Bollettino meteo' },
+  { l: 'pt', d: 'ltr', t: 'Boletim meteorol\u00f3gico' },
+  { l: 'ja', d: 'ltr', t: '\u5929\u6c17\u4e88\u5831' },
+  { l: 'zh', d: 'ltr', t: '\u5929\u6c14\u9884\u62a5' },
+  { l: 'ar', d: 'rtl', t: '\u0646\u0634\u0631\u0629 \u0627\u0644\u0637\u0642\u0633' }
+];
+
+// A board with no font for a script draws .notdef boxes, and a row of empty
+// rectangles on a public display is worse than one language fewer. Every
+// missing glyph in a given font has the SAME advance as every other, so a
+// string with no coverage measures exactly as wide as the same number of
+// deliberately-unassigned codepoints. Spaces are dropped from both sides:
+// a space always has a real advance and would mask the comparison.
+function _wxIntroHasGlyphs(s) {
+  try {
+    var cv = _wxIntroHasGlyphs._cv;
+    if (!cv) { cv = _wxIntroHasGlyphs._cv = document.createElement("canvas"); }
+    var cx = cv.getContext("2d");
+    if (!cx) return true;
+    var fam = "";
+    try { fam = getComputedStyle(document.body).fontFamily || ""; } catch (e0) {}
+    cx.font = "48px " + (fam || "sans-serif");
+    var t = String(s).replace(/\s+/g, "");
+    if (!t) return true;
+    var miss = "";
+    for (var i = 0; i < t.length; i++) miss += "\uFFFF";
+    return Math.abs(cx.measureText(t).width - cx.measureText(miss).width) > 0.5;
+  } catch (e) { return true; }
+}
+
+function _wxIntroHtml(frFirst) {
+  var rows = _WX_INTRO_LINES.slice();
+  if (frFirst) {
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].l === 'fr') { rows.unshift(rows.splice(i, 1)[0]); break; }
+    }
+  }
+  var h = '';
+  for (var j = 0; j < rows.length; j++) {
+    var r = rows[j];
+    if (!_wxIntroHasGlyphs(r.t)) continue;
+    h += '<div class="wxc-intro-line" lang="' + r.l + '"'
+       + (r.d === 'rtl' ? ' dir="rtl"' : '') + '>' + r.t + '</div>';
+  }
+  if (!h) return '';
+  // The supplied clip is the BACKDROP, and only that: its own lettering is
+  // English-only and is knocked back by the scrim to read as texture, while
+  // the languages are drawn over it as type. That is the split that makes
+  // both halves work — motion from the clip, words from the board, so the
+  // words can be spelled correctly, ordered French-first, and stay crisp at
+  // whatever size the panel is.
+  //
+  // Six layers, at most one animation each, so nothing fights over transform:
+  // the clip plays, the scrim knocks it back, the panel blooms, the stack
+  // settles out of a tilt, the ink fades up, the block drifts through the
+  // hold, and a light crosses it.
+  return '<div class="wxc-intro" aria-hidden="true">'
+       + '<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" '
+       + 'src="' + _WX_INTRO_BG + '"></video>'
+       + '<i class="wxc-intro-scrim"></i>'
+       + '<i class="wxc-intro-panel"></i>'
+       + '<div class="wxc-intro-stack"><div class="wxc-intro-lines">' + h + '</div></div>'
+       + '<i class="wxc-intro-sheen"></i></div>';
 }
 
 function _wxArmEntrance(wrap) {
@@ -44062,19 +44145,13 @@ function _renderWxCard(el) {
       : '/logos/Backgrounds/video/wx-grass-loop.mp4';
     var _wxVid = '<video class="wxc-vid" autoplay loop muted playsinline preload="auto" '
                + 'src="' + _wxVidSrc + '"></video>';
-    // v23783 — THE BROADCAST INTRO PLAYS OVER THE CARD AS IT ARRIVES.
-    // A six-second title on black, supplied for this card. It sits ABOVE
-    // every layer, plays once, and fades out as the card's own sequence
-    // comes up underneath it — so the card is revealed by the intro
-    // clearing rather than appearing beside it. muted and playsinline
-    // because the boards are silent and iOS will not autoplay otherwise;
-    // NOT looped, because it is a title and not a scene. It is emitted only
-    // while the entrance is arming: on a re-render mid-slide the card must
-    // not replay its own titles.
-    var _wxIntro = _wxWantsIntro()
-      ? '<video class="wxc-intro" autoplay muted playsinline preload="auto" '
-        + 'src="/logos/Backgrounds/video/wx-report-intro.mp4"></video>'
-      : '';
+    // v23787 — THE TITLE PLAYS OVER THE CARD AS IT ARRIVES.
+    // A six-second title on black. It sits ABOVE every layer, runs once,
+    // and fades out as the card's own sequence comes up underneath it — so
+    // the card is revealed by the title clearing rather than appearing
+    // beside it. It is emitted only while the entrance is arming: on a
+    // re-render mid-slide the card must not replay its own titles.
+    var _wxIntro = _wxWantsIntro() ? _wxIntroHtml(_wxFrF) : '';
     var _wxSceneCls = _wxNightScene ? ' wxc-scene-night' : ' wxc-scene-day';
     // The scene is part of the rebuild signature further down (_wxSig is the
     // whole markup string), so crossing 06:00 or 19:00 swaps the clip on the

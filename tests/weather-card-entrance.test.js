@@ -526,10 +526,10 @@ test('nothing is left hidden if the entrance never runs', () => {
       '.wxc-leaving, or its hidden state outlives the animation: ' +
       `${sel.slice(-70).trim()}`);
   }
-  // …and that companion rule must exist, or a stalled clip sits on the card.
-  assert.match(BLOCK, /\.wxcard-wrap:not\(\.wxc-entering\) > video\.wxc-intro \{ display: none !important; \}/,
-    'the titles must be taken out of the layout whenever the entrance is not ' +
-    'running — a paused clip left over a live card is a black rectangle over ' +
+  // …and that companion rule must exist, or a stalled overlay sits on the card.
+  assert.match(BLOCK, /\.wxcard-wrap:not\(\.wxc-entering\) > \.wxc-intro \{ display: none !important; \}/,
+    'the title must be taken out of the layout whenever the entrance is not ' +
+    'running — an overlay left over a live card is a filled rectangle over ' +
     'the readings');
 });
 
