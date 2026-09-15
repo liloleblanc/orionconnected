@@ -26,10 +26,35 @@ const ROOT = path.resolve(__dirname, '..');
 const INDEX = fs.readFileSync(path.join(ROOT, 'fids-current', 'index.html'), 'utf8');
 const APP = fs.readFileSync(path.join(ROOT, 'fids-current', 'app.html'), 'utf8');
 
+/**
+ * Every attribute-less <script> body in a page, in order.
+ *
+ * Walked rather than matched. A regex for this trips CodeQL js/bad-tag-filter,
+ * and the rule has a point even though nothing here is sanitising anything:
+ * the obvious pattern is case-sensitive and blind to attributes, so it quietly
+ * reads the wrong blocks the moment a page is written slightly differently.
+ * Scripts with a src= are skipped — their body is empty by definition.
+ */
+function scriptBlocks(html) {
+  const out = [];
+  const lower = html.toLowerCase();
+  let i = 0;
+  for (;;) {
+    const open = lower.indexOf('<script', i);
+    if (open < 0) break;
+    const gt = lower.indexOf('>', open);
+    if (gt < 0) break;
+    const close = lower.indexOf('</script', gt);
+    if (close < 0) break;
+    if (lower.slice(open + 7, gt).trim() === '') out.push(html.slice(gt + 1, close));
+    i = close + 8;
+  }
+  return out;
+}
+
 /** The head script that decides where an arrival goes. */
 function routerSource() {
-  const blocks = [...INDEX.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  const hit = blocks.filter((b) => b.includes("data-oc-offer") && b.includes('nomobile'));
+  const hit = scriptBlocks(INDEX).filter((b) => b.includes('data-oc-offer') && b.includes('nomobile'));
   assert.equal(hit.length, 1, 'expected exactly one router script in index.html');
   return hit[0];
 }
@@ -179,8 +204,7 @@ test('our own hostnames are not mistaken for airports', () => {
 
 /** Run the .app handover for one hostname and report where it sent us. */
 function handover(host, search = '') {
-  const blocks = [...INDEX.matchAll(/<script>([\s\S]*?)<\/script>/g)].map((m) => m[1]);
-  const hit = blocks.filter((b) => b.includes('orionconnected.app') && b.includes('location.replace("/app"'));
+  const hit = scriptBlocks(INDEX).filter((b) => b.includes('orionconnected.app') && b.includes('location.replace("/app"'));
   assert.equal(hit.length, 1, 'expected exactly one .app handover script');
   let to = null;
   const ctx = { location: { hostname: host, search, hash: '', replace(u) { if (to === null) to = u; } } };
