@@ -631,6 +631,77 @@ async function loadDryDock(force) {
   return _dryDockInflight;
 }
 
+// ── A CLAIMED SCREEN KEEPS ASKING ─────────────────────────────────────────
+// v23802 — screen.html polls until it is claimed and then hands over to a
+// board. That was the whole of it, which meant the handover was also the END
+// of the conversation: the board does not poll, so re-assigning a screen from
+// the console changed the registry and nothing else. The television carried on
+// showing whatever it was given first, and the only way to move it was to send
+// that TV back to /screen by hand.
+//
+// That is the opposite of the point — the point is that you decide what a
+// screen shows from the console, more than once. So a board that arrived with
+// ?screen=<id> keeps asking, and follows its own assignment when it changes.
+//
+// It compares against the URL IT IS ON rather than remembered state, so a
+// reload, a crash or a stale tab all settle to the same answer, and a screen
+// that has not been re-assigned never navigates.
+var FIDS_SCREEN_FOLLOW_MS = 30000;
+
+function _fidsScreenId() {
+  try {
+    var v = new URLSearchParams(window.location.search).get('screen') || '';
+    return /^[A-HJ-NP-Z2-9]{6}$/.test(v) ? v : '';
+  } catch (e) { return ''; }
+}
+
+function _fidsScreenBoardPage(board) {
+  return board === 'fids' ? 'fids.html' : board === 'bids' ? 'bids.html' : 'gids.html';
+}
+
+/** Where this screen's assignment says it should be, or '' if it is already there. */
+function _fidsScreenDrift(doc, id) {
+  if (!doc || !doc.claimed || !doc.airport || !doc.board) return '';
+  var here = window.location.pathname.replace(/^\//, '').replace(/\.html$/, '');
+  var want = _fidsScreenBoardPage(doc.board).replace(/\.html$/, '');
+  var p = new URLSearchParams(window.location.search);
+  var sameBoard = (here === want);
+  var sameAp = String(p.get('ap') || '').toUpperCase() === String(doc.airport).toUpperCase();
+  var sameGate = String(p.get('gate') || '').toUpperCase() === String(doc.gate || '').toUpperCase();
+  if (sameBoard && sameAp && sameGate) return '';
+  var u = '/' + _fidsScreenBoardPage(doc.board) + '?ap=' + encodeURIComponent(doc.airport)
+        + '&screen=' + encodeURIComponent(id);
+  if (doc.gate) u += '&gate=' + encodeURIComponent(doc.gate);
+  return u;
+}
+
+function _fidsScreenFollow() {
+  var id = _fidsScreenId();
+  if (!id) return;
+  fetch(FIDS_API_BASE + '/api/screens/' + id + '?_oc=' + Date.now(), { cache: 'no-store' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (doc) {
+      if (!doc || typeof doc !== 'object') return;          // unreadable: stay put
+      if (!doc.claimed) {
+        // Forgotten from the console. Back to the pairing screen, which is the
+        // honest thing to show — this display is no longer assigned anything.
+        window.location.replace('/screen.html');
+        return;
+      }
+      var to = _fidsScreenDrift(doc, id);
+      if (to) window.location.replace(to);
+    })
+    .catch(function () {});                                  // offline: stay on the board
+}
+
+try {
+  if (typeof window !== 'undefined' && _fidsScreenId()) {
+    setInterval(_fidsScreenFollow, FIDS_SCREEN_FOLLOW_MS);
+    // Not on load: the screen page has just read this same document, and a
+    // board that re-checks the instant it arrives can bounce on a slow write.
+  }
+} catch (e) {}
+
 try {
   if (typeof window !== 'undefined') {
     window.fidsDryDock = fidsDryDock;
@@ -25105,7 +25176,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23800';
+var FIDS_BUILD_TAG = 'v23802';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
