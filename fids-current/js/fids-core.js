@@ -1265,6 +1265,15 @@ var FIDS_FONT_STACKS = {
   'ginto-nord-black': "'ABC Ginto Nord Black', 'ABC Ginto Nord', sans-serif",
   'ginto-nord-ultra': "'ABC Ginto Nord Ultra', 'ABC Ginto Nord', sans-serif",
   'ginto-nord-hairline': "'ABC Ginto Nord Hairline', 'ABC Ginto Nord', sans-serif",
+  // v23774 — ABC Areal (see font.css)
+  'abc-areal': "'ABC Areal', -apple-system, BlinkMacSystemFont, sans-serif",
+  'abc-areal-regular': "'ABC Areal Regular', 'ABC Areal', sans-serif",
+  'abc-areal-medium': "'ABC Areal Medium', 'ABC Areal', sans-serif",
+  'abc-areal-bold': "'ABC Areal Bold', 'ABC Areal', sans-serif",
+  'abc-areal-semi-mono': "'ABC Areal Semi Mono', 'ABC Areal', sans-serif",
+  'abc-areal-semi-mono-bold': "'ABC Areal Semi Mono Bold', 'ABC Areal Semi Mono', sans-serif",
+  'abc-areal-mono': "'ABC Areal Mono', 'ABC Areal', monospace",
+  'abc-areal-mono-bold': "'ABC Areal Mono Bold', 'ABC Areal Mono', monospace",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
   'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
   'inter':         "'Inter', system-ui, -apple-system, sans-serif",
@@ -1285,11 +1294,19 @@ var FIDS_FONT_STACKS = {
 function restoreFontChoice(defaultFont) {
   try {
     var _iata = String((window._gateIata || (document.getElementById('apSel') || {}).value || '')).toUpperCase();
-    if (_iata) {
-      var _cfgRaw = localStorage.getItem('fids_customize_' + _iata);
+    // v23774 — ?font=<stack key> previews a font on any screen without
+    // touching the saved picks: it outranks the Customize pick for this
+    // load only and is never written anywhere. The link is the review.
+    var _urlFont = '';
+    try { _urlFont = String(new URLSearchParams(location.search).get('font') || '').toLowerCase(); } catch (eU) {}
+    if (_urlFont && !FIDS_FONT_STACKS[_urlFont]) _urlFont = '';
+    if (_iata || _urlFont) {
+      var _cfgRaw = _iata ? localStorage.getItem('fids_customize_' + _iata) : null;
       var _cfg = _cfgRaw ? JSON.parse(_cfgRaw) : null;
       var _stack = null;
-      if (_cfg && _cfg.font) {
+      if (_urlFont) {
+        _stack = FIDS_FONT_STACKS[_urlFont];
+      } else if (_cfg && _cfg.font) {
         if (FIDS_FONT_STACKS[_cfg.font]) {
           _stack = FIDS_FONT_STACKS[_cfg.font];
         } else if (String(_cfg.font).indexOf('custom:') === 0) {
@@ -24946,7 +24963,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23773';
+var FIDS_BUILD_TAG = 'v23774';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -29890,7 +29907,13 @@ function applyAirportConfigToBoard(iata) {
   // The font key maps to a CSS font stack we write to --font-primary, PLUS
   // a *, *::before, *::after { !important } override so the font also
   // applies to hardcoded inline styles and JS-generated content.
-  const _font = _pref('font');
+  // v23774 — ?font=<stack key> outranks the airport's pick for this load
+  // only (a preview link); it is read here as well because this pass runs
+  // after restoreFontChoice and would otherwise put the airport's font back.
+  var _urlFontKey = '';
+  try { _urlFontKey = String(new URLSearchParams(location.search).get('font') || '').toLowerCase(); } catch (eU) {}
+  if (_urlFontKey && !(typeof FIDS_FONT_STACKS !== 'undefined' && FIDS_FONT_STACKS[_urlFontKey])) _urlFontKey = '';
+  const _font = _urlFontKey || _pref('font');
   if (_font) {
     var _fontStacks = {
       'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -29903,6 +29926,14 @@ function applyAirportConfigToBoard(iata) {
       'ginto-nord-black': "'ABC Ginto Nord Black', 'ABC Ginto Nord', sans-serif",
       'ginto-nord-ultra': "'ABC Ginto Nord Ultra', 'ABC Ginto Nord', sans-serif",
       'ginto-nord-hairline': "'ABC Ginto Nord Hairline', 'ABC Ginto Nord', sans-serif",
+      'abc-areal': "'ABC Areal', -apple-system, BlinkMacSystemFont, sans-serif",
+      'abc-areal-regular': "'ABC Areal Regular', 'ABC Areal', sans-serif",
+      'abc-areal-medium': "'ABC Areal Medium', 'ABC Areal', sans-serif",
+      'abc-areal-bold': "'ABC Areal Bold', 'ABC Areal', sans-serif",
+      'abc-areal-semi-mono': "'ABC Areal Semi Mono', 'ABC Areal', sans-serif",
+      'abc-areal-semi-mono-bold': "'ABC Areal Semi Mono Bold', 'ABC Areal Semi Mono', sans-serif",
+      'abc-areal-mono': "'ABC Areal Mono', 'ABC Areal', monospace",
+      'abc-areal-mono-bold': "'ABC Areal Mono Bold', 'ABC Areal Mono', monospace",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
       'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
       'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
