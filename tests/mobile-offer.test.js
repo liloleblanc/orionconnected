@@ -151,7 +151,7 @@ test('an answered phone is not asked twice', () => {
 
   const app = route({ ua: UA_IPHONE, width: 390, pref: 'app' });
   assert.equal(app.asked, false);
-  assert.match(String(app.to), /^https:\/\/orionconnected\.app\//);
+  assert.match(String(app.to), /^\/app/);
 });
 
 test('?mobile=ask takes the answer back', () => {
@@ -169,35 +169,35 @@ test('a preference never overrides an explicit override', () => {
 
 // ── where YES actually goes ───────────────────────────────────────────────
 
-test('the app target is a host that resolves today', () => {
-  // yqm.orionconnected.app is the address worth handing out, and it is what
-  // this becomes once the wildcard record exists on the .app zone. Until then
-  // it has no DNS record at all, so pointing a phone at it would be a dead
-  // host — the apex resolves and carries the airport just as well.
+test('the app target stays on this origin', () => {
+  // /app is the Companion, and it is the address confirmed working by hand:
+  // fids.orionconnected.com/app?ap=MCO. Hopping to the .app domain instead cost
+  // a cross-origin navigation, a second copy of this page on the far side, and
+  // a preference stored on the origin you just left.
   const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390 });
-  assert.equal(new URL(r.app).hostname, 'orionconnected.app');
-  assert.notEqual(new URL(r.app).hostname, 'yqm.orionconnected.app');
+  assert.match(r.app, /^\/app(\?|$)/, 'the offer must link to the Companion on this origin');
+  assert.doesNotMatch(r.app, /orionconnected\.app/, 'no cross-origin hop');
 });
 
 test('the airport rides across to the app', () => {
   const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390 });
-  assert.equal(new URL(r.app).searchParams.get('ap'), 'YQM',
+  assert.equal(new URL(r.app, 'https://yqm.orionconnected.com').searchParams.get('ap'), 'YQM',
     'a phone on Moncton’s domain must land on Moncton’s app');
 });
 
 test('an explicit ?ap= beats the hostname', () => {
   const r = route({ host: 'yqm.orionconnected.com', search: '?ap=YHZ', ua: UA_IPHONE, width: 390 });
-  assert.equal(new URL(r.app).searchParams.get('ap'), 'YHZ');
+  assert.equal(new URL(r.app, 'https://yqm.orionconnected.com').searchParams.get('ap'), 'YHZ');
 });
 
 test('our own hostnames are not mistaken for airports', () => {
   for (const h of ['fids.orionconnected.com', 'www.orionconnected.com', 'app.orionconnected.com']) {
     const r = route({ host: h, ua: UA_IPHONE, width: 390 });
-    assert.equal(new URL(r.app).searchParams.get('ap'), null,
+    assert.equal(new URL(r.app, 'https://x.orionconnected.com').searchParams.get('ap'), null,
       `${h} is a site, not an airport — it must not become ?ap=`);
   }
   const apex = route({ host: 'orionconnected.com', ua: UA_IPHONE, width: 390 });
-  assert.equal(new URL(apex.app).searchParams.get('ap'), null);
+  assert.equal(new URL(apex.app, 'https://orionconnected.com').searchParams.get('ap'), null);
 });
 
 // ── .app means the app all the way down ───────────────────────────────────
@@ -376,4 +376,41 @@ test('a signed-in session does not jump to the picker while the offer is up', ()
 test('a signed-in session still reaches the picker when nothing is being asked', () => {
   assert.equal(bottomScript({ offering: false }), 'picker.html',
     'desktop behaviour must be exactly what it always was');
+});
+
+// ── the question must not survive its own answer ──────────────────────────
+// "Use the mobile app" leaves this origin for the .app zone — and index.html
+// is what that zone serves at "/". So the router ran again on the far side of
+// its own answer, on a domain where the question makes no sense, and neither
+// answer worked: "stay" gave the full board ON orionconnected.app, and "use
+// the app" replaced the page with the URL it was already showing.
+//
+// The .com side looked perfect throughout, which is why this was invisible.
+
+test('the offer is never raised on the .app zone', () => {
+  for (const h of ['orionconnected.app', 'www.orionconnected.app', 'yqm.orionconnected.app']) {
+    const r = route({ host: h, ua: UA_IPHONE, width: 390, search: '?ap=YQM' });
+    assert.equal(r.asked, false, `${h} IS the app — it must not ask`);
+    assert.equal(r.to, null, `${h} must be left to the handover, not routed`);
+  }
+});
+
+test('a remembered answer cannot loop the app onto itself', () => {
+  // The worst shape: answered "app" while standing on the app.
+  const r = route({ host: 'orionconnected.app', ua: UA_IPHONE, width: 390, search: '?ap=YQM', pref: 'app' });
+  assert.equal(r.to, null, 'it must not replace() the page with the page');
+});
+
+test('a remembered answer cannot put the full board on the app domain', () => {
+  const r = route({ host: 'orionconnected.app', ua: UA_IPHONE, width: 390, search: '?ap=YQM', pref: 'site' });
+  assert.equal(r.to, null,
+    'fids.html on orionconnected.app is the full site on the app’s own domain');
+});
+
+test('the .com side is untouched by that guard', () => {
+  // The guard must be about the zone, not about phones in general.
+  const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390 });
+  assert.equal(r.asked, true, 'the question still belongs on the site that is not the app');
+  const wall = route({ ua: UA_DESKTOP, width: 1920 });
+  assert.match(String(wall.to), /^fids\.html\?mode=live/);
 });
