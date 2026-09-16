@@ -58,7 +58,24 @@ const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/display-overrides.
 // the thing that cannot change without the block being replaced wholesale.
 const TITLE_AT = CSS.lastIndexOf('@keyframes wxcFade');
 const BLOCK_AT = TITLE_AT >= 0 ? CSS.lastIndexOf('/*', TITLE_AT) : -1;
-const BLOCK = BLOCK_AT >= 0 ? CSS.slice(BLOCK_AT) : '';
+
+// v23813 — AND IT ENDS SOMEWHERE NOW.
+//
+// This used to slice to the end of the file, which was correct for exactly as
+// long as the weather card was the last thing in it. It stopped being true the
+// first time anything else was appended, and the failure was a good one: the
+// aircraft lights were judged by the weather card's rules and reported for
+// animating a property called `side-on` — the word before a colon in a comment
+// inside a @keyframes body.
+//
+// So the section declares its own end. Falling back to the end of file when
+// the marker is missing keeps the old behaviour rather than silently scanning
+// nothing, which would turn every rule below into a test that always passes.
+const END_MARK = 'END OF THE WEATHER-CARD BLOCK';
+const END_AT = BLOCK_AT >= 0 ? CSS.indexOf(END_MARK, BLOCK_AT) : -1;
+const BLOCK = BLOCK_AT >= 0
+  ? CSS.slice(BLOCK_AT, END_AT > 0 ? CSS.lastIndexOf('/*', END_AT) : undefined)
+  : '';
 
 // The five layers, in the order the owner asked for them. Third column is the
 // class the cascade scan has to look for, which is not always the whole
@@ -1007,4 +1024,30 @@ test('?wxspeed stretches the whole sequence, and refuses nonsense', () => {
   assert.match(SRC, /Math\.round\(_WXC_ENTRANCE_MS \* _wxSpeed\(\)\)/);
   assert.match(SRC, /Math\.round\(_WXC_EXIT_MS \* _wxSpeed\(\)\)/);
   assert.match(SRC, /slide\.type === 'wxcard'\) return Math\.round\(\d+ \* _wxSpeed\(\)\)/);
+});
+
+// ── the bound is real, and it still contains the card ─────────────────────
+// A slice that ends in the wrong place fails in one of two silent ways: too
+// short and every rule above becomes untested, too long and the next thing
+// anyone appends is judged by rules written for a weather card.
+
+test('the block ends where the weather card ends', () => {
+  assert.ok(BLOCK.length > 0, 'the weather-card block must be found at all');
+  assert.match(BLOCK, /@keyframes wxcFade/, 'and must still contain the card it tests');
+  assert.ok(BLOCK.includes('.wxc-credit'), 'down to its last layer');
+  assert.ok(!BLOCK.includes(END_MARK), 'but must stop at its own end marker');
+});
+
+test('what is appended after the card is not judged as the card', () => {
+  // The aircraft lights are the first thing to live below the marker. They
+  // animate opacity, which the card allows, but they are deliberately NOT on
+  // the card's ?wxspeed dial — they are not part of its sequence.
+  assert.ok(END_AT > 0,
+    'the end marker must exist, or this file silently owns everything appended ' +
+    'after it forever');
+  const after = CSS.slice(END_AT);
+  assert.match(after, /@keyframes ocAcBeacon/,
+    'the aircraft lights must sit below the marker, not inside the card');
+  assert.ok(!BLOCK.includes('ocAcBeacon'),
+    'and must not be visible to the card scan at all');
 });
