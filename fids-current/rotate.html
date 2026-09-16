@@ -265,15 +265,44 @@
           // If the dock would empty the run, keep the run. A frozen or black
           // stream is a worse outcome than one docked board, and the list is
           // curation, not a safety gate.
+          var _lost = aps.filter(function (c) { return _docked.indexOf(c) !== -1; });
+          if (_lost.length) { try { console.warn('[DOCK] in dry dock, not touring: ' + _lost.join(', ')); } catch (e) {} }
           if (_keep.length) {
-            var _lost = aps.filter(function (c) { return _docked.indexOf(c) !== -1; });
-            if (_lost.length) { try { console.warn('[DOCK] in dry dock, not touring: ' + _lost.join(', ')); } catch (e) {} }
             aps = _keep;
           } else {
-            try { console.warn('[DOCK] every airport in this run is docked — touring anyway'); } catch (e) {}
+            // v23828 — AND WHEN THE DOCK EMPTIES THE RUN, TOUR THE REST.
+            //
+            // This used to keep the run, on the reasoning that a black stream
+            // is worse than one docked board. That was a false choice. The
+            // alternative to showing a docked airport was never a black
+            // stream — it is the tour, which is exactly what the no-feed
+            // filter twenty lines above already does with aps.length === 0.
+            //
+            // The case it got wrong is the one that matters: stream 1 is
+            // PINNED to a single airport. Dock that airport and the run is
+            // emptied, so this branch fired and the stream carried on showing
+            // the very board that had just been taken out of service. Docking
+            // a pinned stream did not merely fail to remove it, it protected
+            // it.
+            var _fallback = TOUR_DEFAULT.filter(function (c) {
+              return _docked.indexOf(c) === -1 && LIVE[c];
+            });
+            if (_fallback.length) {
+              try { console.warn('[DOCK] run is entirely docked — touring the rest instead'); } catch (e) {}
+              aps = _fallback;
+            } else {
+              // Everything docked AND nothing else has a feed. Now the original
+              // reasoning does apply: something on screen beats nothing.
+              try { console.warn('[DOCK] nothing undocked has a feed — touring anyway'); } catch (e) {}
+            }
           }
         }
       } catch (e) {}
+
+      // v23828 — what this run ended up showing, frozen for the poll to read.
+      // The poll must never reference `aps`: advance() indexes it live, and a
+      // reader today is a splicer tomorrow. This copy cannot affect it.
+      try { window._runOnAir = aps.slice(); } catch (e) {}
 
       // v23414 — NO AIRPORT NAMED, SO TOUR.
       // 
@@ -470,6 +499,33 @@
             // First sight of any list on a cold page is not a change worth a
             // reload if it docks nothing — that is the ordinary empty case.
             if (prev !== null || doc.docked.length) {
+              // v23828 — A PINNED STREAM HAS NO NEXT SWITCH.
+              //
+              // reloadPending is picked up when the run advances, which is
+              // right for a tour and useless for a stream pinned to one
+              // airport: it never advances, so a dock applied while it was
+              // running was never read. Combined with the synchronous
+              // localStorage read at build time — empty on a freshly booted
+              // box, because run.sh wipes the profile — a docked airport could
+              // stay on air indefinitely.
+              //
+              // So if the dock now names something this run is actually
+              // showing, reload rather than wait for a switch that may never
+              // come.
+              // A SNAPSHOT, never the live list. advance() indexes the running
+              // airport array unguarded, so this poll does not name it at all —
+              // not even to read it, because a reader today is a splicer
+              // tomorrow. _runOnAir is taken once when the run is built and
+              // never changes afterwards.
+              var _hits = [];
+              try {
+                _hits = (window._runOnAir || []).filter(function (c) { return doc.docked.indexOf(c) !== -1; });
+              } catch (e) {}
+              if (_hits.length) {
+                try { console.warn('[DOCK] ' + _hits.join(', ') + ' docked and on air now — reloading'); } catch (e) {}
+                location.reload();
+                return;
+              }
               try { console.log('[DOCK] list changed — reloading at the next switch'); } catch (e) {}
               reloadPending = true;
             }
