@@ -1167,7 +1167,17 @@ async function adbFetch(iata, direction) {
   // remains the cold-start floor, for a display that has never seen cyqm.
   if (iata === 'YQM') {
     const seg = direction === 'Departure' ? 'departures' : 'arrivals';
-    const yqmUrl = `https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/${seg}`;
+    // v23826 — THROUGH THE WORKER, NOT FROM EVERY SCREEN.
+    // This called cyqm.ca directly from the browser, which made YQM the only
+    // airport in the estate fetched client-side. Their endpoint blocks by IP:
+    // the stream box stayed allowed and kept drawing, while the displays got
+    // 403 and drew nothing. It also required them to send CORS headers, and a
+    // firewall block page carries none — so the failure arrived as an opaque
+    // CORS error rather than as a status anyone could act on.
+    //
+    // One origin asks now. The last-good cache below is untouched and still
+    // covers an outage; this only changes who does the asking.
+    const yqmUrl = `https://fids-proxy.n-leblanc1984.workers.dev/yqm/flights/${seg}`;
     const _yqmLastGood = () => {
       if (window._yqmLastGood && window._yqmLastGood[seg]) return window._yqmLastGood[seg];
       try {
