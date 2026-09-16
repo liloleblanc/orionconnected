@@ -675,6 +675,65 @@ function _fidsScreenDrift(doc, id) {
   return u;
 }
 
+// ── A DOCKED AIRPORT LEAVES THE UNATTENDED SCREENS ────────────────────────
+// v23827 — docking was built as "do not OFFER this": it takes an airport out of
+// the pickers and out of the stream tour, and leaves a direct link working so
+// the airport can still be opened while it is being repaired. That is the right
+// default and the comment at the dry-dock reader says so.
+//
+// What it missed is the case in between. A screen paired through the registry
+// is neither a picker nor a person: it is a television in a public place that
+// was pointed at an airport once and will show it forever. Docking an airport
+// is a decision to take it out of service, and an unattended display is exactly
+// what that decision is about.
+//
+// So a REGISTERED screen leaves; a hand-opened link does not. The test is the
+// ?screen= parameter, which only the registry's pairing flow sets. Open the
+// same board yourself and it stays put, which is what you want when you are the
+// one doing the repairing.
+//
+// It goes to the tour rather than to a blank page, so the television shows
+// working airports instead of a message about one that is out of service. The
+// tour already filters the dock out of its own run, so it will not land back
+// on the same airport.
+var FIDS_DOCK_SELFCHECK_MS = 60000;
+
+/** The airport this board is actually showing. */
+function _fidsSelfAirport() {
+  try {
+    var p = new URLSearchParams(window.location.search);
+    return String(p.get('ap') || sessionStorage.getItem('fids_airport') || '')
+      .toUpperCase().replace(/[^A-Z0-9]/g, '');
+  } catch (e) { return ''; }
+}
+
+function _fidsDockedSelfCheck() {
+  try {
+    // Inside the rotator's own iframe the tour is already in charge, and it has
+    // filtered the dock out of the run it built. A board navigating itself from
+    // in there would take the whole frame with it.
+    if (window.self !== window.top) return;
+    if (document.documentElement.classList.contains('fids-stream')) return;
+    // Only a registry screen. A person who typed the link is repairing it.
+    if (!_fidsScreenId()) return;
+    var ap = _fidsSelfAirport();
+    if (!ap || !fidsIsDocked(ap)) return;
+    // The dock is only trusted once it has actually loaded; fidsIsDocked reads
+    // an empty list before that, which cannot say anything is docked anyway.
+    try { console.warn('[DOCK] ' + ap + ' is in dry dock — this screen is joining the tour'); } catch (e) {}
+    window.location.replace('/rotate?tour=1');
+  } catch (e) {}
+}
+
+try {
+  if (typeof window !== 'undefined' && _fidsScreenId()) {
+    setInterval(_fidsDockedSelfCheck, FIDS_DOCK_SELFCHECK_MS);
+    // And once the dock has actually arrived, rather than on a timer alone, so
+    // docking an airport clears its screens within a poll instead of a minute.
+    window.addEventListener('fids-dry-dock-ready', _fidsDockedSelfCheck);
+  }
+} catch (e) {}
+
 function _fidsScreenFollow() {
   var id = _fidsScreenId();
   if (!id) return;

@@ -226,3 +226,64 @@ test('the panel never claims to be the thing that enforces admin', () => {
   assert.match(header, /NOT a security boundary/i);
   assert.match(header, /403/, 'and must name what actually stops a write');
 });
+
+// ── v23828: THE PINNED STREAM, WHICH IS THE CASE THAT MATTERED ────────────
+// Docking was reported as having no effect on the stream, and it did not: the
+// streams are PINNED to one airport each. Dock that airport and the run is
+// emptied — and the old branch kept the run rather than blank the stream, so
+// the very board that had been taken out of service carried on broadcasting.
+// Docking a pinned stream did not merely fail, it protected the docked board.
+//
+// The reasoning was a false choice. The alternative to showing a docked airport
+// was never a black stream; it is the tour, which the no-feed filter directly
+// above already does with an emptied run.
+
+test('a run emptied by the dock falls back to the tour, not to the docked board', () => {
+  const at = ROTATE.indexOf("_docked.indexOf(c) === -1");
+  assert.ok(at >= 0, 'the dock filter must exist');
+  const block = ROTATE.slice(at, at + 2600);
+  assert.match(block, /TOUR_DEFAULT\.filter/,
+    'an emptied run must fall back to TOUR_DEFAULT, the way the no-feed filter does');
+  assert.match(block, /_docked\.indexOf\(c\) === -1 && LIVE\[c\]/,
+    'and that fallback must itself exclude docked airports and dead feeds — ' +
+    'otherwise it hands the run straight back to what was just removed');
+});
+
+test('the last resort is still something on screen', () => {
+  // Everything docked AND nothing else with a feed is the one case where the
+  // original reasoning holds: a board beats a black rectangle.
+  const at = ROTATE.indexOf("_docked.indexOf(c) === -1");
+  const block = ROTATE.slice(at, at + 2600);
+  assert.match(block, /nothing undocked has a feed — touring anyway/,
+    'the give-up path must survive, but only after the tour fallback failed');
+  const fallbackAt = block.indexOf('TOUR_DEFAULT.filter');
+  const giveUpAt = block.indexOf('nothing undocked has a feed');
+  assert.ok(fallbackAt < giveUpAt, 'and it must come after, not instead of');
+});
+
+test('a pinned stream reloads instead of waiting for a switch it will never make', () => {
+  // reloadPending lands at the next board switch. A stream pinned to one
+  // airport never switches, so a dock applied while it was running was never
+  // read at all — and the synchronous localStorage read at build time is empty
+  // on a freshly booted box, because run.sh wipes the profile.
+  const poll = ROTATE.slice(ROTATE.indexOf('function checkDock'));
+  const body = poll.slice(0, poll.indexOf('\n      }'));
+  assert.match(body, /_runOnAir/,
+    'the poll must know what is actually on air to decide whether to wait');
+  assert.match(body, /location\.reload\(\)/,
+    'and reload when the dock names something showing right now');
+  const hitAt = body.indexOf('_runOnAir');
+  const pendingAt = body.indexOf('reloadPending = true');
+  assert.ok(hitAt < pendingAt,
+    'the on-air check comes first; reloadPending stays the path for everything else');
+});
+
+test('the on-air snapshot is a copy, never the live list', () => {
+  // The whole reason the poll was forbidden from naming the running array.
+  assert.match(ROTATE, /window\._runOnAir = aps\.slice\(\)/,
+    'a copy taken once when the run is built');
+  const poll = ROTATE.slice(ROTATE.indexOf('function checkDock'));
+  const body = poll.slice(0, poll.indexOf('\n      }'));
+  assert.doesNotMatch(body, /\baps\b/,
+    'and the poll still does not name the running list — not even in a comment');
+});
