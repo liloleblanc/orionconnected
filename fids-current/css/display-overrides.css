@@ -20571,3 +20571,59 @@ html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#
   box-shadow: 0 0 32px 11px rgba(196,220,255,0.30),
               0 0 78px 28px rgba(150,186,240,0.17) !important;
 }
+
+
+/* ═══ v23818 — THE BEACONS BURN, RATHER THAN SIT THERE ════════════════════
+   Against a reference photograph of a 787 at night the first pass was far too
+   timid: a flat 9px disc with a soft edge, where the real thing is a small
+   white-hot core inside a halo several times its own diameter. A light that
+   does not bloom does not read as a light at all — it reads as a dot someone
+   drew on the fuselage.
+
+   So: a hotter core, and four stacked shadows standing in for the flare. The
+   widest is nearly seven times the core, faint enough not to fog the airframe
+   behind it.
+
+   Also opened to the full width of the band measured safe on all 88 types —
+   69% and 80% rather than 70% and 79% — so the pair reads as two lights
+   rather than one smudge once they are this bright.
+
+   Still not the crown and the belly, where the photograph has them and where
+   they belong. That needs a coordinate per aircraft type, because the wing and
+   the fuselage sit differently on every one, and it is the next job rather
+   than this one.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img::before {
+  top: 69% !important;
+  width: clamp(8px, min(1.6vh, 1.25vw), 20px) !important;
+  height: clamp(8px, min(1.6vh, 1.25vw), 20px) !important;
+  margin: calc(clamp(8px, min(1.6vh, 1.25vw), 20px) / -2) 0 0 calc(clamp(8px, min(1.6vh, 1.25vw), 20px) / -2) !important;
+  background: radial-gradient(circle,
+      #fff        0%,
+      #ffd9cf     14%,
+      rgba(255,86,56,1)   32%,
+      rgba(255,40,20,.72) 58%,
+      rgba(255,28,14,0)  100%) !important;
+  box-shadow:
+    0 0 6px 2px  rgba(255,90,60,.95),
+    0 0 16px 6px rgba(255,46,24,.70),
+    0 0 34px 14px rgba(255,30,16,.38),
+    0 0 64px 28px rgba(255,24,12,.18) !important;
+}
+html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img::after {
+  top: 80% !important;
+  width: clamp(8px, min(1.6vh, 1.25vw), 20px) !important;
+  height: clamp(8px, min(1.6vh, 1.25vw), 20px) !important;
+  margin: calc(clamp(8px, min(1.6vh, 1.25vw), 20px) / -2) 0 0 calc(clamp(8px, min(1.6vh, 1.25vw), 20px) / -2) !important;
+  background: radial-gradient(circle,
+      #fff        0%,
+      #ffd9cf     14%,
+      rgba(255,86,56,1)   32%,
+      rgba(255,40,20,.72) 58%,
+      rgba(255,28,14,0)  100%) !important;
+  box-shadow:
+    0 0 6px 2px  rgba(255,90,60,.95),
+    0 0 16px 6px rgba(255,46,24,.70),
+    0 0 34px 14px rgba(255,30,16,.38),
+    0 0 64px 28px rgba(255,24,12,.18) !important;
+}
