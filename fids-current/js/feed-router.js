@@ -17,8 +17,13 @@
 // in-router call already targets the proxy URL, so no rewriting is needed.
 window.adbPacedFetch = window.adbPacedFetch || function (url, opts) { return fetch(url, opts); };
 // ── AERODATABOX ──────────────────────────────────────────────────────────
-const ADB_BASE = 'https://aerodatabox.p.rapidapi.com';
-const ADB_HOST = 'aerodatabox.p.rapidapi.com';
+// v23823 — TWO DEAD CONSTANTS REMOVED.
+// A base URL and a host for the banned provider were declared here and never
+// referenced by anything. adbFetchWindow builds a fids-proxy URL and always
+// did, so nothing changes behaviourally. But an unused constant holding that
+// vendor hostname, shipped to every browser, is one careless edit away from
+// being wired back to a provider that is banned and disconnected. The name is
+// not written here either, for the same reason.
 // ADB key removed — routed through secure proxy
 function fmt12(d, tz) {
   // AeroDataBox expects local airport time IN 24-HOUR FORMAT in the URL
