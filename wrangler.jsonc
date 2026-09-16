@@ -23,6 +23,5 @@
   "r2_buckets": [
     { "binding": "FIDS_ASSETS", "bucket_name": "fids-assets" }
   ],
-  "ai": { "binding": "AI" },
-  "triggers": { "crons": ["17 5,17 * * *"] }
+  "ai": { "binding": "AI" }
 }

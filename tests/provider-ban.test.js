@@ -193,3 +193,48 @@ test('the settled decisions are documented where a human will find them', () => 
     assert.ok(md.includes(must), `the provider doc must still cover ${must}`);
   }
 });
+
+// ── v23822: THE TRIGGER WAS ONLY REMOVED FROM ONE OF THE TWO CONFIGS ──────
+// 'the cron trigger is removed from the wrangler config' reads
+// workers/wrangler.fids-proxy.jsonc. There are TWO wrangler configs, and the
+// one that is actually deployed for the boards is the root wrangler.jsonc —
+// which carried "17 5,17 * * *", the exact schedule the disabled handler's own
+// comment names as the largest identified consumer of the quota that ran out.
+//
+// worker-entry.js forwards scheduled() to the same proxy handler whenever
+// JWT_SECRET is bound, so that trigger was firing twice a day against the
+// routine it was supposed to have been detached from. Nothing was spent —
+// scheduled() returns unconditionally on its second statement — but the whole
+// protection rested on that one `return;`, with the RapidAPI URL and the
+// X-RapidAPI-Key header still sitting live underneath it and a schedule
+// already wired to reach them.
+//
+// A ban that holds in one file and not the other is not a ban. Both configs
+// are checked now.
+
+const ROOT_WRANGLER = fs.readFileSync(path.join(ROOT, 'wrangler.jsonc'), 'utf8');
+
+test('NEITHER wrangler config schedules a cron', () => {
+  for (const [name, cfg] of [
+    ['workers/wrangler.fids-proxy.jsonc', WRANGLER],
+    ['wrangler.jsonc (the deployed board Worker)', ROOT_WRANGLER]
+  ]) {
+    assert.doesNotMatch(cfg, /"crons"\s*:\s*\[[^\]]*"[^"]+"/,
+      `${name} schedules a cron. The only scheduled handler in this repo is the ` +
+      'AeroDataBox credit top-up, disabled 2026-09-10 for unapproved spend. No ' +
+      'config may schedule anything until there is a handler worth scheduling.');
+  }
+});
+
+test('the board Worker cannot reach the disabled handler on a schedule', () => {
+  // Belt and braces: worker-entry forwards scheduled() to the proxy. With no
+  // trigger in either config nothing invokes it, but the forwarding is what
+  // made a trigger in the "wrong" config matter, so it is worth naming.
+  const entry = fs.readFileSync(path.join(ROOT, 'worker-entry.js'), 'utf8');
+  const at = entry.search(/async scheduled\s*\(/);
+  assert.ok(at >= 0, 'worker-entry must still declare scheduled()');
+  const body = entry.slice(at, at + 600);
+  assert.match(body, /proxy\.scheduled/,
+    'it forwards to the proxy handler — which is why a stray cron trigger in ' +
+    'EITHER config reaches the disabled top-up routine');
+});
