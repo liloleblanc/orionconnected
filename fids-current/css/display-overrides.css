@@ -20488,17 +20488,23 @@ html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#
   position: absolute;
   left: 50%;
   top: 72%;
-  width: clamp(5px, min(0.9vh, 0.7vw), 11px);
-  height: clamp(5px, min(0.9vh, 0.7vw), 11px);
-  margin: calc(clamp(5px, min(0.9vh, 0.7vw), 11px) / -2) 0 0 calc(clamp(5px, min(0.9vh, 0.7vw), 11px) / -2);
+  width: clamp(9px, min(1.7vh, 1.3vw), 22px);
+  height: clamp(9px, min(1.7vh, 1.3vw), 22px);
+  margin: calc(clamp(9px, min(1.7vh, 1.3vw), 22px) / -2) 0 0 calc(clamp(9px, min(1.7vh, 1.3vw), 22px) / -2);
   border-radius: 50%;
   background: radial-gradient(circle,
-      rgba(255,236,236,.95) 0%,
-      rgba(255,64,48,.92)  28%,
-      rgba(255,32,20,.42)  55%,
+      rgba(255,246,244,1)   0%,
+      rgba(255,96,72,1)    18%,
+      rgba(255,44,26,.85)  38%,
+      rgba(255,30,18,.35)  64%,
       rgba(255,24,16,0)    100%);
   pointer-events: none;
-  z-index: 3;
+  /* ABOVE THE FOREGROUND CLOUDS. #gateCloudsFg is z-index 3 and sits later in
+     the DOM, so an equal z-index loses to it outright — the light was being
+     painted over by drifting cloud at 0.64 opacity, which is why it read as no
+     light at all rather than as a dim one. The clouds still pass in front of
+     the airframe; only the beacon is lifted clear of them. */
+  z-index: 6;
   animation: ocAcBeacon 1.45s linear infinite;
 }
 
