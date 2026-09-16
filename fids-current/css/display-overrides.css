@@ -20415,69 +20415,29 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    where that slice stops.
    ═════════════════════════════════════════════════════════════════════ */
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   v23813 — A BEACON ON THE AIRCRAFT, AFTER DARK ONLY.
 
-   The night sky went in at v23788 and the aeroplane in front of it stayed lit
-   as though it were noon. A parked aircraft at night is not a silhouette: the
-   anti-collision beacon is turning. That one light is the difference between a
-   night frame and a dark photograph.
+/* ═══ v23819 — THE LIGHTS CAME BACK OUT ═══════════════════════════════════
+   Three passes at placing them and three corrections from the board, which is
+   three too many. The last version sat at 69% and 80% of frame height: on the
+   fuselage on every type, and on the crown, the belly and the wingtip of none
+   of them. Right that a light was there; wrong about where, every time.
 
-   ONE LIGHT, NOT FOUR, AND THE REASON IS MEASURED.
+   The reason is not carelessness, it is that one coordinate cannot do it. The
+   wing sits ABOVE the fuselage on a Dash 8 and BELOW it on a 737; measured
+   across the artwork its lowest point ranges from 83% to 98% of frame height,
+   and automated tip-detection kept finding engines and landing gear instead.
+   The fuselage has a band that works for all 88 measurable types. A wingtip
+   has none, and neither does a crown.
 
-   The obvious version is a red beacon on the fuselage crown, a second on the
-   belly, and a white strobe at the tail. All three were built, and two of them
-   had to go, because the artwork will not carry them.
+   So the lights wait for a coordinate per aircraft type — measure each image
+   once, emit a few custom properties keyed off the filename, and every light
+   lands where the reference photographs put it: red on the left wingtip, green
+   on the right, white at the tail, beacons on the crown and the belly, logo
+   lights on the fin. About 9KB, and correct rather than approximately correct.
 
-   Every one of the 113 aircraft PNGs was drawn to a canvas and its opaque
-   pixels counted. Sampling a column at 30% of the frame — forward of the wing,
-   where the fuselage is unambiguous on every side view — the fuselage top
-   lands at 58.5% of image height (sd 4.5%) and the bottom at 87.3% (sd 4.1%).
-   Those spreads overlap far less than the averages suggest. Sweeping a
-   candidate height across all 88 measurable types, the band that sits on the
-   airframe for EVERY ONE of them is:
-
-       69.0%  to  80.0%   of image height       100% of types
-       81.0%                                     98%
-
-   Outside it something always floats. The Dash 8 family has the highest
-   fuselage top at 69%; the 737 MAX, A320neo and A330 the highest bottom at
-   81%. A crown beacon at 58% hangs above a Dash 8, and a belly beacon at 87%
-   hangs below a MAX — which is exactly what the first two attempts did, in
-   clear air, on a public display.
-
-   The tail strobe failed the same way for a different reason: measuring the
-   rear 6% of the frame returns a vertical centre of 38%, because that region
-   is dominated by the FIN, not the tail cone. The light duly appeared beside
-   the aeroplane rather than on it.
-
-   So: one beacon, at 72% — inside the all-types band, high enough on the
-   flank to read as a beacon rather than a belly light, with margin on both
-   sides for all 88 measured types.
-
-   IT IS STILL A BLOOM, NOT A DOT. Even inside a safe band the fuselage is a
-   different height on every type, and a hard pinpoint reads as a bug the
-   moment it is a few pixels off centre. A soft halo with a bright core reads
-   as a light on a fuselage wherever it lands.
-
-   ANIMATION IS OPACITY ONLY — the house rule, and also the honest way to draw
-   this: a beacon does not travel along the fuselage, it brightens and dims as
-   the mirror comes round. No !important on the animated property, because an
-   author !important outranks the ANIMATION origin and would pin the light at
-   one brightness forever. That is precisely how the weather title's sheen sat
-   motionless for a day.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* A rotating beacon seen side-on: a bright sweep as the mirror comes round,
-   then a long dark arc. Deliberately not a symmetrical fade, which reads as a
-   pulsing LED and belongs to a different machine. */
-@keyframes ocAcBeacon {
-  0%, 62% { opacity: 0; }
-  68%     { opacity: 1; }
-  74%     { opacity: .55; }
-  80%     { opacity: .92; }
-  100%    { opacity: 0; }
-}
+   WHAT STAYS BELOW is the layering, which was never in question: the night sky
+   and its moon belong BEHIND the aeroplane, not painted over it.
+   ═════════════════════════════════════════════════════════════════════════ */
 
 html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img {
   /* v23815 — THE MOON WAS IN FRONT OF THE AEROPLANE.
@@ -20492,70 +20452,6 @@ html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#
   position: relative;
   z-index: 2;
 }
-
-html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img::before {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 70%;
-  width: clamp(7px, min(1.35vh, 1.05vw), 17px);
-  height: clamp(7px, min(1.35vh, 1.05vw), 17px);
-  margin: calc(clamp(7px, min(1.35vh, 1.05vw), 17px) / -2) 0 0 calc(clamp(7px, min(1.35vh, 1.05vw), 17px) / -2);
-  border-radius: 50%;
-  background: radial-gradient(circle,
-      rgba(255,246,244,1)   0%,
-      rgba(255,96,72,1)    18%,
-      rgba(255,44,26,.85)  38%,
-      rgba(255,30,18,.35)  64%,
-      rgba(255,24,16,0)    100%);
-  pointer-events: none;
-  /* ABOVE THE FOREGROUND CLOUDS. #gateCloudsFg is z-index 3 and sits later in
-     the DOM, so an equal z-index loses to it outright — the light was being
-     painted over by drifting cloud at 0.64 opacity, which is why it read as no
-     light at all rather than as a dim one. The clouds still pass in front of
-     the airframe; only the beacon is lifted clear of them. */
-  z-index: 6;
-  animation: ocAcBeacon 1.45s linear infinite;
-}
-html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  top: 79%;
-  width: clamp(7px, min(1.35vh, 1.05vw), 17px);
-  height: clamp(7px, min(1.35vh, 1.05vw), 17px);
-  margin: calc(clamp(7px, min(1.35vh, 1.05vw), 17px) / -2) 0 0 calc(clamp(7px, min(1.35vh, 1.05vw), 17px) / -2);
-  border-radius: 50%;
-  background: radial-gradient(circle,
-      rgba(255,246,244,1)   0%,
-      rgba(255,96,72,1)    18%,
-      rgba(255,44,26,.85)  38%,
-      rgba(255,30,18,.35)  64%,
-      rgba(255,24,16,0)    100%);
-  pointer-events: none;
-  /* ABOVE THE FOREGROUND CLOUDS. #gateCloudsFg is z-index 3 and sits later in
-     the DOM, so an equal z-index loses to it outright — the light was being
-     painted over by drifting cloud at 0.64 opacity, which is why it read as no
-     light at all rather than as a dim one. The clouds still pass in front of
-     the airframe; only the beacon is lifted clear of them. */
-  z-index: 6;
-  animation: ocAcBeacon 1.45s linear infinite;
-}
-
-/* The beacon sits on the centreline, so the mirrored artwork needs no rule of
-   its own — which is the other argument for one light over three. */
-
-/* A blinking light is exactly what prefers-reduced-motion is for. Keep it lit,
-   stop it flashing: a steady beacon still says the aircraft is alive, and only
-   the motion is lost. */
-@media (prefers-reduced-motion: reduce) {
-  html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img::before {
-    animation: none;
-    opacity: .8;
-  }
-}
-
-
 /* ═══ v23816 — THE MOON WAS TOO SMALL ═════════════════════════════════════
    It was clamp(10px, …, 26px) — at the top of that range, roughly a sixth of
    the sky panel's height, and at the bottom a speck. Now it carries about
@@ -20570,125 +20466,4 @@ html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#
   height: clamp(18px, min(4.3vh, 6.1vw), 47px) !important;
   box-shadow: 0 0 32px 11px rgba(196,220,255,0.30),
               0 0 78px 28px rgba(150,186,240,0.17) !important;
-}
-
-
-/* ═══ v23818 — THE BEACONS BURN, RATHER THAN SIT THERE ════════════════════
-   Against a reference photograph of a 787 at night the first pass was far too
-   timid: a flat 9px disc with a soft edge, where the real thing is a small
-   white-hot core inside a halo several times its own diameter. A light that
-   does not bloom does not read as a light at all — it reads as a dot someone
-   drew on the fuselage.
-
-   So: a hotter core, and four stacked shadows standing in for the flare. The
-   widest is nearly seven times the core, faint enough not to fog the airframe
-   behind it.
-
-   Also opened to the full width of the band measured safe on all 88 types —
-   69% and 80% rather than 70% and 79% — so the pair reads as two lights
-   rather than one smudge once they are this bright.
-
-   Still not the crown and the belly, where the photograph has them and where
-   they belong. That needs a coordinate per aircraft type, because the wing and
-   the fuselage sit differently on every one, and it is the next job rather
-   than this one.
-   ═════════════════════════════════════════════════════════════════════════ */
-html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img::before {
-  top: 69% !important;
-  width: clamp(8px, min(1.6vh, 1.25vw), 20px) !important;
-  height: clamp(8px, min(1.6vh, 1.25vw), 20px) !important;
-  margin: calc(clamp(8px, min(1.6vh, 1.25vw), 20px) / -2) 0 0 calc(clamp(8px, min(1.6vh, 1.25vw), 20px) / -2) !important;
-  background: radial-gradient(circle,
-      #fff        0%,
-      #ffd9cf     14%,
-      rgba(255,86,56,1)   32%,
-      rgba(255,40,20,.72) 58%,
-      rgba(255,28,14,0)  100%) !important;
-  box-shadow:
-    0 0 6px 2px  rgba(255,90,60,.95),
-    0 0 16px 6px rgba(255,46,24,.70),
-    0 0 34px 14px rgba(255,30,16,.38),
-    0 0 64px 28px rgba(255,24,12,.18) !important;
-}
-html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .v2-rc-shelf-illus .v2-rc-aircraft-img::after {
-  top: 80% !important;
-  width: clamp(8px, min(1.6vh, 1.25vw), 20px) !important;
-  height: clamp(8px, min(1.6vh, 1.25vw), 20px) !important;
-  margin: calc(clamp(8px, min(1.6vh, 1.25vw), 20px) / -2) 0 0 calc(clamp(8px, min(1.6vh, 1.25vw), 20px) / -2) !important;
-  background: radial-gradient(circle,
-      #fff        0%,
-      #ffd9cf     14%,
-      rgba(255,86,56,1)   32%,
-      rgba(255,40,20,.72) 58%,
-      rgba(255,28,14,0)  100%) !important;
-  box-shadow:
-    0 0 6px 2px  rgba(255,90,60,.95),
-    0 0 16px 6px rgba(255,46,24,.70),
-    0 0 34px 14px rgba(255,30,16,.38),
-    0 0 64px 28px rgba(255,24,12,.18) !important;
-}
-
-
-/* ═══ v23820 — THE AEROPLANE SHRANK WHENEVER A FLIGHT WAS OPERATED BY ═════
-   Reported from a gate board: the aircraft is too small, and something changed
-   today. Both true. It was v23790 — the fix that stopped the caption being
-   severed.
-
-   To fit the two-line "Operated By / Exploité par" caption, that rule lifts the
-   image's bottom edge:
-
-       normal                  bottom: clamp(30px, …,  54px)
-       :has(.v2-rc-acb-opby)   bottom: clamp(60px, …, 102px)
-
-   The image is position:absolute with top:0 and bottom:<that>, so a larger
-   bottom is a SHORTER BOX. Measured on a 1920x1080 board with a 380px panel:
-
-       normal        95px of height for the aircraft
-       Operated-By   56px            = 59% of normal
-
-   A 41% cut, and only on flights that carry an operating carrier — which is
-   why it read as the picture having got smaller rather than as a layout
-   change. AC1983 is operated by Rouge, so it takes the short box every time.
-
-   The caption genuinely needs that room, so the height comes back from the top
-   instead. padding-top is 16% of the panel WIDTH — 61px on a 380px panel,
-   which is more than the entire shortfall. At 6% the Operated-By case gets
-   94px, within a pixel of the normal 95, and the caption keeps every pixel it
-   was given.
-   ═════════════════════════════════════════════════════════════════════════ */
-html body.uxg-gate-mode:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus:has(.v2-rc-acb-opby) .v2-rc-aircraft-img {
-  padding-top: 6% !important;
-}
-
-
-/* ═══ v23821 — THE CAPTION READS AS ONE BLOCK AGAIN ═══════════════════════
-   Reported from a gate board: the aircraft info is too small, in the wrong
-   place, and not uniform. All three, and they are one cause.
-
-   Twenty-eight rules have accumulated on this caption across many versions,
-   and three of them disagree:
-
-       .v2-rc-acb-actype  width:100%; text-align:center      the type, CENTRED
-       .v2-rc-acb-opby    width:100%; justify-content:center the row,  CENTRED
-       .v2-rc-opby-val    flex:1 1 auto; justify-content:flex-start
-
-   The row centres itself and then its value child GROWS to fill that row and
-   left-aligns inside it. So the label and the carrier logo drift to the left
-   under a centred title, which is the ragged edge that was noticed — the two
-   halves of one caption obeying different rules.
-
-   The value stops growing and centres with everything else. It keeps
-   min-width:0 and may still shrink, so the two-row layout that exists to stop
-   the phrase being severed is untouched.
-
-   And the size: the label sat at clamp(8px, …, 12px) under a title at
-   clamp(11px, …). Two steps apart reads as an afterthought rather than as the
-   second line of the same caption; one step apart reads as one block.
-   ═════════════════════════════════════════════════════════════════════════ */
-html body.uxg-gate-mode:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus:has(.v2-rc-acb-opby) .v2-rc-acb-cap .v2-rc-opby-val {
-  flex: 0 1 auto !important;
-  justify-content: center !important;
-}
-html body.uxg-gate-mode:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus:has(.v2-rc-acb-opby) .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-lline {
-  font-size: clamp(9px, min(1.2vh, 1.85vw), 14px) !important;
 }

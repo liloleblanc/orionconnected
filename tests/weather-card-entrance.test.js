@@ -1039,15 +1039,26 @@ test('the block ends where the weather card ends', () => {
 });
 
 test('what is appended after the card is not judged as the card', () => {
-  // The aircraft lights are the first thing to live below the marker. They
-  // animate opacity, which the card allows, but they are deliberately NOT on
-  // the card's ?wxspeed dial — they are not part of its sequence.
+  // The gate illustration's own layering is what lives below the marker: the
+  // night sky and its moon belong BEHIND the aeroplane, which takes an explicit
+  // z-index to get. Nothing about it is the weather card's business, and the
+  // card's rules — its ?wxspeed dial, its motion vocabulary — must not reach it.
+  //
+  // This anchored on @keyframes ocAcBeacon until v23819, when the aircraft
+  // lights were withdrawn for being in the wrong place on the airframe. The
+  // marker outlived them, which is the point of anchoring the bound on the
+  // marker rather than on whatever happens to sit under it.
   assert.ok(END_AT > 0,
     'the end marker must exist, or this file silently owns everything appended ' +
     'after it forever');
   const after = CSS.slice(END_AT);
-  assert.match(after, /@keyframes ocAcBeacon/,
-    'the aircraft lights must sit below the marker, not inside the card');
-  assert.ok(!BLOCK.includes('ocAcBeacon'),
+  // The RULE, not the class: the card block names .v2-rc-aircraft-img itself
+  // (v23790 gave the caption two rows), so presence of the class proves nothing.
+  // What must be on one side of the marker and not the other is the layering
+  // declaration.
+  const LAYER = /\.v2-rc-aircraft-img \{[^}]*z-index:/;
+  assert.match(after, LAYER,
+    'the gate illustration layering must sit below the marker, not inside the card');
+  assert.doesNotMatch(BLOCK, LAYER,
     'and must not be visible to the card scan at all');
 });
