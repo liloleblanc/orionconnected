@@ -9777,6 +9777,50 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     //
     // Cached 5 minutes, because the honest failure mode of a "check the spend"
     // endpoint is somebody polling it and adding to the spend.
+    // ── MONCTON, FETCHED ONCE INSTEAD OF BY EVERY SCREEN ──────────────────
+    // YQM is the only airport the boards fetched DIRECTLY from the browser:
+    // every display called cyqm.ca itself. That endpoint blocks by IP, so the
+    // stream box (one long-lived machine, allowed) kept working while the
+    // screens (many addresses, and restarted) got 403 and drew nothing. Fifty
+    // screens is fifty addresses for a firewall to object to.
+    //
+    // Through here it is ONE address. If Cloudflare's egress is blocked too,
+    // that is a single address to ask Moncton to allow rather than a list
+    // nobody can enumerate.
+    //
+    // The browser's own last-good cache stays exactly as it was — this only
+    // changes who does the asking. A failure answers 503 so the client falls
+    // through to that cache instead of caching an error as data.
+    if (path === "/yqm/flights/departures" || path === "/yqm/flights/arrivals") {
+      const _seg = path.endsWith("arrivals") ? "arrivals" : "departures";
+      const _txt = await fetchAuthorityText(
+        "yqm/" + _seg,
+        "https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/" + _seg,
+        null,
+        60,
+        { headers: {
+          // Their firewall answers a plain client differently from a browser,
+          // so ask the way a browser asks.
+          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+          "Accept": "application/json, text/plain, */*",
+          "Accept-Language": "en-CA,en;q=0.9",
+          "Referer": "https://www.cyqm.ca/"
+        } }
+      );
+      if (_txt) {
+        return new Response(_txt, { headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "public, max-age=30",
+          "X-Feed-Source": "yqm-cyqm-proxy",
+          ...corsHeaders(origin)
+        } });
+      }
+      return new Response(JSON.stringify({ error: "yqm-upstream-unavailable" }), {
+        status: 503,
+        headers: { "Content-Type": "application/json", ...corsHeaders(origin) }
+      });
+    }
+
     if (path === "/fr24/usage") {
       if (!env.FR24_KEY) {
         return jsonResponse({ error: "no FR24_KEY on this worker", hint:
