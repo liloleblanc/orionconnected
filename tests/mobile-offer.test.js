@@ -111,12 +111,47 @@ test('a phone is never silently sent to app.html any more', () => {
   assert.doesNotMatch(String(r.to), /app\.html/);
 });
 
-test('a narrow desktop window is asked rather than thrown into the app', () => {
-  // This is the case that used to be invisible: a real keyboard, a small
-  // window, and no entry screen painted to notice it happening.
-  const r = route({ ua: UA_DESKTOP, width: 640 });
-  assert.equal(r.asked, true);
-  assert.equal(r.to, null);
+test('a display is never asked, whatever shape it is', () => {
+  // v23824 — THIS TEST USED TO ASSERT THE OPPOSITE, AND THAT WAS THE BUG.
+  //
+  // It read "a narrow desktop window is asked rather than thrown into the app",
+  // which sounds right until you remember what opens this page: every display
+  // in the estate boots through index.html. The detector matched bare "Android"
+  // — carried by every Android TV and Fire TV stick — and anything under 700px.
+  //
+  // Before the offer existed those devices were silently redirected to app.html:
+  // wrong, but they showed something. Once the page HOLDS for an answer, a
+  // misdetected display stops on a question that cannot be answered with a TV
+  // remote, and the board never arrives. The stream kept working because it runs
+  // a desktop Chrome at 1920 wide; the screens did not.
+  //
+  // fids-core.js had it right all along, and says so in its own comment: bare
+  // Android without Mobile is not a phone, and it runs no width test at all.
+  const TV = 'Mozilla/5.0 (X11; Linux armv7l) AppleWebKit/537.36 Chrome/94 CrKey/1.54';
+  const ANDROID_TV = 'Mozilla/5.0 (Linux; Android 12; BRAVIA 4K) AppleWebKit/537.36 Chrome/94';
+  const FIRE_TV = 'Mozilla/5.0 (Linux; Android 9; AFTKA Build/PS7233) AppleWebKit/537.36 Chrome/70';
+  for (const [label, ua, width] of [
+    ['an Android TV', ANDROID_TV, 1920],
+    ['a Fire TV stick', FIRE_TV, 1920],
+    ['a Chromecast', TV, 1920],
+    ['a 690px window', TV, 690],
+    ['a small panel', TV, 480]
+  ]) {
+    const r = route({ ua, width });
+    assert.equal(r.asked, false, label + ' must never be asked — it cannot answer');
+    assert.match(String(r.to), /^fids\.html\?mode=live/, label + ' must reach the board');
+  }
+});
+
+test('a real phone is still asked', () => {
+  const ANDROID_PHONE = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/128 Mobile Safari/537.36';
+  for (const [label, ua, width] of [
+    ['an iPhone', UA_IPHONE, 390],
+    ['an Android phone', ANDROID_PHONE, 412]
+  ]) {
+    const r = route({ ua, width });
+    assert.equal(r.asked, true, label + ' is the audience for the offer');
+  }
 });
 
 // ── what must NOT be asked ────────────────────────────────────────────────

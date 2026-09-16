@@ -134,8 +134,24 @@
         var board = 'fids.html?mode=live' + (apM ? '&ap=' + apM[1] : '');
 
         var ua = navigator.userAgent || '';
-        var w  = window.innerWidth || document.documentElement.clientWidth || 0;
-        var isMobile = /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(ua) || w < 700;
+        /* v23824 — A TELEVISION IS NOT A PHONE, AND A NARROW WINDOW IS NOT EITHER.
+           This read /Mobi|Android|…/ plus w < 700, and both halves are wrong for
+           a display:
+
+             · bare "Android" matches EVERY Android TV and Fire TV stick. They
+               all carry it in the user agent.
+             · a display can be narrower than 700px. A window can be too.
+
+           Before the offer existed those devices were silently redirected to
+           app.html — wrong, but they showed something. Once the page HOLDS for
+           an answer, a misdetected display stops on a question that cannot be
+           answered with a TV remote, and the board never arrives.
+
+           fids-core.js already got this right, and its comment says so: bare
+           Android without Mobile is not a phone, and it runs no width test at
+           all. This is that same test, so the two agree. */
+        var isMobile = /iPhone|iPod|iPad|Windows Phone/i.test(ua)
+                    || (/Android/i.test(ua) && /Mobile/i.test(ua));
 
         // Desktop/displays → LIVE main board. Don't force an airport: carry a
         // root ?ap= if present, otherwise let the board use its own
