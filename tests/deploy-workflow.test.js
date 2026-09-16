@@ -110,3 +110,24 @@ test('the YAML is syntactically whole', () => {
   assert.match(YML, /^name:\s*\S/m, 'the workflow needs a name to appear in the Actions list');
   assert.match(YML, /^jobs:$/m, 'it needs a jobs block');
 });
+
+test('the wrangler version is pinned, and pinned to one that reads jsonc', () => {
+  // The action's default is wrangler 3.90.0, which predates .jsonc config
+  // support. Against this repo it does not report a config problem — it
+  // reports "Missing entry-point", because it cannot see wrangler.jsonc at all
+  // and therefore finds no `main`. An hour could go into chasing that error
+  // where it is not.
+  const m = YML.match(/wranglerVersion:\s*'(\d+)\.(\d+)\.(\d+)'/);
+  assert.ok(m, 'wranglerVersion must be pinned — the default is too old to read wrangler.jsonc');
+  assert.ok(Number(m[1]) >= 4,
+    `pinned to ${m[0]} — v4 or newer is required for a .jsonc config`);
+});
+
+test('the config the workflow deploys is the one that parses', () => {
+  // Belt and braces: if the root config is ever renamed to .toml or .json, the
+  // pin above stops being the thing that matters and this says so.
+  const cfg = fs.readdirSync(ROOT).filter((f) => /^wrangler\.(jsonc|json|toml)$/.test(f));
+  assert.deepEqual(cfg, ['wrangler.jsonc'],
+    'the root config is expected to be wrangler.jsonc — if that changed, revisit ' +
+    'the pinned wrangler version, which exists because of the jsonc extension');
+});
