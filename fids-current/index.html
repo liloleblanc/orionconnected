@@ -112,6 +112,24 @@
       try{
         var qs = location.search || '';
         if (/[?&]entry=1/.test(qs)) return;           // admin: keep the entry/login screen
+
+        /* v23812 — NEVER ASK ON THE .app ZONE. That domain IS the app, and the
+           handover at the top of this head has already decided; the question
+           does not apply there.
+
+           Left unguarded it ran anyway, and the answers were worse than the
+           question. "Stay on the regular site" sent a phone to
+           fids.html?mode=live ON orionconnected.app — the full board, on the
+           app's own domain, which is what "it sticks with the full site"
+           turned out to be. And "use the mobile app" resolved to
+           https://orionconnected.app/ with the same query string the page was
+           already showing: a replace() onto itself.
+
+           It was invisible from the .com side because the offer worked
+           perfectly there. The damage happened one hop later, on the domain
+           the answer sent you to, where a second copy of the same question had
+           no idea it had already been answered. */
+        if (/(^|\.)orionconnected\.app$/.test(String(location.hostname || '').toLowerCase())) return;
         var apM = qs.match(/[?&]ap=([^&]+)/);
         var board = 'fids.html?mode=live' + (apM ? '&ap=' + apM[1] : '');
 

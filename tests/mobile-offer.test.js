@@ -377,3 +377,40 @@ test('a signed-in session still reaches the picker when nothing is being asked',
   assert.equal(bottomScript({ offering: false }), 'picker.html',
     'desktop behaviour must be exactly what it always was');
 });
+
+// ── the question must not survive its own answer ──────────────────────────
+// "Use the mobile app" leaves this origin for the .app zone — and index.html
+// is what that zone serves at "/". So the router ran again on the far side of
+// its own answer, on a domain where the question makes no sense, and neither
+// answer worked: "stay" gave the full board ON orionconnected.app, and "use
+// the app" replaced the page with the URL it was already showing.
+//
+// The .com side looked perfect throughout, which is why this was invisible.
+
+test('the offer is never raised on the .app zone', () => {
+  for (const h of ['orionconnected.app', 'www.orionconnected.app', 'yqm.orionconnected.app']) {
+    const r = route({ host: h, ua: UA_IPHONE, width: 390, search: '?ap=YQM' });
+    assert.equal(r.asked, false, `${h} IS the app — it must not ask`);
+    assert.equal(r.to, null, `${h} must be left to the handover, not routed`);
+  }
+});
+
+test('a remembered answer cannot loop the app onto itself', () => {
+  // The worst shape: answered "app" while standing on the app.
+  const r = route({ host: 'orionconnected.app', ua: UA_IPHONE, width: 390, search: '?ap=YQM', pref: 'app' });
+  assert.equal(r.to, null, 'it must not replace() the page with the page');
+});
+
+test('a remembered answer cannot put the full board on the app domain', () => {
+  const r = route({ host: 'orionconnected.app', ua: UA_IPHONE, width: 390, search: '?ap=YQM', pref: 'site' });
+  assert.equal(r.to, null,
+    'fids.html on orionconnected.app is the full site on the app’s own domain');
+});
+
+test('the .com side is untouched by that guard', () => {
+  // The guard must be about the zone, not about phones in general.
+  const r = route({ host: 'yqm.orionconnected.com', ua: UA_IPHONE, width: 390 });
+  assert.equal(r.asked, true, 'the question still belongs on the site that is not the app');
+  const wall = route({ ua: UA_DESKTOP, width: 1920 });
+  assert.match(String(wall.to), /^fids\.html\?mode=live/);
+});
