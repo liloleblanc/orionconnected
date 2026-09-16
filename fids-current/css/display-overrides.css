@@ -20627,3 +20627,35 @@ html body.gate-acsky-night:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#
     0 0 34px 14px rgba(255,30,16,.38),
     0 0 64px 28px rgba(255,24,12,.18) !important;
 }
+
+
+/* ═══ v23820 — THE AEROPLANE SHRANK WHENEVER A FLIGHT WAS OPERATED BY ═════
+   Reported from a gate board: the aircraft is too small, and something changed
+   today. Both true. It was v23790 — the fix that stopped the caption being
+   severed.
+
+   To fit the two-line "Operated By / Exploité par" caption, that rule lifts the
+   image's bottom edge:
+
+       normal                  bottom: clamp(30px, …,  54px)
+       :has(.v2-rc-acb-opby)   bottom: clamp(60px, …, 102px)
+
+   The image is position:absolute with top:0 and bottom:<that>, so a larger
+   bottom is a SHORTER BOX. Measured on a 1920x1080 board with a 380px panel:
+
+       normal        95px of height for the aircraft
+       Operated-By   56px            = 59% of normal
+
+   A 41% cut, and only on flights that carry an operating carrier — which is
+   why it read as the picture having got smaller rather than as a layout
+   change. AC1983 is operated by Rouge, so it takes the short box every time.
+
+   The caption genuinely needs that room, so the height comes back from the top
+   instead. padding-top is 16% of the panel WIDTH — 61px on a 380px panel,
+   which is more than the entire shortfall. At 6% the Operated-By case gets
+   94px, within a pixel of the normal 95, and the caption keeps every pixel it
+   was given.
+   ═════════════════════════════════════════════════════════════════════════ */
+html body.uxg-gate-mode:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus:has(.v2-rc-acb-opby) .v2-rc-aircraft-img {
+  padding-top: 6% !important;
+}
