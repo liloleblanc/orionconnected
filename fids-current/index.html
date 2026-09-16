@@ -560,7 +560,22 @@
   });
 
   // ── Check for existing session ────────────────────────────────────────
-  if (Auth.init()) {
+  // v23811 — NOT WHILE A QUESTION IS OPEN.
+  //
+  // This jump is older than the mobile offer and never used to collide with
+  // anything: the head redirected a phone to the app BEFORE the body ran, so
+  // on a phone this line was unreachable. The offer holds the page instead of
+  // leaving it, and the moment it does, a signed-in session lands here and
+  // navigates away out from under the question — the offer paints, then the
+  // picker replaces it, with no way to answer.
+  //
+  // Only phones are affected, because only phones are asked. A desktop never
+  // raises the offer, so the attribute is absent and this behaves exactly as
+  // it always has.
+  //
+  // The general rule this is one instance of: while data-oc-offer is set, the
+  // page belongs to the question. Nothing may navigate until it is answered.
+  if (Auth.init() && document.documentElement.getAttribute('data-oc-offer') !== '1') {
     // Already authenticated — skip to picker
     window.location.href = 'picker.html';
   }
