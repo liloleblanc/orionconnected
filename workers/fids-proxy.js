@@ -1571,8 +1571,16 @@ const YHZ_CITY_IATA = {
   "WASHINGTON": "IAD", "DETROIT": "DTW", "CHARLOTTE": "CLT"
 };
 function yhzCellText(s) {
+  // This is the shared cell reader: about fifteen airport parsers take their
+  // flight numbers, cities, gates and statuses through it, and the boards paste
+  // the result into a row. A single-pass tag strip is not a sanitizer —
+  // "<scr<script>ipt>" comes out the far side whole — so strip until the string
+  // stops changing, then drop any leftover angle bracket outright. Board text
+  // has no business carrying one. Same treatment as ytzCellText.
+  let t = String(s || ""), prev;
+  do { prev = t; t = t.replace(/<[^>]+>/g, " "); } while (t !== prev);
   // &amp; is decoded LAST (see ausXmlField): first would double-unescape.
-  return String(s || "").replace(/<[^>]+>/g, " ")
+  return t.replace(/[<>]/g, "")
     .replace(/&#0?39;|&#8217;|&rsquo;/g, "'").replace(/’/g, "'")
     .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 }
@@ -5003,7 +5011,17 @@ function parseYqxPage(html, dir, nowMs) {
   const isHome = (s) => /^gander\b/i.test(String(s || "").trim());
   // Each row ends in a commented-out "<!-- <td></td> -->" (a shelved
   // Weather column) — strip comments first so the cell count stays 8.
-  const rows = tm[0].replace(/<!--[\s\S]*?-->/g, "").match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
+  //
+  // UNTIL IT STOPS CHANGING, not once — CodeQL's
+  // js/incomplete-multi-character-sanitization, and here it is a parser bug as
+  // much as a security one. Split the opening marker around a complete comment
+  // — "<!-" + "<!-- -->" + "-" — and one pass removes the inner comment, the
+  // two halves close up into a fresh "<!--", and the markup the page had
+  // deliberately commented OUT is live again by the time the <tr> match runs.
+  // It then becomes a flight on the board. Same treatment as ytzCellText.
+  let table = tm[0], prev;
+  do { prev = table; table = table.replace(/<!--[\s\S]*?-->/g, ""); } while (table !== prev);
+  const rows = table.match(/<tr[^>]*>[\s\S]*?<\/tr>/g) || [];
   for (const row of rows) {
     if (row.indexOf("<th") !== -1) continue;
     const cells = authorityCellsText(row);
@@ -10354,6 +10372,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
 };
 export {
   fids_proxy_default as default,
+  yhzCellText,
   yhzParseBoard,
   yhzWindowTs,
   yqmNormFlight,
