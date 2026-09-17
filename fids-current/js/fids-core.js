@@ -19775,6 +19775,7 @@ const AP = {
   CGK:{ name:'Soekarno-Hatta International Airport',                 tz:'Asia/Jakarta'       },
   KUL:{ name:'Kuala Lumpur International Airport',                   tz:'Asia/Kuala_Lumpur'  },
   MEL:{ name:'Melbourne Airport',                                    tz:'Australia/Melbourne'},
+  HBA:{ name:'Hobart International Airport',                         tz:'Australia/Hobart'   },
   AKL:{ name:'Auckland Airport',                                     tz:'Pacific/Auckland'   },
   MNL:{ name:'Ninoy Aquino International Airport',                   tz:'Asia/Manila'        },
   GCM:{ name:'Owen Roberts International Airport — Grand Cayman',    tz:'America/Cayman'     },
@@ -25257,7 +25258,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23833';
+var FIDS_BUILD_TAG = 'v23834';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -32718,11 +32719,22 @@ document.addEventListener('click', function(e) {
 // rule, which is what happened before this existed.
 const FIDS_ICAO_EXCEPTIONS = {
   SYD: 'YSSY',   // Sydney Kingsford Smith — S, so the K rule would claim it
+  HBA: 'YMHB',   // Hobart — Australia is Y, but the second letter is M, not H
   LHR: 'EGLL', DUB: 'EIDW', EDI: 'EGPH', KEF: 'BIKF', ZRH: 'LSZH'
 };
 try { if (typeof window !== 'undefined') window.FIDS_ICAO_EXCEPTIONS = FIDS_ICAO_EXCEPTIONS; } catch (e) {}
 
 const FIDS_LIVE_AIRPORTS = new Set([
+  // v23834 — HOBART, and the first Australian airport besides Sydney.
+  //
+  // Chosen on its TERMS, not on its size. Every larger Australian airport was
+  // scouted: Brisbane, Gold Coast and Townsville all serve clean feeds and all
+  // three forbid reproducing, distributing or communicating their content to
+  // the public; Melbourne, Cairns and Sunshine Coast carry the same kind of
+  // clause; Perth, Adelaide and Canberra refuse the Worker at the edge with a
+  // 403. Hobart publishes no website terms of use at all, so there is no
+  // clause to breach — which is why a small airport goes first.
+  'HBA',
   // v23804 — YYZ, at last. It was held out because Toronto's bot manager
   // blocked the Worker's datacenter IP and /flights/yyz answered {"list":[]}.
   // That block has lifted: the same route now returns 974 rows, three calls

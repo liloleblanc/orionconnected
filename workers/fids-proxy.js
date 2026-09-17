@@ -3168,6 +3168,73 @@ __name(yhmParseBoard, "yhmParseBoard");
 // Small shared helper: parse an offset-less local ISO string as a wall
 // clock in the given zone (naive Date.parse would read it as UTC in the
 // Worker). Returns a time object or null.
+// ── HOBART (2026-09-17) ──────────────────────────────────────────────
+// Australia's first airport here, and the simplest feed in the estate:
+// hobartairport.com.au publishes its own WordPress JSON at
+// /wp-json/hba/v1/timetable/ with BOTH directions in one document, already
+// in ISO-8601 with the +10:00 offset attached, so no wall-clock guessing.
+//
+// It carries gate AND carousel, which most feeds do not, so a Hobart board
+// can fill the baggage screen as well as the gate one.
+//
+// WHY HOBART AND NOT A LARGER AUSTRALIAN AIRPORT. The bigger ones were
+// scouted and ruled out on their own published terms, not on technical
+// grounds: Brisbane, Gold Coast and Townsville all serve clean feeds AND
+// all three forbid reproducing, distributing or communicating their content
+// to the public; Melbourne, Cairns and Sunshine Coast carry the same kind of
+// clause; Perth, Adelaide and Canberra refuse the request outright at the
+// edge. Hobart publishes no website terms of use at all — no /terms-of-use,
+// no /legal, no /copyright — so there is no clause to breach. That is the
+// whole reason it is first.
+//
+// The status field is EMPTY for most rows because the feed runs five days
+// ahead; an empty status is a scheduled flight, not a missing one.
+const HBA_STATUS = {
+  "landed": "arrived", "arrived": "arrived", "departed": "departed",
+  "closed": "gateclosed", "boarding": "boarding", "cancelled": "cancelled",
+  "delayed": "delayed", "final call": "final", "on time": "ontime"
+};
+// The eight places Hobart actually flies to, as the feed spells them.
+const HBA_CITY_IATA = {
+  "melbourne": "MEL", "sydney": "SYD", "brisbane": "BNE", "canberra": "CBR",
+  "adelaide": "ADL", "perth": "PER", "launceston": "LST", "gold coast": "OOL"
+};
+function hbaParseFeed(json, dir) {
+  const out = [];
+  let doc;
+  try { doc = typeof json === "string" ? JSON.parse(json) : json; } catch (e) { return out; }
+  const rows = (dir === "dep" ? doc.departures : doc.arrivals) || [];
+  for (const r of rows) {
+    const num = String(r.flight_number || "").trim().toUpperCase();
+    if (!/^[A-Z0-9]{2,3}\d{1,4}$/.test(num)) continue;
+    const sched = localIsoObj("Australia/Hobart", r.scheduled_time);
+    if (!sched) continue;
+    let revised = localIsoObj("Australia/Hobart", r.estimated_time);
+    // An estimate equal to schedule is not a revision, and the boards draw a
+    // revised time differently from a scheduled one.
+    if (revised && revised.ts === sched.ts) revised = null;
+    if (revised) revised = settleRevised(revised, sched, "Australia/Hobart");
+    const city = String((dir === "dep" ? r.to : r.from) || "").trim();
+    const code = String(r.airline_code || "").trim().toUpperCase();
+    out.push(authorityFlight({
+      dir,
+      number: num,
+      status: HBA_STATUS[String(r.status || "").trim().toLowerCase()] || "scheduled",
+      homeIata: "HBA", homeIcao: "YMHB", homeName: "Hobart",
+      otherIata: HBA_CITY_IATA[city.toLowerCase()] || null,
+      otherName: city || null,
+      // Arrivals carry a carousel rather than a gate; the board reads the
+      // same field for both and labels it by direction.
+      gate: (dir === "dep" ? r.gate : r.carousel) || null,
+      airlineIata: code || null,
+      airlineName: r.airline || AIRLINE_IATA_NAME[code] || null,
+      sched, revised
+    }));
+  }
+  return out;
+}
+__name(hbaParseFeed, "hbaParseFeed");
+
 function localIsoObj(tz, s) {
   const m = String(s || "").match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})/);
   if (!m) return null;
@@ -6889,6 +6956,16 @@ const AUTHORITY_HANDLERS = {
     const f = yxxParseFeed(t, dir, Date.now());
     return f.length ? f : null;
   } },
+  hba: { tz: "Australia/Hobart", source: "hba-authority", list: async (dir, env) => {
+    // Both directions arrive in ONE document, so the cache key is the
+    // document, not the direction — two screens facing opposite ways share
+    // a single upstream fetch.
+    const t = await fetchAuthorityText("hba/timetable", "https://hobartairport.com.au/wp-json/hba/v1/timetable/", '"arrivals"', 120);
+    if (!t) return null;
+    const f = hbaParseFeed(t, dir);
+    return f.length ? f : null;
+  } },
+
   yqr: { tz: "America/Regina", source: "yqr-authority", list: async (dir, env) => {
     const t = await fetchAuthorityText(`yqr/${dir}`, `https://www.yqr.ca/en/passengers/flights/${dir === "dep" ? "departures" : "arrivals"}`, 'data-th="Flight"', 120);
     if (!t) return null;
