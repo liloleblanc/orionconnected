@@ -15,7 +15,7 @@ The loader's palette in shared.css is the
   <!-- v23803 — yqm.orionconnected.com shows Moncton. Loaded FIRST: it fills in
        sessionStorage.fids_airport, which every board reads as its default, and the
        earliest reader is an inline script further down this page. -->
-  <script src="js/host-airport.js?v=23804"></script>
+  <script src="js/host-airport.js?v=23829"></script>
 
   <script>
   (function () {
@@ -197,7 +197,7 @@ s not just start it's all the time now'). ?rotate= navigates with
   <link rel="stylesheet" href="css/baggage-display.css?v=23472">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23804">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23829">
   <style>
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
@@ -484,7 +484,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
   </div>
   <div class="ctrl-spacer"></div>
   <span class="ctrl-info" id="lastUp">LIVE · 11:40 a.m.</span>
-  <span class="ctrl-info" id="apiLabel">AERODATABOX</span>
+  <span class="ctrl-info" id="apiLabel"></span>
   <span class="mode-badge live" id="modeBadge">LIVE</span>
   <div class="live-pill"><div class="live-dot" style="background: rgb(16, 185, 129);"></div><span id="liveLabel">LIVE</span></div>
 </div>
@@ -666,7 +666,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
       <button onclick="attemptLogin()" style="flex:1;padding:14px;background:#eab308;color:#18181b;border:none;font-size:15px;font-weight:900;letter-spacing:3px;cursor:pointer;">LOGIN</button>
       <button onclick="cancelLogin()" style="flex:1;padding:14px;background:#3f3f46;color:#fff;border:none;font-size:15px;font-weight:700;letter-spacing:2px;cursor:pointer;">CANCEL</button>
     </div>
-    <div style="margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:1px;">LIVE DATA REQUIRES AERODATABOX API ACCESS</div>
+    <div style="margin-top:20px;font-size:10px;color:rgba(255,255,255,0.2);letter-spacing:1px;">LIVE DATA UNAVAILABLE — SIGN IN TO CONTINUE</div>
   </div>
 </div>
 
@@ -864,7 +864,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
 <script src="js/feed-router.js?v=23270"></script>
-<script src="js/fids-core.js?v=23804"></script>
+<script src="js/fids-core.js?v=23829"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -874,7 +874,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="js/airport-runways.js?v=23035"></script>
 <script src="js/template-renderer.js?v=1"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=23804"></script>
+<script src="js/menu.js?v=23829"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/menubar.js?v=23233"></script>
 <script src="js/editor-roles.js?v=1"></script>
