@@ -63,7 +63,7 @@ reader**, not hardcoded layout:
 
 ## The shape of the new system
 
-Modeled on how mature display systems (e.g. Simpleway CX) are built:
+Modeled on how mature display systems are built:
 
 - **CORE (permanent, small, generic):** data engine, asset library, the
   template store, auth, setup, and the **renderer** that binds tokens like

@@ -1,5 +1,5 @@
 /* ═══════════════════════════════════════════════════════════════════════
-   BIDS v2 — Simpleway-inspired layout
+   BIDS v2 — carousel anchor and flight list
    ───────────────────────────────────────────────────────────────────────
    Layered chevron design: big carousel anchor left, flight list right.
    All colors come from FIDS theme variables — works with all 22 themes.
@@ -229,7 +229,8 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   padding: 0 40px;
   position: relative;
 }
-/* Angled left edge on the clock tab — mimics Simpleway's chevron motif */
+/* Angled left edge on the clock tab — carries the chevron motif of the
+   layout above into the tab, so the two read as one shape. */
 .bidsv2-clock-tab::before {
   content: '';
   position: absolute;
