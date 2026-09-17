@@ -20432,3 +20432,73 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body[data-gate-airline="AA"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-logoslot .g8-r1-brandpair {
   flex-direction: row-reverse !important;
 }
+
+/* ══ v23835 — THE BANNER READS ON ONE BASELINE, AND GATE/PORTE FILLS ITS PANEL ══
+
+   Reported off a Billy Bishop gate shot: the airport code and the clock beside
+   it did not sit level, and Gate/Porte wanted to be bigger, further left, and
+   squared to the numeral.
+
+   1. THE CLOCK'S 4px LIFT WAS MEASURED AGAINST A LOGO, NOT A LETTER.
+
+   v23556 raised the clock by 4px so its digits' ink-centre met the YQM mark's:
+   "leaf 44, wordmark 44, YQM mark 44, clock digits 40", the gap being descender
+   space the numerals never use. That is right — for Moncton, which is the ONE
+   airport whose banner carries a mark (fids-core.js ~15099; every other airport
+   renders <span class="octb-ap">IATA</span> instead).
+
+   Against text the lift is wrong, because a letterform carries the same
+   descender space the digits do. Measured on the live board with a zero-height
+   inline probe sitting on each baseline:
+
+       code  "YTZ"   baseline 81.39
+       clock "3:52PM" baseline 77.39   ← the -4px, and the whole of the fault
+
+   Untransformed, both are 81.39. They were never misaligned in layout; the
+   nudge pulled them apart. So the lift is scoped to the mark variant and the
+   text variant is left flat — Moncton keeps its measured placement, verified
+   unchanged.
+
+   2. THE SEPARATOR IS SIZED TO ITS NEIGHBOURS RATHER THAN NUDGED TOWARD THEM.
+
+   At 38.4px beside 64px text, align-items:center leaves its baseline 5.2px
+   high. A translateY would close it, but the correction is a function of the
+   size RATIO, so any such number drifts at the clamp ends. Giving the bar the
+   same clamp as the code and clock makes the three boxes identical and the
+   baselines coincide with no nudge at all — measured 0.00 on all three. Weight
+   and colour are untouched, so the bar keeps its lighter reading.
+
+   3. GATE / PORTE: CEILING TO FLOOR, AND OFF THE NUMERAL.
+
+   5.4vh was tried at v23636 and reverted — not for fitting, but because on a
+   three-character gate the label and numeral filled the panel wall to wall.
+   The reason it works now is the margin: pushing the pair off the numeral buys
+   back the air that made 5.4vh feel crowded.
+
+   Measured against the numeral, 1920x1080:
+
+       label   top   7.4   bottom 131.0
+       numeral top   7.6   bottom 130.8     within 0.2px on both edges
+       gap to the numeral 22px -> 54px
+
+   Re-checked across gate labels 1 / 12 / 109 / A14. The three-character case —
+   the one that caused the revert — keeps 35px of air to its left and 30px to
+   the right of the numeral, and nothing overflows the panel.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb-clockrow:has(.octb-ap) .octb-clock {
+  transform: none !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .octb-clockrow .octb-apsep {
+  font-size: clamp(38px, min(7.5vh, 3.4vw), 64px) !important;
+  line-height: 1 !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .g8-r1-right .g8-bilbl {
+  /* The width term is the v23730 house rule: a vh-only clamp sizes off height
+     alone and overflows the moment a board is narrower than the geometry it was
+     tuned on. At 16:9 the vh governs (5.4vh = 58.3px at 1080, 3.05vw = 58.6px),
+     so the measured placement above is unchanged; vw only bites on a narrow
+     board, which is exactly when it should. */
+  font-size: clamp(34px, min(5.4vh, 3.05vw), 62px) !important;
+  line-height: 1.06 !important;
+  margin-right: .55em !important;
+}
