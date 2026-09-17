@@ -28072,6 +28072,20 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
     if (merged) console.log('[FIDS] YQM webhook aircraft merge: ' + merged + ' tail(s) applied to native rows (' + direction + ')');
   } catch (e) {}
 }
+// Porter's flight-number series, read as an equipment signal.
+//
+// The authority feeds publish no aircraft field at all, so this is the only
+// thing left to read. PD2xxx is the Dash 8-400 network; the low ranges are the
+// E195-E2 routes. Returns null — meaning UNKNOWN, never "a jet" — for anything
+// it does not positively recognise, so a series Porter opens later is left
+// unclaimed rather than silently costed as the wrong aeroplane.
+function _porterSeriesEquipment(number) {
+  var m = String(number == null ? '' : number).toUpperCase().match(/^PD\s*0*(\d+)$/);
+  if (!m) return null;
+  return /^2\d{3}$/.test(m[1]) ? 'DHC-8-400' : null;
+}
+if (typeof window !== 'undefined') window._porterSeriesEquipment = _porterSeriesEquipment;
+
 function adbTs(str) { if(!str)return null; return new Date(str.replace(' ','T')).getTime(); }
 function adbHHMM(str) { if(!str)return null; const m=str.match(/(\d{2}):(\d{2})/); return m?`${m[1]}:${m[2]}`:null; }
 function fidsLocalDateKey(ts, timeZone) {
@@ -29835,6 +29849,30 @@ function mapADB(raw, mode) {
       const _arrIata = (f.arrival?.airport?.iata || '').toUpperCase();
       if ((_depIata === 'YTZ' || _arrIata === 'YTZ') && _aircraftRaw && !/dash|dh|q400|de havilland/i.test(_aircraftRaw)) {
         _aircraftRaw = 'DHC-8-400';
+      }
+      // ── PORTER 2000-SERIES IS THE TURBOPROP NETWORK ──
+      // The YTZ rule above CORRECTS equipment the feed got wrong. This one
+      // SUPPLIES equipment where the feed carries none at all — the airport
+      // authority feeds publish no aircraft field whatever, so every Porter row
+      // on them renders with a blank type and any block-time estimate is made
+      // without knowing whether it is costing a turboprop or a jet. On
+      // YQM→YHU that is the difference between 1h24m and 1h09m, and the board
+      // was showing the jet figure on a route that only sees Dash 8s.
+      //
+      // The series is the only equipment signal these feeds leave us: PD2xxx is
+      // the Dash 8-400 network, while the low ranges (PD200/202/204 Halifax–
+      // Toronto, PD465 Halifax–St. John's) are the E195-E2 routes.
+      //
+      // IT ONLY EVER ADDS. An unmatched number means UNKNOWN, never "therefore
+      // a jet" — Porter may open a 1000-series or any other range at any time,
+      // and a rule that inferred the negative would silently cost a new
+      // turboprop series as jets on a board nobody had thought to re-check.
+      // Unknown stays unknown, and the estimate downstream stays unclaimed.
+      //
+      // Real equipment data always wins: this fires only on an empty field.
+      if (!_aircraftRaw) {
+        const _pdSeries = _porterSeriesEquipment(f.number);
+        if (_pdSeries) _aircraftRaw = _pdSeries;
       }
     }
     const _aircraft=formatAircraft(_aircraftRaw);
