@@ -15,7 +15,7 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=23833"></script>
+<script src="js/host-airport.js?v=23834"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -501,7 +501,8 @@ const AIRPORTS={
   AMS:{n:'Amsterdam',tz:'Europe/Amsterdam',r:'INT'},
   DUB:{n:'Dublin',tz:'Europe/Dublin',r:'INT'},
   KEF:{n:'Reykjavík (Keflavík)',tz:'Atlantic/Reykjavik',r:'INT'},
-  SYD:{n:'Sydney',tz:'Australia/Sydney',r:'INT'}
+  SYD:{n:'Sydney',tz:'Australia/Sydney',r:'INT'},
+HBA:{n:'Hobart',tz:'Australia/Hobart',r:'INT'}
 };
 const REGION_LABEL={CA:'Canada',US:'United States',INT:'Sun & International'};
 const AP_NAME={}; for(var _ak in AIRPORTS) AP_NAME[_ak]=AIRPORTS[_ak].n;
@@ -1268,7 +1269,8 @@ try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{
 // v23338 — the airports that actually serve data. Mirrors FIDS_LIVE_AIRPORTS in
 // fids-core.js (the board's own list); tests/live-airports.test.js fails if the
 // two drift apart or if the worker gains a handler neither of them knows about.
-const APP_LIVE_AIRPORTS = new Set(['YYZ','DCA','IAD',
+const APP_LIVE_AIRPORTS = new Set([
+  'HBA','YYZ','DCA','IAD',
   'TPA','YUL','LGA','EWR','YTZ','YHU',   // v23420 dedicated-route feeds
   'YQM','YHZ','YYT','YSJ','YFC','YQY','YQX','YYG','YDF',
   'YOW','YQB','YQT','YHM','YXX','YLW','YQR','YXE','YYC','YEG',

@@ -1,0 +1,126 @@
+{
+ "arrivals": [
+  {
+   "airline": "Virgin",
+   "airline_code": "VA",
+   "flight_number": "VA1320",
+   "carousel": "1",
+   "codeshare_airlines": [
+    "UA",
+    "QR",
+    "SQ"
+   ],
+   "codeshare_flights": [
+    "UA7406",
+    "QR7180",
+    "SQ6582"
+   ],
+   "gate": "5",
+   "status": "Landed",
+   "from": "Melbourne",
+   "estimated_time": "2026-09-17T11:48:00+10:00",
+   "scheduled_time": "2026-09-17T11:55:00+10:00"
+  },
+  {
+   "airline": "Virgin",
+   "airline_code": "VA",
+   "flight_number": "VA1320",
+   "carousel": "1",
+   "codeshare_airlines": [
+    "UA",
+    "QR",
+    "SQ"
+   ],
+   "codeshare_flights": [
+    "UA7406",
+    "QR7180",
+    "SQ6582"
+   ],
+   "gate": "5",
+   "status": "Landed",
+   "from": "Melbourne",
+   "estimated_time": "2026-09-17T11:48:00+10:00",
+   "scheduled_time": "2026-09-17T11:55:00+10:00"
+  },
+  {
+   "airline": "Link Airways",
+   "airline_code": "FC",
+   "flight_number": "FC263",
+   "carousel": "2",
+   "codeshare_airlines": [
+    "VA"
+   ],
+   "codeshare_flights": [
+    "VA4009"
+   ],
+   "gate": "1",
+   "status": "",
+   "from": "Canberra",
+   "estimated_time": "2026-09-17T12:20:00+10:00",
+   "scheduled_time": "2026-09-17T12:20:00+10:00"
+  }
+ ],
+ "departures": [
+  {
+   "airline": "Virgin",
+   "airline_code": "VA",
+   "flight_number": "VA1323",
+   "codeshare_airlines": [
+    "QR",
+    "AI",
+    "SQ"
+   ],
+   "codeshare_flights": [
+    "QR6313",
+    "AI7176",
+    "SQ6577"
+   ],
+   "gate": "5",
+   "status": "Departed",
+   "to": "Melbourne",
+   "estimated_time": "2026-09-17T12:35:00+10:00",
+   "scheduled_time": "2026-09-17T12:35:00+10:00"
+  },
+  {
+   "airline": "Virgin",
+   "airline_code": "VA",
+   "flight_number": "VA1323",
+   "codeshare_airlines": [
+    "QR",
+    "AI",
+    "SQ"
+   ],
+   "codeshare_flights": [
+    "QR6313",
+    "AI7176",
+    "SQ6577"
+   ],
+   "gate": "5",
+   "status": "Departed",
+   "to": "Melbourne",
+   "estimated_time": "2026-09-17T12:35:00+10:00",
+   "scheduled_time": "2026-09-17T12:35:00+10:00"
+  },
+  {
+   "airline": "Qantas",
+   "airline_code": "QF",
+   "flight_number": "QF1294",
+   "codeshare_airlines": [
+    "EK",
+    "CX",
+    "NZ"
+   ],
+   "codeshare_flights": [
+    "EK5676",
+    "CX9120",
+    "NZ7348"
+   ],
+   "gate": "5",
+   "status": "",
+   "to": "Melbourne",
+   "estimated_time": "2026-09-17T14:15:00+10:00",
+   "scheduled_time": "2026-09-17T14:15:00+10:00"
+  }
+ ],
+ "last_refresh": "2026-09-17T13:36:00+10:00"
+}
