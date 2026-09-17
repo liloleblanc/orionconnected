@@ -862,7 +862,7 @@ window.FIDS_SHARED_AIRLINE = {
   'JJ':'LATAM BRASIL','AD':'AZUL',         'LA':'LATAM',       'JA':'JETSMART',    'AR':'AEROLINEAS',
   'CM':'COPA',        'AV':'AVIANCA',      'MX':'BREEZE',      'AM':'AEROMEXICO',  'XN':'MEXICANA',  'G3':'GOL',
   'Y4':'VOLARIS',     '2T':'BERMUDAIR',    'VB':'VIVAAEROBUS', 'UP':'BAHAMASAIR',  '4C':'LATAM',
-  'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows the owner's app shot rendered as raw codes */
+  'H2':'SKY AIRLINE', 'ZP':'PARANAIR',     /* v23230 — MIA feed rows that rendered as raw codes in the app */
   '4T':'BEOND',       'LR':'LACSA',        'BM':'BMI',
   'UP':'BAHAMASAIR',  'BG':'BIMAN',        'DO':'SKY HIGH',
   'LY':'EL AL',       'TN':'AIR TAHITI',   'NF':'AIR VANUATU',  'FJ':'FIJI',

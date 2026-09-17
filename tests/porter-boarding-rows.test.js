@@ -21,7 +21,7 @@
 // flight fell to the E-jet branch. The tests below passed the whole time
 // because they fed it the strings the sign never actually receives.
 //
-// The rule that does not depend on a feed, supplied by the owner: a Porter
+// The rule that does not depend on a feed, specified for this case: a Porter
 // flight number with 4 digits operates the DH4, 3 digits the jet — the 4-digit
 // series being the Billy Bishop turboprop network and the 3-digit series the
 // jets flying YYZ and west. The

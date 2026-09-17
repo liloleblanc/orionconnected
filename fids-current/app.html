@@ -549,8 +549,8 @@ const ACTYPE={'319':'Airbus A319','320':'Airbus A320','321':'Airbus A321','32N':
   'CR9':'Mitsubishi CRJ-900','CR7':'Mitsubishi CRJ-700','CR2':'Bombardier CRJ-200','CR5':'Mitsubishi CRJ-550',
   'E75':'Embraer E175','E90':'Embraer E190','E95':'Embraer E195',
   'B190':'Beech 1900','AT7':'ATR 72','TRN':'Turboprop',
-  // v23233 — ICAO-style codes the MIA WebFIDS feed sends raw (B38M on the owner's
-  // AC1649 screenshot), plus its house 737-800 shorthand.
+  // v23233 — ICAO-style codes the MIA WebFIDS feed sends raw (B38M on the AC1649
+  // reference screenshot), plus its house 737-800 shorthand.
   'B38M':'Boeing 737 MAX 8','B39M':'Boeing 737 MAX 9','B37M':'Boeing 737 MAX 7',
   'B737':'Boeing 737-700','B738':'Boeing 737-800','B739':'Boeing 737-900','7378W':'Boeing 737-800','B7878':'Boeing 787-8','B7879':'Boeing 787-9','B777':'Boeing 777','B767':'Boeing 767','B757':'Boeing 757','B747':'Boeing 747',
   'A19N':'Airbus A319neo','A20N':'Airbus A320neo','A21N':'Airbus A321neo',
@@ -710,8 +710,8 @@ const BRAND={AC:'#D82F2E',WS:'#00AC9D',TS:'#00B3F0',PD:'#152C53',AA:'#E02527',DL
   UA:'#0033A0',WN:'#304CB2',B6:'#00205B',F8:'#2BA84A',F9:'#026845',PB:'#FCA404'};
 // v23232 — regionals that fly under exactly one mainline brand present AS that
 // brand, the big board's own rule (its name map: Jazz/Rouge → AIR CANADA,
-// Envoy/PSA/Piedmont → AMERICAN, Endeavor → DELTA). the owner's MIA screenshot had
-// MQ3435 on a generic dark card saying "AMERICAN" beside white American cards.
+// Envoy/PSA/Piedmont → AMERICAN, Endeavor → DELTA). the reference MIA screenshot
+// had MQ3435 on a generic dark card saying "AMERICAN" beside white American cards.
 // Multi-mainline operators (SkyWest OO, Mesa YV, GoJet G7, Republic YX) keep
 // their own identity — the board keeps them too.
 const REGIONAL_FAM={QK:'AC',RV:'AC',ZX:'AC','9M':'AC','9L':'AC',SP:'PB',MQ:'AA',OH:'AA',PT:'AA','9E':'DL'};
@@ -1330,7 +1330,7 @@ let BOOT_GATE='';
 })();
 // Refresh whichever view is showing (every 3 min).
 setInterval(()=>{ if(curView==='bag')loadBags(); else load(); },180000);
-// v23230 — iOS RESUME WATCHDOG, same rule the boards carry (the owner's 20:05
+// v23230 — iOS RESUME WATCHDOG, same rule the boards carry (the reference 20:05
 // screenshot: cards frozen at 18:20 — iOS suspends a background tab's
 // timers, and a frozen WebKit context never fires them again). A heartbeat
 // proves the JS context is alive; on pageshow/visibilitychange, data older

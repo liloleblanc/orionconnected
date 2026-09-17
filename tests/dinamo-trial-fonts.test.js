@@ -74,7 +74,7 @@ test('every cut is pickable, on all three tables and in the picker', () => {
 });
 
 test('the trial files are the ones registered, and the stylesheet reloads', () => {
-  // Trial cuts are what the owner holds today; a licensed set is a file swap
+  // Trial cuts are what the repo holds today; a licensed set is a file swap
   // in the same folder, so the paths deliberately carry "Trial".
   const at = FONT_CSS.indexOf('ABC Ginto Rounded + ABC Gravity (Dinamo trials');
   assert.match(FONT_CSS.slice(at), /Trial-Regular\.otf/);

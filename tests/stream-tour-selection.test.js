@@ -7,7 +7,7 @@
 // stream value — so both broadcast boxes, which pass an ap= AND a stream=, had
 // their named airport overwritten with TOUR_DEFAULT.
 //
-// He was also right to distrust a fix keyed on the stream NUMBER. Per
+// A fix keyed on the stream NUMBER is not trustworthy either. Per
 // stream-server/README.md both live boxes run stream=1 (box 1 Moncton
 // ap=YQM, box 2 Orlando ap=MCO); the only stream=2 left in the repo is a
 // stale Miami default in setup.sh and tools/repair-second-stream.sh. So the

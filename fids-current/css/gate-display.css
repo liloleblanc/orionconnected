@@ -1654,7 +1654,7 @@ body, body.gids-page, body.gate-page{
 /* ═════════════════════════════════════════════════════════════════════════
  * v218.99.4 — flight info moved to LEFT COLUMN, row 2 hidden.
  *
- * Per the owner's reference: the status / boarding / departure / arrival fields
+ * Per the reference design: the status / boarding / departure / arrival fields
  * live in the aircraft column as a vertical stack, above the brand/reg
  * blocks. The horizontal row 2 strip is killed.
  *
@@ -2626,7 +2626,7 @@ body, body.gids-page, body.gate-page{
 
 /* v218.99.46 — fix v218.99.45 specificity miss (existing rules had higher
    specificity and overrode my bumps). Also kill the opacity that made
- everything look gray — the owner wants WHITE labels, gray only for (IATA). */
+ everything look gray — labels must be WHITE, gray only for (IATA). */
 
 /* 1. BANNER — city name (v219: sized to fit the slim header; long Bolivian
    names like "Santa Cruz De La Sierra" were overflowing at the old 96–140px) */
@@ -2880,7 +2880,7 @@ body, body.gids-page, body.gate-page{
   display: none !important;
 }
 
-/* v218.99.57 — the owner's icon/spacing/status fixes:
+/* v218.99.57 — icon/spacing/status fixes:
    1. Icons FILL the red circle (reduce badge padding)
    2. Less space between rows
    3. Status value smaller than time values
@@ -3242,7 +3242,7 @@ body, body.gids-page, body.gate-page{
 .g8-airline-PB :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-emblem-wrap,
 .g8-airline-SP :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-icon-badge,
 .g8-airline-SP :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-emblem-wrap { background: #FCA404 !important; }
-/* No exception for Flight # — the owner wants it to have the colon too */
+/* No exception for Flight # — it takes the colon too */
 :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row .v2-fi-flight-label::after {
   content: ":";
 }
@@ -3687,7 +3687,7 @@ The
   transform: none !important;
 }
 
-/* ════════ v221f — the owner's tightening pass ════════ */
+/* ══════════════ v221f — tightening pass ══════════════ */
 /* 1. Flight NUMBER (centre) a tiny bit smaller — labels unchanged */
 .g8-wrap .g8-r1-flightnum { font-size: clamp(48px, 5.2vw, 82px) !important; }
 /* 2. Screen corner BLACK outside the gate tab's rounded corner: the banner
@@ -3818,7 +3818,7 @@ The
 }
 
 /* ════════ v222b — Left panels: title-top · thin divider · BIG bottom value
- (the owner: number ~3/4, touches bottom, line under the title; between-panel
+ (reference: number ~3/4, touches bottom, line under the title; between-panel
    dividers thinner + different colour). ════════ */
 .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-flightinfo-block > .v2-fi-row {
   flex-direction: column !important;
@@ -3930,7 +3930,7 @@ The
   justify-content: flex-end !important;
 }
 
-/* ════════ v222f — left panels matched to the owner's mockup ════════
+/* ═══════ v222f — left panels matched to the reference mockup ═══════
    • title CENTERED at top, teal underline centred (consistent on all panels)
    • between-panel dividers = NAVY bar colour, thick like the outer frame
    • subtle light gradient panel background
@@ -4027,7 +4027,7 @@ The
 }
 
 /* ════════════════════════════════════════════════════════════════════════
- v223 — LEFT PANEL to the owner's EXACT spec (512×1024, 6 equal rows, 2 columns)
+ v223 — LEFT PANEL to the EXACT reference spec (512×1024, 6 equal rows, 2 cols)
    Icon column 30% (icon centred) · Text column 70% (label, full-width gold
    line, big value) — ALL text left-aligned from the same X. Overrides all
    earlier v222* layout rules (this block is last → wins).
@@ -4155,7 +4155,7 @@ The
 .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-textcol .v2-fi-value.v2-fi-status-diverted { color: #c01622 !important; }
 
 /* ════════════════════════════════════════════════════════════════════════
- v224 — RIGHT COLUMN to the owner's spec. Mirrors the left's 6-shelf rhythm:
+ v224 — RIGHT COLUMN to the reference spec. Mirrors the left's 6-shelf rhythm:
    • MAP = top half, with the "Your Aircraft | Votre Avion" title overlaid at
      the TOP and Speed/Altitude at the BOTTOM (both inside the map).
    • Bottom half = flight info → aircraft photo (maxed) → aircraft/operated,
@@ -4438,8 +4438,8 @@ The
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus { grid-row: 5 / 6 !important; flex: none !important; min-height: 0 !important; height: auto !important; }
 .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type  { grid-row: 6 / 7 !important; flex: none !important; min-height: 0 !important; }
 /* 4-row flight-info variant (Arrival row present): row 4 takes a ~45% bigger
- track so the first row's caps don't clip behind the shelf edge (
-   'capped out… can't even see it'). The map row gives up the difference;
+ track so the first row's caps don't clip behind the shelf edge (they
+   capped out and were not readable at all). The map row gives up the difference;
    the class is stamped by the renderer since :has() dies on kiosk browsers. */
 .g8-wrap .gad-map-col-v2.gad-map-col-fi4 {
   grid-template-rows: repeat(3, minmax(0, 0.85fr)) minmax(0, 1.45fr) repeat(2, minmax(0, 1fr)) !important;
@@ -4600,14 +4600,14 @@ The
 }
 
 /* ════════ v254 — Air Canada: BLACK orb badges, RED maple + red icons ════════
- Per the owner — AC's real look: black sphere, red maple/symbols. Override the
+ The AC reference look: black sphere, red maple/symbols. Override the
    accent-coloured badge to black, stop whitening the maple (its source fill is
    #f01428), and colour the functional icons red. AC-scoped only. */
-/* (Black-sphere AC treatment RETIRED — the owner now wants AC's vertical
-   badges RED like every other carrier's accent badges.) */
+/* (Black-sphere AC treatment RETIRED — AC's vertical badges are now
+   RED like every other carrier's accent badges.) */
 /* ── v23438 — THE 74% INSET IS RETIRED
-; China Eastern: 'the 2 orbs dont match the
-   botom orb is right').
+   (China Eastern: the two orbs did not match; the
+   bottom orb is the correct reference).
 
    The gate draws one round emblem orb top-left and one bottom-right, and by
    v23396 both were built from the same recipe — same 60px disc, same
@@ -4620,9 +4620,9 @@ The
 
    Written back when the wrap had no padding of its own, so the inset had to
    come from somewhere; the recipe supplies it now, and doing it twice is also
- what the owner called 'the logos inside are tiny' in v23130. The 100% rule
+ what v23130 recorded as the logos inside rendering tiny. The 100% rule
    further up this file governs again — which is exactly what the bottom orb
-   does, and he says the bottom orb is right.
+   does, and the bottom orb is the correct reference.
 
    (The .g8-airline-UA block above re-asserts 100% for United's full-bleed
    tile; it is now saying what the default already says, and is left alone
@@ -4635,8 +4635,8 @@ The
 
 /* 1) Watermark = ONE brand mark filling the ENTIRE below-map band top-to-
    bottom (auto 100%: height spans all three lower rectangles exactly, aspect
- kept — the logo is wider than the column so its sides crop off; the owner's
-   pick "B" from the treatment comparison). The band's TOP is the map's real
+ kept — the logo is wider than the column so its sides crop off; the chosen
+   treatment is "B" from the comparison). The band's TOP is the map's real
    bottom edge, measured per render into --gate-wm-top (fixed % left the
    logo's top hidden under the map → read as off-centre). Behind everything
    incl. the plane, light. Porter/KLM keep their own pattern rules below. */
@@ -4871,7 +4871,7 @@ html body:not(.gate-acsky) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus.g8-plane-
 }
 
 /* ══ AIR CANADA SHELVES — exact supplied references. The opposite/left rail
- uses the owner's dark brown-smooth texture; the three right shelves below the map
+ uses the supplied dark brown-smooth texture; the three right shelves below the map
    use the lighter 935 texture, with the cloud layer preserved over row 5. */
 html body[data-gate-airline="AC"] .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-flightinfo-block > .v2-fi-row {
   background: url('/textures/ac-left-brown-smooth.jpg?v=22351') center / cover no-repeat !important;
@@ -4887,7 +4887,7 @@ html body[data-gate-airline="AC"] .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves
   text-shadow: 0 1px 2px rgba(0,0,0,0.55);
 }
 
-/* ══ AC SHELF SKIN — the owner's verdict pass (Jul 19): code chip in AC red,
+/* ══ AC SHELF SKIN — verdict pass (Jul 19): code chip in AC red,
    status colours brighter, value clip fixed, the SAME brushed steel on the
    right column (lighter fade so its dark lettering stays readable), and
    the dot-globe watermark visible on BOTH sides. */
@@ -4905,8 +4905,8 @@ html body[data-gate-airline="AC"] .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves
    with Air Canada's own navy+red
 The grunge lives on the COLUMN; the shelves and the
    header go transparent so the single textured surface reads continuously
- behind them, and a light grunge wash blends over the map/photo too (
-   'could even be blended slightly over the map'). */
+ behind them, and a light grunge wash blends over the map/photo too (the
+   wash is blended slightly over the map as well). */
 /* v22459 — AC right shelves: brushed metal, UNIFORM tone across every shelf
  The
    old per-shelf top→bottom gradient repeated on each shelf, so the stack banded

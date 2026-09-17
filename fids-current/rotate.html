@@ -131,8 +131,8 @@
       // whatever the hour some of them are in their busy period — the four
       // European boards carry the North American night. Every one runs on its
       // own authority feed and owes nothing to the cancelled subscription.
-      // v23418 — RANKED BY FLIGHTS PER DAY, WITH CANADA BACK. the owner asked for
-      // airports that work, then 'Canada?'. v23416 judged them on a 5am
+      // v23418 — RANKED BY FLIGHTS PER DAY, WITH CANADA BACK. the requirement was
+      // airports that work, with Canada included. v23416 judged them on a 5am
       // snapshot, which was the wrong measure: it cut Las Vegas and Miami as
       // "quiet" when they are 1,132 and 535 flights a day — they were simply
       // asleep at 1am local. Re-measured over a FULL DAY (-2h/+22h) against
@@ -193,7 +193,7 @@
 
       // v23346 — ap= and tour= BOTH take a list. `tour=1` means the default
       // list below; `tour=ZRH,LHR,YHZ` tours exactly those; `tour=0` opts out.
-      // (the owner's desktop launcher passes the airports in tour=, which used to
+      // (the desktop launcher passes the airports in tour=, which used to
       // read as "not the string 1", quietly leaving the rotator on Moncton.)
       function apList(v) {
         return String(v || '').toUpperCase().split(',')
@@ -203,7 +203,7 @@
       var tourRaw = q.get('tour');
       var aps = apList(q.get('ap')).concat(apList(tourRaw === '1' || tourRaw === '0' ? '' : tourRaw));
       aps = aps.filter(function (c, i) { return aps.indexOf(c) === i; });      // de-dupe, keep order
-      // v23432 — EVERY BROADCAST STREAM TOURS, not just stream 2. the owner's
+      // v23432 — EVERY BROADCAST STREAM TOURS, not just stream 2. the pinned
       // stream is launched as stream=1 with a single ap= (config.env on the
       // Hetzner box: rotate.html?ap=OGG&...&stream=1). A single ap makes
       // isTour false, which switches off the airport rotation, the
@@ -216,9 +216,9 @@
       // untouched, and tour=0 still opts out explicitly.
       // v23516 — ONLY STREAM 1 IS PINNED; EVERY OTHER STREAM TOURS.
       //
-      // — and then, when I over-corrected to pin every named
-      // airport: "it's not just Miami though or Orlando or Tampa for that
-      // matter it's an international stream". Box 2 is MEANT to tour. Pinning
+      // — and then the over-correction, which pinned every named
+      // airport: box 2 is not just Miami, or Orlando, or Tampa for that
+      // matter — it is an international stream. Box 2 is MEANT to tour. Pinning
       // it to the ap= in its URL would have killed the international stream to
       // fix the Moncton one.
       //
@@ -311,7 +311,7 @@
       // 'YQM' — and a ONE-airport run is not a tour, so isTour is false, which
       // switches off BOTH the rotation and the skip-an-empty-board rule below.
       // The stream therefore sat on one small airport that is empty for most of
-      // the night, which is exactly the empty screen he has been watching.
+      // the night, which is exactly the empty screen seen on the stream.
       // Touring is the safe default: a bare rotate.html now walks the working
       // airports, and a single airport still happens whenever ap= asks for one.
       if (aps.length === 0) aps = TOUR_DEFAULT.slice();
@@ -444,7 +444,7 @@
       // and reloadPending was never set. The mechanism written in v23333 so
       // that "a rotator fix reaches the running stream without a hand on the
       // server" has therefore never once fired in production. That is why the
-      // streams sit on old code for days, why the owner says "it never gets done",
+      // streams sit on old code for days, why fixes never seem to arrive,
       // and why a deploy appears to change nothing.
       // Use a signature the CDN cannot withhold: the page's own bytes. Still
       // one request every 30 minutes, now a GET so there is a body to hash.
@@ -623,9 +623,9 @@
         // v23422 — RELOAD EVEN WHEN THE AIRPORT NEVER CHANGES. This used to
         // fire only on an airport switch, which is a trap: a single-airport run
         // has nextAp === curAp forever, so a stream pinned to one board could
-        // NEVER pick up a deploy. That is exactly what happened — the owner's stream
+        // NEVER pick up a deploy. That is exactly what happened — the pinned stream
         // sat on the old code for days while every fix shipped past it, and no
-        // amount of deploying could reach it ('it never gets done'). An airport
+        // amount of deploying could reach it: fixes never landed. An airport
         // switch is still the preferred moment because it hides the reload
         // behind a transition, but a board switch will do when there is no
         // airport switch coming.

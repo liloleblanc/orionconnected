@@ -239,8 +239,8 @@ function tpaToAdbFlight(f) {
   const _c = (o) => (o && o.content != null ? String(o.content).trim() : '');
   // Codeshare rows pack linecode/number/line as LISTS (arrays or comma-joined
   // strings). Blind String() concatenation shipped flights like ",KL2385,7157"
-  // to the board — no recognizable carrier, broken logo, dead branding (the owner's
-  // TPA Belt 6 screenshot). Tokenize every multi-value field and pick ONE
+  // to the board — no recognizable carrier, broken logo, dead branding (seen in
+  // the TPA Belt 6 screenshot). Tokenize every multi-value field and pick ONE
   // primary flight instead.
   const _toks = (o) => {
     if (!o || o.content == null) return [];
@@ -1151,7 +1151,7 @@ async function adbFetch(iata, direction) {
   // Malicious Activities') instead of JSON. Measured here over 26 requests,
   // with and without a browser User-Agent: ~30% blocked, scattered rather
   // than bursty, and identical either way — so it is not bot detection we can
-  // dress around, and it hits the owner's boards exactly as it hits us.
+  // dress around, and it hits the live boards exactly as it hits us.
   //
   // Every one of those used to drop the WHOLE Moncton list onto the ADB
   // scrape for that cycle, and the two sources do not agree: measured on the

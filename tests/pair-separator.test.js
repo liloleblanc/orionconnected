@@ -3,8 +3,8 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // v23768 — A SEPARATOR EARNS ITS PLACE ONLY ON ONE LINE.
 //
-// "If youre gonna have a seperation by seperating it by row then no need for a
-// | separation it doesnt serve a purprose."
+// Once a pair is separated by being split across rows, a "|" separator is not
+// needed as well — it no longer serves a purpose.
 //
 // On one line the bar is what tells the two languages apart. Stacked onto two
 // rows the row break already does that, and the bar is left stranded at the

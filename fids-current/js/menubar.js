@@ -37,8 +37,8 @@
       + 'body.fids-light-board .mbar-link:hover{background:rgba(13,36,64,.07);color:#0d2440;}'
       + 'body.fids-light-board .mbar-sec{color:#6b7c92;}'
       // v23215 — THE RE-PARENTED CONSOLE CONTENT GOES DARK-INK ON LIGHT
-      // BOARDS (s hidden behind
-      // same colors text, for a lot of it'). The wide panels host the old
+      // BOARDS (the fault: text invisible against a same-coloured
+      // background, across much of it). The wide panels host the old
       // sidebar's sections, whose text was styled WHITE for the dark
       // sidebar; on a light board the panel is white — measured on mist:
       // 'Teal', 'Mist (light)', 'Use airport default' all rgb(255,255,255)
@@ -91,7 +91,7 @@
       b.innerHTML = title + '<span class="car">▾</span>';
       var p = document.createElement('div'); p.className = 'mbar-panel';
       // clicks INSIDE a dropdown must not bubble to the document closer —
-      // selects/buttons were vanishing mid-click ("kicks me out").
+      // selects/buttons were vanishing mid-click, closing the dropdown.
       p.addEventListener('click', function (e) { e.stopPropagation(); });
       b.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -101,7 +101,7 @@
         // v22939 — repaint the moved controls from live state before showing
         // them. The sidebar syncs on openOverlayMenu(); this bar hosts the
         // same controls and never did, so whatever they were seeded with at
-        // fragment-load time is what the owner saw — a GIDS screen reporting FIDS.
+        // fragment-load time is what was displayed — a GIDS screen reporting FIDS.
         // Cheap, and it means the panel cannot show a stale value no matter
         // which code path last changed it.
         if (!was && typeof window._syncMenu === 'function') {
@@ -168,7 +168,7 @@
 
     var gOptions = group('Options');
     // Theme lives RIGHT HERE — one click, no console detour.
-    // 'Custom' is NOT in this quick list (the owner: picking it here just turned
+    // 'Custom' is NOT in this quick list (picking it here just turned
     // the board black — the colour editor lives in the Customize dropdown,
     // which was closed). Custom routes to Customize via the link below, so
     // exactly ONE place edits colours.
