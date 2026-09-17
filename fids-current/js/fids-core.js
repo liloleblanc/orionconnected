@@ -27543,12 +27543,40 @@ function _heritageSchedule(iata) {
 }
 // A marker the board carries for as long as it is pretending. Added once and
 // re-asserted on rebuild, because the gate re-renders constantly.
+// Put the board into demonstration mode and KEEP it there.
+//
+// Separate from _heritageMarkBoard because marking is a one-shot paint and this
+// has to hold for the life of the board — and because that function stays short
+// enough to read at a glance, which a test depends on.
+//
+// `if (!LIVE_MODE) startDemoRebuild()` is a top-level statement in this file,
+// so it runs at core load while LIVE_MODE is still true. A heritage gate
+// therefore never started its demo rebuild, and gids.html clearing LIVE_MODE
+// afterwards does not disarm a refresh timer that is already running.
+function _heritageHoldDemo() {
+  if (!_heritageCode()) return;
+  try { LIVE_MODE = false; } catch (e) {}
+  try {
+    if (typeof autoRefreshTimer !== 'undefined' && autoRefreshTimer) {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+  } catch (e) {}
+  try {
+    if (typeof startDemoRebuild === 'function'
+        && typeof demoRebuildTimer !== 'undefined' && !demoRebuildTimer) {
+      startDemoRebuild();
+    }
+  } catch (e) {}
+}
+
 function _heritageMarkBoard() {
   try {
     var code = _heritageCode();
     if (!code) return;
     document.documentElement.setAttribute('data-heritage', code);
     _heritageInstallBranding();
+    _heritageHoldDemo();
     if (document.getElementById('heritageStamp')) return;
     var car = HERITAGE_CARRIERS[code];
     var el = document.createElement('div');
@@ -30072,6 +30100,27 @@ async function _fidsFetchLeg(label, fn) {
 }
 
 async function fetchLive() {
+  // ── A HERITAGE BOARD HAS NO LIVE DATA, BY DEFINITION ──
+  //
+  // Every carrier a heritage gate can show has ceased operating, so a live
+  // feed cannot answer for it — it answers with whoever flies that airport
+  // TODAY. On a heritage Moncton gate that painted Porter, PAL and WestJet
+  // over an Air Atlantic demonstration, which is the board going "back to
+  // normal flights" a few minutes after you arrive.
+  //
+  // gids.html already forces demo for a heritage gate, but that runs AFTER
+  // core load, and by then the top-level `if (!LIVE_MODE) startDemoRebuild()`
+  // has already decided not to, and something has already armed the 5-minute
+  // refresh. Clearing LIVE_MODE afterwards does not disarm a timer that is
+  // running. So the refusal lives here, where ordering cannot defeat it: this
+  // is the one function that can overwrite the board with live rows.
+  if (typeof _heritageCode === 'function' && _heritageCode()) {
+    if (typeof autoRefreshTimer !== 'undefined' && autoRefreshTimer) {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+    return;
+  }
   const iata = document.getElementById('apSel').value;
   // Only show the loading splash on the FIRST load. The 5-minute auto-refresh
   // was re-showing it EVERY time, dropping the live gate/board to the '99%'
