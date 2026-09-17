@@ -7729,7 +7729,25 @@ async function handleYulFids(request, env, origin, direction) {
       const now = Date.now();
       const cand = merged
         .map((f) => {
-          const t = Date.parse(String(f.ScheduledTime || "") + "-04:00");
+          // Montreal is NOT always -04:00. That offset is EDT; the city runs
+          // EST (-05:00) from the first Sunday in November to the second in
+          // March, so a hard-coded -04:00 parses every arrival an hour late for
+          // four months of every year — and tests green all summer, which is
+          // why it sat here unnoticed.
+          //
+          // The consequence is not a wrong time on a screen. This window picks
+          // which arrivals get enriched with a baggage belt, so an hour of
+          // error silently swaps which flights qualify. A flight that misses
+          // the window arrives with no belt, `_belt` lands null, and a null
+          // belt matches no carousel — the flight does not appear on the
+          // baggage screens at all, while ADM's own site has the number the
+          // whole time. A carousel left with nothing can drop out of rotation.
+          //
+          // localIsoObj resolves the offset at the instant in question, the
+          // same guess-then-correct that yhzOffsetFor and localTimeObjIn
+          // already use in this file.
+          const st = localIsoObj("America/Toronto", f.ScheduledTime);
+          const t = st ? st.ts : NaN;
           return { f, dt: isNaN(t) ? Infinity : t - now };
         })
         .filter((x) => x.dt > -5 * 3600000 && x.dt < 3 * 3600000)
