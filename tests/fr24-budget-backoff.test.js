@@ -149,8 +149,8 @@ test('the configured cap is explicit, and inside the permanent credit allowance'
 });
 
 test('the reasoning for the cap is recorded next to it', () => {
-  // This number is the owner\'s money. A bare value invites a future edit to
-  // move it without knowing what it was measured against.
+  // This number is real money. A bare value invites a future edit to move it
+  // without knowing what it was measured against.
   const W = fs.readFileSync(
     path.resolve(__dirname, '..', 'workers', 'wrangler.fids-proxy.jsonc'), 'utf8');
   const at = W.indexOf('"FR24_DAILY_BUDGET"');
@@ -211,9 +211,9 @@ test('both spenders share one cool-off key', () => {
 });
 
 // ── The expensive endpoint cannot drain the pool ─────────────────────────
-// The concern this answers, in the owner's words: "I just dont want to see it
-// flush out like last time." Last time an unattended cron BOUGHT credits and
-// emptied the quota, and every board lost aircraft data for days.
+// The requirement this answers: the quota must never flush out the way it did
+// before. Last time an unattended cron BOUGHT credits and emptied the quota,
+// and every board lost aircraft data for days.
 //
 // Nothing here buys anything — that cron is gone and this code only ever
 // spends calls the plan already includes. But the two endpoints cost very

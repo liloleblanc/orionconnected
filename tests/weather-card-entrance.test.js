@@ -60,7 +60,7 @@ const TITLE_AT = CSS.lastIndexOf('@keyframes wxcFade');
 const BLOCK_AT = TITLE_AT >= 0 ? CSS.lastIndexOf('/*', TITLE_AT) : -1;
 const BLOCK = BLOCK_AT >= 0 ? CSS.slice(BLOCK_AT) : '';
 
-// The five layers, in the order the owner asked for them. Third column is the
+// The five layers, in the order the motion requires. Third column is the
 // class the cascade scan has to look for, which is not always the whole
 // selector: NEXT HOURS is reached by `.wxc-strip:not(...)` but any rival rule
 // pinning it would name `.wxc-strip`.
@@ -135,16 +135,16 @@ test('the delays run video → top → hours → 5-day → credit, ascending', (
   for (let i = 1; i < delays.length; i++) {
     assert.ok(delays[i][1] > delays[i - 1][1],
       `${delays[i][0]} (${delays[i][1]}s) must come AFTER ${delays[i - 1][0]} ` +
-      `(${delays[i - 1][1]}s) — that order IS the thing the owner asked for`);
+      `(${delays[i - 1][1]}s) — that order IS the thing being specified`);
   }
 });
 
 test('the scene is held alone, and no band ever overlaps another', () => {
-  // This is the fault that was reported twice — "it flies", "better but too
-  // fast" — and both times the cause was the same: bands running into each
-  // other, and the scene given a fraction of a second to itself before the
-  // hero landed on it. It is not a matter of taste that can be nudged later;
-  // it is the whole of what was asked for, so it is pinned as arithmetic.
+  // This is the fault that was reported twice — too fast, then still too fast
+  // — and both times the cause was the same: bands running into each other,
+  // and the scene given a fraction of a second to itself before the hero
+  // landed on it. It is not a matter of taste that can be nudged later; it is
+  // the whole of what was asked for, so it is pinned as arithmetic.
   const order = ['> video.wxc-vid', '> .wxcard-main',
     '> .wxc-strip:not(.wxcard-outlook)', '> .wxcard-outlook', '> .wxc-credit'];
   const start = c => delayOf(c);
@@ -182,13 +182,13 @@ test('the scene is held alone, and no band ever overlaps another', () => {
 test('the whole sequence finishes well inside the slide', () => {
   let last = 0;
   for (const [, child] of STAGES) last = Math.max(last, delayOf(child) + durOf(child));
-  // The first cut held this under 2s and the owner rejected the result: every
+  // The first cut held this under 2s and that result was rejected: every
   // band overlapped the one before it and the scene got 0.23s to itself. The
   // ask is the opposite — the scene SEEN, then filled one row at a time,
   // settling. That costs seconds, and they are well spent against a 22s floor;
   // what still matters is that the card spends most of its slide STILL.
   // Two cuts were rejected for being hurried before this one: 1.9s read as a
-  // flurry, 5.7s as "better but too fast". The ask is a majestic arrival, so
+  // flurry, 5.7s as better but still too fast. The ask is a majestic arrival, so
   // the sequence is long on purpose and the pauses between bands carry as much
   // of it as the movement. What still has to hold is that the card spends most
   // of its turn STILL — the slide's floor is 22s.
@@ -214,7 +214,7 @@ test('the video opens in the clear, not under the outgoing slide', () => {
   // carousel lifts the OUTGOING slide into an overlay and dissolves it over
   // this card, and the dissolve is kicked off in the same task as the render —
   // so both clocks start together and at 0.30s the panel was still 79% the
-  // previous slide. The beat the owner named FIRST had no visible window at
+  // previous slide. The beat that comes FIRST had no visible window at
   // all. The two timings live in different files, so only a test that reads
   // both can keep them honest.
   // Anchored on the dissolving overlay itself — `data-ad-fading` is the mark

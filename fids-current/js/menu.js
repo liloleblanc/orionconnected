@@ -353,7 +353,7 @@ try {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // THEME (v218.99.11)
-// Light is the default — the owner uses this during the day. Dark is a toggle
+// Light is the default — it is the mode used during the day. Dark is a toggle
 // for nighttime. Auto-pick on first open based on local time (6am-7pm =
 // light, else dark). Manual toggle wins and persists in localStorage.
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1507,8 +1507,8 @@ function _acGetToken() {
 // on the device fails with a bare HTTP 401 and no way back short of
 // knowing to re-login. A 401 now clears the stale token and pops the
 // login modal on the spot — the form keeps its values, so it's sign in
-// and hit Save again. Not airport-specific: YHU was just what he was
-// editing when the token aged out.
+// and hit Save again. Not airport-specific: YHU was just what was
+// being edited when the token aged out.
 async function _acFetch(url, opts) {
   opts = opts || {};
   opts.headers = opts.headers || {};
@@ -2508,7 +2508,7 @@ function _cuApplyDisplayMode(mode) {
 var _cuThemeExplicitDefault = false;
 function cuApplyAndSave() {
   // MERGE the form over what's saved — an unsynced/untouched control must
-  // never erase a saved setting (the owner: changing the FONT reverted the
+  // never erase a saved setting (observed: changing the FONT reverted the
   // THEME to teal, because the theme select was sitting on '' and the
   // wholesale save dropped theme:'mist').
   var saved = {};
@@ -2896,11 +2896,11 @@ function _cuPresetsSave(list) {
 }
 
 /* ── v23488 — THE PRESET LIBRARY IS AIRPORT-WIDE, NOT BROWSER-WIDE ──────────
- "it should be saving everything globably",
-   and the tell that made it diagnosable — "I would save it and I would see it
-   change on the stream so it must work to a certain point".
+ The requirement: everything should save globally,
+   and the tell that made it diagnosable — a save did visibly change the
+   look on the stream, so the path works up to a certain point.
 
-   That is exactly right, and it is the shape of the bug. v23214 made the ACTIVE
+   That reading is correct, and it is the shape of the bug. v23214 made the ACTIVE
    look sync: _cuCloudPush sends customColors to the airport config, every screen
    picks it up, the stream changes. But the LIBRARY of saved palettes was only
    ever localStorage — it is not in the worker's field whitelist, so it could not
@@ -2909,7 +2909,7 @@ function _cuPresetsSave(list) {
 
    Merge, never replace. A device that has been offline holding three presets the
    cloud has not seen must CONTRIBUTE them, not be wiped by a cloud copy that
-   predates them — losing a palette he spent time on is worse than a stale one.
+   predates them — losing a palette that took work is worse than a stale one.
    Union by id; where both sides hold the same id, the newer savedAt wins.        */
 function _cuPresetsMerge(local, cloud) {
   var byId = {}, out = [], i, p;

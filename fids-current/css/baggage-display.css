@@ -329,8 +329,8 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   overflow: hidden;
 }
 
-/* v23440 — THE CITY COLUMN GETS THE ROOM IT NEEDS (the owner, YYC baggage:
-   'Words cutoff' — the board read 'Fort McMur…').
+/* v23440 — THE CITY COLUMN GETS THE ROOM IT NEEDS (YYC baggage board: words
+   were cut off — the board read 'Fort McMur…').
 
    Measured against the real stylesheet at board width: the origin column had
    210px and 'Fort McMurray | YMM' needs 261px, so it ellipsised. The two
@@ -339,7 +339,7 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
    right one holds a city name AND its IATA code.
 
    Re-weighted to what each column actually carries, with the gap tightened
-   from 24px to 14px to find the rest. Verified across the long names on his
+   from 24px to 14px to find the rest. Verified across the long names on the
    boards — Fort McMurray, Sault Ste. Marie, Grande Prairie, Charlottetown —
    all now fit, and the time and status columns still clear their content. */
 .bidsv2-list-header {
@@ -621,7 +621,7 @@ body .bidsv2-flight-row.bidsv2-row-diverted, body .bidsv2-flight-row.bidsv2-row-
 /* Sun Country (SY) — Jul 2026 */
 .bidsv2-airline-wordmark[data-code="SY"] { height: 15px; }
 
-/* the owner's nudges Jul 5 2026 (~0.66x of the FIDS heights) */
+/* Height nudges Jul 5 2026 (~0.66x of the FIDS heights) */
 .bidsv2-airline-wordmark[data-code="B6"], .bidsv2-airline-wordmark[data-code="AS"] { height: 18px; }
 .bidsv2-airline-wordmark[data-code="F9"] { height: 15px; }
 .bidsv2-airline-wordmark[data-code="PD"] { height: 20px; }

@@ -96,8 +96,8 @@
       'arrived':     'fids-status-arrived',
       'early':       'fids-status-early',
       // Explicit classes so CSS can treat these two differently: On time
-      // stays green, Scheduled reverts to the plain row ink (the owner: the
-      // green Prévu 'is clashing with early').
+      // stays green, Scheduled reverts to the plain row ink, because a green
+      // Prévu clashes with the early state.
       'on-time':     'fids-status-ontime',
       'scheduled':   'fids-status-scheduled'
     };

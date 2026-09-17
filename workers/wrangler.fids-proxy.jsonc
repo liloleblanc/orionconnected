@@ -48,7 +48,7 @@
   // fids-proxy.js already honours it (see _adbFirst). Schedule/FIDS window
   // data is unaffected and still uses ADB. Delete this var (or set "adb")
   // only together with real position caching, or the burn resumes.
-  // ── FR24 DAILY BUDGET RAISED 2026-09-11, ON THE OWNER'S INSTRUCTION ──
+  // ── FR24 DAILY BUDGET RAISED 2026-09-11, BY EXPLICIT AUTHORISATION ──
   // Was the code default of 240/day. Measured spend at the time of the change,
   // from FR24's own usage endpoint over 24h:
   //

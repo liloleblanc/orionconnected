@@ -16,7 +16,7 @@
 // Measured on the live YQM/4 board before the fix, the span carried BOTH:
 //     color: rgb(252,238,238) !important
 //     -webkit-text-fill-color: rgb(76,130,189) !important
-// Blink paints glyphs from the second, which is the blue he was pointing at.
+// Blink paints glyphs from the second, which is the blue that was reported.
 //
 // These assertions lock the two halves of the fix in place. They are structural
 // (they read the source), because the failure is invisible in a DOM-less test

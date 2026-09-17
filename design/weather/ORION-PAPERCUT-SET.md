@@ -6,7 +6,7 @@ the baggage screens is a separate change.
 
 ## Why this set
 
-the owner supplied eight candidate sets. This one won on three counts:
+Eight candidate sets were supplied. This one won on three counts:
 
 1. **It covers everything.** Twenty marks including the six conditions no other set had —
    fog, wind, sleet, drizzle, overcast, and day/night variants throughout. The set already
@@ -44,7 +44,7 @@ PNG with alpha, longest edge 512px, ~120 KB each.
 
 Names follow the existing `TIO_ICON` and `WX_CODE_MAP` vocabulary so they can drop into the
 current pipeline without a translation layer. **Hail is the only condition with no artwork**
-in any set the owner supplied.
+in any of the eight candidate sets.
 
 ## PNG rather than SVG, deliberately
 
@@ -73,7 +73,7 @@ saturated and came through intact.
 Five icons — `rain`, `sleet`, `thunderstorms-rain`, `rain-night`, `wind-cloud` — use the
 source's dark purple-grey cloud. On the navy board they are legible but muddy, since dark
 grey on dark navy is a narrow contrast band. Brightening those five is a small colour pass
-and has not been done, because it changes the artist's palette and that is the owner's call.
+and has not been done, because it changes the artist's palette — a design call not yet made.
 
 ## Licensing
 
@@ -86,4 +86,4 @@ Vecteezy account's download history answers it. Worth settling before these reac
 
 `fids-current/logos/weather/orion/` still holds the six-condition 3D set with its dark and
 light variants. Nothing references either folder. Once this set is wired in, that one can be
-deleted — left in place for now rather than removing artwork the owner paid for on an assumption.
+deleted — left in place for now rather than removing paid-for artwork on an assumption.

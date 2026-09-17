@@ -26,7 +26,7 @@ var __name = (target, value) => __defProp(target, "name", { value, configurable:
 // community position ring, the airport's own authority feed, or an empty
 // enrichment) with no new branches needed.
 //
-// DO NOT flip this back to false. Re-enabling RapidAPI needs explicit owner
+// DO NOT flip this back to false. Re-enabling RapidAPI needs explicit
 // approval, which has been refused on cost. If a future provider is approved,
 // add it alongside FR24 — do not resurrect this one.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -84,8 +84,8 @@ __name(adbFetch, "adbFetch");
 // being the only thing that block produces. It therefore never executes and
 // costs nothing. Not authorized, not billing, left inert.
 //
-// STILL TO BE DONE BY THE OWNER (cannot be done from here — secrets never pass
-// through this repo or a chat):
+// STILL TO BE DONE BY AN OPERATOR (cannot be done from here — secrets never
+// pass through this repo or a chat):
 //   1. Delete the stale secret:  wrangler secret delete ADB_KEY
 //   2. Cancel the RapidAPI/AeroDataBox subscription at rapidapi.com if any
 //      billing relationship remains open.
@@ -1966,7 +1966,7 @@ const AIRLINE_NAME_IATA_SQUASHED = (() => {
   return m;
 })();
 // The reverse map, for feeds that print only a flight code — the boards
-// can then show a proper carrier name (the owner: Pascan on YSJ rendered
+// can then show a proper carrier name (observed: Pascan on YSJ rendered
 // nameless; P6 really is Pascan, the YSJ–YHU operator, not Porter).
 const AIRLINE_IATA_NAME = {
   AC: "Air Canada", PD: "Porter Airlines", WS: "WestJet", PB: "PAL Airlines",
@@ -2766,7 +2766,7 @@ function sfoParseFeed(jsonText, dir, nowMs) {
   for (const r of (Array.isArray(j.data) ? j.data : [])) {
     if (!r || r.flight_kind !== want) continue;
     // v23440 — ONE ROW PER AIRCRAFT.
-    // flysfo expands every marketing partner into its own row: his shot had
+    // flysfo expands every marketing partner into its own row: the board had
     // UA2624, NZ9349 and VA8456 stacked to Portland, all 10:10 off F13, and
     // nine rows to Los Angeles at 10:12 off B22. Measured on the live feed
     // 2026-09-07: 1738 departure rows are 506 aircraft, 1801 arrivals are
@@ -3567,7 +3567,7 @@ function dtwParseFeed(jsonText, dir, nowMs, schedule) {
     // Single-row groups go through dtwPickOperator too. A lone OO3909 has no
     // codeshares to collapse, but it is still Delta Connection and still has
     // to read as Delta — that row, and OO3684 beside it, are exactly the two
-    // the owner ringed on the DTW board. Skipping groups of one left 8 SkyWest and
+    // flagged on the DTW board. Skipping groups of one left 8 SkyWest and
     // 8 Endeavor rows sitting there after the first pass.
     const pick = dtwPickOperator(g);
     if (!pick) {
@@ -7625,7 +7625,7 @@ async function handleYulFids(request, env, origin, direction) {
       .concat(rv.flightsForYesterday || [], rv.flightsForToday || [], rv.flightsForTomorrow || []);
     // ── BELT ENRICHMENT (arrivals only). The list call carries no carousel,
     // but ADM's flight-details apex (getFlightHeroDetails' sibling) returns
- // Terminal_Belt__c per flight — the owner proved it on the website. One
+ // Terminal_Belt__c per flight — proved on the website itself. One
     // details call per arrival is too many for the whole day, so only the
     // baggage-hall window is enriched: arrivals scheduled within the last
     // 5h or next 3h (what a carousel screen actually shows), nearest first,
@@ -8828,7 +8828,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // positions age a little, nobody's flight does.
       // How long an all-providers-failed answer is remembered. Without this,
       // every board poll re-hammered feeds that were ALREADY rate-limiting
-      // us (the owner, morning of 2026-08-25: all three upstreams 429 — no
+      // us (observed, morning of 2026-08-25: all three upstreams 429 — no
       // altimeter, no reg, no inbound panel), which keeps the throttle
       // pinned. Short on purpose: recovery is only ever this far away.
       const ADSB_NEG_TTL = 30;
@@ -8961,7 +8961,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
             }
             // ADB answered but knows no live fix. v23255 treated a hex/reg
             // miss as authoritative and neg-cached it without consulting the
-            // community ring. v23262 withdraws that: the owner's AC2081 (LHR→YHZ,
+            // community ring. v23262 withdraws that: the observed AC2081 (LHR→YHZ,
             // reg C-FSIL confirmed on the very panel that had no altimeter)
             // was airborne over Nova Scotia — squarely inside community
             // coverage — while ADB carried no location block for the leg at
@@ -8974,7 +8974,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         } catch (e) { /* network error → community ring */ }
       }
       // ── FR24, ON A DAILY ALLOWANCE (2026-09-05) ─────────────────────
-      // the owner bought the $9 Explorer tier to test FR24 as the position
+      // the $9 Explorer tier was bought to test FR24 as the position
       // source (the community ring is unapproved, anonymous, and
       // throttling us; airplanes.live REFUSED us — see the ring filter
       // below, it is a closed question, do not raise it). Explorer
@@ -9108,8 +9108,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // re-proposed repeatedly; do not add to that.
       //
       // Earlier comments in this file described the registration as "pending"
-      // and "never got the email done", which reads as not-yet-done and is why
-      // it kept being re-proposed to him. It is done: the answer was no. Those
+      // and as an email never sent, which reads as not-yet-done and is why
+      // it kept being re-proposed. It is done: the answer was no. Those
       // comments have been corrected. ADSB_KEY exists only so that a sponsored
       // or feeder-IP arrangement COULD be honoured if one ever appears — it is
       // not a to-do. Leave the filter below exactly as it is: with no key the
@@ -9708,8 +9708,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
 
-    // PORTER GATE FEED: dead end, measured 2026-08-05. the owner found Porter's
-    // flight-status XHR (getflightsfeed) carrying YTZ arrival gates (05, 02,
+    // PORTER GATE FEED: dead end, measured 2026-08-05. Porter's own
+    // flight-status XHR (getflightsfeed) does carry YTZ arrival gates (05, 02,
     // 01 on PD2520/2522/2524). A /diag/porter probe tried eight candidate
     // paths from the WORKER — i.e. from Cloudflare's own network — and every
     // one returned 403 with Cloudflare's "Just a moment..." JS challenge,
@@ -9944,7 +9944,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // empty: the board keeps the feed's own gate, belt, time and status, and
       // simply goes without the extras it has not had since the key died.
       // NOTE the bare /airports/iata/<IATA> lookup is deliberately NOT in this
-      // list. It is the coordinate source for the map, and I have not proved
+      // list. It is the coordinate source for the map, and it is not proved
       // the client falls back to the static airport-coords table when it comes
       // back empty. Wrongly emptying it would put pins in the wrong place —
       // worse than the 429 it replaces. Left for when that fallback is checked.

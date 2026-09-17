@@ -181,7 +181,7 @@ a good fit for users/roles/scopes and an audit trail), worker `orionconnected`
 
 1. **Promote v23169?** (PBKDF2 + the two ops routes.) Uploaded as
    `3ad19d58-4075-45e7-aaf9-9a7bcc04d527`, **not yet live**. Needs one test
-   only the owner can do: confirm a real login still works.
+   that requires account access: confirm a real login still works.
 2. **ADS-B provider** — register with airplanes.live, or move to adsb.fi /
    OpenSky / FlightAware. Then proxy through the worker.
 3. **Scoped roles** — public / airline user / airline manager / airport user /

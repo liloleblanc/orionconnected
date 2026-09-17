@@ -745,7 +745,7 @@ body {
    guesswork. All marks share the same left edge: no per-code padding, the
    logo slot is a constant 54px + 14px gap even when empty.
  Heights: approved values preserved (AC 18, WS 30, PD 28, UA 23,
-   AM 26, AV 32...), his flagged four corrected (AA/DL 23, F9 20, B6 26
+   AM 26, AV 32...), the four flagged in review corrected (AA/DL 23, F9 20, B6 26
    with its tile restored), the rest set by visual weight
    H = 60/sqrt(ink aspect), clamped 16-29. Regenerate with the script in
    the session scratchpad rather than hand-editing single values. */
@@ -755,8 +755,8 @@ body {
    the tier. That was the wrong trade: at a 30px row Porter's 28px became 14.5px
    and, because a 300x99 mark can only be as wide as three times its height, it
    rendered 65px wide beside Air Canada's 198px and read as tiny.
-then "If you just put porter back the way it was it
-   was fine".
+then the decision was to restore Porter to its previous
+   fixed height.
    These numbers are a designer's judgement about how marks of very different
    aspect should read next to each other, and that judgement does not scale
    linearly with the row. They stay absolute. What stops them crossing a row line
@@ -912,7 +912,7 @@ then "If you just put porter back the way it was it
   letter-spacing: 0.3px !important;
   text-transform: none !important;
   text-align: left !important;
- padding: 5px 18px !important; /* v22202 — the owner circled the header band: less height */
+ padding: 5px 18px !important; /* v22202 — header band flagged in review: less height */
   white-space: nowrap;
 }
 #fidsTable thead th.col-status {
@@ -2120,7 +2120,8 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
    The second half of the same fault: these floors summed to 1066px BEFORE
    the flexible destination column got a single pixel. On a 1024px board the
    table forced itself to 1095px, so Status ran off the right edge entirely
-   and read "En re…" — the truncated EMBARQUEMENT / statuses he photographed.
+   and read "En re…" — the truncated EMBARQUEMENT / statuses photographed on
+   the board.
 
    Floors are now sized to their actual content instead of guessed, and they
    total 1000px, which leaves the destination column real room at 1024. The
@@ -2236,16 +2237,16 @@ body[data-fids-airline-style="emblem"] #fidsTable td.td-airline .fids-airline-wo
    navy-board redefine --fids-row-h, breaking consistency. Force
    the user-picked logo size via body[data-fids-logo-size=...].
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-/* Clearly-distinct fixed row heights per size (the owner: widen the spread so Small
+/* Clearly-distinct fixed row heights per size (requirement: widen the spread so Small
    / Medium / Large actually differ — 44/52/60 read the same). */
-/* v23502 — Small is actually small now. the owner, with Small already selected:
-   "So Rows are too big". Measured on his board: data-fids-logo-size="small",
+/* v23502 — Small is actually small now. Reported with Small already selected:
+   rows still too big. Measured on the live board: data-fids-logo-size="small",
    --fids-row-h 44px, rows rendering exactly 44 — the control was working, the
    tier was just not small. 34px row / 26px logo keeps the three tiers clearly
    apart (34 / 66 / 90), which is what the note above widened the spread for. */
-/* v23504f — 36px, not 30. the owner asked for four things that all need height:
+/* v23504f — 36px, not 30. Four requirements here all need height:
    Porter back at its old size (30px, which spilled 1.8px out of a 30px row),
-   flair "a smidge bigger" than its 29px, icons bigger than 27.6px, and
+   flair a touch bigger than its 29px, icons bigger than 27.6px, and
    nothing crossing a row line. At 30px those are mutually exclusive — the
    tallest wordmark IS the row. 36px gives every one of them room and is still
    well clear of Medium at 66. */
@@ -2342,7 +2343,7 @@ body[data-fids-theme="green"] #fidsTable tbody tr:nth-child(even) { background: 
 body[data-fids-theme="green"] #fidsTable thead th         { background: #0a1f12 !important; color: #6ee7b7 !important; }
 
 /* Cream — make sure the table itself is cream too (was relying on var which 
-   may have been overridden by my :root padding from earlier). */
+   may have been overridden by the :root padding set earlier). */
 body[data-fids-theme="cream"] #fidsTable                  { background: #f4f1ea !important; }
 
 /* Fids board container if it exists */
@@ -2490,7 +2491,7 @@ body[data-fids-theme="cream"] .fids-airport-iata { color: #0a2236 !important; }
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    v=57 — Mobile responsive fixes for GIDS / BIDS (gate / baggage screens)
    These screens were designed for 1080p displays and overflowed on phones,
-   causing the "distorted" look. This block resizes everything for mobile.
+   causing the distorted look. This block resizes everything for mobile.
    ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
 @media (max-width: 700px) {
   /* Banner shrinks to fit */
@@ -3468,8 +3469,8 @@ body[data-fids-airline-style="emblem"] #fidsTable .fids-cell-airline {
   justify-content: center !important;
 }
 
-/* v218.99 — FIDS board: bigger column headers + DISTINCT header band (per
- the owner — it read as the same colour as everything around it).
+/* v218.99 — FIDS board: bigger column headers + DISTINCT header band (the band
+ read as the same colour as everything around it).
    NB: the live table has NO .fids-table class, and every THEME sets its own
    `body[data-fids-theme=…] #fidsTable thead th { font-size:16px !important }`
    — so this must match that specificity (and sit later in the file) to win. */
@@ -3749,7 +3750,7 @@ body[data-fids-theme="mist"] .fids-banner-board .fids-icon-arr {
    Appended last so it out-cascades every per-theme rule above. */
 /* The [data-fids-theme] variants out-specify per-theme overrides. Base
  statuses (Scheduled/Prévu, unknowns) read in PLAIN ROW INK —
-   revised: green Prévu 'is clashing with early'. Only the affirmative
+   revised: green Prévu clashed with Early. Only the affirmative
    states (On time / Early, rules below) stay green. */
 body #fidsTable tbody tr td.td-status,
 body #fidsTable tbody tr td.td-status *,
@@ -4003,8 +4004,8 @@ body #fidsTable tbody tr.row-delayed:nth-child(n),
 body #fidsTable tbody tr.row-delayed:nth-child(n) td,
 body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n),
 body.fids-light-board #fidsTable tbody tr.row-delayed:nth-child(n) td { background: #EDBB00 !important; }
-/* TWO-YELLOW striping (the owner: a run of delays was one unreadable yellow
-   slab — 'it should be 2 different yellows like the regular colors').
+/* TWO-YELLOW striping (a run of delays was one unreadable yellow
+   slab — it needs two different yellows, like the regular colours).
    Even rows go a lighter yellow, mirroring the board's teal striping. */
 body #fidsTable tbody tr.row-delayed:nth-child(even),
 body #fidsTable tbody tr.row-delayed:nth-child(even) td,
@@ -4091,7 +4092,7 @@ body #fidsTable tbody tr.row-final td.td-time-sched.is-revised { opacity: 1 !imp
 /* Sun Country (SY) — official artwork wired Jul 2026 (ink aspect 7.5). */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="SY"] { height: 22px; }
 
-/* the owner's nudges Jul 5 2026 — mirrors display-overrides.css (which governs). */
+/* Review nudges Jul 5 2026 — mirrors display-overrides.css (which governs). */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="B6"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AS"] { height: 28px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: 22px; }

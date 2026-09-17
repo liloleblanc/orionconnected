@@ -61,7 +61,7 @@
   display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
 .axr-sub-rating{ margin-top:calc(var(--axr-info) * 0.3); }
 /* ── IDENTITY ROW ─────────────────────────────────────────────────────────
- the owner: the wordmark and the hotel name on one line, wordmark smaller. Only
+ Required: the wordmark and the hotel name on one line, wordmark smaller. Only
    brands whose logo is a bare wordmark (Novotel, Mercure, Pullman, ibis…)
    render this row; a property lockup carries the name inside its artwork and
    never enters it, so Fairmont and Sofitel are untouched. The wordmark scales
@@ -152,7 +152,7 @@ Nothing announces which is
      letterboxed inside the layer: the cream box sat ~24px below the element
      top while the QR sat at the padding edge, and the QR visibly poked out
  above it. Matching the aspect makes 'meet' exact —
- the shape lands on the box with no distortion of the owner's curve. */
+ the shape lands on the box with no distortion of the artwork's curve. */
   aspect-ratio:329.655 / 74.46;
   /* extra left inset: the shape's top-left corner is one long sweeping curve,
      so copy set at an even padding would run into it */
@@ -171,7 +171,7 @@ The QR never actually crossed
      before the mask, so the mask erased it and the card has had no shadow at
      all since the shape landed. */
   filter:drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
-/* the owner's Bubble.svg IS the container — box, sweeping top-left corner and the
+/* The supplied Bubble.svg IS the container — box, sweeping top-left corner and the
    ALL 'L' tail, one piece. Painted as a masked layer so it takes each brand's
    colour. Geometry from the file: the box occupies y 3.66→78.12 of a 122.044
    tall canvas, so to land the box exactly on this element the layer is
@@ -245,7 +245,7 @@ The QR never actually crossed
 .axr-logo-text{ font-family:var(--axr-display); font-weight:700; font-size:var(--axr-logo); line-height:1;
   letter-spacing:.03em; text-transform: none; }
 /* NAME (78% of logo) — AC Nord Display */
-/* v22717 — the name follows the owner's standing brand policy (already written
+/* v22717 — the name follows the standing brand policy (already written
    for .axr-page-ctx below): NEVER split across lines — one line, whole,
    shrunk-to-fit by _axrFitBubbleNames in fids-core. The v22716 balanced
    wrap was the wrong reading; the policy is no wrap at all. */
@@ -1382,7 +1382,7 @@ Sized well clear of
 }
 
 /* ── v22461 — PROPERTY-LOCKUP LOGO: consistent size, big enough, anchored ──
- the owner: Sofitel lockup 'way too small'; the two Fairmont lockups render at
+ Fault: the Sofitel lockup was far too small; the two Fairmont lockups render at
    different sizes. Root cause: the logos were sized height:auto with a small
    max-width (min(80%,480px)), so a VERY wide lockup (SOFITEL, ~6:1) got
    width-clamped and came out tiny, while different-aspect Fairmont SVGs hit
@@ -1457,7 +1457,7 @@ Sized well clear of
    in italic, for the amenity list. NOT the standalone logo lockup name — that
    stays part of the logo art. (Family kept as 'FairmontName' for continuity.) */
 /* The Seasons Regular (Elena Genova) — the REAL fairmont.com title serif,
- proper licensed cut the owner supplied. Full glyph coverage verified (digits,
+ the proper licensed cut, now supplied. Full glyph coverage verified (digits,
    m², commas, &, accents) — replaces the Season Serif trial stand-in. */
 @font-face {
   font-family: 'FairmontName';
@@ -1481,7 +1481,7 @@ Sized well clear of
 
 /* Fairmont LOGO-NAME font — Franklin Gothic URW Book. The property
    name line inside the LOCKUP (under the script wordmark, e.g. 'EL SAN JUAN
- HOTEL') is set in Franklin Gothic Book — the owner's spec for the logo name.
+ HOTEL') is set in Franklin Gothic Book — the specified face for the logo name.
    Distinct from titles (Season Serif) and body (Montserrat). */
 @font-face {
   font-family: 'FairmontLogoName';
@@ -1565,8 +1565,8 @@ Sized well clear of
 
 /* ════════════════════════════════════════════════════════════════════════
    ONE SIZE PER ROLE — v22522
- the owner counted four different sizes of the SAME hotel name inside one ad, and
-   he is right: the name was styled once per surface (page-1 headline, page-2/3
+ Four different sizes of the SAME hotel name were counted inside one ad, and
+   that is right: the name was styled once per surface (page-1 headline, page-2/3
    context heading, room-page eyebrow, QR caption) and three of those were then
    run through a shrink-to-fit fitter that sized each one to its own line
    width. Same word, four sizes, one card.
@@ -1610,8 +1610,8 @@ The ladder is compressed so each step is a step, not a
 .axr .axr-room-details{ font-size:calc(var(--axr-name) * 0.95) !important;
   margin:0 0 calc(var(--axr-info) * 0.14) !important; }
 /* v22732 — the caps selling line stops shouting over the prose, and the prose
- grows to gate-legible size (the owner, Sofitel New York on the Delta gate:
-   'wording and size fir this add is terrible' — measured live: a 22.8px caps
+ grows to gate-legible size (Sofitel New York on the Delta gate: the wording
+   and size of this ad read badly — measured live: a 22.8px caps
    headline sitting above a 15.7px paragraph, the hierarchy exactly inverted). */
 .axr .axr-fai-feats span{ font-size:calc(var(--axr-name) * 0.78) !important; }
 .axr .axr-blurb{ font-size:calc(var(--axr-name) * 0.74) !important;

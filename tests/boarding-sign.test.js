@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // v23769 — ONE SIGN FOR EVERY AIRLINE.
 //
-// The boarding panel had four bodies and four layouts. The owner's mock fixes
+// The boarding panel had four bodies and four layouts. The design mock fixes
 // one frame: two panels, LEFT the priority group and RIGHT the group being
 // called, every bilingual pair on ONE line round a bar, whole phrases one per
 // language where a line is a sentence, the same two arrow discs in the corners
@@ -194,7 +194,7 @@ test('what the review found, held so it stays fixed', () => {
   // A column carrying a note or roster or marks says so, so the CSS can make
   // room — Porter's pre-boarding overflowed both columns without it.
   assert.match(col, /\(S\.note \|\| S\.roster\) \? ' has-note' : ''/);
-  // v23773 — the tier marks are off the sign: the owner's picture has none.
+  // v23773 — the tier marks are off the sign: the design mock has none.
   assert.doesNotMatch(col, /S\.marks/, 'no marks slot on the sign');
   assert.doesNotMatch(assembly(), /_pdPrioMarksHtml\(|_pdClassicMark\(/, 'the marks are not rendered');
   // The roster is a list and wraps in its own slot; poured into a nowrap
@@ -214,7 +214,7 @@ test('what the review found, held so it stays fixed', () => {
   assert.doesNotMatch(SRC, /_g8SignPair\('zones', true\)/, "'Zones' must not be kept twice");
   assert.doesNotMatch(SRC, /_g8SignPair\(_gkey, _gkey === 'zones'\)/);
   // And the priority panel names what its 1 • 2 are — the word beside the
-  // number, on one row (v23773, the owner's picture).
+  // number, on one row (v23773, the design mock).
   const zoneLeft = (SRC.match(/_L = \{ title: _prioT, sub: _g8CabinPair\(airlineCode, 0\), label: _g8SignPair\('zones'\), value: '1 \\u2022 2'/g) || []).length;
   assert.equal(zoneLeft, 3, `the AC/WS priority panel must say Zones beside 1 • 2 during boarding and at the final call (found ${zoneLeft})`);
 });
@@ -254,7 +254,7 @@ test("each airline's cabins, named the way it names them", () => {
 });
 
 test("the picture: the words, the strip's reminder, the row, the blue half", () => {
-  // v23773 — drawn over the v23742 board by the owner, then two spoken
+  // v23773 — the mock drawn over the v23742 board, then two later
   // amendments: plain "Embarquement" (not "en cours"), and the photo-ID
   // reminder under NOW BOARDING on the strip in an attention colour that is
   // not red.

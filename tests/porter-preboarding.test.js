@@ -2,8 +2,8 @@
 
 // v23522 — THE SIGN NAMES EVERYONE ENTITLED TO PRE-BOARD.
 //
-// the owner sent Porter's published boarding order and said "This is important if
-// somehow it can be integrated":
+// Porter's published boarding order is the source, and integrating it into the
+// sign is the requirement:
 //
 //   Pre-boarding is offered as a courtesy and is available to:
 //     Passengers with disabilities

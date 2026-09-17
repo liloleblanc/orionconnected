@@ -1,6 +1,6 @@
 # Flight data providers — what we may and may not call
 
-**Status: these are settled decisions by the repository owner, not open questions.**
+**Status: these are settled decisions, not open questions.**
 Last updated 2026-09-10.
 
 Read this before touching anything that fetches flight data. Several of these
@@ -46,18 +46,18 @@ daily) that **bought** flight-alert credits out of the plan's API units, 1:1,
 floor 1000 / ceiling 5000, and a comment calling itself "deliberately
 conservative".
 
-The owner had authorised *using* AeroDataBox as a stopgap the day before
-(commit `85254894`, 2026-08-25). **That is authorisation to use a service, not
-to buy from one.** The cron ran roughly 30 times over 15 days and is the largest
+Using AeroDataBox as a stopgap had been authorised the day before (commit
+`85254894`, 2026-08-25). **That is authorisation to use a service, not to buy
+from one.** The cron ran roughly 30 times over 15 days and is the largest
 identified consumer of the monthly quota that then ran out — which is what
 removed aircraft type and registration from every board.
 
 **The rule this establishes: "use service X" never implies "spend money on
 service X". Any purchase, top-up, plan change, or recurring spend is a question
-put to the owner before a line is written — not a judgement call, and not
+put up for approval before a line is written — not a judgement call, and not
 something to justify in a commit message afterwards.**
 
-### Left to the owner (the code no longer depends on either)
+### Left to account administration (the code no longer depends on either)
 
 ```bash
 wrangler secret delete ADB_KEY --config workers/wrangler.fids-proxy.jsonc
@@ -73,8 +73,8 @@ and closing the RapidAPI subscription if any billing relationship remains open.
 registering for it.**
 
 airplanes.live closed its free API in August 2026 (commercial/bot abuse, hosting
-egress blown) and moved to feeder-IP or paid sponsorship. The owner contacted
-them and was turned down.
+egress blown) and moved to feeder-IP or paid sponsorship. They were contacted
+directly and the request was turned down.
 
 **Why this keeps resurfacing:** older comments in `fids-proxy.js` described the
 registration as *"pending"*, which reads as an outstanding to-do. It is not —
@@ -92,11 +92,10 @@ task.**
 
 `FR24_KEY` → `fr24api.flightradar24.com`. This is the paid feed.
 
-**Budget: 60,000 calls/month** (confirmed by the owner, 2026-09-10, as calls
-rather than credits). `FR24_DAILY_BUDGET` currently defaults to 240/day
-(≈7,200/month, about 12%), so there is real headroom — but spend it
-deliberately. The previous quota was lost to unattended per-flight polling; do
-not repeat that shape.
+**Budget: 60,000 calls/month** (confirmed 2026-09-10, as calls rather than
+credits). `FR24_DAILY_BUDGET` currently defaults to 240/day (≈7,200/month,
+about 12%), so there is real headroom — but spend it deliberately. The previous
+quota was lost to unattended per-flight polling; do not repeat that shape.
 
 **Billing is per returned row, not per call** — FR24's FAQ states this three
 times, and live positions cost 8 credits per aircraft returned. Our
@@ -136,6 +135,6 @@ It never executes and costs nothing. Leave it inert; it is not approved.
 ## A note on how these are written
 
 Decisions here are recorded as decisions, with the technical reasoning that
-supports them. They deliberately do **not** quote the owner verbatim or name
+supports them. They deliberately do **not** quote anyone verbatim or name
 individuals: this file is durable, public within the repository, and the
 rationale is what future readers need — not a transcript.
