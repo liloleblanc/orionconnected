@@ -25242,7 +25242,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23830';
+var FIDS_BUILD_TAG = 'v23831';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27243,6 +27243,53 @@ var HERITAGE_CARRIERS = {
   // character token in the codebase and picking one that appeared nowhere, and
   // tests/heritage-demo.test.js re-runs that scan so a future collision fails
   // the suite instead of quietly repainting a live carrier.
+  // Air Nova. Founded July 1986 at Halifax, and the FIRST carrier to become an
+  // Air Canada Connector, which is why its mark carries that endorsement in the
+  // artwork rather than as a separate badge. A wholly owned Air Canada
+  // subsidiary; operations ceased 1 November 2001, and in 2002 it was merged
+  // with Air BC, Air Ontario and Canadian Regional to form Air Canada Jazz.
+  //
+  // 'ANV' IS A SYNTHETIC CODE AND NOT THIS CARRIER'S DESIGNATOR. Air Nova's own
+  // IATA code was QK — which Jazz Aviation flies under today, 41 references deep
+  // in this file alone. A heritage gate takes over whatever code its flights
+  // carry, so using QK would repaint Jazz on every board that shows it. ANV was
+  // picked by the same method as CDX: scanning for a quoted token that appears
+  // nowhere in the tree. tests/heritage-demo.test.js re-runs that scan.
+  //
+  // Sources name 28 destinations across eastern Canada AND the United States,
+  // with Halifax-Montreal and St John's-Halifax attested specifically. The
+  // individual city list is not published anywhere this could check, so the
+  // Atlantic network below is the part that can be stood behind and NO US point
+  // is claimed — the same restraint as Air Atlantic's unclaimed founding year.
+  'ANV': {
+    name: 'Air Nova',
+    mark: '/logos/airlines/canadian/heritage/air-nova.svg',
+    // The carrier's own red, taken from its mark rather than sampled by eye:
+    // the artwork fills with #D8232A, with #8E1F2A as the shadow.
+    accent: '#d8232a',
+    home: 'YHZ',
+    era: '1986–2001',
+    eraFr: '1986–2001',
+    // Verified counts: 2 BAe 146-100, 9 BAe 146-200, 30 Dash 8-100, 7
+    // Dash 8-300, 5 Beech 1900D. The 146-200 and the Dash 8 are what the
+    // network was actually flown on, so those are what the card names.
+    fleet: 'BAe 146-200 · Dash 8-100 · Dash 8-300',
+    // Natural ratio of the mark is 300x108, so 96 high lands at 266 wide. A
+    // shared default would letterbox it — this one is far squarer than the
+    // two wordmarks beside it, because it carries the tail fin and the
+    // Connector line as well as the name.
+    bannerH: 96, bannerW: 266,
+    // Real destinations; flight numbers are illustrative, and the board says
+    // DEMONSTRATION beside them.
+    dests: [
+      { c: 'YHZ', n: 'HALIFAX' },      { c: 'YYT', n: 'ST JOHN’S' },
+      { c: 'YUL', n: 'MONTREAL' },     { c: 'YQM', n: 'MONCTON' },
+      { c: 'YSJ', n: 'SAINT JOHN' },   { c: 'YFC', n: 'FREDERICTON' },
+      { c: 'YYG', n: 'CHARLOTTETOWN' },{ c: 'YQY', n: 'SYDNEY' },
+      { c: 'YQX', n: 'GANDER' },       { c: 'YDF', n: 'DEER LAKE' },
+      { c: 'YOW', n: 'OTTAWA' },       { c: 'YYZ', n: 'TORONTO' }
+    ]
+  },
   'CDX': {
     name: 'Canadian Airlines',
     mark: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
@@ -43637,6 +43684,32 @@ var HERITAGE_MARKS = [
     fr: 'St. John’s (Terre-Neuve) · partenaire de Canadien · jusqu’en 1998',
     // The Atlantic network, plus the three central-Canada cities it reached.
     airports: ['YYT', 'YHZ', 'YQX', 'YQM', 'YSJ', 'YFC', 'YDF', 'YQY', 'YYG', 'YYZ', 'YOW', 'YUL']
+  },
+  {
+    // v23831 — Air Nova, the Atlantic side of the Air Canada network, opposite
+    // Air Atlantic on the Canadian side. Between them the two cards cover the
+    // same airports from the two competing alliances of the period, which is
+    // the whole interest of showing them.
+    //
+    // Its mark is the only one in this folder that arrives ALREADY carrying
+    // its endorsement: the artwork draws 'Liaison Air Canada Connector' under
+    // the wordmark. So there is no separate endorsement file, and none is
+    // invented — the relationship is stated by the mark itself, exactly as it
+    // sat on the aircraft.
+    //
+    // Founded July 1986 and agreed across sources. The END is not agreed: one
+    // has operations ceasing 1 November 2001, another the merger into Air
+    // Canada Regional on 1 January 2001, and the Jazz name arriving in 2002.
+    // The YEAR is common to all of them, so only the year is claimed.
+    key: 'air-nova',
+    file: '/logos/airlines/canadian/heritage/air-nova.svg',
+    name: 'Air Nova',
+    en: 'Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001',
+    fr: 'Halifax (Nouvelle-Écosse) · premier Connecteur Air Canada · 1986–2001',
+    // The Atlantic network it fed Air Canada from, plus the two central-Canada
+    // cities it reached. Sources also put it into the United States, but name
+    // no city, so no US airport is listed.
+    airports: ['YHZ', 'YYT', 'YQM', 'YSJ', 'YFC', 'YYG', 'YQY', 'YQX', 'YDF', 'YUL', 'YOW', 'YYZ']
   },
   {
     // v23760 — Canadian Airlines gets its own card now that its OWN wordmark

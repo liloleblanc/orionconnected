@@ -29,6 +29,18 @@
           + 'BAe 146-200 · Dash 8-100'
     },
     {
+      code: 'ANV',
+      name: 'Air Nova',
+      mark: '/logos/airlines/canadian/heritage/air-nova.svg',
+      home: 'YHZ',
+      // Checked: founded July 1986 at Halifax; the first Air Canada Connector,
+      // and a wholly owned Air Canada subsidiary; operations ceased 1 November
+      // 2001, merged into Air Canada Jazz in 2002. Its own code QK belongs to
+      // Jazz today, so the gate runs under a synthetic one — see fids-core.js.
+      meta: '<b>Halifax, Nova Scotia</b> · the first Air Canada Connector · 1986–2001<br>'
+          + 'BAe 146-200 · Dash 8-100 · Dash 8-300'
+    },
+    {
       code: 'CDX',
       name: 'Canadian Airlines',
       mark: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
