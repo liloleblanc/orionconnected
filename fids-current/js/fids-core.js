@@ -25242,7 +25242,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23829';
+var FIDS_BUILD_TAG = 'v23830';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -30617,17 +30617,53 @@ try {
 // The name is trimmed rather than hand-maintained, so a new airport is
 // attributed correctly the day its feed lands, without a second list to forget
 // to update.
+// ── WHERE EACH AIRPORT PUBLISHES ITS OWN FLIGHTS ─────────────────────────
+// v23830 — the public site of the body that publishes the numbers, so the
+// badge can point a viewer at the source rather than just naming it.
+//
+// GENERATED, not hand-written: each domain is the registrable domain of the
+// URL the Worker actually fetches that airport's flights from, so it cannot
+// drift from where the data really comes from. Vendor and cloud hosts are
+// excluded — Algolia, FlightView, Fruition, S3 and friends are somebody
+// else's infrastructure, and naming one as the airport's own site would be a
+// fresh false claim of exactly the kind this work removed.
+//
+// An airport missing here is not an error. Its feed either runs through a
+// helper with no literal URL, or through a host that could not be vouched
+// for; the badge then names the airport and stops, which is still true.
+var FIDS_FEED_SITES = {
+  AUS: 'abia.org', BOS: 'massport.com', CLT: 'cltairport.mobi', DCA: 'flyreagan.com',
+  DTW: 'metroairport.com', EDI: 'edinburghairport.com', IAD: 'flydulles.com', IAH: 'houstonairports.mobi',
+  KEF: 'kefairport.is', LAS: 'hriairport.com', LHR: 'heathrow.com', MCO: 'goaa.aero',
+  MIA: 'miami-airport.com', MSP: 'mspairport.com', MSY: 'flymsy.com', ORD: 'flychicago.com',
+  PDX: 'flypdx.com', PHL: 'phl.org', PHX: 'phx.aero', SEA: 'portseattle.org',
+  SFO: 'flysfo.com', YDF: 'deerlakeairport.com', YEG: 'flyyeg.com', YFC: 'yfcfredericton.ca',
+  YHM: 'flyhamilton.ca', YHZ: 'halifaxstanfield.ca', YKA: 'kamloopsairport.com', YMM: 'flyymm.com',
+  YOW: 'yow.ca', YQM: 'cyqm.ca', YQR: 'yqr.ca', YQT: 'flyqt.ca',
+  YQX: 'ganderairport.com', YSJ: 'ysjsaintjohn.ca', YVR: 'yvr.ca', YXE: 'yxe.ca',
+  YXX: 'abbotsfordairport.ca', YYC: 'yyc.com', YYG: 'flyyyg.com', YYT: 'stjohnsairport.com',
+  YZF: 'flyyzf.ca', ZRH: 'flughafen-zuerich.ch'
+};
+
 function _feedSourceName(code) {
   try {
     var row = (typeof AP !== 'undefined') && AP[String(code || '').toUpperCase()];
     var n = row && row.name;
     if (!n) return '';
+    // v23830 — THE WHOLE NAME, NOT A SHORTENED ONE.
+    //
+    // This used to drop a trailing "International Airport" to keep the badge
+    // narrow. That saved width by removing the part that makes the line an
+    // attribution: "GREATER MONCTON ROMÉO LEBLANC" is a description, while
+    // "GREATER MONCTON ROMÉO LEBLANC INTERNATIONAL AIRPORT" is the legal name
+    // of the body that publishes the numbers, which is the whole point of
+    // saying it. It is also how the airport writes its own name.
+    //
+    // Only parenthetical asides come off, because those are this table's
+    // editorial notes rather than part of the name.
     return String(n)
       .replace(/\s*\([^)]*\)/g, '')        // "(MET)", "(Alexander B. Campbell)"
       .replace(/\s+/g, ' ')
-      .trim()
-      .replace(/\s+International Airport$/i, '')
-      .replace(/\s+Airport$/i, '')
       .trim();
   } catch (e) { return ''; }
 }
@@ -30640,8 +30676,18 @@ function _paintFeedSource(code) {
     var name = _feedSourceName(code);
     // Without a name, say nothing rather than guess. An empty badge is honest;
     // a wrong one is what this replaced.
-    el.textContent = name ? ('VIA ' + name.toUpperCase()) : '';
-    el.title = name ? ('Flight data published by ' + name) : '';
+    var site = '';
+    try { site = FIDS_FEED_SITES[String(code || '').toUpperCase()] || ''; } catch (e) {}
+    // Says who published the numbers and where to go and see them. The site is
+    // dropped rather than guessed when it is not known, so the sentence is
+    // always true even when it is shorter.
+    el.textContent = name
+      ? ('FLIGHT DATA PROVIDED BY ' + name.toUpperCase() + (site ? ('  ·  ' + site.toUpperCase()) : ''))
+      : '';
+    el.title = name
+      ? ('Flight data for this airport is provided by ' + name
+         + (site ? (', and may be visited at ' + site) : '') + '.')
+      : '';
   } catch (e) {}
 }
 
