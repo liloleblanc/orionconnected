@@ -7819,7 +7819,18 @@ function aircraftImgTag(airlineCode, equipRawOrCode, opts) {
   // first, then the same chain on the generic (liveryless) images.
   var paths = [];
   var _alFolder = LIVERY_FOLDER_ALIAS[al] || al;
-  if (LIVERY_FOLDERS[_alFolder]) {
+  // A heritage carrier's folder is consulted too, but ONLY from the heritage
+  // area and only while a heritage page is open. Putting ANV or 9A into
+  // LIVERY_FOLDERS above would be simpler and would work, because no live
+  // flight carries either code — but it would also seed a defunct airline
+  // into a table every ordinary board reads, which is exactly the guarantee
+  // the heritage area is built to keep. _heritageHasLivery answers false
+  // everywhere else, so an ordinary board has nothing to match against.
+  var _heritageFolder = false;
+  try {
+    _heritageFolder = (typeof _heritageHasLivery === 'function') && _heritageHasLivery(_alFolder);
+  } catch (e) {}
+  if (LIVERY_FOLDERS[_alFolder] || _heritageFolder) {
     if (engineCode) paths.push('aircraft/' + _alFolder + '/' + eq + '-' + engineCode + '.png');
     for (var _vi = 0; _vi < _variants.length; _vi++) paths.push('aircraft/' + _alFolder + '/' + _variants[_vi] + '.png');
   }
@@ -7966,7 +7977,11 @@ var PLANE_FACING = {
   'UA/772.png':'L', 'UA/777.png':'L', 'UA/77L.png':'L', 'UA/788.png':'L', 'UA/789.png':'L', 'UA/7M8.png':'L',
   'UA/7M9.png':'L', 'UA/CR7.png':'L', 'UA/CRJ.png':'L', 'UA/E75.png':'L', 'WN/737.png':'L', 'WN/738.png':'L',
   'WN/73W.png':'L', 'WN/7M8.png':'L', 'WS/737.png':'L', 'WS/738.png':'L', 'WS/73G.png':'L', 'WS/73H.png':'L',
-  'WS/73W.png':'L', 'WS/789.png':'L', 'WS/7M8.png':'L', 'WS/DH4.png':'L'
+  'WS/73W.png':'L', 'WS/789.png':'L', 'WS/7M8.png':'L', 'WS/DH4.png':'L',
+  // Heritage archive art. All four drawings face nose-left, checked against
+  // the generic reference by mirror-matching the silhouette rather than by
+  // eye: each scores far higher unmirrored than mirrored.
+  'ANV/146.png':'L', 'ANV/DH1.png':'L', '9A/146.png':'L', '9A/DH1.png':'L'
 };
 function _planeFacingFromSrc(src) {
   try {
@@ -25242,7 +25257,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23831';
+var FIDS_BUILD_TAG = 'v23832';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27216,6 +27231,10 @@ var HERITAGE_CARRIERS = {
     era: 'until 1998',
     eraFr: 'jusqu’en 1998',
     fleet: 'BAe 146-200 · Dash 8-100',
+    // The two types the archive holds artwork for, in the order a gate cycles
+    // them. A jet on the trunk runs and the Dash on the regional ones is how
+    // the fleet was actually deployed, so the alternation is not arbitrary.
+    equip: ['146', 'DH1'],
     bannerH: 96, bannerW: 460,
     // Its real network. Flight NUMBERS are illustrative — the destinations and
     // the aircraft are real, the specific numbers are not published anywhere
@@ -27274,6 +27293,7 @@ var HERITAGE_CARRIERS = {
     // Dash 8-300, 5 Beech 1900D. The 146-200 and the Dash 8 are what the
     // network was actually flown on, so those are what the card names.
     fleet: 'BAe 146-200 · Dash 8-100 · Dash 8-300',
+    equip: ['146', 'DH1'],
     // Natural ratio of the mark is 300x108, so 96 high lands at 266 wide. A
     // shared default would letterbox it — this one is far squarer than the
     // two wordmarks beside it, because it carries the tail fin and the
@@ -27321,6 +27341,18 @@ var HERITAGE_CARRIERS = {
 // Instead the accent and the name are written into those tables AT RUNTIME,
 // once, and only on a page that asked for a heritage carrier. The banner asks
 // _heritageBannerMark directly and gets null everywhere else.
+/** True only on a heritage page, and only for a carrier whose archive art
+ *  actually exists — so aircraftImgTag may look in aircraft/<code>/ for it.
+ *  Answers false on every ordinary board, which is what keeps a defunct
+ *  carrier out of the live resolution path entirely. */
+function _heritageHasLivery(code) {
+  try {
+    if (!_heritageCode()) return false;
+    var c = HERITAGE_CARRIERS[String(code || '').toUpperCase()];
+    return !!(c && c.equip && c.equip.length);
+  } catch (e) { return false; }
+}
+
 function _heritageBannerMark(code) {
   var c = HERITAGE_CARRIERS[String(code || '').toUpperCase()];
   if (!c || !_heritageCode()) return null;
@@ -27371,6 +27403,18 @@ function _heritageSchedule(iata) {
       flight: String(500 + i * 2),
       dest: d.n, origin: d.n, di: d.c, oi: d.c,
       al: code,
+      // v23832 — THE AIRCRAFT, WHERE THE ARCHIVE HAS ONE.
+      //
+      // _aircraftCode is the field the gate resolves a livery image from, and
+      // an ordinary demo flight carries none, which is why every demo gate
+      // draws an empty aircraft panel. A heritage gate can do better: these
+      // carriers have real liveried artwork in the tree, so the flight names
+      // the type and aircraftImgTag finds aircraft/<code>/<type>.png.
+      //
+      // A carrier with no artwork names no equipment and keeps the empty
+      // panel — nothing is invented to fill it, and no generic white
+      // aeroplane stands in for a livery the archive does not hold.
+      _aircraftCode: (car.equip && car.equip.length) ? car.equip[i % car.equip.length] : '',
       gate: String(1 + (i % 4)),
       terminal: '—'
     };
@@ -27425,6 +27469,14 @@ function buildDemoFlights(iata) {
       _sortTs: schedTs, _revTs: delayTs || null, _flightKey: s.flight,
       _locIata: isDep ? s.di : s.oi,
       _airlineName: AIRLINE_NAME[s.al] || s.al,
+      // v23832 — the schedule's aircraft type has to survive this rebuild.
+      // This function constructs a NEW entry from a fixed field list rather
+      // than copying the schedule row, so anything not named here is dropped
+      // silently. A heritage schedule sets _aircraftCode and it vanished on
+      // the way through, which is why the gate's aircraft shelf held the
+      // carrier mark instead of the livery. Ordinary demo rows set none, so
+      // they are unaffected and still show the hold plate.
+      _aircraftCode: s._aircraftCode || '',
     };
     if (isDep) { entry.dest   = s.dest;   }
     else        { entry.origin = s.origin; }
