@@ -1611,20 +1611,52 @@ function setAirlineBgPick(val) {
   }
 }
 
+// ── FEED TEXT IS THIRD-PARTY INPUT, AND THE BOARDS PASTE IT INTO innerHTML ──
+//
+// Every flight value on a board — number, city, status, gate, belt, time,
+// carrier name — is whatever the airport's own published site printed, relayed
+// verbatim by the proxy worker. None of it is ours, none of it is validated
+// upstream, and the renderers below build their markup as strings and hand the
+// result to innerHTML. Interpolating feed text into that string makes the feed
+// a co-author of the page: a lone '&' in a city name mis-renders, an unpaired
+// '<' swallows the rest of a row, and a source that is compromised, spoofed or
+// simply DNS-hijacked gets script execution on every screen showing that
+// airport.
+//
+// So feed text is escaped AT THE INTERPOLATION, not at the edge. Escaping at
+// the edge would have to guess which fields are text and which are the small
+// number of markup fragments the board builds on purpose (logos, separators,
+// the city/code split); escaping at the sink keeps that distinction where a
+// reader can see it — the board's own markup goes in raw, the feed's
+// contribution can only ever be text.
+//
+// Quotes are escaped too, so one helper covers both text positions and
+// attribute positions (src="…", alt="…", data-code="…").
+function fidsEscHtml(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+if (typeof window !== 'undefined') window.fidsEscHtml = fidsEscHtml;
+
 // Wrap the trailing airport code of a 'City | YYZ' string so it can be
-// styled on its own. Returns escaped-safe HTML built from a value that is
-// already a display string; the city half is emitted unchanged, as the
-// callers did before. No code on the string -> returned untouched.
+// styled on its own. The display string is feed text (a city name off an
+// airport's board), and this is the one helper that turns it into markup, so
+// both halves are escaped here rather than at the single call site — the
+// spans below are the only markup in the result.
 function cityCodeSplitHtml(disp) {
   var str = String(disp == null ? '' : disp);
   try {
     var m = str.match(_CITY_CODE_TAIL);
-    if (!m) return str;
+    if (!m) return fidsEscHtml(str);
     var code = (m[1] || m[2] || '').toUpperCase();
-    if (!code) return str;
-    return _stripCityCode(str)
-      + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + code + '</span>';
-  } catch (e) { return str; }
+    if (!code) return fidsEscHtml(str);
+    return fidsEscHtml(_stripCityCode(str))
+      + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + fidsEscHtml(code) + '</span>';
+  } catch (e) { return fidsEscHtml(str); }
 }
 if (typeof window !== 'undefined') window.cityCodeSplitHtml = cityCodeSplitHtml;
 
@@ -8062,6 +8094,13 @@ function gateAircraftFallbackTag(airlineCode, equipLabel) {
   return '';
 }
 
+// THE PHONE LAYOUT IS THE SAME BOARD, AND IT WAS NOT ESCAPED EITHER.
+//
+// Not on CodeQL's list — it is a different innerHTML statement, reached only
+// under 700px — but it renders the SAME feed values as the wall board, built
+// the same way, and a hostile belt/city/flight/status value executed here while
+// the wall board had already been fixed. Escaped on the same terms: the board's
+// markup goes in raw, the feed's contribution is text.
 function renderMobileBaggageHtml(ctx) {
   const { arrFlights, iata, subScreenVal, timeStr } = ctx;
   const apName = (AP[iata] || {}).name || iata;
@@ -8091,13 +8130,13 @@ function renderMobileBaggageHtml(ctx) {
              +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
              +     '<div style="height:34px;display:flex;align-items:center;">' + _logoHtml + '</div>'
              // status as plain coloured text — no pill
-             +     '<div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform: none;color:' + stColorFor(f.status) + ';">' + stTxt + '</div>'
+             +     '<div style="font-size:13px;font-weight:800;letter-spacing:1px;text-transform: none;color:' + stColorFor(f.status) + ';">' + fidsEscHtml(stTxt) + '</div>'
              +   '</div>'
              +   '<div style="font-size:11px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;margin-bottom:2px;">' + (TL('destArr')||'FROM').toUpperCase() + '</div>'
-             +   '<div style="font-size:19px;color:' + T.ink + ';font-weight:800;margin-bottom:10px;">' + cityDisplay + '</div>'
+             +   '<div style="font-size:19px;color:' + T.ink + ';font-weight:800;margin-bottom:10px;">' + fidsEscHtml(cityDisplay) + '</div>'
              +   '<div style="display:flex;justify-content:space-between;font-size:14px;color:' + T.muted2 + ';">'
-             +     '<span style="font-weight:700;">' + (f.flight || '') + '</span>'
-             +     '<span style="font-variant-numeric:tabular-nums;font-weight:700;">' + (f.time || '') + '</span>'
+             +     '<span style="font-weight:700;">' + fidsEscHtml(f.flight || '') + '</span>'
+             +     '<span style="font-variant-numeric:tabular-nums;font-weight:700;">' + fidsEscHtml(f.time || '') + '</span>'
              +   '</div>'
              + '</div>';
       }).join('')
@@ -8108,11 +8147,11 @@ function renderMobileBaggageHtml(ctx) {
     + '<div style="background:' + T.header + ';padding:16px 18px 14px;border-bottom:1px solid ' + T.line + ';display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">'
     +   '<div style="flex:1;min-width:0;">'
     +     '<div style="font-size:11px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;margin-bottom:4px;">' + (TL('baggageLbl')||'').toUpperCase() + '</div>'
-    +     '<div style="font-size:16px;color:' + T.ink + ';font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (apName || '').replace(/\s+International Airport$/i,'').replace(/\s+Airport$/i,'') + '</div>'
+    +     '<div style="font-size:16px;color:' + T.ink + ';font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + fidsEscHtml((apName || '').replace(/\s+International Airport$/i,'').replace(/\s+Airport$/i,'')) + '</div>'
     +   '</div>'
     +   '<div style="flex:0 0 auto;text-align:right;">'
     +     '<div style="font-size:10px;color:' + T.muted + ';letter-spacing:2px;font-weight:700;">' + (TL('carousel') || 'BELT') + '</div>'
-    +     '<div style="font-size:30px;color:' + T.ink + ';font-weight:900;line-height:1;">' + beltVal + '</div>'
+    +     '<div style="font-size:30px;color:' + T.ink + ';font-weight:900;line-height:1;">' + fidsEscHtml(beltVal) + '</div>'
     +   '</div>'
     + '</div>'
     + '<div id="bagBgDiv" style="display:none;"></div>'
@@ -8120,8 +8159,8 @@ function renderMobileBaggageHtml(ctx) {
     + '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px;">' + flightCards + '</div>'
     // footer
     + '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 18px;font-size:11px;color:' + T.muted + ';letter-spacing:1px;font-weight:700;background:' + T.header + ';border-top:1px solid ' + T.line + ';">'
-    +   '<span>' + (iata || '') + '</span>'
-    +   '<span style="font-variant-numeric:tabular-nums;">' + timeStr + '</span>'
+    +   '<span>' + fidsEscHtml(iata || '') + '</span>'
+    +   '<span style="font-variant-numeric:tabular-nums;">' + fidsEscHtml(timeStr) + '</span>'
     + '</div>'
     // bottom nav (Back / Search)
     + _mobileNavHtml(T)
@@ -9642,9 +9681,31 @@ function _buildV2AircraftCol(ctx, vars) {
         return (html && html.indexOf('g8-r2-revised') !== -1) ? baseRevised : baseEst;
       }
       // For revised display: only show the new time, strip the strike-through scheduled
+      //
+      // PARSED, NOT REGEXED. The old form was one non-greedy pass —
+      // /<[^>]*g8-r2-strike[^>]*>[\s\S]*?<\/[^>]+>/ — over a string whose
+      // middle is a feed-supplied time. A tag strip like that is not a
+      // sanitizer and CodeQL is right to say so
+      // (js/incomplete-multi-character-sanitization): a time value carrying its
+      // own '</span>' closes the match early, the pass removes an empty strike
+      // span, and the rest of that value survives into the innerHTML below as
+      // markup. The escaping at the two builders means nothing dangerous is in
+      // there any more, but a strip that only works on well-formed input is a
+      // trap for the next value that isn't.
+      //
+      // The parser settles it: hand the string to a detached <template>, drop
+      // the .g8-r2-strike ELEMENT, read the rest back. Same treatment the
+      // board's other strike remover already uses on a live node. On the
+      // impossible failure the original is returned unchanged — the scheduled
+      // time stays visible, which is a display regression and not a hole.
       function _stripScheduledStrike(html) {
         if (!html || html.indexOf('g8-r2-revised') === -1) return html;
-        return html.replace(/<[^>]*g8-r2-strike[^>]*>[\s\S]*?<\/[^>]+>/g, '').trim();
+        try {
+          var _t = document.createElement('template');
+          _t.innerHTML = String(html);
+          _t.content.querySelectorAll('.g8-r2-strike').forEach(function (n) { n.remove(); });
+          return _t.innerHTML.trim();
+        } catch (e) { return html; }
       }
       // v23219 — a REVISED time panel flips its own title banner (MIA
       // G11: every topper banner above the time NEEDS to be the proper colour
@@ -11970,7 +12031,9 @@ function uxgGateHtml(ctx) {
     // says it will move.
     var _revDepDisp = _to12h(_revDepHHMM);
     if (_revDepDisp) {
-      depTimeHtml = '<span class="g8-r2-strike">' + (_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised' + _revDirCls + '">' + _revDepDisp + '</span>';
+      // _to12h returns its argument UNCHANGED when it is not HH:MM, so both
+      // halves here are the feed's own string on any non-conforming time.
+      depTimeHtml = '<span class="g8-r2-strike">' + fidsEscHtml(_to12h(currentFlight.time)||'\u2014') + '</span><span class="g8-r2-revised' + _revDirCls + '">' + fidsEscHtml(_revDepDisp) + '</span>';
     }
   }
 
@@ -19290,7 +19353,10 @@ const gView = document.getElementById('gateView');
             +   '</div>'
             + '</div>'
             + '<div class="fids-airport-pill' + (_lg ? ' has-logo' : '') + '">'
-            +   (_lg ? '<img class="fids-airport-logo-img" src="' + _lg + '" alt="" onerror="this.style.display=\'none\'">' : '')
+            // The logo URL is operator input held in localStorage, not one of
+            // ours: unescaped inside src="…" a quote closes the attribute and
+            // the rest becomes handlers on this img.
+            +   (_lg ? '<img class="fids-airport-logo-img" src="' + fidsEscHtml(_lg) + '" alt="" onerror="this.style.display=\'none\'">' : '')
             +   '<div class="fids-airport-text">'
             +     '<div class="fids-airport-iata">' + iata + '</div>'
             +     '<div class="fids-airport-name">' + ((AP[iata] || {}).name || iata) + '</div>'
@@ -19370,7 +19436,10 @@ const gView = document.getElementById('gateView');
             return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
               + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
               + _crslArt
-              + '<div class="bidsv2-carousel-number" data-len="' + String(_crslNum).length + '">' + _crslNum + '</div>'
+              // subScreenVal is a belt key the feed supplied (updateSubScreens
+              // builds the list from f._belt / f.gate / f.flight), and only the
+              // ?belt= URL form passes through _fidsSafeSub — this one does not.
+              + '<div class="bidsv2-carousel-number" data-len="' + String(_crslNum).length + '">' + fidsEscHtml(_crslNum) + '</div>'
               + (_mcoBagTerm ? '<div class="bidsv2-carousel-terminal">Terminal ' + _mcoBagTerm + '</div>' : '')
               + '</div>';
           })()}
@@ -19417,7 +19486,7 @@ const gView = document.getElementById('gateView');
               const _bSafeName = airlineName.replace(/[^A-Z0-9ÀÂÉÈÊÎÔÛÇ &().-]/gi, '');
               const _bAirlineHtml = _bidsEmblemOnly ? '' : (_bWmBase
                 ? '<img class="bidsv2-airline-wordmark" data-code="' + _bWmCode + '" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 'light' : _bWmVariant) + '" onerror="this.outerHTML=\'<div class=&quot;bidsv2-airline-name&quot;>' + _bSafeName + '</div>\'">'
-                : '<div class="bidsv2-airline-name">' + airlineName + '</div>');
+                : '<div class="bidsv2-airline-name">' + fidsEscHtml(airlineName) + '</div>');
               // v23327 — the redesign renders its OWN row markup (b3-*), a
               // clean flex bar that fully contains its content — content had
               // been hanging outside the box, and it must sit inside,
@@ -19434,7 +19503,7 @@ const gView = document.getElementById('gateView');
                   ? '<img class="b3-wordmark" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, 'light') + '" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
                   : _b3WmOne
                   ? '<img class="b3-wordmark fids-wm-mono" alt="' + _bSafeName + '" src="' + _b3WmOne + '">'
-                  : '<div class="b3-airline-name">' + airlineName + '</div>');
+                  : '<div class="b3-airline-name">' + fidsEscHtml(airlineName) + '</div>');
                 // Own city/code split (not .dest-iata): the legacy code-accent
                 // painters target that class and repaint it dark; and the code
                 // must NEVER ellipsize — the city shrinks first.
@@ -19443,12 +19512,16 @@ const gView = document.getElementById('gateView');
                   const _cm = _b3City.match(_CITY_CODE_TAIL);
                   if (_cm) { _b3Code = (_cm[1] || _cm[2] || '').toUpperCase(); _b3City = _stripCityCode(_b3City); }
                 } catch (e) {}
+                // Flight number, city, code, time and status are all feed
+                // text. _bidsTimeForLang and SL() both hand back their argument
+                // unchanged when it is not a shape they recognise, so neither
+                // is a filter. logoHtml and _b3Wm are markup this file built.
                 return `<div class="b3-row${_b3RowCls}">
                   <div class="b3-tile">${logoHtml}</div>
-                  <div class="b3-flight">${_b3Wm}<div class="b3-num">${_flightDisp}</div></div>
-                  <div class="b3-from"><span class="b3-city">${_b3City}</span>${_b3Code ? '<span class="b3-sep">|</span><span class="b3-code">' + _b3Code + '</span>' : ''}</div>
-                  <div class="b3-time">${_bidsTimeForLang(f.time)}</div>
-                  <div class="b3-status ${_b3StCls}">${stTxt}</div>
+                  <div class="b3-flight">${_b3Wm}<div class="b3-num">${fidsEscHtml(_flightDisp)}</div></div>
+                  <div class="b3-from"><span class="b3-city">${fidsEscHtml(_b3City)}</span>${_b3Code ? '<span class="b3-sep">|</span><span class="b3-code">' + fidsEscHtml(_b3Code) + '</span>' : ''}</div>
+                  <div class="b3-time">${fidsEscHtml(_bidsTimeForLang(f.time))}</div>
+                  <div class="b3-status ${_b3StCls}">${fidsEscHtml(stTxt)}</div>
                 </div>`;
               }
               return `<div class="bidsv2-flight-row${_bRowCls}">
@@ -19456,12 +19529,12 @@ const gView = document.getElementById('gateView');
                   <div class="bidsv2-airline-block">${logoHtml}</div>
                   <div class="bidsv2-flight-meta">
                     ${_bAirlineHtml}
-                    <div class="bidsv2-flight-num">${_flightDisp}</div>
+                    <div class="bidsv2-flight-num">${fidsEscHtml(_flightDisp)}</div>
                   </div>
                 </div>
                 <div class="bidsv2-col-from">${cityCodeSplitHtml(cityDisplay)}</div>
-                <div class="bidsv2-col-time">${_bidsTimeForLang(f.time)}</div>
-                <div class="bidsv2-col-status ${statusClass}">${stTxt}</div>
+                <div class="bidsv2-col-time">${fidsEscHtml(_bidsTimeForLang(f.time))}</div>
+                <div class="bidsv2-col-status ${statusClass}">${fidsEscHtml(stTxt)}</div>
               </div>`;
             }).join('') : `<div class="bidsv2-empty">${TL('noAssigned')}</div>`}
             ${_totalPages > 1 ? `<div class="bidsv2-page-indicator">Page ${bView._bidsPage + 1} / ${_totalPages}</div>` : ''}
@@ -23893,6 +23966,13 @@ function _monogramTile(code, name) {
 function mkLogo(code, faName) {
   const c = (code || '').trim().toUpperCase();
   const displayName = AIRLINE_NAME[c] || faName || c;
+  // Both of these are feed text on the fallback paths: an unrecognised code
+  // is echoed into data-code, and a carrier absent from AIRLINE_NAME falls
+  // through to the feed's own spelling of the name in alt. The table paths
+  // resolve to our own strings, but the attribute is written the same way on
+  // every branch, so the escape belongs with the values, not the branch.
+  const _cAttr = fidsEscHtml(c);
+  const _nameAttr = fidsEscHtml(displayName);
 
   // Skip img entirely if all sources already failed for this airline
   if (_logoFailCache[c]) {
@@ -23909,13 +23989,13 @@ function mkLogo(code, faName) {
        already renders in the row, so skip the redundant colored tile and let
        the wordmark stand alone. WN kept out — it has no separate wordmark. */
     if (IATA_TO_TILE_ICAO[c] && !TILE_SKIP_WORDMARK_ONLY.has(c)) {
-      return `<img class="full-logo" data-code="${c}" data-logo-set="tile" alt="${displayName}" src="/logos/airline-tiles/${IATA_TO_TILE_ICAO[c]}.svg" onerror="logoFallback(this)">`;
+      return `<img class="full-logo" data-code="${_cAttr}" data-logo-set="tile" alt="${_nameAttr}" src="/logos/airline-tiles/${IATA_TO_TILE_ICAO[c]}.svg" onerror="logoFallback(this)">`;
     }
     // v188: emblem map — for airlines whose primary visual is an icon/symbol
     // (not a tile background), show that icon in the emblem slot alongside
     // the wordmark. Mokulele's plumeria flower is the canonical example.
     if (IATA_TO_EMBLEM[c]) {
-      return `<img class="full-logo airline-emblem" data-code="${c}" data-logo-set="emblem" alt="${displayName}" src="${IATA_TO_EMBLEM[c]}" onerror="this.style.display='none'">`;
+      return `<img class="full-logo airline-emblem" data-code="${_cAttr}" data-logo-set="emblem" alt="${_nameAttr}" src="${IATA_TO_EMBLEM[c]}" onerror="this.style.display='none'">`;
     }
     return ''; // no tile, wordmark alone
   }
@@ -23936,7 +24016,7 @@ function mkLogo(code, faName) {
   // The airline-name text label shows next to this since the tile is just
   // a square symbol and benefits from being labeled.
   if (IATA_TO_TILE_ICAO[c]) {
-    return `<img class="full-logo" data-code="${c}" data-logo-set="tile" alt="${displayName}" src="/logos/airline-tiles/${IATA_TO_TILE_ICAO[c]}.svg" onerror="logoFallback(this)">`;
+    return `<img class="full-logo" data-code="${_cAttr}" data-logo-set="tile" alt="${_nameAttr}" src="/logos/airline-tiles/${IATA_TO_TILE_ICAO[c]}.svg" onerror="logoFallback(this)">`;
   }
   
   // PRIORITY 2: existing local transparent wordmark (legacy).
@@ -23944,7 +24024,7 @@ function mkLogo(code, faName) {
   // suppressed — data-logo-set="wordmark" triggers the CSS rule that
   // hides .fids-airline-name when this attr is present on the img.
   if (LOCAL_TRANSPARENT_LOGOS[c]) {
-    return `<img class="full-logo" data-code="${c}"${_invertAttr} data-logo-set="wordmark" alt="${displayName}" src="${LOCAL_TRANSPARENT_LOGOS[c]}" onerror="logoFallback(this)">`;
+    return `<img class="full-logo" data-code="${_cAttr}"${_invertAttr} data-logo-set="wordmark" alt="${_nameAttr}" src="${LOCAL_TRANSPARENT_LOGOS[c]}" onerror="logoFallback(this)">`;
   }
   
   // PRIORITY 3: external wway.io fallback. Also full lockups, so same
@@ -23957,7 +24037,7 @@ function mkLogo(code, faName) {
     return _monogramTile(c, displayName);
   }
   const src = 'https://img.wway.io/pics/root/' + logoCode(c) + '@svg';
-  return `<img class="full-logo" data-code="${c}"${_invertAttr} data-logo-set="wordmark" alt="${displayName}" src="${src}" onerror="logoFallback(this)">`;
+  return `<img class="full-logo" data-code="${_cAttr}"${_invertAttr} data-logo-set="wordmark" alt="${_nameAttr}" src="${fidsEscHtml(src)}" onerror="logoFallback(this)">`;
 }
 
 // ── LANGUAGE STRINGS & THEME SYSTEM ──────────────────────────────────────
@@ -26668,10 +26748,29 @@ function setState(which, show) {
       var el = document.getElementById('panelEmpty');
       var ap = (document.getElementById('apSel') || {}).value || '';
       if (el) {
-        el.innerHTML = _fidsAirportHasFeed(ap)
-          ? 'NO FLIGHTS IN WINDOW<div class="sub">NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW</div>'
-          : 'NO LIVE DATA FOR THIS AIRPORT<div class="sub">' + String(ap).toUpperCase()
-            + ' HAS NO FLIGHT FEED YET · SIN DATOS EN VIVO PARA ESTE AEROPUERTO</div>';
+        // THE CODE IN THIS MESSAGE COMES STRAIGHT OFF THE URL.
+        //
+        // #apSel is an <input type="hidden">, not a <select> — ?ap= is written
+        // to it verbatim at boot, with no list of options to fall off. So the
+        // no-feed branch was echoing an arbitrary query string into innerHTML,
+        // and it is precisely the branch an injected value reaches: a payload
+        // is never in FIDS_LIVE_AIRPORTS, so _fidsAirportHasFeed() says no and
+        // the message prints it. .toUpperCase() is not a defence — tag and
+        // attribute names are case-insensitive.
+        //
+        // The fixed half stays markup because it IS markup, ours, constant.
+        // The half that carries the code is built as nodes and set as text, so
+        // there is no string for a URL to be markup in.
+        if (_fidsAirportHasFeed(ap)) {
+          el.innerHTML = 'NO FLIGHTS IN WINDOW<div class="sub">NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW</div>';
+        } else {
+          el.textContent = 'NO LIVE DATA FOR THIS AIRPORT';
+          var _sub = document.createElement('div');
+          _sub.className = 'sub';
+          _sub.textContent = String(ap).toUpperCase()
+            + ' HAS NO FLIGHT FEED YET · SIN DATOS EN VIVO PARA ESTE AEROPUERTO';
+          el.appendChild(_sub);
+        }
       }
       // v23430 — A DEAD BOARD SENDS ITSELF TO THE TOUR.
       // The stream spent four days on a board for an airport with no feed
