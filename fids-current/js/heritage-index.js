@@ -32,6 +32,7 @@
       code: 'ANV',
       name: 'Air Nova',
       mark: '/logos/airlines/canadian/heritage/air-nova.svg',
+      endorsement: '/logos/airlines/canadian/heritage/air-canada-horizontal.svg',
       home: 'YHZ',
       // Checked: founded July 1986 at Halifax; the first Air Canada Connector,
       // and a wholly owned Air Canada subsidiary; operations ceased 1 November

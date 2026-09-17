@@ -25257,7 +25257,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23832';
+var FIDS_BUILD_TAG = 'v23833';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27283,6 +27283,24 @@ var HERITAGE_CARRIERS = {
   'ANV': {
     name: 'Air Nova',
     mark: '/logos/airlines/canadian/heritage/air-nova.svg',
+    // v23833 — THE CONNECTOR ENDORSEMENT.
+    //
+    // Air Nova's own printed material carries this exactly: the carrier's
+    // identity, and Air Canada's mark beneath it with LIAISON AIR CANADA
+    // CONNECTOR. The same relationship Air Atlantic has with its Canadian
+    // Partner badge, and the reason both carriers get an endorsement slot
+    // rather than a second card.
+    //
+    // It is the horizontal lockup — rondelle left, wordmark right — because
+    // that is the form the endorsement took in print, and because the stacked
+    // version in this folder is far too tall to sit under a wordmark without
+    // dominating it.
+    //
+    // The FILE is deliberately not named for a year. The archive's other Air
+    // Canada mark is called air-canada-1988.svg and the chooser says plainly
+    // that its date could not be confirmed; naming this one for a date would
+    // quietly assert what that note declines to claim.
+    endorsement: '/logos/airlines/canadian/heritage/air-canada-horizontal.svg',
     // The carrier's own red, taken from its mark rather than sampled by eye:
     // the artwork fills with #D8232A, with #8E1F2A as the shadow.
     accent: '#d8232a',
@@ -43756,6 +43774,10 @@ var HERITAGE_MARKS = [
     key: 'air-nova',
     file: '/logos/airlines/canadian/heritage/air-nova.svg',
     name: 'Air Nova',
+    // The card shows the same pairing the gate does, and for the same reason:
+    // an Air Canada Connector was not a standalone airline in the way its own
+    // wordmark alone suggests.
+    endorsement: '/logos/airlines/canadian/heritage/air-canada-horizontal.svg',
     en: 'Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001',
     fr: 'Halifax (Nouvelle-Écosse) · premier Connecteur Air Canada · 1986–2001',
     // The Atlantic network it fed Air Canada from, plus the two central-Canada

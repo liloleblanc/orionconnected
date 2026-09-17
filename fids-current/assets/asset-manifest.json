@@ -2,10 +2,10 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2651,
+    "total": 2652,
     "by_category": {
       "ad": 10,
-      "airline": 1442,
+      "airline": 1443,
       "background": 111,
       "brand": 4,
       "hotel": 884,
@@ -4379,6 +4379,17 @@
       "subcategory": "canadian",
       "group": "Airlines — Canadian",
       "name": "air canada big monochrome white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/airlines/canadian/heritage/air-canada-horizontal.svg",
+      "file": "air-canada-horizontal.svg",
+      "category": "airline",
+      "subcategory": "canadian",
+      "group": "Airlines — Canadian",
+      "name": "air canada horizontal",
       "iata": "",
       "country": "",
       "ext": "svg"
