@@ -1,6 +1,6 @@
 // v23335 — the airport picker must offer exactly the airports that have data.
-// "that's stupid to have an
-// airport with no feed on a list of airports that people would watch". A board
+// An airport with no feed does not belong in a picker of airports that people
+// watch; offering one is the fault this test exists to prevent. A board
 // fills only when the worker has a handler for that airport; everything else
 // answers an empty 200 and paints blank. This test keeps the client's
 // FIDS_LIVE_AIRPORTS in step with the worker's AUTHORITY_HANDLERS, so adding a
