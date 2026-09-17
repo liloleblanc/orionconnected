@@ -2014,8 +2014,7 @@ if (_fidsAuthToken()) {
       }
       const ll = document.getElementById('liveLabel');
       if (ll) ll.textContent = 'LIVE';
-      const al = document.getElementById('apiLabel');
-      if (al) al.textContent = 'AERODATABOX';
+      try { _paintFeedSource(typeof _apNow !== 'undefined' ? _apNow : (document.getElementById('apSel') || {}).value); } catch (e) {}
       const ld = document.querySelector('.live-dot');
       if (ld) ld.style.background = '#10b981';
       const lm = document.getElementById('loginModal');
@@ -2078,7 +2077,7 @@ async function attemptLogin() {
       document.getElementById('modeBadge').className  = 'mode-badge live';
       document.getElementById('modeBadge').textContent = 'LIVE';
       document.getElementById('liveLabel').textContent = 'LIVE';
-      document.getElementById('apiLabel').textContent  = 'AERODATABOX';
+      try { _paintFeedSource((document.getElementById('apSel') || {}).value); } catch (e) {}
       document.querySelector('.live-dot').style.background = '#10b981';
       // v11p: no lobby overlay to coordinate with; just refresh for new airport
       onApChange();
@@ -25243,7 +25242,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23804';
+var FIDS_BUILD_TAG = 'v23829';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -30603,11 +30602,55 @@ try {
 } catch (e) {}
 
 // ── AIRPORT CHANGE ────────────────────────────────────────────────────────
+// ── WHERE THE DATA ACTUALLY COMES FROM ────────────────────────────────────
+// v23829 — the badge said AERODATABOX. That provider was disconnected on
+// 2026-09-10 and supplies nothing to this board; every flight list on every
+// airport comes from that airport's own published feed, fetched server-side.
+// Naming a vendor that is not involved is false attribution, and naming the
+// airport instead is both true and worth saying — these are their numbers.
+//
+// FR24 is NOT credited here on purpose. It is wired and it is paid for, but it
+// supplies positions and aircraft detail, never a flight list: no list path in
+// the worker references it. Crediting it for the board would be the same
+// mistake in a different name.
+//
+// The name is trimmed rather than hand-maintained, so a new airport is
+// attributed correctly the day its feed lands, without a second list to forget
+// to update.
+function _feedSourceName(code) {
+  try {
+    var row = (typeof AP !== 'undefined') && AP[String(code || '').toUpperCase()];
+    var n = row && row.name;
+    if (!n) return '';
+    return String(n)
+      .replace(/\s*\([^)]*\)/g, '')        // "(MET)", "(Alexander B. Campbell)"
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\s+International Airport$/i, '')
+      .replace(/\s+Airport$/i, '')
+      .trim();
+  } catch (e) { return ''; }
+}
+
+/** Put the source on the badge, for whatever airport is showing now. */
+function _paintFeedSource(code) {
+  try {
+    var el = document.getElementById('apiLabel');
+    if (!el) return;
+    var name = _feedSourceName(code);
+    // Without a name, say nothing rather than guess. An empty badge is honest;
+    // a wrong one is what this replaced.
+    el.textContent = name ? ('VIA ' + name.toUpperCase()) : '';
+    el.title = name ? ('Flight data published by ' + name) : '';
+  } catch (e) {}
+}
+
 function onApChange() {
   // Normalize to uppercase — a mixed-case code (e.g. ?ap=Yhz) makes every
   // AP[iata] lookup miss, which silently dropped the timezone to UTC and pushed
   // boarding times 3h off. Keep the picker value canonical too.
   const iata = (document.getElementById('apSel').value || '').toUpperCase().trim();
+  try { _paintFeedSource(iata); } catch (e) {}
   try { var _apEl = document.getElementById('apSel'); if (_apEl && _apEl.value !== iata) _apEl.value = iata; } catch (e) {}
   // Persist the selection so a refresh doesn't snap back to the YQM default.
   // The init reads ?ap= from the URL first (it wins over sessionStorage and the
