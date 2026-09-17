@@ -4380,11 +4380,9 @@ function updateDedicatedTimeOnly() {
   // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
   const _localeMap = { en:'en-CA', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt', ja:'ja', zh:'zh', ar:'ar' };
   const _loc = _localeMap[lang] || 'en-CA';
-  const dayName = now.toLocaleDateString(_loc, { ...tzOpts, weekday:'long' });
-  const monthName = now.toLocaleDateString(_loc, { ...tzOpts, month:'long' });
-  // Capitalize day/month — Intl returns lowercase in some locales (fr, es, it)
-  const _cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-  const dateDisplay = `${_cap(dayName)}  ${_cap(monthName)} ${now.getDate()}, ${now.getFullYear()}  ${timeStr}`;
+  // Weekday, month, day number and year all come from the AIRPORT's clock —
+  // see _airportDateLine for the mixed-clock bug this replaces.
+  const dateDisplay = _airportDateLine(now, tzOpts, _loc, timeStr);
   const footer = document.getElementById('dedicatedFooterRight');
   if (footer) footer.textContent = dateDisplay;
   const banClock = document.getElementById('dedicatedBannerClock');
@@ -17469,11 +17467,9 @@ const gView = document.getElementById('gateView');
   // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
   const _localeMap = { en:'en-CA', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt', ja:'ja', zh:'zh', ar:'ar' };
   const _loc = _localeMap[lang] || 'en-CA';
-  const dayName = now.toLocaleDateString(_loc, { ...tzOpts, weekday:'long' });
-  const monthName = now.toLocaleDateString(_loc, { ...tzOpts, month:'long' });
-  // Capitalize day/month — Intl returns lowercase in some locales (fr, es, it)
-  const _cap = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
-  const dateDisplay = `${_cap(dayName)}  ${_cap(monthName)} ${now.getDate()}, ${now.getFullYear()}  ${timeStr}`;
+  // Weekday, month, day number and year all come from the AIRPORT's clock —
+  // see _airportDateLine for the mixed-clock bug this replaces.
+  const dateDisplay = _airportDateLine(now, tzOpts, _loc, timeStr);
 
   contentArea.style.display = 'none';
   // .hdr no longer exists (replaced by v2 banner); hide both legacy and v2.
@@ -28072,6 +28068,37 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
     if (merged) console.log('[FIDS] YQM webhook aircraft merge: ' + merged + ' tail(s) applied to native rows (' + direction + ')');
   } catch (e) {}
 }
+// The dedicated screen's footer date line, built once for both places that
+// paint it.
+//
+// It was written out twice — the first paint and the per-second repaint of the
+// same node — and both copies took the weekday and month from the AIRPORT's
+// clock while taking the day number and year from the VIEWER's:
+//
+//     `${dayName}  ${monthName} ${now.getDate()}, ${now.getFullYear()}`
+//                                 ^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^
+//
+// After local midnight at the airport, a screen an hour behind renders
+// "Friday September 17, 2026" — and 17 September 2026 is a Thursday. The date
+// does not exist. One hour nightly for a viewer an hour west, three for a UTC
+// host, and at the turn of the year it prints the wrong year outright.
+//
+// Fixing one copy alone was undone by the other within a second, which is why
+// this is a function rather than two corrected expressions.
+//
+// The numerals stay Western regardless of the board's language: the accessors
+// this replaces always produced them, and switching Arabic boards to
+// Arabic-Indic digits would be a design change riding in on a bug fix.
+function _airportDateLine(now, tzOpts, locale, timeStr) {
+  var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
+  var dayName = now.toLocaleDateString(locale, Object.assign({}, tzOpts, { weekday: 'long' }));
+  var monthName = now.toLocaleDateString(locale, Object.assign({}, tzOpts, { month: 'long' }));
+  var dayNum = now.toLocaleDateString('en-CA', Object.assign({}, tzOpts, { day: 'numeric' }));
+  var yearNum = now.toLocaleDateString('en-CA', Object.assign({}, tzOpts, { year: 'numeric' }));
+  return cap(dayName) + '  ' + cap(monthName) + ' ' + dayNum + ', ' + yearNum + '  ' + timeStr;
+}
+if (typeof window !== 'undefined') window._airportDateLine = _airportDateLine;
+
 // Porter's flight-number series, read as an equipment signal.
 //
 // The authority feeds publish no aircraft field at all, so this is the only
