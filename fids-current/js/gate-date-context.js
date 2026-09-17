@@ -88,6 +88,77 @@
     return prefix + ' · ' + calendarDate;
   }
 
+  // ── THE ONE PLACE A FLIGHT TIME BECOMES TEXT ────────────────────────────
+  //
+  // Aviation keeps one clock — UTC — and converts at the station. This follows
+  // that: an absolute instant goes in, the station's zone goes in beside it,
+  // and the airport's wall clock comes out. A board in Toronto and a board in
+  // the terminal render the same string for the same flight, because neither
+  // one's host clock is consulted.
+  //
+  // The failure this exists to prevent: `new Date(s).toLocaleTimeString()` with
+  // no timeZone renders in whatever zone the MACHINE is set to. The same
+  // Moncton 17:20 departure reads 5:20 PM in Moncton, 4:20 PM in Toronto and
+  // 8:20 PM on a UTC host. Measured live, on the deployed board.
+  //
+  // `timeZone` is not optional. Omitting it does not throw — a throw here
+  // blanks a live board — so the result reports `zoneAssumed` instead, and a
+  // guard test fails the build when any call site leaves it off.
+  //
+  // The day marker is unconditional by design. A time alone cannot say which
+  // day it belongs to, and a board showing tomorrow's 11:15 AM beside a clock
+  // reading 3:08 PM reads as an hour already missed.
+  function flightClock(options) {
+    options = options || {};
+
+    // An instant, however it arrives: epoch ms, or a string carrying its own
+    // offset. A BARE wall clock is refused rather than guessed at — without an
+    // offset there is no instant, only a reading, and guessing which zone it
+    // was read in is how this class of bug starts.
+    var stamp = options.timestamp;
+    var instant = null;
+    if (typeof stamp === 'number' && Number.isFinite(stamp)) instant = stamp;
+    else if (typeof stamp === 'string' && /[Zz]|[+-]\d{2}:?\d{2}$/.test(stamp.trim())) {
+      var parsed = Date.parse(stamp.trim().replace(' ', 'T'));
+      if (!isNaN(parsed)) instant = parsed;
+    }
+    if (instant === null) {
+      return { time: '', marker: '', text: '', html: '', dayOffset: null,
+               zoneAssumed: false, ok: false };
+    }
+
+    var zoneGiven = !!options.timeZone;
+    var zone = validTimeZone(options.timeZone);
+    var now = options.nowTimestamp == null ? Date.now() : Number(options.nowTimestamp);
+
+    var time = new Intl.DateTimeFormat(options.locale || 'en-US', {
+      timeZone: zone,
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: options.hour12 === undefined ? true : !!options.hour12
+    }).format(new Date(instant));
+
+    // Offset against the AIRPORT's today, never the viewer's. A board in Sydney
+    // showing Moncton must still say "tomorrow" by Moncton's calendar.
+    var offset = dayOffset(instant, now, zone);
+    var marker = (offset === null || offset === 0) ? ''
+      : (offset > 0 ? '+' + offset : String(offset));
+
+    return {
+      time: time,
+      marker: marker,
+      text: time + marker,
+      // Bold, and its own element, so a board can style or size the marker
+      // without reaching into the time itself.
+      html: marker
+        ? time + '<b class="fids-dayoff">' + marker + '</b>'
+        : time,
+      dayOffset: offset,
+      zoneAssumed: !zoneGiven,
+      ok: true
+    };
+  }
+
   function getFlightDateContext(options) {
     options = options || {};
     var flightTimestamp = Number(options.flightTimestamp);
@@ -104,6 +175,7 @@
   return {
     zonedDateOrdinal: zonedDateOrdinal,
     dayOffset: dayOffset,
+    flightClock: flightClock,
     getFlightDateContext: getFlightDateContext
   };
 });
