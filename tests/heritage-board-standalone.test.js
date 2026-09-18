@@ -153,10 +153,16 @@ test('every flight number says whether it was remembered or invented', () => {
 });
 
 test('the stamp says plainly that none of it is real', () => {
-  assert.match(HTML, /Demonstration/i);
-  assert.match(HTML, /Démonstration/);
-  assert.match(HTML, /not a live flight/);
-  assert.match(CSS, /\.hb-stamp[\s\S]*?position:\s*fixed/,
+  // MARKUP and RULES, not HTML and CSS. The forbidden-identifier tests above
+  // strip comments so that documentation does not read as a violation; these
+  // must strip them for the OPPOSITE reason. A comment mentioning the word
+  // "Demonstration" is not a stamp on the page — scanning the raw file would
+  // let someone delete the stamp entirely and still pass, which is the weaker
+  // and more dangerous half of the same mistake.
+  assert.match(MARKUP, /Demonstration/i);
+  assert.match(MARKUP, /Démonstration/);
+  assert.match(MARKUP, /not a live flight/);
+  assert.match(RULES, /\.hb-stamp[\s\S]*?position:\s*fixed/,
     'fixed to the viewport so no re-render can drop it');
 });
 
