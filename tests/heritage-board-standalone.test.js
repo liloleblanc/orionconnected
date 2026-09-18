@@ -50,8 +50,15 @@ const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/heritage-board.css
 // It is also exactly the bug that bit display-overrides.css, where a */ closed
 // early and a live rule was silently discarded for months.
 //
-// So: repeat until the string stops changing, then drop any unterminated
-// comment, which by definition runs to the end of the file.
+// And `-->` is not the only way a comment ends. HTML also accepts `--!>`
+// (the spec's comment-end-bang state), which CodeQL caught too
+// (js/bad-tag-filter). Matching only `-->` means `<!--a--!>b` is treated as
+// unterminated, the fallback below eats everything after it, and a forbidden
+// reference sitting past that point becomes invisible to the scan.
+//
+// So: accept both terminators, repeat until the string stops changing, then
+// drop any genuinely unterminated comment — which by definition runs to the
+// end of the file.
 function strip(text, open, close) {
   const pair = new RegExp(open + '[\\s\\S]*?' + close, 'g');
   let prev;
@@ -60,7 +67,7 @@ function strip(text, open, close) {
 }
 
 const CODE = strip(JS, '/\\*', '\\*/').replace(/^\s*\/\/.*$/gm, '');
-const MARKUP = strip(HTML, '<!--', '-->');
+const MARKUP = strip(HTML, '<!--', '--!?>');
 const RULES = strip(CSS, '/\\*', '\\*/');
 
 test('the page loads nothing from the live board', () => {
