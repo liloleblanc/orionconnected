@@ -30,12 +30,15 @@
    come from somebody who stood in that terminal. That is why this is written
    down rather than generated.
 
-   A generator produced the version this replaces, and it invented Gander,
-   St. John's and Saint John as Air Atlantic destinations from Moncton. Air
-   Atlantic flew Halifax from Moncton and nothing else. The failure is
-   characteristic: regionally plausible, entirely wrong, and undetectable
-   without someone who was there. Data that is written down can only be as
-   wrong as what we were told.
+   A generator produced the version this replaces, and it invented Gander and
+   St. John's as Air Atlantic destinations from Moncton. The failure is
+   characteristic: regionally plausible, and produced by a rule rather than by
+   anybody's knowledge.
+
+   Written-down data can still be wrong — it is only as good as what we were
+   told, and one entry here has already been corrected against a 1995
+   timetable. But it can be CHECKED, and when it is wrong it is wrong once
+   rather than wrong every time the page loads.
 
    Each flight carries `src`, which says where its number came from:
      'recalled'  — a real flight number, remembered

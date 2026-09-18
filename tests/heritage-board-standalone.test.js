@@ -142,9 +142,21 @@ function destinationsOf(code) {
     .sort();
 }
 
-test('Air Atlantic flew Halifax from Moncton, and nowhere else', () => {
-  assert.deepEqual(destinationsOf('9A'), ['YHZ'],
-    'the generator this replaces invented Gander, St. John\'s and Saint John here');
+test('Air Atlantic is Dash 8 at Moncton, never the 146', () => {
+  // An earlier version of this test asserted Air Atlantic flew Halifax from
+  // Moncton and nowhere else. The April 1995 timetable says otherwise — it
+  // served Moncton from Fredericton, Halifax, Saint John and Montreal — and
+  // the recollection it came from has been withdrawn. The assertion is gone
+  // rather than corrected, because the board does not claim to show Air
+  // Atlantic's whole network.
+  //
+  // What the source DOES support, and what the recollection got right: every
+  // 146 in that timetable is Air Nova's. Air Atlantic worked this station on
+  // Dash 8s.
+  const eq = board().DEPARTURES.filter(d => d.carrier === '9A').map(d => d.eq);
+  assert.ok(eq.length > 0, 'Air Atlantic should be on the board at all');
+  assert.deepEqual([...new Set(eq)], ['DH1'],
+    'a 146 in Air Atlantic colours at Moncton is wrong even though the carrier flew the type');
 });
 
 test('Air Nova never flew Moncton–Toronto', () => {
