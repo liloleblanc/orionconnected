@@ -1,5 +1,5 @@
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   MONCTON, SIX IN THE MORNING, A WINTER IN THE MID-NINETIES.
+   MONCTON, SIX IN THE MORNING, A WINTER MORNING IN 1991.
 
    Standalone by design, in the same spirit as heritage-index.js: this page
    loads no board engine, consults no airport roster, and makes no network
@@ -11,6 +11,17 @@
    live system spent its life being overwritten — the live refresh timer
    painted today's real flights over a 1998 demonstration every five minutes,
    because a board wired to a feed will eventually be given one.
+
+   ── WHY A YEAR AND NOT AN ERA ──
+
+   This board was first written as "the mid-nineties", which cannot be checked
+   against anything. The network changed continually: Fredericton's link moved
+   from Montreal to Ottawa, the Saint John run started on the 146 and did not
+   stay there, and Air Nova itself stopped existing in 2002. A board vague
+   about its year is vague about all of that.
+
+   1991, because that is the year of the OAG that documents two of its rows. A
+   board and its source should be describing the same station.
 
    ── EVERYTHING HERE IS INVENTED, AND THE ROUTES ARE NOT ──
 
