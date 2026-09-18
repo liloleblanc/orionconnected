@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moncton, 1991 — from the archive</title>
+<meta name="description" content="A departures board for Moncton on a winter morning in 1991. Two rows come from the OAG of that year; the rest is remembered.">
+<meta name="robots" content="index, follow">
+<link rel="stylesheet" href="css/heritage-board.css?v=1">
+</head>
+<body>
+
+<!--
+  Standalone. This page loads heritage-board.js and heritage-board.css and
+  nothing else — no fids-core.js, no feed-router.js, no display-overrides.css.
+  It makes no network request after load.
+
+  That is the point rather than an economy. The heritage gate built inside the
+  live board spent its life being overwritten: the live refresh timer painted
+  today's real flights over a 1998 demonstration every five minutes, because a
+  board wired to a feed will eventually be given one.
+-->
+
+<div class="hb-wrap">
+
+  <div class="hb-banner">
+    <div class="hb-title" id="hbHead"></div>
+    <div class="hb-station">
+      <span class="hb-station-iata">YQM</span>
+      <span class="hb-station-name">Moncton</span>
+    </div>
+    <div class="hb-clock" id="hbClock">6:12 AM</div>
+  </div>
+
+  <table class="hb-board">
+    <thead>
+      <tr>
+        <th>Time <span class="hb-sep">|</span><span class="hb-fr">Heure</span></th>
+        <th>Flight <span class="hb-sep">|</span><span class="hb-fr">Vol</span></th>
+        <th>To <span class="hb-sep">|</span><span class="hb-fr">Destination</span></th>
+        <th>Aircraft <span class="hb-sep">|</span><span class="hb-fr">Appareil</span></th>
+        <th>Gate <span class="hb-sep">|</span><span class="hb-fr">Porte</span></th>
+        <th>Status <span class="hb-sep">|</span><span class="hb-fr">Statut</span></th>
+      </tr>
+    </thead>
+    <tbody id="hbBody"></tbody>
+  </table>
+
+  <div class="hb-foot">
+    <p><strong>A winter morning at Moncton, 1991.</strong>
+    The day's first movement is the DC-9 that came in from Toronto around
+    midnight, carried on to Charlottetown, slept there and is working back —
+    the last aeroplane of one day is the first of the next.</p>
+
+    <p>Every flight here is invented. The network is not: Air Nova to Montreal,
+    Halifax, Fredericton and Saint John; Air Atlantic to Halifax and nowhere
+    else; Air Canada to Toronto; Northwest Airlink to Boston on a Metro.
+    Moncton–Saint John–Montreal really was one aeroplane serving two cities,
+    and the winter charters to Florida really did sometimes need a fuel stop
+    and sometimes did not.</p>
+
+    <p>None of that is recoverable from any surviving source. These carriers
+    are gone and nobody publishes their schedules. It is written down here
+    because somebody remembered standing in that terminal.</p>
+  </div>
+
+</div>
+
+<div class="hb-stamp">
+  <span>Demonstration <span class="hb-sep">·</span> Démonstration</span>
+  <small>not a live flight &nbsp;/&nbsp; vol fictif</small>
+</div>
+
+<script src="js/heritage-board.js?v=1"></script>
+</body>
+</html>

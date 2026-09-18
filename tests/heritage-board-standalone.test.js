@@ -1,0 +1,243 @@
+'use strict';
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE ARCHIVE BOARD IS STANDALONE, AND THE ROUTES ON IT ARE THE REMEMBERED ONES.
+//
+// Two separate guarantees, and both need holding by a test rather than by
+// good intentions.
+//
+// FIRST: it touches nothing. The heritage gate built inside the live system
+// spent its life being overwritten — the live refresh timer painted today's
+// real Porter and WestJet flights over a 1998 demonstration every five
+// minutes, because a board wired to a feed will eventually be given one. This
+// page cannot be given one. The test asserts that by name.
+//
+// SECOND: the network is real even though the flights are not. The version
+// this replaces GENERATED its schedule, and invented Gander, St. John's and
+// Saint John as Air Atlantic destinations from Moncton — regionally plausible,
+// entirely wrong, undetectable without someone who was there. Air Atlantic
+// flew Halifax from Moncton and nothing else. These assertions are the record
+// of what was actually recalled, so a later edit that "improves" the board
+// back into fiction fails instead.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const ROOT = path.resolve(__dirname, '..');
+const HTML = fs.readFileSync(path.join(ROOT, 'fids-current/heritage-board.html'), 'utf8');
+const JS = fs.readFileSync(path.join(ROOT, 'fids-current/js/heritage-board.js'), 'utf8');
+const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/heritage-board.css'), 'utf8');
+
+// Strip comments from ALL THREE before scanning. Every one of these files
+// explains in its header what it does NOT use, and naming a thing is not using
+// it — the first run of this test failed on its own documentation, in all three
+// files.
+//
+// A SINGLE PASS IS NOT ENOUGH, and CodeQL was right to say so
+// (js/incomplete-multi-character-sanitization). `<!--a--> <!--b` loses the
+// first comment and leaves an UNTERMINATED one, which the pattern then never
+// matches — so everything after it is never stripped. Same for /* in the CSS
+// and the JS.
+//
+// That is not a security problem in a test that reads a file off disk. It is a
+// correctness one: content hidden in an unterminated comment would still
+// satisfy the "must be present" assertions below, and the stamp is the only
+// thing on that page saying none of it is real.
+//
+// It is also exactly the bug that bit display-overrides.css, where a */ closed
+// early and a live rule was silently discarded for months.
+//
+// And `-->` is not the only way a comment ends. HTML also accepts `--!>`
+// (the spec's comment-end-bang state), which CodeQL caught too
+// (js/bad-tag-filter). Matching only `-->` means `<!--a--!>b` is treated as
+// unterminated, the fallback below eats everything after it, and a forbidden
+// reference sitting past that point becomes invisible to the scan.
+//
+// So: accept both terminators, repeat until the string stops changing, then
+// drop any genuinely unterminated comment — which by definition runs to the
+// end of the file.
+function strip(text, open, close) {
+  const pair = new RegExp(open + '[\\s\\S]*?' + close, 'g');
+  let prev;
+  do { prev = text; text = text.replace(pair, ''); } while (text !== prev);
+  return text.replace(new RegExp(open + '[\\s\\S]*$'), '');
+}
+
+const CODE = strip(JS, '/\\*', '\\*/').replace(/^\s*\/\/.*$/gm, '');
+const MARKUP = strip(HTML, '<!--', '--!?>');
+const RULES = strip(CSS, '/\\*', '\\*/');
+
+test('the page loads nothing from the live board', () => {
+  for (const forbidden of ['fids-core.js', 'feed-router.js', 'display-overrides.css',
+                           'host-airport.js', 'menu.js', 'gate-date-context.js']) {
+    assert.equal(MARKUP.includes(forbidden), false,
+      `heritage-board.html loads ${forbidden} — the whole point is that it cannot be ` +
+      'broken by, or overwritten from, the live board');
+  }
+  // Exactly two of its own, and nothing else.
+  const srcs = [...MARKUP.matchAll(/(?:src|href)="([^"]+)"/g)].map(m => m[1]);
+  assert.deepEqual(srcs.sort(), ['css/heritage-board.css?v=1', 'js/heritage-board.js?v=1']);
+});
+
+test('it uses no live-board machinery, by name', () => {
+  // The coupling list the old heritage gate had. Every one of these is a way
+  // for a feed, a timer or a roster to reach the board.
+  const machinery = [
+    'LIVE_MODE', 'fetchLive', 'autoRefreshTimer', 'demoRebuildTimer', 'startDemoRebuild',
+    'loadDemo', 'buildDemoFlights', 'DEMO_SCHEDULES', 'buildRandomFlights',
+    'apSel', 'FIDS_LIVE_AIRPORTS', 'COORDS', 'AIRLINE_NAME', 'AIRLINE_ACCENT',
+    'requestGateRebuild', 'changeScreenType', 'HERITAGE_CARRIERS', 'HERITAGE_MARKS',
+    '_heritageCode', '_heritageSchedule', 'adbTs', 'authorityFlight'
+  ];
+  const found = machinery.filter(m => CODE.includes(m));
+  assert.deepEqual(found, [], 'the archive board reached into the live system: ' + found.join(', '));
+});
+
+test('and makes no network request at all', () => {
+  for (const io of ['fetch(', 'XMLHttpRequest', 'EventSource', 'WebSocket',
+                    'navigator.sendBeacon', 'import(']) {
+    assert.equal(CODE.includes(io), false,
+      `the board performs I/O (${io}) — it has nothing to ask anyone for, and a page ` +
+      'that asks is a page that can be answered with the wrong thing');
+  }
+});
+
+test('the clock is the board\'s own, never the viewer\'s', () => {
+  // A board that reads its host clock shows a different time in every
+  // timezone. This one depicts a fixed moment and counts from it.
+  assert.equal(/new Date\(\)/.test(CODE), false, 'no reading of the host clock');
+  assert.equal(/Date\.now\(\)/.test(CODE), false, 'nor of the host epoch');
+  assert.match(CODE, /OPENS_AT\s*=/, 'it starts from a depicted time');
+});
+
+// ── the remembered network ───────────────────────────────────────────────
+
+// The module paints on load, so the stub has to be complete enough to let it
+// run to the end — it exposes its data only after wiring up.
+function board() {
+  const el = () => ({ textContent: '', innerHTML: '' });
+  const win = {};
+  const doc = {
+    readyState: 'complete',
+    addEventListener() {},
+    getElementById: el,
+    querySelector: el,
+    querySelectorAll: () => []
+  };
+  const timers = { setInterval: () => 0, clearInterval() {} };
+  // eslint-disable-next-line no-new-func
+  new Function('window', 'document', 'setInterval', 'clearInterval', JS)(
+    win, doc, timers.setInterval, timers.clearInterval);
+  return win.HERITAGE_BOARD;
+}
+
+function destinationsOf(code) {
+  return board().DEPARTURES
+    .filter(d => d.carrier === code)
+    .flatMap(d => d.to.map(t => t.iata))
+    .filter((v, i, a) => a.indexOf(v) === i)
+    .sort();
+}
+
+test('Air Atlantic is Dash 8 at Moncton, never the 146', () => {
+  // An earlier version of this test asserted Air Atlantic flew Halifax from
+  // Moncton and nowhere else. The April 1995 timetable says otherwise — it
+  // served Moncton from Fredericton, Halifax, Saint John and Montreal — and
+  // the recollection it came from has been withdrawn. The assertion is gone
+  // rather than corrected, because the board does not claim to show Air
+  // Atlantic's whole network.
+  //
+  // What the source DOES support, and what the recollection got right: every
+  // 146 in that timetable is Air Nova's. Air Atlantic worked this station on
+  // Dash 8s.
+  const eq = board().DEPARTURES.filter(d => d.carrier === '9A').map(d => d.eq);
+  assert.ok(eq.length > 0, 'Air Atlantic should be on the board at all');
+  assert.deepEqual([...new Set(eq)], ['DH1'],
+    'a 146 in Air Atlantic colours at Moncton is wrong even though the carrier flew the type');
+});
+
+test('Air Nova never flew Moncton–Toronto', () => {
+  const nova = destinationsOf('ANV');
+  assert.equal(nova.includes('YYZ'), false,
+    'Toronto out of Moncton was always Air Canada mainline. Air Nova did not fly it, and by ' +
+    'the time Jazz picked it up the Air Nova brand was gone — so it is anachronistic, not ' +
+    'merely unlikely');
+  assert.deepEqual(nova, ['MCO', 'YFC', 'YHZ', 'YSJ', 'YUL']);
+});
+
+test('the night-stop pair is the documented one', () => {
+  // The 1991 OAG Desktop Flight Guide, Flight Itineraries, Air Canada column:
+  //   664  YYZ YQM YYG      Toronto - Moncton - Charlottetown
+  //   665  YYG YQM YYZ      Charlottetown - Moncton - Toronto
+  // Recalled first from hearing the DC-9 overhead around six in the morning,
+  // then found in the guide. These two rows are the only ones on this board
+  // taken from a printed source.
+  const rows = board().DEPARTURES.filter(d => d.src === 'documented');
+  assert.deepEqual(rows.map(d => d.no).sort(), ['664', '665']);
+
+  const morning = rows.find(d => d.no === '665');
+  assert.deepEqual(morning.to.map(t => t.iata), ['YYZ'], '665 works back to Toronto');
+  assert.match(morning.note.en, /Charlottetown/, 'having come from the night stop');
+
+  const evening = rows.find(d => d.no === '664');
+  assert.deepEqual(evening.to.map(t => t.iata), ['YYG'],
+    '664 carries on to Charlottetown rather than terminating at Moncton');
+});
+
+test('668 is not a Moncton flight, whatever it looked like', () => {
+  // It was on this board as a Moncton departure and that was wrong. The guide
+  // gives 668 as YYZ YSJ YFC YYZ — Toronto, Saint John, Fredericton, Toronto.
+  // It never touches Moncton. The recollection had the right number family and
+  // the wrong member of it, which is exactly what a source is for.
+  const numbers = board().DEPARTURES.map(d => d.no);
+  assert.equal(numbers.includes('668'), false);
+  assert.equal(numbers.includes('666'), false,
+    'and there is still no 666 — airlines retire it');
+});
+
+test('the multi-stop routings are one row, not two', () => {
+  const via = board().DEPARTURES.filter(d => d.to.length > 1);
+  assert.equal(via.length, 1, 'Moncton–Saint John–Montreal is the via-stop');
+  assert.deepEqual(via[0].to.map(t => t.iata), ['YSJ', 'YUL']);
+  // Listing them separately would double-count one aeroplane serving two cities.
+  const asOwnRow = board().DEPARTURES.filter(d => d.to.length === 1 && d.to[0].iata === 'YSJ');
+  assert.deepEqual(asOwnRow, []);
+});
+
+test('every flight number says where it came from', () => {
+  for (const d of board().DEPARTURES) {
+    assert.ok(['documented', 'recalled', 'invented'].includes(d.src),
+      `flight ${d.no} does not say where its number came from`);
+  }
+  // Held by name so none of them can quietly change category. A row that moves
+  // from 'invented' to 'documented' should be a deliberate act with a source
+  // behind it, not a side effect of an edit.
+  const by = k => board().DEPARTURES.filter(d => d.src === k).map(d => d.no).sort();
+  assert.deepEqual(by('documented'), ['664', '665'], 'from the 1991 OAG');
+  assert.deepEqual(by('recalled'), ['8882', '8884'], 'from memory');
+  assert.deepEqual(by('invented'), ['2417', '431', '670', '873', '877', '9012']);
+});
+
+test('the stamp says plainly that none of it is real', () => {
+  // MARKUP and RULES, not HTML and CSS. The forbidden-identifier tests above
+  // strip comments so that documentation does not read as a violation; these
+  // must strip them for the OPPOSITE reason. A comment mentioning the word
+  // "Demonstration" is not a stamp on the page — scanning the raw file would
+  // let someone delete the stamp entirely and still pass, which is the weaker
+  // and more dangerous half of the same mistake.
+  assert.match(MARKUP, /Demonstration/i);
+  assert.match(MARKUP, /Démonstration/);
+  assert.match(MARKUP, /not a live flight/);
+  assert.match(RULES, /\.hb-stamp[\s\S]*?position:\s*fixed/,
+    'fixed to the viewport so no re-render can drop it');
+});
+
+test('the stylesheet does not join the specificity war', () => {
+  assert.equal(RULES.includes(':not(#_)'), false,
+    'nothing else styles this page, so no rule here needs to out-weigh anything');
+  assert.equal(RULES.includes('!important'), false,
+    'and nothing needs forcing');
+});

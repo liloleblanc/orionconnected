@@ -1,0 +1,212 @@
+/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+   The archive board's own stylesheet. Monochrome CRT.
+
+   Deliberately NOT display-overrides.css. That file is 20,000 lines and
+   append-only, where a rule wins by carrying more :not(#_) than the one
+   before it. Nothing here needs to win an argument with anything, because
+   nothing else styles this page. Plain selectors, ordinary cascade, no
+   !important anywhere.
+
+   ── WHY BLACK AND WHITE IS THE ACCURATE CHOICE, NOT A STYLISTIC ONE ──
+
+   A regional Canadian airport in the mid-1990s did not have a colour flight
+   information display. It had a monochrome CRT driven by a character
+   terminal, or it had split-flap boards. Colour panels arrived later and
+   arrived first at the big stations.
+
+   So everything here is carried by WEIGHT and INVERSION rather than hue,
+   which is what a character display actually had to work with: a bright cell,
+   a dim cell, and a reversed cell. Status is a reversed block because that is
+   how those boards shouted.
+   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
+
+:root {
+  --hb-ground: #05070a;   /* not pure black — a CRT never was */
+  --hb-bright: #f4f7f9;
+  --hb-ink:    #cfd6dd;
+  --hb-dim:    #6f7b88;
+  --hb-faint:  #3c454f;
+  --hb-rule:   #1b222b;
+
+  /* The one concession to the tube: a character display glowed slightly.
+     Kept to a trace so it reads as phosphor, not as a filter. */
+  --hb-glow: 0 0 1px rgba(226, 240, 255, .35);
+
+  --hb-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas,
+             "DejaVu Sans Mono", "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+/* The root carries the ground as well as the body. A body-only background
+   leaves a pale band below the content on any screen taller than the board. */
+html { background: var(--hb-ground); }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--hb-ground);
+  color: var(--hb-ink);
+  font-family: var(--hb-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .02em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scanlines. One pixel on, one off, at 4% — enough to register as a tube
+   when you look for it and invisible when you are reading the board.
+   Dropped entirely for anyone who has asked for less motion or contrast. */
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: 90; pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, .04) 0 1px,
+    transparent 1px 3px
+  );
+}
+@media (prefers-reduced-motion: reduce), (prefers-contrast: more) {
+  body::after { display: none; }
+}
+
+.hb-wrap { max-width: 1700px; margin: 0 auto; padding: clamp(14px, 2.4vh, 32px); }
+
+/* ── banner ─────────────────────────────────────────────────────────── */
+.hb-banner {
+  display: flex; align-items: baseline; gap: clamp(10px, 1.8vw, 26px);
+  padding-bottom: clamp(8px, 1.4vh, 16px);
+  border-bottom: 2px solid var(--hb-ink);
+  flex-wrap: wrap;
+}
+.hb-title {
+  font-size: clamp(20px, 3.6vh, 44px); font-weight: 700;
+  text-transform: uppercase; letter-spacing: .06em;
+  color: var(--hb-bright); text-shadow: var(--hb-glow);
+}
+.hb-title .hb-sep { color: var(--hb-faint); margin: 0 .5em; }
+.hb-title .hb-fr  { color: var(--hb-dim); }
+
+.hb-station { margin-left: auto; display: flex; align-items: baseline; gap: .55em; }
+.hb-station-iata {
+  font-size: clamp(18px, 3vh, 36px); font-weight: 700;
+  color: var(--hb-bright); letter-spacing: .1em; text-shadow: var(--hb-glow);
+}
+.hb-station-name {
+  font-size: clamp(10px, 1.4vh, 15px); color: var(--hb-dim);
+  text-transform: uppercase; letter-spacing: .14em;
+}
+
+.hb-clock {
+  font-size: clamp(20px, 3.4vh, 42px); font-weight: 700; line-height: 1;
+  color: var(--hb-bright); letter-spacing: .04em; text-shadow: var(--hb-glow);
+}
+
+/* ── the board ──────────────────────────────────────────────────────── */
+.hb-board { width: 100%; border-collapse: collapse; margin-top: clamp(6px, 1.2vh, 14px); }
+
+.hb-board thead th {
+  text-align: left; padding: .65em .55em;
+  font-size: clamp(9px, 1.2vh, 13px); font-weight: 700;
+  letter-spacing: .16em; text-transform: uppercase;
+  color: var(--hb-dim); border-bottom: 1px solid var(--hb-rule);
+  white-space: nowrap;
+}
+.hb-board thead .hb-fr  { color: var(--hb-faint); }
+.hb-board thead .hb-sep { color: var(--hb-faint); margin: 0 .35em; }
+
+.hb-row > td {
+  padding: clamp(.45em, 1vh, .8em) .55em;
+  border-bottom: 1px solid var(--hb-rule);
+  font-size: clamp(12px, 1.95vh, 24px);
+  vertical-align: middle;
+}
+
+.hb-time { font-weight: 700; white-space: nowrap; width: 1%; color: var(--hb-bright); }
+
+.hb-flight { white-space: nowrap; }
+/* The carrier reads as a reversed cell — the only way a character terminal
+   had of setting something apart from the line it sits on. */
+.hb-car {
+  display: inline-block; padding: .1em .5em;
+  background: var(--hb-ink); color: var(--hb-ground);
+  font-size: .6em; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; vertical-align: middle; margin-right: .6em;
+}
+.hb-no { font-weight: 700; color: var(--hb-bright); }
+
+.hb-to .hb-city {
+  font-weight: 700; color: var(--hb-bright);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.hb-to .hb-iata { color: var(--hb-dim); margin-left: .5em; font-size: .84em; }
+.hb-via { color: var(--hb-faint); margin: 0 .55em; }
+
+.hb-note, .hb-tag {
+  display: block; font-size: .54em; letter-spacing: .14em;
+  color: var(--hb-dim); text-transform: uppercase; margin-top: .3em;
+}
+.hb-tag { color: var(--hb-ink); }
+
+.hb-eq   {
+  color: var(--hb-dim); font-size: .8em; white-space: nowrap;
+  /* Caps like the rest of it. A character terminal had one case, and the
+     mixed-case type stood out as the only thing on the board that was not
+     shouting. */
+  text-transform: uppercase; letter-spacing: .08em;
+}
+.hb-gate { font-weight: 700; text-align: center; width: 1%; color: var(--hb-bright); }
+
+.hb-status { text-align: right; white-space: nowrap; width: 1%; }
+.hb-stlabel {
+  font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+  color: var(--hb-ink);
+}
+.hb-stfr {
+  display: block; font-size: .56em; color: var(--hb-faint);
+  text-transform: uppercase; letter-spacing: .1em;
+}
+
+/* Emphasis by inversion and by dimming, never by hue. A reversed status cell
+   is how a monochrome board shouted; a dimmed row is how it said "gone".
+   The row's own text stays readable when it dims — a board that fades a whole
+   line makes the flight hardest to read exactly when someone is running. */
+.hb-st-boarding .hb-stlabel,
+.hb-st-final    .hb-stlabel {
+  background: var(--hb-bright); color: var(--hb-ground);
+  padding: .12em .5em; display: inline-block;
+}
+.hb-st-final .hb-stlabel { animation: hb-blink 1.6s steps(1) infinite; }
+@keyframes hb-blink { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) {
+  .hb-st-final .hb-stlabel { animation: none; }
+}
+
+.hb-st-gateclosed .hb-stlabel { color: var(--hb-bright); }
+.hb-st-departed   .hb-time,
+.hb-st-departed   .hb-no,
+.hb-st-departed   .hb-city,
+.hb-st-departed   .hb-gate,
+.hb-st-departed   .hb-stlabel { color: var(--hb-faint); }
+.hb-st-departed   .hb-car { background: var(--hb-faint); }
+
+/* ── the stamp ──────────────────────────────────────────────────────── */
+/* Reversed, fixed to the viewport, and not part of the board — so no
+   re-render can drop it and nobody can mistake the piece for a record. */
+.hb-stamp {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+  background: var(--hb-bright); color: var(--hb-ground);
+  padding: .5em clamp(12px, 2vw, 28px);
+  font-size: clamp(9px, 1.3vh, 14px); font-weight: 700;
+  letter-spacing: .18em; text-transform: uppercase;
+  display: flex; gap: 1.2em; align-items: baseline; flex-wrap: wrap;
+}
+.hb-stamp small {
+  font-weight: 400; letter-spacing: .08em; text-transform: uppercase;
+}
+
+.hb-foot {
+  margin: clamp(12px, 1.8vh, 24px) 0 clamp(54px, 7vh, 80px);
+  color: var(--hb-dim); font-size: clamp(10px, 1.4vh, 14px); line-height: 1.7;
+  max-width: 74ch; letter-spacing: .03em;
+}
+.hb-foot strong { color: var(--hb-ink); font-weight: 700; }
