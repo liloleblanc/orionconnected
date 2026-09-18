@@ -31,13 +31,37 @@ const HTML = fs.readFileSync(path.join(ROOT, 'fids-current/heritage-board.html')
 const JS = fs.readFileSync(path.join(ROOT, 'fids-current/js/heritage-board.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/heritage-board.css'), 'utf8');
 
-// Strip comments from ALL THREE before scanning for forbidden identifiers.
-// Every one of these files explains in its header what it does NOT use, and
-// naming a thing is not using it — the first run of this test failed on its
-// own documentation, in all three files.
-const CODE = JS.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
-const MARKUP = HTML.replace(/<!--[\s\S]*?-->/g, '');
-const RULES = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
+// Strip comments from ALL THREE before scanning. Every one of these files
+// explains in its header what it does NOT use, and naming a thing is not using
+// it — the first run of this test failed on its own documentation, in all three
+// files.
+//
+// A SINGLE PASS IS NOT ENOUGH, and CodeQL was right to say so
+// (js/incomplete-multi-character-sanitization). `<!--a--> <!--b` loses the
+// first comment and leaves an UNTERMINATED one, which the pattern then never
+// matches — so everything after it is never stripped. Same for /* in the CSS
+// and the JS.
+//
+// That is not a security problem in a test that reads a file off disk. It is a
+// correctness one: content hidden in an unterminated comment would still
+// satisfy the "must be present" assertions below, and the stamp is the only
+// thing on that page saying none of it is real.
+//
+// It is also exactly the bug that bit display-overrides.css, where a */ closed
+// early and a live rule was silently discarded for months.
+//
+// So: repeat until the string stops changing, then drop any unterminated
+// comment, which by definition runs to the end of the file.
+function strip(text, open, close) {
+  const pair = new RegExp(open + '[\\s\\S]*?' + close, 'g');
+  let prev;
+  do { prev = text; text = text.replace(pair, ''); } while (text !== prev);
+  return text.replace(new RegExp(open + '[\\s\\S]*$'), '');
+}
+
+const CODE = strip(JS, '/\\*', '\\*/').replace(/^\s*\/\/.*$/gm, '');
+const MARKUP = strip(HTML, '<!--', '-->');
+const RULES = strip(CSS, '/\\*', '\\*/');
 
 test('the page loads nothing from the live board', () => {
   for (const forbidden of ['fids-core.js', 'feed-router.js', 'display-overrides.css',
