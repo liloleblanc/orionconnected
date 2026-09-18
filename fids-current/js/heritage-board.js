@@ -74,11 +74,15 @@
   // `src`  where the flight NUMBER came from. See the header.
   var DEPARTURES = [
     {
-      at: 6 * 60 + 30, no: '662', carrier: 'AC', eq: 'DC9', gate: '2', src: 'recalled',
+      at: 6 * 60 + 30, no: '665', carrier: 'AC', eq: 'DC9', gate: '2', src: 'documented',
       to: [{ iata: 'YYZ', en: 'Toronto', fr: 'Toronto' }],
-      // The night-stop returning. This aeroplane came in from Toronto around
-      // midnight, carried on to Charlottetown, slept there, and is working
-      // back. The last movement of one day is the first of the next.
+      // The night-stop returning, and the one row on this board taken from a
+      // printed source rather than from memory: the 1991 OAG lists
+      //   664  YYZ YQM YYG      Toronto - Moncton - Charlottetown
+      //   665  YYG YQM YYZ      Charlottetown - Moncton - Toronto
+      // The evening aeroplane goes out to the Island, night-stops, and works
+      // back through Moncton at dawn. Recalled from hearing it overhead around
+      // six, and then found in the guide.
       note: { en: 'Arrived from Charlottetown', fr: 'En provenance de Charlottetown' }
     },
     {
@@ -127,17 +131,23 @@
       intl: true, charter: true
     },
     {
-      at: 12 * 60, no: '664', carrier: 'AC', eq: 'DC9', gate: '2', src: 'recalled',
+      // Midday Toronto. Number invented: the OAG's itineraries section lists
+      // multi-stop flights only, so a Moncton-Toronto NONSTOP does not appear
+      // in it and nothing documents this one.
+      at: 12 * 60, no: '670', carrier: 'AC', eq: 'DC9', gate: '2', src: 'invented',
       to: [{ iata: 'YYZ', en: 'Toronto', fr: 'Toronto' }]
     },
     {
-      // Three Toronto departures a day, four in summer — and the numbering
-      // runs 662 / 664 / 668 rather than 662 / 664 / 666 because airlines
-      // retire 666. The gap is the reason the sequence ends where it does,
-      // not an omission. Do not "tidy" it.
-      at: 17 * 60, no: '668', carrier: 'AC', eq: 'DC9', gate: '2', src: 'recalled',
-      to: [{ iata: 'YYZ', en: 'Toronto', fr: 'Toronto' }],
-      note: { en: 'Last westbound of the day', fr: 'Dernier vol vers l\u2019ouest' }
+      // The evening aeroplane, and the other half of the night-stop: the 1991
+      // OAG gives 664 as YYZ YQM YYG, so it arrives from Toronto and carries
+      // on to Charlottetown rather than terminating here.
+      //
+      // 668 was on this board as a Moncton departure and that was wrong — the
+      // guide lists it as YYZ YSJ YFC YYZ, Toronto to Saint John to
+      // Fredericton and back. It never touches Moncton.
+      at: 17 * 60, no: '664', carrier: 'AC', eq: 'DC9', gate: '2', src: 'documented',
+      to: [{ iata: 'YYG', en: 'Charlottetown', fr: 'Charlottetown' }],
+      note: { en: 'Continues to Charlottetown \u2014 night stop', fr: 'Poursuit vers Charlottetown' }
     }
   ];
 

@@ -156,12 +156,34 @@ test('Air Nova never flew Moncton–Toronto', () => {
   assert.deepEqual(nova, ['MCO', 'YFC', 'YHZ', 'YSJ', 'YUL']);
 });
 
-test('there is no flight 666, and that is deliberate', () => {
-  const ac = board().DEPARTURES.filter(d => d.carrier === 'AC').map(d => d.no);
-  assert.deepEqual(ac, ['662', '664', '668'],
-    'three Toronto departures a day, and the numbering runs 662/664/668 because airlines ' +
-    'retire 666. The gap is why the sequence ends where it does — do not tidy it');
-  assert.equal(ac.includes('666'), false);
+test('the night-stop pair is the documented one', () => {
+  // The 1991 OAG Desktop Flight Guide, Flight Itineraries, Air Canada column:
+  //   664  YYZ YQM YYG      Toronto - Moncton - Charlottetown
+  //   665  YYG YQM YYZ      Charlottetown - Moncton - Toronto
+  // Recalled first from hearing the DC-9 overhead around six in the morning,
+  // then found in the guide. These two rows are the only ones on this board
+  // taken from a printed source.
+  const rows = board().DEPARTURES.filter(d => d.src === 'documented');
+  assert.deepEqual(rows.map(d => d.no).sort(), ['664', '665']);
+
+  const morning = rows.find(d => d.no === '665');
+  assert.deepEqual(morning.to.map(t => t.iata), ['YYZ'], '665 works back to Toronto');
+  assert.match(morning.note.en, /Charlottetown/, 'having come from the night stop');
+
+  const evening = rows.find(d => d.no === '664');
+  assert.deepEqual(evening.to.map(t => t.iata), ['YYG'],
+    '664 carries on to Charlottetown rather than terminating at Moncton');
+});
+
+test('668 is not a Moncton flight, whatever it looked like', () => {
+  // It was on this board as a Moncton departure and that was wrong. The guide
+  // gives 668 as YYZ YSJ YFC YYZ — Toronto, Saint John, Fredericton, Toronto.
+  // It never touches Moncton. The recollection had the right number family and
+  // the wrong member of it, which is exactly what a source is for.
+  const numbers = board().DEPARTURES.map(d => d.no);
+  assert.equal(numbers.includes('668'), false);
+  assert.equal(numbers.includes('666'), false,
+    'and there is still no 666 — airlines retire it');
 });
 
 test('the multi-stop routings are one row, not two', () => {
@@ -173,14 +195,18 @@ test('the multi-stop routings are one row, not two', () => {
   assert.deepEqual(asOwnRow, []);
 });
 
-test('every flight number says whether it was remembered or invented', () => {
+test('every flight number says where it came from', () => {
   for (const d of board().DEPARTURES) {
-    assert.ok(['recalled', 'invented'].includes(d.src),
+    assert.ok(['documented', 'recalled', 'invented'].includes(d.src),
       `flight ${d.no} does not say where its number came from`);
   }
-  // The ones that were actually recalled, held by name so they cannot drift.
-  const recalled = board().DEPARTURES.filter(d => d.src === 'recalled').map(d => d.no).sort();
-  assert.deepEqual(recalled, ['662', '664', '668', '8882', '8884']);
+  // Held by name so none of them can quietly change category. A row that moves
+  // from 'invented' to 'documented' should be a deliberate act with a source
+  // behind it, not a side effect of an edit.
+  const by = k => board().DEPARTURES.filter(d => d.src === k).map(d => d.no).sort();
+  assert.deepEqual(by('documented'), ['664', '665'], 'from the 1991 OAG');
+  assert.deepEqual(by('recalled'), ['8882', '8884'], 'from memory');
+  assert.deepEqual(by('invented'), ['2417', '431', '670', '873', '877', '9012']);
 });
 
 test('the stamp says plainly that none of it is real', () => {
