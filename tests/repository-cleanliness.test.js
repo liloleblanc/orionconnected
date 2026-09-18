@@ -50,6 +50,17 @@ test('only supported production pages sit at the public root', () => {
     // script rather than fids-core.js, so the archive cannot be broken by a
     // change to the live boards.
     'heritage.html',
+    // The archive board itself, standalone for the same reason and more
+    // strictly: it loads only its own script and stylesheet, makes no network
+    // request at all, and reads no clock but the one it depicts. The heritage
+    // gate built INSIDE the live board spent its life being overwritten — the
+    // live refresh timer painted that day's real flights over a 1998
+    // demonstration every five minutes, because a board wired to a feed will
+    // eventually be given one. tests/heritage-board-standalone.test.js asserts
+    // the isolation by name, and asserts the recalled network too: Air
+    // Atlantic flew Halifax from Moncton and nowhere else, Air Nova never flew
+    // Toronto, and there is no flight 666.
+    'heritage-board.html',
     'index.html', 'menu.html', 'picker.html', 'rotate.html',
     // v23798 — the page a TV opens once and never again. It generates a
     // six-character identity, keeps it, and shows it until an admin claims the
