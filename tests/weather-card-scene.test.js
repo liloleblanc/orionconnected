@@ -20,6 +20,7 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'fids-current/js/fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/display-overrides.css'), 'utf8');
+const CODE = SRC.replace(/\/\/.*$/gm, '');            // JS without line comments
 const VIDEO = path.join(ROOT, 'fids-current/logos/Backgrounds/video');
 
 /** A top-level function's source, by name, braces balanced. */
@@ -60,11 +61,17 @@ test('the set loop is first, the scene over it, the screens over both', () => {
 test('the video layer beats the rule that would float it over the content', () => {
   // `.wxcard-wrap > *:not(.wxc-globe)` sets position:relative; z-index:1 on
   // every child. A weaker selector here puts the video ON TOP of the forecast.
-  const rule = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{[^}]*\}/);
-  assert.ok(rule, 'display-overrides.css must style video.wxc-vid');
-  assert.match(rule[0], /position:\s*absolute\s*!important/);
-  assert.match(rule[0], /z-index:\s*0\s*!important/);
-  assert.match(rule[0], /object-fit:\s*cover\s*!important/);
+  const rules = [...CSS.matchAll(/\.wxcard-wrap > video\.wxc-vid \{[^}]*\}/g)].map(m => m[0]);
+  assert.ok(rules.length >= 2, 'the v23724 rule and the v23836 placement must both exist');
+  const first = rules[0], live = rules[rules.length - 1];
+  assert.match(first, /position:\s*absolute\s*!important/);
+  assert.match(first, /object-fit:\s*cover\s*!important/);
+  // the LAST rule is the one that wins (longest chain, latest); it lifts the
+  // loop above the set and must keep it under every screen
+  const z = Number((live.match(/z-index:\s*(\d+)\s*!important/) || [])[1]);
+  const screen = Number((CSS.match(/\.wxcard-wrap > \.wxc-screen \{[^}]*z-index: (\d+)/) || [])[1]);
+  assert.ok(z > 0, 'the scene loop sits above the set (z 0)');
+  assert.ok(z < screen, `the scene loop (z ${z}) must stay under the screens (z ${screen}) — or it floats over the hours and the days`);
 
   const count = sel => (sel.match(/:not\(#_\)/g) || []).length;
   const ourLine = CSS.split('\n').find(l => l.includes('.wxcard-wrap > video.wxc-vid'));
@@ -81,7 +88,7 @@ test('something opaque is always underneath, and it is never a photograph', () =
   // wrap must never be left bare. The set is a PNG in its own layer inside
   // screen 1 — it is not the wrap's ground, and nothing composes a photograph
   // back into that ground without someone deciding to.
-  assert.ok(!/_wxSkyUrl\s*=/.test(SRC), 'the sky-plate variable must stay gone');
+  assert.ok(!/_wxSkyUrl\s*=/.test(CODE), 'the sky-plate variable must stay gone');
   const at = SRC.indexOf('var _wxBg = _wxNightScene');
   assert.ok(at >= 0, 'the background must branch on the scene');
   const bg = SRC.slice(at, SRC.indexOf(';', at));
@@ -167,8 +174,9 @@ test('nothing sensible throws, and nonsense is clear', () => {
 test('the scene is chosen from the family and the hour', () => {
   const at = SRC.indexOf('var _wxNightScene');
   const block = SRC.slice(at, SRC.indexOf('var _wxHtml = ', at));
-  assert.match(block, /_wxSceneKindOf\(_wxAnimIcon\(/, 'the family comes from the same icon mapper the tiles use');
-  assert.match(block, /_wxAtTime\(_wxOrig \|\| dest, 0\)/,
+  assert.match(block, /_wxSceneKind = _wxSceneKindOf\(_wxAnimIcon\(_wxSceneRead \? _wxSceneRead\.code : cur\.code, _wxNightScene\)\);/,
+    'the reading taken at the origin is the one folded to a family, with the origin\'s own night flag');
+  assert.match(block, /_wxSceneRead = _wxAtTime\(_wxOrig \|\| dest, 0\)/,
     "the reading is the board's own airport's — the departure side of the set — " +
     'so the screen shows the sky outside the terminal, not the sky at the far end');
   assert.match(block, /_wxSceneKind === 'clear'/, "'clear' keeps the loops the card has had");
@@ -186,16 +194,25 @@ test('the hour tile\'s night class comes from the same flag as its icon', () => 
   assert.match(block, /var hNight = h24 < 6 \|\| h24 >= 21;/);
   assert.match(block, /_wxAnimIcon\(h\.code, hNight\)/, 'the icon reads hNight');
   assert.match(block, /night: hNight/, 'and the tile carries the same value');
-  assert.match(SRC, /p\.h\.night \? 'wxc-hr-night' : 'wxc-hr-day'/, 'the class is that value, not a second guess');
+  assert.match(SRC, /p\.h\.night \? 'wxc-pt-night' : 'wxc-pt-day'/, 'the class is that value, not a second guess');
 });
 
 // ── The files ────────────────────────────────────────────────────────────
 
-const FAMILIES = ['cloud', 'rain', 'snow', 'storm'];
+const MAPPER_ICONS = (() => {
+  const names = new Set();
+  for (const body of [fn('_wxAnimIcon'), fn('_wmoAnimIcon')]) {
+    for (const m of body.replace(/\/\/.*$/gm, '').matchAll(/'([a-z-]+)'/g)) names.add(m[1]);
+  }
+  return [...names];
+})();
+// derived from the mapper, so a sixth family cannot ship without its loops
+const FAMILIES = [...new Set(MAPPER_ICONS.map(kindOf))].filter(k => k !== 'clear').sort();
 const LOOPS = ['wx-grass-loop.mp4', 'wx-fireflies-night.mp4']
   .concat(FAMILIES.flatMap(f => [`wx-scene-${f}-day.mp4`, `wx-scene-${f}-night.mp4`]));
 
 test('every family has a day loop and a night loop on disk, as real MP4s', () => {
+  assert.deepEqual(FAMILIES, ['cloud', 'rain', 'snow', 'storm'], 'the families the mapper can name');
   for (const f of LOOPS) {
     const p = path.join(VIDEO, f);
     assert.ok(fs.existsSync(p), `${f} is referenced but missing from the tree`);
@@ -219,7 +236,7 @@ test('the set is a loop with the screen filled, held for the film and parked aft
   const hold = fn('_wxHoldSceneForIntro');
   assert.match(hold, /video\.wxc-set/, 'held while the film plays, like the scene');
   const park = fn('_wxParkSceneAfterSet');
-  assert.match(park, /19\.7 - \(elapsed \|\| 0\)/, 'and both are paused once the hours cover them');
+  assert.match(park, /video\.wxc-vid, :scope > video\.wxc-set/, 'and both are paused once the hours cover them (the clock is tested in the entrance suite)');
   assert.match(fn('_wxArmEntrance'), /_wxParkSceneAfterSet\(wrap, 0\)/);
   assert.match(fn('_wxCarryEntrance'), /_wxParkSceneAfterSet\(wrap, el\)/);
 });
@@ -228,8 +245,8 @@ test('the scene loop covers the monitor\'s screen with a hair to spare', () => {
   // Both are percentages of the panel. The scene must reach past the screen's
   // edge on every side (or navy shows in the corner) but not past the bezel.
   const vid = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: ([\d.]+)% !important; left: ([\d.]+)% !important; right: ([\d.]+)% !important; bottom: ([\d.]+)% !important;/);
-  const mon = CSS.match(/\.wxc-monitor \{ position: absolute !important; left: ([\d.]+)% !important; top: ([\d.]+)% !important; width: ([\d.]+)% !important; height: ([\d.]+)% !important;/);
-  assert.ok(vid && mon, 'both rules must exist');
+  const mon = CSS.match(/\.wxc-monitor \{ position: absolute !important; overflow: hidden !important; left: ([\d.]+)% !important; top: ([\d.]+)% !important; width: ([\d.]+)% !important; height: ([\d.]+)% !important;/);
+  assert.ok(vid && mon, 'both rules must exist (the monitor clips its own plates as they sweep in)');
   const v = { top: +vid[1], left: +vid[2], right: +vid[3], bottom: +vid[4] };
   const s = { left: +mon[1], top: +mon[2], right: 100 - +mon[1] - +mon[3], bottom: 100 - +mon[2] - +mon[4] };
   for (const side of ['top', 'left', 'right', 'bottom']) {

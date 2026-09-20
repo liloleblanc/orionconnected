@@ -18175,8 +18175,18 @@ const gView = document.getElementById('gateView');
             // rondelle uses; here it is an elapsed offset instead.)
             var _wxEl = (Date.now() - (window._wxEntranceAt || 0)) / 1000;
             var _wxSpan = (_WXC_ENTRANCE_MS * _wxSpeed()) / 1000;
-            if (_wxEl > 0 && _wxEl < _wxSpan) _wxR.style.setProperty('--wxc-el', _wxEl.toFixed(2) + 's');
-            else _wxEndEntrance(_savedAd);
+            if (_wxEl > 0 && _wxEl < _wxSpan) {
+              // v23836 — in BASE seconds (the delays multiply by --wxc-t), and
+              // on the children too: a screen swapped in by late data carries
+              // its own inline stamp, which would otherwise outrank the wrap's
+              // and resume that screen on the clock it was inserted at.
+              var _wxBase = (_wxEl / _wxSpeed()).toFixed(2) + 's';
+              _wxR.style.setProperty('--wxc-el', _wxBase);
+              try {
+                var _wxKids = _wxR.querySelectorAll(':scope > [style*="--wxc-el"]');
+                for (var _wk = 0; _wk < _wxKids.length; _wk++) _wxKids[_wk].style.setProperty('--wxc-el', _wxBase);
+              } catch (eWk) {}
+            } else _wxEndEntrance(_savedAd);
           }
         } catch (eWx) {}
         if (_savedAd && _newAd) { _newAd.replaceWith(_savedAd); }
@@ -41810,6 +41820,17 @@ function _restartGateAdsTimer() {
                 if (_wxLeaveWrap) {
                   try { var _spL = _wxSpeed(); if (_spL !== 1) _wxLeaveWrap.style.setProperty('--wxc-t', String(_spL)); } catch (eS2) {}
                   _wxLeaveWrap.classList.remove('wxc-entering'); _wxLeaveWrap.classList.add('wxc-leaving');
+                  // The leave's delays are absolute, not resumable: a stamp left
+                  // from a rebuild would make them negative and the layers snap.
+                  // And the loops it uncovers must be MOVING — they were parked
+                  // at 19.7s behind the hours — so they are woken for the exit.
+                  try {
+                    _wxLeaveWrap.style.removeProperty('--wxc-el');
+                    var _wxLk = _wxLeaveWrap.querySelectorAll(':scope > [style*="--wxc-el"]');
+                    for (var _wl = 0; _wl < _wxLk.length; _wl++) _wxLk[_wl].style.removeProperty('--wxc-el');
+                    var _wxLv = _wxLeaveWrap.querySelectorAll(':scope > video.wxc-set, :scope > video.wxc-vid');
+                    for (var _wv = 0; _wv < _wxLv.length; _wv++) { try { _wxLv[_wv].play(); } catch (eLv) {} }
+                  } catch (eLk) {}
                 }
               }
             } catch (eWxL) {}
@@ -44210,10 +44231,11 @@ function _wxSpeed() {
   return 1;
 }
 // Base lengths at _wxSpeed() === 1, from the CSS block. The card is three
-// screens in turn — studio, hours, days — and the last flip begins at 30.5s
-// and is over by 31.7s; the deadline is rounded up past it so the mark comes
-// off on the end state, which is also the base state. Exit runs to 4.2s.
-var _WXC_ENTRANCE_MS = 33000;
+// screens in turn — studio, hours, days — and the last arrival on the last
+// screen (the week's range, sweeping in at 33.26s and misting up for 3.0s)
+// settles at 36.26s; the deadline is rounded up past it so the mark comes off
+// on the end state, which is also the base state. Exit runs to 4.2s.
+var _WXC_ENTRANCE_MS = 37000;
 // How long the title overlay is on screen. The CSS animations are written
 // against this same six seconds; it is named here so the backdrop's pacing
 // cannot drift from it.
@@ -44288,7 +44310,7 @@ function _wxEndEntrance(root) {
 // v23836 — the set loop is held the same way, and both start at 3.8s: the
 // film is opaque over them until it fades from 4.6s, so nothing is lost, and
 // the film has the box to itself for its first two thirds.
-function _wxHoldSceneForIntro(wrap) {
+function _wxHoldSceneForIntro(wrap, elapsedMs) {
   try {
     var vid = wrap && wrap.querySelector(':scope > video.wxc-vid');
     var set = wrap && wrap.querySelector(':scope > video.wxc-set');
@@ -44296,10 +44318,12 @@ function _wxHoldSceneForIntro(wrap) {
     if (!vid || !intro) return;
     try { vid.pause(); } catch (e) {}
     try { if (set) set.pause(); } catch (eS) {}
+    // `elapsedMs` is how far into the film a carried rebuild already is, so
+    // the loops are released at the same moment they would have been.
     setTimeout(function () {
       try { vid.play(); } catch (e) {}
       try { if (set) set.play(); } catch (eS2) {}
-    }, Math.round(3800 * _wxSpeed()));
+    }, Math.max(0, Math.round(3800 * _wxSpeed() - (elapsedMs || 0))));
   } catch (e) {}
 }
 
@@ -44308,18 +44332,23 @@ function _wxHoldSceneForIntro(wrap) {
 // decoding behind an opaque screen for twenty seconds is the same waste the
 // title's backdrop used to be. Paused, not removed: a rebuild inside the visit
 // reuses the nodes. `elapsed` lets a carried rebuild park on the same clock.
+// `elapsed` is REAL seconds since the arrival; the 19.7s flip is in base
+// seconds and scales with the dial. Past the flip the loops are paused at
+// once — a rebuild after it still autoplays fresh nodes. With no later screen
+// (wxc-one) the set holds the whole visit, so it is never parked.
 function _wxParkSceneAfterSet(wrap, elapsed) {
   try {
     if (window._wxParkTimer) { try { clearTimeout(window._wxParkTimer); } catch (eC) {} }
-    var at = (19.7 - (elapsed || 0)) * 1000 * _wxSpeed();
-    if (!(at > 0)) return;
-    window._wxParkTimer = setTimeout(function () {
-      window._wxParkTimer = null;
+    if (wrap && wrap.classList && wrap.classList.contains('wxc-one')) return;
+    var park = function () {
       try {
         var vids = wrap.querySelectorAll(':scope > video.wxc-vid, :scope > video.wxc-set');
         for (var i = 0; i < vids.length; i++) { try { vids[i].pause(); } catch (eP) {} }
       } catch (eQ) {}
-    }, Math.round(at));
+    };
+    var at = 19.7 * 1000 * _wxSpeed() - (elapsed || 0) * 1000;
+    if (!(at > 0)) { park(); return; }
+    window._wxParkTimer = setTimeout(function () { window._wxParkTimer = null; park(); }, Math.round(at));
   } catch (e) {}
 }
 
@@ -44336,12 +44365,38 @@ function _wxCarryEntrance(wrap) {
     if (!wrap || !wrap.classList || !window._wxEntranceAt) return false;
     var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
     if (window._wxEntrancePlayedSeq !== seq) return false;
+    var sp = _wxSpeed();
     var el = (Date.now() - window._wxEntranceAt) / 1000;
-    var span = (_WXC_ENTRANCE_MS * _wxSpeed()) / 1000;
+    var span = (_WXC_ENTRANCE_MS * sp) / 1000;
     if (!(el > 0 && el < span)) return false;
-    try { var sp = _wxSpeed(); if (sp !== 1) wrap.style.setProperty('--wxc-t', String(sp)); } catch (eS) {}
-    wrap.style.setProperty('--wxc-el', el.toFixed(2) + 's');
+    try { if (sp !== 1) wrap.style.setProperty('--wxc-t', String(sp)); } catch (eS) {}
+    // Stamped in BASE seconds: every delay in the block is written as
+    // (base - --wxc-el) * --wxc-t, so a real elapsed would be scaled twice
+    // under ?wxspeed. (The same at the gate rebuild and the screen swap.)
+    wrap.style.setProperty('--wxc-el', (el / sp).toFixed(2) + 's');
     wrap.classList.add('wxc-entering');
+    // Inside the film's window the rebuilt wrap carries the film again (see
+    // _wxWantsIntro); pick it up where the old one was, and hold the loops
+    // under it for what is left, exactly as the arm did.
+    var introMs = (_WXC_ENTRANCE_INTRO_S || 6) * 1000 * sp;
+    if (el * 1000 < introMs) {
+      try {
+        var bg = wrap.querySelector(':scope > .wxc-intro > video.wxc-intro-bg');
+        if (bg) {
+          var rate = _WX_INTRO_BG_SPAN / (introMs / 1000);
+          bg.playbackRate = rate;
+          try { bg.currentTime = el * rate; } catch (eT) {}
+          try { bg.play(); } catch (eP) {}
+          if (window._wxIntroBgTimer) { try { clearTimeout(window._wxIntroBgTimer); } catch (eK) {} }
+          window._wxIntroBgTimer = setTimeout(function () {
+            window._wxIntroBgTimer = null;
+            try { bg.pause(); } catch (eQ) {}
+            try { bg.currentTime = 0; } catch (eU) {}
+          }, Math.round(introMs - el * 1000));
+        }
+      } catch (eB) {}
+      _wxHoldSceneForIntro(wrap, el * 1000);
+    }
     _wxParkSceneAfterSet(wrap, el);
     return true;
   } catch (e) { return false; }
@@ -44350,7 +44405,13 @@ function _wxCarryEntrance(wrap) {
 function _wxWantsIntro() {
   try {
     var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
-    return window._wxEntrancePlayedSeq !== seq;
+    if (window._wxEntrancePlayedSeq !== seq) return true;
+    // v23836 — and inside the film's own window, a rebuild carries the film
+    // again: without it a full rebuild at second two left a bare navy wrap
+    // where the opener had been. _wxCarryEntrance resumes it at the right
+    // frame. Past the window the answer is no, as before.
+    var at = window._wxEntranceAt || 0;
+    return at > 0 && (Date.now() - at) < (_WXC_ENTRANCE_INTRO_S || 6) * 1000 * _wxSpeed();
   } catch (e) { return false; }
 }
 
@@ -44380,14 +44441,20 @@ var _WX_INTRO_BACKDROP = 'film';
 // The chosen opener, complete: six seconds, 976x857, words and all (see
 // 'film' above). The stock globe it replaced stays on disk, one path away.
 var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-film.mp4';
+// The same film cut French-first — BULLETIN MÉTÉO above WEATHER REPORT — for
+// the boards where French leads (frFirstAirport). A film carries its words,
+// so the order has to be in the file; in 'clip' mode the board orders the
+// lines itself and this is not consulted.
+var _WX_INTRO_CLIP_FR = '/logos/Backgrounds/video/wx-title-film-fr.mp4';
 
 // An airliner at night is a handful of lights crossing, not an airframe —
 // that is what anyone standing under one actually sees. The silhouette is
 // there at low opacity to give the lights something to belong to.
-function _wxIntroBackdropHtml() {
+function _wxIntroBackdropHtml(frFirst) {
   if (_WX_INTRO_BACKDROP !== 'sky') {
+    var src = (frFirst && _WX_INTRO_BACKDROP === 'film' && _WX_INTRO_CLIP_FR) ? _WX_INTRO_CLIP_FR : _WX_INTRO_CLIP;
     return '<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" '
-         + 'src="' + _WX_INTRO_CLIP + '"></video>';
+         + 'src="' + src + '"></video>';
   }
   return '<div class="wxc-intro-bg wxc-sky">'
        + '<i class="wxc-sky-far"></i>'
@@ -44444,7 +44511,7 @@ function _wxIntroHtml(frFirst) {
   // A film carries its own words: the overlay is the clip and nothing else —
   // no scrim to knock it back, no panel, no lines to fight its lettering.
   if (_WX_INTRO_BACKDROP === 'film') {
-    return '<div class="wxc-intro wxc-intro-film" aria-hidden="true">' + _wxIntroBackdropHtml() + '</div>';
+    return '<div class="wxc-intro wxc-intro-film" aria-hidden="true">' + _wxIntroBackdropHtml(frFirst) + '</div>';
   }
   var rows = _WX_INTRO_LINES.slice();
   if (frFirst) {
@@ -44644,7 +44711,12 @@ function _renderWxCard(el) {
     if (daily && daily.time && daily.time.length) {
       // v23836 — the week is collected as data here and drawn by the last
       // screen below; the per-tile colour bands of v23724 went with the tiles.
+      // Only days with BOTH readings as finite numbers: the route can carry a
+      // null for a day it cannot compute, and a null low would scale the whole
+      // range against zero and print '0°' as a temperature.
+      var _wxNum = function (v) { return typeof v === 'number' && isFinite(v); };
       for (var i = 0; i < Math.min(5, daily.time.length); i++) {
+        if (!_wxNum(daily.temperature_2m_max[i]) || !_wxNum(daily.temperature_2m_min[i])) continue;
         _wxDays.push({ dt: new Date(daily.time[i] + 'T12:00:00'), ic: _wmoAnimIcon(daily.weather_code[i]),
                        hi: daily.temperature_2m_max[i], lo: daily.temperature_2m_min[i] });
         nDays++;
@@ -44663,6 +44735,7 @@ function _renderWxCard(el) {
       order.sort().slice(0, 5).forEach(function (k) {
         var dd = days[k];
         var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
+        if (!(dd.hi > -99 && dd.lo < 99)) return;   // a day with no readings
         _wxDays.push({ dt: new Date(k + 'T12:00:00'), ic: _wxAnimIcon(code, false), hi: dd.hi, lo: dd.lo });
         nDays++;
       });
@@ -44904,16 +44977,16 @@ function _renderWxCard(el) {
         + '<defs><linearGradient id="wxcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5c953" stop-opacity=".30"/><stop offset="1" stop-color="#f5c953" stop-opacity="0"/></linearGradient></defs>'
         + _pts.map(function (p) { return '<line class="wxc-curve-grid" x1="' + p.x.toFixed(1) + '" y1="' + (_yTop - 30) + '" x2="' + p.x.toFixed(1) + '" y2="' + (_cH - 44) + '"/>'; }).join('')
         + '<path class="wxc-curve-area" d="' + _area + '"/>'
-        + '<path class="wxc-curve-line" d="' + _line + '"/>'
+        + '<path class="wxc-curve-line" pathLength="1" d="' + _line + '"/>'
         + '</svg>';
-      var _cols = _pts.map(function (p) {
-        return '<div class="wxc-hr ' + (p.h.night ? 'wxc-hr-night' : 'wxc-hr-day') + '" style="left:' + (p.x / _cW * 100).toFixed(2) + '%;top:' + (p.y / _cH * 100).toFixed(2) + '%">'
-          + '<div class="wxc-hr-temp">' + _wxDeg(p.h.temp) + '</div>'
+      var _cols = _pts.map(function (p, i) {
+        return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + ';left:' + (p.x / _cW * 100).toFixed(2) + '%;top:' + (p.y / _cH * 100).toFixed(2) + '%">'
+          + '<div class="wxc-pt-temp">' + _wxDeg(p.h.temp) + '</div>'
           + '<img class="wxanim" data-wx="' + p.h.ic + '" src="/logos/weather/animated/' + p.h.ic + '.svg" alt="">'
           + '</div>';
       }).join('');
-      var _times = _pts.map(function (p) {
-        return '<div class="wxc-hr-time" style="left:' + (p.x / _cW * 100).toFixed(2) + '%">' + p.h.lbl + '</div>';
+      var _times = _pts.map(function (p, i) {
+        return '<div class="wxc-pt-time" style="--wxc-i:' + i + ';left:' + (p.x / _cW * 100).toFixed(2) + '%">' + p.h.lbl + '</div>';
       }).join('');
       // the conditions the hours pass through, once each, in order of first appearance
       var _seen = {}, _legN = 0, _leg = '';
@@ -44951,8 +45024,8 @@ function _renderWxCard(el) {
         + '</svg>'
         + '<div class="wxc-rng-lbl" style="top:' + (_rY(_rMax) / _rH * 100).toFixed(1) + '%">' + Math.round(_rMax) + '°</div>'
         + '<div class="wxc-rng-lbl" style="top:' + (_rY(_rMin) / _rH * 100).toFixed(1) + '%">' + Math.round(_rMin) + '°</div>';
-      var _dayCols = _wxDays.map(function (d) {
-        return '<div class="wxc-day2">'
+      var _dayCols = _wxDays.map(function (d, i) {
+        return '<div class="wxc-day2" style="--wxc-i:' + i + '">'
           + '<div class="wxc-dchip">' + _dayAbbr(d.dt, _wxLangs[0]) + (_wxLangs[1] ? _wxDia + _dayAbbr(d.dt, _wxLangs[1]) : '') + '</div>'
           + '<img class="wxanim" data-wx="' + d.ic + '" src="/logos/weather/animated/' + d.ic + '.svg" alt="">'
           + '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
@@ -45196,11 +45269,12 @@ function _renderWxCard(el) {
     // not restarted: the fresh nodes are stamped with the time already
     // elapsed, so their flips land on the same clock as the set's.
     var _wxWrapP = el.querySelector ? el.querySelector('.wxcard-wrap') : null;
-    if (_wxWrapP && el._wxS1Html === _wxS1 && el._wxVidHtml === _wxVid && _wxWrapP.className.indexOf(_wxWrapCls.trim()) >= 0) {
+    if (_wxWrapP && el._wxS1Html === _wxS1 && el._wxVidHtml === _wxVid && el._wxWrapCls === _wxWrapCls) {
       try {
         var _wxElapsed = '';
         if (window._wxEntranceAt && _wxWrapP.classList.contains('wxc-entering')) {
-          _wxElapsed = ((Date.now() - window._wxEntranceAt) / 1000).toFixed(2) + 's';
+          // base seconds, like every other stamp (see _wxCarryEntrance)
+          _wxElapsed = ((Date.now() - window._wxEntranceAt) / 1000 / _wxSpeed()).toFixed(2) + 's';
         }
         [['wxc-s2', _wxS2], ['wxc-s3', _wxS3]].forEach(function (pair) {
           var old = _wxWrapP.querySelector(':scope > .' + pair[0]);
@@ -45224,6 +45298,7 @@ function _renderWxCard(el) {
     el._wxLastHtml = _wxSig;
     el._wxS1Html = _wxS1;
     el._wxVidHtml = _wxVid;
+    el._wxWrapCls = _wxWrapCls;
     el._wxLastBg = _wxBg;
     el.innerHTML = _wxHtml;
     var _wxWrap = el.querySelector('.wxcard-wrap');

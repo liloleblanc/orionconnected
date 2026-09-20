@@ -14,10 +14,14 @@
 // size the panel is, and an order that can put French first where the law
 // and the house rules require it.
 //
-// The panel it plays in is tall and narrow — measured at 408 × 792 — which
-// is why the nine phrases are one centred COLUMN. A 3 × 3 grid, which is
-// what the generated footage used, gives a twenty-one character phrase a
-// third of 408px and is unreadable.
+// The panel it plays in is 976 × 857 on a 1080p board (measured live; the
+// 408 × 792 figure written here before was a preview pane, not a board) and
+// gets closer to square as the board grows. The nine phrases are one centred
+// COLUMN because a phrase is never cut in half, at any of those sizes.
+//
+// v23836 — the 'clip' mode this describes is kept, but what is LIVE is the
+// 'film' mode at the foot of this file: the chosen opener carries its own
+// words and the board draws none.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -29,8 +33,13 @@ const ROOT = path.resolve(__dirname, '..');
 const JS = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
 
+const CODE = JS.replace(/\/\/.*$/gm, '');                       // JS without line comments
+// The title's block, BOUNDED by its own reduced-motion close. It used to run
+// to the end of the file, so every block appended later (the aircraft, the
+// banner, the three screens) was swept into these counts.
 const BLOCK_AT = CSS.lastIndexOf('@keyframes wxcIntroPanel');
-const BLOCK = BLOCK_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', BLOCK_AT)) : '';
+const BLOCK_END = BLOCK_AT >= 0 ? CSS.indexOf('\n}', CSS.indexOf('@media (prefers-reduced-motion: reduce) {', BLOCK_AT)) + 2 : -1;
+const BLOCK = BLOCK_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', BLOCK_AT), BLOCK_END) : '';
 
 /** The table of phrases, read out of the source. */
 function lines() {
@@ -60,10 +69,12 @@ test('the clip is the backdrop; the words are drawn by the board', () => {
   assert.match(ret, /class="wxc-intro-scrim"/,
     'and it is knocked back by a scrim — footage carries its own lettering, ' +
     'which must read as texture and not as a second headline');
-  const bd = JS.slice(JS.indexOf('function _wxIntroBackdropHtml()'));
+  const bd = JS.slice(JS.indexOf('function _wxIntroBackdropHtml(frFirst)'));
   const bdBody = bd.slice(0, bd.indexOf('\n}'));
   assert.match(bdBody, /class="wxc-intro-bg wxc-sky"/, 'sky mode draws the sky');
-  assert.match(bdBody, /src="' \+ _WX_INTRO_CLIP/, 'clip mode plays the clip');
+  assert.match(bdBody, /src="' \+ src \+ '"/, 'clip mode plays the clip');
+  assert.match(bdBody, /var src = \(frFirst && _WX_INTRO_BACKDROP === 'film' && _WX_INTRO_CLIP_FR\) \? _WX_INTRO_CLIP_FR : _WX_INTRO_CLIP;/,
+    'and only a FILM has a French-first cut — a clip is ordered by the board');
   // every phrase is still TEXT, not pixels
   for (const r of lines()) {
     assert.ok(ret.indexOf('wxc-intro-line') >= 0, 'the phrases are elements');
@@ -95,14 +106,14 @@ test('the backdrop sits under the scrim, and the type over both', () => {
 test('only one clip decodes at a time', () => {
   // The backdrop and the scene are both 1920x1080. Two simultaneous decodes
   // on top of the animating layers shows up as dropped frames, not an error.
-  assert.match(JS, /function _wxHoldSceneForIntro\(wrap\)/,
+  assert.match(JS, /function _wxHoldSceneForIntro\(wrap, elapsedMs\)/,
     'the scene is held while the backdrop plays');
-  const h = JS.slice(JS.indexOf('function _wxHoldSceneForIntro(wrap)'));
+  const h = JS.slice(JS.indexOf('function _wxHoldSceneForIntro(wrap, elapsedMs)'));
   const b = h.slice(0, h.indexOf('\n}'));
   assert.match(b, /vid\.pause\(\)/, 'the scene pauses');
   assert.match(b, /set\.pause\(\)/, 'and so does the set loop under it');
-  assert.match(b, /3800 \* _wxSpeed\(\)/,
-    'both resume under the film just before it fades (4.6s), on the same speed dial as everything else');
+  assert.match(b, /3800 \* _wxSpeed\(\) - \(elapsedMs \|\| 0\)/,
+    'both resume under the film at 3.8s (less whatever a carried rebuild has already used), on the same speed dial as everything else');
   const arm = JS.slice(JS.indexOf('function _wxArmEntrance(wrap)'));
   assert.match(arm.slice(0, arm.indexOf('\n}')), /_wxHoldSceneForIntro\(wrap\);/,
     'and it is actually called when the entrance arms');
@@ -412,7 +423,7 @@ test('the backdrop is paced to stay inside the clip it plays', () => {
 });
 
 test('the clip that carried a headline over the type is gone', () => {
-  assert.doesNotMatch(JS, /wx-report-intro\.mp4/,
+  assert.doesNotMatch(CODE, /wx-report-intro\.mp4/,
     'the previous backdrop put WEATHER REPORT in full-frame letters directly ' +
     'behind the nine phrases, and a full-frame sun through the middle of the ' +
     'title — it must not be referenced any more');
@@ -470,7 +481,8 @@ test('the backdrop stops when the title is taken out of the layout', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const SKY_AT = CSS.lastIndexOf('@keyframes wxcSkyDrift');
-const SKY = SKY_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', SKY_AT)) : '';
+const SKY_END = SKY_AT >= 0 ? CSS.indexOf('\n/* ══', SKY_AT) : -1;   // the next top-level header
+const SKY = SKY_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', SKY_AT), SKY_END > 0 ? SKY_END : undefined) : '';
 
 /** sRGB relative luminance of a #rrggbb, 0-255. */
 function lum(hex) {
@@ -585,7 +597,7 @@ test('in film mode the clip carries the words and the board draws none', () => {
   assert.equal(mode, 'film', 'the chosen opener is the film');
   const body = JS.slice(JS.indexOf('function _wxIntroHtml('));
   const film = body.slice(0, body.indexOf('var rows = _WX_INTRO_LINES'));
-  assert.match(film, /if \(_WX_INTRO_BACKDROP === 'film'\) \{\s*return '<div class="wxc-intro wxc-intro-film" aria-hidden="true">' \+ _wxIntroBackdropHtml\(\) \+ '<\/div>';/,
+  assert.match(film, /if \(_WX_INTRO_BACKDROP === 'film'\) \{\s*return '<div class="wxc-intro wxc-intro-film" aria-hidden="true">' \+ _wxIntroBackdropHtml\(frFirst\) \+ '<\/div>';/,
     'film mode returns the overlay with only the clip in it, before any line is built');
   assert.doesNotMatch(film, /wxc-intro-scrim|wxc-intro-panel|wxc-intro-lines|wxc-intro-sheen/,
     'no scrim, panel, lines or sheen over a film');
@@ -595,4 +607,23 @@ test('in film mode the clip carries the words and the board draws none', () => {
   assert.ok(fs.existsSync(file), 'the film is committed');
   const head = fs.readFileSync(file, { encoding: 'latin1', start: 0, end: 16 });
   assert.ok(head.includes('ftyp'), 'a real MP4');
+  // what film mode actually EMITS, run rather than read: the clip, nothing else
+  const clipFr = (JS.match(/var _WX_INTRO_CLIP_FR = '(\/[^']+\.mp4)';/) || [])[1];
+  assert.equal(clipFr, '/logos/Backgrounds/video/wx-title-film-fr.mp4');
+  const fileFr = path.join(ROOT, 'fids-current', clipFr);
+  assert.ok(fs.existsSync(fileFr), 'the French-first cut is committed');
+  const both = new Function('_WX_INTRO_BACKDROP', '_WX_INTRO_CLIP', '_WX_INTRO_CLIP_FR',
+    JS.slice(JS.indexOf('function _wxIntroBackdropHtml('), JS.indexOf('\n}', JS.indexOf('function _wxIntroBackdropHtml(')) + 2)
+    + '\nreturn [_wxIntroBackdropHtml(false), _wxIntroBackdropHtml(true)];')('film', clip, clipFr);
+  assert.match(both[0], /^<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" src="\/logos\/Backgrounds\/video\/wx-title-film\.mp4"><\/video>$/,
+    'film mode plays the film — not the drawn sky, not a clip with words drawn over it');
+  assert.match(both[1], /src="\/logos\/Backgrounds\/video\/wx-title-film-fr\.mp4"/, 'and where French leads, the French-first cut');
+  assert.match(JS, /return '<div class="wxc-intro wxc-intro-film" aria-hidden="true">' \+ _wxIntroBackdropHtml\(frFirst\) \+ '<\/div>';/,
+    'the flag reaches the film');
+  assert.ok(Math.abs(mp4Seconds(fileFr) - mp4Seconds(file)) < 0.01, 'the two cuts are the same length');
+  // and it is PACED as a film: the whole clip across the whole title, rate 1
+  const span = Number((JS.match(/var _WX_INTRO_BG_SPAN = ([\d.]+);/) || [])[1]);
+  const intro = Number((JS.match(/var _WXC_ENTRANCE_INTRO_S = (\d+);/) || [])[1]);
+  assert.equal(span, intro, 'the film IS the title: the span is the window, so playbackRate is 1');
+  assert.ok(Math.abs(mp4Seconds(file) - intro) < 0.05, `and the film is cut to the window (${mp4Seconds(file).toFixed(3)}s for ${intro}s)`);
 });
