@@ -76,8 +76,8 @@ const INTRO_S = Number(SRC.match(/var _WXC_ENTRANCE_INTRO_S = (\d+);/)[1]);
 // ── The order ────────────────────────────────────────────────────────────
 
 test('three screens, in order, over the scene and under the title', () => {
-  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ '">' \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>';/,
-    'scene, set, hours, days, credit, title — that order is the stacking order');
+  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ '">' \+ _wxSet \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>';/,
+    'set loop, scene, the monitor, hours, days, credit, title — that order is the stacking order');
   for (const [v, cls] of [['_wxS1', 'wxc-s1'], ['_wxS2', 'wxc-s2'], ['_wxS3', 'wxc-s3']]) {
     assert.match(SRC, new RegExp(v + " = '<div class=\"wxc-screen " + cls + '"'), `${v} opens the ${cls} screen`);
   }
@@ -222,7 +222,9 @@ test('late data swaps screens 2 and 3 under an untouched set, on the same clock'
 });
 
 test('the carry re-marks only inside the window, and stamps the elapsed time', () => {
-  const carry = new Function('window', 'Date', '_WXC_ENTRANCE_MS', '_wxSpeed',
+  // the park call is stubbed and recorded, so the carry can be checked alone
+  const parked = [];
+  const carry = new Function('window', 'Date', '_WXC_ENTRANCE_MS', '_wxSpeed', '_wxParkSceneAfterSet',
     fnBody('_wxCarryEntrance') + '\nreturn _wxCarryEntrance;');
   const NOW = 1_800_000_000_000;
   const mk = () => {
@@ -234,13 +236,14 @@ test('the carry re-marks only inside the window, and stamps the elapsed time', (
   const run = (entranceAt, playedSeq, visitSeq, speed = 1) => {
     const wrap = mk();
     const ok = carry({ _wxEntranceAt: entranceAt, _wxEntrancePlayedSeq: playedSeq, _gateAdVisitSeq: visitSeq },
-                     { now: () => NOW }, 33000, () => speed)(wrap);
+                     { now: () => NOW }, 33000, () => speed, (w, el) => parked.push(el))(wrap);
     return { ok, wrap };
   };
   let r = run(NOW - 5000, 3, 3);
   assert.equal(r.ok, true, '5s into this visit\'s sequence: carried');
   assert.deepEqual(r.wrap.classes, ['wxc-entering']);
   assert.equal(r.wrap.vars['--wxc-el'], '5.00s');
+  assert.deepEqual(parked, [5], 'and the loops are told to park on the same clock');
   r = run(NOW - 40000, 3, 3);
   assert.equal(r.ok, false, 'past the end: the end state is the right state');
   assert.deepEqual(r.wrap.classes, []);

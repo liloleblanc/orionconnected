@@ -45,10 +45,16 @@ test('the card builds a muted, looping, inline video', () => {
   }
 });
 
-test('the video is the first child, behind the set', () => {
-  assert.match(SRC, /_wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro/,
-    'the video must precede every screen in source order — the set sits over ' +
-    'it with the monitor cut out, and the two later screens cover it entirely');
+test('the set loop is first, the scene over it, the screens over both', () => {
+  assert.match(SRC, /_wxSet \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro/,
+    'set, scene, then the screens — that source order is the stacking order');
+  const set = CSS.match(/\.wxcard-wrap > video\.wxc-set \{[^}]*\}/);
+  assert.ok(set, 'the set loop has its own rule');
+  assert.match(set[0], /z-index: 0 !important/, 'the set is the floor');
+  assert.match(set[0], /object-fit: fill !important/,
+    'stretched, not covered — so the monitor stays at the same percentages at every panel aspect');
+  const vid = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: [^}]*z-index: (\d+) !important; \}/);
+  assert.ok(vid && Number(vid[1]) > 0, 'the scene loop sits above the set');
 });
 
 test('the video layer beats the rule that would float it over the content', () => {
@@ -201,30 +207,40 @@ test('every family has a day loop and a night loop on disk, as real MP4s', () =>
   }
 });
 
-test('the set is a still with the screen cut out', () => {
-  const p = path.join(ROOT, 'fids-current/logos/Backgrounds/wx-studio-set.png');
-  assert.ok(fs.existsSync(p), 'the set must be committed');
-  const b = fs.readFileSync(p);
-  assert.equal(b.toString('latin1', 1, 4), 'PNG');
-  const w = b.readUInt32BE(16), h = b.readUInt32BE(20), colourType = b[25];
-  assert.equal(colourType, 6, 'RGBA — the monitor\'s screen is transparent, which is how the loop shows through');
-  assert.ok(Math.abs(w / h - 976 / 857) < 0.005, `${w}x${h} — cut at the panel\'s own 976 x 857 so the cut-out lands where the CSS says`);
-  assert.match(SRC, /wx-studio-set\.png\?v=/, 'the set is referenced by the card, cache-busted by the build tag');
+test('the set is a loop with the screen filled, held for the film and parked after', () => {
+  const m = SRC.match(/var _wxSet = '<video class="wxc-set"([^']*)'/);
+  assert.ok(m, 'the card must build a <video class="wxc-set">');
+  for (const attr of ['autoplay', 'loop', 'muted', 'playsinline']) assert.ok(m[1].includes(attr), 'the set must carry ' + attr);
+  const p = path.join(VIDEO, 'wx-studio-set.mp4');
+  assert.ok(fs.existsSync(p), 'the set loop must be committed');
+  const head = fs.readFileSync(p, { encoding: 'latin1', start: 0, end: 16 });
+  assert.ok(head.includes('ftyp') && !head.includes('qt  '), 'a real MP4');
+  assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current/logos/Backgrounds/wx-studio-set.png')), 'the still it replaced is gone');
+  const hold = fn('_wxHoldSceneForIntro');
+  assert.match(hold, /video\.wxc-set/, 'held while the film plays, like the scene');
+  const park = fn('_wxParkSceneAfterSet');
+  assert.match(park, /19\.7 - \(elapsed \|\| 0\)/, 'and both are paused once the hours cover them');
+  assert.match(fn('_wxArmEntrance'), /_wxParkSceneAfterSet\(wrap, 0\)/);
+  assert.match(fn('_wxCarryEntrance'), /_wxParkSceneAfterSet\(wrap, el\)/);
 });
 
-test('the loop plays in the same rectangle the set has cut out', () => {
-  // Both are written as percentages of the panel. If one moves and the other
-  // does not, the loop either peeks past the bezel or leaves navy in the corner.
-  const vid = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: ([\d.]+)% !important; left: ([\d.]+)% !important;[^}]*\}/);
+test('the scene loop covers the monitor\'s screen with a hair to spare', () => {
+  // Both are percentages of the panel. The scene must reach past the screen's
+  // edge on every side (or navy shows in the corner) but not past the bezel.
+  const vid = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: ([\d.]+)% !important; left: ([\d.]+)% !important; right: ([\d.]+)% !important; bottom: ([\d.]+)% !important;/);
   const mon = CSS.match(/\.wxc-monitor \{ position: absolute !important; left: ([\d.]+)% !important; top: ([\d.]+)% !important; width: ([\d.]+)% !important; height: ([\d.]+)% !important;/);
-  assert.ok(vid && mon, 'both the placed video rule and the monitor rule must exist');
-  assert.equal(vid[1], mon[2], 'top');
-  assert.equal(vid[2], mon[1], 'left');
+  assert.ok(vid && mon, 'both rules must exist');
+  const v = { top: +vid[1], left: +vid[2], right: +vid[3], bottom: +vid[4] };
+  const s = { left: +mon[1], top: +mon[2], right: 100 - +mon[1] - +mon[3], bottom: 100 - +mon[2] - +mon[4] };
+  for (const side of ['top', 'left', 'right', 'bottom']) {
+    assert.ok(v[side] <= s[side], `${side}: the scene (${v[side]}%) must reach past the screen (${s[side]}%)`);
+    assert.ok(s[side] - v[side] < 1.0, `${side}: but not by more than 1% — the bezel is right there`);
+  }
 });
 
 test('the manifest knows about all of it', () => {
   const man = fs.readFileSync(path.join(ROOT, 'fids-current/assets/asset-manifest.json'), 'utf8');
-  for (const f of LOOPS.concat(['wx-studio-set.png'])) {
+  for (const f of LOOPS.concat(['wx-studio-set.mp4', 'wx-title-film.mp4'])) {
     assert.ok(man.includes(f), `${f} — run \`npm run assets:build\`; CI fails on a stale manifest`);
   }
 });

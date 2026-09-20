@@ -44285,13 +44285,41 @@ function _wxEndEntrance(root) {
 // error. The scene is held until the title is nearly gone — it is behind the
 // backdrop and the scrim until then anyway, and its own fade does not begin
 // until 3.2s.
+// v23836 — the set loop is held the same way, and both start at 3.8s: the
+// film is opaque over them until it fades from 4.6s, so nothing is lost, and
+// the film has the box to itself for its first two thirds.
 function _wxHoldSceneForIntro(wrap) {
   try {
     var vid = wrap && wrap.querySelector(':scope > video.wxc-vid');
+    var set = wrap && wrap.querySelector(':scope > video.wxc-set');
     var intro = wrap && wrap.querySelector(':scope > .wxc-intro');
     if (!vid || !intro) return;
     try { vid.pause(); } catch (e) {}
-    setTimeout(function () { try { vid.play(); } catch (e) {} }, Math.round(2600 * _wxSpeed()));
+    try { if (set) set.pause(); } catch (eS) {}
+    setTimeout(function () {
+      try { vid.play(); } catch (e) {}
+      try { if (set) set.play(); } catch (eS2) {}
+    }, Math.round(3800 * _wxSpeed()));
+  } catch (e) {}
+}
+
+// v23836 — AND BOTH STOP WHEN THE SET LEAVES.
+// From 19.7s the hours and then the days cover the whole panel, and two loops
+// decoding behind an opaque screen for twenty seconds is the same waste the
+// title's backdrop used to be. Paused, not removed: a rebuild inside the visit
+// reuses the nodes. `elapsed` lets a carried rebuild park on the same clock.
+function _wxParkSceneAfterSet(wrap, elapsed) {
+  try {
+    if (window._wxParkTimer) { try { clearTimeout(window._wxParkTimer); } catch (eC) {} }
+    var at = (19.7 - (elapsed || 0)) * 1000 * _wxSpeed();
+    if (!(at > 0)) return;
+    window._wxParkTimer = setTimeout(function () {
+      window._wxParkTimer = null;
+      try {
+        var vids = wrap.querySelectorAll(':scope > video.wxc-vid, :scope > video.wxc-set');
+        for (var i = 0; i < vids.length; i++) { try { vids[i].pause(); } catch (eP) {} }
+      } catch (eQ) {}
+    }, Math.round(at));
   } catch (e) {}
 }
 
@@ -44314,6 +44342,7 @@ function _wxCarryEntrance(wrap) {
     try { var sp = _wxSpeed(); if (sp !== 1) wrap.style.setProperty('--wxc-t', String(sp)); } catch (eS) {}
     wrap.style.setProperty('--wxc-el', el.toFixed(2) + 's');
     wrap.classList.add('wxc-entering');
+    _wxParkSceneAfterSet(wrap, el);
     return true;
   } catch (e) { return false; }
 }
@@ -44464,6 +44493,7 @@ function _wxArmEntrance(wrap) {
     window._wxEntranceAt = Date.now();
     wrap.classList.add('wxc-entering');
     _wxHoldSceneForIntro(wrap);
+    _wxParkSceneAfterSet(wrap, 0);
     // The backdrop is paced to the title, not the other way round: whatever
     // _wxSpeed() does to the six seconds, the same span of clip is consumed.
     try {
@@ -44836,13 +44866,18 @@ function _renderWxCard(el) {
     var _wxDeg = function (v) { return dT(v).replace(/°[CF]$/, '°'); };
 
     // ── screen 1: the set ──────────────────────────────────────────────────
-    // The set is a still with the monitor's screen cut out, so the scene loop
-    // (the wrap's first child, placed in that same rectangle) shows through it.
+    // The set is the studio itself, moving: the steady stretch of the licensed
+    // studio clip, forward then back so it never seams, with the monitor's
+    // screen filled navy. It is the wrap's FIRST child; the scene loop sits
+    // over it in the monitor's rectangle, and screen 1 is only the monitor's
+    // content. A still was tried and turned down — a studio that stops moving
+    // the moment the opener ends reads as a picture, not a set.
+    var _wxSet = '<video class="wxc-set" autoplay loop muted playsinline preload="auto" '
+               + 'src="/logos/Backgrounds/video/wx-studio-set.mp4"></video>';
     var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep') : '';
     var _sideR = _wxSide(dest, _wxArrTs, _arrShort, 'wxc-mon-arr');
     var _wxLink = '<div class="wxc-mon-link" aria-hidden="true"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><path class="wxc-mon-dash" d="M2 12H96"/><path class="wxc-mon-tip" d="M96 3l22 9-22 9z"/></svg></div>';
     var _wxS1 = '<div class="wxc-screen wxc-s1">'
-      + '<img class="wxc-set" src="/logos/Backgrounds/wx-studio-set.png?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : '1') + '" alt="">'
       + '<div class="wxc-monitor' + (_sideL ? ' wxc-mon-2up' : '') + '">' + _wxBar
       +   '<div class="wxc-mon-body">' + (_sideL ? _sideL + _wxLink : '') + _sideR + '</div>'
       +   _wxDots(1)
@@ -45040,7 +45075,7 @@ function _renderWxCard(el) {
     // The scene is part of the rebuild signature further down (_wxSig is the
     // whole markup string), so crossing 06:00 or 19:00 swaps the clip on the
     // next render rather than needing its own timer.
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + '">' + _wxVid + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxIntro + '</div>';
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + '">' + _wxSet + _wxVid + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxIntro + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually

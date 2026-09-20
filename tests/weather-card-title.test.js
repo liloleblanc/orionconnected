@@ -100,8 +100,9 @@ test('only one clip decodes at a time', () => {
   const h = JS.slice(JS.indexOf('function _wxHoldSceneForIntro(wrap)'));
   const b = h.slice(0, h.indexOf('\n}'));
   assert.match(b, /vid\.pause\(\)/, 'the scene pauses');
-  assert.match(b, /2600 \* _wxSpeed\(\)/,
-    'and resumes as the title clears, on the same speed dial as everything else');
+  assert.match(b, /set\.pause\(\)/, 'and so does the set loop under it');
+  assert.match(b, /3800 \* _wxSpeed\(\)/,
+    'both resume under the film just before it fades (4.6s), on the same speed dial as everything else');
   const arm = JS.slice(JS.indexOf('function _wxArmEntrance(wrap)'));
   assert.match(arm.slice(0, arm.indexOf('\n}')), /_wxHoldSceneForIntro\(wrap\);/,
     'and it is actually called when the entrance arms');
