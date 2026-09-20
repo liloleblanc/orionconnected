@@ -301,10 +301,11 @@ test('the deadline outlasts the last arrival, and the mark is off before the sli
   assert.ok(EXIT_MS >= 3000, 'the exit has room for the days, the loops and the ground');
 });
 
-test('the film plays to its end and cuts; the loops are full underneath by then', () => {
+test('the title plays to its end and cuts; the loops are full underneath by then', () => {
   const k = BLOCK.match(/@keyframes wxcFilmOut \{ 0%, (\d+)% \{ opacity: 1; \} 100% \{ opacity: 0; \} \}/);
   assert.ok(k && Number(k[1]) >= 95, 'the film holds opaque to its last frames — the approved render cut hard');
-  assert.match(rule('.wxcard-wrap.wxc-entering > .wxc-intro.wxc-intro-film'), /animation: wxcFilmOut calc\(6\.00s \* var\(--wxc-t, 1\)\) linear both !important/);
+  assert.match(rule('.wxcard-wrap.wxc-entering > .wxc-intro.wxc-intro-paint'), /animation: wxcFilmOut calc\(6\.00s \* var\(--wxc-t, 1\)\) linear both !important; animation-delay: calc\(\(0s - var\(--wxc-el, 0s\)\)/,
+    'and its fade resumes from the elapsed stamp after a rebuild instead of restarting from the top');
   for (const v of ['video.wxc-set', 'video.wxc-vid']) {
     const r = rule('.wxcard-wrap.wxc-entering > ' + v);
     const m = r.match(/wxcFade calc\(([\d.]+)s[\s\S]*?animation-delay: calc\(\(([\d.]+)s/);
@@ -391,8 +392,9 @@ test('a gate rebuild re-stamps the wrap AND the swapped screens, in base seconds
 
 test('the carry re-marks only inside the window, stamps base seconds, resumes the film, and parks', () => {
   const parked = [], held = [], timers = [];
+  const fitted = [];
   const carry = new Function('window', 'Date', '_WXC_ENTRANCE_MS', '_WXC_ENTRANCE_INTRO_S', '_WX_INTRO_BG_SPAN', '_wxSpeed',
-    '_wxParkSceneAfterSet', '_wxHoldSceneForIntro', 'setTimeout', 'clearTimeout',
+    '_wxParkSceneAfterSet', '_wxHoldSceneForIntro', 'setTimeout', 'clearTimeout', '_wxFitIntroPaint',
     fnBody('_wxCarryEntrance') + '\nreturn _wxCarryEntrance;');
   const NOW = 1_800_000_000_000;
   const mk = (withFilm) => {
@@ -405,10 +407,10 @@ test('the carry re-marks only inside the window, stamps base seconds, resumes th
   };
   const run = (entranceAt, playedSeq, visitSeq, speed = 1, withFilm = false) => {
     const wrap = mk(withFilm);
-    parked.length = 0; held.length = 0; timers.length = 0;
+    parked.length = 0; held.length = 0; timers.length = 0; fitted.length = 0;
     const ok = carry({ _wxEntranceAt: entranceAt, _wxEntrancePlayedSeq: playedSeq, _gateAdVisitSeq: visitSeq },
       { now: () => NOW }, ENTRANCE_MS, INTRO_S, 6.0, () => speed,
-      (w, el) => parked.push(el), (w, ms) => held.push(ms), (fn, ms) => { timers.push(ms); return 1; }, () => {})(wrap);
+      (w, el) => parked.push(el), (w, ms) => held.push(ms), (fn, ms) => { timers.push(ms); return 1; }, () => {}, (w) => fitted.push(w))(wrap);
     return { ok, wrap };
   };
   let r = run(NOW - 10000, 3, 3);
@@ -426,6 +428,7 @@ test('the carry re-marks only inside the window, stamps base seconds, resumes th
   assert.equal(r.wrap.bg.t, 2, 'at the frame it had reached');
   assert.deepEqual(timers, [4000], 'and stopped when the window would have closed');
   assert.deepEqual(held, [2000], 'the loops are held for what is left of it');
+  assert.equal(fitted.length, 1, 'and the painted title is fitted to the rebuilt wrap');
   r = run(NOW - 60000, 3, 3);
   assert.equal(r.ok, false, 'past the end: the end state is the right state');
   r = run(NOW - 5000, 2, 3);

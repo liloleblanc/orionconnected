@@ -257,7 +257,7 @@ test('the scene loop covers the monitor\'s screen with a hair to spare', () => {
 
 test('the manifest knows about all of it', () => {
   const man = fs.readFileSync(path.join(ROOT, 'fids-current/assets/asset-manifest.json'), 'utf8');
-  for (const f of LOOPS.concat(['wx-studio-set.mp4', 'wx-title-film.mp4'])) {
+  for (const f of LOOPS.concat(['wx-studio-set.mp4', 'wx-title-globe-bg.mp4'])) {
     assert.ok(man.includes(f), `${f} — run \`npm run assets:build\`; CI fails on a stale manifest`);
   }
 });

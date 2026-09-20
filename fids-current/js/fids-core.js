@@ -44396,6 +44396,7 @@ function _wxCarryEntrance(wrap) {
     // under it for what is left, exactly as the arm did.
     var introMs = (_WXC_ENTRANCE_INTRO_S || 6) * 1000 * sp;
     if (el * 1000 < introMs) {
+      _wxFitIntroPaint(wrap);
       try {
         var bg = wrap.querySelector(':scope > .wxc-intro > video.wxc-intro-bg');
         if (bg) {
@@ -44474,31 +44475,27 @@ function _wxWantsIntro() {
 //            every stock candidate failed on: the type has to read over it.
 //   'clip' — _WX_INTRO_CLIP below as a BACKDROP: the board draws the nine
 //            languages over it.
-//   'film' — _WX_INTRO_CLIP below as the WHOLE title: the clip carries its
-//            own words and the board draws none. This is the opener that
-//            was chosen — the violet globe with WEATHER REPORT and BULLETIN
-//            MÉTÉO painting on and the seven other languages settling under
-//            them, rendered from the licensed studio clip at the panel's own
-//            976 x 857 and exactly six seconds. The switch is this one word.
+//   'paint' — _WX_INTRO_CLIP below is the globe ALONE, and the board paints
+//            the chosen opener's words over it with the chosen opener's
+//            choreography: WEATHER REPORT wiping on left to right, BULLETIN
+//            MÉTÉO right to left, the rule drawing itself, the seven other
+//            languages settling under. See _wxIntroPaintHtml for why the
+//            words are the board's and not the clip's. The switch is this
+//            one word.
 //
-var _WX_INTRO_BACKDROP = 'film';
-// The chosen opener, complete: six seconds, 976x857, words and all (see
-// 'film' above). The stock globe it replaced stays on disk, one path away.
-var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-film.mp4';
-// The same film cut French-first — BULLETIN MÉTÉO above WEATHER REPORT — for
-// the boards where French leads (frFirstAirport). A film carries its words,
-// so the order has to be in the file; in 'clip' mode the board orders the
-// lines itself and this is not consulted.
-var _WX_INTRO_CLIP_FR = '/logos/Backgrounds/video/wx-title-film-fr.mp4';
+var _WX_INTRO_BACKDROP = 'paint';
+// The chosen opener's globe, six seconds at 976x857, with its field wipe and
+// without its lettering (scripts/wx-scenes/titlebg.swift). The stock globe it
+// replaced stays on disk, one path away.
+var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-globe-bg.mp4';
 
 // An airliner at night is a handful of lights crossing, not an airframe —
 // that is what anyone standing under one actually sees. The silhouette is
 // there at low opacity to give the lights something to belong to.
-function _wxIntroBackdropHtml(frFirst) {
+function _wxIntroBackdropHtml() {
   if (_WX_INTRO_BACKDROP !== 'sky') {
-    var src = (frFirst && _WX_INTRO_BACKDROP === 'film' && _WX_INTRO_CLIP_FR) ? _WX_INTRO_CLIP_FR : _WX_INTRO_CLIP;
     return '<video class="wxc-intro-bg" autoplay muted playsinline preload="auto" '
-         + 'src="' + src + '"></video>';
+         + 'src="' + _WX_INTRO_CLIP + '"></video>';
   }
   return '<div class="wxc-intro-bg wxc-sky">'
        + '<i class="wxc-sky-far"></i>'
@@ -44551,12 +44548,90 @@ function _wxIntroHasGlyphs(s) {
   } catch (e) { return true; }
 }
 
-function _wxIntroHtml(frFirst) {
-  // A film carries its own words: the overlay is the clip and nothing else —
-  // no scrim to knock it back, no panel, no lines to fight its lettering.
-  if (_WX_INTRO_BACKDROP === 'film') {
-    return '<div class="wxc-intro wxc-intro-film" aria-hidden="true">' + _wxIntroBackdropHtml(frFirst) + '</div>';
+// v23836 — THE TITLE IS PAINTED ON BY THE BOARD, IN THE BOARD'S OWN FACE.
+//
+// The opener that was chosen is a film: a violet globe, WEATHER REPORT and
+// BULLETIN MÉTÉO wiping on one after the other, a rule drawing itself, the
+// seven other languages settling under. Its words were baked into the clip,
+// and a baked word cannot follow the board: a board set to Spanish still
+// opened in French, a French-first airport still led in English, a narrower
+// panel cropped the lockup, and a rebuild mid-title froze it — all seen on
+// one recording. So the clip is the globe alone and the board draws the
+// words over it with the film's own choreography: in the board's typeface,
+// in the board's two languages by the rule every label uses (_gateLbl —
+// the first two selected, French first where French leads), the other
+// languages settling under, centred at whatever size the panel is, and
+// carried across a rebuild like every other stage of the card.
+function _wxIntroPaintHtml(frFirst) {
+  var rows = _WX_INTRO_LINES.filter(function (r) { return _wxIntroHasGlyphs(r.t); });
+  if (!rows.length) return '';
+  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+  if (frFirst) { var _fi = picked.indexOf('fr'); if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); } }
+  var byLang = {}; rows.forEach(function (r) { byLang[r.l] = r; });
+  var hero = [], seen = {};
+  picked.forEach(function (l) { var r = byLang[l]; if (r && !seen[l]) { seen[l] = 1; hero.push(r); } });
+  if (!hero.length) { hero.push(byLang.en || rows[0]); seen[hero[0].l] = 1; }
+  var rank = rows.filter(function (r) { return !seen[r.l]; });
+  var h = '<div class="wxc-paint"><i class="wxc-pk" aria-hidden="true"><b></b><b></b></i>';
+  hero.forEach(function (r, i) {
+    h += '<div class="wxc-ph wxc-ph' + (i + 1) + '" lang="' + r.l + '"' + (r.d === 'rtl' ? ' dir="rtl"' : '') + '><span>' + r.t + '</span></div>';
+  });
+  h += '<i class="wxc-prule" aria-hidden="true"></i>';
+  // two to a row, the last row taking three when that is what is left —
+  // 2, 2, 3 for the seven the film had — each with its own beat (--wxc-i)
+  var k = 0;
+  while (rank.length) {
+    var row = rank.splice(0, rank.length === 3 ? 3 : 2);
+    h += '<div class="wxc-prow">';
+    row.forEach(function (r, i) {
+      if (i) h += '<i class="wxc-pdot" style="--wxc-i:' + (k - 1) + '" aria-hidden="true"></i>';
+      h += '<span class="wxc-pr" lang="' + r.l + '"' + (r.d === 'rtl' ? ' dir="rtl"' : '') + ' style="--wxc-i:' + k + '">' + r.t + '</span>';
+      k++;
+    });
+    h += '</div>';
   }
+  h += '</div>';
+  return '<div class="wxc-intro wxc-intro-paint" aria-hidden="true">' + _wxIntroBackdropHtml() + h + '</div>';
+}
+
+// The two hero lines share ONE size, the way the film set them: the size is
+// what fits the wider line to the measure, and the narrower is tracked out
+// towards the same width — measured, because the board's face is not the
+// film's. The film's two lines were both fourteen characters and the tracking
+// was a hair; 'Boletim meteorológico' against 'Weather Report' is not, so
+// the tracking is capped at 0.14em and a line that cannot reach the measure
+// within that sits left on the same margin as the kicker and the rule. A
+// right-to-left line is never tracked (letter-spacing breaks Arabic joining).
+function _wxFitIntroPaint(wrap) {
+  try {
+    var paint = wrap && wrap.querySelector(':scope > .wxc-intro > .wxc-paint');
+    if (!paint) return;
+    var lines = paint.querySelectorAll(':scope > .wxc-ph > span');
+    if (!lines.length) return;
+    var measure = paint.clientWidth;
+    if (!(measure > 0)) return;
+    var trackEm = 0.012, probe = 100, widest = 0, ws = [];
+    for (var i = 0; i < lines.length; i++) {
+      lines[i].style.fontSize = probe + 'px'; lines[i].style.letterSpacing = '0px'; lines[i].style.marginRight = '0px';
+      var n = Math.max(1, (lines[i].textContent || '').replace(/\s/g, '').length);
+      var w = lines[i].getBoundingClientRect().width;
+      var rtl = lines[i].parentNode && lines[i].parentNode.getAttribute('dir') === 'rtl';
+      ws.push({ w: w, n: n, rtl: rtl });
+      widest = Math.max(widest, w / probe + (rtl ? 0 : trackEm * (n - 1)));
+    }
+    var size = measure / widest;
+    for (var j = 0; j < lines.length; j++) {
+      lines[j].style.fontSize = size + 'px';
+      if (ws[j].rtl) { lines[j].style.letterSpacing = '0px'; lines[j].style.marginRight = '0px'; continue; }
+      var ls = Math.min(0.14 * size, (measure - ws[j].w * size / probe) / Math.max(1, ws[j].n - 1));
+      lines[j].style.letterSpacing = ls + 'px';
+      lines[j].style.marginRight = (-ls) + 'px';   // letter-spacing trails the last glyph
+    }
+  } catch (e) {}
+}
+
+function _wxIntroHtml(frFirst) {
+  if (_WX_INTRO_BACKDROP === 'paint') return _wxIntroPaintHtml(frFirst);
   var rows = _WX_INTRO_LINES.slice();
   if (frFirst) {
     for (var i = 0; i < rows.length; i++) {
@@ -44603,6 +44678,8 @@ function _wxArmEntrance(wrap) {
     // When it started, so a rebuild can resume the sequence rather than end it.
     window._wxEntranceAt = Date.now();
     wrap.classList.add('wxc-entering');
+    _wxFitIntroPaint(wrap);
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { _wxFitIntroPaint(wrap); }); } catch (eF) {}
     _wxHoldSceneForIntro(wrap);
     _wxParkSceneAfterSet(wrap, 0);
     // The backdrop is paced to the title, not the other way round: whatever
