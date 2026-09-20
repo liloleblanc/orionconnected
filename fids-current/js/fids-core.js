@@ -25334,7 +25334,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23835';
+var FIDS_BUILD_TAG = 'v23836';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43732,6 +43732,19 @@ function _wxAnimIcon(code, night) {
   if (c === 8000) return night ? 'thunderstorms-rain' : 'thunderstorms-day-rain';
   return night ? 'clear-night' : 'clear-day';
 }
+// v23836 — WHICH SCENE THE STUDIO MONITOR SHOWS.
+// The small screen on the set plays the weather that is actually happening —
+// rain when it rains, snow when it snows — so an icon name is folded to one
+// of five scene families, each with a day loop and a night loop. 'clear' keeps
+// the two loops the card has had since v23726.
+function _wxSceneKindOf(icon) {
+  var n = String(icon || '');
+  if (/thunder/.test(n)) return 'storm';
+  if (/snow/.test(n)) return 'snow';
+  if (/rain|drizzle|sleet|hail/.test(n)) return 'rain';
+  if (/cloud|overcast|fog/.test(n)) return 'cloud';
+  return 'clear';
+}
 // WMO daily codes (Open-Meteo /wxdaily) → animated icon names.
 function _wmoAnimIcon(code) {
   var c = Number(code) || 0;
@@ -44182,9 +44195,11 @@ function _wxSpeed() {
   } catch (e) {}
   return 1;
 }
-// Base lengths at _wxSpeed() === 1, from the CSS block: arrival runs to 17.3s,
-// exit to 4.2s. Both are rounded up so a deadline outlives its last frame.
-var _WXC_ENTRANCE_MS = 21000;
+// Base lengths at _wxSpeed() === 1, from the CSS block. The card is three
+// screens in turn — studio, hours, days — and the last flip begins at 30.5s
+// and is over by 31.7s; the deadline is rounded up past it so the mark comes
+// off on the end state, which is also the base state. Exit runs to 4.2s.
+var _WXC_ENTRANCE_MS = 33000;
 // How long the title overlay is on screen. The CSS animations are written
 // against this same six seconds; it is named here so the backdrop's pacing
 // cannot drift from it.
@@ -44266,6 +44281,29 @@ function _wxHoldSceneForIntro(wrap) {
   } catch (e) {}
 }
 
+// v23836 — A REBUILD MID-VISIT CARRIES THE SEQUENCE ACROSS.
+// _wxArmEntrance answers false inside a visit it has already armed, which is
+// right for a re-paint that keeps its nodes — but a full rebuild replaces the
+// wrap, and a fresh wrap with no mark shows the sequence's END state (the last
+// screen) at whatever second the rebuild lands. Re-mark it and stamp the time
+// already elapsed — the same negative-delay resume the gate rebuild uses — so
+// the new nodes pick the sequence up where the old ones left it. Past the end
+// there is nothing to resume, and the end state is the right state.
+function _wxCarryEntrance(wrap) {
+  try {
+    if (!wrap || !wrap.classList || !window._wxEntranceAt) return false;
+    var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
+    if (window._wxEntrancePlayedSeq !== seq) return false;
+    var el = (Date.now() - window._wxEntranceAt) / 1000;
+    var span = (_WXC_ENTRANCE_MS * _wxSpeed()) / 1000;
+    if (!(el > 0 && el < span)) return false;
+    try { var sp = _wxSpeed(); if (sp !== 1) wrap.style.setProperty('--wxc-t', String(sp)); } catch (eS) {}
+    wrap.style.setProperty('--wxc-el', el.toFixed(2) + 's');
+    wrap.classList.add('wxc-entering');
+    return true;
+  } catch (e) { return false; }
+}
+
 function _wxWantsIntro() {
   try {
     var seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0;
@@ -44286,11 +44324,16 @@ function _wxWantsIntro() {
 //   'sky'  — the night sky, drawn by the board. No file, no licence, no
 //            watermark, and dark by construction, which is the one property
 //            every stock candidate failed on: the type has to read over it.
-//   'clip' — _WX_INTRO_CLIP below, an animated globe. Kept because it is
-//            already committed and the switch is this one word.
+//   'clip' — _WX_INTRO_CLIP below, the studio wall. The switch is this one
+//            word.
 //
 var _WX_INTRO_BACKDROP = 'clip';
-var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-globe.mp4';
+// A news-studio wall, drawn rather than sourced: cut to the title's own six
+// seconds at the panel's own 976x857, so nothing is cropped or paced, and
+// with no lettering of its own, so the nine languages the board draws over
+// it have nothing to fight. The globe it replaced stays on disk, one path
+// away.
+var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-studio.mp4';
 
 // An airliner at night is a handful of lights crossing, not an airframe —
 // that is what anyone standing under one actually sees. The silhouette is
@@ -44310,10 +44353,12 @@ function _wxIntroBackdropHtml() {
 }
 
 // Seconds of clip consumed across the whole title, whatever the speed dial is
-// set to. The clip is longer than the title and its headline slides in at
-// ~5.2s; holding the consumption to 4.5s keeps that headline off the screen
-// and slows the globe a little, which suits a title better than real time.
-var _WX_INTRO_BG_SPAN = 4.5;
+// set to. The studio clip is exactly as long as the title and carries no
+// headline to keep off the screen, so it runs at real time; the one limit
+// is that this never exceeds the clip's length, or the last frame holds
+// while the title is still up. (The globe was 12s with lettering at ~5.2s,
+// which is why this used to be 4.5.)
+var _WX_INTRO_BG_SPAN = 6.0;
 
 var _WX_INTRO_LINES = [
   { l: 'en', d: 'ltr', t: 'Weather Report' },
@@ -44399,7 +44444,7 @@ function _wxArmEntrance(wrap) {
     wrap.classList.add('wxc-entering');
     _wxHoldSceneForIntro(wrap);
     // The backdrop is paced to the title, not the other way round: whatever
-    // _wxSpeed() does to the six seconds, the same 4.5s of clip is consumed.
+    // _wxSpeed() does to the six seconds, the same span of clip is consumed.
     try {
       var _bg = wrap.querySelector(':scope > .wxc-intro > video.wxc-intro-bg');
       if (_bg) {
@@ -44522,8 +44567,7 @@ function _renderWxCard(el) {
       void date;
       return '<div class="wxc-d' + extraCls + '">' + day + '</div>';
     };
-    var _dayTopEn = function (d) { return _dayLine(d, _wxLangs[0], ''); };
-    var _dayBotFr = function (d) { return _wxLangs[1] ? _dayLine(d, _wxLangs[1], ' wxc-d-fr') : ''; };
+    var _dayAbbr = function (d, lg) { return _dayLine(d, lg, '').replace(/<[^>]+>/g, ''); };
     var _mlbl = function (key) {
       var M = {
         feels: { en:'Feels like', fr:'Ressenti', es:'Sensación', de:'Gefühlt', it:'Percepita', pt:'Sensação', ja:'体感', zh:'体感', ar:'الإحساس' },
@@ -44534,53 +44578,17 @@ function _renderWxCard(el) {
     };
 
     // 7-DAY outlook: prefer the daily route; fall back to 48h hourly rollup.
-    var tiles = '', nDays = 0;
+    var _wxDays = [], nDays = 0;
     var daily = _wxFetchDaily(dest, function () {
       // re-render in place if the weather scene is still on screen
       try { if (el && el.isConnected && el.querySelector('.wxcard-wrap')) _renderWxCard(el); } catch (eR) {}
     });
     if (daily && daily.time && daily.time.length) {
-      // v23724 — THE WEEK COLOURS ITSELF.
-      //
-      // Each tile takes one of five steps — lavender, pale blue, mint, gold,
-      // coral — and the highs and lows are banded SEPARATELY, against their
-      // own spread, so the two numbers in a tile carry different colours.
-      //
-      // The scale is RELATIVE to the week on screen, not to absolute degrees.
-      // That is a deliberate trade and the reason for it is worth stating,
-      // because the obvious implementation is the other one: fixed thresholds
-      // make a settled week render five tiles of the same colour, which is
-      // what a forecast strip is least useful for. Anchoring to the week's own
-      // min and max means the card always shows how the week MOVES. The cost
-      // is that a given reading is not the same colour in every week — 21° is
-      // the coolest day here and the warmest in November.
-      //
-      // Degenerate weeks are handled: when every day is the same temperature
-      // the span collapses, and _wxBand returns the middle step rather than
-      // dividing by zero.
-      var _wxHis = [], _wxLos = [];
-      for (var _bi = 0; _bi < Math.min(5, daily.time.length); _bi++) {
-        var _bh = daily.temperature_2m_max[_bi], _bl = daily.temperature_2m_min[_bi];
-        if (typeof _bh === 'number' && isFinite(_bh)) _wxHis.push(_bh);
-        if (typeof _bl === 'number' && isFinite(_bl)) _wxLos.push(_bl);
-      }
-      var _wxBand = function (v, arr) {
-        if (!arr.length || typeof v !== 'number' || !isFinite(v)) return 2;
-        var mn = Math.min.apply(null, arr), mx = Math.max.apply(null, arr);
-        if (!(mx - mn > 0.5)) return 2;            // a flat week sits mid-scale
-        var f = (v - mn) / (mx - mn);
-        return Math.max(0, Math.min(4, Math.round(f * 4)));
-      };
+      // v23836 — the week is collected as data here and drawn by the last
+      // screen below; the per-tile colour bands of v23724 went with the tiles.
       for (var i = 0; i < Math.min(5, daily.time.length); i++) {
-        var dt = new Date(daily.time[i] + 'T12:00:00');
-        var icd = _wmoAnimIcon(daily.weather_code[i]);
-        var _tbHi = _wxBand(daily.temperature_2m_max[i], _wxHis);
-        var _tbLo = _wxBand(daily.temperature_2m_min[i], _wxLos);
-        tiles += '<div class="wxc-day wxc-t' + _tbHi + '">'
-          + '<div class="wxc-dhead">' + _dayTopEn(dt) + _dayBotFr(dt) + '</div>'
-          + '<img class="wxanim" data-wx="' + icd + '" src="/logos/weather/animated/' + icd + '.svg" alt="">'
-          + '<div class="wxc-hi">' + dT(daily.temperature_2m_max[i]) + '</div>'
-          + '<div class="wxc-lo wxc-tl' + _tbLo + '">' + dT(daily.temperature_2m_min[i]) + '</div></div>';
+        _wxDays.push({ dt: new Date(daily.time[i] + 'T12:00:00'), ic: _wmoAnimIcon(daily.weather_code[i]),
+                       hi: daily.temperature_2m_max[i], lo: daily.temperature_2m_min[i] });
         nDays++;
       }
     } else {
@@ -44597,64 +44605,35 @@ function _renderWxCard(el) {
       order.sort().slice(0, 5).forEach(function (k) {
         var dd = days[k];
         var code = Object.keys(dd.codes).sort(function (a, b) { return dd.codes[b] - dd.codes[a]; })[0] || cur.code;
-        var dt2 = new Date(k + 'T12:00:00');
-        var ich = _wxAnimIcon(code, false);
-        tiles += '<div class="wxc-day">'
-          + '<div class="wxc-dhead">' + _dayTopEn(dt2) + _dayBotFr(dt2) + '</div>'
-          + '<img class="wxanim" data-wx="' + ich + '" src="/logos/weather/animated/' + ich + '.svg" alt="">'
-          + '<div class="wxc-hi">' + dT(dd.hi) + '</div><div class="wxc-lo">' + dT(dd.lo) + '</div></div>';
+        _wxDays.push({ dt: new Date(k + 'T12:00:00'), ic: _wxAnimIcon(code, false), hi: dd.hi, lo: dd.lo });
         nDays++;
       });
     }
 
-    // NEXT-HOURS strip
-    // Next 6 hours from the cached hourly forecast, in the
-    // DESTINATION's local time, sitting above the 7-day outlook.
-    var hoursHtml = '';
+    // NEXT HOURS — eight consecutive hours from the cached hourly forecast, in
+    // the DESTINATION's local time. Consecutive rather than every third hour
+    // (v23558): the hours screen draws them as a curve, and a curve through 3h
+    // steps is a guess between the points, while eight hourly readings are
+    // the readings. The night/day flag per hour is the same 06/21 threshold
+    // the icon uses, so a tile and its icon cannot disagree (v23724).
+    var _wxHours = [];
     try {
       var _hTz = (AP[dest] || {}).tz;
       var _hNow = Date.now();
       var _hFmt = _hTz ? { timeZone: _hTz, hour: 'numeric', hour12: true } : { hour: 'numeric', hour12: true };
       var _hFmt24 = _hTz ? { timeZone: _hTz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' };
-      // v23558 — FIVE PERIODS ACROSS THE DAY, not six consecutive hours
-      //
-      // Six back-to-back hours only ever showed the next quarter-day and the
-      // icons barely changed between tiles. Stepping 3h gives ~12 hours of
-      // real spread — now, +3, +6, +9, +12 — so the strip actually tells you
-      // how the day moves. Falls back to whatever is available if the feed is
-      // short (a late-evening fetch can return fewer than 13 usable hours).
-      var _hAll = (wx.hourly || [])
+      (wx.hourly || [])
         .filter(function (h) { return h && typeof h.temp === 'number' && h.ts && h.ts >= _hNow - 1800000; })
-        .sort(function (a, b) { return a.ts - b.ts; });
-      var _hSlots = 5, _hStep = 3, _hrs = [];
-      for (var _hi = 0; _hi < _hAll.length && _hrs.length < _hSlots; _hi += _hStep) _hrs.push(_hAll[_hi]);
-      if (_hrs.length < _hSlots) _hrs = _hAll.slice(0, _hSlots);
-      _hrs.forEach(function (h) {
-        var hd = new Date(h.ts);
-        var lbl = hd.toLocaleTimeString('en-US', _hFmt).replace(/:00/, '').replace(/\s/g, ' '); // "3 PM"
-        var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
-        var hNight = h24 < 6 || h24 >= 21;
-        var hic = _wxAnimIcon(h.code, hNight);
-        // v23724 — the tile says what part of the day it is, not just the icon.
-        //
-        // hNight is the SAME value that chose the moon-or-sun above, and it
-        // still decides day-versus-not here, so the tile and its icon cannot
-        // contradict each other. Deriving night again from the label would
-        // reintroduce exactly that: the icon threshold is 21:00 in the
-        // DESTINATION's timezone, and any second guess (a 19:00 window, the
-        // board's own clock) drifts from it by season and by airport.
-        //
-        // Two states, not four. Dawn and dusk bands were tried — violet at
-        // 5 AM, rose at 10 PM — and dropped: on a strip of five tiles read at
-        // a glance across a concourse, a third and fourth colour stops the
-        // night-to-morning boundary from being the thing the eye catches.
-        // Dark for night, blue for day, and the transition reads instantly.
-        var hPhase = hNight ? 'night' : 'day';
-        hoursHtml += '<div class="wxc-hour wxc-hr-' + hPhase + '"><div class="wxc-dhead"><div class="wxc-hr">' + lbl + '</div></div>'
-          + '<img class="wxanim" data-wx="' + hic + '" src="/logos/weather/animated/' + hic + '.svg" alt="">'
-          + '<div class="wxc-ht">' + dT(h.temp) + '</div></div>';
-      });
-    } catch (eHrs) { hoursHtml = ''; }
+        .sort(function (a, b) { return a.ts - b.ts; })
+        .slice(0, 8)
+        .forEach(function (h) {
+          var hd = new Date(h.ts);
+          var lbl = hd.toLocaleTimeString('en-US', _hFmt).replace(/:00/, '').replace(/\s/g, ' '); // "3 PM"
+          var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
+          var hNight = h24 < 6 || h24 >= 21;
+          _wxHours.push({ ts: h.ts, temp: h.temp, ic: _wxAnimIcon(h.code, hNight), lbl: lbl, night: hNight });
+        });
+    } catch (eHrs) { _wxHours = []; }
     // Split MAIN (globe + head + hero) from the STRIPS (hours + outlook):
     // the 7-day data usually lands a beat AFTER the first paint, and
     // rebuilding the whole card for it reloaded the big hero icon — the
@@ -44765,117 +44744,181 @@ function _renderWxCard(el) {
       } catch (eK) { return ''; }
     };
 
-    var _wxSide = function (iata, ts, whenLbl, cls, shortLbl) {
+    // ══ v23836 — THE WEATHER REPORT IN THREE SCREENS ═══════════════════════
+    //
+    // The title clears onto a news set. Its monitor carries the two airports
+    // — here, at departure, and there, at arrival — over the small screen's
+    // own weather. Then the set gives way to the destination's next hours,
+    // then to its five days. One card, three screens, the flips timed in CSS
+    // against the same clock as the entrance.
+    var _wxSide = function (iata, ts, shortLbl, cls) {
       var w = _wxAtTime(iata, ts);
       if (!w) return '';
       var sIc = _wxAnimIcon(w.code, _wxNightAt(iata, ts));
       var when = _wxClock(iata, ts);
-      // The city + time pair goes inside a .wxc-dhead, the SAME header-band
-      // element the hour and day tiles use. — the top
-      // block was the only section on the card not built as a tile, so it read
-      // as a different component sitting above the forecast rather than the
-      // first of three matching panels. Same wrapper here means it inherits
-      // the same band styling for free and can never drift from the tiles
-      // again.
-      // — the
-      // Departure/Arrival label is a SECTION TITLE, so it is emitted above the
-      // panel exactly as .wxc-title sits above the hour and day grids, not
-      // crammed into the panel's header band. That also stops the band running
-      // to three lines, which had pushed the 5-day row 28px into the credit.
-      // The band keeps what identifies the panel: the city and its clock.
-      return '<div class="wxc-sidewrap ' + cls + '-wrap">'
-        + '<div class="wxc-title wxc-side-title">' + whenLbl + '</div>'
-        + '<div class="wxc-side ' + cls + '">'
-        +   '<div class="wxc-dhead">'
-        +     '<div class="wxc-side-city">' + _wxCityOf(iata) + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + _dispIata(iata) + '</span></div>'
-        +     (when ? '<div class="wxc-side-when">' + (shortLbl ? shortLbl + ' ' : '') + when + '</div>' : '')
+      return '<div class="wxc-mon-side ' + cls + '">'
+        +   '<div class="wxc-mon-lbl">' + shortLbl + (when ? ' <b>' + when + '</b>' : '') + '</div>'
+        +   '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _wxCityOf(iata) + '</span> <span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
+        +   '<div class="wxc-mon-now">'
+        +     '<img class="wxanim" data-wx="' + sIc + '" src="/logos/weather/animated/' + sIc + '.svg" alt="">'
+        +     '<div class="wxc-mon-temp">' + dT(w.temp) + '</div>'
         +   '</div>'
-        +   '<img class="wxanim" data-wx="' + sIc + '" src="/logos/weather/animated/' + sIc + '.svg" alt="">'
-        +   '<div class="wxc-temp">' + dT(w.temp) + '</div>'
-        +   '<div class="wxc-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
-        + '</div></div>';
+        +   '<div class="wxc-mon-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
+        + '</div>';
     };
-
-    //
-    // Each panel now names what it IS rather than just tagging a time, which
-    // also retires the card-level "Arrival Weather" kicker above — that kicker
-    // labelled the whole card as arrival even though half of it is the
-    // departure airport, so it was both redundant and wrong.
-    var _depLbl = _wxPairT({ en:'Departure Weather', fr:'Météo au départ', es:'Clima a la salida', de:'Wetter bei Abflug', it:'Meteo alla partenza', pt:'Clima na partida', ja:'出発地の天気', zh:'出发地天气', ar:'طقس المغادرة' });
-    var _arrLbl = _wxPairT({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter bei Ankunft', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' });
-    //
-    // The panel title carries the long form; the band carries the short one
-    // next to the clock, so the line reads "Departure | Départ 6:15 PM".
-    //
-    // Requested: never split text across the separator mid-phrase — so the
-    // short label is passed through _wxPair like every other bilingual string
-    // on this board, joining two COMPLETE words with the separator. Nothing
-    // here is a fragment of a phrase split across the bar.
+    // The short label sits beside the clock: "Departure | Départ 6:15 PM".
+    // Both are COMPLETE words either side of the bar — nothing here is a
+    // phrase cut in half.
     var _depShort = _wxPair({ en:'Departure', fr:'Départ', es:'Salida', de:'Abflug', it:'Partenza', pt:'Partida', ja:'出発', zh:'出发', ar:'المغادرة' });
     var _arrShort = _wxPair({ en:'Arrival', fr:'Arrivée', es:'Llegada', de:'Ankunft', it:'Arrivo', pt:'Chegada', ja:'到着', zh:'到达', ar:'الوصول' });
-    var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depLbl, 'wxc-side-dep', _depShort) : '';
-    var _sideR = _wxSide(dest, _wxArrTs, _arrLbl, 'wxc-side-arr', _arrShort);
-    // If the origin has no usable reading, fall back to the single destination
-    // hero rather than rendering a lopsided two-up with one empty half.
-    var _wxHeroTwoUp = (_sideL && _sideR)
-      ? '<div class="wxc-hero wxc-hero-2up">' + _sideL + _sideR + '</div>'
-      : '<div class="wxc-hero">'
-        + '<img class="wxanim" data-wx="' + ic + '" src="/logos/weather/animated/' + ic + '.svg" alt="">'
-        + '<div><div class="wxc-temp">' + dT(cur.temp) + '</div><div class="wxc-cond">' + cond + '</div></div>'
-        + '</div>';
+    // Titles join their languages with the set's amber lozenge rather than
+    // the board's bar; each language stays one unbreakable unit (v23767).
+    var _wxDia = ' <i class="wxc-dia" aria-hidden="true"></i> ';
+    var _wxPairD = function (obj) {
+      var w = [], seen = {};
+      for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
+        var t = obj[_wxLangs[_wi]] || obj.en;
+        if (!t || seen[String(t).toLowerCase()]) continue;
+        seen[String(t).toLowerCase()] = 1;
+        w.push('<span class="wxc-t-part">' + t + '</span>');
+      }
+      return w.join(_wxDia);
+    };
+    // A stacked pair: one language per line, the same size and weight.
+    var _wxPairS = function (obj) {
+      var w = [], seen = {};
+      for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
+        var t = obj[_wxLangs[_wi]] || obj.en;
+        if (!t || seen[String(t).toLowerCase()]) continue;
+        seen[String(t).toLowerCase()] = 1;
+        w.push('<span class="wxc-l' + (w.length + 1) + '">' + t + '</span>');
+      }
+      return w.join('');
+    };
+    var _wxBar = '<div class="wxc-bar-head"><i class="wxc-bar-tick" aria-hidden="true"></i><span class="wxc-bar-txt">'
+      + _wxPairD({ en:'WEATHER REPORT', fr:'BULLETIN MÉTÉO', es:'INFORME DEL CLIMA', de:'WETTERBERICHT', it:'BOLLETTINO METEO', pt:'BOLETIM METEOROLÓGICO', ja:'天気予報', zh:'天气预报', ar:'نشرة الطقس' })
+      + '</span></div>';
+    var _wxDots = function (n) {
+      var d = '';
+      for (var k = 1; k <= 3; k++) d += '<i' + (k === n ? ' class="on"' : '') + '></i>';
+      return '<div class="wxc-dots" aria-hidden="true">' + d + '</div>';
+    };
+    // The place travels as one piece (v23767): city and code never separate.
+    var _wxPlace = '<span class="wxc-place"><span class="wxc-t-place">' + _wxCityOf(dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest) + '</span></span>';
+    var _wxDeg = function (v) { return dT(v).replace(/°[CF]$/, '°'); };
 
-    var _wxMainHtml =
-        '<div class="wxc-globe" aria-hidden="true"></div>'
-      + '<div class="wxcard-main">'
-      +   '<div class="wxc-head">'
-      +     '<div><div class="wxc-kicker">' + _wxPair({ en:'Arrival Weather', fr:'Météo à l\'arrivée', es:'Clima a la llegada', de:'Wetter am Ziel', it:'Meteo all\'arrivo', pt:'Clima na chegada', ja:'到着地の天気', zh:'到达地天气', ar:'طقس الوصول' }) + '</div>'
-      +     '<div class="wxc-city">' + city + ' <span class="wxc-bar">|</span> <span class="wxc-iata">' + _dispIata(dest) + '</span></div></div>'
-      +   '</div>'
-      +   _wxHeroTwoUp
-      + '</div>';
-    //
-    // — with the top block now showing BOTH airports, these two rows were
-    // the only part of the card that did not say whose forecast it is, and a
-    // reader could reasonably take them for the departure airport's.
-    // The city is appended after a middot so the bilingual pair keeps the bar
-    // to itself — the text is never separated unless it is the full
-    // sentence — rather than chaining three bars in one line.
-    // v23767 — THE PLACE TRAVELS AS ONE PIECE.
-    // This header is a four-part chain: EN label, FR label, city, IATA. It was
-    // one text run, so the browser broke it wherever the width ran out —
-    // measured on a Flair board at Abbotsford it left 'ABBOTSFORD |' hanging
-    // and orphaned 'YXX' alone on the second line. The standing rule
-    // is that a line may be two lines, but never a phrase cut in half.
-    // The city and its code are now one unbreakable unit, so the only place
-    // the header can break is between the label pair and the place.
-    var _wxForCity = ' <span class="wxc-bar">|</span> <span class="wxc-t-place">'
-      + _wxCityOf(dest) + ' <span class="wxc-bar">|</span> ' + _dispIata(dest)
-      + '</span>';
-    var _wxStripsHtml =
-        (hoursHtml ? '<div class="wxc-strip"><div class="wxc-title">' + _wxPairT({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxForCity + '</div><div class="wxc-hoursgrid">' + hoursHtml + '</div></div>' : '')
-      + (tiles ? '<div class="wxcard-outlook wxc-strip"><div class="wxc-title">' + _wxPair({
-            // The English and German
-            // strings said only "5-DAY" / "5-TAGE" — a duration, not a heading —
-            // while every other language here already carried the noun
-            // (PRÉVISIONS, PRONÓSTICO, PREVISIONI, PREVISÃO, 予報, 预报, توقعات).
-            // The two odd ones out now say what the row actually is.
+    // ── screen 1: the set ──────────────────────────────────────────────────
+    // The set is a still with the monitor's screen cut out, so the scene loop
+    // (the wrap's first child, placed in that same rectangle) shows through it.
+    var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep') : '';
+    var _sideR = _wxSide(dest, _wxArrTs, _arrShort, 'wxc-mon-arr');
+    var _wxLink = '<div class="wxc-mon-link" aria-hidden="true"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><path class="wxc-mon-dash" d="M2 12H96"/><path class="wxc-mon-tip" d="M96 3l22 9-22 9z"/></svg></div>';
+    var _wxS1 = '<div class="wxc-screen wxc-s1">'
+      + '<img class="wxc-set" src="/logos/Backgrounds/wx-studio-set.png?v=' + (typeof FIDS_BUILD_TAG !== 'undefined' ? encodeURIComponent(FIDS_BUILD_TAG) : '1') + '" alt="">'
+      + '<div class="wxc-monitor' + (_sideL ? ' wxc-mon-2up' : '') + '">' + _wxBar
+      +   '<div class="wxc-mon-body">' + (_sideL ? _sideL + _wxLink : '') + _sideR + '</div>'
+      +   _wxDots(1)
+      + '</div></div>';
+
+    // ── screen 2: the next hours, as a curve ───────────────────────────────
+    // The curve is an SVG sized to a fixed aspect, so a point's percentage
+    // position is the same in the SVG and in the HTML placed over it; the
+    // temperature and the animated icon are HTML at that point, the times
+    // under it. Nothing in the SVG is text, so nothing stretches.
+    var _wxS2 = '';
+    if (_wxHours.length >= 2) {
+      var _cW = 880, _cH = 300, _n = _wxHours.length;
+      var _tMin = Infinity, _tMax = -Infinity;
+      _wxHours.forEach(function (h) { if (h.temp < _tMin) _tMin = h.temp; if (h.temp > _tMax) _tMax = h.temp; });
+      if (!(_tMax - _tMin > 1)) { _tMin -= 1; _tMax += 1; }   // a flat day still draws a line
+      var _yTop = 104, _yBot = 224;                            // temps above the band, times below it
+      var _pts = _wxHours.map(function (h, i) {
+        return { x: ((i + 0.5) / _n) * _cW, y: _yBot - ((h.temp - _tMin) / (_tMax - _tMin)) * (_yBot - _yTop), h: h };
+      });
+      var _line = _pts.map(function (p, i) { return (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' ');
+      var _area = _line + ' L' + _pts[_pts.length - 1].x.toFixed(1) + ' ' + (_cH - 44) + ' L' + _pts[0].x.toFixed(1) + ' ' + (_cH - 44) + ' Z';
+      var _svg = '<svg class="wxc-curve" viewBox="0 0 ' + _cW + ' ' + _cH + '" preserveAspectRatio="none" aria-hidden="true">'
+        + '<defs><linearGradient id="wxcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5c953" stop-opacity=".30"/><stop offset="1" stop-color="#f5c953" stop-opacity="0"/></linearGradient></defs>'
+        + _pts.map(function (p) { return '<line class="wxc-curve-grid" x1="' + p.x.toFixed(1) + '" y1="' + (_yTop - 30) + '" x2="' + p.x.toFixed(1) + '" y2="' + (_cH - 44) + '"/>'; }).join('')
+        + '<path class="wxc-curve-area" d="' + _area + '"/>'
+        + '<path class="wxc-curve-line" d="' + _line + '"/>'
+        + '</svg>';
+      var _cols = _pts.map(function (p) {
+        return '<div class="wxc-hr ' + (p.h.night ? 'wxc-hr-night' : 'wxc-hr-day') + '" style="left:' + (p.x / _cW * 100).toFixed(2) + '%;top:' + (p.y / _cH * 100).toFixed(2) + '%">'
+          + '<div class="wxc-hr-temp">' + _wxDeg(p.h.temp) + '</div>'
+          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="/logos/weather/animated/' + p.h.ic + '.svg" alt="">'
+          + '</div>';
+      }).join('');
+      var _times = _pts.map(function (p) {
+        return '<div class="wxc-hr-time" style="left:' + (p.x / _cW * 100).toFixed(2) + '%">' + p.h.lbl + '</div>';
+      }).join('');
+      // the conditions the hours pass through, once each, in order of first appearance
+      var _seen = {}, _legN = 0, _leg = '';
+      _wxHours.forEach(function (h) {
+        if (_seen[h.ic] || _legN >= 4) return;
+        _seen[h.ic] = 1; _legN++;
+        _leg += '<span class="wxc-leg-it"><img class="wxanim" data-wx="' + h.ic + '" src="/logos/weather/animated/' + h.ic + '.svg" alt=""><span>' + _wxPairS(_WXLBL[h.ic] || { en: '' }) + '</span></span>';
+      });
+      _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar
+        + '<div class="wxc-sc-title">' + _wxPairD({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxPlace + '</div>'
+        + '<div class="wxc-chart">' + _svg + _cols + _times + '</div>'
+        + (_leg ? '<div class="wxc-legend">' + _leg + '</div>' : '')
+        + _wxDots(2) + '</div>';
+    }
+
+    // ── screen 3: the days, and the week's range ───────────────────────────
+    var _wxS3 = '';
+    if (_wxDays.length) {
+      var _rMin = Infinity, _rMax = -Infinity;
+      _wxDays.forEach(function (d) { if (d.lo < _rMin) _rMin = d.lo; if (d.hi > _rMax) _rMax = d.hi; });
+      if (!(_rMax - _rMin > 1)) { _rMin -= 1; _rMax += 1; }
+      var _rW = 880, _rH = 130, _rTop = 16, _rBot = 114, _rL = 64;
+      var _rY = function (v) { return _rBot - ((v - _rMin) / (_rMax - _rMin)) * (_rBot - _rTop); };
+      var _rCols = _wxDays.map(function (d, i) { return { x: _rL + ((i + 0.5) / _wxDays.length) * (_rW - _rL), d: d }; });
+      var _rPath = function (key) { return _rCols.map(function (c, i) { return (i ? 'L' : 'M') + c.x.toFixed(1) + ' ' + _rY(c.d[key]).toFixed(1); }).join(' '); };
+      var _rng = '<svg class="wxc-range" viewBox="0 0 ' + _rW + ' ' + _rH + '" preserveAspectRatio="none" aria-hidden="true">'
+        + '<line class="wxc-rng-axis" x1="' + _rL + '" y1="' + _rY(_rMax).toFixed(1) + '" x2="' + _rW + '" y2="' + _rY(_rMax).toFixed(1) + '"/>'
+        + '<line class="wxc-rng-axis" x1="' + _rL + '" y1="' + _rY(_rMin).toFixed(1) + '" x2="' + _rW + '" y2="' + _rY(_rMin).toFixed(1) + '"/>'
+        + '<path class="wxc-rng-hi" d="' + _rPath('hi') + '"/>'
+        + '<path class="wxc-rng-lo" d="' + _rPath('lo') + '"/>'
+        + _rCols.map(function (c) {
+            var y1 = _rY(c.d.hi), y2 = _rY(c.d.lo);
+            return '<rect class="wxc-rng-pill" x="' + (c.x - 9).toFixed(1) + '" y="' + y1.toFixed(1) + '" width="18" height="' + Math.max(18, y2 - y1).toFixed(1) + '" rx="9"/>';
+          }).join('')
+        + '</svg>'
+        + '<div class="wxc-rng-lbl" style="top:' + (_rY(_rMax) / _rH * 100).toFixed(1) + '%">' + Math.round(_rMax) + '°</div>'
+        + '<div class="wxc-rng-lbl" style="top:' + (_rY(_rMin) / _rH * 100).toFixed(1) + '%">' + Math.round(_rMin) + '°</div>';
+      var _dayCols = _wxDays.map(function (d) {
+        return '<div class="wxc-day2">'
+          + '<div class="wxc-dchip">' + _dayAbbr(d.dt, _wxLangs[0]) + (_wxLangs[1] ? _wxDia + _dayAbbr(d.dt, _wxLangs[1]) : '') + '</div>'
+          + '<img class="wxanim" data-wx="' + d.ic + '" src="/logos/weather/animated/' + d.ic + '.svg" alt="">'
+          + '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
+          + '<div class="wxc-dlo">' + _wxDeg(d.lo) + '</div>'
+          + '<div class="wxc-dcond">' + _wxPairS(_WXLBL[d.ic] || { en: '' }) + '</div>'
+          + '</div>';
+      }).join('');
+      _wxS3 = '<div class="wxc-screen wxc-s3">' + _wxBar
+        + '<div class="wxc-sc-title">' + _wxPairD({
             en: nDays + '-DAY FORECAST', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE-VORHERSAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
-          }) + _wxForCity + '</div><div class="wxc-grid wxc-grid-' + nDays + '">' + tiles + '</div></div>' : '');
+          }) + _wxPlace + '</div>'
+        + '<div class="wxc-days wxc-days-' + nDays + '">' + _dayCols + '</div>'
+        + '<div class="wxc-rng-title">' + _wxPairD({ en:'TEMPERATURE RANGE', fr:'AMPLITUDE THERMIQUE', es:'AMPLITUD TÉRMICA', de:'TEMPERATURSPANNE', it:'ESCURSIONE TERMICA', pt:'AMPLITUDE TÉRMICA', ja:'気温の幅', zh:'温度范围', ar:'المدى الحراري' }) + '</div>'
+        + '<div class="wxc-rng-wrap">' + _rng + '</div>'
+        + _wxDots(3) + '</div>';
+    }
+    // A missing screen must not leave its slot blank: the days stand in for
+    // the hours, and with neither the set simply holds (wxc-one, in CSS).
+    if (!_wxS2 && _wxS3) _wxS2 = _wxS3.replace('wxc-screen wxc-s3', 'wxc-screen wxc-s2');
+    var _wxOnly1 = !(_wxS2 || _wxS3);
     // v23452 — THE SOURCE CREDIT.
-    // 
-    //
     // MET's data is dual-licensed NLOD 2.0 / CC BY 4.0 and both ask that the
     // Norwegian Meteorological Institute be named as the source. NLOD is
     // explicit that the credit need not sit beside the data — an about page
     // would satisfy it — so a line on the card itself is more than the licence
-    // requires, which is how it was specified.
-    //
-    // Wording is as supplied, with 'data' added: it is MET's open DATA the boards
-    // render, and the week's highs and lows are derived from it rather than
-    // published by MET, which CC BY asks be indicated. Saying 'weather data
-    // provided by' rather than 'weather by' also keeps clear of implying MET
-    // endorses or produced these boards — the one thing their trademark terms
-    // ask you not to suggest.
+    // requires, which is how it was specified. 'Weather data provided by'
+    // rather than 'weather by': it is MET's open DATA the boards render, the
+    // week's highs and lows are derived from it (CC BY asks that be indicated),
+    // and nothing implies MET endorses or produced these boards.
     var _wxCredit = '<div class="wxc-credit">Weather data generously provided by MET Norway</div>';
     // v23724 — THE BACKGROUND MOVES.
     //
@@ -44944,9 +44987,17 @@ function _renderWxCard(el) {
     // clock.
     var _wxNightScene = false;
     try { _wxNightScene = _wxNightAt(_wxOrig || dest); } catch (e) {}
-    var _wxVidSrc = _wxNightScene
-      ? '/logos/Backgrounds/video/wx-fireflies-night.mp4'
-      : '/logos/Backgrounds/video/wx-grass-loop.mp4';
+    // v23836 — AND THE WEATHER, NOT ONLY THE HOUR. The monitor's screen plays
+    // what the sky at the board's own airport is doing: the reading is the
+    // same one the departure side of the set shows, folded to a scene family
+    // by _wxSceneKindOf. 'clear' keeps the grass and the fireflies; the other
+    // four families each have a day loop and a night loop of their own.
+    var _wxSceneRead = null;
+    try { _wxSceneRead = _wxAtTime(_wxOrig || dest, 0); } catch (eSR) {}
+    var _wxSceneKind = _wxSceneKindOf(_wxAnimIcon(_wxSceneRead ? _wxSceneRead.code : cur.code, _wxNightScene));
+    var _wxVidSrc = _wxSceneKind === 'clear'
+      ? (_wxNightScene ? '/logos/Backgrounds/video/wx-fireflies-night.mp4' : '/logos/Backgrounds/video/wx-grass-loop.mp4')
+      : '/logos/Backgrounds/video/wx-scene-' + _wxSceneKind + (_wxNightScene ? '-night' : '-day') + '.mp4';
     var _wxVid = '<video class="wxc-vid" autoplay loop muted playsinline preload="auto" '
                + 'src="' + _wxVidSrc + '"></video>';
     // v23787 — THE TITLE PLAYS OVER THE CARD AS IT ARRIVES.
@@ -44957,10 +45008,11 @@ function _renderWxCard(el) {
     // re-render mid-slide the card must not replay its own titles.
     var _wxIntro = _wxWantsIntro() ? _wxIntroHtml(_wxFrF) : '';
     var _wxSceneCls = _wxNightScene ? ' wxc-scene-night' : ' wxc-scene-day';
+    var _wxWrapCls = _wxSceneCls + ' wxc-wx-' + _wxSceneKind + (_wxOnly1 ? ' wxc-one' : '');
     // The scene is part of the rebuild signature further down (_wxSig is the
     // whole markup string), so crossing 06:00 or 19:00 swaps the clip on the
     // next render rather than needing its own timer.
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxSceneCls + '">' + _wxVid + _wxMainHtml + _wxStripsHtml + _wxCredit + _wxIntro + '</div>';
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + '">' + _wxVid + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxIntro + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually
@@ -45075,43 +45127,40 @@ function _renderWxCard(el) {
       _wxArmEntrance(el.querySelector('.wxcard-wrap'));
       return true;
     }
-    // Strips-only change (late-arriving 7-day/hourly data): swap the strips
-    // under the SAME hero — no innerHTML reset, no hero icon reload, no bump.
-    // _wxHydrateSvgs is safe on the wrap: hydrated icons are spans and are
-    // skipped; only the freshly inserted strip imgs hydrate.
+    // Screens 2 and 3 only (late 7-day / hourly data): swap them under an
+    // untouched screen 1. Neither is on screen before 18.5s, so nothing
+    // visible moves and the hero icons are not reloaded — and the sequence is
+    // not restarted: the fresh nodes are stamped with the time already
+    // elapsed, so their flips land on the same clock as the set's.
     var _wxWrapP = el.querySelector ? el.querySelector('.wxcard-wrap') : null;
-    if (_wxWrapP && el._wxMainHtml === _wxMainHtml) {
+    if (_wxWrapP && el._wxS1Html === _wxS1 && el._wxVidHtml === _wxVid && _wxWrapP.className.indexOf(_wxWrapCls.trim()) >= 0) {
       try {
-        // If the entrance is still running, ABANDON IT before the swap.
-        // The two strips about to be inserted would start their delays from
-        // HERE while the removal deadline stayed where it was armed, so they
-        // would be held at the keyframe's opacity:0 and then snap in with no
-        // fade at all — a blank-and-pop of two of the card's three bands,
-        // mid-slide, on a public board. Landing the card whole is the honest
-        // answer, and it is what a gate rebuild does too.
-        if (_wxWrapP.classList && _wxWrapP.classList.contains('wxc-entering')) _wxEndEntrance();
-        _wxWrapP.querySelectorAll(':scope > .wxc-strip').forEach(function (n) { n.remove(); });
-        // v23724 — PUT THEM BACK WHERE THEY WERE, NOT AT THE END.
-        // 'beforeend' appended the strips AFTER the credit, so every
-        // strips-only refresh walked the MET attribution one slot up the card
-        // until it sat between the hero and the hours. The credit is the last
-        // child by construction and has margin-top:auto to hold it at the
-        // foot; re-inserting ahead of it keeps both facts true.
-        var _wxCreditEl = _wxWrapP.querySelector(':scope > .wxc-credit');
-        if (_wxCreditEl) _wxCreditEl.insertAdjacentHTML('beforebegin', _wxStripsHtml);
-        else _wxWrapP.insertAdjacentHTML('beforeend', _wxStripsHtml);
+        var _wxElapsed = '';
+        if (window._wxEntranceAt && _wxWrapP.classList.contains('wxc-entering')) {
+          _wxElapsed = ((Date.now() - window._wxEntranceAt) / 1000).toFixed(2) + 's';
+        }
+        [['wxc-s2', _wxS2], ['wxc-s3', _wxS3]].forEach(function (pair) {
+          var old = _wxWrapP.querySelector(':scope > .' + pair[0]);
+          if (old) old.remove();
+          if (!pair[1]) return;
+          var anchor = _wxWrapP.querySelector(':scope > .wxc-credit');
+          if (anchor) anchor.insertAdjacentHTML('beforebegin', pair[1]); else _wxWrapP.insertAdjacentHTML('beforeend', pair[1]);
+          var fresh = _wxWrapP.querySelector(':scope > .' + pair[0]);
+          if (fresh && _wxElapsed) fresh.style.setProperty('--wxc-el', _wxElapsed);
+        });
         el._wxLastHtml = _wxSig;
         if (el._wxLastBg !== _wxBg) { _wxWrapP.style.setProperty('background', _wxBg, 'important'); el._wxLastBg = _wxBg; }
         _wxHydrateSvgs(_wxWrapP);
-        // RE-RENDER PATH 2 — the strips were swapped under an untouched hero.
-        // This fires whenever late 7-day/hourly data lands, which is often, so
-        // it MUST NOT re-arm: the visit number has not moved, so it does not.
+        // RE-RENDER PATH 2 — screens swapped under an untouched set. This fires
+        // whenever late data lands, which is often, so it MUST NOT re-arm: the
+        // visit number has not moved, so it does not.
         _wxArmEntrance(_wxWrapP);
         return true;
       } catch (e) {}
     }
     el._wxLastHtml = _wxSig;
-    el._wxMainHtml = _wxMainHtml;
+    el._wxS1Html = _wxS1;
+    el._wxVidHtml = _wxVid;
     el._wxLastBg = _wxBg;
     el.innerHTML = _wxHtml;
     var _wxWrap = el.querySelector('.wxcard-wrap');
@@ -45124,8 +45173,9 @@ function _renderWxCard(el) {
     //
     // Marked synchronously, in the same task as the insert, so the class is on
     // the wrap before the browser paints — otherwise the card shows complete
-    // for one frame and then snaps back to the start of the sequence.
-    _wxArmEntrance(_wxWrap);
+    // for one frame and then snaps back to the start of the sequence. Inside
+    // a visit already armed, the rebuild carries the sequence across instead.
+    if (!_wxArmEntrance(_wxWrap)) _wxCarryEntrance(_wxWrap);
     return true;
   } catch (e) { return false; }
 }

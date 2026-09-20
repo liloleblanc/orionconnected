@@ -2,11 +2,11 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2652,
+    "total": 2662,
     "by_category": {
       "ad": 10,
       "airline": 1443,
-      "background": 111,
+      "background": 121,
       "brand": 4,
       "hotel": 884,
       "livery": 96,
@@ -17188,6 +17188,94 @@
       "ext": "mp4"
     },
     {
+      "path": "/logos/Backgrounds/video/wx-scene-cloud-day.mp4",
+      "file": "wx-scene-cloud-day.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene cloud day",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-cloud-night.mp4",
+      "file": "wx-scene-cloud-night.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene cloud night",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-rain-day.mp4",
+      "file": "wx-scene-rain-day.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene rain day",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-rain-night.mp4",
+      "file": "wx-scene-rain-night.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene rain night",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-snow-day.mp4",
+      "file": "wx-scene-snow-day.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene snow day",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-snow-night.mp4",
+      "file": "wx-scene-snow-night.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene snow night",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-day.mp4",
+      "file": "wx-scene-storm-day.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm day",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-night.mp4",
+      "file": "wx-scene-storm-night.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm night",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
       "path": "/logos/Backgrounds/wx-sky-beach.jpg",
       "file": "wx-sky-beach.jpg",
       "category": "background",
@@ -17210,12 +17298,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/Backgrounds/wx-studio-set.png",
+      "file": "wx-studio-set.png",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx studio set",
+      "iata": "",
+      "country": "",
+      "ext": "png"
+    },
+    {
       "path": "/logos/Backgrounds/video/wx-title-globe.mp4",
       "file": "wx-title-globe.mp4",
       "category": "background",
       "subcategory": "airline-bg",
       "group": "Backgrounds (airline-themed)",
       "name": "wx title globe",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-title-studio.mp4",
+      "file": "wx-title-studio.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx title studio",
       "iata": "",
       "country": "",
       "ext": "mp4"

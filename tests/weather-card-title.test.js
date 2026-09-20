@@ -350,19 +350,49 @@ test('no static !important outranks these keyframes', () => {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // The backdrop is chosen and PACED so that every word on the panel is one the
-// board drew. The clip carries its own headline — they all do — but it slides
-// in at about 5.2s, and the title only ever consumes the clean stretch before
-// that. Measured on the 408 x 792 crop: luminance 70-87 through 5.21s with no
-// blown pixels in the band the type sits in, then the lettering enters.
+// board drew. The clip is drawn rather than sourced, carries no lettering, and
+// is cut to the title's own six seconds — so the one thing pacing has to
+// respect is the clip's length. Consume more than the file holds and the
+// last frame sits still under a title that is still moving. The length is
+// read from the file itself (the mvhd atom), not from a number kept beside
+// it, so swapping the clip cannot leave a stale limit behind.
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('the backdrop is paced to stay inside its clean stretch', () => {
+// Seconds in an MP4: walk the top-level boxes to moov, then to mvhd, and
+// divide duration by timescale. Version 1 widens the timestamps to 64 bits.
+function mp4Seconds(file) {
+  const b = fs.readFileSync(file);
+  const find = (off, end, want) => {
+    while (off + 8 <= end) {
+      let size = b.readUInt32BE(off), hdr = 8;
+      const type = b.toString('latin1', off + 4, off + 8);
+      if (size === 1) { size = Number(b.readBigUInt64BE(off + 8)); hdr = 16; }
+      else if (size === 0) size = end - off;
+      if (type === want) return [off + hdr, off + size];
+      off += size;
+    }
+    return null;
+  };
+  const moov = find(0, b.length, 'moov');
+  const mvhd = moov && find(moov[0], moov[1], 'mvhd');
+  assert.ok(mvhd, `${path.basename(file)} has no mvhd atom`);
+  const at = mvhd[0];
+  return b[at] === 1
+    ? Number(b.readBigUInt64BE(at + 24)) / b.readUInt32BE(at + 20)
+    : b.readUInt32BE(at + 16) / b.readUInt32BE(at + 12);
+}
+
+test('the backdrop is paced to stay inside the clip it plays', () => {
   const span = Number((JS.match(/var _WX_INTRO_BG_SPAN = ([\d.]+);/) || [])[1]);
   assert.ok(span > 0, 'the span must be named');
-  assert.ok(span <= 5.0,
-    `${span}s of clip is consumed, but this clip's own headline slides in at ` +
-    'about 5.2s — anything past that puts a second, English-only headline ' +
-    'behind nine languages');
+  const clip = (JS.match(/var _WX_INTRO_CLIP = '(\/[^']+\.mp4)';/) || [])[1];
+  assert.ok(clip, 'the clip must be named');
+  const file = path.join(ROOT, 'fids-current', clip);
+  assert.ok(fs.existsSync(file), `${clip} is named but not on disk`);
+  const secs = mp4Seconds(file);
+  assert.ok(span <= secs + 1e-6,
+    `${span}s of clip is consumed but ${path.basename(clip)} is only ` +
+    `${secs.toFixed(3)}s long — the last frame would hold under a moving title`);
 
   const arm = JS.slice(JS.indexOf('function _wxArmEntrance(wrap)'));
   const body = arm.slice(0, arm.indexOf('\n}'));

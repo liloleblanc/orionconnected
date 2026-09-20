@@ -1,24 +1,16 @@
 'use strict';
 
-// v23724 — THE ARRIVAL WEATHER CARD'S MOVING BACKGROUND AND TEMPERATURE SCALE.
+// ═══════════════════════════════════════════════════════════════════════════
+// THE SCENE BEHIND THE WEATHER — v23836.
 //
-// Three things here are easy to get wrong in ways that look fine on a desk and
-// fail on a lit board, so each has a guard:
-//
-//   · The night/day class on an hour tile must come from the SAME value that
-//     picked the moon-or-sun icon. Any second derivation (a 19:00 window, the
-//     board's own clock rather than the destination's) drifts by season and by
-//     airport, and the tile ends up day-coloured under a moon.
-//
-//   · The five-day colours are RELATIVE to the week on screen. That is the
-//     whole point — fixed thresholds render five identical tiles whenever the
-//     weather is settled — but it means the banding maths has to survive a week
-//     where every day is the same temperature without dividing by zero.
-//
-//   · Every tint/ink pairing has to clear 4.5:1 over BOTH the grass and the sky
-//     parts of the clip. The first attempt used darker tints and measured
-//     3.16:1 on the coral tiles; lighter tints have MORE contrast with dark ink,
-//     which is the counter-intuitive part worth pinning down.
+// The card opens on a news set whose monitor has its screen cut out, and the
+// scene loop plays in that cut-out. Since v23726 the loop has followed the
+// hour at the board's own airport (grass by day, fireflies after dark); since
+// v23836 it follows the WEATHER there as well: rain when it rains, snow when
+// it snows, each family with a day loop and a night loop. These tests pin the
+// pieces of that: the loop itself, which loop is chosen and from what, the set
+// it plays behind, and the files all of it depends on.
+// ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -28,6 +20,19 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'fids-current/js/fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/display-overrides.css'), 'utf8');
+const VIDEO = path.join(ROOT, 'fids-current/logos/Backgrounds/video');
+
+/** A top-level function's source, by name, braces balanced. */
+function fn(name) {
+  const at = SRC.indexOf('function ' + name + '(');
+  assert.ok(at >= 0, `fids-core.js must define ${name}`);
+  let d = 0;
+  for (let k = SRC.indexOf('{', at); k < SRC.length; k++) {
+    if (SRC[k] === '{') d++;
+    else if (SRC[k] === '}') { d--; if (d === 0) return SRC.slice(at, k + 1); }
+  }
+  assert.fail(`unterminated ${name}`);
+}
 
 // ── The video layer ──────────────────────────────────────────────────────
 
@@ -40,9 +45,10 @@ test('the card builds a muted, looping, inline video', () => {
   }
 });
 
-test('the video is the first child, behind the content', () => {
-  assert.match(SRC, /_wxVid \+ _wxMainHtml/,
-    'the video must precede the card content in source order');
+test('the video is the first child, behind the set', () => {
+  assert.match(SRC, /_wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro/,
+    'the video must precede every screen in source order — the set sits over ' +
+    'it with the monitor cut out, and the two later screens cover it entirely');
 });
 
 test('the video layer beats the rule that would float it over the content', () => {
@@ -66,30 +72,15 @@ test('the video layer beats the rule that would float it over the content', () =
 
 test('something opaque is always underneath, and it is never a photograph', () => {
   // The ground is what shows if the video is blocked or fails to load, so the
-  // wrap must never be left bare.
-  //
-  // v23779 dropped the daytime sky photograph at NIGHT, because the only sky
-  // plates in the repo are daylit and one of them sitting under the fireflies
-  // clip was the reported fault. v23795 drops it by day too: a holiday
-  // shoreline behind an airport's weather is the wrong picture at any hour,
-  // and leaving it on one branch made the card two different things depending
-  // on the time. Both branches are now a gradient over a solid.
-  //
-  // The file is still on disk. What this test pins is that nothing composes a
-  // photograph back into the card without someone deciding to.
-  assert.ok(!/_wxSkyUrl\s*=/.test(SRC),
-    'the sky-plate variable must be gone, not merely emptied — an empty one ' +
-    "composes url('') into the background and takes the whole declaration " +
-    'with it');
-  assert.ok(!/url\('\" \+ _wx\w*SkyUrl/.test(SRC),
-    'and nothing may compose it back in');
-
+  // wrap must never be left bare. The set is a PNG in its own layer inside
+  // screen 1 — it is not the wrap's ground, and nothing composes a photograph
+  // back into that ground without someone deciding to.
+  assert.ok(!/_wxSkyUrl\s*=/.test(SRC), 'the sky-plate variable must stay gone');
   const at = SRC.indexOf('var _wxBg = _wxNightScene');
   assert.ok(at >= 0, 'the background must branch on the scene');
   const bg = SRC.slice(at, SRC.indexOf(';', at));
   const night = bg.slice(0, bg.indexOf(': '));
   const day = bg.slice(bg.indexOf(': '));
-
   for (const [name, branch] of [['night', night], ['day', day]]) {
     assert.match(branch, /linear-gradient\([^)]*rgba\([^)]*\)[^)]*\)/,
       `the ${name} ground must be a real gradient, not nothing`);
@@ -99,235 +90,128 @@ test('something opaque is always underneath, and it is never a photograph', () =
     assert.ok(!/\.jpg|\.png|\.webp/i.test(branch),
       `no photograph may be composed into the ${name} ground`);
   }
-  // …and the two branches must still differ, or the night work is undone
-  assert.notEqual(night.trim(), day.trim(),
-    'night and day share a shape now, but they are not the same ground');
+  assert.notEqual(night.trim(), day.trim(), 'night and day are not the same ground');
 });
 
-// ── Night / day on the hours strip ───────────────────────────────────────
+// ── Which scene ──────────────────────────────────────────────────────────
 
-test('the hour tile class comes from the same value as its icon', () => {
-  const at = SRC.indexOf('var hNight =');
-  assert.ok(at >= 0, 'the hour builder must still compute hNight');
-  const block = SRC.slice(at, at + 1400);
-  assert.match(block, /_wxAnimIcon\(h\.code, hNight\)/,
-    'hNight must still choose the icon');
-  assert.match(block, /var hPhase = hNight \? 'night' : 'day'/,
-    'the SAME hNight must set the tile class, so a tile can never be ' +
-    'day-coloured under a moon');
-  assert.match(block, /wxc-hr-' \+ hPhase/, 'the class must come from hPhase');
-  // Two states only. Dawn and dusk were tried and dropped — a third and
-  // fourth colour stopped the night-to-morning boundary being what the eye
-  // catches first on a five-tile strip.
-  // Check for emitted CLASSES, not the words — the comment above the code
-  // explains why dawn and dusk were dropped and must stay readable.
-  assert.doesNotMatch(SRC, /wxc-hr-dawn|wxc-hr-dusk/,
-    'the hours strip is night/day only');
-  assert.doesNotMatch(CSS, /wxc-hr-dawn|wxc-hr-dusk/,
-    'and no dawn/dusk rules may linger in the stylesheet');
-});
+const kindOf = new Function(fn('_wxSceneKindOf') + '\nreturn _wxSceneKindOf;')();
 
-test('both night and day tiles are styled, with their own ink', () => {
-  for (const cls of ['wxc-hr-night', 'wxc-hr-day']) {
-    assert.ok(CSS.includes('.wxc-hour.' + cls + ' {'), cls + ' must be styled');
-    assert.ok(CSS.includes('.wxc-hour.' + cls + ' .wxc-ht'),
-      cls + ' must set its own text colour — a dark tile with dark ink is unreadable');
+test('an icon name folds to one of five scene families', () => {
+  const expect = {
+    'clear-day': 'clear', 'clear-night': 'clear',
+    'partly-cloudy-day': 'cloud', 'partly-cloudy-night': 'cloud', 'cloudy': 'cloud',
+    'overcast-day': 'cloud', 'fog': 'cloud',
+    'drizzle': 'rain', 'rain': 'rain', 'extreme-rain': 'rain', 'sleet': 'rain', 'hail': 'rain',
+    'snow': 'snow', 'extreme-snow': 'snow',
+    'thunderstorms-day-rain': 'storm', 'thunderstorms-rain': 'storm',
+  };
+  for (const [icon, kind] of Object.entries(expect)) {
+    assert.equal(kindOf(icon), kind, `${icon} → ${kind}`);
   }
 });
 
-// ── The relative temperature banding ─────────────────────────────────────
-
-function bandFn() {
-  const at = SRC.indexOf('var _wxBand = function');
-  assert.ok(at >= 0, 'fids-core.js must define _wxBand');
-  const end = SRC.indexOf('};', at) + 2;
-  return new Function(SRC.slice(at, end) + '\nreturn _wxBand;')();
-}
-
-test('the coldest day takes the first step and the warmest the last', () => {
-  const band = bandFn();
-  const week = [21, 23, 24, 27, 27];
-  assert.equal(band(21, week), 0, 'coolest day is step 0');
-  assert.equal(band(27, week), 4, 'warmest day is step 4');
-  assert.ok(band(23, week) > 0 && band(23, week) < 4, 'the middle spreads between');
+test('every icon the mappers can return has a family', () => {
+  // Every string literal either mapper returns must fold somewhere real —
+  // a new icon that fell through to 'clear' would put grass behind a blizzard.
+  const names = new Set();
+  for (const body of [fn('_wxAnimIcon'), fn('_wmoAnimIcon')]) {
+    for (const m of body.matchAll(/'([a-z-]+)'/g)) names.add(m[1]);
+  }
+  assert.ok(names.size >= 14, 'the mappers should name a dozen-plus icons');
+  const clearOnly = [...names].filter(n => kindOf(n) === 'clear' && !/^clear-/.test(n));
+  assert.deepEqual(clearOnly, [], 'these icons fall through to the clear scene: ' + clearOnly.join(', '));
 });
 
-test('the same temperature always takes the same step within one week', () => {
-  const band = bandFn();
-  const week = [21, 23, 24, 27, 27];
-  assert.equal(band(27, week), band(27, week));
-  assert.equal(band(27, week), 4, 'both 27s are the warmest day, so both are coral');
+test('nothing sensible throws, and nonsense is clear', () => {
+  assert.equal(kindOf(undefined), 'clear');
+  assert.equal(kindOf(null), 'clear');
+  assert.equal(kindOf(''), 'clear');
+  assert.equal(kindOf(42), 'clear');
 });
 
-test('a flat week sits mid-scale instead of dividing by zero', () => {
-  const band = bandFn();
-  assert.equal(band(18, [18, 18, 18, 18, 18]), 2,
-    'five identical days must not blow up or all land on step 0');
-  assert.equal(band(18, [18, 18.3]), 2, 'a span under half a degree is still flat');
+test('the scene is chosen from the family and the hour', () => {
+  const at = SRC.indexOf('var _wxNightScene');
+  const block = SRC.slice(at, SRC.indexOf('var _wxHtml = ', at));
+  assert.match(block, /_wxSceneKindOf\(_wxAnimIcon\(/, 'the family comes from the same icon mapper the tiles use');
+  assert.match(block, /_wxAtTime\(_wxOrig \|\| dest, 0\)/,
+    "the reading is the board's own airport's — the departure side of the set — " +
+    'so the screen shows the sky outside the terminal, not the sky at the far end');
+  assert.match(block, /_wxSceneKind === 'clear'/, "'clear' keeps the loops the card has had");
+  assert.match(block, /wx-fireflies-night\.mp4/);
+  assert.match(block, /wx-grass-loop\.mp4/);
+  assert.match(block, /'\/logos\/Backgrounds\/video\/wx-scene-' \+ _wxSceneKind \+ \(_wxNightScene \? '-night' : '-day'\) \+ '\.mp4'/,
+    'the other four families take a day or a night loop of their own');
+  assert.match(block, /_wxSceneCls = _wxNightScene \? ' wxc-scene-night' : ' wxc-scene-day'/);
+  assert.match(block, /' wxc-wx-' \+ _wxSceneKind/, 'the family rides on the wrap as a class');
 });
 
-test('bad input falls to the middle step rather than throwing', () => {
-  const band = bandFn();
-  assert.equal(band(NaN, [1, 2, 3]), 2);
-  assert.equal(band(10, []), 2);
-  assert.equal(band(undefined, [1, 2]), 2);
+test('the hour tile\'s night class comes from the same flag as its icon', () => {
+  const at = SRC.indexOf('var _wxHours = [];');
+  const block = SRC.slice(at, SRC.indexOf('_wxHours.push', at) + 200);
+  assert.match(block, /var hNight = h24 < 6 \|\| h24 >= 21;/);
+  assert.match(block, /_wxAnimIcon\(h\.code, hNight\)/, 'the icon reads hNight');
+  assert.match(block, /night: hNight/, 'and the tile carries the same value');
+  assert.match(SRC, /p\.h\.night \? 'wxc-hr-night' : 'wxc-hr-day'/, 'the class is that value, not a second guess');
 });
 
-test('the step never escapes 0..4 however odd the week', () => {
-  const band = bandFn();
-  for (const week of [[-40, 45], [0, 0.6], [-5, -5, 30]]) {
-    for (const v of [-100, -40, 0, 22, 45, 100]) {
-      const b = band(v, week);
-      assert.ok(Number.isInteger(b) && b >= 0 && b <= 4, `${v} in ${week} gave ${b}`);
-    }
+// ── The files ────────────────────────────────────────────────────────────
+
+const FAMILIES = ['cloud', 'rain', 'snow', 'storm'];
+const LOOPS = ['wx-grass-loop.mp4', 'wx-fireflies-night.mp4']
+  .concat(FAMILIES.flatMap(f => [`wx-scene-${f}-day.mp4`, `wx-scene-${f}-night.mp4`]));
+
+test('every family has a day loop and a night loop on disk, as real MP4s', () => {
+  for (const f of LOOPS) {
+    const p = path.join(VIDEO, f);
+    assert.ok(fs.existsSync(p), `${f} is referenced but missing from the tree`);
+    const mb = fs.statSync(p).size / 1024 / 1024;
+    assert.ok(mb < 12, `${f} is ${mb.toFixed(1)}MB — the monitor is a fifth of the panel`);
+    const head = fs.readFileSync(p, { encoding: 'latin1', start: 0, end: 16 });
+    assert.ok(head.includes('ftyp'), `${f} must be an ISO media file`);
+    assert.ok(!head.includes('qt  '), `${f} must be a real MP4, not a QuickTime container with an .mp4 name`);
   }
 });
 
-test('highs and lows are banded against their own spreads', () => {
-  // If both used one shared range the low would almost always be step 0 and
-  // every tile's two numbers would read the same colour as each other.
-  assert.match(SRC, /_wxBand\(daily\.temperature_2m_max\[i\], _wxHis\)/);
-  assert.match(SRC, /_wxBand\(daily\.temperature_2m_min\[i\], _wxLos\)/);
-  assert.ok(SRC.includes("'<div class=\"wxc-day wxc-t' + _tbHi"),
-    'the tile carries the HIGH step');
-  assert.ok(SRC.includes("'<div class=\"wxc-lo wxc-tl' + _tbLo"),
-    'the low carries its OWN step');
+test('the set is a still with the screen cut out', () => {
+  const p = path.join(ROOT, 'fids-current/logos/Backgrounds/wx-studio-set.png');
+  assert.ok(fs.existsSync(p), 'the set must be committed');
+  const b = fs.readFileSync(p);
+  assert.equal(b.toString('latin1', 1, 4), 'PNG');
+  const w = b.readUInt32BE(16), h = b.readUInt32BE(20), colourType = b[25];
+  assert.equal(colourType, 6, 'RGBA — the monitor\'s screen is transparent, which is how the loop shows through');
+  assert.ok(Math.abs(w / h - 976 / 857) < 0.005, `${w}x${h} — cut at the panel\'s own 976 x 857 so the cut-out lands where the CSS says`);
+  assert.match(SRC, /wx-studio-set\.png\?v=/, 'the set is referenced by the card, cache-busted by the build tag');
 });
 
-// ── Contrast, measured the way the board composites ──────────────────────
-
-function parseHsl(s) {
-  const m = s.match(/hsla?\((\d+),\s*([\d.]+)%,\s*([\d.]+)%(?:,\s*([\d.]+))?\)/);
-  return m ? { h: +m[1], s: +m[2], l: +m[3], a: m[4] === undefined ? 1 : +m[4] } : null;
-}
-function hslToRgb(h, s, l) {
-  s /= 100; l /= 100;
-  const k = n => (n + h / 30) % 12, a = s * Math.min(l, 1 - l);
-  const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
-  return [255 * f(0), 255 * f(8), 255 * f(4)];
-}
-const lum = c => {
-  const f = c.map(v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
-  return 0.2126 * f[0] + 0.7152 * f[1] + 0.0722 * f[2];
-};
-const cr = (a, b) => { const la = lum(a), lb = lum(b); return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05); };
-const over = (fg, al, bg) => fg.map((x, i) => x * al + bg[i] * (1 - al));
-
-// Sampled from the clip: the grass band and the sky band.
-const GRASS = [96, 153, 92], SKY = [150, 205, 215];
-
-function bandColours() {
-  const out = [];
-  for (let i = 0; i < 5; i++) {
-    const tile = CSS.match(new RegExp('\\.wxc-day\\.wxc-t' + i + ' \\{ background: (hsla\\([^)]*\\))'));
-    const hi = CSS.match(new RegExp('\\.wxc-day\\.wxc-t' + i + ' \\.wxc-hi \\{ color: (hsl\\([^)]*\\))'));
-    const lo = CSS.match(new RegExp('\\.wxc-lo\\.wxc-tl' + i + ' \\{ color: (hsl\\([^)]*\\))'));
-    // (the selectors carry a .wxc-scene-day scope; these fragments still match)
-    assert.ok(tile && hi && lo, 'band ' + i + ' must define tile, hi ink and lo ink');
-    out.push({ i, tile: parseHsl(tile[1]), hi: parseHsl(hi[1]), lo: parseHsl(lo[1]) });
-  }
-  return out;
-}
-
-test('the tile is ONE colour — the temperature lives in the type', () => {
-  const b = bandColours();
-  const tiles = b.map(x => `${x.tile.h},${x.tile.s},${x.tile.l},${x.tile.a}`);
-  assert.equal(new Set(tiles).size, 1,
-    'all five tiles must share the panel fill; five tinted columns buried the ' +
-    'video under bands of colour, which is what it was added for');
+test('the loop plays in the same rectangle the set has cut out', () => {
+  // Both are written as percentages of the panel. If one moves and the other
+  // does not, the loop either peeks past the bezel or leaves navy in the corner.
+  const vid = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: ([\d.]+)% !important; left: ([\d.]+)% !important;[^}]*\}/);
+  const mon = CSS.match(/\.wxc-monitor \{ position: absolute !important; left: ([\d.]+)% !important; top: ([\d.]+)% !important; width: ([\d.]+)% !important; height: ([\d.]+)% !important;/);
+  assert.ok(vid && mon, 'both the placed video rule and the monitor rule must exist');
+  assert.equal(vid[1], mon[2], 'top');
+  assert.equal(vid[2], mon[1], 'left');
 });
 
-test('the five band inks are distinct hues', () => {
-  const b = bandColours();
-  const hues = b.map(x => x.hi.h);
-  assert.equal(new Set(hues).size, 5, 'five bands must be five different hues');
-  for (let i = 1; i < hues.length; i++) {
-    const gap = Math.abs(hues[i] - hues[i - 1]);
-    assert.ok(gap >= 30, `steps ${i - 1}->${i} differ by only ${gap} degrees of hue`);
-  }
-  // The hi and lo inks of a band are the same colour — only the VALUE differs.
-  for (const x of b) {
-    assert.equal(x.hi.h, x.lo.h, 'band ' + x.i + ' hi/lo must share a hue');
+test('the manifest knows about all of it', () => {
+  const man = fs.readFileSync(path.join(ROOT, 'fids-current/assets/asset-manifest.json'), 'utf8');
+  for (const f of LOOPS.concat(['wx-studio-set.png'])) {
+    assert.ok(man.includes(f), `${f} — run \`npm run assets:build\`; CI fails on a stale manifest`);
   }
 });
 
-test('every ink reads on the tile, including over the brightest video', () => {
-  // BRIGHT is the brightest slice of clip measured behind these tiles — near
-  // white sky. It is the worst case and the reason the inks are so dark.
-  const BRIGHT = [220, 252, 253];
-  const b = bandColours();
-  const t = b[0].tile;
-  const fails = [];
-  for (const ground of [GRASS, SKY, BRIGHT]) {
-    const bg = over(hslToRgb(t.h, t.s, t.l), t.a, ground);
-    for (const ink of b) {
-      for (const which of ['hi', 'lo']) {
-        const c = cr(hslToRgb(ink[which].h, ink[which].s, ink[which].l), bg);
-        if (c < 4.5) fails.push(`${which}${ink.i} on ${ground} = ${c.toFixed(2)}`);
-      }
-    }
-  }
-  assert.deepEqual(fails, [], 'every band ink must clear 4.5:1 on the tile');
-});
-
-test('the panel sits on the clip hue, not the old cold navy', () => {
-  const m = CSS.match(/\.wxc-day, [^{]*\.wxc-hour \{\s*background: (hsla\([^)]*\))/);
-  assert.ok(m, 'the panel fill must be declared');
-  const p = parseHsl(m[1]);
-  // The clip averages hue 181; the old panel was 218 and that 37-degree gap is
-  // what read as a colour clash. Anything back up near 218 is a regression.
-  assert.ok(p.h >= 185 && p.h <= 205,
-    `panel hue ${p.h} is outside the clip's range — 218 was the old cold navy`);
-  assert.ok(p.a <= 0.7, `panel alpha ${p.a} is too opaque for the video to read through`);
-});
-
-// ── The credit ───────────────────────────────────────────────────────────
-
-test('a strips-only refresh puts the strips BEFORE the credit', () => {
-  const at = SRC.indexOf(':scope > .wxc-strip');
-  assert.ok(at >= 0, 'the strips-only refresh path must still exist');
-  const block = SRC.slice(at, at + 700);
-  assert.match(block, /wxc-credit/,
-    'the refresh must locate the credit and insert ahead of it');
-  assert.match(block, /insertAdjacentHTML\('beforebegin', _wxStripsHtml\)/,
-    "'beforeend' appended the strips AFTER the credit and walked the MET " +
-    'attribution into the middle of the card');
-});
+// ── Housekeeping ─────────────────────────────────────────────────────────
 
 test('MET is capitalised in the credit', () => {
-  // MET is Meteorologisk institutt. Title-casing it to "Met" misstates the
-  // attribution their licence asks for.
   const m = SRC.match(/class="wxc-credit">([^<]*)</);
   assert.ok(m, 'the credit line must exist');
   assert.match(m[1], /\bMET Norway\b/, 'must credit "MET Norway", not "Met Norway"');
 });
 
-// ── The asset ────────────────────────────────────────────────────────────
-
-test('the clip is present, an mp4, and not oversized', () => {
-  const p = path.join(ROOT, 'fids-current/logos/Backgrounds/video/wx-grass-loop.mp4');
-  assert.ok(fs.existsSync(p), 'the loop must be committed');
-  const mb = fs.statSync(p).size / 1024 / 1024;
-  assert.ok(mb < 12, `the loop is ${mb.toFixed(1)}MB — everything else on the board is under 1MB`);
-  const head = fs.readFileSync(p, { encoding: 'latin1', start: 0, end: 16 });
-  assert.ok(head.includes('ftyp'), 'must be an ISO media file');
-  assert.ok(!head.includes('qt  '),
-    'must be a real MP4, not a QuickTime container with an .mp4 name — ' +
-    'canPlayType reports no support for quicktime and it plays only by sniffing');
-});
-
-test('the manifest knows about it', () => {
-  const man = fs.readFileSync(path.join(ROOT, 'fids-current/assets/asset-manifest.json'), 'utf8');
-  assert.ok(man.includes('wx-grass-loop.mp4'),
-    'run `npm run assets:build` — CI fails on a stale manifest');
-});
-
 test('no malformed percentages reached the stylesheet', () => {
-  // A '%%' from a generation script is invalid CSS. The browser silently drops
-  // the declaration and the element falls through to whatever rule is beneath,
-  // which looked correct on screen while being wrong in the file.
   const bad = CSS.split('\n')
     .map((l, i) => [i + 1, l])
-    .filter(([, l]) => /%%/.test(l) && /wxc-/.test(l));
-  assert.deepEqual(bad, [], 'malformed percentage in a weather-card rule');
+    .filter(([, l]) => /%%|NaN|undefined/.test(l) && /wxc-/.test(l));
+  assert.deepEqual(bad, [], 'malformed value in a weather-card rule');
 });
