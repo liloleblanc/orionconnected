@@ -44555,6 +44555,14 @@ function _renderWxCard(el) {
     // ABOVE the icon, second language's BELOW — via each language's own
     // locale (single language selected → no bottom line).
     var _WX_LOCALE = { en:'en-US', fr:'fr-CA', es:'es', de:'de', it:'it', pt:'pt-BR', ja:'ja', zh:'zh-CN', ar:'ar' };
+    // The three-letter day as TEXT — what the chips on the days screen use
+    // directly, and what _dayLine wraps for a tile. Kept as text so no caller
+    // ever has to un-make markup to get at the word.
+    var _dayName = function (d, lg) {
+      var loc = _WX_LOCALE[lg] || 'en-US';
+      var day = d.toLocaleDateString(loc, { weekday: 'short' });
+      return day.replace(/[^\p{L}]/gu, '').slice(0, 3).toUpperCase();
+    };
     var _dayLine = function (d, lg, extraCls) {
       var loc = _WX_LOCALE[lg] || 'en-US';
       // v23558 — THREE LETTERS, STILL IN BOTH LANGUAGES
@@ -44563,8 +44571,7 @@ function _renderWxCard(el) {
       // 'Mi.', pt 'qua.' — so strip anything that is not a letter before
       // trimming. CJK/Arabic short forms are already 1-3 glyphs and pass
       // through untouched.
-      var day = d.toLocaleDateString(loc, { weekday: 'short' });
-      day = day.replace(/[^\p{L}]/gu, '').slice(0, 3).toUpperCase();
+      var day = _dayName(d, lg);
       // v23382 — ABBREVIATED month. A 7-across tile is roughly a seventh of the
       // card, and the long form blows straight through it: Spanish renders
       // '7 de septiembre' (15 chars), and because .wxc-dt is nowrap/overflow-
@@ -44581,7 +44588,7 @@ function _renderWxCard(el) {
       void date;
       return '<div class="wxc-d' + extraCls + '">' + day + '</div>';
     };
-    var _dayAbbr = function (d, lg) { return _dayLine(d, lg, '').replace(/<[^>]+>/g, ''); };
+    var _dayAbbr = _dayName;
     var _mlbl = function (key) {
       var M = {
         feels: { en:'Feels like', fr:'Ressenti', es:'Sensación', de:'Gefühlt', it:'Percepita', pt:'Sensação', ja:'体感', zh:'体感', ar:'الإحساس' },
