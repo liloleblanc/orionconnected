@@ -116,11 +116,39 @@ test('every icon the mappers can return has a family', () => {
   // a new icon that fell through to 'clear' would put grass behind a blizzard.
   const names = new Set();
   for (const body of [fn('_wxAnimIcon'), fn('_wmoAnimIcon')]) {
-    for (const m of body.matchAll(/'([a-z-]+)'/g)) names.add(m[1]);
+    // literals in code, not in comments
+    for (const m of body.replace(/\/\/.*$/gm, '').matchAll(/'([a-z-]+)'/g)) names.add(m[1]);
   }
   assert.ok(names.size >= 14, 'the mappers should name a dozen-plus icons');
   const clearOnly = [...names].filter(n => kindOf(n) === 'clear' && !/^clear-/.test(n));
   assert.deepEqual(clearOnly, [], 'these icons fall through to the clear scene: ' + clearOnly.join(', '));
+});
+
+test('WMO codes — what the boards actually receive — map to real icons, with night forms', () => {
+  // /wxcurrent returns MET's conditions as WMO codes (0-99). Until v23836 the
+  // card's mapper knew only Tomorrow.io's codes and every reading fell to
+  // 'clear' — which also meant the scene could never be anything but grass.
+  const icon = new Function(fn('_wxAnimIcon') + '\n' + fn('_wmoAnimIcon') + '\nreturn _wxAnimIcon;')();
+  assert.equal(icon(0, false), 'clear-day');
+  assert.equal(icon(0, true), 'clear-night');
+  assert.equal(icon(2, false), 'partly-cloudy-day');
+  assert.equal(icon(2, true), 'partly-cloudy-night');
+  assert.equal(icon(3, true), 'overcast-day', 'overcast has no night form');
+  assert.equal(icon(45, false), 'fog');
+  assert.equal(icon(61, false), 'rain');
+  assert.equal(icon(65, false), 'extreme-rain');
+  assert.equal(icon(73, true), 'snow');
+  assert.equal(icon(95, false), 'thunderstorms-day-rain');
+  assert.equal(icon(95, true), 'thunderstorms-rain');
+  // and the Tomorrow.io codes still answer as they did
+  assert.equal(icon(1101, true), 'partly-cloudy-night');
+  assert.equal(icon(4200, false), 'rain');
+  assert.equal(icon(8000, true), 'thunderstorms-rain');
+  // so the scene can follow the sky
+  assert.equal(kindOf(icon(61, true)), 'rain');
+  assert.equal(kindOf(icon(73, false)), 'snow');
+  assert.equal(kindOf(icon(95, false)), 'storm');
+  assert.equal(kindOf(icon(3, false)), 'cloud');
 });
 
 test('nothing sensible throws, and nonsense is clear', () => {

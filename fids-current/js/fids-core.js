@@ -43718,6 +43718,20 @@ function _renderBigCraft(el, ctx) {
 // forecast. Data comes from TOMORROW_WX (already fetched per destination).
 function _wxAnimIcon(code, night) {
   var c = Number(code) || 0;
+  // v23836 — WMO CODES, WHICH IS WHAT THE BOARDS HAVE RECEIVED SINCE v23452.
+  // /wxcurrent hands back MET's conditions as WMO codes (0-99), and this
+  // mapper only ever knew Tomorrow.io's (1000 and up), so every current and
+  // hourly reading fell through to 'clear': sun and moon on the card whatever
+  // the sky was doing. The daily mapper below already speaks WMO; the small
+  // numbers go through it, and the three icons that have a night form take it.
+  // 0 (clear sky) is left to fall through, which lands on the same answer.
+  if (c > 0 && c < 100) {
+    var w = _wmoAnimIcon(c);
+    if (night && w === 'clear-day') return 'clear-night';
+    if (night && w === 'partly-cloudy-day') return 'partly-cloudy-night';
+    if (night && w === 'thunderstorms-day-rain') return 'thunderstorms-rain';
+    return w;
+  }
   if (c === 1101) return night ? 'partly-cloudy-night' : 'partly-cloudy-day';
   if (c === 1102) return 'overcast-day';
   if (c === 1001) return 'cloudy';
