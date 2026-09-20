@@ -416,7 +416,7 @@ test('the clip that carried a headline over the type is gone', () => {
     'behind the nine phrases, and a full-frame sun through the middle of the ' +
     'title — it must not be referenced any more');
   const mode = (JS.match(/var _WX_INTRO_BACKDROP = '(\w+)';/) || [])[1];
-  assert.ok(mode === 'sky' || mode === 'clip', `unknown backdrop mode: ${mode}`);
+  assert.ok(mode === 'sky' || mode === 'clip' || mode === 'film', `unknown backdrop mode: ${mode}`);
   // whichever it is, the clip it can fall back to has to be real and committed
   const clip = (JS.match(/var _WX_INTRO_CLIP = '([^']+)'/) || [])[1];
   assert.ok(clip && clip.endsWith('.mp4'), 'the clip is named once, as a path');
@@ -569,4 +569,29 @@ test('the aircraft crosses the PANEL, not its own box', () => {
   assert.match(sd, /top: 64%/);
   assert.match(sd, /width: var\(--wxc-craft\)/,
     'and the same size, so the light stays on the aircraft as it crosses');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23836 — THE OPENER IS A FILM. The clip that plays is the chosen title
+// itself — the violet globe, WEATHER REPORT and BULLETIN MÉTÉO painting on,
+// the seven other languages settling under them — so the board draws nothing
+// over it. The nine-language machinery above stays for the 'clip' mode; what
+// this pins is that in 'film' mode none of it is emitted.
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('in film mode the clip carries the words and the board draws none', () => {
+  const mode = (JS.match(/var _WX_INTRO_BACKDROP = '(\w+)';/) || [])[1];
+  assert.equal(mode, 'film', 'the chosen opener is the film');
+  const body = JS.slice(JS.indexOf('function _wxIntroHtml('));
+  const film = body.slice(0, body.indexOf('var rows = _WX_INTRO_LINES'));
+  assert.match(film, /if \(_WX_INTRO_BACKDROP === 'film'\) \{\s*return '<div class="wxc-intro wxc-intro-film" aria-hidden="true">' \+ _wxIntroBackdropHtml\(\) \+ '<\/div>';/,
+    'film mode returns the overlay with only the clip in it, before any line is built');
+  assert.doesNotMatch(film, /wxc-intro-scrim|wxc-intro-panel|wxc-intro-lines|wxc-intro-sheen/,
+    'no scrim, panel, lines or sheen over a film');
+  const clip = (JS.match(/var _WX_INTRO_CLIP = '(\/[^']+\.mp4)';/) || [])[1];
+  assert.equal(clip, '/logos/Backgrounds/video/wx-title-film.mp4');
+  const file = path.join(ROOT, 'fids-current', clip);
+  assert.ok(fs.existsSync(file), 'the film is committed');
+  const head = fs.readFileSync(file, { encoding: 'latin1', start: 0, end: 16 });
+  assert.ok(head.includes('ftyp'), 'a real MP4');
 });

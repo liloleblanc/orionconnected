@@ -44338,16 +44338,19 @@ function _wxWantsIntro() {
 //   'sky'  — the night sky, drawn by the board. No file, no licence, no
 //            watermark, and dark by construction, which is the one property
 //            every stock candidate failed on: the type has to read over it.
-//   'clip' — _WX_INTRO_CLIP below, the studio wall. The switch is this one
-//            word.
+//   'clip' — _WX_INTRO_CLIP below as a BACKDROP: the board draws the nine
+//            languages over it.
+//   'film' — _WX_INTRO_CLIP below as the WHOLE title: the clip carries its
+//            own words and the board draws none. This is the opener that
+//            was chosen — the violet globe with WEATHER REPORT and BULLETIN
+//            MÉTÉO painting on and the seven other languages settling under
+//            them, rendered from the licensed studio clip at the panel's own
+//            976 x 857 and exactly six seconds. The switch is this one word.
 //
-var _WX_INTRO_BACKDROP = 'clip';
-// A news-studio wall, drawn rather than sourced: cut to the title's own six
-// seconds at the panel's own 976x857, so nothing is cropped or paced, and
-// with no lettering of its own, so the nine languages the board draws over
-// it have nothing to fight. The globe it replaced stays on disk, one path
-// away.
-var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-studio.mp4';
+var _WX_INTRO_BACKDROP = 'film';
+// The chosen opener, complete: six seconds, 976x857, words and all (see
+// 'film' above). The stock globe it replaced stays on disk, one path away.
+var _WX_INTRO_CLIP = '/logos/Backgrounds/video/wx-title-film.mp4';
 
 // An airliner at night is a handful of lights crossing, not an airframe —
 // that is what anyone standing under one actually sees. The silhouette is
@@ -44367,11 +44370,10 @@ function _wxIntroBackdropHtml() {
 }
 
 // Seconds of clip consumed across the whole title, whatever the speed dial is
-// set to. The studio clip is exactly as long as the title and carries no
-// headline to keep off the screen, so it runs at real time; the one limit
-// is that this never exceeds the clip's length, or the last frame holds
-// while the title is still up. (The globe was 12s with lettering at ~5.2s,
-// which is why this used to be 4.5.)
+// set to. The film is exactly as long as the title and IS the title, so it
+// runs at real time; the one limit is that this never exceeds the clip's
+// length, or the last frame holds while the overlay is still up. (The stock
+// globe was 12s with lettering at ~5.2s, which is why this used to be 4.5.)
 var _WX_INTRO_BG_SPAN = 6.0;
 
 var _WX_INTRO_LINES = [
@@ -44410,6 +44412,11 @@ function _wxIntroHasGlyphs(s) {
 }
 
 function _wxIntroHtml(frFirst) {
+  // A film carries its own words: the overlay is the clip and nothing else —
+  // no scrim to knock it back, no panel, no lines to fight its lettering.
+  if (_WX_INTRO_BACKDROP === 'film') {
+    return '<div class="wxc-intro wxc-intro-film" aria-hidden="true">' + _wxIntroBackdropHtml() + '</div>';
+  }
   var rows = _WX_INTRO_LINES.slice();
   if (frFirst) {
     for (var i = 0; i < rows.length; i++) {
