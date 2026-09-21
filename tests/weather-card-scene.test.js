@@ -192,10 +192,10 @@ test('the scene is chosen from the family and the hour', () => {
   assert.match(takes, /'clear-day':\s*\['wx-grass-loop'/, "'clear' by day keeps the grass");
   assert.match(takes, /'clear-night':\s*\['wx-fireflies-night'/, "'clear' after dark keeps the fireflies");
   for (const fam of ['cloud', 'rain', 'snow', 'storm']) {
-    assert.match(takes, new RegExp(`'${fam}-day':\\s*\\['wx-scene-${fam}-day'`),
-      `${fam} keeps its own day loop`);
-    assert.match(takes, new RegExp(`'${fam}-night':\\s*\\['wx-scene-${fam}-night'`),
-      `${fam} keeps its own night loop`);
+    for (const tod of ['day', 'night']) {
+      assert.match(takes, new RegExp(`'${fam}-${tod}':\\s*\\['wx-scene-${fam}-${tod}-\\d+'`),
+        `${fam} by ${tod} opens on real footage, named for its slot and source (v23841); the drawn loop is retired`);
+    }
   }
   assert.match(block, /_wxSceneCls = _wxNightScene \? ' wxc-scene-night' : ' wxc-scene-day'/);
   assert.match(block, /' wxc-wx-' \+ _wxSceneKind/, 'the family rides on the wrap as a class');
@@ -221,11 +221,20 @@ const MAPPER_ICONS = (() => {
 })();
 // derived from the mapper, so a sixth family cannot ship without its loops
 const FAMILIES = [...new Set(MAPPER_ICONS.map(kindOf))].filter(k => k !== 'clear').sort();
-const LOOPS = ['wx-grass-loop.mp4', 'wx-fireflies-night.mp4']
-  .concat(FAMILIES.flatMap(f => [`wx-scene-${f}-day.mp4`, `wx-scene-${f}-night.mp4`]));
+// v23841: a slot holds several real takes, so the files to check are whatever
+// _WX_SCENE_TAKES lists — read from the source, never from a naming pattern.
+const TAKES = (() => {
+  const at = SRC.indexOf('var _WX_SCENE_TAKES = {');
+  assert.ok(at >= 0, 'fids-core.js must define _WX_SCENE_TAKES');
+  return new Function(SRC.slice(at, SRC.indexOf('};', at) + 2) + '\nreturn _WX_SCENE_TAKES;')();
+})();
+const LOOPS = [...new Set(Object.values(TAKES).flat())].map(f => f + '.mp4');
 
 test('every family has a day loop and a night loop on disk, as real MP4s', () => {
   assert.deepEqual(FAMILIES, ['cloud', 'rain', 'snow', 'storm'], 'the families the mapper can name');
+  for (const f of FAMILIES) for (const tod of ['day', 'night']) {
+    assert.ok((TAKES[`${f}-${tod}`] || []).length >= 1, `${f}-${tod} must list at least one take`);
+  }
   for (const f of LOOPS) {
     const p = path.join(VIDEO, f);
     assert.ok(fs.existsSync(p), `${f} is referenced but missing from the tree`);

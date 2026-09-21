@@ -80,13 +80,71 @@ test('every clip named in the table is a file that exists', () => {
   }
 });
 
-test('the clips the card played before this existed are still the first take', () => {
+test('clear keeps the two loops the card has always had as its first take', () => {
   const { table } = makePicker();
   assert.equal(table['clear-day'][0], 'wx-grass-loop');
   assert.equal(table['clear-night'][0], 'wx-fireflies-night');
+});
+
+test('the drawn scenes are retired: every weather slot is real footage, several takes deep', () => {
+  // v23841. The owner brought the footage; the shuffle is the point of having
+  // it, and a shuffle of two is a coin toss. Three is the floor.
+  const { table } = makePicker();
   for (const kind of ['cloud', 'rain', 'snow', 'storm']) {
     for (const tod of ['day', 'night']) {
-      assert.equal(table[`${kind}-${tod}`][0], `wx-scene-${kind}-${tod}`);
+      const list = table[`${kind}-${tod}`];
+      assert.ok(list.length >= 3, `${kind}-${tod} holds ${list.length} takes; the shuffle needs at least three`);
+      assert.ok(!list.includes(`wx-scene-${kind}-${tod}`), `${kind}-${tod} still lists the retired drawn loop`);
+      for (const f of list) {
+        assert.match(f, new RegExp(`^wx-scene-${kind}-${tod}-\\d+$`),
+          `${f} must be named for its slot and its source id, so the licence file can always be found`);
+      }
+    }
+  }
+});
+
+// Seconds in an MP4, read from the file's own mvhd atom.
+function mp4Seconds(file) {
+  const b = fs.readFileSync(file);
+  const find = (start, end, type) => {
+    let at = start;
+    while (at + 8 <= end) {
+      let size = b.readUInt32BE(at); const t = b.toString('latin1', at + 4, at + 8); let hdr = 8;
+      if (size === 1) { size = Number(b.readBigUInt64BE(at + 8)); hdr = 16; }
+      if (size === 0) size = end - at;
+      if (t === type) return [at + hdr, at + size];
+      if (size < 8) return null;
+      at += size;
+    }
+    return null;
+  };
+  const moov = find(0, b.length, 'moov');
+  const mvhd = moov && find(moov[0], moov[1], 'mvhd');
+  assert.ok(mvhd, `${path.basename(file)} has no mvhd atom`);
+  const at = mvhd[0];
+  return b[at] === 1
+    ? Number(b.readBigUInt64BE(at + 24)) / b.readUInt32BE(at + 20)
+    : b.readUInt32BE(at + 16) / b.readUInt32BE(at + 12);
+}
+
+test('every take is a real MP4 the monitor can carry: ISO container, short, small', () => {
+  // The scene plays from 3.8s to 19.7s of a visit, so a loop between 3.5s and
+  // 8.2s seams at most a handful of times and never mid-arrival; 12MB is the
+  // bound the other scene files already live under.
+  const { table } = makePicker();
+  const seen = new Set();
+  for (const slot of Object.keys(table)) for (const f of table[slot]) {
+    if (seen.has(f)) continue; seen.add(f);
+    const file = path.join(VIDEO, f + '.mp4');
+    assert.ok(fs.existsSync(file), `${f}.mp4 is listed in ${slot} but not on disk`);
+    const head = fs.readFileSync(file, { encoding: 'latin1', start: 0, end: 16 });
+    assert.ok(head.includes('ftyp'), `${f}.mp4 must be an ISO media file`);
+    assert.ok(!head.includes('qt  '), `${f}.mp4 must be a real MP4, not a QuickTime container renamed`);
+    const mb = fs.statSync(file).size / 1024 / 1024;
+    assert.ok(mb < 12, `${f}.mp4 is ${mb.toFixed(1)}MB`);
+    if (/^wx-scene-/.test(f)) {
+      const s = mp4Seconds(file);
+      assert.ok(s >= 3.5 && s <= 8.2, `${f}.mp4 runs ${s.toFixed(2)}s; a take is 3.5-8.2s`);
     }
   }
 });
@@ -139,12 +197,11 @@ test('a slot holding two clips alternates rather than sticking', () => {
 });
 
 test('one clip in a slot is drawn without touching the visit counter', () => {
-  // A single-clip slot must not consult the counter at all: the ten slots ship
-  // that way today, and the card must behave exactly as it did before.
-  const p = makePicker();
+  // A single-clip slot must not consult the counter at all: it is what a slot
+  // looks like before footage lands, and it must behave exactly as before.
+  const p = makePicker({ 'snow-day': ['only-one'] });
   delete p.win._gateAdVisitSeq;
-  assert.equal(p.take('snow-day'), 'wx-scene-snow-day');
-  assert.equal(p.take('clear-night'), 'wx-fireflies-night');
+  for (let i = 0; i < 20; i++) assert.equal(p.take('snow-day'), 'only-one');
 });
 
 test('the card builds the scene src from the table, not by hand', () => {
