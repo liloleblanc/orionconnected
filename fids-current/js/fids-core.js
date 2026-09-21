@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23842';
+var FIDS_BUILD_TAG = 'v23843';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41872,7 +41872,7 @@ function _restartGateAdsTimer() {
                     _wxLeaveWrap.style.removeProperty('--wxc-el');
                     var _wxLk = _wxLeaveWrap.querySelectorAll(':scope > [style*="--wxc-el"]');
                     for (var _wl = 0; _wl < _wxLk.length; _wl++) _wxLk[_wl].style.removeProperty('--wxc-el');
-                    var _wxLv = _wxLeaveWrap.querySelectorAll(':scope > video.wxc-set, :scope > video.wxc-vid');
+                    var _wxLv = _wxLeaveWrap.querySelectorAll(':scope > video.wxc-vid');
                     for (var _wv = 0; _wv < _wxLv.length; _wv++) { try { _wxLv[_wv].play(); } catch (eLv) {} }
                   } catch (eLk) {}
                 }
@@ -43811,8 +43811,8 @@ function _wxAnimIcon(code, night) {
   if (c === 8000) return night ? 'thunderstorms-rain' : 'thunderstorms-day-rain';
   return night ? 'clear-night' : 'clear-day';
 }
-// v23836 — WHICH SCENE THE STUDIO MONITOR SHOWS.
-// The small screen on the set plays the weather that is actually happening —
+// v23836 — WHICH SCENE PLAYS BEHIND THE CARD (v23843: it is the whole picture now).
+// The scene plays the weather that is actually happening —
 // rain when it rains, snow when it snows — so an icon name is folded to one
 // of five scene families, each with a day loop and a night loop. 'clear' keeps
 // the two loops the card has had since v23726.
@@ -44406,44 +44406,21 @@ function _wxEndEntrance(root) {
 function _wxHoldSceneForIntro(wrap, elapsedMs) {
   try {
     var vid = wrap && wrap.querySelector(':scope > video.wxc-vid');
-    var set = wrap && wrap.querySelector(':scope > video.wxc-set');
     var intro = wrap && wrap.querySelector(':scope > .wxc-intro');
     if (!vid || !intro) return;
     try { vid.pause(); } catch (e) {}
-    try { if (set) set.pause(); } catch (eS) {}
     // `elapsedMs` is how far into the film a carried rebuild already is, so
     // the loops are released at the same moment they would have been.
     setTimeout(function () {
       try { vid.play(); } catch (e) {}
-      try { if (set) set.play(); } catch (eS2) {}
     }, Math.max(0, Math.round(3800 * _wxSpeed() - (elapsedMs || 0))));
   } catch (e) {}
 }
 
-// v23836 — AND BOTH STOP WHEN THE SET LEAVES.
-// From 19.7s the hours and then the days cover the whole panel, and two loops
-// decoding behind an opaque screen for twenty seconds is the same waste the
-// title's backdrop used to be. Paused, not removed: a rebuild inside the visit
-// reuses the nodes. `elapsed` lets a carried rebuild park on the same clock.
-// `elapsed` is REAL seconds since the arrival; the 19.7s flip is in base
-// seconds and scales with the dial. Past the flip the loops are paused at
-// once — a rebuild after it still autoplays fresh nodes. With no later screen
-// (wxc-one) the set holds the whole visit, so it is never parked.
-function _wxParkSceneAfterSet(wrap, elapsed) {
-  try {
-    if (window._wxParkTimer) { try { clearTimeout(window._wxParkTimer); } catch (eC) {} }
-    if (wrap && wrap.classList && wrap.classList.contains('wxc-one')) return;
-    var park = function () {
-      try {
-        var vids = wrap.querySelectorAll(':scope > video.wxc-vid, :scope > video.wxc-set');
-        for (var i = 0; i < vids.length; i++) { try { vids[i].pause(); } catch (eP) {} }
-      } catch (eQ) {}
-    };
-    var at = 19.7 * 1000 * _wxSpeed() - (elapsed || 0) * 1000;
-    if (!(at > 0)) { park(); return; }
-    window._wxParkTimer = setTimeout(function () { window._wxParkTimer = null; park(); }, Math.round(at));
-  } catch (e) {}
-}
+// v23843 — THE SCENE IS NEVER PARKED. It used to pause at 19.7s behind an
+// opaque hours screen; the screens are translucent over the footage now, and
+// a frozen sky behind live numbers is exactly the thing this card must not
+// do. It plays from the film's release until the card has left.
 
 // v23836 — A REBUILD MID-VISIT CARRIES THE SEQUENCE ACROSS.
 // _wxArmEntrance answers false inside a visit it has already armed, which is
@@ -44491,7 +44468,6 @@ function _wxCarryEntrance(wrap) {
       } catch (eB) {}
       _wxHoldSceneForIntro(wrap, el * 1000);
     }
-    _wxParkSceneAfterSet(wrap, el);
     return true;
   } catch (e) { return false; }
 }
@@ -44518,7 +44494,7 @@ function _wxResumeMedia(wrap) {
     var one = wrap.classList && wrap.classList.contains('wxc-one');
     var loopsOn = one || (live && el >= 3.8 * sp && el < 19.7 * sp);
     if (loopsOn) {
-      var vids = wrap.querySelectorAll(':scope > video.wxc-set, :scope > video.wxc-vid');
+      var vids = wrap.querySelectorAll(':scope > video.wxc-vid');
       for (var i = 0; i < vids.length; i++) { try { vids[i].play(); } catch (eV) {} }
     }
   } catch (e) {}
@@ -44758,7 +44734,6 @@ function _wxArmEntrance(wrap) {
     _wxFitIntroPaint(wrap);
     try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { _wxFitIntroPaint(wrap); }); } catch (eF) {}
     _wxHoldSceneForIntro(wrap);
-    _wxParkSceneAfterSet(wrap, 0);
     // The backdrop is paced to the title, not the other way round: whatever
     // _wxSpeed() does to the six seconds, the same span of clip is consumed.
     try {
@@ -45143,8 +45118,6 @@ function _renderWxCard(el) {
     // over it in the monitor's rectangle, and screen 1 is only the monitor's
     // content. A still was tried and turned down — a studio that stops moving
     // the moment the opener ends reads as a picture, not a set.
-    var _wxSet = '<video class="wxc-set" autoplay loop muted playsinline preload="auto" '
-               + 'src="/logos/Backgrounds/video/wx-studio-set.mp4"></video>';
     var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep') : '';
     var _sideR = _wxSide(dest, _wxArrTs, _arrShort, 'wxc-mon-arr');
     var _wxLink = '<div class="wxc-mon-link" aria-hidden="true"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><path class="wxc-mon-dash" d="M2 12H96"/><path class="wxc-mon-tip" d="M96 3l22 9-22 9z"/></svg></div>';
@@ -45345,10 +45318,10 @@ function _renderWxCard(el) {
     // The scene is part of the rebuild signature further down (_wxSig is the
     // whole markup string), so crossing 06:00 or 19:00 swaps the clip on the
     // next render rather than needing its own timer.
-    // v23842 — a navy plate between the set and the screens, so the hours and
-    // the days hand over on navy and the monitor never shows through them.
-    var _wxPlate = '<div class="wxc-plate"></div>';
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + '">' + _wxSet + _wxVid + _wxPlate + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxIntro + '</div>';
+    // v23843 — THE FOOTAGE IS THE WHOLE PICTURE. The title clears onto the
+    // weather itself, filling the panel, and the three screens sit over it for
+    // the whole visit. No studio set, no navy plate: one world, start to end.
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + '">' + _wxVid + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxIntro + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually

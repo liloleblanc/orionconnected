@@ -102,16 +102,16 @@ test('the backdrop sits under the scrim, and the type over both', () => {
 });
 
 test('only one clip decodes at a time', () => {
-  // The backdrop and the scene are both 1920x1080. Two simultaneous decodes
-  // on top of the animating layers shows up as dropped frames, not an error.
+  // The backdrop and the scene are both full-panel clips. Two simultaneous
+  // decodes on top of the animating layers shows up as dropped frames, not an error.
   assert.match(JS, /function _wxHoldSceneForIntro\(wrap, elapsedMs\)/,
     'the scene is held while the backdrop plays');
   const h = JS.slice(JS.indexOf('function _wxHoldSceneForIntro(wrap, elapsedMs)'));
   const b = h.slice(0, h.indexOf('\n}'));
   assert.match(b, /vid\.pause\(\)/, 'the scene pauses');
-  assert.match(b, /set\.pause\(\)/, 'and so does the set loop under it');
+  assert.doesNotMatch(b, /wxc-set/, 'v23843: there is no set loop under it any more');
   assert.match(b, /3800 \* _wxSpeed\(\) - \(elapsedMs \|\| 0\)/,
-    'both resume under the film at 3.8s (less whatever a carried rebuild has already used), on the same speed dial as everything else');
+    'it resumes under the film at 3.8s (less whatever a carried rebuild has already used), on the same speed dial as everything else');
   const arm = JS.slice(JS.indexOf('function _wxArmEntrance(wrap)'));
   assert.match(arm.slice(0, arm.indexOf('\n}')), /_wxHoldSceneForIntro\(wrap\);/,
     'and it is actually called when the entrance arms');

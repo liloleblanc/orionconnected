@@ -94,8 +94,8 @@ function staged() {
 // ── The order ────────────────────────────────────────────────────────────
 
 test('set loop, scene, three screens, credit, title — in that order, and each screen is what it says', () => {
-  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ '">' \+ _wxSet \+ _wxVid \+ _wxPlate \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>';/,
-    'that source order is the stacking order; the plate (v23842) sits between the scene and the screens');
+  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ '">' \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>';/,
+    'that source order is the stacking order; the footage is the ground (v23843)');
   assert.match(SRC, /var _wxS1 = '<div class="wxc-screen wxc-s1">'\s*\+ '<div class="wxc-monitor/, 'screen 1 is the monitor');
   assert.match(SRC, /_wxS2 = '<div class="wxc-screen wxc-s2">'[^;]*wxc-chart/, 'screen 2 is the hours chart');
   assert.match(SRC, /_wxS3 = '<div class="wxc-screen wxc-s3">'[^;]*wxc-days/, 'screen 3 is the days');
@@ -306,7 +306,7 @@ test('the title plays to its end and cuts; the loops are full underneath by then
   assert.ok(k && Number(k[1]) >= 95, 'the film holds opaque to its last frames — the approved render cut hard');
   assert.match(rule('.wxcard-wrap.wxc-entering > .wxc-intro.wxc-intro-paint'), /animation: wxcFilmOut calc\(6\.00s \* var\(--wxc-t, 1\)\) linear both !important; animation-delay: calc\(\(0s - var\(--wxc-el, 0s\)\)/,
     'and its fade resumes from the elapsed stamp after a rebuild instead of restarting from the top');
-  for (const v of ['video.wxc-set', 'video.wxc-vid']) {
+  for (const v of ['video.wxc-vid']) {
     const r = rule('.wxcard-wrap.wxc-entering > ' + v);
     const m = r.match(/wxcFade calc\(([\d.]+)s[\s\S]*?animation-delay: calc\(\(([\d.]+)s/);
     assert.ok(m && Number(m[1]) + Number(m[2]) <= INTRO_S + 1e-9, `${v} is full (${m && (+m[1] + +m[2])}s) by the time the film cuts at ${INTRO_S}s`);
@@ -335,8 +335,8 @@ test('the outgoing copy leaves from the end state, moving, on absolute delays', 
   const tick = SRC.slice(SRC.indexOf("_wxLeaveWrap.classList.add('wxc-leaving');"), SRC.indexOf("_wxLeaveWrap.classList.add('wxc-leaving');") + 900);
   assert.match(tick, /_wxLeaveWrap\.style\.removeProperty\('--wxc-el'\)/, 'a stamp left by a rebuild would make the absolute delays negative');
   assert.match(tick, /querySelectorAll\(':scope > \[style\*="--wxc-el"\]'\)[\s\S]{0,120}removeProperty\('--wxc-el'\)/, 'on the swapped screens too');
-  assert.match(tick, /querySelectorAll\(':scope > video\.wxc-set, :scope > video\.wxc-vid'\)[\s\S]{0,120}\.play\(\)/,
-    'and the loops, parked at 19.7s behind the hours, are woken — what the exit uncovers must MOVE');
+  assert.match(tick, /querySelectorAll\(':scope > video\.wxc-vid'\)[\s\S]{0,120}\.play\(\)/,
+    'and the scene is nudged to play — what the exit uncovers must MOVE');
 });
 
 test('a reduced-motion preference turns the sequence off', () => {
@@ -352,7 +352,7 @@ test('the entrance plays once per arrival and no re-render re-arms it', () => {
   assert.match(arm, /if \(window\._wxEntrancePlayedSeq === seq\) return false;/);
   assert.match(arm, /window\._wxEntranceAt = Date\.now\(\);/);
   assert.match(arm, /wrap\.classList\.add\('wxc-entering'\);/);
-  assert.match(arm, /_wxParkSceneAfterSet\(wrap, 0\)/);
+  assert.doesNotMatch(arm, /_wxParkSceneAfterSet/, 'v23843: nothing parks the scene, it plays the whole visit');
 });
 
 test('a pinned scene re-arrives on every rotation tick', () => {
@@ -390,7 +390,7 @@ test('a gate rebuild re-stamps the wrap AND the swapped screens, in base seconds
     'an inline stamp on a swapped screen outranks the wrap\'s; left alone, that screen resumes on the clock it was inserted at');
 });
 
-test('the carry re-marks only inside the window, stamps base seconds, resumes the film, and parks', () => {
+test('the carry re-marks only inside the window, stamps base seconds, and resumes the film', () => {
   const parked = [], held = [], timers = [];
   const fitted = [];
   const carry = new Function('window', 'Date', '_WXC_ENTRANCE_MS', '_WXC_ENTRANCE_INTRO_S', '_WX_INTRO_BG_SPAN', '_wxSpeed',
@@ -417,7 +417,7 @@ test('the carry re-marks only inside the window, stamps base seconds, resumes th
   assert.equal(r.ok, true, '10s into this visit\'s sequence: carried');
   assert.deepEqual(r.wrap.classes, ['wxc-entering']);
   assert.equal(r.wrap.vars['--wxc-el'], '10.00s');
-  assert.deepEqual(parked, [10], 'and the loops are told to park on the same clock');
+  assert.deepEqual(parked, [], 'v23843: the scene is never parked — it is the picture behind every screen');
   assert.deepEqual(held, [], 'past the film, nothing to hold');
   r = run(NOW - 10000, 3, 3, 2);
   assert.equal(r.wrap.vars['--wxc-el'], '5.00s', 'at half speed 10 real seconds are 5 base seconds — the delays multiply by --wxc-t');
@@ -443,25 +443,16 @@ test('the carry re-marks only inside the window, stamps base seconds, resumes th
   assert.equal(w(3, 3, 9000), false, 'a rebuild after the film');
 });
 
-test('the loops are parked once the hours cover them — at once if the flip has passed, never in wxc-one', () => {
-  const run = (elapsed, speed = 1, one = false) => {
-    const paused = [], timers = [];
-    const vids = [{ k: 'vid', pause() { paused.push(this.k); } }, { k: 'set', pause() { paused.push(this.k); } }];
-    const wrap = { classList: { contains: c => c === 'wxc-one' && one }, querySelectorAll: () => vids };
-    const win = { _wxParkTimer: null };
-    const park = new Function('window', '_wxSpeed', 'setTimeout', 'clearTimeout', fnBody('_wxParkSceneAfterSet') + '\nreturn _wxParkSceneAfterSet;')(
-      win, () => speed, (fn, ms) => { timers.push(ms); return 7; }, () => {});
-    park(wrap, elapsed);
-    return { paused, timers };
-  };
-  assert.deepEqual(run(0), { paused: [], timers: [19700] }, 'from the arrival: a timer for the flip');
-  assert.deepEqual(run(5), { paused: [], timers: [14700] });
-  assert.deepEqual(run(25), { paused: ['vid', 'set'], timers: [] }, 'past the flip a carried rebuild parks AT ONCE — fresh nodes autoplay');
-  assert.deepEqual(run(19.7), { paused: ['vid', 'set'], timers: [] });
-  assert.deepEqual(run(10, 2), { paused: [], timers: [29400] }, 'the flip is in base seconds (19.7 × 2 = 39.4 real), the elapsed in real');
-  assert.deepEqual(run(0, 1, true), { paused: [], timers: [] }, 'with no later screen the set holds the whole visit');
-  const k1 = keyframes('wxcScreen1');
-  assert.equal(secs(k1[3].pcts[0]), 19.7, 'and 19.7 IS the moment screen 1 has gone, read from its keyframes');
+test('the scene is never parked: it plays from the film\'s release to the card\'s exit', () => {
+  // v23843. It used to pause at 19.7s behind an opaque hours screen. The
+  // screens are translucent over the footage now, and a frozen sky behind
+  // live numbers is the one thing this card must not do.
+  assert.doesNotMatch(SRC, /_wxParkSceneAfterSet/);
+  assert.doesNotMatch(SRC, /window\._wxParkTimer/);
+  const hold = fnBody('_wxHoldSceneForIntro');
+  assert.match(hold, /vid\.play\(\)/, 'released under the film');
+  assert.doesNotMatch(SRC.slice(SRC.indexOf('function _wxHoldSceneForIntro'), SRC.indexOf('function _wxCarryEntrance')), /\.pause\(\)[^\n]*\n(?![\s\S]{0,400}3800)/,
+    'and nothing after the release pauses it');
 });
 
 // ── The screens' own rules ───────────────────────────────────────────────

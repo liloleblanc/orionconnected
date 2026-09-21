@@ -46,16 +46,14 @@ test('the card builds a muted, looping, inline video', () => {
   }
 });
 
-test('the set loop is first, the scene over it, the screens over both', () => {
-  assert.match(SRC, /_wxSet \+ _wxVid \+ _wxPlate \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro/,
-    'set, scene, then the screens — that source order is the stacking order');
-  const set = CSS.match(/\.wxcard-wrap > video\.wxc-set \{[^}]*\}/);
-  assert.ok(set, 'the set loop has its own rule');
-  assert.match(set[0], /z-index: 0 !important/, 'the set is the floor');
-  assert.match(set[0], /object-fit: fill !important/,
-    'stretched, not covered — so the monitor stays at the same percentages at every panel aspect');
+test('the scene is first and the screens sit over it — that source order is the stacking order', () => {
+  // v23843: no studio set, no plate. The footage is the ground of the card.
+  assert.match(SRC, /'">' \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>'/,
+    'scene, then the three screens, the credit and the title');
+  assert.doesNotMatch(SRC, /_wxSet\b/, 'the studio set is gone from the markup');
+  assert.doesNotMatch(SRC, /_wxPlate\b/, 'and so is the navy plate');
   const vid = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: [^}]*z-index: (\d+) !important; \}/);
-  assert.ok(vid && Number(vid[1]) > 0, 'the scene loop sits above the set');
+  assert.ok(vid && Number(vid[1]) > 0, 'the scene loop sits above the wrap');
 });
 
 test('the video layer beats the rule that would float it over the content', () => {
@@ -246,40 +244,31 @@ test('every family has a day loop and a night loop on disk, as real MP4s', () =>
   }
 });
 
-test('the set is a loop with the screen filled, held for the film and parked after', () => {
-  const m = SRC.match(/var _wxSet = '<video class="wxc-set"([^']*)'/);
-  assert.ok(m, 'the card must build a <video class="wxc-set">');
-  for (const attr of ['autoplay', 'loop', 'muted', 'playsinline']) assert.ok(m[1].includes(attr), 'the set must carry ' + attr);
-  const p = path.join(VIDEO, 'wx-studio-set.mp4');
-  assert.ok(fs.existsSync(p), 'the set loop must be committed');
-  const head = fs.readFileSync(p, { encoding: 'latin1', start: 0, end: 16 });
-  assert.ok(head.includes('ftyp') && !head.includes('qt  '), 'a real MP4');
-  assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current/logos/Backgrounds/wx-studio-set.png')), 'the still it replaced is gone');
+test('there is no set and no park: the footage is the picture for the whole visit', () => {
+  assert.doesNotMatch(SRC, /wx-studio-set\.mp4/, 'the set loop is not referenced');
+  assert.ok(!fs.existsSync(path.join(VIDEO, 'wx-studio-set.mp4')), 'and not in the tree (its generator stays under scripts/wx-scenes)');
+  assert.doesNotMatch(SRC, /function _wxParkSceneAfterSet/, 'nothing parks the scene behind the screens any more');
+  assert.doesNotMatch(SRC, /_wxParkSceneAfterSet\(/);
   const hold = fn('_wxHoldSceneForIntro');
-  assert.match(hold, /video\.wxc-set/, 'held while the film plays, like the scene');
-  const park = fn('_wxParkSceneAfterSet');
-  assert.match(park, /video\.wxc-vid, :scope > video\.wxc-set/, 'and both are paused once the hours cover them (the clock is tested in the entrance suite)');
-  assert.match(fn('_wxArmEntrance'), /_wxParkSceneAfterSet\(wrap, 0\)/);
-  assert.match(fn('_wxCarryEntrance'), /_wxParkSceneAfterSet\(wrap, el\)/);
+  assert.match(hold, /vid\.pause\(\)/, 'the scene is still held while the film plays');
+  assert.match(hold, /3800 \* _wxSpeed\(\)/, 'and released at 3.8s, under the film');
+  assert.doesNotMatch(hold, /wxc-set/);
 });
 
-test('the scene loop covers the monitor\'s screen with a hair to spare', () => {
-  // Both are percentages of the panel. The scene must reach past the screen's
-  // edge on every side (or navy shows in the corner) but not past the bezel.
-  const vid = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: ([\d.]+)% !important; left: ([\d.]+)% !important; right: ([\d.]+)% !important; bottom: ([\d.]+)% !important;/);
+test('the scene fills the panel, and screen one\'s panel sits centred over it', () => {
+  const rules = [...CSS.matchAll(/\.wxcard-wrap > video\.wxc-vid \{[^}]*\}/g)].map(m => m[0]);
+  const live = rules[rules.length - 1];
+  assert.match(live, /inset: 0 !important/, 'the scene is the whole card');
+  assert.match(live, /width: 100% !important; height: 100% !important; object-fit: cover !important/, 'covering it, whatever the panel aspect');
   const mon = CSS.match(/\.wxc-monitor \{ position: absolute !important; overflow: hidden !important; left: ([\d.]+)% !important; top: ([\d.]+)% !important; width: ([\d.]+)% !important; height: ([\d.]+)% !important;/);
-  assert.ok(vid && mon, 'both rules must exist (the monitor clips its own plates as they sweep in)');
-  const v = { top: +vid[1], left: +vid[2], right: +vid[3], bottom: +vid[4] };
-  const s = { left: +mon[1], top: +mon[2], right: 100 - +mon[1] - +mon[3], bottom: 100 - +mon[2] - +mon[4] };
-  for (const side of ['top', 'left', 'right', 'bottom']) {
-    assert.ok(v[side] <= s[side], `${side}: the scene (${v[side]}%) must reach past the screen (${s[side]}%)`);
-    assert.ok(s[side] - v[side] < 1.0, `${side}: but not by more than 1% — the bezel is right there`);
-  }
+  assert.ok(mon, 'screen one\'s panel keeps its own box');
+  const cx = +mon[1] + +mon[3] / 2, cy = +mon[2] + +mon[4] / 2;
+  assert.ok(Math.abs(cx - 50) < 0.6 && Math.abs(cy - 50) < 0.6, `it sits centred over the footage (${cx.toFixed(1)}, ${cy.toFixed(1)})`);
 });
 
 test('the manifest knows about all of it', () => {
   const man = fs.readFileSync(path.join(ROOT, 'fids-current/assets/asset-manifest.json'), 'utf8');
-  for (const f of LOOPS.concat(['wx-studio-set.mp4', 'wx-title-globe-bg.mp4'])) {
+  for (const f of LOOPS.concat(['wx-title-globe-bg.mp4'])) {
     assert.ok(man.includes(f), `${f} — run \`npm run assets:build\`; CI fails on a stale manifest`);
   }
 });
@@ -300,41 +289,14 @@ test('no malformed percentages reached the stylesheet', () => {
 });
 
 
-// ── v23842: the scene fits the monitor; the screens hand over on navy ────
+// ── v23843: the footage is the whole picture; the screens are translucent ─
 
-test('the scene video is boxed to the monitor, not left at its own pixel size', () => {
-  // A video is a replaced element: with width and height auto, the insets
-  // place its corner and nothing else, and a 1280-wide clip spilled across the
-  // card. The live rule must size it to the inset exactly.
-  const geo = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: ([\d.]+)% !important; left: ([\d.]+)% !important; right: ([\d.]+)% !important; bottom: ([\d.]+)% !important;/);
-  const rules = [...CSS.matchAll(/\.wxcard-wrap > video\.wxc-vid \{[^}]*\}/g)].map(m => m[0]);
+test('the hours and the days are translucent over the footage, dark enough for white type', () => {
+  const rules = [...CSS.matchAll(/\.wxcard-wrap > \.wxc-screen \{[^}]*\}/g)].map(m => m[0]);
   const live = rules[rules.length - 1];
-  const w = Number((live.match(/width: ([\d.]+)% !important/) || [])[1]);
-  const h = Number((live.match(/height: ([\d.]+)% !important/) || [])[1]);
-  assert.ok(w > 0 && h > 0, 'the last scene rule must set an explicit width and height');
-  assert.ok(Math.abs(w - (100 - +geo[2] - +geo[3])) < 0.05, `width ${w}% must equal 100 - left - right`);
-  assert.ok(Math.abs(h - (100 - +geo[1] - +geo[4])) < 0.05, `height ${h}% must equal 100 - top - bottom`);
-  assert.match(live, /right: auto !important; bottom: auto !important/, 'the far insets are released so the box is the size, not the corner');
-  assert.match(live, /object-fit: cover !important/);
-});
-
-test('a navy plate rises with the set\'s exit and stays under the hours and the days', () => {
-  assert.match(SRC, /var _wxPlate = '<div class="wxc-plate"><\/div>';/, 'the plate is emitted');
-  const base = CSS.match(/\.wxcard-wrap > \.wxc-plate \{[^}]*\}/);
-  assert.ok(base, 'the plate has a rule');
-  assert.match(base[0], /z-index: 2 !important/, 'same layer as the screens; source order puts it beneath them');
-  assert.match(base[0], /opacity: 1;/, 'resting state is up, like the screens');
-  assert.ok(!/opacity: [\d.]+ !important/.test(base[0]), 'its opacity is not pinned, or the animation could never move it');
-  assert.match(base[0], /background: linear-gradient\(180deg, #05101f 0%, #0d305e 56%, #071934 100%\) !important/, 'the same navy as the screens');
-  assert.match(CSS, /\.wxcard-wrap\.wxc-one > \.wxc-plate \{ display: none !important; \}/, 'a single-screen card has no hand-over to cover');
-  const k = CSS.match(/@keyframes wxcPlate \{([\s\S]*?)\n\}/);
-  assert.ok(k, 'wxcPlate keyframes');
-  const rise = k[1].match(/0%, ([\d.]+)%\s*\{ opacity: 0;/), up = k[1].match(/([\d.]+)%, 100%\s*\{ opacity: 1; \}/);
-  const s1 = CSS.match(/@keyframes wxcScreen1 \{([\s\S]*?)\n\}/)[1];
-  const s1Hold = s1.match(/([\d.]+)%\s*\{ opacity: 1; transform: none; animation-timing-function/), s1Gone = s1.match(/([\d.]+)%, 100%\s*\{ opacity: 0;/);
-  assert.equal(rise[1], s1Hold[1], 'the plate starts rising exactly as the set begins to leave');
-  assert.equal(up[1], s1Gone[1], 'and is fully up exactly as the set is gone');
-  assert.match(CSS, /\.wxcard-wrap\.wxc-entering > \.wxc-plate \{ animation: wxcPlate calc\(36\.00s \* var\(--wxc-t, 1\)\) linear both !important; animation-delay: calc\(\(0s - var\(--wxc-el, 0s\)\) \* var\(--wxc-t, 1\)\) !important; \}/,
-    'one 36s clock, resumable from the elapsed stamp, like the screens');
-  assert.match(CSS, /\.wxcard-wrap\.wxc-leaving > \.wxc-plate \{ animation: wxcLeaveGround/, 'it leaves with the ground');
+  const alphas = [...live.matchAll(/rgba\(\d+,\d+,\d+,(\.\d+|\d\.\d+)\)/g)].map(m => Number(m[1]));
+  assert.ok(alphas.length >= 2, 'the live screen background is a translucent gradient');
+  for (const a of alphas) assert.ok(a >= 0.45 && a <= 0.8, `stop alpha ${a}: the footage must show through, and the type must still read`);
+  assert.match(CSS, /\.wxcard-wrap > \.wxc-s1 \{ background: transparent !important; \}/, 'screen one shows the footage plain, its plates carry their own ground');
+  assert.match(CSS, /\.wxcard-wrap > \.wxc-plate, [^{]*\.wxcard-wrap > video\.wxc-set \{ display: none !important; \}/, 'the plate and the set are retired in the stylesheet as well');
 });
