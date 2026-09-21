@@ -14,10 +14,14 @@
 // size the panel is, and an order that can put French first where the law
 // and the house rules require it.
 //
-// The panel it plays in is tall and narrow — measured at 408 × 792 — which
-// is why the nine phrases are one centred COLUMN. A 3 × 3 grid, which is
-// what the generated footage used, gives a twenty-one character phrase a
-// third of 408px and is unreadable.
+// The panel it plays in is 976 × 857 on a 1080p board (measured live; the
+// 408 × 792 figure written here before was a preview pane, not a board) and
+// gets closer to square as the board grows. The nine phrases are one centred
+// COLUMN because a phrase is never cut in half, at any of those sizes.
+//
+// v23836 — the 'clip' mode this describes is kept, but what is LIVE is the
+// 'film' mode at the foot of this file: the chosen opener carries its own
+// words and the board draws none.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -29,8 +33,13 @@ const ROOT = path.resolve(__dirname, '..');
 const JS = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
 
+const CODE = JS.replace(/\/\/.*$/gm, '');                       // JS without line comments
+// The title's block, BOUNDED by its own reduced-motion close. It used to run
+// to the end of the file, so every block appended later (the aircraft, the
+// banner, the three screens) was swept into these counts.
 const BLOCK_AT = CSS.lastIndexOf('@keyframes wxcIntroPanel');
-const BLOCK = BLOCK_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', BLOCK_AT)) : '';
+const BLOCK_END = BLOCK_AT >= 0 ? CSS.indexOf('\n}', CSS.indexOf('@media (prefers-reduced-motion: reduce) {', BLOCK_AT)) + 2 : -1;
+const BLOCK = BLOCK_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', BLOCK_AT), BLOCK_END) : '';
 
 /** The table of phrases, read out of the source. */
 function lines() {
@@ -93,15 +102,16 @@ test('the backdrop sits under the scrim, and the type over both', () => {
 });
 
 test('only one clip decodes at a time', () => {
-  // The backdrop and the scene are both 1920x1080. Two simultaneous decodes
-  // on top of the animating layers shows up as dropped frames, not an error.
-  assert.match(JS, /function _wxHoldSceneForIntro\(wrap\)/,
+  // The backdrop and the scene are both full-panel clips. Two simultaneous
+  // decodes on top of the animating layers shows up as dropped frames, not an error.
+  assert.match(JS, /function _wxHoldSceneForIntro\(wrap, elapsedMs\)/,
     'the scene is held while the backdrop plays');
-  const h = JS.slice(JS.indexOf('function _wxHoldSceneForIntro(wrap)'));
+  const h = JS.slice(JS.indexOf('function _wxHoldSceneForIntro(wrap, elapsedMs)'));
   const b = h.slice(0, h.indexOf('\n}'));
   assert.match(b, /vid\.pause\(\)/, 'the scene pauses');
-  assert.match(b, /2600 \* _wxSpeed\(\)/,
-    'and resumes as the title clears, on the same speed dial as everything else');
+  assert.doesNotMatch(b, /wxc-set/, 'v23843: there is no set loop under it any more');
+  assert.match(b, /3800 \* _wxSpeed\(\) - \(elapsedMs \|\| 0\)/,
+    'it resumes under the film at 3.8s (less whatever a carried rebuild has already used), on the same speed dial as everything else');
   const arm = JS.slice(JS.indexOf('function _wxArmEntrance(wrap)'));
   assert.match(arm.slice(0, arm.indexOf('\n}')), /_wxHoldSceneForIntro\(wrap\);/,
     'and it is actually called when the entrance arms');
@@ -350,19 +360,49 @@ test('no static !important outranks these keyframes', () => {
 
 // ═══════════════════════════════════════════════════════════════════════════
 // The backdrop is chosen and PACED so that every word on the panel is one the
-// board drew. The clip carries its own headline — they all do — but it slides
-// in at about 5.2s, and the title only ever consumes the clean stretch before
-// that. Measured on the 408 x 792 crop: luminance 70-87 through 5.21s with no
-// blown pixels in the band the type sits in, then the lettering enters.
+// board drew. The clip is drawn rather than sourced, carries no lettering, and
+// is cut to the title's own six seconds — so the one thing pacing has to
+// respect is the clip's length. Consume more than the file holds and the
+// last frame sits still under a title that is still moving. The length is
+// read from the file itself (the mvhd atom), not from a number kept beside
+// it, so swapping the clip cannot leave a stale limit behind.
 // ═══════════════════════════════════════════════════════════════════════════
 
-test('the backdrop is paced to stay inside its clean stretch', () => {
+// Seconds in an MP4: walk the top-level boxes to moov, then to mvhd, and
+// divide duration by timescale. Version 1 widens the timestamps to 64 bits.
+function mp4Seconds(file) {
+  const b = fs.readFileSync(file);
+  const find = (off, end, want) => {
+    while (off + 8 <= end) {
+      let size = b.readUInt32BE(off), hdr = 8;
+      const type = b.toString('latin1', off + 4, off + 8);
+      if (size === 1) { size = Number(b.readBigUInt64BE(off + 8)); hdr = 16; }
+      else if (size === 0) size = end - off;
+      if (type === want) return [off + hdr, off + size];
+      off += size;
+    }
+    return null;
+  };
+  const moov = find(0, b.length, 'moov');
+  const mvhd = moov && find(moov[0], moov[1], 'mvhd');
+  assert.ok(mvhd, `${path.basename(file)} has no mvhd atom`);
+  const at = mvhd[0];
+  return b[at] === 1
+    ? Number(b.readBigUInt64BE(at + 24)) / b.readUInt32BE(at + 20)
+    : b.readUInt32BE(at + 16) / b.readUInt32BE(at + 12);
+}
+
+test('the backdrop is paced to stay inside the clip it plays', () => {
   const span = Number((JS.match(/var _WX_INTRO_BG_SPAN = ([\d.]+);/) || [])[1]);
   assert.ok(span > 0, 'the span must be named');
-  assert.ok(span <= 5.0,
-    `${span}s of clip is consumed, but this clip's own headline slides in at ` +
-    'about 5.2s — anything past that puts a second, English-only headline ' +
-    'behind nine languages');
+  const clip = (JS.match(/var _WX_INTRO_CLIP = '(\/[^']+\.mp4)';/) || [])[1];
+  assert.ok(clip, 'the clip must be named');
+  const file = path.join(ROOT, 'fids-current', clip);
+  assert.ok(fs.existsSync(file), `${clip} is named but not on disk`);
+  const secs = mp4Seconds(file);
+  assert.ok(span <= secs + 1e-6,
+    `${span}s of clip is consumed but ${path.basename(clip)} is only ` +
+    `${secs.toFixed(3)}s long — the last frame would hold under a moving title`);
 
   const arm = JS.slice(JS.indexOf('function _wxArmEntrance(wrap)'));
   const body = arm.slice(0, arm.indexOf('\n}'));
@@ -381,12 +421,12 @@ test('the backdrop is paced to stay inside its clean stretch', () => {
 });
 
 test('the clip that carried a headline over the type is gone', () => {
-  assert.doesNotMatch(JS, /wx-report-intro\.mp4/,
+  assert.doesNotMatch(CODE, /wx-report-intro\.mp4/,
     'the previous backdrop put WEATHER REPORT in full-frame letters directly ' +
     'behind the nine phrases, and a full-frame sun through the middle of the ' +
     'title — it must not be referenced any more');
   const mode = (JS.match(/var _WX_INTRO_BACKDROP = '(\w+)';/) || [])[1];
-  assert.ok(mode === 'sky' || mode === 'clip', `unknown backdrop mode: ${mode}`);
+  assert.ok(mode === 'sky' || mode === 'clip' || mode === 'paint', `unknown backdrop mode: ${mode}`);
   // whichever it is, the clip it can fall back to has to be real and committed
   const clip = (JS.match(/var _WX_INTRO_CLIP = '([^']+)'/) || [])[1];
   assert.ok(clip && clip.endsWith('.mp4'), 'the clip is named once, as a path');
@@ -439,7 +479,8 @@ test('the backdrop stops when the title is taken out of the layout', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 const SKY_AT = CSS.lastIndexOf('@keyframes wxcSkyDrift');
-const SKY = SKY_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', SKY_AT)) : '';
+const SKY_END = SKY_AT >= 0 ? CSS.indexOf('\n/* ══', SKY_AT) : -1;   // the next top-level header
+const SKY = SKY_AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', SKY_AT), SKY_END > 0 ? SKY_END : undefined) : '';
 
 /** sRGB relative luminance of a #rrggbb, 0-255. */
 function lum(hex) {
@@ -539,4 +580,161 @@ test('the aircraft crosses the PANEL, not its own box', () => {
   assert.match(sd, /top: 64%/);
   assert.match(sd, /width: var\(--wxc-craft\)/,
     'and the same size, so the light stays on the aircraft as it crosses');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23836 — THE TITLE IS PAINTED ON BY THE BOARD, IN THE BOARD'S OWN FACE.
+//
+// The chosen opener was a film with its words baked in, and a baked word
+// cannot follow the board: a Spanish board opened in French, a French-first
+// airport led in English, a narrower panel cropped the lockup, a rebuild
+// mid-title froze it. So the clip is the globe alone and the board draws the
+// words over it with the film's own choreography. What these pin: the words
+// are the board's pair by the board's rule, the rest settle under, the beats
+// are the film's, and nothing animated is pinned !important.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PAINT_AT = CSS.indexOf('/* ══ v23836 — THE TITLE, PAINTED ON BY THE BOARD');
+const PAINT_END = PAINT_AT >= 0 ? CSS.indexOf('\n}', CSS.indexOf('@media (prefers-reduced-motion: reduce) {', PAINT_AT)) + 2 : -1;
+const PAINT = PAINT_AT >= 0 ? CSS.slice(PAINT_AT, PAINT_END) : '';
+const PAINT_CODE = PAINT.replace(/\/\*[\s\S]*?\*\//g, '');
+const paintRule = (tail) => {
+  const line = PAINT_CODE.split('\n').find(l => l.replace(/:not\(#_\)/g, '').replace(/^html body /, '').startsWith(tail + ' {'));
+  assert.ok(line, `the painted-title block must have a rule "${tail}"`);
+  return line.slice(line.indexOf('{') + 1);
+};
+function fnOf(name) {
+  const at = JS.indexOf('function ' + name + '(');
+  assert.ok(at >= 0, `fids-core.js must define ${name}`);
+  let d = 0;
+  for (let k = JS.indexOf('{', at); k < JS.length; k++) {
+    if (JS[k] === '{') d++;
+    else if (JS[k] === '}') { d--; if (d === 0) return JS.slice(at, k + 1); }
+  }
+  assert.fail(`unterminated ${name}`);
+}
+const paint = (langsNow, frFirst) => {
+  const linesSrc = JS.slice(JS.indexOf('var _WX_INTRO_LINES = ['), JS.indexOf('];', JS.indexOf('var _WX_INTRO_LINES = [')) + 2);
+  return new Function('langs', '_WX_INTRO_BACKDROP', '_WX_INTRO_CLIP',
+    linesSrc + '\nfunction _wxIntroHasGlyphs() { return true; }\n' + fnOf('_wxIntroBackdropHtml') + '\n' + fnOf('_wxIntroPaintHtml') + '\nreturn _wxIntroPaintHtml(' + (frFirst ? 'true' : 'false') + ');')(langsNow, 'paint', '/logos/Backgrounds/video/wx-title-globe-bg.mp4');
+};
+const heroOf = h => [...h.matchAll(/<div class="wxc-ph wxc-ph(\d)" lang="([a-z]{2})"[^>]*><span>([^<]*)<\/span>/g)].map(m => ({ n: +m[1], l: m[2], t: m[3] }));
+const rankOf = h => [...h.matchAll(/<span class="wxc-pr" lang="([a-z]{2})"[^>]*style="--wxc-i:(\d+)">([^<]*)<\/span>/g)].map(m => ({ l: m[1], i: +m[2], t: m[3] }));
+const rowsOf = h => (h.match(/<div class="wxc-prow">/g) || []).length;
+
+test('paint mode is what is live, over the globe alone', () => {
+  const mode = (JS.match(/var _WX_INTRO_BACKDROP = '(\w+)';/) || [])[1];
+  assert.equal(mode, 'paint');
+  assert.match(JS, /function _wxIntroHtml\(frFirst\) \{\s*if \(_WX_INTRO_BACKDROP === 'paint'\) return _wxIntroPaintHtml\(frFirst\);/,
+    'the painted title is built before any of the clip-mode lines');
+  const clip = (JS.match(/var _WX_INTRO_CLIP = '(\/[^']+\.mp4)';/) || [])[1];
+  assert.equal(clip, '/logos/Backgrounds/video/wx-title-globe-bg.mp4');
+  const file = path.join(ROOT, 'fids-current', clip);
+  assert.ok(fs.existsSync(file), 'the backdrop is committed');
+  assert.ok(fs.readFileSync(file, { encoding: 'latin1', start: 0, end: 16 }).includes('ftyp'), 'a real MP4');
+  const span = Number((JS.match(/var _WX_INTRO_BG_SPAN = ([\d.]+);/) || [])[1]);
+  const intro = Number((JS.match(/var _WXC_ENTRANCE_INTRO_S = (\d+);/) || [])[1]);
+  assert.equal(span, intro, 'the backdrop is the title\'s own length, played at rate 1');
+  assert.ok(Math.abs(mp4Seconds(file) - intro) < 0.05, 'and cut to the window');
+  for (const gone of ['wx-title-film.mp4', 'wx-title-film-fr.mp4']) {
+    assert.ok(!fs.existsSync(path.join(ROOT, 'fids-current/logos/Backgrounds/video', gone)), `${gone} — the baked-word films are gone`);
+  }
+  assert.doesNotMatch(CODE, /_WX_INTRO_CLIP_FR|wxc-intro-film/, 'and so is film mode');
+  const h = paint(['en', 'fr'], false);
+  assert.match(h, /^<div class="wxc-intro wxc-intro-paint" aria-hidden="true"><video class="wxc-intro-bg"[^>]*src="\/logos\/Backgrounds\/video\/wx-title-globe-bg\.mp4"><\/video><div class="wxc-paint">/,
+    'the overlay is the backdrop and the lockup — no scrim, no panel, no sheen');
+});
+
+test('the hero pair is the board\'s pair, by the rule every label uses', () => {
+  let h = paint(['en', 'fr'], false);
+  assert.deepEqual(heroOf(h).map(x => x.l), ['en', 'fr'], 'English, then French');
+  assert.deepEqual(heroOf(h).map(x => x.t), ['Weather Report', 'Bulletin météo']);
+  h = paint(['en', 'fr'], true);
+  assert.deepEqual(heroOf(h).map(x => x.l), ['fr', 'en'], 'French leads where French must lead');
+  h = paint(['en', 'es', 'de'], false);
+  assert.deepEqual(heroOf(h).map(x => x.l), ['en', 'es'], 'the first two selected, like _gateLbl');
+  assert.deepEqual(rankOf(h).map(x => x.l), ['fr', 'de', 'it', 'pt', 'ja', 'zh', 'ar'], 'the other seven settle under, in the table\'s order');
+  assert.deepEqual(rankOf(h).map(x => x.i), [0, 1, 2, 3, 4, 5, 6], 'each with its own beat');
+  assert.equal(rowsOf(h), 3, 'two, two and three — the film\'s rows');
+  h = paint(['de'], false);
+  assert.deepEqual(heroOf(h).map(x => x.l), ['de'], 'one language selected: one hero line');
+  assert.equal(rankOf(h).length, 8);
+  assert.equal(rowsOf(h), 4, 'and the eight others two to a row');
+  h = paint(['en', 'ar'], false);
+  assert.match(h, /<div class="wxc-ph wxc-ph2" lang="ar" dir="rtl">/, 'a right-to-left hero carries its direction');
+  h = paint(['en', 'fr'], false);
+  assert.match(h, /<span class="wxc-pr" lang="ar" dir="rtl"/, 'and so does a right-to-left line in the rank');
+});
+
+test('the lines are fitted to one measure at one size, and never tracked right-to-left', () => {
+  const fit = fnOf('_wxFitIntroPaint');
+  assert.match(fit, /var measure = paint\.clientWidth;/, 'the lockup\'s own width is the measure');
+  assert.match(fit, /var size = measure \/ widest;/, 'one size, the one that fits the wider line');
+  assert.match(fit, /var ls = Math\.min\(0\.14 \* size, \(measure - ws\[j\]\.w \* size \/ probe\) \/ Math\.max\(1, ws\[j\]\.n - 1\)\);\s*lines\[j\]\.style\.letterSpacing = ls \+ 'px';\s*lines\[j\]\.style\.marginRight = \(-ls\) \+ 'px';/,
+    'the narrower line is tracked towards the measure, capped at 0.14em, and the trailing space is taken back');
+  assert.match(fit, /if \(ws\[j\]\.rtl\) \{ lines\[j\]\.style\.letterSpacing = '0px';/, 'Arabic joins; it is never letter-spaced');
+  assert.match(fnOf('_wxArmEntrance'), /_wxFitIntroPaint\(wrap\);[\s\S]{0,200}document\.fonts\.ready\.then/, 'fitted when armed, and again when the face has loaded');
+  assert.match(fnOf('_wxCarryEntrance'), /_wxFitIntroPaint\(wrap\);/, 'and when carried across a rebuild');
+});
+
+test('the beats are the film\'s own, resumable and on the speed dial', () => {
+  assert.ok(PAINT.length > 2000, 'the block exists and is bounded');
+  const delayOf = (tail) => Number((paintRule(tail).match(/animation-delay: calc\(\(([\d.]+)s/) || [])[1]);
+  const durOf = (tail) => Number((paintRule(tail).match(/animation: \w+ calc\(([\d.]+)s/) || [])[1]);
+  const LOCK = '.wxcard-wrap.wxc-entering > .wxc-intro.wxc-intro-paint > .wxc-paint';
+  assert.equal(delayOf(LOCK + ' > .wxc-pk > b:first-child'), 0.92, 'the kicker');
+  assert.equal(delayOf(LOCK + ' > .wxc-ph1'), 0.54); assert.equal(durOf(LOCK + ' > .wxc-ph1'), 0.66, 'the first line, 0.54–1.20');
+  assert.match(paintRule(LOCK + ' > .wxc-ph1'), /wxcPaintWipeL[\s\S]*?, wxcPaintSlideL/, 'wipes on and slides in');
+  assert.equal(delayOf(LOCK + ' > .wxc-ph2'), 0.98); assert.equal(durOf(LOCK + ' > .wxc-ph2'), 0.66, 'the second line, 0.98–1.64');
+  assert.match(paintRule(LOCK + ' > .wxc-ph2'), /wxcPaintWipeR[\s\S]*?, wxcPaintSlideR/, 'from the other side');
+  assert.equal(delayOf(LOCK + ' > .wxc-prule'), 1.78); assert.equal(durOf(LOCK + ' > .wxc-prule'), 0.80, 'the rule, 1.78–2.58');
+  assert.match(PAINT, /@keyframes wxcPaintRule \{ 0% \{ width: 0; \} 80% \{ width: 100%; \} 90% \{ width: 102\.6%; \} 100% \{ width: 100%; \} \}/, 'overruns by a hair and settles back');
+  assert.equal(delayOf(LOCK), 1.62); assert.equal(durOf(LOCK), 0.84, 'the lockup rides up onto its mark, 1.62–2.46');
+  const rank = paintRule(LOCK + ' > .wxc-prow > .wxc-pr');
+  assert.match(rank, /animation-delay: calc\(\(2\.44s \+ var\(--wxc-i, 0\) \* 0\.085s - var\(--wxc-el, 0s\)\) \* var\(--wxc-t, 1\)\)/, 'the others from 2.44s, 85ms apart');
+  assert.match(rank, /animation: wxcPaintRank calc\(0\.62s/);
+  const L = PAINT.match(/@keyframes wxcPaintWipeL \{ from \{ clip-path: polygon\(([^)]*)\); \} to \{ clip-path: polygon\(([^)]*)\); \} \}/);
+  assert.ok(L, 'the left wipe');
+  assert.match(L[2], /^-3% 0, 114% 0, 105% 100%, -12% 100%$/, 'ends past both edges, the bottom edge behind the top — a slant, like the film\'s');
+  for (const l of PAINT_CODE.split('\n').filter(x => /animation-delay:/.test(x))) {
+    assert.match(l, /- var\(--wxc-el, 0s\)\) \* var\(--wxc-t, 1\)\)/, 'a delay that neither resumes nor stretches: ' + l.slice(0, 80));
+  }
+  for (const l of PAINT_CODE.split('\n').filter(x => /animation: wxc/.test(x))) {
+    assert.match(l, /calc\([\d.]+s \* var\(--wxc-t, 1\)\)/, 'a duration off the speed dial: ' + l.slice(0, 80));
+  }
+  for (const tail of [LOCK, LOCK + ' > .wxc-ph1', LOCK + ' > .wxc-ph2', LOCK + ' > .wxc-prule']) {
+    assert.ok(delayOf(tail) + durOf(tail) <= 6, `${tail} ends inside the six seconds`);
+  }
+  assert.ok(2.44 + 7 * 0.085 + 0.62 <= 6, 'so does the last of eight languages');
+});
+
+test('the title sets in the board\'s own face — no family is named', () => {
+  // The Customize pick reaches every element through a zero-specificity
+  // *:where() rule (restoreFontChoice). A family pinned here outranks it, and
+  // the title then sits in one face over a board in another — which is what
+  // happened, and is not "the default font for now".
+  assert.doesNotMatch(PAINT_CODE, /font-family/, 'the painted title names no font-family anywhere');
+  assert.match(JS, /s\.textContent = '\*:where\(/, 'the board applies its pick through *:where() — that is why nothing here may pin a family');
+});
+
+test('nothing the painted title animates is pinned !important', () => {
+  const rules = [...PAINT_CODE.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({ sel: m[1].trim().replace(/:not\(#_\)/g, ''), decl: m[2] }));
+  const kf = name => { const m = PAINT.match(new RegExp('@keyframes ' + name + ' \\{([\\s\\S]*?)\\}\\s*\\}')); assert.ok(m, name); return [...m[1].matchAll(/([a-z-]+)\s*:/g)].map(x => x[1]); };
+  const lastOf = sel => sel.split(/\s*[> ]\s*/).pop().replace(/:[a-z-]+(\([^)]*\))?/g, '');
+  let checked = 0;
+  for (const r of rules) {
+    const names = [...(r.decl.match(/animation:\s*([^;]*)/) || ['', ''])[1].matchAll(/\b(wxcPaint\w+)\b/g)].map(m => m[1]);
+    if (!names.length) continue;
+    const el = lastOf(r.sel), props = new Set(names.flatMap(kf));
+    for (const base of rules) {
+      if (lastOf(base.sel) !== el || base === r) continue;
+      for (const pn of props) {
+        checked++;
+        assert.ok(!new RegExp('(?:^|[;\\s])' + pn + '\\s*:[^;]*!important').test(base.decl), `${base.sel.slice(-60)} pins ${pn}, which ${names.join('/')} animates`);
+      }
+    }
+  }
+  assert.ok(checked >= 6, `only ${checked} pairs checked — the walk is not finding the rules`);
+  const rm = PAINT.slice(PAINT.indexOf('@media (prefers-reduced-motion: reduce)'));
+  assert.match(rm, /\.wxc-pr, [^{]*\.wxc-pdot \{ animation: none !important; \}/, 'reduced motion: no beats, the finished lockup');
 });

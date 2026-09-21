@@ -1,45 +1,21 @@
 'use strict';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// THE GATE WEATHER CARD ARRIVES IN ORDER (v23777, corrected v23778).
+// THE WEATHER CARD'S SEQUENCE — v23836, three screens.
 //
-// The motion asked for: the video opens on its own, then the top, then NEXT
-// HOURS, then the 5-day band, then the credit.
+// The title film clears onto a news set; the set gives way to the destination's
+// next hours; the hours give way to its five days. Each screen is one
+// 36-second CSS animation keyframed at the flips, all three delayed by
+// (0s − --wxc-el) so a rebuild resumes instead of restarting, all three timed
+// through --wxc-t so ?wxspeed= stretches the whole thing. Each screen SWEEPS in
+// from off the card, turning as it comes (the v23786 grand entrance), and
+// swings out the other side; inside each, the readings step in 260ms apart.
+// Travel is quick and the fade is mist (v23793). The base state — no
+// .wxc-entering — is the END state: screen 3 up, 1 and 2 down.
 //
-// Almost everything that can go wrong here is in the TRIGGER, not the motion,
-// and each hazard below cost real debugging to find, so each has a guard:
-//
-//   · THE CARD RE-RENDERS UNDER ITS OWN POWER. _renderWxCard has three paths —
-//     a re-tint early return, a strips-only swap when late hourly/7-day data
-//     lands, and a full innerHTML rebuild on any weather change — and the gate
-//     rebuilds its DOM on telemetry ticks besides. An entrance keyed on the
-//     wrap being fresh, or on the class being absent, replays on every one of
-//     those, and the card is then seen re-assembling itself mid-slide.
-//
-//   · THE GATE REBUILD RESTARTS CSS ANIMATIONS WITHOUT RE-ENTERING ANY JS. It
-//     detaches the live carousel and re-attaches it, children and all; a
-//     re-inserted node starts its animations again, while the JS deadline that
-//     was going to end the sequence does not move. So DOM churn during the
-//     window has to ABANDON the entrance, not restart it.
-//
-//   · AN ANIMATION CANNOT OUTRANK `!important`. The MET credit already carries
-//     two `opacity: 1 !important` pins, and important author declarations beat
-//     the animation origin outright — no guard chain helps. That layer's fade
-//     has to ride a registered custom property instead.
-//
-//   · THE MIDDLE BAND HAS NO CLASS OF ITS OWN. NEXT HOURS is a bare
-//     .wxc-strip, and the 5-day band carries .wxc-strip TOO. Only
-//     `.wxc-strip:not(.wxcard-outlook)` names the middle band alone; a rule on
-//     bare .wxc-strip hits both and collapses two stages into one.
-//
-//   · .wxc-globe LOOKS LIKE THE BACKGROUND AND IS NOT. It is display:none; the
-//     real ground is video.wxc-vid. Animating the decoy animates nothing.
-//
-//   · A CARD THAT MISSES ITS TRIGGER MUST STILL BE VISIBLE. This hangs over a
-//     gate. An unanimated weather card is a small disappointment; an invisible
-//     one is a fault. So nothing may be hidden at rest — the only opacity:0
-//     allowed is inside the keyframes, where it is reachable solely while the
-//     entrance class is on the wrap.
+// What these tests pin is the choreography as a contract: the order, the
+// times, the handovers, the sweep, the cascade, the thing that cannot be
+// !important, one arming per visit, and what a rebuild does mid-sequence.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -50,961 +26,452 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'fids-current/js/fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current/css/display-overrides.css'), 'utf8');
+const CODE = SRC.replace(/\/\/.*$/gm, '');                       // JS without line comments
+const CSS_CODE = CSS.replace(/\/\*[\s\S]*?\*\//g, '');            // CSS without comments
 
-// The block is appended at the foot of an append-only file, so everything from
-// the comment that opens it is ours. Starting at the `/*` and not at the title
-// matters: the comment-stripping below needs the opener to strip the header.
-// The block's title has changed with its contents more than once; anchor on
-// the thing that cannot change without the block being replaced wholesale.
-const TITLE_AT = CSS.lastIndexOf('@keyframes wxcFade');
-const BLOCK_AT = TITLE_AT >= 0 ? CSS.lastIndexOf('/*', TITLE_AT) : -1;
-const BLOCK = BLOCK_AT >= 0 ? CSS.slice(BLOCK_AT) : '';
+// The block, BOUNDED by its own reduced-motion close — not "marker to EOF",
+// which grows with every later append.
+const HEAD = CSS.indexOf('/* ══ v23836 — THE WEATHER REPORT IN THREE SCREENS');
+assert.ok(HEAD >= 0, 'the three-screen block must exist');
+const RM = CSS.indexOf('@media (prefers-reduced-motion: reduce) {', CSS.indexOf('@keyframes wxcScreen3', HEAD));
+const END = CSS.indexOf('\n}', RM) + 2;
+const BLOCK = CSS.slice(HEAD, END);
+const BLOCK_CODE = BLOCK.replace(/\/\*[\s\S]*?\*\//g, '');
+const SEL_LINES = BLOCK_CODE.split('\n').filter(l => l.trim().startsWith('html body'));
+const trim = l => l.replace(/:not\(#_\)/g, '').replace(/^html body /, '');
 
-// The five layers, in the order the motion requires. Third column is the
-// class the cascade scan has to look for, which is not always the whole
-// selector: NEXT HOURS is reached by `.wxc-strip:not(...)` but any rival rule
-// pinning it would name `.wxc-strip`.
-const STAGES = [
-  ['the video', '> video.wxc-vid', '.wxc-vid'],
-  ['the top', '> .wxcard-main', '.wxcard-main'],
-  ['NEXT HOURS', '> .wxc-strip:not(.wxcard-outlook)', '.wxc-strip'],
-  ['the 5-day band', '> .wxcard-outlook', '.wxcard-outlook'],
-  ['the credit', '> .wxc-credit', '.wxc-credit'],
-];
-
-/** The declaration body of the one animation rule for a layer. */
-function ruleFor(child) {
-  const at = BLOCK.indexOf('.wxcard-wrap.wxc-entering ' + child + ' {');
-  if (at < 0) return null;
-  return BLOCK.slice(at, BLOCK.indexOf('}', at));
+/** The declarations of the rule in the block whose selector ends with `tail`. */
+function rule(tail) {
+  const line = SEL_LINES.find(l => trim(l).startsWith(tail + ' {') || trim(l).includes(', ' + tail + ' {'));
+  assert.ok(line, `the block must have a rule for "${tail}"`);
+  return line.slice(line.indexOf('{') + 1, line.lastIndexOf('}'));
 }
-
-/** The body of a named @keyframes inside our block. */
-function keyframe(name) {
-  const m = BLOCK.match(new RegExp('@keyframes\\s+' + name + '\\s*\\{([\\s\\S]*?)\\n\\}'));
-  return m ? m[1] : null;
-}
-
-const seconds = v => parseFloat(v);
-// v23782 — each layer now runs TWO animations: the fade (an even curve, so it
-// is actually seen) and the rise (exponential, so it settles). animOf is the
-// fade, riseOf the settle.
-const animOf = child => ruleFor(child).match(/animation:\s*([\w-]+)/)[1];
-const riseOf = child => {
-  const m = ruleFor(child).match(/animation:[^;]*?,\s*([\w-]+)\s/);
-  return m ? m[1] : null;
-};
-// v23781 — every timing is now calc(<base>s * var(--wxc-t, 1)), so the dial can
-// stretch the whole sequence from the URL without the shape changing. These
-// read the BASE, which is what every assertion here is about: the dial only
-// scales, and its own clamp is tested separately.
-// A delay also carries the resume offset — calc((Xs - var(--wxc-el, 0s)) * …)
-// — so a rebuild can pick the sequence up where it left off instead of
-// snapping it to the end. Either form reads back the same base.
-const TIME = '(?:([\\d.]+)s|calc\\(\\(?\\s*([\\d.]+)s(?:\\s*-\\s*var\\(--wxc-el[^)]*\\))?\\s*\\)?\\s*\\*\\s*var\\(--wxc-t[^)]*\\)\\s*\\))';
-const pick = m => seconds(m[1] !== undefined ? m[1] : m[2]);
-const delayOf = child => pick(ruleFor(child).match(new RegExp('animation-delay:\\s*' + TIME)));
-const durOf = child => pick(ruleFor(child).match(new RegExp('animation:\\s*[\\w-]+\\s+' + TIME)));
-
-// The block's prose names .wxc-globe (to say it is deliberately absent) and
-// .wxc-entering (to explain what drives the thing), so anything asking what
-// the CSS actually TARGETS has to read the rules, not the commentary.
-const RULES_ONLY = BLOCK.replace(/\/\*[\s\S]*?\*\//g, '');
-const SELECTOR_LINES = RULES_ONLY.split('\n').filter(l => l.trim().startsWith('html body'));
-
-// ── The stage order ──────────────────────────────────────────────────────
-
-test('all five layers are staged, and nothing else is', () => {
-  assert.ok(BLOCK, 'display-overrides.css must carry the entrance block');
-  for (const [name, child] of STAGES) {
-    assert.ok(ruleFor(child), `${name} (${child}) must have an entrance rule`);
-  }
-  // A wildcard would sweep in .wxc-globe — the display:none decoy that looks
-  // like the background layer — and anything added to the card later.
-  assert.ok(!/\.wxc-entering\s*>\s*\*/.test(BLOCK),
-    'no wildcard child selector: every staged layer is named explicitly');
-});
-
-test('the delays run video → top → hours → 5-day → credit, ascending', () => {
-  const delays = STAGES.map(([name, child]) => {
-    const rule = ruleFor(child);
-    const m = rule.match(new RegExp('animation-delay:\\s*' + TIME));
-    assert.ok(m, `${name} must carry an animation-delay`);
-    return [name, pick(m)];
+function keyframes(name) {
+  const m = BLOCK.match(new RegExp('@keyframes ' + name + ' \\{([\\s\\S]*?)\\n\\}'));
+  assert.ok(m, `@keyframes ${name} must be in the block`);
+  return m[1].trim().split('\n').map(l => {
+    const mm = l.trim().match(/^([\d.%, ]+)\{(.*)\}$/);
+    assert.ok(mm, `unparsed keyframe line: ${l}`);
+    return { pcts: mm[1].split(',').map(s => parseFloat(s)), body: mm[2] };
   });
-  for (let i = 1; i < delays.length; i++) {
-    assert.ok(delays[i][1] > delays[i - 1][1],
-      `${delays[i][0]} (${delays[i][1]}s) must come AFTER ${delays[i - 1][0]} ` +
-      `(${delays[i - 1][1]}s) — that order IS the thing being specified`);
+}
+const SPAN_S = 36;
+const secs = pct => +(pct / 100 * SPAN_S).toFixed(2);
+/** The value a keyframe at `pct` gives `prop` — that keyframe MUST name it. */
+function at(frames, pct, prop) {
+  const f = frames.find(fr => fr.pcts.includes(pct) && new RegExp(prop + ':').test(fr.body));
+  assert.ok(f, `no keyframe at ${pct}% writes ${prop}`);
+  return f.body.match(new RegExp(prop + ':\\s*([^;]+);'))[1].trim();
+}
+function fnBody(name) {
+  const at = SRC.indexOf('function ' + name + '(');
+  assert.ok(at >= 0, `fids-core.js must define ${name}`);
+  let d = 0;
+  for (let k = SRC.indexOf('{', at); k < SRC.length; k++) {
+    if (SRC[k] === '{') d++;
+    else if (SRC[k] === '}') { d--; if (d === 0) return SRC.slice(at, k + 1); }
+  }
+  assert.fail(`unterminated ${name}`);
+}
+const ENTRANCE_MS = Number(SRC.match(/var _WXC_ENTRANCE_MS = (\d+);/)[1]);
+const EXIT_MS = Number(SRC.match(/var _WXC_EXIT_MS = (\d+);/)[1]);
+const INTRO_S = Number(SRC.match(/var _WXC_ENTRANCE_INTRO_S = (\d+);/)[1]);
+const DWELL_MS = Number(SRC.match(/if \(slide\.type === 'wxcard'\) return Math\.round\((\d+) \* _wxSpeed\(\)\);/)[1]);
+
+/** Every staged rule in the block: selector, base delay, first duration, whether it steps by --wxc-i. */
+function staged() {
+  const out = [];
+  for (const l of SEL_LINES) {
+    if (!/\.wxc-entering/.test(l) || !/animation:/.test(l)) continue;
+    const dur = l.match(/animation:\s*[\w-]+ calc\(([\d.]+)s \* var\(--wxc-t, 1\)\)/);
+    const delay = l.match(/animation-delay: calc\(\(([\d.]+)s( \+ var\(--wxc-i, 0\) \* ([\d.]+)s)? - var\(--wxc-el, 0s\)\) \* var\(--wxc-t, 1\)\)/);
+    if (!dur || !delay) continue;
+    out.push({ sel: trim(l).slice(0, trim(l).indexOf(' {')), dur: +dur[1], delay: +delay[1], step: delay[3] ? +delay[3] : 0, decl: l });
+  }
+  return out;
+}
+
+// ── The order ────────────────────────────────────────────────────────────
+
+test('set loop, scene, three screens, credit, title — in that order, and each screen is what it says', () => {
+  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ '">' \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>';/,
+    'that source order is the stacking order; the footage is the ground (v23843)');
+  assert.match(SRC, /var _wxS1 = '<div class="wxc-screen wxc-s1">'\s*\+ '<div class="wxc-monitor/, 'screen 1 is the monitor');
+  assert.match(SRC, /_wxS2 = '<div class="wxc-screen wxc-s2">'[^;]*wxc-chart/, 'screen 2 is the hours chart');
+  assert.match(SRC, /_wxS3 = '<div class="wxc-screen wxc-s3">'[^;]*wxc-days/, 'screen 3 is the days');
+});
+
+test('the monitor carries departure and arrival, each read at its own hour', () => {
+  assert.match(SRC, /var _sideL = \(_wxOrig && _wxOrig !== dest\) \? _wxSide\(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep'\) : '';\s*var _sideR = _wxSide\(dest, _wxArrTs, _arrShort, 'wxc-mon-arr'\);/,
+    'departure from the board airport at departure time, arrival at the destination at arrival time');
+  assert.match(SRC, /'<div class="wxc-mon-body">' \+ \(_sideL \? _sideL \+ _wxLink : ''\) \+ _sideR \+ '<\/div>'/,
+    'departure left, the link, arrival right; with no origin reading the arrival stands alone');
+  assert.match(SRC, /var w = _wxAtTime\(iata, ts\);[\s\S]{0,160}_wxAnimIcon\(w\.code, _wxNightAt\(iata, ts\)\)/,
+    'the plate\'s icon is day or night AT THAT HOUR, not now');
+  assert.match(rule('.wxcard-wrap .wxc-mon-2up .wxc-mon-body'), /grid-template-columns: 1fr auto 1fr !important/, 'two plates sit side by side');
+});
+
+test('the screens are stacked, absolute, under the title', () => {
+  const r = rule('.wxcard-wrap > .wxc-screen');
+  assert.match(r, /position: absolute !important/);
+  assert.match(r, /inset: 0 !important/);
+  const z = Number(r.match(/z-index: (\d+) !important/)[1]);
+  const title = CSS.match(/\.wxcard-wrap > \.wxc-intro \{[^}]*z-index:\s*(\d+)/);
+  assert.ok(title, 'the title rule must declare a z-index');
+  assert.ok(z < Number(title[1]), `screens at z ${z} must stay under the title at z ${title[1]}`);
+});
+
+// ── The times ────────────────────────────────────────────────────────────
+
+test('each screen has one 36-second sequence, resumable and stretchable', () => {
+  for (const [s, name] of [['s1', 'wxcScreen1'], ['s2', 'wxcScreen2'], ['s3', 'wxcScreen3']]) {
+    const r = rule('.wxcard-wrap.wxc-entering > .wxc-' + s);
+    assert.match(r, new RegExp('animation: ' + name + ' calc\\(36\\.00s \\* var\\(--wxc-t, 1\\)\\) linear both !important'),
+      `${s} runs ${name} for 36s × --wxc-t, filling both ways`);
+    assert.match(r, /animation-delay: calc\(\(0s - var\(--wxc-el, 0s\)\) \* var\(--wxc-t, 1\)\) !important/,
+      `${s}'s delay is (0 − elapsed) × speed, so a rebuild resumes and ?wxspeed stretches`);
   }
 });
 
-test('the scene is held alone, and no band ever overlaps another', () => {
-  // This is the fault that was reported twice — too fast, then still too fast
-  // — and both times the cause was the same: bands running into each other,
-  // and the scene given a fraction of a second to itself before the hero
-  // landed on it. It is not a matter of taste that can be nudged later; it is
-  // the whole of what was asked for, so it is pinned as arithmetic.
-  const order = ['> video.wxc-vid', '> .wxcard-main',
-    '> .wxc-strip:not(.wxcard-outlook)', '> .wxcard-outlook', '> .wxc-credit'];
-  const start = c => delayOf(c);
-  const end = c => delayOf(c) + durOf(c);
+test('the flips are at 3.2, 18.5 and 30.5 seconds, and every handover is a crossfade', () => {
+  const k1 = keyframes('wxcScreen1'), k2 = keyframes('wxcScreen2'), k3 = keyframes('wxcScreen3');
+  assert.equal(secs(k1[0].pcts[1]), 3.2, 'screen 1 begins to rise at 3.2s');
+  assert.ok(3.2 < INTRO_S, 'which is under the film, before it cuts');
+  // 1 → 2
+  const out1 = k1[2].pcts[0], in2 = k2[0].pcts[1];
+  assert.equal(secs(out1), 18.5, 'screen 1 starts to leave at 18.5s');
+  assert.equal(out1, in2, 'and screen 2 starts to arrive on the same frame — no gap');
+  const out1done = k1[3].pcts[0], in2landed = k2[1].pcts[0], in2full = k2[2].pcts[0];
+  assert.equal(out1done, in2landed, 'screen 1 is gone as screen 2 lands');
+  assert.ok(in2full > in2landed && in2landed > in2, 'a crossfade, not a cut: the arrival lands, then keeps misting up');
+  // 2 → 3
+  const out2 = k2[3].pcts[0], in3 = k3[0].pcts[1];
+  assert.equal(secs(out2), 30.5, 'screen 2 starts to leave at 30.5s');
+  assert.equal(out2, in3, 'and screen 3 arrives on the same frame');
+  assert.equal(k2[4].pcts[0], k3[1].pcts[0], 'screen 2 is gone as screen 3 lands');
+  assert.ok(k3[2].pcts[0] > k3[1].pcts[0], 'and screen 3 keeps misting up after it lands');
+});
 
-  // The scene finishes, and is then alone for a real beat before anything
-  // else begins. Under half a second is not a hold, it is a gap.
-  const hold = start(order[1]) - end(order[0]);
-  assert.ok(hold >= 0.6,
-    `the scene is left alone for ${hold.toFixed(2)}s before the top block ` +
-    'arrives — the request was that the scene be SEEN first, and under 0.6s ' +
-    'it reads as the next thing landing on top of it rather than as a beat');
-
-  // Bands MAY now overlap, and that is the v23782 change: when the fade itself
-  // is slow and even, a band starting while the one before it is most of the
-  // way faded still reads as arriving after it, and the card gains a
-  // continuous cascade instead of five events with dead air between. What has
-  // to hold is that the ORDER is never in doubt — each band starts a clear
-  // beat after the one before it, not alongside it.
-  for (let i = 1; i < order.length - 1; i++) {
-    const step = start(order[i + 1]) - start(order[i]);
-    assert.ok(step >= 2,
-      `${order[i + 1]} starts only ${step.toFixed(2)}s after ${order[i]} — ` +
-      'under two seconds they read as one event rather than a sequence');
+test('each screen sweeps in from off the card, turning, and swings out the other side', () => {
+  for (const name of ['wxcScreen2', 'wxcScreen3']) {
+    const k = keyframes(name);
+    const from = at(k, k[0].pcts[0], 'transform');
+    const m = from.match(/translate3d\((-?[\d.]+)%, 0, 0\) rotateY\((\d+)deg\)/);
+    assert.ok(m, `${name} arrives with a horizontal translate and a turn: ${from}`);
+    assert.ok(Number(m[1]) <= -100, `${name} starts fully off the card (${m[1]}%), not a nudge`);
+    assert.ok(Number(m[2]) > 0, 'and turns as it comes');
+    assert.equal(at(k, k[1].pcts[0], 'transform'), 'none', 'it lands square');
   }
-  // …and no band may be fully up before the next begins either, or the dead
-  // air the overlap was meant to remove comes straight back.
-  for (let i = 1; i < order.length - 1; i++) {
-    assert.ok(start(order[i + 1]) < end(order[i]),
-      `${order[i + 1]} waits for ${order[i]} to finish completely — the ` +
-      'cascade is meant to be continuous');
+  for (const name of ['wxcScreen1', 'wxcScreen2']) {
+    const k = keyframes(name);
+    const last = k[k.length - 1];
+    const to = at(k, last.pcts[0], 'transform');
+    const m = to.match(/translate3d\((-?[\d.]+)%, 0, 0\) rotateY\((-?\d+)deg\)/);
+    assert.ok(m && Number(m[1]) >= 100 && Number(m[2]) < 0, `${name} leaves by the other side, turning the other way: ${to}`);
+  }
+  assert.match(CSS, /\.wxcard-wrap\.wxc-entering,\s*[^{]*\.wxcard-wrap\.wxc-leaving \{\s*perspective: \d+px !important/,
+    'a rotateY with no perspective on the parent is a flat squash, not a turn');
+  // and the travel is quick while the fade is mist
+  const k2 = keyframes('wxcScreen2');
+  const travel = secs(k2[1].pcts[0]) - secs(k2[0].pcts[1]), fade = secs(k2[2].pcts[0]) - secs(k2[0].pcts[1]);
+  assert.ok(fade / travel >= 2.5, `fade ${fade}s over travel ${travel}s — the panel arrives, then materialises`);
+});
+
+test('inside each screen the readings step in 260ms apart, after the screen has landed', () => {
+  const st = staged();
+  const by = Object.fromEntries(st.map(s => [s.sel, s]));
+  const need = (sel) => { assert.ok(by[sel], `${sel} must be staged`); return by[sel]; };
+  // screen 1: after the film cuts at 6.0
+  const s1 = ['.wxcard-wrap.wxc-entering > .wxc-s1 > .wxc-monitor > .wxc-bar-head',
+    '.wxcard-wrap.wxc-entering > .wxc-s1 > .wxc-monitor > .wxc-mon-body > .wxc-mon-side:first-child',
+    '.wxcard-wrap.wxc-entering > .wxc-s1 > .wxc-monitor > .wxc-mon-body > .wxc-mon-link',
+    '.wxcard-wrap.wxc-entering > .wxc-s1 > .wxc-monitor > .wxc-mon-body > .wxc-mon-side:last-child'].map(need);
+  assert.ok(s1[0].delay >= INTRO_S, 'the monitor\'s first piece waits for the film to cut');
+  for (let i = 1; i < s1.length; i++) assert.ok(Math.abs(s1[i].delay - s1[i - 1].delay - 0.26) < 1e-6, `${s1[i].sel} steps 260ms after the previous piece`);
+  // screen 2: the curve draws through the points, one per 260ms
+  const k2 = keyframes('wxcScreen2');
+  const landed2 = secs(k2[1].pcts[0]);
+  const title2 = need('.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-sc-title');
+  assert.ok(title2.delay >= landed2, 'the title waits for the screen to land');
+  const pts = need('.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-chart > .wxc-pt');
+  assert.equal(pts.step, 0.26, 'each reading pops 260ms after the last, by its own --wxc-i');
+  assert.match(pts.decl, /animation: wxcPop/, 'a reading pops in at its point on the curve');
+  const draw = SEL_LINES.find(l => /\.wxc-curve-line \{/.test(l) && /\.wxc-entering/.test(l));
+  assert.ok(draw && /animation: wxcDraw calc\(2\.08s/.test(draw), 'the line draws itself over the eight readings (8 × 0.26s)');
+  assert.match(rule('.wxcard-wrap .wxc-curve-line'), /stroke-dasharray: 1 !important/, 'against pathLength 1');
+  assert.match(SRC, /<path class="wxc-curve-line" pathLength="1"/);
+  assert.match(SRC, /'<div class="wxc-pt ' \+ \(p\.h\.night \? 'wxc-pt-night' : 'wxc-pt-day'\) \+ '" style="--wxc-i:' \+ i \+ ';/, 'the point carries its index');
+  const times = SEL_LINES.find(l => /\.wxc-pt-time \{/.test(l) && /\.wxc-entering/.test(l));
+  assert.ok(times && /animation: wxcFade/.test(times) && !/wxcRise|wxcPop/.test(times),
+    'the times only fade — their transform is pinned (translateX(-50%)) and must not be animated');
+  const legend = need('.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-legend');
+  assert.ok(legend.delay >= pts.delay + 7 * 0.26, 'the legend follows the last reading');
+  // screen 3: the days one after another, then the range
+  const k3 = keyframes('wxcScreen3');
+  const landed3 = secs(k3[1].pcts[0]);
+  const title3 = need('.wxcard-wrap.wxc-entering > .wxc-s3 > .wxc-sc-title');
+  assert.ok(title3.delay >= landed3);
+  const days = need('.wxcard-wrap.wxc-entering > .wxc-s3 > .wxc-days > .wxc-day2');
+  assert.equal(days.step, 0.26);
+  assert.match(days.decl, /wxcRise calc\(1\.20s/, 'each day sweeps in from the left');
+  assert.match(SRC, /'<div class="wxc-day2" style="--wxc-i:' \+ i \+ '">'/, 'the tile carries its index');
+  const rng = need('.wxcard-wrap.wxc-entering > .wxc-s3 > .wxc-rng-wrap');
+  assert.ok(rng.delay >= days.delay + 4 * 0.26, 'the range follows the last day');
+  // every sweeping stage: travel 1.2s, fade ≥ 2.5× the travel
+  for (const s of st) {
+    const m = s.decl.match(/animation: wxcFade calc\(([\d.]+)s[^;]*?, wxcRise calc\(([\d.]+)s/);
+    if (!m) continue;
+    assert.ok(Number(m[1]) / Number(m[2]) >= 2.5, `${s.sel}: fade ${m[1]}s over travel ${m[2]}s — too close to read as settling then misting`);
   }
 });
 
-test('the whole sequence finishes well inside the slide', () => {
-  let last = 0;
-  for (const [, child] of STAGES) last = Math.max(last, delayOf(child) + durOf(child));
-  // The first cut held this under 2s and that result was rejected: every
-  // band overlapped the one before it and the scene got 0.23s to itself. The
-  // ask is the opposite — the scene SEEN, then filled one row at a time,
-  // settling. That costs seconds, and they are well spent against a 22s floor;
-  // what still matters is that the card spends most of its slide STILL.
-  // Two cuts were rejected for being hurried before this one: 1.9s read as a
-  // flurry, 5.7s as better but still too fast. The ask is a majestic arrival, so
-  // the sequence is long on purpose and the pauses between bands carry as much
-  // of it as the movement. What still has to hold is that the card spends most
-  // of its turn STILL — the slide's floor is 22s.
-  // Four cuts were rejected as hurried: 1.9s, 5.7s, 9.3s. The bound that
-  // matters is not a fixed number of seconds — it is that the card is STILL
-  // for longer than it spends arriving, which is what makes it readable. The
-  // dwell was raised with the sequence for exactly that reason, so the two are
-  // checked against each other rather than against a guess.
-  const dwellSrc = SRC.match(/slide\.type === 'wxcard'\) return Math\.round\((\d+) \* _wxSpeed\(\)\)/);
-  assert.ok(dwellSrc, "this card's dwell must be its own, and scale with the dial");
-  const dwell = Number(dwellSrc[1]) / 1000;
-  assert.ok(last < dwell / 2,
-    `the arrival runs ${last.toFixed(2)}s against a ${dwell}s dwell — the card ` +
-    'must be at rest for longer than it spends arriving, or it cannot be read');
-  assert.ok(last > 7,
-    `the last band lands at ${last.toFixed(2)}s — under 7s is pacing that was ` +
-    'rejected as too fast; this entrance is meant to be unhurried');
-});
-
-test('the video opens in the clear, not under the outgoing slide', () => {
-  // THE BUG THIS REPLACES. The first cut opened the video at 0.30s and the
-  // note called that "a mostly-clear frame". On a real slide change the
-  // carousel lifts the OUTGOING slide into an overlay and dissolves it over
-  // this card, and the dissolve is kicked off in the same task as the render —
-  // so both clocks start together and at 0.30s the panel was still 79% the
-  // previous slide. The beat that comes FIRST had no visible window at
-  // all. The two timings live in different files, so only a test that reads
-  // both can keep them honest.
-  // Anchored on the dissolving overlay itself — `data-ad-fading` is the mark
-  // the tick puts on the lifted copy of the outgoing slide. There are other
-  // eased opacity transitions in this file and none of them is this one.
-  const overlay = SRC.indexOf("_old.setAttribute('data-ad-fading', '1');");
-  assert.ok(overlay >= 0, 'the carousel must still dissolve the outgoing slide ' +
-    'by lifting it into a marked overlay');
-  const cf = SRC.slice(overlay, overlay + 900).match(/transition:opacity ([\d.]+)s ease-in-out/);
-  assert.ok(cf, 'the carousel crossfade must still be a plain eased opacity ' +
-    'transition — if it is not, the arithmetic below no longer describes it');
-  const span = seconds(cf[1]);
-
-  // cubic-bezier(.42, 0, .58, 1) — the CSS `ease-in-out` keyword.
-  const bx = t => 3 * (1 - t) ** 2 * t * 0.42 + 3 * (1 - t) * t * t * 0.58 + t ** 3;
-  const by = t => 3 * (1 - t) * t * t * 1 + t ** 3;
-  const cover = s => {
-    const x = Math.min(1, s / span);
-    let lo = 0, hi = 1;
-    for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; bx(m) < x ? lo = m : hi = m; }
-    return 1 - by((lo + hi) / 2);
+test('the base state is the end state, and nothing animated is pinned !important', () => {
+  const down = SEL_LINES.find(l => l.includes('.wxcard-wrap > .wxc-s1, ') && l.includes('.wxcard-wrap > .wxc-s2 {'));
+  const up = rule('.wxcard-wrap > .wxc-s3');
+  assert.ok(down, 'screens 1 and 2 share a base rule');
+  assert.match(down, /\{ opacity: 0; \}/, 'down: opacity 0, no !important');
+  assert.match(up, /^ opacity: 1; $/, 'up: opacity 1, no !important');
+  assert.equal(at(keyframes('wxcScreen1'), 100, 'opacity'), '0');
+  assert.equal(at(keyframes('wxcScreen2'), 100, 'opacity'), '0');
+  assert.equal(at(keyframes('wxcScreen3'), 100, 'opacity'), '1');
+  // no rule ANYWHERE pins opacity / transform / stroke-dashoffset with !important
+  // on an element this block animates. Compared by the element's own class (the
+  // last compound of the selector), across multi-line rules too: a pinned static
+  // in a rule written for the same class years ago outranks the keyframes just
+  // the same — the retired hour label's '.wxc-hr' rules are why the chart's
+  // points are '.wxc-pt'.
+  const lastOf = sel => sel.trim().split(/\s*[> ]\s*/).pop().replace(/:[a-z-]+(\([^)]*\))?/g, '').replace(/^[a-z]+(?=\.)/, '');
+  // reduced-motion blocks pin the base state ON PURPOSE (animation: none); they are not the trap
+  const withoutReducedMotion = txt => {
+    let out = txt, at;
+    while ((at = out.indexOf('@media (prefers-reduced-motion: reduce) {')) >= 0) {
+      let d = 0, k = out.indexOf('{', at);
+      for (; k < out.length; k++) { if (out[k] === '{') d++; else if (out[k] === '}') { d--; if (d === 0) break; } }
+      out = out.slice(0, at) + out.slice(k + 1);
+    }
+    return out;
   };
-
-  const opens = delayOf('> video.wxc-vid');
-  assert.ok(cover(opens) < 0.15,
-    `the video opens at ${opens}s, when the outgoing slide still covers ` +
-    `${(cover(opens) * 100).toFixed(0)}% of the panel — "the video opens first ` +
-    'on its own" has to mean the viewer can see it happen');
-  // v23783 — the lead-in is no longer bounded by the crossfade. The card now
-  // opens UNDER its own six-second title clip, which covers the panel while
-  // the scene fades up behind it, so the scene's start is set by the titles
-  // lifting and not by the outgoing slide. What still matters is that it does
-  // not start before the previous slide has gone.
-  assert.ok(opens > span,
-    'the scene now begins after the outgoing slide is fully gone, under the ' +
-    'title clip — starting during the crossfade would put three things on ' +
-    'screen at once');
-});
-
-// ── The two selectors that are easy to get wrong ─────────────────────────
-
-test('the middle band is addressed as .wxc-strip:not(.wxcard-outlook)', () => {
-  assert.ok(ruleFor('> .wxc-strip:not(.wxcard-outlook)'),
-    'NEXT HOURS has no class of its own — this is the only selector that ' +
-    'reaches it without also reaching the 5-day band');
-  assert.ok(!/\.wxc-entering\s*>\s*\.wxc-strip\s*\{/.test(BLOCK),
-    'a rule on bare .wxc-strip matches BOTH strips: the 5-day band carries ' +
-    '.wxc-strip too, so the two stages would collapse into one');
-});
-
-test('the 5-day band is addressed as .wxcard-outlook', () => {
-  assert.ok(ruleFor('> .wxcard-outlook'),
-    '.wxcard-outlook is the only class unique to the 5-day band');
-});
-
-test('the display:none decoy is never animated', () => {
-  assert.ok(!RULES_ONLY.includes('wxc-globe'),
-    '.wxc-globe reads like the card background and is display:none — the ' +
-    'real ground is video.wxc-vid. Animating the decoy animates nothing.');
-  assert.ok(SELECTOR_LINES.length >= STAGES.length,
-    'and the selector scan must actually be seeing the rules');
-});
-
-// ── The motion vocabulary ────────────────────────────────────────────────
-
-test('the keyframes move transform and opacity, nothing else', () => {
-  const frames = [...BLOCK.matchAll(/@keyframes\s+([\w-]+)\s*\{([\s\S]*?)\n\}/g)];
-  assert.ok(frames.length >= 1, 'the block must declare its own keyframes');
-  for (const [, name, body] of frames) {
-    for (const [, prop] of body.matchAll(/(--[a-z-]+|[a-z-]+)\s*:/g)) {
-      assert.ok(prop === 'opacity' || prop === 'transform' || prop === '--wxc-fade',
-        `@keyframes ${name} animates ${prop} — this file animates transform ` +
-        'and opacity ONLY. Anything else either repaints every frame or, as ' +
-        'measured for background-position, does nothing at all in Chrome. ' +
-        '(--wxc-fade is the one exception and it IS an opacity: see the ' +
-        'credit rule, where the cascade will not let a keyframe set opacity.)');
+  const rulesOf = txt => [...withoutReducedMotion(txt).matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({ sels: m[1].split(',').map(x => x.trim()).filter(Boolean), decl: m[2] }));
+  /** The properties a named @keyframes writes, from wherever in the stylesheet it is. */
+  const kfProps = name => {
+    const k = CSS.lastIndexOf('@keyframes ' + name + ' ');
+    assert.ok(k >= 0, `@keyframes ${name} must exist`);
+    let d = 0, e = CSS.indexOf('{', k);
+    for (; e < CSS.length; e++) { if (CSS[e] === '{') d++; else if (CSS[e] === '}') { d--; if (d === 0) break; } }
+    const body = CSS.slice(k, e + 1);
+    return [...body.matchAll(/([a-z-]+)\s*:/g)].map(m => m[1]).filter(pn => pn !== 'animation-timing-function');
+  };
+  // what each animated element's animations write
+  const writes = new Map();
+  for (const r of rulesOf(BLOCK_CODE)) {
+    const names = [...(r.decl.match(/animation:\s*([^;]*)/) || ['', ''])[1].matchAll(/\b(wxc[A-Za-z0-9]+)\b/g)].map(m => m[1]);
+    if (!names.length) continue;
+    for (const s of r.sels) {
+      const el = lastOf(s), set = writes.get(el) || new Set();
+      for (const n of names) for (const pn of kfProps(n)) set.add(pn);
+      writes.set(el, set);
     }
   }
-});
-
-test('it sweeps in from off the card, turning, and fades the whole way', () => {
-  // v23786 — the entrance was asked to be grand. 104px was a nudge. A band now starts entirely OUTSIDE the card and sweeps
-  // the full width in, turning as it comes; the wrap clips, so what is still
-  // outside is simply not drawn and the eye sees a panel crossing the frame.
-  // Scoped to the CARD's own keyframes. This block is no longer the only
-  // thing at the end of the stylesheet — the title and the night sky live
-  // here too, and their travel is theirs to choose. Policing every
-  // translate3d in the file made this fail on a star drift.
-  const cardKf = [...BLOCK.matchAll(/@keyframes (wxcRise\w*|wxcLeave\w*) \{([\s\S]*?)\n\}/g)]
-    .map(m => m[2]).join("\n");
-  const travels = [...cardKf.matchAll(/translate3d\((-?[\d.]+)(%|px),\s*(-?[\d.]+)(?:px)?,\s*0\)/g)]
-    .map(m => ({ v: parseFloat(m[1]), unit: m[2], y: parseFloat(m[3]) }));
-  assert.ok(travels.length >= 3, 'the layers must travel');
-  for (const { v, unit, y } of travels) {
-    assert.equal(y, 0, `the sweep is horizontal, this one moves ${y}px vertically`);
-    assert.equal(unit, '%',
-      `${v}${unit} — the travel is a share of the panel's OWN width, so it ` +
-      'starts fully off the card at any board size; a fixed pixel run is a ' +
-      'nudge on a 1920 panel and a leap on a narrow one');
-    assert.ok(Math.abs(v) >= 100,
-      `${v}% does not clear the card — under 100% the panel is already ` +
-      'partly in frame when it starts, which is the nudge this replaced');
-  }
-  // arrives from one side, leaves by the other, and turns both times
-  const arrive = [...BLOCK.matchAll(/@keyframes wxcRise \{[\s\S]*?translate3d\((-?[\d.]+)%/g)].map(m => parseFloat(m[1]));
-  const leave = [...BLOCK.matchAll(/@keyframes wxcLeave\w* \{[\s\S]*?translate3d\((-?[\d.]+)%/g)].map(m => parseFloat(m[1]));
-  assert.ok(arrive.length && leave.length, 'both directions must be declared');
-  assert.ok(arrive.every(v => v < 0) && leave.every(v => v > 0),
-    'in from the left, out to the right — arriving and departing on the same ' +
-    'side would look like it bounced');
-  assert.match(BLOCK, /@keyframes wxcRise \{[\s\S]*?rotateY\(\d/,
-    'and it turns as it comes, which is what makes it read as swinging in ' +
-    'rather than sliding');
-  assert.match(BLOCK, /perspective: \d+px !important/,
-    'a rotateY with no perspective on the parent is a flat squash, not a turn');
-
-  // v23793 — THE TRAVEL IS QUICK AND THE FADE IS MIST.
-  // These used to be pinned to the same duration, on the reasoning that a
-  // layer which stops moving while still appearing looks broken. That was
-  // right for a slow sweep and wrong for the effect actually wanted: the panel
-  // should ARRIVE quickly and then take its time materialising, the way mist
-  // does. So they are deliberately different now, and the requirement flips —
-  // the fade must OUTLAST the travel, never the other way round.
-  const pairs = [...BLOCK.matchAll(
-    /animation: (wxcFade\w*) calc\(([\d.]+)s[\s\S]*?both, (wxcRise\w*) calc\(([\d.]+)s/g)];
-  assert.ok(pairs.length >= 5, `expected the staged layers, found ${pairs.length}`);
-  for (const [, , fade, , rise] of pairs) {
-    assert.ok(Number(rise) < Number(fade),
-      `a layer travels for ${rise}s and fades for ${fade}s — the travel has to ` +
-      'be the shorter of the two, or it is drifting rather than arriving');
-    assert.ok(Number(fade) / Number(rise) >= 2.5,
-      `fade ${fade}s over travel ${rise}s is only ${(Number(fade)/Number(rise)).toFixed(1)}x — ` +
-      'too close to read as settling into place and then misting in');
-  }
-});
-
-test('nothing is still fading when the entrance ends', () => {
-  // The layers are staged, so the LAST one starts late. Lengthening the fade
-  // without lengthening the window leaves that layer mid-fade when
-  // _wxEndEntrance strips the class, and it snaps to full opacity — a pop at
-  // the end of a sequence whose whole point is that it does not pop.
-  const core = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
-  const windowMs = Number((core.match(/var _WXC_ENTRANCE_MS = (\d+);/) || [])[1]);
-  assert.ok(windowMs > 0, 'the entrance window must be declared');
-
-  const lines = BLOCK.split('\n');
-  let worst = 0, worstAt = 0;
-  for (let i = 0; i < lines.length; i++) {
-    const a = lines[i].match(/animation: wxc\w+ calc\(([\d.]+)s/);
-    if (!a) continue;
-    for (let j = i + 1; j < Math.min(i + 4, lines.length); j++) {
-      const d = lines[j].match(/animation-delay: calc\(\(([\d.]+)s/);
-      if (d) {
-        const end = Number(d[1]) + Number(a[1]);
-        if (end > worst) { worst = end; worstAt = Number(d[1]); }
-        break;
+  assert.ok(writes.get('.wxc-pt') && writes.get('.wxc-pt').has('transform') && writes.get('.wxc-day2').has('transform') && writes.get('.wxc-s2').has('opacity'), 'the audit sees the movers');
+  const offenders = [];
+  for (const r of rulesOf(CSS_CODE)) {
+    for (const s of r.sels) {
+      if (/\.wxc-intro|\.wxc-sky|@keyframes/.test(s)) continue;                        // the title's own tests cover it
+      const w = writes.get(lastOf(s));
+      if (!w) continue;
+      for (const pn of w) {
+        if (new RegExp('(?:^|[;\\s])' + pn + '\\s*:[^;]*!important').test(r.decl)) offenders.push(s.replace(/:not\(#_\)/g, '').slice(0, 90) + ' pins ' + pn);
       }
     }
   }
-  assert.ok(worst > 0, 'the staged delays must be readable');
-  assert.ok(worst <= windowMs / 1000,
-    `the last layer starts at ${worstAt}s and finishes at ${worst.toFixed(2)}s, ` +
-    `past the ${(windowMs / 1000).toFixed(2)}s entrance — it would be cut off mid-fade`);
+  assert.deepEqual(offenders, [], 'a static !important on an animated property outranks the ANIMATION origin');
+  const hrTime = rule('.wxcard-wrap .wxc-pt-time');
+  assert.match(hrTime, /transform: translateX\(-50%\) !important/, '(the times keep their pinned transform, and are only faded — see above)');
 });
 
-test('every stage fills BOTH ways', () => {
-  // `both` is what holds a layer at the keyframe's opacity:0 THROUGH its
-  // delay. With `forwards`, or with no fill at all, each layer would be fully
-  // visible until its turn came, blink to nothing, and fade back in — five
-  // flashes instead of an entrance, and the whole "nothing is hidden at rest"
-  // argument depends on the hidden state being the fill rather than a rule.
-  for (const [name, child] of STAGES) {
-    assert.match(ruleFor(child), /animation:[^;]*\bboth\b/,
-      `${name} must end its animation shorthand in \`both\``);
+test('the deadline outlasts the last arrival, and the mark is off before the slide ends', () => {
+  let last = 0;
+  for (const s of staged()) last = Math.max(last, s.delay + s.step * 7 + s.dur);
+  const k3 = keyframes('wxcScreen3');
+  last = Math.max(last, secs(k3[2].pcts[0]));
+  assert.ok(last > 30, `the last arrival ends at ${last.toFixed(2)}s — the days must have their own cascade`);
+  assert.ok(ENTRANCE_MS >= last * 1000, `${ENTRANCE_MS}ms must outlive the last arrival at ${last.toFixed(2)}s`);
+  assert.ok(ENTRANCE_MS <= DWELL_MS, 'and come off before the slide is over');
+  assert.ok(DWELL_MS / 1000 - last >= 4, `${(DWELL_MS / 1000 - last).toFixed(1)}s at rest — the last screen must be readable, not still arriving`);
+  assert.ok(EXIT_MS >= 3000, 'the exit has room for the days, the loops and the ground');
+});
+
+test('the title plays to its end and cuts; the loops are full underneath by then', () => {
+  const k = BLOCK.match(/@keyframes wxcFilmOut \{ 0%, (\d+)% \{ opacity: 1; \} 100% \{ opacity: 0; \} \}/);
+  assert.ok(k && Number(k[1]) >= 95, 'the film holds opaque to its last frames — the approved render cut hard');
+  assert.match(rule('.wxcard-wrap.wxc-entering > .wxc-intro.wxc-intro-paint'), /animation: wxcFilmOut calc\(6\.00s \* var\(--wxc-t, 1\)\) linear both !important; animation-delay: calc\(\(0s - var\(--wxc-el, 0s\)\)/,
+    'and its fade resumes from the elapsed stamp after a rebuild instead of restarting from the top');
+  for (const v of ['video.wxc-vid']) {
+    const r = rule('.wxcard-wrap.wxc-entering > ' + v);
+    const m = r.match(/wxcFade calc\(([\d.]+)s[\s\S]*?animation-delay: calc\(\(([\d.]+)s/);
+    assert.ok(m && Number(m[1]) + Number(m[2]) <= INTRO_S + 1e-9, `${v} is full (${m && (+m[1] + +m[2])}s) by the time the film cuts at ${INTRO_S}s`);
   }
+  const hold = fnBody('_wxHoldSceneForIntro');
+  const rel = Number(hold.match(/Math\.round\((\d+) \* _wxSpeed\(\) - \(elapsedMs \|\| 0\)\)/)[1]) / 1000;
+  assert.ok(rel < 0.01 * Number(k[1]) * INTRO_S, `the loops are released at ${rel}s, while the film is still opaque`);
 });
 
-test('three bands share ONE keyframe, and the two that cannot say why', () => {
-  const shared = ['> .wxcard-main', '> .wxc-strip:not(.wxcard-outlook)', '> .wxcard-outlook']
-    .map(animOf);
-  assert.equal(new Set(shared).size, 1,
-    'the top, the hours and the 5-day band differ only by delay, so they ' +
-    'take one keyframe between them rather than three near-copies');
-  // The video shares the FADE — the fade is the point and every layer should
-  // be seen doing it at the same rate — but not the rise: it sits inset:0 /
-  // object-fit:cover behind everything, so the bands' translate would slide
-  // its own cover edge into frame. It scales instead.
-  assert.equal(animOf('> video.wxc-vid'), shared[0],
-    'the video fades on the same curve as the bands');
-  assert.notEqual(riseOf('> video.wxc-vid'), riseOf('> .wxcard-main'),
-    'but it must not take the bands\' translate');
-  assert.notEqual(animOf('> .wxc-credit'), shared[0],
-    'the credit cannot share either — its opacity is pinned !important ' +
-    'elsewhere in the file, so its fade has to ride a custom property');
+// ── Leaving ──────────────────────────────────────────────────────────────
+
+test('the outgoing copy leaves from the end state, moving, on absolute delays', () => {
+  assert.match(rule('.wxcard-wrap.wxc-leaving > .wxc-s3'), /animation: wxcLeave calc\(1\.40s \* var\(--wxc-t, 1\)\)/, 'the days swing out the way the old bands did');
+  const down = SEL_LINES.find(l => l.includes('.wxcard-wrap.wxc-leaving > .wxc-s1, ') && l.includes('.wxcard-wrap.wxc-leaving > .wxc-s2 {'));
+  assert.ok(down && /animation: none !important; opacity: 0;/.test(down), 'screens 1 and 2 are down and stay down');
+  assert.match(rule('.wxcard-wrap.wxc-leaving.wxc-one > .wxc-s1'), /animation: wxcLeave/, 'unless the set was the whole card, in which case it leaves the same way');
+  const loops = SEL_LINES.find(l => /\.wxcard-wrap\.wxc-leaving > video\.wxc-set, /.test(l) && /video\.wxc-vid \{/.test(l));
+  assert.ok(loops && /animation: wxcLeaveVid/.test(loops) && /animation-delay: calc\(1\.00s \* var\(--wxc-t, 1\)\)/.test(loops),
+    'the set and the scene leave together, on an ABSOLUTE delay (no --wxc-el term)');
+  assert.doesNotMatch(loops, /--wxc-el/);
+  const ground = SEL_LINES.find(l => /\.wxcard-wrap\.wxc-leaving \{/.test(l));
+  assert.ok(ground && /animation: wxcLeaveGround calc\(1\.10s/.test(ground) && /animation-delay: calc\(1\.40s \* var\(--wxc-t, 1\)\)/.test(ground),
+    'the ground fades from 1.4s — after the days have gone, before the cover comes off');
+  assert.ok(1.4 + 1.1 < EXIT_MS / 1000 && 1.0 + 1.9 < EXIT_MS / 1000, 'and everything is over before the cover comes off');
+  // the carousel wakes the loops and strips the resume stamp before it marks the copy
+  const tick = SRC.slice(SRC.indexOf("_wxLeaveWrap.classList.add('wxc-leaving');"), SRC.indexOf("_wxLeaveWrap.classList.add('wxc-leaving');") + 900);
+  assert.match(tick, /_wxLeaveWrap\.style\.removeProperty\('--wxc-el'\)/, 'a stamp left by a rebuild would make the absolute delays negative');
+  assert.match(tick, /querySelectorAll\(':scope > \[style\*="--wxc-el"\]'\)[\s\S]{0,120}removeProperty\('--wxc-el'\)/, 'on the swapped screens too');
+  assert.match(tick, /querySelectorAll\(':scope > video\.wxc-vid'\)[\s\S]{0,120}\.play\(\)/,
+    'and the scene is nudged to play — what the exit uncovers must MOVE');
 });
 
-test('the video gets its own opening and is not left mid-transform', () => {
-  const frame = keyframe(riseOf('> video.wxc-vid'));
-  assert.ok(frame, 'the video settle keyframe must exist');
-  assert.match(frame, /to\s*\{[^}]*transform:\s*scale\(1\)/,
-    'the video must settle on scale(1): it is the layer everything else sits ' +
-    'on, and a transform left part-applied shifts the whole card');
+test('a reduced-motion preference turns the sequence off', () => {
+  const rm = BLOCK.slice(BLOCK.indexOf('@media (prefers-reduced-motion: reduce)'));
+  assert.match(rm, /> \.wxc-screen \*[^{]*\{ animation: none !important; \}/, 'no flips and no cascades');
+  assert.match(rm, /\.wxc-curve-line \{ stroke-dashoffset: 0 !important; \}/, 'and the curve is simply drawn');
 });
 
-test('every animated layer declares will-change', () => {
-  for (const [name, child] of STAGES) {
-    assert.match(ruleFor(child), /will-change:\s*transform/,
-      `${name} must carry will-change: transform, like every other animated ` +
-      'layer in this file');
-  }
-});
+// ── One arming per visit, and what a rebuild does ────────────────────────
 
-test('a reduced-motion preference turns the whole entrance off', () => {
-  const at = BLOCK.indexOf('@media (prefers-reduced-motion: reduce)');
-  assert.ok(at >= 0,
-    'every animation family in this file carries a reduced-motion block — an ' +
-    'airport screen should not be the one surface that ignores the setting');
-  const block = BLOCK.slice(at, BLOCK.indexOf('\n}', BLOCK.indexOf('{', at + 40)));
-  for (const [name, child] of STAGES) {
-    assert.ok(block.includes('.wxcard-wrap.wxc-entering ' + child),
-      `${name} must be listed in the reduced-motion block`);
-  }
-  assert.match(block, /animation:\s*none\s*!important/);
-  assert.match(block, /opacity:\s*1\s*!important/,
-    'switching the animation off must also assert opacity:1 — without it a ' +
-    'band whose fill-mode had already applied opacity:0 stays hidden');
-  assert.match(block, /--wxc-fade:\s*1\s*!important/,
-    'and it must assert the custom property too: the credit reads its ' +
-    'opacity FROM --wxc-fade, so an opacity:1 that resolves through a stale ' +
-    'property restores every layer except the one that needed it most');
-});
-
-// ── The cascade: an animation cannot beat !important ─────────────────────
-
-/** Does any rule earlier in the file pin this layer's opacity !important? */
-function pinsOpacity(cls) {
-  const before = CSS.slice(0, BLOCK_AT).replace(/\/\*[\s\S]*?\*\//g, '');
-  const hits = [];
-  for (const chunk of before.split('}')) {
-    const brace = chunk.lastIndexOf('{');
-    if (brace < 0) continue;
-    const body = chunk.slice(brace + 1);
-    if (!/opacity\s*:\s*[^;]*!important/.test(body)) continue;
-    const sel = chunk.slice(0, brace).replace(/:not\(#_\)/g, '');
-    for (const one of sel.split(',')) {
-      // `.wxc-credit` and `.wxc-credit *` both reach the element.
-      if (one.trim().replace(/\s*\*$/, '').endsWith(cls)) { hits.push(one.trim()); break; }
-    }
-  }
-  return hits;
-}
-
-test('a layer whose opacity is pinned !important fades by custom property', () => {
-  // THE BUG THIS REPLACES, AND THE ONE A SPECIFICITY TEST CANNOT SEE.
-  // Two rules already pin `.wxc-credit { opacity: 1 !important }` — the
-  // readability fix and the foot-of-card layout rule. Important author
-  // declarations outrank the ANIMATION origin (Cascading L4 §6.1), so a
-  // keyframe's opacity is discarded for that element no matter how heavy the
-  // guard chain is: 241 × :not(#_) against their 48 loses, because the loss is
-  // by origin and not by specificity. The first cut animated the credit anyway
-  // and only its translate applied, so the MET line sat fully opaque from
-  // frame 0 — the last beat of the sequence was the first thing on screen.
-  //
-  // The file is append-only, so the pins cannot be removed. The fade is
-  // re-declared at !important level instead and reads an animated registered
-  // custom property. This test decides, per layer, which mechanism is the
-  // correct one — so a layer that acquires a pin later fails here instead of
-  // silently losing its stage.
-  const pinned = STAGES.filter(([, , cls]) => pinsOpacity(cls).length > 0).map(s => s[0]);
-  assert.deepEqual(pinned, ['the credit'],
-    'the credit is the known case; any OTHER layer turning up here means a ' +
-    'new !important opacity landed on it and its stage has silently stopped ' +
-    `fading (found: ${pinned.join(', ') || 'none'})`);
-
-  for (const [name, child, cls] of STAGES) {
-    const rule = ruleFor(child);
-    const frame = keyframe(animOf(child));
-    if (pinsOpacity(cls).length > 0) {
-      assert.match(rule, /opacity:\s*var\(--wxc-fade/,
-        `${name} is pinned opacity:1 !important elsewhere, so its entrance ` +
-        'rule must re-declare opacity at !important level reading --wxc-fade');
-      assert.match(rule, /opacity:\s*var\(--wxc-fade[^;]*!important/,
-        `${name}'s re-declaration must itself be !important, or it loses to ` +
-        'the very pins it exists to outrank');
-      assert.match(frame, /--wxc-fade:\s*0[\s;]/,
-        `${name}'s keyframe must animate --wxc-fade from 0`);
-      assert.ok(!/opacity:\s*0/.test(frame),
-        `${name}'s keyframe must NOT try to animate opacity directly — that ` +
-        'is the declaration the cascade throws away, and leaving it in reads ' +
-        'as though the fade were working');
-    } else {
-      assert.match(frame, /opacity:\s*0/,
-        `${name} has no !important pin against it, so it fades the ordinary ` +
-        'way, from the keyframe');
-      assert.ok(!/opacity:/.test(rule),
-        `${name} must leave opacity to its keyframe — a rule-level opacity ` +
-        'would override the animation it is meant to let through');
-    }
-  }
-});
-
-test('the fade property is registered so it interpolates', () => {
-  const at = BLOCK.indexOf('@property --wxc-fade');
-  assert.ok(at >= 0,
-    'an UNREGISTERED custom property animates discretely — --wxc-fade would ' +
-    'flip from 0 to 1 at the halfway mark and the credit would blink rather ' +
-    'than fade');
-  const body = BLOCK.slice(at, BLOCK.indexOf('}', at));
-  assert.match(body, /syntax:\s*'<number>'/,
-    "syntax must be '<number>' for the value to interpolate at all");
-  assert.match(body, /initial-value:\s*1/,
-    'the initial value must be 1: it is what a credit that never enters — no ' +
-    'JS, a dropped class — resolves to, and this card hangs over a gate');
-  assert.match(ruleFor('> .wxc-credit'), /var\(--wxc-fade,\s*1\)/,
-    'and the var() needs its own fallback of 1 for a browser with no ' +
-    '@property support, where the registration is ignored entirely');
-});
-
-// ── The fallback: nothing is hidden at rest ──────────────────────────────
-
-test('nothing is left hidden if the entrance never runs', () => {
-  // Strip the keyframes; opacity:0 is legitimate in there, and only in there.
-  const outside = BLOCK.replace(/@keyframes[\s\S]*?\n\}/g, '');
-  assert.ok(!/opacity:\s*0\s*[;!]/.test(outside),
-    'no rule outside the keyframes may set opacity:0. A card that never gets ' +
-    'its trigger — no JS, a dropped class — must still be fully readable: an ' +
-    'invisible weather card on a public board is worse than an unanimated one.');
-  assert.ok(!/--wxc-fade:\s*0\s*[;!]/.test(outside),
-    'and the same goes for the property the credit\'s opacity now reads — ' +
-    'setting it to 0 anywhere but a keyframe hides the attribution for good');
-  // display:none is allowed in exactly one place: the title OVERLAY, which is
-  // not content. A stalled or paused clip left on top of a live weather card
-  // would be a black rectangle over the readings — the worst failure this
-  // card has — so it is taken out of the layout as well as made transparent.
-  const hides = [...outside.matchAll(/([^\n{]*)\{[^}]*display:\s*none[^}]*\}/g)].map(m => m[1]);
-  for (const sel of hides) {
-    // This block is no longer the last thing in the stylesheet, and the rules
-    // that follow it belong to other panels. Only the weather card is this
-    // test's business.
-    if (!/wxcard-wrap/.test(sel)) continue;
-    assert.match(sel, /wxc-intro/,
-      `only the title overlay may be display:none; this is not it: ${sel.trim().slice(-60)}`);
-  }
-  assert.ok(!/visibility:\s*hidden/.test(outside),
-    'and nothing may be hidden by visibility either');
-  // The hidden state is reachable only while the class is present, which means
-  // every animation rule must be scoped to it.
-  const scoped = [...BLOCK.matchAll(/\n(html body[^\n{]*)\{/g)].map(m => m[1])
-    .filter((sel) => /wxcard-wrap/.test(sel));   // ditto — other panels are not this test's business
-  for (const sel of scoped) {
-    // The title overlay's base rule is the one exception, and it has to be:
-    // it positions the clip over the card, and its safety comes from the
-    // companion rule that takes it out of the layout the moment the entrance
-    // is not running (checked just below), not from the animation.
-    if (/wxc-intro/.test(sel)) continue;
-    assert.ok(sel.includes('.wxc-entering') || sel.includes('.wxc-leaving'),
-      'every rule in this block must be scoped to .wxc-entering or ' +
-      '.wxc-leaving, or its hidden state outlives the animation: ' +
-      `${sel.slice(-70).trim()}`);
-  }
-  // …and that companion rule must exist, or a stalled overlay sits on the card.
-  assert.match(BLOCK, /\.wxcard-wrap:not\(\.wxc-entering\) > \.wxc-intro \{ display: none !important; \}/,
-    'the title must be taken out of the layout whenever the entrance is not ' +
-    'running — an overlay left over a live card is a filled rectangle over ' +
-    'the readings');
-});
-
-test('the exit can only ever hide a copy that is on its way out', () => {
-  // The exit keyframes END at opacity 0 with fill `both`, which is the one
-  // place in this family where a stuck class WOULD leave something invisible.
-  // It is safe only because .wxc-leaving is never put on the live card: the
-  // carousel first MOVES the outgoing slide's DOM into a throwaway overlay,
-  // and the class goes on the copy inside it. That copy is removed on a timer
-  // whatever happens. Both halves of that are load-bearing, so both are pinned.
-  const lift = SRC.indexOf('while (el3.firstChild) _old.appendChild(el3.firstChild);');
-  assert.ok(lift >= 0, 'the carousel must still lift the outgoing slide into an overlay');
-  const after = SRC.slice(lift, lift + 1400);
-  assert.match(after, /_old\.querySelector\('\.wxcard-wrap'\)/,
-    'the mark must be decided from the lifted COPY, never from the live carousel');
-  assert.match(after, /_wxLeaveWrap\.classList\.add\('wxc-leaving'\)/);
-  assert.match(after, /_wxLeaveWrap\.classList\.remove\('wxc-entering'\)/,
-    'and an entrance still running on that copy has to be called off, or the ' +
-    'two sequences fight over the same layers');
-  // The copy is always removed — no path leaves it on screen at opacity 0.
-  const fade = SRC.indexOf("if (_old.getAttribute('data-wx-leaving'))");
-  assert.ok(fade >= 0, 'the dissolve must special-case the marked copy');
-  const tail = SRC.slice(fade, fade + 700);
-  assert.match(tail, /_old\.remove\(\)/, 'and must still remove it');
-  assert.match(tail, /Math\.round\(_WXC_EXIT_MS \* _wxSpeed\(\)\) \+ 120/,
-    'on a deadline past the end of the sequence — and scaled by the dial, or ' +
-    'a slowed exit would have its cover pulled part-way through');
-  const ms = /var _WXC_EXIT_MS = (\d+);/.exec(SRC);
-  assert.ok(ms, '_WXC_EXIT_MS must be declared');
-  const last = Math.max(...[...BLOCK.matchAll(/wxc-leaving[^{]*\{[^}]*?animation: wxcLeave\w* ([\d.]+)s[^}]*?animation-delay: ([\d.]+)s/gs)]
-    .map(m => parseFloat(m[1]) + parseFloat(m[2])));
-  assert.ok(Number(ms[1]) / 1000 >= last,
-    `the cover is pulled at ${Number(ms[1]) / 1000}s but the exit runs to ${last}s`);
-});
-
-// ── The guard chain ──────────────────────────────────────────────────────
-
-test('the guard chain outweighs every other rule on this card', () => {
-  // Counted PER SELECTOR, not per line. The earlier version summed each whole
-  // line, and a comma-joined line of five 48-chain selectors totalled 240
-  // against our 241 — so the assertion passed by one, on a number that was
-  // not a specificity at all. Any future comma-joined line would have failed
-  // it spuriously, and a genuine collapse of our chain to 60 — still well
-  // clear of every real rival — would have failed it too.
-  const weight = sel => (sel.match(/:not\(#_\)/g) || []).length;
-  // Comma-split leaves an empty tail on every line that ends in a comma, which
-  // is most of the reduced-motion group — those are not selectors.
-  const parts = s => s.split(',').map(x => x.trim()).filter(Boolean);
-  const ours = Math.min(...SELECTOR_LINES.flatMap(l => parts(l).map(weight)));
-  let rival = 0;
-  for (const line of CSS.slice(0, BLOCK_AT).split('\n')) {
-    if (!/\.wxcard-|\.wxc-/.test(line)) continue;
-    for (const sel of parts(line)) rival = Math.max(rival, weight(sel));
-  }
-  assert.ok(ours > rival,
-    `the entrance chain (${ours} × :not(#_) per selector) must outweigh the ` +
-    `heaviest existing weather-card selector (${rival}) — this file is ` +
-    'append-only, so weight is the only lever against an earlier rule');
-  // …and specificity is only a lever against NORMAL declarations. The check
-  // that matters for !important ones is the cascade test above.
-});
-
-// ── The trigger: once per arrival, and the re-renders must not re-arm ────
-
-test('the visit counter counts arrivals, not repaints', () => {
-  // Three pieces, because they sit apart in renderGateAd on purpose: the read
-  // happens at the top, ahead of the ?scene= pin; the pin stamps the slot
-  // itself in between; the count happens where the carousel commits the slot.
-  const read = SRC.match(/var _prevShownSlot = window\._gateAdCurrentIdx;/);
-  const pinBump = SRC.match(
-    /if \(window\._gateAdAuthChange\) \{\s*window\._gateAdVisitSeq = \(window\._gateAdVisitSeq \|\| 0\) \+ 1;\s*\}/);
-  const count = SRC.match(
-    /if \(typeof _prevShownSlot !== 'number'[\s\S]*?window\._gateAdCurrentIdx = slot;/);
-  assert.ok(read && count, 'renderGateAd must stamp a slide-visit counter');
-  assert.ok(read.index < SRC.indexOf("new URLSearchParams(location.search).get('scene')"),
-    'the read must sit AHEAD of the ?scene= pin in renderGateAd — the pin ' +
-    'writes _gateAdCurrentIdx itself, so reading it afterwards makes a pinned ' +
-    "board's first paint look like a repaint and the entrance never plays");
-  assert.ok(pinBump, 'the pin must re-arm on an authorised tick');
-  assert.ok(pinBump.index > SRC.indexOf("new URLSearchParams(location.search).get('scene')")
-    && pinBump.index < SRC.indexOf('var slide = slides[slot];'),
-    'the pin re-arm must live INSIDE the scene-pin block — ?scene= is a ' +
-    'review aid and must stay wholly inert on a deployed board');
-
-  const show = new Function('window', 'slot', 'pin',
-    read[0] + '\nif (pin) { ' + pinBump[0] + '\nwindow._gateAdCurrentIdx = slot; }\n' + count[0]);
-  const w = {};
-
-  show(w, 3);                                   // first paint of the session
-  assert.equal(w._gateAdVisitSeq, 1, 'the first paint is an arrival');
-
-  show(w, 3);                                   // gate rebuild, same slide
-  show(w, 3);
-  assert.equal(w._gateAdVisitSeq, 1,
-    'a repaint of the slide already showing is NOT an arrival — the gate ' +
-    'rebuilds several times a minute and every one of those would replay');
-
-  w._gateAdAuthChange = true; show(w, 4); w._gateAdAuthChange = false;
-  assert.equal(w._gateAdVisitSeq, 2, 'the rotation tick moving on is an arrival');
-
-  w._gateAdAuthChange = true; show(w, 4); w._gateAdAuthChange = false;
-  assert.equal(w._gateAdVisitSeq, 2,
-    'an authorised repaint of the SAME slot is still not an arrival');
-
-  show(w, 9);                                   // stray unauthorised caller
-  assert.equal(w._gateAdVisitSeq, 2,
-    'only the rotation tick and the pin recovery may declare a slide change');
+test('the entrance plays once per arrival and no re-render re-arms it', () => {
+  const arm = fnBody('_wxArmEntrance');
+  assert.match(arm, /if \(window\._wxEntrancePlayedSeq === seq\) return false;/);
+  assert.match(arm, /window\._wxEntranceAt = Date\.now\(\);/);
+  assert.match(arm, /wrap\.classList\.add\('wxc-entering'\);/);
+  assert.doesNotMatch(arm, /_wxParkSceneAfterSet/, 'v23843: nothing parks the scene, it plays the whole visit');
 });
 
 test('a pinned scene re-arrives on every rotation tick', () => {
-  // ?scene=wx parks the carousel on the weather card so it can be looked at
-  // without waiting for the rotation — and the one scene anybody pins is this
-  // one, because an entrance is the thing under review.
-  //
-  // The pin stamps _gateAdCurrentIdx itself, so the parked slide never looked
-  // like it changed: the entrance played once at first paint and then never
-  // again for the life of the page, while the tick went on crossfading the
-  // card to an identical, un-animated copy of itself every 22s. Anyone
-  // reviewing a pinned board for more than one dwell would have reported that
-  // the entrance "only works once".
-  const read = SRC.match(/var _prevShownSlot = window\._gateAdCurrentIdx;/);
-  const pinBump = SRC.match(
-    /if \(window\._gateAdAuthChange\) \{\s*window\._gateAdVisitSeq = \(window\._gateAdVisitSeq \|\| 0\) \+ 1;\s*\}/);
-  const count = SRC.match(
-    /if \(typeof _prevShownSlot !== 'number'[\s\S]*?window\._gateAdCurrentIdx = slot;/);
-  const show = new Function('window', 'slot', 'pin',
-    read[0] + '\nif (pin) { ' + pinBump[0] + '\nwindow._gateAdCurrentIdx = slot; }\n' + count[0]);
-
-  const p = {};
-  show(p, 6, true);
-  assert.equal(p._gateAdVisitSeq, 1, 'a pinned first paint is still an arrival');
-  show(p, 6, true);
-  show(p, 6, true);
-  assert.equal(p._gateAdVisitSeq, 1,
-    'and a parked scene does not re-arrive on a plain repaint');
-
-  p._gateAdAuthChange = true; show(p, 6, true); p._gateAdAuthChange = false;
-  assert.equal(p._gateAdVisitSeq, 2,
-    'but the rotation tick firing under the pin IS an arrival — otherwise ' +
-    'the review aid shows the reviewer everything except the thing it is for');
+  const at = SRC.indexOf("var _pin = new URLSearchParams(location.search).get('scene');");
+  const block = SRC.slice(at, at + 2600);
+  assert.match(block, /if \(window\._gateAdAuthChange\) \{\s*window\._gateAdVisitSeq = \(window\._gateAdVisitSeq \|\| 0\) \+ 1;/);
 });
 
-test('the counter note describes the rebuild that actually happens', () => {
-  // This comment is load-bearing: it is what the next reader consults before
-  // touching the trigger. The first version asserted that a rebuild "throws
-  // the element away" and hands this function a fresh childless element —
-  // the opposite of the truth, and it pointed away from the detach/re-attach
-  // that is the one event that really breaks the entrance.
-  const note = SRC.slice(SRC.indexOf('A SLIDE VISIT IS AN ARRIVAL'),
-    SRC.indexOf('window._gateAdCurrentIdx = slot;'));
-  assert.ok(note.length > 200, 'the counter must keep its note');
-  assert.match(note, /PRESERVES the live carousel/,
-    'the note must say the rebuild preserves the carousel and its children');
-  assert.ok(!/throws the element away/.test(note),
-    'a rebuild does NOT throw the carousel away in the normal case — that ' +
-    'claim sent the last reader looking in the wrong place');
+test('all three render paths ask, and only the full rebuild carries', () => {
+  const body = fnBody('_renderWxCard');
+  assert.match(body, /_wxArmEntrance\(el\.querySelector\('\.wxcard-wrap'\)\);\s*return true;/, 'path 1: nothing changed');
+  assert.match(body, /_wxArmEntrance\(_wxWrapP\);\s*return true;/, 'path 2: screens 2 and 3 swapped');
+  assert.match(body, /if \(!_wxArmEntrance\(_wxWrap\)\) _wxCarryEntrance\(_wxWrap\);/, 'path 3: a full rebuild, carried if mid-visit');
+  assert.doesNotMatch(body.replace(/\/\/.*$/gm, ''), /_wxEndEntrance\(\)/, 'no render path ends the sequence any more');
 });
 
-// ── The sequence ends exactly once, and DOM churn abandons it ────────────
+test('late data swaps screens 2 and 3 under an untouched set, on the same clock, only when the wrap is the same wrap', () => {
+  const body = fnBody('_renderWxCard');
+  assert.match(body, /el\._wxS1Html === _wxS1 && el\._wxVidHtml === _wxVid && el\._wxWrapCls === _wxWrapCls/,
+    'the set, the scene AND the wrap\'s class set must be unchanged — a substring test let a wxc-one wrap keep its mark');
+  assert.match(body, /el\._wxWrapCls = _wxWrapCls;/, 'recorded on the full rebuild');
+  assert.match(body, /\[\['wxc-s2', _wxS2\], \['wxc-s3', _wxS3\]\]/);
+  assert.match(body, /_wxElapsed = \(\(Date\.now\(\) - window\._wxEntranceAt\) \/ 1000 \/ _wxSpeed\(\)\)\.toFixed\(2\) \+ 's';/,
+    'stamped in BASE seconds — the delays multiply by --wxc-t');
+  assert.match(body, /fresh\.style\.setProperty\('--wxc-el', _wxElapsed\)/);
+  assert.match(body, /anchor\.insertAdjacentHTML\('beforebegin', pair\[1\]\)/, 'ahead of the credit');
+});
 
-/** Builds _wxArmEntrance + _wxEndEntrance over a fake window/document. */
-function harness() {
-  const endSrc = SRC.match(/function _wxEndEntrance\(root\) \{[\s\S]*?\n\}/);
-  const armSrc = SRC.match(/function _wxArmEntrance\(wrap\) \{[\s\S]*?\n\}/);
-  const msSrc = SRC.match(/var _WXC_ENTRANCE_MS = (\d+);/);
-  assert.ok(endSrc && armSrc && msSrc,
-    'fids-core.js must define _wxArmEntrance, _wxEndEntrance and the duration');
+test('a gate rebuild re-stamps the wrap AND the swapped screens, in base seconds', () => {
+  const at = SRC.indexOf('var _wxR = _savedAd && _savedAd.querySelector');
+  const block = SRC.slice(at, SRC.indexOf('if (_savedAd && _newAd)', at));
+  assert.match(block, /var _wxBase = \(_wxEl \/ _wxSpeed\(\)\)\.toFixed\(2\) \+ 's';/);
+  assert.match(block, /_wxR\.style\.setProperty\('--wxc-el', _wxBase\);/);
+  assert.match(block, /_wxR\.querySelectorAll\(':scope > \[style\*="--wxc-el"\]'\)[\s\S]{0,140}setProperty\('--wxc-el', _wxBase\)/,
+    'an inline stamp on a swapped screen outranks the wrap\'s; left alone, that screen resumes on the clock it was inserted at');
+});
 
-  const all = [];
-  const doc = {
-    querySelectorAll: () => all.filter(n => n.classList.contains('wxc-entering')),
+test('the carry re-marks only inside the window, stamps base seconds, and resumes the film', () => {
+  const parked = [], held = [], timers = [];
+  const fitted = [];
+  const carry = new Function('window', 'Date', '_WXC_ENTRANCE_MS', '_WXC_ENTRANCE_INTRO_S', '_WX_INTRO_BG_SPAN', '_wxSpeed',
+    '_wxParkSceneAfterSet', '_wxHoldSceneForIntro', 'setTimeout', 'clearTimeout', '_wxFitIntroPaint',
+    fnBody('_wxCarryEntrance') + '\nreturn _wxCarryEntrance;');
+  const NOW = 1_800_000_000_000;
+  const mk = (withFilm) => {
+    const w = { classes: [], vars: {}, bg: withFilm ? { rate: 1, t: 0, played: false, playbackRate: 1 } : null };
+    w.classList = { add: c => w.classes.push(c), contains: c => w.classes.includes(c) };
+    w.style = { setProperty: (k, v) => { w.vars[k] = v; } };
+    if (w.bg) { w.bg.play = () => { w.bg.played = true; }; Object.defineProperty(w.bg, 'currentTime', { set: v => { w.bg.t = v; }, get: () => w.bg.t }); }
+    w.querySelector = sel => (sel === ':scope > .wxc-intro > video.wxc-intro-bg' ? w.bg : null);
+    return w;
   };
-  const timers = new Map();
-  let nextId = 0;
-  const w = { _gateAdVisitSeq: 1 };
-  // _wxSpeed reads location.search; the dial itself is tested separately, so
-  // here it is held at 1 and the harness is about the lifecycle only.
-  const api = new Function('window', 'document', 'setTimeout', 'clearTimeout',
-    '_WXC_ENTRANCE_MS', '_wxSpeed', '_wxHoldSceneForIntro',
-    endSrc[0] + '\n' + armSrc[0] + '\nreturn { arm: _wxArmEntrance, end: _wxEndEntrance };')(
-    w, doc, fn => { timers.set(++nextId, fn); return nextId; },
-    id => timers.delete(id), Number(msSrc[1]), () => 1, () => {});
-
-  const wrap = () => {
-    const c = new Set();
-    const n = {
-      c,
-      classList: { add: x => c.add(x), remove: x => c.delete(x), contains: x => c.has(x) },
-      // arming stamps the speed dial on the wrap when it is not 1
-      style: { props: {}, setProperty(k, v) { this.props[k] = v; } },
-      querySelectorAll: () => [],
-    };
-    all.push(n);
-    return n;
+  const run = (entranceAt, playedSeq, visitSeq, speed = 1, withFilm = false) => {
+    const wrap = mk(withFilm);
+    parked.length = 0; held.length = 0; timers.length = 0; fitted.length = 0;
+    const ok = carry({ _wxEntranceAt: entranceAt, _wxEntrancePlayedSeq: playedSeq, _gateAdVisitSeq: visitSeq },
+      { now: () => NOW }, ENTRANCE_MS, INTRO_S, 6.0, () => speed,
+      (w, el) => parked.push(el), (w, ms) => held.push(ms), (fn, ms) => { timers.push(ms); return 1; }, () => {}, (w) => fitted.push(w))(wrap);
+    return { ok, wrap };
   };
-  const fire = () => { [...timers.values()].forEach(fn => fn()); };
-  return { ...api, wrap, fire, w, ms: Number(msSrc[1]) };
-}
-
-test('the entrance plays once per arrival and no re-render re-arms it', () => {
-  // Both the visit counter and the played-marker live on `window`, precisely so
-  // a gate rebuild cannot reset either. The harness therefore holds one window
-  // across the whole slide.
-  const h = harness();
-
-  const first = h.wrap();
-  assert.equal(h.arm(first), true, 'the card arriving must play the entrance');
-  assert.ok(first.c.has('wxc-entering'), 'and mark the wrap');
-
-  // Re-render path 2: late 7-day data swaps the strips under the same hero.
-  assert.equal(h.arm(first), false, 'a strips-only refresh must NOT re-arm');
-  // Re-render path 1: a re-tint only.
-  assert.equal(h.arm(first), false, 'a re-tint must NOT re-arm');
-  // Re-render path 3 on the SAME visit: a plain weather-content change rebuilds
-  // the wrap from scratch. Freshness of the wrap must not count as an arrival.
-  const rebuilt = h.wrap();
-  assert.equal(h.arm(rebuilt), false,
-    'a full rebuild mid-slide must NOT re-arm — path 3 reinserts the wrap for ' +
-    'any weather change, so "the wrap is new" is not "the card arrived"');
-  assert.ok(!rebuilt.c.has('wxc-entering'),
-    'and the rebuilt card is therefore left plain — which is exactly why ' +
-    'nothing may be hidden at rest');
-
-  // The sequence ends: the class comes off, so a LATE strips-only refresh
-  // cannot replay those two bands minutes into the slide.
-  h.fire();
-  assert.ok(!first.c.has('wxc-entering'), 'the class is stripped when it is over');
-  assert.equal(h.arm(first), false, 'and stripping it does not re-arm anything');
-
-  // The slide genuinely leaves and comes back.
-  h.w._gateAdVisitSeq = 2;
-  const second = h.wrap();
-  assert.equal(h.arm(second), true, 'the next arrival plays it again');
+  let r = run(NOW - 10000, 3, 3);
+  assert.equal(r.ok, true, '10s into this visit\'s sequence: carried');
+  assert.deepEqual(r.wrap.classes, ['wxc-entering']);
+  assert.equal(r.wrap.vars['--wxc-el'], '10.00s');
+  assert.deepEqual(parked, [], 'v23843: the scene is never parked — it is the picture behind every screen');
+  assert.deepEqual(held, [], 'past the film, nothing to hold');
+  r = run(NOW - 10000, 3, 3, 2);
+  assert.equal(r.wrap.vars['--wxc-el'], '5.00s', 'at half speed 10 real seconds are 5 base seconds — the delays multiply by --wxc-t');
+  assert.equal(r.wrap.vars['--wxc-t'], '2');
+  r = run(NOW - 2000, 3, 3, 1, true);
+  assert.equal(r.ok, true, 'inside the film');
+  assert.equal(r.wrap.bg.played, true, 'the film is resumed');
+  assert.equal(r.wrap.bg.t, 2, 'at the frame it had reached');
+  assert.deepEqual(timers, [4000], 'and stopped when the window would have closed');
+  assert.deepEqual(held, [2000], 'the loops are held for what is left of it');
+  assert.equal(fitted.length, 1, 'and the painted title is fitted to the rebuilt wrap');
+  r = run(NOW - 60000, 3, 3);
+  assert.equal(r.ok, false, 'past the end: the end state is the right state');
+  r = run(NOW - 5000, 2, 3);
+  assert.equal(r.ok, false, 'a sequence armed for a previous visit is not this visit\'s');
+  r = run(0, 3, 3);
+  assert.equal(r.ok, false, 'never armed: nothing to carry');
+  // …and the rebuild inside the film carries the film's markup again
+  const wants = new Function('window', 'Date', '_WXC_ENTRANCE_INTRO_S', '_wxSpeed', fnBody('_wxWantsIntro') + '\nreturn _wxWantsIntro;');
+  const w = (played, visit, ago) => wants({ _wxEntrancePlayedSeq: played, _gateAdVisitSeq: visit, _wxEntranceAt: NOW - ago }, { now: () => NOW }, INTRO_S, () => 1)();
+  assert.equal(w(3, 4, 0), true, 'a new visit');
+  assert.equal(w(3, 3, 2000), true, 'a rebuild two seconds into the film');
+  assert.equal(w(3, 3, 9000), false, 'a rebuild after the film');
 });
 
-test('the deadline outlasts the animation it is ending', () => {
-  // Nothing tied the JS timer to the CSS timings before, so the constant could
-  // be cut to anything at all and every test still passed — while the class
-  // came off mid-fade and the late bands snapped in with no transition.
-  let last = 0;
-  for (const [, child] of STAGES) last = Math.max(last, delayOf(child) + durOf(child));
-  const h = harness();
-  assert.ok(h.ms / 1000 > last,
-    `_WXC_ENTRANCE_MS is ${h.ms}ms but the last band does not land until ` +
-    `${(last * 1000).toFixed(0)}ms — stripping the class early cuts the ` +
-    'sequence off and the remaining layers hard-cut to full opacity');
-  assert.ok(h.ms / 1000 < last + 1,
-    'and it must not be padded far past the end either — the class is what ' +
-    'keeps a late strips-only refresh from replaying those bands, so every ' +
-    'extra second is a second that refresh can land in');
+test('the scene is never parked: it plays from the film\'s release to the card\'s exit', () => {
+  // v23843. It used to pause at 19.7s behind an opaque hours screen. The
+  // screens are translucent over the footage now, and a frozen sky behind
+  // live numbers is the one thing this card must not do.
+  assert.doesNotMatch(SRC, /_wxParkSceneAfterSet/);
+  assert.doesNotMatch(SRC, /window\._wxParkTimer/);
+  const hold = fnBody('_wxHoldSceneForIntro');
+  assert.match(hold, /vid\.play\(\)/, 'released under the film');
+  assert.ok(hold.lastIndexOf('.pause()') < hold.indexOf('3800'), 'every pause in the hold comes before the release at 3.8s; nothing after it pauses the scene');
+
 });
 
-test('a second arm cannot strand the first wrap', () => {
-  // The timer is a single global slot. It used to close over the wrap it was
-  // armed for, so a second arm inside the window cleared the first timer and
-  // left the earlier wrap marked with nothing left to strip it — and a
-  // stranded class plus a later re-attach restarts the animations with no
-  // deadline at all, which is an invisible weather card over a gate.
-  const h = harness();
-  const a = h.wrap();
-  assert.equal(h.arm(a), true);
-  h.w._gateAdVisitSeq = 2;
-  const b = h.wrap();
-  assert.equal(h.arm(b), true, 'a genuine second arrival arms again');
-  h.fire();
-  assert.ok(!b.c.has('wxc-entering'), 'the second wrap is cleared');
-  assert.ok(!a.c.has('wxc-entering'),
-    'and so is the first — the deadline must clear the mark wherever it is, ' +
-    'not only on the wrap it happened to be armed for');
+// ── The screens' own rules ───────────────────────────────────────────────
+
+test('the hours are eight consecutive readings and the days are five finite ones', () => {
+  assert.match(SRC, /\.slice\(0, 8\)\s*\.forEach\(function \(h\) \{/, 'eight hours, consecutive');
+  assert.match(SRC, /if \(!_wxNum\(daily\.temperature_2m_max\[i\]\) \|\| !_wxNum\(daily\.temperature_2m_min\[i\]\)\) continue;/,
+    'a day the route could not compute (null) is skipped, not drawn as 0°');
+  assert.match(SRC, /if \(!\(dd\.hi > -99 && dd\.lo < 99\)\) return;/, 'and the hourly roll-up skips an empty day');
 });
 
-test('ending the sequence reaches a DETACHED carousel too', () => {
-  // The gate rebuild hands the carousel over while it is OUT of the document,
-  // and a detached subtree is not reachable from document.querySelectorAll —
-  // so the one caller that most needs the mark cleared is the one a
-  // document-wide sweep would miss.
-  const h = harness();
-  const orphan = {
-    c: new Set(['wxc-entering', 'wxcard-wrap']),
-    classList: {
-      add(x) { orphan.c.add(x); }, remove(x) { orphan.c.delete(x); },
-      contains: x => orphan.c.has(x),
-    },
-    style: { props: {}, setProperty(k, v) { this.props[k] = v; } },
-    querySelectorAll: () => [],
-  };
-  h.end(orphan);
-  assert.ok(!orphan.c.has('wxc-entering'),
-    'passing the detached root must clear it — querySelectorAll does not ' +
-    'match the root element itself, so the root needs its own check');
+test('a stacked pair keeps both languages the same size and weight', () => {
+  assert.match(SRC, /w\.push\('<span class="wxc-l' \+ \(w\.length \+ 1\) \+ '">' \+ t \+ '<\/span>'\);/);
+  assert.doesNotMatch(rule('.wxcard-wrap .wxc-l2'), /font-size|font-weight|opacity/, 'the second line may change colour, never size or weight');
 });
 
-// ── Every path that touches the DOM mid-sequence ─────────────────────────
-
-/** The three re-render paths of _renderWxCard, sliced by their own anchors. */
-function renderPaths() {
-  const fn = SRC.slice(SRC.indexOf('function _renderWxCard(el) {'));
-  const end = fn.indexOf('\n}\n');
-  const body = fn.slice(0, end);
-  const p1a = body.indexOf('if (el._wxLastHtml === _wxSig');
-  const p2a = body.indexOf("_wxWrapP && el._wxMainHtml === _wxMainHtml");
-  const p3a = body.indexOf('el.innerHTML = _wxHtml;');
-  assert.ok(p1a >= 0 && p2a >= 0 && p3a >= 0 && p1a < p2a && p2a < p3a,
-    'the three render paths must still be locatable by their own anchors');
-  return { retint: body.slice(p1a, p2a), strips: body.slice(p2a, p3a), rebuild: body.slice(p3a) };
-}
-
-test('all three render paths ask, and none of them clears the marker', () => {
-  // Counting `_wxArmEntrance(` occurrences was not enough: moving path 3's
-  // call into path 1 kept the count at four and disabled the entrance
-  // completely, because path 3 is the ONLY path a real arrival takes — the
-  // crossfade empties the carousel and nulls _wxLastHtml, so paths 1 and 2
-  // both fail their .wxcard-wrap lookup on an arrival. Each path is checked
-  // in its own body now.
-  const p = renderPaths();
-  for (const [name, body] of Object.entries(p)) {
-    assert.match(body, /_wxArmEntrance\(/,
-      `the ${name} path must ask — no path is allowed to reason about the ` +
-      'rule on its own, the visit number decides');
-  }
-  assert.ok(!/_wxEntrancePlayedSeq|_gateAdVisitSeq/.test(p.strips),
-    'the strips-only path must not touch the visit counter or the played ' +
-    'marker — clearing either is the same bug as keying on freshness');
-});
-
-test('the arrival path marks the wrap synchronously', () => {
-  // Deferring the mark by even one task lets the finished card paint and then
-  // snap back to the start of the sequence.
-  const { rebuild } = renderPaths();
-  const upto = rebuild.slice(0, rebuild.indexOf('_wxArmEntrance('));
-  assert.ok(!/setTimeout\(|requestAnimationFrame\(/.test(upto),
-    'nothing may defer the mark on the rebuild path: it has to be on the ' +
-    'wrap before the browser paints, in the same task as the insert');
-});
-
-test('the strips-only swap abandons the sequence instead of restarting it', () => {
-  // The new strips would start their delays from INSERTION while the removal
-  // deadline stayed where it was armed — so a refresh landing at t=1.0s left
-  // both bands held at the keyframe's opacity:0 until the class came off, and
-  // they then snapped in with no fade at all. Two of the card's three content
-  // bands, blank for most of a second, mid-slide, on a public board. This
-  // fires whenever late 7-day data lands, which is every half hour per
-  // destination, so it is routine rather than a corner case.
-  const { strips } = renderPaths();
-  const ends = strips.indexOf('_wxEndEntrance(');
-  const removes = strips.indexOf(":scope > .wxc-strip");
-  assert.ok(ends >= 0, 'the strips-only path must be able to end the sequence');
-  assert.ok(ends < removes,
-    'and it must do so BEFORE it pulls the strips out — abandoning after the ' +
-    're-insert leaves the new nodes mid-animation against a dead deadline');
-  assert.match(strips, /classList\.contains\('wxc-entering'\)/,
-    'and only when the sequence is actually running: a refresh minutes into ' +
-    'the slide has nothing to abandon and must not pay for a DOM sweep');
-});
-
-test('a gate rebuild resumes the sequence rather than snapping it', () => {
-  // The rebuild detaches the live carousel and re-attaches it to survive the
-  // innerHTML wipe, and re-inserting a node RESTARTS its CSS animations — the
-  // v23166 note in display-overrides measured exactly that on this carousel.
-  // The first fix stripped the mark so the card landed whole, which was
-  // correct and looked wrong: every layer mid-flight jumped to its final
-  // position in a single frame, and the gate rebuilds often enough to be
-  // seen. Every delay is written as (base - var(--wxc-el)), so stamping the
-  // elapsed time makes the restarted animations resume where they were.
-  const detach = SRC.indexOf("if (_gateAdAirlineSame && _savedAd && _savedAd.firstChild) { _savedAd.remove(); }");
-  const reattach = SRC.indexOf('_newAd.replaceWith(_savedAd);');
-  assert.ok(detach >= 0 && reattach > detach,
-    'the gate rebuild must still preserve the carousel across the wipe');
-  const between = SRC.slice(detach, reattach);
-  assert.match(between, /wxcard-wrap\.wxc-entering/,
-    'it must look for a card that is actually mid-entrance rather than ' +
-    'sweeping the DOM on every rebuild');
-  assert.match(between, /setProperty\('--wxc-el'/,
-    'and stamp the elapsed time, which is what lets the restarted animations ' +
-    'pick up where they were instead of starting over or snapping to the end');
-  assert.match(between, /_wxEndEntrance\(_savedAd\)/,
-    'past the end of the sequence there is nothing to resume, so the mark ' +
-    'still comes off — that is the case the first fix was written for');
-  assert.match(between, /_wxEl > 0 && _wxEl < _wxSpan/,
-    'the choice between resuming and ending must be made on the clock, not ' +
-    'assumed either way');
-  // The offset only makes sense if the stylesheet actually reads it.
-  assert.match(BLOCK, /animation-delay: calc\(\([\d.]+s - var\(--wxc-el, 0s\)\)/,
-    'every delay must carry the resume offset, or a rebuild lands the card ' +
-    'at the wrong point in its own sequence');
-  assert.match(SRC, /window\._wxEntranceAt = Date\.now\(\);/,
-    'and the arm must record when it started');
-});
-
-test('the class the JS sets is the class the CSS animates', () => {
-  assert.match(SRC, /classList\.add\('wxc-entering'\)/,
-    'fids-core.js must mark the wrap with the class display-overrides selects');
-  assert.match(SRC, /classList\.remove\('wxc-entering'\)/,
-    'and must take it off again when the sequence is over');
-});
-
-// ── The dial ─────────────────────────────────────────────────────────────
-
-test('?wxspeed stretches the whole sequence, and refuses nonsense', () => {
-  // Three cuts of this animation were rejected as too fast. The dial exists so
-  // the next number can be found by looking at a board instead of by another
-  // round trip, which only works if it is honest: one multiplier over every
-  // delay, every duration and every hold, plus the JS deadlines and the dwell,
-  // so the SHAPE is identical at any speed and only the clock changes.
-  const src = SRC.match(/function _wxSpeed\(\) \{[\s\S]*?\n\}/);
-  assert.ok(src, '_wxSpeed must exist');
-  const make = q => new Function('location',
-    src[0] + '\nreturn _wxSpeed();')({ search: q });
-  assert.equal(make(''), 1, 'no parameter is the tuned pacing, untouched');
-  assert.equal(make('?wxspeed=1.4'), 1.4);
-  assert.equal(make('?wxspeed=0.5'), 0.5, 'the fast end of the clamp is allowed');
-  assert.equal(make('?wxspeed=4'), 4, 'and the slow end');
-  assert.equal(make('?wxspeed=0.1'), 1, 'below the clamp falls back to 1');
-  assert.equal(make('?wxspeed=99'), 1, 'and above it — a typo must not park a slide for an hour');
-  assert.equal(make('?wxspeed=slow'), 1, 'and so must a word');
-
-  // Every timing in the block rides the property, or the dial would stretch
-  // some layers and not others and the whole shape would come apart.
-  const timed = RULES_ONLY.match(/animation(?:-delay)?:[^;]+/g) || [];
-  const clocked = timed.filter(t => /[\d.]+s/.test(t) && !/^animation:\s*none/.test(t));
-  for (const t of clocked) {
-    assert.match(t, /var\(--wxc-t/,
-      `every timing must ride the dial, this one does not: ${t.trim().slice(0, 70)}`);
-  }
-  // and the two JS deadlines and the dwell scale with it too
-  assert.match(SRC, /Math\.round\(_WXC_ENTRANCE_MS \* _wxSpeed\(\)\)/);
-  assert.match(SRC, /Math\.round\(_WXC_EXIT_MS \* _wxSpeed\(\)\)/);
-  assert.match(SRC, /slide\.type === 'wxcard'\) return Math\.round\(\d+ \* _wxSpeed\(\)\)/);
+test('a missing screen never leaves its slot blank', () => {
+  assert.match(SRC, /if \(!_wxS2 && _wxS3\) _wxS2 = _wxS3\.replace\('wxc-screen wxc-s3', 'wxc-screen wxc-s2'\);/);
+  assert.match(SRC, /var _wxOnly1 = !\(_wxS2 \|\| _wxS3\);/);
+  assert.match(rule('.wxcard-wrap.wxc-one > .wxc-s1'), /opacity: 1;/);
+  assert.match(rule('.wxcard-wrap.wxc-entering.wxc-one > .wxc-s1'), /animation: wxcFade/);
 });
