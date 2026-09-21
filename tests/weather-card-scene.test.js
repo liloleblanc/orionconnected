@@ -47,7 +47,7 @@ test('the card builds a muted, looping, inline video', () => {
 });
 
 test('the set loop is first, the scene over it, the screens over both', () => {
-  assert.match(SRC, /_wxSet \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro/,
+  assert.match(SRC, /_wxSet \+ _wxVid \+ _wxPlate \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro/,
     'set, scene, then the screens — that source order is the stacking order');
   const set = CSS.match(/\.wxcard-wrap > video\.wxc-set \{[^}]*\}/);
   assert.ok(set, 'the set loop has its own rule');
@@ -297,4 +297,44 @@ test('no malformed percentages reached the stylesheet', () => {
     .map((l, i) => [i + 1, l])
     .filter(([, l]) => /%%|NaN|undefined/.test(l) && /wxc-/.test(l));
   assert.deepEqual(bad, [], 'malformed value in a weather-card rule');
+});
+
+
+// ── v23842: the scene fits the monitor; the screens hand over on navy ────
+
+test('the scene video is boxed to the monitor, not left at its own pixel size', () => {
+  // A video is a replaced element: with width and height auto, the insets
+  // place its corner and nothing else, and a 1280-wide clip spilled across the
+  // card. The live rule must size it to the inset exactly.
+  const geo = CSS.match(/\.wxcard-wrap > video\.wxc-vid \{ top: ([\d.]+)% !important; left: ([\d.]+)% !important; right: ([\d.]+)% !important; bottom: ([\d.]+)% !important;/);
+  const rules = [...CSS.matchAll(/\.wxcard-wrap > video\.wxc-vid \{[^}]*\}/g)].map(m => m[0]);
+  const live = rules[rules.length - 1];
+  const w = Number((live.match(/width: ([\d.]+)% !important/) || [])[1]);
+  const h = Number((live.match(/height: ([\d.]+)% !important/) || [])[1]);
+  assert.ok(w > 0 && h > 0, 'the last scene rule must set an explicit width and height');
+  assert.ok(Math.abs(w - (100 - +geo[2] - +geo[3])) < 0.05, `width ${w}% must equal 100 - left - right`);
+  assert.ok(Math.abs(h - (100 - +geo[1] - +geo[4])) < 0.05, `height ${h}% must equal 100 - top - bottom`);
+  assert.match(live, /right: auto !important; bottom: auto !important/, 'the far insets are released so the box is the size, not the corner');
+  assert.match(live, /object-fit: cover !important/);
+});
+
+test('a navy plate rises with the set\'s exit and stays under the hours and the days', () => {
+  assert.match(SRC, /var _wxPlate = '<div class="wxc-plate"><\/div>';/, 'the plate is emitted');
+  const base = CSS.match(/\.wxcard-wrap > \.wxc-plate \{[^}]*\}/);
+  assert.ok(base, 'the plate has a rule');
+  assert.match(base[0], /z-index: 2 !important/, 'same layer as the screens; source order puts it beneath them');
+  assert.match(base[0], /opacity: 1;/, 'resting state is up, like the screens');
+  assert.ok(!/opacity: [\d.]+ !important/.test(base[0]), 'its opacity is not pinned, or the animation could never move it');
+  assert.match(base[0], /background: linear-gradient\(180deg, #05101f 0%, #0d305e 56%, #071934 100%\) !important/, 'the same navy as the screens');
+  assert.match(CSS, /\.wxcard-wrap\.wxc-one > \.wxc-plate \{ display: none !important; \}/, 'a single-screen card has no hand-over to cover');
+  const k = CSS.match(/@keyframes wxcPlate \{([\s\S]*?)\n\}/);
+  assert.ok(k, 'wxcPlate keyframes');
+  const rise = k[1].match(/0%, ([\d.]+)%\s*\{ opacity: 0;/), up = k[1].match(/([\d.]+)%, 100%\s*\{ opacity: 1; \}/);
+  const s1 = CSS.match(/@keyframes wxcScreen1 \{([\s\S]*?)\n\}/)[1];
+  const s1Hold = s1.match(/([\d.]+)%\s*\{ opacity: 1; transform: none; animation-timing-function/), s1Gone = s1.match(/([\d.]+)%, 100%\s*\{ opacity: 0;/);
+  assert.equal(rise[1], s1Hold[1], 'the plate starts rising exactly as the set begins to leave');
+  assert.equal(up[1], s1Gone[1], 'and is fully up exactly as the set is gone');
+  assert.match(CSS, /\.wxcard-wrap\.wxc-entering > \.wxc-plate \{ animation: wxcPlate calc\(36\.00s \* var\(--wxc-t, 1\)\) linear both !important; animation-delay: calc\(\(0s - var\(--wxc-el, 0s\)\) \* var\(--wxc-t, 1\)\) !important; \}/,
+    'one 36s clock, resumable from the elapsed stamp, like the screens');
+  assert.match(CSS, /\.wxcard-wrap\.wxc-leaving > \.wxc-plate \{ animation: wxcLeaveGround/, 'it leaves with the ground');
 });

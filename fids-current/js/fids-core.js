@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23841';
+var FIDS_BUILD_TAG = 'v23842';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45345,7 +45345,10 @@ function _renderWxCard(el) {
     // The scene is part of the rebuild signature further down (_wxSig is the
     // whole markup string), so crossing 06:00 or 19:00 swaps the clip on the
     // next render rather than needing its own timer.
-    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + '">' + _wxSet + _wxVid + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxIntro + '</div>';
+    // v23842 — a navy plate between the set and the screens, so the hours and
+    // the days hand over on navy and the monitor never shows through them.
+    var _wxPlate = '<div class="wxc-plate"></div>';
+    var _wxHtml = '<div class="wxcard-wrap wxcard-col' + _wxWrapCls + '">' + _wxSet + _wxVid + _wxPlate + _wxS1 + _wxS2 + _wxS3 + _wxCredit + _wxIntro + '</div>';
     // The gate board re-renders every few seconds (countdown / data refresh); the
     // weather scene rebuilt its innerHTML each time, reloading every animated SVG
     // icon → a visible flicker. Only touch the DOM when the rendered HTML actually

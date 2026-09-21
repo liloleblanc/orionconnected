@@ -94,8 +94,8 @@ function staged() {
 // ── The order ────────────────────────────────────────────────────────────
 
 test('set loop, scene, three screens, credit, title — in that order, and each screen is what it says', () => {
-  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ '">' \+ _wxSet \+ _wxVid \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>';/,
-    'that source order is the stacking order');
+  assert.match(SRC, /var _wxHtml = '<div class="wxcard-wrap wxcard-col' \+ _wxWrapCls \+ '">' \+ _wxSet \+ _wxVid \+ _wxPlate \+ _wxS1 \+ _wxS2 \+ _wxS3 \+ _wxCredit \+ _wxIntro \+ '<\/div>';/,
+    'that source order is the stacking order; the plate (v23842) sits between the scene and the screens');
   assert.match(SRC, /var _wxS1 = '<div class="wxc-screen wxc-s1">'\s*\+ '<div class="wxc-monitor/, 'screen 1 is the monitor');
   assert.match(SRC, /_wxS2 = '<div class="wxc-screen wxc-s2">'[^;]*wxc-chart/, 'screen 2 is the hours chart');
   assert.match(SRC, /_wxS3 = '<div class="wxc-screen wxc-s3">'[^;]*wxc-days/, 'screen 3 is the days');
