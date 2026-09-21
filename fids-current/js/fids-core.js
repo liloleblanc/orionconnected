@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23836';
+var FIDS_BUILD_TAG = 'v23840';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43824,6 +43824,55 @@ function _wxSceneKindOf(icon) {
   if (/cloud|overcast|fog/.test(n)) return 'cloud';
   return 'clear';
 }
+// v23840 — MORE THAN ONE TAKE OF THE SAME WEATHER.
+// A board that runs around the clock reaches the snow scene many times in a
+// week, and one eight-second loop stops reading as weather and starts being
+// the thing people recognise. So a slot holds a LIST of clips and the card
+// draws one of them each time it comes round; adding a clip is adding a
+// filename here. A slot with a single clip behaves exactly as it did before.
+var _WX_SCENE_TAKES = {
+  'clear-day':   ['wx-grass-loop'],
+  'clear-night': ['wx-fireflies-night'],
+  'cloud-day':   ['wx-scene-cloud-day'],
+  'cloud-night': ['wx-scene-cloud-night'],
+  'rain-day':    ['wx-scene-rain-day'],
+  'rain-night':  ['wx-scene-rain-night'],
+  'snow-day':    ['wx-scene-snow-day'],
+  'snow-night':  ['wx-scene-snow-night'],
+  'storm-day':   ['wx-scene-storm-day'],
+  'storm-night': ['wx-scene-storm-night']
+};
+// The chosen file is part of the card's rebuild signature, so drawing again
+// inside a visit would change the markup, restart the clip, and take the rest
+// of the card with it. The draw is therefore held for the length of one visit
+// and only renewed on the next arrival. The take that just played is kept out
+// of the following draw, so the same clip never runs twice running.
+var _wxTakeHeld = {};
+var _wxTakeLast = {};
+function _wxSceneTake(slot) {
+  var list = _WX_SCENE_TAKES[slot];
+  if (!list || !list.length) {
+    // Belt and braces: a slot nobody listed still resolves to the file the
+    // card used before this existed.
+    if (slot === 'clear-night') return 'wx-fireflies-night';
+    if (slot === 'clear-day') return 'wx-grass-loop';
+    return 'wx-scene-' + slot;
+  }
+  if (list.length === 1) return list[0];
+  var seq = 0;
+  try { seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0; } catch (eSq) {}
+  var held = _wxTakeHeld[slot];
+  if (held && held.seq === seq) return held.file;
+  var pool = [], i;
+  for (i = 0; i < list.length; i++) {
+    if (list[i] !== _wxTakeLast[slot]) pool.push(list[i]);
+  }
+  if (!pool.length) pool = list;
+  var file = pool[Math.floor(Math.random() * pool.length)] || list[0];
+  _wxTakeLast[slot] = file;
+  _wxTakeHeld[slot] = { seq: seq, file: file };
+  return file;
+}
 // WMO daily codes (Open-Meteo /wxdaily) → animated icon names.
 function _wmoAnimIcon(code) {
   var c = Number(code) || 0;
@@ -45280,9 +45329,8 @@ function _renderWxCard(el) {
     var _wxSceneRead = null;
     try { _wxSceneRead = _wxAtTime(_wxOrig || dest, 0); } catch (eSR) {}
     var _wxSceneKind = _wxSceneKindOf(_wxAnimIcon(_wxSceneRead ? _wxSceneRead.code : cur.code, _wxNightScene));
-    var _wxVidSrc = _wxSceneKind === 'clear'
-      ? (_wxNightScene ? '/logos/Backgrounds/video/wx-fireflies-night.mp4' : '/logos/Backgrounds/video/wx-grass-loop.mp4')
-      : '/logos/Backgrounds/video/wx-scene-' + _wxSceneKind + (_wxNightScene ? '-night' : '-day') + '.mp4';
+    var _wxSceneSlot = _wxSceneKind + (_wxNightScene ? '-night' : '-day');
+    var _wxVidSrc = '/logos/Backgrounds/video/' + _wxSceneTake(_wxSceneSlot) + '.mp4';
     var _wxVid = '<video class="wxc-vid" autoplay loop muted playsinline preload="auto" '
                + 'src="' + _wxVidSrc + '"></video>';
     // v23787 — THE TITLE PLAYS OVER THE CARD AS IT ARRIVES.

@@ -179,11 +179,24 @@ test('the scene is chosen from the family and the hour', () => {
   assert.match(block, /_wxSceneRead = _wxAtTime\(_wxOrig \|\| dest, 0\)/,
     "the reading is the board's own airport's — the departure side of the set — " +
     'so the screen shows the sky outside the terminal, not the sky at the far end');
-  assert.match(block, /_wxSceneKind === 'clear'/, "'clear' keeps the loops the card has had");
-  assert.match(block, /wx-fireflies-night\.mp4/);
-  assert.match(block, /wx-grass-loop\.mp4/);
-  assert.match(block, /'\/logos\/Backgrounds\/video\/wx-scene-' \+ _wxSceneKind \+ \(_wxNightScene \? '-night' : '-day'\) \+ '\.mp4'/,
-    'the other four families take a day or a night loop of their own');
+  assert.match(block, /var _wxSceneSlot = _wxSceneKind \+ \(_wxNightScene \? '-night' : '-day'\);/,
+    'the family and the hour together name one slot');
+  assert.match(block, /_wxVidSrc = '\/logos\/Backgrounds\/video\/' \+ _wxSceneTake\(_wxSceneSlot\) \+ '\.mp4'/,
+    'and the file for that slot is drawn rather than spelled out — v23840, a slot may hold several clips');
+  // The filenames moved into _WX_SCENE_TAKES when a slot became a list. What
+  // still has to hold is the mapping itself: 'clear' keeps the two loops the
+  // card has always had, and the other four families each keep their own day
+  // and night loop as the first take.
+  const takes = SRC.slice(SRC.indexOf('var _WX_SCENE_TAKES = '),
+                          SRC.indexOf('};', SRC.indexOf('var _WX_SCENE_TAKES = ')) + 2);
+  assert.match(takes, /'clear-day':\s*\['wx-grass-loop'/, "'clear' by day keeps the grass");
+  assert.match(takes, /'clear-night':\s*\['wx-fireflies-night'/, "'clear' after dark keeps the fireflies");
+  for (const fam of ['cloud', 'rain', 'snow', 'storm']) {
+    assert.match(takes, new RegExp(`'${fam}-day':\\s*\\['wx-scene-${fam}-day'`),
+      `${fam} keeps its own day loop`);
+    assert.match(takes, new RegExp(`'${fam}-night':\\s*\\['wx-scene-${fam}-night'`),
+      `${fam} keeps its own night loop`);
+  }
   assert.match(block, /_wxSceneCls = _wxNightScene \? ' wxc-scene-night' : ' wxc-scene-day'/);
   assert.match(block, /' wxc-wx-' \+ _wxSceneKind/, 'the family rides on the wrap as a class');
 });
