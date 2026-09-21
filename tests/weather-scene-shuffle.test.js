@@ -37,7 +37,8 @@ function blockOf(head) {
 }
 
 const TABLE_SRC = blockOf('var _WX_SCENE_TAKES = ') + ';';
-const PICK_SRC = blockOf('function _wxSceneTake(slot)');
+const PICK_SRC = blockOf('function _wxSceneTake(slot, key, avoid)');
+const FOR_SRC = blockOf('function _wxSceneTakesFor(slots)');
 
 // A picker with its own state, driven by a fake visit counter, plus an
 // injectable list so the shuffle can be tested without waiting for footage.
@@ -47,7 +48,8 @@ function makePicker(overrides, rnd) {
     ${TABLE_SRC}
     var _wxTakeHeld = {}, _wxTakeLast = {};
     ${PICK_SRC}
-    return { take: _wxSceneTake, table: _WX_SCENE_TAKES, win: window };
+    ${FOR_SRC}
+    return { take: _wxSceneTake, takesFor: _wxSceneTakesFor, table: _WX_SCENE_TAKES, win: window };
   `)(win, rnd ? Object.assign(Object.create(Math), { random: rnd }) : Math);
   if (overrides) for (const k of Object.keys(overrides)) fn.table[k] = overrides[k];
   fn.visit = () => { win._gateAdVisitSeq++; };
@@ -207,8 +209,8 @@ test('one clip in a slot is drawn without touching the visit counter', () => {
 test('the card builds the scene src from the table, not by hand', () => {
   assert.match(JS, /var _wxSceneSlot = _wxSceneKind \+ \(_wxNightScene \? '-night' : '-day'\);/,
     'the slot name is built once');
-  assert.match(JS, /var _wxVidSrc = '\/logos\/Backgrounds\/video\/' \+ _wxSceneTake\(_wxSceneSlot\) \+ '\.mp4';/,
-    'the src comes from _wxSceneTake');
+  assert.match(JS, /var _wxTakes = _wxSceneTakesFor\(_wxSlots\);/, 'the srcs come from the picker, one per screen (v23844)');
+  assert.match(JS, /'src="\/logos\/Backgrounds\/video\/' \+ _wxTakes\[_vi\] \+ '\.mp4"/, 'and are spelled from what it drew');
   const callSite = JS.slice(JS.indexOf('var _wxSceneSlot'), JS.indexOf('var _wxSceneSlot') + 400);
   assert.ok(!/wx-scene-' \+ _wxSceneKind/.test(callSite),
     'the old hand-built filename must be gone, or two rules decide the scene');
@@ -221,4 +223,24 @@ test('the draw is per slot, so rain and snow do not share a turn', () => {
   assert.ok(['r1', 'r2'].includes(r));
   assert.ok(['s1', 's2'].includes(s));
   assert.equal(p.take('rain-day'), r, 'drawing another slot must not disturb this one');
+});
+
+
+test('a scene per screen: three draws, all different where the slots allow, held for the visit', () => {
+  const p = makePicker({ 'snow-night': ['a', 'b', 'c', 'd'], 'rain-day': ['r1', 'r2', 'r3'] });
+  for (let i = 0; i < 30; i++) {
+    const t = p.takesFor(['snow-night', 'snow-night', 'rain-day']);
+    assert.equal(t.length, 3);
+    assert.notEqual(t[0], t[1], 'two screens on the same slot must not show the same take');
+    assert.ok(['r1', 'r2', 'r3'].includes(t[2]));
+    assert.deepEqual(p.takesFor(['snow-night', 'snow-night', 'rain-day']), t, 'a rebuild mid-visit keeps all three');
+    p.visit();
+  }
+});
+
+test('a missing screen draws no scene, and a slot with one take still serves every screen', () => {
+  const p = makePicker({ 'cloud-day': ['only'] });
+  assert.deepEqual(p.takesFor(['cloud-day', null, null]), ['only', null, null]);
+  assert.deepEqual(p.takesFor(['cloud-day', 'cloud-day', 'cloud-day']), ['only', 'only', 'only'],
+    'with nothing else to show, the same take is better than no take');
 });

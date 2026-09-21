@@ -104,15 +104,16 @@ test('the scene class and the video are both driven by that one flag', () => {
   // Widened past 900: the title-clip block (v23783) sits between the flag and
   // the scene class, and the slice is a reading window, not a claim about how
   // close together the two have to be written.
-  const block = SRC.slice(at, at + 2600);
+  // Widened again for v23844: three slots are named between the flag and
+  // the scene class now. Still a reading window, not a distance claim.
+  const block = SRC.slice(at, at + 4400);
   // v23840: the clip names live in _WX_SCENE_TAKES now, because a slot can
   // hold several takes. The pairing they stand for is what this test is about.
   const takes = SRC.slice(SRC.indexOf('var _WX_SCENE_TAKES = '),
                           SRC.indexOf('};', SRC.indexOf('var _WX_SCENE_TAKES = ')) + 2);
   assert.match(takes, /'clear-night':\s*\['wx-fireflies-night'/);
   assert.match(takes, /'clear-day':\s*\['wx-grass-loop'/);
-  assert.match(block, /_wxSceneTake\(_wxSceneSlot\)/,
-    'and the flag reaches the clip through the slot name');
+  assert.match(block, /var _wxSlots = \[_wxSceneSlot, /, 'and the flag reaches the clips through the slot name (v23844: the first of three)');
   assert.match(block, /_wxSceneCls = _wxNightScene \? ' wxc-scene-night' : ' wxc-scene-day'/,
     'the treatment must move with the clip — the light panels and dark ink are ' +
     'unreadable over the night scene, so the class carries them');

@@ -38,8 +38,9 @@ function fn(name) {
 // ── The video layer ──────────────────────────────────────────────────────
 
 test('the card builds a muted, looping, inline video', () => {
-  const m = SRC.match(/var _wxVid = '<video class="wxc-vid"([^']*)'/);
-  assert.ok(m, 'the card must build a <video class="wxc-vid">');
+  // v23844: one element per screen, built in a loop; the attributes follow the class
+  const m = SRC.match(/'<video class="wxc-vid wxc-vid-' \+ \(_vi \+ 1\) \+ '"([^']*)'/);
+  assert.ok(m, 'the card must build <video class="wxc-vid wxc-vid-N"> elements');
   for (const attr of ['autoplay', 'loop', 'muted', 'playsinline']) {
     assert.ok(m[1].includes(attr), 'the video must carry ' + attr +
       ' — without muted+playsinline autoplay is refused outright');
@@ -179,8 +180,10 @@ test('the scene is chosen from the family and the hour', () => {
     'so the screen shows the sky outside the terminal, not the sky at the far end');
   assert.match(block, /var _wxSceneSlot = _wxSceneKind \+ \(_wxNightScene \? '-night' : '-day'\);/,
     'the family and the hour together name one slot');
-  assert.match(block, /_wxVidSrc = '\/logos\/Backgrounds\/video\/' \+ _wxSceneTake\(_wxSceneSlot\) \+ '\.mp4'/,
-    'and the file for that slot is drawn rather than spelled out — v23840, a slot may hold several clips');
+  assert.match(block, /var _wxSlots = \[_wxSceneSlot, _wxS2 \? \(_wxSlot2 \|\| _wxSceneSlot\) : null, _wxS3 \? \(_wxSlot3 \|\| _wxSceneSlot\) : null\];/,
+    'v23844: one slot per screen — now at the board, the coming hours, the destination day — each falling back to now');
+  assert.match(block, /var _wxTakes = _wxSceneTakesFor\(_wxSlots\);/, 'and the files are drawn together so they differ');
+  assert.match(block, /'<video class="wxc-vid wxc-vid-' \+ \(_vi \+ 1\) \+ '" autoplay loop muted playsinline preload="auto" '/, 'one scene element per screen, numbered');
   // The filenames moved into _WX_SCENE_TAKES when a slot became a list. What
   // still has to hold is the mapping itself: 'clear' keeps the two loops the
   // card has always had, and the other four families each keep their own day
@@ -299,4 +302,30 @@ test('the hours and the days are translucent over the footage, dark enough for w
   for (const a of alphas) assert.ok(a >= 0.45 && a <= 0.8, `stop alpha ${a}: the footage must show through, and the type must still read`);
   assert.match(CSS, /\.wxcard-wrap > \.wxc-s1 \{ background: transparent !important; \}/, 'screen one shows the footage plain, its plates carry their own ground');
   assert.match(CSS, /\.wxcard-wrap > \.wxc-plate, [^{]*\.wxcard-wrap > video\.wxc-set \{ display: none !important; \}/, 'the plate and the set are retired in the stylesheet as well');
+});
+
+
+// ── v23844: a scene for each screen ──────────────────────────────────────
+
+test('the second and third scenes fade in on exactly the beats their screens arrive', () => {
+  const kf = n => { const m = CSS.match(new RegExp('@keyframes ' + n + ' \\{([\\s\\S]*?)\\n\\}')); assert.ok(m, n); return m[1]; };
+  const rise = k => k.match(/0%, ([\d.]+)%\s*\{ opacity: 0;/)[1], up = k => k.match(/([\d.]+)%, 100%\s*\{ opacity: 1; \}/)[1];
+  const s2 = kf('wxcScreen2'), s3 = kf('wxcScreen3');
+  const s2in = s2.match(/0%, ([\d.]+)%\s*\{ opacity: 0;/)[1], s2at = s2.match(/\n\s*([\d.]+)%\s*\{ transform: none; \}/)[1];
+  const s3in = s3.match(/0%, ([\d.]+)%\s*\{ opacity: 0;/)[1], s3at = s3.match(/\n\s*([\d.]+)%\s*\{ transform: none; \}/)[1];
+  assert.equal(rise(kf('wxcScene2')), s2in, 'scene two starts fading as screen two starts in');
+  assert.equal(up(kf('wxcScene2')), s2at, 'and is full as screen two lands');
+  assert.equal(rise(kf('wxcScene3')), s3in);
+  assert.equal(up(kf('wxcScene3')), s3at);
+  for (const n of ['2', '3']) {
+    assert.match(CSS, new RegExp('\\.wxcard-wrap\\.wxc-entering > video\\.wxc-vid\\.wxc-vid-' + n + ' \\{ animation: wxcScene' + n + ' calc\\(36\\.00s \\* var\\(--wxc-t, 1\\)\\) linear both !important; animation-delay: calc\\(\\(0s - var\\(--wxc-el, 0s\\)\\) \\* var\\(--wxc-t, 1\\)\\) !important; \\}'),
+      'scene ' + n + ' runs on the same resumable 36s clock as the screens');
+  }
+  assert.ok(!/video\.wxc-vid\.wxc-vid-[23] \{[^}]*opacity: [\d.]+ !important/.test(CSS), 'no pinned opacity on the scenes');
+});
+
+test('the hold pauses every scene under the film and releases them together', () => {
+  const hold = fn('_wxHoldSceneForIntro');
+  assert.match(hold, /querySelectorAll\(':scope > video\.wxc-vid'\)/, 'all of them');
+  assert.match(hold, /vids\[vp\]\.pause\(\)/); assert.match(hold, /vids\[vq\]\.play\(\)/);
 });

@@ -451,8 +451,8 @@ test('the scene is never parked: it plays from the film\'s release to the card\'
   assert.doesNotMatch(SRC, /window\._wxParkTimer/);
   const hold = fnBody('_wxHoldSceneForIntro');
   assert.match(hold, /vid\.play\(\)/, 'released under the film');
-  assert.doesNotMatch(SRC.slice(SRC.indexOf('function _wxHoldSceneForIntro'), SRC.indexOf('function _wxCarryEntrance')), /\.pause\(\)[^\n]*\n(?![\s\S]{0,400}3800)/,
-    'and nothing after the release pauses it');
+  assert.ok(hold.lastIndexOf('.pause()') < hold.indexOf('3800'), 'every pause in the hold comes before the release at 3.8s; nothing after it pauses the scene');
+
 });
 
 // ── The screens' own rules ───────────────────────────────────────────────

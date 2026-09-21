@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23843';
+var FIDS_BUILD_TAG = 'v23844';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43849,7 +43849,9 @@ var _WX_SCENE_TAKES = {
 // of the following draw, so the same clip never runs twice running.
 var _wxTakeHeld = {};
 var _wxTakeLast = {};
-function _wxSceneTake(slot) {
+// v23844 — `key` holds a draw per SCREEN (two screens may share a slot and
+// must still get different takes); `avoid` is what the other screens drew.
+function _wxSceneTake(slot, key, avoid) {
   var list = _WX_SCENE_TAKES[slot];
   if (!list || !list.length) {
     // Belt and braces: a slot nobody listed still resolves to the file the
@@ -43861,17 +43863,31 @@ function _wxSceneTake(slot) {
   if (list.length === 1) return list[0];
   var seq = 0;
   try { seq = (typeof window._gateAdVisitSeq === 'number') ? window._gateAdVisitSeq : 0; } catch (eSq) {}
-  var held = _wxTakeHeld[slot];
-  if (held && held.seq === seq) return held.file;
+  key = key || slot;
+  var held = _wxTakeHeld[key];
+  if (held && held.seq === seq && held.slot === slot) return held.file;
   var pool = [], i;
   for (i = 0; i < list.length; i++) {
-    if (list[i] !== _wxTakeLast[slot]) pool.push(list[i]);
+    if (list[i] !== _wxTakeLast[slot] && !(avoid && avoid[list[i]])) pool.push(list[i]);
   }
+  if (!pool.length) { for (i = 0; i < list.length; i++) { if (!(avoid && avoid[list[i]])) pool.push(list[i]); } }
   if (!pool.length) pool = list;
   var file = pool[Math.floor(Math.random() * pool.length)] || list[0];
   _wxTakeLast[slot] = file;
-  _wxTakeHeld[slot] = { seq: seq, file: file };
+  _wxTakeHeld[key] = { seq: seq, slot: slot, file: file };
   return file;
+}
+// v23844 — A SCENE FOR EACH SCREEN. One take per screen, held for the visit,
+// each different from the others where the slots allow it, so the weather
+// behind the card changes at every change of screen.
+function _wxSceneTakesFor(slots) {
+  var used = {}, files = [], i, f;
+  for (i = 0; i < slots.length; i++) {
+    if (!slots[i]) { files.push(null); continue; }
+    f = _wxSceneTake(slots[i], 'screen' + (i + 1), used);
+    files.push(f); if (f) used[f] = true;
+  }
+  return files;
 }
 // WMO daily codes (Open-Meteo /wxdaily) → animated icon names.
 function _wmoAnimIcon(code) {
@@ -44406,13 +44422,16 @@ function _wxEndEntrance(root) {
 function _wxHoldSceneForIntro(wrap, elapsedMs) {
   try {
     var vid = wrap && wrap.querySelector(':scope > video.wxc-vid');
+    var vids = wrap ? wrap.querySelectorAll(':scope > video.wxc-vid') : [];
     var intro = wrap && wrap.querySelector(':scope > .wxc-intro');
     if (!vid || !intro) return;
     try { vid.pause(); } catch (e) {}
+    for (var vp = 1; vp < vids.length; vp++) { try { vids[vp].pause(); } catch (eVp) {} }
     // `elapsedMs` is how far into the film a carried rebuild already is, so
     // the loops are released at the same moment they would have been.
     setTimeout(function () {
       try { vid.play(); } catch (e) {}
+      for (var vq = 1; vq < vids.length; vq++) { try { vids[vq].play(); } catch (eVq) {} }
     }, Math.max(0, Math.round(3800 * _wxSpeed() - (elapsedMs || 0))));
   } catch (e) {}
 }
@@ -45303,9 +45322,35 @@ function _renderWxCard(el) {
     try { _wxSceneRead = _wxAtTime(_wxOrig || dest, 0); } catch (eSR) {}
     var _wxSceneKind = _wxSceneKindOf(_wxAnimIcon(_wxSceneRead ? _wxSceneRead.code : cur.code, _wxNightScene));
     var _wxSceneSlot = _wxSceneKind + (_wxNightScene ? '-night' : '-day');
-    var _wxVidSrc = '/logos/Backgrounds/video/' + _wxSceneTake(_wxSceneSlot) + '.mp4';
-    var _wxVid = '<video class="wxc-vid" autoplay loop muted playsinline preload="auto" '
-               + 'src="' + _wxVidSrc + '"></video>';
+    // v23844 — A SCENE FOR EACH SCREEN. Screen one is the sky at the board's
+    // airport now. Screen two is the coming hours at the destination: the
+    // condition most of those hours share, by night if most of them are.
+    // Screen three is the destination's first day, at the hour of arrival.
+    // The footage crossfades at each change of screen (wxcScene2/3 below).
+    var _wxSlot2 = null, _wxSlot3 = null;
+    try {
+      if (_wxHours.length) {
+        var _hc = {}, _hn = 0, _hk = null;
+        _wxHours.forEach(function (h) { var k = _wxSceneKindOf(h.ic); _hc[k] = (_hc[k] || 0) + 1; if (h.night) _hn++; });
+        _hk = Object.keys(_hc).sort(function (a, b) { return _hc[b] - _hc[a]; })[0];
+        if (_hk) _wxSlot2 = _hk + (_hn * 2 > _wxHours.length ? '-night' : '-day');
+      }
+    } catch (eS2) {}
+    try {
+      if (_wxDays.length) {
+        var _dNight = false;
+        try { _dNight = !!_wxNightAt(dest, _wxArrTs || Date.now()); } catch (eDN) {}
+        _wxSlot3 = _wxSceneKindOf(_wxDays[0].ic) + (_dNight ? '-night' : '-day');
+      }
+    } catch (eS3) {}
+    var _wxSlots = [_wxSceneSlot, _wxS2 ? (_wxSlot2 || _wxSceneSlot) : null, _wxS3 ? (_wxSlot3 || _wxSceneSlot) : null];
+    var _wxTakes = _wxSceneTakesFor(_wxSlots);
+    var _wxVid = '';
+    for (var _vi = 0; _vi < _wxTakes.length; _vi++) {
+      if (!_wxTakes[_vi]) continue;
+      _wxVid += '<video class="wxc-vid wxc-vid-' + (_vi + 1) + '" autoplay loop muted playsinline preload="auto" '
+              + 'src="/logos/Backgrounds/video/' + _wxTakes[_vi] + '.mp4"></video>';
+    }
     // v23787 — THE TITLE PLAYS OVER THE CARD AS IT ARRIVES.
     // A six-second title on black. It sits ABOVE every layer, runs once,
     // and fades out as the card's own sequence comes up underneath it — so
