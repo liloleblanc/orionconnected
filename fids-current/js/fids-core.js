@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23845';
+var FIDS_BUILD_TAG = 'v23846';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43821,6 +43821,9 @@ function _wxSceneKindOf(icon) {
   if (/thunder/.test(n)) return 'storm';
   if (/snow/.test(n)) return 'snow';
   if (/rain|drizzle|sleet|hail/.test(n)) return 'rain';
+  // v23846 — partly cloudy is a fair day with some cloud, not an overcast:
+  // drawn with the grey stormy loops it read as the wrong weather outside.
+  if (/partly/.test(n)) return 'clear';
   if (/cloud|overcast|fog/.test(n)) return 'cloud';
   return 'clear';
 }
@@ -44060,6 +44063,7 @@ function _wxLocalDate(iata, ts) {
 function _wxFetchSun(iata, ts) {
   try {
     if (!iata) return null;
+    if (!window._wxSun) window._wxSun = {};
     var day = _wxLocalDate(iata, ts);
     if (!day) return null;
     var key = iata + '|' + day;
@@ -44079,10 +44083,44 @@ function _wxFetchSun(iata, ts) {
         // reading — keep it out of the cache so the next pass retries.
         var good = j && !j.error && (j.sunrise || j.sunset || j.polarDay || j.polarNight);
         window._wxSun[key] = { pending: false, ts: Date.now(), data: good ? j : null };
+        // v23846 — the card that asked has already been drawn with the
+        // fixed-hours guess by the time this lands; tell it, so it redraws
+        // with the real sunset instead of showing daylight after dark.
+        try { if (good && typeof window._wxSunReady === 'function') window._wxSunReady(iata); } catch (eR) {}
       });
     return null;
   } catch (e) { return null; }
 }
+// v23846 — hoisted out of the card so the hourly tiles and the scene slots
+// can ask it too. Real sunrise and sunset per airport from _wxFetchSun; the
+// 06:00-21:00 window only while those have not arrived.
+function _wxNightAt(iata, ts) {
+  try {
+    var sun = (typeof _wxFetchSun === 'function') ? _wxFetchSun(iata, ts) : null;
+    if (sun) {
+      if (sun.polarDay) return false;
+      if (sun.polarNight) return true;
+      if (sun.sunrise && sun.sunset) {
+        var now = ts ? new Date(ts).getTime() : Date.now();
+        var rise = Date.parse(sun.sunrise), set = Date.parse(sun.sunset);
+        if (isFinite(rise) && isFinite(set)) {
+          // No same-day wrap is needed. A sunset past midnight is dated on
+          // the FOLLOWING calendar day by MET — Reykjavik on 21 June comes
+          // back as sunrise 2026-06-21T03:01 and sunset 2026-06-22T00:02 —
+          // so the parsed pair is always in order. Verified against the
+          // live API rather than assumed; a wrap here would be code that
+          // can never run and implies a hazard that does not exist.
+          return now < rise || now >= set;
+        }
+      }
+    }
+    var z = (AP[iata] || {}).tz;
+    var d = ts ? new Date(ts) : new Date();
+    var h = Number(d.toLocaleTimeString('en-GB', z ? { timeZone: z, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }).slice(0, 2));
+    return h < 6 || h >= 21;
+  } catch (eN) { return false; }
+}
+
 // Labels keyed by the ICON actually shown — icon and wording can never
 // disagree.
 // v22971 — the weather card follows the SELECTED LANGUAGES
@@ -44821,11 +44859,7 @@ function _renderWxCard(el) {
     try { city = (typeof CITY !== 'undefined' && CITY[dest]) || (AP[dest] && AP[dest].city) || dest; } catch (e) { city = dest; }
     if (typeof tc === 'function') { try { city = tc(city); } catch (e2) {} }
     var night = false;
-    try {
-      var tz = (AP[dest] || {}).tz;
-      var hh = Number(new Date().toLocaleTimeString('en-GB', tz ? { timeZone: tz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }).slice(0, 2));
-      night = hh < 6 || hh >= 21;
-    } catch (e3) {}
+    try { night = !!_wxNightAt(dest); } catch (e3) {}
     var ic = _wxAnimIcon(cur.code, night);
     var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
     var _wxFrF = false;
@@ -44975,8 +45009,11 @@ function _renderWxCard(el) {
         .forEach(function (h) {
           var hd = new Date(h.ts);
           var lbl = hd.toLocaleTimeString('en-US', _hFmt).replace(/:00/, '').replace(/\s/g, ' '); // "3 PM"
-          var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
-          var hNight = h24 < 6 || h24 >= 21;
+          var hNight = false;
+          try { hNight = !!_wxNightAt(dest, h.ts); } catch (eHN) {
+            var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2));
+            hNight = h24 < 6 || h24 >= 21;
+          }
           _wxHours.push({ ts: h.ts, temp: h.temp, ic: _wxAnimIcon(h.code, hNight), lbl: lbl, night: hNight });
         });
     } catch (eHrs) { _wxHours = []; }
@@ -45002,6 +45039,13 @@ function _renderWxCard(el) {
     // or a short feed).
     var _wxOrig = '';
     try { _wxOrig = String(window._gateIata || '').toUpperCase(); } catch (eO) {}
+    // v23846 — when sunrise or sunset lands for any airport this card asked
+    // about, redraw in place (the rebuild carries the sequence across).
+    try {
+      window._wxSunReady = function () {
+        try { if (el && el.isConnected && el.querySelector('.wxcard-wrap')) _renderWxCard(el); } catch (eR2) {}
+      };
+    } catch (eSR) {}
     var _wxDepTs = 0, _wxArrTs = 0;
     try {
       _wxDepTs = (cf && (cf._depTs || cf._sortTs)) || 0;
@@ -45048,32 +45092,6 @@ function _renderWxCard(el) {
     // missing data: above the circle MET reports no rise and no set, and the
     // state comes from solar noon instead. Checked before the times, because
     // in those cases there are no times to compare against.
-    var _wxNightAt = function (iata, ts) {
-      try {
-        var sun = (typeof _wxFetchSun === 'function') ? _wxFetchSun(iata, ts) : null;
-        if (sun) {
-          if (sun.polarDay) return false;
-          if (sun.polarNight) return true;
-          if (sun.sunrise && sun.sunset) {
-            var now = ts ? new Date(ts).getTime() : Date.now();
-            var rise = Date.parse(sun.sunrise), set = Date.parse(sun.sunset);
-            if (isFinite(rise) && isFinite(set)) {
-              // No same-day wrap is needed. A sunset past midnight is dated on
-              // the FOLLOWING calendar day by MET — Reykjavik on 21 June comes
-              // back as sunrise 2026-06-21T03:01 and sunset 2026-06-22T00:02 —
-              // so the parsed pair is always in order. Verified against the
-              // live API rather than assumed; a wrap here would be code that
-              // can never run and implies a hazard that does not exist.
-              return now < rise || now >= set;
-            }
-          }
-        }
-        var z = (AP[iata] || {}).tz;
-        var d = ts ? new Date(ts) : new Date();
-        var h = Number(d.toLocaleTimeString('en-GB', z ? { timeZone: z, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }).slice(0, 2));
-        return h < 6 || h >= 21;
-      } catch (eN) { return false; }
-    };
     var _wxCityOf = function (iata) {
       var c = iata;
       try { c = (typeof CITY !== 'undefined' && CITY[iata]) || (AP[iata] && AP[iata].city) || iata; } catch (eC) {}

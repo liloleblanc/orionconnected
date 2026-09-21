@@ -32,7 +32,7 @@ const WORKER = fs.readFileSync(path.join(ROOT, 'worker-entry.js'), 'utf8');
 
 // Lift the real decision function and drive it with a stubbed solar cache.
 function decider(sunByKey) {
-  const at = SRC.indexOf('var _wxNightAt = function');
+  const at = SRC.indexOf('function _wxNightAt(iata, ts)');
   assert.ok(at >= 0, 'fids-core.js must still define _wxNightAt');
   let d = 0; let body = null;
   for (let k = SRC.indexOf('{', at); k < SRC.length; k++) {
