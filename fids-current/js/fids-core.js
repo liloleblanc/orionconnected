@@ -43816,6 +43816,11 @@ function _wxAnimIcon(code, night) {
 // rain when it rains, snow when it snows — so an icon name is folded to one
 // of five scene families, each with a day loop and a night loop. 'clear' keeps
 // the two loops the card has had since v23726.
+// v23847 — THE CARD'S ICON SET. Flat: white clouds, a lemon sun and moon,
+// blue drops and wind, a grey cloud behind for overcast. It follows the
+// forecast-card references the card is being styled after. The animated set
+// stays on disk for the other boards.
+var _WX_ICON_DIR = '/logos/weather/flat/';
 function _wxSceneKindOf(icon) {
   var n = String(icon || '');
   if (/thunder/.test(n)) return 'storm';
@@ -43973,10 +43978,14 @@ function _wxHydrateSvgs(root) {
           img.parentNode.replaceChild(span, img);
         } catch (e) {}
       }
-      if (window._wxSvgTxt[name]) { inject(window._wxSvgTxt[name]); return; }
-      fetch('/logos/weather/animated/' + name + '.svg')
+      // v23847 — the set comes from the image's own src, so two sets can live
+      // side by side (the card's flat set, the other boards' animated one).
+      var dir = String(img.getAttribute('src') || '').replace(/[^\/]*$/, '') || '/logos/weather/animated/';
+      var ckey = dir + name;
+      if (window._wxSvgTxt[ckey]) { inject(window._wxSvgTxt[ckey]); return; }
+      fetch(dir + name + '.svg')
         .then(function (r) { return r.ok ? r.text() : null; })
-        .then(function (txt) { if (txt) { window._wxSvgTxt[name] = txt; inject(txt); } })
+        .then(function (txt) { if (txt) { window._wxSvgTxt[ckey] = txt; inject(txt); } })
         .catch(function () {});
     });
   } catch (e) {}
@@ -45124,7 +45133,7 @@ function _renderWxCard(el) {
         +   '<div class="wxc-mon-lbl">' + shortLbl + (when ? ' <b>' + when + '</b>' : '') + '</div>'
         +   '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _wxCityOf(iata) + '</span> <span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
         +   '<div class="wxc-mon-now">'
-        +     '<img class="wxanim" data-wx="' + sIc + '" src="/logos/weather/animated/' + sIc + '.svg" alt="">'
+        +     '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg" alt="">'
         +     '<div class="wxc-mon-temp">' + dT(w.temp) + '</div>'
         +   '</div>'
         +   '<div class="wxc-mon-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
@@ -45213,7 +45222,7 @@ function _renderWxCard(el) {
       var _cols = _pts.map(function (p, i) {
         return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + ';left:' + (p.x / _cW * 100).toFixed(2) + '%;top:' + (p.y / _cH * 100).toFixed(2) + '%">'
           + '<div class="wxc-pt-temp">' + _wxDeg(p.h.temp) + '</div>'
-          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="/logos/weather/animated/' + p.h.ic + '.svg" alt="">'
+          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _WX_ICON_DIR + p.h.ic + '.svg" alt="">'
           + '</div>';
       }).join('');
       var _times = _pts.map(function (p, i) {
@@ -45224,7 +45233,7 @@ function _renderWxCard(el) {
       _wxHours.forEach(function (h) {
         if (_seen[h.ic] || _legN >= 4) return;
         _seen[h.ic] = 1; _legN++;
-        _leg += '<span class="wxc-leg-it"><img class="wxanim" data-wx="' + h.ic + '" src="/logos/weather/animated/' + h.ic + '.svg" alt=""><span>' + _wxPairS(_WXLBL[h.ic] || { en: '' }) + '</span></span>';
+        _leg += '<span class="wxc-leg-it"><img class="wxanim" data-wx="' + h.ic + '" src="' + _WX_ICON_DIR + h.ic + '.svg" alt=""><span>' + _wxPairS(_WXLBL[h.ic] || { en: '' }) + '</span></span>';
       });
       _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar
         + '<div class="wxc-sc-title">' + _wxPairD({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxPlace + '</div>'
@@ -45258,7 +45267,7 @@ function _renderWxCard(el) {
       var _dayCols = _wxDays.map(function (d, i) {
         return '<div class="wxc-day2" style="--wxc-i:' + i + '">'
           + '<div class="wxc-dchip">' + _dayAbbr(d.dt, _wxLangs[0]) + (_wxLangs[1] ? _wxDia + _dayAbbr(d.dt, _wxLangs[1]) : '') + '</div>'
-          + '<img class="wxanim" data-wx="' + d.ic + '" src="/logos/weather/animated/' + d.ic + '.svg" alt="">'
+          + '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg" alt="">'
           + '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
           + '<div class="wxc-dlo">' + _wxDeg(d.lo) + '</div>'
           + '<div class="wxc-dcond">' + _wxPairS(_WXLBL[d.ic] || { en: '' }) + '</div>'
