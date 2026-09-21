@@ -78,7 +78,14 @@ test('the trial files are the ones registered, and the stylesheet reloads', () =
   // in the same folder, so the paths deliberately carry "Trial".
   const at = FONT_CSS.indexOf('ABC Ginto Rounded + ABC Gravity (Dinamo trials');
   assert.match(FONT_CSS.slice(at), /Trial-Regular\.otf/);
-  for (const sh of ['fids', 'gids', 'bids']) {
-    assert.match(rd(`fids-current/${sh}.html`), /css\/font\.css\?v=330/, `${sh}.html reloads font.css`);
-  }
+  // Every page must reload font.css at the SAME version. Pinning one literal
+  // here meant any later change to the stylesheet had to edit this test as
+  // well; what actually matters is that no page is left on a stale query
+  // while the others move — that is how a face ships to two of three screens.
+  const versions = ['fids', 'gids', 'bids'].map((sh) => {
+    const m = rd(`fids-current/${sh}.html`).match(/css\/font\.css\?v=(\d+)/);
+    assert.ok(m, `${sh}.html must reload font.css with a version`);
+    return m[1];
+  });
+  assert.equal(new Set(versions).size, 1, `the pages disagree about font.css: ${versions.join(', ')}`);
 });

@@ -16037,7 +16037,35 @@ function gateAutofit(root) {
       try {
         if (box.closest('.g8-wrap.g8-takeover')) _gh = Math.max(_gh, 110);
       } catch (e) {}
-      _boxAssign(num, Math.max(40, w - bw), Math.floor(_gh * 0.98), null, false);
+      // v23837 — THE NUMBER IS FITTED FIRST, BECAUSE THE NUMBER IS THE SIGN.
+      //
+      // Its budget used to be whatever the Gate/Porte label left over
+      // (`w - bw`), which makes the largest glyph on a gate sign a function of
+      // how wide the board's typeface happens to set two words. Measured on a
+      // 1920 board in a wider face: the label took 239px of a 442px panel, the
+      // number was handed 59px, and the search walked it down to the 12px
+      // floor — the same outcome v23753 fixed from the other end. A label is
+      // a caption; it yields.
+      //
+      // So the number takes its half first and the label fits into the real
+      // remainder. The label is only ever SHRUNK from its stylesheet size and
+      // is reset before each pass, so v23835's sizing still governs wherever
+      // it already fits, and repeated corrections cannot ratchet it down.
+      void bw;
+      _boxAssign(num, Math.max(40, Math.round(w * 0.5)), Math.floor(_gh * 0.98), null, false);
+      if (bil) {
+        try {
+          bil.style.removeProperty('font-size');
+          var _bilAvail = w - (num.getBoundingClientRect().width + 16);
+          var _bilPx = parseFloat(window.getComputedStyle(bil).fontSize) || 0;
+          var _bilGuard = 24;
+          while (_bilAvail > 24 && _bilPx > 14
+                 && bil.getBoundingClientRect().width > _bilAvail && _bilGuard-- > 0) {
+            _bilPx -= Math.max(1, _bilPx * 0.06);
+            bil.style.setProperty('font-size', _bilPx + 'px', 'important');
+          }
+        } catch (eBil) {}
+      }
     });
     // RIGHT CARD type shelf ('Aircraft details pending' clipped mid-word on
     // production): wrap allowed, then the largest size whose wrapped lines
