@@ -708,6 +708,15 @@ test('the beats are the film\'s own, resumable and on the speed dial', () => {
   assert.ok(2.44 + 7 * 0.085 + 0.62 <= 6, 'so does the last of eight languages');
 });
 
+test('the title sets in the board\'s own face — no family is named', () => {
+  // The Customize pick reaches every element through a zero-specificity
+  // *:where() rule (restoreFontChoice). A family pinned here outranks it, and
+  // the title then sits in one face over a board in another — which is what
+  // happened, and is not "the default font for now".
+  assert.doesNotMatch(PAINT_CODE, /font-family/, 'the painted title names no font-family anywhere');
+  assert.match(JS, /s\.textContent = '\*:where\(/, 'the board applies its pick through *:where() — that is why nothing here may pin a family');
+});
+
 test('nothing the painted title animates is pinned !important', () => {
   const rules = [...PAINT_CODE.matchAll(/([^{}]+)\{([^{}]*)\}/g)].map(m => ({ sel: m[1].trim().replace(/:not\(#_\)/g, ''), decl: m[2] }));
   const kf = name => { const m = PAINT.match(new RegExp('@keyframes ' + name + ' \\{([\\s\\S]*?)\\}\\s*\\}')); assert.ok(m, name); return [...m[1].matchAll(/([a-z-]+)\s*:/g)].map(x => x[1]); };
