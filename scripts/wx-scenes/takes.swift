@@ -6,7 +6,11 @@
 // faded into the first X, so the clip lands back on its own first frame.
 //
 //   swiftc -O -o takes takes.swift
-//   ./takes <src> <t0|auto> <L> <X> <out.mp4>
+//   ./takes <src> <t0|auto> <L> <X> <out.mp4> [speed]
+//     speed  1 = as shot; 0.5 = half speed. Below 1 the source is sampled at
+//            fractional frames and the two neighbours are BLENDED, so the
+//            slow-down is smooth rather than a stutter of repeated frames,
+//            and close-up rain reads softer instead of harsher.
 //     t0   start in the source, or "auto": find the biggest brightness jump
 //          (a lightning flash) and start the window 2.5s before it.
 //     L    loop length written, seconds.   X  crossfade, seconds.
@@ -14,6 +18,7 @@ import AppKit
 import AVFoundation
 let args = CommandLine.arguments
 let src = args[1], L = Double(args[3])!, X = Double(args[4])!, out = args[5]
+let SPEED = args.count > 6 ? (Double(args[6]) ?? 1.0) : 1.0
 let PW = 1280, PH = 704, FPS: Int32 = 30
 let asset = AVURLAsset(url: URL(fileURLWithPath: src))
 let sem0 = DispatchSemaphore(value: 0); var dur = 0.0
@@ -40,8 +45,15 @@ if args[2] == "auto" {
     t += 0.25 }
   t0 = bestAt - 2.5
 } else { t0 = Double(args[2])! }
-t0 = max(0, min(t0, dur - L - X - 0.05))
-guard dur - t0 >= L + X else { print("{\"error\":\"too short\",\"seconds\":\(dur)}"); exit(1) }
+let NEED = (L + X) * SPEED                       // source seconds the loop consumes
+t0 = max(0, min(t0, dur - NEED - 0.05))
+guard dur - t0 >= NEED else { print("{\"error\":\"too short\",\"seconds\":\(dur)}"); exit(1) }
+// source frame interval, for blending between neighbours when slowed
+var srcFps = 30.0
+do { let sem1 = DispatchSemaphore(value: 0)
+  Task { if let t = try? await asset.loadTracks(withMediaType: .video).first, let r = try? await t.load(.nominalFrameRate), r > 1 { srcFps = Double(r) }; sem1.signal() }
+  sem1.wait() }
+let FI = 1.0 / srcFps
 
 let g = gen(2560)
 try? FileManager.default.removeItem(atPath: out)
@@ -57,6 +69,21 @@ let adaptor = AVAssetWriterInputPixelBufferAdaptor(assetWriterInput: input, sour
 writer.add(input); writer.startWriting(); writer.startSession(atSourceTime: .zero)
 let cs = CGColorSpaceCreateDeviceRGB()
 func frame(_ t: Double) -> CGImage? { try? g.copyCGImage(at: CMTime(seconds: t, preferredTimescale: 600), actualTime: nil) }
+// Draw source time τ into ctx over rect r at alpha a. At full speed that is
+// one frame. Slowed, τ falls between two source frames: draw the earlier one,
+// then the later one at the fractional weight, so motion is smoothed.
+func drawSrc(_ ctx: CGContext, _ tau: Double, _ r: CGRect, _ a: CGFloat) -> Bool {
+  if SPEED >= 0.999 {
+    guard let cg = frame(tau) else { return false }
+    ctx.setAlpha(a); ctx.draw(cover(cg), in: r); ctx.setAlpha(1); return true
+  }
+  let k = floor(tau / FI); let frac = tau / FI - k
+  let tA = k * FI + FI * 0.5, tB = tA + FI          // frame centres
+  guard let A = frame(tA) else { return false }
+  ctx.setAlpha(a); ctx.draw(cover(A), in: r)
+  if frac > 0.02, let B = frame(tB) { ctx.setAlpha(a * CGFloat(frac)); ctx.draw(cover(B), in: r) }
+  ctx.setAlpha(1); return true
+}
 func cover(_ cg: CGImage) -> CGImage {
   let Wd = CGFloat(cg.width), Hd = CGFloat(cg.height), aspect = CGFloat(PW) / CGFloat(PH)
   var cw = Wd, ch = Hd; if Wd / Hd > aspect { cw = Hd * aspect } else { ch = Wd / aspect }
@@ -75,13 +102,13 @@ for i in 0..<n {
   if t < X {
     // the seam: the tail beyond the loop fades into the head
     let a = CGFloat(t / X)
-    if let tail = frame(t0 + L + t) { ctx.draw(cover(tail), in: r) } else { missed += 1 }
-    if let head = frame(t0 + t) { ctx.setAlpha(a); ctx.draw(cover(head), in: r); ctx.setAlpha(1) } else { missed += 1 }
-  } else if let cg = frame(t0 + t) { ctx.draw(cover(cg), in: r) } else { missed += 1 }
+    if !drawSrc(ctx, t0 + (L + t) * SPEED, r, 1) { missed += 1 }
+    if !drawSrc(ctx, t0 + t * SPEED, r, a) { missed += 1 }
+  } else if !drawSrc(ctx, t0 + t * SPEED, r, 1) { missed += 1 }
   CVPixelBufferUnlockBaseAddress(buf, [])
   adaptor.append(buf, withPresentationTime: CMTime(value: CMTimeValue(i), timescale: FPS)); written += 1
 }
 input.markAsFinished(); let sem = DispatchSemaphore(value: 0); writer.finishWriting { sem.signal() }; sem.wait()
 let ok = writer.status == .completed
 let size = (try? FileManager.default.attributesOfItem(atPath: out)[.size] as? Int) ?? 0
-print("{\"ok\":\(ok),\"t0\":\(String(format: "%.2f", t0)),\"loop\":\(L),\"frames\":\(written),\"missed\":\(missed),\"bytes\":\(size),\"src_seconds\":\(String(format: "%.1f", dur))}")
+print("{\"ok\":\(ok),\"t0\":\(String(format: "%.2f", t0)),\"loop\":\(L),\"frames\":\(written),\"missed\":\(missed),\"bytes\":\(size),\"src_seconds\":\(String(format: "%.1f", dur)),\"speed\":\(SPEED)}")

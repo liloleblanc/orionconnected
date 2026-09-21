@@ -37,8 +37,8 @@ function blockOf(head) {
 }
 
 const TABLE_SRC = blockOf('var _WX_SCENE_TAKES = ') + ';';
-const PICK_SRC = blockOf('function _wxSceneTake(slot, key, avoid)');
-const FOR_SRC = blockOf('function _wxSceneTakesFor(slots)');
+const PICK_SRC = blockOf('function _wxTakeName(e)') + '\n' + blockOf('function _wxTakesInSeason(entries, month)') + '\n' + blockOf('function _wxSceneTake(slot, key, avoid, month)');
+const FOR_SRC = blockOf('function _wxSceneTakesFor(slots, month)');
 
 // A picker with its own state, driven by a fake visit counter, plus an
 // injectable list so the shuffle can be tested without waiting for footage.
@@ -73,11 +73,13 @@ test('every scene slot the card can reach is listed', () => {
 test('every clip named in the table is a file that exists', () => {
   const { table } = makePicker();
   for (const slot of Object.keys(table)) {
-    for (const f of table[slot]) {
+    for (const e of table[slot]) {
+      const f = typeof e === 'object' ? e.f : e;
       assert.ok(fs.existsSync(path.join(VIDEO, f + '.mp4')),
         `${slot} names ${f}.mp4, which is not in logos/Backgrounds/video`);
       assert.ok(!/\.mp4$/.test(f), `${slot} lists ${f} with an extension; the table holds bare names`);
       assert.ok(!/[\/\\]/.test(f), `${slot} lists a path, not a filename`);
+      if (typeof e === 'object') assert.ok(Array.isArray(e.months) && e.months.every(m => m >= 1 && m <= 12), `${f} has a months list of 1-12`);
     }
   }
 });
@@ -94,7 +96,7 @@ test('the drawn scenes are retired: every weather slot is real footage, several 
   const { table } = makePicker();
   for (const kind of ['cloud', 'rain', 'snow', 'storm']) {
     for (const tod of ['day', 'night']) {
-      const list = table[`${kind}-${tod}`];
+      const list = table[`${kind}-${tod}`].map(e => typeof e === 'object' ? e.f : e);
       assert.ok(list.length >= 3, `${kind}-${tod} holds ${list.length} takes; the shuffle needs at least three`);
       assert.ok(!list.includes(`wx-scene-${kind}-${tod}`), `${kind}-${tod} still lists the retired drawn loop`);
       for (const f of list) {
@@ -135,7 +137,8 @@ test('every take is a real MP4 the monitor can carry: ISO container, short, smal
   // bound the other scene files already live under.
   const { table } = makePicker();
   const seen = new Set();
-  for (const slot of Object.keys(table)) for (const f of table[slot]) {
+  for (const slot of Object.keys(table)) for (const e of table[slot]) {
+    const f = typeof e === 'object' ? e.f : e;
     if (seen.has(f)) continue; seen.add(f);
     const file = path.join(VIDEO, f + '.mp4');
     assert.ok(fs.existsSync(file), `${f}.mp4 is listed in ${slot} but not on disk`);
@@ -209,7 +212,7 @@ test('one clip in a slot is drawn without touching the visit counter', () => {
 test('the card builds the scene src from the table, not by hand', () => {
   assert.match(JS, /var _wxSceneSlot = _wxSceneKind \+ \(_wxNightScene \? '-night' : '-day'\);/,
     'the slot name is built once');
-  assert.match(JS, /var _wxTakes = _wxSceneTakesFor\(_wxSlots\);/, 'the srcs come from the picker, one per screen (v23844)');
+  assert.match(JS, /var _wxTakes = _wxSceneTakesFor\(_wxSlots, _wxSceneMonth\);/, 'the srcs come from the picker, one per screen, in season (v23844/5)');
   assert.match(JS, /'src="\/logos\/Backgrounds\/video\/' \+ _wxTakes\[_vi\] \+ '\.mp4"/, 'and are spelled from what it drew');
   const callSite = JS.slice(JS.indexOf('var _wxSceneSlot'), JS.indexOf('var _wxSceneSlot') + 400);
   assert.ok(!/wx-scene-' \+ _wxSceneKind/.test(callSite),
@@ -243,4 +246,20 @@ test('a missing screen draws no scene, and a slot with one take still serves eve
   assert.deepEqual(p.takesFor(['cloud-day', null, null]), ['only', null, null]);
   assert.deepEqual(p.takesFor(['cloud-day', 'cloud-day', 'cloud-day']), ['only', 'only', 'only'],
     'with nothing else to show, the same take is better than no take');
+});
+
+
+test('a seasonal take plays only in its months, and the pool never empties because of it', () => {
+  const p = makePicker({ 'clear-day': ['grass', { f: 'leaves-a', months: [9, 10, 11] }, { f: 'leaves-b', months: [9, 10, 11] }] });
+  const draws = (month, n = 40) => { const s = new Set(); for (let i = 0; i < n; i++) { s.add(p.take('clear-day', 'k' + i, null, month)); } return s; };
+  assert.deepEqual([...draws(4)], ['grass'], 'in April only the all-year take is drawn');
+  assert.ok(draws(10).has('leaves-a') || draws(10).has('leaves-b'), 'in October the leaves are in the pool');
+  assert.deepEqual([...draws(0)], ['grass'], 'with no month known, seasonal takes are left out rather than guessed');
+  const q = makePicker({ 'clear-day': [{ f: 'leaves-a', months: [9] }, { f: 'leaves-b', months: [9] }] });
+  assert.ok(['leaves-a', 'leaves-b'].includes(q.take('clear-day', 'x', null, 3)), 'a slot with only seasonal takes still serves something out of season');
+});
+
+test('the card turns the month by six for a southern airport', () => {
+  assert.match(JS, /_wxSceneMonth = \(_cS && _cS\[0\] < 0\) \? \(\(_mo \+ 5\) % 12\) \+ 1 : _mo;/, 'south of the equator October is April');
+  assert.match(JS, /_wxSceneTakesFor\(_wxSlots, _wxSceneMonth\)/, 'and the picker is told');
 });

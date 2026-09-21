@@ -182,7 +182,7 @@ test('the scene is chosen from the family and the hour', () => {
     'the family and the hour together name one slot');
   assert.match(block, /var _wxSlots = \[_wxSceneSlot, _wxS2 \? \(_wxSlot2 \|\| _wxSceneSlot\) : null, _wxS3 \? \(_wxSlot3 \|\| _wxSceneSlot\) : null\];/,
     'v23844: one slot per screen — now at the board, the coming hours, the destination day — each falling back to now');
-  assert.match(block, /var _wxTakes = _wxSceneTakesFor\(_wxSlots\);/, 'and the files are drawn together so they differ');
+  assert.match(block, /var _wxTakes = _wxSceneTakesFor\(_wxSlots, _wxSceneMonth\);/, 'and the files are drawn together so they differ, in the board\'s season (v23845)');
   assert.match(block, /'<video class="wxc-vid wxc-vid-' \+ \(_vi \+ 1\) \+ '" autoplay loop muted playsinline preload="auto" '/, 'one scene element per screen, numbered');
   // The filenames moved into _WX_SCENE_TAKES when a slot became a list. What
   // still has to hold is the mapping itself: 'clear' keeps the two loops the
@@ -229,7 +229,7 @@ const TAKES = (() => {
   assert.ok(at >= 0, 'fids-core.js must define _WX_SCENE_TAKES');
   return new Function(SRC.slice(at, SRC.indexOf('};', at) + 2) + '\nreturn _WX_SCENE_TAKES;')();
 })();
-const LOOPS = [...new Set(Object.values(TAKES).flat())].map(f => f + '.mp4');
+const LOOPS = [...new Set(Object.values(TAKES).flat().map(e => typeof e === 'object' ? e.f : e))].map(f => f + '.mp4');
 
 test('every family has a day loop and a night loop on disk, as real MP4s', () => {
   assert.deepEqual(FAMILIES, ['cloud', 'rain', 'snow', 'storm'], 'the families the mapper can name');

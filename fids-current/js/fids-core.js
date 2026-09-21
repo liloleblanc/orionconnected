@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23844';
+var FIDS_BUILD_TAG = 'v23845';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43831,16 +43831,16 @@ function _wxSceneKindOf(icon) {
 // draws one of them each time it comes round; adding a clip is adding a
 // filename here. A slot with a single clip behaves exactly as it did before.
 var _WX_SCENE_TAKES = {
-  'clear-day': ['wx-grass-loop', 'wx-scene-clear-day-10366529', 'wx-scene-clear-day-1804078', 'wx-scene-clear-day-18743722', 'wx-scene-clear-day-25251479', 'wx-scene-clear-day-28665381', 'wx-scene-clear-day-35058242', 'wx-scene-clear-day-36081116', 'wx-scene-clear-day-4860056'],
-  'clear-night': ['wx-fireflies-night', 'wx-scene-clear-night-33641499', 'wx-scene-clear-night-37491853', 'wx-scene-clear-night-49319234', 'wx-scene-clear-night-51755410', 'wx-scene-clear-night-52003618', 'wx-scene-clear-night-5629210', 'wx-scene-clear-night-6073162', 'wx-scene-clear-night-66430286'],
+  'clear-day': ['wx-grass-loop', 'wx-scene-clear-day-10366529', 'wx-scene-clear-day-10366529', 'wx-scene-clear-day-1804078', 'wx-scene-clear-day-18743722', 'wx-scene-clear-day-25251479', 'wx-scene-clear-day-28665381', 'wx-scene-clear-day-35058242', 'wx-scene-clear-day-36081116', 'wx-scene-clear-day-36081116', 'wx-scene-clear-day-4860056', { f: 'wx-scene-clear-day-71319284', months: [9, 10, 11] }, { f: 'wx-scene-clear-day-73284904', months: [9, 10, 11] }],
+  'clear-night': ['wx-fireflies-night', 'wx-scene-clear-night-33641499', 'wx-scene-clear-night-37491853', 'wx-scene-clear-night-49319234', 'wx-scene-clear-night-51755410', 'wx-scene-clear-night-52003618', 'wx-scene-clear-night-5629210', 'wx-scene-clear-night-6073162', 'wx-scene-clear-night-66430286', { f: 'wx-scene-clear-night-69572273', months: [9, 10, 11] }, { f: 'wx-scene-clear-night-72642355', months: [9, 10, 11] }],
   'cloud-day': ['wx-scene-cloud-day-21795715', 'wx-scene-cloud-day-35757006', 'wx-scene-cloud-day-46063269', 'wx-scene-cloud-day-60620471', 'wx-scene-cloud-day-71073946', 'wx-scene-cloud-day-75644811', 'wx-scene-cloud-day-77501426'],
   'cloud-night': ['wx-scene-cloud-night-1616582', 'wx-scene-cloud-night-25463396', 'wx-scene-cloud-night-43989503', 'wx-scene-cloud-night-52810453', 'wx-scene-cloud-night-54993960', 'wx-scene-cloud-night-71236947', 'wx-scene-cloud-night-8081944', 'wx-scene-cloud-night-84151667'],
-  'rain-day': ['wx-scene-rain-day-25732747', 'wx-scene-rain-day-26234817', 'wx-scene-rain-day-41265233', 'wx-scene-rain-day-52125235', 'wx-scene-rain-day-65404793', 'wx-scene-rain-day-73739979'],
-  'rain-night': ['wx-scene-rain-night-74469118', 'wx-scene-rain-night-75453636', 'wx-scene-rain-night-77132356'],
-  'snow-day': ['wx-scene-snow-day-4575302', 'wx-scene-snow-day-47730037', 'wx-scene-snow-day-49923056', 'wx-scene-snow-day-5878391', 'wx-scene-snow-day-5931286', 'wx-scene-snow-day-77933981', 'wx-scene-snow-day-78747566'],
-  'snow-night': ['wx-scene-snow-night-3273178', 'wx-scene-snow-night-39671420', 'wx-scene-snow-night-4644922', 'wx-scene-snow-night-54072404', 'wx-scene-snow-night-74288910', 'wx-scene-snow-night-79178366', 'wx-scene-snow-night-86012973'],
+  'rain-day': ['wx-scene-rain-day-25732747', 'wx-scene-rain-day-25732747', 'wx-scene-rain-day-26234817', 'wx-scene-rain-day-41265233', 'wx-scene-rain-day-41265233', 'wx-scene-rain-day-52125235', 'wx-scene-rain-day-65404793', 'wx-scene-rain-day-65404793', 'wx-scene-rain-day-73739979'],
+  'rain-night': ['wx-scene-rain-night-74469118', 'wx-scene-rain-night-74469118', 'wx-scene-rain-night-75453636', 'wx-scene-rain-night-75453636', 'wx-scene-rain-night-77132356', 'wx-scene-rain-night-77132356'],
+  'snow-day': ['wx-scene-snow-day-4575302', 'wx-scene-snow-day-47730037', 'wx-scene-snow-day-49923056', 'wx-scene-snow-day-5878391', 'wx-scene-snow-day-5931286', 'wx-scene-snow-day-5931286', 'wx-scene-snow-day-77933981', 'wx-scene-snow-day-78747566'],
+  'snow-night': ['wx-scene-snow-night-3273178', 'wx-scene-snow-night-39671420', 'wx-scene-snow-night-4644922', 'wx-scene-snow-night-4644922', 'wx-scene-snow-night-54072404', 'wx-scene-snow-night-74288910', 'wx-scene-snow-night-79178366', 'wx-scene-snow-night-86012973'],
   'storm-day': ['wx-scene-storm-day-1615031', 'wx-scene-storm-day-1797779', 'wx-scene-storm-day-38364739', 'wx-scene-storm-day-52189937', 'wx-scene-storm-day-52873990', 'wx-scene-storm-day-5905698', 'wx-scene-storm-day-7537320', 'wx-scene-storm-day-82114209'],
-  'storm-night': ['wx-scene-storm-night-12821882', 'wx-scene-storm-night-2018910', 'wx-scene-storm-night-4846434', 'wx-scene-storm-night-4915798', 'wx-scene-storm-night-5018766', 'wx-scene-storm-night-82480163', 'wx-scene-storm-night-85833526']
+  'storm-night': ['wx-scene-storm-night-12821882', 'wx-scene-storm-night-2018910', 'wx-scene-storm-night-2018910', 'wx-scene-storm-night-4846434', 'wx-scene-storm-night-4915798', 'wx-scene-storm-night-5018766', 'wx-scene-storm-night-82480163', 'wx-scene-storm-night-85833526', 'wx-scene-storm-night-85833526']
 };
 // The chosen file is part of the card's rebuild signature, so drawing again
 // inside a visit would change the markup, restart the clip, and take the rest
@@ -43851,8 +43851,31 @@ var _wxTakeHeld = {};
 var _wxTakeLast = {};
 // v23844 — `key` holds a draw per SCREEN (two screens may share a slot and
 // must still get different takes); `avoid` is what the other screens drew.
-function _wxSceneTake(slot, key, avoid) {
-  var list = _WX_SCENE_TAKES[slot];
+// v23845 — SOME TAKES HAVE A SEASON. An entry may be a bare filename, or
+// { f: name, months: [..] } with the months (1-12, northern reckoning) it
+// may play in; the caller passes the board's own month, already turned by
+// six for a southern airport, so autumn leaves never fall over Sydney in
+// October. A take with no months plays all year.
+function _wxTakeName(e) { return (e && typeof e === 'object') ? e.f : e; }
+function _wxTakesInSeason(entries, month) {
+  var out = [], i, e;
+  for (i = 0; i < (entries || []).length; i++) {
+    e = entries[i];
+    if (e && typeof e === 'object' && e.months && e.months.length) {
+      if (!month || e.months.indexOf(month) < 0) continue;
+    }
+    out.push(_wxTakeName(e));
+  }
+  return out;
+}
+function _wxSceneTake(slot, key, avoid, month) {
+  var entries = _WX_SCENE_TAKES[slot];
+  var list = _wxTakesInSeason(entries, month);
+  if ((!list || !list.length) && entries && entries.length) {
+    // every take in the slot is out of season: something is better than the
+    // unlisted-slot default, so the season is set aside for this draw
+    list = []; for (var ei = 0; ei < entries.length; ei++) list.push(_wxTakeName(entries[ei]));
+  }
   if (!list || !list.length) {
     // Belt and braces: a slot nobody listed still resolves to the file the
     // card used before this existed.
@@ -43880,11 +43903,11 @@ function _wxSceneTake(slot, key, avoid) {
 // v23844 — A SCENE FOR EACH SCREEN. One take per screen, held for the visit,
 // each different from the others where the slots allow it, so the weather
 // behind the card changes at every change of screen.
-function _wxSceneTakesFor(slots) {
+function _wxSceneTakesFor(slots, month) {
   var used = {}, files = [], i, f;
   for (i = 0; i < slots.length; i++) {
     if (!slots[i]) { files.push(null); continue; }
-    f = _wxSceneTake(slots[i], 'screen' + (i + 1), used);
+    f = _wxSceneTake(slots[i], 'screen' + (i + 1), used, month);
     files.push(f); if (f) used[f] = true;
   }
   return files;
@@ -45344,7 +45367,16 @@ function _renderWxCard(el) {
       }
     } catch (eS3) {}
     var _wxSlots = [_wxSceneSlot, _wxS2 ? (_wxSlot2 || _wxSceneSlot) : null, _wxS3 ? (_wxSlot3 || _wxSceneSlot) : null];
-    var _wxTakes = _wxSceneTakesFor(_wxSlots);
+    // The board's own month, in its own time zone, turned by six months for a
+    // southern airport so a seasonal take is judged by the season outside.
+    var _wxSceneMonth = 0;
+    try {
+      var _apS = _wxOrig || dest, _tzS = (AP[_apS] || {}).tz;
+      var _mo = Number(new Date().toLocaleDateString('en-US', _tzS ? { timeZone: _tzS, month: 'numeric' } : { month: 'numeric' }));
+      var _cS = (typeof COORDS !== 'undefined' && COORDS[_apS]) || null;
+      if (_mo >= 1 && _mo <= 12) _wxSceneMonth = (_cS && _cS[0] < 0) ? ((_mo + 5) % 12) + 1 : _mo;
+    } catch (eMo) { _wxSceneMonth = 0; }
+    var _wxTakes = _wxSceneTakesFor(_wxSlots, _wxSceneMonth);
     var _wxVid = '';
     for (var _vi = 0; _vi < _wxTakes.length; _vi++) {
       if (!_wxTakes[_vi]) continue;
