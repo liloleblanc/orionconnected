@@ -112,7 +112,7 @@ const kindOf = new Function(fn('_wxSceneKindOf') + '\nreturn _wxSceneKindOf;')()
 test('an icon name folds to one of five scene families', () => {
   const expect = {
     'clear-day': 'clear', 'clear-night': 'clear',
-    'partly-cloudy-day': 'cloud', 'partly-cloudy-night': 'cloud', 'cloudy': 'cloud',
+    'partly-cloudy-day': 'clear', 'partly-cloudy-night': 'clear', 'cloudy': 'cloud',
     'overcast-day': 'cloud', 'fog': 'cloud',
     'drizzle': 'rain', 'rain': 'rain', 'extreme-rain': 'rain', 'sleet': 'rain', 'hail': 'rain',
     'snow': 'snow', 'extreme-snow': 'snow',
@@ -132,8 +132,12 @@ test('every icon the mappers can return has a family', () => {
     for (const m of body.replace(/\/\/.*$/gm, '').matchAll(/'([a-z-]+)'/g)) names.add(m[1]);
   }
   assert.ok(names.size >= 14, 'the mappers should name a dozen-plus icons');
-  const clearOnly = [...names].filter(n => kindOf(n) === 'clear' && !/^clear-/.test(n));
+  // v23846: partly cloudy folds to the fair-weather scene ON PURPOSE — drawn
+  // with the grey overcast loops it read as the wrong weather outside. Nothing
+  // else may fall through.
+  const clearOnly = [...names].filter(n => kindOf(n) === 'clear' && !/^clear-/.test(n) && !/^partly-cloudy/.test(n));
   assert.deepEqual(clearOnly, [], 'these icons fall through to the clear scene: ' + clearOnly.join(', '));
+  assert.equal(kindOf('partly-cloudy-day'), 'clear'); assert.equal(kindOf('partly-cloudy-night'), 'clear');
 });
 
 test('WMO codes — what the boards actually receive — map to real icons, with night forms', () => {
@@ -205,7 +209,7 @@ test('the scene is chosen from the family and the hour', () => {
 test('the hour tile\'s night class comes from the same flag as its icon', () => {
   const at = SRC.indexOf('var _wxHours = [];');
   const block = SRC.slice(at, SRC.indexOf('_wxHours.push', at) + 200);
-  assert.match(block, /var hNight = h24 < 6 \|\| h24 >= 21;/);
+  assert.match(block, /hNight = !!_wxNightAt\(dest, h\.ts\)/, 'v23846: real sunrise and sunset per hour, the fixed window only as the fallback inside the catch');
   assert.match(block, /_wxAnimIcon\(h\.code, hNight\)/, 'the icon reads hNight');
   assert.match(block, /night: hNight/, 'and the tile carries the same value');
   assert.match(SRC, /p\.h\.night \? 'wxc-pt-night' : 'wxc-pt-day'/, 'the class is that value, not a second guess');

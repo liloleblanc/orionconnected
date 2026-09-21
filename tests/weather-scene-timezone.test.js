@@ -34,7 +34,7 @@ const SRC = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'
 
 // Lift the real _wxNightAt and give it a real AP table.
 function nightAt() {
-  const at = SRC.indexOf('var _wxNightAt = function');
+  const at = SRC.indexOf('function _wxNightAt(iata, ts)');
   assert.ok(at >= 0, 'fids-core.js must still define _wxNightAt');
   let depth = 0; let body = null;
   for (let k = SRC.indexOf('{', at); k < SRC.length; k++) {
