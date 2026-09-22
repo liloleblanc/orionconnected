@@ -294,7 +294,13 @@ test('/citypic keeps its key a secret and its pictures its own', () => {
   assert.match(r, /kv\.put\(kNeg, '1', \{ expirationTtl: 86400 \}\)/, 'a miss is remembered for a day');
   // The term is part of both keys: the route is public and the term is the
   // caller's, so a key by code alone could be seeded by anyone for a month.
-  assert.match(r, /const kq = iata \+ ':' \+ q\.toLowerCase\(\);\s*const kPic = 'citypic:v1:' \+ kq;\s*const kNeg = 'citypic:neg:' \+ kq;/);
+  assert.match(r, /const kq = iata \+ ':' \+ q\.toLowerCase\(\);\s*const kPic = 'citypic:v2:' \+ kq;\s*const kNeg = 'citypic:neg2:' \+ kq;/);
+  // The prefix carries a version BECAUSE a picture cached under older rules
+  // outlives them: entries chosen before the city-tag check live thirty days,
+  // and Thunder Bay went on being served the Golden Gate Bridge until the
+  // prefix moved. Any future change to how a picture is chosen must move it
+  // again, so the miss key is versioned alongside it.
+  assert.doesNotMatch(r, /'citypic:v1:'|'citypic:neg:'/, 'the retired keys must not be read any more');
   // Upstream faults are never remembered as a miss: a limit or an outage
   // throws to the 502, a bad download answers 502, and only an empty answer
   // is remembered.
