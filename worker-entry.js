@@ -598,9 +598,15 @@ export default {
       // by anyone's term and shown on every board for a month; keyed by
       // code and term, an outsider's term can only ever seed its own entry,
       // and the board's own term is deterministic.
+      // v2 of the picture key. v1 entries were chosen before the picture had
+      // to be TAGGED with the city, and they live thirty days: Thunder Bay was
+      // still being served the Golden Gate Bridge from cache after the check
+      // went in. Bumping the prefix retires every one of them at a stroke and
+      // lets them expire unread. The miss key is bumped with it, so a city
+      // written off under the old rules gets asked for again.
       const kq = iata + ':' + q.toLowerCase();
-      const kPic = 'citypic:v1:' + kq;
-      const kNeg = 'citypic:neg:' + kq;
+      const kPic = 'citypic:v2:' + kq;
+      const kNeg = 'citypic:neg2:' + kq;
       // Two pauses, for the two ways the upstream can fail. kHold is this
       // city's: ten minutes after a fault peculiar to it. kBack is everyone's:
       // five minutes after a rate limit or an outage, which are shared. The
