@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2788,
+    "total": 2793,
     "by_category": {
       "ad": 10,
       "airline": 1443,
@@ -10,7 +10,7 @@
       "brand": 4,
       "hotel": 884,
       "livery": 96,
-      "misc": 56,
+      "misc": 61,
       "symbol": 4,
       "weather": 106
     }
@@ -29068,6 +29068,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/LAS-night.jpg",
+      "file": "LAS-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "LAS night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/LAS.jpg",
       "file": "LAS.jpg",
       "category": "misc",
@@ -29154,6 +29165,17 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/cities/MCO-night.jpg",
+      "file": "MCO-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "MCO night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
     },
     {
       "path": "/logos/cities/MCO.jpg",
@@ -29343,6 +29365,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YOW-night.jpg",
+      "file": "YOW-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YOW night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YOW.jpg",
       "file": "YOW.jpg",
       "category": "misc",
@@ -29453,12 +29486,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YYZ-night.jpg",
+      "file": "YYZ-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YYZ night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YYZ.jpg",
       "file": "YYZ.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YYZ",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/ZRH-night.jpg",
+      "file": "ZRH-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "ZRH night",
       "iata": "",
       "country": "",
       "ext": "jpg"

@@ -39,20 +39,30 @@ function fnSource(name) {
   }
   assert.fail('unbalanced ' + name);
 }
-function table() {
-  const m = SRC.match(/var _WX_CITY_PICS = (\{[\s\S]*?\});/);
-  assert.ok(m, '_WX_CITY_PICS must be defined');
+function table(name) {
+  const m = SRC.match(new RegExp('var ' + (name || '_WX_CITY_PICS') + ' = (\\{[\\s\\S]*?\\});'));
+  assert.ok(m, (name || '_WX_CITY_PICS') + ' must be defined');
   return new Function('return ' + m[1])();
 }
 
 test('the curated table and the files on disk agree exactly', () => {
   const t = table();
-  const files = fs.readdirSync(CITIES).filter(f => f.endsWith('.jpg')).map(f => f.slice(0, -4)).sort();
+  const n = table('_WX_CITY_NIGHT');
+  const all = fs.readdirSync(CITIES).filter(f => f.endsWith('.jpg')).map(f => f.slice(0, -4));
+  const files = all.filter(f => !f.endsWith('-night')).sort();
+  const nightFiles = all.filter(f => f.endsWith('-night')).map(f => f.slice(0, -6)).sort();
   const curated = Object.keys(t).filter(k => t[k] === 1).sort();
-  assert.deepEqual(curated, files, 'every curated code has a file and every file a code');
-  for (const k of Object.keys(t)) {
-    if (t[k] !== 1) assert.equal(t[t[k]], 1, k + ' aliases ' + t[k] + ', which must itself be curated');
+  assert.deepEqual(curated, files, 'every curated code has a day file and every day file a code');
+  // The night set is its own table and its own files, and it is allowed to be
+  // smaller: a city with no night picture keeps its day one, which is what the
+  // board did before there were any.
+  assert.deepEqual(Object.keys(n).filter(k => n[k] === 1).sort(), nightFiles, 'every night code has a file and every night file a code');
+  for (const [tbl, label] of [[t, 'day'], [n, 'night']]) {
+    for (const k of Object.keys(tbl)) {
+      if (tbl[k] !== 1) assert.equal(tbl[tbl[k]], 1, k + ' aliases ' + tbl[k] + ' in the ' + label + ' set, which must itself be curated');
+    }
   }
+  for (const k of Object.keys(n)) assert.ok(t[k], k + ' has a night picture but no day entry');
   assert.deepEqual(Object.keys(t).filter(k => t[k] === 'NYC').sort(), ['EWR', 'JFK', 'LGA'], 'the three New York fields share one picture');
   assert.ok(files.length >= 39, 'the roster set is at least the 39 cities gathered');
 });
@@ -84,23 +94,36 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   const query = new Function('WIKI_CITY', 'CITY', 'AP', 'tc', 'return ' + fnSource('_wxCityQuery'))(
     { YXX: 'Abbotsford,_British_Columbia' }, { YQT: 'THUNDER BAY' }, { YQT: {} }, s => s.toLowerCase().replace(/(^|\s)(\S)/g, (m, p, c) => p + c.toUpperCase()));
   const enc = new Function('return ' + fnSource('_wxEnc'))();
-  const pic = new Function('_WX_CITY_PICS', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, query, enc);
+  const pic = new Function('_WX_CITY_PICS', '_WX_CITY_NIGHT', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, table('_WX_CITY_NIGHT'), query, enc);
   assert.equal(pic('YQM'), '/logos/cities/YQM.jpg');
+  // Night asks for the night picture where there is one and keeps the day one
+  // where there is not — never a daylit city at two in the morning once the
+  // set is filled, and never a regression while it is not.
+  assert.equal(pic('YQM', true), '/logos/cities/YQM.jpg', 'no night picture yet, so the day one stands');
+  assert.equal(pic('MCO', true), '/logos/cities/MCO-night.jpg');
+  assert.equal(pic('MCO', false), '/logos/cities/MCO.jpg');
+  assert.equal(pic('JFK', true), '/logos/cities/NYC.jpg', 'the shared New York picture has no night version yet');
+  // An alias may only point at a city that HAS a night picture — otherwise the
+  // board asks for a file that answers 404, which is worse than the day
+  // picture it would otherwise have kept.
+  for (const [k, v] of Object.entries(table('_WX_CITY_NIGHT'))) {
+    if (v !== 1) assert.ok(fs.existsSync(path.join(CITIES, v + '-night.jpg')), k + ' aliases ' + v + ' at night, which has no night file');
+  }
   assert.equal(pic('yqm'), '/logos/cities/YQM.jpg', 'case does not matter');
   assert.equal(pic('JFK'), '/logos/cities/NYC.jpg');
   assert.equal(pic('EWR'), '/logos/cities/NYC.jpg');
   assert.equal(pic('YXX'), '/citypic?iata=YXX&q=Abbotsford%20British%20Columbia', 'the encyclopedia title, with its province, is the query');
   assert.equal(pic('YQT'), '/citypic?iata=YQT&q=Thunder%20Bay', 'the board name in title case when there is no title');
   assert.equal(pic('ZZZ'), '/citypic?iata=ZZZ', 'an unknown code still asks, with no name');
-  const apos = new Function('_WX_CITY_PICS', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, () => "Val-D'Or (Québec)", enc);
+  const apos = new Function('_WX_CITY_PICS', '_WX_CITY_NIGHT', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, {}, () => "Val-D'Or (Québec)", enc);
   assert.equal(apos('YVO'), '/citypic?iata=YVO&q=Val-D%27Or%20%28Qu%C3%A9bec%29', "an apostrophe or a bracket cannot break the url('…') it goes into");
   assert.equal(pic(''), '');
 });
 
 test('the plate stacks picture, weather, then readings', () => {
   const side = fnSource('_wxSide');
-  assert.match(side, /var pic = _wxCityPic\(iata\);/);
-  assert.match(side, /var fx = _wxSceneKindOf\(sIc\) \+ \(_wxNightAt\(iata, ts\) \? '-night' : '-day'\);/, 'the weather layer follows the icon and the real night');
+  assert.match(side, /var pic = _wxCityPic\(iata, isNight\);/, 'the picture is of the hour the plate draws');
+  assert.match(side, /var fx = _wxSceneKindOf\(sIc\) \+ \(isNight \? '-night' : '-day'\);/, 'the weather layer follows the icon and the real night');
   const order = ['wxc-mon-side ', 'wxc-mon-haspic', 'wxc-mon-pic', 'wxc-mon-fx wxc-fx-', 'wxc-mon-lbl', 'wxc-mon-city', 'wxc-mon-now', 'wxc-mon-cond'];
   let last = -1;
   for (const o of order) { const at = side.indexOf(o); assert.ok(at > last, o + ' comes in order'); last = at; }
@@ -238,10 +261,10 @@ test('reduced motion stills the weather layers, and outranks them', () => {
 });
 
 test('the boards load the CSS at the new build', () => {
-  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23852';/);
+  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23853';/);
   for (const h of ['fids', 'gids', 'bids']) {
     const html = fs.readFileSync(path.join(ROOT, 'fids-current', h + '.html'), 'utf8');
-    assert.match(html, /css\/display-overrides\.css\?v=23852/, h + '.html');
+    assert.match(html, /css\/display-overrides\.css\?v=23853/, h + '.html');
   }
 });
 
