@@ -652,10 +652,40 @@ export default {
           const j = await r.json().catch(() => null);
           return (j && Array.isArray(j.hits) && j.hits.length) ? j.hits : null;
         };
+        // A picture only counts as this city's if Pixabay tagged it with the
+        // city's name. Sampled WITHOUT this check, "Halifax skyline night" and
+        // "Moncton skyline night" came back as the same picture of a European
+        // river city, and Zurich and Dublin returned one picture between them,
+        // byte for byte: the search falls back to generic cityscapes rather
+        // than answering empty, and a board carrying the wrong city is worse
+        // than a board carrying none. A hit tagged with the whole name wins;
+        // one tagged with the first word of it will do; nothing else is
+        // served. A name with no word of four letters cannot be checked this
+        // way — those are taken on trust, there being nothing to match on.
+        const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+        // The phrase is built from EVERY word, the short ones included: Thunder
+        // Bay's second word is three letters, and without it the name never
+        // forms a phrase and a photograph of a thunderstorm answers for the
+        // city. Only the single-word fallback needs a word long enough to be
+        // worth matching on its own.
+        const all = norm(q).split(/[^a-z0-9]+/).filter(Boolean);
+        const words = all.filter((w) => w.length >= 4);
+        const phrase = all.slice(0, 2).join(' ');
         // A skyline reads as the city, so that is asked for first; then the
         // city under the places category; then the bare name.
-        const hits = (await search(q + ' skyline', 'places')) || (await search(q, 'places')) || (await search(q, ''));
-        const hit = hits && hits.find(h => h && typeof h.largeImageURL === 'string');
+        let best = null, named = null;
+        for (const [term, category] of [[q + ' skyline', 'places'], [q, 'places'], [q, '']]) {
+          const hits = await search(term, category);
+          if (!hits) continue;
+          for (const h of hits) {
+            if (!h || typeof h.largeImageURL !== 'string') continue;
+            const t = norm(h.tags);
+            if (all.length > 1 && t.indexOf(phrase) >= 0) { best = h; break; }
+            if (!named && (!words.length || t.indexOf(words[0]) >= 0)) named = h;
+          }
+          if (best) break;
+        }
+        const hit = best || named;
         const remember = async () => { if (kv) await kv.put(kNeg, '1', { expirationTtl: 86400 }).catch(() => {}); };
         // An upstream fault answers 502 naming its status — an operator can
         // read the cause off the response instead of the Worker's log — and
