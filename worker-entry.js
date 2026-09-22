@@ -601,14 +601,24 @@ export default {
       const kq = iata + ':' + q.toLowerCase();
       const kPic = 'citypic:v1:' + kq;
       const kNeg = 'citypic:neg:' + kq;
+      // Two pauses, for the two ways the upstream can fail. kHold is this
+      // city's: ten minutes after a fault peculiar to it. kBack is everyone's:
+      // five minutes after a rate limit or an outage, which are shared. The
+      // boards ask for this picture on every render, so without a pause a
+      // rate limit feeds itself — and a pause costs a plate its photograph
+      // and nothing else.
+      const kHold = 'citypic:hold:' + kq;
+      const kBack = 'citypic:backoff';
       const picHead = (type, age) => ({ 'Content-Type': type, 'Cache-Control': 'public, max-age=' + age, 'Access-Control-Allow-Origin': '*' });
-      const none = () => new Response('no picture', { status: 404, headers: { 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*' } });
+      const none = (age) => new Response('no picture', { status: 404, headers: { 'Cache-Control': 'public, max-age=' + (age || 3600), 'Access-Control-Allow-Origin': '*' } });
       try {
         if (kv) {
           const hit = await kv.getWithMetadata(kPic, { type: 'arrayBuffer' }).catch(() => null);
           if (hit && hit.value) return new Response(hit.value, { status: 200, headers: picHead((hit.metadata && hit.metadata.type) || 'image/jpeg', 86400) });
           const neg = await kv.get(kNeg).catch(() => null);
           if (neg) return none();
+          const paused = (await kv.get(kBack).catch(() => null)) || (await kv.get(kHold).catch(() => null));
+          if (paused) return none(120);
         }
         const key = env.PIXABAY_KEY;
         if (!key || !q) return none();
@@ -624,14 +634,21 @@ export default {
           if (used >= cap) return none();
           await kv.put(kUsed, String(used + 1), { expirationTtl: 2 * 86400 }).catch(() => {});
         }
+        // The status of the last attempt that failed upstream, if any. A
+        // non-200 is that ATTEMPT's failure, not the request's — the next
+        // attempt still runs, which is why this is recorded rather than
+        // thrown. Thrown, one bad first search took the two fallbacks with
+        // it and a city that had a picture under its bare name never got
+        // asked for it.
+        var upstream = 0;
         const search = async (term, category) => {
           const u = 'https://pixabay.com/api/?key=' + encodeURIComponent(key)
             + '&image_type=photo&orientation=horizontal&safesearch=true&min_width=1280&per_page=5&order=popular'
             + '&q=' + encodeURIComponent(term) + (category ? '&category=' + category : '');
           const r = await fetch(u, { headers: { 'Accept': 'application/json' } });
-          // A rate limit or an outage is not "no picture": it is thrown to the
-          // 502 below, which caches nothing, so the next board tries again.
-          if (!r.ok) throw new Error('pixabay ' + r.status);
+          // A rate limit or an outage is not "no picture", so it is never
+          // written down as one; it is remembered here and answered below.
+          if (!r.ok) { upstream = r.status; return null; }
           const j = await r.json().catch(() => null);
           return (j && Array.isArray(j.hits) && j.hits.length) ? j.hits : null;
         };
@@ -640,12 +657,24 @@ export default {
         const hits = (await search(q + ' skyline', 'places')) || (await search(q, 'places')) || (await search(q, ''));
         const hit = hits && hits.find(h => h && typeof h.largeImageURL === 'string');
         const remember = async () => { if (kv) await kv.put(kNeg, '1', { expirationTtl: 86400 }).catch(() => {}); };
-        if (!hit) { await remember(); return none(); }
+        // An upstream fault answers 502 naming its status — an operator can
+        // read the cause off the response instead of the Worker's log — and
+        // pauses the asking. A shared fault (429, 5xx) pauses every city; a
+        // fault peculiar to this one pauses only it.
+        const faulted = async (why, shared) => {
+          if (kv) await kv.put(shared ? kBack : kHold, String(why), { expirationTtl: shared ? 300 : 600 }).catch(() => {});
+          return new Response('citypic upstream ' + why, { status: 502, headers: NO_STORE });
+        };
+        if (!hit) {
+          if (upstream) return faulted(upstream, upstream === 429 || upstream >= 500);
+          await remember();
+          return none();
+        }
         const img = await fetch(hit.largeImageURL);
         const type = (img.headers.get('Content-Type') || '').split(';')[0].trim();
         // A failed download, or a body that is not an image, is likewise an
         // upstream fault — not a miss to remember for a day.
-        if (!img.ok || !/^image\//.test(type)) return new Response('citypic fetch failed', { status: 502, headers: NO_STORE });
+        if (!img.ok || !/^image\//.test(type)) return faulted('image ' + (img.status || 0), false);
         const bytes = await img.arrayBuffer();
         if (kv) await kv.put(kPic, bytes, { expirationTtl: 30 * 86400, metadata: { type: type, src: 'pixabay', id: hit.id } }).catch(() => {});
         return new Response(bytes, { status: 200, headers: picHead(type, 86400) });

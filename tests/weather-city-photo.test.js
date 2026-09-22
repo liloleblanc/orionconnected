@@ -229,14 +229,26 @@ test('/citypic keeps its key a secret and its pictures its own', () => {
   // Upstream faults are never remembered as a miss: a limit or an outage
   // throws to the 502, a bad download answers 502, and only an empty answer
   // is remembered.
-  assert.match(r, /if \(!r\.ok\) throw new Error\('pixabay ' \+ r\.status\);/);
-  assert.match(r, /if \(!img\.ok \|\| !\/\^image\\\/\/\.test\(type\)\) return new Response\('citypic fetch failed', \{ status: 502, headers: NO_STORE \}\);/);
+  // A failed attempt is recorded, not thrown: the two fallback searches must
+  // still run, or a city with no "<name> skyline" picture never gets asked
+  // for its bare name.
+  assert.match(r, /if \(!r\.ok\) \{ upstream = r\.status; return null; \}/);
+  assert.match(r, /const hits = \(await search\(q \+ ' skyline', 'places'\)\) \|\| \(await search\(q, 'places'\)\) \|\| \(await search\(q, ''\)\);/,
+    'all three attempts, in order');
+  // An upstream fault names its status and pauses the asking; a shared fault
+  // (rate limit, outage) pauses every city, a peculiar one pauses only this.
+  assert.match(r, /return new Response\('citypic upstream ' \+ why, \{ status: 502, headers: NO_STORE \}\)/);
+  assert.match(r, /kv\.put\(shared \? kBack : kHold, String\(why\), \{ expirationTtl: shared \? 300 : 600 \}\)/);
+  assert.match(r, /if \(upstream\) return faulted\(upstream, upstream === 429 \|\| upstream >= 500\);/);
+  assert.match(r, /if \(!img\.ok \|\| !\/\^image\\\/\/\.test\(type\)\) return faulted\('image ' \+ \(img\.status \|\| 0\), false\);/);
+  assert.match(r, /const paused = \(await kv\.get\(kBack\)[\s\S]{0,80}if \(paused\) return none\(120\);/, 'a paused route answers cheaply');
   assert.equal((r.match(/await remember\(\)/g) || []).length, 1, 'remember() runs for the empty answer only');
   // A day's budget bounds what any caller can spend of the key's quota.
   assert.match(r, /const kUsed = 'citypic:used:' \+ new Date\(\)\.toISOString\(\)\.slice\(0, 10\);/);
   assert.match(r, /const cap = Number\(env\.CITYPIC_DAILY_LOOKUPS\) \|\| 200;\s*if \(used >= cap\) return none\(\);/);
   assert.match(r, /env\.CITY_BG_CACHE/, 'the KV namespace the root config already binds');
-  assert.match(r, /'Cache-Control': 'public, max-age=3600'/, 'even a 404 is cached at the edge');
+  assert.match(r, /const none = \(age\) => new Response\('no picture', \{ status: 404, headers: \{ 'Cache-Control': 'public, max-age=' \+ \(age \|\| 3600\)/,
+    'even a 404 is cached at the edge — an hour by default, two minutes while paused');
   assert.match(r, /safesearch=true/);
   assert.match(r, /catch \(e\) \{\s*return new Response\('citypic fetch failed', \{ status: 502, headers: NO_STORE \}\);/);
   const wr = fs.readFileSync(path.join(ROOT, 'wrangler.jsonc'), 'utf8');
