@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23853';
+var FIDS_BUILD_TAG = 'v23854';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45175,12 +45175,17 @@ function _renderWxCard(el) {
     var _wxEnc = function (t) {
       return encodeURIComponent(t).replace(/[!'()*]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });
     };
+    var _wxNightPicFor = function (iata) {
+      var k = String(iata || '').toUpperCase();
+      var n = k && _WX_CITY_NIGHT[k];
+      return n ? '/logos/cities/' + (n === 1 ? k : n) + '-night.jpg' : '';
+    };
     var _wxCityPic = function (iata, night) {
       var k = String(iata || '').toUpperCase();
       if (!k) return '';
       if (night) {
-        var n = _WX_CITY_NIGHT[k];
-        if (n) return '/logos/cities/' + (n === 1 ? k : n) + '-night.jpg';
+        var n = _wxNightPicFor(k);
+        if (n) return n;
       }
       var v = _WX_CITY_PICS[k];
       if (v) return '/logos/cities/' + (v === 1 ? k : v) + '.jpg';
@@ -45196,9 +45201,16 @@ function _renderWxCard(el) {
       // v23849 — the picture under the readings and the weather over it;
       // v23853 — and the picture is of the hour the plate is drawing.
       var pic = _wxCityPic(iata, isNight);
+      // v23854 — A CITY WITH NO NIGHT PICTURE IS TAKEN DOWN TO DUSK. Most
+      // places have no photograph of themselves after dark — neither library
+      // has one for Moncton — so the day picture is what there is, and shown
+      // as it stands at two in the morning it is broad daylight behind the
+      // readings. Graded down it reads as the same city at night, which is
+      // the truth of the hour even if it is not a photograph of it.
+      var dusk = isNight && !_wxNightPicFor(iata);
       var fx = _wxSceneKindOf(sIc) + (isNight ? '-night' : '-day');
       return '<div class="wxc-mon-side ' + cls + (pic ? ' wxc-mon-haspic' : '') + '">'
-        +   (pic ? '<div class="wxc-mon-pic" style="background-image:url(\'' + pic + '\')"></div>' : '')
+        +   (pic ? '<div class="wxc-mon-pic' + (dusk ? ' wxc-mon-dusk' : '') + '" style="background-image:url(\'' + pic + '\')"></div>' : '')
         +   '<div class="wxc-mon-fx wxc-fx-' + fx + '" aria-hidden="true"></div>'
         +   '<div class="wxc-mon-lbl">' + shortLbl + (when ? ' <b>' + when + '</b>' : '') + '</div>'
         +   '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _wxCityOf(iata) + '</span> <span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
