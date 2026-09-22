@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23861';
+var FIDS_BUILD_TAG = 'v23863';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45306,7 +45306,15 @@ function _renderWxCard(el) {
       // v23857 — THE HOURS AS COLUMNS, TO THE HOURLY REFERENCE. One column an hour: its label on top,
       // the icon, the temperature, in a rounded glass panel; the first is
       // simply "now". The curve of v23836 is gone with the tiles it drew under.
-      var _wxNowLbl = _wxPairS({ en:'Now', fr:'Maint.', es:'Ahora', de:'Jetzt', it:'Ora', pt:'Agora', ja:'今', zh:'现在', ar:'الآن' });
+      // v23863 — the other seven columns are clock times in no language at
+      // all; this one is a word, and two of them side by side do not fit a
+      // column an eighth of the panel wide — it ran into 8 PM. The screen's
+      // own title carries both languages, so the column takes the board's
+      // first one.
+      var _wxNowLbl = (function () {
+        var o = { en:'Now', fr:'Maint.', es:'Ahora', de:'Jetzt', it:'Ora', pt:'Agora', ja:'今', zh:'现在', ar:'الآن' };
+        return o[_wxLangs[0]] || o.en;
+      })();
       var _cols = _pts.map(function (p, i) {
         return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + '">'
           + '<div class="wxc-pt-time">' + (i === 0 ? _wxNowLbl : p.h.lbl) + '</div>'
