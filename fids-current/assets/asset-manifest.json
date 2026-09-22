@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2798,
+    "total": 2788,
     "by_category": {
       "ad": 10,
       "airline": 1443,
@@ -12,7 +12,7 @@
       "livery": 96,
       "misc": 56,
       "symbol": 4,
-      "weather": 116
+      "weather": 106
     }
   },
   "items": [
@@ -30683,116 +30683,6 @@
       "iata": "",
       "country": "",
       "ext": "svg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-clear-day.jpg",
-      "file": "wx-still-clear-day.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still clear day",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-clear-night.jpg",
-      "file": "wx-still-clear-night.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still clear night",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-cloud-day.jpg",
-      "file": "wx-still-cloud-day.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still cloud day",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-cloud-night.jpg",
-      "file": "wx-still-cloud-night.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still cloud night",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-rain-day.jpg",
-      "file": "wx-still-rain-day.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still rain day",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-rain-night.jpg",
-      "file": "wx-still-rain-night.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still rain night",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-snow-day.jpg",
-      "file": "wx-still-snow-day.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still snow day",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-snow-night.jpg",
-      "file": "wx-still-snow-night.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still snow night",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-storm-day.jpg",
-      "file": "wx-still-storm-day.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still storm day",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
-    },
-    {
-      "path": "/logos/weather/stills/wx-still-storm-night.jpg",
-      "file": "wx-still-storm-night.jpg",
-      "category": "weather",
-      "subcategory": "icon",
-      "group": "Weather icons",
-      "name": "wx still storm night",
-      "iata": "",
-      "country": "",
-      "ext": "jpg"
     }
   ]
 }
