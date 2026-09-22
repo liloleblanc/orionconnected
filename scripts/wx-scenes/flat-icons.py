@@ -1,4 +1,4 @@
-"""Flat weather icons in the style the owner chose: white puffy clouds, a lemon
+"""Flat weather icons after the forecast-card references: white puffy clouds, a lemon
 sun with stubby rays, a lemon crescent moon, blue teardrops, blue wind curls,
 a grey cloud behind for overcast. No outlines. Gently animated with SMIL so
 they move inside an <img>. Every name the card's icon mappers can return gets

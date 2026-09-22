@@ -200,7 +200,13 @@ test('inside each screen the readings step in 260ms apart, after the screen has 
   assert.ok(draw && /animation: wxcDraw calc\(2\.08s/.test(draw), 'the line draws itself over the eight readings (8 × 0.26s)');
   assert.match(rule('.wxcard-wrap .wxc-curve-line'), /stroke-dasharray: 1 !important/, 'against pathLength 1');
   assert.match(SRC, /<path class="wxc-curve-line" pathLength="1"/);
-  assert.match(SRC, /'<div class="wxc-pt ' \+ \(p\.h\.night \? 'wxc-pt-night' : 'wxc-pt-day'\) \+ '" style="--wxc-i:' \+ i \+ ';/, 'the point carries its index');
+  // v23848: the hours are columns in a grid; a point carries its index and nothing else inline
+  assert.match(SRC, /'<div class="wxc-pt ' \+ \(p\.h\.night \? 'wxc-pt-night' : 'wxc-pt-day'\) \+ '" style="--wxc-i:' \+ i \+ '">'/, 'the point carries its index');
+  assert.match(SRC, /'<div class="wxc-chart wxc-hgrid">' \+ _cols \+ '<\/div>'/, 'and the columns sit in the grid panel');
+  // the note's rule lives in the v23848 block, after this one, so it is looked for in the whole sheet
+  const hnote = CSS_CODE.split('\n').find(l => l.includes('.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-hnote {'));
+  assert.ok(hnote, '.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-hnote must be staged');
+  assert.match(hnote, /animation-delay: calc\(\(22\.20s - var\(--wxc-el, 0s\)\) \* var\(--wxc-t, 1\)\)/, 'the turn-of-weather note steps in after the last column, on the beat the legend had');
   const times = SEL_LINES.find(l => /\.wxc-pt-time \{/.test(l) && /\.wxc-entering/.test(l));
   assert.ok(times && /animation: wxcFade/.test(times) && !/wxcRise|wxcPop/.test(times),
     'the times only fade — their transform is pinned (translateX(-50%)) and must not be animated');
