@@ -106,8 +106,8 @@ test('the monitor carries departure and arrival, each read at its own hour', () 
     'departure from the board airport at departure time, arrival at the destination at arrival time');
   assert.match(SRC, /'<div class="wxc-mon-body">' \+ \(_sideL \? _sideL \+ _wxLink : ''\) \+ _sideR \+ '<\/div>'/,
     'departure left, the link, arrival right; with no origin reading the arrival stands alone');
-  assert.match(SRC, /var w = _wxAtTime\(iata, ts\);[\s\S]{0,160}_wxAnimIcon\(w\.code, _wxNightAt\(iata, ts\)\)/,
-    'the plate\'s icon is day or night AT THAT HOUR, not now');
+  assert.match(SRC, /var isNight = !!_wxNightAt\(iata, ts\);\s*var sIc = _wxAnimIcon\(w\.code, isNight\);/,
+    'the plate\'s icon is day or night AT THAT HOUR, not now — read once and shared with the picture');
   assert.match(rule('.wxcard-wrap .wxc-mon-2up .wxc-mon-body'), /grid-template-columns: 1fr auto 1fr !important/, 'two plates sit side by side');
 });
 

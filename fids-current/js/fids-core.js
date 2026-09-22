@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23852';
+var FIDS_BUILD_TAG = 'v23853';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45145,6 +45145,19 @@ function _renderWxCard(el) {
       MSP:1, BOS:1, PHL:1, MIA:1, TPA:1, ZRH:1, DUB:1, EDI:1, KEF:1,
       JFK:'NYC', LGA:'NYC', EWR:'NYC'
     };
+    // v23853 — AND THE SAME CITY AFTER DARK. A plate at two in the morning
+    // was showing the city in full daylight, and five of the curated
+    // pictures were the opposite fault: a night or a sunset shot, on the
+    // plate at noon. Those five are night pictures and are filed as such
+    // here; a city with no night picture keeps its day one, which is what
+    // the board did before, so this can only improve as the set fills in.
+    // An alias belongs here only once the city it points at HAS a night
+    // picture: pointing at one that does not exist asks the board for a file
+    // that answers 404, which is worse than the day picture it would have
+    // kept. New York's three fields are therefore absent until NYC has one.
+    var _WX_CITY_NIGHT = {
+      MCO:1, ZRH:1, YYZ:1, LAS:1, YOW:1
+    };
     // The name the Worker searches by, for an airport outside the curated
     // set: the encyclopedia title where there is one (it carries the
     // province or state, which is what tells the two Saint Johns apart),
@@ -45162,9 +45175,13 @@ function _renderWxCard(el) {
     var _wxEnc = function (t) {
       return encodeURIComponent(t).replace(/[!'()*]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });
     };
-    var _wxCityPic = function (iata) {
+    var _wxCityPic = function (iata, night) {
       var k = String(iata || '').toUpperCase();
       if (!k) return '';
+      if (night) {
+        var n = _WX_CITY_NIGHT[k];
+        if (n) return '/logos/cities/' + (n === 1 ? k : n) + '-night.jpg';
+      }
       var v = _WX_CITY_PICS[k];
       if (v) return '/logos/cities/' + (v === 1 ? k : v) + '.jpg';
       var q = _wxCityQuery(k);
@@ -45173,11 +45190,13 @@ function _renderWxCard(el) {
     var _wxSide = function (iata, ts, shortLbl, cls) {
       var w = _wxAtTime(iata, ts);
       if (!w) return '';
-      var sIc = _wxAnimIcon(w.code, _wxNightAt(iata, ts));
+      var isNight = !!_wxNightAt(iata, ts);
+      var sIc = _wxAnimIcon(w.code, isNight);
       var when = _wxClock(iata, ts);
-      // v23849 — the picture under the readings and the weather over it.
-      var pic = _wxCityPic(iata);
-      var fx = _wxSceneKindOf(sIc) + (_wxNightAt(iata, ts) ? '-night' : '-day');
+      // v23849 — the picture under the readings and the weather over it;
+      // v23853 — and the picture is of the hour the plate is drawing.
+      var pic = _wxCityPic(iata, isNight);
+      var fx = _wxSceneKindOf(sIc) + (isNight ? '-night' : '-day');
       return '<div class="wxc-mon-side ' + cls + (pic ? ' wxc-mon-haspic' : '') + '">'
         +   (pic ? '<div class="wxc-mon-pic" style="background-image:url(\'' + pic + '\')"></div>' : '')
         +   '<div class="wxc-mon-fx wxc-fx-' + fx + '" aria-hidden="true"></div>'
