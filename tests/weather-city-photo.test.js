@@ -94,7 +94,8 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   const query = new Function('WIKI_CITY', 'CITY', 'AP', 'tc', 'return ' + fnSource('_wxCityQuery'))(
     { YXX: 'Abbotsford,_British_Columbia' }, { YQT: 'THUNDER BAY' }, { YQT: {} }, s => s.toLowerCase().replace(/(^|\s)(\S)/g, (m, p, c) => p + c.toUpperCase()));
   const enc = new Function('return ' + fnSource('_wxEnc'))();
-  const pic = new Function('_WX_CITY_PICS', '_WX_CITY_NIGHT', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, table('_WX_CITY_NIGHT'), query, enc);
+  const nightFor = new Function('_WX_CITY_NIGHT', 'return ' + fnSource('_wxNightPicFor'))(table('_WX_CITY_NIGHT'));
+  const pic = new Function('_WX_CITY_PICS', '_wxNightPicFor', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, nightFor, query, enc);
   assert.equal(pic('YQM'), '/logos/cities/YQM.jpg');
   // Night asks for the night picture where there is one and keeps the day one
   // where there is not — never a daylit city at two in the morning once the
@@ -115,7 +116,7 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   assert.equal(pic('YXX'), '/citypic?iata=YXX&q=Abbotsford%20British%20Columbia', 'the encyclopedia title, with its province, is the query');
   assert.equal(pic('YQT'), '/citypic?iata=YQT&q=Thunder%20Bay', 'the board name in title case when there is no title');
   assert.equal(pic('ZZZ'), '/citypic?iata=ZZZ', 'an unknown code still asks, with no name');
-  const apos = new Function('_WX_CITY_PICS', '_WX_CITY_NIGHT', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, {}, () => "Val-D'Or (Québec)", enc);
+  const apos = new Function('_WX_CITY_PICS', '_wxNightPicFor', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, () => '', () => "Val-D'Or (Québec)", enc);
   assert.equal(apos('YVO'), '/citypic?iata=YVO&q=Val-D%27Or%20%28Qu%C3%A9bec%29', "an apostrophe or a bracket cannot break the url('…') it goes into");
   assert.equal(pic(''), '');
 });
@@ -123,11 +124,17 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
 test('the plate stacks picture, weather, then readings', () => {
   const side = fnSource('_wxSide');
   assert.match(side, /var pic = _wxCityPic\(iata, isNight\);/, 'the picture is of the hour the plate draws');
+  // A city with no night picture is taken down to dusk rather than left in
+  // broad daylight at two in the morning; one that HAS a night picture is not
+  // graded at all, because it is already a photograph of the hour.
+  assert.match(side, /var dusk = isNight && !_wxNightPicFor\(iata\);/);
+  assert.match(side, /\(dusk \? ' wxc-mon-dusk' : ''\)/);
+  assert.match(liveRule('.wxcard-wrap .wxc-mon-side > .wxc-mon-pic.wxc-mon-dusk'), /filter: brightness\(\.40\) saturate\(\.65\) contrast\(1\.08\) !important/);
   assert.match(side, /var fx = _wxSceneKindOf\(sIc\) \+ \(isNight \? '-night' : '-day'\);/, 'the weather layer follows the icon and the real night');
   const order = ['wxc-mon-side ', 'wxc-mon-haspic', 'wxc-mon-pic', 'wxc-mon-fx wxc-fx-', 'wxc-mon-lbl', 'wxc-mon-city', 'wxc-mon-now', 'wxc-mon-cond'];
   let last = -1;
   for (const o of order) { const at = side.indexOf(o); assert.ok(at > last, o + ' comes in order'); last = at; }
-  assert.match(side, /\(pic \? '<div class="wxc-mon-pic" style="background-image:url\(\\'' \+ pic \+ '\\'\)"><\/div>' : ''\)/, 'no picture, no picture layer');
+  assert.match(side, /\(pic \? '<div class="wxc-mon-pic' \+ \(dusk \? ' wxc-mon-dusk' : ''\) \+ '" style="background-image:url\(\\'' \+ pic \+ '\\'\)"><\/div>' : ''\)/, 'no picture, no picture layer');
   assert.match(side, /aria-hidden="true"/, 'the weather layer is decoration');
 });
 
@@ -261,10 +268,10 @@ test('reduced motion stills the weather layers, and outranks them', () => {
 });
 
 test('the boards load the CSS at the new build', () => {
-  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23853';/);
+  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23854';/);
   for (const h of ['fids', 'gids', 'bids']) {
     const html = fs.readFileSync(path.join(ROOT, 'fids-current', h + '.html'), 'utf8');
-    assert.match(html, /css\/display-overrides\.css\?v=23853/, h + '.html');
+    assert.match(html, /css\/display-overrides\.css\?v=23854/, h + '.html');
   }
 });
 
