@@ -115,6 +115,25 @@ const RM = CSS.indexOf('@media (prefers-reduced-motion: reduce) {', HEAD);
 const BLOCK = CSS.slice(HEAD, CSS.indexOf('\n}', RM) + 2);
 const LINES = BLOCK.split('\n').filter(l => l.trim().startsWith('html body'));
 const trim = l => l.replace(/:not\(#_\)/g, '').replace(/html body /g, '');
+/** The rule that actually WINS for `tail`: same specificity throughout this
+ *  file, so the last one written is the one the browser applies. Pinning the
+ *  v23849 copy would pin a rule a later block has already overridden. */
+const ALL_LINES = CSS.split('\n').filter(l => l.trim().startsWith('html body'));
+function liveRule(tail) {
+  const hits = ALL_LINES.filter(l => {
+    const s = trim(l);
+    return s.slice(0, s.indexOf(' {')).split(', ').includes(tail);
+  });
+  assert.ok(hits.length, 'some block must have a rule for "' + tail + '"');
+  const line = hits[hits.length - 1];
+  return line.slice(line.indexOf('{') + 1, line.lastIndexOf('}'));
+}
+/** The keyframes of `name`, wherever in the file they are written. */
+function liveKeyframes(name) {
+  const m = CSS.match(new RegExp('@keyframes ' + name + ' \\{([\\s\\S]*?)\\n\\}'));
+  assert.ok(m, '@keyframes ' + name + ' must exist');
+  return m[1];
+}
 function rule(tail) {
   const line = LINES.find(l => trim(l).slice(0, trim(l).indexOf(' {')).split(', ').includes(tail));
   assert.ok(line, 'the block must have a rule for "' + tail + '"');
@@ -149,31 +168,58 @@ test('all ten weather layers are styled, and night deepens each', () => {
   }
 });
 
-test('every falling loop is seamless: its tiles divide its travel', () => {
-  const travel = (name) => {
-    const m = BLOCK.match(new RegExp('@keyframes ' + name + ' \\{([\\s\\S]*?)\\n\\}'));
-    assert.ok(m, name + ' keyframes');
-    const last = m[1].trim().split('\n').pop();
-    const t = last.match(/translate(?:Y)?\((?:0, )?(\d+)px\)/);
-    assert.ok(t, name + ' ends on a pixel travel');
-    return +t[1];
+test('every falling loop is seamless, and none of them is a lattice', () => {
+  // The layer that wins is the one to check. Its cells must divide the travel
+  // of the keyframes it names, or the field jumps once a loop.
+  const travelOf = (name) => {
+    const last = liveKeyframes(name).trim().split('\n').pop();
+    const m = last.match(/translate(?:Y)?\((?:-?\d+(?:px)?, )?(\d+)px\)/);
+    assert.ok(m, name + ' must end on a pixel travel');
+    return +m[1];
   };
-  const tiles = (tail) => Array.from(rule(tail).matchAll(/\/ \d+px (\d+)px/g)).map(m => +m[1]);
-  const rainT = travel('wxcFxRain'), snowT = travel('wxcFxSnow');
-  const rain = tiles('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::before');
-  const snow = tiles('.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::before');
-  assert.ok(rain.length >= 2 && snow.length >= 3, 'layers of rain and snow');
-  for (const h of rain) assert.equal(rainT % h, 0, 'rain tile ' + h + ' divides ' + rainT);
-  for (const h of snow) assert.equal(snowT % h, 0, 'snow tile ' + h + ' divides ' + snowT);
-  // The snow sways out and back, so the loop closes on x = 0.
-  assert.match(BLOCK, /@keyframes wxcFxSnow \{\n  0%   \{ transform: translate\(0, 0\); \}\n  50%  \{ transform: translate\(9px, 112px\); \}\n  100% \{ transform: translate\(0, 224px\); \}/);
-  // Rain is tilted BEFORE it travels, so it falls along the tilt.
-  assert.match(BLOCK, /to   \{ transform: rotate\(10deg\) translateY\(224px\); \}/);
-  // The tilted layers overscan far enough that no corner shows through.
-  assert.match(rule('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::before'), /inset: -300px -50% -50% -50% !important/);
-  // Cloud drifts one tile of a two-tile layer.
-  assert.match(rule('.wxcard-wrap .wxc-mon-fx.wxc-fx-cloud-day::before'), /inset: 0 -100% 0 0 !important;.*background-size: 50% 100% !important/);
-  assert.match(BLOCK, /@keyframes wxcFxDrift \{\n  from \{ transform: translateX\(0\); \}\n  to   \{ transform: translateX\(-50%\); \}/);
+  const cellsOf = (tail) => Array.from(liveRule(tail).matchAll(/\/(\d+)px (\d+)px/g)).map(m => ({ w: +m[1], h: +m[2] }));
+  const animOf = (tail) => {
+    const m = liveRule(tail).match(/animation: (\w+)/);
+    assert.ok(m, tail + ' must animate');
+    return m[1];
+  };
+  for (const tail of [
+    '.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::before',
+    '.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::after',
+    '.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::before',
+    '.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::after',
+  ]) {
+    const travel = travelOf(animOf(tail));
+    const cells = cellsOf(tail);
+    assert.ok(cells.length, tail + ' must lay down cells');
+    for (const c of cells) assert.equal(travel % c.h, 0, tail + ': cell ' + c.h + ' must divide ' + travel);
+  }
+  // A lattice is what one mark per cell looks like at plate size. Snow and the
+  // night's stars therefore scatter SEVERAL marks at irregular offsets inside
+  // ONE cell, which is why the cell of a layer is a single size.
+  for (const tail of [
+    '.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::before',
+    '.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::after',
+    '.wxcard-wrap .wxc-mon-fx.wxc-fx-clear-night::before',
+  ]) {
+    const cells = cellsOf(tail);
+    assert.ok(cells.length >= 5, tail + ' must scatter at least five marks, not tile one');
+    const sizes = new Set(cells.map(c => c.w + 'x' + c.h));
+    assert.equal(sizes.size, 1, tail + ': the marks must share one cell, or they do not scatter within it');
+    const offsets = new Set(Array.from(liveRule(tail).matchAll(/(-?\d+)px (-?\d+)px\//g)).map(m => m[1] + ',' + m[2]));
+    assert.equal(offsets.size, cells.length, tail + ': every mark must sit at its own offset');
+  }
+  // Rain still leans before it travels, so it falls along the lean.
+  assert.match(liveKeyframes(animOf('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::before')), /rotate\(\d+deg\) translateY\(224px\)/);
+  // The two snow layers drift opposite ways — that is what reads as depth.
+  const s1 = liveKeyframes(animOf('.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::before'));
+  const s2 = liveKeyframes(animOf('.wxcard-wrap .wxc-mon-fx.wxc-fx-snow-day::after'));
+  const sway = (k) => +(k.match(/translate\((-?\d+)(?:px)?, 112px\)/) || [0, 0])[1];
+  assert.ok(sway(s1) * sway(s2) < 0, 'the near and far snow must sway opposite ways');
+  // Nothing in the rain is a hard bright line any more.
+  const rainMax = Math.max(...Array.from(liveRule('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::after').matchAll(/rgba\(\d+,\d+,\d+,\.(\d+)\)/g)).map(m => +('0.' + m[1])));
+  assert.ok(rainMax <= 0.45, 'no rain streak brighter than 45% white, was 88% and read as scratches');
+  assert.match(liveRule('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::after'), /filter: blur\(/, 'and every streak is softened');
 });
 
 test('the storm flashes twice a cycle and rests dark between', () => {
@@ -192,10 +238,10 @@ test('reduced motion stills the weather layers, and outranks them', () => {
 });
 
 test('the boards load the CSS at the new build', () => {
-  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23850';/);
+  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23851';/);
   for (const h of ['fids', 'gids', 'bids']) {
     const html = fs.readFileSync(path.join(ROOT, 'fids-current', h + '.html'), 'utf8');
-    assert.match(html, /css\/display-overrides\.css\?v=23850/, h + '.html');
+    assert.match(html, /css\/display-overrides\.css\?v=23851/, h + '.html');
   }
 });
 
