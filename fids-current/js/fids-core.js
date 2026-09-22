@@ -19795,6 +19795,7 @@ const AP = {
   ATL:{ name:'Hartsfield-Jackson Atlanta International Airport',     tz:'America/New_York'   },
   MIA:{ name:'Miami International Airport',                          tz:'America/New_York'   },
   MCO:{ name:'Orlando International Airport',                        tz:'America/New_York'   },
+  PSE:{ name:'Mercedita International Airport',                      tz:'America/Puerto_Rico' },
   BOS:{ name:'Boston Logan International Airport',                   tz:'America/New_York'   },
   DFW:{ name:'Dallas/Fort Worth International Airport',              tz:'America/Chicago'    },
   LHR:{ name:'London Heathrow Airport',                              tz:'Europe/London'      },
@@ -25388,7 +25389,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23864';
+var FIDS_BUILD_TAG = 'v23865';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44876,7 +44877,30 @@ function _renderWxCard(el) {
     var night = false;
     try { night = !!_wxNightAt(dest); } catch (e3) {}
     var ic = _wxAnimIcon(cur.code, night);
-    var dT = function (v) { return (typeof displayTemp === 'function') ? displayTemp(Math.round(v)) : Math.round(v) + '°C'; };
+    // v23865 — FAHRENHEIT ON AN AMERICAN BOARD. `tempUnit` is only ever set
+    // by the main board's language carousel, which a gate board never runs,
+    // so it stayed at its initial 'C' and Orlando read 30°C. The card takes
+    // the unit from its own airport instead: the United States and its
+    // territories are the places that read Fahrenheit, and the timezone
+    // already on every airport row is what says so — no second table to
+    // fall out of step with the first.
+    var _WX_F_TZ = {
+      'America/New_York':1, 'America/Detroit':1, 'America/Chicago':1, 'America/Denver':1,
+      'America/Phoenix':1, 'America/Los_Angeles':1, 'America/Boise':1, 'America/Menominee':1,
+      'America/Indiana/Indianapolis':1, 'America/Kentucky/Louisville':1, 'America/North_Dakota/Center':1,
+      'America/Anchorage':1, 'America/Juneau':1, 'America/Sitka':1, 'America/Nome':1,
+      'America/Adak':1, 'America/Yakutat':1, 'America/Metlakatla':1,
+      'America/Puerto_Rico':1, 'America/St_Thomas':1,
+      'Pacific/Honolulu':1, 'Pacific/Guam':1, 'Pacific/Saipan':1, 'Pacific/Pago_Pago':1
+    };
+    var _wxUsesF = (function () {
+      try { return !!_WX_F_TZ[(AP[String(window._gateIata || '').toUpperCase()] || {}).tz]; }
+      catch (eU) { return false; }
+    })();
+    var dT = function (v) {
+      var c = Math.round(v);
+      return _wxUsesF ? (Math.round(c * 9 / 5 + 32) + '°F') : (c + '°C');
+    };
     var _wxFrF = false;
     try { _wxFrF = (typeof frFirstAirport === 'function') && frFirstAirport(window._gateIata || ''); } catch (eF) {}
     // v22971 — THE CARD FOLLOWS THE SELECTED LANGUAGES
@@ -45113,13 +45137,19 @@ function _renderWxCard(el) {
       if (typeof tc === 'function') { try { c = tc(c); } catch (eC2) {} }
       return c;
     };
+    // v23865 — AN HOUR IN THE WRONG ZONE IS WORSE THAN NO HOUR. With no
+    // entry for the airport this fell back to the machine's own timezone,
+    // so a board in Moncton printed a Ponce arrival an hour late and
+    // disagreed with the flight row beside it. An airport we do not know the
+    // zone of gets no clock at all; the label still reads DEPARTURE or
+    // ARRIVAL, and nothing on the card contradicts the board.
     var _wxClock = function (iata, ts) {
       if (!ts) return '';
       try {
         var z = (AP[iata] || {}).tz;
+        if (!z) return '';
         return new Date(ts).toLocaleTimeString('en-US',
-          z ? { timeZone: z, hour: 'numeric', minute: '2-digit', hour12: true }
-            : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s/g, ' ');
+          { timeZone: z, hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s/g, ' ');
       } catch (eK) { return ''; }
     };
 
@@ -45279,14 +45309,14 @@ function _renderWxCard(el) {
     // over it in the monitor's rectangle, and screen 1 is only the monitor's
     // content. A still was tried and turned down — a studio that stops moving
     // the moment the opener ends reads as a picture, not a set.
-    // v23864 — THE DEPARTURE PLATE IS HERE AND NOW. It was read at the hour
-    // the flight leaves, so a board standing in the dark at eight in the
-    // evening showed the airport in full daylight because the aircraft goes
-    // at eleven the next morning. Nobody at the gate wants to be told what
-    // it was like this morning: they can see out of the window. The arrival
-    // plate still reads the hour of arrival, which is the one thing about
-    // this card a traveller cannot see for themselves.
-    var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, Date.now(), _depShort, 'wxc-mon-dep') : '';
+    // v23865 — BOTH PLATES READ THE FLIGHT'S OWN HOURS. Reading the near
+    // plate at the current time made the card contradict the board it sits
+    // on: the board said the flight leaves at 5:05am and the card's own
+    // heading said 7:29 PM, because that was the hour a passer-by happened
+    // to be looking. The card belongs to the flight, so both plates carry
+    // the flight's hours — departure and arrival — and agree with every
+    // other time on the screen.
+    var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep') : '';
     var _sideR = _wxSide(dest, _wxArrTs, _arrShort, 'wxc-mon-arr');
     var _wxLink = '<div class="wxc-mon-link" aria-hidden="true"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><path class="wxc-mon-dash" d="M2 12H96"/><path class="wxc-mon-tip" d="M96 3l22 9-22 9z"/></svg></div>';
     var _wxS1 = '<div class="wxc-screen wxc-s1">'
