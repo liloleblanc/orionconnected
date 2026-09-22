@@ -45315,12 +45315,23 @@ function _renderWxCard(el) {
         + '</svg>'
         + '<div class="wxc-rng-lbl" style="top:' + (_rY(_rMax) / _rH * 100).toFixed(1) + '%">' + Math.round(_rMax) + '°</div>'
         + '<div class="wxc-rng-lbl" style="top:' + (_rY(_rMin) / _rH * 100).toFixed(1) + '%">' + Math.round(_rMin) + '°</div>';
+      // v23852 — A DAY CARD, TO THE FORECAST-CARD REFERENCE: the day along the
+      // top, then the temperature and the condition down the left with the
+      // icon beside them at the right. The condition takes the card's full
+      // width under both, because beside the icon there is room for one short
+      // word and the roster's conditions are not all short ones.  The high is
+      // the card's figure and it
+      // takes the board's amber; the low follows it smaller and quieter,
+      // because the reference only ever showed one and a board must carry both.
       var _dayCols = _wxDays.map(function (d, i) {
         return '<div class="wxc-day2" style="--wxc-i:' + i + '">'
           + '<div class="wxc-dchip">' + _dayAbbr(d.dt, _wxLangs[0]) + (_wxLangs[1] ? _wxDia + _dayAbbr(d.dt, _wxLangs[1]) : '') + '</div>'
-          + '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg" alt="">'
-          + '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
-          + '<div class="wxc-dlo">' + _wxDeg(d.lo) + '</div>'
+          + '<div class="wxc-drow">'
+          +   '<div class="wxc-dcol">'
+          +     '<div class="wxc-dhi">' + _wxDeg(d.hi) + '<span class="wxc-dlo">' + _wxDeg(d.lo) + '</span></div>'
+          +   '</div>'
+          +   '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg" alt="">'
+          + '</div>'
           + '<div class="wxc-dcond">' + _wxPairS(_WXLBL[d.ic] || { en: '' }) + '</div>'
           + '</div>';
       }).join('');
