@@ -45173,13 +45173,19 @@ function _renderWxCard(el) {
       try { q = (typeof CITY !== 'undefined' && CITY[iata]) || (AP[iata] && AP[iata].city) || ''; } catch (eQ2) {}
       return q ? tc(String(q)) : '';
     };
+    // The address goes inside url('…') in a style attribute, and
+    // encodeURIComponent leaves the apostrophe alone (Val-D'Or), so the
+    // five characters it spares are encoded here as well.
+    var _wxEnc = function (t) {
+      return encodeURIComponent(t).replace(/[!'()*]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });
+    };
     var _wxCityPic = function (iata) {
       var k = String(iata || '').toUpperCase();
       if (!k) return '';
       var v = _WX_CITY_PICS[k];
       if (v) return '/logos/cities/' + (v === 1 ? k : v) + '.jpg';
       var q = _wxCityQuery(k);
-      return '/citypic?iata=' + encodeURIComponent(k) + (q ? '&q=' + encodeURIComponent(q) : '');
+      return '/citypic?iata=' + _wxEnc(k) + (q ? '&q=' + _wxEnc(q) : '');
     };
     var _wxSide = function (iata, ts, shortLbl, cls) {
       var w = _wxAtTime(iata, ts);

@@ -83,7 +83,8 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   const t = table();
   const query = new Function('WIKI_CITY', 'CITY', 'AP', 'tc', 'return ' + fnSource('_wxCityQuery'))(
     { YXX: 'Abbotsford,_British_Columbia' }, { YQT: 'THUNDER BAY' }, { YQT: {} }, s => s.toLowerCase().replace(/(^|\s)(\S)/g, (m, p, c) => p + c.toUpperCase()));
-  const pic = new Function('_WX_CITY_PICS', '_wxCityQuery', 'return ' + fnSource('_wxCityPic'))(t, query);
+  const enc = new Function('return ' + fnSource('_wxEnc'))();
+  const pic = new Function('_WX_CITY_PICS', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, query, enc);
   assert.equal(pic('YQM'), '/logos/cities/YQM.jpg');
   assert.equal(pic('yqm'), '/logos/cities/YQM.jpg', 'case does not matter');
   assert.equal(pic('JFK'), '/logos/cities/NYC.jpg');
@@ -91,6 +92,8 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   assert.equal(pic('YXX'), '/citypic?iata=YXX&q=Abbotsford%20British%20Columbia', 'the encyclopedia title, with its province, is the query');
   assert.equal(pic('YQT'), '/citypic?iata=YQT&q=Thunder%20Bay', 'the board name in title case when there is no title');
   assert.equal(pic('ZZZ'), '/citypic?iata=ZZZ', 'an unknown code still asks, with no name');
+  const apos = new Function('_WX_CITY_PICS', '_wxCityQuery', '_wxEnc', 'return ' + fnSource('_wxCityPic'))(t, () => "Val-D'Or (Québec)", enc);
+  assert.equal(apos('YVO'), '/citypic?iata=YVO&q=Val-D%27Or%20%28Qu%C3%A9bec%29', "an apostrophe or a bracket cannot break the url('…') it goes into");
   assert.equal(pic(''), '');
 });
 
@@ -128,6 +131,7 @@ test('picture under a scrim, weather over it, readings above with a shadow', () 
   assert.match(rule('.wxcard-wrap .wxc-mon-side'), /position: relative !important; overflow: hidden !important; isolation: isolate !important/);
   assert.match(rule('.wxcard-wrap .wxc-mon-side > *'), /z-index: 2 !important/);
   assert.match(rule('.wxcard-wrap .wxc-mon-haspic'), /text-shadow/);
+  assert.match(rule('.wxcard-wrap .wxc-mon-haspic .wxc-mon-iata'), /text-shadow: none !important/, 'the amber chip sits on its own fill and carries no shadow');
   const pic = rule('.wxcard-wrap .wxc-mon-side > .wxc-mon-pic');
   assert.match(pic, /position: absolute !important; inset: 0 !important; z-index: 0 !important; background-size: cover !important; background-position: center !important/);
   assert.match(rule('.wxcard-wrap .wxc-mon-side > .wxc-mon-pic::after'), /linear-gradient\(180deg, rgba\(4,14,31,\.58\)/, 'the scrim is darkest at the label and the stats');
@@ -179,8 +183,12 @@ test('the storm flashes twice a cycle and rests dark between', () => {
   assert.match(rule('.wxcard-wrap .wxc-mon-fx.wxc-fx-storm-day::after'), /animation: wxcFxFlash 11s linear infinite !important/);
 });
 
-test('reduced motion stills the weather layers', () => {
-  assert.match(BLOCK, /@media \(prefers-reduced-motion: reduce\) \{\n  html body(?::not\(#_\))* \.wxcard-wrap \.wxc-mon-fx::before, html body(?::not\(#_\))* \.wxcard-wrap \.wxc-mon-fx::after \{ animation: none !important; \}\n\}/);
+test('reduced motion stills the weather layers, and outranks them', () => {
+  // The animating rules are three classes deep (.wxcard-wrap .wxc-mon-fx.wxc-fx-*);
+  // every declaration on both sides is !important, so the override must reach
+  // the same specificity to win on source order — the attribute selector is
+  // the third class.
+  assert.match(BLOCK, /@media \(prefers-reduced-motion: reduce\) \{\n  html body(?::not\(#_\))* \.wxcard-wrap \.wxc-mon-fx\[class\*="wxc-fx-"\]::before, html body(?::not\(#_\))* \.wxcard-wrap \.wxc-mon-fx\[class\*="wxc-fx-"\]::after \{ animation: none !important; \}\n\}/);
 });
 
 test('the boards load the CSS at the new build', () => {
@@ -207,7 +215,7 @@ test('/citypic keeps its key a secret and its pictures its own', () => {
   const r = routeSource();
   assert.match(r, /const key = env\.PIXABAY_KEY;/, 'the key is a Worker secret');
   assert.doesNotMatch(WORKER, /key=[A-Za-z0-9-]{20,}/, 'no key literal anywhere in the Worker');
-  assert.match(r, /const iata = String\(url\.searchParams\.get\('iata'\) \|\| ''\)\.toUpperCase\(\);\s*if \(!\/\^\[A-Z0-9\]\{3,4\}\$\/\.test\(iata\)\) return new Response\('Bad iata', \{ status: 400/);
+  assert.match(r, /const iata = String\(url\.searchParams\.get\('iata'\) \|\| ''\)\.toUpperCase\(\);\s*if \(!\/\^\[A-Z\]\{3\}\$\/\.test\(iata\)\) return new Response\('Bad iata', \{ status: 400/, 'three letters, the shape the client sends');
   assert.match(r, /replace\(\/\[\^\\p\{L\}\\p\{N\} \.'-\]\/gu, ''\)/, 'the name is scrubbed before it is passed on');
   assert.match(r, /\.slice\(0, 80\)/);
   assert.match(r, /if \(!key \|\| !q\) return none\(\);/, 'no key or no name is a 404, not a call');
@@ -215,7 +223,18 @@ test('/citypic keeps its key a secret and its pictures its own', () => {
   assert.doesNotMatch(r, /Location|status: 30[1-8]/, 'never a redirect to a third party');
   assert.match(r, /kv\.put\(kPic, bytes, \{ expirationTtl: 30 \* 86400/, 'kept thirty days');
   assert.match(r, /kv\.put\(kNeg, '1', \{ expirationTtl: 86400 \}\)/, 'a miss is remembered for a day');
-  assert.match(r, /'citypic:v1:' \+ iata/);
+  // The term is part of both keys: the route is public and the term is the
+  // caller's, so a key by code alone could be seeded by anyone for a month.
+  assert.match(r, /const kq = iata \+ ':' \+ q\.toLowerCase\(\);\s*const kPic = 'citypic:v1:' \+ kq;\s*const kNeg = 'citypic:neg:' \+ kq;/);
+  // Upstream faults are never remembered as a miss: a limit or an outage
+  // throws to the 502, a bad download answers 502, and only an empty answer
+  // is remembered.
+  assert.match(r, /if \(!r\.ok\) throw new Error\('pixabay ' \+ r\.status\);/);
+  assert.match(r, /if \(!img\.ok \|\| !\/\^image\\\/\/\.test\(type\)\) return new Response\('citypic fetch failed', \{ status: 502, headers: NO_STORE \}\);/);
+  assert.equal((r.match(/await remember\(\)/g) || []).length, 1, 'remember() runs for the empty answer only');
+  // A day's budget bounds what any caller can spend of the key's quota.
+  assert.match(r, /const kUsed = 'citypic:used:' \+ new Date\(\)\.toISOString\(\)\.slice\(0, 10\);/);
+  assert.match(r, /const cap = Number\(env\.CITYPIC_DAILY_LOOKUPS\) \|\| 200;\s*if \(used >= cap\) return none\(\);/);
   assert.match(r, /env\.CITY_BG_CACHE/, 'the KV namespace the root config already binds');
   assert.match(r, /'Cache-Control': 'public, max-age=3600'/, 'even a 404 is cached at the edge');
   assert.match(r, /safesearch=true/);

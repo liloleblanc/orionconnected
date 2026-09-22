@@ -590,11 +590,17 @@ export default {
     // photographed costs one lookup, not one per board boot.
     if (path === '/citypic') {
       const iata = String(url.searchParams.get('iata') || '').toUpperCase();
-      if (!/^[A-Z0-9]{3,4}$/.test(iata)) return new Response('Bad iata', { status: 400, headers: NO_STORE });
+      if (!/^[A-Z]{3}$/.test(iata)) return new Response('Bad iata', { status: 400, headers: NO_STORE });
       const q = String(url.searchParams.get('q') || '').replace(/[^\p{L}\p{N} .'-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 80);
       const kv = env.CITY_BG_CACHE || null;
-      const kPic = 'citypic:v1:' + iata;
-      const kNeg = 'citypic:neg:' + iata;
+      // The term is PART of the key. The route is public and the term comes
+      // from the caller, so an entry keyed by the code alone could be seeded
+      // by anyone's term and shown on every board for a month; keyed by
+      // code and term, an outsider's term can only ever seed its own entry,
+      // and the board's own term is deterministic.
+      const kq = iata + ':' + q.toLowerCase();
+      const kPic = 'citypic:v1:' + kq;
+      const kNeg = 'citypic:neg:' + kq;
       const picHead = (type, age) => ({ 'Content-Type': type, 'Cache-Control': 'public, max-age=' + age, 'Access-Control-Allow-Origin': '*' });
       const none = () => new Response('no picture', { status: 404, headers: { 'Cache-Control': 'public, max-age=3600', 'Access-Control-Allow-Origin': '*' } });
       try {
@@ -606,12 +612,26 @@ export default {
         }
         const key = env.PIXABAY_KEY;
         if (!key || !q) return none();
+        // A day's budget of upstream lookups. Any of 17,576 well-formed codes
+        // with any term would otherwise cost searches, a download and a KV
+        // write each; the budget bounds what the key's quota can be spent
+        // on. KV is eventually consistent, so the cap is coarse, not exact.
+        // Over budget answers 404 for the hour WITHOUT remembering a miss.
+        if (kv) {
+          const kUsed = 'citypic:used:' + new Date().toISOString().slice(0, 10);
+          const used = Number(await kv.get(kUsed).catch(() => 0)) || 0;
+          const cap = Number(env.CITYPIC_DAILY_LOOKUPS) || 200;
+          if (used >= cap) return none();
+          await kv.put(kUsed, String(used + 1), { expirationTtl: 2 * 86400 }).catch(() => {});
+        }
         const search = async (term, category) => {
           const u = 'https://pixabay.com/api/?key=' + encodeURIComponent(key)
             + '&image_type=photo&orientation=horizontal&safesearch=true&min_width=1280&per_page=5&order=popular'
             + '&q=' + encodeURIComponent(term) + (category ? '&category=' + category : '');
           const r = await fetch(u, { headers: { 'Accept': 'application/json' } });
-          if (!r.ok) return null;
+          // A rate limit or an outage is not "no picture": it is thrown to the
+          // 502 below, which caches nothing, so the next board tries again.
+          if (!r.ok) throw new Error('pixabay ' + r.status);
           const j = await r.json().catch(() => null);
           return (j && Array.isArray(j.hits) && j.hits.length) ? j.hits : null;
         };
@@ -622,8 +642,10 @@ export default {
         const remember = async () => { if (kv) await kv.put(kNeg, '1', { expirationTtl: 86400 }).catch(() => {}); };
         if (!hit) { await remember(); return none(); }
         const img = await fetch(hit.largeImageURL);
-        if (!img.ok) { await remember(); return none(); }
-        const type = (img.headers.get('Content-Type') || 'image/jpeg').split(';')[0].trim();
+        const type = (img.headers.get('Content-Type') || '').split(';')[0].trim();
+        // A failed download, or a body that is not an image, is likewise an
+        // upstream fault — not a miss to remember for a day.
+        if (!img.ok || !/^image\//.test(type)) return new Response('citypic fetch failed', { status: 502, headers: NO_STORE });
         const bytes = await img.arrayBuffer();
         if (kv) await kv.put(kPic, bytes, { expirationTtl: 30 * 86400, metadata: { type: type, src: 'pixabay', id: hit.id } }).catch(() => {});
         return new Response(bytes, { status: 200, headers: picHead(type, 86400) });
