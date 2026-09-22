@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23846';
+var FIDS_BUILD_TAG = 'v23849';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43816,6 +43816,11 @@ function _wxAnimIcon(code, night) {
 // rain when it rains, snow when it snows — so an icon name is folded to one
 // of five scene families, each with a day loop and a night loop. 'clear' keeps
 // the two loops the card has had since v23726.
+// v23847 — THE CARD'S ICON SET. Flat: white clouds, a lemon sun and moon,
+// blue drops and wind, a grey cloud behind for overcast. It follows the
+// forecast-card references the card is being styled after. The animated set
+// stays on disk for the other boards.
+var _WX_ICON_DIR = '/logos/weather/flat/';
 function _wxSceneKindOf(icon) {
   var n = String(icon || '');
   if (/thunder/.test(n)) return 'storm';
@@ -43973,10 +43978,14 @@ function _wxHydrateSvgs(root) {
           img.parentNode.replaceChild(span, img);
         } catch (e) {}
       }
-      if (window._wxSvgTxt[name]) { inject(window._wxSvgTxt[name]); return; }
-      fetch('/logos/weather/animated/' + name + '.svg')
+      // v23847 — the set comes from the image's own src, so two sets can live
+      // side by side (the card's flat set, the other boards' animated one).
+      var dir = String(img.getAttribute('src') || '').replace(/[^\/]*$/, '') || '/logos/weather/animated/';
+      var ckey = dir + name;
+      if (window._wxSvgTxt[ckey]) { inject(window._wxSvgTxt[ckey]); return; }
+      fetch(dir + name + '.svg')
         .then(function (r) { return r.ok ? r.text() : null; })
-        .then(function (txt) { if (txt) { window._wxSvgTxt[name] = txt; inject(txt); } })
+        .then(function (txt) { if (txt) { window._wxSvgTxt[ckey] = txt; inject(txt); } })
         .catch(function () {});
     });
   } catch (e) {}
@@ -44870,6 +44879,23 @@ function _renderWxCard(el) {
     // language picker. Everything now resolves from `langs` (≤2, de-duped,
     // fr-first at the French-first airports) like the rest of the build.
     var _wxLangs = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+    // v23848 — humidity, wind and feels-like under a plate's reading, with
+    // thin line icons, as the forecast reference carries them. Only what the
+    // feed has for that airport; nothing is guessed.
+    var _WX_ST_DROP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c3.5 4.6 6 8 6 11a6 6 0 0 1-12 0c0-3 2.5-6.4 6-11z"/></svg>';
+    var _WX_ST_WIND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h10a3 3 0 1 0-3-3M3 14h14a3 3 0 1 1-3 3M3 19h7"/></svg>';
+    var _WX_ST_FEEL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z"/><path d="M12 9v6"/></svg>';
+    var _wxStats = function (iata) {
+      try {
+        var c = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[iata] && TOMORROW_WX[iata].current) || null;
+        if (!c) return '';
+        var b = '';
+        if (typeof c.humidity === 'number' && isFinite(c.humidity)) b += '<span class="wxc-st">' + _WX_ST_DROP + Math.round(c.humidity) + '%</span>';
+        if (typeof c.windSpeed === 'number' && isFinite(c.windSpeed)) b += '<span class="wxc-st">' + _WX_ST_WIND + Math.round(c.windSpeed) + ' km/h</span>';
+        if (typeof c.feelsLike === 'number' && isFinite(c.feelsLike)) b += '<span class="wxc-st">' + _WX_ST_FEEL + _wxDeg(c.feelsLike) + '</span>';
+        return b ? '<div class="wxc-mon-stats">' + b + '</div>' : '';
+      } catch (eSt) { return ''; }
+    };
     if (_wxFrF) { var _wf = _wxLangs.indexOf('fr'); if (_wf > 0) { _wxLangs.splice(_wf, 1); _wxLangs.unshift('fr'); } }
     var _wxSep = ' <span class="v2-rc-fi-sep">|</span> ';
     var _wxPair = function (obj) {
@@ -45115,19 +45141,71 @@ function _renderWxCard(el) {
     // own weather. Then the set gives way to the destination's next hours,
     // then to its five days. One card, three screens, the flips timed in CSS
     // against the same clock as the entrance.
+    // ══ v23849 — THE CITY ON THE PLATE ═══════════════════════════════════
+    //
+    // Each plate carries a photograph of its city — the departure on the
+    // left, the destination on the right — and the weather is drawn over
+    // it: rain falling, snow drifting, cloud crossing, the sun's warmth, the
+    // night's blue, a storm's flash. The photographs are real ones. The
+    // roster's airports ship with a curated picture under /logos/cities/
+    // (one file, NYC, serves the three New York fields). An airport outside
+    // the set asks the Worker's /citypic, which looks a picture up once and
+    // keeps it; a 404 there leaves the plate on its glass, and the weather
+    // still plays over the glass. The weather layer is CSS, not footage:
+    // the card already runs three full-panel clips, and two more decoding
+    // behind the plates is a cost the stream servers should not carry for
+    // an effect a few gradients can draw.
+    var _WX_CITY_PICS = {
+      YQM:1, YDF:1, YHZ:1, YYT:1, YWK:1, YUL:1, YYZ:1, YOW:1, YYC:1, YHM:1,
+      YEG:1, YWG:1, YFC:1, YSJ:1, YQB:1, YVR:1, MCO:1, FLL:1, CUN:1, PUJ:1,
+      VRA:1, ORD:1, DEN:1, SFO:1, CLT:1, NYC:1, IAH:1, LAS:1, PHX:1, DTW:1,
+      MSP:1, BOS:1, PHL:1, MIA:1, TPA:1, ZRH:1, DUB:1, EDI:1, KEF:1,
+      JFK:'NYC', LGA:'NYC', EWR:'NYC'
+    };
+    // The name the Worker searches by, for an airport outside the curated
+    // set: the encyclopedia title where there is one (it carries the
+    // province or state, which is what tells the two Saint Johns apart),
+    // else the board's own city name in title case.
+    var _wxCityQuery = function (iata) {
+      var q = '';
+      try { q = (typeof WIKI_CITY !== 'undefined' && WIKI_CITY[iata]) || ''; } catch (eQ) {}
+      if (q) return String(q).replace(/_/g, ' ').replace(/,/g, '');
+      try { q = (typeof CITY !== 'undefined' && CITY[iata]) || (AP[iata] && AP[iata].city) || ''; } catch (eQ2) {}
+      return q ? tc(String(q)) : '';
+    };
+    // The address goes inside url('…') in a style attribute, and
+    // encodeURIComponent leaves the apostrophe alone (Val-D'Or), so the
+    // five characters it spares are encoded here as well.
+    var _wxEnc = function (t) {
+      return encodeURIComponent(t).replace(/[!'()*]/g, function (c) { return '%' + c.charCodeAt(0).toString(16).toUpperCase(); });
+    };
+    var _wxCityPic = function (iata) {
+      var k = String(iata || '').toUpperCase();
+      if (!k) return '';
+      var v = _WX_CITY_PICS[k];
+      if (v) return '/logos/cities/' + (v === 1 ? k : v) + '.jpg';
+      var q = _wxCityQuery(k);
+      return '/citypic?iata=' + _wxEnc(k) + (q ? '&q=' + _wxEnc(q) : '');
+    };
     var _wxSide = function (iata, ts, shortLbl, cls) {
       var w = _wxAtTime(iata, ts);
       if (!w) return '';
       var sIc = _wxAnimIcon(w.code, _wxNightAt(iata, ts));
       var when = _wxClock(iata, ts);
-      return '<div class="wxc-mon-side ' + cls + '">'
+      // v23849 — the picture under the readings and the weather over it.
+      var pic = _wxCityPic(iata);
+      var fx = _wxSceneKindOf(sIc) + (_wxNightAt(iata, ts) ? '-night' : '-day');
+      return '<div class="wxc-mon-side ' + cls + (pic ? ' wxc-mon-haspic' : '') + '">'
+        +   (pic ? '<div class="wxc-mon-pic" style="background-image:url(\'' + pic + '\')"></div>' : '')
+        +   '<div class="wxc-mon-fx wxc-fx-' + fx + '" aria-hidden="true"></div>'
         +   '<div class="wxc-mon-lbl">' + shortLbl + (when ? ' <b>' + when + '</b>' : '') + '</div>'
         +   '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _wxCityOf(iata) + '</span> <span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
         +   '<div class="wxc-mon-now">'
-        +     '<img class="wxanim" data-wx="' + sIc + '" src="/logos/weather/animated/' + sIc + '.svg" alt="">'
+        +     '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg" alt="">'
         +     '<div class="wxc-mon-temp">' + dT(w.temp) + '</div>'
         +   '</div>'
         +   '<div class="wxc-mon-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
+        + _wxStats(iata)
         + '</div>';
     };
     // The short label sits beside the clock: "Departure | Départ 6:15 PM".
@@ -45210,26 +45288,34 @@ function _renderWxCard(el) {
         + '<path class="wxc-curve-area" d="' + _area + '"/>'
         + '<path class="wxc-curve-line" pathLength="1" d="' + _line + '"/>'
         + '</svg>';
+      // v23848 — THE HOURS AS COLUMNS. One column an hour: its label on top,
+      // the icon, the temperature, in a rounded glass panel; the first is
+      // simply "now". The curve of v23836 is gone with the tiles it drew under.
+      var _wxNowLbl = _wxPairS({ en:'Now', fr:'Maint.', es:'Ahora', de:'Jetzt', it:'Ora', pt:'Agora', ja:'今', zh:'现在', ar:'الآن' });
       var _cols = _pts.map(function (p, i) {
-        return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + ';left:' + (p.x / _cW * 100).toFixed(2) + '%;top:' + (p.y / _cH * 100).toFixed(2) + '%">'
+        return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + '">'
+          + '<div class="wxc-pt-time">' + (i === 0 ? _wxNowLbl : p.h.lbl) + '</div>'
+          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _WX_ICON_DIR + p.h.ic + '.svg" alt="">'
           + '<div class="wxc-pt-temp">' + _wxDeg(p.h.temp) + '</div>'
-          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="/logos/weather/animated/' + p.h.ic + '.svg" alt="">'
           + '</div>';
       }).join('');
-      var _times = _pts.map(function (p, i) {
-        return '<div class="wxc-pt-time" style="--wxc-i:' + i + ';left:' + (p.x / _cW * 100).toFixed(2) + '%">' + p.h.lbl + '</div>';
-      }).join('');
-      // the conditions the hours pass through, once each, in order of first appearance
-      var _seen = {}, _legN = 0, _leg = '';
-      _wxHours.forEach(function (h) {
-        if (_seen[h.ic] || _legN >= 4) return;
-        _seen[h.ic] = 1; _legN++;
-        _leg += '<span class="wxc-leg-it"><img class="wxanim" data-wx="' + h.ic + '" src="/logos/weather/animated/' + h.ic + '.svg" alt=""><span>' + _wxPairS(_WXLBL[h.ic] || { en: '' }) + '</span></span>';
-      });
+      // A one-line note when the weather turns within the window: the first
+      // hour whose family differs from now, named, with its hour.
+      var _hnote = '';
+      try {
+        var _k0 = _wxSceneKindOf(_wxHours[0].ic);
+        for (var _hi = 1; _hi < _wxHours.length; _hi++) {
+          if (_wxSceneKindOf(_wxHours[_hi].ic) !== _k0) {
+            _hnote = '<div class="wxc-hnote">' + _wxPairS(_WXLBL[_wxHours[_hi].ic] || { en: '' })
+                   + ' <span class="wxc-hnote-at">' + _wxHours[_hi].lbl + '</span></div>';
+            break;
+          }
+        }
+      } catch (eHn) { _hnote = ''; }
       _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar
         + '<div class="wxc-sc-title">' + _wxPairD({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxPlace + '</div>'
-        + '<div class="wxc-chart">' + _svg + _cols + _times + '</div>'
-        + (_leg ? '<div class="wxc-legend">' + _leg + '</div>' : '')
+        + '<div class="wxc-chart wxc-hgrid">' + _cols + '</div>'
+        + _hnote
         + _wxDots(2) + '</div>';
     }
 
@@ -45255,13 +45341,20 @@ function _renderWxCard(el) {
         + '</svg>'
         + '<div class="wxc-rng-lbl" style="top:' + (_rY(_rMax) / _rH * 100).toFixed(1) + '%">' + Math.round(_rMax) + '°</div>'
         + '<div class="wxc-rng-lbl" style="top:' + (_rY(_rMin) / _rH * 100).toFixed(1) + '%">' + Math.round(_rMin) + '°</div>';
+      // v23848 — A CARD A DAY. The day name is a header band, the body holds
+      // the icon and the high over the low, and a strip of that day's weather
+      // footage closes the card, cut from the same takes the scenes use.
       var _dayCols = _wxDays.map(function (d, i) {
+        var _dSlot = _wxSceneKindOf(d.ic) + '-day';
         return '<div class="wxc-day2" style="--wxc-i:' + i + '">'
           + '<div class="wxc-dchip">' + _dayAbbr(d.dt, _wxLangs[0]) + (_wxLangs[1] ? _wxDia + _dayAbbr(d.dt, _wxLangs[1]) : '') + '</div>'
-          + '<img class="wxanim" data-wx="' + d.ic + '" src="/logos/weather/animated/' + d.ic + '.svg" alt="">'
-          + '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
-          + '<div class="wxc-dlo">' + _wxDeg(d.lo) + '</div>'
-          + '<div class="wxc-dcond">' + _wxPairS(_WXLBL[d.ic] || { en: '' }) + '</div>'
+          + '<div class="wxc-dbody">'
+          +   '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg" alt="">'
+          +   '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
+          +   '<div class="wxc-dlo">' + _wxDeg(d.lo) + '</div>'
+          +   '<div class="wxc-dcond">' + _wxPairS(_WXLBL[d.ic] || { en: '' }) + '</div>'
+          + '</div>'
+          + '<div class="wxc-dstrip" style="background-image:url(/logos/weather/stills/wx-still-' + _dSlot + '.jpg)"></div>'
           + '</div>';
       }).join('');
       _wxS3 = '<div class="wxc-screen wxc-s3">' + _wxBar
