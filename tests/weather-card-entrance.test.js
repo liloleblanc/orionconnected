@@ -102,7 +102,12 @@ test('set loop, scene, three screens, credit, title — in that order, and each 
 });
 
 test('the monitor carries departure and arrival, each read at its own hour', () => {
-  assert.match(SRC, /var _sideL = \(_wxOrig && _wxOrig !== dest\) \? _wxSide\(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep'\) : '';\s*var _sideR = _wxSide\(dest, _wxArrTs, _arrShort, 'wxc-mon-arr'\);/,
+  // v23864 — the departure plate is HERE AND NOW: read at the hour the flight
+  // left, a board standing in the dark showed the airport in daylight because
+  // the aircraft goes the next morning. The arrival plate still reads the hour
+  // of arrival, which is the one thing on this card nobody can see for
+  // themselves by looking out of the window.
+  assert.match(SRC, /var _sideL = \(_wxOrig && _wxOrig !== dest\) \? _wxSide\(_wxOrig, Date\.now\(\), _depShort, 'wxc-mon-dep'\) : '';\s*var _sideR = _wxSide\(dest, _wxArrTs, _arrShort, 'wxc-mon-arr'\);/,
     'departure from the board airport at departure time, arrival at the destination at arrival time');
   assert.match(SRC, /'<div class="wxc-mon-body">' \+ \(_sideL \? _sideL \+ _wxLink : ''\) \+ _sideR \+ '<\/div>'/,
     'departure left, the link, arrival right; with no origin reading the arrival stands alone');

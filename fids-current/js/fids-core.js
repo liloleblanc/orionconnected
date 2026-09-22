@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23863';
+var FIDS_BUILD_TAG = 'v23864';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45279,7 +45279,14 @@ function _renderWxCard(el) {
     // over it in the monitor's rectangle, and screen 1 is only the monitor's
     // content. A still was tried and turned down — a studio that stops moving
     // the moment the opener ends reads as a picture, not a set.
-    var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, _wxDepTs, _depShort, 'wxc-mon-dep') : '';
+    // v23864 — THE DEPARTURE PLATE IS HERE AND NOW. It was read at the hour
+    // the flight leaves, so a board standing in the dark at eight in the
+    // evening showed the airport in full daylight because the aircraft goes
+    // at eleven the next morning. Nobody at the gate wants to be told what
+    // it was like this morning: they can see out of the window. The arrival
+    // plate still reads the hour of arrival, which is the one thing about
+    // this card a traveller cannot see for themselves.
+    var _sideL = (_wxOrig && _wxOrig !== dest) ? _wxSide(_wxOrig, Date.now(), _depShort, 'wxc-mon-dep') : '';
     var _sideR = _wxSide(dest, _wxArrTs, _arrShort, 'wxc-mon-arr');
     var _wxLink = '<div class="wxc-mon-link" aria-hidden="true"><svg viewBox="0 0 120 24" preserveAspectRatio="none"><path class="wxc-mon-dash" d="M2 12H96"/><path class="wxc-mon-tip" d="M96 3l22 9-22 9z"/></svg></div>';
     var _wxS1 = '<div class="wxc-screen wxc-s1">'
