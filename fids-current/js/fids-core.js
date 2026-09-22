@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23848';
+var FIDS_BUILD_TAG = 'v23849';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45141,12 +45141,57 @@ function _renderWxCard(el) {
     // own weather. Then the set gives way to the destination's next hours,
     // then to its five days. One card, three screens, the flips timed in CSS
     // against the same clock as the entrance.
+    // ══ v23849 — THE CITY ON THE PLATE ═══════════════════════════════════
+    //
+    // Each plate carries a photograph of its city — the departure on the
+    // left, the destination on the right — and the weather is drawn over
+    // it: rain falling, snow drifting, cloud crossing, the sun's warmth, the
+    // night's blue, a storm's flash. The photographs are real ones. The
+    // roster's airports ship with a curated picture under /logos/cities/
+    // (one file, NYC, serves the three New York fields). An airport outside
+    // the set asks the Worker's /citypic, which looks a picture up once and
+    // keeps it; a 404 there leaves the plate on its glass, and the weather
+    // still plays over the glass. The weather layer is CSS, not footage:
+    // the card already runs three full-panel clips, and two more decoding
+    // behind the plates is a cost the stream servers should not carry for
+    // an effect a few gradients can draw.
+    var _WX_CITY_PICS = {
+      YQM:1, YDF:1, YHZ:1, YYT:1, YWK:1, YUL:1, YYZ:1, YOW:1, YYC:1, YHM:1,
+      YEG:1, YWG:1, YFC:1, YSJ:1, YQB:1, YVR:1, MCO:1, FLL:1, CUN:1, PUJ:1,
+      VRA:1, ORD:1, DEN:1, SFO:1, CLT:1, NYC:1, IAH:1, LAS:1, PHX:1, DTW:1,
+      MSP:1, BOS:1, PHL:1, MIA:1, TPA:1, ZRH:1, DUB:1, EDI:1, KEF:1,
+      JFK:'NYC', LGA:'NYC', EWR:'NYC'
+    };
+    // The name the Worker searches by, for an airport outside the curated
+    // set: the encyclopedia title where there is one (it carries the
+    // province or state, which is what tells the two Saint Johns apart),
+    // else the board's own city name in title case.
+    var _wxCityQuery = function (iata) {
+      var q = '';
+      try { q = (typeof WIKI_CITY !== 'undefined' && WIKI_CITY[iata]) || ''; } catch (eQ) {}
+      if (q) return String(q).replace(/_/g, ' ').replace(/,/g, '');
+      try { q = (typeof CITY !== 'undefined' && CITY[iata]) || (AP[iata] && AP[iata].city) || ''; } catch (eQ2) {}
+      return q ? tc(String(q)) : '';
+    };
+    var _wxCityPic = function (iata) {
+      var k = String(iata || '').toUpperCase();
+      if (!k) return '';
+      var v = _WX_CITY_PICS[k];
+      if (v) return '/logos/cities/' + (v === 1 ? k : v) + '.jpg';
+      var q = _wxCityQuery(k);
+      return '/citypic?iata=' + encodeURIComponent(k) + (q ? '&q=' + encodeURIComponent(q) : '');
+    };
     var _wxSide = function (iata, ts, shortLbl, cls) {
       var w = _wxAtTime(iata, ts);
       if (!w) return '';
       var sIc = _wxAnimIcon(w.code, _wxNightAt(iata, ts));
       var when = _wxClock(iata, ts);
-      return '<div class="wxc-mon-side ' + cls + '">'
+      // v23849 — the picture under the readings and the weather over it.
+      var pic = _wxCityPic(iata);
+      var fx = _wxSceneKindOf(sIc) + (_wxNightAt(iata, ts) ? '-night' : '-day');
+      return '<div class="wxc-mon-side ' + cls + (pic ? ' wxc-mon-haspic' : '') + '">'
+        +   (pic ? '<div class="wxc-mon-pic" style="background-image:url(\'' + pic + '\')"></div>' : '')
+        +   '<div class="wxc-mon-fx wxc-fx-' + fx + '" aria-hidden="true"></div>'
         +   '<div class="wxc-mon-lbl">' + shortLbl + (when ? ' <b>' + when + '</b>' : '') + '</div>'
         +   '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _wxCityOf(iata) + '</span> <span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
         +   '<div class="wxc-mon-now">'
