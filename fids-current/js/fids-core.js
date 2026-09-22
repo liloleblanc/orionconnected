@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23859';
+var FIDS_BUILD_TAG = 'v23860';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45198,27 +45198,31 @@ function _renderWxCard(el) {
       var isNight = !!_wxNightAt(iata, ts);
       var sIc = _wxAnimIcon(w.code, isNight);
       var when = _wxClock(iata, ts);
-      // v23849 — the picture under the readings and the weather over it;
-      // v23853 — and the picture is of the hour the plate is drawing.
       var pic = _wxCityPic(iata, isNight);
-      // v23854 — A CITY WITH NO NIGHT PICTURE IS TAKEN DOWN TO DUSK. Most
-      // places have no photograph of themselves after dark — neither library
-      // has one for Moncton — so the day picture is what there is, and shown
-      // as it stands at two in the morning it is broad daylight behind the
-      // readings. Graded down it reads as the same city at night, which is
-      // the truth of the hour even if it is not a photograph of it.
       var dusk = isNight && !_wxNightPicFor(iata);
       var fx = _wxSceneKindOf(sIc) + (isNight ? '-night' : '-day');
+      // v23860 — NOTHING IS WRITTEN ON THE PHOTOGRAPH. The plate is three
+      // parts stacked, as the reference panels are: a band along the top
+      // carrying which end of the flight this is and at what hour, then the
+      // photograph of the city with the weather playing over it and NO text
+      // on it at all, then the readings on their own glass underneath. Every
+      // word now sits on a surface made for it, which is why they can be
+      // this size and still be read from across a room.
       return '<div class="wxc-mon-side ' + cls + (pic ? ' wxc-mon-haspic' : '') + '">'
-        +   (pic ? '<div class="wxc-mon-pic' + (dusk ? ' wxc-mon-dusk' : '') + '" style="background-image:url(\'' + pic + '\')"></div>' : '')
-        +   '<div class="wxc-mon-fx wxc-fx-' + fx + '" aria-hidden="true"></div>'
-        +   '<div class="wxc-mon-lbl">' + shortLbl + (when ? ' <b>' + when + '</b>' : '') + '</div>'
-        +   '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _wxCityOf(iata) + '</span> <span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
-        +   '<div class="wxc-mon-now">'
-        +     '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg" alt="">'
-        +     '<div class="wxc-mon-temp">' + dT(w.temp) + '</div>'
+        +   '<div class="wxc-mon-head"><span class="wxc-mon-lbl">' + shortLbl + '</span>'
+        +     (when ? '<b class="wxc-mon-when">' + when + '</b>' : '') + '</div>'
+        +   '<div class="wxc-mon-pic' + (dusk ? ' wxc-mon-dusk' : '') + '"'
+        +     (pic ? ' style="background-image:url(\'' + pic + '\')"' : '') + '>'
+        +     '<div class="wxc-mon-fx wxc-fx-' + fx + '" aria-hidden="true"></div>'
         +   '</div>'
-        +   '<div class="wxc-mon-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
+        +   '<div class="wxc-mon-info">'
+        +     '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _wxCityOf(iata) + '</span> <span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
+        +     '<div class="wxc-mon-now">'
+        +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg" alt="">'
+        +       '<div class="wxc-mon-temp">' + dT(w.temp) + '</div>'
+        +     '</div>'
+        +     '<div class="wxc-mon-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
+        +   '</div>'
         + '</div>';
     };
     // The short label sits beside the clock: "Departure | Départ 6:15 PM".

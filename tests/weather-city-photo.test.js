@@ -131,10 +131,20 @@ test('the plate stacks picture, weather, then readings', () => {
   assert.match(side, /\(dusk \? ' wxc-mon-dusk' : ''\)/);
   assert.match(liveRule('.wxcard-wrap .wxc-mon-side > .wxc-mon-pic.wxc-mon-dusk'), /filter: brightness\(\.40\) saturate\(\.65\) contrast\(1\.08\) !important/);
   assert.match(side, /var fx = _wxSceneKindOf\(sIc\) \+ \(isNight \? '-night' : '-day'\);/, 'the weather layer follows the icon and the real night');
-  const order = ['wxc-mon-side ', 'wxc-mon-haspic', 'wxc-mon-pic', 'wxc-mon-fx wxc-fx-', 'wxc-mon-lbl', 'wxc-mon-city', 'wxc-mon-now', 'wxc-mon-cond'];
+  // v23860 — the plate is band, photograph, readings, in that order, and NO
+  // word is written on the photograph: the label sits in the band above it
+  // and the city, temperature and condition on their own glass below.
+  const order = ['wxc-mon-side ', 'wxc-mon-haspic', 'wxc-mon-head', 'wxc-mon-lbl', 'wxc-mon-pic', 'wxc-mon-fx wxc-fx-', 'wxc-mon-info', 'wxc-mon-city', 'wxc-mon-now', 'wxc-mon-cond'];
   let last = -1;
   for (const o of order) { const at = side.indexOf(o); assert.ok(at > last, o + ' comes in order'); last = at; }
-  assert.match(side, /\(pic \? '<div class="wxc-mon-pic' \+ \(dusk \? ' wxc-mon-dusk' : ''\) \+ '" style="background-image:url\(\\'' \+ pic \+ '\\'\)"><\/div>' : ''\)/, 'no picture, no picture layer');
+  // The picture region is always drawn — the weather plays over it either
+  // way — and only its background-image depends on there being a picture.
+  assert.match(side, /'<div class="wxc-mon-pic' \+ \(dusk \? ' wxc-mon-dusk' : ''\) \+ '"'\s*\+\s*\(pic \? ' style="background-image:url\(\\'' \+ pic \+ '\\'\)"' : ''\)/, 'no picture, no background');
+  // Nothing may be written over the photograph.
+  const picRegion = side.slice(side.indexOf('wxc-mon-pic'), side.indexOf('wxc-mon-info'));
+  for (const w of ['wxc-mon-city', 'wxc-mon-temp', 'wxc-mon-cond', 'wxc-mon-lbl']) {
+    assert.ok(!picRegion.includes(w), w + ' must not sit on the photograph');
+  }
   assert.match(side, /aria-hidden="true"/, 'the weather layer is decoration');
 });
 
@@ -268,10 +278,10 @@ test('reduced motion stills the weather layers, and outranks them', () => {
 });
 
 test('the boards load the CSS at the new build', () => {
-  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23859';/);
+  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23860';/);
   for (const h of ['fids', 'gids', 'bids']) {
     const html = fs.readFileSync(path.join(ROOT, 'fids-current', h + '.html'), 'utf8');
-    assert.match(html, /css\/display-overrides\.css\?v=23859/, h + '.html');
+    assert.match(html, /css\/display-overrides\.css\?v=23860/, h + '.html');
   }
 });
 
