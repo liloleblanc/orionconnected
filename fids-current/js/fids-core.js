@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23860';
+var FIDS_BUILD_TAG = 'v23861';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43838,16 +43838,22 @@ function _wxSceneKindOf(icon) {
 // the thing people recognise. So a slot holds a LIST of clips and the card
 // draws one of them each time it comes round; adding a clip is adding a
 // filename here. A slot with a single clip behaves exactly as it did before.
+// v23861 — A SCENE SHOWS THE WEATHER, NOT A SEASCAPE. Six takes had a body
+// of water as their subject rather than the sky doing something: three of the
+// ten clear-day takes were open ocean, which is the slot that plays most, so a
+// sunny forecast kept showing the sea behind it. A scene here stands for the
+// conditions outside — sun, cloud, rain, snow — and a calm sea says nothing
+// about any of them. The files stay on disk; they are simply not drawn from.
 var _WX_SCENE_TAKES = {
-  'clear-day': ['wx-grass-loop', 'wx-scene-clear-day-10366529', 'wx-scene-clear-day-10366529', 'wx-scene-clear-day-1804078', 'wx-scene-clear-day-18743722', 'wx-scene-clear-day-25251479', 'wx-scene-clear-day-28665381', 'wx-scene-clear-day-35058242', 'wx-scene-clear-day-36081116', 'wx-scene-clear-day-36081116', 'wx-scene-clear-day-4860056', { f: 'wx-scene-clear-day-71319284', months: [9, 10, 11] }, { f: 'wx-scene-clear-day-73284904', months: [9, 10, 11] }],
-  'clear-night': ['wx-fireflies-night', 'wx-scene-clear-night-33641499', 'wx-scene-clear-night-37491853', 'wx-scene-clear-night-49319234', 'wx-scene-clear-night-51755410', 'wx-scene-clear-night-52003618', 'wx-scene-clear-night-5629210', 'wx-scene-clear-night-6073162', 'wx-scene-clear-night-66430286', { f: 'wx-scene-clear-night-69572273', months: [9, 10, 11] }, { f: 'wx-scene-clear-night-72642355', months: [9, 10, 11] }],
+  'clear-day': ['wx-grass-loop', 'wx-scene-clear-day-1804078', 'wx-scene-clear-day-18743722', 'wx-scene-clear-day-25251479', 'wx-scene-clear-day-28665381', 'wx-scene-clear-day-4860056', { f: 'wx-scene-clear-day-71319284', months: [9, 10, 11] }, { f: 'wx-scene-clear-day-73284904', months: [9, 10, 11] }],
+  'clear-night': ['wx-fireflies-night', 'wx-scene-clear-night-49319234', 'wx-scene-clear-night-51755410', 'wx-scene-clear-night-52003618', 'wx-scene-clear-night-5629210', 'wx-scene-clear-night-6073162', 'wx-scene-clear-night-66430286', { f: 'wx-scene-clear-night-69572273', months: [9, 10, 11] }, { f: 'wx-scene-clear-night-72642355', months: [9, 10, 11] }],
   'cloud-day': ['wx-scene-cloud-day-21795715', 'wx-scene-cloud-day-35757006', 'wx-scene-cloud-day-46063269', 'wx-scene-cloud-day-60620471', 'wx-scene-cloud-day-71073946', 'wx-scene-cloud-day-75644811', 'wx-scene-cloud-day-77501426'],
   'cloud-night': ['wx-scene-cloud-night-1616582', 'wx-scene-cloud-night-25463396', 'wx-scene-cloud-night-43989503', 'wx-scene-cloud-night-52810453', 'wx-scene-cloud-night-54993960', 'wx-scene-cloud-night-71236947', 'wx-scene-cloud-night-8081944', 'wx-scene-cloud-night-84151667'],
   'rain-day': ['wx-scene-rain-day-25732747', 'wx-scene-rain-day-25732747', 'wx-scene-rain-day-26234817', 'wx-scene-rain-day-41265233', 'wx-scene-rain-day-41265233', 'wx-scene-rain-day-52125235', 'wx-scene-rain-day-65404793', 'wx-scene-rain-day-65404793', 'wx-scene-rain-day-73739979'],
   'rain-night': ['wx-scene-rain-night-74469118', 'wx-scene-rain-night-74469118', 'wx-scene-rain-night-75453636', 'wx-scene-rain-night-75453636', 'wx-scene-rain-night-77132356', 'wx-scene-rain-night-77132356'],
   'snow-day': ['wx-scene-snow-day-4575302', 'wx-scene-snow-day-47730037', 'wx-scene-snow-day-49923056', 'wx-scene-snow-day-5878391', 'wx-scene-snow-day-5931286', 'wx-scene-snow-day-5931286', 'wx-scene-snow-day-77933981', 'wx-scene-snow-day-78747566'],
   'snow-night': ['wx-scene-snow-night-3273178', 'wx-scene-snow-night-39671420', 'wx-scene-snow-night-4644922', 'wx-scene-snow-night-4644922', 'wx-scene-snow-night-54072404', 'wx-scene-snow-night-74288910', 'wx-scene-snow-night-79178366', 'wx-scene-snow-night-86012973'],
-  'storm-day': ['wx-scene-storm-day-1615031', 'wx-scene-storm-day-1797779', 'wx-scene-storm-day-38364739', 'wx-scene-storm-day-52189937', 'wx-scene-storm-day-52873990', 'wx-scene-storm-day-5905698', 'wx-scene-storm-day-7537320', 'wx-scene-storm-day-82114209'],
+  'storm-day': ['wx-scene-storm-day-1615031', 'wx-scene-storm-day-1797779', 'wx-scene-storm-day-52189937', 'wx-scene-storm-day-52873990', 'wx-scene-storm-day-5905698', 'wx-scene-storm-day-7537320', 'wx-scene-storm-day-82114209'],
   'storm-night': ['wx-scene-storm-night-12821882', 'wx-scene-storm-night-2018910', 'wx-scene-storm-night-2018910', 'wx-scene-storm-night-4846434', 'wx-scene-storm-night-4915798', 'wx-scene-storm-night-5018766', 'wx-scene-storm-night-82480163', 'wx-scene-storm-night-85833526', 'wx-scene-storm-night-85833526']
 };
 // The chosen file is part of the card's rebuild signature, so drawing again
