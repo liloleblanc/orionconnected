@@ -302,8 +302,36 @@ test('/citypic keeps its key a secret and its pictures its own', () => {
   // still run, or a city with no "<name> skyline" picture never gets asked
   // for its bare name.
   assert.match(r, /if \(!r\.ok\) \{ upstream = r\.status; return null; \}/);
-  assert.match(r, /const hits = \(await search\(q \+ ' skyline', 'places'\)\) \|\| \(await search\(q, 'places'\)\) \|\| \(await search\(q, ''\)\);/,
+  assert.match(r, /for \(const \[term, category\] of \[\[q \+ ' skyline', 'places'\], \[q, 'places'\], \[q, ''\]\]\)/,
     'all three attempts, in order');
+  // The picture must be TAGGED with the city, or a board gets a different one:
+  // sampled without the check, two Canadian cities both returned a European
+  // river city and two more shared one picture byte for byte.
+  // The phrase is built from EVERY word, short ones included — Thunder Bay's
+  // second word is three letters, and without it a thunderstorm answers for
+  // the city (this test caught exactly that).
+  assert.match(r, /const all = norm\(q\)\.split\(\/\[\^a-z0-9\]\+\/\)\.filter\(Boolean\);/);
+  assert.match(r, /const phrase = all\.slice\(0, 2\)\.join\(' '\);/);
+  assert.match(r, /if \(all\.length > 1 && t\.indexOf\(phrase\) >= 0\) \{ best = h; break; \}/, 'the whole name wins');
+  assert.match(r, /if \(!named && \(!words\.length \|\| t\.indexOf\(words\[0\]\) >= 0\)\) named = h;/, 'the first word of it will do');
+  assert.match(r, /const hit = best \|\| named;/, 'and nothing else is served');
+  // The matcher itself, lifted and driven — a hit tagged with another city
+  // must lose to one tagged with this one, and an untagged hit must not win.
+  {
+    const src = r.slice(r.indexOf('const norm ='), r.indexOf('const hit = best || named;'));
+    const run = (q, hits) => new Function('q', 'search', 'return (async () => {' + src + ' return best || named; })()')(q, async () => hits);
+    const H = (tags) => ({ largeImageURL: 'https://x/' + tags, tags });
+    return Promise.all([
+      run('Halifax Nova Scotia', [H('budapest, river, night'), H('halifax, nova scotia, harbour')])
+        .then(h => assert.equal(h.tags, 'halifax, nova scotia, harbour', 'the city that is named wins over the one that is not')),
+      run('Thunder Bay', [H('thunder, lightning, storm'), H('thunder bay, ontario')])
+        .then(h => assert.equal(h.tags, 'thunder bay, ontario', 'the whole name beats a word of it')),
+      run('Moncton', [H('budapest, river'), H('city, skyline')])
+        .then(h => assert.equal(h, null, 'nothing tagged Moncton, so no picture at all')),
+      run('Quebec City', [H('quebec city, chateau frontenac')])
+        .then(h => assert.ok(h, 'accents in the query must not stop a plain-ascii tag matching')),
+    ]);
+  }
   // An upstream fault names its status and pauses the asking; a shared fault
   // (rate limit, outage) pauses every city, a peculiar one pauses only this.
   assert.match(r, /return new Response\('citypic upstream ' \+ why, \{ status: 502, headers: NO_STORE \}\)/);
