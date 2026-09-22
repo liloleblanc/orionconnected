@@ -195,17 +195,21 @@ test('inside each screen the readings step in 260ms apart, after the screen has 
   assert.ok(title2.delay >= landed2, 'the title waits for the screen to land');
   const pts = need('.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-chart > .wxc-pt');
   assert.equal(pts.step, 0.26, 'each reading pops 260ms after the last, by its own --wxc-i');
-  assert.match(pts.decl, /animation: wxcPop/, 'a reading pops in at its point on the curve');
-  const draw = SEL_LINES.find(l => /\.wxc-curve-line \{/.test(l) && /\.wxc-entering/.test(l));
-  assert.ok(draw && /animation: wxcDraw calc\(2\.08s/.test(draw), 'the line draws itself over the eight readings (8 × 0.26s)');
-  assert.match(rule('.wxcard-wrap .wxc-curve-line'), /stroke-dasharray: 1 !important/, 'against pathLength 1');
-  assert.match(SRC, /<path class="wxc-curve-line" pathLength="1"/);
-  assert.match(SRC, /'<div class="wxc-pt ' \+ \(p\.h\.night \? 'wxc-pt-night' : 'wxc-pt-day'\) \+ '" style="--wxc-i:' \+ i \+ ';/, 'the point carries its index');
+  assert.match(pts.decl, /animation: wxcPop/, 'a reading pops in at its column');
+  // v23857 — THE CURVE IS GONE from this screen and its assertions with it: the
+  // hours are columns now, so there is no line to draw, no legend beneath it,
+  // and a point carries its index and nothing else inline.
+  assert.doesNotMatch(SRC, /<path class="wxc-curve-line"/, 'no curve is built for the hours any more');
+  assert.match(SRC, /'<div class="wxc-pt ' \+ \(p\.h\.night \? 'wxc-pt-night' : 'wxc-pt-day'\) \+ '" style="--wxc-i:' \+ i \+ '">'/, 'the point carries its index');
+  assert.match(SRC, /'<div class="wxc-chart wxc-hgrid">' \+ _cols \+ '<\/div>'/, 'and the columns sit in the grid panel');
+  // the note's rule lives in the v23848 block, after this one, so it is looked for in the whole sheet
+  const hnote = CSS_CODE.split('\n').find(l => l.includes('.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-hnote {'));
+  assert.ok(hnote, '.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-hnote must be staged');
+  assert.match(hnote, /animation-delay: calc\(\(22\.20s - var\(--wxc-el, 0s\)\) \* var\(--wxc-t, 1\)\)/, 'the turn-of-weather note steps in after the last column, on the beat the legend had');
   const times = SEL_LINES.find(l => /\.wxc-pt-time \{/.test(l) && /\.wxc-entering/.test(l));
   assert.ok(times && /animation: wxcFade/.test(times) && !/wxcRise|wxcPop/.test(times),
-    'the times only fade — their transform is pinned (translateX(-50%)) and must not be animated');
-  const legend = need('.wxcard-wrap.wxc-entering > .wxc-s2 > .wxc-legend');
-  assert.ok(legend.delay >= pts.delay + 7 * 0.26, 'the legend follows the last reading');
+    'the times only fade — nothing else may move them');
+  assert.doesNotMatch(SRC, /class="wxc-legend"/, 'the legend went with the curve; the note names the turn instead');
   // screen 3: the days one after another, then the range
   const k3 = keyframes('wxcScreen3');
   const landed3 = secs(k3[1].pcts[0]);

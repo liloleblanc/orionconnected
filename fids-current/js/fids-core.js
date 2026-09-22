@@ -25388,7 +25388,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23856';
+var FIDS_BUILD_TAG = 'v23859';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45293,34 +45293,34 @@ function _renderWxCard(el) {
       var _pts = _wxHours.map(function (h, i) {
         return { x: ((i + 0.5) / _n) * _cW, y: _yBot - ((h.temp - _tMin) / (_tMax - _tMin)) * (_yBot - _yTop), h: h };
       });
-      var _line = _pts.map(function (p, i) { return (i ? 'L' : 'M') + p.x.toFixed(1) + ' ' + p.y.toFixed(1); }).join(' ');
-      var _area = _line + ' L' + _pts[_pts.length - 1].x.toFixed(1) + ' ' + (_cH - 44) + ' L' + _pts[0].x.toFixed(1) + ' ' + (_cH - 44) + ' Z';
-      var _svg = '<svg class="wxc-curve" viewBox="0 0 ' + _cW + ' ' + _cH + '" preserveAspectRatio="none" aria-hidden="true">'
-        + '<defs><linearGradient id="wxcArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5c953" stop-opacity=".30"/><stop offset="1" stop-color="#f5c953" stop-opacity="0"/></linearGradient></defs>'
-        + _pts.map(function (p) { return '<line class="wxc-curve-grid" x1="' + p.x.toFixed(1) + '" y1="' + (_yTop - 30) + '" x2="' + p.x.toFixed(1) + '" y2="' + (_cH - 44) + '"/>'; }).join('')
-        + '<path class="wxc-curve-area" d="' + _area + '"/>'
-        + '<path class="wxc-curve-line" pathLength="1" d="' + _line + '"/>'
-        + '</svg>';
+      // v23857 — THE HOURS AS COLUMNS, TO THE HOURLY REFERENCE. One column an hour: its label on top,
+      // the icon, the temperature, in a rounded glass panel; the first is
+      // simply "now". The curve of v23836 is gone with the tiles it drew under.
+      var _wxNowLbl = _wxPairS({ en:'Now', fr:'Maint.', es:'Ahora', de:'Jetzt', it:'Ora', pt:'Agora', ja:'今', zh:'现在', ar:'الآن' });
       var _cols = _pts.map(function (p, i) {
-        return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + ';left:' + (p.x / _cW * 100).toFixed(2) + '%;top:' + (p.y / _cH * 100).toFixed(2) + '%">'
-          + '<div class="wxc-pt-temp">' + _wxDeg(p.h.temp) + '</div>'
+        return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + '">'
+          + '<div class="wxc-pt-time">' + (i === 0 ? _wxNowLbl : p.h.lbl) + '</div>'
           + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _WX_ICON_DIR + p.h.ic + '.svg" alt="">'
+          + '<div class="wxc-pt-temp">' + _wxDeg(p.h.temp) + '</div>'
           + '</div>';
       }).join('');
-      var _times = _pts.map(function (p, i) {
-        return '<div class="wxc-pt-time" style="--wxc-i:' + i + ';left:' + (p.x / _cW * 100).toFixed(2) + '%">' + p.h.lbl + '</div>';
-      }).join('');
-      // the conditions the hours pass through, once each, in order of first appearance
-      var _seen = {}, _legN = 0, _leg = '';
-      _wxHours.forEach(function (h) {
-        if (_seen[h.ic] || _legN >= 4) return;
-        _seen[h.ic] = 1; _legN++;
-        _leg += '<span class="wxc-leg-it"><img class="wxanim" data-wx="' + h.ic + '" src="' + _WX_ICON_DIR + h.ic + '.svg" alt=""><span>' + _wxPairS(_WXLBL[h.ic] || { en: '' }) + '</span></span>';
-      });
+      // A one-line note when the weather turns within the window: the first
+      // hour whose family differs from now, named, with its hour.
+      var _hnote = '';
+      try {
+        var _k0 = _wxSceneKindOf(_wxHours[0].ic);
+        for (var _hi = 1; _hi < _wxHours.length; _hi++) {
+          if (_wxSceneKindOf(_wxHours[_hi].ic) !== _k0) {
+            _hnote = '<div class="wxc-hnote">' + _wxPairS(_WXLBL[_wxHours[_hi].ic] || { en: '' })
+                   + ' <span class="wxc-hnote-at">' + _wxHours[_hi].lbl + '</span></div>';
+            break;
+          }
+        }
+      } catch (eHn) { _hnote = ''; }
       _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar
         + '<div class="wxc-sc-title">' + _wxPairD({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxPlace + '</div>'
-        + '<div class="wxc-chart">' + _svg + _cols + _times + '</div>'
-        + (_leg ? '<div class="wxc-legend">' + _leg + '</div>' : '')
+        + '<div class="wxc-chart wxc-hgrid">' + _cols + '</div>'
+        + _hnote
         + _wxDots(2) + '</div>';
     }
 
