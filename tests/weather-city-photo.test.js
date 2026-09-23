@@ -278,10 +278,10 @@ test('reduced motion stills the weather layers, and outranks them', () => {
 });
 
 test('the boards load the CSS at the new build', () => {
-  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23878';/);
+  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23879';/);
   for (const h of ['fids', 'gids', 'bids']) {
     const html = fs.readFileSync(path.join(ROOT, 'fids-current', h + '.html'), 'utf8');
-    assert.match(html, /css\/display-overrides\.css\?v=23878/, h + '.html');
+    assert.match(html, /css\/display-overrides\.css\?v=23879/, h + '.html');
   }
 });
 
