@@ -25406,7 +25406,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23870';
+var FIDS_BUILD_TAG = 'v23871';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45489,6 +45489,24 @@ function _renderWxCard(el) {
       // The wind arrow points where the wind is GOING (bearing + 180): the
       // feed reports the direction it comes FROM, which is the meteorological
       // convention and the opposite of what an arrow is read as.
+      // v23871 — THE READINGS NEEDED A WHEN.
+      //
+      // Both rows carry the CURRENT observation at the destination, and both
+      // sat under headings about something else — the next twelve hours on one
+      // screen, the next five days on the other. Read cold, a wind speed under
+      // a five-day forecast looks like a forecast of wind, which it is not and
+      // which the feed does not provide per day. So the row says what it is:
+      // the reading now, at the destination's own clock, which is also the
+      // only clock on the card the numbers could honestly be stamped with.
+      var _factsWhen = (function () {
+        try {
+          var t = _wxClock(dest, Date.now());
+          if (!t) return '';
+          return '<div class="wxc-facts-when">'
+            + _wxPairD({ en:'NOW', fr:'MAINTENANT', es:'AHORA', de:'JETZT', it:'ORA', pt:'AGORA', ja:'現在', zh:'现在', ar:'الآن' })
+            + '<b>' + t + '</b></div>';
+        } catch (eFW) { return ''; }
+      })();
       var _s2facts = '';
       try {
         var _c2 = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[dest] && TOMORROW_WX[dest].current) || null;
@@ -45516,7 +45534,7 @@ function _renderWxCard(el) {
         + '<div class="wxc-sc-title">' + _wxPairD({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxPlace + '</div>'
         + '<div class="wxc-chart wxc-hgrid">' + _cols + '</div>'
         + _hnote
-        + (_s2facts ? '<div class="wxc-facts wxc-facts2">' + _s2facts + '</div>' : '')
+        + (_s2facts ? _factsWhen + '<div class="wxc-facts wxc-facts2">' + _s2facts + '</div>' : '')
         + _wxDots(2) + '</div>';
     }
 
@@ -45586,7 +45604,7 @@ function _renderWxCard(el) {
             en: nDays + '-DAY FORECAST', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE-VORHERSAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
           }) + _wxPlace + '</div>'
         + '<div class="wxc-days wxc-days-' + nDays + '">' + _dayCols + '</div>'
-        + (_facts ? '<div class="wxc-facts">' + _facts + '</div>' : '')
+        + (_facts ? _factsWhen + '<div class="wxc-facts">' + _facts + '</div>' : '')
         + _wxDots(3) + '</div>';
     }
     // A missing screen must not leave its slot blank: the days stand in for
