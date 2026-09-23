@@ -1519,6 +1519,29 @@ var FIDS_FONT_STACKS = {
 //      was reopened. Apply it here for every screen type.
 //   2. Control-bar FONT dropdown pick (fids_font_choice).
 //   3. defaultFont (page default), then Geist.
+// ── THE OLD DEFAULT WAS SAVED AS IF IT HAD BEEN CHOSEN ─────────────────────
+// v23872. changeFont() persists EVERY call, including the one that applies
+// the page default when nobody has picked anything. So every board that has
+// ever loaded carries fids_font_choice='Possibility' — written by the old
+// default, not by a person — and a saved pick outranks the page default.
+//
+// The consequence is that changing the default changed nothing: a new board
+// would take Bricolage and every existing one would keep Possibility forever,
+// which is the opposite of a default.
+//
+// One shot, then never again: a stored value equal to the OLD default is
+// cleared once, so those boards fall through to the current default. The flag
+// is set whether or not anything was cleared, so a deliberate pick of
+// Possibility made after this runs is kept — this can only ever discard the
+// value the code wrote for itself, and only on the first load that sees it.
+try {
+  if (!localStorage.getItem('fids_font_default_migrated')) {
+    if (localStorage.getItem('fids_font_choice') === 'Possibility') {
+      localStorage.removeItem('fids_font_choice');
+    }
+    localStorage.setItem('fids_font_default_migrated', '1');
+  }
+} catch (eFD) {}
 function restoreFontChoice(defaultFont) {
   try {
     var _iata = String((window._gateIata || (document.getElementById('apSel') || {}).value || '')).toUpperCase();
@@ -25406,7 +25429,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23871';
+var FIDS_BUILD_TAG = 'v23872';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
