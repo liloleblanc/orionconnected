@@ -25488,7 +25488,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23875';
+var FIDS_BUILD_TAG = 'v23876';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -39248,6 +39248,50 @@ var ACCOR_LOGO_CROP = {
 // e.g. "Novotel Montreal Centre" -> "Novotel Montréal Centre",
 // "Novotel Montreal Airport" -> "Novotel Montréal Aéroport". English boards
 // are untouched.
+
+// ── QUÉBEC PROPERTIES THAT ARE NAMED TWICE ─────────────────────────────────
+// v23876. Two Montréal hotels carry a genuine pair of lockups, each with the
+// property's name drawn into the artwork in one language:
+//
+//   Fairmont   The Queen Elizabeth   /  Le Reine Elizabeth
+//   Sofitel    Montreal Golden Mile  /  Montréal Le Carré Doré
+//
+// Both were showing the English mark only, because the property map resolves
+// exactly one file per property and the English one was it.
+//
+// They now alternate page to page, FRENCH FIRST — the board's rule in Québec,
+// and the reason this is done by alternating rather than by reading the board
+// language: a bilingual board should show both names over the course of an
+// advertisement, not pick one and hide the other.
+//
+// THE OTHER QUÉBEC PROPERTIES ARE DELIBERATELY ABSENT. Le Château Frontenac
+// and Le Manoir Richelieu are French-named in every language — there is no
+// English form to alternate to, and inventing one would be worse than showing
+// one mark. They keep their single lockup, which is the correct treatment and
+// needs no entry here.
+var QC_LOCKUP_PAIRS = [
+  { test: /\b(?:queen|reine)\s*eliz/i,
+    fr: '/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_Le_Reine_Elizabeth.svg',
+    en: '/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_The_Queen_Elizabeth.svg',
+    nameFr: 'Fairmont Le Reine Elizabeth', nameEn: 'Fairmont The Queen Elizabeth' },
+  // No trailing \b: JavaScript's word boundary is ASCII-only, so after the
+  // 'é' of 'Doré' there is no boundary to find and the accented spelling —
+  // the correct one — never matched.
+  { test: /\b(?:golden\s*mile|carr[eé]\s*dor[eé])/i,
+    fr: '/logos/hotels/sofitel/sofitel-montreal-fr.svg',
+    en: '/logos/hotels/sofitel/sofitel-montreal-en.svg',
+    nameFr: 'Sofitel Montréal Le Carré Doré', nameEn: 'Sofitel Montreal Golden Mile' }
+];
+function _qcLockupPair(name) {
+  try {
+    var h = String(name || '');
+    for (var i = 0; i < QC_LOCKUP_PAIRS.length; i++) {
+      if (QC_LOCKUP_PAIRS[i].test.test(h)) return QC_LOCKUP_PAIRS[i];
+    }
+  } catch (e) {}
+  return null;
+}
+
 function _accorFrName(name) {
   if (typeof accorLang === 'function' && accorLang() !== 'fr') return name;
   return String(name || '')
@@ -39881,10 +39925,21 @@ function buildAccorAdOnlyV6(ad) {
   // path outright. Both are brands that must not change.
   var _hasPropertyLockup = !!(ad._propertyLockup || _inlineLockup);
   var _useTextId = !_hasPropertyLockup && !lockupHasName;
-  function _idRow(nameHtml) {
-    // Lockup brands: exactly the markup they had — artwork, then the name line
-    // if their artwork does not already carry it.
-    if (!_useTextId) return logoHtml + (nameHtml || '');
+  // v23876 — the paired Québec marks take turns, French on the first page.
+  // Page order is the alternation: with three pages a viewer sees FR, EN, FR,
+  // so both names are given and the French one both opens and closes.
+  var _qcPair = _qcLockupPair(hotelName) || _qcLockupPair(_fullName);
+  function _idRow(nameHtml, pageIdx) {
+    if (!_useTextId) {
+      var art = logoHtml;
+      if (_qcPair) {
+        var src = ((pageIdx || 0) % 2 === 0) ? _qcPair.fr : _qcPair.en;
+        var alt = ((pageIdx || 0) % 2 === 0) ? _qcPair.nameFr : _qcPair.nameEn;
+        art = '<div class="axr-logo"><img class="axr-hotel-svg" src="' + esc(src)
+            + '" data-crop="" alt="' + esc(alt) + '"></div>';
+      }
+      return art + (nameHtml || '');
+    }
     return '<div class="axr-idtext">' + esc(_fullName) + '</div>';
   }
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
@@ -39894,7 +39949,7 @@ function buildAccorAdOnlyV6(ad) {
   var _page1 = '<div class="axr-page axr-page-on">'
     + _heroImg(_ph0) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
-    +   _idRow(showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '')
+    +   _idRow(showName ? '<div class="axr-name">'+esc(displayName)+'</div>' : '', 0)
     +   _addrLineHtml + _locLineHtml + _starsRow
     + '</div></div>';
   // Page 2 — THE HOTEL. Every hotel card sells like fairmont.com: the
@@ -40071,7 +40126,7 @@ function buildAccorAdOnlyV6(ad) {
   var _page2 = (!_p2a && !_p2b) ? '' : '<div class="axr-page">'
     + _heroImg(_ph1) + '<div class="axr-hero-grad"></div>'
     + '<div class="axr-hotel">'
-    + _idRow(_ctxName)
+    + _idRow(_ctxName, 1)
     +   _biCols(_p2a, _p2b)
     + '</div></div>';
   // Page 3 — THE DESTINATION: what's around the hotel, its real dining, the
@@ -40097,7 +40152,7 @@ function buildAccorAdOnlyV6(ad) {
     + _heroImg(_ph2) + '<div class="axr-hero-grad"></div>'
     + bubbleHtml
     + '<div class="axr-hotel">'
-    + _idRow(_ctxName)
+    + _idRow(_ctxName, 2)
     +   _p3Body
     + '</div></div>';
 
