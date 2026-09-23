@@ -16652,7 +16652,12 @@ function _axrFitBubbleNames() {
   // page-1 property name and the page-2/3 context name shrink to one line
   // exactly like the bubble names
   // CSS gives them white-space:nowrap; this supplies the fit.
-  var names = document.querySelectorAll('.axr-bub-name, .axr-name, .axr-page-ctx');
+  // v23875 — .axr-idtext WAS NEVER IN THIS LIST, AND IT IS THE ONE THAT GETS
+  // CUT. Brands whose artwork does not carry the property name write it here
+  // instead, and the rule for that element is nowrap + ellipsis. Never being
+  // fitted, a long name had nothing to do but reach the edge and stop:
+  // 'Hotel Stratford San Francisco - Hand…' on a live board.
+  var names = document.querySelectorAll('.axr-bub-name, .axr-name, .axr-page-ctx, .axr-idtext');
   for (var i = 0; i < names.length; i++) {
     var el = names[i];
     var box = el.parentElement;
@@ -16661,12 +16666,27 @@ function _axrFitBubbleNames() {
     if (el.dataset.fitKey === key) continue;
     el.dataset.fitKey = key;
     el.style.removeProperty('font-size');
+    // Clear last pass's escape before measuring, or one wrapped name stays
+    // wrapped for every name that follows it into the same element.
+    el.style.removeProperty('white-space');
+    el.style.removeProperty('text-overflow');
     var base = parseFloat(getComputedStyle(el).fontSize) || 18;
     var size = base, guard = 26;
-    var min = base * 0.56;
+    // 0.46, not 0.56. The floor exists so a name cannot shrink to nothing, but
+    // set too high it stops the fit early and hands the overflow straight to
+    // the thing this function exists to prevent.
+    var min = base * 0.46;
     while (el.scrollWidth > box.clientWidth + 0.5 && size > min && guard-- > 0) {
       size = Math.max(min, size - Math.max(0.5, size * 0.045));
       el.style.setProperty('font-size', size + 'px', 'important');
+    }
+    // THE FLOOR IS NOT A LICENCE TO CUT. A name that still will not fit on one
+    // line at the smallest size allowed is wrapped, not severed — two readable
+    // lines beat one truncated one, and a cut name is the only outcome here
+    // that loses information the board was put up to give.
+    if (el.scrollWidth > box.clientWidth + 0.5) {
+      el.style.setProperty('white-space', 'normal', 'important');
+      el.style.setProperty('text-overflow', 'clip', 'important');
     }
   }
 }
@@ -25468,7 +25488,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23874';
+var FIDS_BUILD_TAG = 'v23875';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
