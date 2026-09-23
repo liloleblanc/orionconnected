@@ -73,7 +73,13 @@
 .axr .axr-idtext{ font-family:var(--axr-display); font-weight:700;
   font-size:var(--axr-logo); line-height:1.06; letter-spacing:-.008em;
   color:#fff; margin:0; flex:0 0 auto; max-width:100%;
-  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  /* v23875 — no ellipsis. This element carries the PROPERTY NAME for every
+     brand whose artwork does not, and it was the one being cut on a live
+     board ('Hotel Stratford San Francisco - Hand…'). It is fitted in JS
+     now; where even the smallest allowed size will not do, the fitter
+     lets it wrap. A name is the one thing on this card that cannot be
+     abbreviated by the layout. */
+  white-space:nowrap; overflow:hidden; }
 /* Footer co-brand: the property's wordmark, a hairline, then the ALL
    signature — the pair centred together. */
 .axr-all.axr-all-cobrand{ gap:clamp(14px,1.7vw,28px); }

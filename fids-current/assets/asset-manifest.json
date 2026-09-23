@@ -2,13 +2,13 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2805,
+    "total": 2809,
     "by_category": {
       "ad": 10,
       "airline": 1443,
       "background": 185,
       "brand": 4,
-      "hotel": 884,
+      "hotel": 888,
       "livery": 96,
       "misc": 63,
       "symbol": 4,
@@ -25548,6 +25548,28 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/hotels/accor-luxury/fairmont-savoy-white.svg",
+      "file": "fairmont-savoy-white.svg",
+      "category": "hotel",
+      "subcategory": "accor-luxury",
+      "group": "Hotels — Accor Luxury",
+      "name": "fairmont savoy white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/accor-luxury/fairmont-savoy.svg",
+      "file": "fairmont-savoy.svg",
+      "category": "hotel",
+      "subcategory": "accor-luxury",
+      "group": "Hotels — Accor Luxury",
+      "name": "fairmont savoy",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
       "path": "/logos/hotels/accor-luxury/fairmont-tremblant-white.svg",
       "file": "fairmont-tremblant-white.svg",
       "category": "hotel",
@@ -25887,6 +25909,28 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/hotels/accor-luxury/the-plaza-new-york-white.svg",
+      "file": "the-plaza-new-york-white.svg",
+      "category": "hotel",
+      "subcategory": "accor-luxury",
+      "group": "Hotels — Accor Luxury",
+      "name": "the plaza new york white",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/hotels/accor-luxury/the-plaza-new-york.svg",
+      "file": "the-plaza-new-york.svg",
+      "category": "hotel",
+      "subcategory": "accor-luxury",
+      "group": "Hotels — Accor Luxury",
+      "name": "the plaza new york",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
     },
     {
       "path": "/logos/hotels/accor-midscale/25th-monochrome-black.svg",

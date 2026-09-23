@@ -1519,6 +1519,29 @@ var FIDS_FONT_STACKS = {
 //      was reopened. Apply it here for every screen type.
 //   2. Control-bar FONT dropdown pick (fids_font_choice).
 //   3. defaultFont (page default), then Geist.
+// ── THE OLD DEFAULT WAS SAVED AS IF IT HAD BEEN CHOSEN ─────────────────────
+// v23872. changeFont() persists EVERY call, including the one that applies
+// the page default when nobody has picked anything. So every board that has
+// ever loaded carries fids_font_choice='Possibility' — written by the old
+// default, not by a person — and a saved pick outranks the page default.
+//
+// The consequence is that changing the default changed nothing: a new board
+// would take Bricolage and every existing one would keep Possibility forever,
+// which is the opposite of a default.
+//
+// One shot, then never again: a stored value equal to the OLD default is
+// cleared once, so those boards fall through to the current default. The flag
+// is set whether or not anything was cleared, so a deliberate pick of
+// Possibility made after this runs is kept — this can only ever discard the
+// value the code wrote for itself, and only on the first load that sees it.
+try {
+  if (!localStorage.getItem('fids_font_default_migrated')) {
+    if (localStorage.getItem('fids_font_choice') === 'Possibility') {
+      localStorage.removeItem('fids_font_choice');
+    }
+    localStorage.setItem('fids_font_default_migrated', '1');
+  }
+} catch (eFD) {}
 function restoreFontChoice(defaultFont) {
   try {
     var _iata = String((window._gateIata || (document.getElementById('apSel') || {}).value || '')).toUpperCase();
@@ -5375,6 +5398,7 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
   // (matched by name below in buildAdLogoPanel) is what actually renders. Kept
   // in sync so nothing points at the old one-off top-level SVGs.
   var _FP = '/logos/hotels/accor-luxury/fairmont/outlined_svg_white/';
+  var _AL = '/logos/hotels/accor-luxury/';
   var propertyMap = [
     // Fairmont — Canadian properties (individual lockups)
     [/\bbanff\s*springs\b/,                      _FP + '001_The_Fairmont_Banff_Springs.svg'],
@@ -5396,12 +5420,30 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
     [/\bvancouver\s*airport\b/,                  _FP + '015_The_Fairmont_Vancouver_Airport.svg'],
     [/\bwaterfront\b/,                           _FP + '014_The_Fairmont_Waterfront.svg'],
     [/\bfort\s*garry\b|\bwinnipeg\b/,            _FP + '020_The_Fairmont_Winnipeg.svg'],
+    // v23873 — two properties whose marks are their OWN, not the Fairmont
+    // lockup. The Savoy and The Plaza each carry a wordmark predating and
+    // outranking the chain's, and both were falling through to the generic
+    // Fairmont logo. They sit outside the numbered brand-team pack because
+    // they are not in it — these are the properties' own marks.
+    [/\bsavoy\b/,                               _AL + 'fairmont-savoy-white.svg'],
+    [/\bthe\s*plaza\b/,                         _AL + 'the-plaza-new-york-white.svg'],
   ];
   // Only run property lookup if this is a Fairmont property
   if (/\bfairmont\b/.test(_propHay) || brandCode === 'FAI') {
     for (var p = 0; p < propertyMap.length; p++) {
       if (propertyMap[p][0].test(_propHay)) return propertyMap[p][1];
     }
+  }
+  // v23873 — THE PLAZA IS NOT LISTED AS A FAIRMONT, SO THE GATE ABOVE NEVER
+  // REACHES IT. Matched here instead, and deliberately narrowly: 'plaza' is
+  // one of the commonest words in hotel naming, and Crowne Plaza alone would
+  // otherwise take this mark across an entire competing chain. The name must
+  // read 'the plaza' AND place it in New York, and anything Crowne is refused
+  // outright — two conditions and an exclusion, because the cost of a false
+  // match here is one hotel's mark on another hotel's advertisement.
+  if (/\bthe\s*plaza\b/.test(_propHay) && !/\bcrowne\b/.test(_propHay)
+      && /\bnew\s*york\b|\bny\b|\bfifth\s*ave|\bcentral\s*park\b/.test(_propHay)) {
+    return '/logos/hotels/accor-luxury/the-plaza-new-york-white.svg';
   }
 
   if (brandCode && ACCOR_BRAND_LOGOS[brandCode]) return ACCOR_BRAND_LOGOS[brandCode];
@@ -9838,6 +9880,26 @@ function _buildV2AircraftCol(ctx, vars) {
       var _dfStops = (currentFlight && Array.isArray(currentFlight._stops) && currentFlight._stops.length > 1)
         ? currentFlight._stops : null;
       var _dfCity = _dfStops ? _destFlipStops(_dfStops, 'c') : null;
+      // v23874 — THE ORB FLIPS WITH THE NAME.
+      //
+      // v23164 took the IATA out of the title and said it "rides in the ORB
+      // instead". The orb was given the STATIC destination code, and on a
+      // through flight the name flips leg by leg while the orb does not: a
+      // Newark-San Francisco service reads 'SFO' beside the word 'Newark' for
+      // half of every cycle. The rule that chip and city move together was
+      // satisfied by deleting the title chip, and then quietly broken when the
+      // code reappeared somewhere else.
+      //
+      // Nothing new is needed to fix it. _destFlipStops already emits an 'ia'
+      // flip from the same stops, and the ticker advances every [data-destflip]
+      // off ONE shared index — so a code flip and a city flip cannot drift.
+      //
+      // _destFlipStops returns null for 'ia' when any leg lacks a code, which
+      // is the case the original rule was written for: rather than freeze a
+      // code that will contradict the name, the orb falls back to the globe
+      // and the flight says its destinations in words alone.
+      var _dfIata = _dfStops ? _destFlipStops(_dfStops, 'ia') : null;
+      var _orbCode = _dfIata || (_dfStops ? '' : _destIataDisp);
       // (The IATA flip-chip that used to live in the title is gone with it —
       // _dfCity below still flips the CITY leg-by-leg, so a via-stop reads on
       // screen exactly as before, in the value.)
@@ -9951,8 +10013,8 @@ function _buildV2AircraftCol(ctx, vars) {
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
-        + _shelf(_badge(_destIataDisp
-                          ? '<span class="v2-fi-orbcode">' + _destIataDisp + '</span>'
+        + _shelf(_badge(_orbCode
+                          ? '<span class="v2-fi-orbcode">' + _orbCode + '</span>'
                           : _svgGlobe),
                  _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         // v23195 — the STATUS shelf's row carries the status class, so its
@@ -9971,7 +10033,7 @@ function _buildV2AircraftCol(ctx, vars) {
             var _arrP = _railPair('arrival');
             var _arrT = _arrP[0]
               + (_arrP[1] ? ' <span class="v2-fi-sep">|</span> ' + _arrP[1] : '')
-              + _codeSeg(_destIataDisp);
+              + _codeSeg(_orbCode);
             return _shelf(_badge(_svgArrive), _arrT, '', (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr));
           })()
         + '</div>';
@@ -16590,7 +16652,12 @@ function _axrFitBubbleNames() {
   // page-1 property name and the page-2/3 context name shrink to one line
   // exactly like the bubble names
   // CSS gives them white-space:nowrap; this supplies the fit.
-  var names = document.querySelectorAll('.axr-bub-name, .axr-name, .axr-page-ctx');
+  // v23875 — .axr-idtext WAS NEVER IN THIS LIST, AND IT IS THE ONE THAT GETS
+  // CUT. Brands whose artwork does not carry the property name write it here
+  // instead, and the rule for that element is nowrap + ellipsis. Never being
+  // fitted, a long name had nothing to do but reach the edge and stop:
+  // 'Hotel Stratford San Francisco - Hand…' on a live board.
+  var names = document.querySelectorAll('.axr-bub-name, .axr-name, .axr-page-ctx, .axr-idtext');
   for (var i = 0; i < names.length; i++) {
     var el = names[i];
     var box = el.parentElement;
@@ -16599,12 +16666,27 @@ function _axrFitBubbleNames() {
     if (el.dataset.fitKey === key) continue;
     el.dataset.fitKey = key;
     el.style.removeProperty('font-size');
+    // Clear last pass's escape before measuring, or one wrapped name stays
+    // wrapped for every name that follows it into the same element.
+    el.style.removeProperty('white-space');
+    el.style.removeProperty('text-overflow');
     var base = parseFloat(getComputedStyle(el).fontSize) || 18;
     var size = base, guard = 26;
-    var min = base * 0.56;
+    // 0.46, not 0.56. The floor exists so a name cannot shrink to nothing, but
+    // set too high it stops the fit early and hands the overflow straight to
+    // the thing this function exists to prevent.
+    var min = base * 0.46;
     while (el.scrollWidth > box.clientWidth + 0.5 && size > min && guard-- > 0) {
       size = Math.max(min, size - Math.max(0.5, size * 0.045));
       el.style.setProperty('font-size', size + 'px', 'important');
+    }
+    // THE FLOOR IS NOT A LICENCE TO CUT. A name that still will not fit on one
+    // line at the smallest size allowed is wrapped, not severed — two readable
+    // lines beat one truncated one, and a cut name is the only outcome here
+    // that loses information the board was put up to give.
+    if (el.scrollWidth > box.clientWidth + 0.5) {
+      el.style.setProperty('white-space', 'normal', 'important');
+      el.style.setProperty('text-overflow', 'clip', 'important');
     }
   }
 }
@@ -23738,7 +23820,7 @@ const LOGO_SUBFOLDER = {
   'fairmont-chateau-whistler.svg':'hotels/accor-luxury', 'fairmont-empress.svg':'hotels/accor-luxury', 'fairmont-fort-garry.svg':'hotels/accor-luxury', 'fairmont-full.svg':'hotels/accor-luxury',
   'fairmont-hotel-macdonald.svg':'hotels/accor-luxury', 'fairmont-hotel-vancouver.svg':'hotels/accor-luxury', 'fairmont-jasper-park-lodge.svg':'hotels/accor-luxury', 'fairmont-le-chateau-frontenac.svg':'airlines/canadian',
   'fairmont-le-chateau-montebello.svg':'hotels/accor-luxury', 'fairmont-le-manoir-richelieu.svg':'hotels/accor-luxury', 'fairmont-pacific-rim.svg':'hotels/accor-luxury', 'fairmont-palliser.svg':'hotels/accor-luxury',
-  'fairmont-queen-elizabeth.svg':'hotels/accor-luxury', 'fairmont-royal-york.svg':'hotels/accor-luxury', 'fairmont-tremblant.svg':'hotels/accor-luxury', 'fairmont-vancouver-airport.svg':'hotels/accor-luxury',
+  'fairmont-queen-elizabeth.svg':'hotels/accor-luxury', 'fairmont-savoy.svg':'hotels/accor-luxury', 'fairmont-savoy-white.svg':'hotels/accor-luxury', 'the-plaza-new-york.svg':'hotels/accor-luxury', 'the-plaza-new-york-white.svg':'hotels/accor-luxury', 'fairmont-royal-york.svg':'hotels/accor-luxury', 'fairmont-tremblant.svg':'hotels/accor-luxury', 'fairmont-vancouver-airport.svg':'hotels/accor-luxury',
   'fairmont-waterfront.svg':'hotels/accor-luxury', 'fairmont.png':'hotels/accor-luxury', 'fairmont.svg':'hotels/accor-luxury', 'flair-wordmark-dark.svg':'airlines/canadian', 'flair-wordmark-light.svg':'airlines/canadian', 'icelandair-wordmark-dark.svg':'airlines/european', 'icelandair-wordmark-light.svg':'airlines/european', 'flair.svg':'airlines/canadian', 'flying-blue.png':'airlines/alliances', 'flying-blue940X360px.webp':'airlines/alliances',
   'four-seasons.png':'hotels/other-chains', 'golden-tulip.jpg':'hotels/wyndham', 'grand-hyatt-white.png':'hotels/hyatt', 'grand-hyatt.png':'hotels/hyatt',
   'grand-mercure.png':'hotels/accor-premium', 'grand-mercure.svg':'hotels/accor-premium', 'great-wolf-lodge.png':'hotels/wyndham', 'greet.svg':'hotels/accor-midscale',
@@ -25406,7 +25488,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23871';
+var FIDS_BUILD_TAG = 'v23875';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
