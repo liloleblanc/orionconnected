@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2803,
+    "total": 2805,
     "by_category": {
       "ad": 10,
       "airline": 1443,
@@ -10,7 +10,7 @@
       "brand": 4,
       "hotel": 884,
       "livery": 96,
-      "misc": 61,
+      "misc": 63,
       "symbol": 4,
       "weather": 116
     }
@@ -28912,6 +28912,28 @@
       "iata": "",
       "country": "",
       "ext": "svg"
+    },
+    {
+      "path": "/logos/cities/ATL-night.jpg",
+      "file": "ATL-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "ATL night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/ATL.jpg",
+      "file": "ATL.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "ATL",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
     },
     {
       "path": "/logos/booking.svg",
