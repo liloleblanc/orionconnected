@@ -9880,6 +9880,26 @@ function _buildV2AircraftCol(ctx, vars) {
       var _dfStops = (currentFlight && Array.isArray(currentFlight._stops) && currentFlight._stops.length > 1)
         ? currentFlight._stops : null;
       var _dfCity = _dfStops ? _destFlipStops(_dfStops, 'c') : null;
+      // v23874 — THE ORB FLIPS WITH THE NAME.
+      //
+      // v23164 took the IATA out of the title and said it "rides in the ORB
+      // instead". The orb was given the STATIC destination code, and on a
+      // through flight the name flips leg by leg while the orb does not: a
+      // Newark-San Francisco service reads 'SFO' beside the word 'Newark' for
+      // half of every cycle. The rule that chip and city move together was
+      // satisfied by deleting the title chip, and then quietly broken when the
+      // code reappeared somewhere else.
+      //
+      // Nothing new is needed to fix it. _destFlipStops already emits an 'ia'
+      // flip from the same stops, and the ticker advances every [data-destflip]
+      // off ONE shared index — so a code flip and a city flip cannot drift.
+      //
+      // _destFlipStops returns null for 'ia' when any leg lacks a code, which
+      // is the case the original rule was written for: rather than freeze a
+      // code that will contradict the name, the orb falls back to the globe
+      // and the flight says its destinations in words alone.
+      var _dfIata = _dfStops ? _destFlipStops(_dfStops, 'ia') : null;
+      var _orbCode = _dfIata || (_dfStops ? '' : _destIataDisp);
       // (The IATA flip-chip that used to live in the title is gone with it —
       // _dfCity below still flips the CITY leg-by-leg, so a via-stop reads on
       // screen exactly as before, in the value.)
@@ -9993,8 +10013,8 @@ function _buildV2AircraftCol(ctx, vars) {
       _flightInfoBlock =
           '<div class="v2-flightinfo-block">'
         + _shelf(_emblemHtml || _badge(_svgPlane), _railPair('flight')[0], _railPair('flight')[1], (_fiFlightNo || _fnNumber || '—'), 'v2-fi-flight-number')
-        + _shelf(_badge(_destIataDisp
-                          ? '<span class="v2-fi-orbcode">' + _destIataDisp + '</span>'
+        + _shelf(_badge(_orbCode
+                          ? '<span class="v2-fi-orbcode">' + _orbCode + '</span>'
                           : _svgGlobe),
                  _destLabel, '', (_destValue || '—'), 'v2-fi-dest')
         // v23195 — the STATUS shelf's row carries the status class, so its
@@ -10013,7 +10033,7 @@ function _buildV2AircraftCol(ctx, vars) {
             var _arrP = _railPair('arrival');
             var _arrT = _arrP[0]
               + (_arrP[1] ? ' <span class="v2-fi-sep">|</span> ' + _arrP[1] : '')
-              + _codeSeg(_destIataDisp);
+              + _codeSeg(_orbCode);
             return _shelf(_badge(_svgArrive), _arrT, '', (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr));
           })()
         + '</div>';
@@ -25448,7 +25468,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23873';
+var FIDS_BUILD_TAG = 'v23874';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
