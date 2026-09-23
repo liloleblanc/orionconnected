@@ -18535,10 +18535,22 @@ const gView = document.getElementById('gateView');
         const _arrTs = currentFlight._arrTs || (effectiveDepTs ? effectiveDepTs + (currentFlight._durationMins||0)*60000 : 0);
         const _wxDepIata = iata;
         const _wxDestIata = locIata;
+        // v23878 — A THROUGH FLIGHT HAS MORE THAN ONE DESTINATION. MCO-EWR-SFO
+        // fetched Orlando and San Francisco and never Newark, so the card had
+        // nothing to show for the stop even though the stop is on the ticket.
+        // Every leg with a code is fetched; the list is deduplicated because a
+        // single-stop flight's only stop IS _wxDestIata.
+        var _wxLegs = [];
+        try {
+          (Array.isArray(currentFlight._stops) ? currentFlight._stops : []).forEach(function (st) {
+            var ia = String((st && st.iata) || '').toUpperCase();
+            if (ia && ia !== _wxDestIata && _wxLegs.indexOf(ia) < 0) _wxLegs.push(ia);
+          });
+        } catch (eLg) {}
         Promise.all([
           fetchTomorrowWeather(_wxDepIata),
           _wxDestIata ? fetchTomorrowWeather(_wxDestIata) : Promise.resolve(null)
-        ]).then(() => {
+        ].concat(_wxLegs.map(function (ia) { return fetchTomorrowWeather(ia); }))).then(() => {
           // Update the weather strip in place — retry if element isn't found (re-render may have happened)
           function _updateWxStrip() {
             const wxEl = document.getElementById('gateWxStrip');
@@ -25488,7 +25500,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23877';
+var FIDS_BUILD_TAG = 'v23878';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -38076,6 +38088,41 @@ var GATE_ADS_GENERIC = [
     icon:'<svg viewBox="0 0 24 24" width="48" height="48" fill="white"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>' },
 ];
 
+
+// ── THE LEGS OF A THROUGH FLIGHT, AND WHICH ONE IS BEING FEATURED ──────────
+// v23878. MCO-EWR-SFO has two destinations and the board only ever spoke about
+// the last one — weather for San Francisco, hotels in San Francisco, nothing
+// at all for Newark, where a large part of the cabin is getting off.
+//
+// The legs are taken in turn instead. ONE index serves every consumer, so a
+// pass that shows Newark's weather also shows Newark's hotels rather than
+// pairing one city's sky with another city's beds. It advances when the
+// weather card comes round, which is the slowest of them and therefore the
+// one that sets the pace.
+//
+// A flight with a single destination has an empty list here and every caller
+// keeps the behaviour it already had.
+function _flightLegs(cf) {
+  var out = [], seen = {};
+  try {
+    (Array.isArray(cf && cf._stops) ? cf._stops : []).forEach(function (st) {
+      var ia = String((st && st.iata) || '').toUpperCase();
+      if (ia && !seen[ia]) { seen[ia] = 1; out.push(ia); }
+    });
+  } catch (e) {}
+  return out.length > 1 ? out : [];
+}
+// `has` decides whether this consumer can actually show that leg — weather
+// needs a cached observation, hotels need a cached property list. A leg the
+// caller cannot serve is passed over rather than shown empty.
+function _legForNow(cf, fallback, has) {
+  var legs = _flightLegs(cf);
+  if (!legs.length) return fallback;
+  var usable = has ? legs.filter(has) : legs;
+  if (usable.length < 2) return fallback;
+  return usable[(window._wxLegIdx || 0) % usable.length] || fallback;
+}
+
 function getGateAds() {
   var code = (window._gateCurrentAirline || '').toUpperCase();
   var airlineRaw = GATE_ADS_BY_AIRLINE[code] || [];
@@ -38101,7 +38148,17 @@ function getGateAds() {
     var cf = window._gateCurrentFlight;
     if (cf) {
       destIata = cf._locIata || '';
-      destCity = (typeof CITY !== 'undefined' && CITY[cf._locIata]) || cf.dest || destIata;
+      // Every leg's hotels are fetched, so a pass that features Newark has
+      // Newark's properties to show rather than falling back to the last stop.
+      try {
+        _flightLegs(cf).forEach(function (ia) {
+          if (typeof fetchAccorHotels === 'function') fetchAccorHotels(ia);
+        });
+      } catch (eFL) {}
+      destIata = _legForNow(cf, destIata, function (ia) {
+        try { var c = _accorCacheFor(ia); return !!(c && c.length); } catch (e) { return false; }
+      });
+      destCity = (typeof CITY !== 'undefined' && CITY[destIata]) || cf.dest || destIata;
     }
     // Title case — handles all-caps names like "CHICAGO O'HARE"
     destCity = _fidsTitleCase(destCity.toLowerCase());
@@ -45106,14 +45163,41 @@ function _wxArmEntrance(wrap) {
       window._wxEntranceTimer = null;
       _wxEndEntrance();
     }, Math.round(_WXC_ENTRANCE_MS * _wxSpeed()));
+    try { _wxAdvanceLeg(window._gateCurrentFlight); } catch (eAdv) {}
     return true;
   } catch (e) { return false; }
+}
+
+
+// ── WHICH LEG THE CARD IS ABOUT THIS TIME ──────────────────────────────────
+// v23878. A through flight goes to more than one place and the card only ever
+// named the last of them: MCO-EWR-SFO reported San Francisco and never Newark,
+// though Newark is where a good share of the cabin gets off.
+//
+// Rather than crowd a second arrival onto a two-up card, the card takes the
+// legs in turn — Newark this time, San Francisco the next — which is the same
+// treatment the destination orb already gives them, and the one the deck uses
+// for everything else it cannot show at once.
+//
+// A leg is only offered if its weather is actually cached; an uncached stop is
+// skipped rather than shown empty, and a flight with one destination has
+// nothing to rotate and is left exactly as it was.
+function _wxHasObs(ia) {
+  try {
+    return !!(typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[ia] && TOMORROW_WX[ia].current
+              && typeof TOMORROW_WX[ia].current.temp === 'number');
+  } catch (e) { return false; }
+}
+function _wxLegForNow(cf, fallback) { return _legForNow(cf, fallback, _wxHasObs); }
+function _wxAdvanceLeg(cf) {
+  try { if (_flightLegs(cf).length > 1) window._wxLegIdx = (window._wxLegIdx || 0) + 1; } catch (e) {}
 }
 
 function _renderWxCard(el) {
   try {
     var cf = window._gateCurrentFlight;
     var dest = cf && cf._locIata ? String(cf._locIata).toUpperCase() : '';
+    dest = _wxLegForNow(cf, dest);
     if (!dest || typeof TOMORROW_WX === 'undefined' || !TOMORROW_WX[dest] || !TOMORROW_WX[dest].current) return false;
     var wx = TOMORROW_WX[dest], cur = wx.current;
     if (typeof cur.temp !== 'number') return false;
