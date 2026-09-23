@@ -25389,7 +25389,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23866';
+var FIDS_BUILD_TAG = 'v23867';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45175,6 +45175,7 @@ function _renderWxCard(el) {
     // behind the plates is a cost the stream servers should not carry for
     // an effect a few gradients can draw.
     var _WX_CITY_PICS = {
+      ATL:1,
       YQM:1, YDF:1, YHZ:1, YYT:1, YWK:1, YUL:1, YYZ:1, YOW:1, YYC:1, YHM:1,
       YEG:1, YWG:1, YFC:1, YSJ:1, YQB:1, YVR:1, MCO:1, FLL:1, CUN:1, PUJ:1,
       VRA:1, ORD:1, DEN:1, SFO:1, CLT:1, NYC:1, IAH:1, LAS:1, PHX:1, DTW:1,
@@ -45192,7 +45193,20 @@ function _renderWxCard(el) {
     // that answers 404, which is worse than the day picture it would have
     // kept. New York's three fields are therefore absent until NYC has one.
     var _WX_CITY_NIGHT = {
-      MCO:1, ZRH:1, YYZ:1, LAS:1, YOW:1
+      // v23867 — ATLANTA AFTER DARK IS A PHOTOGRAPH, NOT A FILTER.
+      //
+      // A city with no entry here is handed its DAYTIME picture at night with
+      // brightness(.40) over it. On Atlanta that measured 124/255 mean
+      // luminance down to 49.7 — a blackout, and the plate read as a fault
+      // rather than as a city. The grade was not the thing to fix: dimming a
+      // flat overcast afternoon does not make night, because a city reads as
+      // night by its LIGHTS. Orlando has always looked right for exactly that
+      // reason — it has a real night photograph and never takes this path.
+      //
+      // The picture service cannot close the gap either. It matches every
+      // search word at once, so 'Atlanta night skyline' returns nothing at
+      // all; a night picture has to be a file, the way these five are.
+      MCO:1, ZRH:1, YYZ:1, LAS:1, YOW:1, ATL:1
     };
     // The name the Worker searches by, for an airport outside the curated
     // set: the encyclopedia title where there is one (it carries the
