@@ -1445,6 +1445,9 @@ function changeFont(f) {
 // Font stacks shared by the control-bar dropdown AND the FIDS Console
 // Customize panel (same keys the Customize <select> saves).
 var FIDS_FONT_STACKS = {
+  'bricolage': "'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-semicond': "'Bricolage Grotesque SemiCond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-cond': "'Bricolage Grotesque Cond', -apple-system, BlinkMacSystemFont, sans-serif",
   // v23868 — BRICOLAGE GROTESQUE, served from a licensed Adobe Fonts web kit.
   //
   // Three widths across four optical sizes, regular and bold. The optical
@@ -1459,21 +1462,6 @@ var FIDS_FONT_STACKS = {
   // documents. That is deliberate and it is what makes them usable at all: a
   // Typekit web kit carries a web-embedding licence, which is the thing the
   // previously evaluated candidates lacked.
-  'bricolage': "'bricolage-grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-semicond': "'bricolage-grotesque-semicond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-cond': "'bricolage-grotesque-cond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-24': "'bricolage-grotesque-24', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-24-scond': "'bricolage-grotesque-24-scond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-24-cond': "'bricolage-grotesque-24-cond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-36': "'bricolage-grotesque-36', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-36-scond': "'bricolage-grotesque-36-scond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-36-cond': "'bricolage-grotesque-36-cond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-48': "'bricolage-grotesque-48', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-48-scond': "'bricolage-grotesque-48-scond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-48-cond': "'bricolage-grotesque-48-cond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-72': "'bricolage-grotesque-72', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-72-scond': "'bricolage-grotesque-72-scond', -apple-system, BlinkMacSystemFont, sans-serif",
-  'bricolage-72-cond': "'bricolage-grotesque-72-cond', -apple-system, BlinkMacSystemFont, sans-serif",
   'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
   'ginto-nord': "'ABC Ginto Nord', -apple-system, BlinkMacSystemFont, sans-serif",
   'ginto-nord-thin': "'ABC Ginto Nord Thin', 'ABC Ginto Nord', sans-serif",
@@ -1573,7 +1561,7 @@ function restoreFontChoice(defaultFont) {
   } catch (e) {}
   var f = '';
   try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
-  changeFont(f || defaultFont || 'Possibility');  // Possibility = brand default
+  changeFont(f || defaultFont || 'Bricolage Grotesque');  // the board default
 }
 
 // Start / stop the airline background rotation timer. Runs only when
@@ -25418,7 +25406,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23868';
+var FIDS_BUILD_TAG = 'v23871';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -30619,21 +30607,9 @@ function applyAirportConfigToBoard(iata) {
   const _font = _urlFontKey || _pref('font');
   if (_font) {
     var _fontStacks = {
-      'bricolage': "'bricolage-grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-semicond': "'bricolage-grotesque-semicond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-cond': "'bricolage-grotesque-cond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-24': "'bricolage-grotesque-24', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-24-scond': "'bricolage-grotesque-24-scond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-24-cond': "'bricolage-grotesque-24-cond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-36': "'bricolage-grotesque-36', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-36-scond': "'bricolage-grotesque-36-scond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-36-cond': "'bricolage-grotesque-36-cond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-48': "'bricolage-grotesque-48', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-48-scond': "'bricolage-grotesque-48-scond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-48-cond': "'bricolage-grotesque-48-cond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-72': "'bricolage-grotesque-72', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-72-scond': "'bricolage-grotesque-72-scond', -apple-system, BlinkMacSystemFont, sans-serif",
-      'bricolage-72-cond': "'bricolage-grotesque-72-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage': "'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-semicond': "'Bricolage Grotesque SemiCond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-cond': "'Bricolage Grotesque Cond', -apple-system, BlinkMacSystemFont, sans-serif",
       'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
       'ginto-nord': "'ABC Ginto Nord', -apple-system, BlinkMacSystemFont, sans-serif",
       'ginto-nord-thin': "'ABC Ginto Nord Thin', 'ABC Ginto Nord', sans-serif",
@@ -33301,7 +33277,7 @@ if (document.readyState === 'loading') {
 window.addEventListener('DOMContentLoaded', () => {
   // RocGrotesk is only the DEFAULT — a font the user picked (and which
   // changeFont persisted) must never be stomped on reload.
-  try { restoreFontChoice('Possibility'); } catch (e) {}
+  try { restoreFontChoice('Bricolage Grotesque'); } catch (e) {}
   const bgCtrls = document.getElementById('ctrlBgGroup');
   if (bgCtrls && screenType === 'gate') bgCtrls.style.display = 'flex';
   // If airline mode was restored from localStorage, kick off rotation.
@@ -40865,7 +40841,7 @@ function renderGateAd(index) {
   }
   // ARRIVAL WEATHER scene (destination card + outlook).
   if (slide && slide.type === 'wxcard') {
-    if (typeof _renderWxCard === 'function' && _renderWxCard(el)) return;
+    if (_wxTurnDue() && typeof _renderWxCard === 'function' && _renderWxCard(el)) return;
     // No data — SKIP the dead weather slide and sync the rotation index so
     // the next tick advances past the substituted slide instead of
     // repeating it (this wrap-around duplicated deck[0] every cycle).
@@ -41379,7 +41355,13 @@ function _getGateAdDwellMs(slide) {
   // began leaving again — the card would never be read. 42s leaves 22s at rest
   // after the last band, more than the whole slide used to be. Scaled with
   // ?wxspeed= so dialling the pacing cannot starve it.
-  if (slide.type === 'wxcard') return Math.round(42000 * _wxSpeed());
+  // v23870 — LONGER ON SCREEN, RARER IN THE ROTATION. The staged arrival
+  // runs 37s, so 42s left about five seconds of stillness at the end and
+  // the last screen was gone almost as soon as it settled. 60s leaves the
+  // outlook up for a good twenty seconds after it stops moving, which is
+  // when it is actually readable. The cost of a longer slide is paid back
+  // by _wxTurnDue()'s floor: it holds longer and returns far less often.
+  if (slide.type === 'wxcard') return Math.round(60000 * _wxSpeed());
   // Long enough to read a name and two caption lines without lingering.
   if (slide.type === 'heritage') return 14000;
   // v218.96: custom slides from the Gate Theme editor carry their own
@@ -41421,7 +41403,11 @@ function _getGateAdDwellMs(slide) {
       // three base pages, and page 2 drops itself when the hotel has no copy,
       // so the live count above is the only figure that can be wrong-by-one.
       if (!_axN) _axN = 3;
-      return _axN * 10000 + 1000; // full dwell per page + fade buffer
+      // v23870 — 14s a page, not 10. A hotel page carries a name, a
+      // location, a photograph and a call to action in two languages;
+      // ten seconds was not enough to reach the end of it, and the deck
+      // now returns to these less often, so each turn can afford longer.
+      return _axN * 14000 + 1000; // full dwell per page + fade buffer
     }
     // Generic hotel ads (Hilton, etc. — large logo + city sub)
     if (ad.logo && /hilton|marriott|hyatt|ihg/i.test(ad.logo)) return 18000;
@@ -41508,7 +41494,13 @@ function _buildGateAdSlideList() {
   // SAME hotel played forever: Faena New York played over and over and never
   // saw Sofitel New York, The Plaza or the Hard Rock a few blocks away, all of
   // which the catalog returns for that destination.
-  var ACCOR_PER_PASS = 4;
+  // v23870 — two a pass, not four, and one after every fifth other slide
+  // rather than every third. The hotels were the most frequent thing in
+  // the rotation on any gate with a short deck. Every nearby hotel still
+  // gets its turn across successive passes — the pool is walked from
+  // where it left off, so halving the per-pass count spreads the same
+  // set over more passes rather than cutting any hotel out.
+  var ACCOR_PER_PASS = 2;
   var deck = [];
   var _wantAccor = Math.min(accorSlides.length, ACCOR_PER_PASS);
   if (nonAccor.length && _wantAccor) {
@@ -41518,7 +41510,7 @@ function _buildGateAdSlideList() {
       _since++;
       // a hotel after every 3 others — or as soon as the pool wraps, when it
       // is shorter than 3 (a 1-item pool never reaches the counter otherwise)
-      if (_since >= 3 || (i + 1) % nonAccor.length === 0) {
+      if (_since >= 5 || (i + 1) % nonAccor.length === 0) {
         deck.push(accorSlides[ai++]);
         _since = 0;
       }
@@ -41721,6 +41713,45 @@ function _getGateAdSlideAt(index) {
   var totalSlots = Math.max(1, slides.length);
   var slot = ((index % totalSlots) + totalSlots) % totalSlots;
   return slides.length ? (slides[slot] || null) : null;
+}
+
+
+// ── HOW OFTEN THE WEATHER SCENE GETS A TURN ────────────────────────────────
+// v23870. The scene is spliced into the deck ONCE per pass, which sounds
+// occasional and is not: a gate with little media runs a short deck, and a
+// short deck plus a 42-second scene meant the weather came round every
+// couple of minutes and dominated the rotation.
+//
+// Gated on ELAPSED TIME rather than a pass counter, deliberately. A counter
+// would mean something different at every gate — every third pass is six
+// minutes on a long deck and ninety seconds on a short one — and the deck
+// length is not ours to predict. A floor in minutes is the same promise
+// everywhere: the scene will not reappear sooner than this, whatever else
+// is or is not in the rotation.
+//
+// The slot is not removed when it is not due; it is SKIPPED, through the
+// same path a dead weather slide already takes, so the deck length and every
+// rotation index are exactly what they were.
+var _WX_MIN_GAP_MS = 6 * 60000;
+try {
+  // get() returns null when the parameter is absent and Number(null) is 0 —
+  // which passed a `>= 0` test and silently set the floor to nothing, i.e.
+  // exactly the behaviour this constant exists to prevent. Read the raw
+  // string and require it to be non-empty before it is allowed to mean
+  // anything.
+  var _wxgRaw = new URLSearchParams(location.search).get('wxgap');
+  if (_wxgRaw !== null && String(_wxgRaw).trim() !== '') {
+    var _wxg = Number(_wxgRaw);
+    if (isFinite(_wxg) && _wxg >= 0) _WX_MIN_GAP_MS = _wxg * 60000;
+  }
+} catch (eWG) {}
+function _wxTurnDue() {
+  try {
+    var last = window._wxLastShownAt || 0;
+    if (last && (Date.now() - last) < _WX_MIN_GAP_MS) return false;
+    window._wxLastShownAt = Date.now();
+    return true;
+  } catch (e) { return true; }
 }
 
 // ── AD MEDIA PRE-WARM ──────────────────────────────────────────────────────
@@ -45430,10 +45461,80 @@ function _renderWxCard(el) {
           }
         }
       } catch (eHn) { _hnote = ''; }
+      var _wxFact = function (svg, label, value) {
+        return '<div class="wxc-fact">' + svg
+          + '<div class="wxc-fact-t"><span class="wxc-fact-l">' + label + '</span>'
+          + '<span class="wxc-fact-v">' + value + '</span></div></div>';
+      };
+      var _WX_F_FEEL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z"/><path d="M12 9v6"/></svg>';
+      var _WX_F_DROP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c3.5 4.6 6 8 6 11a6 6 0 0 1-12 0c0-3 2.5-6.4 6-11z"/></svg>';
+      var _WX_F_WIND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h10a3 3 0 1 0-3-3M3 14h14a3 3 0 1 1-3 3M3 19h7"/></svg>';
+      var _WX_F_RISE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="3.4"/><path d="M12 5.5V8M5.6 8.6l1.8 1.8M18.4 8.6l-1.8 1.8M3 19h18"/></svg>';
+      var _WX_F_GUST  = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 8h9a3 3 0 1 0-3-3M3 13h13a3 3 0 1 1-3 3M3 18h7"/></svg>';
+      var _WX_F_VIS   = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.6-6 10-6 10 6 10 6-3.6 6-10 6-10-6-10-6z"/><circle cx="12" cy="12" r="2.6"/></svg>';
+      var _WX_F_CLOUD = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a3.6 3.6 0 0 0 .3-7.2A5.4 5.4 0 0 0 6.8 11 3.5 3.5 0 0 0 7 18z"/></svg>';
+      var _WX_F_PRESS = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 12l4-3M12 7.5v1"/></svg>';
+      var _WX_F_SET  = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.4"/><path d="M12 19v2.5M5.6 15.4l1.8-1.8M18.4 15.4l-1.8-1.8M3 19h18"/></svg>';
+
+
+      // v23870 — THE HOURS SCREEN CARRIES THE REST OF THE OBSERVATION.
+      //
+      // The feed returns wind direction, gusts, visibility, cloud cover and
+      // pressure on every fetch and the card showed none of them, while this
+      // screen sat two thirds empty under its strip. These five are the
+      // aviation-legible ones — what a passenger at a gate can actually read
+      // their delay out of — and they are deliberately NOT the five on the
+      // outlook screen, so the two screens say different things.
+      //
+      // The wind arrow points where the wind is GOING (bearing + 180): the
+      // feed reports the direction it comes FROM, which is the meteorological
+      // convention and the opposite of what an arrow is read as.
+      // v23871 — THE READINGS NEEDED A WHEN.
+      //
+      // Both rows carry the CURRENT observation at the destination, and both
+      // sat under headings about something else — the next twelve hours on one
+      // screen, the next five days on the other. Read cold, a wind speed under
+      // a five-day forecast looks like a forecast of wind, which it is not and
+      // which the feed does not provide per day. So the row says what it is:
+      // the reading now, at the destination's own clock, which is also the
+      // only clock on the card the numbers could honestly be stamped with.
+      var _factsWhen = (function () {
+        try {
+          var t = _wxClock(dest, Date.now());
+          if (!t) return '';
+          return '<div class="wxc-facts-when">'
+            + _wxPairD({ en:'NOW', fr:'MAINTENANT', es:'AHORA', de:'JETZT', it:'ORA', pt:'AGORA', ja:'現在', zh:'现在', ar:'الآن' })
+            + '<b>' + t + '</b></div>';
+        } catch (eFW) { return ''; }
+      })();
+      var _s2facts = '';
+      try {
+        var _c2 = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[dest] && TOMORROW_WX[dest].current) || null;
+        var _num = function (v) { return typeof v === 'number' && isFinite(v); };
+        if (_c2 && _num(_c2.windSpeed)) {
+          var _arrow = _num(_c2.windDir)
+            ? '<svg viewBox="0 0 24 24" aria-hidden="true" style="transform:rotate(' + Math.round(_c2.windDir + 180) + 'deg)"><path d="M12 3v18M12 3l-5 5M12 3l5 5"/></svg>'
+            : _WX_F_WIND;
+          _s2facts += _wxFact(_arrow, _wxPairS({ en:'Wind', fr:'Vent', es:'Viento', de:'Wind', it:'Vento', pt:'Vento', ja:'風', zh:'风', ar:'الرياح' }), Math.round(_c2.windSpeed) + ' km/h');
+        }
+        if (_c2 && _num(_c2.windGust)) {
+          _s2facts += _wxFact(_WX_F_GUST, _wxPairS({ en:'Gusts', fr:'Rafales', es:'Ráfagas', de:'Böen', it:'Raffiche', pt:'Rajadas', ja:'突風', zh:'阵风', ar:'هبات' }), Math.round(_c2.windGust) + ' km/h');
+        }
+        if (_c2 && _num(_c2.visibility)) {
+          _s2facts += _wxFact(_WX_F_VIS, _wxPairS({ en:'Visibility', fr:'Visibilité', es:'Visibilidad', de:'Sicht', it:'Visibilità', pt:'Visibilidade', ja:'視程', zh:'能见度', ar:'الرؤية' }), Math.round(_c2.visibility / 1000) + ' km');
+        }
+        if (_c2 && _num(_c2.cloudCover)) {
+          _s2facts += _wxFact(_WX_F_CLOUD, _wxPairS({ en:'Cloud', fr:'Nuages', es:'Nubes', de:'Wolken', it:'Nuvole', pt:'Nuvens', ja:'雲量', zh:'云量', ar:'الغيوم' }), Math.round(_c2.cloudCover) + '%');
+        }
+        if (_c2 && _num(_c2.pressure)) {
+          _s2facts += _wxFact(_WX_F_PRESS, _wxPairS({ en:'Pressure', fr:'Pression', es:'Presión', de:'Druck', it:'Pressione', pt:'Pressão', ja:'気圧', zh:'气压', ar:'الضغط' }), Math.round(_c2.pressure) + ' hPa');
+        }
+      } catch (eS2) { _s2facts = ''; }
       _wxS2 = '<div class="wxc-screen wxc-s2">' + _wxBar
         + '<div class="wxc-sc-title">' + _wxPairD({ en:'NEXT HOURS', fr:'PROCHAINES HEURES', es:'PRÓXIMAS HORAS', de:'NÄCHSTE STUNDEN', it:'PROSSIME ORE', pt:'PRÓXIMAS HORAS', ja:'今後の天気', zh:'未来几小时', ar:'الساعات القادمة' }) + _wxPlace + '</div>'
         + '<div class="wxc-chart wxc-hgrid">' + _cols + '</div>'
         + _hnote
+        + (_s2facts ? _factsWhen + '<div class="wxc-facts wxc-facts2">' + _s2facts + '</div>' : '')
         + _wxDots(2) + '</div>';
     }
 
@@ -45459,16 +45560,6 @@ function _renderWxCard(el) {
               : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s/g, ' ');
         } catch (eH) { return ''; }
       };
-      var _wxFact = function (svg, label, value) {
-        return '<div class="wxc-fact">' + svg
-          + '<div class="wxc-fact-t"><span class="wxc-fact-l">' + label + '</span>'
-          + '<span class="wxc-fact-v">' + value + '</span></div></div>';
-      };
-      var _WX_F_FEEL = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4a2 2 0 0 1 4 0v9.3a4 4 0 1 1-4 0z"/><path d="M12 9v6"/></svg>';
-      var _WX_F_DROP = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5c3.5 4.6 6 8 6 11a6 6 0 0 1-12 0c0-3 2.5-6.4 6-11z"/></svg>';
-      var _WX_F_WIND = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h10a3 3 0 1 0-3-3M3 14h14a3 3 0 1 1-3 3M3 19h7"/></svg>';
-      var _WX_F_RISE = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="14" r="3.4"/><path d="M12 5.5V8M5.6 8.6l1.8 1.8M18.4 8.6l-1.8 1.8M3 19h18"/></svg>';
-      var _WX_F_SET  = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.4"/><path d="M12 19v2.5M5.6 15.4l1.8-1.8M18.4 15.4l-1.8-1.8M3 19h18"/></svg>';
       var _facts = '';
       try {
         var _fc = (typeof TOMORROW_WX !== 'undefined' && TOMORROW_WX[dest] && TOMORROW_WX[dest].current) || null;
@@ -45513,7 +45604,7 @@ function _renderWxCard(el) {
             en: nDays + '-DAY FORECAST', fr: 'PRÉVISIONS ' + nDays + ' JOURS', es: 'PRONÓSTICO ' + nDays + ' DÍAS', de: nDays + '-TAGE-VORHERSAGE', it: 'PREVISIONI ' + nDays + ' GIORNI', pt: 'PREVISÃO ' + nDays + ' DIAS', ja: nDays + '日間予報', zh: nDays + '天预报', ar: 'توقعات ' + nDays + ' أيام'
           }) + _wxPlace + '</div>'
         + '<div class="wxc-days wxc-days-' + nDays + '">' + _dayCols + '</div>'
-        + (_facts ? '<div class="wxc-facts">' + _facts + '</div>' : '')
+        + (_facts ? _factsWhen + '<div class="wxc-facts">' + _facts + '</div>' : '')
         + _wxDots(3) + '</div>';
     }
     // A missing screen must not leave its slot blank: the days stand in for

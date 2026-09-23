@@ -26,8 +26,22 @@ test('the public directory contains no development or source-package debris', ()
   const forbiddenExtensions = new Set([
     '.ai', '.bak', '.cdr', '.eps', '.ipynb', '.md', '.pdf', '.py', '.rtf', '.sh', '.txt', '.zip'
   ]);
-  const debris = walk(staticRoot).filter((file) => forbiddenExtensions.has(path.extname(file).toLowerCase()));
+  // ONE carve-out, and it is the opposite case to the Dinamo licence that
+  // must never be published: the SIL Open Font License REQUIRES its text to
+  // travel with any redistribution of the font files, and serving woff2 to a
+  // browser is redistribution. So this .txt is not debris — it is the
+  // condition on which those faces may be here at all. Named exactly, by
+  // full path, so it exempts that file and nothing else.
+  const licensedText = new Set([
+    path.join(staticRoot, 'fonts', 'bricolage', 'OFL.txt')
+  ]);
+  const debris = walk(staticRoot).filter((file) =>
+    forbiddenExtensions.has(path.extname(file).toLowerCase()) && !licensedText.has(file));
   assert.deepEqual(debris, []);
+  for (const f of licensedText) {
+    assert.ok(fs.existsSync(f), `${path.basename(f)} must ship beside the fonts it licenses`);
+    assert.match(fs.readFileSync(f, 'utf8'), /SIL Open Font License, Version 1\.1/, 'the carve-out is for an OFL text only');
+  }
 });
 
 test('public filenames do not contain copy suffixes or generated download names', () => {
