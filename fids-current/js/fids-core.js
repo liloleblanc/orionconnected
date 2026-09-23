@@ -25488,7 +25488,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23876';
+var FIDS_BUILD_TAG = 'v23877';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44158,6 +44158,40 @@ function _wmoAnimIcon(code) {
 // Inline the animated SVGs so their animations ALWAYS run (some display
 // stacks freeze SVG animation inside <img>). Fetched once, cached.
 window._wxSvgTxt = window._wxSvgTxt || {};
+
+// ── THE PLATE'S CITY LINE FITS, IT DOES NOT WRAP AND IT DOES NOT CLIP ──────
+// v23877. Stopping the clip by allowing the line to wrap traded one fault for
+// another: 'San Francisco' and its code went onto separate lines, and the
+// code belongs beside the name it labels.
+//
+// So it is fitted instead — the same answer the hotel names get. The name and
+// its code stay on one line and the line shrinks until it fits the plate.
+// Only if it will not fit at the smallest size allowed does it wrap, which is
+// still better than a severed word but is now the last resort rather than the
+// first response.
+function _wxFitPlateCities(root) {
+  try {
+    var els = (root || document).querySelectorAll('.wxc-mon-city');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i], box = el.parentElement;
+      if (!box || !box.clientWidth) continue;
+      var key = (el.textContent || '') + '|' + Math.round(box.clientWidth);
+      if (el.dataset.fitKey === key) continue;
+      el.dataset.fitKey = key;
+      el.style.removeProperty('font-size');
+      el.style.setProperty('white-space', 'nowrap', 'important');
+      var base = parseFloat(getComputedStyle(el).fontSize) || 24;
+      var size = base, min = base * 0.55, guard = 28;
+      while (el.scrollWidth > box.clientWidth + 0.5 && size > min && guard-- > 0) {
+        size = Math.max(min, size - Math.max(0.5, size * 0.04));
+        el.style.setProperty('font-size', size + 'px', 'important');
+      }
+      if (el.scrollWidth > box.clientWidth + 0.5) {
+        el.style.setProperty('white-space', 'normal', 'important');
+      }
+    }
+  } catch (e) {}
+}
 function _wxHydrateSvgs(root) {
   try {
     root.querySelectorAll('img.wxanim[data-wx]').forEach(function (img) {
@@ -46027,6 +46061,7 @@ function _renderWxCard(el) {
         el._wxLastHtml = _wxSig;
         if (el._wxLastBg !== _wxBg) { _wxWrapP.style.setProperty('background', _wxBg, 'important'); el._wxLastBg = _wxBg; }
         _wxHydrateSvgs(_wxWrapP);
+        _wxFitPlateCities(_wxWrapP);
         // RE-RENDER PATH 2 — screens swapped under an untouched set. This fires
         // whenever late data lands, which is often, so it MUST NOT re-arm: the
         // visit number has not moved, so it does not.
@@ -46043,6 +46078,7 @@ function _renderWxCard(el) {
     var _wxWrap = el.querySelector('.wxcard-wrap');
     if (_wxWrap) _wxWrap.style.setProperty('background', _wxBg, 'important');
     _wxHydrateSvgs(el);
+    _wxFitPlateCities(el);
     // RE-RENDER PATH 3 — a full rebuild. This is the path a real arrival takes
     // (the rotation tick empties the carousel, so there is no wrap to reuse),
     // and also the path a plain weather-content change takes mid-slide. The
