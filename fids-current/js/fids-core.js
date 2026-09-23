@@ -5398,6 +5398,7 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
   // (matched by name below in buildAdLogoPanel) is what actually renders. Kept
   // in sync so nothing points at the old one-off top-level SVGs.
   var _FP = '/logos/hotels/accor-luxury/fairmont/outlined_svg_white/';
+  var _AL = '/logos/hotels/accor-luxury/';
   var propertyMap = [
     // Fairmont — Canadian properties (individual lockups)
     [/\bbanff\s*springs\b/,                      _FP + '001_The_Fairmont_Banff_Springs.svg'],
@@ -5419,12 +5420,30 @@ function resolveAccorHotelLogo(brandCode, brandName, rawHotelName, cleanedHotelN
     [/\bvancouver\s*airport\b/,                  _FP + '015_The_Fairmont_Vancouver_Airport.svg'],
     [/\bwaterfront\b/,                           _FP + '014_The_Fairmont_Waterfront.svg'],
     [/\bfort\s*garry\b|\bwinnipeg\b/,            _FP + '020_The_Fairmont_Winnipeg.svg'],
+    // v23873 — two properties whose marks are their OWN, not the Fairmont
+    // lockup. The Savoy and The Plaza each carry a wordmark predating and
+    // outranking the chain's, and both were falling through to the generic
+    // Fairmont logo. They sit outside the numbered brand-team pack because
+    // they are not in it — these are the properties' own marks.
+    [/\bsavoy\b/,                               _AL + 'fairmont-savoy-white.svg'],
+    [/\bthe\s*plaza\b/,                         _AL + 'the-plaza-new-york-white.svg'],
   ];
   // Only run property lookup if this is a Fairmont property
   if (/\bfairmont\b/.test(_propHay) || brandCode === 'FAI') {
     for (var p = 0; p < propertyMap.length; p++) {
       if (propertyMap[p][0].test(_propHay)) return propertyMap[p][1];
     }
+  }
+  // v23873 — THE PLAZA IS NOT LISTED AS A FAIRMONT, SO THE GATE ABOVE NEVER
+  // REACHES IT. Matched here instead, and deliberately narrowly: 'plaza' is
+  // one of the commonest words in hotel naming, and Crowne Plaza alone would
+  // otherwise take this mark across an entire competing chain. The name must
+  // read 'the plaza' AND place it in New York, and anything Crowne is refused
+  // outright — two conditions and an exclusion, because the cost of a false
+  // match here is one hotel's mark on another hotel's advertisement.
+  if (/\bthe\s*plaza\b/.test(_propHay) && !/\bcrowne\b/.test(_propHay)
+      && /\bnew\s*york\b|\bny\b|\bfifth\s*ave|\bcentral\s*park\b/.test(_propHay)) {
+    return '/logos/hotels/accor-luxury/the-plaza-new-york-white.svg';
   }
 
   if (brandCode && ACCOR_BRAND_LOGOS[brandCode]) return ACCOR_BRAND_LOGOS[brandCode];
@@ -23761,7 +23780,7 @@ const LOGO_SUBFOLDER = {
   'fairmont-chateau-whistler.svg':'hotels/accor-luxury', 'fairmont-empress.svg':'hotels/accor-luxury', 'fairmont-fort-garry.svg':'hotels/accor-luxury', 'fairmont-full.svg':'hotels/accor-luxury',
   'fairmont-hotel-macdonald.svg':'hotels/accor-luxury', 'fairmont-hotel-vancouver.svg':'hotels/accor-luxury', 'fairmont-jasper-park-lodge.svg':'hotels/accor-luxury', 'fairmont-le-chateau-frontenac.svg':'airlines/canadian',
   'fairmont-le-chateau-montebello.svg':'hotels/accor-luxury', 'fairmont-le-manoir-richelieu.svg':'hotels/accor-luxury', 'fairmont-pacific-rim.svg':'hotels/accor-luxury', 'fairmont-palliser.svg':'hotels/accor-luxury',
-  'fairmont-queen-elizabeth.svg':'hotels/accor-luxury', 'fairmont-royal-york.svg':'hotels/accor-luxury', 'fairmont-tremblant.svg':'hotels/accor-luxury', 'fairmont-vancouver-airport.svg':'hotels/accor-luxury',
+  'fairmont-queen-elizabeth.svg':'hotels/accor-luxury', 'fairmont-savoy.svg':'hotels/accor-luxury', 'fairmont-savoy-white.svg':'hotels/accor-luxury', 'the-plaza-new-york.svg':'hotels/accor-luxury', 'the-plaza-new-york-white.svg':'hotels/accor-luxury', 'fairmont-royal-york.svg':'hotels/accor-luxury', 'fairmont-tremblant.svg':'hotels/accor-luxury', 'fairmont-vancouver-airport.svg':'hotels/accor-luxury',
   'fairmont-waterfront.svg':'hotels/accor-luxury', 'fairmont.png':'hotels/accor-luxury', 'fairmont.svg':'hotels/accor-luxury', 'flair-wordmark-dark.svg':'airlines/canadian', 'flair-wordmark-light.svg':'airlines/canadian', 'icelandair-wordmark-dark.svg':'airlines/european', 'icelandair-wordmark-light.svg':'airlines/european', 'flair.svg':'airlines/canadian', 'flying-blue.png':'airlines/alliances', 'flying-blue940X360px.webp':'airlines/alliances',
   'four-seasons.png':'hotels/other-chains', 'golden-tulip.jpg':'hotels/wyndham', 'grand-hyatt-white.png':'hotels/hyatt', 'grand-hyatt.png':'hotels/hyatt',
   'grand-mercure.png':'hotels/accor-premium', 'grand-mercure.svg':'hotels/accor-premium', 'great-wolf-lodge.png':'hotels/wyndham', 'greet.svg':'hotels/accor-midscale',
@@ -25429,7 +25448,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23872';
+var FIDS_BUILD_TAG = 'v23873';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
