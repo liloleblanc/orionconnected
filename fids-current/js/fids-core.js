@@ -1445,6 +1445,35 @@ function changeFont(f) {
 // Font stacks shared by the control-bar dropdown AND the FIDS Console
 // Customize panel (same keys the Customize <select> saves).
 var FIDS_FONT_STACKS = {
+  // v23868 — BRICOLAGE GROTESQUE, served from a licensed Adobe Fonts web kit.
+  //
+  // Three widths across four optical sizes, regular and bold. The optical
+  // sizes are the reason it is registered face by face rather than as one
+  // family: 24 is drawn for text and 72 for headlines, and on a board read
+  // from across a concourse that distinction is the whole point of the
+  // typeface. Picking '72' for a gate number and '24' for a row is a choice
+  // the picker can now express.
+  //
+  // Unlike every other family here the faces are NOT in font.css and NOT in
+  // the repo — they load from use.typekit.net, linked in the three board
+  // documents. That is deliberate and it is what makes them usable at all: a
+  // Typekit web kit carries a web-embedding licence, which is the thing the
+  // previously evaluated candidates lacked.
+  'bricolage': "'bricolage-grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-semicond': "'bricolage-grotesque-semicond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-cond': "'bricolage-grotesque-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-24': "'bricolage-grotesque-24', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-24-scond': "'bricolage-grotesque-24-scond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-24-cond': "'bricolage-grotesque-24-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-36': "'bricolage-grotesque-36', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-36-scond': "'bricolage-grotesque-36-scond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-36-cond': "'bricolage-grotesque-36-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-48': "'bricolage-grotesque-48', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-48-scond': "'bricolage-grotesque-48-scond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-48-cond': "'bricolage-grotesque-48-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-72': "'bricolage-grotesque-72', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-72-scond': "'bricolage-grotesque-72-scond', -apple-system, BlinkMacSystemFont, sans-serif",
+  'bricolage-72-cond': "'bricolage-grotesque-72-cond', -apple-system, BlinkMacSystemFont, sans-serif",
   'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
   'ginto-nord': "'ABC Ginto Nord', -apple-system, BlinkMacSystemFont, sans-serif",
   'ginto-nord-thin': "'ABC Ginto Nord Thin', 'ABC Ginto Nord', sans-serif",
@@ -25389,7 +25418,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23867';
+var FIDS_BUILD_TAG = 'v23868';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -30590,6 +30619,21 @@ function applyAirportConfigToBoard(iata) {
   const _font = _urlFontKey || _pref('font');
   if (_font) {
     var _fontStacks = {
+      'bricolage': "'bricolage-grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-semicond': "'bricolage-grotesque-semicond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-cond': "'bricolage-grotesque-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-24': "'bricolage-grotesque-24', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-24-scond': "'bricolage-grotesque-24-scond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-24-cond': "'bricolage-grotesque-24-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-36': "'bricolage-grotesque-36', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-36-scond': "'bricolage-grotesque-36-scond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-36-cond': "'bricolage-grotesque-36-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-48': "'bricolage-grotesque-48', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-48-scond': "'bricolage-grotesque-48-scond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-48-cond': "'bricolage-grotesque-48-cond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-72': "'bricolage-grotesque-72', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-72-scond': "'bricolage-grotesque-72-scond', -apple-system, BlinkMacSystemFont, sans-serif",
+      'bricolage-72-cond': "'bricolage-grotesque-72-cond', -apple-system, BlinkMacSystemFont, sans-serif",
       'possibility':   "'Possibility', -apple-system, BlinkMacSystemFont, sans-serif",
       'ginto-nord': "'ABC Ginto Nord', -apple-system, BlinkMacSystemFont, sans-serif",
       'ginto-nord-thin': "'ABC Ginto Nord Thin', 'ABC Ginto Nord', sans-serif",
