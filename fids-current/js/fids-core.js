@@ -25511,7 +25511,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23882';
+var FIDS_BUILD_TAG = 'v23883';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44628,8 +44628,26 @@ function _renderHeritageCard(el) {
     var l2 = frF ? mark.en : mark.fr;
     var kicker = frF ? 'Depuis les archives &nbsp;|&nbsp; From the archive'
                      : 'From the archive &nbsp;|&nbsp; Depuis les archives';
+    // v23883 — THE AEROPLANE ITSELF, AND NOTHING ELSE ADDED.
+    //
+    // The first attempt at this put the mark on a white plate over a drawn sky
+    // with drawn clouds. It was reported as terrible and it was: white plates
+    // on a background read as cutouts pasted on, and CSS radial gradients do
+    // not make clouds, they make grey smudges.
+    //
+    // So this adds ONE thing — the aircraft in that carrier's livery — and
+    // changes nothing else. No sky, no clouds, no plates. The card's own
+    // ground, the mark, the endorsement, the rule and the dates are exactly
+    // as they were.
+    //
+    // The image is optional: onerror removes its own layer and marks the card,
+    // so a carrier with no livery art shows precisely today's card rather than
+    // a gap where a picture should be.
+    var acSrc = mark.aircraft || ('/aircraft/heritage/' + mark.key + '.png');
     var html =
       '<div class="hcard-wrap">'
+      +   '<img class="hcard-plane" src="' + esc(acSrc) + '" alt="" aria-hidden="true"'
+      +     ' onerror="this.closest(\'.hcard-wrap\').classList.add(\'hcard-noplane\');this.remove();">'
       +   '<div class="hcard-kicker">' + kicker + '</div>'
       +   '<div class="hcard-plate">'
       +     '<img class="hcard-mark" src="' + esc(mark.file) + '" alt="' + esc(mark.name) + '">'
