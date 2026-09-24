@@ -25511,7 +25511,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23880';
+var FIDS_BUILD_TAG = 'v23881';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44628,8 +44628,30 @@ function _renderHeritageCard(el) {
     var l2 = frF ? mark.en : mark.fr;
     var kicker = frF ? 'Depuis les archives &nbsp;|&nbsp; From the archive'
                      : 'From the archive &nbsp;|&nbsp; Depuis les archives';
+    // v23881 — THE ARCHIVE CARD FLIES.
+    //
+    // It was a wordmark on a flat plate for a few seconds. These are carriers
+    // that flew these airports, and the thing worth showing is the aeroplane
+    // in that livery, in the air — the mark alone says who, and nothing of
+    // what it was like.
+    //
+    // The scene is drawn behind the existing card rather than replacing it:
+    // sky, drifting cloud, and the aircraft if there is art for it. Every
+    // carrier keeps its wordmark and its dates exactly where they were, so a
+    // carrier with no aircraft art loses nothing and simply shows the mark
+    // over a sky instead of over a plate.
+    //
+    // The aircraft is optional BY CONSTRUCTION: onerror removes its own layer,
+    // so a path that does not resolve leaves the card as it is today rather
+    // than a broken image over a heritage mark. Dropping a PNG at the path
+    // turns it on with no further change.
+    var acSrc = mark.aircraft || ('/aircraft/heritage/' + mark.key + '.png');
     var html =
-      '<div class="hcard-wrap">'
+      '<div class="hcard-wrap hcard-scene">'
+      +   '<div class="hcard-sky" aria-hidden="true"></div>'
+      +   '<div class="hcard-clouds" aria-hidden="true"></div>'
+      +   '<img class="hcard-ac" src="' + esc(acSrc) + '" alt="" aria-hidden="true"'
+      +     ' onerror="this.closest(\'.hcard-scene\').classList.add(\'hcard-noac\');this.remove();">'
       +   '<div class="hcard-kicker">' + kicker + '</div>'
       +   '<div class="hcard-plate">'
       +     '<img class="hcard-mark" src="' + esc(mark.file) + '" alt="' + esc(mark.name) + '">'
