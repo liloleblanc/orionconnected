@@ -25511,7 +25511,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23885';
+var FIDS_BUILD_TAG = 'v23886';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -41574,7 +41574,10 @@ function _getGateAdDwellMs(slide) {
   // by _wxTurnDue()'s floor: it holds longer and returns far less often.
   if (slide.type === 'wxcard') return Math.round(60000 * _wxSpeed());
   // Long enough to read a name and two caption lines without lingering.
-  if (slide.type === 'heritage') return 14000;
+  // v23886 — the archive card holds long enough for the aeroplane to cross
+  // it. The crossing takes 20s; at 14s the card left while the aircraft was
+  // still over the middle of it, which is the one moment it must not.
+  if (slide.type === 'heritage') return 22000;
   // v218.96: custom slides from the Gate Theme editor carry their own
   // configured duration. Clamp to a sensible 2s–600s range so a typo can't
   // freeze the carousel on a single slide for the rest of the day, while
