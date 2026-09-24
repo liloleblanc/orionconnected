@@ -1445,6 +1445,17 @@ function changeFont(f) {
 // Font stacks shared by the control-bar dropdown AND the FIDS Console
 // Customize panel (same keys the Customize <select> saves).
 var FIDS_FONT_STACKS = {
+  // v23880 — Cabinet Grotesk (Indian Type Foundry, Fontshare). The variable
+  // face carries 100-900 in one file; the named weights below pin a single
+  // weight for a pick that should not drift with whatever the element asks
+  // for. Files are ITF's own and must stay that way — the licence forbids
+  // subsetting and format conversion.
+  'cabinet': "'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+  'cabinet-light': "'Cabinet Grotesk Light', -apple-system, BlinkMacSystemFont, sans-serif",
+  'cabinet-medium': "'Cabinet Grotesk Medium', -apple-system, BlinkMacSystemFont, sans-serif",
+  'cabinet-bold': "'Cabinet Grotesk Bold', -apple-system, BlinkMacSystemFont, sans-serif",
+  'cabinet-extrabold': "'Cabinet Grotesk Extrabold', -apple-system, BlinkMacSystemFont, sans-serif",
+  'cabinet-black': "'Cabinet Grotesk Black', -apple-system, BlinkMacSystemFont, sans-serif",
   'bricolage': "'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
   'bricolage-semicond': "'Bricolage Grotesque SemiCond', -apple-system, BlinkMacSystemFont, sans-serif",
   'bricolage-cond': "'Bricolage Grotesque Cond', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -25500,7 +25511,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23879';
+var FIDS_BUILD_TAG = 'v23880';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -30701,6 +30712,12 @@ function applyAirportConfigToBoard(iata) {
   const _font = _urlFontKey || _pref('font');
   if (_font) {
     var _fontStacks = {
+      'cabinet': "'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
+      'cabinet-light': "'Cabinet Grotesk Light', -apple-system, BlinkMacSystemFont, sans-serif",
+      'cabinet-medium': "'Cabinet Grotesk Medium', -apple-system, BlinkMacSystemFont, sans-serif",
+      'cabinet-bold': "'Cabinet Grotesk Bold', -apple-system, BlinkMacSystemFont, sans-serif",
+      'cabinet-extrabold': "'Cabinet Grotesk Extrabold', -apple-system, BlinkMacSystemFont, sans-serif",
+      'cabinet-black': "'Cabinet Grotesk Black', -apple-system, BlinkMacSystemFont, sans-serif",
       'bricolage': "'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, sans-serif",
       'bricolage-semicond': "'Bricolage Grotesque SemiCond', -apple-system, BlinkMacSystemFont, sans-serif",
       'bricolage-cond': "'Bricolage Grotesque Cond', -apple-system, BlinkMacSystemFont, sans-serif",
