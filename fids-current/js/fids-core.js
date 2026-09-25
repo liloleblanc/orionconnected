@@ -44683,8 +44683,11 @@ function _renderHeritageCard(el) {
       // front band with the rush streaks riding on it (::after). The last two
       // sit ABOVE the aeroplane exactly as they do on the gate shelf.
       +   '<div class="hcard-sky" aria-hidden="true">'
-      +     '<i class="hcard-sky-fastc"></i>'
-      +     '<i class="hcard-sky-mid"></i>'
+      // ONE element for the back plate, with the fast and cumulus bands as its
+      // OWN pseudo-children — the shelf's topology, not merely its numbers.
+      // They ride the back plate's transform there, and a flat list of
+      // siblings silently drops that compounding.
+      +     '<i class="hcard-sky-back"></i>'
       +     '<img class="hcard-plane" src="' + esc(acSrc) + '" alt=""'
       +       ' onerror="this.closest(\'.hcard-wrap\').classList.add(\'hcard-noplane\');this.remove();">'
       +     '<i class="hcard-sky-fg"></i>'
