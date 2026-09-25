@@ -44656,11 +44656,14 @@ function _renderHeritageCard(el) {
     // Every part of that failed. A radial gradient is a grey smudge, not a
     // cloud, and a white plate on a background reads as a cutout pasted on.
     //
-    // The clouds here are neither drawn nor new: they are the photographic sky
-    // plate and cumulus bands already running on the gate aircraft shelf, the
-    // five-layer scene approved at v23087 and live on every gate since. The
-    // treatment is proven, the files are already licensed and already shipped,
-    // and no additional asset is introduced.
+    // The clouds here are neither drawn nor new, and they are not a reading of
+    // the gate scene either: every layer is the gate aircraft shelf's own, at
+    // the parameters the SHIPPING BOARD computes — read off the live gate at
+    // 1680x1050 rather than off the stylesheet, because several later blocks
+    // override the first declaration and the source's opening values are not
+    // what the board actually paints. All five layers are present, in the gate
+    // shelf's order and z-order, with its artwork, tile widths, travel
+    // distances, durations, opacities and direction.
     //
     // The sky is a WINDOW in the top of the card, not the card's ground. This
     // is the point of the composition and it is what keeps the earlier failure
@@ -44675,7 +44678,12 @@ function _renderHeritageCard(el) {
     var acSrc = mark.aircraft || ('/aircraft/heritage/' + mark.key + '.png');
     var html =
       '<div class="hcard-wrap">'
+      // The five layers of the gate aircraft scene, in its order: the sky plate
+      // (::before), the cartoon fast band, the cumulus, the aeroplane, then the
+      // front band with the rush streaks riding on it (::after). The last two
+      // sit ABOVE the aeroplane exactly as they do on the gate shelf.
       +   '<div class="hcard-sky" aria-hidden="true">'
+      +     '<i class="hcard-sky-fastc"></i>'
       +     '<i class="hcard-sky-mid"></i>'
       +     '<img class="hcard-plane" src="' + esc(acSrc) + '" alt=""'
       +       ' onerror="this.closest(\'.hcard-wrap\').classList.add(\'hcard-noplane\');this.remove();">'
