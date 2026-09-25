@@ -25511,7 +25511,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23886';
+var FIDS_BUILD_TAG = 'v23887';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44646,11 +44646,41 @@ function _renderHeritageCard(el) {
     // The image is optional: onerror removes its own layer and marks the card,
     // so a carrier with no livery art shows precisely today's card rather than
     // a gap where a picture should be.
+    // v23887 — THE AEROPLANE FLIES THROUGH REAL SKY.
+    //
+    // The card had the aircraft crossing its own paper ground, with no sky for
+    // it to cross. What was asked for is the aeroplane flying WITH CLOUDS.
+    //
+    // An earlier attempt drew that sky: a CSS gradient for the air and radial
+    // gradients for the cloud, with the mark floated on a white plate over it.
+    // Every part of that failed. A radial gradient is a grey smudge, not a
+    // cloud, and a white plate on a background reads as a cutout pasted on.
+    //
+    // The clouds here are neither drawn nor new: they are the photographic sky
+    // plate and cumulus bands already running on the gate aircraft shelf, the
+    // five-layer scene approved at v23087 and live on every gate since. The
+    // treatment is proven, the files are already licensed and already shipped,
+    // and no additional asset is introduced.
+    //
+    // The sky is a WINDOW in the top of the card, not the card's ground. This
+    // is the point of the composition and it is what keeps the earlier failure
+    // from returning: the mark, the rule and the dates stay on the paper they
+    // were always on, so no wordmark is ever asked to hold up over sky and
+    // nothing needs a plate cut for it. A heritage mark is lit by choosing its
+    // ground, never by recolouring the artwork, and its ground is unchanged.
+    //
+    // The aeroplane moves into the window and flies inside it, so the crossing
+    // is bounded by something that looks like air instead of running over a
+    // printed card.
     var acSrc = mark.aircraft || ('/aircraft/heritage/' + mark.key + '.png');
     var html =
       '<div class="hcard-wrap">'
-      +   '<img class="hcard-plane" src="' + esc(acSrc) + '" alt="" aria-hidden="true"'
-      +     ' onerror="this.closest(\'.hcard-wrap\').classList.add(\'hcard-noplane\');this.remove();">'
+      +   '<div class="hcard-sky" aria-hidden="true">'
+      +     '<i class="hcard-sky-mid"></i>'
+      +     '<img class="hcard-plane" src="' + esc(acSrc) + '" alt=""'
+      +       ' onerror="this.closest(\'.hcard-wrap\').classList.add(\'hcard-noplane\');this.remove();">'
+      +     '<i class="hcard-sky-fg"></i>'
+      +   '</div>'
       +   '<div class="hcard-kicker">' + kicker + '</div>'
       +   '<div class="hcard-plate">'
       +     '<img class="hcard-mark" src="' + esc(mark.file) + '" alt="' + esc(mark.name) + '">'
