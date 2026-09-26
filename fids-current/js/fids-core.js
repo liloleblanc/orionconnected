@@ -11806,7 +11806,7 @@ function _buildV2MapCol(ctx, vars) {
       } catch (e) {}
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus' + _facingCls + '">'
-        +   '<div id="gateCloudsBg"></div>'
+        +   '<div id="gateCloudsBg"></div><i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
               : _aircraftHoldHtml)
@@ -11847,7 +11847,7 @@ function _buildV2MapCol(ctx, vars) {
     var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark + '</div>';
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus">'
-      +   '<div id="gateCloudsBg"></div>'
+      +   '<div id="gateCloudsBg"></div><i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
       +   (/[?&]acsky=1\b/.test(window.location.search)
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
@@ -25472,11 +25472,13 @@ function _acSkyPhaseApply() {
     try {
       var _shelfEl = document.querySelector('.v2-rc-shelf-illus');
       if (_shelfEl && _shelfEl.isConnected && !(_shelfEl.dataset && _shelfEl.dataset.skyPhased === '1')) {
-        _shelfEl.style.setProperty('--g8-back-delay',  '-' + (t % 260).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-mid-delay',   '-' + (t % 130).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-fast-delay',  '-' + (t %  26).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %  13).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-rush-delay',  '-' + (t %   5).toFixed(2) + 's');
+        // v23890 — one modulus per layer, equal to that layer's CSS cycle:
+        // bank 1250s, medium 680s, veil behind 35s, veil in front 15s. The
+        // plate is still now and needs no phase.
+        _shelfEl.style.setProperty('--g8-bank-delay',  '-' + (t % 1250).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-med-delay',   '-' + (t %  680).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-veil-delay',  '-' + (t %   35).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %   15).toFixed(2) + 's');
         if (_shelfEl.dataset) _shelfEl.dataset.skyPhased = '1';
       }
     } catch (e4) {}
@@ -25511,7 +25513,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23889';
+var FIDS_BUILD_TAG = 'v23890';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
