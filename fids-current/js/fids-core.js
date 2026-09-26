@@ -4047,6 +4047,47 @@ function _acResolvedGet(fl) {
   } catch (e) { return null; }
 }
 
+// v23901 — THE AIRCRAFT BEFORE THE FLIGHT FLIES. No home feed names the
+// aircraft and FR24 only sees transmitting aircraft, so a gate's next
+// departure, and its inbound until it leaves the far end, drew no aircraft.
+// The worker's /acinfo answers from the far end's own feed (today's aircraft,
+// e.g. Calgary names type and registration days ahead) or, failing that, from
+// the type this flight number usually flies (type only, never a registration).
+// Asked only when nothing else is known, once per flight per 10 minutes; an
+// answer lands in the same resolved store the render already falls back to,
+// then the gate repaints once.
+var _ACINFO_BASE = 'https://fids-proxy.n-leblanc1984.workers.dev/acinfo';
+var _acInfoTried = Object.create(null);
+function _acInfoKick(row, ourDir) {
+  try {
+    if (!row || !row.flight || typeof fetch !== 'function') return;
+    var f = String(row.flight).replace(/\s+/g, '').toUpperCase();
+    if (!/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d{1,4}[A-Z]?$/.test(f)) return;
+    var other = String(row._locIata || '').toUpperCase();
+    if (other && !/^[A-Z]{3}$/.test(other)) other = '';
+    // Our arrival left from THEIR departures; our departure lands in THEIR arrivals.
+    var at = ourDir === 'arr' ? 'dep' : 'arr';
+    var ts = Number(row._sortTs) || 0;
+    var key = f + '|' + other + '|' + at + '|' + Math.floor(ts / 3600000);
+    var last = _acInfoTried[key];
+    if (last && (Date.now() - last) < 600000) return;
+    _acInfoTried[key] = Date.now();
+    var url = _ACINFO_BASE + '?f=' + encodeURIComponent(f)
+      + (other ? '&other=' + encodeURIComponent(other) : '') + '&at=' + at + (ts ? '&ts=' + ts : '');
+    fetch(url, { cache: 'no-store' }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.type) return;
+      var cd = (typeof aircraftCodeToIata === 'function' && aircraftCodeToIata(j.type)) || j.type;
+      var nm = (typeof formatAircraft === 'function') ? formatAircraft(j.type) : '';
+      if (!nm && !cd) return;
+      if (_acResolvedGet(f)) return;   // resolved by another path meanwhile
+      // A registration only from the far end's feed for THIS flight today; the
+      // usual-type answer never carries one.
+      _acResolvedPut(f, nm, cd, j.basis === 'feed' ? (j.reg || '') : '');
+      if (typeof requestGateRebuild === 'function') requestGateRebuild();
+    }).catch(function () {});
+  } catch (e) {}
+}
+
 // v23130 — A TRUNCATED STATUS IS A BROKEN SENTENCE (a YYZ screenshot:
 // 'Embarquem\u2026' — unacceptable). After any geometry/fit pass, any
 // status cell still wider than its box steps its own font down until the
@@ -4291,11 +4332,16 @@ async function _gateNumbersPoll() {
         try {
           var _atNm = (typeof formatAircraft === 'function') ? formatAircraft(_adsb.type) : '';
           var _atCd = (typeof aircraftCodeToIata === 'function') ? aircraftCodeToIata(_adsb.type) : '';
-          if (_atNm && !inb._aircraft) inb._aircraft = _atNm;
-          if (_atCd && !inb._aircraftCode) inb._aircraftCode = _atCd;
+          var _atFilled = false;
+          if (_atNm && !inb._aircraft) { inb._aircraft = _atNm; _atFilled = true; }
+          if (_atCd && !inb._aircraftCode) { inb._aircraftCode = _atCd; _atFilled = true; }
           if ((_atNm || _atCd) && typeof _acResolvedPut === 'function') {
             _acResolvedPut(inb.flight || flt, _atNm, _atCd, inb._reg || '');
           }
+          // v23901 — the type was stored and never painted: this path returns
+          // just below, and render() does not rebuild a gate on its own. Paint
+          // once, only when this fill actually changed what the gate knows.
+          if (_atFilled && typeof requestGateRebuild === 'function') requestGateRebuild();
         } catch (eT) {}
       }
       try { _gateTelemSetReal(_adsb.spd, _adsb.alt); } catch (e) {}
@@ -11128,6 +11174,8 @@ function _buildV2MapCol(ctx, vars) {
         _inbEquipCd = _inbR2.cd || '';
         _inbEquipNm = _inbR2.nm || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '');
         if (!_ib2._reg && _inbR2.reg) _ib2._reg = _inbR2.reg;
+      } else if (typeof _acInfoKick === 'function') {
+        _acInfoKick(_ib2, 'arr');
       }
     }
     // PAIRWISE, ONE FLIGHT
@@ -12043,6 +12091,8 @@ function uxgGateHtml(ctx) {
       equipRaw = _acR.cd || '';
       equipName = _acR.nm || (equipRaw ? formatAircraft(equipRaw) : '');
       if (!currentFlight._reg && _acR.reg) currentFlight._reg = _acR.reg;
+    } else if (typeof _acInfoKick === 'function') {
+      _acInfoKick(currentFlight, 'dep');
     }
   }
   var minsToDep = effectiveDepTs ? Math.round((effectiveDepTs - Date.now()) / 60000) : 9999;
@@ -25551,7 +25601,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23900';
+var FIDS_BUILD_TAG = 'v23901';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

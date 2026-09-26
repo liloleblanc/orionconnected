@@ -2017,6 +2017,100 @@ function authorityFlight(o) {
   };
 }
 __name(authorityFlight, "authorityFlight");
+
+// ── THE AIRCRAFT FOR A FLIGHT THAT HAS NOT TAKEN OFF (v23901) ──────────────
+// No home feed we read names the aircraft, and FR24 only sees aircraft that are
+// transmitting, so a gate's next departure (and its inbound, until it leaves
+// the far end) had no aircraft at all. Two free sources fill that:
+//
+//   1. THE OTHER END'S FEED. Several airports publish the aircraft on their own
+//      rows (Calgary: IATA type on every row and the registration days ahead).
+//      A Moncton arrival from Calgary is a Calgary departure, so its row there
+//      names the aircraft for today's flight.
+//   2. WHAT THE FLIGHT NUMBER USUALLY FLIES. Every FR24 hit already carries the
+//      ICAO type; /adsb/ remembers it per flight number at no extra credit.
+//      Only the type is kept and only the type is ever shown from it — a tail
+//      from a previous day is never displayed as this flight's aircraft.
+//      FR24's API terms allow commercial use and derived datasets, and cap
+//      storage at 30 days: records expire after 29 and older observations are
+//      dropped on every write.
+const AC_FLIGHT_RE = /^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d{1,4}[A-Z]?$/;
+const ACMEM_TTL_S = 29 * 86400;
+const ACMEM_MAX_OBS = 10;
+// A registration as a board should print it. Only Canadian (C-XXXX, sent
+// without the hyphen) and US (N-numbers, no hyphen by convention) are kept:
+// every other country hyphenates at its own position, and a guessed hyphen is
+// a wrong registration on screen.
+function acDisplayRegistration(s) {
+  const r = String(s || "").toUpperCase().replace(/[^A-Z0-9-]/g, "");
+  if (!r) return null;
+  let m = r.match(/^C-?([FGI][A-Z]{3})$/);
+  if (m) return `C-${m[1]}`;
+  if (/^N[1-9][0-9A-Z]{0,4}$/.test(r)) return r;
+  return null;
+}
+__name(acDisplayRegistration, "acDisplayRegistration");
+function acMemAddObservation(rec, type, now) {
+  const t = String(type || "").toUpperCase().trim();
+  if (!/^[A-Z0-9]{2,4}$/.test(t)) return null;
+  const day = new Date(now).toISOString().slice(0, 10);
+  const cutoff = new Date(now - ACMEM_TTL_S * 1000).toISOString().slice(0, 10);
+  const obs = ((rec && Array.isArray(rec.obs)) ? rec.obs : [])
+    .filter((o) => o && typeof o.d === "string" && o.d >= cutoff && o.d !== day);
+  obs.push({ d: day, t });
+  return { obs: obs.slice(-ACMEM_MAX_OBS) };
+}
+__name(acMemAddObservation, "acMemAddObservation");
+// The type this flight number flies most often in the kept window; a tie goes
+// to the most recent. One day's swap does not outvote a week of the usual.
+function acMemUsualType(rec, now) {
+  const cutoff = new Date(now - ACMEM_TTL_S * 1000).toISOString().slice(0, 10);
+  const obs = ((rec && Array.isArray(rec.obs)) ? rec.obs : []).filter((o) => o && o.d >= cutoff && o.t);
+  if (!obs.length) return null;
+  const n = {}, last = {};
+  obs.forEach((o, i) => { n[o.t] = (n[o.t] || 0) + 1; last[o.t] = i; });
+  return Object.keys(n).sort((a, b) => (n[b] - n[a]) || (last[b] - last[a]))[0];
+}
+__name(acMemUsualType, "acMemUsualType");
+async function acMemRemember(env, flightNo, type, now) {
+  try {
+    const f = String(flightNo || "").toUpperCase().replace(/\s+/g, "");
+    if (!env || !env.FIDS_LIVE_FLIGHTS || !AC_FLIGHT_RE.test(f)) return;
+    const key = `acmem:v1:${f}`;
+    const rec = await env.FIDS_LIVE_FLIGHTS.get(key, { type: "json" });
+    const day = new Date(now).toISOString().slice(0, 10);
+    if (rec && Array.isArray(rec.obs) && rec.obs.some((o) => o && o.d === day)) return;   // one per day
+    const next = acMemAddObservation(rec, type, now);
+    if (next) await env.FIDS_LIVE_FLIGHTS.put(key, JSON.stringify(next), { expirationTtl: ACMEM_TTL_S });
+  } catch (e) {}
+}
+__name(acMemRemember, "acMemRemember");
+// Compact index of one direction of an authority feed: [number, ts, model, reg]
+// for rows that name an aircraft. Calgary's document is ~6.5 MB; the index is
+// a few tens of KB, so a lookup never re-parses the whole feed.
+function acFeedIndexRows(rows) {
+  const out = [];
+  for (const fl of (Array.isArray(rows) ? rows : [])) {
+    const a = fl && fl.aircraft;
+    if (!a || (!a.model && !a.reg) || !fl.number || !fl._authTs) continue;
+    out.push([String(fl.number).toUpperCase().replace(/\s+/g, ""), fl._authTs, a.model || null, a.reg || null]);
+  }
+  return out;
+}
+__name(acFeedIndexRows, "acFeedIndexRows");
+// This flight number's row closest to our own scheduled time, within 20 h, so
+// a daily flight picks today's instance and never tomorrow's.
+function acFeedPick(index, flightNo, ts) {
+  let best = null, bestD = Infinity;
+  for (const e of (Array.isArray(index) ? index : [])) {
+    if (e[0] !== flightNo) continue;
+    const d = ts ? Math.abs(e[1] - ts) : 0;
+    if (d < bestD) { best = e; bestD = d; }
+  }
+  if (!best || (ts && bestD > 20 * 3600000)) return null;
+  return { model: best[2], reg: best[3] };
+}
+__name(acFeedPick, "acFeedPick");
 // One cached page/payload fetch per source per TTL, however many screens
 // are polling. Negative results are cached briefly so an outage is
 // re-probed, not hammered.
@@ -2286,7 +2380,8 @@ function yqbParseHits(jsonText, dir) {
       otherName: city || null,
       airlineIata: (h.airlineIataCode || "").toString().trim().toUpperCase() || null,
       airlineName: h.airline || null,
-      aircraftModel: h.aircraftName || null,
+      // v23901 — aircraftName is empty on every row; the IATA type code is not.
+      aircraftModel: h.aircraftName || (h.aircraftIataCode ? String(h.aircraftIataCode).trim() : null) || null,
       sched, revised
     });
     if (dir === "arr" && h.carouselName) fl.arrival.baggageBelt = String(h.carouselName);
@@ -2752,8 +2847,13 @@ function yycParseFeed(rawText, dir, nowMs) {
       otherIata: (r.AirportCode || "").toString().toUpperCase() || null,
       otherName: r.AirportName || null,
       airlineIata: code, airlineName: r.AirlineName || null,
+      // v23901 — the feed names the aircraft on every row (IATA type: 7M8, DH4,
+      // CR9) and, days ahead, the registration. Both were dropped here.
+      aircraftModel: (r.AircraftCode || "").toString().trim().toUpperCase() || null,
       sched, revised
     });
+    const _yycReg = acDisplayRegistration(r.Registration);
+    if (_yycReg) { fl.aircraft = fl.aircraft || {}; fl.aircraft.reg = _yycReg; }
     const homeSide = dir === "dep" ? fl.departure : fl.arrival;
     if (r.Concourse) homeSide.terminal = String(r.Concourse);
     if (dir === "arr" && r.ClaimUnit) fl.arrival.baggageBelt = String(r.ClaimUnit);
@@ -2810,7 +2910,10 @@ function sfoParseFeed(jsonText, dir, nowMs) {
       otherIata: (ap.iata_code || "").toString().toUpperCase() || null,
       otherName: ap.airport_city || ap.airport_name || null,
       airlineIata: code, airlineName: al.airline_display_name || al.airline_name || null,
-      aircraftModel: (typeof acT === "string" && acT.trim()) ? acT.trim() : null,
+      // v23901 — the field is an object ({iata_code, icao_code}), so the string
+      // test alone dropped the type on every row.
+      aircraftModel: (typeof acT === "string" && acT.trim()) ? acT.trim()
+        : (acT && typeof acT === "object" ? (acT.iata_code || acT.icao_code || null) : null),
       sched, revised
     });
     const homeSide = dir === "dep" ? fl.departure : fl.arrival;
@@ -2998,6 +3101,7 @@ function yvrParseFeed(jsonText, dir, nowMs) {
       otherIata: (r.FlightAirportCode || "").toString().toUpperCase() || null,
       otherName: r.FlightCity || null,
       airlineIata: nm[1], airlineName: r.FlightAirlineName || null,
+      aircraftModel: (r.FlightAircraftType || "").toString().trim() || null,
       sched, revised
     });
     const homeSide = dir === "dep" ? fl.departure : fl.arrival;
@@ -8933,6 +9037,63 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         return jsonResponse({ error: "Cache clear failed", details: e.message }, 500, origin);
       }
     }
+    // ── /acinfo — THE AIRCRAFT FOR A FLIGHT BEFORE IT FLIES (v23901) ─────────
+    // GET /acinfo?f=WS812&other=YYC&at=dep&ts=<our scheduled epoch ms>
+    //   f      the flight number as the board shows it
+    //   other  the airport at the far end (our origin for an arrival, our
+    //          destination for a departure)
+    //   at     which of THEIR rows that is: "dep" for our arrival, "arr" for ours
+    // Answers { type, reg, source, basis }: basis "feed" is today's aircraft from
+    // the far end's own feed; basis "usual" is the type this number flies most
+    // (no registration, ever). Public like /adsb/, pattern-checked, no upstream
+    // beyond the feeds the boards already read and our own KV.
+    if (path === "/acinfo") {
+      const f = String(url.searchParams.get("f") || "").toUpperCase().replace(/\s+/g, "");
+      const other = String(url.searchParams.get("other") || "").toLowerCase();
+      const at = url.searchParams.get("at") === "arr" ? "arr" : "dep";
+      const ts = Number(url.searchParams.get("ts")) || 0;
+      if (!AC_FLIGHT_RE.test(f) || (other && !/^[a-z]{3}$/.test(other))) {
+        return jsonResponse({ error: "Use /acinfo?f=AC1986&other=YYZ&at=dep&ts=<ms>" }, 400, origin);
+      }
+      const _acCache = caches.default;
+      const _acKey = new Request(`https://acinfo-cache/v1/${f}/${other || "-"}/${at}/${Math.floor(ts / 3600000)}`);
+      try {
+        const hit = await _acCache.match(_acKey);
+        if (hit) return new Response(await hit.text(), { status: 200, headers: {
+          "Content-Type": "application/json", "Cache-Control": "public, max-age=300", "X-Acinfo-Cache": "hit", ...corsHeaders(origin) } });
+      } catch (e) {}
+      const out = { f, type: null, reg: null, source: null, basis: null };
+      const h = other && AUTHORITY_HANDLERS[other];
+      if (h) {
+        try {
+          const _ixKey = new Request(`https://acinfo-index/v1/${other}/${at}`);
+          let index = null;
+          const ih = await _acCache.match(_ixKey);
+          if (ih) index = await ih.json();
+          else {
+            index = acFeedIndexRows(await h.list(at, env));
+            await _acCache.put(_ixKey, new Response(JSON.stringify(index), { headers: {
+              "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } }));
+          }
+          const pick = acFeedPick(index, f, ts);
+          if (pick && (pick.model || pick.reg)) {
+            out.type = pick.model || null; out.reg = pick.reg || null; out.source = other; out.basis = "feed";
+          }
+        } catch (e) {}
+      }
+      if (!out.type && env.FIDS_LIVE_FLIGHTS) {
+        try {
+          const usual = acMemUsualType(await env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${f}`, { type: "json" }), Date.now());
+          if (usual) { out.type = usual; out.source = "fr24"; out.basis = "usual"; }
+        } catch (e) {}
+      }
+      const _acBody = JSON.stringify(out);
+      const _acAge = out.type || out.reg ? 600 : 300;
+      try { await _acCache.put(_acKey, new Response(_acBody, { headers: {
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${_acAge}` } })); } catch (e) {}
+      return new Response(_acBody, { status: 200, headers: {
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${_acAge}`, "X-Acinfo-Cache": "miss", ...corsHeaders(origin) } });
+    }
     // ── ADS-B LIVE POSITIONS (proxied + cached) ───────────────────────────
     // GET /adsb/flight/{AC7754} | /adsb/callsign/{cs} | /adsb/reg/{tail} | /adsb/hex/{icao24}
     //
@@ -9131,6 +9292,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                   baro_rate: (typeof _p.vspeed === "number") ? _p.vspeed : void 0,
                   seen_pos: _ageS !== null ? _ageS : void 0
                 };
+                // v23901 — remember what this flight number flew (type only is
+                // ever shown from it). Same answer, no extra credit.
+                try { ctx.waitUntil(acMemRemember(env, _p.flight || (kind === "flight" ? subject : ""), _p.type, Date.now())); } catch (e) {}
                 const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
                 try {
                   await cache.put(cacheKey, new Response(_frBody, { headers: {
@@ -10350,5 +10514,10 @@ export {
   sydSlices,
   sydStatus,
   AUTHORITY_HANDLERS as _authorityHandlers,
+  acDisplayRegistration,
+  acMemAddObservation,
+  acMemUsualType,
+  acFeedIndexRows,
+  acFeedPick,
   _authorityRosterHas
 };
