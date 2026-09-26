@@ -277,11 +277,23 @@ test('reduced motion stills the weather layers, and outranks them', () => {
   assert.match(BLOCK, /@media \(prefers-reduced-motion: reduce\) \{\n  html body(?::not\(#_\))* \.wxcard-wrap \.wxc-mon-fx\[class\*="wxc-fx-"\]::before, html body(?::not\(#_\))* \.wxcard-wrap \.wxc-mon-fx\[class\*="wxc-fx-"\]::after \{ animation: none !important; \}\n\}/);
 });
 
-test('the boards load the CSS at the new build', () => {
-  assert.match(SRC, /var FIDS_BUILD_TAG = 'v23886';/);
+// This asserted one literal version, so it failed on every deploy that bumped
+// the tag and passed only on the day it was written. The invariant it was
+// reaching for is not "the build is v23886" — it is that the three shells
+// cache-bust at whatever the build tag currently says. Stated that way it
+// holds at every version AND actually catches the bug it was guarding: a
+// stylesheet or a script left on a stale ?v= while the tag moves on, which
+// serves old CSS against new markup.
+test('the boards load the CSS and the script at the current build', () => {
+  const tag = SRC.match(/var FIDS_BUILD_TAG = '(v\d+)';/);
+  assert.ok(tag, 'fids-core.js must declare FIDS_BUILD_TAG');
+  const n = tag[1].slice(1);
   for (const h of ['fids', 'gids', 'bids']) {
     const html = fs.readFileSync(path.join(ROOT, 'fids-current', h + '.html'), 'utf8');
-    assert.match(html, /css\/display-overrides\.css\?v=23886/, h + '.html');
+    assert.match(html, new RegExp('css/display-overrides\\.css\\?v=' + n + '\\b'),
+      h + '.html must load the stylesheet at ' + tag[1]);
+    assert.match(html, new RegExp('js/fids-core\\.js\\?v=' + n + '\\b'),
+      h + '.html must load the script at ' + tag[1]);
   }
 });
 
