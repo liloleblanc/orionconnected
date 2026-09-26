@@ -94,12 +94,15 @@ obvious in the scene.
 
 ## The shelf's three bands (v23893)
 
-The scene is three bands. Along the top, a still deck of soft cloud hung
-from the top edge, baked into the sky plate (v23894; the flipped bank tried
-first read as a flat strip with a hard lower edge on the board). Along the bottom, the still bank, its tops
+The scene is three bands. Along the top, a still band of big lit cumulus
+hung from the top edge, tops cut by the frame, baked into the sky plate
+(v23895; a flipped bank read as a flat strip, and a deck of thin wisps was
+too faint to read as cloud at shelf size — the band has to be obvious). Along the bottom, the still bank, its tops
 under the aeroplane. Between them, the aeroplane's own band: the two fast
-veil layers, one behind the airframe and one in front, filling the band from
-top to bottom, and behind them a slower layer of medium-to-big clouds that
+veil layers, one behind the airframe and one in front — big soft masses,
+0.7–0.95 of the band's height, overlapping, so the band is filled with
+moving cloud rather than crossed by thin wisps — and behind them a slower layer of medium-to-big clouds that
 drifts at about 14 px/s. Nothing in the top or bottom band moves; the
-aeroplane bobs a little more than before and faster (5 s cycle) so it is
-seen to move; it does not need to climb and dive.
+aeroplane floats slowly and smoothly (9 s cycle, about ±10 px); a 5 s bob
+read as jerky. Every layer's phase is written into the shelf's markup at
+build time, so a rebuild never restarts a layer out of step.
