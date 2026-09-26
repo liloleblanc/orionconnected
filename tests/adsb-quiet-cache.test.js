@@ -61,7 +61,7 @@ test('only a clean, genuinely empty FR24 answer counts as quiet', () => {
   // Declared false before the FR24 block, so every path that skips FR24 leaves
   // it false.
   const declAt = worker.indexOf('let _fr24SaidNothing = false;');
-  const gateAt = worker.indexOf('if (env.FR24_KEY && (kind === "callsign" || kind === "reg")');
+  const gateAt = worker.indexOf('if (env.FR24_KEY && (kind === "callsign" || kind === "reg" || kind === "flight")');
   assert.ok(declAt > 0 && gateAt > 0, 'expected both the declaration and the FR24 gate');
   assert.ok(declAt < gateAt, 'the flag must default to false outside the FR24 branch');
 });

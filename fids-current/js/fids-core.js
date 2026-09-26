@@ -25528,7 +25528,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23897';
+var FIDS_BUILD_TAG = 'v23898';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -29043,7 +29043,9 @@ async function _adsbFetchOne(path) {
         return sa - sb;
       })[0];
     }
-    _adsbCache[key] = { at: Date.now(), ac: ac };
+    // _quiet: FR24 answered cleanly and nothing is transmitting under that
+    // subject — see _adsbTelemetry, which stops asking other names for it.
+    _adsbCache[key] = { at: Date.now(), ac: ac, quiet: !ac && !!(j && j._quiet) };
     return ac;
   } catch (e) {
     if (timer) clearTimeout(timer);
@@ -29092,8 +29094,20 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
   // {0,2} not {0,1}: real callsigns carry two trailing letters (DLH3CF,
   // SXS2VN were both live over FRA during verification and both were skipped).
   var _cs = String(callSign || '').trim().toUpperCase().replace(/\s+/g, '');
-  if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_cs)) tries.push('/callsign/' + encodeURIComponent(_cs));
   var _fn = String(flightNo || '').trim().toUpperCase().replace(/\s+/g, '');
+  // v23898 — THE FLIGHT NUMBER BEFORE ANY CALLSIGN. A callsign is the radio
+  // name and regional flying doesn't use the ticket number's prefix: AC7754
+  // flies as PVL7754 (PAL), AC2046 as ROU2046 (Rouge), and 'AC' -> 'ACA'
+  // below asked for flights that don't exist. Flightradar24 matches the
+  // number as sold (/adsb/flight/), whoever operates it.
+  var _iataFn = '';
+  if (/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d{1,4}[A-Z]?$/.test(_fn)) _iataFn = _fn;
+  else {
+    var _fm = _fn.match(/^([A-Z]{3})(\d{1,4}[A-Z]?)$/);
+    try { if (_fm && CALLSIGN_TO_IATA[_fm[1]]) _iataFn = CALLSIGN_TO_IATA[_fm[1]] + _fm[2]; } catch (e) {}
+  }
+  if (_iataFn) tries.push('/flight/' + encodeURIComponent(_iataFn));
+  if (/^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_cs)) tries.push('/callsign/' + encodeURIComponent(_cs));
   if (_fn && _fn !== _cs && /^[A-Z]{3}\d{1,4}[A-Z]{0,2}$/.test(_fn)) tries.push('/callsign/' + encodeURIComponent(_fn));
   // Then the converted forms ('WS812' → 'WJA812') — this is what makes a gate
   // whose inbound is only known by its IATA number resolvable at all.
@@ -29110,9 +29124,16 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
   if (/^[A-Z0-9-]{4,10}$/.test(_r)) tries.push('/reg/' + encodeURIComponent(_r));
   // Our flight's digits, for the tail guard ('JZA7992' still matches 'AC7992').
   var _ourDigits = (_fn || _cs).replace(/^\D+/, '').replace(/\D+$/, '');
+  var _numberQuiet = false;
   for (var i = 0; i < tries.length; i++) {
+    // FR24 already said nothing is flying under our number: a guessed
+    // callsign for the same flight can only cost another empty call.
+    if (_numberQuiet && /^\/callsign\//.test(tries[i])) continue;
     var ac = await _adsbFetchOne(tries[i]);
-    if (!ac) continue;
+    if (!ac) {
+      if (/^\/flight\//.test(tries[i]) && (_adsbCache[tries[i]] || {}).quiet) _numberQuiet = true;
+      continue;
+    }
     // A fix older than 15 minutes is not a position (seen_pos is in seconds).
     if (typeof ac.seen_pos === 'number' && ac.seen_pos > 900) continue;
     // THE TAIL IS NOT THE FLIGHT (v23103's guard, now where the lookups
@@ -29120,7 +29141,7 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
     // hex/reg answer must be squawking OUR flight number, or carry no callsign
     // at all (the community ring often omits it; the resolver's reachability
     // gate still catches those).
-    if (!/^\/callsign\//.test(tries[i])) {
+    if (!/^\/(callsign|flight)\//.test(tries[i])) {
       var _acDigits = String(ac.flight || '').trim().toUpperCase().replace(/^\D+/, '').replace(/\D+$/, '');
       if (_acDigits && _ourDigits && _acDigits !== _ourDigits) {
         try { console.log('[ADSB]', _fn || _cs, tries[i], 'is flying', String(ac.flight).trim(), '— not this leg; fix ignored'); } catch (e) {}
