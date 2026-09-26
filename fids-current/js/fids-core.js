@@ -25511,7 +25511,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23887';
+var FIDS_BUILD_TAG = 'v23888';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44691,6 +44691,24 @@ function _renderHeritageCard(el) {
       +     '<img class="hcard-plane" src="' + esc(acSrc) + '" alt=""'
       +       ' onerror="this.closest(\'.hcard-wrap\').classList.add(\'hcard-noplane\');this.remove();">'
       +     '<i class="hcard-sky-fg"></i>'
+      // THE RENDERED FLY-THROUGH, when this carrier has one.
+      //
+      // The five CSS layers put cloud in five fixed bands and the aeroplane in
+      // exactly one gap between them. What they cannot do, at any settings, is
+      // put cloud at an ARBITRARY depth relative to the aircraft — so cloud
+      // never passes across the fuselage the way it does in real footage, and
+      // distance can only be suggested by opacity rather than by haze and
+      // focus. The clip is a depth render: every cloud is a billboard at its
+      // own depth with a camera tracking past, so parallax, scale, draw order
+      // and atmospheric haze all fall out of the projection.
+      //
+      // It is opaque and contains the aeroplane, so it covers the layers
+      // entirely. They stay in the markup deliberately: onerror removes the
+      // video, and a carrier whose clip is missing or whose board cannot
+      // decode it falls straight back to the layered scene with no gap.
+      +     '<video class="hcard-skyvid" autoplay muted loop playsinline preload="auto"'
+      +       ' src="' + esc('/textures/heritage-sky-' + mark.key + '.mp4?v=23888') + '"'
+      +       ' onerror="this.remove();"></video>'
       +   '</div>'
       +   '<div class="hcard-kicker">' + kicker + '</div>'
       +   '<div class="hcard-plate">'
