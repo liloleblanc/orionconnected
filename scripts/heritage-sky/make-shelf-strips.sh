@@ -61,3 +61,20 @@ FRONT="$E/wisp_r.png,0.05,0.50,0.95,0,0.88;$E/smoke_01.png,0.17,0.62,0.78,1,0.86
 "$C" --out "$O/gate-clouds-veil-front-v6.png" --outW 2400 --outH 290 --featherTop 0.10 --featherBot 0.10 --whiten 0.32 --place "$FRONT"
 BACK="$E/smoke_05.png,0.04,0.52,0.82,0,0.90;$E/wisp_l.png,0.13,0.44,0.86,1,0.86;$E/smoke_01.png,0.22,0.60,0.74,0,0.90;$E/wisp_r.png,0.31,0.50,0.90,0,0.86;$E/smoke_03.png,0.40,0.42,0.72,1,0.88;$E/smoke_04.png,0.49,0.58,0.76,0,0.90;$E/smoke_02.png,0.58,0.46,0.74,1,0.88;$E/wisp_l.png,0.67,0.56,0.86,0,0.86;$E/smoke_05.png,0.76,0.48,0.82,1,0.90;$E/wisp_r.png,0.85,0.60,0.90,1,0.86;$E/smoke_01.png,0.93,0.44,0.74,0,0.90;$E/smoke_03.png,1.01,0.54,0.72,1,0.88"
 "$C" --out "$O/gate-clouds-veil-back-v6.png" --outW 2700 --outH 290 --featherTop 0.10 --featherBot 0.10 --whiten 0.30 --place "$BACK"
+
+# ── v23896: THE TOP AND BOTTOM ARE THE LICENSED BORDER SHEET, WHOLE. The smoke-cloud sheet is
+# a border layout — cloud along its top and its bottom, clear in the middle — and that is the
+# still background: its two borders sit at the top and bottom of the plate, scaled uniformly so
+# the shelf's window (up to ~440px wide) sees one copy, alpha lifted (the smoke is translucent)
+# and the crop edges faded. The bank layer is off; the fast veils are light and span the band.
+# (smokeborder_01.png is the recovered sheet: unchecker -> blurpng 7 0.03 -> alpharemap 0.14 1.1 -> blurpng 3 0.02)
+"$HERE/bin/cropscale" "$E/smokeborder_01.png" "$O/border-top.png" 0 0 1920 235 440
+"$HERE/bin/cropscale" "$E/smokeborder_01.png" "$O/border-bot.png" 0 555 1920 255 440
+"$HERE/bin/alpharemap" "$O/border-top.png" "$O/border-top.png" 0 0.55; "$HERE/bin/vfade"   "$O/border-top.png" "$O/border-top.png" 38 54
+"$HERE/bin/alpharemap" "$O/border-bot.png" "$O/border-bot.png" 0 0.55; "$HERE/bin/vfadein" "$O/border-bot.png" "$O/border-bot.png" 0 18
+#   plate gate-sky-back-v7.jpg 1600 225 sky-1600x225.jpg "border-top.png,0,0,1" "border-top.png,440,0,1" "border-top.png,880,0,1" "border-top.png,1320,0,1" "border-bot.png,0,167,1" "border-bot.png,440,167,1" "border-bot.png,880,167,1" "border-bot.png,1320,167,1"
+# Veils v7: light (not heavier), spanning the band's height; strips 230 tall display at 115 (55..170).
+FRONT="$E/wisp_r.png,0.05,0.50,0.95,0,0.72;$E/smoke_01.png,0.17,0.66,0.72,1,0.70;$E/wisp_l.png,0.29,0.42,0.92,0,0.70;$E/smoke_05.png,0.41,0.60,0.74,1,0.72;$E/smoke_03.png,0.52,0.36,0.70,0,0.70;$E/wisp_r.png,0.64,0.58,0.95,1,0.70;$E/smoke_04.png,0.76,0.44,0.74,0,0.72;$E/smoke_02.png,0.87,0.64,0.72,1,0.70;$E/wisp_l.png,0.98,0.50,0.90,0,0.70"
+"$C" --out "$O/gate-clouds-veil-front-v7.png" --outW 2400 --outH 230 --featherTop 0.10 --featherBot 0.10 --whiten 0.36 --place "$FRONT"
+BACK="$E/smoke_05.png,0.04,0.54,0.80,0,0.74;$E/wisp_l.png,0.13,0.40,0.86,1,0.70;$E/smoke_01.png,0.22,0.64,0.70,0,0.74;$E/wisp_r.png,0.31,0.50,0.90,0,0.70;$E/smoke_03.png,0.40,0.36,0.68,1,0.72;$E/smoke_04.png,0.49,0.62,0.72,0,0.74;$E/smoke_02.png,0.58,0.44,0.70,1,0.72;$E/wisp_l.png,0.67,0.58,0.86,0,0.70;$E/smoke_05.png,0.76,0.46,0.80,1,0.74;$E/wisp_r.png,0.85,0.64,0.90,1,0.70;$E/smoke_01.png,0.93,0.40,0.70,0,0.74;$E/smoke_03.png,1.01,0.56,0.68,1,0.72"
+"$C" --out "$O/gate-clouds-veil-back-v7.png" --outW 2700 --outH 230 --featherTop 0.10 --featherBot 0.10 --whiten 0.34 --place "$BACK"

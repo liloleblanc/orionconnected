@@ -26,6 +26,7 @@ tools; `render-clips.sh` reproduces the two archive-card clips byte-for-purpose;
 | `vfade` | fades alpha to zero across a row range so a crop never ends in a line |
 | `vfadein` | fades alpha in from zero across a row range so a layer never starts as a line |
 | `plate` | draws alpha layers onto a JPG background at fixed positions (the still sky plate) |
+| `cropscale` | crops a region and scales it to a width, alpha kept (sips silently centres a zero offset and refuses a crop that reaches the edge) |
 
 ## The structure is measured, not tuned
 
@@ -94,14 +95,16 @@ obvious in the scene.
 
 ## The shelf's three bands (v23893)
 
-The scene is three bands. Along the top, a still band of big lit cumulus
-hung from the top edge, tops cut by the frame, baked into the sky plate
-(v23895; a flipped bank read as a flat strip, and a deck of thin wisps was
-too faint to read as cloud at shelf size — the band has to be obvious). Along the bottom, the still bank, its tops
+The scene is three bands. The top and bottom bands are the licensed
+smoke-cloud sheet used as designed: it is a border layout, cloud along its
+top and along its bottom with the middle clear, and both borders sit still
+in the sky plate (v23896). Earlier tries — a flipped bank, a deck of thin
+wisps, a row of cumulus — were substitutes for the artwork that had been
+supplied for exactly this. Along the bottom, the still bank, its tops
 under the aeroplane. Between them, the aeroplane's own band: the two fast
-veil layers, one behind the airframe and one in front — big soft masses,
-0.7–0.95 of the band's height, overlapping, so the band is filled with
-moving cloud rather than crossed by thin wisps — and behind them a slower layer of medium-to-big clouds that
+veil layers, one behind the airframe and one in front — light, translucent,
+spanning the band's full height so the aeroplane flies inside them; filling
+the band means height, not weight — and behind them a slower layer of medium-to-big clouds that
 drifts at about 14 px/s. Nothing in the top or bottom band moves; the
 aeroplane floats slowly and smoothly (9 s cycle, about ±10 px); a 5 s bob
 read as jerky. Every layer's phase is written into the shelf's markup at
