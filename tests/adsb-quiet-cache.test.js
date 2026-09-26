@@ -88,15 +88,6 @@ test('the response header matches the TTL actually cached', () => {
   assert.equal(served[1], '_negTtl', 'the response header is not using the conditional TTL');
 });
 
-test('an empty answer from the ring is also held longer', () => {
-  // Secondary path — the ring returns on ANY ok response, including one with
-  // zero aircraft, and that used to be cached at the live-position TTL.
-  assert.match(worker, /const _ttl = _empty \? ADSB_EMPTY_TTL : ADSB_TTL;/,
-    'an ok-but-empty ring answer should use the empty TTL');
-  assert.match(worker, /catch \(e\) \{ _empty = false; \}/,
-    'an unparseable body must not be treated as empty');
-});
-
 test('the saving is real, at the measured rates', () => {
   const empty = constant('ADSB_EMPTY_TTL');
   const before = 30;

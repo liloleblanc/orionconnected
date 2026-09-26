@@ -110,9 +110,19 @@ test('a purchase is never made without asking — no refill path stays reachable
 
 // ── airplanes.live ────────────────────────────────────────────────────────
 
-test('airplanes.live stays out of the provider ring without a key', () => {
-  assert.match(WORKER, /\.filter\(\(p\) => p !== "airplanes\.live" \|\| !!env\.ADSB_KEY\)/,
-    'airplanes.live refused us access — it must not be called anonymously');
+test('the community position feeds are not called at all', () => {
+  // airplanes.live, adsb.fi and adsb.lol refused us, and refuse any request
+  // from a Cloudflare Worker. None of their API hosts may appear in the worker.
+  for (const host of ['api.airplanes.live', 'opendata.adsb.fi', 'api.adsb.lol']) {
+    assert.ok(!WORKER.includes(host), `${host} is still called from the worker`);
+  }
+});
+
+test('the aircraft lookup has no direct AeroDataBox call', () => {
+  // AeroDataBox is cancelled; every call to it must go through adbFetch, which
+  // blocks it. A bare fetch to its host bypasses the block.
+  assert.doesNotMatch(WORKER, /fetch\(\s*`https:\/\/aerodatabox\.p\.rapidapi\.com/,
+    'a bare fetch to AeroDataBox bypasses the disconnect');
 });
 
 test('no comment describes the airplanes.live refusal as pending or outstanding', () => {

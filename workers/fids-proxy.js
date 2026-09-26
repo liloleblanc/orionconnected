@@ -8970,26 +8970,15 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // "everyone is rate-limiting us" with "this aeroplane is parked" would
       // turn a transient outage into a five-minute one.
       const ADSB_EMPTY_TTL = 300;
-      const PROVIDERS = {
-        "airplanes.live": "https://api.airplanes.live/v2",
-        "adsb.fi":        "https://opendata.adsb.fi/api/v2",
-        "adsb.lol":       "https://api.adsb.lol/v2"
-      };
-      const provider = (env.ADSB_PROVIDER || "airplanes.live").trim();
-      const base = PROVIDERS[provider];
-      if (!base) {
-        return jsonResponse({ error: "Unknown ADSB_PROVIDER", provider, allowed: Object.keys(PROVIDERS) }, 500, origin);
-      }
       const m = path.match(/^\/adsb\/(hex|reg|callsign)\/([A-Za-z0-9-]{1,12})$/);
       if (!m) {
         return jsonResponse({ error: "Use /adsb/hex/:icao24, /adsb/reg/:tail or /adsb/callsign/:cs" }, 400, origin);
       }
       const kind = m[1];
       const subject = m[2].toUpperCase();
-      const upstream = `${base}/${kind}/${encodeURIComponent(subject)}`;
 
       // Shared edge cache — this is the bit that makes audience size irrelevant.
-      const cacheKey = new Request(`https://adsb-cache/${provider}/${kind}/${subject}`);
+      const cacheKey = new Request(`https://adsb-cache/fr24/${kind}/${subject}`);
       const cache = caches.default;
       try {
         const hit = await cache.match(cacheKey);
@@ -9001,91 +8990,13 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         }
       } catch (e) {}
 
-      // v23222 — PROVIDER FAILOVER
-      // airplanes.live has 403'd unregistered callers since
-      // 2026-08-15; with a single fixed provider every board silently fell
-      // back to stale clock-estimated positions — wrong spots, wrong headings
-      // ('the planes go backwards'). The configured provider is tried first,
-      // then the other allowed feeds in the ring; the first healthy answer
-      // wins and is cached. A dead upstream costs one extra hop, never the
-      // whole feature. All three feeds speak the same readsb /v2 shape.
-      // v23255 — AERODATABOX WAS the position source. IT IS NOW DISCONNECTED
-      // (2026-09-10, unapproved and too expensive — see the kill switch at the
-      // top of this file). Kept only as the record of how we got here.
-      // An older note here was MISREAD by every session since as meaning the
-      // airplanes.live registration was still outstanding. It is not: access was
-      // requested and refused. Closed question.
-      // ADB's flight lookups carry a live `location` block
-      // (lat/lon, pressureAltitude.feet, groundSpeed.kt, trueTrack.deg,
-      // vsiFpm, reportedAtUtc) on EnRoute legs, fetched with the SAME paid
-      // key the schedule data already uses — our own quota, nobody else's
-      // rate limit. The answer is reshaped to the readsb `{ac:[...]}` form
-      // the boards already parse, so nothing client-side changes. The
-      // community ring below stays as the fallback (and takes over entirely
-      // with ADSB_SOURCE="community" or when ADB_KEY is absent).
-      const _ADB_KINDS = { hex: "icao24", reg: "reg", callsign: "callsign" };
-      const _adbFirst = ((env.ADSB_SOURCE || "adb").trim() !== "community") && !!env.ADB_KEY;
-      if (_adbFirst && _ADB_KINDS[kind]) {
-        try {
-          const _adbR = await fetch(
-            `https://aerodatabox.p.rapidapi.com/flights/${_ADB_KINDS[kind]}/${encodeURIComponent(subject)}?withLocation=true&withAircraftImage=false`,
-            { headers: { "X-RapidAPI-Key": env.ADB_KEY, "X-RapidAPI-Host": "aerodatabox.p.rapidapi.com" } }
-          );
-          if (_adbR.ok) {
-            const _adbJ = await _adbR.json().catch(() => null);
-            const _legs = Array.isArray(_adbJ) ? _adbJ : (_adbJ ? [_adbJ] : []);
-            // The live leg: has a location fix, freshest report wins, and an
-            // EnRoute leg beats a stale fix left on an Arrived one.
-            const _withLoc = _legs.filter((f) => f && f.location && typeof f.location.lat === "number" && typeof f.location.lon === "number");
-            const _pool = _withLoc.filter((f) => f.status === "EnRoute").length ? _withLoc.filter((f) => f.status === "EnRoute") : _withLoc;
-            let _best = null, _bestAt = -1;
-            for (const f of _pool) {
-              const _at = Date.parse(String(f.location.reportedAtUtc || "").replace(" ", "T") + (String(f.location.reportedAtUtc || "").endsWith("Z") ? "" : ":00Z")) || 0;
-              if (_at > _bestAt) { _bestAt = _at; _best = f; }
-            }
-            // A fix older than 30 min is a museum piece, not a position.
-            const _ageS = _bestAt > 0 ? Math.max(0, Math.round((Date.now() - _bestAt) / 1000)) : null;
-            if (_best && (_ageS === null || _ageS < 1800)) {
-              const L = _best.location, A = _best.aircraft || {};
-              const _altFt = (L.pressureAltitude && typeof L.pressureAltitude.feet === "number" && L.pressureAltitude.feet > 0)
-                ? Math.round(L.pressureAltitude.feet)
-                : ((L.altitude && typeof L.altitude.feet === "number" && L.altitude.feet > 0) ? Math.round(L.altitude.feet) : null);
-              const _ac = {
-                hex: String(A.modeS || "").toLowerCase() || void 0,
-                flight: _best.callSign || void 0,
-                r: A.reg || void 0,
-                t: A.model || void 0,
-                desc: A.model || void 0,
-                lat: L.lat, lon: L.lon,
-                alt_baro: _altFt !== null ? _altFt : void 0,
-                gs: (L.groundSpeed && typeof L.groundSpeed.kt === "number") ? Math.round(L.groundSpeed.kt) : void 0,
-                track: (L.trueTrack && typeof L.trueTrack.deg === "number") ? L.trueTrack.deg : void 0,
-                baro_rate: (typeof L.vsiFpm === "number") ? L.vsiFpm : void 0,
-                seen_pos: _ageS !== null ? _ageS : void 0
-              };
-              const _adbBody = JSON.stringify({ ac: [_ac], _provider: "aerodatabox" });
-              try {
-                await cache.put(cacheKey, new Response(_adbBody, { headers: {
-                  "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
-              } catch (e) {}
-              return new Response(_adbBody, { status: 200, headers: {
-                "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
-                "X-Adsb-Cache": "miss", "X-Adsb-Provider": "aerodatabox", ...corsHeaders(origin) } });
-            }
-            // ADB answered but knows no live fix. v23255 treated a hex/reg
-            // miss as authoritative and neg-cached it without consulting the
-            // community ring. v23262 withdraws that: the observed AC2081 (LHR→YHZ,
-            // reg C-FSIL confirmed on the very panel that had no altimeter)
-            // was airborne over Nova Scotia — squarely inside community
-            // coverage — while ADB carried no location block for the leg at
-            // all, so "authoritative" empty really meant "ADB can't see this
-            // one". EVERY kind now falls through to the ring; the all-failed
-            // tail below still neg-caches when the ring strikes out too, so
-            // a genuinely untracked airframe costs the same as before.
-          }
-          // Non-OK from ADB (quota, 5xx) → fall through to the community ring.
-        } catch (e) { /* network error → community ring */ }
-      }
+      // THE COMMUNITY FEEDS AND AERODATABOX ARE GONE FROM THIS LOOKUP.
+      // airplanes.live, adsb.fi and adsb.lol refuse requests from a Cloudflare
+      // Worker (403/429 on every call) and have told us not to use them;
+      // AeroDataBox is cancelled (RapidAPI, disconnected 2026-09-10) and this
+      // route still held a direct call to it. Flightradar24 is the only source.
+      // When it cannot answer, the lookup answers empty and the board keeps
+      // the feed's own data. Do not add a free community feed back here.
       // ── FR24, ON A DAILY ALLOWANCE (2026-09-05) ─────────────────────
       // the $9 Explorer tier was bought to test FR24 as the position
       // source (the community ring is unapproved, anonymous, and
@@ -9196,87 +9107,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           }
         } catch (e) { /* FR24 trouble → community ring */ }
       }
-      // v23254 — SPREAD THE LOAD ACROSS THE RING. Every request used to try
-      // the configured provider first, so one feed absorbed our entire
-      // volume (and rate-limited us), then the cascade moved the SAME full
-      // volume onto the next feed. Rotating the starting provider by a hash
-      // of the subject splits traffic three ways — each feed sees a third —
-      // while any one aircraft still resolves from a consistent feed (which
-      // also keeps its answers steady between polls). Failover order after
-      // the start is unchanged.
-      // v23264 — AIRPLANES.LIVE IS INVITATION-ONLY NOW. On 2026-08-25 they
-      // mailed all API users: the free API is down for good ("commercial and
-      // corporate abuse, compounded by bot abuse", hosting egress blown in 4
-      // days, 2B requests/week). Access is now feeder-IP or paid sponsorship.
-      // Calling it anonymously is a guaranteed 403 that costs us a round-trip
-      // of latency on every miss AND adds to the exact load they asked people
-      // to stop generating.
-      //
-      // ╔═════════════════════════════════════════════════════════════════════╗
-      // ║ AIRPLANES.LIVE IS CLOSED TO US. DO NOT PROPOSE REGISTERING FOR IT.  ║
-      // ╚═════════════════════════════════════════════════════════════════════╝
-      // Access was requested directly and declined. This is a SETTLED, CLOSED
-      // question — not an open task, not "pending", not something a future
-      // session should rediscover and suggest because it is free. It has been
-      // re-proposed repeatedly; do not add to that.
-      //
-      // Earlier comments in this file described the registration as "pending"
-      // and as an email never sent, which reads as not-yet-done and is why
-      // it kept being re-proposed. It is done: the answer was no. Those
-      // comments have been corrected. ADSB_KEY exists only so that a sponsored
-      // or feeder-IP arrangement COULD be honoured if one ever appears — it is
-      // not a to-do. Leave the filter below exactly as it is: with no key the
-      // provider stays out of the ring, which is the correct permanent state.
-      const _provNames = Object.keys(PROVIDERS)
-        .filter((p) => p !== "airplanes.live" || !!env.ADSB_KEY);
-      let _h = 0;
-      for (let i = 0; i < subject.length; i++) _h = (_h * 31 + subject.charCodeAt(i)) >>> 0;
-      const _start = _h % _provNames.length;
-      const _rotated = _provNames.slice(_start).concat(_provNames.slice(0, _start));
-      // A pinned ADSB_PROVIDER (explicit env choice) still leads its ring —
-      // but v23264's keyless-airplanes.live exclusion outranks the pin, or a
-      // stale ADSB_PROVIDER="airplanes.live" would reinstate the guaranteed
-      // 403 the filter above exists to prevent.
-      // THE FREE COMMUNITY FEEDS ARE OUT. adsb.lol and adsb.fi refuse
-      // requests from a Cloudflare Worker — 403 or 429 on every call, while
-      // the same query from a home connection answers 200 — so from here
-      // they have never returned an aircraft, only added a failed round-trip
-      // to every lookup and made "no data" look like "the ring tried".
-      // Flightradar24 above is the source. ADSB_RING="1" puts the ring back
-      // if a feeder-IP or sponsored arrangement ever makes it reachable.
-      const ring = env.ADSB_RING !== "1" ? [] : (env.ADSB_PROVIDER && _provNames.includes(provider))
-        ? [provider].concat(_provNames.filter((p) => p !== provider))
-        : _rotated;
-      let lastStatus = 0;
-      for (const prov of ring) {
-        try {
-          const headers = { "Accept": "application/json", "User-Agent": "OrionConnected-FIDS/1.0 (airport flight information displays)" };
-          // Only set for the provider the key belongs to. Absent = anonymous,
-          // which is how the free community feeds normally work.
-          if (env.ADSB_KEY && prov === "airplanes.live") headers["auth"] = env.ADSB_KEY;
-          const r = await fetch(`${PROVIDERS[prov]}/${kind}/${encodeURIComponent(subject)}`, { headers });
-          if (!r.ok) { lastStatus = r.status; continue; }
-          const payload = await r.text();
-          // An answer with no aircraft in it is remembered for longer — see
-          // ADSB_EMPTY_TTL. Parsed defensively: an unreadable body is treated
-          // as a normal answer and keeps the short TTL, because guessing
-          // "empty" from a parse failure would suppress a real position.
-          let _empty = false;
-          try {
-            const _j = JSON.parse(payload);
-            _empty = !!(_j && Array.isArray(_j.ac) && _j.ac.length === 0);
-          } catch (e) { _empty = false; }
-          const _ttl = _empty ? ADSB_EMPTY_TTL : ADSB_TTL;
-          try {
-            await cache.put(cacheKey, new Response(payload, { headers: {
-              "Content-Type": "application/json", "Cache-Control": `public, max-age=${_ttl}` } }));
-          } catch (e) {}
-          return new Response(payload, { status: 200, headers: {
-            "Content-Type": "application/json", "Cache-Control": `public, max-age=${_ttl}`,
-            "X-Adsb-Cache": _empty ? "empty" : "miss", "X-Adsb-Provider": prov, ...corsHeaders(origin) } });
-        } catch (e) { /* network error → try the next feed */ }
-      }
-      // Every feed failed — shaped like a success with no aircraft so the
+      // No answer — shaped like a success with no aircraft so the
       // board's existing "no fix" path handles it. v23254: the failure IS
       // cached now, briefly (ADSB_NEG_TTL) — an uncached miss meant every
       // board poll re-hit feeds that were already rate-limiting us, keeping
@@ -9300,7 +9131,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // That is the origin of the 80% empty-response rate in the usage figures.
       const _negTtl = _fr24SaidNothing ? ADSB_EMPTY_TTL : ADSB_NEG_TTL;
       const _negBody = JSON.stringify({
-        ac: [], _upstreamStatus: lastStatus, _provider: ring.length ? ring.join(",") : "fr24-only",
+        ac: [], _provider: "fr24",
         ...(_fr24SaidNothing ? { _quiet: true } : {})
       });
       try {
