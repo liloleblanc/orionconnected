@@ -28,6 +28,7 @@ tools; `render-clips.sh` reproduces the two archive-card clips byte-for-purpose;
 | `vfadein` | fades alpha in from zero across a row range so a layer never starts as a line |
 | `plate` | draws alpha layers onto a JPG background at fixed positions (the still sky plate) |
 | `cropscale` | crops a region and scales it to a width, alpha kept (sips silently centres a zero offset and refuses a crop that reaches the edge) |
+| `cleanplate` | removes an aircraft from a sky clip: mask traced from the clip itself, bob tracked on the aircraft's own pixels, hole filled from the surrounding sky |
 
 ## The structure is measured, not tuned
 
@@ -122,3 +123,22 @@ checker, brightness is the matte: blur the source about 9 px first, so the
 clean to zero in the open sky. Cut the bands, fade their inner edges, and
 cross-fade them into tiles (`tileify`) so the plate never shows a seam.
 Judge the result on the stack composite at shelf scale, never on the sheet.
+
+## The sky is the reference clip, aircraft removed (v23899)
+
+The shelf no longer imitates the reference; it plays it. `cleanplate` takes the
+reference fly-through and removes its aircraft using only the clip: the
+aircraft is whatever is not sky in one reference frame, connected to a seed on
+the fuselage; its own pixels are the template for tracking its bob; and across
+every tenth frame aligned on that bob (38 for this clip), anything non-sky in
+at least 80% of them is aircraft, while clouds, which move, drop out of the
+mask. The hole is dilated, feathered and
+filled from the sky around it. The clip was shot for a nose-right aircraft, so
+the board mirrors it for the default nose-left one, and scales it 1.2x from
+the top so the filled band sits behind the gate aircraft's fuselage.
+
+Three layers of the supplied clouds pass over it, over the full height, never
+one line across the aeroplane: big and slow far back (60 s), mixed sizes
+behind (12 s), small in front (6 s). Recipes are in `make-shelf-strips.sh`.
+`cropscale` crops from the top-left, as CGImage does; an earlier copy flipped
+the offset and cut the wrong band whenever the offset was not zero.

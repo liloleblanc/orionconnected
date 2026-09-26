@@ -89,3 +89,26 @@ BACK="$E/smoke_05.png,0.04,0.54,0.80,0,0.74;$E/wisp_l.png,0.13,0.40,0.86,1,0.70;
 "$HERE/bin/cropscale" "$E/smokeborder_02.png" "$O/bb.png" 0 540 1920 270 480; "$HERE/bin/vfadein" "$O/bb.png" "$O/bb.png" 0 18
 "$HERE/bin/tileify" "$O/bt.png" "$O/bt-tile.png" 60; "$HERE/bin/tileify" "$O/bb.png" "$O/bb-tile.png" 60
 #   plate gate-sky-back-v8.jpg 1600 225 sky-1600x225.jpg "bt-tile.png,0,0,1" "bt-tile.png,420,0,1" "bt-tile.png,840,0,1" "bt-tile.png,1260,0,1" "bb-tile.png,0,158,1" "bb-tile.png,420,158,1" "bb-tile.png,840,158,1" "bb-tile.png,1260,158,1"
+
+# ── v23899: THE SKY IS THE REFERENCE CLIP ITSELF, WITH ITS AIRCRAFT REMOVED.
+# The reference fly-through (an A320 in cloud, 1920x1080) is not in the repository. cleanplate traces the
+# aircraft in the frame at 9.5 s from a seed on its fuselage (1000,640) inside the box 330-1600 x 330-790,
+# tracks its bob on its own pixels, keeps as mask only what stays non-sky across aligned frames (clouds move,
+# so they drop out), fills the hole from the surrounding sky, and centre-crops to 1140x675.
+#   "$HERE/bin/cleanplate" A320.mp4 "$O/gate-sky-shelf.mp4" 1140 675 9.5 1000 640 330 330 1600 790
+# The poster and the plate (gate-sky-model.jpg) are the clip's first frame, so nothing changes when it starts:
+#   "$HERE/bin/grabframes" "$O/gate-sky-shelf.mp4" frames 0 ; sips -s format jpeg -s formatOptions 90 frames/frame_00.00.png --out "$O/gate-sky-model.jpg"
+# Three layers of the supplied soft clouds pass over it, unprocessed apart from whitening; alpharemap then
+# drops the faint floor so no strip reads as a box. Far: big clouds, spaced, a little haze, slow.
+MID="$E/p07_01.png,0.08,0.66,0.44,0,0.95;$E/p10_01.png,0.30,0.34,0.36,1,0.92;$E/p01_01.png,0.52,0.70,0.40,0,0.95;$E/p07_01.png,0.74,0.30,0.42,1,0.92;$E/p10_01.png,0.94,0.60,0.38,0,0.95"
+"$C" --out "$O/midbig.png" --outW 3000 --outH 450 --haze 0.16 --whiten 0.7 --place "$MID"
+"$HERE/bin/alpharemap" "$O/midbig.png" "$O/gate-clouds-midfar-model.png" 0 0.8
+# Back: mixed sizes over the full height.
+BACK="$E/p10_01.png,0.03,0.40,0.20,1,0.90;$E/p01_01.png,0.17,0.70,0.12,0,0.88;$E/p07_01.png,0.31,0.30,0.26,0,0.90;$E/p01_01.png,0.46,0.66,0.18,1,0.88;$E/p10_01.png,0.60,0.46,0.14,0,0.90;$E/p07_01.png,0.75,0.78,0.22,1,0.88;$E/p10_01.png,0.89,0.24,0.16,0,0.90"
+"$C" --out "$O/back-full.png" --outW 2700 --outH 450 --whiten 0.85 --place "$BACK"
+"$HERE/bin/alpharemap" "$O/back-full.png" "$O/gate-clouds-back-model2.png" 0 0.8
+# Front: the same mix plus the small ones, whitened fully so none reads grey over a livery.
+FRONT="$E/p07_01.png,0.06,0.74,0.40,0,0.95;$E/p10_01.png,0.21,0.28,0.17,1,0.92;$E/p01_01.png,0.36,0.52,0.30,0,0.95;$E/p10_01.png,0.51,0.84,0.12,0,0.92;$E/p07_01.png,0.65,0.22,0.36,1,0.95;$E/p10_01.png,0.81,0.62,0.22,0,0.92;$E/p01_01.png,0.94,0.36,0.15,1,0.92;$E/p01_01.png,0.13,0.52,0.10,0,0.9;$E/p07_01.png,0.29,0.66,0.12,1,0.9;$E/p10_01.png,0.44,0.36,0.09,0,0.9;$E/p01_01.png,0.58,0.46,0.11,1,0.9;$E/p07_01.png,0.73,0.78,0.10,0,0.9;$E/p10_01.png,0.88,0.44,0.09,1,0.9"
+"$C" --out "$O/front-full.png" --outW 2400 --outH 450 --whiten 1.0 --place "$FRONT"
+"$HERE/bin/alpharemap" "$O/front-full.png" "$O/gate-clouds-front-model2.png" 0 0.7
+rm -f "$O/midbig.png" "$O/back-full.png" "$O/front-full.png"
