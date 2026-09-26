@@ -37,3 +37,14 @@ BACK="$E/smoke_05.png,0.04,0.40,0.30,0,0.88;$E/streak_bot.png,0.12,0.74,0.18,1,0
 # out over rows 48-78 (vfade) so no crop line survives; the plate is the licensed cirrus sky
 # at 1600x225 with the ceiling drawn at y=-14, alpha .84:
 #   plate gate-sky-back-v4.jpg 1600 225 sky-1600x225.jpg "ceiling_01.png,0,-14,0.84"
+
+# ── v23894: the top band is a deck of soft wisps hung from the top edge, not the
+# flipped bank (which read as a flat strip with a hard lower edge on the board);
+# the bank's upper haze fades in over 70 rows so the layer's top is never a line.
+DECK="$E/wisp_r.png,0.06,0.78,1.05,0,0.92;$E/smoke_03.png,0.19,0.84,0.80,1,0.90;$E/wisp_l.png,0.31,0.80,1.00,0,0.90;$E/smoke_01.png,0.44,0.86,0.70,1,0.92;$E/smoke_05.png,0.55,0.82,0.78,0,0.92;$E/wisp_r.png,0.68,0.76,1.05,1,0.90;$E/smoke_04.png,0.81,0.84,0.72,0,0.92;$E/smoke_02.png,0.92,0.80,0.80,1,0.90;$E/wisp_l.png,1.02,0.82,0.95,1,0.90"
+"$C" --out "$O/deck.png" --outW 1600 --outH 110 --featherTop 0 --featherBot 0 --whiten 0.32 --place "$DECK"
+"$HERE/bin/vfade" "$O/deck.png" "$O/deck.png" 62 108
+#   plate gate-sky-back-v5.jpg 1600 225 sky-1600x225.jpg "deck.png,0,-6,0.92"   (sky-1600x225.jpg = the licensed cirrus band)
+"$HERE/bin/alpharemap" "$E/bankband_01.png" "$O/bankband-2.png" 0.22 1.0
+"$HERE/bin/vfadein" "$O/bankband-2.png" "$O/bankband-2.png" 0 70
+"$HERE/bin/tileify" "$O/bankband-2.png" "$O/gate-clouds-bank-v5.png" 240

@@ -24,6 +24,7 @@ tools; `render-clips.sh` reproduces the two archive-card clips byte-for-purpose;
 | `keyblue` | unmixes a white cloud from a vertical sky gradient fitted from the image's own margins |
 | `flipcrop` | flips an alpha PNG both ways, crops rows, tints, resizes to a width (the top band) |
 | `vfade` | fades alpha to zero across a row range so a crop never ends in a line |
+| `vfadein` | fades alpha in from zero across a row range so a layer never starts as a line |
 | `plate` | draws alpha layers onto a JPG background at fixed positions (the still sky plate) |
 
 ## The structure is measured, not tuned
@@ -93,8 +94,9 @@ obvious in the scene.
 
 ## The shelf's three bands (v23893)
 
-The scene is three bands. Along the top, a still layer of cloud seen from
-below, baked into the sky plate. Along the bottom, the still bank, its tops
+The scene is three bands. Along the top, a still deck of soft cloud hung
+from the top edge, baked into the sky plate (v23894; the flipped bank tried
+first read as a flat strip with a hard lower edge on the board). Along the bottom, the still bank, its tops
 under the aeroplane. Between them, the aeroplane's own band: the two fast
 veil layers, one behind the airframe and one in front, filling the band from
 top to bottom, and behind them a slower layer of medium-to-big clouds that
