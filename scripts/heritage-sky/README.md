@@ -17,6 +17,11 @@ tools; `render-clips.sh` reproduces the two archive-card clips byte-for-purpose;
 | `unchecker` | recovers alpha from a preview that has the transparency checkerboard baked in |
 | `grabframes` | pulls PNG frames from a movie at given times (also reads ProRes) |
 | `alphahist` | alpha-channel histogram and corner check for an image |
+| `tileify` | cross-fades an image's right end over its left start so it tiles horizontally |
+| `alpharemap` | lifts an alpha floor out of a recovered sheet (`a' = ((a-floor)/(1-floor))^gamma`) |
+| `ellfeather` | multiplies alpha by an elliptical falloff so a rectangular crop has no straight edge |
+| `blurpng` | gaussian blur with an optional alpha floor (kills a residual checker) |
+| `keyblue` | unmixes a white cloud from a vertical sky gradient fitted from the image's own margins |
 
 ## The structure is measured, not tuned
 
@@ -64,3 +69,21 @@ segmented from the licensed photographic cloud pack, `ai_*` from a licensed
 vector set (its SVG export had the checkerboard drawn in as a
 `<g id="background">`, removed before rasterising). The source packs are not
 in the repository; these cut-outs are what the renders actually consume.
+
+## The shelf's v4 veils (v23892)
+
+The front veils were not selling the motion: too slow, too few, and the
+layer behind the aeroplane too thin to match. v4 rebuilds both veil strips
+from a licensed smoke-cloud sheet and a soft-cloud vector, nine wisps per
+front tile and twelve per back tile, and puts the speed back up: 200 px/s
+in front (1200 px / 6 s), 112 px/s behind (1350 px / 12 s). The bank is a
+licensed cumulus bank cut to a band and cross-faded into a 1680 px tile; the
+sky plate is a band of a licensed cirrus sky and is still.
+
+A dark-checkerboard preview keeps a faint alpha haze after grid
+reconstruction (the cloud is not white and the JPEG blurs the cells), and a
+rectangular crop of it shows as a translucent box on the board. The chain
+that works: `unchecker` → `blurpng 7 0.03` → `alpharemap 0.14 1.1` →
+`blurpng 3 0.02` → crop → `ellfeather 0.55`. Check the strip composite over
+sky before shipping: the boxes are invisible in the element viewer and
+obvious in the scene.
