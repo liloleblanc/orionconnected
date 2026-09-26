@@ -48,3 +48,16 @@ DECK="$E/wisp_r.png,0.06,0.78,1.05,0,0.92;$E/smoke_03.png,0.19,0.84,0.80,1,0.90;
 "$HERE/bin/alpharemap" "$E/bankband_01.png" "$O/bankband-2.png" 0.22 1.0
 "$HERE/bin/vfadein" "$O/bankband-2.png" "$O/bankband-2.png" 0 70
 "$HERE/bin/tileify" "$O/bankband-2.png" "$O/gate-clouds-bank-v5.png" 240
+
+# ── v23895: the bands made obvious and the veils made to fill the band.
+# Top band: big lit cumulus (the medium elements) hung from the top edge, tops cut by the
+# frame, bottoms irregular, faded out over rows 84-118; baked into the plate.
+TOP="$E/p03_01.png,0.06,0.84,1.30,0,0.96;$E/p13_01.png,0.20,0.90,1.15,1,0.95;$E/p01_01.png,0.34,0.86,1.30,0,0.96;$E/p10_01.png,0.49,0.92,1.10,1,0.95;$E/p07_01.png,0.62,0.86,1.25,0,0.96;$E/p03_01.png,0.77,0.90,1.20,1,0.95;$E/p13_01.png,0.91,0.84,1.30,0,0.96;$E/p01_01.png,1.04,0.90,1.15,1,0.95"
+"$C" --out "$O/topband.png" --outW 1600 --outH 120 --featherTop 0 --featherBot 0 --haze 0.08 --whiten 0.06 --place "$TOP"
+"$HERE/bin/vfade" "$O/topband.png" "$O/topband.png" 84 118
+#   plate gate-sky-back-v6.jpg 1600 225 sky-1600x225.jpg "topband.png,0,-10,1.0"
+# Veils: big soft masses, 0.7-0.95 of the band height, overlapping, front and back.
+FRONT="$E/wisp_r.png,0.05,0.50,0.95,0,0.88;$E/smoke_01.png,0.17,0.62,0.78,1,0.86;$E/wisp_l.png,0.29,0.46,0.92,0,0.85;$E/smoke_05.png,0.41,0.58,0.80,1,0.88;$E/smoke_03.png,0.52,0.42,0.76,0,0.86;$E/wisp_r.png,0.64,0.56,0.95,1,0.86;$E/smoke_04.png,0.76,0.48,0.80,0,0.88;$E/smoke_02.png,0.87,0.60,0.78,1,0.86;$E/wisp_l.png,0.98,0.50,0.90,0,0.85"
+"$C" --out "$O/gate-clouds-veil-front-v6.png" --outW 2400 --outH 290 --featherTop 0.10 --featherBot 0.10 --whiten 0.32 --place "$FRONT"
+BACK="$E/smoke_05.png,0.04,0.52,0.82,0,0.90;$E/wisp_l.png,0.13,0.44,0.86,1,0.86;$E/smoke_01.png,0.22,0.60,0.74,0,0.90;$E/wisp_r.png,0.31,0.50,0.90,0,0.86;$E/smoke_03.png,0.40,0.42,0.72,1,0.88;$E/smoke_04.png,0.49,0.58,0.76,0,0.90;$E/smoke_02.png,0.58,0.46,0.74,1,0.88;$E/wisp_l.png,0.67,0.56,0.86,0,0.86;$E/smoke_05.png,0.76,0.48,0.82,1,0.90;$E/wisp_r.png,0.85,0.60,0.90,1,0.86;$E/smoke_01.png,0.93,0.44,0.74,0,0.90;$E/smoke_03.png,1.01,0.54,0.72,1,0.88"
+"$C" --out "$O/gate-clouds-veil-back-v6.png" --outW 2700 --outH 290 --featherTop 0.10 --featherBot 0.10 --whiten 0.30 --place "$BACK"
