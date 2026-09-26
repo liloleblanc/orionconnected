@@ -137,10 +137,22 @@ test('the configured cap is explicit, and inside the permanent credit allowance'
   assert.ok(m, 'the cap must be set explicitly in wrangler, not left to the default');
   const perDay = Number(m[1]);
   // A 31-day month is the one that has to fit, not an average one.
-  const perMonth = perDay * 31;
-  assert.ok(perMonth <= 30000,
-    `${perDay}/day is ${perMonth} credits in a 31-day month, past the permanent ` +
-    '30,000 allowance — it may fit while the promotion lasts and will not in January');
+  // Until the promotion ends the configured cap must fit 60,000 in a 31-day
+  // month; from 2027-01-01 the worker must clamp it to fit 30,000 on its own.
+  assert.ok(perDay * 31 <= 60000,
+    `${perDay}/day is ${perDay * 31} credits in a 31-day month, past the 60,000 promotional allowance`);
+  const SRC2 = fs.readFileSync(path.resolve(__dirname, '..', 'workers', 'fids-proxy.js'), 'utf8');
+  const fm = SRC2.match(/function fr24EffectiveCap\([\s\S]*?\n\}/);
+  assert.ok(fm, 'fr24EffectiveCap must exist to clamp the cap when the promotion ends');
+  const ends = (SRC2.match(/const FR24_PROMO_ENDS = "([0-9-]+)"/) || [])[1];
+  const perm = Number((SRC2.match(/const FR24_PERMANENT_DAILY_CAP = (\d+)/) || [])[1]);
+  const eff = new Function('FR24_PROMO_ENDS', 'FR24_PERMANENT_DAILY_CAP', fm[0] + '; return fr24EffectiveCap;')(ends, perm);
+  assert.equal(eff(perDay, Date.UTC(2026, 11, 31, 12)), perDay, 'the configured cap applies until the promotion ends');
+  const january = eff(perDay, Date.UTC(2027, 0, 1, 1));
+  assert.ok(january * 31 <= 30000,
+    `from January the effective cap is ${january}/day = ${january * 31} in a 31-day month, past the permanent 30,000`);
+  assert.match(SRC2, /const cap = fr24EffectiveCap\(/, 'the sweep must use the effective cap');
+  assert.match(SRC2, /const _cap = fr24EffectiveCap\(/, 'the position lookup must use the effective cap');
   // And not throttled to the point of uselessness: the cap tripping is meant to
   // be the exception, not the daily routine.
   assert.ok(perDay >= 500,

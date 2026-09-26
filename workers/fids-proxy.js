@@ -3320,6 +3320,20 @@ __name(pdxParseFeed, "pdxParseFeed");
 // takeoff it saw. A full DTW day is roughly 25 calls, taken once and cached,
 // against the same FR24_DAILY_BUDGET the ADSB path already spends from.
 // Without FR24_KEY the whole thing is a no-op and the board behaves as before.
+// ── THE PROMOTION ENDS ON ITS OWN ─────────────────────────────────────────
+// The account has 60,000 credits a month until 2026-12-31 (an Early Access
+// promotion on the Explorer tier) and 30,000 from January. The configured cap
+// is sized to the promotion; from 2027-01-01 it is clamped to 950/day (29,450
+// in a 31-day month) automatically, so nothing has to be remembered at year end
+// and the boards never overspend the permanent allowance.
+const FR24_PROMO_ENDS = "2027-01-01";
+const FR24_PERMANENT_DAILY_CAP = 950;
+function fr24EffectiveCap(configured, now) {
+  const day = new Date(now || Date.now()).toISOString().slice(0, 10);
+  return day >= FR24_PROMO_ENDS ? Math.min(configured, FR24_PERMANENT_DAILY_CAP) : configured;
+}
+__name(fr24EffectiveCap, "fr24EffectiveCap");
+
 // ── THE DAILY ALLOWANCE IS PACED THROUGH THE DAY ──────────────────────────
 // The budget resets at 00:00 UTC — 21:00 in Atlantic Canada — and the boards
 // spent all of it in the first two or three hours: the counter hit the cap at
@@ -3402,7 +3416,7 @@ async function dtwFr24Schedule(env) {
 
     const day = new Date().toISOString().slice(0, 10);
     const bKey = `fr24:used:${day}`;
-    const cap = Math.max(0, Number(env.FR24_DAILY_BUDGET || 240));
+    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)));
     let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
     if (used >= cap) return (cached && cached.map) || null;
     // Respect a cool-off set by either path — a burst is the last thing a
@@ -9034,7 +9048,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         try {
           const _day = new Date().toISOString().slice(0, 10);
           const _bKey = `fr24:used:${_day}`;
-          const _cap = Math.max(0, Number(env.FR24_DAILY_BUDGET || 240));
+          const _cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)));
           const _used = Number(await env.FIDS_LIVE_FLIGHTS.get(_bKey)) || 0;
           // A recent 429/403 sets a short cool-off instead of burning the day.
           const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
