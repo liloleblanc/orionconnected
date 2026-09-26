@@ -9237,7 +9237,14 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // but v23264's keyless-airplanes.live exclusion outranks the pin, or a
       // stale ADSB_PROVIDER="airplanes.live" would reinstate the guaranteed
       // 403 the filter above exists to prevent.
-      const ring = (env.ADSB_PROVIDER && _provNames.includes(provider))
+      // THE FREE COMMUNITY FEEDS ARE OUT. adsb.lol and adsb.fi refuse
+      // requests from a Cloudflare Worker — 403 or 429 on every call, while
+      // the same query from a home connection answers 200 — so from here
+      // they have never returned an aircraft, only added a failed round-trip
+      // to every lookup and made "no data" look like "the ring tried".
+      // Flightradar24 above is the source. ADSB_RING="1" puts the ring back
+      // if a feeder-IP or sponsored arrangement ever makes it reachable.
+      const ring = env.ADSB_RING !== "1" ? [] : (env.ADSB_PROVIDER && _provNames.includes(provider))
         ? [provider].concat(_provNames.filter((p) => p !== provider))
         : _rotated;
       let lastStatus = 0;
@@ -9293,7 +9300,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // That is the origin of the 80% empty-response rate in the usage figures.
       const _negTtl = _fr24SaidNothing ? ADSB_EMPTY_TTL : ADSB_NEG_TTL;
       const _negBody = JSON.stringify({
-        ac: [], _upstreamStatus: lastStatus, _provider: ring.join(","),
+        ac: [], _upstreamStatus: lastStatus, _provider: ring.length ? ring.join(",") : "fr24-only",
         ...(_fr24SaidNothing ? { _quiet: true } : {})
       });
       try {
