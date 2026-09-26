@@ -122,3 +122,16 @@ checker, brightness is the matte: blur the source about 9 px first, so the
 clean to zero in the open sky. Cut the bands, fade their inner edges, and
 cross-fade them into tiles (`tileify`) so the plate never shows a seam.
 Judge the result on the stack composite at shelf scale, never on the sheet.
+
+## What the reference actually looks like (v23898)
+
+Frames of the reference hero clip, read side by side with the shelf: a
+light, hazy blue sky; a bright, puffy cumulus bank along the bottom, about
+a quarter of the height; the same kind of bank hanging from the top, about
+a fifth; big, soft, translucent veils drifting through the aeroplane, in
+front and behind; soft medium clouds behind those. Everything is soft-edged
+and bright; nothing is crisp, and nothing is a thin wisp. Earlier shelf
+versions substituted crisp photo cumulus, dense white borders or thin
+streaks for those bands, and read as a collage. Compare against the
+reference frames at shelf scale before shipping — the comparison grid, not
+the strip viewer, is the test.

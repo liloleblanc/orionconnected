@@ -89,3 +89,20 @@ BACK="$E/smoke_05.png,0.04,0.54,0.80,0,0.74;$E/wisp_l.png,0.13,0.40,0.86,1,0.70;
 "$HERE/bin/cropscale" "$E/smokeborder_02.png" "$O/bb.png" 0 540 1920 270 480; "$HERE/bin/vfadein" "$O/bb.png" "$O/bb.png" 0 18
 "$HERE/bin/tileify" "$O/bt.png" "$O/bt-tile.png" 60; "$HERE/bin/tileify" "$O/bb.png" "$O/bb-tile.png" 60
 #   plate gate-sky-back-v8.jpg 1600 225 sky-1600x225.jpg "bt-tile.png,0,0,1" "bt-tile.png,420,0,1" "bt-tile.png,840,0,1" "bt-tile.png,1260,0,1" "bb-tile.png,0,158,1" "bb-tile.png,420,158,1" "bb-tile.png,840,158,1" "bb-tile.png,1260,158,1"
+
+# ── v23898: BUILT TO THE REFERENCE, LAYER BY LAYER. Read off the reference frames: a light,
+# hazy blue sky; a bright, puffy cumulus bank along the BOTTOM (about a quarter of the height) and
+# the same kind of bank hanging from the TOP (about a fifth); big, soft, translucent veils drifting
+# through the aeroplane in front and behind; soft medium clouds behind those. Everything soft-edged
+# and bright, nothing crisp. Both banks are the licensed cumulus bank (bankband_01), made opaque
+# (alpharemap 0 0.5) and baked still into the plate; the sky is rows 250-750 of the licensed cirrus.
+"$C" --out "$O/bank-bright.png" --outW 1920 --outH 280 --haze 0.10 --whiten 0.10 --blur 1 --place "$E/bankband_01.png,0.5,0.5,1.0,0,0.96"
+"$HERE/bin/cropscale" "$O/bank-bright.png" "$O/bank-1600.png" 0 0 1920 280 1600; "$HERE/bin/alpharemap" "$O/bank-1600.png" "$O/bank-1600.png" 0 0.5
+"$HERE/bin/flipcrop" "$O/bank-1600.png" "$O/topcrowns.png" 45 150 1600 1.0 1.0 1.0; "$HERE/bin/vfade" "$O/topcrowns.png" "$O/topcrowns.png" 82 105
+#   plate gate-sky-back-v10.jpg 1600 225 sky-1600x225.jpg "topcrowns.png,0,-10,1" "bank-1600.png,0,100,1"
+MED="$E/p01_01.png,0.10,0.55,0.46,0,0.82;$E/p13_01.png,0.36,0.42,0.38,1,0.76;$E/p03_01.png,0.60,0.58,0.44,0,0.80;$E/p07_01.png,0.86,0.45,0.40,1,0.78"
+"$C" --out "$O/gate-clouds-medium-v4.png" --outW 1000 --outH 260 --featherTop 0.12 --featherBot 0.08 --haze 0.22 --whiten 0.10 --blur 2 --place "$MED"
+FRONT="$E/wisp_r.png,0.06,0.50,0.98,0,0.62;$E/smoke_01.png,0.19,0.62,0.80,1,0.58;$E/wisp_l.png,0.32,0.44,0.96,0,0.60;$E/wisp_full.png,0.50,0.54,0.92,0,0.55;$E/smoke_05.png,0.66,0.40,0.82,1,0.60;$E/wisp_r.png,0.80,0.60,0.98,1,0.60;$E/smoke_03.png,0.93,0.48,0.80,0,0.58"
+"$C" --out "$O/gate-clouds-veil-front-v8.png" --outW 2400 --outH 230 --featherTop 0.10 --featherBot 0.10 --haze 0.15 --whiten 0.42 --blur 4 --place "$FRONT"
+BACK="$E/wisp_l.png,0.05,0.46,0.92,1,0.62;$E/smoke_04.png,0.16,0.60,0.80,0,0.60;$E/wisp_full.png,0.30,0.50,0.90,1,0.56;$E/smoke_01.png,0.44,0.40,0.78,0,0.62;$E/wisp_r.png,0.56,0.58,0.96,0,0.60;$E/smoke_02.png,0.68,0.44,0.76,1,0.62;$E/wisp_l.png,0.80,0.62,0.92,0,0.60;$E/smoke_05.png,0.92,0.48,0.82,1,0.62;$E/wisp_full.png,1.03,0.54,0.88,0,0.56"
+"$C" --out "$O/gate-clouds-veil-back-v8.png" --outW 2700 --outH 230 --featherTop 0.10 --featherBot 0.10 --haze 0.15 --whiten 0.40 --blur 4 --place "$BACK"
