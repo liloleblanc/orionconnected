@@ -11806,7 +11806,12 @@ function _buildV2MapCol(ctx, vars) {
       } catch (e) {}
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus' + _facingCls + '"' + _acSkyDelayStyle() + '>'
-        +   '<div id="gateCloudsBg"></div><i id="gateCloudsVeil" aria-hidden="true"></i>'
+        +   '<div id="gateCloudsBg"></div>'
+        // v23899 — the sky is a clip: the reference flight with its own aircraft removed. It starts
+        // at the wall clock's phase, so a rebuild never restarts it and every gate shows the same sky.
+        +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=23899" src="/textures/gate-sky-shelf.mp4?v=23899" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+        +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
+        +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
         +   (_acImg
               ? '<div class="v2-rc-aircraft-img">' + _acImg + '</div>'
               : _aircraftHoldHtml)
@@ -11847,7 +11852,10 @@ function _buildV2MapCol(ctx, vars) {
     var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark + '</div>';
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
-      +   '<div id="gateCloudsBg"></div><i id="gateCloudsVeil" aria-hidden="true"></i>'
+      +   '<div id="gateCloudsBg"></div>'
+      +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=23899" src="/textures/gate-sky-shelf.mp4?v=23899" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
+      +   '<i id="gateCloudsVeil" aria-hidden="true"></i>'
       +   _fallbackHold
       +   (/[?&]acsky=1\b/.test(window.location.search)
             ? '<video id="gateFgVid" autoplay muted loop playsinline aria-hidden="true" '
@@ -25433,7 +25441,8 @@ function _acSkyDelayStyle() {
   try {
     var t = Date.now() / 1000;
     return ' data-sky-phased="1" style="--g8-med-delay:-' + (t % 65).toFixed(2) + 's;--g8-veil-delay:-' + (t % 12).toFixed(2)
-      + 's;--g8-front-delay:-' + (t % 6).toFixed(2) + 's;--g8-float-delay:-' + (t % 9).toFixed(2) + 's"';
+      + 's;--g8-front-delay:-' + (t % 6).toFixed(2) + 's;--g8-float-delay:-' + (t % 9).toFixed(2)
+      + 's;--g8-midfar-delay:-' + (t % 60).toFixed(2) + 's"';
   } catch (e) { return ''; }
 }
 function _acSkyIsNight() {
@@ -25528,7 +25537,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23898';
+var FIDS_BUILD_TAG = 'v23899';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44725,28 +44734,19 @@ function _renderHeritageCard(el) {
       // OWN pseudo-children — the shelf's topology, not merely its numbers.
       // They ride the back plate's transform there, and a flat list of
       // siblings silently drops that compounding.
-      +     '<i class="hcard-sky-back"></i>'
-      +     '<img class="hcard-plane" src="' + esc(acSrc) + '" alt=""'
-      +       ' onerror="this.closest(\'.hcard-wrap\').classList.add(\'hcard-noplane\');this.remove();">'
-      +     '<i class="hcard-sky-fg"></i>'
-      // THE RENDERED FLY-THROUGH, when this carrier has one.
-      //
-      // The five CSS layers put cloud in five fixed bands and the aeroplane in
-      // exactly one gap between them. What they cannot do, at any settings, is
-      // put cloud at an ARBITRARY depth relative to the aircraft — so cloud
-      // never passes across the fuselage the way it does in real footage, and
-      // distance can only be suggested by opacity rather than by haze and
-      // focus. The clip is a depth render: every cloud is a billboard at its
-      // own depth with a camera tracking past, so parallax, scale, draw order
-      // and atmospheric haze all fall out of the projection.
-      //
-      // It is opaque and contains the aeroplane, so it covers the layers
-      // entirely. They stay in the markup deliberately: onerror removes the
-      // video, and a carrier whose clip is missing or whose board cannot
-      // decode it falls straight back to the layered scene with no gap.
-      +     '<video class="hcard-skyvid" autoplay muted loop playsinline preload="auto"'
-      +       ' src="' + esc('/textures/heritage-sky-' + mark.key + '.mp4?v=23888') + '"'
-      +       ' onerror="this.remove();"></video>'
+      // v23899 — THE GATE SHELF'S SCENE. The same sky clip, the same far, back and front cloud
+      // layers and the same slow float as every gate, so the archive card and the gates are one
+      // sky. The stage is sized in shelf pixels (1em = one shelf pixel, from the sky's height), so
+      // every layer keeps the shelf's proportions and speeds at the card's larger size.
+      +     '<video class="hcard-skyclip" autoplay muted loop playsinline preload="auto"'
+      +       ' poster="/textures/gate-sky-model.jpg?v=23899" src="/textures/gate-sky-shelf.mp4?v=23899"'
+      +       ' onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
+      +     '<div class="hcard-stage">'
+      +       '<i class="hcard-l-mid"></i><i class="hcard-l-back"></i>'
+      +       '<div class="hcard-float"><img class="hcard-plane" src="' + esc(acSrc) + '" alt=""'
+      +         ' onerror="this.closest(\'.hcard-wrap\').classList.add(\'hcard-noplane\');this.remove();"></div>'
+      +       '<i class="hcard-l-front"></i>'
+      +     '</div>'
       +   '</div>'
       +   '<div class="hcard-kicker">' + kicker + '</div>'
       +   '<div class="hcard-plate">'
