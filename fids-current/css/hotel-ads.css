@@ -183,10 +183,18 @@ The QR never actually crossed
    tall canvas, so to land the box exactly on this element the layer is
    122.044/74.46 = 163.9% tall and sits 3.66/74.46 = 4.92% above the top; the
    tail then dips 51.9% of the box height below it. */
+/* v23891 — THE OUTLINE FILLS ITS BOX, ALWAYS. The shape is an SVG with a
+   viewBox, and an SVG mask keeps its own aspect unless told otherwise: any
+   time this element's box departs from the artwork's ratio — an engine
+   without aspect-ratio, a caption that outgrows the box — the shape was
+   letterboxed inside the layer, narrower or shorter than the element, and
+   the QR at the padding edge sat outside the cream. The artwork now carries
+   preserveAspectRatio="none", so the cream always spans the element's own
+   box and the QR is inside it by the padding, whatever the box's height. */
 .axr-bubble::before{ content:""; position:absolute; left:0; top:-4.92%; right:0; height:163.9%;
   background:var(--bub-bg); z-index:-1;
-  -webkit-mask:url('/logos/hotels/accor-corporate/all-bubble.svg') 0 0/100% 100% no-repeat;
-          mask:url('/logos/hotels/accor-corporate/all-bubble.svg') 0 0/100% 100% no-repeat; }
+  -webkit-mask:url('/logos/hotels/accor-corporate/all-bubble.svg?v=23891') 0 0/100% 100% no-repeat;
+          mask:url('/logos/hotels/accor-corporate/all-bubble.svg?v=23891') 0 0/100% 100% no-repeat; }
 .axr-bubble::after{ display:none; }
 .axr-bubble-copy{ min-width:0; font-family:var(--axr-display); font-size:clamp(13px,1.12vw,19px);
   line-height:1.22; font-weight:500; letter-spacing:.002em;
