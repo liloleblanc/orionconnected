@@ -8934,7 +8934,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       }
     }
     // ── ADS-B LIVE POSITIONS (proxied + cached) ───────────────────────────
-    // GET /adsb/hex/{icao24} | /adsb/reg/{tail} | /adsb/callsign/{cs}
+    // GET /adsb/flight/{AC7754} | /adsb/callsign/{cs} | /adsb/reg/{tail} | /adsb/hex/{icao24}
     //
     // WHY THIS EXISTS. The boards used to call the ADS-B feed DIRECTLY from the
     // browser. Two things broke that: the provider now returns 403 to
@@ -8999,9 +8999,19 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // "everyone is rate-limiting us" with "this aeroplane is parked" would
       // turn a transient outage into a five-minute one.
       const ADSB_EMPTY_TTL = 300;
-      const m = path.match(/^\/adsb\/(hex|reg|callsign)\/([A-Za-z0-9-]{1,12})$/);
+      // ── BY FLIGHT NUMBER, NOT BY A GUESSED CALLSIGN ────────────────────
+      // A callsign is the radio name, and for regional flying it is not the
+      // number on the ticket. Measured against Flightradar24 on 2026-09-26:
+      // AC7754 flies as PVL7754 (PAL Airlines), AC7705 as PVL7705, AC2046 as
+      // ROU2046 (Rouge). The board turned "AC" into "ACA" and asked for
+      // ACA7754, which does not exist, so every Air Canada Express and Rouge
+      // flight came back empty: three of nine flights inbound to Halifax, and
+      // most of Moncton. No aircraft type, no registration, no position.
+      // FR24's `flights` filter matches the number as sold, whoever operates
+      // it, so the board now asks that first. Same price per call.
+      const m = path.match(/^\/adsb\/(hex|reg|callsign|flight)\/([A-Za-z0-9-]{1,12})$/);
       if (!m) {
-        return jsonResponse({ error: "Use /adsb/hex/:icao24, /adsb/reg/:tail or /adsb/callsign/:cs" }, 400, origin);
+        return jsonResponse({ error: "Use /adsb/flight/:number, /adsb/callsign/:cs, /adsb/reg/:tail or /adsb/hex/:icao24" }, 400, origin);
       }
       const kind = m[1];
       const subject = m[2].toUpperCase();
@@ -9044,7 +9054,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // remembered, and it is the difference between paying FR24 twice a
       // minute for a parked aeroplane and paying it twice an hour.
       let _fr24SaidNothing = false;
-      if (env.FR24_KEY && (kind === "callsign" || kind === "reg") && env.FIDS_LIVE_FLIGHTS) {
+      if (env.FR24_KEY && (kind === "callsign" || kind === "reg" || kind === "flight") && env.FIDS_LIVE_FLIGHTS) {
         try {
           const _day = new Date().toISOString().slice(0, 10);
           const _bKey = `fr24:used:${_day}`;
@@ -9053,7 +9063,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           // A recent 429/403 sets a short cool-off instead of burning the day.
           const _coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${_day}`)) || 0;
           if (_used < _cap && Date.now() >= _coolUntil && _used < fr24PacedAllowance(_cap)) {
-            const _param = kind === "callsign" ? "callsigns" : "registrations";
+            const _param = kind === "callsign" ? "callsigns" : kind === "flight" ? "flights" : "registrations";
             const _fr = await fetch(
               `https://fr24api.flightradar24.com/api/live/flight-positions/full?${_param}=${encodeURIComponent(subject)}`,
               { headers: { "Authorization": `Bearer ${env.FR24_KEY}`, "Accept-Version": "v1", "Accept": "application/json" } }
