@@ -22,6 +22,9 @@ tools; `render-clips.sh` reproduces the two archive-card clips byte-for-purpose;
 | `ellfeather` | multiplies alpha by an elliptical falloff so a rectangular crop has no straight edge |
 | `blurpng` | gaussian blur with an optional alpha floor (kills a residual checker) |
 | `keyblue` | unmixes a white cloud from a vertical sky gradient fitted from the image's own margins |
+| `flipcrop` | flips an alpha PNG both ways, crops rows, tints, resizes to a width (the top band) |
+| `vfade` | fades alpha to zero across a row range so a crop never ends in a line |
+| `plate` | draws alpha layers onto a JPG background at fixed positions (the still sky plate) |
 
 ## The structure is measured, not tuned
 
@@ -87,3 +90,14 @@ that works: `unchecker` → `blurpng 7 0.03` → `alpharemap 0.14 1.1` →
 `blurpng 3 0.02` → crop → `ellfeather 0.55`. Check the strip composite over
 sky before shipping: the boxes are invisible in the element viewer and
 obvious in the scene.
+
+## The shelf's three bands (v23893)
+
+The scene is three bands. Along the top, a still layer of cloud seen from
+below, baked into the sky plate. Along the bottom, the still bank, its tops
+under the aeroplane. Between them, the aeroplane's own band: the two fast
+veil layers, one behind the airframe and one in front, filling the band from
+top to bottom, and behind them a slower layer of medium-to-big clouds that
+drifts at about 14 px/s. Nothing in the top or bottom band moves; the
+aeroplane bobs a little more than before and faster (5 s cycle) so it is
+seen to move; it does not need to climb and dive.
