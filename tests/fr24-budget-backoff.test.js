@@ -82,7 +82,7 @@ test('the cool-off is actually honoured before spending', () => {
   assert.ok(at >= 0);
   const readSite = SRC.indexOf('_coolUntil');
   assert.ok(readSite >= 0, 'the cool-off must be read back');
-  assert.match(SRC, /if \(_used < _cap && Date\.now\(\) >= _coolUntil\)/,
+  assert.match(SRC, /if \(_used < _cap && Date\.now\(\) >= _coolUntil( && _used < fr24PacedAllowance\(_cap\))?\)/,
     'the budget gate must check both the cap and the cool-off');
 });
 
@@ -137,10 +137,22 @@ test('the configured cap is explicit, and inside the permanent credit allowance'
   assert.ok(m, 'the cap must be set explicitly in wrangler, not left to the default');
   const perDay = Number(m[1]);
   // A 31-day month is the one that has to fit, not an average one.
-  const perMonth = perDay * 31;
-  assert.ok(perMonth <= 30000,
-    `${perDay}/day is ${perMonth} credits in a 31-day month, past the permanent ` +
-    '30,000 allowance — it may fit while the promotion lasts and will not in January');
+  // Until the promotion ends the configured cap must fit 60,000 in a 31-day
+  // month; from 2027-01-01 the worker must clamp it to fit 30,000 on its own.
+  assert.ok(perDay * 31 <= 60000,
+    `${perDay}/day is ${perDay * 31} credits in a 31-day month, past the 60,000 promotional allowance`);
+  const SRC2 = fs.readFileSync(path.resolve(__dirname, '..', 'workers', 'fids-proxy.js'), 'utf8');
+  const fm = SRC2.match(/function fr24EffectiveCap\([\s\S]*?\n\}/);
+  assert.ok(fm, 'fr24EffectiveCap must exist to clamp the cap when the promotion ends');
+  const ends = (SRC2.match(/const FR24_PROMO_ENDS = "([0-9-]+)"/) || [])[1];
+  const perm = Number((SRC2.match(/const FR24_PERMANENT_DAILY_CAP = (\d+)/) || [])[1]);
+  const eff = new Function('FR24_PROMO_ENDS', 'FR24_PERMANENT_DAILY_CAP', fm[0] + '; return fr24EffectiveCap;')(ends, perm);
+  assert.equal(eff(perDay, Date.UTC(2026, 11, 31, 12)), perDay, 'the configured cap applies until the promotion ends');
+  const january = eff(perDay, Date.UTC(2027, 0, 1, 1));
+  assert.ok(january * 31 <= 30000,
+    `from January the effective cap is ${january}/day = ${january * 31} in a 31-day month, past the permanent 30,000`);
+  assert.match(SRC2, /const cap = fr24EffectiveCap\(/, 'the sweep must use the effective cap');
+  assert.match(SRC2, /const _cap = fr24EffectiveCap\(/, 'the position lookup must use the effective cap');
   // And not throttled to the point of uselessness: the cap tripping is meant to
   // be the exception, not the daily routine.
   assert.ok(perDay >= 500,
@@ -271,4 +283,19 @@ test('nothing in this path purchases anything', () => {
     .split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
   assert.doesNotMatch(W, /"crons"\s*:/,
     'no cron on this worker — an unattended schedule is what spent the money');
+});
+
+
+test('the allowance is paced through the UTC day, so no night can spend the whole of it', () => {
+  // The cap was being reached two or three hours after the 00:00 UTC reset
+  // (21:00 Atlantic), leaving every gate without aircraft for the next day.
+  const m = SRC.match(/function fr24PacedAllowance\([\s\S]*?\n\}/);
+  assert.ok(m, 'fr24PacedAllowance must exist');
+  const paced = new Function(m[0] + '; return fr24PacedAllowance;')();
+  const at = (h) => paced(950, Date.UTC(2026, 8, 26, h, 0));
+  assert.ok(at(0) <= 950 / 12, `the first hour may take at most a twelfth, got ${at(0)}`);
+  assert.ok(at(3) < 950 / 4, `three hours in, well under a quarter, got ${at(3)}`);
+  assert.equal(at(23), 950, 'the last hour reaches the full cap');
+  for (let h = 1; h < 24; h++) assert.ok(at(h) >= at(h - 1), 'the allowance never shrinks during the day');
+  assert.match(SRC, /_used < fr24PacedAllowance\(_cap\)/, 'the position lookup must check the paced allowance');
 });

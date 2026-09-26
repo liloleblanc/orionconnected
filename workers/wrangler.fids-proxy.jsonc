@@ -93,7 +93,15 @@
   // so 950 is 2-3x headroom, not a squeeze. If a week of real traffic lands
   // higher than that, raise this rather than leaving the cap to bite: a 402
   // still stops the day by design, and the cap tripping is meant to be rare.
-  "vars": { "ADSB_SOURCE": "community", "FR24_DAILY_BUDGET": "950" },
+  //
+  // RAISED 2026-09-26 to 1,900/day, PACED, BY EXPLICIT AUTHORISATION. At 950 the
+  // allowance was gone two or three hours after each 00:00 UTC reset and every
+  // gate went without aircraft for the rest of the day, while the account used
+  // 24,544 of its 60,000 credits in 30 days. 1,900/day is 58,900 in a 31-day
+  // month, inside the 60,000 the account has until 2026-12-31. Spending is paced
+  // through the day (fr24PacedAllowance), and from 2027-01-01 the worker clamps
+  // the cap to 950/day by itself (fr24EffectiveCap), inside the permanent 30,000.
+  "vars": { "FR24_DAILY_BUDGET": "1900" },
 
   // ── CRON REMOVED 2026-09-10 ─────────────────────────────────────────────
   // It used to read "17 5,17 * * *" — 05:17 and 17:17 UTC daily. Its ONLY job
