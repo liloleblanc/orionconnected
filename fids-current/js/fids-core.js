@@ -4406,8 +4406,22 @@ try {
           var _mbW = document.getElementById('gateMapBox');
           var _inbW = window._gateInbound;
           if (_inbW && fidsInboundHasArrived(_inbW, Date.now())) _inbW = null;
-          if (_mbW && _mbW.offsetParent !== null && _inbW
-              && !_mbW.querySelector('.leaflet-container')) {
+          // v23900 — THE BOX IS THE MAP. L.map('gateMapBox') makes #gateMapBox
+          // itself the Leaflet container, so the class sits on the box, and
+          // querySelector only searches INSIDE it: the check always read
+          // "empty" and tore down a perfectly good map every 10 s whenever an
+          // inbound was being tracked. Measured on the live Moncton gate 1
+          // board (WS812 inbound): 11 teardowns in 2.6 minutes, each one
+          // repainting the tiles from blank — the white flashes on the small
+          // map. A map that is attached to this very box is alive.
+          var _mbAlive = false;
+          try {
+            _mbAlive = _mbW.classList.contains('leaflet-container')
+              || !!_mbW.querySelector('.leaflet-container')
+              || !!(typeof gateMap !== 'undefined' && gateMap && gateMap.getContainer
+                    && gateMap.getContainer() === _mbW);
+          } catch (e7) {}
+          if (_mbW && _mbW.offsetParent !== null && _inbW && !_mbAlive) {
             console.log('[MAP-WATCHDOG] map container EMPTY while an inbound is tracked — rebuilding');
             try { if (typeof gateMap !== 'undefined' && gateMap) { gateMap.remove(); } } catch (e4) {}
             try { gateMap = null; } catch (e5) {}
@@ -25537,7 +25551,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23899';
+var FIDS_BUILD_TAG = 'v23900';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
