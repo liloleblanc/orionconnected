@@ -78,3 +78,14 @@ FRONT="$E/wisp_r.png,0.05,0.50,0.95,0,0.72;$E/smoke_01.png,0.17,0.66,0.72,1,0.70
 "$C" --out "$O/gate-clouds-veil-front-v7.png" --outW 2400 --outH 230 --featherTop 0.10 --featherBot 0.10 --whiten 0.36 --place "$FRONT"
 BACK="$E/smoke_05.png,0.04,0.54,0.80,0,0.74;$E/wisp_l.png,0.13,0.40,0.86,1,0.70;$E/smoke_01.png,0.22,0.64,0.70,0,0.74;$E/wisp_r.png,0.31,0.50,0.90,0,0.70;$E/smoke_03.png,0.40,0.36,0.68,1,0.72;$E/smoke_04.png,0.49,0.62,0.72,0,0.74;$E/smoke_02.png,0.58,0.44,0.70,1,0.72;$E/wisp_l.png,0.67,0.58,0.86,0,0.70;$E/smoke_05.png,0.76,0.46,0.80,1,0.74;$E/wisp_r.png,0.85,0.64,0.90,1,0.70;$E/smoke_01.png,0.93,0.40,0.70,0,0.74;$E/smoke_03.png,1.01,0.56,0.68,1,0.72"
 "$C" --out "$O/gate-clouds-veil-back-v7.png" --outW 2700 --outH 230 --featherTop 0.10 --featherBot 0.10 --whiten 0.34 --place "$BACK"
+
+# ── v23897: THE BORDER SHEET, KEYED BY BRIGHTNESS. The checkerboard reconstruction left a haze
+# floor across the whole sheet, so every crop of it showed on the board as a translucent BOX, and
+# the copies tiled with seams. The sheet is a white cloud on a near-black checker, so brightness is
+# the matte: blur the source 9px first (the 13px checker averages to one grey), then
+# lumakey 40..215 — clean alpha, no floor. smokeborder_02.png is that result. The bands are then
+# cut, faded at their inner edge, and cross-faded into 420px tiles so no seam can show.
+"$HERE/bin/cropscale" "$E/smokeborder_02.png" "$O/bt.png" 0 0   1920 330 480; "$HERE/bin/vfade"   "$O/bt.png" "$O/bt.png" 64 82
+"$HERE/bin/cropscale" "$E/smokeborder_02.png" "$O/bb.png" 0 540 1920 270 480; "$HERE/bin/vfadein" "$O/bb.png" "$O/bb.png" 0 18
+"$HERE/bin/tileify" "$O/bt.png" "$O/bt-tile.png" 60; "$HERE/bin/tileify" "$O/bb.png" "$O/bb-tile.png" 60
+#   plate gate-sky-back-v8.jpg 1600 225 sky-1600x225.jpg "bt-tile.png,0,0,1" "bt-tile.png,420,0,1" "bt-tile.png,840,0,1" "bt-tile.png,1260,0,1" "bb-tile.png,0,158,1" "bb-tile.png,420,158,1" "bb-tile.png,840,158,1" "bb-tile.png,1260,158,1"

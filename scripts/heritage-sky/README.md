@@ -22,6 +22,7 @@ tools; `render-clips.sh` reproduces the two archive-card clips byte-for-purpose;
 | `ellfeather` | multiplies alpha by an elliptical falloff so a rectangular crop has no straight edge |
 | `blurpng` | gaussian blur with an optional alpha floor (kills a residual checker) |
 | `keyblue` | unmixes a white cloud from a vertical sky gradient fitted from the image's own margins |
+| `lumakey` | alpha from brightness for a white cloud on a dark ground (blur the checker away first) |
 | `flipcrop` | flips an alpha PNG both ways, crops rows, tints, resizes to a width (the top band) |
 | `vfade` | fades alpha to zero across a row range so a crop never ends in a line |
 | `vfadein` | fades alpha in from zero across a row range so a layer never starts as a line |
@@ -109,3 +110,15 @@ drifts at about 14 px/s. Nothing in the top or bottom band moves; the
 aeroplane floats slowly and smoothly (9 s cycle, about ±10 px); a 5 s bob
 read as jerky. Every layer's phase is written into the shelf's markup at
 build time, so a rebuild never restarts a layer out of step.
+
+## The border sheet, keyed by brightness (v23897)
+
+The checkerboard reconstruction leaves a faint alpha floor across the whole
+sheet. Cut out and feathered, a single wisp hides it; used whole as the top
+and bottom bands, every crop showed on the board as a translucent box, and
+the tiled copies met in visible seams. For a white cloud on a near-black
+checker, brightness is the matte: blur the source about 9 px first, so the
+13 px checker averages to one grey, then `lumakey 40 215`. The alpha is
+clean to zero in the open sky. Cut the bands, fade their inner edges, and
+cross-fade them into tiles (`tileify`) so the plate never shows a seam.
+Judge the result on the stack composite at shelf scale, never on the sheet.
