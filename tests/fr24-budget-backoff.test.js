@@ -82,7 +82,7 @@ test('the cool-off is actually honoured before spending', () => {
   assert.ok(at >= 0);
   const readSite = SRC.indexOf('_coolUntil');
   assert.ok(readSite >= 0, 'the cool-off must be read back');
-  assert.match(SRC, /if \(_used < _cap && Date\.now\(\) >= _coolUntil\)/,
+  assert.match(SRC, /if \(_used < _cap && Date\.now\(\) >= _coolUntil( && _used < fr24PacedAllowance\(_cap\))?\)/,
     'the budget gate must check both the cap and the cool-off');
 });
 
@@ -271,4 +271,19 @@ test('nothing in this path purchases anything', () => {
     .split('\n').map(l => l.replace(/\/\/.*$/, '')).join('\n');
   assert.doesNotMatch(W, /"crons"\s*:/,
     'no cron on this worker — an unattended schedule is what spent the money');
+});
+
+
+test('the allowance is paced through the UTC day, so no night can spend the whole of it', () => {
+  // The cap was being reached two or three hours after the 00:00 UTC reset
+  // (21:00 Atlantic), leaving every gate without aircraft for the next day.
+  const m = SRC.match(/function fr24PacedAllowance\([\s\S]*?\n\}/);
+  assert.ok(m, 'fr24PacedAllowance must exist');
+  const paced = new Function(m[0] + '; return fr24PacedAllowance;')();
+  const at = (h) => paced(950, Date.UTC(2026, 8, 26, h, 0));
+  assert.ok(at(0) <= 950 / 12, `the first hour may take at most a twelfth, got ${at(0)}`);
+  assert.ok(at(3) < 950 / 4, `three hours in, well under a quarter, got ${at(3)}`);
+  assert.equal(at(23), 950, 'the last hour reaches the full cap');
+  for (let h = 1; h < 24; h++) assert.ok(at(h) >= at(h - 1), 'the allowance never shrinks during the day');
+  assert.match(SRC, /_used < fr24PacedAllowance\(_cap\)/, 'the position lookup must check the paced allowance');
 });
