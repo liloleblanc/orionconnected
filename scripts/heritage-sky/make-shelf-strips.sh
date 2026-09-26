@@ -23,3 +23,17 @@ BACK="$E/smoke_05.png,0.04,0.50,0.34,0,0.88;$E/streak_bot.png,0.12,0.64,0.20,1,0
 # The bank: a 1920x280 band cut from the licensed cumulus bank, cross-faded over 240px so it tiles at 1680.
 "$HERE/bin/tileify" "$E/bankband_01.png" "$O/gate-clouds-bank-v4.png" 240
 # The sky plate (gate-sky-back-v3.jpg) is rows 180-530 of the licensed cirrus sky, resized to 1600x292 (sips); the plate is still, so it need not tile.
+
+# ── v5 (v23893): THREE BANDS. A still cloud layer along the top, the still
+# bank along the bottom, and the aeroplane's band between them carrying the
+# fast veils (front and back, filling the band) and the slow medium-to-big
+# clouds behind them. The veils are recomposed taller so they fill the band.
+FRONT="$E/smoke_01.png,0.05,0.62,0.36,0,0.85;$E/streak_top.png,0.16,0.30,0.20,1,0.80;$E/wisp_r.png,0.28,0.55,0.60,0,0.75;$E/smoke_04.png,0.40,0.24,0.34,1,0.80;$E/streak_bot.png,0.50,0.72,0.20,0,0.80;$E/smoke_05.png,0.61,0.42,0.36,1,0.85;$E/wisp_l.png,0.72,0.66,0.52,0,0.72;$E/smoke_02.png,0.83,0.28,0.34,1,0.80;$E/smoke_03.png,0.94,0.58,0.40,0,0.80"
+"$C" --out "$O/gate-clouds-veil-front-v5.png" --outW 2400 --outH 290 --featherTop 0.14 --featherBot 0.14 --whiten 0.30 --place "$FRONT"
+BACK="$E/smoke_05.png,0.04,0.40,0.30,0,0.88;$E/streak_bot.png,0.12,0.74,0.18,1,0.85;$E/wisp_l.png,0.21,0.32,0.46,0,0.78;$E/smoke_01.png,0.29,0.66,0.32,1,0.88;$E/smoke_04.png,0.37,0.24,0.30,0,0.85;$E/streak_top.png,0.46,0.56,0.17,0,0.85;$E/smoke_03.png,0.54,0.76,0.34,1,0.85;$E/smoke_02.png,0.62,0.36,0.30,0,0.85;$E/wisp_r.png,0.71,0.60,0.52,1,0.78;$E/smoke_05.png,0.80,0.26,0.30,1,0.88;$E/smoke_01.png,0.88,0.70,0.32,0,0.88;$E/streak_bot.png,0.96,0.46,0.20,0,0.85"
+"$C" --out "$O/gate-clouds-veil-back-v5.png" --outW 2700 --outH 290 --featherTop 0.14 --featherBot 0.14 --whiten 0.28 --place "$BACK"
+# The top band lives in the plate (still). ceiling_01.png is the bank band flipped both ways
+# (flipcrop rows 140-240, tinted blue-grey), alpha floor lifted (alpharemap 0.40 1.2) and faded
+# out over rows 48-78 (vfade) so no crop line survives; the plate is the licensed cirrus sky
+# at 1600x225 with the ceiling drawn at y=-14, alpha .84:
+#   plate gate-sky-back-v4.jpg 1600 225 sky-1600x225.jpg "ceiling_01.png,0,-14,0.84"

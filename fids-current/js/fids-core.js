@@ -25451,7 +25451,7 @@ function _acSkyPhaseApply() {
     // visible jump. v23080 durations: g8SkyBack 260s, g8SkyMid 130s,
     // g8SkyFast 26s, g8SkyFront 13s, g8SkyRush 5s, g8AcFloat 9s.
     var pairs = [
-      ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 9]   // float, matches g8AcFloat
+      ['.v2-rc-shelf-illus .v2-rc-aircraft-img', 5]   // float, matches g8AcFloat
     ];
     for (var i = 0; i < pairs.length; i++) {
       var el = document.querySelector(pairs[i][0]);
@@ -25473,12 +25473,13 @@ function _acSkyPhaseApply() {
       var _shelfEl = document.querySelector('.v2-rc-shelf-illus');
       if (_shelfEl && _shelfEl.isConnected && !(_shelfEl.dataset && _shelfEl.dataset.skyPhased === '1')) {
         // v23890 — one modulus per layer, equal to that layer's CSS cycle:
-        // bank 1680s, medium 680s, veil behind 12s, veil in front 6s. The
+        // medium 65s, veil behind 12s, veil in front 6s, float 5s; the bank and the plate are still. The
         // plate is still now and needs no phase.
         _shelfEl.style.setProperty('--g8-bank-delay',  '-' + (t % 1680).toFixed(2) + 's');
-        _shelfEl.style.setProperty('--g8-med-delay',   '-' + (t %  680).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-med-delay',   '-' + (t %   65).toFixed(2) + 's');
         _shelfEl.style.setProperty('--g8-veil-delay',  '-' + (t %   12).toFixed(2) + 's');
         _shelfEl.style.setProperty('--g8-front-delay', '-' + (t %    6).toFixed(2) + 's');
+        _shelfEl.style.setProperty('--g8-float-delay', '-' + (t %    5).toFixed(2) + 's');
         if (_shelfEl.dataset) _shelfEl.dataset.skyPhased = '1';
       }
     } catch (e4) {}
@@ -25513,7 +25514,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23892';
+var FIDS_BUILD_TAG = 'v23893';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
