@@ -62,7 +62,10 @@ test('every file in the heritage folder is either used or deliberately not', () 
     .map((f) => path.basename(f))
     .sort();
   const unused = onDisk.filter((f) => !used.includes(f));
-  assert.deepEqual(unused, ['air-canada-1964.svg', 'air-canada-1988.svg'],
+  // v23902 — the modern horizontal Air Canada logo is no longer on the Air
+  // Nova card: the endorsement there is now the 1987 lockup of the period,
+  // supplied as artwork in logos/advertisements/retro-airlines/.
+  assert.deepEqual(unused, ['air-canada-1964.svg', 'air-canada-1988.svg', 'air-canada-horizontal.svg'],
     'an unused heritage file must be a recorded decision — if a mark is added ' +
     'to the folder it either gets a checked caption and joins the set, or this ' +
     'list records why it does not');
