@@ -3505,8 +3505,30 @@ function fr24PacedAllowance(cap, now) {
 }
 __name(fr24PacedAllowance, "fr24PacedAllowance");
 
+// v23910 — THE SWEEP FOLLOWS THE PACE LINE, AND RESUMES INSTEAD OF RESTARTING.
+//
+// On 2026-09-27 at 19:25 UTC this sweep took the shared counter from 1614
+// (the pace line was 1617) to 1914 in one burst: five 60-credit pages,
+// checked only against the CAP. The cap was 1900, so every /adsb lookup on
+// every board was refused from 16:25 ADT to the 21:00 ADT reset and no
+// gate showed an aircraft all evening. Over the week before, this one
+// Detroit refresh was 42% of all FR24 spend (5068 of 12002 credits), and
+// a sweep cut short by the cap kept only its OLDEST rows, so it re-ran —
+// and re-paid — as soon as that 20-hour cache aged out.
+//
+// Now: a page is fetched only if it fits under the SAME pace line the
+// position lookups obey, at most DTW_FR24_MAX_CALLS pages per attempt; a
+// sweep interrupted by the pace line carries its cursor and rows forward
+// and continues on a later request; the finished schedule is kept for a
+// week (it is minutes-of-day for a timetable that repeats). While a new
+// sweep fills in, the last finished schedule keeps serving.
 const DTW_FR24_CACHE_KEY = "dtw:fr24:sched:v2";
-const DTW_FR24_MAX_CALLS = 30;
+// v23910 — pages per ATTEMPT, not per sweep. A sweep now resumes where it
+// stopped (see dtwFr24Schedule), so no single request can take more than
+// 5 x 60 = 300 credits, and only out of what the pace line has left.
+const DTW_FR24_MAX_CALLS = 5;
+const DTW_FR24_REFRESH_MS = 7 * 24 * 3600 * 1000;   // a week-old Detroit schedule is still the schedule
+const DTW_FR24_PAGE_CREDITS = 60;                   // a full 20-row flight-summary/full page
 const DTW_FR24_WINDOW_MIN = 75;   // wheels-up lands within this of schedule
 
 // ── WHAT AN FR24 CALL ACTUALLY COSTS ────────────────────────────────────────
@@ -3568,49 +3590,46 @@ async function dtwFr24Schedule(env) {
   if (!env || !env.FR24_KEY || !env.FIDS_LIVE_FLIGHTS) return null;
   try {
     const cached = await env.FIDS_LIVE_FLIGHTS.get(DTW_FR24_CACHE_KEY, { type: "json" }).catch(() => null);
-    if (cached && cached.at && Date.now() - cached.at < 20 * 3600 * 1000) return cached.map || null;
+    const done = (cached && cached.map) || null;
+    const serve = () => done || (cached && cached.sweep && Object.keys(cached.sweep.map || {}).length ? cached.sweep.map : null);
+    if (cached && cached.at && Date.now() - cached.at < DTW_FR24_REFRESH_MS) return done;
 
     const day = new Date().toISOString().slice(0, 10);
-    const bKey = `fr24:used:${day}`;
-    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)));
-    let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
-    if (used >= cap) return (cached && cached.map) || null;
     // Respect a cool-off set by either path — a burst is the last thing a
     // rate-limited plan needs.
     const coolUntil = Number(await env.FIDS_LIVE_FLIGHTS.get(`fr24:cool:${day}`)) || 0;
-    if (Date.now() < coolUntil) return (cached && cached.map) || null;
-
-    // ── THIS ENDPOINT GETS ITS OWN CEILING ──────────────────────────────
-    // The two FR24 endpoints do not cost remotely the same. Measured from
-    // FR24's own usage meter:
-    //
-    //   live/flight-positions/full    2.7 credits per call
-    //   flight-summary/full          59   credits per call
-    //
-    // FR24 bills per returned ROW, so one sweep of 30 summary calls is ~1,770
-    // credits — more than 650 position lookups. The call budget cannot be
-    // blown (1,800/day is 55,800 in a 31-day month against a 60,000 ceiling),
-    // but the CREDIT pool is a different meter and this endpoint is what
-    // drains it.
-    //
-    // The 20-hour cache above already means one sweep a day in practice. This
-    // makes that a rule rather than a happy accident: a bug, a cache miss
-    // storm or a retry loop cannot turn a once-a-day sweep into the thing that
-    // empties the pool and leaves every board with no aircraft data for the
-    // rest of the billing period. The cheap lookups keep the generous budget;
-    // the expensive one is boxed.
+    if (Date.now() < coolUntil) return serve();
+    // Its own per-day call count on top (59 credits a summary call vs 2.7 a position).
     const sweepKey = `fr24:sweep:${day}`;
     const sweepCap = Math.max(0, Number(env.FR24_SUMMARY_DAILY_CALLS || 40));
     const sweepUsed = Number(await env.FIDS_LIVE_FLIGHTS.get(sweepKey)) || 0;
-    if (sweepUsed >= sweepCap) return (cached && cached.map) || null;
-
-    const endTs = Date.now() - 30 * 60000;          // wheels-up needs to have happened
+    if (sweepUsed >= sweepCap) return serve();
     const iso = (ms) => new Date(ms).toISOString().replace(/\.\d+Z$/, "Z");
-    const map = {};
-    let cursor = endTs - 26 * 3600 * 1000;
+    // Resume an unfinished sweep (< 2 days old), else cover the last 26 h.
+    let sw = cached && cached.sweep;
+    if (!sw || !sw.endTs || Date.now() - (sw.started || 0) > 48 * 3600 * 1000) {
+      const e = Date.now() - 30 * 60000;          // wheels-up needs to have happened
+      sw = { started: Date.now(), cursor: e - 26 * 3600 * 1000, endTs: e, map: {} };
+    }
+    const map = sw.map || {};
+    const endTs = sw.endTs;
+    let cursor = sw.cursor;
     let calls = 0;
+    let finished = false;
 
-    while (cursor < endTs && used < cap && calls < DTW_FR24_MAX_CALLS) {
+    const bKey = `fr24:used:${day}`;
+    const cap = fr24EffectiveCap(Math.max(0, Number(env.FR24_DAILY_BUDGET || 240)));
+    let used = Number(await env.FIDS_LIVE_FLIGHTS.get(bKey)) || 0;
+    if (used >= cap) return serve();
+    // The whole page must fit under the pace line, not merely start below it.
+    const fits = () => used + DTW_FR24_PAGE_CREDITS <= Math.min(cap, fr24PacedAllowance(cap));
+    if (!fits()) return serve();
+    // One sweeper at a time (KV is no lock, but it stops nearly every overlap).
+    const lockKey = "dtw:fr24:lock";
+    if (await env.FIDS_LIVE_FLIGHTS.get(lockKey)) return serve();
+    try { await env.FIDS_LIVE_FLIGHTS.put(lockKey, "1", { expirationTtl: 90 }); } catch (e) {}
+
+    while (cursor < endTs && used < cap && fits() && calls < DTW_FR24_MAX_CALLS) {
       const url = "https://fr24api.flightradar24.com/api/flight-summary/full"
         + "?airports=outbound:KDTW"
         + `&flight_datetime_from=${iso(cursor)}&flight_datetime_to=${iso(endTs)}`;
@@ -3623,21 +3642,12 @@ async function dtwFr24Schedule(env) {
       // A hard no from the plan stops THIS sweep. Only an empty credit pool
       // (402) stops the day.
       //
-      // This was the single worst thing in the FR24 path and it is worth being
-      // explicit about why. This sweep fires up to DTW_FR24_MAX_CALLS (30)
-      // requests back to back, which is exactly the shape that trips a rate
-      // limiter. It then wrote used = cap into the SHARED fr24:used:<day> key —
-      // the same key every aircraft-identity lookup checks, for every airport.
-      // So one burst of Detroit schedule refreshes hitting a 429 blinded the
-      // registration, aircraft type and heading on every gate board in the
-      // system until the next UTC midnight. That is the "half the time there
-      // is no airplane data": it works after the 00:00 UTC reset and dies
-      // whenever this sweep next trips.
-      //
-      // 402 still burns the day, because an empty pool really is empty. A 429
-      // or 403 now ends this sweep only, costs the calls actually made, and
-      // sets the same short cool-off the ADSB path uses so the next attempt is
-      // minutes away rather than hours.
+      // This sweep once wrote used = cap into the SHARED fr24:used:<day> key
+      // on a 429 too — the key every aircraft-identity lookup checks — so one
+      // rate-limited Detroit refresh blinded every gate board until the next
+      // UTC midnight. 402 still burns the day, because an empty pool really
+      // is empty. A 429 or 403 ends this attempt only, costs the calls
+      // actually made, and sets the short cool-off the ADSB path uses.
       if (r.status === 402) { used = cap; break; }
       if (r.status === 429 || r.status === 403) {
         try { await env.FIDS_LIVE_FLIGHTS.put(`fr24:cool:${day}`, String(Date.now() + 300000), { expirationTtl: 3600 }); } catch (e) {}
@@ -3649,7 +3659,7 @@ async function dtwFr24Schedule(env) {
       // Charged on what came back, not on the fact that a request was made.
       // A 20-row page is 60 credits, and used to register as 1.
       used += fr24Charge("flight-summary/full", rows.length);
-      if (!rows.length) break;
+      if (!rows.length) { finished = true; break; }
 
       let maxTs = cursor;
       for (const f of rows) {
@@ -3667,25 +3677,33 @@ async function dtwFr24Schedule(env) {
         // Kept as the raw ICAO (B739, A21N): formatAircraft routes 4-character
         // codes through aircraftCodeToIata, so the composite survives and the
         // 737-800/MAX-8 family must never be flattened on the way.
-        (map[dest] = map[dest] || []).push({
-          m: mins,
-          f: flight,
-          op: String((f && f.operating_as) || "") || null,
-          t: String((f && f.type) || "").toUpperCase() || null
-        });
+        const list = (map[dest] = map[dest] || []);
+        if (!list.some((x) => x.m === mins && x.f === flight)) {
+          list.push({
+            m: mins,
+            f: flight,
+            op: String((f && f.operating_as) || "") || null,
+            t: String((f && f.type) || "").toUpperCase() || null
+          });
+        }
       }
-      if (rows.length < 20) break;          // last page
-      if (maxTs <= cursor) break;           // no forward progress; stop rather than spin
+      if (rows.length < 20) { finished = true; break; }   // last page
+      if (maxTs <= cursor) { finished = true; break; }    // no forward progress; stop rather than spin
       cursor = maxTs + 1000;
     }
+    if (cursor >= endTs) finished = true;
 
     try { await env.FIDS_LIVE_FLIGHTS.put(bKey, String(used), { expirationTtl: 172800 }); } catch (e) {}
     try { await env.FIDS_LIVE_FLIGHTS.put(sweepKey, String(sweepUsed + calls), { expirationTtl: 172800 }); } catch (e) {}
-    if (Object.keys(map).length) {
-      try { await env.FIDS_LIVE_FLIGHTS.put(DTW_FR24_CACHE_KEY, JSON.stringify({ at: Date.now(), map }), { expirationTtl: 172800 }); } catch (e) {}
-      return map;
+    const hasRows = Object.keys(map).length > 0;
+    const state = finished
+      ? { at: Date.now(), map: hasRows ? map : done }
+      : { at: 0, map: done, sweep: { started: sw.started, cursor, endTs, map } };
+    if (calls > 0 || !cached || !cached.sweep) {
+      try { await env.FIDS_LIVE_FLIGHTS.put(DTW_FR24_CACHE_KEY, JSON.stringify(state), { expirationTtl: 30 * 86400 }); } catch (e) {}
     }
-    return (cached && cached.map) || null;
+    try { await env.FIDS_LIVE_FLIGHTS.delete(lockKey); } catch (e) {}
+    return state.map || (hasRows ? map : null);
   } catch (e) { return null; }
 }
 __name(dtwFr24Schedule, "dtwFr24Schedule");
