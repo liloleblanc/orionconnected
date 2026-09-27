@@ -9205,12 +9205,15 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
       // clock, so a 20s edge TTL meant nearly every poll was a cache MISS
       // that hit the community feeds; doubling the TTL halves our request
       // volume against per-IP throttles for no visible staleness.
-      const ADSB_TTL = 90;                       // seconds. Was 40 — but the
-      // community ring is now the ONLY position source (ADB cancelled), we
-      // use it anonymously and unapproved, and it already throttles us.
-      // Halving our call rate is basic politeness — and it is PERMANENT, not
-      // a stopgap. airplanes.live is CLOSED TO US (see the ring filter below);
-      // positions age a little, nobody's flight does.
+      // v23907 — 180 s, up from 90. A position for a flying aeroplane costs 8
+      // FR24 credits and the daily allowance is paced (~80 credits an hour for
+      // every screen together): at 90 s one tracked flight cost ~320 an hour
+      // per Cloudflare location, four times the whole hourly budget, so most
+      // lookups were skipped and few flights got a position, a type or a
+      // track. The map's glide dead-reckons between fixes, so a fix every
+      // three minutes still moves smoothly, and the flown track still traces
+      // the real path.
+      const ADSB_TTL = 180;
       // How long an all-providers-failed answer is remembered. Without this,
       // every board poll re-hammered feeds that were ALREADY rate-limiting
       // us (observed, morning of 2026-08-25: all three upstreams 429 — no
@@ -9269,6 +9272,34 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           return new Response(body, { status: 200, headers: {
             "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}`,
             "X-Adsb-Cache": "hit", ...corsHeaders(origin) } });
+        }
+      } catch (e) {}
+      // v23907 — ONE ANSWER FOR EVERY SCREEN. The cache above belongs to one
+      // Cloudflare location, so the stream box (Europe) and the screens
+      // (Canada) each paid FR24 for the same aircraft. Every FR24 answer — a
+      // position, or "not transmitting" — is also kept in KV, which every
+      // location reads, for as long as the edge would keep it. A copy served
+      // from KV has seen_pos advanced by its age, so a reused fix is never
+      // mistaken for a fresh one.
+      const _gKey = `adsbans:v1:${kind}:${subject}`;
+      try {
+        if (env.FIDS_LIVE_FLIGHTS) {
+          const _g = await env.FIDS_LIVE_FLIGHTS.get(_gKey, { type: "json" });
+          if (_g && typeof _g.body === "string" && typeof _g.at === "number") {
+            const _gAge = Math.max(0, Math.round((Date.now() - _g.at) / 1000));
+            const _gMax = _g.quiet ? ADSB_EMPTY_TTL : ADSB_TTL;
+            if (_gAge < _gMax) {
+              const _gj = JSON.parse(_g.body);
+              if (Array.isArray(_gj.ac)) _gj.ac.forEach((a) => { if (a && typeof a.seen_pos === "number") a.seen_pos += _gAge; });
+              const _gBody = JSON.stringify(_gj);
+              const _gLeft = Math.max(1, _gMax - _gAge);
+              try { await cache.put(cacheKey, new Response(_gBody, { headers: {
+                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}` } })); } catch (e) {}
+              return new Response(_gBody, { status: 200, headers: {
+                "Content-Type": "application/json", "Cache-Control": `public, max-age=${_gLeft}`,
+                "X-Adsb-Cache": "shared", ...corsHeaders(origin) } });
+            }
+          }
         }
       } catch (e) {}
 
@@ -9386,6 +9417,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                 // v23906 — and add this position to the flight's flown track.
                 try { ctx.waitUntil(acTrackAppend(env, _p, Date.now())); } catch (e) {}
                 const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
+                // v23907 — and for every other location.
+                try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), body: _frBody }), { expirationTtl: ADSB_TTL })); } catch (e) {}
                 try {
                   await cache.put(cacheKey, new Response(_frBody, { headers: {
                     "Content-Type": "application/json", "Cache-Control": `public, max-age=${ADSB_TTL}` } }));
@@ -9431,6 +9464,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         await cache.put(cacheKey, new Response(_negBody, { headers: {
           "Content-Type": "application/json", "Cache-Control": `public, max-age=${_negTtl}` } }));
       } catch (e) {}
+      if (_fr24SaidNothing && env.FIDS_LIVE_FLIGHTS) {
+        try { ctx.waitUntil(env.FIDS_LIVE_FLIGHTS.put(_gKey, JSON.stringify({ at: Date.now(), quiet: true, body: _negBody }), { expirationTtl: ADSB_EMPTY_TTL })); } catch (e) {}
+      }
       return new Response(_negBody, { status: 200, headers: {
         "Content-Type": "application/json", "Cache-Control": `public, max-age=${_negTtl}`,
         "X-Adsb-Cache": _fr24SaidNothing ? "quiet" : "neg", ...corsHeaders(origin) } });
