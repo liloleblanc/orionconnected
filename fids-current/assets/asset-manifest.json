@@ -2,9 +2,9 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2810,
+    "total": 2811,
     "by_category": {
-      "ad": 11,
+      "ad": 12,
       "airline": 1443,
       "background": 185,
       "brand": 4,
@@ -100,6 +100,17 @@
       "subcategory": "house",
       "group": "Advertisements",
       "name": "AirToronto",
+      "iata": "",
+      "country": "",
+      "ext": "svg"
+    },
+    {
+      "path": "/logos/advertisements/retro-airlines/CDNDC10.svg",
+      "file": "CDNDC10.svg",
+      "category": "ad",
+      "subcategory": "house",
+      "group": "Advertisements",
+      "name": "CDNDC10",
       "iata": "",
       "country": "",
       "ext": "svg"
