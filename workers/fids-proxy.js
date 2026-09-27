@@ -9286,7 +9286,13 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                   t: _p.type || void 0,
                   desc: _p.type || void 0,
                   lat: _p.lat, lon: _p.lon,
-                  alt_baro: (typeof _p.alt === "number" && _p.alt > 0) ? Math.round(_p.alt) : void 0,
+                  // v23905 — FR24 reports an aircraft on the ground with alt 0.
+                  // It was dropped, so no FR24 fix was ever "on the ground": a
+                  // parked aeroplane read as airborne with no altitude and the
+                  // board glided it across the apron. "ground" is the value the
+                  // board already reads as on the ground.
+                  alt_baro: (typeof _p.alt === "number" && _p.alt > 0) ? Math.round(_p.alt)
+                    : (typeof _p.alt === "number" ? "ground" : void 0),
                   gs: (typeof _p.gspeed === "number") ? Math.round(_p.gspeed) : void 0,
                   track: (typeof _p.track === "number") ? _p.track : void 0,
                   baro_rate: (typeof _p.vspeed === "number") ? _p.vspeed : void 0,

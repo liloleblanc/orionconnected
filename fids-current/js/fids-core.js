@@ -25642,7 +25642,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23904';
+var FIDS_BUILD_TAG = 'v23905';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -34324,6 +34324,19 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // added for. `_fidsLastFix` is the last REAL FIX, written only here, and it is
   // what the movement test reads. The glide can no longer answer a question about
   // how far the aircraft has actually flown.
+  // v23905 — a parked fix ahead of the "nothing changed" shortcut below, which
+  // would otherwise return with the old flown line and glide still in place.
+  if (_liveReuse && gateMap._fidsLive === true && _gateParkedAtOrigin(planeLat, planeLng, o)) {
+    var _mvK = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.mini) || null;
+    if (_mvK && _mvK.marker && _mvK.marker._map === gateMap && _mvK.a1 && _mvK.a2) {
+      _stopGateMapGlide();
+      _gateApplyParked(_mvK, planeLat, planeLng, d);
+      var _bvK = _gateGlide.views && _gateGlide.views.big;
+      if (_bvK && _bvK.marker && _bvK.marker._map && _bvK.a1 && _bvK.a2) _gateApplyParked(_bvK, planeLat, planeLng, d);
+      window._gatePlaneMk = _mvK.marker;
+      return;
+    }
+  }
   var _lv = null, _fx = null;
   try {
     if (_liveReuse && gateMap._fidsLastView) _lv = gateMap._fidsLastView;
@@ -34361,6 +34374,16 @@ function initGateMapLive(org,dst,planeLat,planeLng){
       var _mv = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.mini) || null;
       if (_mv && _mv.marker && _mv.marker._map === gateMap && _mv.a1 && _mv.a2 &&
           _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
+        // v23905 — parked at the origin: stop any glide, pin the marker to the
+        // fix, drop the flown line, start the dashed route at the aeroplane.
+        if (_gateParkedAtOrigin(planeLat, planeLng, o)) {
+          _stopGateMapGlide();
+          _gateApplyParked(_mv, planeLat, planeLng, d);
+          gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+          gateMap._fidsLastFix = { lat: planeLat, lng: planeLng };
+          window._gatePlaneMk = _mv.marker;
+          return;
+        }
         gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
         // v23700 — the REAL fix, kept apart from the camera record above so the
         // glide's follow-pan cannot overwrite the movement test's reference.
@@ -34438,7 +34461,12 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // regression worse than the fault it chased. Back to the known-good
   // great-circle solid leg; the hairpin stays open, to be fixed without
   // touching what already works.
-  var _a1 = _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
+  // v23905 — parked at the origin: no flown line (an empty one keeps the view's
+  // shape for the glide once it departs), and no glide left running.
+  var _parkedO = _gateParkedAtOrigin(planeLat, planeLng, o);
+  if (_parkedO) { try { _stopGateMapGlide(); } catch (eP) {} }
+  var _a1 = _parkedO ? L.polyline([], {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap)
+                     : _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
   // Runway-aligned final when we have the data — same shape the glide flies.
   var _rwyP = _runwayFinalPath(_pp, d, dst);
   var _a2 = null;
@@ -34457,7 +34485,8 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   _ov.push(_planeMk);
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
-  var _glSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
+  var _glSpd = _parkedO ? 0
+             : (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
              // v23129 — _gateStickyFix stores the speed under 'spd', not
              // 'speed'. Reading .speed here was ALWAYS undefined, so every map
              // built off the sticky-fix branch (feed coords, no ADS-B answer
@@ -34646,6 +34675,34 @@ function _stopGateMapGlide() {
   try { if (_gateGlide.raf && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(_gateGlide.raf); } catch (e) {}
   _gateGlide.timer = null;
   _gateGlide.raf = null;
+}
+
+// v23905 — PARKED AT THE ORIGIN. A live fix on the ground within 5 nm of the
+// departure airport is an aeroplane waiting at its gate for this leg: nothing
+// has been flown yet. So no solid 'flown' line from the airport's reference
+// point to it (that drew a dogleg across the apron), no dead reckoning (a
+// stale glide speed walked it 800 m across the field), and the route starts
+// at the aeroplane itself, dashed all the way.
+function _gateParkedAtOrigin(lat, lng, o) {
+  try {
+    var lp = window._gateInboundLivePos;
+    var onG = !!(lp && lp.onGround === true) || !!(window._gateInbound && window._gateInbound._liveOnGround === true);
+    return !!(onG && o && typeof lat === 'number' && typeof lng === 'number' && _gcNm([lat, lng], o) < 5);
+  } catch (e) { return false; }
+}
+// Put an existing view (marker + its two lines) into the parked state in place.
+function _gateApplyParked(view, lat, lng, d) {
+  try {
+    if (view.marker && view.marker.setLatLng) view.marker.setLatLng([lat, lng]);
+    if (view.a1 && view.a1.setLatLngs) view.a1.setLatLngs([]);
+    if (view.a2 && view.a2.setLatLngs) view.a2.setLatLngs(_gcFullRoute([lat, lng], d, 60));
+    var el = view.marker && view.marker.getElement && view.marker.getElement();
+    if (el && el.firstChild && el.firstChild.style) {
+      var dLng = (d[1] - lng) * Math.PI / 180, la1 = lat * Math.PI / 180, la2 = d[0] * Math.PI / 180;
+      var brg = Math.atan2(Math.sin(dLng) * Math.cos(la2), Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
+      el.firstChild.style.transform = 'rotate(' + _gateHeading(brg) + 'deg)';
+    }
+  } catch (e) {}
 }
 
 // Great-circle path org→dst as plain [lat,lng] points (antimeridian-normalised),
@@ -35019,6 +35076,18 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
         _liveViews.push(_vv);
       }
       if (!_liveViews.length) { _stopGateMapGlide(); return; }
+      // v23905 — a fix that says the aeroplane is parked at its origin ends
+      // the glide where it stands: pin every view to the fix, flown line
+      // dropped, route dashed from the aeroplane. A running glide otherwise
+      // keeps walking on its last speed until the position next changes.
+      try {
+        var _lpF = window._gateInboundLivePos;
+        if (_lpF && _lpF.onGround === true && _gateParkedAtOrigin(_lpF.lat, _lpF.lng, o)) {
+          _stopGateMapGlide();
+          for (var _pv = 0; _pv < _liveViews.length; _pv++) _gateApplyParked(_liveViews[_pv], _lpF.lat, _lpF.lng, d);
+          return;
+        }
+      } catch (ePk) {}
 
       var now = _nowFn();
       var elapsed = now - _t0;
@@ -46615,6 +46684,12 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
         _bmv.a1 && _bmv.a2 &&
         typeof _gateGlideSameLeg === 'function' &&
         _gateGlideSameLeg(_gateGlide.o, o) && _gateGlideSameLeg(_gateGlide.d, d)) {
+      // v23905 — parked at the origin: same in-place pin as the mini map.
+      if (_gateParkedAtOrigin(planeLat, planeLng, o)) {
+        _stopGateMapGlide();
+        _gateApplyParked(_bmv, planeLat, planeLng, d);
+        return;
+      }
       try {
         var _bcpt = window._bigCraftMap.latLngToContainerPoint([planeLat, planeLng]);
         var _bcsz = window._bigCraftMap.getSize();
@@ -46663,7 +46738,10 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // (The old single ideal arc left any real-world deviation looking
   // 'off course' with the plane floating beside the route.)
   var _pp = [planeLat, planeLng];
-  var _bcA1 = _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+  var _bcParked = _gateParkedAtOrigin(planeLat, planeLng, o);
+  if (_bcParked) { try { _stopGateMapGlide(); } catch (eP) {} }
+  var _bcA1 = _bcParked ? L.polyline([], {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap)
+                        : _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
   // Runway-aligned final on the big map too.
   var _bcRwyP = _runwayFinalPath(_pp, d, dst);
   var _bcA2 = null;
@@ -46689,7 +46767,8 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   // was a one-shot paint per slide — visibly frozen
   // 
   try {
-    var _bcGlSpd = (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0) ? window._gateInbound._liveSpd
+    var _bcGlSpd = _bcParked ? 0
+      : (window._gateInbound && typeof window._gateInbound._liveSpd === 'number' && window._gateInbound._liveSpd > 0) ? window._gateInbound._liveSpd
       // v23099 — same last-anchored-speed fallback as the mini map; this
       // cache reading 0 is why the big marker was a one-shot frozen paint.
       : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 &&
