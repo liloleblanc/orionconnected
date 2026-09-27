@@ -297,3 +297,30 @@ test('the aircraft sky turns to night at the real sunset, like the weather card'
   assert.equal(sky(true)(), true, '20:12 in Moncton, sun down at 19:06: night');
   assert.equal(sky(false)(), false);
 });
+
+test('a map whose route layer was measured at zero size is re-measured (the white smear)', () => {
+  const heal = lift('_mapHealRenderer', [], []);
+  const mk = (svgW, svgH, mapW) => {
+    const calls = [];
+    const svg = { getAttribute: (k) => ({ width: String(svgW), height: String(svgH) })[k] };
+    const c = { isConnected: true, clientWidth: 288, clientHeight: 287, querySelector: () => svg };
+    const m = {
+      _loaded: true, getContainer: () => c, getSize: () => ({ x: mapW, y: 287 }),
+      invalidateSize: () => calls.push('invalidate'),
+      eachLayer: (fn) => fn({ _renderer: { _svgSize: { x: 0, y: 0 }, _update() { calls.push('renderer:' + (this._svgSize === null ? 'forgot' : 'kept')); } } }),
+      fire: (e) => calls.push(e),
+    };
+    return { m, calls };
+  };
+  const smear = mk(0, 0, 288);                    // what gate 1 measured: svg 0x0 on a 288 px map
+  assert.equal(heal(smear.m), true);
+  assert.deepEqual(smear.calls, ['invalidate', 'renderer:forgot', 'moveend'], 'the renderer forgets its size so it rewrites the svg');
+  const ok = mk(346, 344, 288);                   // a healthy overlay is 1.2x the map
+  assert.equal(heal(ok.m), false);
+  assert.deepEqual(ok.calls, [], 'a healthy map is left alone');
+  const hidden = mk(0, 0, 0);
+  hidden.m.getContainer().clientWidth = 0;
+  assert.equal(heal(hidden.m), false, 'a hidden map is not touched');
+  assert.match(CORE, /setInterval\(function \(\) \{\s*try \{ if \(typeof gateMap !== 'undefined'\) _mapHealRenderer\(gateMap\); \} catch \(e\) \{\}\s*try \{ _mapHealRenderer\(window\._bigCraftMap\); \} catch \(e\) \{\}\s*\}, 2000\);/);
+  assert.match(fnSource('_gateMapWatchResize'), /gateMap\.invalidateSize\(\); _mapHealRenderer\(gateMap\);/);
+});

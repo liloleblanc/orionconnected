@@ -34243,12 +34243,51 @@ function _gateMapSettle(o, d, p, delayMs) {
 // centre, wrongly-zoomed crop with the plane at the frame edge (
 // it was unclear what was happening to the map). Watch the box and re-measure:
 // invalidateSize() keeps the true centre through any late resize.
+// v23909 — THE ROUTE DRAWN AS A WHITE SMEAR. Reported with a screenshot of
+// the small map: a broad, soft white band from Calgary to Moncton where the
+// dashed route should be. Traced on the live gate 1 board: hiding the SVG
+// overlay pane removes the band, and in that state the overlay <svg> measured
+// width 0, height 0, viewBox "144 144 0 0" while the map was 288 px wide. The
+// box travels between the rail and the centre slide and is detached for a
+// moment on each rebuild; if Leaflet's renderer last measured it during one of
+// those zero-size moments and nothing re-measured it after, the route is
+// painted through a zero-size canvas and the compositor stretches that into
+// the smear. The resize observer usually catches the return — usually is the
+// problem. This is the check that always does: if a visible map's overlay is
+// smaller than the map, re-measure and re-run the renderer. It is cheap
+// enough to run every couple of seconds.
+function _mapHealRenderer(m) {
+  try {
+    if (!m || !m._loaded || !m.getContainer) return false;
+    var c = m.getContainer();
+    if (!c || !c.isConnected || c.clientWidth < 20 || c.clientHeight < 20) return false;
+    var sz = m.getSize();
+    var svg = c.querySelector('.leaflet-overlay-pane svg');
+    var sw = svg ? (Number(svg.getAttribute('width')) || 0) : null;
+    var sh = svg ? (Number(svg.getAttribute('height')) || 0) : null;
+    var stale = sz.x !== c.clientWidth || sz.y !== c.clientHeight
+      || (svg !== null && (sw < c.clientWidth || sh < c.clientHeight));
+    if (!stale) return false;
+    m.invalidateSize({ animate: false });
+    // Leaflet's SVG renderer only rewrites width/height when its remembered
+    // size changes, so forget it first: the rewrite must happen every time.
+    m.eachLayer(function (l) { try { if (l._renderer && typeof l._renderer._update === 'function') { l._renderer._svgSize = null; l._renderer._update(); } } catch (e) {} });
+    m.fire('moveend');
+    return true;
+  } catch (e) { return false; }
+}
+try {
+  setInterval(function () {
+    try { if (typeof gateMap !== 'undefined') _mapHealRenderer(gateMap); } catch (e) {}
+    try { _mapHealRenderer(window._bigCraftMap); } catch (e) {}
+  }, 2000);
+} catch (e) {}
 function _gateMapWatchResize(mb) {
   try {
     if (window._gateMapRO) { try { window._gateMapRO.disconnect(); } catch (e2) {} }
     if (typeof ResizeObserver === 'function') {
       window._gateMapRO = new ResizeObserver(function () {
-        try { if (gateMap) gateMap.invalidateSize(); } catch (e3) {}
+        try { if (gateMap) { gateMap.invalidateSize(); _mapHealRenderer(gateMap); } } catch (e3) {}
       });
       window._gateMapRO.observe(mb);
     }
