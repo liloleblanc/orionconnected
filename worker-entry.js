@@ -1015,10 +1015,12 @@ export default {
       const upstream = tpl.replace('{z}', m[2]).replace('{x}', m[3]).replace('{y}', m[4]);
       try {
         // OSM (and some others) reject requests without a descriptive
-        // User-Agent per their tile-usage policy — always send one.
+        // User-Agent per their tile-usage policy — always send one. It must
+        // name THIS application and a contact that is ours (v23909: it gave
+        // Orlando airport's site, which the policy treats as a faked UA).
         const r = await fetch(upstream, {
           cf: { cacheEverything: true, cacheTtl: DAY },
-          headers: { 'User-Agent': 'OrionConnectedFIDS/1.0 (airport display board; +https://flymco.com)' }
+          headers: { 'User-Agent': 'OrionConnectedFIDS/1.0 (airport display boards; +https://fids.orionconnected.com)' }
         });
         if (!r.ok) return new Response('Tile upstream ' + r.status, { status: 502, headers: NO_STORE });
         return new Response(r.body, {

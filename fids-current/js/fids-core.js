@@ -4250,6 +4250,30 @@ async function _gateNumbersPoll() {
     // the flight lookup, so on most gates this is the exact key and the reg /
     // callsign attempts below are never needed.
     var _inbHex = inb._modeS || (inb.aircraft && inb.aircraft.modeS) || '';
+    // v23909 — NO FLIGHTRADAR24 LOOKUP FOR A LEG THAT IS NOT FLYING. This poll
+    // asked FR24 every minute from the moment a gate showed a flight, hours
+    // before it left. Before departure the flight number answers empty (paid),
+    // and the registration finds the airframe wherever it is: airborne on an
+    // earlier leg (paid, 8 credits, then thrown away by the guard below) or
+    // parked at ANOTHER airport — which that guard lets through, so the map
+    // was handed a position with no reason to be there. The render path
+    // already waits for the leg's window (_gateLegWindowOpen); this poll now
+    // does too. An arrival is looked up while its leg can be flying; the
+    // departing flight from 20 minutes before it leaves. Until then the map
+    // draws the aeroplane waiting at its stand, which costs nothing (v23909).
+    var _legOpen = true;
+    try {
+      if (inb.dest) {
+        var _outT = Math.max(inb._revTs || 0, inb._sortTs || 0);
+        _legOpen = !_outT || Date.now() >= _outT - 20 * 60000;
+      } else {
+        _legOpen = _gateLegWindowOpen(inb, iata);
+      }
+    } catch (e) { _legOpen = true; }
+    if (!_legOpen) {
+      try { window._gateInboundLivePos = null; } catch (e) {}
+      return;
+    }
     try { _adsb = await _adsbTelemetry(inb._reg, inb._callSign, flt, _inbHex); } catch (e) {}
     // v23103 — THE TAIL IS NOT THE FLIGHT. Registration matching finds the
     // airframe wherever it is — including mid-air on its PREVIOUS leg.
@@ -18640,6 +18664,8 @@ const gView = document.getElementById('gateView');
       var _prevAirline = window._gateCurrentAirline;
       window._gateCurrentAirline = currentFlight.airline || '';
       window._gateIata = iata;
+      // v23909 — this airport's stands, fetched now so the map's first draw has them.
+      try { if (iata && typeof _apGatesFor === 'function') _apGatesFor(iata); } catch (eG) {}
       // Phase 2: kick off airport config load (idempotent — safe to call repeatedly)
       if (iata && typeof bootstrapAirportConfig === 'function') bootstrapAirportConfig(iata);
       // If the airline changed, refresh the menu picker so the dropdown
@@ -18841,15 +18867,21 @@ const gView = document.getElementById('gateView');
               // airborne estimate, never a bare clock.
               // v23263 — leg identity here too: 'arr-pins' equalling
               // 'arr-pins' across a gate switch kept the old gate's map.
-              var pinKey = (inb.status === 'arrived' || inb.status === 'landed')
+              // v23909 — a parked aeroplane only where the row proves it waits:
+              // landed here, or not yet due off the ground at its origin. A
+              // flight the feed has not confirmed airborne, or one past 0.98 of
+              // its clock, keeps the pins-only view (see initGateMap).
+              var _arrHere = (inb.status === 'arrived' || inb.status === 'landed');
+              var _pinWait = _arrHere ? _gateInboundLandedHere(inb) : _gateInboundWaitingAtOrigin(inb);
+              var pinKey = (_arrHere
                 ? 'arr-pins-' + apIata + '>' + (dstIata || '?')
-                : 'inb-pins-' + (inb._locIata || '?') + '>' + apIata;
+                : 'inb-pins-' + (inb._locIata || '?') + '>' + apIata) + (_pinWait ? '+wait' : '');
               if (!gateMap || window._lastMapProgKey !== pinKey) {
                 window._lastMapProgKey = pinKey;
-                if (inb.status === 'arrived' || inb.status === 'landed') {
-                  initGateMap(apIata, dstIata, -1);
+                if (_arrHere) {
+                  initGateMap(apIata, dstIata || apIata, -1, _pinWait);
                 } else {
-                  initGateMap(inb._locIata, apIata, -1);
+                  initGateMap(inb._locIata, apIata, -1, _pinWait);
                 }
               }
             }
@@ -18860,10 +18892,11 @@ const gView = document.getElementById('gateView');
           // OLD gate's route stayed painted indefinitely (gate 46
           // wearing DL5324's YHZ→LGA line). The outbound preview now claims
           // the map through the same keyed guard as every other state.
-          var outKey = 'out-pins-' + apIata + '>' + (dstIata || '?');
+          var _outWait = _gateOutboundWaiting(window._gateCurrentFlight);   // v23909
+          var outKey = 'out-pins-' + apIata + '>' + (dstIata || '?') + (_outWait ? '+wait' : '');
           if (dstIata && (!gateMap || window._lastMapProgKey !== outKey)) {
             window._lastMapProgKey = outKey;
-            initGateMap(apIata, dstIata, -1);
+            initGateMap(apIata, dstIata, -1, _outWait);
           }
         }
       }
@@ -25642,7 +25675,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23906';
+var FIDS_BUILD_TAG = 'v23909';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -33943,7 +33976,7 @@ function _mapPlaneIcon() {
   } catch (e) {}
   return '/logos/map-plane-jet.png';
 }
-function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;
+function initGateMap(org,dst,prog,waitAt){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,wait:!!waitAt,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;
   /* v23104 — THE LIVE VIEW OUTRANKS THE ESTIMATE. This check must run BEFORE
      the mini-view detach below, or the view is already gone when we look.
      While a healthy same-leg live glide is flying on this map, an estimate
@@ -33972,7 +34005,7 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
     Promise.all(pending).then(function() {
       // Re-attempt once both resolutions are in
       if (_lookupAirport(org) && _lookupAirport(dst)) {
-        initGateMap(org, dst, prog);
+        initGateMap(org, dst, prog, waitAt);
       } else {
         // Could not resolve every endpoint — fall back to a WORLD view with
         // whatever pin we DO know (an unresolvable exotic code used to blank
@@ -34086,16 +34119,44 @@ function initGateMap(org,dst,prog){try{window._fidsGateRoute={org:org,dst:dst,pr
   // false because this is the map ARRIVING at its view, not travelling to it;
   // there is no previous view worth animating away from.
   var _preDep = (p < 0.02);
-  var _viewSet = false;
-  if (_preDep) {
-    try {
-      gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
-      _viewSet = true;
-    } catch (e) { /* fall through to setView */ }
-  }
-  if (!_viewSet) gateMap.setView(center, zoom, { animate: false });
+  // v23909 — a waiting aeroplane only when the caller KNOWS it is waiting
+  // (waitAt: landed at our gate, or not yet due off the ground where it
+  // stands — see _gateInboundWaitingAtOrigin and friends). A p below 0.02
+  // also stands for "unknown" (unconfirmed by the feed, cancelled, diverted,
+  // the last minutes of a leg): that keeps the old route view with no
+  // aircraft, which claims nothing about where the aeroplane is.
+  var _parked = _preDep && !!waitAt;
   var _estOv=(gateMap._fidsOverlays=gateMap._fidsOverlays||[]);
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }_estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  var arc=null;
+  if (_parked) {
+    // Not the whole route from its midpoint: the aeroplane, where it waits
+    // (see _gateDrawParkedEstimate). When the airport's gate file lands after
+    // this draw, draw once more with the stand — unless a live fix has taken
+    // the map over in the meantime.
+    var _pkK = String(org).toUpperCase();
+    if (!Object.prototype.hasOwnProperty.call(_AP_GATES, _pkK)) {
+      _apGatesFor(_pkK, function () {
+        var r = window._fidsGateRoute;
+        if (r && r.org === org && r.dst === dst && r.prog === prog && r.wait && gateMap && gateMap._fidsParkView && gateMap._fidsLive !== true) initGateMap(org, dst, prog, waitAt);
+      });
+    }
+    _gateDrawParkedEstimate(gateMap, _gateParkSpot(org, o, _gateOwnGateRef(org)), d).forEach(function (l) { _estOv.push(l); });
+  } else {
+    try { delete gateMap._fidsParkView; } catch (e) {}
+    var _viewSet = false;
+    if (_preDep) {
+      try {
+        gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
+        _viewSet = true;
+      } catch (e) { /* fall through to setView */ }
+    }
+    if (!_viewSet) gateMap.setView(center, zoom, { animate: false });
+    if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }
+  }
+  // The origin pin is the aeroplane itself while it waits there: its label
+  // sat over the aircraft (the pin is the rounded reference point, out on the
+  // runways at stand zoom).
+  if (!_parked) _estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));if (!(_parked && String(org).toUpperCase() === String(dst).toUpperCase())) _estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -34144,7 +34205,10 @@ function _bigMapSettle(o, d, p, delayMs) {
       m.invalidateSize({ animate: false });
       var after = m.getSize();
       if (before.x === after.x && before.y === after.y) return;   // nothing moved
-      if (p < 0.02) m.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
+      // v23909 — a waiting aeroplane keeps the camera on itself.
+      var pv = m._fidsParkView;
+      if (p < 0.02 && pv) m.setView([pv.lat, pv.lng], pv.zoom, { animate: false });
+      else if (p < 0.02) m.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
     } catch (e) {}
   }, delayMs);
 }
@@ -34157,7 +34221,10 @@ function _gateMapSettle(o, d, p, delayMs) {
       gateMap.invalidateSize({ animate: false });
       var _after = gateMap.getSize();
       if (_before.x === _after.x && _before.y === _after.y) return; // nothing moved
-      if (p < 0.02) gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
+      // v23909 — a waiting aeroplane keeps the camera on itself.
+      var _pv = gateMap._fidsParkView;
+      if (p < 0.02 && _pv) gateMap.setView([_pv.lat, _pv.lng], _pv.zoom, { animate: false });
+      else if (p < 0.02) gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
     } catch (e) {}
   }, delayMs);
 }
@@ -34441,6 +34508,9 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     _gateMapWatchResize(mb);
   }
   gateMap._fidsLive = true;   // live map — the marker watchdog polices this one
+  // v23909 — a live fix retires the waiting view: its camera must not be
+  // restored by a settle pass, nor its gate-file redraw replace this map.
+  try { delete gateMap._fidsParkView; if (window._fidsGateRoute) window._fidsGateRoute.wait = false; } catch (eP) {}
   gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
   // v23700 — see the note at the zoom hold: this is the last REAL fix, and it
   // is the only thing the movement test may measure against.
@@ -34705,6 +34775,175 @@ function _gateApplyParked(view, lat, lng, d) {
       el.firstChild.style.transform = 'rotate(' + _gateHeading(brg) + 'deg)';
     }
   } catch (e) {}
+}
+
+// v23909 — AN AEROPLANE THAT HAS NOT LEFT IS SHOWN WHERE IT IS WAITING.
+// Before departure both estimate maps framed the WHOLE route and drew no
+// aircraft at all. On a gate-sized map that fit is zoom 3 over the route's
+// midpoint: a Moncton–Toronto departure standing at gate 1 showed a stretch
+// of Vermont with a line across it and nothing on it — a map with no reason
+// to be where it was. The aeroplane is on the ground at the origin, so that
+// is where the map now is: the plane parked there, nose toward the
+// destination, the route dashed out from it — the view a live ground fix
+// already gets (v23905), so a real fix arriving later changes nothing.
+//
+// WHERE AT THE AIRPORT. The airport tables hold a reference point rounded to
+// two decimals (YQM is ~1 km from its terminal, out on the runways), which is
+// no place to park an aeroplane at stand zoom. /data/gates/<IATA>.json holds
+// each board airport's stands, gate doors and terminals from OpenStreetMap —
+// the same database the street tiles are drawn from — built by
+// scripts/gates/build-gates.py. At the board's own airport the plane stands
+// at its gate's stand (z15, as the live parked view); with no stand on
+// record, at the terminal when there is only one (z14); otherwise at the
+// reference point, far enough out (z12) that the rounding cannot put it on a
+// runway.
+var _AP_GATES = {};          // IATA -> gate file, or null when there is none
+var _AP_GATES_WAIT = {};     // IATA -> [callbacks] while the file is loading
+var _AP_GATES_RETRY = {};    // IATA -> time a failed fetch may be tried again
+function _apGatesFor(iata, onReady) {
+  var k = String(iata || '').toUpperCase();
+  if (!/^[A-Z0-9]{3}$/.test(k)) return null;
+  if (Object.prototype.hasOwnProperty.call(_AP_GATES, k)) return _AP_GATES[k];
+  if (_AP_GATES_WAIT[k]) { if (onReady) _AP_GATES_WAIT[k].push(onReady); return null; }
+  if (_AP_GATES_RETRY[k] && Date.now() < _AP_GATES_RETRY[k]) return null;
+  _AP_GATES_WAIT[k] = onReady ? [onReady] : [];
+  // Only a 404 means "this airport has no gate file" for the life of the page.
+  // A network blip, a 5xx or a bad body is retried five minutes on — a board
+  // runs for days, and one failed boot fetch must not cost it its stands.
+  var done = function (f, known) {
+    var cbs = _AP_GATES_WAIT[k] || [];
+    delete _AP_GATES_WAIT[k];
+    if (known) { _AP_GATES[k] = f; delete _AP_GATES_RETRY[k]; }
+    else _AP_GATES_RETRY[k] = Date.now() + 5 * 60000;
+    if (f) cbs.forEach(function (cb) { try { cb(f); } catch (e) {} });
+  };
+  try {
+    fetch('/data/gates/' + k + '.json').then(function (r) {
+      if (r.status === 404) return done(null, true);
+      if (!r.ok) return done(null, false);
+      return r.json().then(function (f) { done(f && typeof f === 'object' ? f : null, !!(f && typeof f === 'object')); }, function () { done(null, false); });
+    }, function () { done(null, false); });
+  } catch (e) { done(null, false); }
+  return null;
+}
+// One spelling for a gate, on both sides: the feed's and the gate file's
+// (scripts/gates/build-gates.py norm_ref mirrors this exactly).
+function _gateRefNorm(g) {
+  var s = String(g == null ? '' : g).toUpperCase().trim().replace(/^GATE\s*/, '').replace(/[\s\-_.]/g, '');
+  return s.replace(/(^|[A-Z])0+(\d)/g, '$1$2');
+}
+// The gate this board stands at, for an aeroplane at the board's own airport.
+function _gateOwnGateRef(org) {
+  try {
+    if (String(org || '').toUpperCase() !== String(window._gateIata || '').toUpperCase()) return '';
+    var cf = window._gateCurrentFlight;
+    return String((cf && cf.gate) || subScreenVal || '');
+  } catch (e) { return ''; }
+}
+// WAITING IS EVIDENCE, NEVER A FALLBACK. The estimate maps are handed a
+// progress under 0.02 both when a flight has not left AND when nobody knows
+// (a late leg the feed never confirmed airborne, a cancelled or diverted one,
+// the last minutes of a leg whose clock ran past 0.98). Only the first may
+// draw a parked aeroplane, so each caller asks one of these three.
+function _gateLegGone(row) {
+  return /cancel|divert/i.test(String((row && row.status) || ''));
+}
+// The inbound has not left where it is: nothing says it is flying and its
+// scheduled departure is not more than a taxi behind us.
+function _gateInboundWaitingAtOrigin(inb, now) {
+  try {
+    if (!inb || _gateLegGone(inb)) return false;
+    if (/depart|airborne|en.?route|active|landed|arriv/i.test(String(inb.status || ''))) return false;
+    if (typeof fidsInboundAirborne === 'function' && fidsInboundAirborne(inb)) return false;
+    var dep = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : 0;
+    return !!dep && (now || Date.now()) < dep + 10 * 60000;
+  } catch (e) { return false; }
+}
+// The inbound is down at OUR field: the feed says so, it carries an actual
+// arrival time, or a live fix has it on the ground here. A clock alone is not
+// a landing (a late leg with no revised time is still in the air).
+function _gateInboundLandedHere(inb, liveGrounded) {
+  try {
+    if (!inb || _gateLegGone(inb)) return false;
+    return inb.status === 'arrived' || inb.status === 'landed' || !!inb._actualArrTime || !!liveGrounded;
+  } catch (e) { return false; }
+}
+// This gate's own departure has not gone: not departed, cancelled or
+// diverted, and not more than 15 minutes past its time.
+function _gateOutboundWaiting(cf, now) {
+  try {
+    if (!cf || _gateLegGone(cf)) return false;
+    if (/depart|airborne|en.?route|active/i.test(String(cf.status || ''))) return false;
+    var dep = Math.max(cf._revTs || 0, cf._sortTs || 0);
+    return !dep || (now || Date.now()) < dep + 15 * 60000;
+  } catch (e) { return false; }
+}
+// Where an aeroplane waiting at `iata` stands, and the zoom to show it at.
+//
+// THE DOOR IS THE AUTHORITY. A stand's number is only a label, and the same
+// number turns up elsewhere on a big field: at JFK, T8's gate 36 has its own
+// door while stand "36" is at Terminal 4, 1.7 km away; at MCO, stand "2" is
+// 2.8 km from door 2. So when the gate's door is on record, the aeroplane goes
+// to a stand with this gate's number only if that stand is AT this door
+// (within 150 m), else to the stand nearest the door (within 100 m), else to
+// the door itself. With no door on record, a stand of that number is used only
+// if it sits at a terminal or a door — never out on a cargo apron. Numbers the
+// gate files could not pin to one place are left out of them at build time
+// (scripts/gates/build-gates.py), so they fall through to the terminal or the
+// airport rather than to a guess.
+function _gateParkSpot(iata, o, gateRef) {
+  var f = _apGatesFor(iata);
+  var near = function (p) { return p && o && _gcNm(p, o) < 5; };   // a stand 5 nm off is another airport's
+  var m = function (a, b) { return _gcNm(a, b) * 1852; };
+  var spot = function (p, z, src) { return { lat: p[0], lng: p[1], zoom: z, src: src }; };
+  if (f) {
+    var g = _gateRefNorm(gateRef), st = f.stands || {}, gt = f.gates || {}, tm = f.terminals || [];
+    if (g) {
+      var named = [];
+      if (near(st[g])) named.push(st[g]);
+      // Gate 1 boards from stand 1A or 1B.
+      if (/\d$/.test(g)) {
+        Object.keys(st).sort().forEach(function (k) {
+          if (k.length === g.length + 1 && k.indexOf(g) === 0 && /[A-Z]$/.test(k) && near(st[k])) named.push(st[k]);
+        });
+      }
+      var door = near(gt[g]) ? gt[g] : null;
+      if (door) {
+        for (var i = 0; i < named.length; i++) if (m(named[i], door) <= 150) return spot(named[i], 15, 'stand');
+        var best = null, bd = Infinity;
+        Object.keys(st).forEach(function (k) { var d = m(st[k], door); if (d < bd) { bd = d; best = st[k]; } });
+        if (best && bd <= 100) return spot(best, 15, 'stand');
+        return spot(door, 15, 'gate');
+      }
+      for (var j = 0; j < named.length; j++) {
+        var p = named[j], ok = false;
+        for (var t = 0; t < tm.length && !ok; t++) if (m(p, tm[t]) <= 400) ok = true;
+        for (var dk in gt) { if (ok) break; if (Object.prototype.hasOwnProperty.call(gt, dk) && m(p, gt[dk]) <= 200) ok = true; }
+        if (ok) return spot(p, 15, 'stand');
+      }
+    }
+    if (tm.length === 1 && near(tm[0])) return spot(tm[0], 14, 'terminal');
+  }
+  return o ? spot(o, 12, 'airport') : null;
+}
+// Draw the waiting aeroplane on an estimate map: the route dashed from it to
+// the destination, the plane on top nose-first along that route, the camera
+// on it. Returns the overlays so the caller's reuse pass can clear them.
+function _gateDrawParkedEstimate(map, spot, d) {
+  var out = [], s = [spot.lat, spot.lng];
+  try {
+    if (_gateMapShowOverlay('route') && _gcNm(s, d) > 1) {
+      var rt = _gcAddArc(map, s, d, { vertices: 100, color: '#60a5fa', weight: 3, opacity: 0.6, dashArray: '8,6', noClip: true });
+      if (rt) out.push(rt);
+    }
+    var dLng = (d[1] - s[1]) * Math.PI / 180, la1 = s[0] * Math.PI / 180, la2 = d[0] * Math.PI / 180;
+    var brg = Math.atan2(Math.sin(dLng) * Math.cos(la2), Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
+    if (!isFinite(brg)) brg = 0;
+    out.push(L.marker(s, { zIndexOffset: 1000, icon: L.divIcon({ html: '<div style="transform:rotate(' + _gateHeading(brg) + 'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="' + _mapPlaneIcon() + '" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>', iconSize: [48, 48], iconAnchor: [24, 24], className: '' }) }).addTo(map));
+    map.setView(s, spot.zoom, { animate: false });
+    map._fidsParkView = { lat: spot.lat, lng: spot.lng, zoom: spot.zoom, src: spot.src };
+  } catch (e) {}
+  return out;
 }
 
 // v23906 — THE FLOWN HALF IS THE REAL TRACK. The worker records every FR24
@@ -35334,6 +35573,9 @@ var _gateMapCamera = {
 };
 
 function _gateMapTick() {
+  // v23909 — this airport's stands, asked for before anything is drawn, so the
+  // first waiting aeroplane lands on its stand instead of jumping there.
+  try { if (window._gateIata) _apGatesFor(window._gateIata); } catch (e) {}
   var mb = document.getElementById('gateMapBox');
   if (!mb || mb.offsetHeight < 10) return; // not rendered yet
   // (v219.1: the 3D showcase lives in the BIG CENTER rotation — renderGateAd.
@@ -35351,7 +35593,7 @@ function _gateMapTick() {
   var hasInbound = !!(inb && inb._locIata);
 
   // Determine phase + the relevant route + progress
-  var phase, routeOrg, routeDst, prog = -1, depTs = null;
+  var phase, routeOrg, routeDst, prog = -1, depTs = null, waitAt = false;
 
   if (hasInbound) {
     // Compute progress along the inbound route
@@ -35446,6 +35688,8 @@ function _gateMapTick() {
       routeOrg = apIata;
       routeDst = dstIata || apIata;
       prog = -1; // full route, no plane in motion
+      // v23909 — parked at our stand only on real evidence of the landing.
+      waitAt = _gateInboundLandedHere(inb, _liveGrounded);
     } else if (actuallyAirborne) {
       phase = 'airborne';
       routeOrg = inb._locIata;
@@ -35458,6 +35702,7 @@ function _gateMapTick() {
       routeOrg = inb._locIata;
       routeDst = apIata;
       prog = -1;
+      waitAt = _gateInboundWaitingAtOrigin(inb, now);   // v23909
     }
   } else if (dstIata) {
     // No inbound info — show our outbound only
@@ -35465,6 +35710,7 @@ function _gateMapTick() {
     routeOrg = apIata;
     routeDst = dstIata;
     prog = -1;
+    waitAt = _gateOutboundWaiting(cf, now);   // v23909
   } else {
     return; // nothing to show
   }
@@ -35494,7 +35740,7 @@ function _gateMapTick() {
 
   // Build a stable key — only rebuild if a phase boundary crosses
   var progBucket = (prog < 0) ? 'pre' : Math.round(prog * 50);
-  var progKey = phase + '|' + progBucket;
+  var progKey = phase + (waitAt ? '+wait' : '') + '|' + progBucket;
   if (progKey === _gateMapCamera.lastProgKey && !subjectChanged) return;
   _gateMapCamera.lastProgKey = progKey;
 
@@ -35513,7 +35759,7 @@ function _gateMapTick() {
                 : (window._gateMapFix && typeof window._gateMapFix.lat === 'number' ? window._gateMapFix : null);
     if (_lf) { initGateMapLive(routeOrg, routeDst, _lf.lat, _lf.lng); return; }
   }
-  initGateMap(routeOrg, routeDst, renderProg);
+  initGateMap(routeOrg, routeDst, renderProg, waitAt);
 }
 
 _ocEvery(_gateMapTick, 10000);
@@ -40898,7 +41144,14 @@ function _map3dFlightCtx(allowEstimated) {
       etaStr: etaStr,
       destWx: wx,
       estimated: !fixOk,
-      out: _legOut
+      out: _legOut,
+      // v23909 — the evidence that the aeroplane is waiting where the leg
+      // starts (the big map parks it only then; see _bigMapClone).
+      waiting: (function () {
+        try {
+          return !fixOk && prog <= 0.02 && (_legOut ? _gateOutboundWaiting(inb) : _gateInboundWaitingAtOrigin(inb));
+        } catch (eW) { return false; }
+      })()
     };
   } catch (e) { return null; }
 }
@@ -44297,7 +44550,7 @@ function _renderBigCraft(el, ctx) {
     if (typeof L !== 'undefined' && typeof L.map === 'function') {
       var _bcO = ctx.oc, _bcD = ctx.dc;
       if (ctx.pos) _bigMapCloneLive(_bcO, _bcD, ctx.pos[1], ctx.pos[0]);
-      else _bigMapClone(_bcO, _bcD, ctx.progress);
+      else _bigMapClone(_bcO, _bcD, ctx.progress, ctx.waiting);
     }
   } catch (e4) {}
   // v22972 — NEVER SIT DARK (a clip: the panel goes to a blank screen
@@ -46572,7 +46825,7 @@ function _gcAddArc(map, from, to, opts) {
   }
   return a;
 }
-function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:dst,prog:prog,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('bigCraftMap');if(!mb)return;
+function _bigMapClone(org,dst,prog,waitAt){try{window._bigCraftRouteMemo={org:org,dst:dst,prog:prog,wait:!!waitAt,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('bigCraftMap');if(!mb)return;
   // v23106 — THE LIVE VIEW OUTRANKS THE ESTIMATE on the big surface too
   // (mini got this in v23104). A slide repaint that lands during a poll gap
   // has no live fix, falls into this estimated builder, and used to
@@ -46600,7 +46853,7 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
     Promise.all(pending).then(function() {
       // Re-attempt once both resolutions are in
       if (_lookupAirport(org) && _lookupAirport(dst)) {
-        _bigMapClone(org, dst, prog);
+        _bigMapClone(org, dst, prog, waitAt);
       } else {
         // Could not resolve — leave the box empty rather than gray squares
         try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch(e){}
@@ -46667,21 +46920,31 @@ function _bigMapClone(org,dst,prog){try{window._bigCraftRouteMemo={org:org,dst:d
   // was always documented to be. animate:false because the map is ARRIVING at a
   // view, not travelling between two.
   var _bcPreDep = (p < 0.02);
-  var _bcViewSet = false;
-  if (_bcPreDep) {
-    try {
-      window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
-      _bcViewSet = true;
-    } catch (e) { /* fall through */ }
+  // v23909 — parked only when the caller knows the aeroplane waits (see
+  // initGateMap); "unknown" keeps the route fit with no aircraft.
+  var _bcParked = _bcPreDep && !!waitAt;
+  var arc=null;
+  if (_bcParked) {
+    var _bpK = String(org).toUpperCase();
+    if (!Object.prototype.hasOwnProperty.call(_AP_GATES, _bpK)) {
+      _apGatesFor(_bpK, function () {
+        var r = window._bigCraftRouteMemo;
+        if (r && r.org === org && r.dst === dst && r.prog === prog && r.wait && window._bigCraftMap && window._bigCraftMap._fidsParkView) _bigMapClone(org, dst, prog, waitAt);
+      });
+    }
+    _gateDrawParkedEstimate(window._bigCraftMap, _gateParkSpot(org, o, _gateOwnGateRef(org)), d);
+  } else {
+    var _bcViewSet = false;
+    if (_bcPreDep) {
+      try {
+        window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
+        _bcViewSet = true;
+      } catch (e) { /* fall through */ }
+    }
+    if (!_bcViewSet) window._bigCraftMap.setView(center, zoom, { animate: false });
+    if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }
   }
-  if (!_bcViewSet) window._bigCraftMap.setView(center, zoom, { animate: false });
-  // For pre-departure flights, fit bounds to show both endpoints with padding.
-  if (p < 0.02) {
-    try {
-      window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11 });
-    } catch(e) { /* fallback to setView above */ }
-  }
-  var arc=null; if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});_bigMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  if (!_bcParked)   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});if (!(_bcParked && String(org).toUpperCase() === String(dst).toUpperCase())) L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});_bigMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
