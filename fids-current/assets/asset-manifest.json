@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2811,
+    "total": 2835,
     "by_category": {
       "ad": 12,
       "airline": 1443,
@@ -10,7 +10,7 @@
       "brand": 4,
       "hotel": 888,
       "livery": 96,
-      "misc": 63,
+      "misc": 87,
       "symbol": 4,
       "weather": 116
     }
@@ -29013,6 +29013,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/cities/BOS-night.jpg",
+      "file": "BOS-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "BOS night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/BOS.jpg",
       "file": "BOS.jpg",
       "category": "misc",
@@ -29035,12 +29046,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/cities/CLT-night.jpg",
+      "file": "CLT-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "CLT night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/CLT.jpg",
       "file": "CLT.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "CLT",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/CUN-night.jpg",
+      "file": "CUN-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "CUN night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29068,6 +29101,17 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/cities/DEN-night.jpg",
+      "file": "DEN-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "DEN night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/DEN.jpg",
       "file": "DEN.jpg",
       "category": "misc",
@@ -29090,12 +29134,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/cities/DTW-night.jpg",
+      "file": "DTW-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "DTW night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/DTW.jpg",
       "file": "DTW.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "DTW",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/DUB-night.jpg",
+      "file": "DUB-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "DUB night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29112,12 +29178,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/EDI-night.jpg",
+      "file": "EDI-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "EDI night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/EDI.jpg",
       "file": "EDI.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "EDI",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/FLL-night.jpg",
+      "file": "FLL-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "FLL night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29134,12 +29222,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/IAH-night.jpg",
+      "file": "IAH-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "IAH night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/IAH.jpg",
       "file": "IAH.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "IAH",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/KEF-night.jpg",
+      "file": "KEF-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "KEF night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29277,12 +29387,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/MIA-night.jpg",
+      "file": "MIA-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "MIA night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/MIA.jpg",
       "file": "MIA.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "MIA",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/MSP-night.jpg",
+      "file": "MSP-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "MSP night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29299,12 +29431,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/NYC-night.jpg",
+      "file": "NYC-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "NYC night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/NYC.jpg",
       "file": "NYC.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "NYC",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/ORD-night.jpg",
+      "file": "ORD-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "ORD night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29321,12 +29475,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/PHL-night.jpg",
+      "file": "PHL-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "PHL night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/PHL.jpg",
       "file": "PHL.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "PHL",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/PHX-night.jpg",
+      "file": "PHX-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "PHX night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29354,12 +29530,34 @@
       "ext": "svg"
     },
     {
+      "path": "/logos/cities/PUJ-night.jpg",
+      "file": "PUJ-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "PUJ night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/PUJ.jpg",
       "file": "PUJ.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "PUJ",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/SFO-night.jpg",
+      "file": "SFO-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "SFO night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29376,12 +29574,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/TPA-night.jpg",
+      "file": "TPA-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "TPA night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/TPA.jpg",
       "file": "TPA.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "TPA",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/VRA-night.jpg",
+      "file": "VRA-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "VRA night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29486,6 +29706,17 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YQM-night.jpg",
+      "file": "YQM-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YQM night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YQM.jpg",
       "file": "YQM.jpg",
       "category": "misc",
@@ -29508,12 +29739,34 @@
       "ext": "jpg"
     },
     {
+      "path": "/logos/cities/YUL-night.jpg",
+      "file": "YUL-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YUL night",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
       "path": "/logos/cities/YUL.jpg",
       "file": "YUL.jpg",
       "category": "misc",
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YUL",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YVR-night.jpg",
+      "file": "YVR-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YVR night",
       "iata": "",
       "country": "",
       "ext": "jpg"
@@ -29547,6 +29800,17 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YWK",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YYC-night.jpg",
+      "file": "YYC-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YYC night",
       "iata": "",
       "country": "",
       "ext": "jpg"

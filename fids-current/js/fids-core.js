@@ -25683,7 +25683,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23909';
+var FIDS_BUILD_TAG = 'v23911';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -46199,7 +46199,7 @@ function _renderWxCard(el) {
     // An alias belongs here only once the city it points at HAS a night
     // picture: pointing at one that does not exist asks the board for a file
     // that answers 404, which is worse than the day picture it would have
-    // kept. New York's three fields are therefore absent until NYC has one.
+    // kept. (New York's three fields waited here until NYC had one; v23908.)
     var _WX_CITY_NIGHT = {
       // v23867 — ATLANTA AFTER DARK IS A PHOTOGRAPH, NOT A FILTER.
       //
@@ -46214,7 +46214,31 @@ function _renderWxCard(el) {
       // The picture service cannot close the gap either. It matches every
       // search word at once, so 'Atlanta night skyline' returns nothing at
       // all; a night picture has to be a file, the way these five are.
-      MCO:1, ZRH:1, YYZ:1, LAS:1, YOW:1, ATL:1
+      MCO:1, ZRH:1, YYZ:1, LAS:1, YOW:1, ATL:1,
+      // v23908 — TWENTY-THREE MORE CITIES AFTER DARK. Every roster city big
+      // enough to have its own skyline now has a photograph taken at blue
+      // hour or later, with its lights on: the same 1280×720 frame as the
+      // day set, each checked to be that city and not a lookalike. Each was
+      // also measured, because the Atlanta blackout above is what a plate
+      // looks like below about 50/255 mean luminance: the set runs 52 to
+      // 121, and the first Varadero pick (moonlit palms, 19) was swapped for
+      // a lit beach bar (106) for that reason. The resort towns with no
+      // skyline (Punta Cana, Varadero, Cancún) are a beach or a hotel front
+      // after dark. New York has its night picture now, so its three fields
+      // point at it.
+      NYC:1, MIA:1, DUB:1, EDI:1, SFO:1, BOS:1, PHL:1, ORD:1, DEN:1, CLT:1,
+      IAH:1, PHX:1, DTW:1, MSP:1, TPA:1, YVR:1, YUL:1, YYC:1, CUN:1, PUJ:1,
+      VRA:1, FLL:1, KEF:1,
+      JFK:'NYC', LGA:'NYC', EWR:'NYC',
+      // v23908 — AND MONCTON, THE PLATE THIS BOARD SHOWS MOST AFTER DARK. No
+      // stock library holds a licensable Moncton night skyline (searched
+      // across Vecteezy, Unsplash, Pexels, Pixabay, Adobe Stock, Commons and
+      // Flickr; the skylines that exist are paid Shutterstock or
+      // non-commercial). This is the city from the air at night — the
+      // Petitcodiac bend and the lights of Moncton, Dieppe and Riverview —
+      // Unsplash licence, no credit required. Its shadows were lifted from
+      // 26 to 55/255 mean so it does not read as a black plate.
+      YQM:1
     };
     // The name the Worker searches by, for an airport outside the curated
     // set: the encyclopedia title where there is one (it carries the
