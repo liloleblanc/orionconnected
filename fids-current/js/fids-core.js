@@ -25583,9 +25583,17 @@ function _acSkyDelayStyle() {
       + 's;--g8-midfar-delay:-' + (t % 60).toFixed(2) + 's"';
   } catch (e) { return ''; }
 }
+// v23909 — FROM SUNSET TO SUNRISE, NOT 21:00 TO 06:00. Reported at 20:12 in
+// Moncton with the sun down since 19:06: the sky behind the aircraft was
+// still daylight, because this window was fixed at 21:00. The weather card
+// has followed the real sunrise and sunset at the board's airport since
+// v23846 (_wxNightAt, MET Norway's times via /wxsun); the aircraft sky now
+// asks the same question, so the two panels turn together. Until the day's
+// times have loaded, _wxNightAt falls back to the 06–21 window below.
 function _acSkyIsNight() {
   try {
     var ia = (typeof window !== 'undefined' && window._gateIata) || '';
+    if (ia && typeof _wxNightAt === 'function') return !!_wxNightAt(ia);
     var tz = '';
     try { tz = (typeof AP !== 'undefined' && AP[ia] && AP[ia].tz) || ''; } catch (eT) {}
     var hh = Number(new Date().toLocaleTimeString('en-GB', tz
@@ -34855,8 +34863,20 @@ function _gateInboundWaitingAtOrigin(inb, now) {
     if (!inb || _gateLegGone(inb)) return false;
     if (/depart|airborne|en.?route|active|landed|arriv/i.test(String(inb.status || ''))) return false;
     if (typeof fidsInboundAirborne === 'function' && fidsInboundAirborne(inb)) return false;
+    var t = now || Date.now();
     var dep = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : 0;
-    return !!dep && (now || Date.now()) < dep + 10 * 60000;
+    if (dep) return t < dep + 10 * 60000;
+    // The airport feeds' arrival rows rarely carry a departure time (YQM's
+    // do not: tomorrow's WS812 from Calgary had none, so gate 1 fell back to
+    // the continent-wide route view for the whole evening). It still cannot
+    // have left if it lands further off than the longest the leg can take:
+    // the maps' own block estimate (780 km/h + 25 min) with 30% and half an
+    // hour on top.
+    var arr = Math.max(inb._revTs || 0, inb._sortTs || 0);
+    var o = _lookupAirport(inb._locIata), d = _lookupAirport((typeof window !== 'undefined' && window._gateIata) || '');
+    if (!arr || !o || !d) return false;
+    var blockMs = (_gcNm(o, d) * 1.852 / 13 + 25) * 60000;
+    return t < arr - (blockMs * 1.3 + 30 * 60000);
   } catch (e) { return false; }
 }
 // The inbound is down at OUR field: the feed says so, it carries an actual

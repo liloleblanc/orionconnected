@@ -184,15 +184,21 @@ test('every caller says why the aeroplane is waiting, or passes nothing', () => 
 test('waiting is evidence: late, unconfirmed, cancelled and diverted legs are not "waiting"', () => {
   const T = Date.UTC(2026, 8, 27, 20, 0);
   const iso = (ms) => new Date(ms).toISOString();
-  const mk = (name, air) => new Function('fidsInboundAirborne', 'adbTs', '_gateLegGone', 'return (' + fnSource(name) + ')')(
-    () => air, (v) => Date.parse(v), lift('_gateLegGone', [], []));
+  const AP_C = { YYC: [51.12, -114.01], YQM: [46.11, -64.68] };
+  const mk = (name, air) => new Function('fidsInboundAirborne', 'adbTs', '_gateLegGone', '_lookupAirport', '_gcNm', 'window', 'return (' + fnSource(name) + ')')(
+    () => air, (v) => Date.parse(v), lift('_gateLegGone', [], []), (k) => AP_C[k] || null, gcNm, { _gateIata: 'YQM' });
   const atOrigin = mk('_gateInboundWaitingAtOrigin', false);
   assert.equal(atOrigin({ status: 'scheduled', _depSchedLocal: iso(T + 30 * 60000) }, T), true, 'due off in 30 min: waiting');
   assert.equal(atOrigin({ status: 'delayed', _depSchedLocal: iso(T - 60 * 60000) }, T), false, 'an hour past its departure, unconfirmed: not known to be waiting');
   assert.equal(atOrigin({ status: 'cancelled', _depSchedLocal: iso(T + 30 * 60000) }, T), false);
   assert.equal(atOrigin({ status: 'diverted', _depSchedLocal: iso(T + 30 * 60000) }, T), false);
   assert.equal(atOrigin({ status: 'enroute', _depSchedLocal: iso(T + 30 * 60000) }, T), false);
-  assert.equal(atOrigin({ status: 'scheduled' }, T), false, 'no departure time: unknown');
+  assert.equal(atOrigin({ status: 'scheduled' }, T), false, 'no departure or arrival time: unknown');
+  // No departure time on the row (YQM's arrival feed has none): judged from the arrival.
+  assert.equal(atOrigin({ status: 'scheduled', _locIata: 'YYC', _sortTs: T + 21 * 3600000 }, T), true,
+    'tomorrow\'s WS812 lands in 21 h: it has not left Calgary');
+  assert.equal(atOrigin({ status: 'scheduled', _locIata: 'YYC', _sortTs: T + 2 * 3600000 }, T), false,
+    'lands in 2 h on a 4.5 h leg: it may well be flying, so not "waiting"');
   assert.equal(mk('_gateInboundWaitingAtOrigin', true)({ status: 'scheduled', _depSchedLocal: iso(T + 30 * 60000) }, T), false, 'the feed says it is flying');
   const here = new Function('_gateLegGone', 'return (' + fnSource('_gateInboundLandedHere') + ')')(lift('_gateLegGone', [], []));
   assert.equal(here({ status: 'arrived' }), true);
@@ -282,4 +288,12 @@ test('the builder drops a gate number OSM puts in two places, and splits "45/46"
   assert.ok(f.gates['45'] && f.gates['46'], '"45/46" names both gates');
   assert.equal(f.terminals.length, 1);
   assert.equal(f.license, 'ODbL-1.0');
+});
+
+test('the aircraft sky turns to night at the real sunset, like the weather card', () => {
+  const src = fnSource('_acSkyIsNight');
+  assert.match(src, /if \(ia && typeof _wxNightAt === 'function'\) return !!_wxNightAt\(ia\);/, 'the same sunrise/sunset the weather card uses');
+  const sky = (night) => new Function('window', '_wxNightAt', 'AP', 'return (' + src + ')')({ _gateIata: 'YQM' }, (ia) => { assert.equal(ia, 'YQM'); return night; }, {});
+  assert.equal(sky(true)(), true, '20:12 in Moncton, sun down at 19:06: night');
+  assert.equal(sky(false)(), false);
 });
