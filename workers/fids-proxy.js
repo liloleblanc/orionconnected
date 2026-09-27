@@ -2111,6 +2111,58 @@ function acFeedPick(index, flightNo, ts) {
   return { model: best[2], reg: best[3] };
 }
 __name(acFeedPick, "acFeedPick");
+
+// ── THE TRACK A FLIGHT HAS ACTUALLY FLOWN (v23906) ─────────────────────────
+// The maps drew the "flown" half of the route as a straight great-circle arc
+// from the airport to the aeroplane, which no aeroplane flies: it leaves along
+// a runway, turns onto its airway, detours around weather. Every FR24 hit the
+// boards already pay for carries a real position, so each one is appended to
+// that flight's track here, at no extra credit, and /fltrack/<flight> serves
+// it, so every screen draws the same line even if it was switched on mid-
+// flight. Keyed by FR24's own id for the flight (today's WS812 never mixes
+// with tomorrow's), kept 26 hours (FR24's API terms cap storage at 30 days).
+const TRK_TTL_S = 26 * 3600;
+const TRK_INDEX_TTL_S = 20 * 3600;
+const TRK_MAX_PTS = 600;
+function acTrackAddPoint(rec, p, now) {
+  if (!p || typeof p.lat !== "number" || typeof p.lon !== "number") return null;
+  const pts = (rec && Array.isArray(rec.pts)) ? rec.pts.slice() : [];
+  const tms = p.timestamp ? Date.parse(p.timestamp) : NaN;
+  const t = Math.round((isNaN(tms) ? now : tms) / 1000);
+  const pt = [Math.round(p.lat * 1e4) / 1e4, Math.round(p.lon * 1e4) / 1e4,
+    (typeof p.alt === "number") ? Math.round(p.alt) : null, t];
+  const last = pts[pts.length - 1];
+  if (last) {
+    if (t <= last[3]) return null;                                   // not newer
+    const dLat = (pt[0] - last[0]) * 111, dLon = (pt[1] - last[1]) * 111 * Math.cos(pt[0] * Math.PI / 180);
+    if (t - last[3] < 45 && Math.sqrt(dLat * dLat + dLon * dLon) < 1) return null;   // nothing new
+  }
+  pts.push(pt);
+  while (pts.length > TRK_MAX_PTS) pts.splice(1, 1);                 // keep the first, thin the oldest after it
+  return {
+    f: (rec && rec.f) || String(p.flight || "").toUpperCase(),
+    o: (rec && rec.o) || (p.orig_iata ? String(p.orig_iata).toUpperCase() : null),
+    d: (rec && rec.d) || (p.dest_iata ? String(p.dest_iata).toUpperCase() : null),
+    pts
+  };
+}
+__name(acTrackAddPoint, "acTrackAddPoint");
+async function acTrackAppend(env, p, now) {
+  try {
+    if (!env || !env.FIDS_LIVE_FLIGHTS || !p) return;
+    const f = String(p.flight || "").toUpperCase().replace(/\s+/g, "");
+    if (!AC_FLIGHT_RE.test(f)) return;
+    const id = String(p.fr24_id || "").replace(/[^A-Za-z0-9]/g, "")
+      || `${f}-${new Date(now).toISOString().slice(0, 10)}`;
+    const key = `trk:v1:${id}`;
+    const rec = await env.FIDS_LIVE_FLIGHTS.get(key, { type: "json" });
+    const next = acTrackAddPoint(rec, p, now);
+    if (!next) return;
+    await env.FIDS_LIVE_FLIGHTS.put(key, JSON.stringify(next), { expirationTtl: TRK_TTL_S });
+    await env.FIDS_LIVE_FLIGHTS.put(`trkix:v1:${f}`, id, { expirationTtl: TRK_INDEX_TTL_S });
+  } catch (e) {}
+}
+__name(acTrackAppend, "acTrackAppend");
 // One cached page/payload fetch per source per TTL, however many screens
 // are polling. Negative results are cached briefly so an outage is
 // re-probed, not hammered.
@@ -9037,6 +9089,36 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         return jsonResponse({ error: "Cache clear failed", details: e.message }, 500, origin);
       }
     }
+    // ── /fltrack/<flight> — THE TRACK THIS FLIGHT HAS FLOWN (v23906) ─────────
+    // { f, id, o, d, pts: [[lat, lon, altFt, epochS], ...] } for the flight's
+    // current FR24 leg, oldest first. Public like /adsb/, pattern-checked,
+    // reads only our own KV.
+    {
+      const _tm = path.match(/^\/fltrack\/([A-Za-z0-9]{3,8})$/);
+      if (_tm) {
+        const f = _tm[1].toUpperCase();
+        if (!AC_FLIGHT_RE.test(f)) return jsonResponse({ error: "Use /fltrack/<flight number>" }, 400, origin);
+        const _tkKey = new Request(`https://fltrack-cache/v1/${f}`);
+        try {
+          const hit = await caches.default.match(_tkKey);
+          if (hit) return new Response(await hit.text(), { status: 200, headers: {
+            "Content-Type": "application/json", "Cache-Control": "public, max-age=45", "X-Track-Cache": "hit", ...corsHeaders(origin) } });
+        } catch (e) {}
+        let out = { f, id: null, o: null, d: null, pts: [] };
+        try {
+          if (env.FIDS_LIVE_FLIGHTS) {
+            const id = await env.FIDS_LIVE_FLIGHTS.get(`trkix:v1:${f}`);
+            const rec = id ? await env.FIDS_LIVE_FLIGHTS.get(`trk:v1:${id}`, { type: "json" }) : null;
+            if (rec && Array.isArray(rec.pts)) out = { f, id, o: rec.o || null, d: rec.d || null, pts: rec.pts };
+          }
+        } catch (e) {}
+        const _tkBody = JSON.stringify(out);
+        try { await caches.default.put(_tkKey, new Response(_tkBody, { headers: {
+          "Content-Type": "application/json", "Cache-Control": "public, max-age=45" } })); } catch (e) {}
+        return new Response(_tkBody, { status: 200, headers: {
+          "Content-Type": "application/json", "Cache-Control": "public, max-age=45", "X-Track-Cache": "miss", ...corsHeaders(origin) } });
+      }
+    }
     // ── /acinfo — THE AIRCRAFT FOR A FLIGHT BEFORE IT FLIES (v23901) ─────────
     // GET /acinfo?f=WS812&other=YYC&at=dep&ts=<our scheduled epoch ms>
     //   f      the flight number as the board shows it
@@ -9301,6 +9383,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                 // v23901 — remember what this flight number flew (type only is
                 // ever shown from it). Same answer, no extra credit.
                 try { ctx.waitUntil(acMemRemember(env, _p.flight || (kind === "flight" ? subject : ""), _p.type, Date.now())); } catch (e) {}
+                // v23906 — and add this position to the flight's flown track.
+                try { ctx.waitUntil(acTrackAppend(env, _p, Date.now())); } catch (e) {}
                 const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
                 try {
                   await cache.put(cacheKey, new Response(_frBody, { headers: {
@@ -10525,5 +10609,7 @@ export {
   acMemUsualType,
   acFeedIndexRows,
   acFeedPick,
+  acTrackAddPoint,
+  acTrackAppend,
   _authorityRosterHas
 };

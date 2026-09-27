@@ -25642,7 +25642,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23905';
+var FIDS_BUILD_TAG = 'v23906';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -34465,8 +34465,10 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   // shape for the glide once it departs), and no glide left running.
   var _parkedO = _gateParkedAtOrigin(planeLat, planeLng, o);
   if (_parkedO) { try { _stopGateMapGlide(); } catch (eP) {} }
+  var _flownM = _parkedO ? null : _gateFlownPath(o, d, planeLat, planeLng, dst);
   var _a1 = _parkedO ? L.polyline([], {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap)
-                     : _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
+          : _flownM ? L.polyline(_flownM, {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap)
+          : _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
   // Runway-aligned final when we have the data — same shape the glide flies.
   var _rwyP = _runwayFinalPath(_pp, d, dst);
   var _a2 = null;
@@ -34705,6 +34707,51 @@ function _gateApplyParked(view, lat, lng, d) {
   } catch (e) {}
 }
 
+// v23906 — THE FLOWN HALF IS THE REAL TRACK. The worker records every FR24
+// position the boards receive into the flight's track (/fltrack/<flight>).
+// When one is on record for THIS leg, the solid "flown" line follows it —
+// off the runway, the climb-out turn, the airway — instead of a straight arc
+// from the airport. If recording began mid-flight, a short arc from the
+// airport joins the first recorded point, so the line always starts at the
+// origin. A track whose last point is not near the aeroplane, or whose
+// destination is another airport, belongs to another leg and is not used;
+// with no usable track the line is exactly the arc it always was.
+var _FLTRACK_BASE = 'https://fids-proxy.n-leblanc1984.workers.dev/fltrack/';
+var _flownCache = Object.create(null);
+function _gateFlownPath(o, d, planeLat, planeLng, destIata) {
+  try {
+    var inb = window._gateInbound || window._gatePanelInbound;
+    var f = inb && String(inb.flight || '').replace(/\s+/g, '').toUpperCase();
+    if (!f || !/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d{1,4}[A-Z]?$/.test(f) || !o || !d) return null;
+    var now = Date.now(), c = _flownCache[f];
+    if ((!c || now - c.at > 45000) && !(c && c.busy) && typeof fetch === 'function') {
+      c = _flownCache[f] = c || { at: 0, rec: null };
+      c.busy = true;
+      fetch(_FLTRACK_BASE + encodeURIComponent(f), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) { c.rec = j; c.at = Date.now(); c.busy = false; }, function () { c.at = Date.now(); c.busy = false; });
+    }
+    var rec = c && c.rec;
+    if (!rec || !Array.isArray(rec.pts) || rec.pts.length < 2) return null;
+    if (destIata && rec.d && String(rec.d).toUpperCase() !== String(destIata).toUpperCase()) return null;
+    var pl = [planeLat, planeLng];
+    var pts = [];
+    for (var i = 0; i < rec.pts.length; i++) {
+      var q = rec.pts[i];
+      if (q && typeof q[0] === 'number' && typeof q[1] === 'number') pts.push([q[0], q[1]]);
+    }
+    if (pts.length < 2) return null;
+    if (_gcNm(pts[pts.length - 1], pl) > 60) return null;            // another leg, or stale
+    if (_gcNm(pts[0], o) > _gcNm(o, d) * 0.9) return null;          // does not start on this leg
+    var path = _gcNm(pts[0], o) > 3 ? _gcFullRoute(o, pts[0], 24) : [o];
+    for (var j = 0; j < pts.length; j++) {
+      if (_gcNm(path[path.length - 1], pts[j]) > 0.05) path.push(pts[j]);   // no zero-length steps
+    }
+    if (_gcNm(path[path.length - 1], pl) > 0.05) path.push(pl); else path[path.length - 1] = pl;
+    return path.length >= 2 ? path : null;
+  } catch (e) { return null; }
+}
+
 // Great-circle path org→dst as plain [lat,lng] points (antimeridian-normalised),
 // with a straight-line fallback if the arc plugin is unavailable.
 function _gcFullRoute(o, d, n) {
@@ -34837,6 +34884,9 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // marker and there is nothing to slide sideways to.
   var _pl = [planeLat, planeLng];
   var _nmA = _gcNm(o, _pl), _nmB = _gcNm(_pl, d);
+  // v23906 — the flown half is the recorded track when this leg has one.
+  var _flownA = _gateFlownPath(o, d, planeLat, planeLng, destIata);
+  if (_flownA) { _nmA = 0; for (var _fa = 1; _fa < _flownA.length; _fa++) _nmA += _gcNm(_flownA[_fa - 1], _flownA[_fa]); }
   var totalNm = _nmA + _nmB;
   if (!(totalNm > 0)) return;
   // Remember the last real speed — a rebuild whose caches read 0 for an
@@ -34851,7 +34901,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // half the vertices were crammed into the short final leg.
   var _vA = Math.max(2, Math.min(116, Math.round(118 * (_nmA / totalNm))));
   var _vB = Math.max(2, 118 - _vA);
-  var _legA = _gcFullRoute(o, _pl, _vA);
+  var _legA = _flownA || _gcFullRoute(o, _pl, _vA);
   // Runway-aligned final: once inbound, the remaining
   // leg lands along a real runway instead of running into the airport pin.
   // The frame loop redraws a1/a2 from this same route, so the drawn dashed
@@ -46740,8 +46790,10 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
   var _pp = [planeLat, planeLng];
   var _bcParked = _gateParkedAtOrigin(planeLat, planeLng, o);
   if (_bcParked) { try { _stopGateMapGlide(); } catch (eP) {} }
+  var _bcFlown = _bcParked ? null : _gateFlownPath(o, d, planeLat, planeLng, dst);
   var _bcA1 = _bcParked ? L.polyline([], {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap)
-                        : _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
+            : _bcFlown ? L.polyline(_bcFlown, {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap)
+            : _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
   // Runway-aligned final on the big map too.
   var _bcRwyP = _runwayFinalPath(_pp, d, dst);
   var _bcA2 = null;
