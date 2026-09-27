@@ -11707,9 +11707,9 @@ function _buildV2MapCol(ctx, vars) {
       } else if (_acModel && _acReg && !_regConfirmed) {
         _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
           + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
-          + '  |  ' + _nbw(_acReg + _acRegTag);
+          + ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag);
       } else {
-        _acTypeVal = _nbw(_acModel) + (_acReg ? '  |  ' + _nbw(_acReg + _acRegTag) : '');
+        _acTypeVal = _nbw(_acModel) + (_acReg ? ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag) : '');
       }
       // Shorter label per (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
@@ -11811,8 +11811,21 @@ function _buildV2MapCol(ctx, vars) {
           }
         }
       } catch (e) {}
+      // v23904 — ONE ROW. The caption was the model on one line and Operated By
+      // on a second, which made it the tallest thing under the aircraft. Now:
+      //   Aircraft:   Airbus A319 | C-FTOD        Operated By:    [LOGO]
+      //   Appareil:                               Exploité par:
+      // each label pair stacked, the model and the operator mark each as tall
+      // as the pair beside them. Labels follow the airport's language order.
+      var _acLbl = _gateLbl('aircraft', _frF8, function (w) { return '<span class="v2-rc-opby-lline v2-rc-acb-lline">' + w + ':</span>'; }, '');
+      // _acTypeVal is never empty (an unknown model still builds an empty
+      // nowrap span), so what decides is whether there is a model or a tail.
+      var _acKnown = !!(_acModel || _acReg);
       var _typeCellHtml =
-          '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acTypeVal || _pendingAircraftText) + '</div>'
+          '<div class="v2-rc-acb-ac' + (_acKnown ? '' : ' is-pending') + '">'
+        +   (_acKnown ? '<span class="v2-rc-acb-lbl v2-rc-acb-opby-lbl">' + _acLbl + '</span>' : '')
+        +   '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acKnown ? _acTypeVal : _pendingAircraftText) + '</div>'
+        + '</div>'
         + (_opByVal
             ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">' + _opByLbl + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
@@ -16264,6 +16277,32 @@ function gateAutofit(root) {
         ['font-size', 'white-space', 'margin-left', 'width', 'padding-left'].forEach(function (p) {
           try { el.style.removeProperty(p); } catch (e2) {}
         });
+        // v23904 — the one-row caption sets the model at twice its label. A
+        // model that does not fit on one line steps down a pixel at a time,
+        // but not far: below 1.25x the label it reads as a label, so instead
+        // it goes to TWO lines (model beside the first label, registration
+        // beside the second, no separator) at the largest size two lines fit
+        // in the band, stepping down from there to the label size. Each
+        // segment is nowrap, so nothing is ever cut inside 'Airbus A319'.
+        try {
+          el.classList.remove('is-2line');
+          var _lblEl = el.parentNode && el.parentNode.querySelector('.v2-rc-acb-lline');
+          var _lblPx = _lblEl ? (parseFloat(window.getComputedStyle(_lblEl).fontSize) || 10) : 10;
+          var _capEl = el.closest('.v2-rc-acb-cap');
+          var _capH = _capEl ? _capEl.clientHeight : 0;
+          var _fits = function () { return el.scrollWidth <= el.clientWidth + 1 && (!_capH || el.offsetHeight <= _capH); };
+          if (el.clientWidth > 0 && !_fits()) {
+            var _fs = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+            var _oneFloor = Math.round(_lblPx * 1.25);
+            while (_fs > _oneFloor && !_fits()) { _fs -= 1; el.style.setProperty('font-size', _fs + 'px', 'important'); }
+            if (!_fits() && el.querySelector('.v2-rc-acb-sep')) {
+              el.classList.add('is-2line');
+              _fs = Math.max(_lblPx, Math.floor((_capH || _fs * 2) * 0.44));
+              el.style.setProperty('font-size', _fs + 'px', 'important');
+              while (_fs > _lblPx && !_fits()) { _fs -= 1; el.style.setProperty('font-size', _fs + 'px', 'important'); }
+            }
+          }
+        } catch (e3) {}
         return;
       }
       var panel = el.closest('.v2-rc-acb-cap') || el.closest('.v2-rc-acb') || el.closest('.v2-rc-shelf-type');
@@ -25192,6 +25231,8 @@ var _GATE_LBL = {
   acImgPending:{ en:'Aircraft image pending', fr:'Image de l\u2019appareil à venir', es:'Imagen del avión pendiente', de:'Flugzeugbild folgt', it:'Immagine dell\u2019aereo in arrivo', pt:'Imagem da aeronave pendente', ja:'機体画像は準備中', zh:'机型图片即将显示', ar:'صورة الطائرة قريباً' },
   acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
+  // v23904 — the caption's own label, stacked beside the model like Operated By.
+  aircraft:  { en:'Aircraft',      fr:'Appareil',       es:'Aeronave',     de:'Flugzeug',    it:'Aeromobile',  pt:'Aeronave',   ja:'機材',   zh:'机型',   ar:'الطائرة' },
   welcome:   { en:'Welcome',       fr:'Bienvenue',      es:'Bienvenido',   de:'Willkommen',  it:'Benvenuto',   pt:'Bem-vindo',  ja:'ようこそ',  zh:'欢迎',   ar:'أهلاً' },
   priority:  { en:'Priority',      fr:'Prioritaire',    es:'Prioridad',    de:'Priorität',   it:'Priorità',    pt:'Prioridade', ja:'優先',      zh:'优先',   ar:'أولوية' },
   rows:      { en:'Rows',          fr:'Rangées',        es:'Filas',        de:'Reihen',      it:'File',        pt:'Fileiras',   ja:'列',        zh:'排',     ar:'صفوف' },
@@ -25601,7 +25642,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23903';
+var FIDS_BUILD_TAG = 'v23904';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
