@@ -229,3 +229,15 @@ test('every clamp on the card carries a width term', () => {
   const bad = all.filter((c) => c.includes('vh') && !c.includes('vw'));
   assert.deepEqual(bad, [], 'these clamps have no width term: ' + bad.join(', '));
 });
+
+test('every card that names its own aeroplane has the file on disk', () => {
+  // v23903 — Canadian Airlines' DC-10 is named explicitly (the supplied art
+  // lives with the other retro artwork); a missing file would silently drop
+  // the whole sky from the card.
+  const named = marks().filter((m) => m.aircraft);
+  assert.ok(named.some((m) => m.key === 'canadian-airlines'), 'Canadian Airlines names its DC-10');
+  for (const m of named) {
+    const p = path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, ''));
+    assert.ok(fs.existsSync(p), `${m.aircraft} is referenced but missing from the tree`);
+  }
+});

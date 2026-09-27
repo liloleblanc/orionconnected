@@ -25601,7 +25601,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23902';
+var FIDS_BUILD_TAG = 'v23903';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44694,6 +44694,10 @@ var HERITAGE_MARKS = [
     key: 'canadian-airlines',
     file: '/logos/airlines/canadian/heritage/canadian-airlines.svg',
     name: 'Canadian Airlines',
+    // v23903 — its aeroplane: a DC-10 in Canadian's livery, from the supplied
+    // artwork. Nose left like the other two, so the card's sky runs the same
+    // way; until now this card had no aircraft and so showed no sky at all.
+    aircraft: '/logos/advertisements/retro-airlines/CDNDC10.svg',
     en: 'Calgary · 1987–2001',
     fr: 'Calgary · 1987–2001',
     airports: '*CA'
