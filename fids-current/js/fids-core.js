@@ -25601,7 +25601,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23901';
+var FIDS_BUILD_TAG = 'v23902';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44670,7 +44670,10 @@ var HERITAGE_MARKS = [
     // The card shows the same pairing the gate does, and for the same reason:
     // an Air Canada Connector was not a standalone airline in the way its own
     // wordmark alone suggests.
-    endorsement: '/logos/airlines/canadian/heritage/air-canada-horizontal.svg',
+    // v23902 — the endorsement is Air Canada's own mark of the period: the
+    // 1987 stacked lockup (roundel over the wordmark), from the supplied
+    // artwork, in place of the modern horizontal logo.
+    endorsement: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
     en: 'Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001',
     fr: 'Halifax (Nouvelle-Écosse) · premier Connecteur Air Canada · 1986–2001',
     // The Atlantic network it fed Air Canada from, plus the two central-Canada
