@@ -100,7 +100,8 @@ test('the resolver answers a curated file, an alias, or the Worker route', () =>
   // Night asks for the night picture where there is one and keeps the day one
   // where there is not — never a daylit city at two in the morning once the
   // set is filled, and never a regression while it is not.
-  assert.equal(pic('YQM', true), '/logos/cities/YQM.jpg', 'no night picture yet, so the day one stands');
+  assert.equal(pic('YFC', true), '/logos/cities/YFC.jpg', 'no night picture yet, so the day one stands');
+  assert.equal(pic('YQM', true), '/logos/cities/YQM-night.jpg', 'Moncton after dark');
   assert.equal(pic('MCO', true), '/logos/cities/MCO-night.jpg');
   assert.equal(pic('MCO', false), '/logos/cities/MCO.jpg');
   // v23908 — New York has its night picture, and all three fields share it.

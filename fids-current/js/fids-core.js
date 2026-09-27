@@ -45917,7 +45917,16 @@ function _renderWxCard(el) {
       NYC:1, MIA:1, DUB:1, EDI:1, SFO:1, BOS:1, PHL:1, ORD:1, DEN:1, CLT:1,
       IAH:1, PHX:1, DTW:1, MSP:1, TPA:1, YVR:1, YUL:1, YYC:1, CUN:1, PUJ:1,
       VRA:1, FLL:1, KEF:1,
-      JFK:'NYC', LGA:'NYC', EWR:'NYC'
+      JFK:'NYC', LGA:'NYC', EWR:'NYC',
+      // v23908 — AND MONCTON, THE PLATE THIS BOARD SHOWS MOST AFTER DARK. No
+      // stock library holds a licensable Moncton night skyline (searched
+      // across Vecteezy, Unsplash, Pexels, Pixabay, Adobe Stock, Commons and
+      // Flickr; the skylines that exist are paid Shutterstock or
+      // non-commercial). This is the city from the air at night — the
+      // Petitcodiac bend and the lights of Moncton, Dieppe and Riverview —
+      // Unsplash licence, no credit required. Its shadows were lifted from
+      // 26 to 55/255 mean so it does not read as a black plate.
+      YQM:1
     };
     // The name the Worker searches by, for an airport outside the curated
     // set: the encyclopedia title where there is one (it carries the

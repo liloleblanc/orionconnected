@@ -2,7 +2,7 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2834,
+    "total": 2835,
     "by_category": {
       "ad": 12,
       "airline": 1443,
@@ -10,7 +10,7 @@
       "brand": 4,
       "hotel": 888,
       "livery": 96,
-      "misc": 86,
+      "misc": 87,
       "symbol": 4,
       "weather": 116
     }
@@ -29701,6 +29701,17 @@
       "subcategory": "root",
       "group": "Uncategorized (logos root)",
       "name": "YQB",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
+    },
+    {
+      "path": "/logos/cities/YQM-night.jpg",
+      "file": "YQM-night.jpg",
+      "category": "misc",
+      "subcategory": "root",
+      "group": "Uncategorized (logos root)",
+      "name": "YQM night",
       "iata": "",
       "country": "",
       "ext": "jpg"
