@@ -75,13 +75,15 @@ test('no card claims a date its sources disagree on', () => {
   const byKey = Object.fromEntries(marks().map((m) => [m.key, m]));
   // Air Canada: the DC-9 years are checked (1966–2002); the livery's own years
   // are not (start 1977/78 vs 1980, end 1992/93/94), so none is printed.
-  const acm = byKey['air-canada'];
-  assert.ok(acm, 'the Air Canada DC-9 card exists');
-  for (const cap of [acm.en, acm.fr]) {
-    assert.match(cap, /DC-9 · 1966–2002$/, 'the checked DC-9 years print');
-    assert.doesNotMatch(cap, /19(7[7-9]|8\d|9[0-4])/, 'no disputed livery year appears');
+  for (const k of ['air-canada', 'air-canada-caps']) {
+    const acm = byKey[k];
+    assert.ok(acm, k + ': the Air Canada DC-9 card exists');
+    for (const cap of [acm.en, acm.fr]) {
+      assert.match(cap, /DC-9 · 1966–2002$/, 'the checked DC-9 years print');
+      assert.doesNotMatch(cap, /19(6[5-9]|7\d|8\d|9[0-4])(?!–2002)/, 'no disputed livery or logo year appears');
+    }
+    assert.match(acm.fr, /^Montréal/, 'the French caption spells Montréal');
   }
-  assert.match(acm.fr, /^Montréal/, 'the French caption spells Montréal');
   // Founding year reported as 1985 in one source and 1986 in another.
   assert.doesNotMatch(byKey['air-atlantic'].en, /198[56]\s*[–-]/,
     'Air Atlantic must not print a founding year — the sources disagree');
@@ -247,9 +249,16 @@ test('every card that names its own aeroplane has the file on disk', () => {
   assert.ok(named.some((m) => m.key === 'canadian-airlines'), 'Canadian Airlines names its DC-10');
   // v23912 — Air Canada's DC-9, filed with the heritage aeroplanes and never
   // as the type folder's D9S picture, which stands for every DC-9 on the boards.
-  const ac = named.find((m) => m.key === 'air-canada');
-  assert.ok(ac, 'Air Canada names its DC-9');
-  assert.equal(ac.aircraft, '/aircraft/heritage/air-canada-dc9.svg');
+  // Two liveries, two cards: the 1987 mark with the AC87 drawing, the
+  // capitals mark with the AC80 drawing.
+  const byK = Object.fromEntries(named.map((m) => [m.key, m]));
+  assert.equal(byK['air-canada'].aircraft, '/aircraft/heritage/air-canada-dc9-ac87.svg');
+  assert.match(byK['air-canada'].file, /AC-1987-LOGO\.svg$/);
+  assert.equal(byK['air-canada-caps'].aircraft, '/aircraft/heritage/air-canada-dc9-ac80.svg');
+  assert.match(byK['air-canada-caps'].file, /air-canada-logo-1965-1987\.png$/);
+  for (const k of ['air-canada', 'air-canada-caps']) {
+    assert.ok(fs.existsSync(path.join(ROOT, 'fids-current', byK[k].file.replace(/^\//, ''))), k + ' mark on disk');
+  }
   for (const m of named) {
     const p = path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, ''));
     assert.ok(fs.existsSync(p), `${m.aircraft} is referenced but missing from the tree`);
