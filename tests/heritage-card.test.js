@@ -264,3 +264,23 @@ test('every card that names its own aeroplane has the file on disk', () => {
     assert.ok(fs.existsSync(p), `${m.aircraft} is referenced but missing from the tree`);
   }
 });
+
+test('a heritage aeroplane drawn as SVG is all shapes, with no picture inside it', () => {
+  // Illustrator cannot write some shading into an SVG (a freeform gradient, a
+  // gradient mesh, an fx effect), so on export it pastes that part in as a
+  // bitmap at the document's raster resolution, 72 ppi by default. The shaded
+  // caps-livery DC-9 came out with its engine as a 74 x 30 pixel picture:
+  // blurred, with stepped edges, on a card that draws the aeroplane at many
+  // times that size. The engine now carries an ordinary linear gradient.
+  const dir = path.join(ROOT, 'fids-current', 'aircraft', 'heritage');
+  const files = new Set(fs.readdirSync(dir).filter((f) => f.endsWith('.svg')).map((f) => path.join(dir, f)));
+  for (const m of marks()) {
+    if (m.aircraft && /\.svg$/.test(m.aircraft)) files.add(path.join(ROOT, 'fids-current', m.aircraft.replace(/^\//, '')));
+  }
+  assert.ok(files.size >= 2, 'the Air Canada DC-9 drawings are found');
+  for (const f of files) {
+    const svg = fs.readFileSync(f, 'utf8');
+    assert.doesNotMatch(svg, /<image\b/, path.basename(f) + ' has a bitmap pasted into it');
+    assert.doesNotMatch(svg, /href\s*=\s*["']data:image\//, path.basename(f) + ' embeds a data: image');
+  }
+});
