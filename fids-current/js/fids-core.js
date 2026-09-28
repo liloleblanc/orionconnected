@@ -25683,7 +25683,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23911';
+var FIDS_BUILD_TAG = 'v23912';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -45172,6 +45172,55 @@ var HERITAGE_MARKS = [
     aircraft: '/logos/advertisements/retro-airlines/CDNDC10.svg',
     en: 'Calgary · 1987–2001',
     fr: 'Calgary · 1987–2001',
+    airports: '*CA'
+  },
+  {
+    // v23912 — AIR CANADA IN THE DC-9 YEARS. The supplied artwork: a DC-9-32
+    // in the red-cheatline livery with the white rondelle on a red tail, drawn
+    // as C-FTMA (a real Air Canada DC-9-32, MSN 47266, delivered 1968), under
+    // the carrier's stacked mark of the period. Air Canada still flies, so the
+    // card dates the AEROPLANE, not the airline — and it is keyed by 'key', not
+    // by the AC code, so nothing here can touch the live carrier's boards.
+    //
+    // CHECKED: Air Canada flew the DC-9 from 1966 to 2002 (Canada Aviation and
+    // Space Museum, 'Air Canada operated DC-9s from 1966 to 2002'; Globe and
+    // Mail/CP and Aviation Week, February–March 2002), the first airline outside
+    // the United States to fly the type, headquartered in Montreal throughout.
+    // NOT PRINTED: the livery's own years. Its start (red titles: 1977/78 vs
+    // 1980) and its end (1992, 1993 or 1994 — Air Canada's own publications
+    // disagree, and aircraft were repainted over time) are both disputed, so
+    // no livery date appears, and neither does any day or month for the
+    // DC-9's first or last flight, which the sources also give differently.
+    key: 'air-canada',
+    file: '/logos/advertisements/retro-airlines/AC-1987-LOGO.svg',
+    name: 'Air Canada',
+    // Filed with the other heritage aeroplanes, not as aircraft/D9S: the type
+    // folder's pictures stand for EVERY DC-9, and this one is Air Canada's.
+    // The supplied AC87 drawing: mixed-case 'Air Canada' titles over the
+    // double cheatline, the livery that went with this stacked mark.
+    aircraft: '/aircraft/heritage/air-canada-dc9-ac87.svg',
+    en: 'Montreal · DC-9 · 1966–2002',
+    fr: 'Montréal · DC-9 · 1966–2002',
+    // The DC-9 was the domestic workhorse; Canadian airports only, the same
+    // scope as the Canadian Airlines card.
+    airports: '*CA'
+  },
+  {
+    // v23912 — AND THE SAME AEROPLANE IN ITS EARLIER DRESS. The supplied AC80
+    // drawing: capitals 'AIR CANADA' titles over a single red cheatline, paired
+    // with the capitals mark of the same look (AIR CANADA stacked over the
+    // rondelle). Two cards, one per livery, rotating with the rest.
+    //
+    // Same checked caption as the card above, for the same reason: the DC-9
+    // years are solid, the years each livery was worn are not. The mark's
+    // FILENAME carries '1965-1987'; that is the artwork's name, and no date
+    // from it is printed.
+    key: 'air-canada-caps',
+    file: '/logos/advertisements/retro-airlines/air-canada-logo-1965-1987.png',
+    name: 'Air Canada',
+    aircraft: '/aircraft/heritage/air-canada-dc9-ac80.svg',
+    en: 'Montreal · DC-9 · 1966–2002',
+    fr: 'Montréal · DC-9 · 1966–2002',
     airports: '*CA'
   }
 ];
