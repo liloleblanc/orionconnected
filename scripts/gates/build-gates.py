@@ -458,25 +458,38 @@ DOOR_STANDS_OVERRIDE = {
     },
 }
 
-# LOCAL KNOWLEDGE, NOT OPENSTREETMAP: where the jet-bridge stands really are.
+# LOCAL KNOWLEDGE, NOT OPENSTREETMAP: where the aircraft really park.
+#
 # Moncton has two identical jet bridges. Bridge 1 serves gates 3 and 4 (with
 # the side stands 5, 6A and 6B as walk-outs); Bridge 2 serves gates 1 and 2
 # (with 1A, 1B and 2). OSM's doors and bridges agree with that, but its two
-# stand points at the bridge heads do not: the one at Bridge 2's head is
-# tagged "3" (so gate 3 would take gate 1/2's bridge), and the one for
-# Bridge 1 sits 17 m in from where the bridge meets the aircraft. The bridge
-# heads were marked by the airport's operator on the GeoNB orthophoto and
-# measured there (0.2 m per pixel, checked against three OSM stands to 1 m);
-# the stop point is where the NOSE stops, taken 6 m ahead of the bridge head
-# along the stand heading and 2 m to its right (the bridge meets the front
-# left door), and the heading is the parked aircraft's in the same photo.
+# stand points at the bridges do not: the one at Bridge 2 is tagged "3" (so
+# gate 3 would take gate 1/2's bridge), and the one for Bridge 1 sits on the
+# bridge itself, 17 m in from the pad the aircraft actually parks on.
+#
+# A bridge stand is a PAD, not a stop line: the aircraft parks on the pad
+# (the lighter square of concrete) and the bridge swings out to its door, so
+# where the nose ends up depends on the type. The point stored for a pad
+# stand is the pad's centre (kind "pad"); the board puts the aircraft's nose
+# wheel 2.2 m ahead of it along the heading, which is where the regional jet
+# parked on Bridge 2's pad in the GeoNB photo has its nose wheel (its nose is
+# 5.4 m ahead of the pad centre). Pads were measured on GeoNB's photo
+# (0.18 m per pixel, bounds requested in Web Mercator); the heading is that
+# parked aircraft's.
+#
+# The walk-out stands are where they are in OSM - each at the end of a white
+# passenger walkway, which reaches the aircraft's front-left door - but they
+# face along their painted yellow lead-in lines, not toward a door (OSM's
+# heading pointed them at door 1).
 SITE_OVERRIDE = {
     'YQM': {
         'drop_stands': ['3', '4'],
         'stands': {
-            'BR1': [46.11557, -64.68785, 310.0],   # Bridge 1: gates 3 and 4
-            'BR2': [46.11598, -64.68743, 310.0],   # Bridge 2: gates 1 and 2
+            'BR1': [46.115603, -64.687737, 310.0],   # Bridge 1's pad: gates 3 and 4
+            'BR2': [46.115927, -64.687325, 310.0],   # Bridge 2's pad: gates 1 and 2
         },
+        'headings': {'1A': 240.0, '1B': 270.0, '2': 270.0, '5': 335.0, '6A': 70.0, '6B': 45.0},
+        'kind': {'BR1': 'pad', 'BR2': 'pad'},
         'bridged': ['BR1', 'BR2'],
     },
 }
@@ -488,6 +501,9 @@ def apply_site_override(iata, stands):
     if not over:
         return stands
     out = {r: p for r, p in stands.items() if r not in over.get('drop_stands', ())}
+    for r, hdg in over.get('headings', {}).items():
+        if r in out:
+            out[r] = [out[r][0], out[r][1], hdg]
     out.update(over.get('stands', {}))
     return dict(sorted(out.items()))
 
@@ -636,7 +652,7 @@ def build(iata, coords, details=None):
         return None
     out['stands'] = apply_site_override(iata, out['stands'])
     site = SITE_OVERRIDE.get(iata, {})
-    return {
+    f = {
         'iata': iata,
         'source': 'OpenStreetMap contributors (ODbL 1.0)',
         'copyright': '\u00a9 OpenStreetMap contributors',
@@ -651,6 +667,11 @@ def build(iata, coords, details=None):
         'bridged': site.get('bridged') or bridged(out['stands'], bridges),
         'ambiguous': {k: sorted(v) for k, v in sorted(dropped.items())},
     }
+    if site.get('kind'):
+        # How to read a stand point that is not the nose's stop: "pad" = the
+        # centre of the pad the aircraft parks on (see SITE_OVERRIDE).
+        f['stand_kind'] = dict(sorted(site['kind'].items()))
+    return f
 
 
 # ------------------------------------------------------- airside GeoJSON
