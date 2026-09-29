@@ -31,7 +31,8 @@ const root = path.resolve(__dirname, '..');
 const CORE = fs.readFileSync(path.join(root, 'fids-current', 'js', 'fids-core.js'), 'utf8');
 
 function fnSource(name) {
-  let i = CORE.search(new RegExp('(^|\\n)(async )?function ' + name.replace(/\$/g, '\\$') + '\\('));
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let i = CORE.search(new RegExp('(^|\\n)(async )?function ' + escaped + '\\('));
   assert.ok(i >= 0, name + ' must exist');
   if (CORE[i] === '\n') i++;
   let depth = 0, j = CORE.indexOf('{', i);
