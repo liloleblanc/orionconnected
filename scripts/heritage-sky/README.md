@@ -142,3 +142,30 @@ one line across the aeroplane: big and slow far back (60 s), mixed sizes
 behind (12 s), small in front (6 s). Recipes are in `make-shelf-strips.sh`.
 `cropscale` crops from the top-left, as CGImage does; an earlier copy flipped
 the offset and cut the wrong band whenever the offset was not zero.
+
+## Aircraft drawings: put the artboard back (`artboard-backing.py`)
+
+A side-view aircraft drawn on a white artboard can lean on that white without
+anyone meaning it to. A shape drawn at partial opacity (the caps-livery DC-9's
+thrust reverser is a 67 % gradient, its intake ring fades to 37 %), or a sliver
+left between two shapes (the white stripe above that DC-9's wing was an empty
+gap), reads as white in Illustrator or Linearity and as blue sky on the archive
+card.
+
+    python3 scripts/heritage-sky/artboard-backing.py export.svg fids-current/aircraft/heritage/<name>.svg
+
+The script adds a `<g id="artboard-backing">` as the first thing drawn. It holds:
+- a white copy of every shape whose fill is not fully opaque;
+- a white band behind every enclosed gap. A gap is a transparent pixel in a
+  render that cannot be reached from the edge of the picture without crossing
+  the drawing.
+
+Over white, the result is pixel-identical to the export. It refuses if any of
+the backing would land where the sky reaches. It runs on macOS only, rendering
+with `qlmanage`, and needs Pillow.
+
+`tests/heritage-card.test.js` checks two things for every drawing in
+`aircraft/heritage/`:
+- every see-through shape is backed;
+- the drawing contains no embedded bitmap. Illustrator writes one when it
+  cannot express some shading, as it did with the DC-9's engine.

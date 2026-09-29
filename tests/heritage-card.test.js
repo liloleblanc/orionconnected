@@ -284,3 +284,43 @@ test('a heritage aeroplane drawn as SVG is all shapes, with no picture inside it
     assert.doesNotMatch(svg, /href\s*=\s*["']data:image\//, path.basename(f) + ' embeds a data: image');
   }
 });
+
+test('a shape drawn see-through in a heritage aeroplane has the artboard behind it', () => {
+  // A drawing made on a white artboard leans on that white without anyone
+  // meaning it to: the caps-livery DC-9's thrust reverser is a 67 % gradient
+  // and its intake ring fades to 37 %, both white in the editor and both
+  // tinted blue by the card's sky. scripts/heritage-sky/artboard-backing.py
+  // puts a white copy of every such shape (and of every enclosed gap) at the
+  // bottom of the drawing, in <g id="artboard-backing">. The gaps need a
+  // render to find; the shapes can be checked here.
+  const dir = path.join(ROOT, 'fids-current', 'aircraft', 'heritage');
+  for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.svg'))) {
+    const svg = fs.readFileSync(path.join(dir, f), 'utf8');
+    const grads = {};
+    for (const m of svg.matchAll(/<(linearGradient|radialGradient)\b([^>]*?)(?:\/>|>([\s\S]*?)<\/\1>)/g)) {
+      const id = (m[2].match(/\bid="([^"]+)"/) || [])[1];
+      const ops = [...String(m[3] || '').matchAll(/stop-opacity="([0-9.eE+-]+)"/g)].map((x) => +x[1]);
+      const href = (m[2].match(/href="#([^"]+)"/) || [])[1];
+      if (id) grads[id] = { op: ops.length ? Math.min(...ops) : null, href };
+    }
+    const gmin = (id, n = 0) => {
+      const g = grads[id];
+      if (!g) return 1;
+      if (g.op == null && g.href && n < 8) return gmin(g.href, n + 1);
+      return g.op == null ? 1 : g.op;
+    };
+    const backing = (svg.match(/<g id="artboard-backing">([\s\S]*?)<\/g>/) || [])[1] || '';
+    const art = svg.replace(/<g id="artboard-backing">[\s\S]*?<\/g>/, '');
+    for (const m of art.matchAll(/<(path|rect|ellipse|circle|polygon)\b[^>]*?\/?>/g)) {
+      const t = m[0];
+      if (/fill="none"/.test(t)) continue;
+      const op = +((t.match(/\sopacity="([0-9.eE+-]+)"/) || [])[1] || 1);
+      const fo = +((t.match(/fill-opacity="([0-9.eE+-]+)"/) || [])[1] || 1);
+      const fg = (t.match(/fill="url\(#([^)]+)\)"/) || [])[1];
+      if (Math.min(op, fo, fg ? gmin(fg) : 1) >= 0.999) continue;
+      const d = (t.match(/\sd="([^"]+)"/) || [])[1];
+      assert.ok(d && backing.includes('d="' + d + '"'),
+        f + ': a see-through shape has nothing behind it but the sky: ' + t.slice(0, 90));
+    }
+  }
+});
