@@ -98,7 +98,13 @@ test('the waiting aeroplane stands at its gate, else the terminal, else the airp
   const at = spot({ YQM });
   assert.deepEqual(at('YQM', o, '1'), { lat: YQM.stands['1A'][0], lng: YQM.stands['1A'][1], zoom: 15, src: 'stand' }, 'gate 1 boards from stand 1A, at its door');
   assert.deepEqual(at('YQM', o, '2'), { lat: YQM.stands['2'][0], lng: YQM.stands['2'][1], zoom: 15, src: 'stand' }, 'its own stand, not the nearer stand 3');
-  assert.deepEqual(at('YQM', o, '3'), { lat: YQM.stands['3'][0], lng: YQM.stands['3'][1], zoom: 15, src: 'stand' });
+  // Gate 3 boards over Bridge 1. OSM's stand "3" was really Bridge 2's head
+  // (gates 1 and 2), so the builder's YQM correction replaces both bridge
+  // stands; the nearest stand to door 3 is now Bridge 1's.
+  assert.deepEqual(at('YQM', o, '3'), { lat: YQM.stands.BR1[0], lng: YQM.stands.BR1[1], zoom: 15, src: 'stand' }, 'gate 3 boards over Bridge 1');
+  assert.deepEqual(YQM.bridged, ['BR1', 'BR2'], 'Moncton has two jet bridges');
+  assert.equal(YQM.door_stands['3'][0], 'BR1');
+  assert.ok(YQM.door_stands['1'].includes('BR2') && YQM.door_stands['2'].includes('BR2'), 'gates 1 and 2 share Bridge 2');
   assert.deepEqual(at('YQM', o, '9'), { lat: YQM.terminals[0][0], lng: YQM.terminals[0][1], zoom: 14, src: 'terminal' }, 'no such gate: the only terminal');
   assert.deepEqual(at('YQM', o, ''), { lat: YQM.terminals[0][0], lng: YQM.terminals[0][1], zoom: 14, src: 'terminal' }, 'another airport\'s aeroplane has no gate here');
   assert.deepEqual(at('YYZ', [43.68, -79.62], ''), { lat: 43.68, lng: -79.62, zoom: 12, src: 'airport' }, 'no file: the airport, far enough out');

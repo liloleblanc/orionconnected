@@ -451,12 +451,45 @@ DOOR_GROUP_M = 3
 # own stand first, then nearest).
 DOOR_STANDS_OVERRIDE = {
     'YQM': {
-        '1': ['1A', '1B', '2'],
-        '2': ['1A', '1B', '2'],
-        '3': ['3', '4', '5', '6A', '6B'],
-        '4': ['3', '4', '5', '6A', '6B'],
+        '1': ['BR2', '1A', '1B', '2'],
+        '2': ['BR2', '1A', '1B', '2'],
+        '3': ['BR1', '5', '6A', '6B'],
+        '4': ['BR1', '5', '6A', '6B'],
     },
 }
+
+# LOCAL KNOWLEDGE, NOT OPENSTREETMAP: where the jet-bridge stands really are.
+# Moncton has two identical jet bridges. Bridge 1 serves gates 3 and 4 (with
+# the side stands 5, 6A and 6B as walk-outs); Bridge 2 serves gates 1 and 2
+# (with 1A, 1B and 2). OSM's doors and bridges agree with that, but its two
+# stand points at the bridge heads do not: the one at Bridge 2's head is
+# tagged "3" (so gate 3 would take gate 1/2's bridge), and the one for
+# Bridge 1 sits 17 m in from where the bridge meets the aircraft. The bridge
+# heads were marked by the airport's operator on the GeoNB orthophoto and
+# measured there (0.2 m per pixel, checked against three OSM stands to 1 m);
+# the stop point is where the NOSE stops, taken 6 m ahead of the bridge head
+# along the stand heading and 2 m to its right (the bridge meets the front
+# left door), and the heading is the parked aircraft's in the same photo.
+SITE_OVERRIDE = {
+    'YQM': {
+        'drop_stands': ['3', '4'],
+        'stands': {
+            'BR1': [46.11557, -64.68785, 310.0],   # Bridge 1: gates 3 and 4
+            'BR2': [46.11598, -64.68743, 310.0],   # Bridge 2: gates 1 and 2
+        },
+        'bridged': ['BR1', 'BR2'],
+    },
+}
+
+
+def apply_site_override(iata, stands):
+    """Stands after the hand corrections for this airport (a new dict)."""
+    over = SITE_OVERRIDE.get(iata)
+    if not over:
+        return stands
+    out = {r: p for r, p in stands.items() if r not in over.get('drop_stands', ())}
+    out.update(over.get('stands', {}))
+    return dict(sorted(out.items()))
 
 
 def _own(door, stand):
@@ -601,6 +634,8 @@ def build(iata, coords, details=None):
         out[kind] = dict(sorted(keep.items()))
     if not (out['stands'] or out['gates'] or terminals):
         return None
+    out['stands'] = apply_site_override(iata, out['stands'])
+    site = SITE_OVERRIDE.get(iata, {})
     return {
         'iata': iata,
         'source': 'OpenStreetMap contributors (ODbL 1.0)',
@@ -613,7 +648,7 @@ def build(iata, coords, details=None):
         'gates': out['gates'],
         'terminals': sorted(terminals),
         'door_stands': door_stands(iata, out['stands'], out['gates']),
-        'bridged': bridged(out['stands'], bridges),
+        'bridged': site.get('bridged') or bridged(out['stands'], bridges),
         'ambiguous': {k: sorted(v) for k, v in sorted(dropped.items())},
     }
 
