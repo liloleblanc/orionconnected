@@ -73,10 +73,19 @@ test('every gate file is well formed, keyed the way the board asks, and credits 
     for (const kind of ['stands', 'gates']) {
       for (const [k, p] of Object.entries(g[kind] || {})) {
         assert.equal(norm(k), k, f + ' ' + kind + ' key ' + k + ' is normalised');
-        assert.ok(Array.isArray(p) && p.length === 2 && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180, f + ' ' + k + ' is a point');
+        // A stand may carry the way the nose points once parked: [lat, lng, hdg].
+        const n = kind === 'stands' ? [2, 3] : [2];
+        assert.ok(Array.isArray(p) && n.includes(p.length) && Math.abs(p[0]) <= 90 && Math.abs(p[1]) <= 180, f + ' ' + k + ' is a point');
+        if (p.length === 3) assert.ok(p[2] >= 0 && p[2] < 360, f + ' stand ' + k + ' heading is degrees true');
       }
     }
     assert.ok(Array.isArray(g.terminals), f + ' lists terminals');
+    // Each door's stands, and the stands a jet bridge reaches, name stands on record.
+    for (const [d, list] of Object.entries(g.door_stands || {})) {
+      assert.ok(g.gates[d], f + ' door_stands door ' + d + ' is a door');
+      assert.ok(Array.isArray(list) && list.length && list.every(s => g.stands[s]), f + ' door ' + d + ' lists stands on record');
+    }
+    assert.ok((g.bridged || []).every(s => g.stands[s]), f + ' bridged names stands on record');
     assert.equal(g.license, 'ODbL-1.0', f + ' states its licence');
     assert.match(g.license_url, /opendatacommons\.org\/licenses\/odbl/, f + ' links it');
     assert.equal(typeof g.ambiguous, 'object', f + ' records the refs it could not pin to one place');
@@ -305,6 +314,10 @@ test('the builder drops a gate number OSM puts in two places, and splits "45/46"
       { type: 'node', lat: 40.0005, lon: -73.0, tags: { aeroway: 'parking_position', ref: '07' } },
       { type: 'node', lat: 40.0006, lon: -73.0001, tags: { aeroway: 'parking_position', ref: '7' } },  // 13 m: the same stand
       { type: 'way', center: { lat: 40.001, lon: -73.002 }, tags: { aeroway: 'terminal' } },
+      // Stand 12 is its lead-in line, 100 m, drawn from the stop end outward; its door is 22 m past that end.
+      { type: 'way', id: 12, tags: { aeroway: 'parking_position', ref: '12' }, geometry: [{ lat: 40.0021, lon: -73.0 }, { lat: 40.003, lon: -73.0 }] },
+      { type: 'node', lat: 40.0019, lon: -73.0, tags: { aeroway: 'gate', ref: '12' } },
+      { type: 'way', id: 13, tags: { aeroway: 'jet_bridge' }, geometry: [{ lat: 40.0019, lon: -73.0003 }, { lat: 40.0021, lon: -73.0002 }] },
     ]));
     out = execFileSync('python3', ['-c',
       'import importlib.util,json,sys\n' +
@@ -320,6 +333,9 @@ test('the builder drops a gate number OSM puts in two places, and splits "45/46"
   assert.ok(f.gates['45'] && f.gates['46'], '"45/46" names both gates');
   assert.equal(f.terminals.length, 1);
   assert.equal(f.license, 'ODbL-1.0');
+  assert.deepEqual(f.stands['12'], [40.0021, -73.0, 180], 'a line is stored as its end at the door, nose pointing on along it');
+  assert.deepEqual(f.door_stands['12'], ['12'], 'door 12 boards stand 12');
+  assert.deepEqual(f.bridged, ['12'], 'the jet bridge reaches stand 12 only');
 });
 
 test('the aircraft sky turns to night at the real sunset, like the weather card', () => {
