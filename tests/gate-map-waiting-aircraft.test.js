@@ -10,6 +10,12 @@
 // where it is waiting — at its gate's stand at the board's own airport (from
 // the OpenStreetMap gate files), else at the terminal or the airport — with
 // the camera on it, like the live parked view (v23905).
+//
+// v23915: "waiting" was the schedule read as a place — gate 1 parked the 05:25
+// departure's aeroplane at stand 1A seven hours before it left Toronto. An
+// aeroplane is now drawn only on evidence (see gate-map-evidence.test.js), and
+// with none the map is our own gate, empty: the stand, the route dashed from
+// it, and a label naming the other end. Never the route over its midpoint.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -140,77 +146,103 @@ test('the parked estimate draws the aeroplane at the spot, the route dashed from
   assert.deepEqual(out, ['arc', 'marker']);
 });
 
-test('an estimate map parks the aeroplane only on evidence; "unknown" keeps the route view', () => {
-  const mini = fnSource('initGateMap');
-  const big = fnSource('_bigMapClone');
-  assert.match(mini, /^function initGateMap\(org,dst,prog,waitAt\)/);
-  assert.match(big, /^function _bigMapClone\(org,dst,prog,waitAt\)/);
-  assert.match(mini, /var _parked = _preDep && !!waitAt;/);
-  assert.match(big, /var _bcParked = _bcPreDep && !!waitAt;/);
-  for (const [name, src] of [['mini', mini], ['big', big]]) {
-    assert.match(src, /_gateDrawParkedEstimate\(/, name + ' draws the waiting aeroplane');
-    assert.match(src, /_gateParkSpot\(org, o, _gateOwnGateRef\(org\)\)/, name + ' asks where it waits');
-    assert.match(src, /fitBounds\(\[o, d\]/, name + ' still fits the route when nothing says the aeroplane waits');
-  }
-  // The origin pin is the aeroplane while it waits; its label sat over the aircraft.
-  assert.match(mini, /if \(!_parked\) _estOv\.push\(L\.circleMarker\(o,/);
-  assert.match(big, /if \(!_bcParked\)\s+L\.circleMarker\(o,/);
-  // A container resize keeps the camera on the waiting aeroplane.
-  assert.match(fnSource('_gateMapSettle'), /if \(p < 0\.02 && _pv\) gateMap\.setView\(\[_pv\.lat, _pv\.lng\], _pv\.zoom/);
-  assert.match(fnSource('_bigMapSettle'), /if \(p < 0\.02 && pv\) m\.setView\(\[pv\.lat, pv\.lng\], pv\.zoom/);
-  // A live fix retires the waiting view, and the gate-file redraw never replaces a live map.
-  assert.match(fnSource('initGateMapLive'), /delete gateMap\._fidsParkView; if \(window\._fidsGateRoute\) window\._fidsGateRoute\.wait = false;/);
-  assert.match(mini, /r\.wait && gateMap && gateMap\._fidsParkView && gateMap\._fidsLive !== true\) initGateMap\(org, dst, prog, waitAt\)/);
+test('an empty stand is our gate with no aeroplane: the route dashed from the stand, one label, the camera on it', () => {
+  const calls = { setView: null, arcs: [], rings: [], markers: [] };
+  const map = { setView: (c, z) => { calls.setView = [c, z]; } };
+  const L = {
+    divIcon: (o) => o,
+    marker: (ll, opts) => ({ addTo: () => { calls.markers.push({ ll, html: opts.icon.html, cls: opts.icon.className }); return 'label'; } }),
+    circleMarker: (ll, opts) => ({ addTo: () => { calls.rings.push({ ll, fill: opts.fill }); return 'ring'; } }),
+  };
+  const draw = new Function('L', '_gateMapShowOverlay', '_gcAddArc', '_gcNm',
+    'return (' + fnSource('_gateDrawEmptyStand') + ')')(
+    L, () => true, (m, a, b, opts) => { calls.arcs.push({ a, b, dash: opts.dashArray }); return 'arc'; }, gcNm);
+  const stand = { lat: 46.11611, lng: -64.6868, zoom: 15, src: 'stand' };
+  const out = draw(map, stand, [43.68, -79.62], 'To Toronto · 5:25am | À Toronto · 05:25');
+  assert.deepEqual(calls.setView, [[46.11611, -64.6868], 15], 'camera on our stand at the parked view\'s zoom');
+  assert.deepEqual(calls.arcs, [{ a: [46.11611, -64.6868], b: [43.68, -79.62], dash: '8,6' }], 'the route runs from the stand toward Toronto, dashed');
+  assert.deepEqual(calls.rings, [{ ll: [46.11611, -64.6868], fill: false }], 'a ring on the stand, not an aeroplane');
+  assert.equal(calls.markers.length, 1);
+  assert.equal(calls.markers[0].cls, 'gate-map-note-pin');
+  assert.doesNotMatch(calls.markers[0].html, /map-plane-|<img/, 'no aircraft marker');
+  assert.match(calls.markers[0].html, /^<div class="gate-map-note">To Toronto · 5:25am \| À Toronto · 05:25<\/div>$/);
+  assert.deepEqual(map._fidsParkView, { lat: 46.11611, lng: -64.6868, zoom: 15, src: 'stand', empty: true });
+  assert.deepEqual(out, ['arc', 'ring', 'label']);
+  // The far end unknown: the stand and its label, no route.
+  calls.arcs = [];
+  draw(map, stand, null, 'x');
+  assert.deepEqual(calls.arcs, []);
 });
 
-test('every caller says why the aeroplane is waiting, or passes nothing', () => {
+test('an estimate map parks the aeroplane only on evidence, and with none shows our gate empty — never the route over its midpoint', () => {
+  const mini = fnSource('initGateMap');
+  const big = fnSource('_bigMapClone');
+  assert.match(mini, /^function initGateMap\(org,dst,prog,waitAt,note\)/);
+  assert.match(big, /^function _bigMapClone\(org,dst,prog,waitAt,note\)/);
+  assert.match(mini, /var _parked = _preDep && !!waitAt;/);
+  assert.match(mini, /var _empty = _preDep && !waitAt;/);
+  assert.match(big, /var _bcParked = _bcPreDep && !!waitAt;/);
+  assert.match(big, /var _bcEmpty = _bcPreDep && !waitAt;/);
+  for (const [name, src] of [['mini', mini], ['big', big]]) {
+    assert.match(src, /_gateDrawParkedEstimate\(/, name + ' draws the parked aeroplane');
+    assert.match(src, /_gateDrawEmptyStand\(/, name + ' draws the empty stand');
+    assert.doesNotMatch(src, /fitBounds\(\[o, d\]/, name + ' never frames the whole route (zoom 3 over Vermont)');
+  }
+  // Our own gate is always known: when the far end cannot be placed, a leg that
+  // starts or ends here shows our stand (no route) before any world view.
+  const own = mini.indexOf('_gateDrawEmptyStand(gateMap, _hSpot, null, note)');
+  assert.ok(own > 0 && own < mini.indexOf('gateMap.setView([20, '), 'mini: our stand before the world view');
+  assert.match(big, /else _gateDrawEmptyStand\(window\._bigCraftMap, _hSpot, null, note\);/);
+  // The stand is always OURS: for an inbound leg that is the destination end.
+  assert.match(mini, /var _stI = _hereIsDst \? dst : org, _stC = _hereIsDst \? d : o, _thC = _hereIsDst \? o : d;/);
+  assert.match(mini, /var _stSpot = _gateParkSpot\(_stI, _stC, _gateOwnGateRef\(_stI\)\);/);
+  assert.match(big, /var _bcSpot = _gateParkSpot\(_bcStI, _bcStC, _gateOwnGateRef\(_bcStI\)\);/);
+  // No pin on the airport the map stands at; the far end keeps its pin.
+  assert.match(mini, /var _pinlessO = \(_parked \|\| _empty\) && !_hereIsDst;/);
+  assert.match(mini, /if \(!_pinlessO\) _estOv\.push\(L\.circleMarker\(o,/);
+  assert.match(big, /if \(!_bcPinlessO\)\s+L\.circleMarker\(o,/);
+  // A container resize keeps the camera on the stand; there is no route fit to go back to.
+  assert.match(fnSource('_gateMapSettle'), /if \(p < 0\.02 && _pv\) gateMap\.setView\(\[_pv\.lat, _pv\.lng\], _pv\.zoom/);
+  assert.match(fnSource('_bigMapSettle'), /if \(p < 0\.02 && pv\) m\.setView\(\[pv\.lat, pv\.lng\], pv\.zoom/);
+  assert.doesNotMatch(fnSource('_gateMapSettle'), /fitBounds/);
+  assert.doesNotMatch(fnSource('_bigMapSettle'), /fitBounds/);
+  // A live fix retires the parked view, and the gate-file redraw never replaces a live map.
+  assert.match(fnSource('initGateMapLive'), /delete gateMap\._fidsParkView; if \(window\._fidsGateRoute\) window\._fidsGateRoute\.wait = false;/);
+  assert.match(mini, /\(r\.wait \|\| r\.empty\) && gateMap && gateMap\._fidsParkView && gateMap\._fidsLive !== true\) initGateMap\(org, dst, prog, waitAt, note\)/);
+});
+
+test('every map draws the one answer; nothing parks an aeroplane from the schedule', () => {
   const tick = fnSource('_gateMapTick');
-  assert.match(tick, /phase = 'at-gate';[\s\S]{0,260}waitAt = _gateInboundLandedHere\(inb, _liveGrounded\);/, 'at our gate: only on a real landing');
-  assert.match(tick, /phase = 'pre';[\s\S]{0,160}waitAt = _gateInboundWaitingAtOrigin\(inb, now\);/, 'at its origin: only before it is due off');
-  assert.match(tick, /phase = 'no-inbound-out';[\s\S]{0,160}waitAt = _gateOutboundWaiting\(cf, now\);/);
-  assert.match(tick, /var progKey = phase \+ \(waitAt \? '\+wait' : ''\) \+ '\|' \+ progBucket;/, 'a change in the evidence redraws');
-  assert.match(tick, /initGateMap\(routeOrg, routeDst, renderProg, waitAt\);/);
-  assert.match(CORE, /var _pinWait = _arrHere \? _gateInboundLandedHere\(inb\) : _gateInboundWaitingAtOrigin\(inb\);/);
-  assert.match(CORE, /initGateMap\(apIata, dstIata \|\| apIata, -1, _pinWait\);/);
-  assert.match(CORE, /initGateMap\(inb\._locIata, apIata, -1, _pinWait\);/);
-  assert.match(CORE, /initGateMap\(apIata, dstIata, -1, _outWait\);/);
-  assert.match(CORE, /_bigMapClone\(_bcO, _bcD, ctx\.progress, ctx\.waiting\);/);
-  assert.match(fnSource('_map3dFlightCtx'), /return !fixOk && prog <= 0\.02 && \(_legOut \? _gateOutboundWaiting\(inb\) : _gateInboundWaitingAtOrigin\(inb\)\);/);
+  assert.match(tick, /_gateMapApply\(_gateAircraftWhere\(/);
+  assert.match(CORE, /_bigMapClone\(_bcO, _bcD, ctx\.progress, ctx\.waiting, ctx\.note\);/);
+  assert.match(CORE, /_bigMapCloneLive\(_bcO, _bcD, ctx\.pos\[1\], ctx\.pos\[0\], ctx\.fixAt\);/);
+  assert.match(fnSource('_map3dFlightCtx'), /waiting: res\.kind === 'stand',/);
+  // v23909's waiting rules read "has not departed" as "is standing here"; gone.
+  for (const gone of ['_gateInboundWaitingAtOrigin', '_gateOutboundWaiting', '_gateInboundLandedHere']) {
+    assert.ok(!CORE.includes(gone), gone + ' is gone');
+  }
   // The home airport's stands are asked for before anything is drawn.
   assert.ok(tick.indexOf('_apGatesFor(window._gateIata)') < tick.indexOf("if (!mb || mb.offsetHeight < 10) return;"));
   assert.match(CORE, /window\._gateIata = iata;\s*\/\/ v23909[^\n]*\n\s*try \{ if \(iata && typeof _apGatesFor === 'function'\) _apGatesFor\(iata\); \}/);
 });
 
-test('waiting is evidence: late, unconfirmed, cancelled and diverted legs are not "waiting"', () => {
+test('parked is evidence: the feed\'s own words, an actual time — never the clock', () => {
   const T = Date.UTC(2026, 8, 27, 20, 0);
-  const iso = (ms) => new Date(ms).toISOString();
-  const AP_C = { YYC: [51.12, -114.01], YQM: [46.11, -64.68] };
-  const mk = (name, air) => new Function('fidsInboundAirborne', 'adbTs', '_gateLegGone', '_lookupAirport', '_gcNm', 'window', 'return (' + fnSource(name) + ')')(
-    () => air, (v) => Date.parse(v), lift('_gateLegGone', [], []), (k) => AP_C[k] || null, gcNm, { _gateIata: 'YQM' });
-  const atOrigin = mk('_gateInboundWaitingAtOrigin', false);
-  assert.equal(atOrigin({ status: 'scheduled', _depSchedLocal: iso(T + 30 * 60000) }, T), true, 'due off in 30 min: waiting');
-  assert.equal(atOrigin({ status: 'delayed', _depSchedLocal: iso(T - 60 * 60000) }, T), false, 'an hour past its departure, unconfirmed: not known to be waiting');
-  assert.equal(atOrigin({ status: 'cancelled', _depSchedLocal: iso(T + 30 * 60000) }, T), false);
-  assert.equal(atOrigin({ status: 'diverted', _depSchedLocal: iso(T + 30 * 60000) }, T), false);
-  assert.equal(atOrigin({ status: 'enroute', _depSchedLocal: iso(T + 30 * 60000) }, T), false);
-  assert.equal(atOrigin({ status: 'scheduled' }, T), false, 'no departure or arrival time: unknown');
-  // No departure time on the row (YQM's arrival feed has none): judged from the arrival.
-  assert.equal(atOrigin({ status: 'scheduled', _locIata: 'YYC', _sortTs: T + 21 * 3600000 }, T), true,
-    'tomorrow\'s WS812 lands in 21 h: it has not left Calgary');
-  assert.equal(atOrigin({ status: 'scheduled', _locIata: 'YYC', _sortTs: T + 2 * 3600000 }, T), false,
-    'lands in 2 h on a 4.5 h leg: it may well be flying, so not "waiting"');
-  assert.equal(mk('_gateInboundWaitingAtOrigin', true)({ status: 'scheduled', _depSchedLocal: iso(T + 30 * 60000) }, T), false, 'the feed says it is flying');
-  const here = new Function('_gateLegGone', 'return (' + fnSource('_gateInboundLandedHere') + ')')(lift('_gateLegGone', [], []));
-  assert.equal(here({ status: 'arrived' }), true);
-  assert.equal(here({ status: 'delayed', _actualArrTime: '2026-09-27T19:50' }), true);
-  assert.equal(here({ status: 'delayed' }, true), true, 'a live fix on the ground here');
-  assert.equal(here({ status: 'delayed' }, false), false, 'the clock alone is not a landing');
-  assert.equal(here({ status: 'diverted', _actualArrTime: 'x' }), false);
-  const out = new Function('_gateLegGone', 'return (' + fnSource('_gateOutboundWaiting') + ')')(lift('_gateLegGone', [], []));
-  assert.equal(out({ status: 'Delayed', _sortTs: T + 60 * 60000 }, T), true, 'AC1987 at gate 1, delayed');
-  assert.equal(out({ status: 'departed', _sortTs: T - 5 * 60000 }, T), false);
-  assert.equal(out({ status: 'scheduled', _sortTs: T - 30 * 60000 }, T), false, 'long past its time');
-  assert.equal(out({ status: 'cancelled', _sortTs: T + 60 * 60000 }, T), false);
+  const gone = lift('_gateLegGone', [], []);
+  const raw = lift('_gateRawStatus', [], []);
+  const rawLanded = new Function('_gateRawStatus', 'return (' + fnSource('_gateRawLanded') + ')')(raw);
+  const landedAt = new Function('_gateLegGone', '_gateRawLanded', 'adbTs', '_GATE_DOWN_SEEN', '_gateRowKey',
+    'return (' + fnSource('_gateLandedAt') + ')')(gone, rawLanded, (v) => Date.parse(v), {}, lift('_gateRowKey', [], []));
+  assert.equal(landedAt({ status: 'arrived', _stInferred: false, _revTs: T - 10 * 60000 }, T), T - 10 * 60000, 'the feed says it landed');
+  assert.equal(landedAt({ status: 'arrived', _stInferred: true, _sortTs: T - 40 * 60000 }, T), 0, 'the clock says it landed: not a landing');
+  assert.equal(landedAt({ status: 'delayed', _actualArrTime: '2026-09-27T19:50:00Z' }, T), Date.parse('2026-09-27T19:50:00Z'));
+  assert.equal(landedAt({ status: 'delayed' }, T), 0, 'a late leg with no revised time is still in the air');
+  assert.equal(landedAt({ status: 'diverted', _actualArrTime: '2026-09-27T19:50:00Z' }, T), 0);
+  const atGate = new Function('_gateRawStatus', 'return (' + fnSource('_gateOutboundAtGate') + ')')(raw);
+  assert.equal(atGate({ status: 'boarding' }), true, 'our departure boarding, in the feed\'s words');
+  assert.equal(atGate({ status: 'gateclosed', _stInferred: true }), false, 'the clock\'s "gate closed" is not');
+  assert.equal(atGate({ status: 'Delayed' }), false, 'AC1987 at gate 1, delayed: says nothing about where its aeroplane is');
+  assert.equal(atGate({ status: 'scheduled' }), false);
 });
 
 test('a gate file that failed to load is fetched again; only a 404 is final', async () => {
