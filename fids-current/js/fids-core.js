@@ -25533,7 +25533,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23915';
+var FIDS_BUILD_TAG = 'v23916';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -33642,6 +33642,16 @@ function _gateMapTileLayer() {
   t.on('add', function () {
     var m = this._map;
     setTimeout(function () { try { _wxRadarAdd(m); } catch (e) {} }, 0);
+    // v23916 — the aeroplane is sized in metres, so its size follows the zoom:
+    // hooked here, once per map, for the same reason as the radar — every
+    // map-build site passes through this layer. 'zoom' fires on every frame of
+    // a flyTo, so the aeroplane grows with the camera rather than after it.
+    try {
+      if (m && !m._fidsPlaneFitHook) {
+        m._fidsPlaneFitHook = true;
+        m.on('zoom zoomend viewreset', function () { _mapPlaneFit(m); });
+      }
+    } catch (e) {}
   });
   return t;
 }
@@ -33819,6 +33829,11 @@ function _wxRadarAdd(m) {
 var _GATE_TRACK_MAX_AGE_MS = 120000; // 2 min; ADS-B fixes arrive far faster
 function _gateHeading(fallbackBearing) {
   try {
+    // v23916 — A TRACK IS WHERE THE AEROPLANE IS GOING. Standing on its stand
+    // it is going nowhere, and FR24's "track" for a stationary aircraft is
+    // whatever it last reported, or noise. Below 5 kt the caller's heading
+    // (the stand's own, see _gateGroundHeading) is the answer.
+    if (!_gateTrackTrusted()) return fallbackBearing;
     var lt = window._gateInboundLiveTrack;
     if (lt && typeof lt.track === 'number' && (Date.now() - lt.at) <= _GATE_TRACK_MAX_AGE_MS) return lt.track;
     var inb = window._gateInbound;
@@ -33887,29 +33902,221 @@ function _estRouteFrac(nowMs, arrMs, durMs, wheelsUpMs) {
 }
 try { if (typeof window !== 'undefined') window._estRouteFrac = _estRouteFrac; } catch (e) {}
 
-function _mapPlaneIcon() {
+// ═══════════════════════════════════════════════════════════════════════════
+// v23916 — THE AEROPLANE AT ITS REAL SIZE.
+//
+// The marker was a fixed 48 px picture at every zoom. Parked at a Moncton
+// stand at zoom 15 that drew an A320 as a 142 m aeroplane, 3.8 times too big,
+// over two stands and half the apron; at the terminal fallback (z14) 7.5
+// times, at the airport one (z12) 30 times. The same picture is almost
+// exactly an A320's real size at zoom 17 (45 px true, 43 px drawn), and z17 is
+// the first zoom at which the street map prints Moncton's gate numbers. So
+// the parked views move to z17 (_gateParkSpot) and the marker is sized in
+// metres from the map's own zoom and latitude:
+//
+//   drawn length = max(today's length, real length in px)
+//   drawn span   = max(today's span, real span in px), within 0.8-1.2 times
+//                  the length's factor (see _mapPlaneScale)
+//
+// In flight and at every zoom up to 15 the real size is smaller than today's
+// icon, so every aeroplane stays exactly today's icon there (the one place
+// that is not so is north of 62°, where at z15 the widest aeroplanes — an
+// A380 first, a 747-8 and the other widebodies further north — are wider than
+// the icon and drawn at their real span); on the
+// ground at z17 it becomes its real size (A320, 737-8, CRJ900, A220-300,
+// Dash 8-400, 787-9 exact; the A319's span within 1%). Neither the length nor
+// the span ever shrinks as the map zooms in, and both grow continuously, so
+// the zoom-in has no jumps. The aeroplanes shorter than the icon at z17 (A319,
+// E175, ATR 72, the smaller Dash 8s and CRJs) are drawn at today's length, up
+// to a third too long, at their real span where that is wider.
+//
+// HOW. The image inside the marker is scaled by two CSS custom properties set
+// on the map's container (display-overrides.css, v23916 block) — the image,
+// not the rotated div around it, because the live glide and the parked view
+// rewrite that div's transform on every frame. The rotation is on the div, so
+// a different scale along the length and across the span is applied in the
+// aeroplane's own nose-up frame and then turned: the footprint is the real
+// one. _mapPlaneFit recomputes both on every zoom (hooked where every map
+// gets its tile layer, _gateMapTileLayer) and whenever the marker is drawn.
+//
+// SIZES are keyed by the one code aircraftCodeToIata gives every spelling of a
+// type ('DHC-8-400', 'Dash 8 Q400' and 'DH8D' are all DH4): [length, span,
+// nose gear from the nose], metres. Lengths and spans are the manufacturers'
+// figures; where a type is commonly fitted with winglets the span with them
+// is used (757-200/-300 41.1 m, not 38.1; 767-300ER 50.9, not 47.6); the 777-8/-9
+// span is the folded one, since it only matters on the ground. The E175's
+// span is the standard 26.0 m wing (E170 and E175 share it). THE NOSE-GEAR
+// DISTANCES ARE APPROXIMATE (±0.5 m): they only place a nose over a pad
+// stand, where the nose wheel stops (see _gateParkPlace).
+var _MAP_PLANE_DIMS = {
+  // Turboprops
+  DH4: [32.8, 28.4, 3.9], DH8: [32.8, 28.4, 3.9], DH3: [25.7, 27.4, 2.9], DH2: [22.3, 25.9, 2.9], DH1: [22.3, 25.9, 2.9],
+  AT7: [27.2, 27.1, 3.0], AT5: [22.7, 24.6, 3.0], AT4: [22.7, 24.6, 3.0],
+  SF3: [19.7, 21.4, 2.4], BEH: [17.6, 17.7, 2.0], BE1: [17.6, 17.7, 2.0], B19: [17.6, 17.7, 2.0],
+  J31: [14.4, 15.9, 1.8], J32: [14.4, 15.9, 1.8], DHT: [15.8, 19.8, 1.4], PC2: [14.4, 16.3, 1.9],
+  // Regional jets: CRJ, ERJ, E-jets, A220
+  CR9: [36.2, 24.9, 3.5], CRA: [36.2, 24.9, 3.5], CRJ: [36.2, 24.9, 3.5], CRK: [39.1, 26.2, 3.5],
+  CR7: [32.3, 23.2, 3.5], CR5: [32.3, 23.2, 3.5], CR2: [26.8, 21.2, 3.5], CR1: [26.8, 21.2, 3.5],
+  ER4: [29.9, 20.0, 3.0], ERJ: [29.9, 20.0, 3.0], ERD: [28.4, 20.0, 3.0], ER3: [26.3, 20.0, 3.0],
+  E7W: [29.9, 26.0, 3.2], E70: [29.9, 26.0, 3.2], E75: [31.7, 26.0, 3.2], E90: [36.2, 28.7, 3.2], E95: [38.7, 28.7, 3.2],
+  297: [32.4, 31.0, 3.2], 290: [36.3, 33.7, 3.2], 295: [41.5, 35.1, 3.2],
+  221: [35.0, 35.1, 4.2], 223: [38.7, 35.1, 4.2],
+  100: [35.5, 28.1, 3.6], F70: [30.9, 28.1, 3.6],
+  // The rear-engine narrowbodies
+  717: [37.8, 28.4, 3.6], DC9: [36.4, 28.5, 3.4], D93: [36.4, 28.5, 3.4], D95: [40.7, 28.5, 3.4], D9S: [36.4, 28.5, 3.4],
+  M80: [45.1, 32.8, 3.4], M81: [45.1, 32.8, 3.4], M82: [45.1, 32.8, 3.4], M83: [45.1, 32.8, 3.4], M88: [45.1, 32.8, 3.4],
+  M87: [39.8, 32.8, 3.4], M90: [46.5, 32.9, 3.4],
+  // A320 family
+  318: [31.4, 34.1, 5.0], 319: [33.8, 35.8, 5.0], '31N': [33.8, 35.8, 5.0], 320: [37.6, 35.8, 5.0], '32N': [37.6, 35.8, 5.0],
+  321: [44.5, 35.8, 5.0], '32Q': [44.5, 35.8, 5.0],
+  // 737 (73C/73W/73H/73J are the winglet codes of the -300/-700/-800/-900)
+  732: [30.5, 28.4, 4.8], 733: [33.4, 28.9, 4.8], '73C': [33.4, 31.2, 4.8], 734: [36.4, 28.9, 4.8], 735: [31.0, 28.9, 4.8],
+  736: [31.2, 34.3, 4.8], '73G': [33.6, 35.8, 4.8], '73W': [33.6, 35.8, 4.8], 738: [39.5, 35.8, 4.8], '73H': [39.5, 35.8, 4.8],
+  739: [42.1, 35.8, 4.8], '73J': [42.1, 35.8, 4.8], '7M7': [35.6, 35.9, 4.8], '7M8': [39.5, 35.9, 4.8], '7M9': [42.2, 35.9, 4.8],
+  // 757 / 767
+  752: [47.3, 41.1, 5.0], 753: [54.4, 41.1, 5.0], 762: [48.5, 47.6, 5.4], 763: [54.9, 50.9, 5.4], 764: [61.4, 51.9, 5.4],
+  // 777 / 787
+  772: [63.7, 60.9, 7.0], 773: [73.9, 60.9, 7.0], '77W': [73.9, 64.8, 7.0], '77L': [63.7, 64.8, 7.0], 777: [73.9, 64.8, 7.0],
+  778: [70.9, 64.8, 7.0], 779: [76.7, 64.8, 7.0],
+  788: [56.7, 60.1, 6.0], 789: [62.8, 60.1, 6.0], '78J': [68.3, 60.1, 6.0], 787: [62.8, 60.1, 6.0],
+  // A330 / A340 / A350 / A380 / 747
+  332: [58.8, 60.3, 5.3], 333: [63.7, 60.3, 5.3], 338: [58.8, 64.0, 5.3], 339: [63.7, 64.0, 5.3],
+  342: [59.4, 60.3, 5.3], 343: [63.7, 60.3, 5.3], 345: [67.9, 63.5, 5.3], 346: [75.4, 63.5, 5.3],
+  359: [66.8, 64.8, 6.3], 351: [73.8, 64.8, 6.3], 388: [72.7, 79.8, 7.3],
+  744: [70.7, 64.4, 7.8], 748: [76.3, 68.4, 7.8]
+};
+// A type nobody has named: a narrowbody-sized jet, or a regional turboprop.
+var _MAP_PLANE_UNKNOWN = { jet: [38, 35, 4.8], prop: [30, 27, 3.5] };
+// Each picture's aeroplane, measured in the 48 px marker box at scale 1: its
+// length nose to tail and its span, px. The two PNGs are the supplied
+// silhouettes (the jet's is 114 x 95 of 128 px; the turboprop's 93 x 79, drawn
+// 7.3 px left of centre, which display-overrides.css puts back). The three
+// SVGs are the supplied Dash 8-400 drawing and the CRJ900 and 717 models drawn
+// to real dimensions in its style; each file's viewBox is centred on the half-way
+// point nose to tail and widened so that at scale 1 the aeroplane is exactly
+// as long as the picture it replaces — so in flight nothing changes size.
+var _MAP_PLANE_ART = {
+  jet:  { src: '/logos/map-plane-jet.png',  len: 42.75, span: 35.63 },
+  prop: { src: '/logos/map-plane-prop.png', len: 34.88, span: 29.63 },
+  dh4:  { src: '/logos/map-plane-dh4.svg',  len: 34.88, span: 31.99 },
+  crj:  { src: '/logos/map-plane-crj.svg',  len: 42.75, span: 29.41 },
+  t717: { src: '/logos/map-plane-717.svg',  len: 42.75, span: 32.12 }
+};
+// Everything the map needs to know about one type string: its code, whether
+// it is a turboprop, its size in metres and the picture that draws it. The
+// Dash 8s (DH1-DH4) are the supplied Dash 8-400 drawing, scaled to their own
+// dimensions until smaller drawings exist; the rear-engine T-tail jets (CRJ,
+// ERJ, Fokker 70/100) the CRJ900 model; the 717, DC-9 and MD-80s the 717
+// model; other turboprops the old turboprop PNG; every other jet the jet PNG.
+function _mapPlaneSpecFor(raw) {
+  var r = String(raw == null ? '' : raw), code = '';
+  try { code = r ? String((typeof aircraftCodeToIata === 'function' ? aircraftCodeToIata(r) : r) || '').toUpperCase() : ''; } catch (e) { code = r.toUpperCase(); }
+  var dash8 = /^DH[1-48]$/.test(code) || /DASH ?8|DHC-?8|Q ?400/i.test(r);
+  var prop = dash8 || /^(DH[1-8]|DHT|DHC|AT[4-7]|ATR|BEK|BE[1H9]|B19|SF3|SW4|J3[12]|C08|CNA|CN1|PC2|EM2)/.test(code)
+          || /TWIN OTTER|DHC-?6|ATR ?[47]2/i.test(r);
+  // A Dash 8 named only in words ("Dash 8") is sized as the -400, the common one.
+  var dimCode = Object.prototype.hasOwnProperty.call(_MAP_PLANE_DIMS, code) ? code : (dash8 ? 'DH4' : '');
+  var use = dimCode ? _MAP_PLANE_DIMS[dimCode] : _MAP_PLANE_UNKNOWN[prop ? 'prop' : 'jet'];
+  var art = dash8 ? 'dh4'
+          : /^(CR[1-9AJK]|ER[34DJ]|E45|100|F70)$/.test(code) ? 'crj'
+          : /^(717|M8\d|M90|DC9|D9[1-5SX])$/.test(code) ? 't717'
+          : prop ? 'prop' : 'jet';
+  return { code: dimCode, prop: prop, known: !!dimCode, len: use[0], span: use[1], ng: use[2],
+           art: _MAP_PLANE_ART[art], key: dimCode || (prop ? 'prop' : 'jet') };
+}
+// The type of the aeroplane the gate maps draw, from everywhere it lives.
+// v23107 — LOOK EVERYWHERE THE TYPE ACTUALLY LIVES (PD472: the panel listed a
+// Dash 8 while the map drew the jet default): the board's departure row, the
+// verified-tail cache, the inbound row, and (v23916) the resolved-aircraft
+// store the /acinfo answers and the live poll write, which survives the
+// feed's row rebuilds.
+// v23916 — IN THE PANEL'S ORDER OF TRUTH. The type now also sizes the
+// aeroplane and picks its stand (a jet the bridge, a turboprop a walk-out), so
+// which source wins when they disagree matters twice. They are read in the
+// order the aircraft block on the panel reads them: the registration's own
+// type first (the one airframe; scheduled equipment lies on a swap), then the
+// inbound, the aeroplane that physically turns here (its row, then the
+// resolved store for it), then the departure row (its fields, then the
+// resolved store for it). v23107's rule — any source saying turboprop won —
+// got the swap right only when the swap was to a turboprop; reading the
+// departure row first, as this did before, drew an E195-scheduled departure
+// whose inbound's registration is a Dash 8-400 as a 38.7 m jet on Moncton's
+// Bridge 2 pad while the panel said Dash 8-400. The first source that names a
+// type we know the size of wins; failing that, any source that says
+// turboprop; failing that, the first thing any source said.
+function _mapPlaneSpec() {
   try {
- // v23107 — LOOK EVERYWHERE THE TYPE ACTUALLY LIVES (PD472: the
-    // panel listed a Dash 8 while the map drew the jet default). This only
-    // read the OUTBOUND row's display string; for regionals the type is
-    // routinely known on the INBOUND row, the row's code field, or the
-    // verified-tail cache instead. An airline flying both DH8s and E195s
-    // makes the jet fallback a coin-flip lie — exhaust the real sources
-    // first.
     var cf = window._gateCurrentFlight || {};
     var inb = window._gateInbound || {};
-    var _srcs = [cf._aircraftCode, cf._aircraft, cf.aircraft,
-                 (inb._reg && typeof _regTrueType === 'function') ? _regTrueType(inb._reg) : '',
-                 inb._aircraftCode, inb._aircraft];
+    var rc = (typeof _acResolvedGet === 'function' && cf.flight) ? _acResolvedGet(cf.flight) : null;
+    var ri = (typeof _acResolvedGet === 'function' && inb.flight) ? _acResolvedGet(inb.flight) : null;
+    var _srcs = [(inb._reg && typeof _regTrueType === 'function') ? _regTrueType(inb._reg) : '',
+                 inb._aircraftCode, inb._aircraft, ri && ri.cd, ri && ri.nm,
+                 cf._aircraftCode, cf._aircraft, cf.aircraft, rc && rc.cd, rc && rc.nm];
+    var first = null, firstProp = null;
     for (var _si = 0; _si < _srcs.length; _si++) {
-      var raw = String(_srcs[_si] || '');
-      if (!raw) continue;
-      var eq = (typeof aircraftCodeToIata === 'function') ? String(aircraftCodeToIata(raw) || raw) : raw;
-      if (/^(DH[1-8]|DHT|DHC|AT[4-7]|ATR|BEK|BE[1H9]|B19|SF3|SW4|J3[12]|C08|CNA|CN1|PC2|EM2)/i.test(eq.toUpperCase())
-          || /DASH ?8|DHC-?[68]|Q ?400|TWIN OTTER|ATR ?[47]2/i.test(raw)) return '/logos/map-plane-prop.png';
+      var raw = _srcs[_si];
+      if (!raw || typeof raw === 'object') continue;
+      var s = _mapPlaneSpecFor(raw);
+      if (s.known) return s;
+      if (!first) first = s;
+      if (s.prop && !firstProp) firstProp = s;
     }
+    if (firstProp || first) return firstProp || first;
   } catch (e) {}
+  return _mapPlaneSpecFor('');
+}
+function _mapPlaneIcon() {
+  try { return _mapPlaneSpec().art.src; } catch (e) {}
   return '/logos/map-plane-jet.png';
+}
+// The two scale factors for one aeroplane, one picture, one latitude and one
+// zoom. Metres per CSS pixel on the 256 px Web Mercator tiles is
+// 156543.03392 · cos(lat) / 2^zoom — the latitude matters: at the same zoom
+// Heathrow draws 11% more pixels per metre than Moncton, Keflavík 58% more.
+//   ky = max(1, real length px / picture length px)
+//   kx = clamp(max(1, real span px / picture span px), 0.8 · ky, 1.2 · ky)
+// so wherever the real aeroplane is smaller than the picture both ways (in
+// flight) the picture is drawn exactly as it always was. Where the length has
+// outgrown the picture and the span is within the clamp, kx is the same as
+// ky · (span/length) / (picture span/picture length).
+function _mapPlaneScale(ac, art, lat, zoom) {
+  var mpp = 156543.03392 * Math.cos((Number(lat) || 0) * Math.PI / 180) / Math.pow(2, Number(zoom) || 0);
+  var ky = 1, kx = 1;
+  if (ac && art && mpp > 0 && art.len > 0 && ac.len > 0) {
+    ky = Math.max(1, (ac.len / mpp) / art.len);
+    // v23916 — the span has its own floor, the same max(1, …) as the length,
+    // and is then kept within 0.8-1.2 of the length's factor. It used to be
+    // held at 1 until the LENGTH outgrew the picture, which drew every type
+    // shorter than its picture at z17 at the picture's width (the A319 18%
+    // too narrow, the A318 up to 22%, the ATR 72 10%), and made the width jump
+    // in one frame (+14% on an A320, and a Dash 8-400 5% narrower than today)
+    // at the zoom where the length took over, half-way through the flyTo down
+    // to a stand. Both factors are now continuous in the zoom, never below 1
+    // and never smaller at a closer zoom.
+    kx = (art.span > 0 && ac.span > 0)
+      ? Math.min(1.2 * ky, Math.max(0.8 * ky, Math.max(1, (ac.span / mpp) / art.span)))
+      : ky;
+  }
+  return { kx: kx, ky: ky, mpp: mpp };
+}
+// Size the aeroplane on one map to its zoom. Also swaps the picture when the
+// type has become known since the marker was drawn (the /acinfo answer lands
+// after the first draw), so the picture and the size always agree.
+function _mapPlaneFit(map) {
+  try {
+    if (!map || !map.getContainer || !map.getZoom || !map._loaded) return;
+    var c = map.getContainer();
+    if (!c || !c.style) return;
+    var z = map.getZoom(), ctr = map.getCenter();
+    if (!isFinite(z) || !ctr) return;
+    var ac = _mapPlaneSpec();
+    var img = c.querySelector ? c.querySelector('.leaflet-marker-icon img[src*="/logos/map-plane-"]') : null;
+    if (img && ac.art && img.getAttribute('src') !== ac.art.src) img.setAttribute('src', ac.art.src);
+    var k = _mapPlaneScale(ac, ac.art, ctr.lat, z);
+    c.style.setProperty('--fids-plane-kx', k.kx.toFixed(4));
+    c.style.setProperty('--fids-plane-ky', k.ky.toFixed(4));
+  } catch (e) {}
 }
 function initGateMap(org,dst,prog,waitAt,note){
   // v23915 — the route record says whether an aeroplane is drawn at all
@@ -33967,7 +34174,7 @@ function initGateMap(org,dst,prog,waitAt,note){
           gateMap._fidsRouteKey = String(org).toUpperCase() + '>' + String(dst).toUpperCase();
           gateMap._fidsLive = false;
           _gateMapWatchResize(mb);
-          var _hSpot = _gateParkSpot(_hK, [_hC[0], _hC[1]], _gateOwnGateRef(_hK));
+          var _hSpot = _gateParkSpot(_hK, [_hC[0], _hC[1]], _gateOwnGateRef(_hK), _mapPlaneSpec());
           gateMap._fidsOverlays = waitAt ? _gateDrawParkedEstimate(gateMap, _hSpot, null) : _gateDrawEmptyStand(gateMap, _hSpot, null, note);
           setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
           return;
@@ -34111,7 +34318,7 @@ function initGateMap(org,dst,prog,waitAt,note){
         if (r && r.org === org && r.dst === dst && r.prog === prog && (r.wait || r.empty) && gateMap && gateMap._fidsParkView && gateMap._fidsLive !== true) initGateMap(org, dst, prog, waitAt, note);
       });
     }
-    var _stSpot = _gateParkSpot(_stI, _stC, _gateOwnGateRef(_stI));
+    var _stSpot = _gateParkSpot(_stI, _stC, _gateOwnGateRef(_stI), _mapPlaneSpec());
     (_parked ? _gateDrawParkedEstimate(gateMap, _stSpot, _thC) : _gateDrawEmptyStand(gateMap, _stSpot, _thC, note)).forEach(function (l) { _estOv.push(l); });
   } else {
     try { delete gateMap._fidsParkView; } catch (e) {}
@@ -34135,6 +34342,7 @@ function initGateMap(org,dst,prog,waitAt,note){
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
       _estOv.push(L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap));
+      _mapPlaneFit(gateMap);   // v23916 — sized for this zoom (today's icon in flight)
       // v23106 — center on the plane through DESCENT AND APPROACH too, not
       // just cruise: the phase table above frames the DESTINATION for
       // p>0.88 while the estimated plane still paints miles away — the
@@ -34347,6 +34555,18 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
   else if (nearDst < 0.06) zoom = 11;
   else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
+  // v23916 — ON THE GROUND AT EITHER END, THE GROUND VIEW. A live fix on the
+  // ground at the origin or at our field is shown at stand zoom (17) standing
+  // still and 16 taxiing, where the aeroplane is drawn at its real size
+  // (_mapPlaneFit); in the air the ladder above is unchanged. The zoom hold
+  // below does not apply to it: a parked aeroplane has "barely moved" by
+  // definition, and the hold would keep whatever zoom the approach left.
+  var _gndZ = _gateGroundZoom(planeLat, planeLng, o, d);
+  if (_gndZ) {
+    zoom = _gndZ;
+    // The origin's gate file, for the heading of the stand it is standing on.
+    try { if (_gcNm([planeLat, planeLng], o) < 5) _apGatesFor(org); } catch (eGF) {}
+  }
 
   // REUSE the map when the route is unchanged — tearing it down reloaded the
   // heavy satellite tiles each time.
@@ -34437,14 +34657,28 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
     // pre-v23700 behaviour and harmless there because nothing has glided.
     var _ref = _fx || _lv;
     var _dLat = Math.abs(_ref.lat - planeLat), _dLng = Math.abs(_ref.lng - planeLng);
+    // v23916 — THE GROUND VIEW'S ZOOM IS NOT CARRIED INTO THE AIR. Standing at
+    // the origin the map is at 17 (16 taxiing), deeper than anything the air
+    // ladder above gives (15 at most). The first airborne fix is still inside
+    // the hold's box around the last ground fix, so the hold kept 17 in the
+    // air: the aeroplane drawn up to 1.7 times today's icon on the climb, the
+    // camera chasing it at 0.9 m/px, a step down of one level per fix after
+    // that, and the big map (which has no hold) at the ladder's 15. Off the
+    // ground the hold and the one-level step start from 15 instead, as they
+    // did when the origin view was 15; `_lvCam` keeps the camera's real zoom
+    // for the "nothing changed" test, so a map left at 17 is always redrawn.
+    var _lvCam = _lv.zoom;
+    if (!_gndZ && _lv.zoom > 15) _lv = { lat: _lv.lat, lng: _lv.lng, zoom: 15 };
     if (_dLat < 0.05 && _dLng < 0.05) zoom = _lv.zoom;                 // hold zoom, no flap
     // Hysteresis: even on a real move, never let one tick jump more than a
     // single zoom level. A 2-level jump is what reads as the map 'going'.
     if (zoom !== _lv.zoom) zoom = _lv.zoom + (zoom > _lv.zoom ? 1 : -1);
+    // v23916 — on the ground, the ground view's zoom, at once (see _gndZ).
+    if (_gndZ) zoom = _gndZ;
     // Skip only when the instance being reused is already LIVE — a reused
     // EST instance (same key namespace since v23099) still carries the
     // static overlays and must fall through to the redraw below.
-    if (_liveReuse && gateMap._fidsLive === true && _dLat < 0.012 && _dLng < 0.012 && _lv.zoom === zoom) return; // nothing changed → skip
+    if (_liveReuse && gateMap._fidsLive === true && _dLat < 0.012 && _dLng < 0.012 && _lvCam === zoom) return; // nothing changed → skip
   }
   // v23102 — RE-ANCHOR IN PLACE
   // the map flashed 3 times). On a same-leg live refresh
@@ -34466,6 +34700,19 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
         if (_gateParkedAtOrigin(planeLat, planeLng, o)) {
           _stopGateMapGlide();
           _gateApplyParked(_mv, planeLat, planeLng, d);
+          gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
+          gateMap._fidsLastFix = { lat: planeLat, lng: planeLng };
+          window._gatePlaneMk = _mv.marker;
+          return;
+        }
+        // v23916 — on the ground at OUR field (landed; the origin is above):
+        // the marker to the fix, the glide stopped — left running it carries
+        // the marker on to the touchdown point, outside a stand-zoom view.
+        if (_gndZ) {
+          _stopGateMapGlide();
+          _gateApplyParked(_mv, planeLat, planeLng, d, true);
+          var _bvH = _gateGlide.views && _gateGlide.views.big;
+          if (_bvH && _bvH.marker && _bvH.marker._map && _bvH.a1 && _bvH.a2) _gateApplyParked(_bvH, planeLat, planeLng, d, true);
           gateMap._fidsLastView = { lat: planeLat, lng: planeLng, zoom: zoom };
           gateMap._fidsLastFix = { lat: planeLat, lng: planeLng };
           window._gatePlaneMk = _mv.marker;
@@ -34555,13 +34802,18 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
   // shape for the glide once it departs), and no glide left running.
   var _parkedO = _gateParkedAtOrigin(planeLat, planeLng, o);
   if (_parkedO) { try { _stopGateMapGlide(); } catch (eP) {} }
+  // v23916 — on the ground at OUR field: landed, so no glide (it would carry
+  // the marker on to the touchdown point) and nothing dashed ahead of it — the
+  // runway-shaped final from a stand drew an approach across the field.
+  var _gndHere = !!_gndZ && !_parkedO;
+  if (_gndHere) { try { _stopGateMapGlide(); } catch (eP2) {} }
   var _flownM = _parkedO ? null : _gateFlownPath(o, d, planeLat, planeLng, dst);
   var _a1 = _parkedO ? L.polyline([], {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap)
           : _flownM ? L.polyline(_flownM, {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(gateMap)
           : _gcAddArc(gateMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true}); if(_a1)_ov.push(_a1);
   // Runway-aligned final when we have the data — same shape the glide flies.
-  var _rwyP = _runwayFinalPath(_pp, d, dst);
-  var _a2 = null;
+  var _rwyP = _gndHere ? null : _runwayFinalPath(_pp, d, dst);
+  var _a2 = _gndHere ? L.polyline([], {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap) : null;
   if (_rwyP) { try { _a2 = L.polyline(_rwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap); } catch (e) { _a2 = null; } }
   if (!_a2) _a2 = _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   if(_a2)_ov.push(_a2);
@@ -34573,8 +34825,12 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
+  // v23916 — standing on the ground the nose is the stand's way, not the
+  // destination's (_gateHeading keeps a moving aeroplane's own track).
+  if (_gndZ) bearing = _gateGroundHeading(planeLat, planeLng, bearing);
   var _planeMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(gateMap);
   _ov.push(_planeMk);
+  _mapPlaneFit(gateMap);   // v23916 — sized for this zoom
   // Feed the live glide: move the plane along the route at its own ground
   // speed between real ADS-B fixes; this call re-seeds it to the true spot.
   var _glSpd = _parkedO ? 0
@@ -34680,6 +34936,7 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
     var _lpG = window._gateInboundLivePos;
     if (_lpG && _lpG.onGround === true) _glSpd = 0;
   } catch (e) {}
+  if (_gndHere) _glSpd = 0;   // v23916 — the one answer's ground fix, too (it may not be the poll's)
   window._gatePlaneMk = _planeMk;
   try { console.log('[MAP-LIVE] plane @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'z' + zoom, 'glideKts', _glSpd); } catch (e) {}
   _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd, dst, fixAt);
@@ -34814,17 +35071,121 @@ function _gateParkedAtOrigin(lat, lng, o) {
     return !!(onG && o && typeof lat === 'number' && typeof lng === 'number' && _gcNm([lat, lng], o) < 5);
   } catch (e) { return false; }
 }
+// v23916 — THE AEROPLANE ON THE GROUND, LIVE: HOW FAST, WHICH WAY, HOW CLOSE.
+// The live fix's ground speed: the one answer's (_gateAircraftWhere) when it
+// is a live position, else the 60 s poll's. null when nothing says.
+function _gateGroundSpeed() {
+  try {
+    var wh = window._gateMapWhere;
+    if (wh && (wh.kind === 'fix' || wh.kind === 'origin-ground') && typeof wh.spd === 'number' && isFinite(wh.spd)) return wh.spd;
+    var lp = window._gateInboundLivePos;
+    if (lp && typeof lp.speed === 'number' && isFinite(lp.speed)) return lp.speed;
+  } catch (e) {}
+  return null;
+}
+// FR24's track is the aeroplane's heading only while it moves: 5 kt or more,
+// or no speed on record at all (in the air, as it always was).
+function _gateTrackTrusted() {
+  var s = _gateGroundSpeed();
+  return !(typeof s === 'number' && s < 5);
+}
+// On the ground, in the live answer's words (else the poll's).
+function _gateOnGroundNow() {
+  try {
+    var wh = window._gateMapWhere;
+    if (wh && (wh.kind === 'fix' || wh.kind === 'origin-ground')) return wh.kind === 'origin-ground' || wh.onGround === true;
+    var lp = window._gateInboundLivePos;
+    if (lp) return lp.onGround === true;
+    return !!(window._gateInbound && window._gateInbound._liveOnGround === true);
+  } catch (e) { return false; }
+}
+// The live view's zoom for an aeroplane on the ground at either end of its
+// leg: stand zoom (17) standing still, 16 taxiing — taxi fixes arrive about a
+// minute apart and are not animated on the ground (v22888), so at 17 a
+// taxiing aeroplane would jump out of a 315 m frame between two of them.
+// 0 in the air or anywhere else: the distance ladder decides, as before.
+function _gateGroundZoomNow() {
+  var s = _gateGroundSpeed();
+  return (typeof s === 'number' && s > 5) ? 16 : 17;
+}
+function _gateGroundZoom(lat, lng, o, d) {
+  try {
+    if (!_gateOnGroundNow()) return 0;
+    var at = (o && _gcNm([lat, lng], o) < 5) || (d && _gcNm([lat, lng], d) < 6);
+    return at ? _gateGroundZoomNow() : 0;
+  } catch (e) { return 0; }
+}
+// Which way the nose of an aeroplane standing at `p` points, by the gate
+// file's rules (step 3 of the true-scale placement): the stand's own heading
+// (p[2], the lead-in line's direction); else toward its own door when that is
+// within 150 m; else toward the terminal's centre within 400 m; else toward
+// the destination; null when none of those is known.
+function _gateStandHeading(p, door, term, d) {
+  try {
+    if (p && p.length > 2 && typeof p[2] === 'number' && isFinite(p[2])) return p[2];
+    var m = function (a, b) { return _gcNm(a, b) * 1852; };
+    if (p && door) { var dd = m(p, door); if (dd >= 3 && dd <= 150) return _gcBrgDeg(p, door); }
+    if (p && term) { var dt = m(p, term); if (dt >= 3 && dt <= 400) return _gcBrgDeg(p, term); }
+    if (p && d && _gcNm(p, d) > 1) return _gcBrgDeg(p, d);
+  } catch (e) {}
+  return null;
+}
+// A live aeroplane standing still: the heading of the stand it is on (the
+// nearest stand within 45 m in any gate file this page has loaded — ours, and
+// the origin's once initGateMapLive has asked for it), else `fallback`.
+function _gateGroundHeading(lat, lng, fallback) {
+  try {
+    var here = [lat, lng], best = null, bd = 45, bf = null;
+    for (var k in _AP_GATES) {
+      if (!Object.prototype.hasOwnProperty.call(_AP_GATES, k)) continue;
+      var f = _AP_GATES[k];
+      if (!f || !f.stands) continue;
+      for (var r in f.stands) {
+        if (!Object.prototype.hasOwnProperty.call(f.stands, r)) continue;
+        var p = f.stands[r];
+        if (!p || typeof p[0] !== 'number') continue;
+        var dm = _gcNm(here, p) * 1852;
+        if (dm < bd) { bd = dm; best = { ref: r, p: p }; bf = f; }
+      }
+    }
+    if (!best) return fallback;
+    var g = bf.gates || {}, door = g[best.ref] || g[best.ref.replace(/([0-9])[A-Z]$/, '$1')] || null, term = null, tdm = Infinity;
+    (bf.terminals || []).forEach(function (t) { var x = _gcNm(best.p, t); if (x < tdm) { tdm = x; term = t; } });
+    var h = _gateStandHeading(best.p, door, term, null);
+    return (typeof h === 'number' && isFinite(h)) ? h : fallback;
+  } catch (e) { return fallback; }
+}
 // Put an existing view (marker + its two lines) into the parked state in place.
-function _gateApplyParked(view, lat, lng, d) {
+// v23916 — `here` is the other end of the leg: an aeroplane on the ground at
+// OUR field has landed, so it keeps its flown line and has nothing ahead of
+// it; one at its origin has flown nothing yet and its route is dashed from it.
+// Either way the marker stands at the fix itself (a glide left running would
+// carry it on to the touchdown point, off a stand-zoom view), points the way
+// the stand does while it stands still, and the camera comes down to the
+// ground view's zoom (17 standing, 16 taxiing) — these in-place paths never
+// changed zoom before.
+function _gateApplyParked(view, lat, lng, d, here) {
   try {
     if (view.marker && view.marker.setLatLng) view.marker.setLatLng([lat, lng]);
-    if (view.a1 && view.a1.setLatLngs) view.a1.setLatLngs([]);
-    if (view.a2 && view.a2.setLatLngs) view.a2.setLatLngs(_gcFullRoute([lat, lng], d, 60));
+    if (here) {
+      if (view.a2 && view.a2.setLatLngs) view.a2.setLatLngs([]);
+    } else {
+      if (view.a1 && view.a1.setLatLngs) view.a1.setLatLngs([]);
+      if (view.a2 && view.a2.setLatLngs) view.a2.setLatLngs(_gcFullRoute([lat, lng], d, 60));
+    }
     var el = view.marker && view.marker.getElement && view.marker.getElement();
     if (el && el.firstChild && el.firstChild.style) {
       var dLng = (d[1] - lng) * Math.PI / 180, la1 = lat * Math.PI / 180, la2 = d[0] * Math.PI / 180;
       var brg = Math.atan2(Math.sin(dLng) * Math.cos(la2), Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
-      el.firstChild.style.transform = 'rotate(' + _gateHeading(brg) + 'deg)';
+      el.firstChild.style.transform = 'rotate(' + _gateHeading(_gateGroundHeading(lat, lng, brg)) + 'deg)';
+    }
+    var vm = view.map || (view.marker && view.marker._map) || null;
+    if (vm && vm.flyTo && vm.getZoom) {
+      var gz = _gateGroundZoomNow(), off = false;
+      // A taxiing aeroplane can leave a ground-zoom frame between two fixes.
+      try { var pt = vm.latLngToContainerPoint([lat, lng]), sz = vm.getSize(); off = pt.x < 0 || pt.y < 0 || pt.x > sz.x || pt.y > sz.y; } catch (eO) { off = false; }
+      if (off || Math.abs(vm.getZoom() - gz) > 0.01) vm.flyTo([lat, lng], gz, { duration: 1.6 });
+      _mapPlaneFit(vm);
     }
   } catch (e) {}
 }
@@ -35622,9 +35983,18 @@ function _gateMapApply(res) {
   } catch (e) {}
   var live = res.kind === 'fix' || res.kind === 'origin-ground';
   var note = res.kind === 'none' ? _gateMapNote(res) : '';
+  // v23916 — at our stand (or our empty stand) WHERE the aeroplane stands and
+  // how far back from the stop point its middle is both depend on its type (a
+  // jet takes the door's bridge, a turboprop the walk-out; a longer aeroplane
+  // sits further back), so a type that becomes known after the first draw
+  // redraws it once. Everything else about the key is as before.
+  var acKey = '';
+  if (res.kind === 'stand' || res.kind === 'none') { try { acKey = '|' + _mapPlaneSpec().key; } catch (eK) { acKey = ''; } }
   var key = res.kind + '|' + res.org + '>' + res.dst + '|'
     + (live ? res.lat.toFixed(3) + ',' + res.lng.toFixed(3)
-       : res.kind === 'air-est' ? String(Math.round(res.prog * 50)) : note);
+       : res.kind === 'air-est' ? String(Math.round(res.prog * 50)) : note) + acKey;
+  // The picture and the size follow the type on every tick, drawn or not.
+  try { if (typeof gateMap !== 'undefined') _mapPlaneFit(gateMap); _mapPlaneFit(window._bigCraftMap); } catch (eF) {}
   try {
     window._gateMapWhere = res;
     // The sticky fix the live builders fall back to for a speed is this one.
@@ -35655,62 +36025,209 @@ function _gateMapApply(res) {
 // gate files could not pin to one place are left out of them at build time
 // (scripts/gates/build-gates.py), so they fall through to the terminal or the
 // airport rather than to a guess.
-function _gateParkSpot(iata, o, gateRef) {
+//
+// v23916 — A DOOR SERVES A GROUP OF STANDS, AND THE AEROPLANE PICKS ONE. A
+// feed's "gate" is the boarding door, and the gate files now say which stands
+// each door boards (door_stands, its own first) and which of them a jet bridge
+// reaches (bridged). At Moncton doors 3 and 4 board over Bridge 1 (its pad,
+// BR1) or walk out to stands 5, 6A and 6B; doors 1 and 2 over Bridge 2 (BR2)
+// or walk out to 1A, 1B and 2. So the stand now depends on the aeroplane `ac`
+// (a _mapPlaneSpec): a jet takes the door's bridge, a turboprop a walk-out,
+// the door's own first (_gateStandAlloc). A door with no group on record
+// keeps the rules above.
+//
+// v23916 — ZOOM 17 AT A STAND OR A DOOR (was 15), 16 at the only terminal (was
+// 14): z17 is where the aeroplane is drawn at its real size (_mapPlaneFit) and
+// the first zoom at which the street map prints the gate numbers. The airport
+// fallback stays at 12 with today's symbol: its point is only good to about a
+// kilometre, and a true-size aeroplane there would claim a precision we do not
+// have. The spot carries what the placement needs (_gateParkPlace): the
+// stand's heading and kind, its door, the nearest terminal, and `ac`.
+function _gateParkSpot(iata, o, gateRef, ac) {
   var f = _apGatesFor(iata);
   var near = function (p) { return p && o && _gcNm(p, o) < 5; };   // a stand 5 nm off is another airport's
   var m = function (a, b) { return _gcNm(a, b) * 1852; };
-  var spot = function (p, z, src) { return { lat: p[0], lng: p[1], zoom: z, src: src }; };
+  var tNear = function (p, cap) {
+    var best = null, bd = cap;
+    ((f && f.terminals) || []).forEach(function (t) { var x = m(p, t); if (x <= bd) { bd = x; best = [t[0], t[1]]; } });
+    return best;
+  };
+  var spot = function (p, z, src, ref, door) {
+    var s = { lat: p[0], lng: p[1], zoom: z, src: src };
+    if (ref) {
+      s.ref = ref;
+      if (p.length > 2 && typeof p[2] === 'number' && isFinite(p[2])) s.hdg = p[2];
+      s.kind = (f && f.stand_kind && f.stand_kind[ref] === 'pad') ? 'pad' : 'stop';
+    }
+    if (door) s.door = [door[0], door[1]];
+    // The terminal a stand faces (400 m, the heading rule's reach); for a door
+    // with no stand, the building it is in, however big (the way out of it).
+    var t = src === 'stand' ? tNear(p, 400) : src === 'gate' ? tNear(p, 1500) : null;
+    if (t) s.term = t;
+    if (ac) s.ac = ac;
+    return s;
+  };
   if (f) {
     var g = _gateRefNorm(gateRef), st = f.stands || {}, gt = f.gates || {}, tm = f.terminals || [];
     if (g) {
+      var door = near(gt[g]) ? gt[g] : null;
+      var grp = (door && f.door_stands && Array.isArray(f.door_stands[g]))
+        ? f.door_stands[g].filter(function (k) { return near(st[k]) && m(st[k], door) <= 250; }) : [];
+      if (grp.length) {
+        var pick = _gateStandAlloc(grp, f.bridged || [], g,
+          [{ id: 'board', prop: !!(ac && ac.prop), len: (ac && ac.len) || _MAP_PLANE_UNKNOWN.jet[0] }]).board;
+        if (pick) return spot(st[pick], 17, 'stand', pick, door);
+      }
       var named = [];
-      if (near(st[g])) named.push(st[g]);
+      if (near(st[g])) named.push(g);
       // Gate 1 boards from stand 1A or 1B.
       if (/\d$/.test(g)) {
         Object.keys(st).sort().forEach(function (k) {
-          if (k.length === g.length + 1 && k.indexOf(g) === 0 && /[A-Z]$/.test(k) && near(st[k])) named.push(st[k]);
+          if (k.length === g.length + 1 && k.indexOf(g) === 0 && /[A-Z]$/.test(k) && near(st[k])) named.push(k);
         });
       }
-      var door = near(gt[g]) ? gt[g] : null;
       if (door) {
-        for (var i = 0; i < named.length; i++) if (m(named[i], door) <= 150) return spot(named[i], 15, 'stand');
+        for (var i = 0; i < named.length; i++) if (m(st[named[i]], door) <= 150) return spot(st[named[i]], 17, 'stand', named[i], door);
         var best = null, bd = Infinity;
-        Object.keys(st).forEach(function (k) { var d = m(st[k], door); if (d < bd) { bd = d; best = st[k]; } });
-        if (best && bd <= 100) return spot(best, 15, 'stand');
-        return spot(door, 15, 'gate');
+        Object.keys(st).forEach(function (k) { var d = m(st[k], door); if (d < bd) { bd = d; best = k; } });
+        if (best && bd <= 100) return spot(st[best], 17, 'stand', best, door);
+        return spot(door, 17, 'gate', '', door);
       }
       for (var j = 0; j < named.length; j++) {
-        var p = named[j], ok = false;
+        var p = st[named[j]], ok = false;
         for (var t = 0; t < tm.length && !ok; t++) if (m(p, tm[t]) <= 400) ok = true;
         for (var dk in gt) { if (ok) break; if (Object.prototype.hasOwnProperty.call(gt, dk) && m(p, gt[dk]) <= 200) ok = true; }
-        if (ok) return spot(p, 15, 'stand');
+        if (ok) return spot(p, 17, 'stand', named[j], null);
       }
     }
-    if (tm.length === 1 && near(tm[0])) return spot(tm[0], 14, 'terminal');
+    if (tm.length === 1 && near(tm[0])) return spot(tm[0], 16, 'terminal');
   }
   return o ? spot(o, 12, 'airport') : null;
+}
+// v23916 — WHICH OF A DOOR'S STANDS EACH AEROPLANE TAKES. Pure: `list` is the
+// door's stands (door_stands, its own first), `bridged` the stands a jet bridge
+// reaches, `door` the door's normalised number, `acs` the aeroplanes at this
+// door as [{ id, prop, len }] (len in metres). Returns { id: stand } — null for
+// an aeroplane left without one.
+//   • The largest go first: jets before turboprops, longer before shorter. A
+//     type nobody has named counts as a jet (the jet picture is what the map
+//     draws for it).
+//   • A jet takes a bridged stand — the door's own-numbered one first, else
+//     the first bridged stand in the door's list.
+//   • A turboprop walks out: a stand no bridge reaches — the door's
+//     own-numbered one (the stand with its number, else a lettered one, in
+//     order: door 1 boards stand 1A before 1B, as it always has), else the
+//     first walk-out still free in the door's list.
+//   • Whoever is left (a jet when the bridges are taken, a turboprop when the
+//     walk-outs are) the door's own-numbered stand, else the first stand still
+//     free in the door's list.
+// Moncton: doors 3 and 4 → BR1 for a jet and stand 5 for a turboprop (the
+// doors have no stand of their own number; 5, 6B and 6A are their walk-outs);
+// doors 1 and 2 → BR2 for a jet, and 1A / 2 for a turboprop. A turboprop took
+// Bridge 1's pad at doors 3 and 4 until the walk-out rule said "a stand no
+// bridge reaches": the first stand those doors list is the bridge. Today the
+// board asks for its own aeroplane only; several at once (every aircraft on
+// the ground at a small airport) is a list, and they get distinct stands.
+function _gateStandAlloc(list, bridged, door, acs) {
+  var out = {}, used = {}, br = {};
+  list = Array.isArray(list) ? list : [];
+  (bridged || []).forEach(function (s) { br[s] = true; });
+  var g = String(door || '');
+  var own = list.filter(function (s) {
+    return s === g || (/\d$/.test(g) && s.length === g.length + 1 && s.indexOf(g) === 0 && /[A-Z]$/.test(s));
+  }).sort(function (a, b) { return a === g ? -1 : b === g ? 1 : (a < b ? -1 : a > b ? 1 : 0); });
+  var order = (acs || []).filter(function (a) { return !!a; }).slice().sort(function (a, b) {
+    return ((a.prop ? 1 : 0) - (b.prop ? 1 : 0)) || ((Number(b.len) || 0) - (Number(a.len) || 0));
+  });
+  var first = function (arr, test) {
+    for (var i = 0; i < arr.length; i++) if (!used[arr[i]] && (!test || test(arr[i]))) return arr[i];
+    return null;
+  };
+  var isBr = function (s) { return !!br[s]; };
+  var walkOut = function (s) { return !br[s]; };
+  order.forEach(function (a) {
+    var pick = null;
+    if (!a.prop) pick = first(own, isBr) || first(list, isBr);
+    else pick = first(own, walkOut) || first(list, walkOut);
+    if (!pick) pick = first(own) || first(list);
+    if (pick) used[pick] = true;
+    out[a.id] = pick || null;
+  });
+  return out;
+}
+// v23916 — WHERE THE AEROPLANE'S MIDDLE GOES, AND WHICH WAY ITS NOSE POINTS.
+// The marker is drawn about the aeroplane's centre (every picture is centred
+// on the half-way point nose to tail), so at real size a centre put on the
+// stand point would leave half the aeroplane over the stop line and the
+// terminal. The gate files hold where the NOSE stops:
+//   • a stop point (stand kind "stop", from the lead-in line's end): the nose
+//     is on the point;
+//   • a pad (kind "pad", Moncton's two bridges): the point is the pad's centre
+//     and the nose wheel stops 2.2 m ahead of it along the heading — measured
+//     on the regional jet parked on Bridge 2's pad in the GeoNB photo — so the
+//     nose is the type's nose-gear distance + 2.2 m ahead of the pad centre;
+// and the centre is half the drawn length back from the nose, along the
+// heading. The drawn length is the real one, or today's icon length where that
+// is longer (a Dash 8-100 at z17), so the drawn nose is the one on the stop.
+//   • A door with no stand: the aeroplane stands off the building, nose 5 m
+//     out from the door, its body further out along terminal centre → door.
+//   • The terminal and airport fallbacks draw today's symbol on the point.
+// Heading: the stand's own (the lead-in line's direction), else toward this
+// gate's door within 150 m, else toward the terminal centre within 400 m, else
+// toward the destination `d` (_gateStandHeading).
+function _gateParkPlace(spot, d) {
+  var s = [spot.lat, spot.lng];
+  var ac = spot.ac || _mapPlaneSpecFor('');
+  var hdg = null, c = s, nose = s, lenM = ac.len;
+  try {
+    var art = ac.art || _MAP_PLANE_ART.jet;
+    if (spot.src === 'stand' || spot.src === 'gate') {
+      var k = _mapPlaneScale(ac, art, spot.lat, spot.zoom);
+      lenM = Math.max(ac.len, art.len * k.mpp);
+    }
+    if (spot.src === 'stand') {
+      hdg = _gateStandHeading(typeof spot.hdg === 'number' ? [spot.lat, spot.lng, spot.hdg] : s, spot.door, spot.term, d);
+      if (!(typeof hdg === 'number' && isFinite(hdg))) hdg = 0;
+      if (spot.kind === 'pad') nose = _gcDestPt(s, hdg, ((ac.ng || 0) + 2.2) / 1852);
+      c = _gcDestPt(nose, (hdg + 180) % 360, (lenM / 2) / 1852);
+    } else if (spot.src === 'gate') {
+      var outB = null;
+      if (spot.term && _gcNm(spot.term, s) * 1852 > 1) outB = _gcBrgDeg(spot.term, s);
+      else if (d && _gcNm(s, d) > 1) outB = (_gcBrgDeg(s, d) + 180) % 360;
+      if (outB === null) outB = 180;
+      hdg = (outB + 180) % 360;                       // nose in, toward the door
+      nose = _gcDestPt(s, outB, 5 / 1852);
+      c = _gcDestPt(s, outB, (lenM / 2 + 5) / 1852);
+    } else {
+      hdg = _gateStandHeading(s, null, null, d);
+      if (!(typeof hdg === 'number' && isFinite(hdg))) hdg = 0;
+    }
+  } catch (e) {
+    if (!(typeof hdg === 'number' && isFinite(hdg))) hdg = 0;
+  }
+  return { lat: c[0], lng: c[1], hdg: hdg, nose: nose, lenM: lenM };
 }
 // Draw the waiting aeroplane on an estimate map: the route dashed from it to
 // the destination, the plane on top nose-first along that route, the camera
 // on it. Returns the overlays so the caller's reuse pass can clear them.
+// v23916 — at its stand at real size (_gateParkPlace): the marker on the
+// aeroplane's centre, nose the stand's way (it is standing still: no track,
+// no destination bearing, unless the stand says nothing else), the route and
+// the camera from that centre, and the picture sized for the zoom.
 function _gateDrawParkedEstimate(map, spot, d) {
-  var out = [], s = [spot.lat, spot.lng];
+  var out = [];
   try {
+    var pl = _gateParkPlace(spot, d), c = [pl.lat, pl.lng];
     // v23915 — `d` may be unknown (a destination with no coordinates): the
     // aeroplane still stands at our gate, with no route drawn from it.
-    if (d && _gateMapShowOverlay('route') && _gcNm(s, d) > 1) {
-      var rt = _gcAddArc(map, s, d, { vertices: 100, color: '#60a5fa', weight: 3, opacity: 0.6, dashArray: '8,6', noClip: true });
+    if (d && _gateMapShowOverlay('route') && _gcNm(c, d) > 1) {
+      var rt = _gcAddArc(map, c, d, { vertices: 100, color: '#60a5fa', weight: 3, opacity: 0.6, dashArray: '8,6', noClip: true });
       if (rt) out.push(rt);
     }
-    var brg = 0;
-    if (d) {
-      var dLng = (d[1] - s[1]) * Math.PI / 180, la1 = s[0] * Math.PI / 180, la2 = d[0] * Math.PI / 180;
-      brg = Math.atan2(Math.sin(dLng) * Math.cos(la2), Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
-    }
-    if (!isFinite(brg)) brg = 0;
-    out.push(L.marker(s, { zIndexOffset: 1000, icon: L.divIcon({ html: '<div style="transform:rotate(' + _gateHeading(brg) + 'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="' + _mapPlaneIcon() + '" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>', iconSize: [48, 48], iconAnchor: [24, 24], className: '' }) }).addTo(map));
-    map.setView(s, spot.zoom, { animate: false });
-    map._fidsParkView = { lat: spot.lat, lng: spot.lng, zoom: spot.zoom, src: spot.src };
+    out.push(L.marker(c, { zIndexOffset: 1000, icon: L.divIcon({ html: '<div style="transform:rotate(' + pl.hdg + 'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="' + _mapPlaneIcon() + '" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>', iconSize: [48, 48], iconAnchor: [24, 24], className: '' }) }).addTo(map));
+    map.setView(c, spot.zoom, { animate: false });
+    map._fidsParkView = { lat: c[0], lng: c[1], zoom: spot.zoom, src: spot.src };
+    _mapPlaneFit(map);
   } catch (e) {}
   return out;
 }
@@ -35724,6 +36241,10 @@ function _gateDrawParkedEstimate(map, spot, d) {
 // same place and zoom the aeroplane is drawn at the moment evidence arrives,
 // so nothing jumps when it does. `d` may be unknown: then no route, only the
 // stand and its label.
+// v23916 — at z17 too, on the stand the board's own aeroplane would take (the
+// spot is chosen for its type, _gateParkSpot), and the camera exactly where
+// the parked view puts it — on that aeroplane's middle — so a landing that
+// arrives draws the aeroplane without the map moving.
 function _gateDrawEmptyStand(map, spot, d, note) {
   var out = [];
   if (!map || !spot) return out;
@@ -35740,8 +36261,10 @@ function _gateDrawEmptyStand(map, spot, d, note) {
         icon: L.divIcon({ className: 'gate-map-note-pin', iconSize: [0, 0], iconAnchor: [0, 0],
                           html: '<div class="gate-map-note">' + esc + '</div>' }) }).addTo(map));
     }
-    map.setView(s, spot.zoom, { animate: false });
-    map._fidsParkView = { lat: spot.lat, lng: spot.lng, zoom: spot.zoom, src: spot.src, empty: true };
+    var c = s;
+    try { var pl = _gateParkPlace(spot, d); if (isFinite(pl.lat) && isFinite(pl.lng)) c = [pl.lat, pl.lng]; } catch (eP) { c = s; }
+    map.setView(c, spot.zoom, { animate: false });
+    map._fidsParkView = { lat: c[0], lng: c[1], zoom: spot.zoom, src: spot.src, empty: true };
   } catch (e) {}
   return out;
 }
@@ -47492,7 +48015,7 @@ function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&
         var _hK = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase(), _hC = _lookupAirport(_hK);
         if (mb && _hC && _p0 < 0.02 && (String(org).toUpperCase() === _hK || String(dst).toUpperCase() === _hK)) {
           window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
-          var _hSpot = _gateParkSpot(_hK, [_hC[0], _hC[1]], _gateOwnGateRef(_hK));
+          var _hSpot = _gateParkSpot(_hK, [_hC[0], _hC[1]], _gateOwnGateRef(_hK), _mapPlaneSpec());
           if (waitAt) _gateDrawParkedEstimate(window._bigCraftMap, _hSpot, null);
           else _gateDrawEmptyStand(window._bigCraftMap, _hSpot, null, note);
           return;
@@ -47577,7 +48100,7 @@ function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&
         if (r && r.org === org && r.dst === dst && r.prog === prog && (r.wait || r.empty) && window._bigCraftMap && window._bigCraftMap._fidsParkView) _bigMapClone(org, dst, prog, waitAt, note);
       });
     }
-    var _bcSpot = _gateParkSpot(_bcStI, _bcStC, _gateOwnGateRef(_bcStI));
+    var _bcSpot = _gateParkSpot(_bcStI, _bcStC, _gateOwnGateRef(_bcStI), _mapPlaneSpec());
     if (_bcParked) _gateDrawParkedEstimate(window._bigCraftMap, _bcSpot, _bcThC);
     else _gateDrawEmptyStand(window._bigCraftMap, _bcSpot, _bcThC, note);
   } else {
@@ -47598,6 +48121,7 @@ function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&
       var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
       var bearing=Math.atan2(y2,x2)*180/Math.PI;
       L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+      _mapPlaneFit(window._bigCraftMap);   // v23916 — sized for this zoom (today's icon in flight)
       // v23106 — same as the mini est map: keep the camera ON THE PLANE
       // through descent/approach; the destination-framed phases left the
       // estimated plane off-screen (a 31s clip: static camera on the
@@ -47650,11 +48174,25 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
         _gateApplyParked(_bmv, planeLat, planeLng, d);
         return;
       }
+      // v23916 — on the ground at OUR field (landed): the marker to the fix,
+      // no glide, and the ground view's zoom — as on the small map.
+      if (_gateGroundZoom(planeLat, planeLng, o, d)) {
+        _stopGateMapGlide();
+        _gateApplyParked(_bmv, planeLat, planeLng, d, true);
+        return;
+      }
+      // v23916 — off the ground, never deeper than the air ladder's 15: the
+      // in-place parked path above flies this map down to the ground view (17
+      // standing, 16 taxiing), and this path keeps the map's zoom, so without
+      // this the climb-out was flown at stand zoom with the aeroplane drawn at
+      // its real size (see the zoom hold in initGateMapLive).
       try {
+        var _bcZ = window._bigCraftMap.getZoom();
+        var _bcAirZ = (typeof _bcZ === 'number' && _bcZ > 15) ? 15 : _bcZ;
         var _bcpt = window._bigCraftMap.latLngToContainerPoint([planeLat, planeLng]);
         var _bcsz = window._bigCraftMap.getSize();
-        if (_bcpt.x < 0 || _bcpt.y < 0 || _bcpt.x > _bcsz.x || _bcpt.y > _bcsz.y) {
-          window._bigCraftMap.flyTo([planeLat, planeLng], window._bigCraftMap.getZoom(), { duration: 1.6 });
+        if (_bcpt.x < 0 || _bcpt.y < 0 || _bcpt.x > _bcsz.x || _bcpt.y > _bcsz.y || _bcAirZ !== _bcZ) {
+          window._bigCraftMap.flyTo([planeLat, planeLng], _bcAirZ, { duration: 1.6 });
         }
       } catch (eBC1) {}
       var _bcIpSpd = (window._gateInboundLivePos && typeof window._gateInboundLivePos.speed === 'number') ? window._gateInboundLivePos.speed
@@ -47692,6 +48230,13 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
   else if (nearDst < 0.06) zoom = 11;
   else if (nearDst < 0.14) zoom = 9;
   else zoom = cruiseZoom;
+  // v23916 — on the ground at either end, the ground view: stand zoom (17)
+  // standing still, 16 taxiing (see initGateMapLive); in the air unchanged.
+  var _bcGndZ = _gateGroundZoom(planeLat, planeLng, o, d);
+  if (_bcGndZ) {
+    zoom = _bcGndZ;
+    try { if (_gcNm([planeLat, planeLng], o) < 5) _apGatesFor(org); } catch (eGF) {}
+  }
   window._bigCraftMap.setView([planeLat, planeLng], zoom);
   // Normal-map behavior: the route is drawn THROUGH the aircraft —
   // solid behind it, dashed ahead — so the plane always sits ON its line.
@@ -47700,13 +48245,16 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
   var _pp = [planeLat, planeLng];
   var _bcParked = _gateParkedAtOrigin(planeLat, planeLng, o);
   if (_bcParked) { try { _stopGateMapGlide(); } catch (eP) {} }
+  // v23916 — landed at OUR field: no glide, nothing dashed ahead (see initGateMapLive).
+  var _bcGndHere = !!_bcGndZ && !_bcParked;
+  if (_bcGndHere) { try { _stopGateMapGlide(); } catch (eP2) {} }
   var _bcFlown = _bcParked ? null : _gateFlownPath(o, d, planeLat, planeLng, dst);
   var _bcA1 = _bcParked ? L.polyline([], {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap)
             : _bcFlown ? L.polyline(_bcFlown, {color:'#60a5fa',weight:4,opacity:0.9,noClip:true}).addTo(window._bigCraftMap)
             : _gcAddArc(window._bigCraftMap,o,_pp,{vertices:60,color:'#60a5fa',weight:4,opacity:0.9,noClip:true});
   // Runway-aligned final on the big map too.
-  var _bcRwyP = _runwayFinalPath(_pp, d, dst);
-  var _bcA2 = null;
+  var _bcRwyP = _bcGndHere ? null : _runwayFinalPath(_pp, d, dst);
+  var _bcA2 = _bcGndHere ? L.polyline([], {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap) : null;
   if (_bcRwyP) { try { _bcA2 = L.polyline(_bcRwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap); } catch (e) { _bcA2 = null; } }
   if (!_bcA2) _bcA2 = _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
@@ -47722,7 +48270,10 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
   var y2=Math.sin(dLng)*Math.cos(lat2);
   var x2=Math.cos(lat1)*Math.sin(lat2)-Math.sin(lat1)*Math.cos(lat2)*Math.cos(dLng);
   var bearing=Math.atan2(y2,x2)*180/Math.PI;
+  // v23916 — standing on the ground the nose is the stand's way.
+  if (_bcGndZ) bearing = _gateGroundHeading(planeLat, planeLng, bearing);
   var _bcPlaneMk = L.marker(planePos,{zIndexOffset:1000,icon:L.divIcon({html:'<div style="transform:rotate('+_gateHeading(bearing)+'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="'+_mapPlaneIcon()+'" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>',iconSize:[48,48],iconAnchor:[24,24],className:''})}).addTo(window._bigCraftMap);
+  _mapPlaneFit(window._bigCraftMap);   // v23916 — sized for this zoom
   // SAME PROGRAMMING as the mini map — the two are not separate:
   // the identical glide engine now
   // dead-reckons the plane along the route on the BIG map too. The big plane
@@ -47736,6 +48287,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
       : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 &&
          (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
       : 0;
+    if (_bcGndHere) _bcGlSpd = 0;   // v23916 — landed here: no dead reckoning
     // v23099 — call even at speed 0: the engine now JOINS a running same-leg
     // glide as a second view (the two surfaces resolve speed from different
     // caches, so one often has it while the other reads 0 — that was half of
