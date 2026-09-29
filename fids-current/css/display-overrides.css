@@ -22487,3 +22487,40 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   letter-spacing: 0.01em;
   pointer-events: none;
 }
+
+/* ══ v23915 — THE EMPTY STAND'S LABEL ═══════════════════════════════════════
+   When nothing says where the aeroplane is, both gate maps stay on this
+   gate's stand with no aircraft on it (_gateDrawEmptyStand, fids-core.js) and
+   name the other end of the leg and its time in one line under the stand:
+   "From Ottawa · 4:33pm | De Ottawa · 16:33". Styled like the airport pins'
+   labels (.gate-map-label, fids.css) so it reads as part of the same map. The
+   marker it rides on is a zero-size divIcon anchored on the stand; the label
+   centres itself under that point. */
+.leaflet-marker-icon.gate-map-note-pin {
+  overflow: visible;
+  background: none;
+  border: 0;
+}
+.gate-map-note {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform: translate(-50%, 10px);
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.65);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-size: clamp(10px, min(1.25vh, 0.72vw), 14px);
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+#bigCraftMap .gate-map-note {
+  font-size: clamp(12px, min(1.7vh, 0.95vw), 18px);
+  padding: 4px 10px;
+}

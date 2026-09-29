@@ -318,6 +318,11 @@
             org: String(r.org).toUpperCase().trim(),
             dst: String(r.dst).toUpperCase().trim(),
             prog: (typeof r.prog === 'number' && r.prog >= 0) ? Math.round(r.prog * 100) : 0,
+            // v23915 — whether the gate map drew an aeroplane at all. It draws
+            // one only where there is evidence the aircraft is (see
+            // _gateAircraftWhere in fids-core.js); with none, no plane here
+            // either, instead of one parked on the origin pin at progress 0.
+            plane: r.plane !== false,
             live: true
           };
         }
@@ -328,6 +333,15 @@
       org: String(_resolve(p.origin || '', ctx) || '').toUpperCase().trim(),
       dst: String(_resolve(p.destination || '', ctx) || '').toUpperCase().trim(),
       prog: parseFloat(p.progress) || 0,
+      // v23915 — a LIVE map with no route from the gate map has no aeroplane
+      // to show. The fields above are the Designer's preview defaults (YQM to
+      // YYZ at 45%), and on a live page they drew an aircraft over Maine that
+      // nothing said existed: for good on fids.html and bids.html (no gate map
+      // there ever publishes a route), for the first ~15 s of every gids.html
+      // load, and between one gate flight and the next. The route stays for
+      // context; the aeroplane is drawn only on a manual map, where the
+      // progress is the author's to set.
+      plane: (p.source || 'live') !== 'live',
       live: false
     };
   }
@@ -351,7 +365,9 @@
     try {
       const C = window.AIRPORT_COORDS || {};
       const o = C[rt.org], d = C[rt.dst];
-      if (o && d) {
+      // v23915 — no aeroplane, no "remaining": the distance was read off the
+      // same progress the plane is drawn at.
+      if (o && d && rt.plane !== false) {
         const total = _haversineKm(o[0], o[1], d[0], d[1]);
         remaining = Math.max(0, Math.round(total * (1 - (rt.prog || 0) / 100))) + ' km';
       }
@@ -407,7 +423,9 @@
     } catch (e) { arc = L.polyline([o, d], { color: accent, weight: 4 }).addTo(map); }
     L.circleMarker(o, { radius: 8, color: '#fff', weight: 2, fillColor: accent,    fillOpacity: 1 }).addTo(map);
     L.circleMarker(d, { radius: 8, color: '#fff', weight: 2, fillColor: '#ef4444', fillOpacity: 1 }).addTo(map);
-    try {
+    // v23915 — the aircraft only when the live gate map has one to show
+    // (rt.plane; always on a manual route).
+    if (rt.plane !== false) try {
       const prog = Math.max(0, Math.min(1, (rt.prog || 0) / 100));
       const lls = arc.getLatLngs ? arc.getLatLngs() : [L.latLng(o), L.latLng(d)];
       if (lls && lls.length) {
@@ -458,7 +476,7 @@
           origin: rt.org, originLabel: _resolve(p.originLabel || '', ctx),
           dest: rt.dst, destLabel: _resolve(p.destinationLabel || '', ctx),
           fnum: _resolve(p.flightNumber || '', ctx),
-          progress: rt.prog, accent: p.accent, textColor: p.textColor
+          progress: rt.prog, plane: rt.plane, accent: p.accent, textColor: p.textColor
         });
       }
     };
@@ -467,7 +485,7 @@
     // heavy (Leaflet), so it only fires when the state key actually changes.
     const stateKey = () => {
       const rt = _flightMapRoute(p); const f = _liveContext().flight || {};
-      return rt.org + '>' + rt.dst + '|' + Math.round(rt.prog / 4) + '|' +
+      return rt.org + '>' + rt.dst + '|' + Math.round(rt.prog / 4) + '|' + (rt.plane === false ? 'none' : 'plane') + '|' +
              (f.status || '') + '|' + (f.speed || '') + '|' + (f.altitude || '');
     };
     let lastKey = stateKey();
@@ -499,10 +517,11 @@
         '<path d="' + donePath + '" fill="none" stroke="' + _esc(accent) + '" stroke-width="6" stroke-linecap="round"/>' +
         '<circle cx="' + x0 + '" cy="' + y0 + '" r="15" fill="' + _esc(accent) + '"/>' +
         '<circle cx="' + x2 + '" cy="' + y2 + '" r="15" fill="#ef4444"/>' +
+        (o.plane === false ? '' :
         '<g transform="translate(' + pp.x.toFixed(1) + ' ' + pp.y.toFixed(1) + ') rotate(' + ang.toFixed(1) + ')">' +
           '<circle r="26" fill="' + _esc(accent) + '" opacity="0.25"/>' +
           '<path d="M 30 0 L -16 -15 L -6 0 L -16 15 Z" fill="#ffffff" stroke="' + _esc(accent) + '" stroke-width="2"/>' +
-        '</g>' +
+        '</g>') +
       '</svg>';
     return svg +
       (o.fnum ? '<div style="position:absolute;top:16px;left:0;right:0;text-align:center;color:' + _esc(text) + ';font-weight:700;font-size:24px;letter-spacing:0.12em;font-family:Inter,system-ui,sans-serif;">' + _esc(o.fnum) + '</div>' : '') +

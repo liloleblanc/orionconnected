@@ -1127,7 +1127,9 @@ function applyOverrideToFlight(flight) {
   if (ov.aircraft) flight._aircraft = ov.aircraft;
   if (ov.reg) flight._reg = ov.reg;
   if (ov.equipCode) flight._aircraftCode = ov.equipCode;
-  if (ov.status) flight.status = ov.status;
+  // v23915 — a status set by a person at the airport is the airport's word,
+  // not the clock's (see adbStatusInferred).
+  if (ov.status) { flight.status = ov.status; flight._stInferred = false; }
   if (ov.revisedTime) {
     flight.upd = ov.revisedTime;
     // Recalculate _revTs from the revised time
@@ -4125,7 +4127,22 @@ async function _gateNumbersPoll() {
     }
     var flt = inb && inb.flight;
     if (!flt) return;
-    if (/cancel|arriv|land/i.test(String(inb.status || ''))) return;   // on the ground → stop
+    if (/cancel|arriv|land/i.test(String(inb.status || ''))) {   // on the ground → stop
+      // v23915 — and the feed's OWN "Arrived"/"Landed" (or a cancellation) ends
+      // the leg's live position, so nothing dead-reckons on from it. A status
+      // adbStatus made up from the clock stops the lookups as before (no new
+      // FR24 calls) but clears nothing: the map's age limit (_gateFixCheck)
+      // retires that position on its own.
+      try {
+        var _lpEnd = window._gateInboundLivePos;
+        if (_lpEnd && (_gateRawLanded(inb) || _gateLegGone(inb)) && (!_lpEnd.fl || _lpEnd.fl === flt)) window._gateInboundLivePos = null;
+      } catch (eEnd) {}
+      return;
+    }
+    // v23915 — an inbound only the new pairing rules found (a through flight,
+    // a tail at another gate) is not this poll's to look up: the gate-match
+    // never handed it one before, and FR24 bills per row (_gateMatchIsNew).
+    if (inb._gateNoAdsb === true) return;
     var iata = '';
     try { iata = (document.getElementById('apSel') || {}).value || ''; } catch (e) {}
     iata = String(iata || window._gateIata || '').toUpperCase();
@@ -4283,7 +4300,11 @@ async function _gateNumbersPoll() {
     // window opens, the fix is not THIS flight's telemetry: discard it and
     // clear anything a previous poll wrote.
     try {
-      var _depGateT = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : null;
+      // v23915 — the leg's REAL departure time: the authority feeds' arrival
+      // rows carry the arrival time in that field (_gateDepSchedTs), and with
+      // it this guard threw away every airborne fix until 20 minutes before
+      // the flight was due to LAND.
+      var _depGateT = _gateDepSchedTs(inb) || null;
       if (_adsb && _depGateT && Date.now() < _depGateT - 20 * 60000 && _adsb.onGround !== true) {
         try { console.log('[ADSB]', flt, 'tail is airborne on a PREVIOUS leg (this one departs later) — fix ignored'); } catch (e) {}
         _adsb = null;
@@ -4291,14 +4312,45 @@ async function _gateNumbersPoll() {
         try { window._gateInboundLivePos = null; } catch (e) {}
       }
     } catch (e) {}
+    // v23915 — THE SAME TEST THE MAPS APPLY, AT THE SOURCE. A position is only
+    // this leg's if it can still reach our field by the ETA (v23331's check,
+    // which ran on the render's sticky path but never here, on the path the
+    // small map reads first), and an answer found by tail or hex with no
+    // callsign at all is the airframe wherever it is: only a ground fix at
+    // this leg's origin or at our field says anything about THIS flight. A
+    // position that fails is someone else's aeroplane — its numbers too. A
+    // ground fix at the leg's origin is exempt from the ETA half: that
+    // aeroplane has not left, it is late (_fixAtLegOrigin).
+    try {
+      if (_adsb && typeof _adsb.lat === 'number' && typeof _adsb.lng === 'number' && !inb.dest) {
+        var _rOk = _fixPlausibleForLeg(inb, _adsb.lat, _adsb.lng, _adsb.onGround === true);
+        if (_rOk && /^(hex|reg)$/.test(String(_adsb.via || '')) && !_adsb.cs) {
+          var _oA = _lookupAirport(inb._locIata), _hA = _lookupAirport(iata);
+          _rOk = _adsb.onGround === true && !!((_oA && _gcNm([_adsb.lat, _adsb.lng], _oA) < 5) || (_hA && _gcNm([_adsb.lat, _adsb.lng], _hA) < 6));
+        }
+        if (!_rOk) {
+          try { console.log('[ADSB]', flt, 'fix', _adsb.lat.toFixed(2) + ',' + _adsb.lng.toFixed(2), 'is not this leg (unreachable, or a tail with no callsign) — ignored'); } catch (e) {}
+          _adsb = null;
+          try { _gateTelemSetReal(null, null); } catch (e) {}
+          try { if (window._gateInboundLivePos && (!window._gateInboundLivePos.fl || window._gateInboundLivePos.fl === flt)) window._gateInboundLivePos = null; } catch (e) {}
+        }
+      }
+    } catch (e) {}
     if (_adsb) {
       if (typeof _adsb.alt === 'number') inb._liveAlt = _adsb.alt;
       if (typeof _adsb.spd === 'number') inb._liveSpd = _adsb.spd;
       if (typeof _adsb.lat === 'number' && typeof _adsb.lng === 'number') {
-        inb._liveLat = _adsb.lat; inb._liveLng = _adsb.lng;
+        // v23915 — the fix carries its time: FR24's own (the answer's age,
+        // seen_pos, taken off the moment it reached us), else when it arrived.
+        // Untimed, it was dead-reckoned for as long as FR24 stayed quiet —
+        // flown on to our runway and parked there. `fl` says whose it is.
+        var _fxAt = (typeof _adsb.at === 'number' ? _adsb.at : Date.now())
+                  - ((typeof _adsb.age === 'number' && _adsb.age > 0) ? _adsb.age * 1000 : 0);
+        inb._liveLat = _adsb.lat; inb._liveLng = _adsb.lng; inb._liveAt = _fxAt;
         // onGround rides along so the map glide can be suppressed — see the
         // dead-reckoning guard in the map tick.
-        window._gateInboundLivePos = { lat: _adsb.lat, lng: _adsb.lng, speed: _adsb.spd, altitude: _adsb.alt, onGround: _adsb.onGround === true };
+        window._gateInboundLivePos = { lat: _adsb.lat, lng: _adsb.lng, speed: _adsb.spd, altitude: _adsb.alt, onGround: _adsb.onGround === true,
+                                       at: _fxAt, fl: flt, via: _adsb.via || '', cs: _adsb.cs || '' };
       }
       // The aircraft's REAL track over the ground. Published globally as well as
       // on the row, because the map markers draw from a different scope and had
@@ -4389,8 +4441,9 @@ async function _gateNumbersPoll() {
     var _lpLat = (typeof _lp.lat === 'number') ? _lp.lat : null;
     var _lpLng = (typeof _lp.lng === 'number') ? _lp.lng : null;
     if (_lpLat !== null && _lpLng !== null) {
-      inb._liveLat = _lpLat; inb._liveLng = _lpLng;
-      window._gateInboundLivePos = { lat: _lpLat, lng: _lpLng, speed: liveSpd, altitude: liveAlt };
+      // v23915 — timed on arrival and owned, like the ADS-B fix above.
+      inb._liveLat = _lpLat; inb._liveLng = _lpLng; inb._liveAt = Date.now();
+      window._gateInboundLivePos = { lat: _lpLat, lng: _lpLng, speed: liveSpd, altitude: liveAlt, at: Date.now(), fl: flt, via: 'flight', cs: '' };
     }
     try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
     try { console.log('[NUMPOLL]', flt, '→ spd', liveSpd, 'alt', liveAlt, 'pos', _lpLat, _lpLng); } catch (e) {}
@@ -4433,7 +4486,12 @@ try {
             var _mwKey = _mwLL.lat.toFixed(5) + ',' + _mwLL.lng.toFixed(5);
             var _mwPrev = window._gateMarkerMotion || null;
             var _mwOnG = !!(window._gateInboundLivePos && window._gateInboundLivePos.onGround === true)
-                      || !!(window._gateInbound && window._gateInbound._liveOnGround === true);
+                      || !!(window._gateInbound && window._gateInbound._liveOnGround === true)
+                      // v23915 — a marker held still on purpose is not wedged: the
+                      // glide stops dead-reckoning 5 minutes after the last real
+                      // fix (_GLIDE_DR_MAX_MS) and waits for the next one.
+                      || !!(typeof _gateGlide !== 'undefined' && _gateGlide.fixAt > 0
+                            && Date.now() - _gateGlide.fixAt > _GLIDE_DR_MAX_MS);
             if (!_mwPrev || _mwPrev.key !== _mwKey) {
               window._gateMarkerMotion = { key: _mwKey, ts: Date.now() };
             } else if (!_mwOnG && Date.now() - _mwPrev.ts > 60000) {
@@ -4712,19 +4770,17 @@ try {
 //  4. revisedTime evidence: an ETA revised EARLIER than schedule only
 //     happens from real flight progress; early/on-time WITH a revision =
 //     the feed is actively tracking.
+// v23915 — SIGNALS 3 AND 4 ARE GONE, AND 1 IS THE FEED'S OWN WORD ONLY. An ETA
+// revised earlier than schedule is a FORECAST, made hours before the aircraft
+// leaves; "on time" with a revision is the same. Both launched a clock glyph
+// on the gate maps for an aeroplane still standing at its origin. A live
+// altitude is a live fix, and fixes are judged on their own (_gateFixCheck:
+// timed, this leg's, reachable). And a status adbStatus made up from the clock
+// is not the feed saying anything (_stInferred). What is left — the feed says
+// it is flying, or it has an actual wheels-up that has passed — is the one
+// rule every map uses (_gateLegUp).
 function fidsInboundAirborne(inb) {
-  if (!inb) return false;
-  var st = String(inb.status || '').toLowerCase();
-  if (/arriv|land|cancel|divert/.test(st)) return false;
-  if (/active|en-?route|departed|approaching/.test(st)) return true;
-  try {
-    var _up = inb._actualDepTime ? adbTs(inb._actualDepTime) : 0;
-    if (_up && _up < Date.now()) return true;
-  } catch (e) {}
-  if (typeof inb._liveAlt === 'number' && inb._liveAlt > 0) return true;
-  if (inb._revTs && inb._sortTs && inb._revTs < inb._sortTs) return true;
-  if (/early|on-?time|ontime/.test(st) && !!(inb._revTs || inb.upd)) return true;
-  return false;
+  try { return _gateLegUp(inb, Date.now()) >= 0; } catch (e) { return false; }
 }
 
 // Can this airframe belong to this carrier at all? Used to reject
@@ -17954,77 +18010,18 @@ const gView = document.getElementById('gateView');
       // to correct while the reg lookup is in flight. Once the reg
       // result arrives via loadFlight(), window._gateInbound takes over.
       // ══════════════════════════════════════════════════════════════════
-      const airlineCode2 = currentFlight.airline || '';
-      const _depTs = currentFlight._sortTs || Date.now();
-      // v23303 — THE AIRCRAFT THAT STAYED OVERNIGHT IS STILL THE INBOUND.
-      // A 6-hour lookback cannot see a plane that came in last night and is
-      // operating this morning's departure, which is exactly the case on an
-      // early departure. Measured on YQM gate 3: PD2294 leaves on a Dash
-      // 8-400, PD2381 arrived on the same type at the same gate and is sitting
-      // there with status 'arrived' — and the ONLY filter rejecting it was
-      // this window. The panel then had no incoming flight to show, which is
-      // what the departure-card fallback was bolted on to paper over; the
-      // requirement is that the panel show the incoming flight, not nothing.
-      // 20 hours covers a remain-overnight without reaching back to the
-      // previous day's rotation. Everything else still applies — same gate,
-      // same airline family, same aircraft type, not departed, arriving before
-      // this flight leaves — and the sort still prefers the MOST RECENT match,
-      // so a closer inbound always wins over the overnight one.
-      const _6hBefore = _depTs - 20*3600000;
+      // v23915 — the pairing lives in _gateInboundForDeparture now (below the
+      // gate maps' evidence rules it shares), so it can be tested on its own
+      // and so its rules and the maps' cannot drift apart.
       const _gateVal = currentFlight.gate || subScreenVal || '';
-
-      // Gate-based placeholder — only used if reg lookup hasn't returned yet
-      const AIRLINE_FAMILY = { 'QK':'AC','RV':'AC','ZX':'AC','9M':'AC','AC':'AC', 'WR':'WS','WS':'WS', 'PD':'PD','P3':'PD', 'PB':'PB','SP':'PB', 'TS':'TS', 'F8':'F8' };
-      const depFamily = AIRLINE_FAMILY[airlineCode2] || airlineCode2;
-      // The inbound IS the same airframe doing its previous leg, so it must be
-      // the SAME aircraft type. Without this, a short-haul jet (e.g. a Hawaiian
-      // 717 that only flies inter-island) would get paired with a mainland
-      // arrival (an A330 from LAX/Tokyo) just because they shared a gate.
-      const _acFamily = function (s) {
-        var u = String(s || '').toUpperCase();
-        var m = u.match(/\b(7[0-9]7|7[0-9]8|7[0-9]9|7M[0-9]|3[0-9][0-9]|32[NQ]|2[0-9][0-9]|CR[0-9JK]|DH[0-9C]|E[0-9]{2}|AT[0-9R])\b/);
-        if (m) return m[1];
-        if (/717/.test(u)) return '717';
-        if (/787|78[0-9X]/.test(u)) return '787';
-        if (/777|77[0-9WLX]/.test(u)) return '777';
-        if (/767|76[0-9]/.test(u)) return '767';
-        if (/A?330|33[0-9]/.test(u)) return '330';
-        if (/A?321|32[1N]/.test(u)) return '321';
-        if (/A?320/.test(u)) return '320';
-        if (/A?319/.test(u)) return '319';
-        return u.replace(/[^A-Z0-9]/g, '').slice(0, 4);
-      };
-      const _outAc = _acFamily(currentFlight._aircraft || currentFlight._aircraftCode);
-      const _gateMatchFallback = (data.arr || []).filter(f =>
-        f.gate === _gateVal &&
-        f.status !== 'departed' &&
-        // v23310 — A CANCELLED FLIGHT NEVER ARRIVES, SO IT IS NEVER THE
-        // INCOMING AIRCRAFT. This filter excluded 'departed' and nothing else,
-        // so a cancelled arrival was fully eligible to be adopted as the
-        // airframe for the next departure — and the ENTIRE right rail is built
-        // from that one object, so the map drew its route, the plate showed its
-        // type, and the card printed its cancelled status. Measured on YQM
-        // gate 2:
-        // PB925 to Wabush was pairing with PB923 from Deer Lake, CANCELLED, and
-        // the rail drew YQM->YDF for a flight going to YWK.
-        // v23303 is what made it reachable: widening the window 6h -> 20h for
-        // overnight aircraft is the only reason an 11:00am cancellation could
-        // be picked up for a 6:40pm departure, seven and a half hours later.
-        // Diverted is excluded on the same logic — it is not landing here.
-        (function () {
-          var _s = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
-          return _s !== 'cancelled' && _s !== 'canceled' && _s !== 'diverted';
-        })() &&
-        f.flight !== currentFlight.flight &&
-        f._sortTs <= _depTs &&
-        f._sortTs >= _6hBefore &&
-        (AIRLINE_FAMILY[f.airline] || f.airline) === depFamily &&
-        // same aircraft type when both are known (it's the same plane)
-        (function () {
-          var fa = _acFamily(f._aircraft || f._aircraftCode);
-          return !_outAc || !fa || fa === _outAc;
-        })()
-      ).sort((a,b) => b._sortTs - a._sortTs)[0] || null;
+      // v23915 — what the feed still lists, plus the landed arrivals and the
+      // departures this board has seen and the feed has since dropped (_gateArrsSeen).
+      const _gmAp = String(window._gateIata || iata || '').toUpperCase();
+      const _gateMatchFallback = _gateInboundForDeparture(currentFlight, _gateVal,
+        _gateArrsSeen(data.arr || [], _gmAp, Date.now()), _gateDepsSeen(data.dep || [], _gmAp, Date.now()));
+      // An inbound the pre-v23915 gate-match could not have found (a through
+      // flight, a tail at another gate) is never looked up on FR24 (_gateMatchIsNew).
+      try { if (_gateMatchFallback) _gateMatchFallback._gateNoAdsb = _gateMatchIsNew(_gateMatchFallback, currentFlight, _gateVal); } catch (eNA) {}
 
       // PRIMARY SOURCE: reg-based inbound from loadFlight. If present, use it.
       // FALLBACK: gate-match (only while reg lookup is pending). Once the reg
@@ -18138,7 +18135,9 @@ const gView = document.getElementById('gateView');
                 if (liveSpd !== null || liveAlt !== null || (_latRaw !== null && _lngRaw !== null)) {
                   window._gateInboundLivePos = {
                     lat: _latRaw, lng: _lngRaw, speed: liveSpd, altitude: liveAlt,
-                    _airport: _capturedIata, _inboundFlight: _capturedInbound
+                    _airport: _capturedIata, _inboundFlight: _capturedInbound,
+                    // v23915 — timed and owned (_gateFixCheck ignores a position without both).
+                    at: Date.now(), fl: _capturedInbound, via: 'flight', cs: ''
                   };
                   try { _gateTelemSetReal(liveSpd, liveAlt); } catch (e) {}
                 }
@@ -18616,7 +18615,14 @@ const gView = document.getElementById('gateView');
           // No previous data either — set to null is fine (initial state)
           window._gateInbound = null;
         }
-        // else: keep the last known (non-reg-lookup) inbound, don't clear it
+        // else: keep the last known (non-reg-lookup) inbound, don't clear it.
+        // v23915 — kept for the panel's sake only: the maps do not take its
+        // word for where the aeroplane is. _gateAircraftWhere re-checks it on
+        // every tick (turn flown since? on the ground longer than a turn or a
+        // night stop?), so a kept inbound no longer stays "parked" until the
+        // departure changes. On Sep 28's schedule gate 3 kept PD2381 parked
+        // straight through 06:15–11:14, while that aeroplane flew PD2294 to
+        // Ottawa and came back as PD2293.
       }
       var _inbChanged = (_prevInbId !== _newInbId);
       window._gateInboundId = _newInbId;
@@ -18731,174 +18737,16 @@ const gView = document.getElementById('gateView');
         if (mb.offsetHeight < 10) {
           mb.style.minHeight = '250px';
         }
-        var inb = window._gateInbound;
-        var apIata = window._gateIata || 'YQM';
-        var dstIata = (currentFlight && currentFlight._locIata) || '';
-        if (inb && inb._locIata) {
-          // Try live position first, fall back to time estimate
-          var livePos = window._gateInboundLivePos;
-          if (livePos && livePos.lat && livePos.lng) {
-            // Only rebuild map if position changed or map doesn't exist
-            var posKey = livePos.lat.toFixed(3) + ',' + livePos.lng.toFixed(3);
-            if (!gateMap || window._lastMapPosKey !== posKey) {
-              window._lastMapPosKey = posKey;
-              // Use origin IATA — try _locIata first, then look up from origin city name
-              var _inbOriginIata = inb._locIata || '';
-              if (!_inbOriginIata && inb.origin && typeof AP !== 'undefined') {
-                var _found = Object.keys(AP).find(function(k){ return (AP[k].city||'').toLowerCase() === (inb.origin||'').toLowerCase(); });
-                if (_found) _inbOriginIata = _found;
-              }
-              initGateMapLive(_inbOriginIata || apIata, apIata, livePos.lat, livePos.lng);
-            }
-          } else if ((function(){
-                      // Same sticky fix the telemetry uses — a genuine airborne
-                      // position (real coords + real altitude), held across polls
-                      // where ADB omits it so the plane doesn't blink on and off.
-                      // Once arrived/landed there's nothing to hold → pins only.
-                      if (/arriv|land|cancel/i.test(String(inb.status || ''))) { window._gateMapFix = null; return false; }
-                      var _onG = inb._liveOnGround === true;
-                      // v23331 — resolve through the ONE gated resolver; never hand
-                      // the raw row snapshot to the sticky cache (a feed position
-                      // with an altitude re-armed the 4-minute hold on every tick,
-                      // so a frozen fix could never expire).
-                      var _lf0 = (typeof _gateLiveFix === 'function') ? _gateLiveFix(inb) : null;
-                      var _mf = _gateStickyFix(
-                        String(inb.flight || inb._reg || ''),
-                        _lf0 ? _lf0.lat : null,
-                        _lf0 ? _lf0.lng : null,
-                        ((_onG || !_lf0) ? null : (typeof inb._liveAlt === 'number' ? inb._liveAlt : null)),
-                        ((_onG || !_lf0) ? null : (typeof inb._liveSpd === 'number' ? inb._liveSpd : null))
-                      );
-                      window._gateMapFix = (_mf && typeof _mf.lat === 'number' && typeof _mf.lng === 'number' && typeof _mf.alt === 'number' && _mf.alt > 0) ? _mf : null;
-                      return !!window._gateMapFix;
-                    })()) {
-            // Plot the ACTUAL position. We never estimate from the clock anymore —
-            // that plotted a phantom plane mid-route whenever the departure/arrival
-            // times were off (e.g. the EWR Eastern / YQM Atlantic 1-hour gap).
-            var _mfix = window._gateMapFix;
-            var posKey2 = _mfix.lat.toFixed(3) + ',' + _mfix.lng.toFixed(3);
-            if (!gateMap || window._lastMapPosKey !== posKey2) {
-              window._lastMapPosKey = posKey2;
-              initGateMapLive(inb._locIata || apIata, apIata, _mfix.lat, _mfix.lng);
-            }
-          } else {
-            // No real airborne fix. Try an HONEST estimated glyph first: the
-            // shared ctx builder computes distance-based time-progress and only
-            // returns progress > 0 when the FEED says the flight is flying (or
-            // real altitude exists) — the phantom-plane guard lives there. The
-            // mini map thus matches the big takeover (it had not been matching).
-            var _estProg = 0;
-            if (inb.status !== 'arrived' && inb.status !== 'landed' && inb._locIata) {
-              // Compute from THIS inbound record directly — the shared ctx
-              // builder reads window._gateInbound and silently swaps to the
-              // OUTBOUND leg when that global isn't set yet, which made the
-              // glyph never appear here.
-              try {
-                // ONE airborne answer for every consumer — the spec-signal
-                // interpreter (status enum, wheels-up runwayTime, live
-                // altitude, revision evidence). See fidsInboundAirborne.
-                var _stAirMini = fidsInboundAirborne(inb);
-                var _arrTMini = inb._revTs || inb._sortTs || 0;
-                // STICKY airborne: once this flight has qualified, keep the
-                // glyph through polls whose object momentarily lacks the
-                // revision markers.
-                // Expires 15 min after the effective arrival.
-                try {
-                  window._miniAirSticky = window._miniAirSticky || {};
-                  var _fkMini = String(inb.flight || '') + '|' + String(inb._locIata || '');
-                  if (_stAirMini) window._miniAirSticky[_fkMini] = Date.now();
-                  else if (window._miniAirSticky[_fkMini] && _arrTMini && Date.now() < _arrTMini + 15 * 60000) _stAirMini = true;
-                } catch (e) {}
-                // AIRPORT_COORDS ships in a SEPARATE file (airport-coords.js)
-                // — a display with a poisoned cache of it (transient 404 kept
-                // forever, the wordmark-token failure class) silently loses
-                // the estimator and shows pins-only, no plane (the WS813
-                // gate: under way and early, yet no aircraft). Fall back
-                // to the engine's own tables so ONE stale file can't kill it.
-                var _apcMini = window.AIRPORT_COORDS || {};
-                var _upO = String(inb._locIata).toUpperCase(), _upD = String(apIata).toUpperCase();
-                var _ocMini = _apcMini[_upO]
-                  || (typeof COORDS !== 'undefined' && COORDS[_upO])
-                  || (typeof GATE_AP !== 'undefined' && GATE_AP[_upO]) || null;
-                var _dcMini = _apcMini[_upD]
-                  || (typeof COORDS !== 'undefined' && COORDS[_upD])
-                  || (typeof GATE_AP !== 'undefined' && GATE_AP[_upD]) || null;
-                if (_stAirMini && _arrTMini && _ocMini && _dcMini) {
-                  var _toR = Math.PI / 180;
-                  var _dla = (_dcMini[0] - _ocMini[0]) * _toR, _dlo = (_dcMini[1] - _ocMini[1]) * _toR;
-                  var _hv = Math.sin(_dla / 2) * Math.sin(_dla / 2)
-                          + Math.cos(_ocMini[0] * _toR) * Math.cos(_dcMini[0] * _toR) * Math.sin(_dlo / 2) * Math.sin(_dlo / 2);
-                  var _kmMini = 6371 * 2 * Math.atan2(Math.sqrt(_hv), Math.sqrt(1 - _hv));
-                  var _durMini = Math.max(3600000, (_kmMini / 13 + 25) * 60000);   // ~780 km/h + 25 min
-                  // ADB ML01 realistic route time beats the guess when cached.
-                  var _mlMiniType = ((inb._reg && typeof _regTrueType === 'function') ? _regTrueType(inb._reg) : '')
-                    || inb._aircraft || inb._aircraftCode || '';
-                  var _mlMini = (typeof fidsMlFlightTimeMins === 'function')
-                    ? fidsMlFlightTimeMins(inb._locIata, apIata, _mlMiniType) : null;
-                  if (_mlMini) _durMini = _mlMini * 60000;
-                  // v23268 — the real wheels-up when ADB gives us one; the
-                  // taxi-out estimate only when it does not.
-                  var _wuMini = 0;
-                  try { if (inb._actualDepTime) _wuMini = adbTs(inb._actualDepTime) || 0; } catch (e) {}
-                  var _pMini = (typeof _estRouteFrac === 'function')
-                    ? _estRouteFrac(Date.now(), _arrTMini, _durMini, _wuMini)
-                    : (Date.now() - (_arrTMini - _durMini)) / _durMini;
-                  if (_pMini >= 0.02 && _pMini <= 0.98) _estProg = _pMini;
-                  try { console.log('[MINIMAP-EST]', { st: inb.status, revTs: !!inb._revTs, upd: inb.upd || '', air: _stAirMini, wheelsUp: !!_wuMini, p: +(_pMini || 0).toFixed(3) }); } catch (e) {}
-                } else {
-                  try { console.log('[MINIMAP-EST] skipped', { st: inb.status, air: _stAirMini, arrTs: !!_arrTMini, oc: !!_ocMini, dc: !!_dcMini, loc: inb._locIata }); } catch (e) {}
-                }
-              } catch (e) {}
-            }
-            if (_estProg > 0) {
-              // Bucket the key so the glyph advances every ~2% of the route.
-              // v23263 — the key carries the LEG, not just the bucket (on
-              // gate 46 a YHZ→LGA route was left standing on a Houston gate).
-              // Two different flights can land on the same progress bucket,
-              // and a bare 'inb-est-40' matching across a gate switch is
-              // exactly the guard failing to notice the subject changed.
-              var progKey = 'inb-est-' + (inb._locIata || '?') + '>' + apIata + '-' + Math.round(_estProg * 50);
-              if (!gateMap || window._lastMapProgKey !== progKey) {
-                window._lastMapProgKey = progKey;
-                initGateMap(inb._locIata, apIata, _estProg);
-              }
-            } else {
-              // Pins only — a plane icon needs live coords or a feed-confirmed
-              // airborne estimate, never a bare clock.
-              // v23263 — leg identity here too: 'arr-pins' equalling
-              // 'arr-pins' across a gate switch kept the old gate's map.
-              // v23909 — a parked aeroplane only where the row proves it waits:
-              // landed here, or not yet due off the ground at its origin. A
-              // flight the feed has not confirmed airborne, or one past 0.98 of
-              // its clock, keeps the pins-only view (see initGateMap).
-              var _arrHere = (inb.status === 'arrived' || inb.status === 'landed');
-              var _pinWait = _arrHere ? _gateInboundLandedHere(inb) : _gateInboundWaitingAtOrigin(inb);
-              var pinKey = (_arrHere
-                ? 'arr-pins-' + apIata + '>' + (dstIata || '?')
-                : 'inb-pins-' + (inb._locIata || '?') + '>' + apIata) + (_pinWait ? '+wait' : '');
-              if (!gateMap || window._lastMapProgKey !== pinKey) {
-                window._lastMapProgKey = pinKey;
-                if (_arrHere) {
-                  initGateMap(apIata, dstIata || apIata, -1, _pinWait);
-                } else {
-                  initGateMap(inb._locIata, apIata, -1, _pinWait);
-                }
-              }
-            }
-          }
-        } else {
-          // v23263 — `!gateMap` alone kept whatever map was already standing:
-          // switch gates while the new gate's inbound is unresolved and the
-          // OLD gate's route stayed painted indefinitely (gate 46
-          // wearing DL5324's YHZ→LGA line). The outbound preview now claims
-          // the map through the same keyed guard as every other state.
-          var _outWait = _gateOutboundWaiting(window._gateCurrentFlight);   // v23909
-          var outKey = 'out-pins-' + apIata + '>' + (dstIata || '?') + (_outWait ? '+wait' : '');
-          if (dstIata && (!gateMap || window._lastMapProgKey !== outKey)) {
-            window._lastMapProgKey = outKey;
-            initGateMap(apIata, dstIata, -1, _outWait);
-          }
-        }
+        // v23915 — ONE ANSWER, THE SAME ONE THE 10 s MAP TICK DRAWS. This used
+        // to be a second controller with rules of its own: an untimed live
+        // position drawn first with no reachability check, a clock glyph
+        // launched on an ETA "revised early", and the v23909 waiting rules
+        // that parked the aeroplane from the schedule (gate 1's 05:25 parked at
+        // stand 1A at 22:20; gate 4's inbound parked at Toronto eleven hours
+        // before its leg). Everything it decided now comes from
+        // _gateAircraftWhere, and _gateMapApply draws it under the key both
+        // controllers share, so neither can undo the other.
+        _gateMapApply(_gateAircraftWhere(window._gateInbound, window._gateCurrentFlight || currentFlight, Date.now()));
       }
       setTimeout(tryInitMap, 500);
       setTimeout(function() { if (!gateMap) tryInitMap(); else gateMap.invalidateSize(); }, 1500);
@@ -19252,7 +19100,9 @@ const gView = document.getElementById('gateView');
               var _ln = (typeof data.inbound._liveLng === 'number') ? data.inbound._liveLng
                       : (_sameInb && typeof _prev.lng === 'number' ? _prev.lng : null);
               window._gateInboundLivePos = (_sp !== null || _al !== null || (_la !== null && _ln !== null))
-                ? { lat: _la, lng: _ln, speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null }
+                // v23915 — timed and owned (_gateFixCheck ignores a position without both).
+                ? { lat: _la, lng: _ln, speed: _sp, altitude: _al, _inboundFlight: (data.inbound && data.inbound.flight) || null,
+                    at: Date.now(), fl: (data.inbound && data.inbound.flight) || '', via: 'flight', cs: '' }
                 : null;
             })();
             if (_prevInboundKey !== _nextInboundKey) changed = true;
@@ -25683,7 +25533,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23914';
+var FIDS_BUILD_TAG = 'v23915';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -28417,6 +28267,18 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
     const recs = (j && Array.isArray(j.flights)) ? j.flights : [];
     if (!recs.length) return;
     const cutoff = Date.now() - 6 * 3600000;
+    // v23915 — KEYED ON THE FLIGHT AND ITS DAY, NOT THE NUMBER ALONE. Every
+    // record for AC2040 answered every AC2040 row, so tomorrow's row inherited
+    // today's tail (C-FYJP) for six hours — a registration that then paired
+    // tomorrow's flights by an aeroplane that was not theirs. A record belongs
+    // to a row when its scheduled time at OUR end is the row's (within 6 h:
+    // the same rotation on the next day is 24 h away). The records' keys carry
+    // a UTC receipt date, not the flight's, so the times are compared instead.
+    const _homeTs = (leg) => {
+      const t = leg && leg.scheduledTime;
+      if (!t) return 0;
+      try { return adbTs(t.utc || t.local) || 0; } catch (e) { return 0; }
+    };
     const byNum = {};
     for (const rec of recs) {
       let ts = 0; try { ts = new Date(rec.received_at).getTime(); } catch (e) {}
@@ -28425,13 +28287,31 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
       if (!cf) continue;
       const num = String(cf.number || '').replace(/\s+/g, '').toUpperCase();
       if (!num) continue;
-      if (!byNum[num] || ts > byNum[num]._ts) byNum[num] = { _ts: ts, f: cf };
+      (byNum[num] = byNum[num] || []).push({ _ts: ts, f: cf, sched: _homeTs(direction === 'Departure' ? cf.departure : cf.arrival) });
     }
     let merged = 0;
     for (const row of list) {
       const num = String(row.number || '').replace(/\s+/g, '').toUpperCase();
-      const hit = num && byNum[num];
+      const rowSched = _homeTs(direction === 'Departure' ? row.departure : row.arrival);
+      let hit = null;
+      for (const c of (num && byNum[num]) || []) {
+        if (!c.sched || !rowSched || Math.abs(c.sched - rowSched) > 6 * 3600000) continue;
+        if (!hit || c._ts > hit._ts) hit = c;
+      }
       if (!hit) continue;
+      // v23915 — THE PUSH ALSO KNOWS WHETHER THE AEROPLANE LEFT, and the
+      // native feed never does: cyqm.ca has no en-route state and no times from
+      // the far end. The origin's wheels-up (departure.runwayTime) and the
+      // push's status ride along as evidence for the gate maps
+      // (_gateAircraftWhere) — on their own fields, so the board's own status
+      // and times stay the native feed's, as this merge has always promised.
+      try {
+        const _dep = hit.f.departure || {};
+        const _up = _dep.runwayTime && (_dep.runwayTime.utc || _dep.runwayTime.local);
+        if (_up && !row._pushDepUp && (adbTs(_up) || Infinity) <= Date.now() + 60000) row._pushDepUp = _up;
+        const _pst = (typeof fidsAdbStatusKey === 'function') ? fidsAdbStatusKey(hit.f.status) : '';
+        if (_pst) row._pushStatus = _pst;
+      } catch (eP) {}
       const ac = hit.f.aircraft || {};
       const reg = String(ac.reg || ac.registration || '').trim();
       const modeS = String(ac.modeS || ac.hexIcao || '').trim().toUpperCase();
@@ -29045,6 +28925,9 @@ var _FIX_MAX_AGE_MS = 15 * 60000;
 function _gateLegWindowOpen(row, apIata) {
   try {
     if (!row) return false;
+    // v23915 — never open for an inbound only the new pairing rules found
+    // (_gateMatchIsNew): no FR24 request that did not exist before.
+    if (row._gateNoAdsb === true) return false;
     var arr = Math.max(row._revTs || 0, row._sortTs || 0);
     if (!arr) return true;                                   // no times → cannot judge; the render's own guards decide
     var acType = ((row._reg && typeof _regTrueType === 'function') ? _regTrueType(row._reg) : '') || row._aircraft || row._aircraftCode || '';
@@ -29062,9 +28945,26 @@ function _fixCanReachByEta(lat, lng, dest, arrTs, nowTs) {
   var hrsLeft = Math.max(0, (arrTs - nowTs) / 3600000);
   return remainNm <= hrsLeft * 600 + 60;
 }
-function _fixPlausibleForLeg(row, lat, lng) {
+// v23915 — AN AEROPLANE STILL STANDING AT ITS ORIGIN IS LATE, NOT SOMEONE
+// ELSE'S. The ETA test asks whether a fix could still fly here in time; one on
+// the ground within 5 nm of the leg's origin has not left yet, so the only
+// thing the test can say about it is that the feed's ETA is stale. Applied to
+// it, the test threw away the one fix that matters on a late departure:
+// AC7992 standing at Montréal at 09:58, due here at 10:14–10:30, was dropped
+// (381 nm to go, 380 allowed) and both maps showed our empty stand under
+// "From Montréal · 10:14" instead of the aeroplane at YUL (v23905's view).
+// Fixes in the air keep the test in full.
+function _fixAtLegOrigin(row, lat, lng, onGround) {
+  try {
+    if (onGround !== true || !row || row.dest || typeof lat !== 'number' || typeof lng !== 'number') return false;
+    var o = _lookupAirport(row._locIata);
+    return !!(o && _gcNm([lat, lng], o) < 5);
+  } catch (e) { return false; }
+}
+function _fixPlausibleForLeg(row, lat, lng, onGround) {
   try {
     if (!row || row.dest) return true;                       // arrival rows only; outbound legs keep their own guards
+    if (_fixAtLegOrigin(row, lat, lng, onGround)) return true;
     var apI = (typeof window !== 'undefined' && window._gateIata) || '';
     var dC = _lookupAirport(apI); if (!dC) return true;
     var arrTs = Math.max(row._revTs || 0, row._sortTs || 0); if (!arrTs) return true;
@@ -29091,7 +28991,7 @@ function _gateLiveFix(row) {
     lat = row._liveLat; lng = row._liveLng; src = 'feed';
   }
   if (lat === null || lng === null) return null;
-  if (!_fixPlausibleForLeg(row, lat, lng)) {
+  if (!_fixPlausibleForLeg(row, lat, lng, src === 'adsb' ? !!(c && c.onGround === true) : row._liveOnGround === true)) {
     try { console.log('[FIX-GATE]', row.flight, src, 'fix', lat.toFixed(2) + ',' + lng.toFixed(2), 'cannot reach', window._gateIata, 'by ETA — ignored'); } catch (e) {}
     if (_gateFixCache && _gateFixCache.key === key) _gateFixCache = null;
     return null;
@@ -29324,7 +29224,13 @@ async function _adsbTelemetry(reg, callSign, flightNo, modeS) {
       type: ac.t || null,
       desc: ac.desc || null,
       age: (typeof ac.seen_pos === 'number') ? ac.seen_pos : null,
-      at: Date.now()
+      at: Date.now(),
+      // v23915 — whose answer this is, for the maps' evidence test
+      // (_gateFixCheck): the flight it was asked for, how it was found
+      // (flight / callsign / hex / reg), and the callsign it was squawking.
+      fl: _fn || _cs,
+      via: ((tries[i].match(/^\/(\w+)\//) || [])[1]) || '',
+      cs: String(ac.flight || '').trim().toUpperCase()
     };
     // Publish under every identifier the caller might hold. The gate RENDER
     // reads this directly rather than trusting that the 60-second poll
@@ -29966,6 +29872,22 @@ function adbStatus(f, mode, schedTs, nowTs) {
   }
   return base;
 }
+// v23915 — WHICH OF adbStatus'S ANSWERS CAME FROM THE CLOCK. Past the list of
+// explicit statuses above, adbStatus does not read the feed at all: an arrival
+// becomes 'landed' at its (revised) time and 'arrived' half an hour later, a
+// departure 'boarding', 'final', 'gateclosed' and then 'departed' by the
+// minute. That is right for a board's status column and wrong as evidence:
+// Moncton's feed says "On Time" until it says "Arrived at", so at 22:50 nine of
+// its twelve arrivals were one clock tick from being "landed", and the gate
+// maps parked each aeroplane at our stand at its scheduled minute whether or
+// not it had landed. mapADB stamps _stInferred on every row from this; the
+// evidence checks (_gateRawStatus) read the status only when it is false.
+var _ADB_EXPLICIT_STATUS = /^(cancelled|canceled|cancelleduncertain|canceleduncertain|diverted|arrived|landed|enroute|approaching|active|departed|boarding|gateclosed|final|finalcall|delayed|early)$/;
+function adbStatusInferred(f, st) {
+  var raw = String((f && f.status) || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (_ADB_EXPLICIT_STATUS.test(raw)) return false;
+  return /^(landed|arrived|departed|boarding|final|gateclosed)$/.test(String(st || ''));
+}
 // ── Row de-duplication ───────────────────────────────────────────────────
 // The feeds repeat the
 // same departure. AeroDataBox is queried withLeg=true, so a rotation comes
@@ -29990,7 +29912,7 @@ function _fidsDedupeRows(rows, mode) {
   var out = [], byKey = Object.create(null);
   // Fields that often arrive on only ONE of the two copies — never lose them.
   var _FILL = ['gate','terminal','_reg','_aircraft','_aircraftCode','_belt',
-               '_checkIn','_callSign','_durationMins','_actualDepTime','_actualArrTime'];
+               '_checkIn','_callSign','_durationMins','_actualDepTime','_actualArrTime','_pushStatus'];
   for (var i = 0; i < rows.length; i++) {
     var r = rows[i];
     var ep = String(r._locIata || (mode === 'dep' ? r.dest : r.origin) || '').toUpperCase();
@@ -30000,6 +29922,7 @@ function _fidsDedupeRows(rows, mode) {
       // Same departure, seen twice. Keep the copy that knows the most.
       if (_rowStatusRank(r.status) > _rowStatusRank(prev.status)) {
         prev.status = r.status;
+        prev._stInferred = r._stInferred;   // v23915 — the status and where it came from travel together
         if (r.upd) prev.upd = r.upd;
         if (r._revTs) prev._revTs = r._revTs;
       }
@@ -30165,6 +30088,7 @@ function mapADB(raw, mode) {
     const revTs=revL?_adbNearestDayTs(adbTs(revL),schedTs):null;
     const upd=(revTs&&Math.abs(revTs-schedTs)>5*60000)?adbHHMM(revL):null;
     const st=adbStatus(f,mode,schedTs,nowTs);
+    const _stInferred=adbStatusInferred(f,st);   // v23915 — see adbStatusInferred
     let locIata=mode==='dep'
       ?(f.arrival?.airport?.iata||f.arrival?.airport?.icao?.slice(1)||'').trim().toUpperCase()
       :(f.departure?.airport?.iata||f.departure?.airport?.icao?.slice(1)||'').trim().toUpperCase();
@@ -30311,8 +30235,11 @@ function mapADB(raw, mode) {
         ' aircraftCodeToIata=', (typeof aircraftCodeToIata === 'function' ? aircraftCodeToIata(_aircraftRaw) : '(fn missing)'));
     }
     const _reg=(f.aircraft&&(f.aircraft.reg||f.aircraft.registration||f.aircraft.tailNumber))||'';
-    // Actual wheels-off / touchdown from runwayTime
-    const _actualDepTime = (f.departure?.runwayTime?.local||f.departure?.runwayTime?.utc)||null;
+    // Actual wheels-off / touchdown from runwayTime. v23915 — or, on a Moncton
+    // row, the origin's wheels-up from the Flight-Alert push merged onto it
+    // (_pushDepUp, see _yqmCacheAircraftMerge): the native feed never carries one.
+    const _actualDepTime = (f.departure?.runwayTime?.local||f.departure?.runwayTime?.utc)||f._pushDepUp||null;
+    const _pushStatus = f._pushStatus || null;
     const _actualArrTime = (f.arrival?.runwayTime?.local||f.arrival?.runwayTime?.utc)||null;
     // Baggage belt (arrivals) and check-in desk (departures)
     // ── BELT SYNTHESIS, TERMINAL-AWARE (v218.22) ─────────────────────────
@@ -30439,8 +30366,8 @@ function mapADB(raw, mode) {
     // there.
     if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
     return mode==='dep'
-      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null}
-      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null};
+      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null,_stInferred,_pushStatus}
+      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null,_stInferred,_pushStatus};
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode);
 }
 
@@ -33984,20 +33911,31 @@ function _mapPlaneIcon() {
   } catch (e) {}
   return '/logos/map-plane-jet.png';
 }
-function initGateMap(org,dst,prog,waitAt){try{window._fidsGateRoute={org:org,dst:dst,prog:prog,wait:!!waitAt,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;
+function initGateMap(org,dst,prog,waitAt,note){
+  // v23915 — the route record says whether an aeroplane is drawn at all
+  // (`plane`), and when none is, the empty stand's label (`note`): the studio's
+  // Flight Map element reads this record and used to draw a plane at progress 0
+  // on the origin pin in every state.
+  var _p0 = (typeof prog === 'number' && prog > 0) ? prog : 0;
+  try{window._fidsGateRoute={org:org,dst:dst,prog:prog,wait:!!waitAt,empty:(_p0 < 0.02 && !waitAt),plane:(_p0 >= 0.02 || !!waitAt),note:note||'',at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;
   /* v23104 — THE LIVE VIEW OUTRANKS THE ESTIMATE. This check must run BEFORE
      the mini-view detach below, or the view is already gone when we look.
      While a healthy same-leg live glide is flying on this map, an estimate
      redraw is only ever a downgrade (camera yanked to the continental pins
      view, plane hidden under the origin pin, then back on the next good
  poll — ). Skip it. */
+  // v23915 — "healthy" is now measured, not assumed: the glide's last REAL
+  // fix must still be young enough to be evidence (_gateGlideFixFresh), and the
+  // leg must be this one in this direction. The reversed leg used to count as
+  // "the same leg", so on an out-and-back turn (AC7992/7995, AC644/647,
+  // WS812/813…) the at-gate view for the outbound was skipped after a live
+  // landing and the marker sat on the touchdown point until the flight changed.
   try {
     var _lgO = _lookupAirport(org), _lgD = _lookupAirport(dst);
     var _lgv = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.mini) || null;
     if (_lgv && _lgv.marker && typeof gateMap !== 'undefined' && gateMap && _lgv.marker._map === gateMap &&
         typeof _gateGlideSameLeg === 'function' && _lgO && _lgD &&
-        ((_gateGlideSameLeg(_gateGlide.o, _lgO) && _gateGlideSameLeg(_gateGlide.d, _lgD)) ||
-         (_gateGlideSameLeg(_gateGlide.o, _lgD) && _gateGlideSameLeg(_gateGlide.d, _lgO)))) {
+        _gateGlideSameLeg(_gateGlide.o, _lgO) && _gateGlideSameLeg(_gateGlide.d, _lgD) && _gateGlideFixFresh()) {
       try { console.log('[MAP-EST] live glide healthy on this leg — estimate redraw skipped'); } catch (e0) {}
       return;
     }
@@ -34013,8 +33951,27 @@ function initGateMap(org,dst,prog,waitAt){try{window._fidsGateRoute={org:org,dst
     Promise.all(pending).then(function() {
       // Re-attempt once both resolutions are in
       if (_lookupAirport(org) && _lookupAirport(dst)) {
-        initGateMap(org, dst, prog, waitAt);
+        initGateMap(org, dst, prog, waitAt, note);
       } else {
+        // v23915 — WE ALWAYS KNOW OUR OWN GATE. When the far end cannot be
+        // placed, a leg that starts or ends here still shows this gate: the
+        // aeroplane on its stand when the evidence puts it there, else the
+        // empty stand and its label — no route, since there is nowhere to draw
+        // it to. The world view below is left for a map about two airports
+        // neither of which is ours.
+        var _hK = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase(), _hC = _lookupAirport(_hK);
+        if (mb && _hC && _p0 < 0.02 && (String(org).toUpperCase() === _hK || String(dst).toUpperCase() === _hK)) {
+          try { if (gateMap) { gateMap.remove(); } } catch(e){}
+          gateMap = L.map('gateMapBox',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});
+          _gateMapTileLayer().addTo(gateMap);
+          gateMap._fidsRouteKey = String(org).toUpperCase() + '>' + String(dst).toUpperCase();
+          gateMap._fidsLive = false;
+          _gateMapWatchResize(mb);
+          var _hSpot = _gateParkSpot(_hK, [_hC[0], _hC[1]], _gateOwnGateRef(_hK));
+          gateMap._fidsOverlays = waitAt ? _gateDrawParkedEstimate(gateMap, _hSpot, null) : _gateDrawEmptyStand(gateMap, _hSpot, null, note);
+          setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
+          return;
+        }
         // Could not resolve every endpoint — fall back to a WORLD view with
         // whatever pin we DO know (an unresolvable exotic code used to blank
         // the panel into an empty grey rectangle, e.g. GEO long-haul).
@@ -34083,9 +34040,8 @@ function initGateMap(org,dst,prog,waitAt){try{window._fidsGateRoute={org:org,dst
   var p = Math.max(0, Math.min(1, prog || 0));
   var zoom, center;
   if (p < 0.02) {
-    // Before departure: show the FULL route so users see where they're going.
-    // Fit the map bounds to both origin + destination with padding.
-    // Set a placeholder zoom; we'll overwrite it with fitBounds after setView below.
+    // Below 0.02 nothing here is used: the view is a stand, ours (v23915,
+    // see the parked / empty-stand branch below), never the whole route.
     zoom = cruiseZoom; center = [(o[0]+d[0])/2, (o[1]+d[1])/2];
   } else if (p < 0.06) {
     // Taxi/takeoff: zoom out to city-wide
@@ -34126,45 +34082,49 @@ function initGateMap(org,dst,prog,waitAt){try{window._fidsGateRoute={org:org,dst
   // ("fallback to setView above") — instead of running both every time. animate:
   // false because this is the map ARRIVING at its view, not travelling to it;
   // there is no previous view worth animating away from.
+  // v23915 — the bounds fit is gone: below 0.02 the view is a stand (parked
+  // or empty), and above it the phase table's setView is the only decision.
   var _preDep = (p < 0.02);
-  // v23909 — a waiting aeroplane only when the caller KNOWS it is waiting
-  // (waitAt: landed at our gate, or not yet due off the ground where it
-  // stands — see _gateInboundWaitingAtOrigin and friends). A p below 0.02
-  // also stands for "unknown" (unconfirmed by the feed, cancelled, diverted,
-  // the last minutes of a leg): that keeps the old route view with no
-  // aircraft, which claims nothing about where the aeroplane is.
+  // v23909 — a parked aeroplane only when the caller KNOWS it is there
+  // (waitAt). v23915 — and the caller is always _gateMapApply with the one
+  // answer (_gateAircraftWhere): 'stand' parks it at our stand; everything
+  // else below 0.02 is 'none' and draws no aeroplane at all.
   var _parked = _preDep && !!waitAt;
+  // v23915 — NOTHING SAYS WHERE IT IS: the map is OUR gate, empty (see
+  // _gateDrawEmptyStand). This replaces the whole-route fitBounds, which on a
+  // gate-sized box was zoom 3 over the route's midpoint. For an inbound leg the
+  // stand is at the destination end (ours); the route runs out toward its
+  // origin.
+  var _empty = _preDep && !waitAt;
+  var _hereK = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+  var _hereIsDst = _empty && String(dst).toUpperCase() === _hereK && String(org).toUpperCase() !== _hereK;
+  var _stI = _hereIsDst ? dst : org, _stC = _hereIsDst ? d : o, _thC = _hereIsDst ? o : d;
   var _estOv=(gateMap._fidsOverlays=gateMap._fidsOverlays||[]);
   var arc=null;
-  if (_parked) {
-    // Not the whole route from its midpoint: the aeroplane, where it waits
-    // (see _gateDrawParkedEstimate). When the airport's gate file lands after
-    // this draw, draw once more with the stand — unless a live fix has taken
-    // the map over in the meantime.
-    var _pkK = String(org).toUpperCase();
+  if (_parked || _empty) {
+    // When the airport's gate file lands after this draw, draw once more with
+    // the stand — unless a live fix has taken the map over in the meantime.
+    var _pkK = String(_stI).toUpperCase();
     if (!Object.prototype.hasOwnProperty.call(_AP_GATES, _pkK)) {
       _apGatesFor(_pkK, function () {
         var r = window._fidsGateRoute;
-        if (r && r.org === org && r.dst === dst && r.prog === prog && r.wait && gateMap && gateMap._fidsParkView && gateMap._fidsLive !== true) initGateMap(org, dst, prog, waitAt);
+        if (r && r.org === org && r.dst === dst && r.prog === prog && (r.wait || r.empty) && gateMap && gateMap._fidsParkView && gateMap._fidsLive !== true) initGateMap(org, dst, prog, waitAt, note);
       });
     }
-    _gateDrawParkedEstimate(gateMap, _gateParkSpot(org, o, _gateOwnGateRef(org)), d).forEach(function (l) { _estOv.push(l); });
+    var _stSpot = _gateParkSpot(_stI, _stC, _gateOwnGateRef(_stI));
+    (_parked ? _gateDrawParkedEstimate(gateMap, _stSpot, _thC) : _gateDrawEmptyStand(gateMap, _stSpot, _thC, note)).forEach(function (l) { _estOv.push(l); });
   } else {
     try { delete gateMap._fidsParkView; } catch (e) {}
-    var _viewSet = false;
-    if (_preDep) {
-      try {
-        gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
-        _viewSet = true;
-      } catch (e) { /* fall through to setView */ }
-    }
-    if (!_viewSet) gateMap.setView(center, zoom, { animate: false });
+    gateMap.setView(center, zoom, { animate: false });
     if(_gateMapShowOverlay('route')){ arc=_gcAddArc(gateMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); if(arc)_estOv.push(arc); }
   }
-  // The origin pin is the aeroplane itself while it waits there: its label
-  // sat over the aircraft (the pin is the rounded reference point, out on the
-  // runways at stand zoom).
-  if (!_parked) _estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));if (!(_parked && String(org).toUpperCase() === String(dst).toUpperCase())) _estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  // No pin on the airport the map is standing at: the aeroplane (or the empty
+  // stand) is there, and the pin is the rounded reference point, out on the
+  // runways at stand zoom, with its label over the aircraft. The far end keeps
+  // its pin, out of frame.
+  var _pinlessO = (_parked || _empty) && !_hereIsDst;
+  var _pinlessD = _hereIsDst || ((_parked || _empty) && String(org).toUpperCase() === String(dst).toUpperCase());
+  if (!_pinlessO) _estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));if (!_pinlessD) _estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -34213,10 +34173,10 @@ function _bigMapSettle(o, d, p, delayMs) {
       m.invalidateSize({ animate: false });
       var after = m.getSize();
       if (before.x === after.x && before.y === after.y) return;   // nothing moved
-      // v23909 — a waiting aeroplane keeps the camera on itself.
+      // v23909 — a waiting aeroplane keeps the camera on itself. v23915 — and
+      // so does an empty stand; there is no whole-route view to go back to.
       var pv = m._fidsParkView;
       if (p < 0.02 && pv) m.setView([pv.lat, pv.lng], pv.zoom, { animate: false });
-      else if (p < 0.02) m.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
     } catch (e) {}
   }, delayMs);
 }
@@ -34229,10 +34189,10 @@ function _gateMapSettle(o, d, p, delayMs) {
       gateMap.invalidateSize({ animate: false });
       var _after = gateMap.getSize();
       if (_before.x === _after.x && _before.y === _after.y) return; // nothing moved
-      // v23909 — a waiting aeroplane keeps the camera on itself.
+      // v23909 — a waiting aeroplane keeps the camera on itself. v23915 — and
+      // so does an empty stand; there is no whole-route view to go back to.
       var _pv = gateMap._fidsParkView;
       if (p < 0.02 && _pv) gateMap.setView([_pv.lat, _pv.lng], _pv.zoom, { animate: false });
-      else if (p < 0.02) gateMap.fitBounds([o, d], { padding: [40, 40], maxZoom: 9, animate: false });
     } catch (e) {}
   }, delayMs);
 }
@@ -34320,7 +34280,7 @@ function _gateMapWatchResize(mb) {
   } catch (e) {}
 }
 
-function initGateMapLive(org,dst,planeLat,planeLng){
+function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
   if(typeof L==='undefined'||typeof L.map!=='function')return;
   var mb=document.getElementById('gateMapBox');if(!mb)return;
   var o=_lookupAirport(org), d=_lookupAirport(dst);
@@ -34330,7 +34290,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     if (!d) pending.push(_fetchAirportCoords(dst));
     Promise.all(pending).then(function() {
       if (_lookupAirport(org) && _lookupAirport(dst)) {
-        initGateMapLive(org, dst, planeLat, planeLng);
+        initGateMapLive(org, dst, planeLat, planeLng, fixAt);
       } else {
         // Same world-view fallback as initGateMap — never a blank grey box.
         var _oK2 = _lookupAirport(org), _dK2 = _lookupAirport(dst);
@@ -34350,6 +34310,19 @@ function initGateMapLive(org,dst,planeLat,planeLng){
     });
     return;
   }
+  // v23915 — every live draw records the time of the fix it draws (the glide's
+  // dead-reckoning cap and the estimate maps' healthy-glide guard read it), and
+  // publishes the route with an aeroplane on it: the studio's Flight Map element
+  // reads _fidsGateRoute, which only the estimate map used to write, so on a
+  // live leg it showed a stale route.
+  _gateGlideNoteFix(fixAt, (function () {
+    try { var w = window._gateMapWhere; return !!(w && w.onGround === true); } catch (e) { return false; }
+  })());
+  try {
+    var _lvDo = _gcNm(o, [planeLat, planeLng]), _lvDd = _gcNm([planeLat, planeLng], d);
+    window._fidsGateRoute = { org: org, dst: dst, prog: (_lvDo + _lvDd) > 0 ? _lvDo / (_lvDo + _lvDd) : 0,
+                              wait: false, empty: false, plane: true, live: true, note: '', at: Date.now() };
+  } catch (eR) {}
   // ── Geometry + progressive zoom, computed BEFORE any redraw so we can bail
   //    out when nothing meaningful changed. ──
   var distToOrg = Math.sqrt(Math.pow(planeLat-o[0],2)+Math.pow(planeLng-o[1],2));
@@ -34526,7 +34499,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
         try { var _lpIp = window._gateInboundLivePos; if (_lpIp && _lpIp.onGround === true) _ipSpd = 0; } catch (e2) {}
         window._gatePlaneMk = _mv.marker;
         try { console.log('[MAP-LIVE] in-place re-anchor @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'glideKts', _ipSpd); } catch (e3) {}
-        _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _mv.marker, _mv.a1, _mv.a2, _ipSpd, dst);
+        _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _mv.marker, _mv.a1, _mv.a2, _ipSpd, dst, fixAt);
         setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 500);
         return;
       }
@@ -34709,7 +34682,7 @@ function initGateMapLive(org,dst,planeLat,planeLng){
   } catch (e) {}
   window._gatePlaneMk = _planeMk;
   try { console.log('[MAP-LIVE] plane @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'z' + zoom, 'glideKts', _glSpd); } catch (e) {}
-  _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd, dst);
+  _startGateMapGlide(gateMap, o, d, planeLat, planeLng, _planeMk, _a1, _a2, _glSpd, dst, fixAt);
   setTimeout(function(){if(gateMap)gateMap.invalidateSize();},500);
 }
 
@@ -34785,6 +34758,34 @@ var _gateGlide = { timer: null, raf: null, gen: 0, views: {} };
 function _gateGlideSameLeg(A, B) {
   return !!(A && B && Math.abs(A[0] - B[0]) < 5e-4 && Math.abs(A[1] - B[1]) < 5e-4);
 }
+// v23915 — THE LAST REAL FIX, AND HOW OLD IT IS. The glide dead-reckons from
+// a position FR24 reported; the time of that report is what says whether the
+// glide is still showing anything. Recorded by the live builders on every fix
+// they draw (moving or parked), read by the dead-reckoning cap in
+// _startGateMapGlide and by the estimate maps' "live glide healthy" guards,
+// which used to check only that a marker was still on the map — so a glide
+// whose last fix was an hour old, sitting on our touchdown point, still
+// counted as healthy and kept the at-gate view off the map.
+function _gateGlideNoteFix(fixAt, onGround) {
+  try {
+    _gateGlide.fixAt = (typeof fixAt === 'number' && isFinite(fixAt) && fixAt > 0) ? fixAt : Date.now();
+    _gateGlide.fixGround = onGround === true;
+  } catch (e) {}
+}
+// Healthy = that fix would still pass as evidence (_gateFixCheck's ages: 3 min
+// on the ground, 15 in the air) AND the one answer still says "live".
+function _gateGlideFixFresh(now) {
+  try {
+    var at = _gateGlide.fixAt;
+    if (!(at > 0)) return false;
+    if ((now || Date.now()) - at > (_gateGlide.fixGround ? 3 : 15) * 60000) return false;
+    var wh = (typeof window !== 'undefined') ? window._gateMapWhere : null;
+    return !wh || wh.kind === 'fix' || wh.kind === 'origin-ground';
+  } catch (e) { return false; }
+}
+// Dead reckoning stops advancing 5 minutes after the last real fix: past that
+// a moving marker is a guess about an aeroplane nobody has heard from.
+var _GLIDE_DR_MAX_MS = 5 * 60000;
 
 function _stopGateMapGlide() {
   // Bumping the generation is what actually stops things — clearing the
@@ -34805,7 +34806,11 @@ function _stopGateMapGlide() {
 function _gateParkedAtOrigin(lat, lng, o) {
   try {
     var lp = window._gateInboundLivePos;
-    var onG = !!(lp && lp.onGround === true) || !!(window._gateInbound && window._gateInbound._liveOnGround === true);
+    // v23915 — or the one answer says so (its fix may be an ADS-B answer the
+    // poll did not write to _gateInboundLivePos; see _gateFixFor).
+    var wh = window._gateMapWhere;
+    var onG = !!(lp && lp.onGround === true) || !!(window._gateInbound && window._gateInbound._liveOnGround === true)
+           || !!(wh && wh.kind === 'origin-ground');
     return !!(onG && o && typeof lat === 'number' && typeof lng === 'number' && _gcNm([lat, lng], o) < 5);
   } catch (e) { return false; }
 }
@@ -34887,55 +34892,755 @@ function _gateOwnGateRef(org) {
     return String((cf && cf.gate) || subScreenVal || '');
   } catch (e) { return ''; }
 }
-// WAITING IS EVIDENCE, NEVER A FALLBACK. The estimate maps are handed a
-// progress under 0.02 both when a flight has not left AND when nobody knows
-// (a late leg the feed never confirmed airborne, a cancelled or diverted one,
-// the last minutes of a leg whose clock ran past 0.98). Only the first may
-// draw a parked aeroplane, so each caller asks one of these three.
+// A cancelled or diverted leg is not coming here, and nothing about it places
+// an aeroplane anywhere.
 function _gateLegGone(row) {
   return /cancel|divert/i.test(String((row && row.status) || ''));
 }
-// The inbound has not left where it is: nothing says it is flying and its
-// scheduled departure is not more than a taxi behind us.
-function _gateInboundWaitingAtOrigin(inb, now) {
-  try {
-    if (!inb || _gateLegGone(inb)) return false;
-    if (/depart|airborne|en.?route|active|landed|arriv/i.test(String(inb.status || ''))) return false;
-    if (typeof fidsInboundAirborne === 'function' && fidsInboundAirborne(inb)) return false;
-    var t = now || Date.now();
-    var dep = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : 0;
-    if (dep) return t < dep + 10 * 60000;
-    // The airport feeds' arrival rows rarely carry a departure time (YQM's
-    // do not: tomorrow's WS812 from Calgary had none, so gate 1 fell back to
-    // the continent-wide route view for the whole evening). It still cannot
-    // have left if it lands further off than the longest the leg can take:
-    // the maps' own block estimate (780 km/h + 25 min) with 30% and half an
-    // hour on top.
-    var arr = Math.max(inb._revTs || 0, inb._sortTs || 0);
-    var o = _lookupAirport(inb._locIata), d = _lookupAirport((typeof window !== 'undefined' && window._gateIata) || '');
-    if (!arr || !o || !d) return false;
-    var blockMs = (_gcNm(o, d) * 1.852 / 13 + 25) * 60000;
-    return t < arr - (blockMs * 1.3 + 30 * 60000);
-  } catch (e) { return false; }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23915 — AN AEROPLANE IS DRAWN ONLY WHERE THERE IS EVIDENCE THAT IT IS.
+//
+// The gate maps drew aircraft parked where they were not: at Moncton hours
+// before they could get there, while the real aeroplane still had several
+// other legs to fly first. Confirmed on all four live boards on the night of
+// 2026-09-28:
+//   gate 1  the 05:25 departure's aeroplane parked at stand 1A seven hours
+//           early; it was still in Toronto;
+//   gate 2  PB923's aeroplane parked 12½ hours early — it only gets here on
+//           PB923 from Deer Lake at 11:00, a through flight the gate-match
+//           had thrown away for having the same number;
+//   gate 4  the wrong inbound (AC644, a zero-minute "turn" into AC7995) parked
+//           at Toronto eleven hours before that leg.
+//
+// Every one of those was a SCHEDULE read as a place. v23909's waiting rules
+// took "has not departed yet" for "is standing here"; adbStatus turns a
+// neutral "On Time" into 'landed' at the scheduled minute and the maps took
+// that for a landing; the map tick launched a clock plane at arrival − 2 h
+// with no sign the aircraft had left; the live position had no time on it and
+// was dead-reckoned without limit; and two controllers on the small map (the
+// 10 s map tick and the render's tryInitMap) each kept their own rules, so
+// one drew what the other had refused.
+//
+// Now there is one question and one answer: _gateAircraftWhere(). Both small-
+// map controllers and the big map take the aeroplane from it and from nothing
+// else. The answer is one of
+//   fix            a live position that passes every check in _gateFixCheck,
+//                  drawn where it is (initGateMapLive);
+//   origin-ground  the same, on the ground within 5 nm of the leg's origin
+//                  (v23905's parked view) — the ONLY way an aeroplane is ever
+//                  drawn at another airport;
+//   air-est        no position, but the feed's own words say it took off: drawn
+//                  along the route, from the actual wheels-up when known;
+//   stand          at OUR stand — landed here on evidence, its turn not yet
+//                  flown, and not on the ground longer than a turn or a night
+//                  stop; or our own departure boarding in the feed's words;
+//   none           nothing says where it is: no aeroplane, and the map shows
+//                  OUR gate, empty, the route dashed toward the other city and
+//                  a label naming it (_gateDrawEmptyStand).
+// A missing aeroplane is honest. A drawn one is a claim, and every claim here
+// is something the feed or a live position actually said.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// One airline family per pool of aeroplanes: mainline, Rouge and Jazz all fly
+// AC numbers; Encore WS; Porter's two codes. The same table the gate-match
+// has always used, lifted so the evidence checks read it too.
+function _gateFamily(code) {
+  var F = { QK: 'AC', RV: 'AC', ZX: 'AC', '9M': 'AC', AC: 'AC', WR: 'WS', WS: 'WS',
+            PD: 'PD', P3: 'PD', PB: 'PB', SP: 'PB', TS: 'TS', F8: 'F8' };
+  var c = String(code || '').toUpperCase();
+  return F[c] || c;
 }
-// The inbound is down at OUR field: the feed says so, it carries an actual
-// arrival time, or a live fix has it on the ground here. A clock alone is not
-// a landing (a late leg with no revised time is still in the air).
-function _gateInboundLandedHere(inb, liveGrounded) {
-  try {
-    if (!inb || _gateLegGone(inb)) return false;
-    return inb.status === 'arrived' || inb.status === 'landed' || !!inb._actualArrTime || !!liveGrounded;
-  } catch (e) { return false; }
+function _gateRowKey(row) {
+  return String((row && row.flight) || '') + '|' + String((row && row._sortTs) || '');
 }
-// This gate's own departure has not gone: not departed, cancelled or
-// diverted, and not more than 15 minutes past its time.
-function _gateOutboundWaiting(cf, now) {
+// The feed's own status, or '' when adbStatus made it up from the clock
+// (_stInferred, see adbStatusInferred). A neutral "On Time" at 16:34 is not a
+// landing, and a neutral "On Time" at 05:10 is not a boarding.
+function _gateRawStatus(row) {
+  if (!row || row._stInferred === true) return '';
+  return String(row.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+}
+function _gateRawLanded(row) {
+  var s = _gateRawStatus(row);
+  return s === 'arrived' || s === 'landed';
+}
+// Airborne in the feed's own words: the row's status, or the Flight-Alert push
+// merged onto a Moncton row (_pushStatus, see _yqmCacheAircraftMerge).
+function _gateRawAirborne(row) {
+  if (!row) return false;
+  var s = _gateRawStatus(row), p = String(row._pushStatus || '').toLowerCase();
+  return /^(active|enroute|approaching|departed|airborne)$/.test(s) || /^(active|departed)$/.test(p);
+}
+// Our own departure boarding, on final call or with its gate closed — in the
+// feed's words, never the clock's. An aeroplane is at our gate.
+function _gateOutboundAtGate(cf) {
+  var s = _gateRawStatus(cf);
+  return s === 'boarding' || s === 'final' || s === 'finalcall' || s === 'gateclosed';
+}
+// Today's registration, or ''. A tail from history is a guess about the
+// airframe, not the airframe.
+function _gateTodayReg(row) {
+  if (!row || /^history/i.test(String(row._regSource || ''))) return '';
+  return String(row._reg || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+function _gateIsProp(row) {
   try {
-    if (!cf || _gateLegGone(cf)) return false;
-    if (/depart|airborne|en.?route|active/i.test(String(cf.status || ''))) return false;
-    var dep = Math.max(cf._revTs || 0, cf._sortTs || 0);
-    return !dep || (now || Date.now()) < dep + 15 * 60000;
-  } catch (e) { return false; }
+    var srcs = [row && row._aircraftCode, row && row._aircraft];
+    for (var i = 0; i < srcs.length; i++) {
+      var raw = String(srcs[i] || '');
+      if (!raw) continue;
+      var eq = (typeof aircraftCodeToIata === 'function') ? String(aircraftCodeToIata(raw) || raw) : raw;
+      if (/^(DH[1-8]|DHT|DHC|AT[4-7]|ATR|BE[1H9]|B19|SF3|SW4|J3[12])/i.test(eq.toUpperCase())
+          || /DASH ?8|DHC-?[68]|Q ?400|ATR ?[47]2/i.test(raw)) return true;
+    }
+  } catch (e) {}
+  return false;
+}
+// The shortest believable turn: 25 minutes for a turboprop, 35 for a jet or a
+// type nobody has told us. AC644 landing at 11:15 is not the aeroplane for
+// AC7995 leaving at 11:15.
+function _gateMinTurnMs(dep, arr) {
+  return (_gateIsProp(dep) || _gateIsProp(arr)) ? 25 * 60000 : 35 * 60000;
+}
+// The type family a row's aircraft belongs to ('7M8', 'DHC', '320', ...), or ''
+// when the row names none. The gate-match's own comparison, lifted so the
+// claim checks below compare types the same way.
+function _gateAcFamily(s) {
+  var u = String(s || '').toUpperCase();
+  if (!u) return '';
+  // One code per type, whatever the spelling. The feeds name the same Dash 8 as
+  // "DHC-8-400", "De Havilland Dash 8-400" and "Dash 8 Q400", and the same CRJ as
+  // "Canadair CRJ 900" and "Bombardier CRJ900"; the pattern below turned those
+  // into DHC/DEHA and CRJ/BOMB, so a tail's arrival and its own departure could
+  // read as two different types and the pairing threw the arrival away.
+  // aircraftCodeToIata already gives every spelling the one code the art uses.
+  try {
+    if (typeof aircraftCodeToIata === 'function') {
+      var code = String(aircraftCodeToIata(s) || '').toUpperCase();
+      if (/^[A-Z0-9]{3}$/.test(code)) return code;
+    }
+  } catch (e) {}
+  var m = u.match(/\b(7[0-9]7|7[0-9]8|7[0-9]9|7M[0-9]|3[0-9][0-9]|32[NQ]|2[0-9][0-9]|CR[0-9JK]|DH[0-9C]|E[0-9]{2}|AT[0-9R])\b/);
+  if (m) return m[1];
+  if (/717/.test(u)) return '717';
+  if (/787|78[0-9X]/.test(u)) return '787';
+  if (/777|77[0-9WLX]/.test(u)) return '777';
+  if (/767|76[0-9]/.test(u)) return '767';
+  if (/A?330|33[0-9]/.test(u)) return '330';
+  if (/A?321|32[1N]/.test(u)) return '321';
+  if (/A?320/.test(u)) return '320';
+  if (/A?319/.test(u)) return '319';
+  return u.replace(/[^A-Z0-9]/g, '').slice(0, 4);
+}
+// The board airport's own clock, for the night-stop tests.
+function _gateHereTz() {
+  try {
+    var ap = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+    return (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || '';
+  } catch (e) { return ''; }
+}
+function _gateLocalHour(ts, tz) {
+  try { return +new Date(ts).toLocaleString('en-GB', { timeZone: tz || 'UTC', hour: '2-digit', hourCycle: 'h23' }); } catch (e) { return -1; }
+}
+// Down in the evening or the small hours (19:00 on, or before 05:00 — AC1986
+// is due at 00:03): an aeroplane that stays the night.
+function _gateNightStop(ts, tz) {
+  var h = _gateLocalHour(ts, tz);
+  return h >= 19 || (h >= 0 && h < 5);
+}
+// v23915 — COULD DEPARTURE `d` BE ARRIVAL `a`'S AEROPLANE AT ALL? Asked before
+// another departure is allowed to take (_gateArrivalClaimed), to have flown
+// (_gateTurnConsumed) or to come before (_gateOvernightOk) an arrival that
+// would otherwise be this gate's. Without it, at a busy airport whose feed
+// names no registrations (every authority feed but Calgary's) and keeps
+// arrivals for only three hours, almost any same-airline departure anywhere on
+// the field "took" the gate's aeroplane: measured on a real Calgary morning
+// with the tails removed, 27 of 37 same-gate turns were thrown away that way —
+// a WestJet Dash 8 turning at A01C taken by a 737 MAX leaving E74, a 737 at
+// C52 "flown" by a Dash 8 from A13 — and the stands showed empty with the
+// aeroplane on them. So, beyond the airline family the callers already check:
+//  • the types agree when both rows name one: a turboprop does not become a
+//    jet, and a 737 does not become an A320;
+//  • the same gate — an aeroplane turns where it stands — or else a NIGHT
+//    STOP towed to another gate for the morning (Moncton: Porter in at gate 3
+//    at 21:30 leaves on the 06:15 from gate 4; Air Canada's evening arrivals at
+//    gate 4 leave on the first wave from gate 1), and then only for a
+//    departure from a known gate that has no arrival of its own family filed
+//    at it at all, the way Moncton's gate 1 has none.
+// A departure with no registration never undoes a pair the registrations
+// made: that is left to the callers, which know the pair.
+function _gateCouldTurn(d, a, arrs, aLandTs) {
+  if (!d || !a) return false;
+  var dT = String(d._aircraft || d._aircraftCode || ''), aT = String(a._aircraft || a._aircraftCode || '');
+  if (dT && aT) {
+    if (_gateIsProp(d) !== _gateIsProp(a)) return false;
+    var dF = _gateAcFamily(dT), aF = _gateAcFamily(aT);
+    if (dF && aF && dF !== aF) return false;
+  }
+  var dG = _gateRefNorm(d.gate), aG = _gateRefNorm(a.gate);
+  var known = function (g) { return !!g && /[A-Z0-9]/.test(g); };
+  if (known(dG) && known(aG) && dG === aG) return true;
+  if (!known(dG)) return false;
+  var land = aLandTs || a._revTs || a._sortTs || 0;
+  if (!land || !d._sortTs || d._sortTs - land > 18 * 3600000 || !_gateNightStop(land, _gateHereTz())) return false;
+  var fam = _gateFamily(d.airline);
+  for (var i = 0; i < (arrs || []).length; i++) {
+    var x = arrs[i];
+    if (!x || x === a || _gateFamily(x.airline) !== fam || _gateLegGone(x) || !x._sortTs) continue;
+    if (x._sortTs >= d._sortTs || x._sortTs < d._sortTs - 20 * 3600000) continue;
+    if (_gateRefNorm(x.gate) === dG) return false;
+  }
+  return true;
+}
+// The departure time on an arrival row — but not the one the airport-authority
+// feeds invent. The worker's builders (authorityFlight, fids-proxy.js, and its
+// two siblings) copy the home time into the far side, so every YHZ and YYC
+// arrival "left" at the minute it was due to land here (14 of 14 and 101 of 101
+// rows, measured). That echo is no departure time at all.
+function _gateDepSchedTs(row) {
+  try {
+    var t = (row && row._depSchedLocal) ? (adbTs(row._depSchedLocal) || 0) : 0;
+    if (!t) return 0;
+    if (row._sortTs && Math.abs(t - row._sortTs) < 60000) return 0;
+    return t;
+  } catch (e) { return 0; }
+}
+// Does departure `d` have an inbound of its own, other than `a`? Its own best
+// match, found the way the gate-match finds one: an arrival with its
+// registration, else its number (a through flight), else the latest at its
+// gate early enough to turn. If that best match IS `a`, `a` is d's aeroplane.
+// A hub departure nearly always has one of its own, so it takes nobody
+// else's aeroplane. A spoke's first wave usually has none (Moncton's gate 1
+// has no arrivals at all), and its aeroplane is the one that stayed the night.
+function _gateDepOwnInbound(d, a, arrs) {
+  var fam = _gateFamily(d.airline), dReg = _gateTodayReg(d), dG = _gateRefNorm(d.gate);
+  var list = (arrs || []).slice();
+  if (a && list.indexOf(a) < 0) list.push(a);           // a kept inbound may have left the feed
+  var best = null, bestRank = -1;
+  for (var i = 0; i < list.length; i++) {
+    var x = list[i];
+    if (!x || _gateFamily(x.airline) !== fam || _gateLegGone(x) || !x._sortTs) continue;
+    if (x._sortTs >= d._sortTs || x._sortTs < d._sortTs - 20 * 3600000) continue;
+    var xReg = _gateTodayReg(x), rank;
+    if (dReg && xReg) { if (dReg !== xReg) continue; rank = 3; }
+    else if (x.flight === d.flight) rank = 2;
+    else if (dG && _gateRefNorm(x.gate) === dG && d._sortTs - x._sortTs >= _gateMinTurnMs(d, x)) rank = 1;
+    else continue;
+    if (rank > bestRank || (rank === bestRank && x._sortTs > best._sortTs)) { best = x; bestRank = rank; }
+  }
+  if (!best || best === a || (a && best.flight === a.flight && best._sortTs === a._sortTs)) return null;
+  return best;
+}
+// PAIRING: has an earlier departure of the same family already taken this
+// arrival's aeroplane? One scheduled from our field after the arrival (plus a
+// turn) and before our departure, with no inbound of its own, is where that
+// aeroplane goes. Sep 28, gate 3: PD2381 lands at 21:30 and the first Porter
+// out in the morning is PD2294 at 06:15 from gate 4 — so PD2381 is PD2294's
+// aeroplane, not PD2370's at 11:55, however much gate 3 shares. Only a
+// departure that could be its turn at all (_gateCouldTurn) takes it, and none
+// takes an arrival whose registration is our departure's.
+function _gateArrivalClaimed(a, cf, deps, arrs) {
+  if (!a || !cf || !a._sortTs || !cf._sortTs) return null;
+  var fam = _gateFamily(a.airline), aReg = _gateTodayReg(a), cReg = _gateTodayReg(cf);
+  if (aReg && cReg && aReg === cReg) return null;
+  for (var i = 0; i < (deps || []).length; i++) {
+    var d = deps[i];
+    if (!d || d === cf || (d.flight === cf.flight && d._sortTs === cf._sortTs)) continue;
+    if (_gateFamily(d.airline) !== fam || _gateLegGone(d) || !d._sortTs) continue;
+    if (d._sortTs >= cf._sortTs || d._sortTs < a._sortTs + _gateMinTurnMs(d, a)) continue;
+    var dReg = _gateTodayReg(d);
+    if (aReg && dReg) { if (aReg === dReg) return d; continue; }
+    if (!_gateCouldTurn(d, a, arrs)) continue;
+    if (_gateDepOwnInbound(d, a, arrs)) continue;
+    return d;
+  }
+  return null;
+}
+// AT OUR STAND: has the aeroplane left since it landed? A same-family
+// departure that the FEED says has gone (or that carries a wheels-up time)
+// after this landing, with no inbound of its own, took it. Measured on gate 3:
+// PD2373 landed 17:03 and left again as PD2382 at 17:40, and the map kept it
+// "parked at gate 3" for the next departure regardless. Only a departure that
+// could be its turn (_gateCouldTurn) and left at least 15 minutes after the
+// landing counts: nobody turns an aeroplane faster, and the one pushing back
+// from our gate just after our wheels-on is the aeroplane making room. When
+// the registrations say this arrival IS our departure's aeroplane, a
+// departure with no registration flew something else.
+function _gateTurnConsumed(inb, landTs, cf, deps, arrs, now) {
+  var fam = _gateFamily(inb.airline), iReg = _gateTodayReg(inb), cReg = _gateTodayReg(cf);
+  var paired = !!(iReg && cReg && iReg === cReg);
+  for (var i = 0; i < (deps || []).length; i++) {
+    var d = deps[i];
+    if (!d || d === cf || (cf && d.flight === cf.flight && d._sortTs === cf._sortTs)) continue;
+    if (_gateFamily(d.airline) !== fam) continue;
+    var up = 0;
+    try { up = d._actualDepTime ? (adbTs(d._actualDepTime) || 0) : 0; } catch (e) { up = 0; }
+    var s = _gateRawStatus(d), p = String(d._pushStatus || '').toLowerCase();
+    var gone = /^(departed|active|enroute|airborne)$/.test(s) || /^(active|departed)$/.test(p) || (up > 0 && up <= now);
+    if (!gone) continue;
+    var when = up || d._revTs || d._sortTs || 0;
+    if (!(when >= landTs + 15 * 60000) || when > now + 5 * 60000) continue;
+    var dReg = _gateTodayReg(d);
+    if (iReg && dReg) { if (iReg === dReg) return d; continue; }
+    if (paired) continue;
+    if (!_gateCouldTurn(d, inb, arrs, landTs)) continue;
+    if (_gateDepOwnInbound(d, inb, arrs)) continue;
+    return d;
+  }
+  return null;
+}
+// A night stop: down in the evening (19:00 on, or after midnight before 05:00 —
+// AC1986 is due at 00:03) and our departure is that family's first from our
+// field after it, the next morning. The Porter that lands on gate 3 at 21:47
+// and leaves on PD2370 at 11:55 is on the stand all night; one whose family
+// has a 06:15 departure in between flew that one first.
+function _gateOvernightOk(inb, landTs, cf, deps, arrs, tz) {
+  if (!cf || !cf._sortTs || cf._sortTs <= landTs || cf._sortTs - landTs > 18 * 3600000) return false;
+  if (!_gateNightStop(landTs, tz)) return false;
+  var fam = _gateFamily(inb.airline), iReg = _gateTodayReg(inb), cReg = _gateTodayReg(cf);
+  var paired = !!(iReg && cReg && iReg === cReg);
+  for (var i = 0; i < (deps || []).length; i++) {
+    var d = deps[i];
+    if (!d || d === cf || (d.flight === cf.flight && d._sortTs === cf._sortTs)) continue;
+    if (_gateFamily(d.airline) !== fam || _gateLegGone(d) || !d._sortTs) continue;
+    if (!(d._sortTs > landTs && d._sortTs < cf._sortTs)) continue;
+    var dReg = _gateTodayReg(d);
+    if (iReg && dReg) { if (iReg === dReg) return false; continue; }
+    if (paired || !_gateCouldTurn(d, inb, arrs, landTs)) continue;
+    if (!_gateDepOwnInbound(d, inb, arrs)) return false;
+  }
+  return true;
+}
+// When the inbound came down HERE, on evidence: the feed's actual arrival
+// time, its own "Arrived"/"Landed", or a live ground fix at our field seen
+// earlier (_GATE_DOWN_SEEN). 0 when nothing says it has landed.
+var _GATE_DOWN_SEEN = {};
+function _gateLandedAt(inb, now) {
+  if (!inb || _gateLegGone(inb)) return 0;
+  var t = 0;
+  try { t = inb._actualArrTime ? (adbTs(inb._actualArrTime) || 0) : 0; } catch (e) { t = 0; }
+  if (t > now + 5 * 60000) t = 0;                     // an "actual" still ahead of us is an estimate
+  if (!t && _gateRawLanded(inb)) t = Math.min(now, inb._revTs || inb._sortTs || now);
+  if (!t && _GATE_DOWN_SEEN[_gateRowKey(inb)]) t = _GATE_DOWN_SEEN[_gateRowKey(inb)];
+  return t || 0;
+}
+// '' when a landed inbound is still at our stand; otherwise why it is not.
+// Ground time is capped at 4 h unless it is a night stop; the check re-runs on
+// every tick, including for the inbound the gate keeps after its row has left
+// the feed ("keep the last known", in the gate render).
+function _gateStandVerdict(inb, landTs, cf, deps, arrs, now, tz) {
+  var ir = _gateTodayReg(inb), or = _gateTodayReg(cf);
+  if (ir && or && ir !== or) return 'another-airframe';
+  if (_gateTurnConsumed(inb, landTs, cf, deps, arrs, now)) return 'turn-flown';
+  if (now - landTs <= 4 * 3600000) return '';
+  if (_gateOvernightOk(inb, landTs, cf, deps, arrs, tz)) return '';
+  return 'ground-too-long';
+}
+// Did the inbound leave, in the feed's own words? Returns the actual wheels-up
+// time, 0 when only the status says so, or -1 for no. Never the clock, never
+// "on time", never an ETA revised earlier (that is a forecast, not a take-off),
+// never arrival − 2 h.
+function _gateLegUp(inb, now) {
+  if (!inb || _gateLegGone(inb) || _gateRawLanded(inb)) return -1;
+  var up = 0;
+  try { up = inb._actualDepTime ? (adbTs(inb._actualDepTime) || 0) : 0; } catch (e) { up = 0; }
+  // A wheels-up from another day is not this leg's.
+  if (up && (up > now + 60000 || (inb._sortTs && up < inb._sortTs - 20 * 3600000))) up = 0;
+  if (up) return up;
+  return _gateRawAirborne(inb) ? 0 : -1;
+}
+// Where along the route an aeroplane that has left, but that nothing is
+// tracking, most likely is: the taxi-aware profile the maps already use
+// (_estRouteFrac), anchored on the real wheels-up when there is one. -1 once
+// its clock has run out: it left, and nothing says where it is now.
+function _gateAirEstProg(inb, ap, up, now) {
+  var o = _lookupAirport(inb._locIata), d = _lookupAirport(ap);
+  var arr = inb._revTs || inb._sortTs || 0;
+  if (!o || !d || !arr) return -1;
+  var dep = _gateDepSchedTs(inb);
+  var dur = (dep && inb._sortTs > dep) ? inb._sortTs - dep
+          : Math.max(3600000, (_gcNm(o, d) * 1.852 / 13 + 25) * 60000);
+  var p = _estRouteFrac(now, arr, dur, up > 0 ? up : 0);
+  if (!(p >= 0)) return -1;
+  if (p >= 0.995 && now > arr + 10 * 60000) return -1;
+  return Math.max(0.02, Math.min(0.98, p));
+}
+// R2 — A LIVE FIX IS EVIDENCE ONLY IF
+//  • it carries a time (Flightradar24's own, else when it reached us), at most
+//    3 minutes old on the ground and 15 in the air — a position with no time
+//    on it was dead-reckoned for hours when FR24 went quiet;
+//  • it is THIS leg's: asked for by this flight's number, and an answer found
+//    by tail or hex with no callsign only on the ground within 5 nm of this
+//    leg's origin or 6 of our field (a tail is the airframe wherever it is);
+//  • a ground fix is at one of those two airports at all (a feed that reports
+//    every altitude as 0 is not an aeroplane taxiing over Maine);
+//  • it can still reach our field by its ETA (v23331) — unless it is on the
+//    ground at this leg's origin, where it has simply not left yet and the
+//    ETA is what is wrong (_fixAtLegOrigin) — it is near this route at all,
+//    and its altitude and speed are ones this type can fly.
+function _gateFixCheck(c, inb, ap, now) {
+  if (!c || !inb || typeof c.lat !== 'number' || typeof c.lng !== 'number' || !isFinite(c.lat) || !isFinite(c.lng)) return false;
+  if (typeof c.at !== 'number' || !isFinite(c.at)) return false;
+  var age = now - c.at;
+  if (age > (c.onGround ? 3 : 15) * 60000 || age < -2 * 60000) return false;
+  var dg = function (s) { return String(s || '').toUpperCase().replace(/\s+/g, '').replace(/^\D+/, '').replace(/\D+$/, ''); };
+  if (!c.fl || !inb.flight || dg(c.fl) !== dg(inb.flight)) return false;
+  var o = _lookupAirport(inb._locIata), h = _lookupAirport(ap);
+  var nearO = !!(o && _gcNm([c.lat, c.lng], o) < 5), nearH = !!(h && _gcNm([c.lat, c.lng], h) < 6);
+  if (/^(hex|reg)$/.test(String(c.via || ''))) {
+    if (c.cs) { if (dg(c.cs) !== dg(inb.flight)) return false; }
+    else if (!(c.onGround && (nearO || nearH))) return false;
+  }
+  if (c.onGround && !(nearO || nearH)) return false;
+  var arr = Math.max(inb._revTs || 0, inb._sortTs || 0);
+  if (h && arr && !(c.onGround && nearO) && !_fixCanReachByEta(c.lat, c.lng, h, arr, now)) return false;
+  // Near this route at all (the big map's corridor gate, now both maps'): a
+  // fix a quarter of the leg or 86 nm off the direct path is someone else's.
+  if (o && h) {
+    var dT = _gcNm(o, h), dS = _gcNm(o, [c.lat, c.lng]) + _gcNm([c.lat, c.lng], h);
+    if (dT > 1 && dS > Math.max(dT * 1.25, dT + 86)) return false;
+  }
+  // The altitude and speed this type can fly (the big map's _liveFixPhysOk,
+  // now both maps'): a Dash 8 "at 31,400 ft" is someone else's aeroplane.
+  if (!c.onGround && typeof c.alt === 'number' && (c.alt > 45000 || (_gateIsProp(inb) && c.alt > 27500))) return false;
+  if (!c.onGround && typeof c.spd === 'number' && _gateIsProp(inb) && c.spd > 450) return false;
+  return true;
+}
+// The freshest fix that passes _gateFixCheck, from what the page already holds:
+// the 60 s poll's position, the ADS-B answers stored under this flight's number
+// or callsign, and the feed row's own reported position. Read-only — this asks
+// Flightradar24 for nothing.
+function _gateFixFor(inb, ap, now) {
+  var cands = [];
+  try {
+    var lp = window._gateInboundLivePos;
+    if (lp) cands.push({ lat: lp.lat, lng: lp.lng, onGround: lp.onGround === true, alt: lp.altitude, spd: lp.speed,
+                         at: lp.at, fl: lp.fl, via: lp.via, cs: lp.cs, src: 'poll' });
+  } catch (e) {}
+  try {
+    var store = window._adsbLast || {};
+    [inb.flight, inb._callSign].forEach(function (k) {
+      k = String(k || '').toUpperCase().replace(/\s+/g, '');
+      var v = k ? store[k] : null;
+      if (!v) return;
+      cands.push({ lat: v.lat, lng: v.lng, onGround: v.onGround === true, alt: v.alt, spd: v.spd,
+                   at: (typeof v.at === 'number') ? v.at - ((typeof v.age === 'number' && v.age > 0) ? v.age * 1000 : 0) : null,
+                   fl: v.fl, via: v.via, cs: v.cs, src: 'adsb' });
+    });
+  } catch (e) {}
+  if (typeof inb._liveLat === 'number' && typeof inb._liveLng === 'number') {
+    cands.push({ lat: inb._liveLat, lng: inb._liveLng, onGround: inb._liveOnGround === true, alt: inb._liveAlt,
+                 spd: inb._liveSpd, at: inb._liveAt, fl: inb.flight, via: 'feed', src: 'feed' });
+  }
+  var best = null;
+  for (var i = 0; i < cands.length; i++) {
+    if (_gateFixCheck(cands[i], inb, ap, now) && (!best || cands[i].at > best.at)) best = cands[i];
+  }
+  return best;
+}
+// ── WHICH ARRIVAL IS THIS DEPARTURE'S AEROPLANE (the gate-match) ─────────
+// The registration-based inbound (window._gateInbound, populated by
+// loadFlight()) was meant to be the reliable way to identify the airframe;
+// since the enrichment kill-list those lookups all answer empty, so this
+// schedule match IS the inbound on every gate, for the panel and the maps.
+// Everything it guesses is flagged _identityUnverified by the caller.
+//
+// v23303 — THE AIRCRAFT THAT STAYED OVERNIGHT IS STILL THE INBOUND.
+// A 6-hour lookback cannot see a plane that came in last night and is
+// operating this morning's departure, which is exactly the case on an
+// early departure. Measured on YQM gate 3: PD2294 leaves on a Dash
+// 8-400, PD2381 arrived on the same type at the same gate and is sitting
+// there with status 'arrived' — and the ONLY filter rejecting it was
+// this window. 20 hours covers a remain-overnight without reaching back to
+// the previous day's rotation.
+//
+// v23310 — A CANCELLED FLIGHT NEVER ARRIVES, SO IT IS NEVER THE INCOMING
+// AIRCRAFT. Measured on YQM gate 2: PB925 to Wabush was pairing with PB923
+// from Deer Lake, CANCELLED, and the rail drew YQM->YDF for a flight going to
+// YWK. Diverted is excluded on the same logic — it is not landing here.
+//
+// Same airline family (Jazz and Rouge fly AC numbers) and, when both are
+// known, the same aircraft type: the inbound IS the same airframe doing its
+// previous leg (a Hawaiian 717 was once paired with an A330 from LAX because
+// they shared a gate).
+//
+// v23915 — FOUR MORE THINGS AN AEROPLANE CANNOT DO:
+//  • It cannot turn in no time. An arrival must land at least 25 minutes
+//    (turboprop) or 35 (jet, or unknown) before the departure: AC644 due at
+//    11:15 is not the aeroplane for AC7995 leaving gate 4 at 11:15 — AC7992
+//    at 10:30 is.
+//  • It cannot fly two departures at once. If a same-family departure from
+//    our field is scheduled after the arrival (plus a turn) and before ours,
+//    has no inbound of its own and could be that arrival's turn at all (same
+//    gate, or a night stop towed to a gate with no arrivals of its own; types
+//    agreeing — _gateCouldTurn), the arrival is that departure's aeroplane
+//    (_gateArrivalClaimed): PD2381 in at 21:30 flies PD2294 at 06:15, not
+//    PD2370 at 11:55.
+//  • A through flight keeps its number. PB923 lands from Deer Lake at 11:00
+//    and leaves for Mont-Joli at 11:25 as PB923: the strongest match there is,
+//    and the only one this filter used to rule out by name.
+//  • A registration is the airframe. When both rows carry today's tail, a
+//    mismatch rules the arrival out and a match rules it in whatever gate it
+//    used (at Moncton Air Canada arrives at gate 4 and leaves from gate 1).
+// Among what is left: a through flight first, then a registration match, then
+// the most recent arrival.
+function _gateInboundForDeparture(cf, gateVal, arrs, deps) {
+  if (!cf) return null;
+  var depTs = cf._sortTs || Date.now();
+  var lookback = depTs - 20 * 3600000;
+  var depFamily = _gateFamily(cf.airline);
+  var acFamily = _gateAcFamily;
+  var outAc = acFamily(cf._aircraft || cf._aircraftCode);
+  var outReg = _gateTodayReg(cf);
+  var rank = function (f) { return f.flight === cf.flight ? 2 : (outReg && _gateTodayReg(f) === outReg ? 1 : 0); };
+  return (arrs || []).filter(function (f) {
+    if (!f || f.status === 'departed' || _gateLegGone(f)) return false;
+    if (!f._sortTs || f._sortTs >= depTs || f._sortTs < lookback) return false;
+    if (_gateFamily(f.airline) !== depFamily) return false;
+    var fReg = _gateTodayReg(f);
+    if (outReg && fReg) return fReg === outReg;
+    var fa = acFamily(f._aircraft || f._aircraftCode);
+    if (outAc && fa && fa !== outAc) return false;
+    if (f.flight === cf.flight) return true;
+    if (f.gate !== gateVal) return false;
+    if (depTs - f._sortTs < _gateMinTurnMs(cf, f)) return false;
+    return !_gateArrivalClaimed(f, cf, deps, arrs);
+  }).sort(function (a, b) { return (rank(b) - rank(a)) || (b._sortTs - a._sortTs); })[0] || null;
+}
+// v23915 — NO NEW FLIGHTRADAR24 LOOKUPS FROM THE NEW PAIRING. Until this
+// version the gate-match never returned a through flight (it threw away an
+// arrival carrying the departure's own number) nor an arrival at another gate,
+// so nothing ever asked FR24 about either. With them, the 60 s poll would ask
+// about PB923 from Deer Lake every minute from 06:35 to 10:59 and PB924 from
+// 13:25 to 17:49 — about 500 credits a day on gate 2 alone, billed per
+// returned row against the daily cap — and a tail matched at another gate the
+// same. The maps and the panel use these inbounds (reading only what the page
+// already holds), but no lookup is made for one: the render marks it
+// _gateNoAdsb, and _gateLegWindowOpen — the door every FR24 lookup for the
+// gate's inbound goes through (the poll, the panel, the sticky fix) — stays
+// shut for it. Such an inbound is placed only by what the page already holds —
+// the feed's own words (wheels-up, "Arrived") and position — or not at all.
+function _gateMatchIsNew(inb, cf, gateVal) {
+  if (!inb || !cf) return false;
+  return inb.flight === cf.flight || String(inb.gate || '') !== String(gateVal || '');
+}
+// Every departure this board has seen from our field in the last 30 hours.
+// The feed drops a departure three hours after its time (DEPART_TRAIL_HRS), and
+// with it the only record that the overnight aeroplane has already left: at
+// 09:16 the 06:15 is gone from the list and the stand looks occupied again.
+var _GATE_DEP_SEEN = { ap: '', rows: {} };
+function _gateDepsSeen(list, ap, now) {
+  try {
+    if (_GATE_DEP_SEEN.ap !== ap) _GATE_DEP_SEEN = { ap: ap, rows: _gateSeenLoad(ap, 'dep') };
+    var rows = _GATE_DEP_SEEN.rows, out = [], changed = false;
+    for (var i = 0; i < (list || []).length; i++) {
+      var d = list[i];
+      if (!d || !d.flight || !d._sortTs) continue;
+      var key = _gateRowKey(d), was = rows[key];
+      if (!was || was._remembered || _gateRawStatus(was) !== _gateRawStatus(d) || was._actualDepTime !== d._actualDepTime) changed = true;
+      rows[key] = d;
+    }
+    for (var k in rows) {
+      if (!Object.prototype.hasOwnProperty.call(rows, k)) continue;
+      if (now - (rows[k]._sortTs || 0) > 30 * 3600000) { delete rows[k]; changed = true; continue; }
+      out.push(rows[k]);
+    }
+    if (changed) _gateSeenSave(ap, 'dep', rows);
+    return out;
+  } catch (e) { return list || []; }
+}
+// v23915 — THE BOARD REMEMBERS WHAT IT SAW LAND AND LEAVE, ACROSS A RELOAD.
+// Moncton's feed keeps an arrived row for about an hour: PD2381 landed at gate 3
+// at 21:47 and was gone from the feed by 00:30, while its aeroplane sat there
+// until the 11:55 to Ottawa. Without it the gate had no evidence and showed an
+// empty stand all night. So every row the feed itself calls arrived/landed (never
+// one adbStatus made up from the clock) is kept for 30 hours, and every
+// departure with it — both, because a remembered arrival without the departure
+// that took its aeroplane away would park that aeroplane at the stand again. The
+// memory lives in this browser's storage, so a reload (every build bump reloads
+// every board) does not wipe it. The rules re-check a remembered row exactly as
+// a live one: turn consumed, 4 h cap or night stop.
+var _GATE_SEEN_KEY = 'fids_gate_seen_v1';
+var _GATE_SEEN_FIELDS = ['flight', 'airline', 'gate', 'status', '_stInferred', '_sortTs', '_revTs',
+  '_actualDepTime', '_actualArrTime', '_locIata', '_aircraft', '_aircraftCode', '_reg', '_regSource',
+  '_pushStatus', '_depSchedLocal', '_arrSchedLocal'];
+function _gateSeenSlim(row) {
+  var o = { _remembered: true };
+  for (var i = 0; i < _GATE_SEEN_FIELDS.length; i++) {
+    var k = _GATE_SEEN_FIELDS[i];
+    if (row[k] != null && row[k] !== '') o[k] = row[k];
+  }
+  return o;
+}
+function _gateSeenLoad(ap, kind) {
+  try {
+    var all = JSON.parse(localStorage.getItem(_GATE_SEEN_KEY) || '{}');
+    var rows = (all[ap] && all[ap][kind]) || {};
+    var out = {};
+    for (var k in rows) {
+      if (Object.prototype.hasOwnProperty.call(rows, k) && rows[k] && rows[k].flight) {
+        out[k] = rows[k]; out[k]._remembered = true;
+      }
+    }
+    return out;
+  } catch (e) { return {}; }
+}
+function _gateSeenSave(ap, kind, rows) {
+  try {
+    var all = JSON.parse(localStorage.getItem(_GATE_SEEN_KEY) || '{}');
+    for (var a in all) { if (a !== ap && Object.prototype.hasOwnProperty.call(all, a)) delete all[a]; }   // one airport per screen
+    all[ap] = all[ap] || {};
+    var slim = {};
+    for (var k in rows) {
+      if (Object.prototype.hasOwnProperty.call(rows, k)) slim[k] = _gateSeenSlim(rows[k]);
+    }
+    all[ap][kind] = slim;
+    localStorage.setItem(_GATE_SEEN_KEY, JSON.stringify(all));
+  } catch (e) {}
+}
+var _GATE_ARR_SEEN = { ap: '', rows: {} };
+// The feed's arrivals, plus the landed ones it has since dropped.
+function _gateArrsSeen(list, ap, now) {
+  try {
+    ap = String(ap || '').toUpperCase();
+    if (_GATE_ARR_SEEN.ap !== ap) _GATE_ARR_SEEN = { ap: ap, rows: _gateSeenLoad(ap, 'arr') };
+    var rows = _GATE_ARR_SEEN.rows, live = {}, out = [], changed = false;
+    for (var i = 0; i < (list || []).length; i++) {
+      var f = list[i];
+      if (!f || !f.flight || !f._sortTs) continue;
+      var key = _gateRowKey(f);
+      live[key] = true;
+      out.push(f);
+      // Only what the feed itself says came down is evidence worth keeping.
+      if ((_gateRawLanded(f) || f._actualArrTime) && !_gateLegGone(f)) {
+        if (!rows[key] || rows[key]._remembered) changed = true;
+        rows[key] = f;
+      }
+    }
+    for (var k in rows) {
+      if (!Object.prototype.hasOwnProperty.call(rows, k)) continue;
+      if (now - (rows[k]._sortTs || 0) > 30 * 3600000) { delete rows[k]; changed = true; continue; }
+      if (!live[k]) out.push(rows[k]);
+    }
+    if (changed) _gateSeenSave(ap, 'arr', rows);
+    return out;
+  } catch (e) { return list || []; }
+}
+// THE ONE ANSWER. `inb` is the gate's inbound (window._gateInbound, including
+// the one kept after its row left the feed), `cf` the gate's departure.
+function _gateAircraftWhere(inb, cf, now) {
+  var t = now || Date.now();
+  var ap = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+  var outDst = String((cf && cf._locIata) || '').toUpperCase();
+  var deps = [], arrs = [], tz = '';
+  try { deps = _gateDepsSeen((typeof data !== 'undefined' && data && data.dep) || [], ap, t); } catch (e) { deps = []; }
+  try { arrs = _gateArrsSeen((typeof data !== 'undefined' && data && data.arr) || [], ap, t); } catch (e) { arrs = []; }
+  try { tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
+  var out = function (kind, why) {
+    return { kind: kind, leg: 'out', org: ap, dst: outDst || ap, other: outDst,
+             at: (cf && (cf._revTs || cf._sortTs)) || 0, why: why };
+  };
+  if (cf && !_gateLegGone(cf) && _gateOutboundAtGate(cf)) return out('stand', 'boarding');
+  if (!inb || !inb._locIata || _gateLegGone(inb)) return out('none', inb ? 'inbound-gone' : 'no-inbound');
+  var org = String(inb._locIata).toUpperCase();
+  var land = (inb._actualArrTime || _gateRawLanded(inb)) ? _gateLandedAt(inb, t) : 0;
+  if (!land) {
+    var fx = _gateFixFor(inb, ap, t);
+    if (fx) {
+      var kind = 'fix';
+      var oC = _lookupAirport(org), hC = _lookupAirport(ap);
+      if (fx.onGround && oC && _gcNm([fx.lat, fx.lng], oC) < 5) kind = 'origin-ground';
+      else if (fx.onGround && hC && _gcNm([fx.lat, fx.lng], hC) < 6) {
+        // Down at our field: the landing is now on record for when the fix ages out.
+        try { _GATE_DOWN_SEEN[_gateRowKey(inb)] = fx.at; } catch (e) {}
+      }
+      return { kind: kind, leg: 'in', org: org, dst: ap, other: org, lat: fx.lat, lng: fx.lng,
+               onGround: !!fx.onGround, alt: fx.alt, spd: fx.spd, at: fx.at, src: fx.src, why: fx.src };
+    }
+    land = _gateLandedAt(inb, t);
+  }
+  if (land) {
+    var why = _gateStandVerdict(inb, land, cf, deps, arrs, t, tz);
+    return why ? out('none', why) : out('stand', 'landed');
+  }
+  var up = _gateLegUp(inb, t);
+  if (up >= 0) {
+    var p = _gateAirEstProg(inb, ap, up, t);
+    if (p > 0) return { kind: 'air-est', leg: 'in', org: org, dst: ap, other: org, prog: p,
+                        at: inb._revTs || inb._sortTs || 0, why: up ? 'wheels-up' : 'status' };
+  }
+  return { kind: 'none', leg: 'in', org: org, dst: ap, other: org, at: inb._revTs || inb._sortTs || 0, why: 'no-evidence' };
+}
+// The empty stand's label: the other end of the leg and its time here, in the
+// board's languages the way every other bilingual pair on the gate is built
+// (_gateLbl's pick and French-first order; _fidsClockForLang's 4:33pm / 16:33).
+// "From Ottawa · 4:33pm | De Ottawa · 16:33". One line.
+function _gateMapCity(iata, lg) {
+  var c = '';
+  try { c = (typeof airportCityNameSafe_v21877 === 'function') ? airportCityNameSafe_v21877(iata, lg) : ''; } catch (e) { c = ''; }
+  if (!c) return String(iata || '');
+  if (c !== c.toUpperCase()) return c;
+  return c.toLowerCase().replace(/(^|[\s\-\/(.])([a-zà-ÿ])/g, function (m, p, ch) { return p + ch.toUpperCase(); });
+}
+function _gateMapNote(res) {
+  try {
+    if (!res || !res.other) return '';
+    var tbl = (typeof _GATE_LBL !== 'undefined') ? _GATE_LBL[res.leg === 'out' ? 'to' : 'from'] : null;
+    if (!tbl) return '';
+    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
+    var ap = String(window._gateIata || '').toUpperCase();
+    if (typeof frFirstAirport === 'function' && frFirstAirport(ap)) {
+      var fi = picked.indexOf('fr');
+      if (fi > 0) { picked.splice(fi, 1); picked.unshift('fr'); }
+    }
+    var tz = '';
+    try { tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
+    var parts = [], seen = {};
+    for (var i = 0; i < picked.length && parts.length < 2; i++) {
+      var w = tbl[picked[i]];
+      if (!w) continue;
+      var tm = res.at ? _fidsClockForLang(new Date(res.at), tz, picked[i]) : '';
+      var s = w + ' ' + _gateMapCity(res.other, picked[i]) + (tm ? ' · ' + tm : '');
+      if (seen[s.toLowerCase()]) continue;
+      seen[s.toLowerCase()] = 1;
+      parts.push(s);
+    }
+    return parts.join(' | ');
+  } catch (e) { return ''; }
+}
+// Draw the answer on the small map. Both controllers (tryInitMap and the 10 s
+// map tick) come through here with the same answer, under one key, so the
+// second of them to run in a tick finds nothing to do instead of drawing its
+// own idea of the aeroplane.
+function _gateMapApply(res) {
+  if (!res || !res.org || !res.dst) return;
+  try {
+    // The feed's own "Arrived" or a cancellation ends the leg's live position.
+    var inb = window._gateInbound, lp = window._gateInboundLivePos;
+    if (lp && inb && (_gateRawLanded(inb) || _gateLegGone(inb)) && (!lp.fl || lp.fl === inb.flight)) window._gateInboundLivePos = null;
+  } catch (e) {}
+  var live = res.kind === 'fix' || res.kind === 'origin-ground';
+  var note = res.kind === 'none' ? _gateMapNote(res) : '';
+  var key = res.kind + '|' + res.org + '>' + res.dst + '|'
+    + (live ? res.lat.toFixed(3) + ',' + res.lng.toFixed(3)
+       : res.kind === 'air-est' ? String(Math.round(res.prog * 50)) : note);
+  try {
+    window._gateMapWhere = res;
+    // The sticky fix the live builders fall back to for a speed is this one.
+    window._gateMapFix = (live && !res.onGround)
+      ? { key: String((window._gateInbound && window._gateInbound.flight) || ''), lat: res.lat, lng: res.lng,
+          alt: res.alt, spd: res.spd, speed: res.spd, ts: res.at }
+      : null;
+  } catch (e) {}
+  if (typeof gateMap !== 'undefined' && gateMap && window._lastMapProgKey === key) return;
+  window._lastMapProgKey = key;
+  window._lastMapPosKey = key;
+  try { console.log('[MAP-WHERE]', res.kind, res.org + '>' + res.dst, res.why || '', live ? res.lat.toFixed(3) + ',' + res.lng.toFixed(3) : (res.prog || '')); } catch (e) {}
+  if (live) initGateMapLive(res.org, res.dst, res.lat, res.lng, res.at);
+  else if (res.kind === 'air-est') initGateMap(res.org, res.dst, res.prog, false);
+  else if (res.kind === 'stand') initGateMap(res.org, res.dst, -1, true);
+  else initGateMap(res.org, res.dst, -1, false, note);
 }
 // Where an aeroplane waiting at `iata` stands, and the zoom to show it at.
 //
@@ -34991,16 +35696,52 @@ function _gateParkSpot(iata, o, gateRef) {
 function _gateDrawParkedEstimate(map, spot, d) {
   var out = [], s = [spot.lat, spot.lng];
   try {
-    if (_gateMapShowOverlay('route') && _gcNm(s, d) > 1) {
+    // v23915 — `d` may be unknown (a destination with no coordinates): the
+    // aeroplane still stands at our gate, with no route drawn from it.
+    if (d && _gateMapShowOverlay('route') && _gcNm(s, d) > 1) {
       var rt = _gcAddArc(map, s, d, { vertices: 100, color: '#60a5fa', weight: 3, opacity: 0.6, dashArray: '8,6', noClip: true });
       if (rt) out.push(rt);
     }
-    var dLng = (d[1] - s[1]) * Math.PI / 180, la1 = s[0] * Math.PI / 180, la2 = d[0] * Math.PI / 180;
-    var brg = Math.atan2(Math.sin(dLng) * Math.cos(la2), Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
+    var brg = 0;
+    if (d) {
+      var dLng = (d[1] - s[1]) * Math.PI / 180, la1 = s[0] * Math.PI / 180, la2 = d[0] * Math.PI / 180;
+      brg = Math.atan2(Math.sin(dLng) * Math.cos(la2), Math.cos(la1) * Math.sin(la2) - Math.sin(la1) * Math.cos(la2) * Math.cos(dLng)) * 180 / Math.PI;
+    }
     if (!isFinite(brg)) brg = 0;
     out.push(L.marker(s, { zIndexOffset: 1000, icon: L.divIcon({ html: '<div style="transform:rotate(' + _gateHeading(brg) + 'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;"><img src="' + _mapPlaneIcon() + '" width="48" height="48" style="filter:drop-shadow(0 2px 6px rgba(0,0,0,0.7));" onerror="this.style.display=\'none\';this.parentNode.style.fontSize=\'32px\';this.parentNode.style.color=\'#0b1322\';this.parentNode.textContent=\'✈\';"></div>', iconSize: [48, 48], iconAnchor: [24, 24], className: '' }) }).addTo(map));
     map.setView(s, spot.zoom, { animate: false });
     map._fidsParkView = { lat: spot.lat, lng: spot.lng, zoom: spot.zoom, src: spot.src };
+  } catch (e) {}
+  return out;
+}
+// v23915 — OUR GATE, EMPTY. When nothing says where the aeroplane is, the map
+// neither guesses nor falls back to the whole route framed over its midpoint
+// (Vermont, for Moncton–Toronto — the view v23909 set out to retire and then
+// kept for "unknown"). It stays on this gate's stand at the parked view's own
+// zoom with no aircraft on it: a ring on the stand, the route dashed from it
+// toward the other city and running out of frame, and one line naming that
+// city and the time ("From Ottawa · 4:33pm | De Ottawa · 16:33"). It is the
+// same place and zoom the aeroplane is drawn at the moment evidence arrives,
+// so nothing jumps when it does. `d` may be unknown: then no route, only the
+// stand and its label.
+function _gateDrawEmptyStand(map, spot, d, note) {
+  var out = [];
+  if (!map || !spot) return out;
+  var s = [spot.lat, spot.lng];
+  try {
+    if (d && _gateMapShowOverlay('route') && _gcNm(s, d) > 1) {
+      var rt = _gcAddArc(map, s, d, { vertices: 100, color: '#60a5fa', weight: 3, opacity: 0.6, dashArray: '8,6', noClip: true });
+      if (rt) out.push(rt);
+    }
+    out.push(L.circleMarker(s, { radius: 5, color: '#60a5fa', weight: 2, fill: false, interactive: false }).addTo(map));
+    if (note) {
+      var esc = String(note).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      out.push(L.marker(s, { interactive: false, keyboard: false, zIndexOffset: 900,
+        icon: L.divIcon({ className: 'gate-map-note-pin', iconSize: [0, 0], iconAnchor: [0, 0],
+                          html: '<div class="gate-map-note">' + esc + '</div>' }) }).addTo(map));
+    }
+    map.setView(s, spot.zoom, { animate: false });
+    map._fidsParkView = { lat: spot.lat, lng: spot.lng, zoom: spot.zoom, src: spot.src, empty: true };
   } catch (e) {}
   return out;
 }
@@ -35140,7 +35881,7 @@ function _runwayFinalPath(pl, d, destIata) {
   } catch (e) { return null; }
 }
 
-function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata) {
+function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speedKts, destIata, fixAt) {
   // v23099 — the unconditional kill that used to sit here is gone. Claiming
   // the generation at the END of this function already supersedes any older
   // loop; killing at ENTRY meant an ABORTED start (no marker, speed 0) took
@@ -35361,6 +36102,13 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
   // same point by having no correction term at all — progress is purely
   // elapsed/duration. This keeps the correction but bounds it.
   var _MAX_RATE_MULT = 1.6;
+  // v23915 — how long this glide may keep advancing: until 5 minutes after the
+  // fix it was anchored on (FR24's own time for it when the poll had one). The
+  // marker then holds where it is until the next fix; if none comes, the one
+  // answer (_gateAircraftWhere) retires the position once it is too old to be
+  // evidence, instead of flying it on to our runway and parking it there.
+  var _drLeftMs = Math.max(0, ((typeof fixAt === 'number' && isFinite(fixAt) && fixAt > 0) ? fixAt : Date.now())
+                              + _GLIDE_DR_MAX_MS - Date.now());
   var _rateRaw = _baseRate * _phase + (_errP / _CONVERGE_MS);
   var _rateCap = Math.max(_baseRate, _baseRate * _phase) * _MAX_RATE_MULT;
   var _rate = Math.max(0, Math.min(_rateRaw, _rateCap));
@@ -35440,6 +36188,7 @@ function _startGateMapGlide(map, o, d, planeLat, planeLng, marker, a1, a2, speed
       var now = _nowFn();
       var elapsed = now - _t0;
       if (!(elapsed > 0)) elapsed = 0;   // a non-monotonic clock cannot rewind us
+      if (elapsed > _drLeftMs) elapsed = _drLeftMs;   // v23915 — no dead reckoning past 5 min
 
       // POSITION IS A PURE FUNCTION OF ELAPSED TIME. _rate is fixed for the
       // life of this glide and clamped >= 0, and elapsed only grows, so p can
@@ -35639,186 +36388,16 @@ function _gateMapTick() {
   if (!mb || mb.offsetHeight < 10) return; // not rendered yet
   // (v219.1: the 3D showcase lives in the BIG CENTER rotation — renderGateAd.
   // This small map window keeps the classic 2D map, always.)
-  var inb = window._gateInbound;
-  var apIata = window._gateIata || 'YQM';
-  var cf = window._gateCurrentFlight;
-  var dstIata = (cf && cf._locIata) || '';
-  var now = Date.now();
-
-  // What aircraft is this map about?
-  // Prefer the inbound's registration (the airframe arriving at our gate).
-  // If no inbound, fall back to the outbound flight info.
-  var inbReg = (inb && inb._reg) ? String(inb._reg).toUpperCase() : null;
-  var hasInbound = !!(inb && inb._locIata);
-
-  // Determine phase + the relevant route + progress
-  var phase, routeOrg, routeDst, prog = -1, depTs = null, waitAt = false;
-
-  if (hasInbound) {
-    // Compute progress along the inbound route
-    var aTs = inb._revTs || inb._sortTs;
-    if (aTs) {
-      depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal) : (aTs - 7200000);
-      var tot = aTs - depTs;
-      if (tot > 0) prog = (now - depTs) / tot;
-    }
-    // Aircraft is airborne if departure time has passed and we haven't
-    // arrived yet. Note: we used to also require status !== 'scheduled',
-    // but ADB sometimes leaves the status field as 'scheduled' for short-
-    // haul flights even after the aircraft has actually departed. Trusting
-    // the time-based calculation is more reliable than the status field.
-    // v23099 — A LIVE AIRBORNE FIX NEAR THE FIELD OVERRIDES THE CLOCK. prog
-    // is derived from the GATE-arrival time, so it crosses 0.99 while a
-    // short-haul is still on final — the map flipped to the at-gate pins
-    // view during the exact minutes the runway-aligned approach renders
-    // (the aircraft never reached a runway). While the aircraft is measurably
-    // in the air within ~25nm of the field, it has not landed.
-    var _liveFinal = false;
-    try {
-      if (prog >= 0.99 && inb.status !== 'arrived' && inb.status !== 'landed') {
-        var _lvF = window._gateInboundLivePos || window._gateMapFix;
-        var _apCF = _lookupAirport(apIata);
-        if (_lvF && _apCF && typeof _lvF.lat === 'number' && typeof _lvF.lng === 'number' &&
-            !(_lvF.onGround === true) && (((_lvF.altitude || _lvF.alt) || 0) > 0) &&
-            _gcNm([_lvF.lat, _lvF.lng], _apCF) < 25) {
-          _liveFinal = true;
-        }
-      }
-    } catch (e) {}
-    var actuallyAirborne = (
-      depTs !== null &&
-      now >= depTs &&
-      inb.status !== 'cancelled' &&
-      prog > 0.02 && (prog < 0.99 || _liveFinal)
-    );
-    // v23164 — A GROUND FIX AT OUR FIELD IS A LANDING (a recording: the
-    // plane came in sideways and just stopped, with the camera parked at
-    // street level and the plane still there). prog is derived from the GATE
-    // time, so an EARLY arrival rolls out with prog still well under 0.99 —
-    // status lags too — and the phase stays 'airborne': the camera keeps
-    // street-following a taxiing aircraft until the SCHEDULED time catches
-    // up, which on an early flight is many minutes of a frozen street map.
-    // This is the missing mirror of _liveFinal above: that rule says
-    // 'measurably in the air near the field ⇒ not landed'; this one says
-    // 'measurably on the ground at the field ⇒ landed'. Same evidence, both
-    // directions. The screen's own digits already trusted it — the video
-    // reads 'Altitude 0 ft', which only renders when onGround is true.
-    // Distance-gated to our field so a delayed departure taxiing at the
-    // ORIGIN can't trip it, and it feeds the existing 20s debounce below,
-    // so a single onGround blip on approach still can't flap the view.
-    var _liveGrounded = false;
-    try {
-      if (inb.status !== 'arrived' && inb.status !== 'landed') {
-        var _lvG = window._gateInboundLivePos || window._gateMapFix;
-        var _apCG = _lookupAirport(apIata);
-        if (_lvG && _apCG && typeof _lvG.lat === 'number' && typeof _lvG.lng === 'number' &&
-            (_lvG.onGround === true ||
-             (window._gateInbound && window._gateInbound._liveOnGround === true)) &&
-            _gcNm([_lvG.lat, _lvG.lng], _apCG) < 6) {
-          _liveGrounded = true;
-        }
-      }
-    } catch (e) {}
-    var inboundLanded = !_liveFinal && (_liveGrounded || inb.status === 'arrived' || inb.status === 'landed' || prog >= 0.99);
-    // v23102 — DEBOUNCE the clock-derived landing: a single missing poll or
-    // onGround blip flipped airborne↔at-gate once a minute on approach, and
-    // every flip re-routed the map (the measured flash cycle). A landing the
-    // FEED confirms flips immediately; a landing inferred from the clock
-    // must hold for 20s before the at-gate view takes over.
-    if (inboundLanded && inb.status !== 'arrived' && inb.status !== 'landed') {
-      try {
-        var _ldKey = String(inbReg || '') + '|' + String(inb.flight || '');
-        var _ldSt = window._gateLandedSticky;
-        if (!_ldSt || _ldSt.key !== _ldKey) {
-          window._gateLandedSticky = { key: _ldKey, at: Date.now() };
-          inboundLanded = false;
-        } else if (Date.now() - _ldSt.at < 20000) {
-          inboundLanded = false;
-        }
-      } catch (e) {}
-    } else if (!inboundLanded) {
-      try { window._gateLandedSticky = null; } catch (e) {}
-    }
-
-    if (inboundLanded) {
-      // Plane is at our gate — show its UPCOMING outbound route.
-      // (cf is our gate's outbound flight; dstIata is its destination.)
-      phase = 'at-gate';
-      routeOrg = apIata;
-      routeDst = dstIata || apIata;
-      prog = -1; // full route, no plane in motion
-      // v23909 — parked at our stand only on real evidence of the landing.
-      waitAt = _gateInboundLandedHere(inb, _liveGrounded);
-    } else if (actuallyAirborne) {
-      phase = 'airborne';
-      routeOrg = inb._locIata;
-      routeDst = apIata;
-      // prog stays as computed
-      prog = Math.max(0.02, Math.min(0.98, prog));
-    } else {
-      // Inbound scheduled but not airborne yet
-      phase = 'pre';
-      routeOrg = inb._locIata;
-      routeDst = apIata;
-      prog = -1;
-      waitAt = _gateInboundWaitingAtOrigin(inb, now);   // v23909
-    }
-  } else if (dstIata) {
-    // No inbound info — show our outbound only
-    phase = 'no-inbound-out';
-    routeOrg = apIata;
-    routeDst = dstIata;
-    prog = -1;
-    waitAt = _gateOutboundWaiting(cf, now);   // v23909
-  } else {
-    return; // nothing to show
-  }
-
-  // Did the airframe change? (mechanical, aircraft swap, or new flight)
-  // We use registration as the truth source. Fall back to an
-  // origin→destination key when reg unavailable.
-  var subjectKey = inbReg
-    ? 'reg:' + inbReg + '|' + phase + '|' + routeOrg + '>' + routeDst
-    : 'noreg:' + phase + '|' + routeOrg + '>' + routeDst;
-  var subjectChanged = (_gateMapCamera.reg !== subjectKey);
-  if (subjectChanged) {
-    console.log('[MAP-CAM] subject changed →', phase, routeOrg + '→' + routeDst,
-                inbReg ? '(reg ' + inbReg + ')' : '(no reg)');
-    _gateMapCamera.reg = subjectKey;
-    _gateMapCamera.phase = phase;
-    _gateMapCamera.lastProgKey = null;
-    _gateMapCamera.flybackUntil = 0;
-    _gateMapCamera.nextFlybackAt = now + 60000; // first flyback ~60s in
-  }
-
-  // Flyback REMOVED. The old
-  // every-60s whole-route zoom-out hid the live plane for 10s each minute —
-  // reading as the aircraft vanishing. The plane now stays on screen the
-  // whole time, gliding continuously between real fixes.
-  var flybackActive = false;
-
-  // Build a stable key — only rebuild if a phase boundary crosses
-  var progBucket = (prog < 0) ? 'pre' : Math.round(prog * 50);
-  var progKey = phase + (waitAt ? '+wait' : '') + '|' + progBucket;
-  if (progKey === _gateMapCamera.lastProgKey && !subjectChanged) return;
-  _gateMapCamera.lastProgKey = progKey;
-
-  var renderProg = (prog < 0 || flybackActive) ? -1 : prog;
-  // SINGLE-OWNER MAP: if this inbound is airborne and we have a REAL ADS-B
-  // fix, draw the actual plane (initGateMapLive) — the very same thing
-  // tryInitMap() draws. Previously this tick always called initGateMap()
-  // with a TIME-SIMULATED arc plane, so the two controllers fought and the
-  // gate flipped between the live "flight view" and the simulated "full
-  // map" (fast on load, then every ~10s). Yielding to the live fix here
-  // makes both paths render identically → no more flip.
-  if (phase === 'airborne' && !flybackActive) {
-    var _lp = window._gateInboundLivePos;
-    var _lf = (_lp && typeof _lp.lat === 'number' && typeof _lp.lng === 'number')
-                ? _lp
-                : (window._gateMapFix && typeof window._gateMapFix.lat === 'number' ? window._gateMapFix : null);
-    if (_lf) { initGateMapLive(routeOrg, routeDst, _lf.lat, _lf.lng); return; }
-  }
-  initGateMap(routeOrg, routeDst, renderProg, waitAt);
+  //
+  // v23915 — THIS TICK NO LONGER HAS ITS OWN RULES. It kept a phase table of
+  // its own ('pre' / 'airborne' / 'at-gate' / 'no-inbound-out'): 'airborne'
+  // came from the clock alone (arrival − 2 h when the row had no departure
+  // time), 'at-gate' from a status adbStatus had made up, 'pre' and
+  // 'no-inbound-out' parked the aeroplane from the schedule — and tryInitMap,
+  // the render's own controller, refused some of what this drew, so the two
+  // took turns. Both now draw the one answer, under one key (_gateMapApply).
+  if (!window._gateInbound && !(window._gateCurrentFlight && window._gateCurrentFlight._locIata)) return; // nothing to show
+  _gateMapApply(_gateAircraftWhere(window._gateInbound, window._gateCurrentFlight, Date.now()));
 }
 
 _ocEvery(_gateMapTick, 10000);
@@ -41032,23 +41611,23 @@ if (typeof window !== 'undefined') window._regTrueType = _regTrueType;
 
 function _map3dFlightCtx(allowEstimated) {
   try {
-    var inb = window._gateInbound;
-    // OUTBOUND fallback: when no
-    // inbound airframe is resolvable — common now that the feed rarely
-    // publishes tails, and 'expected' tails are display-only by design — the
-    // takeover shows the DEPARTING flight's own route (gate → destination),
-    // the same schematic the mini map draws in that state. Glyph sits at the
-    // origin until wheels-up; time-progress after departure.
-    var _legOut = false;
-    if (!inb || !inb._locIata) {
-      var _ocf = window._gateCurrentFlight;
-      if (_ocf && _ocf._locIata) { inb = _ocf; _legOut = true; }
-      else return null;
-    }
+    // v23915 — THE BIG MAP TAKES ITS AEROPLANE FROM THE SAME ANSWER AS THE
+    // SMALL ONE (_gateAircraftWhere). It kept its own: a clock progress with
+    // no airborne check on the outbound leg, "revised early" counted as a
+    // take-off, ground fixes refused (so a real one at the origin fell through
+    // to the schedule's "waiting"), and v23909's schedule-based parking. The
+    // leg it is about (the inbound, or our departure when there is none or
+    // when the inbound's turn is over) comes from the answer too.
+    var res = _gateAircraftWhere(window._gateInbound, window._gateCurrentFlight, Date.now());
+    if (!res || !res.org || !res.dst) return null;
+    // The small map is hidden while this slide shows, so its controllers are
+    // not refreshing the published answer; the live builders read it.
+    try { window._gateMapWhere = res; } catch (eW) {}
+    var _legOut = res.leg === 'out';
+    var inb = _legOut ? window._gateCurrentFlight : window._gateInbound;
+    if (!inb) return null;
     var APC = window.AIRPORT_COORDS || {};
-    var gI = String(window._gateIata || ((document.getElementById('apSel') || {}).value || '')).toUpperCase();
-    var dI = _legOut ? String(inb._locIata || '').toUpperCase() : gI;
-    var oI = _legOut ? gI : String(inb._locIata || '').toUpperCase();
+    var oI = String(res.org).toUpperCase(), dI = String(res.dst).toUpperCase();
     var oC = APC[oI], dC = APC[dI];
     if (!oC || !dC || oI === dI) return null;
     var cityOf = function (ia) {
@@ -41056,123 +41635,38 @@ function _map3dFlightCtx(allowEstimated) {
       try { if (typeof AP !== 'undefined' && AP[ia] && AP[ia].city) return AP[ia].city; } catch (e) {}
       return ia;
     };
-    // Progress: live position beats the clock. Project the live fix onto the
-    // route by share of distance covered; otherwise fall back to time-based.
     var _hav = function (a, b) {
       var toR = Math.PI / 180, R = 6371;
       var dLa = (b[0] - a[0]) * toR, dLo = (b[1] - a[1]) * toR;
-      var s = Math.sin(dLa / 2) * Math.sin(dLa / 2)
+      var s2 = Math.sin(dLa / 2) * Math.sin(dLa / 2)
             + Math.cos(a[0] * toR) * Math.cos(b[0] * toR) * Math.sin(dLo / 2) * Math.sin(dLo / 2);
-      return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+      return R * 2 * Math.atan2(Math.sqrt(s2), Math.sqrt(1 - s2));
     };
+    // A live fix — moving, or on the ground at the origin — is drawn where it
+    // is on both maps; the same checks passed it for both (_gateFixCheck).
+    var fixOk = res.kind === 'fix' || res.kind === 'origin-ground';
+    var liveLat = fixOk ? res.lat : null, liveLng = fixOk ? res.lng : null;
     var prog = -1;
-    // Same resolver the mini map uses — ADS-B cache first, feed field second.
-    // Reading _liveLat alone here is what put the two maps in different
-    // places (see _gateLiveFix).
-    var _lfix = (typeof _gateLiveFix === 'function') ? _gateLiveFix(inb) : null;
-    var liveLat = _lfix ? _lfix.lat : ((typeof inb._liveLat === 'number') ? inb._liveLat : null);
-    var liveLng = _lfix ? _lfix.lng : ((typeof inb._liveLng === 'number') ? inb._liveLng : null);
-    // The cache also knows when the airframe is down — the mini map honours
-    // that (_ib._liveOnGround = true), so the big map must too, or it keeps a
-    // glyph in the air after the feed catches up.
-    var _onGnd = !!inb._liveOnGround || !!(_lfix && _lfix.onGround);
-    var fixOk = liveLat !== null && liveLng !== null && !_onGnd && _liveFixPhysOk(inb);
-    if (fixOk) {
-      // Corridor gate: the fix must sit near this route, or it's someone
-      // else's airplane. Compare against the direct path with slack.
-      var dOrg = _hav(oC, [liveLat, liveLng]);
-      var dDst = _hav([liveLat, liveLng], dC);
-      var dTot = _hav(oC, dC);
-      if (dTot > 1 && (dOrg + dDst) > Math.max(dTot * 1.25, dTot + 160)) fixOk = false;
-    }
-    // v23100 — THE OUTBOUND LEG MUST NOT ADOPT THE INBOUND AIRCRAFT'S FIX.
-    // The outbound fallback's tail is usually the same physical airframe as
-    // the still-flying inbound turn (C-FZUG was AC1656 inbound AND AC1617
-    // outbound), and a fix on approach sits inside the outbound corridor
-    // because it is close to the route's ORIGIN. The big map then drew the
-    // outbound route with the glyph riding the inbound aircraft — nose
-    // toward the outbound city, dot tracking the approach, re-stepped on
-    // every fix (a recording: the plane flying sideways, TPA gate,
-    // nose to Montreal while descending from Toronto). Until the outbound
-    // has actually departed, its leg has no live position by definition.
-    if (fixOk && _legOut) {
-      var _outDeparted = /depart|airborne|enroute|en-route|active/i.test(String(inb.status || '')) ||
-        (inb._sortTs && Date.now() > inb._sortTs + 15 * 60000);
-      if (!_outDeparted) fixOk = false;
-    }
     if (fixOk) {
       var dOrg2 = _hav(oC, [liveLat, liveLng]);
       var dDst2 = _hav([liveLat, liveLng], dC);
-      if (dOrg2 + dDst2 > 1) prog = Math.max(0.02, Math.min(0.98, dOrg2 / (dOrg2 + dDst2)));
+      prog = (dOrg2 + dDst2 > 1) ? Math.max(0.02, Math.min(0.98, dOrg2 / (dOrg2 + dDst2))) : 0.02;
+    } else if (res.kind === 'air-est') {
+      prog = res.prog;
     }
-    var arrTs = inb._revTs || inb._sortTs || 0;
-    if (_legOut) {
-      // Departure rows: _sortTs IS the departure time — derive the arrival
-      // from the scheduled duration so progress/ETA stay meaningful. With no
-      // duration the glyph simply holds at the origin (prog 0, no ETA).
-      arrTs = (arrTs && inb._durationMins) ? arrTs + inb._durationMins * 60000 : 0;
-    }
-    if (prog < 0) {
-      // No scheduled departure on the row → derive the flight duration from
-      // the route distance (~780 km/h + 25 min taxi/climb) instead of a flat
-      // 2 h. The flat guess pinned a 5 h Calgary/Edmonton inbound at progress
-      // 0 for its first 3 hours — glyph hidden under the origin pin, so the
-      // big map showed just dotted lines.
-      var _estDurMs = 0;
-      try {
-        _estDurMs = (_hav(oC, dC) / 13 + 25) * 60000;
-        // ADB ML01 realistic route time beats the 780 km/h guess when cached.
-        var _mlDurType = (((inb && inb._reg) && typeof _regTrueType === 'function') ? _regTrueType(inb._reg) : '')
-          || (inb && (inb._aircraft || inb._aircraftCode)) || '';
-        var _mlDur = (typeof fidsMlFlightTimeMins === 'function')
-          ? fidsMlFlightTimeMins(oI, dI, _mlDurType) : null;
-        if (_mlDur) _estDurMs = _mlDur * 60000;
-      } catch (e) {}
-      var depTs = inb._depSchedLocal ? adbTs(inb._depSchedLocal)
-                : (arrTs ? arrTs - Math.max(3600000, _estDurMs || 7200000) : 0);
-      // v23266 — same taxi-aware profile as the mini map. These two maps must
-      // agree: the comment above records what happened last time they read the
-      // same journey differently.
-      if (depTs && arrTs > depTs) {
-        var _wuBig = 0;
-        try { if (inb._actualDepTime) _wuBig = adbTs(inb._actualDepTime) || 0; } catch (e) {}
-        prog = (typeof _estRouteFrac === 'function')
-          ? _estRouteFrac(Date.now(), arrTs, arrTs - depTs, _wuBig)
-          : Math.max(0, Math.min(1, (Date.now() - depTs) / (arrTs - depTs)));
-      }
-      else prog = 0;
-    }
-    // Phantom guard: a time-progress glyph only for a flight the FEED says is
-    // flying (or with real altitude). A clock alone must never launch a plane
-    // that is still at the origin gate — that was the original phantom bug.
-    if (!_legOut && !fixOk && prog > 0) {
-      // Same single spec-signal interpreter the mini map uses — big and
-      // small glyphs can never disagree again (same programming throughout).
-      if (!fidsInboundAirborne(inb)) prog = 0;
-    }
-    // Landed / at the gate → nothing to plot; the slide skips itself.
-    // v23099 — unless a LIVE airborne fix sits within ~25nm of the field:
-    // the clock crosses 0.99 while a short-haul is still on final, and this
-    // null-out was skipping the big slide during the only minutes the
-    // runway-aligned approach can render. Feed-confirmed arrivals still end
-    // the slide immediately.
-    var _bigLiveFinal = false;
-    try {
-      _bigLiveFinal = !!(prog >= 0.99 && fixOk &&
-        inb.status !== 'arrived' && inb.status !== 'landed' &&
-        _hav([liveLat, liveLng], dC) < 46);   // km ≈ 25nm
-    } catch (e) {}
-    if ((prog >= 0.99 && !_bigLiveFinal) || inb.status === 'arrived' || inb.status === 'landed') return null;
     // HONESTY RULE: callers that plot a confident aircraft
     // (the retired 3D view) get NOTHING without a real live fix. The BIG
     // Your-Aircraft slide passes allowEstimated=true and renders the same
-    // schematic the mini map shows (route + glyph at time-progress), with
-    // ctx.estimated set so it can present honestly.
+    // schematic the mini map shows, with ctx.estimated set so it can present
+    // honestly.
     if (!fixOk && !allowEstimated) return null;
+    var arrTs = _legOut
+      ? ((inb._revTs || inb._sortTs) && inb._durationMins ? (inb._revTs || inb._sortTs) + inb._durationMins * 60000 : 0)
+      : (inb._revTs || inb._sortTs || 0);
     var etaStr = '';
     try {
       var mins = Math.round((arrTs - Date.now()) / 60000);
-      if (mins > 0) etaStr = (mins >= 60 ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm' : mins + ' min');
+      if (arrTs && mins > 0) etaStr = (mins >= 60 ? Math.floor(mins / 60) + 'h ' + (mins % 60) + 'm' : mins + ' min');
     } catch (e) {}
     var wx = '';
     try {
@@ -41182,6 +41676,8 @@ function _map3dFlightCtx(allowEstimated) {
            + ((typeof tioLabel === 'function' && w.current.code) ? ' · ' + tioLabel(w.current.code) : '');
       }
     } catch (e) {}
+    var _spd = fixOk ? ((typeof res.spd === 'number') ? res.spd : inb._liveSpd) : null;
+    var _alt = fixOk ? ((typeof res.alt === 'number') ? res.alt : inb._liveAlt) : null;
     return {
       o: [oC[1], oC[0]], d: [dC[1], dC[0]],          // AIRPORT_COORDS is [lat,lng]
       oc: oI, dc: dI, oCity: cityOf(oI), dCity: cityOf(dI),
@@ -41189,11 +41685,12 @@ function _map3dFlightCtx(allowEstimated) {
       fl: inb.flight || '',
       col: window._gateAccent || '#5fa8ff',
       progress: prog,
-      // TRUE live fix [lng,lat] — the 3D plane must sit exactly where the
+      // TRUE live fix [lng,lat] — the big plane must sit exactly where the
       // 2D mini map shows it.
       pos: fixOk ? [liveLng, liveLat] : null,
-      speedKph: (fixOk && typeof inb._liveSpd === 'number') ? Math.round(inb._liveSpd * 1.852) : 0,
-      altFt: (fixOk && typeof inb._liveAlt === 'number') ? Math.round(inb._liveAlt) : 0,
+      fixAt: fixOk ? res.at : null,
+      speedKph: (fixOk && typeof _spd === 'number' && !res.onGround) ? Math.round(_spd * 1.852) : 0,
+      altFt: (fixOk && typeof _alt === 'number' && !res.onGround) ? Math.round(_alt) : 0,
       // Same equipment resolution as the aircraft panel: prefer the
       // registration-backed OUTBOUND equipment (it's the same tail on the
       // turnaround) over the inbound row's often-generic type — the map
@@ -41202,15 +41699,16 @@ function _map3dFlightCtx(allowEstimated) {
            || ((window._gateCurrentFlight && window._gateCurrentFlight._aircraft) || inb._aircraft || ''),
       etaStr: etaStr,
       destWx: wx,
-      estimated: !fixOk,
+      // An aeroplane drawn from anything but a live fix is an estimate; with
+      // no aeroplane there is no position to call estimated.
+      estimated: res.kind === 'air-est' || res.kind === 'stand',
       out: _legOut,
-      // v23909 — the evidence that the aeroplane is waiting where the leg
-      // starts (the big map parks it only then; see _bigMapClone).
-      waiting: (function () {
-        try {
-          return !fixOk && prog <= 0.02 && (_legOut ? _gateOutboundWaiting(inb) : _gateInboundWaitingAtOrigin(inb));
-        } catch (eW) { return false; }
-      })()
+      kind: res.kind,
+      // v23909 — parked at our stand; v23915 — only on the one answer's
+      // evidence ('stand').
+      waiting: res.kind === 'stand',
+      // v23915 — the empty stand's label ('none').
+      note: res.kind === 'none' ? _gateMapNote(res) : ''
     };
   } catch (e) { return null; }
 }
@@ -44608,8 +45106,8 @@ function _renderBigCraft(el, ctx) {
   try {
     if (typeof L !== 'undefined' && typeof L.map === 'function') {
       var _bcO = ctx.oc, _bcD = ctx.dc;
-      if (ctx.pos) _bigMapCloneLive(_bcO, _bcD, ctx.pos[1], ctx.pos[0]);
-      else _bigMapClone(_bcO, _bcD, ctx.progress, ctx.waiting);
+      if (ctx.pos) _bigMapCloneLive(_bcO, _bcD, ctx.pos[1], ctx.pos[0], ctx.fixAt);
+      else _bigMapClone(_bcO, _bcD, ctx.progress, ctx.waiting, ctx.note);
     }
   } catch (e4) {}
   // v22972 — NEVER SIT DARK (a clip: the panel goes to a blank screen
@@ -46957,7 +47455,7 @@ function _gcAddArc(map, from, to, opts) {
   }
   return a;
 }
-function _bigMapClone(org,dst,prog,waitAt){try{window._bigCraftRouteMemo={org:org,dst:dst,prog:prog,wait:!!waitAt,at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('bigCraftMap');if(!mb)return;
+function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&&prog>0)?prog:0;try{window._bigCraftRouteMemo={org:org,dst:dst,prog:prog,wait:!!waitAt,empty:(_p0<0.02&&!waitAt),note:note||'',at:Date.now()};}catch(e){}if(typeof L==='undefined'||typeof L.map!=='function')return;var mb=document.getElementById('bigCraftMap');if(!mb)return;
   // v23106 — THE LIVE VIEW OUTRANKS THE ESTIMATE on the big surface too
   // (mini got this in v23104). A slide repaint that lands during a poll gap
   // has no live fix, falls into this estimated builder, and used to
@@ -46966,11 +47464,12 @@ function _bigMapClone(org,dst,prog,waitAt){try{window._bigCraftRouteMemo={org:or
   try {
     var _bgO = _lookupAirport(org), _bgD = _lookupAirport(dst);
     var _bgv = (typeof _gateGlide !== 'undefined' && _gateGlide.views && _gateGlide.views.big) || null;
+    // v23915 — same test as the small map: this leg in this direction, and a
+    // last real fix still young enough to be evidence (_gateGlideFixFresh).
     if (_bgv && _bgv.marker && window._bigCraftMap && _bgv.marker._map === window._bigCraftMap &&
         window._bigCraftMap.getContainer && window._bigCraftMap.getContainer() === mb &&
         typeof _gateGlideSameLeg === 'function' && _bgO && _bgD &&
-        ((_gateGlideSameLeg(_gateGlide.o, _bgO) && _gateGlideSameLeg(_gateGlide.d, _bgD)) ||
-         (_gateGlideSameLeg(_gateGlide.o, _bgD) && _gateGlideSameLeg(_gateGlide.d, _bgO)))) {
+        _gateGlideSameLeg(_gateGlide.o, _bgO) && _gateGlideSameLeg(_gateGlide.d, _bgD) && _gateGlideFixFresh()) {
       try { console.log('[BIGMAP-EST] live glide healthy on this leg — estimate redraw skipped'); } catch (e0) {}
       return;
     }
@@ -46985,10 +47484,20 @@ function _bigMapClone(org,dst,prog,waitAt){try{window._bigCraftRouteMemo={org:or
     Promise.all(pending).then(function() {
       // Re-attempt once both resolutions are in
       if (_lookupAirport(org) && _lookupAirport(dst)) {
-        _bigMapClone(org, dst, prog, waitAt);
+        _bigMapClone(org, dst, prog, waitAt, note);
       } else {
-        // Could not resolve — leave the box empty rather than gray squares
         try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch(e){}
+        // v23915 — our own gate is always known (see initGateMap): the
+        // aeroplane on its stand, or the empty stand and its label.
+        var _hK = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase(), _hC = _lookupAirport(_hK);
+        if (mb && _hC && _p0 < 0.02 && (String(org).toUpperCase() === _hK || String(dst).toUpperCase() === _hK)) {
+          window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
+          var _hSpot = _gateParkSpot(_hK, [_hC[0], _hC[1]], _gateOwnGateRef(_hK));
+          if (waitAt) _gateDrawParkedEstimate(window._bigCraftMap, _hSpot, null);
+          else _gateDrawEmptyStand(window._bigCraftMap, _hSpot, null, note);
+          return;
+        }
+        // Could not resolve — leave the box empty rather than gray squares
         if (mb) mb.innerHTML = '';
       }
     });
@@ -47010,9 +47519,8 @@ function _bigMapClone(org,dst,prog,waitAt){try{window._bigCraftRouteMemo={org:or
   var p = Math.max(0, Math.min(1, prog || 0));
   var zoom, center;
   if (p < 0.02) {
-    // Before departure: show the FULL route so users see where they're going.
-    // Fit the map bounds to both origin + destination with padding.
-    // Set a placeholder zoom; we'll overwrite it with fitBounds after setView below.
+    // Below 0.02 nothing here is used: the view is a stand, ours (v23915,
+    // see the parked / empty-stand branch below), never the whole route.
     zoom = cruiseZoom; center = [(o[0]+d[0])/2, (o[1]+d[1])/2];
   } else if (p < 0.06) {
     // Taxi/takeoff: zoom out to city-wide
@@ -47052,31 +47560,34 @@ function _bigMapClone(org,dst,prog,waitAt){try{window._bigCraftRouteMemo={org:or
   // was always documented to be. animate:false because the map is ARRIVING at a
   // view, not travelling between two.
   var _bcPreDep = (p < 0.02);
-  // v23909 — parked only when the caller knows the aeroplane waits (see
-  // initGateMap); "unknown" keeps the route fit with no aircraft.
+  // v23909 — parked only when the caller knows the aeroplane is there (see
+  // initGateMap). v23915 — and with nothing known, OUR gate empty, never the
+  // whole route over its midpoint (_gateDrawEmptyStand).
   var _bcParked = _bcPreDep && !!waitAt;
+  var _bcEmpty = _bcPreDep && !waitAt;
+  var _bcHereK = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+  var _bcHereIsDst = _bcEmpty && String(dst).toUpperCase() === _bcHereK && String(org).toUpperCase() !== _bcHereK;
+  var _bcStI = _bcHereIsDst ? dst : org, _bcStC = _bcHereIsDst ? d : o, _bcThC = _bcHereIsDst ? o : d;
   var arc=null;
-  if (_bcParked) {
-    var _bpK = String(org).toUpperCase();
+  if (_bcParked || _bcEmpty) {
+    var _bpK = String(_bcStI).toUpperCase();
     if (!Object.prototype.hasOwnProperty.call(_AP_GATES, _bpK)) {
       _apGatesFor(_bpK, function () {
         var r = window._bigCraftRouteMemo;
-        if (r && r.org === org && r.dst === dst && r.prog === prog && r.wait && window._bigCraftMap && window._bigCraftMap._fidsParkView) _bigMapClone(org, dst, prog, waitAt);
+        if (r && r.org === org && r.dst === dst && r.prog === prog && (r.wait || r.empty) && window._bigCraftMap && window._bigCraftMap._fidsParkView) _bigMapClone(org, dst, prog, waitAt, note);
       });
     }
-    _gateDrawParkedEstimate(window._bigCraftMap, _gateParkSpot(org, o, _gateOwnGateRef(org)), d);
+    var _bcSpot = _gateParkSpot(_bcStI, _bcStC, _gateOwnGateRef(_bcStI));
+    if (_bcParked) _gateDrawParkedEstimate(window._bigCraftMap, _bcSpot, _bcThC);
+    else _gateDrawEmptyStand(window._bigCraftMap, _bcSpot, _bcThC, note);
   } else {
-    var _bcViewSet = false;
-    if (_bcPreDep) {
-      try {
-        window._bigCraftMap.fitBounds([o, d], { padding: [14, 14], maxZoom: 11, animate: false });
-        _bcViewSet = true;
-      } catch (e) { /* fall through */ }
-    }
-    if (!_bcViewSet) window._bigCraftMap.setView(center, zoom, { animate: false });
+    window._bigCraftMap.setView(center, zoom, { animate: false });
     if(_gateMapShowOverlay('route')){ arc=_gcAddArc(window._bigCraftMap,o,d,{vertices:100,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}); }
   }
-  if (!_bcParked)   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});if (!(_bcParked && String(org).toUpperCase() === String(dst).toUpperCase())) L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});_bigMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  // No pin where the map stands (see initGateMap); the far end keeps its pin.
+  var _bcPinlessO = (_bcParked || _bcEmpty) && !_bcHereIsDst;
+  var _bcPinlessD = _bcHereIsDst || ((_bcParked || _bcEmpty) && String(org).toUpperCase() === String(dst).toUpperCase());
+  if (!_bcPinlessO)   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});if (!_bcPinlessD) L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});_bigMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -47097,7 +47608,7 @@ function _bigMapClone(org,dst,prog,waitAt){try{window._bigCraftRouteMemo={org:or
   }_bigMapSettle(o,d,p,500);}
 
 
-function _bigMapCloneLive(org,dst,planeLat,planeLng){
+function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
   if(typeof L==='undefined'||typeof L.map!=='function')return;
   var mb=document.getElementById('bigCraftMap');if(!mb)return;
   var o=_lookupAirport(org), d=_lookupAirport(dst);
@@ -47107,7 +47618,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
     if (!d) pending.push(_fetchAirportCoords(dst));
     Promise.all(pending).then(function() {
       if (_lookupAirport(org) && _lookupAirport(dst)) {
-        _bigMapCloneLive(org, dst, planeLat, planeLng);
+        _bigMapCloneLive(org, dst, planeLat, planeLng, fixAt);
       } else {
         try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch(e){}
         if (mb) mb.innerHTML = '';
@@ -47115,6 +47626,10 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
     });
     return;
   }
+  // v23915 — the fix's own time, as on the small map (initGateMapLive).
+  _gateGlideNoteFix(fixAt, (function () {
+    try { var w = window._gateMapWhere; return !!(w && w.onGround === true); } catch (e) { return false; }
+  })());
   // v23106 — RE-ANCHOR THE BIG SURFACE IN PLACE, same contract as the mini
   // (v23102). The slide repaint re-enters this builder every few seconds;
   // each entry used to remove() the whole big map and rebuild marker, arcs
@@ -47147,7 +47662,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
         : (typeof _gateGlide !== 'undefined' && _gateGlide.lastSpd > 0 && (Date.now() - (_gateGlide.lastSpdAt || 0)) < 300000) ? _gateGlide.lastSpd
         : 0;
       try { console.log('[BIGMAP] in-place re-anchor @', planeLat.toFixed(3) + ',' + planeLng.toFixed(3), 'glideKts', _bcIpSpd); } catch (eBC2) {}
-      _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bmv.marker, _bmv.a1, _bmv.a2, _bcIpSpd, dst);
+      _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bmv.marker, _bmv.a1, _bmv.a2, _bcIpSpd, dst, fixAt);
       setTimeout(function(){ if (window._bigCraftMap) window._bigCraftMap.invalidateSize(); }, 500);
       return;
     }
@@ -47226,7 +47741,7 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng){
     // caches, so one often has it while the other reads 0 — that was half of
     // the two maps disagreeing). With no running glide and no speed it no-ops.
     if (typeof _startGateMapGlide === 'function') {
-      _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bcPlaneMk, _bcA1, _bcA2, _bcGlSpd, dst);
+      _startGateMapGlide(window._bigCraftMap, o, d, planeLat, planeLng, _bcPlaneMk, _bcA1, _bcA2, _bcGlSpd, dst, fixAt);
     }
   } catch (e) {}
   setTimeout(function(){if(window._bigCraftMap)window._bigCraftMap.invalidateSize();},500);
