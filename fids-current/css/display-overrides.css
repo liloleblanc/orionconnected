@@ -22524,3 +22524,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   font-size: clamp(12px, min(1.7vh, 0.95vw), 18px);
   padding: 4px 10px;
 }
+
+/* ══ v23916 — THE AEROPLANE ON THE GATE MAPS AT ITS REAL SIZE ═══════════════
+   The map marker is a 48 px picture; _mapPlaneFit (fids-core.js) sets two
+   custom properties on each map's container from the map's zoom and latitude
+   and the aeroplane's real length and span, and this rule scales the picture
+   by them: at least today's size (1 in flight and at every zoom up to 15),
+   the aeroplane's real size once that is bigger (on its stand at zoom 17).
+   The IMAGE is scaled, not the div around it: the live glide and the parked
+   view rewrite that div's transform (translate + rotate) on every frame, and
+   because the rotation is on the div, a length scale and a different span
+   scale here are applied in the aeroplane's own nose-up frame, then turned —
+   the real footprint.
+   The turboprop PNG (now only for turboprops other than the Dash 8s) is drawn
+   7.3 px left of its box's centre, so it swung round off its own axis as the
+   marker turned and stood ~6 m beside its stand at zoom 17; the translate,
+   applied before the scale, puts its fuselage on the axis at every size. */
+.leaflet-marker-icon img[src*="/logos/map-plane-"] {
+  transform-origin: 50% 50%;
+  transform: scale(var(--fids-plane-kx, 1), var(--fids-plane-ky, 1));
+}
+.leaflet-marker-icon img[src*="/logos/map-plane-prop.png"] {
+  transform: scale(var(--fids-plane-kx, 1), var(--fids-plane-ky, 1)) translateX(7.3px);
+}

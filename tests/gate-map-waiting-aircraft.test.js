@@ -16,6 +16,11 @@
 // aeroplane is now drawn only on evidence (see gate-map-evidence.test.js), and
 // with none the map is our own gate, empty: the stand, the route dashed from
 // it, and a label naming the other end. Never the route over its midpoint.
+//
+// v23916: the parked and empty views are at zoom 17 (the terminal 16), where
+// the aeroplane is drawn at its real size, and the stand depends on its type —
+// a door boards a group of stands, a jet takes the bridge, a turboprop the
+// walk-out. The placement arithmetic is in gate-map-true-scale.test.js.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -40,6 +45,25 @@ function fnSource(name) {
 const lift = (name, deps, vals) => new Function(...deps, 'return (' + fnSource(name) + ')')(...vals);
 const gcNm = lift('_gcNm', [], []);
 const norm = lift('_gateRefNorm', [], []);
+// A `var NAME = {...};` table, evaluated on its own.
+function varSource(name) {
+  const i = CORE.indexOf('var ' + name + ' = {');
+  assert.ok(i >= 0, name + ' must exist');
+  let depth = 0, j = CORE.indexOf('{', i);
+  for (; j < CORE.length; j++) {
+    if (CORE[j] === '{') depth++;
+    else if (CORE[j] === '}' && --depth === 0) break;
+  }
+  return new Function('return (' + CORE.slice(CORE.indexOf('{', i), j + 1) + ')')();
+}
+// v23916 — the stand depends on the aeroplane: _gateParkSpot is given its
+// type (a _mapPlaneSpec) and picks among the door's stands (_gateStandAlloc).
+const alloc = lift('_gateStandAlloc', [], []);
+const UNKNOWN = varSource('_MAP_PLANE_UNKNOWN');
+const parkSpot = (files) => lift('_gateParkSpot', ['_apGatesFor', '_gateRefNorm', '_gcNm', '_gateStandAlloc', '_MAP_PLANE_UNKNOWN'],
+  [(k) => (typeof files === 'function' ? files(k) : files[k]) || null, norm, gcNm, alloc, UNKNOWN]);
+const JET = { prop: false, len: 37.6, key: '320' };
+const PROP = { prop: true, len: 32.8, key: 'DH4' };
 
 const YQM = JSON.parse(fs.readFileSync(path.join(GATES, 'YQM.json'), 'utf8'));
 
@@ -94,43 +118,67 @@ test('every gate file is well formed, keyed the way the board asks, and credits 
 
 test('the waiting aeroplane stands at its gate, else the terminal, else the airport', () => {
   const o = [46.11, -64.68];
-  const spot = (files) => lift('_gateParkSpot', ['_apGatesFor', '_gateRefNorm', '_gcNm'], [(k) => files[k] || null, norm, gcNm]);
-  const at = spot({ YQM });
-  assert.deepEqual(at('YQM', o, '1'), { lat: YQM.stands['1A'][0], lng: YQM.stands['1A'][1], zoom: 15, src: 'stand' }, 'gate 1 boards from stand 1A, at its door');
-  assert.deepEqual(at('YQM', o, '2'), { lat: YQM.stands['2'][0], lng: YQM.stands['2'][1], zoom: 15, src: 'stand' }, 'its own stand, not the nearer stand 3');
+  const at = parkSpot({ YQM });
+  const where = (s) => s && { ref: s.ref, zoom: s.zoom, src: s.src };
+  // v23916 — a door boards a group of stands: a turboprop walks out to the
+  // door's own stand (gate 1 boards stand 1A, as it always has; gate 2 its own
+  // stand 2, not the nearer stand 3), a jet takes the door's bridge.
+  assert.deepEqual(where(at('YQM', o, '1', PROP)), { ref: '1A', zoom: 17, src: 'stand' }, 'gate 1 turboprop: stand 1A, at its door');
+  assert.deepEqual(where(at('YQM', o, '2', PROP)), { ref: '2', zoom: 17, src: 'stand' }, 'gate 2 turboprop: its own stand');
+  assert.deepEqual(where(at('YQM', o, '1', JET)), { ref: 'BR2', zoom: 17, src: 'stand' }, 'gate 1 jet: Bridge 2');
+  assert.deepEqual(where(at('YQM', o, '2', JET)), { ref: 'BR2', zoom: 17, src: 'stand' }, 'gate 2 jet: Bridge 2');
+  assert.deepEqual(where(at('YQM', o, '1')), { ref: 'BR2', zoom: 17, src: 'stand' }, 'a type nobody named is drawn as a jet, and parks as one');
   // Gate 3 boards over Bridge 1. OSM's stand "3" was really Bridge 2's head
   // (gates 1 and 2), so the builder's YQM correction replaces both bridge
-  // stands; the nearest stand to door 3 is now Bridge 1's.
-  assert.deepEqual(at('YQM', o, '3'), { lat: YQM.stands.BR1[0], lng: YQM.stands.BR1[1], zoom: 15, src: 'stand' }, 'gate 3 boards over Bridge 1');
+  // stands; doors 3 and 4 list Bridge 1's pad first. A jet takes it; a
+  // turboprop walks out to stand 5, the first walk-out those doors list.
+  for (const g of ['3', '4']) {
+    assert.equal(at('YQM', o, g, JET).ref, 'BR1', 'gate ' + g + ' jet boards over Bridge 1');
+    assert.deepEqual(where(at('YQM', o, g, PROP)), { ref: '5', zoom: 17, src: 'stand' }, 'gate ' + g + ' turboprop walks out to stand 5');
+  }
+  // The spot carries what the placement needs: the stand's heading and kind,
+  // its door, the terminal it faces, and the aeroplane it was chosen for.
+  assert.deepEqual(at('YQM', o, '3', JET), {
+    lat: YQM.stands.BR1[0], lng: YQM.stands.BR1[1], zoom: 17, src: 'stand', ref: 'BR1', hdg: 310, kind: 'pad',
+    door: YQM.gates['3'], term: YQM.terminals[0], ac: JET });
+  assert.deepEqual(at('YQM', o, '1', PROP), {
+    lat: YQM.stands['1A'][0], lng: YQM.stands['1A'][1], zoom: 17, src: 'stand', ref: '1A', hdg: 240, kind: 'stop',
+    door: YQM.gates['1'], term: YQM.terminals[0], ac: PROP });
   assert.deepEqual(YQM.bridged, ['BR1', 'BR2'], 'Moncton has two jet bridges');
   assert.equal(YQM.door_stands['3'][0], 'BR1');
   assert.ok(YQM.door_stands['1'].includes('BR2') && YQM.door_stands['2'].includes('BR2'), 'gates 1 and 2 share Bridge 2');
-  assert.deepEqual(at('YQM', o, '9'), { lat: YQM.terminals[0][0], lng: YQM.terminals[0][1], zoom: 14, src: 'terminal' }, 'no such gate: the only terminal');
-  assert.deepEqual(at('YQM', o, ''), { lat: YQM.terminals[0][0], lng: YQM.terminals[0][1], zoom: 14, src: 'terminal' }, 'another airport\'s aeroplane has no gate here');
+  assert.deepEqual(YQM.stand_kind, { BR1: 'pad', BR2: 'pad' });
+  assert.deepEqual(at('YQM', o, '9'), { lat: YQM.terminals[0][0], lng: YQM.terminals[0][1], zoom: 16, src: 'terminal' }, 'no such gate: the only terminal');
+  assert.deepEqual(at('YQM', o, ''), { lat: YQM.terminals[0][0], lng: YQM.terminals[0][1], zoom: 16, src: 'terminal' }, 'another airport\'s aeroplane has no gate here');
   assert.deepEqual(at('YYZ', [43.68, -79.62], ''), { lat: 43.68, lng: -79.62, zoom: 12, src: 'airport' }, 'no file: the airport, far enough out');
   // A stand 5 nm or more from the airport is another airport's.
-  const far = spot({ YQM: { stands: { 1: [45.9, -64.3] }, gates: {}, terminals: [] } });
+  const far = parkSpot({ YQM: { stands: { 1: [45.9, -64.3] }, gates: {}, terminals: [] } });
   assert.equal(far('YQM', o, '1').src, 'airport');
   // Multiple terminals and no stand: the airport, not a guessed terminal.
-  const two = spot({ YQM: { stands: {}, gates: {}, terminals: [[46.115, -64.688], [46.105, -64.67]] } });
+  const two = parkSpot({ YQM: { stands: {}, gates: {}, terminals: [[46.115, -64.688], [46.105, -64.67]] } });
   assert.equal(two('YQM', o, '1').src, 'airport');
+  // A door's group is only its stands near it: one listed 400 m away is not boarded from here.
+  const stray = parkSpot({ YQM: { stands: { 1: [46.1162, -64.6868], X: [46.1195, -64.6868] }, gates: { 1: [46.1161, -64.6879] },
+    terminals: [], door_stands: { 1: ['X', '1'] }, bridged: ['X'] } });
+  assert.equal(stray('YQM', o, '1', JET).ref, '1');
 });
 
 test('the door is the authority: a same-numbered stand elsewhere on the field is never used', () => {
-  const spot = (file, ap) => lift('_gateParkSpot', ['_apGatesFor', '_gateRefNorm', '_gcNm'], [() => file, norm, gcNm])('JFK', ap, '36');
+  const spot = (file, ap) => parkSpot(() => file)('JFK', ap, '36');
   const ap = [40.64, -73.78];
   const door = [40.6452, -73.7897];                 // T8's door 36
   const t4stand36 = [40.6436, -73.7700];            // T4's stand "36", ~1.7 km away
   // The far stand loses to the door itself.
-  assert.deepEqual(spot({ stands: { 36: t4stand36 }, gates: { 36: door }, terminals: [] }, ap), { lat: door[0], lng: door[1], zoom: 15, src: 'gate' });
+  assert.deepEqual(spot({ stands: { 36: t4stand36 }, gates: { 36: door }, terminals: [] }, ap), { lat: door[0], lng: door[1], zoom: 17, src: 'gate', door });
   // A stand AT the door (any number) wins over the door.
   const atDoor = [40.6456, -73.7893];               // ~55 m
-  assert.deepEqual(spot({ stands: { 36: t4stand36, 7: atDoor }, gates: { 36: door }, terminals: [] }, ap), { lat: atDoor[0], lng: atDoor[1], zoom: 15, src: 'stand' });
+  assert.deepEqual(spot({ stands: { 36: t4stand36, 7: atDoor }, gates: { 36: door }, terminals: [] }, ap),
+    { lat: atDoor[0], lng: atDoor[1], zoom: 17, src: 'stand', ref: '7', kind: 'stop', door });
   // No door on record: a same-numbered stand only if it sits at a terminal or a door.
   const cargo = spot({ stands: { 36: t4stand36 }, gates: {}, terminals: [[40.6452, -73.7897]] }, ap);
   assert.equal(cargo.src, 'terminal', 'a lone stand 1.7 km from any terminal is not a gate');
   const ok = spot({ stands: { 36: t4stand36 }, gates: {}, terminals: [[40.6440, -73.7705]] }, ap);
-  assert.deepEqual(ok, { lat: t4stand36[0], lng: t4stand36[1], zoom: 15, src: 'stand' });
+  assert.deepEqual(ok, { lat: t4stand36[0], lng: t4stand36[1], zoom: 17, src: 'stand', ref: '36', kind: 'stop', term: [40.6440, -73.7705] });
 });
 
 test('only the board\'s own airport uses the board\'s gate', () => {
@@ -141,23 +189,32 @@ test('only the board\'s own airport uses the board\'s gate', () => {
 });
 
 test('the parked estimate draws the aeroplane at the spot, the route dashed from it, the camera on it', () => {
-  const calls = { setView: null, arcs: [], markers: [] };
+  const calls = { setView: null, arcs: [], markers: [], fit: 0, placed: null };
   const map = { setView: (c, z) => { calls.setView = [c, z]; } };
   const L = {
     divIcon: (o) => o,
     marker: (ll, opts) => ({ addTo: () => { calls.markers.push({ ll, html: opts.icon.html }); return 'marker'; } }),
   };
-  const draw = new Function('L', '_gateMapShowOverlay', '_gcAddArc', '_gcNm', '_gateHeading', '_mapPlaneIcon',
+  // v23916 — the marker goes where _gateParkPlace puts the aeroplane's middle
+  // (tested with real numbers in gate-map-true-scale.test.js), nose the
+  // stand's way; this is the drawing's wiring.
+  const place = { lat: 46.11618, lng: -64.68663, hdg: 240, nose: [46.11611, -64.6868], lenM: 32.8 };
+  const draw = new Function('L', '_gateMapShowOverlay', '_gcAddArc', '_gcNm', '_mapPlaneIcon', '_gateParkPlace', '_mapPlaneFit',
     'return (' + fnSource('_gateDrawParkedEstimate') + ')')(
-    L, () => true, (m, a, b, opts) => { calls.arcs.push({ a, b, dash: opts.dashArray }); return 'arc'; }, gcNm, (b) => b, () => '/logos/map-plane-jet.png');
-  const out = draw(map, { lat: 46.11611, lng: -64.6868, zoom: 15, src: 'stand' }, [43.68, -79.62]);
-  assert.deepEqual(calls.setView, [[46.11611, -64.6868], 15], 'camera on the aeroplane at stand zoom');
-  assert.deepEqual(calls.arcs, [{ a: [46.11611, -64.6868], b: [43.68, -79.62], dash: '8,6' }], 'the route starts at the aeroplane, dashed');
+    L, () => true, (m, a, b, opts) => { calls.arcs.push({ a, b, dash: opts.dashArray }); return 'arc'; }, gcNm,
+    () => '/logos/map-plane-dh4.svg', (spot, d) => { calls.placed = [spot, d]; return place; }, (m) => { if (m === map) calls.fit++; });
+  const spot = { lat: 46.11611, lng: -64.6868, zoom: 17, src: 'stand', ref: '1A', hdg: 240, kind: 'stop' };
+  const out = draw(map, spot, [43.68, -79.62]);
+  assert.deepEqual(calls.placed, [spot, [43.68, -79.62]]);
+  assert.deepEqual(calls.setView, [[46.11618, -64.68663], 17], 'camera on the aeroplane at stand zoom');
+  assert.deepEqual(calls.arcs, [{ a: [46.11618, -64.68663], b: [43.68, -79.62], dash: '8,6' }], 'the route starts at the aeroplane, dashed');
   assert.equal(calls.markers.length, 1);
-  assert.deepEqual(calls.markers[0].ll, [46.11611, -64.6868]);
+  assert.deepEqual(calls.markers[0].ll, [46.11618, -64.68663], 'the marker on the aeroplane\'s middle, not on the stop point');
   const rot = +calls.markers[0].html.match(/rotate\((-?[\d.]+)deg\)/)[1];
-  assert.ok(rot < -80 && rot > -110, 'nose toward Toronto (west), got ' + rot);
-  assert.deepEqual(map._fidsParkView, { lat: 46.11611, lng: -64.6868, zoom: 15, src: 'stand' });
+  assert.equal(rot, 240, 'nose along the stand\'s lead-in line, not toward the destination');
+  assert.match(calls.markers[0].html, /src="\/logos\/map-plane-dh4\.svg" width="48" height="48"/);
+  assert.deepEqual(map._fidsParkView, { lat: 46.11618, lng: -64.68663, zoom: 17, src: 'stand' });
+  assert.equal(calls.fit, 1, 'sized for the zoom it is drawn at');
   assert.deepEqual(out, ['arc', 'marker']);
 });
 
@@ -169,24 +226,36 @@ test('an empty stand is our gate with no aeroplane: the route dashed from the st
     marker: (ll, opts) => ({ addTo: () => { calls.markers.push({ ll, html: opts.icon.html, cls: opts.icon.className }); return 'label'; } }),
     circleMarker: (ll, opts) => ({ addTo: () => { calls.rings.push({ ll, fill: opts.fill }); return 'ring'; } }),
   };
-  const draw = new Function('L', '_gateMapShowOverlay', '_gcAddArc', '_gcNm',
+  // v23916 — the camera goes exactly where the parked view would put it (the
+  // middle of the board's own aeroplane on this stand, _gateParkPlace), so a
+  // landing that arrives draws the aeroplane without the map moving; the
+  // ring, the label and the route stay on the stand itself.
+  let placed = null;
+  const draw = new Function('L', '_gateMapShowOverlay', '_gcAddArc', '_gcNm', '_gateParkPlace',
     'return (' + fnSource('_gateDrawEmptyStand') + ')')(
-    L, () => true, (m, a, b, opts) => { calls.arcs.push({ a, b, dash: opts.dashArray }); return 'arc'; }, gcNm);
-  const stand = { lat: 46.11611, lng: -64.6868, zoom: 15, src: 'stand' };
+    L, () => true, (m, a, b, opts) => { calls.arcs.push({ a, b, dash: opts.dashArray }); return 'arc'; }, gcNm,
+    (spot, d) => { placed = [spot, d]; return { lat: 46.11618, lng: -64.68663, hdg: 240 }; });
+  const stand = { lat: 46.11611, lng: -64.6868, zoom: 17, src: 'stand', ref: '1A', hdg: 240, kind: 'stop' };
   const out = draw(map, stand, [43.68, -79.62], 'To Toronto · 5:25am | À Toronto · 05:25');
-  assert.deepEqual(calls.setView, [[46.11611, -64.6868], 15], 'camera on our stand at the parked view\'s zoom');
+  assert.deepEqual(placed, [stand, [43.68, -79.62]]);
+  assert.deepEqual(calls.setView, [[46.11618, -64.68663], 17], 'camera where the parked view puts it, at the parked view\'s zoom');
   assert.deepEqual(calls.arcs, [{ a: [46.11611, -64.6868], b: [43.68, -79.62], dash: '8,6' }], 'the route runs from the stand toward Toronto, dashed');
   assert.deepEqual(calls.rings, [{ ll: [46.11611, -64.6868], fill: false }], 'a ring on the stand, not an aeroplane');
   assert.equal(calls.markers.length, 1);
   assert.equal(calls.markers[0].cls, 'gate-map-note-pin');
   assert.doesNotMatch(calls.markers[0].html, /map-plane-|<img/, 'no aircraft marker');
   assert.match(calls.markers[0].html, /^<div class="gate-map-note">To Toronto · 5:25am \| À Toronto · 05:25<\/div>$/);
-  assert.deepEqual(map._fidsParkView, { lat: 46.11611, lng: -64.6868, zoom: 15, src: 'stand', empty: true });
+  assert.deepEqual(map._fidsParkView, { lat: 46.11618, lng: -64.68663, zoom: 17, src: 'stand', empty: true });
   assert.deepEqual(out, ['arc', 'ring', 'label']);
   // The far end unknown: the stand and its label, no route.
   calls.arcs = [];
   draw(map, stand, null, 'x');
   assert.deepEqual(calls.arcs, []);
+  // A placement that cannot be made leaves the camera on the stand.
+  const bare = new Function('L', '_gateMapShowOverlay', '_gcAddArc', '_gcNm', '_gateParkPlace',
+    'return (' + fnSource('_gateDrawEmptyStand') + ')')(L, () => true, () => 'arc', gcNm, () => { throw new Error('no'); });
+  bare(map, stand, null, '');
+  assert.deepEqual(calls.setView, [[46.11611, -64.6868], 17]);
 });
 
 test('an estimate map parks the aeroplane only on evidence, and with none shows our gate empty — never the route over its midpoint', () => {
@@ -210,8 +279,11 @@ test('an estimate map parks the aeroplane only on evidence, and with none shows 
   assert.match(big, /else _gateDrawEmptyStand\(window\._bigCraftMap, _hSpot, null, note\);/);
   // The stand is always OURS: for an inbound leg that is the destination end.
   assert.match(mini, /var _stI = _hereIsDst \? dst : org, _stC = _hereIsDst \? d : o, _thC = _hereIsDst \? o : d;/);
-  assert.match(mini, /var _stSpot = _gateParkSpot\(_stI, _stC, _gateOwnGateRef\(_stI\)\);/);
-  assert.match(big, /var _bcSpot = _gateParkSpot\(_bcStI, _bcStC, _gateOwnGateRef\(_bcStI\)\);/);
+  // v23916 — and the stand is the one the board's own aeroplane takes (its type picks it).
+  assert.match(mini, /var _stSpot = _gateParkSpot\(_stI, _stC, _gateOwnGateRef\(_stI\), _mapPlaneSpec\(\)\);/);
+  assert.match(big, /var _bcSpot = _gateParkSpot\(_bcStI, _bcStC, _gateOwnGateRef\(_bcStI\), _mapPlaneSpec\(\)\);/);
+  assert.match(mini, /var _hSpot = _gateParkSpot\(_hK, \[_hC\[0\], _hC\[1\]\], _gateOwnGateRef\(_hK\), _mapPlaneSpec\(\)\);/);
+  assert.match(big, /var _hSpot = _gateParkSpot\(_hK, \[_hC\[0\], _hC\[1\]\], _gateOwnGateRef\(_hK\), _mapPlaneSpec\(\)\);/);
   // No pin on the airport the map stands at; the far end keeps its pin.
   assert.match(mini, /var _pinlessO = \(_parked \|\| _empty\) && !_hereIsDst;/);
   assert.match(mini, /if \(!_pinlessO\) _estOv\.push\(L\.circleMarker\(o,/);

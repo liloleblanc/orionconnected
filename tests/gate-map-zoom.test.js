@@ -40,16 +40,17 @@ const EXPR = SRC.slice(at, SRC.indexOf('\n', endMark) + 1) + '\n}\n';
 
 // Run it with the surrounding state stubbed. `_liveReuse` true is the steady
 // state on a live leg; the window records stand in for a rebuilt map.
-function holdZoom({ lastView, lastFix, planeLat, planeLng, tierZoom, routeKey = 'R' }) {
+// v23916 — `_gndZ` is the ground view's zoom (0 in the air, the case here).
+function holdZoom({ lastView, lastFix, planeLat, planeLng, tierZoom, routeKey = 'R', gndZ = 0 }) {
   const gateMap = { _fidsLastView: lastView, _fidsLastFix: lastFix };
   const window = {
     _GATE_MAP_VIEW: lastView ? { key: routeKey, ...lastView } : null,
     _GATE_MAP_FIX: lastFix ? { key: routeKey, ...lastFix } : null,
   };
   const fn = new Function(
-    'gateMap', 'window', '_liveReuse', '_liveRouteKey', 'planeLat', 'planeLng', 'zoom',
+    'gateMap', 'window', '_liveReuse', '_liveRouteKey', 'planeLat', 'planeLng', 'zoom', '_gndZ',
     EXPR + '\nreturn zoom;');
-  return fn(gateMap, window, true, routeKey, planeLat, planeLng, tierZoom);
+  return fn(gateMap, window, true, routeKey, planeLat, planeLng, tierZoom, gndZ);
 }
 
 // A 60-second poll on a jet covers roughly 0.12 degrees of latitude. That is the
@@ -113,4 +114,23 @@ test('the glide still owns the camera record — the fix record is written only 
   assert.ok(!glideRegion.includes('_fidsLastFix'),
     'the glide must NOT write the fix record — that is the whole bug: it would ' +
     'once again be answering a question about how far the aircraft has flown');
+});
+
+test('v23916 — the ground view\'s zoom is not carried into the air', () => {
+  // Standing at the origin the live map is at 17 (16 taxiing); the first
+  // airborne fix lands inside the hold's box around the last ground fix. The
+  // hold used to keep 17 in the air — the climbing aeroplane drawn at its real
+  // size, up to 1.7 times today's icon, with the camera chasing it.
+  const ground = { lat: 43.67, lng: -79.64 };
+  const air = { planeLat: 43.67 + 0.026, planeLng: -79.64 + 0.03 };
+  for (const z of [17, 16]) {
+    assert.equal(holdZoom({ lastView: { ...ground, zoom: z }, lastFix: ground, ...air, tierZoom: 15 }), 15,
+      'held from z' + z + ': the air ladder\'s 15 at most');
+    assert.equal(holdZoom({ lastView: { ...ground, zoom: z }, lastFix: ground, planeLat: 43.73, planeLng: -79.54, tierZoom: 13 }), 14,
+      'a real move from z' + z + ': one level out from 15');
+  }
+  // On the ground the carried zoom stays (the ground view then sets its own).
+  assert.equal(holdZoom({ lastView: { ...ground, zoom: 17 }, lastFix: ground, ...air, tierZoom: 15, gndZ: 17 }), 17);
+  // In the air at the ladder's own zooms, the hold is exactly as before.
+  assert.equal(holdZoom({ lastView: { ...ground, zoom: 13 }, lastFix: ground, ...air, tierZoom: 9 }), 13);
 });

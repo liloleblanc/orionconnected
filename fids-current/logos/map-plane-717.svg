@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-390.15 -390.15 780.3 780.3">
+<!-- Boeing 717-200 seen from above, nose up, drawn from its real dimensions (37.8 m long, 28.4 m span)
+     at the Dash 8-400 model's scale. The viewBox centre is half-way nose to tail. -->
+<!-- Map marker copy: the viewBox is widened about the same centre (was -353.5 -353.5 706.9 706.9) so that in the
+     board's 48 px marker the aeroplane is 42.75 px long, the length of the jet art it replaces (map-plane-jet.png, 114 of 128 px);
+     the map scales it to true size from there. Drawn length 694.92 units, span 522.11 units, box 780.3. -->
+<polygon fill="#FFFFFF" stroke="#E8E8E8" stroke-width="1" points="18.4,-86.4 261.1,25.9 261.1,51.7 103,24.2 18.4,27.6"/>
+<line stroke="#152C53" stroke-width="4.8" stroke-linecap="round" x1="38.1" y1="-80.1" x2="256.5" y2="28.7"/>
+<polygon fill="#FFFFFF" stroke="#E8E8E8" stroke-width="1" points="-18.4,-86.4 -261.1,25.9 -261.1,51.7 -103,24.2 -18.4,27.6"/>
+<line stroke="#152C53" stroke-width="4.8" stroke-linecap="round" x1="-38.1" y1="-80.1" x2="-256.5" y2="28.7"/>
+<path fill="#F9F9F9" stroke="#E8E8E8" stroke-width="1" d="M0,-347.5 C19,-347.5 30.7,-326.5 30.7,-277.6 L30.7,194.9 C30.7,263.6 8.8,309.9 5.5,319.9 L-5.5,319.9 C-8.8,309.9 -30.7,263.6 -30.7,194.9 L-30.7,-277.6 C-30.7,-326.5 -19,-347.5 0,-347.5 Z"/>
+<path fill="#636363" opacity="0.045" d="M16.9,-277.6 L30.7,-277.6 L30.7,194.9 L16.9,194.9 Z"/>
+<polygon fill="#000000" points="0,-314.4 13,-308.3 13,-298.2 0,-304.3"/>
+<polygon fill="#000000" points="-0,-314.4 -13,-308.3 -13,-298.2 -0,-304.3"/>
+<polygon fill="#000000" points="14.6,-307.5 27.6,-301.5 27.6,-291.4 14.6,-297.4"/>
+<polygon fill="#000000" points="-14.6,-307.5 -27.6,-301.5 -27.6,-291.4 -14.6,-297.4"/>
+<rect fill="#152C53" x="22.8" y="-261.1" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-261.1" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-251.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-251.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-242.3" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-242.3" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-232.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-232.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-223.6" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-223.6" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-214.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-214.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-204.8" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-204.8" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-195.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-195.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-186" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-186" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-176.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-176.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-167.3" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-167.3" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-157.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-157.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-148.5" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-148.5" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-139.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-139.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-129.8" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-129.8" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-120.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-120.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-111" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-111" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-101.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-101.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-92.3" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-92.3" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-82.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-82.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-73.5" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-73.5" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-64.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-64.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-54.8" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-54.8" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-45.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-45.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-36" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-36" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-26.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-26.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-17.3" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-17.3" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="-7.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="-7.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="1.5" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="1.5" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="10.8" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="10.8" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="20.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="20.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="29.6" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="29.6" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="39" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="39" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="48.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="48.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="57.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="57.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="67.1" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="67.1" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="76.5" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="76.5" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="85.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="85.9" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="95.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="95.2" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="104.6" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="104.6" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="114" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="114" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="123.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="123.4" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="132.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="132.7" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="22.8" y="142.1" width="3.7" height="3.7"/>
+<rect fill="#152C53" x="-26.5" y="142.1" width="3.7" height="3.7"/>
+<rect fill="#FFFFFF" stroke="#E8E8E8" stroke-width="1" x="27.6" y="160.1" width="32.1" height="33.8"/>
+<path fill="#FFFFFF" stroke="#E8E8E8" stroke-width="1" d="M43.7,138.6 L43.7,211.9 C43.7,217.5 75.8,217.5 75.8,211.9 L75.8,138.6 C75.8,128.1 43.7,128.1 43.7,138.6 Z"/>
+<path fill="#152C53" d="M44.9,139.4 C44.9,129.7 74.5,129.7 74.5,139.4 L74.5,142.6 C69.4,136.2 50.1,136.2 44.9,142.6 Z"/>
+<rect fill="#FFFFFF" stroke="#E8E8E8" stroke-width="1" x="-59.7" y="160.1" width="32.1" height="33.8"/>
+<path fill="#FFFFFF" stroke="#E8E8E8" stroke-width="1" d="M-75.8,138.6 L-75.8,211.9 C-75.8,217.5 -43.7,217.5 -43.7,211.9 L-43.7,138.6 C-43.7,128.1 -75.8,128.1 -75.8,138.6 Z"/>
+<path fill="#152C53" d="M-74.5,139.4 C-74.5,129.7 -44.9,129.7 -44.9,139.4 L-44.9,142.6 C-50.1,136.2 -69.4,136.2 -74.5,142.6 Z"/>
+<line stroke="#152C53" stroke-width="6.3" stroke-linecap="round" x1="0" y1="211.4" x2="0" y2="327.2"/>
+<polygon fill="#FFFFFF" stroke="#E8E8E8" stroke-width="1" points="0,262.5 112.1,327.2 112.1,347.5 0,315.8"/>
+<line stroke="#152C53" stroke-width="4.8" stroke-linecap="round" x1="4.6" y1="267" x2="109.4" y2="329.1"/>
+<polygon fill="#FFFFFF" stroke="#E8E8E8" stroke-width="1" points="0,262.5 -112.1,327.2 -112.1,347.5 0,315.8"/>
+<line stroke="#152C53" stroke-width="4.8" stroke-linecap="round" x1="-4.6" y1="267" x2="-109.4" y2="329.1"/>
+</svg>
