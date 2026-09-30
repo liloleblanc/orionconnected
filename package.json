@@ -6,5 +6,8 @@
     "test:browser": "node tests/gate-browser-stability.mjs",
     "assets:build": "python3 scripts/assets/build-manifest.py fids-current",
     "assets:check": "python3 scripts/assets/build-manifest.py --check fids-current"
+  },
+  "devDependencies": {
+    "wrangler": "4.144.0"
   }
 }
