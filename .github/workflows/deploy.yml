@@ -50,9 +50,13 @@ jobs:
         with:
           ref: main
 
+      # Tests run on Node 20, the same as the "Repository checks" workflow every
+      # PR passes: four airport feed tests (YKA, YMM, YXS, YZF) read time-zone
+      # and year-rollover results that differ on Node 22's ICU data, and the
+      # boards themselves run in Chrome, not Node. Wrangler then needs Node 22.
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 20
 
       - uses: actions/setup-python@v5
         with:
@@ -65,6 +69,10 @@ jobs:
 
       - name: Asset manifest is current
         run: npm run assets:check
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
       - name: Deploy
         uses: cloudflare/wrangler-action@v3
