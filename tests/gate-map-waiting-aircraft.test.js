@@ -245,7 +245,8 @@ test('an empty stand is our gate with no aeroplane: the route dashed from the st
   assert.equal(calls.markers[0].cls, 'gate-map-note-pin');
   assert.doesNotMatch(calls.markers[0].html, /map-plane-|<img/, 'no aircraft marker');
   assert.match(calls.markers[0].html, /^<div class="gate-map-note">To Toronto · 5:25am \| À Toronto · 05:25<\/div>$/);
-  assert.deepEqual(map._fidsParkView, { lat: 46.11618, lng: -64.68663, zoom: 17, src: 'stand', empty: true });
+  // v23919 — with the ring's own place, so the apron's framing keeps the ring and its label in view.
+  assert.deepEqual(map._fidsParkView, { lat: 46.11618, lng: -64.68663, zoom: 17, src: 'stand', empty: true, ring: [46.11611, -64.6868] });
   assert.deepEqual(out, ['arc', 'ring', 'label']);
   // The far end unknown: the stand and its label, no route.
   calls.arcs = [];

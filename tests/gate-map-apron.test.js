@@ -93,7 +93,7 @@ const router = new Function(
 
 const FNS = [
   // the v23915 evidence rules
-  '_gateLegGone', '_gateFamily', '_gateRowKey', '_gateRawStatus', '_gateRawLanded', '_gateRawAirborne',
+  '_gateLegGone', '_gateFamily', '_gateRowKey', '_gateRawStatus', '_gateRawLanded', '_gateRawAirborne', '_gatePushLeft',
   '_gateOutboundAtGate', '_gateTodayReg', '_gateIsProp', '_gateMinTurnMs', '_gateDepSchedTs',
   '_gateAcFamily', '_gateHereTz', '_gateLocalHour', '_gateNightStop', '_gateCouldTurn',
   '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnConsumed', '_gateOvernightOk', '_gateLandedAt',
@@ -109,6 +109,8 @@ const FNS = [
   '_gateApronIsOwn', '_gateApronAssign', '_gateApronStandSpot', '_gateApronPlan', '_gateApronClear',
   '_gateApronFit', '_gateApronSync', '_gateApronSince', '_gateApronOwnIndex', '_gateApronOwnRef', '_gateOwnParkSpot',
   '_gateSeenKeepIdentity',
+  // v23919 — every aeroplane in the picture
+  '_gateApronFrame', '_gateApronFrameCentre',
 ];
 const EXPORTS = FNS.map((n) => n + ': ' + n).join(', ');
 // The board's own table of airport points (GATE_AP) rounds Moncton to two decimals.
@@ -169,13 +171,24 @@ function engine(ctx) {
     'return { ' + EXPORTS + ' };',
   ].join('\n');
   const E = {};
+  // The moment's clock, for the code that reads Date.now() itself
+  // (_gateOwnParkSpot, _gateApronOwnRef): without it they answered for the
+  // time the tests happened to run, and the 11:10 board's empty stand moved
+  // once the afternoon's rules no longer had AC644 on the ground.
+  const RealDate = Date;
+  const at = ctx.now;
+  const Clock = at === undefined ? RealDate : (function () {
+    function D(...a) { return a.length ? new RealDate(...a) : new RealDate(at); }
+    D.now = () => at; D.UTC = RealDate.UTC; D.parse = RealDate.parse; D.prototype = RealDate.prototype;
+    return D;
+  })();
   const mod = new Function('window', 'data', 'AP', '_lookupAirport', 'localStorage', '_apGatesFor', '_AP_GATES',
-    'mapADB', '_fidsCollapseRevisions', 'L', 'gateMap', 'subScreenVal', 'console', src)(
+    'mapADB', '_fidsCollapseRevisions', 'L', 'gateMap', 'subScreenVal', 'console', 'Date', src)(
     window, data, { YQM: { tz: 'America/Moncton' }, YHZ: { tz: 'America/Halifax' } },
     (k) => COORDS[String(k || '').toUpperCase()] || null, ctx.storage || store(),
     (k) => gates[String(k || '').toUpperCase()] || null, gates,
     (raw, mode, kept) => E.mapADB(raw, mode, kept), (rows) => rows, ctx.L || null, ctx.map || null, ctx.sub || '',
-    { log() {} });
+    { log() {} }, Clock);
   Object.assign(E, mod);
   // ctx.types: { flight: type } put on every row mapped for that flight, the
   // way the webhook merge or /acinfo name a type on a real board.
@@ -822,4 +835,175 @@ test('two stands a few metres apart are one place: no aeroplane is drawn on top 
       assert.ok(m(got[i], got[j]) >= 20, got[i] + ' / ' + got[j] + ' in ' + JSON.stringify(got));
     }
   }
+});
+
+// ── v23919 — the Porter boarding for PD2382, missing from gate 2's map ─────
+//
+// Moncton, 2026-09-30, 17:17. Gate 3's screen said "Boarding" for PD2382
+// (cyqm.ca, until 17:20); gate 2's map showed Air Canada's AC1984 (down at
+// 17:00) on Bridge 1 and no Dash 8. Two causes, both pinned here. The
+// Flight-Alert push had said
+// "departed" for PD2382 at 17:14 (received 20:14:05Z) with no runway time — the
+// aeroplane off its blocks, not in the air — and the maps took that as gone
+// while every board still said Boarding. And gate 2's map is centred on gate
+// 2's own spot, with the Porter's stand 160 px below the middle: off the bottom
+// of the map on a board in a laptop-sized window.
+
+// The push merge (_yqmCacheAircraftMerge) puts its fields on the rows cyqm lists.
+function withPush(E, merge) {
+  for (const r of E.data.arr.concat(E.data.dep)) if (merge[r.flight]) Object.assign(r, merge[r.flight]);
+  E.data.arr = E.data.arr.slice(); E.data.dep = E.data.dep.slice();   // a new feed, as the page sees it
+  return E;
+}
+const EVENING_0930 = (() => {
+  const types = { PD2373: 'Bombardier Dash 8 Q400 / DHC-8-400', PD2382: 'Bombardier Dash 8 Q400 / DHC-8-400',
+                  AC1984: 'Airbus A319', AC1987: 'Airbus A319',
+                  // gate 2's own, tomorrow: PAL's Dash 8-300 (/acinfo's usual type), so its empty stand is walk-out 2
+                  PB923: 'DH8C' };
+  let arrivals = said(MORNING.arrivals, 'PD2373', 30, 'Arrived', '4:33 PM');
+  arrivals = said(arrivals, 'AC1984', 30, 'Arrived at 5:00 PM', '5:00 PM');
+  return { types, arrivals, departures: said(MORNING.departures, 'PD2382', 30, 'Boarding') };
+})();
+
+test('17:17 on Sep 30: the Porter boarding for PD2382 is on the other maps, whatever the push said at 17:14', async () => {
+  const { types, arrivals, departures } = EVENING_0930;
+  const now = T(9, 30, 17, 17);
+  const m = await momentAt(now, null, { types, feed: { arrivals, departures } });
+  assert.deepEqual(m.board('2').others(), ['AC1984@BR1', 'PD2373@5'], 'both on the ground');
+  assert.deepEqual(m.board('4').others(), ['PD2373@5'], 'gate 4\'s own is AC1984, for AC1987');
+  // The push at 17:14: "departed", no runway time. The boards still say Boarding.
+  const g2 = withPush(m.board('2'), { PD2382: { _pushStatus: 'departed' } });
+  const pd = g2.data.dep.find((r) => r.flight === 'PD2382');
+  assert.equal(g2._gateRawStatus(pd), 'boarding');
+  assert.equal(g2._gateDepLeft(pd, now), false, 'off its blocks is not gone while the board says Boarding');
+  assert.deepEqual(g2.others(), ['AC1984@BR1', 'PD2373@5']);
+  assert.deepEqual(withPush(m.board('4'), { PD2382: { _pushStatus: 'departed' } }).others(), ['PD2373@5']);
+  // Gate 3's own board draws it as its own, and its apron never draws it twice.
+  const g3 = withPush(m.board('3'), { PD2382: { _pushStatus: 'departed' } });
+  assert.equal(g3.cf.flight, 'PD2382');
+  assert.deepEqual(g3.others(), ['AC1984@BR1']);
+  // The push's wheels-up (its runway time, on _actualDepTime): it has gone.
+  const up = new Date(T(9, 30, 17, 16)).toISOString().slice(0, 16).replace('T', ' ') + 'Z';
+  assert.deepEqual(withPush(m.board('2'), { PD2382: { _pushStatus: 'departed', _actualDepTime: up } }).others(), ['AC1984@BR1']);
+  // "active" (en route) is in the air, whatever the board says.
+  assert.deepEqual(withPush(m.board('2'), { PD2382: { _pushStatus: 'active' } }).others(), ['AC1984@BR1']);
+  // 17:21: cyqm.ca says Departed. Gone from every map.
+  const m2 = await momentAt(T(9, 30, 17, 21), null, { types,
+    feed: { arrivals, departures: said(MORNING.departures, 'PD2382', 30, 'Departed', '5:20 PM') } });
+  assert.deepEqual(m2.board('2').others(), ['AC1984@BR1']);
+  // An arrival's row is never "boarding": its push is read as it always was
+  // (PD2381's "departed" from Montréal is the inbound in the air).
+  const arr = { flight: 'PD2381', status: 'scheduled', _pushStatus: 'departed' };
+  assert.equal(g2._gateRawAirborne(arr), true);
+  assert.equal(g2._gatePushLeft(arr), true);
+  // The turn rule reads the push the same way (_gateTurnConsumed).
+  assert.match(fnSource('_gateTurnConsumed'), /_gatePushLeft\(d\)/);
+  assert.doesNotMatch(fnSource('_gateTurnConsumed'), /\/\^\(active\|departed\)\$\/\.test\(p\)/);
+});
+
+// A Leaflet-shaped map with real Web Mercator pixels, for the camera.
+function cameraMap(size, pv, note) {
+  const px = (ll, z) => {
+    const lat = Array.isArray(ll) ? ll[0] : ll.lat, lng = Array.isArray(ll) ? ll[1] : ll.lng;
+    const w = 256 * Math.pow(2, z), r = lat * Math.PI / 180;
+    return { x: (lng + 180) / 360 * w, y: (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2 * w };
+  };
+  const unpx = (p, z) => {
+    const w = 256 * Math.pow(2, z), n = Math.PI - 2 * Math.PI * p.y / w;
+    return { lat: 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))), lng: p.x / w * 360 - 180 };
+  };
+  const map = { _loaded: true, layers: [], center: [pv.lat, pv.lng], zoom: pv.zoom, _fidsParkView: pv, moves: 0,
+    getZoom() { return this.zoom; }, getCenter() { return { lat: this.center[0], lng: this.center[1] }; },
+    getSize() { return { x: size[0], y: size[1] }; },
+    project: px, unproject: unpx,
+    setView(ll, z) { this.center = [ll.lat, ll.lng]; this.zoom = z; this.moves++; },
+    getContainer() { return { querySelector: () => note || null }; },
+    removeLayer(l) { this.layers = this.layers.filter((x) => x !== l); } };
+  // Where a point is drawn, in the map's own pixels (0,0 top left).
+  map.at = (ll) => {
+    const p = px(ll, map.zoom), c = px(map.center, map.zoom);
+    return [p.x - c.x + size[0] / 2, p.y - c.y + size[1] / 2];
+  };
+  return map;
+}
+const cameraL = {
+  divIcon: (o) => o,
+  point: (x, y) => ({ x, y }),
+  marker: (ll, opts) => {
+    const el = { firstChild: { style: { props: {}, setProperty(k, v) { this.props[k] = v; } } } };
+    const mk = { ll, opts, el, getElement: () => el, getLatLng: () => ({ lat: ll[0], lng: ll[1] }), addTo(map) { map.layers.push(mk); return mk; } };
+    return mk;
+  },
+};
+
+test('every aeroplane on the ground is in the picture: gate 2\'s map at 17:17 on a laptop-sized board', async () => {
+  const { types, arrivals, departures } = EVENING_0930;
+  const now = T(9, 30, 17, 17);
+  const m = await momentAt(now, null, { types, feed: { arrivals, departures } });
+  // The empty stand's parked view, as _gateDrawEmptyStand leaves it.
+  const probe = m.board('2');
+  const spot = probe._gateOwnParkSpot('YQM', COORDS.YQM);
+  assert.equal(spot.ref, '2', 'gate 2\'s empty stand, as on the board');
+  const place = probe._gateParkPlace(spot, null);
+  const pv = () => ({ lat: place.lat, lng: place.lng, zoom: spot.zoom, src: 'stand', empty: true, ring: [spot.lat, spot.lng] });
+  const note = { offsetWidth: 248, offsetHeight: 21, textContent: 'From Deer Lake · 11:00am | De Deer Lake · 11:00' };
+  // 1280 x 720: the map measured 288 x 287 on the board.
+  const map = cameraMap([288, 287], pv(), note);
+  const E = board(now, '2', m.arrS, m.depS, { types, L: cameraL, map });
+  // Before: at the parked view, stand 5's Porter is off the bottom.
+  const porterAt = () => {
+    const mk = map.layers.find((l) => /map-plane-dh4/.test(l.opts.icon.html));
+    return mk ? map.at(mk.ll) : null;
+  };
+  const save = E._gateApronFrame;
+  E._gateApronSync(map);
+  assert.equal(map.layers.length, 2);
+  // Every picture's centre at least its half-size inside the frame, the ring and its label too.
+  const inFrame = (xy, r) => xy[0] >= r && xy[1] >= r && xy[0] <= 288 - r && xy[1] <= 287 - r;
+  for (const l of map.layers) assert.ok(inFrame(map.at(l.ll), 24), l.opts.icon.html.match(/map-plane-\w+/)[0] + ' at ' + map.at(l.ll).map(Math.round));
+  const ring = map.at(pv().ring);
+  assert.ok(ring[0] - 124 >= 0 && ring[0] + 124 <= 288 && ring[1] + 10 + 21 <= 287 && ring[1] >= 8, 'the ring and its label, at ' + ring.map(Math.round));
+  assert.equal(map.zoom, 17, 'never a zoom out: the pictures are true size at stand zoom');
+  // The parked view alone had the Porter's centre 160 px below the middle: past the bottom edge.
+  const c0 = map.project([pv().lat, pv().lng], 17), pp = map.project(map.layers.find((l) => /dh4/.test(l.opts.icon.html)).ll, 17);
+  assert.ok(pp.y - c0.y + 287 / 2 > 287 - 24, 'it needed the move: ' + Math.round(pp.y - c0.y));
+  // Settled: the next tick, and the moveend of its own move, do not move it again.
+  const moves = map.moves;
+  E._gateApronSync(map); E._gateApronSync(map);
+  assert.equal(map.moves, moves);
+  assert.ok(porterAt());
+  // A board-sized map (380 x 433 at 1680 x 1050) already holds them all: the camera is not touched.
+  const big = cameraMap([380, 433], pv(), note);
+  const E2 = board(now, '2', m.arrS, m.depS, { types, L: cameraL, map: big });
+  E2._gateApronSync(big);
+  assert.equal(big.layers.length, 2);
+  assert.equal(big.moves, 0);
+  // With nobody else on the ground, the camera is the parked view exactly.
+  delete map._fidsApron;
+  E._gateApronFrame(map);
+  assert.deepEqual(map.center.map((v) => +v.toFixed(7)), [pv().lat, pv().lng].map((v) => +v.toFixed(7)));
+  // A live aeroplane keeps the camera on itself; so does any view that is not the parked one.
+  const live = cameraMap([288, 287], pv(), note);
+  live._fidsLive = true;
+  board(now, '2', m.arrS, m.depS, { types, L: cameraL, map: live })._gateApronSync(live);
+  assert.equal(live.moves, 0);
+  const flying = cameraMap([288, 287], pv(), note);
+  delete flying._fidsParkView;
+  board(now, '2', m.arrS, m.depS, { types, L: cameraL, map: flying })._gateApronSync(flying);
+  assert.equal(flying.moves, 0);
+  assert.equal(save, E._gateApronFrame);
+});
+
+test('the camera moves as little as holds them all, and keeps this board\'s own when they cannot all fit', () => {
+  const E = engine({ now: T(9, 30, 17, 17) });
+  const F = E._gateApronFrameCentre;
+  // Already in frame: the parked view's centre, untouched.
+  assert.deepEqual(F([500, 500], [300, 300], [[420, 420, 470, 470], [480, 480, 520, 520]], [480, 480, 520, 520], 8), [500, 500]);
+  // One past the bottom: moved down exactly far enough (its bottom 8 px inside), not re-centred.
+  assert.deepEqual(F([500, 500], [300, 300], [[470, 600, 520, 660], [480, 480, 520, 520]], [480, 480, 520, 520], 8), [500, 518]);
+  // Too far apart for the frame: the middle of them, moved as little as keeps our own in it.
+  const t = F([500, 500], [300, 300], [[0, 480, 40, 520], [980, 480, 1020, 520], [480, 480, 520, 520]], [480, 480, 520, 520], 8);
+  assert.deepEqual(t, [510, 500]);
+  const t2 = F([100, 500], [300, 300], [[80, 480, 120, 520], [980, 480, 1020, 520]], [80, 480, 120, 520], 8);
+  assert.equal(t2[0], 80 + 142, 'our own at the left edge, not off it');
 });
