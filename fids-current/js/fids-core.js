@@ -25534,7 +25534,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23918';
+var FIDS_BUILD_TAG = 'v23919';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -35353,8 +35353,26 @@ function _gateRawLanded(row) {
 // merged onto a Moncton row (_pushStatus, see _yqmCacheAircraftMerge).
 function _gateRawAirborne(row) {
   if (!row) return false;
-  var s = _gateRawStatus(row), p = String(row._pushStatus || '').toLowerCase();
-  return /^(active|enroute|approaching|departed|airborne)$/.test(s) || /^(active|departed)$/.test(p);
+  var s = _gateRawStatus(row);
+  return /^(active|enroute|approaching|departed|airborne)$/.test(s) || _gatePushLeft(row);
+}
+// Has the aeroplane left, by the push (_pushStatus)? "active" is in the air.
+// v23919 — "departed" WITH NO WHEELS-UP, ON A ROW STILL BOARDING, IS NOT GONE.
+// The push's "departed" is the aeroplane off its blocks — the push-back — and
+// its wheels-up, when there is one, rides on _actualDepTime (the push's runway
+// time). Moncton, 2026-09-30: the push said "departed" for PD2382 at 17:14
+// with no runway time while cyqm.ca, which every board prints, still said
+// "Boarding" until 17:20. From 17:14 the maps took the Porter off the apron —
+// gate 3's screen said Boarding and gate 2's map showed Air Canada's jet on
+// Bridge 1 and no Dash 8. While the board's own row says the aeroplane is at
+// its gate (boarding, final call, gate closed: _gateOutboundAtGate) and no
+// wheels-up has come, the maps say what the boards say. An arrival's row is
+// never "boarding", so an inbound's push is read as it always was.
+function _gatePushLeft(row) {
+  var p = String((row && row._pushStatus) || '').toLowerCase();
+  if (p === 'active') return true;
+  if (p !== 'departed') return false;
+  return !_gateOutboundAtGate(row) || !!row._actualDepTime;
 }
 // Our own departure boarding, on final call or with its gate closed — in the
 // feed's words, never the clock's. An aeroplane is at our gate.
@@ -35560,8 +35578,8 @@ function _gateTurnConsumed(inb, landTs, cf, deps, arrs, now) {
     if (_gateFamily(d.airline) !== fam) continue;
     var up = 0;
     try { up = d._actualDepTime ? (adbTs(d._actualDepTime) || 0) : 0; } catch (e) { up = 0; }
-    var s = _gateRawStatus(d), p = String(d._pushStatus || '').toLowerCase();
-    var gone = /^(departed|active|enroute|airborne)$/.test(s) || /^(active|departed)$/.test(p) || (up > 0 && up <= now);
+    var s = _gateRawStatus(d);
+    var gone = /^(departed|active|enroute|airborne)$/.test(s) || _gatePushLeft(d) || (up > 0 && up <= now);
     if (!gone) continue;
     var when = up || d._revTs || d._sortTs || 0;
     if (!(when >= landTs + 15 * 60000) || when > now + 5 * 60000) continue;
@@ -36378,7 +36396,7 @@ function _gateDrawEmptyStand(map, spot, d, note) {
     var c = s;
     try { var pl = _gateParkPlace(spot, d); if (isFinite(pl.lat) && isFinite(pl.lng)) c = [pl.lat, pl.lng]; } catch (eP) { c = s; }
     map.setView(c, spot.zoom, { animate: false });
-    map._fidsParkView = { lat: c[0], lng: c[1], zoom: spot.zoom, src: spot.src, empty: true };
+    map._fidsParkView = { lat: c[0], lng: c[1], zoom: spot.zoom, src: spot.src, empty: true, ring: [s[0], s[1]] };
   } catch (e) {}
   return out;
 }
@@ -36936,9 +36954,9 @@ function _gateApronSync(map) {
     var z = map.getZoom(), ctr = map.getCenter(), o = _lookupAirport(ap);
     if (!(z >= _GATE_APRON_MIN_ZOOM - 0.01) || !o || !ctr || _gcNm([ctr.lat, ctr.lng], o) > 3) { _gateApronClear(map); return; }
     var plan = _gateApronPlan(ap, Date.now());
-    if (!plan || !plan.items.length) { _gateApronClear(map); return; }
+    if (!plan || !plan.items.length) { _gateApronClear(map); _gateApronFrame(map); return; }
     var zi = Math.round(z), key = plan.key + '@' + zi;
-    if (map._fidsApron && map._fidsApron.key === key) { _gateApronFit(map, z); return; }
+    if (map._fidsApron && map._fidsApron.key === key) { _gateApronFit(map, z); _gateApronFrame(map); return; }
     _gateApronClear(map);
     var f = _apGatesFor(ap), layers = [], items = [];
     plan.items.forEach(function (it) {
@@ -36955,12 +36973,98 @@ function _gateApronSync(map) {
         var mk = L.marker([pl.lat, pl.lng], { zIndexOffset: -1000, interactive: false, keyboard: false,
           icon: L.divIcon({ className: 'gate-apron-other', html: html, iconSize: [48, 48], iconAnchor: [24, 24] }) }).addTo(map);
         layers.push(mk);
-        items.push({ mk: mk, spec: it.spec, lat: pl.lat, id: it.id, stand: it.stand });
+        items.push({ mk: mk, spec: it.spec, lat: pl.lat, lng: pl.lng, id: it.id, stand: it.stand });
       } catch (e1) {}
     });
     map._fidsApron = { key: key, layers: layers, items: items };
     try { console.log('[APRON]', items.map(function (x) { return x.id.split('|')[0] + '@' + x.stand; }).join(' ') || '(none)', 'z' + zi); } catch (eL) {}
+    _gateApronFrame(map);
   } catch (e) {}
+}
+// v23919 — EVERY AEROPLANE ON THE GROUND IS IN THE PICTURE. The parked view
+// (and the empty stand's) is centred on this board's own spot, and v23918 drew
+// the others wherever their stands fell, in frame or not. Moncton, 2026-09-30,
+// 17:17: the Porter for PD2382 boarding at door 3 stood on walk-out 5, 160 px
+// below the middle of gate 2's map — off the bottom of a board in a
+// laptop-sized window — while Air Canada's AC1984, down at 17:00, stood on
+// Bridge 1, 109 px below it and still in frame: gate 2's map showed one jet, on
+// the bridge beside gate 3, and no Dash 8. Now, while the camera is the parked
+// view's, it moves just far enough to hold this board's own spot — its
+// aeroplane, or the empty stand's ring with its label and the aeroplane it is
+// waiting for — and every other aeroplane with its whole length and span. It
+// never changes the zoom: the pictures are at their real size at stand zoom
+// and would be drawn larger than life, on top of one another, one zoom out;
+// and all of Moncton's stands are 175 x 198 px at zoom 17. When they cannot all
+// be held, the middle of them, with this board's own spot kept in frame. With
+// no others it is the parked view exactly. A live aeroplane (map._fidsLive),
+// or any other view, keeps its own camera.
+function _gateApronFrame(map) {
+  try {
+    var pv = map && map._fidsParkView;
+    if (!pv || map._fidsLive === true || !map.getSize || !map.project || !map.getZoom || typeof L === 'undefined') return;
+    var z = map.getZoom();
+    if (!(Math.abs(z - pv.zoom) < 0.01)) return;
+    var size = map.getSize();
+    if (!size || !(size.x > 40) || !(size.y > 40)) return;
+    var mpp = 40075016.686 * Math.cos(pv.lat * Math.PI / 180) / Math.pow(2, z + 8);
+    var box = function (lat, lng, spec) {
+      var p = map.project([lat, lng], z);
+      var m = Math.max((spec && spec.len) || 0, (spec && spec.span) || 0);
+      var r = Math.max(24, m / mpp / 2) + 3;
+      return [p.x - r, p.y - r, p.x + r, p.y + r];
+    };
+    var st = map._fidsApron, boxes = [];
+    ((st && st.items) || []).forEach(function (it) {
+      if (it && isFinite(it.lat) && isFinite(it.lng)) boxes.push(box(it.lat, it.lng, it.spec));
+    });
+    var own = [box(pv.lat, pv.lng, _mapPlaneSpec())];
+    if (pv.empty && pv.ring) {
+      var rp = map.project(pv.ring, z), lw = 0, lh = 0;
+      try {
+        var el = map.getContainer().querySelector('.gate-map-note');
+        if (el) {
+          lw = el.offsetWidth || (String(el.textContent || '').length * 7 + 16);
+          lh = el.offsetHeight || 20;
+        }
+      } catch (eN) { lw = 0; lh = 0; }
+      own.push([rp.x - Math.max(8, lw / 2), rp.y - 8, rp.x + Math.max(8, lw / 2), rp.y + Math.max(8, 10 + lh)]);
+    }
+    var keep = own.reduce(function (a, b) {
+      return [Math.min(a[0], b[0]), Math.min(a[1], b[1]), Math.max(a[2], b[2]), Math.max(a[3], b[3])];
+    });
+    var c0 = map.project([pv.lat, pv.lng], z);
+    var t = boxes.length ? _gateApronFrameCentre([c0.x, c0.y], [size.x, size.y], boxes.concat([keep]), keep, 8) : [c0.x, c0.y];
+    var cur = map.project(map.getCenter(), z);
+    if (Math.abs(cur.x - t[0]) < 1 && Math.abs(cur.y - t[1]) < 1) return;
+    map.setView(map.unproject(L.point(t[0], t[1]), z), z, { animate: false });
+  } catch (e) {}
+}
+// Where the camera goes: the centre, in pixels at the map's zoom, nearest to
+// the parked view's `ctr` that holds every one of `boxes` ([x0, y0, x1, y1])
+// inside a frame of `size` with `pad` to spare — `ctr` itself when they are
+// already in it. On an axis where they cannot all be held, the middle of them,
+// moved as little as keeps `keep` (this board's own) in frame.
+function _gateApronFrameCentre(ctr, size, boxes, keep, pad) {
+  var out = [ctr[0], ctr[1]];
+  if (!boxes || !boxes.length) return out;
+  for (var ax = 0; ax < 2; ax++) {
+    var lo = Infinity, hi = -Infinity;
+    for (var i = 0; i < boxes.length; i++) {
+      lo = Math.min(lo, boxes[i][ax]);
+      hi = Math.max(hi, boxes[i][ax + 2]);
+    }
+    var half = size[ax] / 2 - pad;
+    var cMin = hi - half, cMax = lo + half;
+    var c;
+    if (cMin <= cMax) {
+      c = Math.min(Math.max(ctr[ax], cMin), cMax);
+    } else {
+      c = (lo + hi) / 2;
+      if (keep) c = Math.min(Math.max(c, keep[ax + 2] - half), keep[ax] + half);
+    }
+    out[ax] = c;
+  }
+  return out;
 }
 
 // v23906 — THE FLOWN HALF IS THE REAL TRACK. The worker records every FR24
