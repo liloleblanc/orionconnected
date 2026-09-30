@@ -280,10 +280,14 @@ test('an estimate map parks the aeroplane only on evidence, and with none shows 
   // The stand is always OURS: for an inbound leg that is the destination end.
   assert.match(mini, /var _stI = _hereIsDst \? dst : org, _stC = _hereIsDst \? d : o, _thC = _hereIsDst \? o : d;/);
   // v23916 — and the stand is the one the board's own aeroplane takes (its type picks it).
-  assert.match(mini, /var _stSpot = _gateParkSpot\(_stI, _stC, _gateOwnGateRef\(_stI\), _mapPlaneSpec\(\)\);/);
-  assert.match(big, /var _bcSpot = _gateParkSpot\(_bcStI, _bcStC, _gateOwnGateRef\(_bcStI\), _mapPlaneSpec\(\)\);/);
-  assert.match(mini, /var _hSpot = _gateParkSpot\(_hK, \[_hC\[0\], _hC\[1\]\], _gateOwnGateRef\(_hK\), _mapPlaneSpec\(\)\);/);
-  assert.match(big, /var _hSpot = _gateParkSpot\(_hK, \[_hC\[0\], _hC\[1\]\], _gateOwnGateRef\(_hK\), _mapPlaneSpec\(\)\);/);
+  // v23918 — through _gateOwnParkSpot: the same pick, moved to the stand the
+  // apron deals this board where the apron is on (tests/gate-map-apron.test.js).
+  assert.match(mini, /var _stSpot = _gateOwnParkSpot\(_stI, _stC\);/);
+  assert.match(big, /var _bcSpot = _gateOwnParkSpot\(_bcStI, _bcStC\);/);
+  assert.match(mini, /var _hSpot = _gateOwnParkSpot\(_hK, \[_hC\[0\], _hC\[1\]\]\);/);
+  assert.match(big, /var _hSpot = _gateOwnParkSpot\(_hK, \[_hC\[0\], _hC\[1\]\]\);/);
+  const ownSpot = fnSource('_gateOwnParkSpot');
+  assert.match(ownSpot, /var ac = _mapPlaneSpec\(\);\s+var sp = _gateParkSpot\(iata, o, _gateOwnGateRef\(iata\), ac\);/);
   // No pin on the airport the map stands at; the far end keeps its pin.
   assert.match(mini, /var _pinlessO = \(_parked \|\| _empty\) && !_hereIsDst;/);
   assert.match(mini, /if \(!_pinlessO\) _estOv\.push\(L\.circleMarker\(o,/);

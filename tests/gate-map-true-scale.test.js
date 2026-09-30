@@ -408,8 +408,10 @@ test('the parked views are at zoom 17 on both maps; the terminal 16; the airport
     const src = fnSource(name);
     assert.match(src, /_gateDrawParkedEstimate\(/);
     assert.match(src, /_gateDrawEmptyStand\(/);
-    assert.match(src, /_gateParkSpot\([^;]*, _mapPlaneSpec\(\)\)/);
+    // v23918 — through _gateOwnParkSpot, which asks _gateParkSpot with _mapPlaneSpec().
+    assert.match(src, /_gateOwnParkSpot\(/);
   }
+  assert.match(fnSource('_gateOwnParkSpot'), /var ac = _mapPlaneSpec\(\);\s+var sp = _gateParkSpot\(iata, o, _gateOwnGateRef\(iata\), ac\);/);
 });
 
 test('the picture is scaled by CSS custom properties, the IMAGE not the rotated div; the zoom hook covers every map', () => {
