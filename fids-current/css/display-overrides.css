@@ -22547,3 +22547,21 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 .leaflet-marker-icon img[src*="/logos/map-plane-prop.png"] {
   transform: scale(var(--fids-plane-kx, 1), var(--fids-plane-ky, 1)) translateX(7.3px);
 }
+
+/* ══ v23918 — THE OTHER AEROPLANES ON THE GROUND ═══════════════════════════
+   At ground zoom over a small field (Moncton first), both gate maps also draw
+   every other aeroplane the evidence puts on the ground there, each on its
+   own stand (_gateApronSync, fids-core.js). They are the same true-scale
+   pictures as this board's own aeroplane, sized by the same two custom
+   properties — set on each marker's own div, so they win over the map's —
+   and drawn lighter and under it, with no route and no label, so the
+   board's own aeroplane stays the one the eye goes to. The marker is a
+   divIcon with its own class, which replaces Leaflet's default white box. */
+.leaflet-marker-icon.gate-apron-other {
+  background: none;
+  border: 0;
+  pointer-events: none;
+}
+.leaflet-marker-icon.gate-apron-other img[src*="/logos/map-plane-"] {
+  opacity: 0.55;
+}

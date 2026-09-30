@@ -18016,9 +18016,10 @@ const gView = document.getElementById('gateView');
       const _gateVal = currentFlight.gate || subScreenVal || '';
       // v23915 — what the feed still lists, plus the landed arrivals and the
       // departures this board has seen and the feed has since dropped (_gateArrsSeen).
+      // v23918 — and what the worker remembered for every screen (_gateFeedRows).
       const _gmAp = String(window._gateIata || iata || '').toUpperCase();
       const _gateMatchFallback = _gateInboundForDeparture(currentFlight, _gateVal,
-        _gateArrsSeen(data.arr || [], _gmAp, Date.now()), _gateDepsSeen(data.dep || [], _gmAp, Date.now()));
+        _gateArrsSeen(_gateFeedRows('arr'), _gmAp, Date.now()), _gateDepsSeen(_gateFeedRows('dep'), _gmAp, Date.now()));
       // An inbound the pre-v23915 gate-match could not have found (a through
       // flight, a tail at another gate) is never looked up on FR24 (_gateMatchIsNew).
       try { if (_gateMatchFallback) _gateMatchFallback._gateNoAdsb = _gateMatchIsNew(_gateMatchFallback, currentFlight, _gateVal); } catch (eNA) {}
@@ -25533,7 +25534,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23917';
+var FIDS_BUILD_TAG = 'v23918';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -29984,13 +29985,17 @@ function _fidsSetLookahead(depRaw, arrRaw) {
   return n;
 }
 
-function mapADB(raw, mode) {
+// v23918 — `kept`: rows the Moncton worker remembered after the feed dropped
+// them (_gateFeedKept). They are evidence for the gate maps, never board rows,
+// so they skip the board's three-hour trail and are kept for the 30 hours the
+// memory itself keeps; every other rule is the same.
+function mapADB(raw, mode, kept) {
   const nowTs=Date.now(), list=mode==='dep'?(raw.departures||[]):(raw.arrivals||[]);
   return _fidsDedupeRows(list.map(f => {
     const sL=mode==='dep'?(f.departure?.scheduledTime?.local||f.departure?.scheduledTime?.utc):(f.arrival?.scheduledTime?.local||f.arrival?.scheduledTime?.utc);
     if(!sL)return null;
     const schedTs=adbTs(sL); if(!schedTs)return null;
-    if(nowTs-schedTs>DEPART_TRAIL_HRS*3600000)return null;
+    if(nowTs-schedTs>(kept===true?30:DEPART_TRAIL_HRS)*3600000)return null;
     if(schedTs-nowTs>LOOKAHEAD_HRS*3600000)return null;
     const time=adbHHMM(sL)||'??:??';
     const code=(f.airline?.iata||'').trim().toUpperCase();
@@ -33652,6 +33657,18 @@ function _gateMapTileLayer() {
         m.on('zoom zoomend viewreset', function () { _mapPlaneFit(m); });
       }
     } catch (e) {}
+    // v23918 — the other aeroplanes on the ground follow the camera: drawn at
+    // ground zoom over our own field, taken off anywhere else (_gateApronSync).
+    // Hooked here once per map for the same reason. A new map's first moveend
+    // fires before this layer is added (Leaflet adds layers on 'load', after
+    // the first view is set), so the first sync waits one tick.
+    try {
+      if (m && !m._fidsApronHook) {
+        m._fidsApronHook = true;
+        m.on('zoomend moveend', function () { _gateApronSync(m); });
+        setTimeout(function () { try { _gateApronSync(m); } catch (e2) {} }, 0);
+      }
+    } catch (e) {}
   });
   return t;
 }
@@ -34111,11 +34128,15 @@ function _mapPlaneFit(map) {
     var z = map.getZoom(), ctr = map.getCenter();
     if (!isFinite(z) || !ctr) return;
     var ac = _mapPlaneSpec();
-    var img = c.querySelector ? c.querySelector('.leaflet-marker-icon img[src*="/logos/map-plane-"]') : null;
+    // v23918 — this board's own aeroplane only: the other aeroplanes on the
+    // ground (gate-apron-other, _gateApronSync) carry their own types and
+    // their own sizes, and the first picture in the pane may be one of theirs.
+    var img = c.querySelector ? c.querySelector('.leaflet-marker-icon:not(.gate-apron-other) img[src*="/logos/map-plane-"]') : null;
     if (img && ac.art && img.getAttribute('src') !== ac.art.src) img.setAttribute('src', ac.art.src);
     var k = _mapPlaneScale(ac, ac.art, ctr.lat, z);
     c.style.setProperty('--fids-plane-kx', k.kx.toFixed(4));
     c.style.setProperty('--fids-plane-ky', k.ky.toFixed(4));
+    try { _gateApronFit(map, z); } catch (eA) {}
   } catch (e) {}
 }
 function initGateMap(org,dst,prog,waitAt,note){
@@ -34174,7 +34195,8 @@ function initGateMap(org,dst,prog,waitAt,note){
           gateMap._fidsRouteKey = String(org).toUpperCase() + '>' + String(dst).toUpperCase();
           gateMap._fidsLive = false;
           _gateMapWatchResize(mb);
-          var _hSpot = _gateParkSpot(_hK, [_hC[0], _hC[1]], _gateOwnGateRef(_hK), _mapPlaneSpec());
+          // v23918 — on the stand the apron deals this board (_gateOwnParkSpot).
+          var _hSpot = _gateOwnParkSpot(_hK, [_hC[0], _hC[1]]);
           gateMap._fidsOverlays = waitAt ? _gateDrawParkedEstimate(gateMap, _hSpot, null) : _gateDrawEmptyStand(gateMap, _hSpot, null, note);
           setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
           return;
@@ -34318,7 +34340,8 @@ function initGateMap(org,dst,prog,waitAt,note){
         if (r && r.org === org && r.dst === dst && r.prog === prog && (r.wait || r.empty) && gateMap && gateMap._fidsParkView && gateMap._fidsLive !== true) initGateMap(org, dst, prog, waitAt, note);
       });
     }
-    var _stSpot = _gateParkSpot(_stI, _stC, _gateOwnGateRef(_stI), _mapPlaneSpec());
+    // v23918 — on the stand the apron deals this board (_gateOwnParkSpot).
+    var _stSpot = _gateOwnParkSpot(_stI, _stC);
     (_parked ? _gateDrawParkedEstimate(gateMap, _stSpot, _thC) : _gateDrawEmptyStand(gateMap, _stSpot, _thC, note)).forEach(function (l) { _estOv.push(l); });
   } else {
     try { delete gateMap._fidsParkView; } catch (e) {}
@@ -35786,6 +35809,72 @@ function _gateMatchIsNew(inb, cf, gateVal) {
   if (!inb || !cf) return false;
   return inb.flight === cf.flight || String(inb.gate || '') !== String(gateVal || '');
 }
+// v23918 — WHAT THE WORKER REMEMBERED FOR EVERY SCREEN. Moncton's worker keeps
+// each row cyqm.ca said arrived or departed for 30 hours after the feed drops
+// it, and hands them back marked "remembered" (yqmWithMemory, fids-proxy.js).
+// feed-router sets them aside from the board's rows (window._yqmRemembered, in
+// the ADB shape every feed is mapped to); here they become board-shaped rows
+// through the same mapADB, past its three-hour trail, and are memoised on the
+// list they came from, so a render or a map tick maps them once per poll. A
+// screen that was not running when PD2381 landed now knows it did.
+var _GATE_FEED_KEPT = { arr: null, dep: null };
+function _gateFeedKept(kind) {
+  var rem = (typeof window !== 'undefined') ? window._yqmRemembered : null;
+  if (!rem || String(rem.ap || '').toUpperCase() !== String(window._gateIata || '').toUpperCase()) return [];
+  var raw = kind === 'dep' ? rem.departures : rem.arrivals;
+  if (!Array.isArray(raw) || !raw.length) return [];
+  var c = _GATE_FEED_KEPT[kind];
+  if (c && c.src === raw) return c.rows;
+  var rows = [];
+  try {
+    var tz = (typeof AP !== 'undefined' && AP[String(rem.ap).toUpperCase()] && AP[String(rem.ap).toUpperCase()].tz) || '';
+    rows = _fidsCollapseRevisions(mapADB(kind === 'dep' ? { departures: raw } : { arrivals: raw }, kind, true), tz) || [];
+    rows.forEach(function (r) { r._feedKept = true; });
+  } catch (e) { rows = []; }
+  _GATE_FEED_KEPT[kind] = { src: raw, rows: rows };
+  return rows;
+}
+// The feed's rows as the gate's evidence rules read them: what the board holds
+// (data.arr / data.dep) and, after it, what the worker remembered that the
+// board's list does not hold. Never used for what the boards display.
+function _gateFeedRows(kind) {
+  var list = (typeof data !== 'undefined' && data && data[kind]) || [];
+  var kept = [];
+  try { kept = _gateFeedKept(kind) || []; } catch (e) { kept = []; }
+  if (!kept.length) return list;
+  var have = {}, out = list.slice();
+  for (var i = 0; i < list.length; i++) if (list[i]) have[_gateRowKey(list[i])] = true;
+  for (var j = 0; j < kept.length; j++) {
+    if (kept[j] && !have[_gateRowKey(kept[j])]) out.push(kept[j]);
+  }
+  return out;
+}
+// v23918 — A ROW THE WORKER REMEMBERED NEVER WIPES WHAT THIS SCREEN SAW. While
+// cyqm.ca lists a row, the board's copy carries the Flight-Alert push merged
+// onto it (_yqmCacheAircraftMerge): today's tail, the type, the push's status
+// and the wheels-up. The worker keeps cyqm's own row, which has none of them,
+// and once the feed drops the row that copy is what _gateFeedRows hands in,
+// under the same key. The two memories below used to replace the screen's copy
+// with it — and save the stripped row to this browser's storage — throwing
+// away AC2040's C-FYJP (the Airbus that stays the night at gate 4 and leaves
+// on the first wave from gate 1) and the tail AC1983 took away at 05:27, which
+// is what tells the claim rules that AC1983 flew another airframe and not
+// AC2040. So a kept row keeps its own status (the feed's latest word) and
+// takes every identity field it leaves blank from the copy this screen held.
+// It is a kept row's own copy (mapped afresh by _gateFeedKept on each poll),
+// so filling it in place touches nothing the boards display.
+var _GATE_SEEN_IDENTITY = ['_aircraft', '_aircraftCode', '_pushStatus', '_actualDepTime', '_actualArrTime'];
+function _gateSeenKeepIdentity(row, was) {
+  if (!row || !was || row === was || row._feedKept !== true) return row;
+  try {
+    if (!row._reg && was._reg) { row._reg = was._reg; row._regSource = was._regSource; }
+    for (var i = 0; i < _GATE_SEEN_IDENTITY.length; i++) {
+      var k = _GATE_SEEN_IDENTITY[i];
+      if ((row[k] == null || row[k] === '') && was[k] != null && was[k] !== '') row[k] = was[k];
+    }
+  } catch (e) {}
+  return row;
+}
 // Every departure this board has seen from our field in the last 30 hours.
 // The feed drops a departure three hours after its time (DEPART_TRAIL_HRS), and
 // with it the only record that the overnight aeroplane has already left: at
@@ -35799,6 +35888,8 @@ function _gateDepsSeen(list, ap, now) {
       var d = list[i];
       if (!d || !d.flight || !d._sortTs) continue;
       var key = _gateRowKey(d), was = rows[key];
+      // v23918 — a row the worker kept takes this screen's tail and wheels-up (_gateSeenKeepIdentity).
+      try { if (was) _gateSeenKeepIdentity(d, was); } catch (eK) {}
       if (!was || was._remembered || _gateRawStatus(was) !== _gateRawStatus(d) || was._actualDepTime !== d._actualDepTime) changed = true;
       rows[key] = d;
     }
@@ -35871,6 +35962,9 @@ function _gateArrsSeen(list, ap, now) {
       var f = list[i];
       if (!f || !f.flight || !f._sortTs) continue;
       var key = _gateRowKey(f);
+      // v23918 — before it is listed or kept: a row the worker kept takes this
+      // screen's tail and type (_gateSeenKeepIdentity).
+      try { if (rows[key]) _gateSeenKeepIdentity(f, rows[key]); } catch (eK) {}
       live[key] = true;
       out.push(f);
       // Only what the feed itself says came down is evidence worth keeping.
@@ -35893,11 +35987,18 @@ function _gateArrsSeen(list, ap, now) {
 function _gateAircraftWhere(inb, cf, now) {
   var t = now || Date.now();
   var ap = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
-  var outDst = String((cf && cf._locIata) || '').toUpperCase();
   var deps = [], arrs = [], tz = '';
-  try { deps = _gateDepsSeen((typeof data !== 'undefined' && data && data.dep) || [], ap, t); } catch (e) { deps = []; }
-  try { arrs = _gateArrsSeen((typeof data !== 'undefined' && data && data.arr) || [], ap, t); } catch (e) { arrs = []; }
+  // v23918 — the feed's rows plus what the worker remembered (_gateFeedRows).
+  try { deps = _gateDepsSeen(_gateFeedRows('dep'), ap, t); } catch (e) { deps = []; }
+  try { arrs = _gateArrsSeen(_gateFeedRows('arr'), ap, t); } catch (e) { arrs = []; }
   try { tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
+  return _gateAircraftWhereIn(inb, cf, t, ap, deps, arrs, tz);
+}
+// v23918 — the answer itself, for lists already gathered: the apron (every
+// aeroplane on the ground, _gateApronCollect) asks it once per departure with
+// one set of lists instead of gathering them again for each.
+function _gateAircraftWhereIn(inb, cf, t, ap, deps, arrs, tz) {
+  var outDst = String((cf && cf._locIata) || '').toUpperCase();
   var out = function (kind, why) {
     return { kind: kind, leg: 'out', org: ap, dst: outDst || ap, other: outDst,
              at: (cf && (cf._revTs || cf._sortTs)) || 0, why: why };
@@ -36003,6 +36104,17 @@ function _gateMapApply(res) {
           alt: res.alt, spd: res.spd, speed: res.spd, ts: res.at }
       : null;
   } catch (e) {}
+  // v23918 — at our stand (or our empty stand) the stand itself is dealt with
+  // everyone else's on the ground (_gateOwnParkSpot), so it can change without
+  // the answer changing — ours is dealt a free one when another comes or goes
+  // before it is down: the key carries it, after the answer is published,
+  // since the deal reads it (_gateApronOwn).
+  if (res.kind === 'stand' || res.kind === 'none') { try { key += '|' + _gateApronOwnRef(); } catch (eO) {} }
+  // v23918 — the other aeroplanes on the ground change with the feed and the
+  // minute, not only with the camera, so every tick looks again — after the
+  // answer above is published, since it says which stand is this board's
+  // (_gateApronOwn). Cheap when nothing changed (_gateApronPlan).
+  try { if (typeof gateMap !== 'undefined') _gateApronSync(gateMap); _gateApronSync(window._bigCraftMap); } catch (eA) {}
   if (typeof gateMap !== 'undefined' && gateMap && window._lastMapProgKey === key) return;
   window._lastMapProgKey = key;
   window._lastMapPosKey = key;
@@ -36125,9 +36237,11 @@ function _gateParkSpot(iata, o, gateRef, ac) {
 // doors have no stand of their own number; 5, 6B and 6A are their walk-outs);
 // doors 1 and 2 → BR2 for a jet, and 1A / 2 for a turboprop. A turboprop took
 // Bridge 1's pad at doors 3 and 4 until the walk-out rule said "a stand no
-// bridge reaches": the first stand those doors list is the bridge. Today the
-// board asks for its own aeroplane only; several at once (every aircraft on
-// the ground at a small airport) is a list, and they get distinct stands.
+// bridge reaches": the first stand those doors list is the bridge. The
+// single-aircraft view asks for its own aeroplane only; several at once is a
+// list, and they get distinct stands — v23918's apron (every aircraft on the
+// ground at a small airport, _gateApronAssign) asks for each of them, in the
+// order they came to be on the ground, from the stands still free.
 function _gateStandAlloc(list, bridged, door, acs) {
   var out = {}, used = {}, br = {};
   list = Array.isArray(list) ? list : [];
@@ -36267,6 +36381,586 @@ function _gateDrawEmptyStand(map, spot, d, note) {
     map._fidsParkView = { lat: c[0], lng: c[1], zoom: spot.zoom, src: spot.src, empty: true };
   } catch (e) {}
   return out;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23918 — EVERY AEROPLANE ON THE GROUND AT A SMALL FIELD, ON EVERY GATE MAP.
+//
+// At stand zoom a gate map showed one aeroplane (this board's, or its empty
+// stand) on an apron that, at Moncton, usually has two or three more on it.
+// Now both maps (gateMap and the takeover's window._bigCraftMap), whenever
+// they are at ground zoom (16 or closer) over our own field, also draw every
+// OTHER aeroplane the same evidence rules put on the ground here:
+//   • each departure from our field that has not left, whose aeroplane the
+//     gate-match finds (_gateInboundForDeparture) and the one answer places at
+//     a stand (_gateAircraftWhereIn: landed on evidence, its turn not flown,
+//     within a turn or a night stop) — or that is boarding, on final call or
+//     closed in the feed's own words;
+//   • each arrival that landed on evidence and that no departure still to
+//     leave has taken: the departure that will fly it (the pairing's own
+//     claim rule, _gateArrivalClaimed) decides a night stop, and with none the
+//     turn and 4-hour rules (_gateStandVerdict) decide alone.
+// One aeroplane per airframe: one inbound row is one aeroplane, and a boarding
+// departure the gate-match found no inbound for takes the landed arrival its
+// claim rule gives it rather than drawing a second one. And one aeroplane per
+// departure: a departure given to one arrival is neither claimed by another
+// nor counted as another's turn (_gateApronCollect).
+//
+// WHERE. The feed's gate is a boarding door serving a group of stands
+// (door_stands): an aeroplane goes to its departure's door, or its arrival's
+// when it has no departure yet. All of them — this board's own included — are
+// allocated together, the same way on every board (_gateApronAssign): the one
+// longest on the ground first, a jet to a bridged stand and a turboprop to a
+// walk-out (_gateStandAlloc), no stand twice and none on top of another. So a
+// parked aeroplane keeps its stand when another lands, and the four Moncton
+// boards put the same aeroplane on the same stand; this board's own aeroplane
+// (and its empty stand) is drawn on the stand the allocation gives it
+// (_gateOwnParkSpot) — alone on the apron, the one the single-aircraft view
+// always gave it. A door with no group on record keeps the single-aircraft
+// rules; an aeroplane whose door is unknown (a row with no gate) or finds no
+// free stand is not drawn — no guessing.
+//
+// HOW IT LOOKS. The same true-scale picture, nose on the stop point and the
+// stand's heading (_gateParkPlace, _mapPlaneScale) as this board's own, drawn
+// lighter (class gate-apron-other, display-overrides.css v23918) and under it;
+// no route line, no label. Nothing is drawn in flight, below zoom 16, or at
+// another airport. It asks nothing of the network: the rows are the feed the
+// page already holds, plus what it and the worker remembered.
+//
+// WHICH AIRPORTS. The rule is "a field with ten gates or fewer" (the gate
+// file's doors); it is written (_GATE_APRON_BY_SIZE) but switched on for
+// Moncton alone until it has been watched there (_GATE_APRON_AIRPORTS).
+//
+// COST. The list is rebuilt when the feed's lists change or the minute turns
+// (_gateApronPlan), never per frame; the markers are redrawn only when who
+// stands where changes, and re-sized with the zoom like this board's own.
+// ═══════════════════════════════════════════════════════════════════════════
+var _GATE_APRON_AIRPORTS = { YQM: true };
+var _GATE_APRON_BY_SIZE = false;
+var _GATE_APRON_MAX_GATES = 10;
+var _GATE_APRON_MIN_ZOOM = 16;
+function _gateApronOn(ap) {
+  var k = String(ap || '').toUpperCase();
+  if (!k) return false;
+  if (_GATE_APRON_AIRPORTS[k] === true) return true;
+  if (!_GATE_APRON_BY_SIZE) return false;
+  var f = Object.prototype.hasOwnProperty.call(_AP_GATES, k) ? _AP_GATES[k] : null;
+  var n = (f && f.gates) ? Object.keys(f.gates).length : 0;
+  return n > 0 && n <= _GATE_APRON_MAX_GATES;
+}
+// Has this departure left, in the feed's own words or by an actual wheels-up?
+function _gateDepLeft(d, now) {
+  if (!d) return true;
+  if (_gateRawAirborne(d)) return true;
+  var up = 0;
+  try { up = d._actualDepTime ? (adbTs(d._actualDepTime) || 0) : 0; } catch (e) { up = 0; }
+  return up > 0 && up <= now;
+}
+// Another aeroplane's type, in _mapPlaneSpec's order of truth (the inbound's
+// registration, the inbound, then the departure) — but a registration's type
+// only when this page already knows it: _regTrueType would look it up, and the
+// apron makes no request of its own.
+function _gateApronSpec(inb, dep) {
+  try {
+    var a = inb || {}, b = dep || {};
+    var regT = function (reg) {
+      try {
+        var r = String(reg || '').replace(/[^A-Z0-9-]/gi, '').toUpperCase();
+        var c = (typeof window !== 'undefined') ? window._regTypeCache : null;
+        return (r && c && c[r]) || '';
+      } catch (e) { return ''; }
+    };
+    var ri = (typeof _acResolvedGet === 'function' && a.flight) ? _acResolvedGet(a.flight) : null;
+    var rb = (typeof _acResolvedGet === 'function' && b.flight) ? _acResolvedGet(b.flight) : null;
+    var srcs = [regT(a._reg), a._aircraftCode, a._aircraft, ri && ri.cd, ri && ri.nm,
+                regT(b._reg), b._aircraftCode, b._aircraft, b.aircraft, rb && rb.cd, rb && rb.nm];
+    var first = null, firstProp = null;
+    for (var i = 0; i < srcs.length; i++) {
+      var raw = srcs[i];
+      if (!raw || typeof raw === 'object') continue;
+      var s = _mapPlaneSpecFor(raw);
+      if (s.known) return s;
+      if (!first) first = s;
+      if (s.prop && !firstProp) firstProp = s;
+    }
+    if (firstProp || first) return firstProp || first;
+  } catch (e) {}
+  return _mapPlaneSpecFor('');
+}
+// The first of these gates that names a door ('4', '1A'); '' when none does
+// (the boards print a row with no gate as '—').
+function _gateApronDoor() {
+  for (var i = 0; i < arguments.length; i++) {
+    var g = _gateRefNorm(arguments[i]);
+    if (g && /[A-Z0-9]/.test(g)) return g;
+  }
+  return '';
+}
+// Since when an aeroplane has stood here, for the order stands are dealt in
+// (_gateApronAssign): its landing on evidence (_gateLandedAt — the feed's
+// actual time or its own "Arrived at 9:47 PM", the same on every board). One
+// only its departure's boarding puts here came to be drawn when boarding began,
+// taken as half an hour before that departure (when a Moncton departure is
+// called): one with no inbound found, and one the rules had ruled off the stand
+// until then — a Jazz Dash 8 down at 18:36 is past the four hours and no night
+// stop, so it is not drawn overnight, and when AC7753 boards at 06:40 it must
+// not come back "first" and take the walk-out the Porter has stood on since
+// 21:47. `deps` / `arrs` are the lists its stand was judged against. 0: unknown.
+function _gateApronSince(inb, dep, now, deps, arrs, tz) {
+  var land = 0;
+  try { land = inb ? (_gateLandedAt(inb, now) || 0) : 0; } catch (e) { land = 0; }
+  var board = (dep && dep._sortTs) ? dep._sortTs - 30 * 60000 : 0;
+  if (land && board && _gateOutboundAtGate(dep) && !_gateLegGone(dep)) {
+    var at = Math.min(now, board);
+    if (land <= at) {
+      // Standing here on its landing's evidence when boarding began?
+      var why = 'x';
+      try { why = _gateStandVerdict(inb, land, dep, deps, arrs, at, tz); } catch (e) { why = 'x'; }
+      if (why) land = 0;
+    }
+  }
+  return land || board || 0;
+}
+// Who is on the ground at `ap` at `now`, by the evidence rules above. Pure over
+// its lists: `arrs` / `deps` as _gateArrsSeen / _gateDepsSeen give them.
+// Returns [{ id, inb, dep, door, why, since }], one per airframe, this board's
+// own aeroplane included (the caller picks it out, _gateApronOwnIndex).
+//
+// ONE AEROPLANE PER DEPARTURE. The claim rule (_gateArrivalClaimed) asks, of
+// one arrival at a time, which departure will fly it, and nothing stopped two
+// arrivals from getting the same answer. At Moncton the first wave leaves from
+// gate 1, which has no arrivals of its own, so with no registrations BOTH of
+// the evening's Air Canada Airbuses at gate 4 (AC2040 from Montréal, AC1986
+// from Toronto) were "AC1983's aeroplane" at 05:25: gate 1's board hid both as
+// its own while boarding, and the moment AC1983 left both were "turn flown" —
+// the Airbus still standing there for AC2037 at 06:35 vanished from every map
+// until AC2037 boarded. Now each departure is given ONE aeroplane (`given`):
+// the gate-match's choice first, then the landed arrivals, the one that came
+// down last first (the gate-match's own tie-break, the most recent arrival).
+// A departure already given is not offered to the next arrival — it claims,
+// has flown or stands in the way of a night stop for one aeroplane only — so
+// AC2040 is re-claimed against the departures left and goes to AC2037. The
+// resolver's rules are untouched; they are only asked with that departure off
+// the list.
+function _gateApronCollect(ap, now, arrs, deps, tz) {
+  var out = [], byKey = {}, given = {};
+  var all = (deps || []).filter(function (d) { return d && d._sortTs && !_gateLegGone(d); })
+    .slice().sort(function (a, b) { return a._sortTs - b._sortTs; });
+  var open = all.filter(function (d) { return !_gateDepLeft(d, now); });
+  arrs = arrs || [];
+  // Each departure still to leave, and the aeroplane the gate-match gives it.
+  // One aeroplane flies its earliest departure first.
+  var inbOf = [], firstFor = {};
+  for (var i = 0; i < open.length; i++) {
+    var ib = null;
+    try { ib = _gateInboundForDeparture(open[i], open[i].gate, arrs, all); } catch (e) { ib = null; }
+    inbOf.push(ib);
+    if (ib && !firstFor[_gateRowKey(ib)]) firstFor[_gateRowKey(ib)] = open[i];
+  }
+  for (var j = 0; j < open.length; j++) {
+    var d = open[j], inb = inbOf[j];
+    if (inb && firstFor[_gateRowKey(inb)] !== d) continue;
+    // The gate-match's choice: this departure's aeroplane, whether or not it is down yet.
+    if (inb) given[_gateRowKey(d)] = true;
+    var res = null;
+    try { res = _gateAircraftWhereIn(inb, d, now, ap, all, arrs, tz); } catch (e) { res = null; }
+    if (!res || res.kind !== 'stand') continue;
+    var k = inb ? _gateRowKey(inb) : 'dep|' + _gateRowKey(d);
+    if (byKey[k]) continue;
+    byKey[k] = { id: k, inb: inb, dep: d, door: _gateApronDoor(d.gate, inb && inb.gate), why: res.why,
+                 since: _gateApronSince(inb, d, now, all, arrs, tz) };
+    out.push(byKey[k]);
+  }
+  // Each arrival down on evidence that the gate-match gave to no departure,
+  // the last one down first.
+  var cands = [];
+  for (var n = 0; n < arrs.length; n++) {
+    var a0 = arrs[n];
+    if (!a0 || !a0.flight || !a0._sortTs || _gateLegGone(a0)) continue;
+    var ak0 = _gateRowKey(a0);
+    if (firstFor[ak0] || byKey[ak0]) continue;
+    var land0 = 0;
+    try { land0 = _gateLandedAt(a0, now); } catch (e) { land0 = 0; }
+    if (land0) cands.push({ a: a0, land: land0 });
+  }
+  cands.sort(function (x, y) {
+    return (y.land - x.land) || (y.a._sortTs - x.a._sortTs) || (_gateRowKey(x.a) < _gateRowKey(y.a) ? -1 : 1);
+  });
+  for (var c = 0; c < cands.length; c++) {
+    var a = cands[c].a, ak = _gateRowKey(a), land = cands[c].land;
+    if (byKey[ak]) continue;
+    // The departures not yet given an aeroplane.
+    var left = all.filter(function (x) { return !given[_gateRowKey(x)]; });
+    var next = null;
+    try { next = _gateArrivalClaimed(a, { flight: '', airline: a.airline, _sortTs: a._sortTs + 20 * 3600000 }, left, arrs); } catch (e) { next = null; }
+    if (next && !_gateDepLeft(next, now)) {
+      var r2 = null;
+      try { r2 = _gateAircraftWhereIn(a, next, now, ap, left, arrs, tz); } catch (e) { r2 = null; }
+      if (!r2 || r2.kind !== 'stand') {
+        // Not standing here for it. When a departure that has gone took it,
+        // that departure flew this aeroplane and no other.
+        var fl2 = null;
+        try { fl2 = _gateTurnConsumed(a, land, next, left, arrs, now); } catch (e) { fl2 = null; }
+        if (fl2) given[_gateRowKey(fl2)] = true;
+        continue;
+      }
+      given[_gateRowKey(next)] = true;
+      var dk = 'dep|' + _gateRowKey(next);
+      if (byKey[dk]) {
+        // Its departure is boarding and the gate-match had found it no
+        // aeroplane: this is that aeroplane, at that departure's door.
+        byKey[dk].id = ak; byKey[dk].inb = a; byKey[dk].door = _gateApronDoor(next.gate, a.gate);
+        byKey[dk].since = _gateApronSince(a, next, now, left, arrs, tz);
+        byKey[ak] = byKey[dk]; delete byKey[dk];
+        continue;
+      }
+      byKey[ak] = { id: ak, inb: a, dep: next, door: _gateApronDoor(a.gate, next.gate), why: r2.why,
+                    since: _gateApronSince(a, next, now, left, arrs, tz) };
+      out.push(byKey[ak]);
+      continue;
+    }
+    // No departure still to leave will fly it: a departure that has gone
+    // since it landed took it (and no other), else the 4-hour rule decides.
+    var fl = null;
+    try { fl = _gateTurnConsumed(a, land, null, left, arrs, now); } catch (e) { fl = null; }
+    if (fl) { given[_gateRowKey(fl)] = true; continue; }
+    var why = 'x';
+    try { why = _gateStandVerdict(a, land, null, left, arrs, now, tz); } catch (e) { why = 'x'; }
+    if (why) continue;
+    byKey[ak] = { id: ak, inb: a, dep: null, door: _gateApronDoor(a.gate), why: 'landed', since: land };
+    out.push(byKey[ak]);
+  }
+  // One airframe once: a registration seen twice is the one aeroplane.
+  var regs = {};
+  return out.filter(function (e) {
+    var r = _gateTodayReg(e.inb) || _gateTodayReg(e.dep);
+    if (!r) return true;
+    if (regs[r]) return false;
+    regs[r] = true;
+    return true;
+  });
+}
+// This board's own aeroplane, as the single-aircraft view knows it. `here` says
+// the view draws it here at all (at the stand on evidence, or live on the
+// ground at our field — parked, or taxiing in): only then can another row for
+// our inbound or our departure be that same aeroplane drawn twice. While our
+// inbound is still in the air, or the view has ruled it off our stand (its
+// night stop belongs to an earlier departure, say), an aeroplane the rules put
+// on the ground here is not the one this board draws, and it is drawn. A
+// registration is the airframe wherever it is, so a row carrying ours never is.
+// `door` and `spec` are what the view places it by (our gate, _mapPlaneSpec);
+// `reserve` is the stand a live aeroplane taxiing on the ground here is on or
+// nearest to, which nobody else takes while it is there.
+function _gateApronOwn(ap, o, f) {
+  var own = { keys: {}, cf: null, regs: {}, reserve: [], here: false, door: '', spec: null };
+  try {
+    var cf = window._gateCurrentFlight || null;
+    own.cf = cf;
+    [window._gateInbound, window._gatePanelInbound].forEach(function (r) {
+      if (!r) return;
+      if (r.flight && r._sortTs) own.keys[_gateRowKey(r)] = true;
+      var rg = _gateTodayReg(r);
+      if (rg) own.regs[rg] = true;
+    });
+    var cr = _gateTodayReg(cf);
+    if (cr) own.regs[cr] = true;
+    var wh = window._gateMapWhere;
+    var live = !!(wh && wh.kind === 'fix' && wh.onGround === true && typeof wh.lat === 'number' && typeof wh.lng === 'number'
+                  && o && _gcNm([wh.lat, wh.lng], o) < 6);
+    own.here = !!(wh && (wh.kind === 'stand' || live));
+    own.door = _gateApronDoor(_gateOwnGateRef(ap));
+    try { own.spec = _mapPlaneSpec(); } catch (eS) { own.spec = null; }
+    if (live && f && f.stands) {
+      var best = null, bd = 45;
+      for (var k in f.stands) {
+        if (!Object.prototype.hasOwnProperty.call(f.stands, k) || !f.stands[k]) continue;
+        var dm = _gcNm([wh.lat, wh.lng], f.stands[k]) * 1852;
+        if (dm < bd) { bd = dm; best = k; }
+      }
+      if (best) own.reserve.push(best);
+    }
+  } catch (e) {}
+  return own;
+}
+// Which one of the aeroplanes on the ground is this board's own: at most ONE —
+// the one holding our inbound, else the one flying our departure — and only
+// while the board's own view draws it here. -1 for none. (With several arrivals
+// "flying" one departure, every one of them used to count as ours, and gate 1
+// hid them all behind its own boarding aeroplane.)
+function _gateApronOwnIndex(list, own) {
+  if (!own || !own.here || !Array.isArray(list)) return -1;
+  var i;
+  for (i = 0; i < list.length; i++) {
+    if (list[i] && list[i].inb && own.keys[_gateRowKey(list[i].inb)]) return i;
+  }
+  var cf = own.cf;
+  if (!cf) return -1;
+  for (i = 0; i < list.length; i++) {
+    var d = list[i] && list[i].dep;
+    if (d && d.flight === cf.flight && d._sortTs === cf._sortTs) return i;
+  }
+  return -1;
+}
+// An aeroplane carrying this board's registration is this board's, wherever
+// the rules put it: never drawn as another.
+function _gateApronIsOwn(e, own) {
+  if (!e || !own) return false;
+  var r = _gateTodayReg(e.inb) || _gateTodayReg(e.dep);
+  return !!(r && own.regs[r]);
+}
+// Two stands this close are one place: the aeroplane on one covers the other.
+// Moncton's gate file has stand 1B 3.8 m from stand 2 (the same stop, drawn
+// twice on the map); the nearest real pair, 2 and 1A, is 33 m apart.
+var _GATE_APRON_CLEAR_M = 20;
+// Stands for every aeroplane on the ground at once. Pure over the gate file
+// `f`, the airport's point `o`, the aeroplanes `items` ([{ id, door, prop, len,
+// spec, since, tie }]) and the stands already `reserved`. Returns { id: stand }
+// — null for an aeroplane left without one.
+//
+// v23918 — THE ONE LONGEST ON THE GROUND KEEPS ITS STAND, ON EVERY BOARD. The
+// stands used to be dealt afresh every minute largest first (then by departure
+// time), and each board first took its own aeroplane's stand from its own
+// single-aircraft pick. So parked aeroplanes jumped: the E175 on Bridge 1 since
+// 10:27 moved to 6B when the longer A320 landed at 11:13, the Air Canada
+// Airbus on Bridge 1 since 21:38 moved when AC1986 landed at 00:18 (its
+// departure is earlier), the Porter on stand 5 all night moved when a Dash 8
+// with an earlier departure landed — and gate 4's board, keeping its own
+// aeroplane where its single view put it, drew both on different stands from
+// gates 1-3 beside it. Now the order is the order they came to be here (since:
+// the landing on evidence, _gateApronSince), then larger first only between
+// two with the same time, then the departure's time and the row's key — the
+// same answer from the same rows on every board. Each takes, from its door's
+// stands still free, a stand of its own kind first (a jet a bridge, a turboprop
+// a walk-out), else any (_gateStandAlloc). An aeroplane already parked never
+// gives its stand up to one that lands later; it keeps it until it leaves.
+// When one dealt before it leaves, it can be dealt the stand that one left
+// (AC644 on 6B takes Bridge 1 when the E175 goes at 11:20) — on every board
+// at once: the deal remembers nothing a board that opened later would not.
+//
+// A stand is taken with every stand within _GATE_APRON_CLEAR_M of it — the one
+// under a reserved stand included — so no aeroplane is drawn on top of another.
+function _gateApronAssign(f, o, items, reserved) {
+  var out = {}, used = {};
+  var st = (f && f.stands) || {}, gt = (f && f.gates) || {};
+  var m = function (a, b) { return _gcNm(a, b) * 1852; };
+  var near = function (p) { return !!(p && o && _gcNm(p, o) < 5); };
+  var occupy = function (ref) {
+    if (!ref) return;
+    used[ref] = true;
+    var p = st[ref];
+    if (!p) return;
+    for (var k in st) {
+      if (!Object.prototype.hasOwnProperty.call(st, k) || used[k] || !st[k]) continue;
+      if (m(st[k], p) < _GATE_APRON_CLEAR_M) used[k] = true;
+    }
+  };
+  (reserved || []).forEach(occupy);
+  var when = function (a) { return (Number(a.since) > 0) ? Number(a.since) : Infinity; };
+  var order = (items || []).filter(function (a) { return !!a; }).slice().sort(function (a, b) {
+    var wa = when(a), wb = when(b);
+    if (wa !== wb) return wa < wb ? -1 : 1;
+    return ((a.prop ? 1 : 0) - (b.prop ? 1 : 0)) || ((Number(b.len) || 0) - (Number(a.len) || 0))
+      || ((Number(a.tie) || 0) - (Number(b.tie) || 0)) || (String(a.id) < String(b.id) ? -1 : String(a.id) > String(b.id) ? 1 : 0);
+  });
+  var br = {};
+  ((f && f.bridged) || []).forEach(function (k) { br[k] = true; });
+  // mine: only a stand of its own kind (a jet a bridge, a turboprop a walk-out).
+  var place = function (a, mine) {
+    var g = _gateApronDoor(a.door), door = (g && near(gt[g])) ? gt[g] : null;
+    if (door && f.door_stands && Array.isArray(f.door_stands[g])) {
+      var free = f.door_stands[g].filter(function (k) {
+        return near(st[k]) && m(st[k], door) <= 250 && !used[k] && (!mine || (a.prop ? !br[k] : !!br[k]));
+      });
+      var pick = free.length ? _gateStandAlloc(free, f.bridged || [], g, [{ id: 'a', prop: !!a.prop, len: a.len }]).a : null;
+      if (pick) { occupy(pick); out[a.id] = pick; }
+    } else if (g && mine) {
+      // A door with no group on record: the single-aircraft rules (_gateParkSpot), when the stand they give is free.
+      var sp = null;
+      try { sp = _gateParkSpot(f.iata || '', o, g, a.spec); } catch (e) { sp = null; }
+      if (sp && sp.src === 'stand' && sp.ref && !used[sp.ref]) { occupy(sp.ref); out[a.id] = sp.ref; }
+    }
+  };
+  // Those down at one time (or with no time known) are dealt together, in two
+  // rounds: each to a stand of its own kind first, then whoever is left to any
+  // free stand of its door's group — so a jet with no bridge left never takes
+  // the walk-out a turboprop down with it would have had.
+  for (var i = 0; i < order.length;) {
+    var j = i;
+    while (j < order.length && when(order[j]) === when(order[i])) j++;
+    var grp = order.slice(i, j);
+    grp.forEach(function (a) { out[a.id] = null; place(a, true); });
+    grp.forEach(function (a) { if (!out[a.id]) place(a, false); });
+    i = j;
+  }
+  return out;
+}
+// The spot _gateParkPlace needs for one stand of the gate file — the same
+// shape _gateParkSpot hands the single-aircraft view: the stand's heading and
+// kind, its door, the terminal it faces within 400 m, and the aeroplane.
+function _gateApronStandSpot(f, o, ref, g, zoom, ac) {
+  var p = f.stands[ref];
+  var s = { lat: p[0], lng: p[1], zoom: zoom, src: 'stand', ref: ref,
+            kind: (f.stand_kind && f.stand_kind[ref] === 'pad') ? 'pad' : 'stop' };
+  if (p.length > 2 && typeof p[2] === 'number' && isFinite(p[2])) s.hdg = p[2];
+  var door = f.gates && f.gates[g];
+  if (door && o && _gcNm(door, o) < 5) s.door = [door[0], door[1]];
+  var best = null, bd = 400;
+  (f.terminals || []).forEach(function (t) { var x = _gcNm(p, t) * 1852; if (x <= bd) { bd = x; best = [t[0], t[1]]; } });
+  if (best) s.term = best;
+  if (ac) s.ac = ac;
+  return s;
+}
+// Every aeroplane on the ground and its stand, now: `items` the others (drawn
+// lighter, _gateApronSync), `own` this board's own stand (_gateOwnParkSpot).
+// Rebuilt only when the feed's lists, the minute, this board's own aeroplane
+// or the gate file change. null when the gate file or the airport's point is
+// not known yet.
+//
+// This board's own aeroplane is dealt its stand with everyone else's, by the
+// same rule, so the stand it is drawn on is the one the other boards leave
+// free for it. When the view has no aeroplane of ours here to place — its
+// empty stand, or an aeroplane of ours the list above does not hold — ours is
+// dealt LAST, from the stands everyone on the ground has left: the empty ring
+// is never drawn under another aeroplane, and when ours lands (after all of
+// them) it takes that same free stand, so nothing moves when the evidence
+// arrives. (The ring used to sit on the single view's stand while another
+// aeroplane was dealt that same stand and drawn on it, under its label.)
+var _GATE_APRON_CACHE = { sig: '', arr: null, dep: null, kA: null, kD: null, f: null, val: null };
+function _gateApronPlan(ap, now) {
+  var f = _apGatesFor(ap);
+  if (!f || !f.stands) return null;
+  var o = _lookupAirport(ap);
+  if (!o) return null;
+  var own = _gateApronOwn(ap, o, f);
+  var rem = (typeof window !== 'undefined') ? window._yqmRemembered : null;
+  var dA = (typeof data !== 'undefined' && data) ? data.arr : null, dD = (typeof data !== 'undefined' && data) ? data.dep : null;
+  var kA = rem ? rem.arrivals : null, kD = rem ? rem.departures : null;
+  var sig = [ap, Math.floor(now / 60000), own.here ? 'here' : '', own.reserve.join(','), Object.keys(own.keys).join(','),
+             own.cf ? _gateRowKey(own.cf) : '', Object.keys(own.regs).join(','), own.door, own.spec ? own.spec.key : ''].join('|');
+  var c = _GATE_APRON_CACHE;
+  if (c.val && c.sig === sig && c.arr === dA && c.dep === dD && c.kA === kA && c.kD === kD && c.f === f) return c.val;
+  var tz = '';
+  try { tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
+  var deps = [], arrs = [];
+  try { deps = _gateDepsSeen(_gateFeedRows('dep'), ap, now); } catch (e) { deps = []; }
+  try { arrs = _gateArrsSeen(_gateFeedRows('arr'), ap, now); } catch (e) { arrs = []; }
+  var list = _gateApronCollect(ap, now, arrs, deps, tz);
+  var ownIdx = _gateApronOwnIndex(list, own);
+  var items = list.map(function (e, i) {
+    // Ours is placed by the type the board draws it with.
+    var spec = (i === ownIdx && own.spec) ? own.spec : _gateApronSpec(e.inb, e.dep);
+    return { id: e.id, door: e.door, prop: !!spec.prop, len: spec.len, spec: spec, since: e.since,
+             tie: (e.dep && e.dep._sortTs) || 0, own: i === ownIdx || _gateApronIsOwn(e, own),
+             dest: (e.dep && e.dep._locIata) || '', flight: (e.inb && e.inb.flight) || (e.dep && e.dep.flight) || '' };
+  });
+  var stands = _gateApronAssign(f, o, items, own.reserve);
+  var ownRef = null, ownDoor = own.door;
+  if (ownIdx >= 0) {
+    ownRef = stands[items[ownIdx].id] || null;
+    ownDoor = items[ownIdx].door || own.door;
+  } else if (own.door) {
+    var taken = own.reserve.slice();
+    for (var sk in stands) { if (Object.prototype.hasOwnProperty.call(stands, sk) && stands[sk]) taken.push(stands[sk]); }
+    var os = own.spec || _mapPlaneSpecFor('');
+    ownRef = _gateApronAssign(f, o, [{ id: 'own', door: own.door, prop: !!os.prop, len: os.len, spec: os }], taken).own || null;
+  }
+  var placed = items.filter(function (it) { return !it.own && !!stands[it.id]; });
+  placed.forEach(function (it) { it.stand = stands[it.id]; });
+  var val = { key: placed.map(function (it) { return it.id + '>' + it.stand + '>' + it.spec.key; }).join(';'), items: placed,
+              own: ownRef, ownDoor: ownDoor };
+  _GATE_APRON_CACHE = { sig: sig, arr: dA, dep: dD, kA: kA, kD: kD, f: f, val: val };
+  return val;
+}
+// This board's own stand, where the apron is on: '' elsewhere, or when the
+// gate file or the airport is not known yet.
+function _gateApronOwnRef() {
+  try {
+    var ap = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+    if (!_gateApronOn(ap)) return '';
+    var plan = _gateApronPlan(ap, Date.now());
+    return (plan && plan.own) || '';
+  } catch (e) { return ''; }
+}
+// v23918 — WHERE THIS BOARD'S OWN AEROPLANE (OR ITS EMPTY STAND) IS DRAWN at
+// our own field: the single-aircraft view's spot (_gateParkSpot, our gate, our
+// type), moved to the stand the apron deals ours (_gateApronPlan) where the
+// apron is on. Alone on the apron that is the same stand; with others on the
+// ground it is the one they leave free, the same one every board leaves free.
+// Every other airport, and every spot that is not a stand, is as before.
+function _gateOwnParkSpot(iata, o) {
+  var ac = _mapPlaneSpec();
+  var sp = _gateParkSpot(iata, o, _gateOwnGateRef(iata), ac);
+  try {
+    var ap = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+    if (!sp || sp.src !== 'stand' || String(iata || '').toUpperCase() !== ap || !_gateApronOn(ap)) return sp;
+    var plan = _gateApronPlan(ap, Date.now()), f = _apGatesFor(ap);
+    if (plan && plan.own && plan.own !== sp.ref && f && f.stands && f.stands[plan.own]) {
+      return _gateApronStandSpot(f, o, plan.own, _gateRefNorm(plan.ownDoor || _gateOwnGateRef(ap)), sp.zoom, ac);
+    }
+  } catch (e) {}
+  return sp;
+}
+function _gateApronClear(map) {
+  try {
+    var st = map && map._fidsApron;
+    if (!st) return;
+    (st.layers || []).forEach(function (l) { try { map.removeLayer(l); } catch (e) {} });
+    delete map._fidsApron;
+  } catch (e) {}
+}
+// Size each other aeroplane for the zoom, as _mapPlaneFit sizes this board's
+// own: the custom properties on the marker's own div win over the map's.
+function _gateApronFit(map, z) {
+  var st = map && map._fidsApron;
+  if (!st || !st.items) return;
+  for (var i = 0; i < st.items.length; i++) {
+    try {
+      var it = st.items[i], el = it.mk && it.mk.getElement ? it.mk.getElement() : null;
+      var w = el && el.firstChild;
+      if (!w || !w.style || !w.style.setProperty) continue;
+      var k = _mapPlaneScale(it.spec, it.spec.art, it.lat, z);
+      w.style.setProperty('--fids-plane-kx', k.kx.toFixed(4));
+      w.style.setProperty('--fids-plane-ky', k.ky.toFixed(4));
+    } catch (e) {}
+  }
+}
+// Put the other aeroplanes on one map, or take them off it. Called whenever
+// the map's camera settles (hooked in _gateMapTileLayer) and on every map tick
+// (_gateMapApply); cheap when nothing has changed.
+function _gateApronSync(map) {
+  try {
+    if (!map || !map._loaded || !map.getZoom || !map.getCenter) return;
+    var isGate = (typeof gateMap !== 'undefined' && map === gateMap) || (typeof window !== 'undefined' && map === window._bigCraftMap);
+    var ap = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase();
+    if (!isGate || !_gateApronOn(ap) || typeof L === 'undefined') { _gateApronClear(map); return; }
+    var z = map.getZoom(), ctr = map.getCenter(), o = _lookupAirport(ap);
+    if (!(z >= _GATE_APRON_MIN_ZOOM - 0.01) || !o || !ctr || _gcNm([ctr.lat, ctr.lng], o) > 3) { _gateApronClear(map); return; }
+    var plan = _gateApronPlan(ap, Date.now());
+    if (!plan || !plan.items.length) { _gateApronClear(map); return; }
+    var zi = Math.round(z), key = plan.key + '@' + zi;
+    if (map._fidsApron && map._fidsApron.key === key) { _gateApronFit(map, z); return; }
+    _gateApronClear(map);
+    var f = _apGatesFor(ap), layers = [], items = [];
+    plan.items.forEach(function (it) {
+      try {
+        var spot = _gateApronStandSpot(f, o, it.stand, _gateRefNorm(it.door), zi, it.spec);
+        var pl = _gateParkPlace(spot, it.dest ? _lookupAirport(it.dest) : null);
+        if (!isFinite(pl.lat) || !isFinite(pl.lng)) return;
+        var k = _mapPlaneScale(it.spec, it.spec.art, pl.lat, z);
+        var html = '<div class="gate-apron-plane" style="transform:rotate(' + pl.hdg + 'deg);width:48px;height:48px;display:flex;align-items:center;justify-content:center;'
+          + '--fids-plane-kx:' + k.kx.toFixed(4) + ';--fids-plane-ky:' + k.ky.toFixed(4) + ';">'
+          + '<img src="' + it.spec.art.src + '" width="48" height="48" alt="" style="filter:drop-shadow(0 1px 3px rgba(0,0,0,0.45));" onerror="this.style.display=\'none\';"></div>';
+        // Under this board's own aeroplane (zIndexOffset 1000) whatever the
+        // two stands' screen heights, and under the empty stand's label.
+        var mk = L.marker([pl.lat, pl.lng], { zIndexOffset: -1000, interactive: false, keyboard: false,
+          icon: L.divIcon({ className: 'gate-apron-other', html: html, iconSize: [48, 48], iconAnchor: [24, 24] }) }).addTo(map);
+        layers.push(mk);
+        items.push({ mk: mk, spec: it.spec, lat: pl.lat, id: it.id, stand: it.stand });
+      } catch (e1) {}
+    });
+    map._fidsApron = { key: key, layers: layers, items: items };
+    try { console.log('[APRON]', items.map(function (x) { return x.id.split('|')[0] + '@' + x.stand; }).join(' ') || '(none)', 'z' + zi); } catch (eL) {}
+  } catch (e) {}
 }
 
 // v23906 — THE FLOWN HALF IS THE REAL TRACK. The worker records every FR24
@@ -48015,7 +48709,8 @@ function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&
         var _hK = String((typeof window !== 'undefined' && window._gateIata) || '').toUpperCase(), _hC = _lookupAirport(_hK);
         if (mb && _hC && _p0 < 0.02 && (String(org).toUpperCase() === _hK || String(dst).toUpperCase() === _hK)) {
           window._bigCraftMap=L.map('bigCraftMap',{zoomControl:false,attributionControl:false,dragging:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false,touchZoom:false,fadeAnimation:false,zoomAnimation:false});_bcFadeInWhenReady(_gateMapTileLayer()).addTo(window._bigCraftMap);_bcSizeNow(window._bigCraftMap);
-          var _hSpot = _gateParkSpot(_hK, [_hC[0], _hC[1]], _gateOwnGateRef(_hK), _mapPlaneSpec());
+          // v23918 — on the stand the apron deals this board (_gateOwnParkSpot).
+          var _hSpot = _gateOwnParkSpot(_hK, [_hC[0], _hC[1]]);
           if (waitAt) _gateDrawParkedEstimate(window._bigCraftMap, _hSpot, null);
           else _gateDrawEmptyStand(window._bigCraftMap, _hSpot, null, note);
           return;
@@ -48100,7 +48795,8 @@ function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&
         if (r && r.org === org && r.dst === dst && r.prog === prog && (r.wait || r.empty) && window._bigCraftMap && window._bigCraftMap._fidsParkView) _bigMapClone(org, dst, prog, waitAt, note);
       });
     }
-    var _bcSpot = _gateParkSpot(_bcStI, _bcStC, _gateOwnGateRef(_bcStI), _mapPlaneSpec());
+    // v23918 — on the stand the apron deals this board (_gateOwnParkSpot).
+    var _bcSpot = _gateOwnParkSpot(_bcStI, _bcStC);
     if (_bcParked) _gateDrawParkedEstimate(window._bigCraftMap, _bcSpot, _bcThC);
     else _gateDrawEmptyStand(window._bigCraftMap, _bcSpot, _bcThC, note);
   } else {

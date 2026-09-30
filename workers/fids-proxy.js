@@ -1879,6 +1879,158 @@ async function maybeServeYqmCache(adbPath, url, env, origin) {
 }
 __name(maybeServeYqmCache, "maybeServeYqmCache");
 // ════════════════════════════════════════════════════════════════════
+// v23918 — WHAT MONCTON'S FEED SAID LANDED AND LEFT, KEPT FOR EVERY SCREEN.
+// ════════════════════════════════════════════════════════════════════
+// cyqm.ca lists an arrival until about an hour after it lands and a
+// departure until a few hours after it leaves, then drops the row. The gate
+// maps draw an aeroplane only on evidence (fids-core.js, _gateAircraftWhere),
+// and for an aeroplane that stayed the night the only evidence was that
+// dropped row: PD2381 "Arrived at 9:47 PM" is gone from the feed by 23:00,
+// while its Dash 8 stands at gate 3 until the 11:55 to Ottawa. v23915 made
+// each board remember what IT saw in its own storage, which only helps a
+// screen that was running at 21:47; one switched on, reloaded by a build bump
+// or opened for the first time in the morning had nothing, and showed an
+// empty stand beside a parked aeroplane.
+//
+// So the worker remembers, once, for every screen. Every row whose OWN status
+// says it arrived or landed (arrivals: "Arrived at 9:47 PM", "Arrived") or
+// departed (departures: "Departed at 6:33 AM") — the same reading the client's
+// yqmStatus gives those words, never the clock — goes into one small document
+// per direction in FIDS_LIVE_FLIGHTS ('yqm:seen:v1:arrivals' /
+// 'yqm:seen:v1:departures'), keyed by flight and scheduled wall-clock time,
+// and is kept 30 hours from that scheduled time (the client's own memory
+// keeps 30 hours too). Every answer then carries the remembered rows the feed
+// no longer lists, in cyqm's own row shape so feed-router maps them unchanged,
+// marked "remembered": true. A flight the feed still lists within six hours of
+// a remembered one is the same movement and is never repeated.
+//
+// COST. The document is read at most once per 45 s per isolate (the boards
+// poll every minute, so KV reads do not multiply with screens) and written
+// only when a row is new, has changed, or has aged out — a few writes an hour.
+// A KV failure never costs the board its list: the upstream answer goes out
+// as it came, and nothing is written from a document that could not be read
+// (writing one would drop what other isolates remembered).
+const YQM_SEEN_KEY = "yqm:seen:v1:";
+const YQM_SEEN_TTL_S = 30 * 3600;
+const YQM_SEEN_READ_MS = 45000;
+const YQM_SEEN_SAME_S = 6 * 3600;
+// Per isolate: { at, doc } per direction. `doc` is null after a failed read
+// (retried once the window passes); `last` is the last document ever read.
+const _yqmSeenMem = { arrivals: null, departures: null };
+// The row's own status, read in the client's order (feed-router.js yqmStatus):
+// a cancellation or diversion is never a landing, a boarding never a departure.
+function yqmSeenStatus(s) {
+  const t = String(s || "").toLowerCase();
+  if (t.includes("cancel") || t.includes("divert")) return "";
+  if (t.includes("gate closed") || t.includes("final call") || t.includes("last call") || t.includes("board")) return "";
+  if (t.includes("depart")) return "departed";
+  if (t.includes("arriv") || t.includes("land")) return "arrived";
+  return "";
+}
+__name(yqmSeenStatus, "yqmSeenStatus");
+function yqmSeenFlight(row) {
+  return String((row && (row.flightId || ((row.airlineCode || "") + (row.flightNumber || "")))) || "").trim().toUpperCase();
+}
+__name(yqmSeenFlight, "yqmSeenFlight");
+function yqmSeenRowKey(row) {
+  const f = yqmSeenFlight(row), ts = Number(row && row.localTimestamp);
+  return (f && isFinite(ts) && ts > 0) ? `${f}|${ts}` : "";
+}
+__name(yqmSeenRowKey, "yqmSeenRowKey");
+// cyqm's localTimestamp is Moncton's WALL CLOCK written as a UTC epoch
+// (feed-router.js yqmTimeObj), so "now" is measured in the same frame.
+function yqmMonctonWallS(now) {
+  const m = String(tzOffsetAt("America/Moncton", now)).match(/([+-])(\d{2}):(\d{2})/);
+  const mins = m ? (m[1] === "-" ? -1 : 1) * (Number(m[2]) * 60 + Number(m[3])) : 0;
+  return Math.floor(now / 1000) + mins * 60;
+}
+__name(yqmMonctonWallS, "yqmMonctonWallS");
+// The remembered rows after one upstream answer: expired rows dropped, and
+// every row that says it came down (arrivals) or left (departures) added or
+// refreshed. `changed` is true only when the document is different.
+function yqmSeenMerge(doc, rows, seg, now) {
+  const want = seg === "arrivals" ? "arrived" : "departed";
+  const wall = yqmMonctonWallS(now);
+  const prev = (doc && doc.rows && typeof doc.rows === "object") ? doc.rows : {};
+  const next = {};
+  let changed = false;
+  for (const k of Object.keys(prev)) {
+    const r = prev[k], ts = Number(r && r.localTimestamp);
+    if (!r || typeof r !== "object" || !isFinite(ts) || wall - ts > YQM_SEEN_TTL_S) { changed = true; continue; }
+    next[k] = r;
+  }
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    if (!r || typeof r !== "object" || r.remembered === true || yqmSeenStatus(r.status) !== want) continue;
+    const k = yqmSeenRowKey(r), ts = Number(r.localTimestamp), f = yqmSeenFlight(r);
+    if (!k || wall - ts > YQM_SEEN_TTL_S) continue;
+    // One movement once: the same flight kept under a time a few minutes off
+    // (re-timed while listed) is replaced by the row as the feed now lists it.
+    for (const o of Object.keys(next)) {
+      if (o !== k && yqmSeenFlight(next[o]) === f && Math.abs(Number(next[o].localTimestamp) - ts) < YQM_SEEN_SAME_S) { delete next[o]; changed = true; }
+    }
+    if (!next[k] || JSON.stringify(next[k]) !== JSON.stringify(r)) { next[k] = r; changed = true; }
+  }
+  return { doc: { v: 1, rows: next }, changed };
+}
+__name(yqmSeenMerge, "yqmSeenMerge");
+// The remembered rows this answer no longer lists, oldest first, marked.
+function yqmSeenAppend(rows, doc, now) {
+  const wall = yqmMonctonWallS(now);
+  const listed = {};
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    const f = yqmSeenFlight(r), ts = Number(r && r.localTimestamp);
+    if (f && isFinite(ts)) (listed[f] = listed[f] || []).push(ts);
+  }
+  const kept = (doc && doc.rows && typeof doc.rows === "object") ? doc.rows : {};
+  const out = [];
+  for (const k of Object.keys(kept)) {
+    const r = kept[k], ts = Number(r && r.localTimestamp), f = yqmSeenFlight(r);
+    if (!r || !f || !isFinite(ts) || wall - ts > YQM_SEEN_TTL_S) continue;
+    if ((listed[f] || []).some((t) => Math.abs(t - ts) < YQM_SEEN_SAME_S)) continue;
+    out.push(Object.assign({}, r, { remembered: true }));
+  }
+  return out.sort((a, b) => Number(a.localTimestamp) - Number(b.localTimestamp));
+}
+__name(yqmSeenAppend, "yqmSeenAppend");
+async function yqmSeenLoad(env, seg, now) {
+  const mem = _yqmSeenMem[seg];
+  if (mem && now - mem.at < YQM_SEEN_READ_MS) return mem.doc;
+  let d = null;
+  try {
+    const got = await env.FIDS_LIVE_FLIGHTS.get(YQM_SEEN_KEY + seg, { type: "json" });
+    d = (got && typeof got === "object" && got.rows && typeof got.rows === "object") ? got : { v: 1, rows: {} };
+  } catch (e) { d = null; }
+  _yqmSeenMem[seg] = { at: now, doc: d, last: d || (mem && (mem.doc || mem.last)) || null };
+  return d;
+}
+__name(yqmSeenLoad, "yqmSeenLoad");
+// One upstream answer in, the same answer plus what it has dropped out.
+// Returns { text, added }; any failure returns the upstream text untouched.
+async function yqmWithMemory(env, ctx, seg, text, now) {
+  let rows;
+  try { rows = JSON.parse(text); } catch (e) { return { text, added: 0 }; }
+  if (!Array.isArray(rows) || !env || !env.FIDS_LIVE_FLIGHTS) return { text, added: 0 };
+  try {
+    const doc = await yqmSeenLoad(env, seg, now);
+    const mem = _yqmSeenMem[seg];
+    const merged = yqmSeenMerge(doc || (mem && mem.last) || { v: 1, rows: {} }, rows, seg, now);
+    if (merged.changed && doc) {
+      _yqmSeenMem[seg] = { at: now, doc: merged.doc, last: merged.doc };
+      try {
+        const p = env.FIDS_LIVE_FLIGHTS.put(YQM_SEEN_KEY + seg, JSON.stringify(merged.doc), { expirationTtl: YQM_SEEN_TTL_S + 3600 });
+        if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(Promise.resolve(p).catch(() => {}));
+        else await p;
+      } catch (e) {}
+    }
+    const extra = yqmSeenAppend(rows, merged.doc, now);
+    if (!extra.length) return { text, added: 0 };
+    return { text: JSON.stringify(rows.concat(extra)), added: extra.length };
+  } catch (e) {
+    return { text, added: 0 };
+  }
+}
+__name(yqmWithMemory, "yqmWithMemory");
+// ════════════════════════════════════════════════════════════════════
 // GENERIC AUTHORITY-FEED MACHINERY (2026-09-05 overnight batch)
 // ════════════════════════════════════════════════════════════════════
 // With the AeroDataBox subscription gone, every airport we can moves to
@@ -10106,10 +10258,16 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         } }
       );
       if (_txt) {
-        return new Response(_txt, { headers: {
+        // v23918 — the rows the feed has dropped but said landed / left come
+        // back on the end of the answer, marked "remembered" (yqmWithMemory).
+        // A failure there answers exactly what cyqm.ca sent, as before.
+        let _mem = { text: _txt, added: 0 };
+        try { _mem = await yqmWithMemory(env, ctx, _seg, _txt, Date.now()); } catch (e) { _mem = { text: _txt, added: 0 }; }
+        return new Response(_mem.text, { headers: {
           "Content-Type": "application/json",
           "Cache-Control": "public, max-age=30",
           "X-Feed-Source": "yqm-cyqm-proxy",
+          "X-Feed-Remembered": String(_mem.added || 0),
           ...corsHeaders(origin)
         } });
       }
@@ -10580,6 +10738,11 @@ export {
   yhzWindowTs,
   yqmNormFlight,
   yqmSchedTs,
+  yqmSeenStatus,
+  yqmSeenMerge,
+  yqmSeenAppend,
+  yqmWithMemory,
+  _yqmSeenMem,
   yytParseTable,
   ysjParsePage,
   yfcParseBoard,

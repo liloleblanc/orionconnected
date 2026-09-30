@@ -184,7 +184,7 @@ function yqmToAdbFlight(f, direction) {
   // v23233 — no fabricated far-side time: the feed only knows the local
   // movement clock, and echoing it painted every card "Arr == Dep".
   const otherSide = { airport: other, airline, quality: ['Live'] };
-  return {
+  const out = {
     number,
     callSign: null,
     status: yqmStatus(f.status),
@@ -193,6 +193,29 @@ function yqmToAdbFlight(f, direction) {
     departure: isDep ? homeSide : otherSide,
     arrival: isDep ? otherSide : homeSide
   };
+  // v23918 — a row the worker kept after cyqm.ca dropped it ("remembered",
+  // see yqmWithMemory in workers/fids-proxy.js). Mapped exactly like a live
+  // row: its status is the feed's own "Arrived at 9:47 PM" / "Departed at
+  // 6:33 AM", so it reaches the gate maps as 'arrived' / 'departed' — an
+  // explicit status adbStatusInferred never marks _stInferred — and the flag
+  // only says which list it belongs in (see the YQM branch of adbFetch).
+  if (f.remembered === true) out._yqmRemembered = true;
+  return out;
+}
+// v23918 — THE ROWS THE WORKER REMEMBERED ARE EVIDENCE, NOT BOARD ROWS. They
+// are last evening's landings and this morning's departures that cyqm.ca no
+// longer lists. The departures and arrivals boards keep showing exactly what
+// the airport lists, so these are set aside (`kept`) for the gate maps'
+// evidence rules alone (window._yqmRemembered, read by _gateFeedKept in
+// fids-core.js); both lists are mapped by yqmToAdbFlight, the same way.
+function yqmSplitRemembered(rows, direction) {
+  const list = [], kept = [];
+  for (const f of (Array.isArray(rows) ? rows : [])) {
+    const m = yqmToAdbFlight(f, direction);
+    if (!m) continue;
+    if (f.remembered === true) kept.push(m); else list.push(m);
+  }
+  return { list, kept };
 }
 // ── TPA (Tampa) native feed — tampaairport.../api/flight-status ────────
 // One endpoint returns BOTH directions (adi: "D"/"A"), with airside
@@ -1196,8 +1219,15 @@ async function adbFetch(iata, direction) {
         if (!r.ok) { _lastWhy = `HTTP ${r.status}`; }
         else {
           const raw = await r.json();
-          const rows = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
-          const list = rows.map(f => yqmToAdbFlight(f, direction)).filter(Boolean);
+          const rowsAll = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
+          // v23918 — the rows the worker remembered go to the gate maps'
+          // evidence only (yqmSplitRemembered); the board lists the rest.
+          const _split = yqmSplitRemembered(rowsAll, direction);
+          try {
+            window._yqmRemembered = window._yqmRemembered || { ap: 'YQM' };
+            window._yqmRemembered[seg] = _split.kept;
+          } catch (eK) {}
+          const list = _split.list;
           console.log(`[FIDS] YQM cyqm.ca feed ${direction}: ${list.length} flights (attempt ${attempt})`);
           if (list.length) {
             // The CYQM webhook subscription was wired but BYPASSED the moment

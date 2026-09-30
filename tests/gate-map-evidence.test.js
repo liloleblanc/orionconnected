@@ -65,10 +65,11 @@ const FNS = [
   '_gateAcFamily', '_gateHereTz', '_gateLocalHour', '_gateNightStop', '_gateCouldTurn',
   '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnConsumed', '_gateOvernightOk', '_gateLandedAt',
   '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
-  '_gateAircraftWhere', '_gateInboundForDeparture', '_gateMapCity', '_gateMapNote', 'fidsInboundAirborne',
+  '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateInboundForDeparture', '_gateMapCity', '_gateMapNote', 'fidsInboundAirborne',
   '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', 'adbStatus',
   'adbStatusInferred', '_fidsClockForLang', '_gateMatchIsNew', '_fixAtLegOrigin', '_fixPlausibleForLeg',
   '_gateLegWindowOpen', '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave', '_gateArrsSeen', 'aircraftCodeToIata',
+  '_gateSeenKeepIdentity',
 ];
 const EXPORTS = FNS.map((n) => n + ': ' + n).join(', ');
 
@@ -89,6 +90,7 @@ function engine(ctx) {
     lineSource('var _GATE_SEEN_KEY = '),
     blockSource('var _GATE_SEEN_FIELDS = [', '];'),
     lineSource('var _GATE_ARR_SEEN = '),
+    lineSource('var _GATE_SEEN_IDENTITY = '),
     lineSource('var _ADB_EXPLICIT_STATUS = '),
     ...FNS.map(fnSource),
     'return { ' + EXPORTS + ', _GATE_DOWN_SEEN: _GATE_DOWN_SEEN };',
