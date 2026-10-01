@@ -16971,9 +16971,18 @@ function gateAutofit(root) {
               }
               // 6. The last resort, so nothing is ever cut: a model that still
               // does not fit at the row's floor comes down to the label's own
-              // size, and the mark and the name with it, never below it. No
-              // board measured reaches this step (window.__acbLastResort counts
-              // it, for the harness).
+              // size, and the mark and the name with it, never below it
+              // (window.__acbLastResort counts it, for the harness).
+              // REAL BOARDS REACH THIS STEP: every PAL-operated Air Canada
+              // Dash 8 (YHZ gate 2C at 16:50, AC7691/AC7677; gate 57 at
+              // 16:00, AC7669/AC7664 + C-GPFI). PAL's wordmark is 6.2 times
+              // as wide as it is tall and is held at the model's size, the
+              // model is one unbreakable phrase ('De Havilland Dash 8-400',
+              // 12.1 em at this size), and the two label pairs with their
+              // spacing are 3.6 of the row's scale. At 1680x1050 (a 380px
+              // panel) that leaves about 12.4px of model over 10px labels
+              // at best, which is where this lands (12.1 over 10.08, mark
+              // 12.6). One row cannot hold that caption at twice the label.
               if (!_fits()) {
                 try { window.__acbLastResort = (window.__acbLastResort || 0) + 1; } catch (e6) {}
                 while (_fs > _lblPx && !_fits()) {

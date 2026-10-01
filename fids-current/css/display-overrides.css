@@ -7625,7 +7625,10 @@ Measured on
    one bottom edge, one height. AC-scoped — tonight's complaint is the AC
    gate; other carriers' pane-matched type plates (v22686) are untouched. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 {
-  padding-bottom: clamp(6px, 0.8vh, 10px) !important;
+  /* v23926 — named, so the lower right panel can reach through exactly
+     this padding to the column's bottom edge (its --rcp-pb). */
+  --rc-col-pb: clamp(6px, 0.8vh, 10px);
+  padding-bottom: var(--rc-col-pb) !important;
   box-sizing: border-box !important;
 }
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-type {
@@ -14761,7 +14764,10 @@ Measured: the shelf
    clip. Shelf clips, inners inherit; the aircraft shelf gets the same
    treatment for its inner layers. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 :is(.v2-rc-shelf-map, .v2-rc-shelf-illus) {
-  border-radius: clamp(12px, 1.6vh, 18px) !important;
+  /* v23926 — named, so the lower right panel's top corners are this
+     radius by reference, not by a copy (its square foot is its own). */
+  --rc-panel-r: clamp(12px, 1.6vh, 18px);
+  border-radius: var(--rc-panel-r) !important;
   overflow: hidden !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 :is(.v2-map-area, .g8-inb-map) {
@@ -22611,7 +22617,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
                 same size, so the same layers land on the same pixels. The
                 caption and the lines are laid on that ground with no colour
                 of their own;
-              · no border, as the upper panel has none;
+              · the upper panel's frame: its own box has no border, and
+                what shows is its map area's 1px #e7eaef rule along the
+                top edge, tapering into the rounded corners; the lower
+                panel wears that same top rule and nothing else;
               · corners mirror the side columns, which are rounded at the top
                 and end square on the bottom edge of the screen: the TOP two
                 corners round with the upper panel's own radius, the BOTTOM
@@ -22625,10 +22634,11 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
                 where the column's top margin is 0.9vh, plus Air Canada's
                 padding on Air Canada; that is what keeps both "flush at the
                 bottom" and "equal height";
-              · the picture keeps its old sky box (222px at 1680x1050); the
-                caption is ONE ROW (v23904), 60px, the same with or without an
-                operator, and the Your Aircraft lines run across the panel's
-                full width under the carrier's mark and title.
+              · the picture keeps its old sky box less the 1px rule (221px
+                at 1680x1050); the caption is ONE ROW (v23904), 60px, the
+                same with or without an operator, and the Your Aircraft lines
+                run across the panel's full width under the carrier's mark
+                and title.
 
    The picture (.v2-rc-shelf-illus) and the Your Aircraft lines
    (.v2-rc-shelf-fi) stay two grid items, both placed on rows 4-6 of the one
@@ -22636,8 +22646,11 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    the panel and carries its frame and ground; the lines lie over its foot,
    transparent. The sky's layers are scaled and drift past the sky box, so the
    ground is painted twice: as the panel's background, and again over the sky
-   layers from the sky box down (::after, clipped there), under the caption.
-   Nothing here uses :has(), which the kiosk browsers drop.
+   layers from the sky box down (::after, masked there), under the caption.
+   Nothing here uses :has(), which the kiosk browsers drop. The two vh-only
+   values this needs (the panels' radius, Air Canada's bottom padding) are
+   read by name from their own rules (--rc-panel-r, --rc-col-pb), so every
+   clamp here carries a width term (the v23730 house rule).
 
    The middle panel is not touched.
 
@@ -22649,9 +22662,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
 /* ── the column and its tokens ── */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gad-map-col-v2 {
-  --rcp-r: clamp(12px, 1.6vh, 18px);                       /* the upper panel's own corners (v23242): 16.8px */
   --rcp-my: 0.9vh;                                         /* the upper panel's own margins: 9.45px */
-  --rcp-pb: 0px;                                           /* the column's bottom padding (Air Canada's below) */
+  /* The column's bottom padding: none, or Air Canada's v22821 padding,
+     which that rule names (--rc-col-pb). */
+  --rcp-pb: var(--rc-col-pb, 0px);
   /* The Your Aircraft lines: 152.9px at 1680x1050. A portrait screen's column
      is narrow and its panel tall, so there the height term takes over from
      the width term (199.7px at 1080x1920, where 9.1vw alone gave 100px and
@@ -22675,9 +22689,9 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   --rcp-type-sh: 0 0 2px rgba(0, 0, 0, 0.95), 0 0 5px rgba(0, 0, 0, 0.6), 0 1px 3px rgba(0, 0, 0, 0.78);
 }
 /* Air Canada's column keeps its v22821 bottom padding, so its upper panel is
-   the 430.7px it was; the lower panel reaches through it to the edge. */
+   the 430.7px it was; the lower panel reaches through it to the edge
+   (--rcp-pb above). Its ground is one flat colour. */
 html body:is([data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gad-map-col-v2 {
-  --rcp-pb: clamp(6px, 0.8vh, 10px);
   --rc-ground-ink: #0b0d10;                                /* the flat ground below (fids-core.js: _gateLowerInkGround) */
 }
 html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gad-map-col-v2 {
@@ -22694,8 +22708,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   max-height: none !important;
   margin: calc(2 * var(--rcp-my) + var(--rcp-pb)) 0 calc(-1 * var(--rcp-pb)) !important;
   padding: 0 !important;
+  /* THE UPPER PANEL'S FRAME. The upper panel's own box has no border; what
+     frames it is its full-size map area's 1px #e7eaef rule along the top
+     (gate-display.css, the right-column uniformity pass), following its
+     rounded corners and tapering into them (no side rules). Its bottom
+     rule lies under the map's divider band, so only the top one shows.
+     The lower panel wears that same top rule, on the same radius. */
   border: 0 !important;
-  border-radius: var(--rcp-r) var(--rcp-r) 0 0 !important;
+  border-top: 1px solid #e7eaef !important;
+  border-radius: var(--rc-panel-r) var(--rc-panel-r) 0 0 !important;
   box-shadow: none !important;
   outline: 0 !important;
   overflow: hidden !important;
@@ -22729,7 +22750,19 @@ html body:is([data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airli
 /* The ground again, over the sky layers from the sky box down: the panel's
    whole box, clipped to the caption and the lines, so the gradients land on
    exactly the pixels they do underneath. Above every sky layer (the front
-   clouds are z 3), under the caption. */
+   clouds are z 3), under the caption.
+   THE JOIN IS ONE PIXEL ROW OF GROUND, NOT A SEAM. The sky box ends on a
+   fraction of a pixel (834.28 at 1680x1050). Clipped there with clip-path,
+   every layer of the ground was anti-aliased on its own along that row, so
+   the bright banner colour under the translucent ramps showed through each
+   of them, and the sky layers that run on under the ground showed through
+   too: a 1px line lighter than both sides (WestJet at night, YHZ gate 16:
+   (31,41,60) between (15,22,37) and (6,16,36); United +9 in blue; Porter
+   +4). The ground is cut by a mask instead, a hard stop that applies to
+   the ground as a whole and lands on whole pixels, and it starts 1px inside
+   the sky box, so the sky's last part-covered row is under it. Measured on
+   the same four boards: the join row matches the ground below it within 2
+   levels. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-illus::after {
   content: '' !important;
   display: block !important;
@@ -22742,7 +22775,9 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   border-radius: 0 !important;
   box-shadow: none !important;
   opacity: 1 !important;
-  clip-path: inset(calc(100% - var(--rcp-cap) - var(--rcp-sheet)) 0 0 0) !important;
+  clip-path: none !important;
+  -webkit-mask-image: linear-gradient(to bottom, transparent calc(100% - var(--rcp-cap) - var(--rcp-sheet) - 1px), #000 calc(100% - var(--rcp-cap) - var(--rcp-sheet) - 1px)) !important;
+  mask-image: linear-gradient(to bottom, transparent calc(100% - var(--rcp-cap) - var(--rcp-sheet) - 1px), #000 calc(100% - var(--rcp-cap) - var(--rcp-sheet) - 1px)) !important;
   pointer-events: none !important;
   z-index: 4 !important;
 }

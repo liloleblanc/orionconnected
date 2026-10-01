@@ -234,16 +234,7 @@ test('the artwork is never recoloured', () => {
 test('every clamp on the card carries a width term', () => {
   // The v23730 house rule: a vh-only clamp sizes off height alone and
   // overflows the moment a board is narrower than the geometry it was tuned on.
-  // The card's CSS runs from its v23758 header to its own last rule (the last
-  // one naming an .hcard- class). The file is append-only, so slicing to the
-  // end of the file swept in every block added after the card, and those
-  // blocks are not the card (v23926's right-column panel radius is the upper
-  // panel's own vh-only clamp, copied exactly).
-  const start = CSS.indexOf('v23758 — FROM THE ARCHIVE');
-  const lastRule = CSS.lastIndexOf('.hcard-');
-  const end = CSS.indexOf('\n}', lastRule);
-  assert.ok(start > 0 && lastRule > start && end > lastRule, 'the card\'s CSS is bounded');
-  const seg = CSS.slice(start, end + 2);
+  const seg = CSS.slice(CSS.indexOf('v23758 — FROM THE ARCHIVE'));
   const all = seg.match(/clamp\([^()]*(?:\([^()]*\)[^()]*)*\)/g) || [];
   assert.ok(all.length >= 8, `expected the card's clamps, found ${all.length}`);
   const bad = all.filter((c) => c.includes('vh') && !c.includes('vw'));

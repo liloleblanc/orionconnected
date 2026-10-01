@@ -118,20 +118,26 @@ test('the v23926 block exists, is the last word on these elements, and leaves th
 test('the upper panel is the map panel as it was: three rows, 0.9vh margins, four round corners, the same size', () => {
   assert.match(CSS, /\.gad-map-col-v2 > \.v2-rc-shelf-map\s+\{ grid-row: span 3 !important;/, 'it spans rows 1-3');
   assert.match(PLAIN, /\.g8-wrap \.gad-map-col-v2 > \.v2-rc-shelf \{\s*margin: 0\.9vh 0\.7vw !important;/, 'its 0.9vh margins');
-  assert.match(PLAIN, /\.gad-map-col-v2 :is\(\.v2-rc-shelf-map, \.v2-rc-shelf-illus\) \{\s*border-radius: clamp\(12px, 1\.6vh, 18px\) !important;/,
+  // Its corners (v23242): one rule rounds both panels, and names its radius
+  // so the lower panel's top corners are that radius by reference.
+  assert.match(PLAIN, /\.gad-map-col-v2 :is\(\.v2-rc-shelf-map, \.v2-rc-shelf-illus\) \{\s*--rc-panel-r: clamp\(12px, 1\.6vh, 18px\);\s*border-radius: var\(--rc-panel-r\) !important;/,
     'its corners (v23242)');
-  // The lower panel's tokens are those same two values, character for character.
-  assert.equal(token('--rcp-r'), 'clamp(12px, 1.6vh, 18px)');
+  assert.doesNotMatch(RULES, /--rc-panel-r:/, 'the block never restates the radius');
+  // The lower panel's margin token is the upper panel's, character for character.
   assert.equal(token('--rcp-my'), '0.9vh');
   // The column's padding is not touched, so Air Canada's v22821 bottom
   // padding still sits under the upper panel's grid (430.67px tall at
   // 1680x1050, as it was; the first v23926 cut zeroed it and the panel grew
   // to 434.88). The lower panel reaches through it by the same amount.
   assert.doesNotMatch(RULES, /padding-bottom/, 'the block never sets the column\'s padding');
-  const v22821 = PLAIN.match(new RegExp('html body:is\\(' + AC.replace(/[[\]().*"]/g, '\\$&') + '\\):not\\(#_\\):not\\(#_\\) \\.g8-wrap \\.gad-map-col-v2 \\{\\s*padding-bottom: ([^;]+) !important;'));
-  assert.ok(v22821, 'Air Canada\'s v22821 padding is still in the file');
-  assert.equal(ruleFor('.g8-wrap .gad-map-col-v2', AC).match(/--rcp-pb: ([^;]+);/)[1], v22821[1], 'the lower panel knows that padding exactly');
-  assert.equal(token('--rcp-pb'), '0px', 'and every other carrier has none');
+  // That rule names its padding (the value it always had), and the lower
+  // panel reads the name: Air Canada's padding where it is set, none on every
+  // other carrier.
+  const v22821 = PLAIN.match(new RegExp('html body:is\\(' + AC.replace(/[[\]().*"]/g, '\\$&') + '\\):not\\(#_\\):not\\(#_\\) \\.g8-wrap \\.gad-map-col-v2 \\{\\s*--rc-col-pb: ([^;]+);\\s*padding-bottom: var\\(--rc-col-pb\\) !important;'));
+  assert.ok(v22821, 'Air Canada\'s v22821 padding is still in the file, named');
+  assert.equal(v22821[1], 'clamp(6px, 0.8vh, 10px)', 'the value it always had');
+  assert.equal(token('--rcp-pb'), 'var(--rc-col-pb, 0px)', 'the lower panel knows that padding exactly, and none elsewhere');
+  assert.doesNotMatch(RULES, /--rc-col-pb:/, 'the block never restates the padding');
 });
 
 test('the lower panel: one panel on rows 4-6, the size of the upper, flush on the bottom edge', () => {
@@ -149,14 +155,16 @@ test('the lower panel: one panel on rows 4-6, the size of the upper, flush on th
   assert.match(sheet, /align-self: end !important;/, 'the Your Aircraft lines sit on the panel\'s foot');
   assert.match(ruleFor('.g8-wrap .gad-map-col-v2'), /grid-template-columns: minmax\(0, 1fr\) !important;/);
   // Corners: top two round with the upper panel's radius, bottom two square.
-  assert.match(plate, /border-radius: var\(--rcp-r\) var\(--rcp-r\) 0 0 !important;/);
+  assert.match(plate, /border-radius: var\(--rc-panel-r\) var\(--rc-panel-r\) 0 0 !important;/);
   assert.match(sheet, /border-radius: 0 !important;/);
-  // One frame, as the upper panel has: no border, no outline, no shadow.
+  // One frame, the upper panel's (its top rule, next test); no outline, no
+  // shadow, and the lines lying on its foot have none of their own.
   for (const d of [plate, sheet]) {
     assert.match(d, /border: 0 !important;/);
     assert.match(d, /outline: 0 !important;/);
     assert.match(d, /box-shadow: none !important;/);
   }
+  assert.doesNotMatch(sheet, /border-(top|right|bottom|left):/);
   // The arithmetic, at three sizes, from the declared margins: both panels
   // span three of the column's six equal rows (the grid's height is the
   // column's less its bottom padding), each gives up its two vertical
@@ -178,6 +186,39 @@ test('the lower panel: one panel on rows 4-6, the size of the upper, flush on th
       if (VH === 10.5) assert.ok(Math.abs(upper - (P ? 430.67 : 434.88)) < 0.05, `the upper panel keeps its ${upper.toFixed(2)}px at 1680x1050`);
     }
   }
+});
+
+test('the lower panel wears the upper panel\'s frame: the map area\'s 1px top rule, on the same radius', () => {
+  // The upper panel's own box has no border. What frames it on screen is its
+  // map area's rule (gate-display.css, the right-column uniformity pass): 1px
+  // #e7eaef top and bottom, no sides. The map area fills the panel and takes
+  // its radius, so the top rule runs along the panel's top edge and tapers
+  // into its rounded corners; the bottom rule lies under the map's divider
+  // band. Measured at 1680x1050: (231,234,239) on the panel's top row, on Air
+  // Canada at night and on PAL with the mark. The lower panel had none.
+  const rim = GATE_PLAIN.match(/\.gad-map-col-v2 \.v2-map-area \{ border-top: (1px solid #[0-9a-f]{6}) !important; border-bottom: (1px solid #[0-9a-f]{6}) !important; \}/i);
+  assert.ok(rim, 'the map area\'s rule');
+  assert.equal(rim[1], '1px solid #e7eaef');
+  assert.match(PLAIN, /\.gad-map-col-v2 :is\(\.v2-map-area, \.g8-inb-map\) \{\s*border-radius: inherit !important;/, 'on the panel\'s radius');
+  assert.match(PLAIN, /\.gad-map-col-v2 \.v2-rc-shelf-map \.v2-map-area \{\s*position: absolute !important;\s*inset: 0 !important;/, 'filling the panel');
+  assert.match(GATE_PLAIN, /\.g8-wrap \.gad-map-col-v2 > \.v2-rc-shelf-map::after \{[^}]*bottom: 0 !important; z-index: 7 !important;/, 'the divider band over its bottom rule');
+  const plate = ruleFor('.gad-map-col-v2 > .v2-rc-shelf-illus');
+  assert.match(plate, /border: 0 !important;\s*border-top: 1px solid #e7eaef !important;/, 'the lower panel: the same top rule, no other');
+  assert.equal(plate.match(/border-top: ([^;]+) !important;/)[1], rim[1], 'character for character');
+  // Its children sit inside it: a positioned layer at top 0 starts under the
+  // rule, and the panel clips at its padding edge, so nothing paints over it.
+  assert.match(plate, /overflow: hidden !important;/);
+});
+
+test('the house rule: every clamp in the block carries a width term', () => {
+  // v23730: a vh-only clamp sizes off height alone and overflows the moment a
+  // board is narrower than the geometry it was tuned on. The two values this
+  // block needs that ARE vh-only clamps (the panels' radius, Air Canada's
+  // padding) live in their own rules, by name, and are read here by var().
+  const all = BLOCK.match(/clamp\([^()]*(?:\([^()]*(?:\([^()]*\)[^()]*)*\)[^()]*)*\)/g) || [];
+  assert.ok(all.length >= 8, `expected the block's clamps, found ${all.length}`);
+  const bad = all.filter((c) => c.includes('vh') && !c.includes('vw'));
+  assert.deepEqual(bad, [], 'these clamps have no width term: ' + bad.join(', '));
 });
 
 test('one ground, and it is the upper panel\'s: the same layers, value for value', () => {
@@ -205,7 +246,17 @@ test('one ground, and it is the upper panel\'s: the same layers, value for value
   const after = ruleFor('.gad-map-col-v2 > .v2-rc-shelf-illus::after');
   assert.match(after, /content: '' !important;/);
   assert.match(after, /inset: 0 !important;/, 'the panel\'s whole box, so the gradients land where they do underneath');
-  assert.match(after, /clip-path: inset\(calc\(100% - var\(--rcp-cap\) - var\(--rcp-sheet\)\) 0 0 0\) !important;/);
+  // Cut by a hard-stop MASK, 1px inside the sky box. The sky box ends on a
+  // fraction of a pixel. A clip-path there anti-aliased each of the ground's
+  // layers on its own along that row (the bright banner colour under the
+  // translucent ramps showed through), and the sky layers running on under
+  // the ground showed through as well: a 1px line lighter than both sides on
+  // a night sky (WestJet (31,41,60) between (15,22,37) and (6,16,36)). A mask
+  // applies to the ground as a whole and its hard stop lands on whole pixels.
+  const cut = 'linear-gradient(to bottom, transparent calc(100% - var(--rcp-cap) - var(--rcp-sheet) - 1px), #000 calc(100% - var(--rcp-cap) - var(--rcp-sheet) - 1px)) !important;';
+  assert.ok(after.includes('-webkit-mask-image: ' + cut), 'the prefixed mask (the kiosk browsers)');
+  assert.ok(after.includes('\n  mask-image: ' + cut), 'and the standard one');
+  assert.match(after, /clip-path: none !important;/, 'no clip-path edge');
   assert.match(after, /z-index: 4 !important;/);
   assert.match(ruleFor('.gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap'), /z-index: 5 !important;/);
   // The lines paint nothing: they lie on that ground.
@@ -258,11 +309,12 @@ test('the sky, the aircraft, the caption and the lines measure from the same two
   assert.match(cap, /bottom: var\(--rcp-sheet\) !important;/, 'the caption sits on the lines, no gap');
   assert.match(cap, /height: var\(--rcp-cap\) !important;/);
   assert.match(ruleFor('.gad-map-col-v2 > .v2-rc-shelf-fi'), /height: var\(--rcp-sheet\) !important;/);
-  // At 1680x1050 the sky box keeps the old shelf's size (222.1), the caption
-  // is the 60px one-row band and the lines get 153px of the panel.
+  // At 1680x1050 the sky box is the old shelf's size less the 1px top rule
+  // (221.1 of 222.1), the caption is the 60px one-row band and the lines get
+  // 153px of the panel.
   const panel = (913.5 - 6) / 6 * 3 - 2 * 0.9 * 10.5;
-  const skyPx = panel - px(token('--rcp-cap'), 16.8, 10.5) - px(token('--rcp-sheet'), 16.8, 10.5);
-  assert.ok(Math.abs(skyPx - 222.1) < 0.5, `sky box ${skyPx.toFixed(1)}px`);
+  const skyPx = panel - 1 - px(token('--rcp-cap'), 16.8, 10.5) - px(token('--rcp-sheet'), 16.8, 10.5);
+  assert.ok(Math.abs(skyPx - 221.1) < 0.5, `sky box ${skyPx.toFixed(1)}px`);
   assert.ok(Math.abs(px(token('--rcp-cap'), 16.8, 10.5) - 59.85) < 0.05);
   // The lines' height is the same on every landscape board as the first cut
   // gave it, and a portrait screen's tall, narrow panel gives them room
