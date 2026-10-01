@@ -50,7 +50,7 @@ function fnSource(name) {
   throw new Error(`could not find the end of ${name}()`);
 }
 
-// v23923 — _gateLiveGates asks _gateFlightLive, which carries the boarding
+// v23925 — _gateLiveGates asks _gateFlightLive, which carries the boarding
 // hold and reads the feed's own word (_gateOutboundAtGate), an operator's
 // override (_gateOverrideWord) and the evidence that a flight has left
 // (_gateDepLeft), and then the yield (_gateHoldYields). Lift the whole chain, and the two
@@ -367,7 +367,7 @@ test('a feed that moved on under the dropdown still yields a gate', () => {
   assert.ok(['A1', 'A2', 'A3'].includes(r.gate), `chose ${r.gate}`);
 });
 
-// ── v23923 — the boarding hold reaches every pick path ──────────────────────
+// ── v23925 — the boarding hold reaches every pick path ──────────────────────
 // A flight the feed itself still calls Boarding keeps its gate up to an hour
 // past its time. The hold lives in _gateFlightLive, which _gateLiveGates asks,
 // so updateSubScreens, the cycle's pickGate and the gids.html boot pick (the
@@ -396,11 +396,11 @@ test('every pick path holds a gate whose flight the airport still calls Boarding
   // The cycle's hop goes through the same function (see the test above).
   const cycle = core.slice(core.indexOf('function pickGate()'), core.indexOf('// TWO drive modes:'));
   assert.match(cycle, /_gateLiveGates\(data\.dep\)/);
-  // A clock-made boarding (a row a pre-v23923 screen remembered) holds nothing.
+  // A clock-made boarding (a row a pre-v23925 screen remembered) holds nothing.
   assert.deepEqual(liveGates([Object.assign({}, held[0], { _stInferred: true }), held[1]], NOW), ['5']);
 });
 
-// v23923 — and the yield reaches them too. Moncton gate 1 runs AC2037 (06:35)
+// v23925 — and the yield reaches them too. Moncton gate 1 runs AC2037 (06:35)
 // and AC7753 (07:10). If the feed leaves AC2037 on "Boarding" after AC7753 has
 // departed, gate 1 has nothing left to show: a walking display must not land
 // there and paint "Awaiting Next Flight" under a gate the hold kept "live".

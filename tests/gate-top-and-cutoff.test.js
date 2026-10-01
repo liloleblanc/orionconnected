@@ -6,7 +6,7 @@
 // Requested: the top-panel shelves must carry the airport code once the board
 // switches to boarding, for all airlines; and the gate cut-off is five minutes.
 //
-// v23923 — the cut-off is no longer the clock's: GATE CLOSED shows on the
+// v23925 — the cut-off is no longer the clock's: GATE CLOSED shows on the
 // airport's own word (see the last test).
 
 const test = require('node:test');
@@ -87,7 +87,7 @@ test('the boarding destination keeps the duplicate pair the rail keeps', () => {
 // ── The cut-off ──────────────────────────────────────────────────────────
 
 test('GATE CLOSED is the airport\'s word, never the clock\'s', () => {
-  // v23923 — the gate reads closed when the flight's own word says so (the
+  // v23925 — the gate reads closed when the flight's own word says so (the
   // feed's, an operator's, a test flight's). The v23526 five-minute clock
   // cut-off closed every gate before its time even while the feed still said
   // Boarding, and with the gate now holding a boarding flight for up to an

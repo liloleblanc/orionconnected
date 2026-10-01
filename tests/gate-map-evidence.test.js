@@ -329,13 +329,13 @@ test('an "On Time" arrival 40 minutes past its time, with nothing else, is NOT a
   // What cyqm.ca sends for PD2373 until it says "Arrived at": a neutral status.
   const raw = { status: 'scheduled', arrival: { scheduledTime: { local: '2026-09-29 16:33-03:00' } } };
   const st = E.adbStatus(raw, 'arr', sched, now);
-  // v23923 — the clock no longer makes claims anywhere: the board's status
+  // v23925 — the clock no longer makes claims anywhere: the board's status
   // column keeps the airport's own neutral word, and nothing is inferred.
   assert.equal(st, 'ontime', 'the board keeps the airport\'s word, not the clock\'s "Arrived"');
   assert.equal(E.adbStatusInferred(raw, st), false, 'a neutral word is no claim, so nothing is inferred');
   assert.equal(E.adbStatusInferred({ status: 'arrived' }, 'arrived'), false, 'the feed\'s own "Arrived" is not inferred');
   const cf = dep('PD2382', 'YHU', '3', 29, 17, 20, { _aircraft: 'DHC-8-400' });
-  // A neutral row, and the same row as a pre-v23923 screen may still remember
+  // A neutral row, and the same row as a pre-v23925 screen may still remember
   // it (a clock-made claim flagged _stInferred): neither puts it on our stand.
   for (const extra of [{}, { _stInferred: true }]) {
     const inb = arr('PD2373', 'YOW', '3', 29, 16, 33, Object.assign({ status: st, _aircraft: 'DHC-8-400' }, extra));

@@ -167,7 +167,7 @@
   <link rel="stylesheet" href="css/baggage-display.css?v=23472">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23923">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23925">
   <script>
   /* v23136 — a ?gate= / ?belt= URL is a GATE screen from the first byte, not
      after the feed lands (intermittently the old screen still showed up; a
@@ -871,11 +871,11 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <!-- v218.99.25 — QR code generator for hotel ad slides -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/gids-layout.js?v=1"></script>
-<script src="js/fids-v2.js?v=23923"></script>
+<script src="js/fids-v2.js?v=23925"></script>
 <script src="data/airline-colors.js?v=23120"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/feed-router.js?v=23923"></script>
-<script src="js/fids-core.js?v=23923"></script>
+<script src="js/feed-router.js?v=23925"></script>
+<script src="js/fids-core.js?v=23925"></script>
 <script src="js/gate-visual-integrity.js?v=23267"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
@@ -1081,7 +1081,7 @@ window.addEventListener("DOMContentLoaded", async function() {
           // day — _live is empty and the old full-list behaviour stands, so a
           // quiet airport still shows a gate and its honest empty state.
           //
-          // v23923 — _gateLiveGates() now also carries the boarding hold (a
+          // v23925 — _gateLiveGates() now also carries the boarding hold (a
           // flight the feed still calls boarding, final call or gate closed
           // keeps its gate up to an hour past its time, _gateFlightLive in
           // fids-core.js) and the hold's yield to the gate's next flight

@@ -2,7 +2,7 @@
 
 // WHY THIS EXISTS
 //
-// v23923. Three rules, one theme: a board says only what the airport said.
+// v23925. Three rules, one theme: a board says only what the airport said.
 //
 // (A) A status that claims something happened — landed, arrived, departed,
 //     boarding, final call, gate closed — shows only on the feed's own word or
