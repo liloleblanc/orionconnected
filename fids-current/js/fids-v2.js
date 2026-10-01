@@ -32,6 +32,10 @@
     'st-boarding':    { en:'Boarding',    fr:'Embarquement',  es:'Embarcando',     de:'Boarding',         it:'Imbarco',          pt:'Embarque',         ja:'搭乗中',   zh:'登机中',   ar:'الصعود' },
     'st-final-call':  { en:'Final call',  fr:'Dernier appel', es:'Última llamada', de:'Letzter Aufruf',   it:'Ultima chiamata',  pt:'Última chamada',   ja:'最終案内', zh:'最后呼叫', ar:'النداء الأخير' },
     'st-gate-closed': { en:'Gate closed', fr:'Porte fermée',  es:'Puerta cerrada', de:'Gate geschlossen', it:'Gate chiuso',      pt:'Portão fechado',   ja:'搭乗終了', zh:'登机口已关闭', ar:'البوابة مغلقة' },
+    // v23925 — an arrival the feed says is in the air ('active') read
+    // "Scheduled | Prévu" because no state matched it. The words are the
+    // board's own for that state (SS.active in fids-core.js).
+    'st-en-route':    { en:'En route',    fr:'En vol',        es:'En vuelo',       de:'Unterwegs',        it:'In volo',          pt:'Em voo',           ja:'飛行中',   zh:'飞行中',   ar:'في الطريق' },
     'st-departed':    { en:'Departed',    fr:'Parti',         es:'Salido',         de:'Abgeflogen',       it:'Partito',          pt:'Partiu',           ja:'出発済',   zh:'已起飞',   ar:'غادرت' },
     'st-arrived':     { en:'Arrived',     fr:'Arrivé',        es:'Llegado',        de:'Angekommen',       it:'Arrivato',         pt:'Chegou',           ja:'到着',     zh:'已到达',   ar:'وصلت' },
     'st-delayed':     { en:'Delayed',     fr:'En retard',     es:'Retrasado',      de:'Verspätet',        it:'In ritardo',       pt:'Atrasado',         ja:'遅延',     zh:'延误',     ar:'متأخر' },
@@ -59,15 +63,20 @@
   window.fidsT = T;
 
   // ── Status normalization ────────────────────────────────────────────────
-  // Maps raw status strings (from ADB / our data) to the 10 canonical states.
+  // Maps raw status strings (from ADB / our data) to the canonical states.
+  // v23925 — there are twelve with 'en-route' (the count of ten written here
+  // had fallen behind long before); the returns below are the list.
   function normStatus(raw) {
     const s = String(raw || '').toLowerCase().trim();
     if (!s) return 'scheduled';
     if (s === 'cancelled' || s === 'canceled') return 'cancelled';
     if (s === 'diverted') return 'diverted';
-    if (s === 'gate-closed' || s === 'closed' || s.includes('gate clos')) return 'gate-closed';
+    // v23925 — 'gateclosed' is the word the board's own status (adbStatus)
+    // carries; without it a feed's "Gate Closed" read "Scheduled | Prévu".
+    if (s === 'gate-closed' || s === 'gateclosed' || s === 'closed' || s.includes('gate clos')) return 'gate-closed';
     if (s === 'final-call' || s === 'final' || s.includes('final call') || s.includes('last call')) return 'final-call';
     if (s === 'boarding' || s === 'gate-open' || s === 'now-boarding') return 'boarding';
+    if (s === 'active' || s === 'en-route') return 'en-route';   // v23925 — see 'st-en-route'
     if (s === 'departed' || s === 'expected' || s === 'enroute' || s === 'inair' || s === 'in-air') return 'departed';
     if (s === 'arrived' || s === 'landed' || s === 'at-gate' || s === 'gate') return 'arrived';
     if (s === 'delayed' || s === 'late') return 'delayed';
@@ -95,6 +104,7 @@
       'departed':    'fids-status-departed',
       'arrived':     'fids-status-arrived',
       'early':       'fids-status-early',
+      'en-route':    'fids-status-scheduled',     // v23925 — plain row ink, no new colour
       // Explicit classes so CSS can treat these two differently: On time
       // stays green, Scheduled reverts to the plain row ink, because a green
       // Prévu clashes with the early state.

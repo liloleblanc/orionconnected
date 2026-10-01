@@ -52,6 +52,13 @@ test('the model is twice its label, the operator mark never smaller than the tex
 
 test('a long model steps down, then goes to two lines instead of being cut', () => {
   assert.match(CORE, /el\.classList\.add\('is-2line'\);/);
+  // v23925 — the caption refits when its operator mark finishes loading (the
+  // mark takes no room until it does, so the first fit measured too wide).
+  assert.match(CORE, /gView\.querySelectorAll\('\.v2-rc-acb-cap img'\)\.forEach\(function \(im\) \{\s*if \(im\.complete\) return;\s*im\.addEventListener\('load', function \(\) \{\s*if \(window\._gateFitGeneration !== _fitGeneration\) return;/);
+  // v23925 — with no registration there is no second line to take: the model
+  // keeps stepping down to the label's own size instead of being clipped at
+  // the 1.25x floor ('Airbus A3' on a Rouge A321 at YQM gate 4).
+  assert.match(CORE, /\} else if \(!_fits\(\)\) \{(?:\s*\/\/[^\n]*\n)*\s*while \(_fs > _lblPx && !_fits\(\)\) \{ _fs -= 1; el\.style\.setProperty\('font-size', _fs \+ 'px', 'important'\); \}/);
   assert.match(CORE, /<span class="v2-rc-acb-sep">\|<\/span>/, 'the separator is addressable so two lines can drop it');
   assert.match(block, /\.is-2line \.v2-rc-acb-sep \{\s*display: none !important;/);
   assert.match(block, /\.is-2line > span:not\(\.v2-rc-reg-expected\):not\(\.v2-rc-acb-sep\)/,

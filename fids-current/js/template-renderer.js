@@ -212,15 +212,19 @@
   function _liveFlights(source) {
     try {
       const list = source === 'arr' ? window.flightsArr : window.flightsDep;
+      // v23925 — a departure as the departures board shows it (window.fidsShownRow,
+      // fids-core.js): Boarding in its boarding window at an airport whose feed
+      // never says it, so a templated list agrees with the board and the gate.
+      const _shown = (source !== 'arr' && typeof window.fidsShownRow === 'function') ? window.fidsShownRow : null;
       if (Array.isArray(list) && list.length) {
-        return list.map(f => ({
+        return list.map(f0 => { const f = (_shown && _shown(f0)) || f0; return {
           flight:      f.flight || f.number || '',
           airline:     f.airline || (f.flight || '').slice(0, 2),
           destination: f.destination || f.dest || f.city || f.origin || '',
           time:        f.time || f.sched || f.scheduled || '',
           status:      f.status || f.state || '',
           gate:        f.gate || f.terminal || ''
-        }));
+        }; });
       }
     } catch (e) {}
     return [
@@ -251,6 +255,8 @@
       let f = null;
       if (gate) f = list.find(x => String(x && (x.gate || x.terminal) || '').toUpperCase() === gate.toUpperCase());
       if (!f) f = list[0];
+      // v23925 — the row as the departures board shows it (see _liveFlights).
+      try { if (f && typeof window.fidsShownRow === 'function') f = window.fidsShownRow(f) || f; } catch (eS) {}
       if (f) {
         // Format helpers for the live fields surfaced in Push A
         const num = (v, suffix) => (v != null && v !== '' && !isNaN(v)) ? (Math.round(v) + (suffix || '')) : '';

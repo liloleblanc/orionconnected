@@ -42,7 +42,8 @@
     const status = String(value || '').replace(/[\s_-]+/g, '').toLowerCase();
     const labels = {
       scheduled: 'On time', expected: 'On time', active: 'En route', enroute: 'En route',
-      boarding: 'Boarding', gateclosed: 'Gate closed', departed: 'Departed',
+      // v23925 — the shared router passes a final call through as 'final'.
+      boarding: 'Boarding', final: 'Final call', finalcall: 'Final call', gateclosed: 'Gate closed', departed: 'Departed',
       arrived: 'Arrived', landed: 'Arrived', delayed: 'Delayed', cancelled: 'Cancelled',
       canceled: 'Cancelled', diverted: 'Diverted'
     };

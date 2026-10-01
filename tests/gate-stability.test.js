@@ -42,6 +42,29 @@ test('all display entry points load the date-context helper before core', () => 
     assert.ok(helper >= 0, `${file} is missing the date helper`);
     assert.ok(main >= 0, `${file} must bust fids-core.js at the current build tag v${buildTag}`);
     assert.ok(main > helper, `${file} must load the date helper before core`);
+    // v23925 — the status words now live in three files that must move
+    // together: the router names the airport's word, core turns it into the
+    // board's status, and fids-v2.js prints it. A new core running against a
+    // cached old router or status map would print "Boarding" for a final call
+    // or "Scheduled" for a gate closed, so the two shared scripts carry the
+    // build tag too.
+    for (const shared of ['js/feed-router.js', 'js/fids-v2.js']) {
+      const m = html.match(new RegExp(shared.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '\\?v=(\\d+)'));
+      assert.ok(m, `${file} must load ${shared} with a cache buster`);
+      assert.equal(m[1], buildTag, `${file} must bust ${shared} at the current build tag v${buildTag}`);
+    }
+  }
+  // v23925 — and every other page that loads the shared router: the companion
+  // app (which reads the router's new 'final' word) and the studio editor and
+  // player (studio-data.js reads it too). A router change that left one of
+  // them on a cached old copy would print the old words there.
+  for (const file of ['app.html', 'js/studio.js', 'js/studio-player.js']) {
+    const src = fs.readFileSync(path.join(root, file), 'utf8');
+    const all = src.match(/feed-router\.js\?v=(\d+)/g) || [];
+    assert.ok(all.length > 0, `${file} must load feed-router.js with a cache buster`);
+    for (const one of all) {
+      assert.equal(one.replace(/^.*\?v=/, ''), buildTag, `${file} must bust feed-router.js at the current build tag v${buildTag}`);
+    }
   }
 });
 

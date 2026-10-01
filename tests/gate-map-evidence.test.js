@@ -92,6 +92,7 @@ function engine(ctx) {
     lineSource('var _GATE_ARR_SEEN = '),
     lineSource('var _GATE_SEEN_IDENTITY = '),
     lineSource('var _ADB_EXPLICIT_STATUS = '),
+    lineSource('var ARR_CONFIRM_MIN = '),
     ...FNS.map(fnSource),
     'return { ' + EXPORTS + ', _GATE_DOWN_SEEN: _GATE_DOWN_SEEN };',
   ].join('\n');
@@ -329,15 +330,23 @@ test('an "On Time" arrival 40 minutes past its time, with nothing else, is NOT a
   // What cyqm.ca sends for PD2373 until it says "Arrived at": a neutral status.
   const raw = { status: 'scheduled', arrival: { scheduledTime: { local: '2026-09-29 16:33-03:00' } } };
   const st = E.adbStatus(raw, 'arr', sched, now);
-  assert.equal(st, 'arrived', 'the board\'s status column still reads it off the clock');
-  assert.equal(E.adbStatusInferred(raw, st), true, 'and says so');
+  // v23925 — the clock no longer makes claims anywhere: the board's status
+  // column keeps the airport's own neutral word, and nothing is inferred.
+  assert.equal(st, 'ontime', 'the board keeps the airport\'s word, not the clock\'s "Arrived"');
+  assert.equal(E.adbStatusInferred(raw, st), false, 'a neutral word is no claim, so nothing is inferred');
   assert.equal(E.adbStatusInferred({ status: 'arrived' }, 'arrived'), false, 'the feed\'s own "Arrived" is not inferred');
-  const inb = arr('PD2373', 'YOW', '3', 29, 16, 33, { status: st, _stInferred: true, _aircraft: 'DHC-8-400' });
   const cf = dep('PD2382', 'YHU', '3', 29, 17, 20, { _aircraft: 'DHC-8-400' });
-  const res = E._gateAircraftWhere(inb, cf, now);
-  assert.notEqual(res.kind, 'stand');
-  assert.equal(res.kind, 'none');
-  assert.equal(E.fidsInboundAirborne(inb), false, 'nor is it flying on the clock\'s word');
+  // A neutral row, and the same row as a pre-v23925 screen may still remember
+  // it (a clock-made claim flagged _stInferred): neither puts it on our stand.
+  for (const extra of [{}, { _stInferred: true }]) {
+    const inb = arr('PD2373', 'YOW', '3', 29, 16, 33, Object.assign({ status: st, _aircraft: 'DHC-8-400' }, extra));
+    const res = E._gateAircraftWhere(inb, cf, now);
+    assert.notEqual(res.kind, 'stand');
+    assert.equal(res.kind, 'none');
+    assert.equal(E.fidsInboundAirborne(inb), false, 'nor is it flying on the clock\'s word');
+  }
+  const remembered = arr('PD2373', 'YOW', '3', 29, 16, 33, { status: 'arrived', _stInferred: true, _aircraft: 'DHC-8-400' });
+  assert.equal(E._gateAircraftWhere(remembered, cf, now).kind, 'none', 'an old clock-made "arrived" is still not a landing');
 });
 
 test('an arrival that landed at 17:03 and left again as the 17:20 is NOT at our stand for a later departure', () => {
@@ -568,6 +577,16 @@ test('no new Flightradar24 lookups: an inbound only the new pairing rules found 
   const due = { flight: 'PB923', _locIata: 'YDF', _sortTs: Date.now() + 30 * MIN };
   assert.equal(E._gateLegWindowOpen(due, 'YQM'), true, 'in its window');
   assert.equal(E._gateLegWindowOpen(Object.assign({}, due, { _gateNoAdsb: true }), 'YQM'), false, 'but never looked up');
+  // v23925 — an arrival stays looked up until the airport confirms it, up to
+  // ARR_CONFIRM_MIN past its time (it was 8 minutes): AC1986 Toronto, due
+  // 00:03, still "Early at 12:02 AM" in the feed at 00:10 with no landing seen.
+  const landed = { flight: 'AC1986', _locIata: 'YYZ', _sortTs: Date.now() - 25 * MIN };
+  assert.equal(E._gateLegWindowOpen(landed, 'YQM'), true, '+25 min, nothing confirms it: still watched');
+  assert.equal(E._gateLegWindowOpen(Object.assign({}, landed, { _sortTs: Date.now() - 31 * MIN }), 'YQM'), false, '+31 min: closed');
+  assert.match(CORE, /^var ARR_CONFIRM_MIN = 30;/m);
+  assert.match(fnSource('_gateNumbersPoll'), /if \(_arrDue && Date\.now\(\) >= _arrDue \+ ARR_CONFIRM_MIN \* 60000\) return;/, 'the neutral stop waits the same half hour');
+  assert.match(CORE, /_lwNow > _lwArr \+ ARR_CONFIRM_MIN \* 60000/, 'and the map keeps the fix for it');
+  assert.doesNotMatch(CORE, /_lwArr \+ 8 \* 60000|arr \+ 8 \* 60000/, 'no 8-minute close left');
   // The render tags the match; the poll returns before any lookup of its own.
   assert.match(CORE, /_gateMatchFallback\._gateNoAdsb = _gateMatchIsNew\(_gateMatchFallback, currentFlight, _gateVal\);/);
   const poll = fnSource('_gateNumbersPoll');

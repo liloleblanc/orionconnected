@@ -22565,3 +22565,25 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 .leaflet-marker-icon.gate-apron-other img[src*="/logos/map-plane-"] {
   opacity: 0.55;
 }
+
+/* ══ v23925 — THE LATE-INBOUND NOTICE, ONE WHOLE SENTENCE PER LINE ═════════
+   When the inbound is late and the airline has published no new time, the
+   gate's message strip (.g8-r3-v2 when idle, .g8-r3-bottom over a takeover)
+   reads "The incoming aircraft has been delayed. Updated boarding time to
+   follow." in the board's two languages (_gateInbLateNotice / _gateLbl in
+   fids-core.js). Both strips are flex rows, so the pair is wrapped in one
+   block (.g8-msg-pair) and each language is its own block line inside it:
+   the only break between the languages is the one between the sentences, and
+   a sentence is never severed across the pair. Balanced wrapping keeps a
+   sentence that is wider than the strip from leaving one word on a line. */
+.g8-r3 .g8-msg-pair {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+.g8-r3 .g8-msg-l {
+  display: block;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  text-wrap: balance;
+}
