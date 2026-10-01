@@ -5460,6 +5460,19 @@ var OPBY_WORDMARKS_THEMED = {
   'SKW': { onDark:'/logos/airlines/us-regional/skywest-airlines-wordmark-light.svg', onLight:'/logos/airlines/us-regional/skywest-airlines-wordmark-dark.svg' },
   'PT':  { onDark:'/logos/airlines/us-regional/piedmont-wordmark-light.svg',       onLight:'/logos/airlines/us-regional/piedmont-wordmark-dark.svg' },
   'PDT': { onDark:'/logos/airlines/us-regional/piedmont-wordmark-light.svg',       onLight:'/logos/airlines/us-regional/piedmont-wordmark-dark.svg' },
+  // v23926 — PAL's wordmark is navy lettering (#1C3474). The Air Canada
+  // caption it sits in was a light grey strip; it is now the lower panel's
+  // own ground, Air Canada's near-black, where navy lettering vanishes. PAL's
+  // white lettering on a dark ground, its colour lettering on a light one.
+  'PB':  { onDark:'/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg' },
+  'PVL': { onDark:'/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg' },
+  // v23926 — Rouge, for the same reason. rouge.svg is crimson lettering
+  // (#A21C37, 'AIR CANADA' in #EC1C2B): right on the old light grey strip
+  // (v23464), about 2.5:1 on Air Canada's near-black ground. Its published
+  // white lettering on a dark ground, as OPERATOR_LOGOS_THEMED and the banner
+  // already use it; its crimson on a light one.
+  'RV':  { onDark:'/logos/airlines/canadian/rouge-monochrome-white.svg',           onLight:'/logos/airlines/canadian/rouge.svg' },
+  'ROU': { onDark:'/logos/airlines/canadian/rouge-monochrome-white.svg',           onLight:'/logos/airlines/canadian/rouge.svg' },
   'YV':  { onDark:'/logos/airlines/us-regional/mesa-airlines.svg',                 onLight:'/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg' },
   'ASH': { onDark:'/logos/airlines/us-regional/mesa-airlines.svg',                 onLight:'/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg' },
   '9E':  { onDark:'/logos/airlines/us-regional/endeavor-air-monochrome-white.svg', onLight:'/logos/airlines/us-regional/endeavor-air.svg' },
@@ -5514,6 +5527,10 @@ function _opbyContrastFix(root) {
         return { r: +q[1], g: +q[2], b: +q[3], a: (q[4] === undefined ? 1 : +q[4]) };
       };
       var e = im, layers = [];
+      // v23926 — on the lower right panel the caption has no ground of its
+      // own: the panel's published one is the ground (see _rcLowerGround).
+      var _rcG2 = (typeof _rcLowerGround === 'function') ? _rcLowerGround(im) : null;
+      if (_rcG2) { layers.push({ r: _rcG2[0], g: _rcG2[1], b: _rcG2[2], a: 1 }); e = null; }
       while (e && e.nodeType === 1) {
         var lay = _px(getComputedStyle(e).backgroundColor);
         if (lay && lay.a > 0) {
@@ -11098,6 +11115,12 @@ function _buildV2MapCol(ctx, vars) {
       // its own. Same carrier, same badge and same fit as the top-left orb.
       var _mcParts = window._gateOrbParts(_mcOrbArt || _mcCode);
       var _mcBadge = _mcParts.badge + 'color:#fff;';
+      // v23926 — art that is itself a disc fills its box (padding 0 in the
+      // badge above). The merged panel's stylesheet pads the box, so it is
+      // told which kind of art it holds: without this Delta's orb sat smaller
+      // inside its own red ground. Written ahead of v2-fi-orbwrap so the
+      // operator repaint's match on 'v2-fi-orbwrap" style="' still holds.
+      var _mcWrapCls = _mcParts.native ? ' v2-fi-orbwrap-native' : '';
       // v23203 — the orb carries the OPERATOR's logo when another carrier
       // flies the leg
       // 
@@ -11233,7 +11256,7 @@ function _buildV2MapCol(ctx, vars) {
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _mcBadge + '">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge' + _mcWrapCls + ' v2-fi-orbwrap" style="' + _mcBadge + '">'
         +       (_mcOrbSrc
                   // v23222 — BITMAP ROUNDELS STAY NATIVE (a G4 screenshot:
                   // Rouge rendered as an empty square). rouge-icon.png is a
@@ -11544,6 +11567,7 @@ function _buildV2MapCol(ctx, vars) {
       // v23396 — same recipe as the rail (see _gateOrbParts).
       var _niParts = window._gateOrbParts(_niOrbArt || _niCode);
       var _niBadge = _niParts.badge + 'color:#fff;';
+      var _niWrapCls = _niParts.native ? ' v2-fi-orbwrap-native' : '';   // v23926, as _mcWrapCls
       // v23308 — the status line only says "to be confirmed" when something
       // ACTUALLY is. A screenshot printed it under 'WS812 · From: Calgary YYC',
       // where nothing was left to confirm: the plane was already known to be
@@ -11575,7 +11599,7 @@ function _buildV2MapCol(ctx, vars) {
           '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
         + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
         +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge v2-fi-orbwrap" style="' + _niBadge + '">'
+        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge' + _niWrapCls + ' v2-fi-orbwrap" style="' + _niBadge + '">'
         +       (_niOrbSrc
                   ? '<img class="v2-fi-orb' + _niParts.nativeCls + '" src="' + _niOrbSrc + '" alt="" style="' + _niParts.imgStyle + (/\.png(\?|$)/i.test(_niOrbSrc) ? 'filter:none;' : '') + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_niCode) + '\')">'
                   : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
@@ -12198,12 +12222,26 @@ function _buildV2MapCol(ctx, vars) {
         // emblem; the onerror fallback is the operator's name in bold ink.
         var _opLogo6 = ((typeof operatorWordmarkUrl === 'function') ? operatorWordmarkUrl(_opCode) : null)
           || ((typeof operatorLogoUrl === 'function') ? operatorLogoUrl(_opCode) : null);
+        // v23926 — A NAME THAT IS THE MARKETING CARRIER'S OWN SAYS NOTHING.
+        // Québec's feed gives AC313 (YQB gate 23) operator code 9M, which has
+        // no mark on file, with the name 'AIR CANADA' (the board also names 9M
+        // 'Air Canada', on purpose). The caption printed 'Operated By |
+        // Exploité par: AIR CANADA' on an Air Canada flight, and that name was
+        // wide enough that the fitter took the model down to the label's
+        // size. An operator with no mark whose name is the marketing carrier's
+        // is left out, and the caption is the model alone. An operator with a
+        // mark of its own (Jazz, PAL, Rouge, the US regionals) always shows:
+        // its feed name can be the parent's ('AIR CANADA' on a Jazz leg).
+        var _mktNm6 = String((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_mktCode6]) || '').trim().toUpperCase();
+        var _opSameName6 = !_opLogo6 && !!_mktNm6 && String(_opNm6).trim().toUpperCase() === _mktNm6;
         // v23261 — data-op lets the post-render contrast pass re-pick the
         // themed wordmark once the strip's real background is measurable.
-        _opByVal = _opLogo6
-          ? '<img class="v2-rc-opby-logo" data-op="' + _opCode + '" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
-            + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
-          : '<b>' + _opNm6 + '</b>';
+        if (!_opSameName6) {
+          _opByVal = _opLogo6
+            ? '<img class="v2-rc-opby-logo" data-op="' + _opCode + '" src="' + _opLogo6 + '" alt="' + _opNm6 + '" '
+              + 'onerror="this.outerHTML=\'<b>' + _opNm6 + '</b>\'">'
+            : '<b>' + _opNm6 + '</b>';
+        }
       }
       // v22958 — follows `langs`. _lang2b
       // was the FIFTH airport-keyed second-language picker found this session.
@@ -12295,6 +12333,12 @@ function _buildV2MapCol(ctx, vars) {
         + (_opByVal
             ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">' + _opByLbl + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
+      // v23926 — THE BAND SAYS WHAT IT HOLDS. The stylesheet lays the caption
+      // out by its state (no model yet, an operator beside it), and :has() is
+      // out on the kiosks, so the state is written on the band itself. Without
+      // it the pending words were laid over the operator's label and mark
+      // (seen on YHZ gate 58, a PAL-operated Air Canada flight).
+      var _capCls = 'v2-rc-acb-cap' + (_acKnown ? '' : ' is-pending') + (_opByVal ? ' has-op' : '');
       // The reserved aircraft area should remain an intentional branded panel
       // while a lookup finishes. Never guess a model; hold the airline mark in
       // the space instead of floating a raw "image pending" warning over it.
@@ -12372,7 +12416,7 @@ function _buildV2MapCol(ctx, vars) {
         // — it was stretching the bar to the pane's 268x88 and no stylesheet
         // rule can outrank an inline !important. _fitTypePanel knows the new
         // class, so the text still sizes itself to the bar.
-        +   '<div class="v2-rc-acb-cap">' + _typeCellHtml + '</div>'
+        +   '<div class="' + _capCls + '">' + _typeCellHtml + '</div>'
         + '</div>';
     }
   } catch (e) {}
@@ -12403,7 +12447,7 @@ function _buildV2MapCol(ctx, vars) {
               + 'src="/textures/gate-fg-clouds.mp4?v=23072"></video>' : '')
       +   '<div id="gateCloudsFg" aria-hidden="true"></div>'
         +   '<i id="gateNightSky" aria-hidden="true"></i>'
-      +   '<div class="v2-rc-acb-cap">'
+      +   '<div class="v2-rc-acb-cap is-pending">'
       +     '<div class="v2-rc-acb-actype v2-rc-actype-val">' + _gateLbl('acUpdating', _frF8, function (w) { return '<span style="white-space:nowrap;">' + w + '</span>'; }, ' <span class="v2-rc-fi-sep">|</span> ') + '</div>'
       +   '</div>'
       + '</div>';
@@ -15414,6 +15458,30 @@ function uxgGateHtml(ctx) {
         ? _bannerSpec.r1 : '#0c1119');
   } catch (e) {}
 
+  // v23926 — --rc-ground-ink: WHAT THE LOWER RIGHT PANEL'S TYPE SITS ON.
+  // The aircraft picture, its caption and the Your Aircraft lines are one
+  // panel now, and its ground is the upper panel's own, layer for layer
+  // (display-overrides.css: the brand-hold halo over the banner colour's
+  // diagonal ramp to near-black, twice, on --banner-bg). The caption and the
+  // lines paint nothing of their own, so the two ink passes that read the
+  // colour under a code or an operator's mark (_gateCodeInk, _opbyContrastFix)
+  // would walk up past the panel and find the page. They read this instead:
+  // the ramp composited where the type starts, 42% along it with a little of
+  // the halo, the lightest ground any of the type sits on. Air Canada's and
+  // WestJet's ground is one flat colour, set beside theirs in the stylesheet.
+  var _gateLowerInkGround = (function (hex) {
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+    if (!m) return '#0c1119';
+    var B = [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
+    var E = [7, 16, 29], a0 = 0.86, t = 0.42, halo = 0.06;
+    var C0 = B.map(function (v) { return (v * 82 + 255 * 4) / 86; });
+    var alpha = (1 - t) * a0 + t;
+    var P = C0.map(function (v, k) { return (1 - t) * a0 * v + t * E[k]; });
+    var over = function (under) { return P.map(function (v, k) { return v + (1 - alpha) * under[k]; }); };
+    var X = over(over(B)).map(function (v) { return v * (1 - halo) + 255 * halo; });
+    return '#' + X.map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
+  })((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119');
+
   return '<div class="g8-wrap'
        // v23115 — the boarding takeovers move the clock OUT of the banner and
        // into the white strip. CSS can't reach up from the
@@ -15478,6 +15546,8 @@ function uxgGateHtml(ctx) {
            if (!_hexIsLight(s.r1)) return s.r1;
            return (s.r1Text && !_hexIsLight(s.r1Text)) ? s.r1Text : '#0c1119';
          })(_bannerSpec)
+       // v23926 — what the lower right panel's type sits on (see above).
+       + ';--rc-ground-ink:' + _gateLowerInkGround
        // WAS: color-mix(accent 42%, #0a1f12). Darkening an accent by mixing it
        // toward black IS brown when the accent is warm — Southwest gold
        // #F9B612 came out #6e5e12 and Sunwing amber #F7941D came out #6e5017,
@@ -16483,14 +16553,62 @@ function gateAutofit(root) {
       var row2 = val.closest('.v2-fi-row');
       var title2 = row2 ? row2.querySelector('.v2-fi-title') : null;
       var availH = row2 ? (row2.clientHeight - (title2 ? title2.offsetHeight : 0) - 8) : 0;
-      var f = Infinity, sumH = 0;
-      lines.forEach(function (ln) {
-        var w = _lnW(ln); sumH += ln.offsetHeight;
-        if (w > 8) f = Math.min(f, availW / w);
-      });
+      var _growBy = function (measure) {
+        var g = Infinity, sumH = 0;
+        lines.forEach(function (ln) {
+          var w = measure(ln); sumH += ln.offsetHeight;
+          if (w > 8) g = Math.min(g, availW / w);
+        });
+        if (!isFinite(g)) return g;
+        if (availH > 20 && sumH > 0) g = Math.min(g, availH / sumH);
+        return Math.min(g, 1.9);
+      };
+      // v23926 — A LONE PAIR TAKES TWO LINES WHEN TWO LINES READ LARGER.
+      // 'Information Unavailable | Information non disponible' is the whole
+      // card when nothing is known. On the merged panel's full width the pair
+      // just fits on one line at its base size, so the factor stayed at 1 and
+      // the check below took it down: 11.9px on one line at 1280x720, where
+      // the narrower v23924 card had broken it to two lines at 16.5px. The
+      // card's budget is both its width and its height, so both forms are
+      // measured and the larger one is kept. Stacked is the pair pass's own
+      // .is-stacked (each language a block, no bar), so that pass agrees with
+      // the result instead of undoing it. Only a line that is nothing but one
+      // _gateLblSpans pair is offered the choice; the flight lines keep theirs.
+      // Stacked, each language is a block as wide as the card, so the pair is
+      // measured by its words (the text runs), not by its boxes.
+      var _txtW = function (ln) {
+        try {
+          var tw = document.createTreeWalker(ln, NodeFilter.SHOW_TEXT), tn, l = Infinity, r = -Infinity;
+          while ((tn = tw.nextNode())) {
+            if (!tn.textContent.trim()) continue;
+            var rg = document.createRange();
+            rg.selectNodeContents(tn);
+            var b = rg.getBoundingClientRect();
+            if (b.width) { l = Math.min(l, b.left); r = Math.max(r, b.right); }
+          }
+          return r > l ? r - l : _lnW(ln);
+        } catch (e) { return _lnW(ln); }
+      };
+      var _pairLn = null;
+      if (lines.length === 1) {
+        var _pl = lines[0].querySelector('.v2-rc-fi-stline');
+        if (_pl && _pl.children.length === 2 && !_pl.querySelector('[class]')
+            && lines[0].textContent.trim() === _pl.textContent.trim()) _pairLn = _pl;
+      }
+      var f, _measure = _lnW;
+      if (_pairLn) {
+        _pairLn.classList.remove('is-stacked');
+        var _f1 = _growBy(_lnW);
+        _pairLn.classList.add('is-stacked');
+        var _f2 = _growBy(_txtW);
+        var _stack = isFinite(_f2) && _f2 > (isFinite(_f1) ? _f1 : 0) * 1.04;
+        if (!_stack) _pairLn.classList.remove('is-stacked');
+        f = _stack ? _f2 : _f1;
+        if (_stack) _measure = _txtW;
+      } else {
+        f = _growBy(_lnW);
+      }
       if (!isFinite(f)) return;
-      if (availH > 20 && sumH > 0) f = Math.min(f, availH / sumH);
-      f = Math.min(f, 1.9);
       if (f > 1.02) lines.forEach(function (ln) {
         var base = parseFloat(getComputedStyle(ln).fontSize) || 0; if (!base) return;
         ln.style.setProperty('font-size', (Math.floor(base * f * 10) / 10) + 'px', 'important');
@@ -16505,12 +16623,33 @@ function gateAutofit(root) {
       // grow branch fired, so a line overflowing at base size is pulled in.
       for (var _fit = 0; _fit < 3; _fit++) {
         var _over = 1;
-        lines.forEach(function (ln) { var w = _lnW(ln); if (w > availW) _over = Math.max(_over, w / availW); });
+        lines.forEach(function (ln) { var w = _measure(ln); if (w > availW) _over = Math.max(_over, w / availW); });
         if (_over <= 1.005) break;
         lines.forEach(function (ln) {
           var cur = parseFloat(ln.style.fontSize) || parseFloat(getComputedStyle(ln).fontSize) || 0; if (!cur) return;
           ln.style.setProperty('font-size', (Math.floor(cur / _over * 10) / 10) + 'px', 'important');
         });
+      }
+      // v23926 — AND DOWN, NOT ONLY ACROSS. The width check above never looked
+      // at the stack's height, so where the lines met a short card they ran
+      // out of its foot: on a 1080x1920 screen the Your Aircraft lines of
+      // the lower right panel ended 1px past the panel and the third line was
+      // cut away. Same shared factor, so the hierarchy holds: the stack comes
+      // down until its last line ends inside the row.
+      if (row2) {
+        for (var _hfit = 0; _hfit < 4; _hfit++) {
+          var _rr = row2.getBoundingClientRect();
+          var _rcs = getComputedStyle(row2);
+          var _bot = _rr.bottom - (parseFloat(_rcs.paddingBottom) || 0) - (parseFloat(_rcs.borderBottomWidth) || 0);
+          var _l0 = lines[0].getBoundingClientRect(), _lN = lines[lines.length - 1].getBoundingClientRect();
+          var _stackH = _lN.bottom - _l0.top, _roomH = _bot - _l0.top;
+          if (!(_stackH > 0) || !(_roomH > 0) || _lN.bottom <= _bot + 0.01) break;
+          var _down = _roomH / _stackH;
+          lines.forEach(function (ln) {
+            var cur = parseFloat(ln.style.fontSize) || parseFloat(getComputedStyle(ln).fontSize) || 0; if (!cur) return;
+            ln.style.setProperty('font-size', (Math.floor(cur * _down * 10) / 10) + 'px', 'important');
+          });
+        }
       }
     });
     // v23134 — THE BOARDING NUMBERS FIT THEIR PANEL
@@ -16670,30 +16809,189 @@ function gateAutofit(root) {
         // beside the second, no separator) at the largest size two lines fit
         // in the band, stepping down from there to the label size. Each
         // segment is nowrap, so nothing is ever cut inside 'Airbus A319'.
+        // v23926 — ONE ROW, AS LARGE AS IT FITS. The caption is now the band
+        // of the lower right panel (the picture, the caption and the Your
+        // Aircraft lines are one panel), still one row (the v23904 form), and
+        // the panel's extra height goes to that row: the band is the
+        // stylesheet's --rcp-cap, and the row's own scale, --acb-h, starts
+        // at the band and is lowered here, a pixel at a time, as far as v23904's
+        // own band (7/8 of it) while the row does not fit across the panel.
+        // Below that the v23904 steps take over, with one change: an operator's
+        // mark comes down WITH the model, keeping its proportion, because a
+        // wordmark the row cannot hold leaves the model no room at all (Jazz
+        // beside 'Mitsubishi CRJ900' cut it to 'Mitsubishi CR' on v23924).
+        // The mark is never set smaller than the model's own type (a carrier's
+        // mark is never smaller than the text beside it). A model holds at
+        // 1.25x its label on one line; with a registration it may take the
+        // two-line form (v23904). After the model the mark comes down alone,
+        // to the model's size, and for the widest rows the whole row comes
+        // down once more with those proportions kept (step 5). Nothing is
+        // ever cut: step 6 is the last resort.
         try {
-          el.classList.remove('is-2line');
-          var _lblEl = el.parentNode && el.parentNode.querySelector('.v2-rc-acb-lline');
-          var _lblPx = _lblEl ? (parseFloat(window.getComputedStyle(_lblEl).fontSize) || 10) : 10;
           var _capEl = el.closest('.v2-rc-acb-cap');
-          var _capH = _capEl ? _capEl.clientHeight : 0;
-          var _fits = function () { return el.scrollWidth <= el.clientWidth + 1 && (!_capH || el.offsetHeight <= _capH); };
-          if (el.clientWidth > 0 && !_fits()) {
-            var _fs = parseFloat(window.getComputedStyle(el).fontSize) || 0;
-            var _oneFloor = Math.round(_lblPx * 1.25);
-            while (_fs > _oneFloor && !_fits()) { _fs -= 1; el.style.setProperty('font-size', _fs + 'px', 'important'); }
-            if (!_fits() && el.querySelector('.v2-rc-acb-sep')) {
-              el.classList.add('is-2line');
-              _fs = Math.max(_lblPx, Math.floor((_capH || _fs * 2) * 0.44));
-              el.style.setProperty('font-size', _fs + 'px', 'important');
-              while (_fs > _lblPx && !_fits()) { _fs -= 1; el.style.setProperty('font-size', _fs + 'px', 'important'); }
-            } else if (!_fits()) {
-              // v23925 — A MODEL WITH NO REGISTRATION HAS NO SECOND LINE TO
-              // TAKE, so the 1.25x floor left it clipped: 'Airbus A3' at YQM
-              // gate 4 (1 Oct 00:03, AC1983, Rouge A321 with its wide Operated
-              // By mark), 160px of model in a 129px cell. It keeps stepping
-              // down to the label's own size, which is still never smaller
-              // than the label beside it, and is never cut.
-              while (_fs > _lblPx && !_fits()) { _fs -= 1; el.style.setProperty('font-size', _fs + 'px', 'important'); }
+          var _logoEl = _capEl.querySelector('img.v2-rc-opby-logo');
+          // v23926 — or the operator's NAME, where it has no mark on file or
+          // its file failed (the onerror fallback writes <b>Name</b>). It is
+          // drawn on the row's scale and comes down in step 4 like the mark.
+          var _nameEl = _logoEl ? null : _capEl.querySelector('.v2-rc-acb-opby b');
+          // The mark's width is only known once its file has loaded, and the
+          // autofit passes (render, font settle, resize) can all run before
+          // that: PAL's wordmark arrived after them and pushed the row out.
+          // Fit this caption again when it lands (once per file), and when it
+          // fails: the name that replaces it is a different width again.
+          if (_logoEl && !(_logoEl.complete && _logoEl.naturalWidth) && _logoEl.dataset.fitOnLoad !== _logoEl.src) {
+            _logoEl.dataset.fitOnLoad = _logoEl.src;
+            var _refit = function () {
+              try { if (el.isConnected) { _fitTypePanel(el); _fitTypePanel(el); } } catch (e5) {}
+            };
+            _logoEl.addEventListener('load', _refit, { once: true });
+            _logoEl.addEventListener('error', _refit, { once: true });
+          }
+          el.classList.remove('is-2line');
+          _capEl.style.removeProperty('--acb-h');
+          if (_logoEl) { _logoEl.style.removeProperty('height'); _logoEl.style.removeProperty('max-height'); }
+          if (_nameEl) _nameEl.style.removeProperty('font-size');
+          // The band's full height is the row's top scale (--acb-h starts at
+          // --rcp-cap, which is the band's border box); the model's own height
+          // is checked against the room inside it.
+          var _capH = _capEl.clientHeight, _bandH = _capEl.offsetHeight;
+          // Fits when the model's own box holds its text, nothing in the row
+          // runs past the band (the operator's half is never squeezed, so a
+          // row too wide shows up as the band overflowing), and the model is
+          // no taller than the band.
+          // v23926 — MEASURED TO THE FRACTION OF A PIXEL. scrollWidth and
+          // clientWidth are whole pixels, so a model 0.67px wider than its box
+          // passed (Porter's 'De Havilland Dash 8-400' at 1366x768: text right
+          // 1356.80, box right 1356.13) and its overflow:hidden shaved the
+          // last letter. The model's text is measured by its own runs (a
+          // Range) against its box's content edges, to 0.01px: that box cuts.
+          // The row's items are held inside the band's content box; the band
+          // itself clips only at its padding edge, 0.16 of the row further
+          // out, and the operator's half lands on the content edge by
+          // construction (space-between), so a layout rounding there is not
+          // an overflow (half a pixel of slack).
+          var _EPS = 0.01, _ROW_EPS = 0.5;
+          var _innerOf = function (box) {
+            var r = box.getBoundingClientRect(), cs = window.getComputedStyle(box);
+            return {
+              l: r.left + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.paddingLeft) || 0),
+              r: r.right - (parseFloat(cs.borderRightWidth) || 0) - (parseFloat(cs.paddingRight) || 0)
+            };
+          };
+          var _fits = function () {
+            if (el.scrollWidth > el.clientWidth || _capEl.scrollWidth > _capEl.clientWidth) return false;
+            var mi = _innerOf(el), rg = document.createRange();
+            rg.selectNodeContents(el);
+            var mt = rg.getBoundingClientRect();
+            if (mt.width && (mt.right > mi.r + _EPS || mt.left < mi.l - _EPS)) return false;
+            var ci = _innerOf(_capEl);
+            for (var _ck = 0; _ck < _capEl.children.length; _ck++) {
+              var cr = _capEl.children[_ck].getBoundingClientRect();
+              if (cr.width && (cr.right > ci.r + _ROW_EPS || cr.left < ci.l - _ROW_EPS)) return false;
+            }
+            return !_capH || el.offsetHeight <= _capH;
+          };
+          // (The band's width, not the model's: a wide operator's half can
+          // squeeze the model to nothing, and that is the case to fit.)
+          if (el.isConnected && _capEl.clientWidth > 0 && _capH > 0 && !_fits()) {
+            // 1. The whole row: labels, model, mark and spacing, together.
+            var _u = _bandH, _uMin = Math.round(_bandH * 0.875);
+            while (_u > _uMin && !_fits()) { _u = Math.max(_uMin, _u - 1); _capEl.style.setProperty('--acb-h', _u + 'px', 'important'); }
+            if (!_fits()) {
+              var _lblEl = _capEl.querySelector('.v2-rc-opby-lline');
+              var _lblPx = _lblEl ? (parseFloat(window.getComputedStyle(_lblEl).fontSize) || 10) : Math.round(_u * 0.24);
+              var _fs = parseFloat(window.getComputedStyle(el).fontSize) || 0;
+              var _lh = _logoEl ? (_logoEl.getBoundingClientRect().height || 0) : 0;
+              var _k = (_fs && _lh) ? _lh / _fs : 0;
+              // The mark's height is laid out on a 1/64px grid, so a height
+              // set equal to the model's size can land a hair under it (12.47
+              // beside 12.48): it is rounded UP to that grid, never down.
+              var _up64 = function (v) { return Math.ceil(v * 64 - 1e-6) / 64; };
+              var _setLh = function (px) {
+                _lh = _up64(px);
+                _logoEl.style.setProperty('height', _lh + 'px', 'important');
+                _logoEl.style.setProperty('max-height', _lh + 'px', 'important');
+              };
+              var _setFs = function (px) {
+                el.style.setProperty('font-size', px + 'px', 'important');
+                if (_k) _setLh(Math.max(px, Math.min(_lh, px * _k)));
+              };
+              var _pending = _capEl.classList.contains('is-pending');
+              // The model's floor beside a label of `lbl` px: 1.25x the label on
+              // one line (below that a model reads as a label); the label's own
+              // size for the pending words and the two-line form, which are
+              // already two lines of label-sized type.
+              var _mFloor = function (lbl) {
+                return (_pending || el.classList.contains('is-2line')) ? lbl : Math.round(lbl * 1.25 * 100) / 100;
+              };
+              // 2. The model (and the mark with it) steps down to its floor.
+              while (_fs > _mFloor(_lblPx) && !_fits()) { _fs = Math.max(_mFloor(_lblPx), _fs - 1); _setFs(_fs); }
+              // 3. With a registration: model over registration, at the
+              // largest size two lines fit in the band, down to the label.
+              if (!_fits() && el.querySelector('.v2-rc-acb-sep')) {
+                el.classList.add('is-2line');
+                _fs = Math.max(_lblPx, Math.min(Math.round(_u * 0.52), Math.floor(_capH * 0.44)));
+                _setFs(_fs);
+                while (_fs > _lblPx && !_fits()) { _fs = Math.max(_lblPx, _fs - 1); _setFs(_fs); }
+              }
+              // 4. The mark alone, down to the model's own size and no further.
+              if (_logoEl) {
+                while (_lh > _up64(_fs) && !_fits()) _setLh(Math.max(_fs, _lh - 1));
+              }
+              // The operator's name the same way: it starts under the model
+              // (0.34 of the row against 0.52) and is never brought below the
+              // model's own size, so a long name ('Air Wisconsin Airlines')
+              // gives way before anything is cut.
+              var _nm = _nameEl ? (parseFloat(window.getComputedStyle(_nameEl).fontSize) || 0) : 0;
+              if (_nameEl) {
+                while (_nm > _fs && !_fits()) {
+                  _nm = Math.max(_fs, _nm - 1);
+                  _nameEl.style.setProperty('font-size', _nm + 'px', 'important');
+                }
+              }
+              // 5. Only for the widest rows: the whole row again, below
+              // v23904's size, with the proportions kept: the model stays at
+              // its floor above the label (1.25x on one line, never down to the
+              // label's own size as v23926's first cut did, which left 'De
+              // Havilland Dash 8-300' at 6.7px on a 1024x768 Québec board) and
+              // the mark and the name at no less than the model. Floor: 0.7 of
+              // the band.
+              var _uFloor = Math.round(_bandH * 0.7);
+              while (!_fits() && _u > _uFloor && _lblEl) {
+                _u -= 1;
+                _capEl.style.setProperty('--acb-h', _u + 'px', 'important');
+                _lblPx = parseFloat(window.getComputedStyle(_lblEl).fontSize) || (_u * 0.24);
+                _fs = Math.min(_fs, _mFloor(_lblPx));
+                el.style.setProperty('font-size', _fs + 'px', 'important');
+                if (_logoEl) _setLh(Math.min(_lh, Math.max(_fs, _lh - 1)));
+                if (_nameEl) {
+                  _nm = Math.min(_nm, Math.max(_fs, _nm - 1));
+                  _nameEl.style.setProperty('font-size', _nm + 'px', 'important');
+                }
+              }
+              // 6. The last resort, so nothing is ever cut: a model that still
+              // does not fit at the row's floor comes down to the label's own
+              // size, and the mark and the name with it, never below it
+              // (window.__acbLastResort counts it, for the harness).
+              // REAL BOARDS REACH THIS STEP: every PAL-operated Air Canada
+              // Dash 8 (YHZ gate 2C at 16:50, AC7691/AC7677; gate 57 at
+              // 16:00, AC7669/AC7664 + C-GPFI). PAL's wordmark is 6.2 times
+              // as wide as it is tall and is held at the model's size, the
+              // model is one unbreakable phrase ('De Havilland Dash 8-400',
+              // 12.1 em at this size), and the two label pairs with their
+              // spacing are 3.6 of the row's scale. At 1680x1050 (a 380px
+              // panel) that leaves about 12.4px of model over 10px labels
+              // at best, which is where this lands (12.1 over 10.08, mark
+              // 12.6). One row cannot hold that caption at twice the label.
+              if (!_fits()) {
+                try { window.__acbLastResort = (window.__acbLastResort || 0) + 1; } catch (e6) {}
+                while (_fs > _lblPx && !_fits()) {
+                  _fs = Math.max(_lblPx, _fs - 0.5);
+                  el.style.setProperty('font-size', _fs + 'px', 'important');
+                  if (_logoEl && _lh > _up64(_fs)) _setLh(Math.max(_fs, Math.min(_lh, _fs * (_k || 1))));
+                  if (_nameEl && _nm > _fs) { _nm = _fs; _nameEl.style.setProperty('font-size', _nm + 'px', 'important'); }
+                }
+              }
             }
           }
         } catch (e3) {}
@@ -16897,7 +17195,25 @@ function _ocFromHsl(h, sat, l) {
   return [Math.round(q(a2, b2, h + 1 / 3) * 255), Math.round(q(a2, b2, h) * 255), Math.round(q(a2, b2, h - 1 / 3) * 255)];
 }
 // The real ground under an element: the first ancestor that actually paints one.
+// v23926 — THE LOWER RIGHT PANEL'S TYPE PAINTS NO GROUND OF ITS OWN. The
+// caption and the Your Aircraft lines lie on the panel's ground, which is the
+// upper panel's layered ramp, not one colour, and the lines are a sibling of
+// the element that paints it. Walking up from them finds the page instead, so
+// both ink passes ask this first: the colour the panel publishes as
+// --rc-ground-ink (uxgGateHtml's _gateLowerInkGround; the flat colour on Air
+// Canada and WestJet), or null outside that panel.
+function _rcLowerGround(el) {
+  try {
+    var host = el && el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-illus, .gad-map-col-v2 > .v2-rc-shelf-fi');
+    if (!host) return null;
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(getComputedStyle(host).getPropertyValue('--rc-ground-ink') || '').trim());
+    if (!m) return null;
+    return [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
+  } catch (e) { return null; }
+}
 function _ocGroundOf(el) {
+  var _rcG = _rcLowerGround(el);
+  if (_rcG) return _rcG;
   var n = el;
   while (n && n !== document.documentElement) {
     var parts = _ocColorParts(getComputedStyle(n).backgroundColor);
@@ -16932,7 +17248,15 @@ function _gateCodeInk(root) {
       var fg = _ocColorParts(el.dataset.inkBase);
       if (!fg) continue;
       var base = _ocCr(fg, bg);
-      if (base >= FLOOR) {                             // already legible — the accent stands
+      // v23926 — ON THE MERGED PANEL'S SHEET THE CODE IS BODY TEXT. Every line
+      // of the Your Aircraft card is held to 4.5:1, and the code is part of the
+      // first line: Air Canada's red measured 3.8:1 on its near-black sheet
+      // and American's blue 3.5:1, both above the 3.2 floor that lets an
+      // accent stand. Here the floor is the body-text bar, with a margin for
+      // the sheet's lighter top edge; the hue is kept, as everywhere else.
+      var _onSheet = !!(el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-fi'));
+      var _floor = _onSheet ? 4.8 : FLOOR, _target = _onSheet ? 5 : TARGET;
+      if (base >= _floor) {                            // already legible — the accent stands
         // v23502c — ONLY EVER UNDO OUR OWN OVERRIDE.
         // Calling removeProperty unconditionally stripped the
         // inline colour the BOARD itself had set, so a code that was already
@@ -16954,7 +17278,7 @@ function _gateCodeInk(root) {
         var cand = _ocFromHsl(hsl[0], hsl[1], l);
         var cr = _ocCr(cand, bg);
         if (cr > bestCr) { bestCr = cr; best = cand; }
-        if (cr >= TARGET) break;
+        if (cr >= _target) break;
       }
       if (bestCr <= base) continue;                    // nothing better available — keep the brand colour
       var css = 'rgb(' + best[0] + ', ' + best[1] + ', ' + best[2] + ')';
@@ -25880,7 +26204,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23925';
+var FIDS_BUILD_TAG = 'v23926';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
