@@ -13,6 +13,15 @@
 // as its label pair. A long model steps down, then goes to two lines (model
 // over registration) rather than being cut. Measured on a 380 px shelf at
 // 1680 wide: 50 px band (was ~90 px with an operator).
+//
+// v23926 made the aircraft picture, this caption and the Your Aircraft lines
+// one panel (the lower of the right column's two). The caption keeps the form
+// above, one row, now drawn by the v23926 block at the end of
+// display-overrides.css (the v23904 block stays in the file underneath it).
+// What changed is only the band's size: the panel's extra height goes to the
+// one row, 60 px at 1680x1050 (--rcp-cap; v23904's --acb-h was 52.5). The
+// row's own scale, --acb-h, starts at the band and the fitter lowers it as far
+// as v23904's size while the row does not fit across the panel.
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -23,6 +32,15 @@ const root = path.resolve(__dirname, '..');
 const CORE = fs.readFileSync(path.join(root, 'fids-current', 'js', 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(root, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
 const block = CSS.slice(CSS.indexOf('v23904 — THE CAPTION IS ONE ROW'));
+// The rules that draw the caption now: the v23926 block, without comments.
+const drawn = CSS.slice(CSS.lastIndexOf('/*', CSS.indexOf('v23926 — THE RIGHT COLUMN IS TWO PANELS'))).replace(/\/\*[\s\S]*?\*\//g, '');
+
+function ruleFor(tail) {
+  const at = drawn.indexOf(tail + ' {');
+  assert.ok(at >= 0, `no drawing rule for ${tail}`);
+  return drawn.slice(at, drawn.indexOf('}', at));
+}
+const CAP = '.gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap';
 
 test('the caption has an Aircraft / Appareil label pair beside the model', () => {
   assert.match(CORE, /aircraft:\s*\{ en:'Aircraft',\s*fr:'Appareil'/, 'the label lives in _GATE_LBL');
@@ -37,17 +55,37 @@ test('an unknown aircraft shows the pending text, not empty labels', () => {
 
 test('one band, the same height with or without an operator', () => {
   assert.ok(block.length > 0, 'the v23904 block exists');
+  // v23904's band, still the size the row may come down to.
   assert.match(block, /--acb-h: clamp\(30px, min\(5vh, 7\.6vw\), 54px\);/);
-  assert.match(block, /flex-direction: row !important;/);
-  assert.match(block, /height: var\(--acb-h\) !important;/);
+  // The band that draws it now: the merged panel's one row.
+  assert.match(drawn, /--rcp-cap: clamp\(32px, min\(5\.7vh, 3\.6vw\), 64px\);/);
+  const cap = ruleFor(CAP);
+  assert.match(cap, /--acb-h: var\(--rcp-cap\);/);
+  assert.match(cap, /display: flex !important;/);
+  assert.match(cap, /flex-direction: row !important;/);
+  assert.match(cap, /flex-wrap: nowrap !important;/);
+  assert.match(cap, /height: var\(--rcp-cap\) !important;/);
   assert.doesNotMatch(block, /flex-direction: column !important;\s*align-items: center !important;\s*justify-content: center !important;\s*gap: clamp\(1px/,
     'the two-row caption is not reintroduced');
+  // Nor a second row: no grid, and nothing placed on a row of its own.
+  assert.doesNotMatch(cap, /display: grid/);
+  const capAt = drawn.indexOf(CAP + ' {');
+  const caption = drawn.slice(capAt, drawn.indexOf('.v2-rc-shelf-fi {', capAt));
+  assert.doesNotMatch(caption, /grid-row/, 'the label pair, the model and the operator share one row');
+  // No second height for the band anywhere in the block.
+  assert.doesNotMatch(drawn, /\.v2-rc-acb-cap(\.[\w-]+|:not\([^)]*\))* \{[^}]*[^-]height: (?!var\(--rcp-cap\))/);
 });
 
 test('the model is twice its label, the operator mark never smaller than the text', () => {
-  assert.match(block, /font-size: calc\(var\(--acb-h\) \* 0\.52\) !important;/, 'model');
-  assert.match(block, /font-size: calc\(var\(--acb-h\) \* 0\.24\) !important;/, 'label');
-  assert.match(block, /height: calc\(var\(--acb-h\) \* 0\.62\) !important;/, 'mark taller than the model text');
+  assert.match(ruleFor(CAP + ' .v2-rc-acb-actype'), /font-size: calc\(var\(--acb-h\) \* 0\.52\) !important;/, 'model');
+  assert.match(ruleFor(CAP + ' .v2-rc-opby-lline'), /font-size: calc\(var\(--acb-h\) \* 0\.24\) !important;/, 'label');
+  assert.match(ruleFor(CAP + ' .v2-rc-opby-logo'), /height: calc\(var\(--acb-h\) \* 0\.62\) !important;/, 'mark taller than the model text');
+  // When the fitter brings the mark down with the model, it never goes under
+  // the model's own type, and its height is rounded UP to the 1/64px layout
+  // grid (a mark set equal to a 12.48px model measured 12.47).
+  assert.match(CORE, /if \(_k\) _setLh\(Math\.max\(px, Math\.min\(_lh, px \* _k\)\)\);/);
+  assert.match(CORE, /while \(_lh > _up64\(_fs\) && !_fits\(\)\) _setLh\(Math\.max\(_fs, _lh - 1\)\);/);
+  assert.match(CORE, /var _up64 = function \(v\) \{ return Math\.ceil\(v \* 64 - 1e-6\) \/ 64; \};/);
 });
 
 test('a long model steps down, then goes to two lines instead of being cut', () => {
@@ -58,9 +96,178 @@ test('a long model steps down, then goes to two lines instead of being cut', () 
   // v23925 — with no registration there is no second line to take: the model
   // keeps stepping down to the label's own size instead of being clipped at
   // the 1.25x floor ('Airbus A3' on a Rouge A321 at YQM gate 4).
-  assert.match(CORE, /\} else if \(!_fits\(\)\) \{(?:\s*\/\/[^\n]*\n)*\s*while \(_fs > _lblPx && !_fits\(\)\) \{ _fs -= 1; el\.style\.setProperty\('font-size', _fs \+ 'px', 'important'\); \}/);
+  // v23926 keeps that guarantee as the LAST resort (step 6): first the row
+  // comes down with the model held at 1.25x its label (step 5), because going
+  // straight to the label's size left 'De Havilland Dash 8-300' at 6.7px on a
+  // 1024x768 Québec board.
+  assert.match(CORE, /if \(!_fits\(\)\) \{\s*try \{ window\.__acbLastResort = \(window\.__acbLastResort \|\| 0\) \+ 1; \} catch \(e6\) \{\}\s*while \(_fs > _lblPx && !_fits\(\)\) \{\s*_fs = Math\.max\(_lblPx, _fs - 0\.5\);/);
+  assert.match(CORE, /_fs = Math\.min\(_fs, _mFloor\(_lblPx\)\);/, 'step 5 holds the model at its floor over the label');
   assert.match(CORE, /<span class="v2-rc-acb-sep">\|<\/span>/, 'the separator is addressable so two lines can drop it');
   assert.match(block, /\.is-2line \.v2-rc-acb-sep \{\s*display: none !important;/);
   assert.match(block, /\.is-2line > span:not\(\.v2-rc-reg-expected\):not\(\.v2-rc-acb-sep\)/,
     'the hidden expected qualifier stays hidden in two-line form');
+  // Two lines only with a registration (the separator exists only then); a
+  // model without one steps on down to the label size on one line.
+  assert.match(CORE, /if \(!_fits\(\) && el\.querySelector\('\.v2-rc-acb-sep'\)\) \{\s*el\.classList\.add\('is-2line'\);/);
+  assert.match(CORE, /return \(_pending \|\| el\.classList\.contains\('is-2line'\)\) \? lbl : Math\.round\(lbl \* 1\.25 \* 100\) \/ 100;/);
+  assert.match(CORE, /_fs = Math\.max\(_lblPx, _fs - 1\)/, 'never below the label size');
+});
+
+test('the row comes down as one before the model does, as far as v23904', () => {
+  assert.match(CORE, /var _u = _bandH, _uMin = Math\.round\(_bandH \* 0\.875\);/);
+  assert.match(CORE, /_capEl\.style\.setProperty\('--acb-h', _u \+ 'px', 'important'\)/);
+  // Only the widest rows go further: the row again, with the model held at
+  // its floor over the label, never below 0.7 of the band.
+  assert.match(CORE, /var _uFloor = Math\.round\(_bandH \* 0\.7\);/);
+  // Fitted again when the operator's mark arrives: its width is unknown until
+  // the file loads, and a late wordmark otherwise pushes the row out. And when
+  // it fails: the onerror fallback puts the operator's name in its place.
+  assert.match(CORE, /_logoEl\.addEventListener\('load', _refit, \{ once: true \}\);/);
+  assert.match(CORE, /_logoEl\.addEventListener\('error', _refit, \{ once: true \}\);/);
+});
+
+test('the band says what it holds: the pending words never sit under the operator', () => {
+  assert.match(CORE, /var _capCls = 'v2-rc-acb-cap' \+ \(_acKnown \? '' : ' is-pending'\) \+ \(_opByVal \? ' has-op' : ''\);/);
+  assert.match(CORE, /'<div class="' \+ _capCls \+ '">' \+ _typeCellHtml \+ '<\/div>'/);
+  assert.match(CORE, /'<div class="v2-rc-acb-cap is-pending">'/, 'the fallback caption is pending too');
+  // One language over the other, no bar, and laid out by class (no :has()).
+  assert.match(ruleFor(CAP + '.is-pending .v2-rc-acb-actype > span:not(.v2-rc-fi-sep)'), /display: block !important;/);
+  assert.match(ruleFor(CAP + '.is-pending .v2-rc-acb-actype > .v2-rc-fi-sep'), /display: none !important;/);
+  assert.match(ruleFor(CAP + ':not(.has-op)'), /justify-content: center !important;/);
+  const op = ruleFor(CAP + ' .v2-rc-acb-opby');
+  assert.match(op, /flex: 0 0 auto !important;/, 'the operator half is never squeezed under the words');
+  assert.match(op, /border-left: 2px solid /, 'the vertical rule between the halves');
+  assert.doesNotMatch(drawn, /:has\(/);
+});
+
+// ── v23926: an operator shown by NAME ──────────────────────────────────────
+//
+// An operator with no mark on file, or whose mark fails to load (the onerror
+// fallback), is shown as <b>Name</b>. An older rule held that at a fixed
+// 2.7vh (28.35px at 1680x1050), which the fitter could not move, so a long
+// name ('Air Wisconsin Airlines') cut the model off. It is drawn on the row's
+// scale now, and the fitter brings it down after the model, never below the
+// model's own size.
+
+test('an operator shown by name is drawn on the row\'s scale, on one line', () => {
+  const name = ruleFor(CAP + ' .v2-rc-acb-opby b');
+  const k = (decl) => Number(decl.match(/calc\(var\(--acb-h\) \* ([\d.]+)\)/)[1]);
+  const nameK = k(name.match(/font-size: [^;]+;/)[0]);
+  assert.match(name, /white-space: nowrap !important;/);
+  // Between the label and the model: an operator's name is not the headline.
+  assert.ok(nameK > k(ruleFor(CAP + ' .v2-rc-opby-lline')) && nameK < k(ruleFor(CAP + ' .v2-rc-acb-actype')));
+  // The fitter finds it, clears its own write before each pass, brings it
+  // down after the model, never below the model's size, and with the row.
+  assert.match(CORE, /var _nameEl = _logoEl \? null : _capEl\.querySelector\('\.v2-rc-acb-opby b'\);/);
+  assert.match(CORE, /if \(_nameEl\) _nameEl\.style\.removeProperty\('font-size'\);/);
+  assert.match(CORE, /while \(_nm > _fs && !_fits\(\)\) \{\s*_nm = Math\.max\(_fs, _nm - 1\);/);
+  assert.match(CORE, /_nm = Math\.min\(_nm, Math\.max\(_fs, _nm - 1\)\);/);
+});
+
+// The caption branch of the real fitter, run against a model of the band's
+// flex row at 1680x1050 (380px wide, 60px high). Widths come from em-widths
+// measured on the board's face (the model about 0.51em a character, a name
+// 0.45 to 0.58, the labels 0.46); 0.53 is used for both the model and the
+// name, a little wide of the average, so the model errs toward not fitting.
+function fitCaption({ model, reg, op, nameFixedPx }) {
+  const at = CORE.indexOf('function _fitTypePanel(el) {');
+  const end = CORE.indexOf("root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach", at);
+  const src = CORE.slice(at, end);
+  const style = () => ({ p: {}, setProperty(n, v) { this.p[n] = parseFloat(v); }, removeProperty(n) { delete this.p[n]; } });
+  const W = 380, H = 60;
+  const capEl = { style: style(), classList: { contains: () => false }, clientWidth: W, clientHeight: H, offsetHeight: H };
+  const u = () => capEl.style.p['--acb-h'] || H;
+  const lblEl = { fs: () => 0.24 * u() };
+  const nameEl = { style: style(), fs() { return nameFixedPx || this.style.p['font-size'] || 0.34 * u(); } };
+  const cls = new Set();
+  const el = {
+    style: style(), isConnected: true,
+    classList: { add: (c) => cls.add(c), remove: (c) => cls.delete(c), contains: (c) => cls.has(c) },
+    closest: (s) => (s === '.v2-rc-acb-cap' ? capEl : null),
+    querySelector: (s) => (s === '.v2-rc-acb-sep' && reg ? {} : null),
+    fs() { return this.style.p['font-size'] || 0.52 * u(); },
+  };
+  const lay = () => {
+    const U = u(), lbl = lblEl.fs();
+    const opbyW = 0.2 * U + 2 + 13 * 0.46 * lbl + 0.16 * U + op.length * 0.53 * nameEl.fs();
+    const fixed = 2 * 0.16 * U + 9 * 0.46 * lbl + 0.16 * U + 0.2 * U + opbyW;
+    const two = cls.has('is-2line');
+    const text = (two ? Math.max(model.length, reg.length) : (model + (reg ? ' | ' + reg : '')).length) * 0.53 * el.fs();
+    const box = Math.max(0, W - fixed);
+    return { box, text, band: Math.max(W, fixed), h: (two ? 2 * 1.08 : 1.02) * el.fs() };
+  };
+  // Whole pixels for scrollWidth and clientWidth, as a browser reports them;
+  // the boxes themselves, the text runs (a Range) and the row's items at
+  // their fractional positions.
+  const padU = () => 0.16 * u();
+  const modelLeft = () => padU() + 9 * 0.46 * lblEl.fs() + 0.16 * u();
+  Object.defineProperties(el, {
+    clientWidth: { get: () => Math.round(lay().box) }, scrollWidth: { get: () => Math.round(Math.max(lay().box, lay().text)) },
+    offsetHeight: { get: () => lay().h },
+  });
+  el.getBoundingClientRect = () => ({ left: modelLeft(), right: modelLeft() + lay().box, width: lay().box });
+  capEl.getBoundingClientRect = () => ({ left: 0, right: W, width: W });
+  Object.defineProperty(capEl, 'scrollWidth', { get: () => Math.round(lay().band) });
+  Object.defineProperty(capEl, 'children', { get: () => [
+    { getBoundingClientRect: () => ({ left: padU(), right: modelLeft() + lay().box, width: 1 }) },
+    { getBoundingClientRect: () => ({ left: modelLeft() + lay().box + 0.2 * u(), right: lay().band - padU(), width: 1 }) },
+  ] });
+  capEl.querySelector = (s) => (s === '.v2-rc-opby-lline' ? lblEl : s === '.v2-rc-acb-opby b' ? nameEl : null);
+  const pad = (x) => (x === capEl ? padU() : 0) + 'px';
+  const win = { getComputedStyle: (x) => ({ fontSize: (x.fs ? x.fs() : 0) + 'px', paddingLeft: pad(x), paddingRight: pad(x), borderLeftWidth: '0px', borderRightWidth: '0px' }) };
+  const doc = { createRange: () => ({ selectNodeContents() {}, getBoundingClientRect: () => ({ left: modelLeft(), right: modelLeft() + lay().text, width: lay().text }) }) };
+  // eslint-disable-next-line no-new-func
+  const fit = Function('window', 'document', src + '\nreturn _fitTypePanel;')(win, doc);
+  fit(el); fit(el);
+  const L = lay();
+  return {
+    // Exact, not to the whole pixel: overflow:hidden cuts a fraction too.
+    fits: L.text <= L.box + 0.01 && L.band <= W + 0.5 && L.h <= H,
+    model: el.fs(), name: nameEl.fs(), label: lblEl.fs(), nameSet: 'font-size' in nameEl.style.p, u: u(),
+  };
+}
+
+test('a long operator name gives way; the model is never cut', () => {
+  const cases = [
+    { model: 'Bombardier CRJ200', reg: 'N438AW', op: 'Air Wisconsin Airlines', long: true },
+    { model: 'Beechcraft 1900D', reg: 'C-GCMJ', op: 'Central Mountain Air', long: true },
+    { model: 'Mitsubishi CRJ900', reg: '', op: 'Jazz Aviation LP', long: true },
+    { model: 'De Havilland Dash 8-100', reg: 'C-FPAE', op: 'PAL Airlines', long: true },
+    { model: 'Embraer E175', reg: 'N21144', op: 'CommuteAir' },
+  ];
+  for (const c of cases) {
+    // At the old fixed 28.35px a long name leaves the row no way to fit.
+    if (c.long) assert.equal(fitCaption({ ...c, nameFixedPx: 28.35 }).fits, false, `${c.op}: the fixed name is the fault`);
+    const r = fitCaption(c);
+    assert.ok(r.fits, `${c.model} beside ${c.op}: nothing cut, nothing out of the band`);
+    assert.ok(r.model >= r.label - 0.01, `${c.op}: the model stays at or over its label`);
+    if (r.nameSet) assert.ok(r.name >= r.model - 0.01, `${c.op}: the name is never brought below the model (${r.name} < ${r.model})`);
+  }
+  // A short name is left on the row's scale: the fitter never writes it.
+  for (const c of [{ model: 'Airbus A320', reg: '', op: 'Jazz' }, { model: 'Dash 8', reg: '', op: 'Jazz' }]) {
+    const r = fitCaption(c);
+    assert.ok(r.fits && !r.nameSet && Math.abs(r.name - 0.34 * r.u) < 0.01, `${c.model} beside ${c.op}`);
+  }
+  assert.equal(fitCaption({ model: 'Dash 8', reg: '', op: 'Jazz' }).u, 60, 'and a row that fits stays at the band');
+});
+
+test('a model without a registration holds at 1.25x its label while the row comes down', () => {
+  // Each of these needs the row below v23904's size (step 5) in this model.
+  for (const c of [
+    { model: 'Mitsubishi CRJ900', reg: '', op: 'Jazz Aviation LP' },
+    { model: 'Bombardier CRJ200', reg: '', op: 'Air Wisconsin' },
+    { model: 'Embraer E175', reg: '', op: 'Air Wisconsin Airlines' },
+  ]) {
+    const r = fitCaption(c);
+    assert.ok(r.fits, `${c.model} beside ${c.op}: nothing cut`);
+    assert.ok(r.u < 52.5, `${c.model} beside ${c.op}: the row came down past v23904's size (${r.u})`);
+    assert.ok(r.model >= 1.25 * r.label - 0.01, `${c.model}: model ${r.model.toFixed(2)} over label ${r.label.toFixed(2)}`);
+  }
+});
+
+test('an operator under the marketing carrier\'s own name, with no mark of its own, is left out', () => {
+  // AC313 at YQB gate 23: operator 9M, name 'AIR CANADA', no mark on file.
+  assert.match(CORE, /var _opSameName6 = !_opLogo6 && !!_mktNm6 && String\(_opNm6\)\.trim\(\)\.toUpperCase\(\) === _mktNm6;/);
+  assert.match(CORE, /if \(!_opSameName6\) \{\s*_opByVal = _opLogo6/);
+  assert.match(CORE, /'9M':'AIR CANADA'/, 'the board names 9M Air Canada on purpose');
 });
