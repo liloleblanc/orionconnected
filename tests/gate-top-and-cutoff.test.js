@@ -5,6 +5,9 @@
 //
 // Requested: the top-panel shelves must carry the airport code once the board
 // switches to boarding, for all airlines; and the gate cut-off is five minutes.
+//
+// v23923 — the cut-off is no longer the clock's: GATE CLOSED shows on the
+// airport's own word (see the last test).
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
@@ -83,22 +86,27 @@ test('the boarding destination keeps the duplicate pair the rail keeps', () => {
 
 // ── The cut-off ──────────────────────────────────────────────────────────
 
-test('the gate closes five minutes BEFORE departure, not after it', () => {
-  const m = SRC.match(/var GATE_CLOSE_LEAD_MIN = (\d+);/);
-  assert.ok(m, 'the cut-off must be a named constant, not a literal in a comparison');
-  assert.equal(m[1], '5', 'the agreed cut-off is five minutes');
-  assert.match(SRC, /minsToDep <= GATE_CLOSE_LEAD_MIN/,
-    'the clock rule must use the constant');
+test('GATE CLOSED is the airport\'s word, never the clock\'s', () => {
+  // v23923 — the gate reads closed when the flight's own word says so (the
+  // feed's, an operator's, a test flight's). The v23526 five-minute clock
+  // cut-off closed every gate before its time even while the feed still said
+  // Boarding, and with the gate now holding a boarding flight for up to an
+  // hour it would have shown GATE CLOSED for that whole hour over people
+  // still boarding.
+  assert.doesNotMatch(SRC, /GATE_CLOSE_LEAD_MIN/, 'the clock cut-off constant is gone');
+  // The decision lives in _gateSignPhase (status-evidence.test.js runs it over
+  // every word and minute); uxgGateHtml takes isGateClosedStatus from it.
+  const i = SRC.indexOf('function _gateSignPhase(');
+  assert.ok(i > 0, '_gateSignPhase must exist');
+  const sign = SRC.slice(i, SRC.indexOf('\n}', i));
+  const m = sign.match(/var isGateClosedStatus = ([^;]+);/);
+  assert.ok(m, 'isGateClosedStatus must be one plain statement');
+  assert.equal(m[1].trim(), "(_gateWord === 'gateclosed' || _gateWord === 'departed')",
+    'it reads only the flight\'s word, gate closed or departed');
+  assert.doesNotMatch(m[1], /minsToDep/, 'no clock term');
+  assert.match(sign, /var _gateWord = String\(stKey \|\| ''\)\.replace\(\/\[\\s_-\]\+\/g, ''\)\.toLowerCase\(\);/,
+    'the word is the gate\'s one status key, normalised');
+  assert.match(SRC, /var isGateClosedStatus = _gateSign\.isGateClosedStatus;/, 'and the gate builder uses that answer');
   assert.doesNotMatch(SRC, /isFinite\(minsToDep\) && minsToDep <= -2/,
     'the old -2 rule closed the gate two minutes AFTER the aircraft was due out');
-});
-
-test('the cut-off is a lead time, so it moves with a delay', () => {
-  // minsToDep is revised-aware, so the deadline follows the revised departure.
-  const close = (minsToDep) => minsToDep <= 5 && minsToDep > -720;
-  assert.equal(close(6), false, 'six minutes out the gate is still open');
-  assert.equal(close(5), true, 'at five minutes the gate is closed');
-  assert.equal(close(0), true);
-  assert.equal(close(-3), true, 'and it stays closed past departure');
-  assert.equal(close(-800), false, 'yesterday\'s flight is not a closed gate');
 });

@@ -329,15 +329,23 @@ test('an "On Time" arrival 40 minutes past its time, with nothing else, is NOT a
   // What cyqm.ca sends for PD2373 until it says "Arrived at": a neutral status.
   const raw = { status: 'scheduled', arrival: { scheduledTime: { local: '2026-09-29 16:33-03:00' } } };
   const st = E.adbStatus(raw, 'arr', sched, now);
-  assert.equal(st, 'arrived', 'the board\'s status column still reads it off the clock');
-  assert.equal(E.adbStatusInferred(raw, st), true, 'and says so');
+  // v23923 — the clock no longer makes claims anywhere: the board's status
+  // column keeps the airport's own neutral word, and nothing is inferred.
+  assert.equal(st, 'ontime', 'the board keeps the airport\'s word, not the clock\'s "Arrived"');
+  assert.equal(E.adbStatusInferred(raw, st), false, 'a neutral word is no claim, so nothing is inferred');
   assert.equal(E.adbStatusInferred({ status: 'arrived' }, 'arrived'), false, 'the feed\'s own "Arrived" is not inferred');
-  const inb = arr('PD2373', 'YOW', '3', 29, 16, 33, { status: st, _stInferred: true, _aircraft: 'DHC-8-400' });
   const cf = dep('PD2382', 'YHU', '3', 29, 17, 20, { _aircraft: 'DHC-8-400' });
-  const res = E._gateAircraftWhere(inb, cf, now);
-  assert.notEqual(res.kind, 'stand');
-  assert.equal(res.kind, 'none');
-  assert.equal(E.fidsInboundAirborne(inb), false, 'nor is it flying on the clock\'s word');
+  // A neutral row, and the same row as a pre-v23923 screen may still remember
+  // it (a clock-made claim flagged _stInferred): neither puts it on our stand.
+  for (const extra of [{}, { _stInferred: true }]) {
+    const inb = arr('PD2373', 'YOW', '3', 29, 16, 33, Object.assign({ status: st, _aircraft: 'DHC-8-400' }, extra));
+    const res = E._gateAircraftWhere(inb, cf, now);
+    assert.notEqual(res.kind, 'stand');
+    assert.equal(res.kind, 'none');
+    assert.equal(E.fidsInboundAirborne(inb), false, 'nor is it flying on the clock\'s word');
+  }
+  const remembered = arr('PD2373', 'YOW', '3', 29, 16, 33, { status: 'arrived', _stInferred: true, _aircraft: 'DHC-8-400' });
+  assert.equal(E._gateAircraftWhere(remembered, cf, now).kind, 'none', 'an old clock-made "arrived" is still not a landing');
 });
 
 test('an arrival that landed at 17:03 and left again as the 17:20 is NOT at our stand for a later departure', () => {

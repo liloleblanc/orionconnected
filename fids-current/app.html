@@ -406,7 +406,7 @@
 </div>
 
 <script src="js/shared-names.js?v=23233"></script>
-<script src="js/feed-router.js?v=23918"></script>
+<script src="js/feed-router.js?v=23923"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -950,6 +950,10 @@ function adbToCard(f,dir){
   else if(raw==='arrived'||raw==='landed')state='ingate';
   else if(raw==='boarding')state='boarding';
   else if(raw==='gateclosed'||raw==='gate closed')state='gateclosed';
+  // v23923 — the shared router now passes Moncton's "Final call" through as
+  // 'final' instead of folding it into 'boarding'; read it as the final call
+  // it is. The app's own clock below is otherwise unchanged.
+  else if(raw==='final'||raw==='finalcall')state='final';
   if(raw==='delayed')timeliness='delayed';
   else if(sc&&rv){const dt=(new Date(rv.replace(' ','T'))-new Date(sc.replace(' ','T')))/60000;
     if(dt>=5)timeliness='delayed'; else if(dt<=-5)timeliness='early';}

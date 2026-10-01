@@ -50,6 +50,35 @@ function fnSource(name) {
   throw new Error(`could not find the end of ${name}()`);
 }
 
+// v23923 — _gateLiveGates asks _gateFlightLive, which carries the boarding
+// hold and reads the feed's own word (_gateOutboundAtGate), an operator's
+// override (_gateOverrideWord) and the evidence that a flight has left
+// (_gateDepLeft), and then the yield (_gateHoldYields). Lift the whole chain, and the two
+// constants it reads, so the harnesses below run the shipped rule: lifted
+// alone it throws a ReferenceError, which the gids boot pick's try/catch
+// would swallow and silently widen the pool to every gate.
+function constLine(name) {
+  const m = core.match(new RegExp('^var ' + name + ' = [^;]+;', 'm'));
+  assert.ok(m, `fids-core.js must declare ${name}`);
+  return m[0];
+}
+function liveGateChain() {
+  return [
+    constLine('BOARDING_HOLD_MIN'),
+    constLine('GATE_GRACE_MIN'),
+    fnSource('adbTs'),
+    fnSource('_gateRawStatus'),
+    fnSource('_gateOutboundAtGate'),
+    fnSource('_gatePushLeft'),
+    fnSource('_gateRawAirborne'),
+    fnSource('_gateDepLeft'),
+    fnSource('_gateOverrideWord'),
+    fnSource('_gateFlightLive'),
+    fnSource('_gateHoldYields'),
+    fnSource('_gateLiveGates')
+  ].join('\n');
+}
+
 // A <select> with just enough behaviour for updateSubScreens: assigning
 // .innerHTML = '' clears the options, appendChild adds one, and .value only
 // takes a value that is actually an option — exactly like the real element,
@@ -94,7 +123,7 @@ function runUpdateSubScreens({ dep, search = '', inRotator = true, openOn = '', 
     fnSource('_fidsSafeSub'),
     fnSource('_fidsPinnedSub'),
     fnSource('_gateWalkActive'),
-    fnSource('_gateLiveGates'),
+    liveGateChain(),
     fnSource('updateSubScreens'),
     'updateSubScreens();',
     'return { chosen: subScreenVal, selValue: subSelForTest.value, options: subSelForTest.options.map(function (o) { return o.value; }) };'
@@ -114,7 +143,7 @@ function runUpdateSubScreens({ dep, search = '', inRotator = true, openOn = '', 
 }
 
 function liveGates(dep, now) {
-  const fn = new Function('Date', fnSource('_gateLiveGates') + '\nreturn _gateLiveGates;');
+  const fn = new Function('Date', liveGateChain() + '\nreturn _gateLiveGates;');
   return fn(Date)(dep, now);
 }
 
@@ -270,7 +299,7 @@ function runGidsBootPick({ options, dep, last = null, willCycle = true, now }) {
     ap: 'YOW',
     _willCycle: willCycle,
     data: { dep },
-    _gateLiveGates: new Function('Date', fnSource('_gateLiveGates') + '\nreturn _gateLiveGates;')(Date),
+    _gateLiveGates: new Function('Date', liveGateChain() + '\nreturn _gateLiveGates;')(Date),
     window: { sessionStorage: { getItem: (k) => (k in store ? store[k] : null), setItem: (k, v) => { store[k] = v; } } },
     Math,
     String,
@@ -336,4 +365,57 @@ test('a feed that moved on under the dropdown still yields a gate', () => {
   // still open on something rather than throw on an empty pool.
   const r = runGidsBootPick({ options: ['A1', 'A2', 'A3'], dep: YOW, now: NOW });
   assert.ok(['A1', 'A2', 'A3'].includes(r.gate), `chose ${r.gate}`);
+});
+
+// ── v23923 — the boarding hold reaches every pick path ──────────────────────
+// A flight the feed itself still calls Boarding keeps its gate up to an hour
+// past its time. The hold lives in _gateFlightLive, which _gateLiveGates asks,
+// so updateSubScreens, the cycle's pickGate and the gids.html boot pick (the
+// last writer) all carry it. Moncton's PD2382 at gate 3, thirty minutes past
+// its 17:20: while cyqm.ca says Boarding, every path may land on gate 3; once
+// it is only "On time", none may.
+
+test('every pick path holds a gate whose flight the airport still calls Boarding', () => {
+  const pd2382 = (status) => [
+    { gate: '3', flight: 'PD2382', status, _sortTs: NOW - 30 * MIN },
+    { gate: '5', flight: 'AC7995', status: 'ontime', _sortTs: NOW + 20 * MIN }
+  ];
+  const held = pd2382('boarding');
+  const gone = pd2382('ontime');
+  assert.deepEqual(liveGates(held, NOW), ['3', '5']);
+  assert.deepEqual(liveGates(gone, NOW), ['5']);
+  const subs = new Set(), boots = new Set();
+  for (let i = 0; i < 200; i++) {
+    subs.add(runUpdateSubScreens({ dep: held, now: NOW }).chosen);
+    boots.add(runGidsBootPick({ options: ['3', '5'], dep: held, now: NOW }).gate);
+    assert.equal(runUpdateSubScreens({ dep: gone, now: NOW }).chosen, '5', 'updateSubScreens left gate 3');
+    assert.equal(runGidsBootPick({ options: ['3', '5'], dep: gone, now: NOW }).gate, '5', 'the boot pick left gate 3');
+  }
+  assert.ok(subs.has('3'), 'updateSubScreens may land on the held gate');
+  assert.ok(boots.has('3'), 'the gids boot pick may land on the held gate');
+  // The cycle's hop goes through the same function (see the test above).
+  const cycle = core.slice(core.indexOf('function pickGate()'), core.indexOf('// TWO drive modes:'));
+  assert.match(cycle, /_gateLiveGates\(data\.dep\)/);
+  // A clock-made boarding (a row a pre-v23923 screen remembered) holds nothing.
+  assert.deepEqual(liveGates([Object.assign({}, held[0], { _stInferred: true }), held[1]], NOW), ['5']);
+});
+
+// v23923 — and the yield reaches them too. Moncton gate 1 runs AC2037 (06:35)
+// and AC7753 (07:10). If the feed leaves AC2037 on "Boarding" after AC7753 has
+// departed, gate 1 has nothing left to show: a walking display must not land
+// there and paint "Awaiting Next Flight" under a gate the hold kept "live".
+test('a stale hold that has given way to the next flight leaves no live gate behind', () => {
+  const gate1 = (later) => [
+    { gate: '1', flight: 'AC2037', status: 'boarding', _sortTs: NOW - 40 * MIN },
+    Object.assign({ gate: '1', flight: 'AC7753', _sortTs: NOW - 5 * MIN }, later),
+    { gate: '5', flight: 'AC7995', status: 'ontime', _sortTs: NOW + 20 * MIN }
+  ];
+  assert.deepEqual(liveGates(gate1({ status: 'departed' }), NOW), ['5'], 'the later flight departed');
+  assert.deepEqual(liveGates(gate1({ status: 'ontime', _sortTs: NOW - 15 * MIN }), NOW), ['5'], 'the later flight is past its own time');
+  assert.deepEqual(liveGates(gate1({ status: 'ontime', _sortTs: NOW + 25 * MIN }), NOW), ['1', '5'], 'still ahead: the hold stands');
+  const dead = gate1({ status: 'departed' });
+  for (let i = 0; i < 100; i++) {
+    assert.equal(runUpdateSubScreens({ dep: dead, now: NOW }).chosen, '5', 'updateSubScreens');
+    assert.equal(runGidsBootPick({ options: ['1', '5'], dep: dead, now: NOW }).gate, '5', 'the gids boot pick');
+  }
 });

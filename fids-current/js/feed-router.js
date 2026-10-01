@@ -143,12 +143,18 @@ function yqmClockToMin(s) {
 }
 // Map the human status string ("Departed at 8:20 PM", "On Time", …) onto
 // the lowercase keywords the board keys on.
+// v23923 — THE BOARD NOW PRINTS ONLY THE AIRPORT'S WORD (adbStatus no longer
+// makes boarding, final call or gate closed from the clock), so the adapters
+// must stop replacing that word with a different one: Moncton's "Final call"
+// and "Last call" are 'final' (they read "Boarding"), Tampa's GC and Toronto
+// Pearson's GTC are 'gateclosed' (they read "Boarding" too).
 function yqmStatus(s) {
   const t = String(s || '').toLowerCase();
   if (t.includes('cancel')) return 'cancelled';
   if (t.includes('divert')) return 'diverted';
   if (t.includes('gate closed')) return 'gateclosed';
-  if (t.includes('final call') || t.includes('last call') || t.includes('board')) return 'boarding';
+  if (t.includes('final call') || t.includes('last call')) return 'final';
+  if (t.includes('board')) return 'boarding';
   if (t.includes('depart')) return 'departed';
   if (t.includes('arriv') || t.includes('land')) return 'arrived';
   if (t.includes('delay')) return 'delayed';
@@ -246,7 +252,8 @@ function tpaStatus(code, content) {
   if (c === 'DP') return 'departed';
   if (c === 'AR' || c === 'AB' || c === 'AN' || c === 'OB' || c === 'BC') return 'arrived';
   if (c === 'DL') return 'delayed';
-  if (c === 'BO' || c === 'GC') return 'boarding';
+  if (c === 'GC') return 'gateclosed';   // v23923 — gate closed, not boarding (see yqmStatus)
+  if (c === 'BO') return 'boarding';
   const t = String(content || '').replace(/&nbsp;/g, ' ').toLowerCase();
   if (t.includes('cancel')) return 'cancelled';
   if (t.includes('divert')) return 'diverted';
@@ -368,7 +375,14 @@ function yyzStatus(code) {
   if (c === 'DIV') return 'diverted';
   if (c === 'DEL') return 'delayed';
   if (c === 'DEP') return 'departed';
-  if (c === 'BRD' || c === 'BOR' || c === 'BOA' || c === 'GTO' || c === 'GTC' || c === 'FBO') return 'boarding';
+  if (c === 'GTC') return 'gateclosed';   // v23923 — gate closed, not boarding (see yqmStatus)
+  // v23923 — GTO, by its pair with GTC, is "gate open": the agent is at the
+  // gate, nobody has been called. The board prints only the airport's word,
+  // and "gate open" is not "boarding", so it stays neutral (the board then
+  // reads On time / Scheduled by its time) instead of opening NOW BOARDING
+  // and the gate's boarding hold on a word the airport did not say.
+  if (c === 'GTO') return 'scheduled';
+  if (c === 'BRD' || c === 'BOR' || c === 'BOA' || c === 'FBO') return 'boarding';
   if (c === 'ARR' || c === 'LDD' || c === 'LND' || c === 'BAG' || c === 'ONB') return 'arrived';
   // ONT = on time, SKD/ETD = scheduled/estimated → treat as scheduled
   return 'scheduled';
