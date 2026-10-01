@@ -2938,9 +2938,9 @@ var DELAY_HOLD_MIN = 60;
 // leg window closed 8 minutes after it, so a real landing a few minutes late
 // (AC1986, Moncton, 1 Oct 00:02: still "Early at 12:02 AM" in the feed at
 // 00:10, the push still airborne) was never seen: the map held the aeroplane
-// at the end of its estimate. Decided with the owner on 2026-10-01: keep
-// looking until the airport says Arrived (the poll's own stop) or this many
-// minutes pass, so the map can show the real landing and taxi.
+// at the end of its estimate. The requirement (2026-10-01): keep looking
+// until the airport says Arrived (the poll's own stop) or this many minutes
+// pass, so the map can show the real landing and taxi.
 var ARR_CONFIRM_MIN = 30;
 
 // v23925 — WHICH AIRPORTS' FEEDS SAY THE GATE WORDS (decision of 2026-09-30,
