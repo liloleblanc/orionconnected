@@ -107,7 +107,7 @@ test('the v23926 block exists, is the last word on these elements, and leaves th
     // Blink stops counting a specificity component at 255: these tie on ids
     // with the heaviest earlier rules (the sky layers' 277) and win on the
     // six :not(._).
-    assert.match(sel, /^html body(:is\(\[data-gate-airline="(AC|WS)"\][^)]*\))?(:not\(#_\)){255}(:not\(\._\)){6} \.g8-wrap \.gad-map-col-v2([ >]|$)/,
+    assert.match(sel, /^html body(:is\(\[data-gate-airline="(AC|WS)"\][^)]*\))?(:not\(#_\)){255}(:not\(\._\)){6} \.g8-wrap(\.g8-banner-light)? \.gad-map-col-v2([ >]|$)/,
       `selector without the v23926 weight, or outside the right column: ${sel.slice(0, 80)}`);
     // The upper panel is not restyled here, and nothing in the middle panel is.
     assert.doesNotMatch(sel, /v2-rc-shelf-map|v2-rc-map-life|gad-media-col|ad-panel|ad-outer|bigcraft|wxcard|hcard/, sel.slice(-80));
@@ -230,7 +230,7 @@ test('no frame, strip or rule of its own inside the lower panel', () => {
   assert.match(RULES, /\.v2-rc-acb-cap::before,\s*\n[^\n]*\.v2-rc-acb-cap::after \{\s*content: none !important;\s*display: none !important;/);
   // White type with the lines' own shadow, every carrier (Air Canada's was
   // near-black type on its grey strip).
-  assert.match(cap, /color: #ffffff !important;\s*-webkit-text-fill-color: #ffffff !important;\s*text-shadow: 0 1px 3px rgba\(0, 0, 0, 0\.78\) !important;/);
+  assert.match(cap, /color: #ffffff !important;\s*-webkit-text-fill-color: #ffffff !important;\s*text-shadow: var\(--rcp-type-sh\) !important;/);
   assert.match(ruleFor('.gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap :is(div, span, b)'), /background: none !important;\s*box-shadow: none !important;/);
   const row = ruleFor('.gad-map-col-v2 > .v2-rc-shelf-fi .v2-fi-row');
   assert.match(row, /background: transparent !important;/);
@@ -342,4 +342,81 @@ test('a carrier whose art is a disc fills the mark box: no circle inside a circl
   assert.match(native, /padding: 0 !important;/);
   assert.match(native, /box-shadow: none !important;/);
   assert.doesNotMatch(native, /width|height|background/, 'the box keeps its size and its own ground');
+});
+
+test('every word in the caption carries the shadow, and a light banner gives it a halo', () => {
+  // The old light strip's rule clears text-shadow on every child of the
+  // caption. A shadow set only on the caption box never reached a letter:
+  // the labels and the model computed 'none' (Porter's 12.7px white labels
+  // at 3.5:1 with nothing behind them). It is set on the children.
+  assert.match(PLAIN, /\.gad-map-col-v2 \.v2-rc-acb-cap \*[^{]*\{[^}]*text-shadow: none !important;/, 'the rule that clears it is still there');
+  const kids = ruleFor('.gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap :is(div, span, b)');
+  assert.match(kids, /color: #ffffff !important;\s*-webkit-text-fill-color: #ffffff !important;\s*text-shadow: var\(--rcp-type-sh\) !important;/);
+  // One shadow for every word in the lower panel: the caption, the plain
+  // title and the lines (through the plate token they already read).
+  assert.equal(token('--rcp-type-sh'), '0 1px 3px rgba(0, 0, 0, 0.78)', 'the lines\' own shadow');
+  assert.match(ruleFor('.gad-map-col-v2 > .v2-rc-shelf-fi'), /--plate-ink-sh: var\(--rcp-type-sh\);/);
+  assert.match(RULES, /\.v2-fi-title:not\(\.v2-fi-title-warn\):not\(\.v2-fi-title-good\) \* \{\s*color: #ffffff !important;\s*-webkit-text-fill-color: #ffffff !important;\s*text-shadow: var\(--rcp-type-sh\) !important;/);
+  assert.doesNotMatch(RULES.replace(/--rcp-type-sh:[^;]+;/g, ''), /text-shadow: (?!var\(--rcp-type-sh\))/, 'no word in the panel has a shadow of its own');
+  // A light banner colour (Porter's cream, .g8-banner-light on the wrap)
+  // puts mid grey under the type; there the shadow starts with a tight dark
+  // halo round each letter.
+  const light = RULES.match(/\.g8-wrap\.g8-banner-light \.gad-map-col-v2 \{\s*--rcp-type-sh: ([^;]+);\s*\}/);
+  assert.ok(light, 'the light-banner shadow');
+  assert.match(light[1], /^0 0 2px rgba\(0, 0, 0, 0\.95\), /, 'a 2px halo first');
+  assert.match(light[1], /0 1px 3px rgba\(0, 0, 0, 0\.78\)$/, 'and the ordinary shadow under it');
+  assert.match(CORE, /return _lum > 170 \? ' g8-banner-light' : '';/, 'the class the board puts on a light banner\'s wrap');
+});
+
+test('the title pills keep the board\'s own bar: the words\' colour, never the title\'s', () => {
+  // A pill carries its own ground and words. The board's pill rules colour
+  // the bar with the words: dark ink on the green and amber pills, white on
+  // WestJet's navy. The title element's own colour is the dark ink even where
+  // the words are white, so an inherited bar went navy on navy (1.2:1).
+  assert.doesNotMatch(RULES, /:\s*inherit\b/, 'nothing in the block inherits a colour');
+  const sep = RULES.match(/[^{}]*\.v2-rc-shelf-fi :is\(\.v2-fi-sep, \.v2-rc-fi-sep, \.v2-rc-bar\)([^,{]*),/);
+  assert.ok(sep, 'the separators\' rule');
+  assert.equal(sep[1], ':not(.v2-fi-title-warn *):not(.v2-fi-title-good *)', 'the white separators leave the pills alone');
+  const pill = ruleFor('.v2-fi-title:is(.v2-fi-title-warn, .v2-fi-title-good) .v2-fi-sep');
+  assert.doesNotMatch(pill, /color/, 'in a pill the bar keeps the pill rules\' colour');
+  assert.match(pill, /opacity: 0\.8 !important;/);
+  assert.match(RULES, /\.v2-fi-title:not\(\.v2-fi-title-warn\):not\(\.v2-fi-title-good\) \.v2-fi-sep \{\s*opacity: 0\.62 !important;/);
+  // Every rule in the block that names a pill's separator sets no colour.
+  for (const r of RULES.match(/[^{}]+\{[^}]*\}/g) || []) {
+    const [sel, body] = r.split('{');
+    if (/title-(warn|good)\)? \.v2-fi-sep\s*$/.test(sel.trim()) || /:is\(\.v2-fi-title-warn, \.v2-fi-title-good\) \.v2-fi-sep/.test(sel)) {
+      assert.doesNotMatch(body, /color/, sel.slice(-90));
+    }
+  }
+});
+
+test('an operator\'s mark on Air Canada\'s near-black ground clears 3:1', () => {
+  // The caption used to be a light grey strip on Air Canada, and Rouge's and
+  // PAL's colour lettering was drawn for it. On the panel's own ground
+  // (#0b0d10) Rouge's crimson read 2.5:1 and PAL's navy less. Each takes its
+  // published white lettering there (_opbyContrastFix, onDark); Jazz keeps
+  // its own red, which clears 3:1.
+  const objSrc = (name) => {
+    const at = CORE.indexOf('var ' + name + ' = {');
+    assert.ok(at > 0, name);
+    // eslint-disable-next-line no-new-func
+    return Function('return ' + CORE.slice(at + ('var ' + name + ' = ').length, CORE.indexOf('\n};', at) + 2))();
+  };
+  const WORD = objSrc('OPERATOR_WORDMARKS');
+  const PAIR = objSrc('OPBY_WORDMARKS_THEMED');
+  assert.deepEqual(PAIR.RV, { onDark: '/logos/airlines/canadian/rouge-monochrome-white.svg', onLight: '/logos/airlines/canadian/rouge.svg' });
+  assert.deepEqual(PAIR.ROU, PAIR.RV);
+  const lum = (h) => [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
+    .map((x) => (x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4)))
+    .reduce((a, v, i) => a + v * [0.2126, 0.7152, 0.0722][i], 0);
+  const ratio = (a, b) => (Math.max(lum(a), lum(b)) + 0.05) / (Math.min(lum(a), lum(b)) + 0.05);
+  const ground = ruleFor('.g8-wrap .gad-map-col-v2', AC).match(/--rc-ground-ink: #([0-9a-f]{6});/i)[1];
+  for (const op of ['RV', 'ROU', 'QK', 'JZA', 'PB', 'PVL']) {
+    const file = PAIR[op] ? PAIR[op].onDark : WORD[op];
+    assert.ok(file, op);
+    const svg = fs.readFileSync(path.join(root, 'fids-current', file), 'utf8');
+    const fills = [...svg.matchAll(/fill[:=]"?#([0-9a-f]{6})\b/gi)].map((m) => m[1]);
+    assert.ok(fills.length, `${op}: ${file} has fills`);
+    for (const f of fills) assert.ok(ratio(f, ground) >= 3, `${op}: #${f} on #${ground} is ${ratio(f, ground).toFixed(2)}:1 (${file})`);
+  }
 });

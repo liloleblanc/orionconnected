@@ -5466,6 +5466,13 @@ var OPBY_WORDMARKS_THEMED = {
   // white lettering on a dark ground, its colour lettering on a light one.
   'PB':  { onDark:'/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg' },
   'PVL': { onDark:'/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg' },
+  // v23926 — Rouge, for the same reason. rouge.svg is crimson lettering
+  // (#A21C37, 'AIR CANADA' in #EC1C2B): right on the old light grey strip
+  // (v23464), about 2.5:1 on Air Canada's near-black ground. Its published
+  // white lettering on a dark ground, as OPERATOR_LOGOS_THEMED and the banner
+  // already use it; its crimson on a light one.
+  'RV':  { onDark:'/logos/airlines/canadian/rouge-monochrome-white.svg',           onLight:'/logos/airlines/canadian/rouge.svg' },
+  'ROU': { onDark:'/logos/airlines/canadian/rouge-monochrome-white.svg',           onLight:'/logos/airlines/canadian/rouge.svg' },
   'YV':  { onDark:'/logos/airlines/us-regional/mesa-airlines.svg',                 onLight:'/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg' },
   'ASH': { onDark:'/logos/airlines/us-regional/mesa-airlines.svg',                 onLight:'/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg' },
   '9E':  { onDark:'/logos/airlines/us-regional/endeavor-air-monochrome-white.svg', onLight:'/logos/airlines/us-regional/endeavor-air.svg' },
