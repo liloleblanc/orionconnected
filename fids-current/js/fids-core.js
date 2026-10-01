@@ -2890,13 +2890,18 @@ function _gateWalkActive() {
 // The yield (_gateHoldYields) is applied here too, so a gate whose only live
 // flight is a stale hold that has already given way is not a gate a walking
 // display lands on — it would paint "Awaiting Next Flight".
-function _gateLiveGates(flights, nowMs) {
+// v23925 — so is the Delayed stay (a Delayed flight keeps its gate to its new
+// time plus the grace, or an hour past its schedule with no new time) and its
+// yield, both in the same two functions.
+// v23925 — iata: the airport, for the Option-B yield; the pick paths leave it
+// out and _gateHoldYields reads the page's own (_pageAirport).
+function _gateLiveGates(flights, nowMs, iata) {
   var now = nowMs || Date.now();
   var out = [];
   (flights || []).forEach(function (f) {
     if (!f || !f.gate || f.gate === '—') return;
     if (!_gateFlightLive(f, now)) return;
-    if (_gateHoldYields(f, flights, now)) return;
+    if (_gateHoldYields(f, flights, now, iata)) return;
     if (out.indexOf(f.gate) === -1) out.push(f.gate);
   });
   return out.sort();
@@ -2919,6 +2924,81 @@ function _gateLiveGates(flights, nowMs) {
 var BOARDING_HOLD_MIN = 60;
 var GATE_GRACE_MIN = 10;
 var BOARD_TRAIL_MIN = 30;
+// v23925 — DELAY_HOLD_MIN: a flight the feed calls Delayed with NO new time
+//   stays its gate's flight up to an hour past its scheduled time (decision of
+//   2026-09-30: a delayed flight stays on its gate). The airport has said the
+//   flight is late and not by how much, so the ten-minute grace would hand its
+//   gate to the next flight, or to "Awaiting Next Flight", while its
+//   passengers are still at the door. A Delayed WITH a new time needs no
+//   constant of its own: the new time plus GATE_GRACE_MIN, as always.
+var DELAY_HOLD_MIN = 60;
+
+// v23925 — WHICH AIRPORTS' FEEDS SAY THE GATE WORDS (decision of 2026-09-30,
+// Option B). Boarding, Final call and Gate closed on a board are claims about
+// the door, and at the airports below they come ONLY from the feed: the strict
+// rule. Every other airport's feed never says those words — the status that
+// reaches the boards is movement words only (Halifax, Ottawa, Montréal,
+// Calgary, Vancouver, Boston, Denver, O'Hare, San Francisco, Heathrow, ...) or
+// times only — so there the gate and the departures board show Boarding from
+// the airline's printed boarding time until the departure time
+// (_schedBoardingOn), marked as clock-made, and never Final call or Gate
+// closed. An airport missing from this table gets that schedule boarding.
+// The table is explicit on purpose. Working it out at run time, from whether
+// any row has said Boarding today, would send Moncton, quiet before its first
+// wave, to the schedule.
+// v23925 — THE BAR IS EVIDENCE, NOT A MAPPER BRANCH. Each entry names the
+// adapter the board's route really calls AND where the feed was seen saying a
+// gate word: a captured fixture (tests/fixtures), or a sighting recorded with
+// the adapter or its test. Add an airport only with both. A mapper that CAN
+// return 'boarding' proves nothing on its own, because most adapters carry a
+// keyword branch for words their feed has never been seen to use, and a
+// strict airport whose feed never says the words never shows Boarding at all
+// — the failure Option B exists to prevent. So these are NOT here, and get
+// the schedule boarding:
+//   - the adapter's own notes record a vocabulary without a gate word:
+//     LaGuardia and Newark (the Port Authority boards, the same vocabulary
+//     that left JFK out), Miami, Montréal Saint-Hubert, Salt Lake City (12
+//     departures inside their boarding window in the capture, all
+//     "Scheduled"), Kamloops, Fort McMurray, Prince George, Yellowknife and
+//     Gander;
+//   - Orlando: the table cited the worker's authority-window enum (BD / LC),
+//     but the board reads /flights/mco, whose mapper (mcoStatus) has no
+//     Boarding or Last Call and returns those rows as scheduled;
+//   - the rest, whose adapters map a gate word nobody has recorded the feed
+//     using: Tampa, Toronto Pearson, Billy Bishop, Hobart, Kansas City,
+//     Raleigh-Durham, Reagan, Dulles and Charlottetown. A capture showing one
+//     of them saying Boarding puts it back here.
+// Calgary, Keflavík, Charlotte, Las Vegas, San Francisco and Boston publish
+// boarding in SEPARATE fields the worker does not read, so their status word
+// never says it either.
+var FEED_SAYS_GATE_WORDS = {
+  YQM: 'feed-router yqmStatus (cyqm.ca), worker YQM_STATUS_ENUM (the push) — cyqm.ca prints "Boarding" (tests/gate-map-apron.test.js)',
+  MSP: 'worker MSP_STATUS — fixture msp-dep-sample.html (Boarding)',
+  YXE: 'worker yxeStatus — fixture yxe-dep-sample.html (Boarding, Final Call)',
+  ZRH: 'worker ZRH_STATUS / zrhStatus — fixture zrh-sample-2026-09-06.json (Boarding, Closed)',
+  IAH: 'worker iahStatus — "BRD @ 830PM" in the 2026-09-05 capture (tests/iah-feed.test.js)',
+  SYD: 'worker SYD_STATUS / sydStatus — Boarding, Final Call, Gate Closed in archived daytime captures (the adapter\'s notes)'
+};
+function _feedSaysGateWords(iata) {
+  var k = String(iata || '').toUpperCase();
+  return !!k && Object.prototype.hasOwnProperty.call(FEED_SAYS_GATE_WORDS, k);
+}
+// v23925 — the airport this page shows (the apSel field every board, gate and
+// belt page carries), for the gate pick's Option-B yield (_gateHoldYields): the
+// three pick paths call it without an airport, and they must all read the same
+// one. '' when there is no page (a test harness), which leaves that yield off.
+function _pageAirport() {
+  try {
+    var el = (typeof document !== 'undefined' && document && document.getElementById) ? document.getElementById('apSel') : null;
+    return String((el && el.value) || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  } catch (e) { return ''; }
+}
+// v23925 — has the feed published a new time with its Delayed? A revised HH:MM
+// (upd) or a revised timestamp later than the schedule — the same test
+// _gateSignPhase and _gateDepDisplayState use for "revised".
+function _gateDelayHasTime(f) {
+  return !!(f && (f.upd || (f._revTs && f._sortTs && f._revTs > f._sortTs + 60000)));
+}
 
 // v23925 — IS THIS STILL THE GATE'S FLIGHT? The one test every gate path asks:
 // which gate a walking display lands on (_gateLiveGates) and which flight a
@@ -2934,17 +3014,53 @@ var BOARD_TRAIL_MIN = 30;
 // only after it: applyOverrideToFlight writes it onto the picked row, which the
 // next feed re-map rebuilds without it, so an agent's "Boarding" used to hold
 // a gate only until the feed next refreshed and then drop off mid-hold.
+// v23925 — DELAYED FLIGHTS STAY ON THEIR GATE (decision of 2026-09-30), here so
+// all three pick paths share it. A Delayed with a new time stays until that
+// time plus GATE_GRACE_MIN, which is what the revised time below already did.
+// A Delayed with NO new time used to go ten minutes after its schedule, while
+// the airport was saying the flight had not left; it now stays DELAY_HOLD_MIN
+// past its schedule, unless real evidence says it has left (_gateDepLeft). The
+// yield to a later flight the airport is boarding at the same gate is
+// _gateHoldYields. Diverted frees the gate like Departed and Cancelled: the
+// aeroplane is not coming back to this door.
 function _gateFlightLive(f, nowMs) {
   if (!f) return false;
   var ovSt = _gateOverrideWord(f);
   var st = ovSt || String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
-  if (st === 'cancelled' || st === 'canceled' || st === 'departed') return false;
+  if (st === 'cancelled' || st === 'canceled' || st === 'departed' || st === 'diverted') return false;
   var now = nowMs || Date.now();
   var eff = f._revTs || f._sortTs || 0;
   if (!eff) return true;
   var atDoor = ovSt ? /^(boarding|final|finalcall|gateclosed)$/.test(ovSt) : _gateOutboundAtGate(f);
   var held = atDoor && !_gateDepLeft(f, now);
+  if (!held && st === 'delayed' && !_gateDelayHasTime(f) && f._sortTs && !_gateDepLeft(f, now)) {
+    // v23925 — a Delayed with no new time. When boarding began at this door
+    // (the airport said Boarding, Final call or Gate closed here,
+    // _gateBoardingBeganHere), the decision of 2026-09-30 is that it keeps
+    // running however long the delay: the gate keeps the flight until the
+    // airport says it has gone (Departed, Cancelled, Diverted above) or real
+    // evidence does, bounded only by the board's own stop for a row
+    // (DEPART_TRAIL_HRS past its schedule). A delayed flight that never started
+    // boarding stays DELAY_HOLD_MIN. A Delayed WITH a new time is that time plus
+    // GATE_GRACE_MIN below, boarding begun or not: the time is pushed ahead.
+    if (_gateBoardingBeganHere(f)) return (now - f._sortTs) <= DEPART_TRAIL_HRS * 3600000;
+    return (now - f._sortTs) <= DELAY_HOLD_MIN * 60000;
+  }
   return (now - eff) <= (held ? BOARDING_HOLD_MIN : GATE_GRACE_MIN) * 60000;
+}
+// v23925 — did the airport say this flight was boarding (Boarding, Final call
+// or Gate closed) at the gate it is at now? The record _gateDepsSeen keeps per
+// flight and day (_gateDoorRecord); a record from another door does not count,
+// as for the kept sign (_gateDoorBasis). The schedule boarding is never
+// recorded, so it never counts.
+function _gateBoardingBeganHere(f) {
+  try {
+    if (!f || typeof _gateDoorRecord !== 'function') return false;
+    var rec = _gateDoorRecord(f);
+    if (!rec || !/^(boarding|final|gateclosed)$/.test(String(rec.w || ''))) return false;
+    var g = (f.gate && f.gate !== '—') ? String(f.gate) : '';
+    return !(rec.gate && g && String(rec.gate) !== g);
+  } catch (e) { return false; }
 }
 // v23925 — the operator override's status word for a row, normalised, or ''.
 // Overrides live in this browser's localStorage (getGateOverrides); a page or
@@ -2976,11 +3092,56 @@ function _gateOverrideWord(f) {
 // 07:10): a "Boarding" AC2037 left on the feed hid AC7753 through its own
 // departure and, once AC7753 had dropped off, came back on its own.
 // Cancelled and diverted later flights prove nothing about the door.
-function _gateHoldYields(f, rows, nowMs) {
+// v23925 — A DELAYED FLIGHT (the feed's Delayed, with or without a new time)
+// stays on its gate by _gateFlightLive, and yields only while a later flight at
+// the same gate is at the door in the airport's own word (boarding, final call
+// or gate closed, _gateOutboundAtGate) and has not left. Neither the later
+// flight's time coming nor its departure moves a delayed flight off: it is
+// still to leave from this door, so once the later flight has gone the gate
+// shows it again. Measured from its SCHEDULE, so the yield can start once the
+// ordinary grace past the scheduled time is over, while the delay keeps it
+// live; before that the grace comes first, as for every flight.
+// v23925 — TWO MORE RULES IN THE YIELD.
+// (1) A TIGHT TURN AT AN AIRPORT WHOSE FEED NEVER SAYS THE GATE WORDS. There
+//   the next flight's Boarding is the schedule's (_schedBoardingOn), and the
+//   departures board shows it from that flight's printed boarding time. On a
+//   turn shorter than the boarding lead plus the grace (Halifax gate 16:
+//   AC2057 05:15, AC2061 05:50), the earlier flight sat in its ten-minute
+//   grace while the board already said the later one was boarding at the same
+//   gate, so the two screens disagreed for those minutes. So, at such an
+//   airport only, an earlier flight whose departure time has passed (its own
+//   schedule sign closed at that minute) gives the gate up inside its grace to
+//   a later flight at the gate that is in its boarding window, or that the
+//   feed or an operator says is boarding. Not a Delayed flight: it keeps its
+//   gate under the Delayed rule, which yields only to the airport's own word
+//   (decision of 2026-09-30); the departures board then holds the later
+//   flight's schedule Boarding back too (_fidsShownRow), so the screens still
+//   agree. Not a flight the feed itself still calls boarding: the hold below.
+//   iata is the airport; the pick paths leave it out and the page's own is
+//   read (_pageAirport), so all three still share one rule.
+// (2) A DELAYED FLIGHT YIELDS ONLY TO A FLIGHT THAT IS STILL THE GATE'S. A
+//   "Boarding" left on a later flight that has itself gone off the gate (its
+//   hour is up, or it has given way to the flight after it) proves nothing
+//   about the door. Moncton gate 1: AC1983 "Delayed until 7:50 AM" kept giving
+//   way to an AC2037 the feed had left on Boarding after AC2037 had itself
+//   given way to AC7753, and from 07:21 the gate showed no flight at all while
+//   AC1983 was still to leave from it. The recursion reads only later flights,
+//   so it ends.
+function _gateHoldYields(f, rows, nowMs, iata) {
   if (!f || !f.gate || f.gate === '—') return false;
   var now = nowMs || Date.now();
-  var eff = f._revTs || f._sortTs || 0;
-  if (!eff || (now - eff) <= GATE_GRACE_MIN * 60000) return false;
+  var ovW = _gateOverrideWord(f);
+  var delayed = (ovW || String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase()) === 'delayed';
+  var eff = delayed ? (f._sortTs || 0) : (f._revTs || f._sortTs || 0);
+  if (!eff) return false;
+  var inGrace = (now - eff) <= GATE_GRACE_MIN * 60000;
+  var schedAp = '';
+  if (inGrace) {
+    if (delayed || now < eff) return false;
+    if (ovW ? /^(boarding|final|finalcall|gateclosed)$/.test(ovW) : _gateOutboundAtGate(f)) return false;
+    schedAp = (iata != null) ? String(iata || '').toUpperCase() : _pageAirport();
+    if (!schedAp || _feedSaysGateWords(schedAp)) return false;
+  }
   var list = rows || [];
   for (var i = 0; i < list.length; i++) {
     var r = list[i];
@@ -2992,6 +3153,17 @@ function _gateHoldYields(f, rows, nowMs) {
         && Math.abs((r._sortTs || 0) - (f._sortTs || 0)) <= 5 * 60000) continue;
     var st = String(r.status || '').replace(/[\s_-]+/g, '').toLowerCase();
     if (st === 'cancelled' || st === 'canceled' || st === 'diverted') continue;
+    if (inGrace) {
+      var ovR = _gateOverrideWord(r);
+      var doorR = ovR ? /^(boarding|final|finalcall|gateclosed)$/.test(ovR) : _gateOutboundAtGate(r);
+      if ((doorR && !_gateDepLeft(r, now)) || _schedBoardingWindow(r, now, schedAp)) return true;
+      continue;
+    }
+    if (delayed) {
+      if (_gateOutboundAtGate(r) && !_gateDepLeft(r, now)
+          && _gateFlightLive(r, now) && !_gateHoldYields(r, list, now, iata)) return true;
+      continue;
+    }
     if (st === 'departed' || _gateDepLeft(r, now) || _gateOutboundAtGate(r)) return true;
     var effR = r._revTs || r._sortTs || 0;
     if (effR && now >= effR) return true;
@@ -3007,13 +3179,15 @@ function _gateHoldYields(f, rows, nowMs) {
 // the painted flight was already wrong. A held flight that has given way
 // (_gateHoldYields) is not on the list, so a stale "Boarding" cannot hide the
 // next flight at that door.
-function _gateFlightsAt(sub, nowMs) {
+// v23925 — iata: the airport, passed by the departures board's own question
+// (_fidsShownRow); the gate's readers leave it out and the page's is read.
+function _gateFlightsAt(sub, nowMs, iata) {
   var now = nowMs || Date.now();
   var all = data.dep || [];
   return _gateCsPick(all
     .filter(function (f) {
       if (f.gate !== sub && f.flight !== sub) return false;
-      return _gateFlightLive(f, now) && !_gateHoldYields(f, all, now);
+      return _gateFlightLive(f, now) && !_gateHoldYields(f, all, now, iata);
     })
     .sort(function (a, b) { return a._sortTs - b._sortTs; }));
 }
@@ -3867,7 +4041,9 @@ function getDedicatedRenderKey() {
       // selection. Measured on the branch: with langs = es+fr the gate still
       // rendered English — a language that was not even selected.
       langsKey: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '',
-      first: first ? { flight:first.flight, status:first.status, upd:first.upd, time:first.time, gate:first.gate, airline:first.airline, loc:first._locIata, sort:first._sortTs } : null,
+      // v23925 — and the door word a sign opens on (_gateDoorFor): the schedule
+      // boarding opens on the clock, with nothing in the row changing.
+      first: first ? { flight:first.flight, status:first.status, upd:first.upd, time:first.time, gate:first.gate, airline:first.airline, loc:first._locIata, sort:first._sortTs, door:_gateDoorFor(first, _nowMs2, iata).word } : null,
       second: second ? { flight:second.flight, status:second.status, upd:second.upd, time:second.time, gate:second.gate, airline:second.airline, loc:second._locIata, sort:second._sortTs } : null
     });
   }
@@ -4785,6 +4961,20 @@ function updateDedicatedTimeOnly() {
       if (cdStr) { cdEl.textContent = cdStr; cdEl.parentElement.style.display = ''; }
       else { cdEl.parentElement.style.display = 'none'; }
     }
+    // v23925 — THE SCHEDULE BOARDING OPENS ON ITS MINUTE. At an airport whose
+    // feed never says Boarding the sign opens at the printed boarding time and
+    // closes at the departure time (_gateDoor), with nothing in the feed
+    // changing, and a gate repaints only when its key changes. This runs every
+    // second: when the door word for the painted flight is no longer the one
+    // painted (window._gatePaintedDoor, set by uxgGateHtml), one rebuild is
+    // asked for. The painted word is updated first, so it is asked once.
+    try {
+      const _pd = window._gatePaintedDoor;
+      if (cf && _pd && _pd.k === _gateRowKey(cf)) {
+        const _dw = _gateDoorFor(cf, _nowMs3, iata).word;
+        if (_dw !== _pd.w) { _pd.w = _dw; requestGateRebuild(); }
+      }
+    } catch (eD) {}
   }
 }
 
@@ -8560,7 +8750,17 @@ function renderMobileGateHtml(ctx) {
   const airline = currentFlight.airline || '';
   const dest = tc(loc || currentFlight.dest || currentFlight._locCity || '—');
   const destIata = locIata || currentFlight._locIata || '';
-  const stKey = currentFlight.status || 'scheduled';
+  // v23925 — the phone-width gate (under 700 px) says what the TV gate's sign
+  // says (_gateDoorFor): Boarding in the schedule window at an airport whose
+  // feed never says it, and the kept Boarding through a delay once the
+  // airport has said it. It printed the row's raw word, so a narrow gate read
+  // On time while the departures board and the TV gate said Boarding. Its
+  // painted word is noted for the one-second clock, as uxgGateHtml's is, so it
+  // repaints on the minute the window opens or closes.
+  let _mDoor = '';
+  try { _mDoor = _gateDoorFor(currentFlight, Date.now(), iata).word || ''; } catch (eM) { _mDoor = ''; }
+  try { window._gatePaintedDoor = { k: _gateRowKey(currentFlight), w: _mDoor }; } catch (eP) {}
+  const stKey = _mDoor || currentFlight.status || 'scheduled';
   const stLabel = SL(stKey) || stKey.toUpperCase();
   const depTime = currentFlight.upd || currentFlight.time || '';
   const schedTime = currentFlight.time || '—';
@@ -10307,7 +10507,9 @@ function _buildV2AircraftCol(ctx, vars) {
       // STATUS — show BOTH languages, never switch ("On Time | À l'heure").
       var _stBiling = '';
       try {
-        var _stk = String((currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
+        // v23925 — the door word when a sign opened on one (vars._doorWord,
+        // _gateDoor): the Status shelf reads Boarding beside NOW BOARDING.
+        var _stk = String((vars && vars._doorWord) || (currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
         if (_stk === 'ontime') _stk = 'ontime';
         if (_delayedByRev && (_stk === 'scheduled' || _stk === 'ontime' || _stk === '')) _stk = 'delayed';
         // A plain "scheduled" flight with no delay reads as ON TIME —
@@ -12480,78 +12682,32 @@ function uxgGateHtml(ctx) {
   }
 
   // Boarding time estimate (35 min before dep)
-  var boardLeadMins = getBoardingLeadMins(equipRaw);
+  // v23925 — THE BOARDING TIME AND THE DOOR WORD, ONE ANSWER (_gateDoor). The
+  // boarding time this field prints is _gateBoardingTimes, the code that stood
+  // here lifted out unchanged (the lead by aircraft type, the shift onto the
+  // feed's revised departure, the honesty floor, the final guard), so the
+  // schedule boarding below and the departures board's Boarding open at the
+  // minute this field prints. _gateDoor also says whether a sign opens on
+  // something other than the flight's own word:
+  //   - the airport said Boarding or Final call and now says Delayed
+  //     (_gateDoorBasis): the sign, and this boarding time, stay as they were;
+  //     the Departure field still moves to the feed's new time (depTimeHtml
+  //     above reads the real row);
+  //   - an airport whose feed never says the gate words: Boarding from this
+  //     boarding time until the departure time (_schedBoardingOn), clock-made.
+  var _door = _gateDoor(currentFlight, Date.now(), iata, window._gateInbound, data.arr, tz, equipRaw);
+  var _bt = _door.bt;
+  var boardLeadMins = _bt.lead;
   var boardTimeHtml = '\u2014';
-  // Keep boarding consistent with the DISPLAYED departure. effectiveDepTs is
-  // (_revTs || _sortTs), but the Departure field shows the feed's revised time
-  // (currentFlight.upd), which can exist even when _revTs doesn't \u2014 in that
-  // case effectiveDepTs is still the SCHEDULED time, so boarding would read off
-  // the old departure while the field shows the new one. Shift the boarding
-  // base by that same delay so boarding is always exactly `lead` minutes before
-  // the time the Departure field shows. (No-op unless that divergence exists.)
-  var _effDepForBoard = effectiveDepTs;
-  // The Departure field shows the feed's revised time (currentFlight.upd) when
-  // delayed. Derive boarding's base the SAME way — scheduled (_sortTs) shifted by
-  // (upd - scheduled) — rather than trusting effectiveDepTs (_revTs). The feed
-  // sometimes leaves _revTs at the SCHEDULED time while only `upd` carries the
-  // delay; effectiveDepTs then reads the OLD departure and boarding lands ~lead
-  // min before it (e.g. 4:55am boarding under a 7:00am departure). Basing on
-  // _sortTs + delay matches the displayed departure and can't double-count the
-  // delay (we never add it on top of an already-revised _revTs).
-  if (depDelayed && currentFlight._sortTs && currentFlight.upd && currentFlight.time) {
-    var _obP = String(currentFlight.time).split(':'), _rbP = String(currentFlight.upd).split(':');
-    if (_obP.length === 2 && _rbP.length === 2) {
-      var _delayB = (parseInt(_rbP[0],10)*60 + parseInt(_rbP[1],10)) - (parseInt(_obP[0],10)*60 + parseInt(_obP[1],10));
-      if (_delayB < 0) _delayB += 1440;            // revised crossed midnight
-      if (_delayB > 0) _effDepForBoard = currentFlight._sortTs + _delayB*60000;
-    }
-  }
+  var _effDepForBoard = _bt.effDepForBoard;
   if (_effDepForBoard) {
-    var boardTs = _effDepForBoard - boardLeadMins*60000;
-    // HONESTY FLOOR
-    // : boarding can't be estimated before the airframe is even at
-    // the gate. When the shown inbound's (revised) arrival is known and the
-    // dep-minus-lead estimate lands before arrival + turn, floor it at
-    // arrival + 20 min — but never later than dep − 10 min, and always at
-    // least 5 min after the arrival itself in a degenerate window.
-    // v23925 — the floor is _gateBoardingFloorTs (pure, beside
-    // _gateInbLateNotice), which reads the inbound's schedule when the
-    // departure keeps the airline's own time and the inbound's published
-    // revision when the departure is revised too.
-    try {
-      boardTs = _gateBoardingFloorTs(boardTs, _effDepForBoard, currentFlight,
-        window._gateInbound, data.arr, depDelayed);
-    } catch (e) {}
-    // FINAL GUARD: the boarding base
-    // (_effDepForBoard, from _sortTs) can diverge from the departure the field
-    // actually shows (currentFlight.time), which let boarding land at/after the
-    // shown departure. Clamp boarding's displayed time-of-day so it is always a
-    // sensible interval BEFORE the shown departure. Midnight-crossing flights
-    // (boarding late night, departure after midnight → a large negative gap)
-    // are left alone.
-    try {
-      // Use the departure the field ACTUALLY shows: revised (upd) when delayed,
-      // scheduled otherwise. Comparing against scheduled on a delayed flight
-      // would wrongly pull boarding back.
-      var _gShownDep = (depDelayed && currentFlight.upd) ? currentFlight.upd : currentFlight.time;
-      var _gDepHM = String(_gShownDep || '').match(/^(\d{1,2}):(\d{2})/);
-      if (_gDepHM) {
-        var _gTz = { timeZone: tz || 'UTC', hour12: false, hour: '2-digit', minute: '2-digit' };
-        var _gBoardHM = new Date(boardTs).toLocaleTimeString('en-GB', _gTz).match(/^(\d{1,2}):(\d{2})/);
-        if (_gBoardHM) {
-          var _gDepMin = parseInt(_gDepHM[1], 10) * 60 + parseInt(_gDepHM[2], 10);
-          var _gBoardMin = parseInt(_gBoardHM[1], 10) * 60 + parseInt(_gBoardHM[2], 10);
-          var _gGap = _gDepMin - _gBoardMin;           // + = boarding before dep (same day)
-          if (_gGap < 10 && _gGap > -720) {            // boarding at/after dep → fix; leave real midnight crossings
-            boardTs -= (boardLeadMins - _gGap) * 60000; // pull back to dep − lead
-          }
-        }
-      }
-    } catch (e) {}
+    var boardTs = _bt.boardTs;
     var bd = new Date(boardTs);
     boardTimeHtml = bd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
     // If delayed, show original boarding time struck through + new boarding time
-    if (depDelayed && currentFlight._sortTs) {
+    // (v23925 — "delayed" as the boarding time's own row has it: on a kept
+    // sign that is the row from before the delay, so nothing is struck.)
+    if (_bt.depDelayed && currentFlight._sortTs) {
       var origBoardTs = currentFlight._sortTs - boardLeadMins*60000;
       var origBd = new Date(origBoardTs);
       var origBoardStr = origBd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
@@ -12560,6 +12716,43 @@ function uxgGateHtml(ctx) {
       }
     }
   }
+  // v23925 — the sign's word, when _gateDoor gives one. After the time fields
+  // above, which keep the row's own Early/Delayed inks; before the badge, the
+  // message strip and the signs below, which all read stKey. On a kept sign
+  // the sign also keeps its own clock: the zones, the Porter photo-ID note and
+  // the lead read the departure the sign was opened for, not the new time, so
+  // a delay does not step the zones back or restart anything.
+  var _signDepTs = effectiveDepTs;
+  if (_door.word) {
+    stKey = _door.word;
+    stLabel = SL(stKey) || stKey.toUpperCase();
+    if (_door.kept) {
+      _signDepTs = _door.basis._revTs || _door.basis._sortTs || effectiveDepTs;
+      if (_signDepTs) minsToDep = Math.round((_signDepTs - Date.now()) / 60000);
+    }
+  }
+  // v23925 — THE TIME IS PUSHED AHEAD. On a sign kept because the airport
+  // repeated its door word with a later time (_gateDoorBasis), the row's word
+  // is Boarding or Final call, not Delayed, so depDelayed above left the
+  // Departure field on the schedule. The new time is the airport's: show it,
+  // the schedule struck through, as a Delayed row shows its own. The sign keeps
+  // its clock; only this field moves.
+  if (_door.kept && !depDelayed && _gateDelayHasTime(currentFlight)) {
+    var _pushHM = currentFlight.upd;
+    if (!_pushHM && currentFlight._revTs) {
+      try {
+        _pushHM = new Date(currentFlight._revTs).toLocaleTimeString('en-US',
+          { timeZone: tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: false });
+      } catch (eH) {}
+    }
+    var _pushDisp = _to12h(_pushHM);
+    if (_pushDisp) {
+      depTimeHtml = '<span class="g8-r2-strike">' + fidsEscHtml(_to12h(currentFlight.time) || '\u2014') + '</span><span class="g8-r2-revised">' + fidsEscHtml(_pushDisp) + '</span>';
+    }
+  }
+  // v23925 — what this paint showed, for updateDedicatedTimeOnly: the schedule
+  // boarding opens and closes on the clock, between feed refreshes and renders.
+  try { window._gatePaintedDoor = { k: _gateRowKey(currentFlight), w: _door.word }; } catch (eP) {}
 
   // Status badge class
   var stClass = '';
@@ -12588,9 +12781,11 @@ function uxgGateHtml(ctx) {
   // Derive the lead from the boardTs the field actually prints, so one clock
   // drives the field, the countdown, and both takeovers. Only trust it inside a
   // sane window; a genuine midnight-crossing boardTs must not widen the lead.
+  // (v23925 — from the departure the sign was opened for, _signDepTs: the
+  // real departure, except on a sign kept through a delay.)
   var _boardLeadShown = boardLeadMins;
-  if (typeof boardTs === 'number' && boardTs && effectiveDepTs) {
-    var _leadShown = Math.round((effectiveDepTs - boardTs) / 60000);
+  if (typeof boardTs === 'number' && boardTs && _signDepTs) {
+    var _leadShown = Math.round((_signDepTs - boardTs) / 60000);
     if (_leadShown >= 5 && _leadShown <= 90) _boardLeadShown = _leadShown;
   }
   var minsToBoard = Math.max(0, minsToDep - _boardLeadShown);
@@ -12626,7 +12821,10 @@ function uxgGateHtml(ctx) {
     // Big "FINAL BOARDING CALL / All groups / proceed to gate" panel takes
     // over row 4. Suppress the row 3 message to avoid duplication.
     r3Left = '';
-  } else if (depDelayed) {
+  } else if (depDelayed && !showBoarding) {
+    // v23925 — not under NOW BOARDING: a sign kept through a delay carries no
+    // Delayed banner (_gateDoorBasis), and the Departure field already shows
+    // the new time.
     r3Left = TL('depDelayed');
   } else if (inbDelayed) {
     r3Left = _inbNoticeHtml;
@@ -12989,7 +13187,10 @@ function uxgGateHtml(ctx) {
       // v23925 — the flank's word is _boardStripStatusKey (top level, so it
       // can be run on its own); '' means no flank: past the departure time
       // with nothing from the airport, On time is no longer true.
-      var _bwStKey = _boardStripStatusKey(currentFlight, _stripState, minsToDep);
+      // v23925 — a sign kept through a delay (_door.kept) has no flank: not
+      // Delayed (the decision of 2026-09-30 keeps the boarding sign as it was)
+      // and not On time, which the airport has just contradicted.
+      var _bwStKey = _boardStripStatusKey(currentFlight, _stripState, minsToDep, _door.kept);
       var _bwAbn = !!_bwStKey;
       var _bwStWord = function (lang) {
         try {
@@ -15545,6 +15746,9 @@ function uxgGateHtml(ctx) {
                 _ovMsg: _ovMsg,
                 // v23925 — the honest late-inbound line for the idle strip.
                 _inbNotice: _inbNoticeHtml,
+                // v23925 — the door word a sign opened on (_gateDoor), so the
+                // rail's Status shelf says what the sign says.
+                _doorWord: _door.word,
                 // v218.99.4 — flight info data for left-column injection.
                 // Row 2 stays generated for fallback, but is hidden via CSS;
                 // these strings get rendered as a vertical stack inside the
@@ -18337,7 +18541,9 @@ const gView = document.getElementById('gateView');
       var _computeGateKey = function () {
         // v23925 — and the inbound's revised time, so the late-inbound notice
         // appears and clears as the inbound's lateness changes (not a day term).
-        return (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (currentFlight._sortTs||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag + '|' + (inboundFlight ? (inboundFlight._revTs || '') : '');
+        // v23925 — and the door word (_gateDoorFor), so the schedule boarding
+        // and a sign kept through a delay repaint when they open and close.
+        return (currentFlight.flight||'') + '|' + (currentFlight.status||'') + '|' + (currentFlight.upd||'') + '|' + (currentFlight._sortTs||'') + '|' + (locIata||'') + '|' + (inboundFlight?inboundFlight.flight:'') + '|' + (inboundFlight?inboundFlight.status:'') + '|' + subScreenVal + '|' + _regInbTag + '|' + _msgTag + '|' + _langTag + '|' + (inboundFlight ? (inboundFlight._revTs || '') : '') + '|' + _gateDoorFor(currentFlight, Date.now(), iata).word;
       };
       var _gateKey = _computeGateKey();
       if (window._lastGateKey !== _gateKey) {
@@ -26578,7 +26784,12 @@ function render() {
         cityDisp = cityCode(f._locIata, cityDisp, lang);
       }
     }
-    const stKey     = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus(f.status) : (f.status || 'scheduled');
+    // v23925 — the row as shown (_fidsShownRow): a departure in its boarding
+    // window reads Boarding at an airport whose feed never says it, the word
+    // the gate's sign shows at the same minute. A copy marked clock-made; the
+    // board's data and every other reader keep the airport's own word.
+    const _fs       = isDep ? _fidsShownRow(f, nowTs, _apUpBoard) : f;
+    const stKey     = (typeof window.fidsNormStatus === 'function') ? window.fidsNormStatus(_fs.status) : (_fs.status || 'scheduled');
     const isCanc    = stKey === 'cancelled';
     const isDiv     = stKey === 'diverted';
     const isDelayed = stKey === 'delayed';
@@ -26596,11 +26807,11 @@ function render() {
     // loaded yet (defensive — fids-v2.js should always be loaded first).
     let stCellHtml = '', stCellCls = '';
     if (typeof window.fidsFormatStatus === 'function') {
-      const sc = window.fidsFormatStatus(f, lang);
+      const sc = window.fidsFormatStatus(_fs, lang);
       stCellHtml = sc.html;
       stCellCls  = sc.cssClass;
     } else {
-      stCellHtml = SL(f.status);
+      stCellHtml = SL(_fs.status);
     }
 
     // Time cell — keep the existing +1 day suffix logic so multi-day boards
@@ -28509,7 +28720,12 @@ function fidsInboundHasArrived(inboundFlight, nowTs) {
 // À l'heure" beside a departure time already gone. Past the departure time
 // with nothing from the airport the answer is not known, so the flanks are
 // left empty ('') rather than say On time — or a Delayed nobody announced.
-function _boardStripStatusKey(currentFlight, _stripState, minsToDep) {
+// v23925 — kept: the sign was kept up through a Delayed after the airport had
+// said Boarding or Final call (_gateDoorBasis). No flank then either: the
+// decision of 2026-09-30 puts no Delayed on that sign, and On time is what the
+// airport has just contradicted.
+function _boardStripStatusKey(currentFlight, _stripState, minsToDep, kept) {
+  if (kept) return '';
   var _bwStKey = 'ontime';
   try {
     var _bwRaw = '';
@@ -28651,6 +28867,296 @@ function _gateBoardingFloorTs(boardTs, effDepTs, cf, gi, arrRows, depRevised) {
   }
   return boardTs;
 }
+// v23925 — THE BOARDING TIME THE GATE PRINTS, IN ONE PLACE. Lifted out of
+// uxgGateHtml unchanged — the lead by aircraft type (getBoardingLeadMins), the
+// shift onto the feed's revised departure, the honesty floor
+// (_gateBoardingFloorTs) and the final guard — so the gate's Boarding field,
+// its NOW BOARDING sign at an airport whose feed never says Boarding
+// (_schedBoardingOn) and the departures board's Boarding (_fidsShownRow) all
+// read one time. Pure: the row, its aircraft code (_fidsBoardEquip), the gate's
+// inbound (window._gateInbound on a gate, used only when it is for this
+// departure; null on the departures board, where the floor reads the arrivals
+// list exactly as the gate does until its own inbound lookup lands), the
+// arrivals list and the airport's time zone. Returns the boarding instant, the
+// departure it was taken from, the lead, and whether the row is "delayed" with
+// a time for the struck-through display.
+function _gateBoardingTimes(cf, equip, gi, arrRows, tz) {
+  var lead = getBoardingLeadMins(equip);
+  var out = { boardTs: 0, effDepForBoard: 0, lead: lead, depDelayed: false };
+  if (!cf) return out;
+  var depDelayed = _gateDepDisplayState(cf).depDelayed;
+  out.depDelayed = depDelayed;
+  // Keep boarding consistent with the DISPLAYED departure. effectiveDepTs is
+  // (_revTs || _sortTs), but the Departure field shows the feed's revised time
+  // (currentFlight.upd), which can exist even when _revTs doesn't — in that
+  // case effectiveDepTs is still the SCHEDULED time, so boarding would read off
+  // the old departure while the field shows the new one. Shift the boarding
+  // base by that same delay so boarding is always exactly `lead` minutes before
+  // the time the Departure field shows. (No-op unless that divergence exists.)
+  // The Departure field shows the feed's revised time (currentFlight.upd) when
+  // delayed. Derive boarding's base the SAME way — scheduled (_sortTs) shifted by
+  // (upd - scheduled) — rather than trusting effectiveDepTs (_revTs). The feed
+  // sometimes leaves _revTs at the SCHEDULED time while only `upd` carries the
+  // delay; effectiveDepTs then reads the OLD departure and boarding lands ~lead
+  // min before it (e.g. 4:55am boarding under a 7:00am departure). Basing on
+  // _sortTs + delay matches the displayed departure and can't double-count the
+  // delay (we never add it on top of an already-revised _revTs).
+  var effDep = cf._revTs || cf._sortTs || 0;
+  if (depDelayed && cf._sortTs && cf.upd && cf.time) {
+    var _obP = String(cf.time).split(':'), _rbP = String(cf.upd).split(':');
+    if (_obP.length === 2 && _rbP.length === 2) {
+      var _delayB = (parseInt(_rbP[0],10)*60 + parseInt(_rbP[1],10)) - (parseInt(_obP[0],10)*60 + parseInt(_obP[1],10));
+      // v23925 — ONLY A REAL MIDNIGHT CROSSING WRAPS (the arrival shift's rule,
+      // v23158). Every negative gap used to gain a day, so an EARLY departure
+      // (05:15 revised to 05:05) had its boarding instant the next morning.
+      // The gate printed the right time of day, so it never showed; the
+      // schedule boarding compares the instant, and never opened on an Early
+      // row. A swing past half a day is a wrap; anything nearer is the
+      // revision itself, earlier or later.
+      if (_delayB < -720) _delayB += 1440;         // revised crossed midnight, later
+      else if (_delayB > 720) _delayB -= 1440;     // revised crossed midnight, earlier
+      if (_delayB !== 0) effDep = cf._sortTs + _delayB*60000;
+    }
+  }
+  out.effDepForBoard = effDep;
+  if (!effDep) return out;
+  var boardTs = effDep - lead * 60000;
+  // HONESTY FLOOR: boarding can't be estimated before the airframe is even at
+  // the gate (_gateBoardingFloorTs).
+  try { boardTs = _gateBoardingFloorTs(boardTs, effDep, cf, gi, arrRows, depDelayed); } catch (e) {}
+  // FINAL GUARD: the boarding base (from _sortTs) can diverge from the
+  // departure the field actually shows (cf.time), which let boarding land
+  // at/after the shown departure. Clamp boarding's displayed time-of-day so it
+  // is always a sensible interval BEFORE the shown departure. Midnight-crossing
+  // flights (boarding late night, departure after midnight → a large negative
+  // gap) are left alone. The departure the field ACTUALLY shows: revised (upd)
+  // when delayed, scheduled otherwise.
+  try {
+    var _gShownDep = (depDelayed && cf.upd) ? cf.upd : cf.time;
+    var _gDepHM = String(_gShownDep || '').match(/^(\d{1,2}):(\d{2})/);
+    if (_gDepHM) {
+      var _gTz = { timeZone: tz || 'UTC', hour12: false, hour: '2-digit', minute: '2-digit' };
+      var _gBoardHM = new Date(boardTs).toLocaleTimeString('en-GB', _gTz).match(/^(\d{1,2}):(\d{2})/);
+      if (_gBoardHM) {
+        var _gDepMin = parseInt(_gDepHM[1], 10) * 60 + parseInt(_gDepHM[2], 10);
+        var _gBoardMin = parseInt(_gBoardHM[1], 10) * 60 + parseInt(_gBoardHM[2], 10);
+        var _gGap = _gDepMin - _gBoardMin;           // + = boarding before dep (same day)
+        if (_gGap < 10 && _gGap > -720) {            // boarding at/after dep → fix; leave real midnight crossings
+          boardTs -= (lead - _gGap) * 60000;         // pull back to dep − lead
+        }
+      }
+    }
+  } catch (e) {}
+  out.boardTs = boardTs;
+  return out;
+}
+// v23925 — the aircraft code the boarding lead reads: the row's own, or, when
+// the row names no aircraft at all, the type this page has resolved for the
+// flight (_acResolvedGet). uxgGateHtml's equipRaw rule, so the gate's printed
+// time, its sign and the departures board read the same lead.
+// v23925 — EXCEPT WHERE THE CLOCK OPENS THE SIGN (an airport missing from
+// FEED_SAYS_GATE_WORDS): there the lead reads only the type the FEED gave the
+// row (_feedAcCode, stamped by mapADB and never written over). The type a
+// gate resolves for itself lives in that page alone — its lookups fill
+// window._ACRES and write onto its own copy of the row — and the departures
+// board, another page and on the stream another frame, never has it. Halifax
+// and O'Hare rows carry no type, so a gate that had resolved a Dash 8 opened
+// NOW BOARDING at 04:55 while the board said Boarding from 04:40. One source
+// both screens hold keeps the two on the same minute; the gate prints that
+// same boarding time (_gateDoor).
+function _fidsBoardEquip(f, iata) {
+  if (!f) return '';
+  if (iata != null && !_feedSaysGateWords(iata)) {
+    return String((Object.prototype.hasOwnProperty.call(f, '_feedAcCode') ? f._feedAcCode : f._aircraftCode) || '');
+  }
+  var raw = f._aircraftCode || '';
+  if (!raw && !f._aircraft) {
+    try {
+      var r = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f.flight) : null;
+      if (r) raw = r.cd || '';
+    } catch (e) {}
+  }
+  return raw;
+}
+// v23925 — OPTION B: BOARDING FROM THE AIRLINE'S PRINTED TIME, WHERE THE FEED
+// NEVER SAYS IT (decision of 2026-09-30). True from the boarding time the gate
+// prints (bt, _gateBoardingTimes) until the (revised) departure time, at an
+// airport whose feed never says the gate words (_feedSaysGateWords false), on
+// a row whose word leaves the time standing: scheduled, on time, early, or
+// Delayed WITH a published new time — the window moves with that time. Never
+// on a Delayed with no new time, Cancelled, Diverted, or a word that says the
+// flight is boarding, closed, gone or flying; never once real evidence says it
+// has left (_gateDepLeft: a wheels-up, an airborne push). It makes Boarding
+// and nothing else: never Final call, never Gate closed, and nothing from the
+// departure time on, so the gate returns to its idle layout and the board to
+// the airport's own word.
+function _schedBoardingOn(f, nowMs, iata, bt) {
+  if (!f || _feedSaysGateWords(iata)) return false;
+  var w = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (!(w === '' || w === 'scheduled' || w === 'ontime' || w === 'early'
+        || (w === 'delayed' && _gateDelayHasTime(f)))) return false;
+  var now = nowMs || Date.now();
+  try { if (_gateDepLeft(f, now)) return false; } catch (e) {}
+  var dep = f._revTs || f._sortTs || 0;
+  if (!dep || !bt || !bt.boardTs) return false;
+  return now >= bt.boardTs && now < dep;
+}
+// v23925 — is the schedule boarding open for this row now? _schedBoardingOn on
+// the boarding time the departures board works out (_gateBoardingTimes, with
+// the feed's own aircraft type and the arrivals list, no gate-only inbound).
+// Shared by the board's row (_fidsShownRow) and the gate pick's yield
+// (_gateHoldYields), which must not ask _fidsShownRow: that one asks the pick.
+function _schedBoardingWindow(f, nowMs, iata) {
+  if (!f || _feedSaysGateWords(iata)) return false;
+  var now = nowMs || Date.now();
+  var dep = f._revTs || f._sortTs || 0;
+  // The window never opens two hours before the departure (the longest lead is
+  // 45 minutes; the floor only moves boarding later): skip the work.
+  if (!dep || now >= dep || dep - now > 120 * 60000) return false;
+  var ap = String(iata || '').toUpperCase();
+  var tz = '';
+  try { tz = (typeof AP !== 'undefined' && AP && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
+  var arr = (typeof data !== 'undefined' && data && data.arr) || [];
+  var bt = _gateBoardingTimes(f, _fidsBoardEquip(f, ap), null, arr, tz);
+  return _schedBoardingOn(f, now, ap, bt);
+}
+// v23925 — is this row the flight its gate shows (_gateFlightsAt's first)? The
+// same departure under another number counts (_gateCsPick's test). A row with
+// no gate, or not on its gate's list at all, has no gate screen to disagree
+// with.
+function _gateIsGateFlight(f, nowMs, iata) {
+  if (!f || !f.gate || f.gate === '—') return true;
+  var first = null;
+  try { first = _gateFlightsAt(f.gate, nowMs, iata)[0] || null; } catch (e) { return true; }
+  if (!first || first === f || _gateRowKey(first) === _gateRowKey(f)) return true;
+  return (first._locIata || first.dest) === (f._locIata || f.dest)
+    && Math.abs((first._sortTs || 0) - (f._sortTs || 0)) <= 5 * 60000;
+}
+// v23925 — THE DEPARTURES BOARD'S ROW, AS SHOWN. At an airport whose feed never
+// says the gate words, a departure inside its boarding window
+// (_schedBoardingWindow) reads Boarding, the word the gate's NOW BOARDING sign
+// shows at the same minute, from the same boarding time. The answer is a COPY
+// marked clock-made (_stInferred true, _stExplicit false, _schedBoarding true):
+// the row in data.dep keeps the airport's word, so the gate maps' evidence
+// (_gateRawStatus and _gateOutboundAtGate refuse an inferred word), the gate's
+// boarding hold, the board's row placement (_fidsBoardRowPlace) and the
+// seen-memory (_gateDepsSeen) never see it. Every other row comes back as it
+// is, the same object.
+// v23925 — AND ONLY WHILE IT IS ITS GATE'S FLIGHT (_gateIsGateFlight). A
+// Delayed flight keeps its gate (decision of 2026-09-30) and gives it up only
+// to the airport's own Boarding, so at Halifax gate 16 an AC2057 "Delayed"
+// with no time held the gate from 05:15 while the board said the 06:00 WS3401
+// was boarding there; WS3401's NOW BOARDING never reached its gate. Two
+// flights are not boarding at one door: the board now says what the gate
+// says. On an ordinary turn the earlier flight gives the gate up at its
+// departure time to a later flight in its window (_gateHoldYields), so this
+// holds nothing back there.
+function _fidsShownRow(f, nowMs, iata) {
+  if (!f || _feedSaysGateWords(iata)) return f;
+  var now = nowMs || Date.now();
+  if (!_schedBoardingWindow(f, now, iata)) return f;
+  if (!_gateIsGateFlight(f, now, iata)) return f;
+  return Object.assign({}, f, { status: 'boarding', _stInferred: true, _stExplicit: false, _schedBoarding: true });
+}
+// v23925 — the same row for the Designer templates (template-renderer.js reads
+// window.flightsDep, which is data.dep as the feed gave it), so a templated
+// flight list or gate panel says Boarding when the departures board does.
+try { if (typeof window !== 'undefined') window.fidsShownRow = function (f) { return _fidsShownRow(f, Date.now(), _pageAirport()); }; } catch (eW) {}
+// v23925 — DELAYED WHILE BOARDING (decision of 2026-09-30: once boarding has
+// really begun, a delay keeps it running and only pushes the time ahead). When
+// the feed has said Boarding or Final call for this flight on this day (the
+// record _gateDepsSeen keeps, _doorSaid) and now says Delayed, with or without
+// a new time, the gate's boarding display stays exactly as it was: the sign
+// the airport's last door word opened, and the boarding time it printed. Only
+// the Departure field moves, to the feed's new time, because uxgGateHtml reads
+// that from the real row. Returns a copy of the row as it stood when the
+// airport last said its door word, or the row itself when this does not
+// apply: the word is not Delayed, or nothing remembers the airport saying
+// boarding. The schedule boarding (_schedBoardingOn) is never written onto a
+// row, so it is never remembered: at an airport whose feed never says the
+// gate words, a Delayed shows the delay.
+// The display only. Which flight the gate shows, and for how long, is
+// _gateFlightLive's Delayed rule, and the departures board prints the
+// airport's own Delayed with its new time as for every row.
+// v23925 — three limits on keeping the sign:
+//   - the AIRPORT REPEATS its door word with a LATER time (Moncton AC1983:
+//     Boarding at 05:00, "Delayed until 5:50" at 05:20, Boarding again with
+//     5:50 at 05:30). That used to rebuild the sign on the new time: the
+//     printed boarding time jumped from 4:50 to 5:15 and the zones stepped
+//     back. Boarding has begun, so the time is pushed and nothing restarts:
+//     the sign keeps the clock it opened on, in the airport's current word
+//     (boarding, final call, gate closed), and the Departure field shows the
+//     new time (uxgGateHtml);
+//   - the record belongs to the DOOR it was said at: a flight moved to another
+//     gate with its delay shows the delay there, where nobody has boarded;
+//   - real evidence that the flight has LEFT (_gateDepLeft: a wheels-up, the
+//     push's 'active') ends a kept sign, as it ends the schedule boarding and
+//     the hold, so NOW BOARDING never stands over a map with the aeroplane
+//     gone. The flight stays on the gate under its ordinary rule.
+function _gateDoorBasis(cf, nowMs) {
+  if (!cf) return cf;
+  var w = String(cf.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (w === 'finalcall') w = 'final';
+  var door = /^(boarding|final|gateclosed)$/.test(w);
+  if (w !== 'delayed' && !door) return cf;
+  var rec = _gateDoorRecord(cf);
+  if (!rec || !/^(boarding|final|gateclosed)$/.test(String(rec.w || ''))) return cf;
+  var g = (cf.gate && cf.gate !== '—') ? String(cf.gate) : '';
+  if (rec.gate && g && String(rec.gate) !== g) return cf;
+  if (nowMs) { try { if (_gateDepLeft(cf, nowMs)) return cf; } catch (e) {} }
+  if (door) {
+    var recDep = rec.rev || cf._sortTs || 0;
+    var rowDep = cf._revTs || cf._sortTs || 0;
+    if (!(recDep && rowDep > recDep + 60000)) return cf;
+    return Object.assign({}, cf, { status: w, _revTs: rec.rev || null, upd: rec.upd || null, _doorKept: true });
+  }
+  return Object.assign({}, cf, { status: rec.w, _revTs: rec.rev || null, upd: rec.upd || null, _doorKept: true });
+}
+// v23925 — the boarding-began record for a row: on the row (_gateDepsSeen
+// carries it onto each fresh copy), or in the seen-memory under the row's key
+// when this copy has not been through _gateDepsSeen yet — the render key is
+// worked out before the gate's paint runs it.
+function _gateDoorRecord(cf) {
+  if (!cf) return null;
+  if (cf._doorSaid) return cf._doorSaid;
+  try {
+    var m = (typeof _GATE_DEP_SEEN !== 'undefined' && _GATE_DEP_SEEN && _GATE_DEP_SEEN.rows)
+      ? _GATE_DEP_SEEN.rows[_gateRowKey(cf)] : null;
+    return (m && m._doorSaid) || null;
+  } catch (e) { return null; }
+}
+// v23925 — WHAT THE GATE'S SIGNS SHOW WHEN THE FLIGHT'S OWN WORD DOES NOT OPEN
+// THEM, and the boarding time worked out on the same row:
+//   kept true  — boarding began and the feed now says Delayed (_gateDoorBasis):
+//                the airport's last door word, boarding times from that row;
+//   'boarding' — the schedule boarding at an airport whose feed never says
+//                the gate words (_schedBoardingOn);
+//   ''         — neither: the flight's own word decides, as before.
+// uxgGateHtml paints from this, and the gate's render keys and the
+// once-a-second clock (updateDedicatedTimeOnly, through _gateDoorFor) ask it,
+// so the sign opens and closes at its minute and the key never disagrees with
+// the paint.
+// v23925 — at an airport whose feed never says the gate words the lead reads
+// the feed's own aircraft type (_fidsBoardEquip with the airport), whatever
+// type the gate has resolved for itself, so the boarding time the gate prints,
+// its sign and the departures board are one time.
+function _gateDoor(cf, nowMs, iata, gi, arrRows, tz, equip) {
+  var basis = _gateDoorBasis(cf, nowMs);
+  var eq = (equip == null || !_feedSaysGateWords(iata)) ? _fidsBoardEquip(cf, iata) : equip;
+  var bt = _gateBoardingTimes(basis, eq, gi, arrRows, tz);
+  if (basis && basis !== cf) return { word: String(basis.status), kept: true, basis: basis, bt: bt };
+  return { word: _schedBoardingOn(cf, nowMs, iata, bt) ? 'boarding' : '', kept: false, basis: cf, bt: bt };
+}
+// v23925 — _gateDoor with the page's own inputs: the gate's inbound, the
+// arrivals list and the airport's zone.
+function _gateDoorFor(cf, nowMs, iata) {
+  var ap = String(iata || '').toUpperCase();
+  var tz = '', gi = null, arr = [];
+  try { tz = (typeof AP !== 'undefined' && AP && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
+  try { gi = (typeof window !== 'undefined' && window._gateInbound) || null; } catch (e) { gi = null; }
+  try { arr = (typeof data !== 'undefined' && data && data.arr) || []; } catch (e) { arr = []; }
+  return _gateDoor(cf, nowMs, ap, gi, arr, tz);
+}
 // v23925 — THE VERB THE BIG MAP'S CAPTION GIVES THE INBOUND IT IS TRACKING
 // ("<verb> | <verb> AC7992 · YYZ", _renderBigCraft). Its _GATE_LBL key:
 //   - 'arrivedFrom'  — only on evidence (fidsInboundHasArrived: the airport's
@@ -28703,6 +29209,10 @@ function _gateInbLateNotice(cf, inb, stKey, effectiveDepTs, nowMs) {
   if (!cf || !inb) return false;
   var now = nowMs || Date.now();
   var inbSt = String(inb.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  // v23925 — an inbound that is diverted or cancelled is not coming to this
+  // gate late; it is not coming. A revised time it still carries says nothing
+  // about this departure, so it never raises "Updated boarding time to follow".
+  if (/^(cancelled|canceled|diverted)$/.test(inbSt)) return false;
   var late = inbSt === 'delayed' || !!(inb._revTs && inb._sortTs && inb._revTs > inb._sortTs + 5 * 60000);
   if (!late) return false;
   if (fidsInboundHasArrived(inb, now)) return false;
@@ -30607,6 +31117,10 @@ function mapADB(raw, mode, kept) {
         if (_pdSeries) _aircraftRaw = _pdSeries;
       }
     }
+    // v23925 — _feedAcCode: this same type, kept apart from _aircraftCode, which
+    // a gate's own lookups write over on its copy of the row. The schedule
+    // boarding's lead reads it (_fidsBoardEquip), so a gate and the departures
+    // board, which never share those lookups, open Boarding on the same minute.
     const _aircraft=formatAircraft(_aircraftRaw);
     // Diagnostic — log raw ADB aircraft data for Rouge-range flights so we can
     // see exactly what ADB returns vs. what gets normalized.
@@ -30749,8 +31263,8 @@ function mapADB(raw, mode, kept) {
     // there.
     if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
     return mode==='dep'
-      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus}
-      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus};
+      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus}
+      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus};
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode);
 }
 
@@ -36278,6 +36792,41 @@ function _gateDepsSeen(list, ap, now) {
       var key = _gateRowKey(d), was = rows[key];
       // v23918 — a row the worker kept takes this screen's tail and wheels-up (_gateSeenKeepIdentity).
       try { if (was) _gateSeenKeepIdentity(d, was); } catch (eK) {}
+      // v23925 — BOARDING BEGAN, REMEMBERED (decision of 2026-09-30: once the
+      // airport has said Boarding or Final call, a later Delayed changes nothing
+      // on the gate's boarding display; _gateDoorBasis reads this). The last
+      // door word the FEED said for this flight on this day — boarding, final
+      // or gateclosed, never a clock-made word (_gateRawStatus) and never the
+      // schedule boarding, which is not written onto any row — with the
+      // departure time the row carried when it said it. Kept on the row under
+      // the same flight-and-scheduled-time key as everything else here, carried
+      // onto each fresh copy of the row the way _gateSeenKeepIdentity carries a
+      // tail, and saved with it (_GATE_SEEN_FIELDS), so it survives a reload,
+      // expires with the row after 30 hours, and cannot reach another flight
+      // or the same flight number on another day (a different _sortTs).
+      // v23925 — the record also names the GATE the word was said at, and once
+      // it exists a repeated door word keeps the departure time boarding
+      // began on (rev, upd) and only updates the word: boarding has begun, so
+      // a later time from the airport is pushed onto the Departure field and
+      // restarts nothing (_gateDoorBasis). A door word at another gate is a
+      // new record: nobody has boarded at that door yet.
+      try {
+        var _dw = _gateRawStatus(d);
+        if (_dw === 'finalcall') _dw = 'final';
+        if (_dw === 'boarding' || _dw === 'final' || _dw === 'gateclosed') {
+          var _dg = (d.gate && d.gate !== '—') ? String(d.gate) : '';
+          var _dp = (was && was._doorSaid) || null;
+          if (_dp && (!_dp.gate || !_dg || String(_dp.gate) === _dg)) {
+            if (_dp.w !== _dw) changed = true;
+            d._doorSaid = { w: _dw, rev: _dp.rev || null, upd: _dp.upd || null, gate: _dp.gate || _dg || null };
+          } else {
+            changed = true;
+            d._doorSaid = { w: _dw, rev: d._revTs || null, upd: d.upd || null, gate: _dg || null };
+          }
+        } else if (was && was._doorSaid && !d._doorSaid) {
+          d._doorSaid = was._doorSaid;
+        }
+      } catch (eD) {}
       if (!was || was._remembered || _gateRawStatus(was) !== _gateRawStatus(d) || was._actualDepTime !== d._actualDepTime) changed = true;
       rows[key] = d;
     }
@@ -36302,9 +36851,10 @@ function _gateDepsSeen(list, ap, now) {
 // every board) does not wipe it. The rules re-check a remembered row exactly as
 // a live one: turn consumed, 4 h cap or night stop.
 var _GATE_SEEN_KEY = 'fids_gate_seen_v1';
+// v23925 — '_doorSaid': the departures' boarding-began record (_gateDepsSeen).
 var _GATE_SEEN_FIELDS = ['flight', 'airline', 'gate', 'status', '_stInferred', '_sortTs', '_revTs',
   '_actualDepTime', '_actualArrTime', '_locIata', '_aircraft', '_aircraftCode', '_reg', '_regSource',
-  '_pushStatus', '_depSchedLocal', '_arrSchedLocal'];
+  '_pushStatus', '_depSchedLocal', '_arrSchedLocal', '_doorSaid'];
 function _gateSeenSlim(row) {
   var o = { _remembered: true };
   for (var i = 0; i < _GATE_SEEN_FIELDS.length; i++) {

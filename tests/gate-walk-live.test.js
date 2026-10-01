@@ -66,6 +66,9 @@ function liveGateChain() {
   return [
     constLine('BOARDING_HOLD_MIN'),
     constLine('GATE_GRACE_MIN'),
+    // v23925 — a Delayed with no new time stays DELAY_HOLD_MIN past its schedule.
+    constLine('DELAY_HOLD_MIN'),
+    fnSource('_gateDelayHasTime'),
     fnSource('adbTs'),
     fnSource('_gateRawStatus'),
     fnSource('_gateOutboundAtGate'),
@@ -73,6 +76,9 @@ function liveGateChain() {
     fnSource('_gateRawAirborne'),
     fnSource('_gateDepLeft'),
     fnSource('_gateOverrideWord'),
+    // v23925 — the Option-B yield reads the page's airport (apSel); with none, as
+    // in these harnesses, it stays off and the rule is the one tested here.
+    fnSource('_pageAirport'),
     fnSource('_gateFlightLive'),
     fnSource('_gateHoldYields'),
     fnSource('_gateLiveGates')
