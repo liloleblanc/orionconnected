@@ -371,16 +371,18 @@ test('the gate poll asks Flightradar24 only while the leg can be flying', () => 
   // nothing can quietly reset _outT and open the window to every poll.
   assert.match(poll, /if \(inb\.dest\) \{\s*var _outT = Math\.max\(inb\._revTs \|\| 0, inb\._sortTs \|\| 0\);(?:\s*\/\/[^\n]*\n)*\s*_legOpen = !_outT \|\| \(Date\.now\(\) >= _outT - 20 \* 60000 && Date\.now\(\) <= _outT \+ GATE_GRACE_MIN \* 60000\);/,
     'the departing flight: from 20 minutes before it leaves until the gate\'s ordinary grace ends (v23925: the boarding hold adds no lookups)');
-  // v23925 — an arrival the feed has not called airborne stops at its
-  // (revised) time, where the clock's 'landed' used to stop it.
+  // v23925 — an arrival the feed has not called airborne stops ARR_CONFIRM_MIN
+  // past its (revised) time, unless the airport confirms it sooner (the
+  // clock's 'landed' used to stop it at the scheduled minute, before most
+  // real landings were seen).
   const stop = poll.indexOf('var _arrDue = (inb._revTs || inb._sortTs) || 0;');
   assert.ok(stop > 0 && stop < ask, 'the non-airborne arrival stop comes before the lookup');
   // It skips a row whose status is the feed's own word (_stExplicit): the
   // clock's 'landed' only ever replaced a neutral word, so an inbound the
-  // airport calls "Delayed until 11:05" keeps its lookups to 8 minutes past
-  // its arrival (_gateLegWindowOpen), as before v23925.
+  // airport calls "Delayed until 11:05" keeps its lookups to ARR_CONFIRM_MIN
+  // past its arrival (_gateLegWindowOpen).
   assert.match(poll.slice(stop - 400, stop + 200),
-    /if \(!inb\.dest && inb\._stExplicit !== true && !\/\^\(active\|enroute\|approaching\|departed\)\$\/\.test\(String\(inb\.status \|\| ''\)\.replace\(\/\[\\s_-\]\+\/g, ''\)\.toLowerCase\(\)\)\) \{\s*var _arrDue = \(inb\._revTs \|\| inb\._sortTs\) \|\| 0;\s*if \(_arrDue && Date\.now\(\) >= _arrDue\) return;\s*\}/);
+    /if \(!inb\.dest && inb\._stExplicit !== true && !\/\^\(active\|enroute\|approaching\|departed\)\$\/\.test\(String\(inb\.status \|\| ''\)\.replace\(\/\[\\s_-\]\+\/g, ''\)\.toLowerCase\(\)\)\) \{\s*var _arrDue = \(inb\._revTs \|\| inb\._sortTs\) \|\| 0;\s*if \(_arrDue && Date\.now\(\) >= _arrDue \+ ARR_CONFIRM_MIN \* 60000\) return;\s*\}/);
   assert.match(poll, /_legOpen = _gateLegWindowOpen\(inb, iata\);/, 'an arrival: while its leg can be flying');
   assert.match(poll.slice(gate, ask), /if \(!_legOpen\) \{\s*try \{ window\._gateInboundLivePos = null; \} catch \(e\) \{\}\s*return;/,
     'no lookup, and no stale position left for the map');

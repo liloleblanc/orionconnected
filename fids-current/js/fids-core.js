@@ -2932,6 +2932,16 @@ var BOARD_TRAIL_MIN = 30;
 //   passengers are still at the door. A Delayed WITH a new time needs no
 //   constant of its own: the new time plus GATE_GRACE_MIN, as always.
 var DELAY_HOLD_MIN = 60;
+// v23925 — ARR_CONFIRM_MIN: how long past its (revised) time an arriving
+// aeroplane keeps being looked up while nothing confirms it has landed. The
+// clock's 'landed' used to stop the lookups at the scheduled minute and the
+// leg window closed 8 minutes after it, so a real landing a few minutes late
+// (AC1986, Moncton, 1 Oct 00:02: still "Early at 12:02 AM" in the feed at
+// 00:10, the push still airborne) was never seen: the map held the aeroplane
+// at the end of its estimate. Decided with the owner on 2026-10-01: keep
+// looking until the airport says Arrived (the poll's own stop) or this many
+// minutes pass, so the map can show the real landing and taxi.
+var ARR_CONFIRM_MIN = 30;
 
 // v23925 — WHICH AIRPORTS' FEEDS SAY THE GATE WORDS (decision of 2026-09-30,
 // Option B). Boarding, Final call and Gate closed on a board are claims about
@@ -4488,11 +4498,11 @@ async function _gateNumbersPoll() {
     // The clock's 'landed' only ever replaced a NEUTRAL word, so this stop
     // skips a row whose status is the feed's own word (_stExplicit): an
     // inbound the airport calls "Delayed until 11:05" was never stopped at
-    // 11:05 before — _gateLegWindowOpen keeps it until 8 minutes after its
+    // 11:05 before — _gateLegWindowOpen keeps it until ARR_CONFIRM_MIN after its
     // arrival — and the late inbound is exactly the one the notice is about.
     if (!inb.dest && inb._stExplicit !== true && !/^(active|enroute|approaching|departed)$/.test(String(inb.status || '').replace(/[\s_-]+/g, '').toLowerCase())) {
       var _arrDue = (inb._revTs || inb._sortTs) || 0;
-      if (_arrDue && Date.now() >= _arrDue) return;
+      if (_arrDue && Date.now() >= _arrDue + ARR_CONFIRM_MIN * 60000) return;
     }
     // v23915 — an inbound only the new pairing rules found (a through flight,
     // a tail at another gate) is not this poll's to look up: the gate-match
@@ -10691,7 +10701,8 @@ function _buildV2MapCol(ctx, vars) {
       // can be a stale cruise fix from a previous flight or linger after
       // landing. A fix only counts as THIS leg being airborne inside the
       // leg's plausible window: from ~its departure (arrival − duration −
-      // 25 min pad) until arrival + 8 min. Outside that, show nothing.
+      // 25 min pad) until arrival + ARR_CONFIRM_MIN (v23925: it was 8 min, the
+      // same close the lookups had). Outside that, show nothing.
       try {
         var _lwArr = (_ib._revTs && _ib._revTs > _ib._sortTs) ? _ib._revTs : (_ib._sortTs || 0);
         if (_lwArr) {
@@ -10701,7 +10712,7 @@ function _buildV2MapCol(ctx, vars) {
             ? fidsMlFlightTimeMins(_ib._locIata, vars.iata, _lwAcType) : null;
           var _lwSpan = ((_ib._durationMins || _lwDurMl || 240) + 25) * 60000;
           var _lwNow = Date.now();
-          if (_lwNow < _lwArr - _lwSpan || _lwNow > _lwArr + 8 * 60000) {
+          if (_lwNow < _lwArr - _lwSpan || _lwNow > _lwArr + ARR_CONFIRM_MIN * 60000) {
             _candAlt = null; _candSpd = null; _candLat = null; _candLng = null;
             if (_gateFixCache && _gateFixCache.key === String(_ib.flight || _ib._reg || '')) _gateFixCache = null;
           }
@@ -16675,6 +16686,14 @@ function gateAutofit(root) {
               _fs = Math.max(_lblPx, Math.floor((_capH || _fs * 2) * 0.44));
               el.style.setProperty('font-size', _fs + 'px', 'important');
               while (_fs > _lblPx && !_fits()) { _fs -= 1; el.style.setProperty('font-size', _fs + 'px', 'important'); }
+            } else if (!_fits()) {
+              // v23925 — A MODEL WITH NO REGISTRATION HAS NO SECOND LINE TO
+              // TAKE, so the 1.25x floor left it clipped: 'Airbus A3' at YQM
+              // gate 4 (1 Oct 00:03, AC1983, Rouge A321 with its wide Operated
+              // By mark), 160px of model in a 129px cell. It keeps stepping
+              // down to the label's own size, which is still never smaller
+              // than the label beside it, and is never cut.
+              while (_fs > _lblPx && !_fits()) { _fs -= 1; el.style.setProperty('font-size', _fs + 'px', 'important'); }
             }
           }
         } catch (e3) {}
@@ -18785,6 +18804,23 @@ const gView = document.getElementById('gateView');
             var _fontView = document.getElementById('gateView');
             if (_fontView === gView && typeof gateAutofit === 'function') gateAutofit(_fontView);
           });
+          // v23925 — AND WHEN THE CAPTION'S OWN PICTURES ARRIVE. The aircraft
+          // caption is one row: the model beside the operator's mark, sharing
+          // its width. The mark is an <img>, so until it loads it takes no
+          // room and the model fits at full size; when it lands the model's
+          // cell narrows and nothing measured it again ('Airbus A3' under a
+          // Rouge mark at YQM gate 4, 1 Oct). Each caption image that is not
+          // loaded yet asks for one more fit when it is, same generation guard.
+          try {
+            gView.querySelectorAll('.v2-rc-acb-cap img').forEach(function (im) {
+              if (im.complete) return;
+              im.addEventListener('load', function () {
+                if (window._gateFitGeneration !== _fitGeneration) return;
+                var _imgView = document.getElementById('gateView');
+                if (_imgView === gView && typeof gateAutofit === 'function') gateAutofit(_imgView);
+              }, { once: true });
+            });
+          } catch (eImg) {}
           // Observe the VIEWPORT, not gateView's content box. A content
           // ResizeObserver feeds font changes back into itself (fit → a 1 px
           // content change → fit again) even when the physical screen never
@@ -29751,7 +29787,8 @@ function _gateStickyFix(key, lat, lng, alt, spd) {
 // every map shares.
 var _FIX_MAX_AGE_MS = 15 * 60000;
 // The leg's plausible airborne window: from ~its departure (arrival −
-// duration − 25 min pad) until arrival + 8 min. Same arithmetic as the
+// duration − 25 min pad) until arrival + ARR_CONFIRM_MIN (v23925; it was
+// 8 min, which stopped watching a real landing a few minutes late). Same arithmetic as the
 // render's guard, lifted here so no lookup is even FIRED outside it — a
 // pre-departure or long-landed inbound used to spend FR24 budget every poll.
 function _gateLegWindowOpen(row, apIata) {
@@ -29766,7 +29803,7 @@ function _gateLegWindowOpen(row, apIata) {
     var durMl = (typeof fidsMlFlightTimeMins === 'function') ? fidsMlFlightTimeMins(row._locIata, apIata || window._gateIata || '', acType) : null;
     var span = ((row._durationMins || durMl || 240) + 25) * 60000;
     var now = Date.now();
-    return !(now < arr - span || now > arr + 8 * 60000);
+    return !(now < arr - span || now > arr + ARR_CONFIRM_MIN * 60000);
   } catch (e) { return true; }
 }
 // Can the aircraft still get from (lat,lng) to this field by its ETA? A 600 kt
