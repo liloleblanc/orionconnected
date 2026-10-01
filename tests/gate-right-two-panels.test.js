@@ -51,6 +51,8 @@ const PLAIN = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
 const GATE_PLAIN = GATE.replace(/\/\*[\s\S]*?\*\//g, '');
 const AC = '[data-gate-airline="AC"],[data-gate-airline="ACA"],[data-gate-airline*="AIR CANADA"]';
 const WS = '[data-gate-airline="WS"],[data-gate-airline="WJA"],[data-gate-airline*="WESTJET"]';
+/** A literal string as a RegExp source: every character RegExp treats as syntax, backslash included. */
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /** Declarations of every rule in the block whose LAST selector ends with `tail`, generic or for one carrier. */
 function ruleFor(tail, carrier) {
@@ -69,7 +71,7 @@ function ruleFor(tail, carrier) {
 }
 /** A custom property's value as declared in the block (the first declaration). */
 function token(name) {
-  const m = RULES.match(new RegExp(name.replace(/-/g, '\\-') + ':\\s*([^;]+);'));
+  const m = RULES.match(new RegExp(reEsc(name) + ':\\s*([^;]+);'));
   assert.ok(m, `no ${name} token`);
   return m[1].trim();
 }
@@ -133,7 +135,7 @@ test('the upper panel is the map panel as it was: three rows, 0.9vh margins, fou
   // That rule names its padding (the value it always had), and the lower
   // panel reads the name: Air Canada's padding where it is set, none on every
   // other carrier.
-  const v22821 = PLAIN.match(new RegExp('html body:is\\(' + AC.replace(/[[\]().*"]/g, '\\$&') + '\\):not\\(#_\\):not\\(#_\\) \\.g8-wrap \\.gad-map-col-v2 \\{\\s*--rc-col-pb: ([^;]+);\\s*padding-bottom: var\\(--rc-col-pb\\) !important;'));
+  const v22821 = PLAIN.match(new RegExp('html body:is\\(' + reEsc(AC) + '\\):not\\(#_\\):not\\(#_\\) \\.g8-wrap \\.gad-map-col-v2 \\{\\s*--rc-col-pb: ([^;]+);\\s*padding-bottom: var\\(--rc-col-pb\\) !important;'));
   assert.ok(v22821, 'Air Canada\'s v22821 padding is still in the file, named');
   assert.equal(v22821[1], 'clamp(6px, 0.8vh, 10px)', 'the value it always had');
   assert.equal(token('--rcp-pb'), 'var(--rc-col-pb, 0px)', 'the lower panel knows that padding exactly, and none elsewhere');
@@ -239,7 +241,7 @@ test('one ground, and it is the upper panel\'s: the same layers, value for value
   const v22925b = PLAIN.match(new RegExp('\\.v2-rc-map-life \\{\\s*background-color: (#[0-9a-f]{6}) !important;\\s*background-image: none !important;', 'i'));
   assert.ok(v22925b);
   assert.equal(flat(AC), v22925b[1], 'Air Canada: the v22925b near-black');
-  assert.match(PLAIN, new RegExp('html body:is\\(' + WS.replace(/[[\]().*"]/g, '\\$&') + '\\)[^{]*\\.v2-rc-map-life \\{\\s*background-color: ' + flat(WS) + ' !important;'),
+  assert.match(PLAIN, new RegExp('html body:is\\(' + reEsc(WS) + '\\)[^{]*\\.v2-rc-map-life \\{\\s*background-color: ' + flat(WS) + ' !important;'),
     'WestJet: its deep navy, the last word on its brand-hold layer');
   // Painted again over the sky layers, from the sky box down, clipped there,
   // above every sky layer (the front clouds are z 3) and under the caption.
