@@ -67,7 +67,7 @@ function shape(sel) {
   return s.replace(/(:not|:is)+/g, '').replace(/\s+/g, ' ').trim();
 }
 const decl = (body, name) => {
-  const m = body.match(new RegExp(name.replace(/[-]/g, '\\-') + '\\s*:\\s*([^;]+);'));
+  const m = body.match(new RegExp(name.replace(/[.*+?^${}()|[\]\\-]/g, '\\$&') + '\\s*:\\s*([^;]+);'));
   return m ? m[1].trim() : null;
 };
 
