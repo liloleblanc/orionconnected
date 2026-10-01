@@ -49,7 +49,7 @@ test('all display entry points load the date-context helper before core', () => 
     // or "Scheduled" for a gate closed, so the two shared scripts carry the
     // build tag too.
     for (const shared of ['js/feed-router.js', 'js/fids-v2.js']) {
-      const m = html.match(new RegExp(shared.replace(/[.\/]/g, '\\$&') + '\\?v=(\\d+)'));
+      const m = html.match(new RegExp(shared.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&') + '\\?v=(\\d+)'));
       assert.ok(m, `${file} must load ${shared} with a cache buster`);
       assert.equal(m[1], buildTag, `${file} must bust ${shared} at the current build tag v${buildTag}`);
     }

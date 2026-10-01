@@ -369,7 +369,7 @@ test('the gate poll asks Flightradar24 only while the leg can be flying', () => 
   assert.ok(gate > 0 && ask > gate, 'the window is judged before the lookup');
   // Only whitespace and line comments may sit between the two statements, so
   // nothing can quietly reset _outT and open the window to every poll.
-  assert.match(poll, /if \(inb\.dest\) \{\s*var _outT = Math\.max\(inb\._revTs \|\| 0, inb\._sortTs \|\| 0\);(?:\s*\/\/[^\n]*)*\s*_legOpen = !_outT \|\| \(Date\.now\(\) >= _outT - 20 \* 60000 && Date\.now\(\) <= _outT \+ GATE_GRACE_MIN \* 60000\);/,
+  assert.match(poll, /if \(inb\.dest\) \{\s*var _outT = Math\.max\(inb\._revTs \|\| 0, inb\._sortTs \|\| 0\);(?:\s*\/\/[^\n]*\n)*\s*_legOpen = !_outT \|\| \(Date\.now\(\) >= _outT - 20 \* 60000 && Date\.now\(\) <= _outT \+ GATE_GRACE_MIN \* 60000\);/,
     'the departing flight: from 20 minutes before it leaves until the gate\'s ordinary grace ends (v23923: the boarding hold adds no lookups)');
   // v23923 — an arrival the feed has not called airborne stops at its
   // (revised) time, where the clock's 'landed' used to stop it.

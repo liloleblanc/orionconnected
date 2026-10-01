@@ -65,7 +65,7 @@ function braceFrom(SRC, start, what) {
   throw new Error('could not find the end of ' + what);
 }
 function fnIn(SRC, name) {
-  const m = SRC.match(new RegExp('(^|\\n)(async )?function ' + name.replace(/[$]/g, '\\$') + '\\('));
+  const m = SRC.match(new RegExp('(^|\\n)(async )?function ' + name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\('));
   assert.ok(m, name + ' must be declared');
   return braceFrom(SRC, m.index + (m[1] ? 1 : 0), name);
 }
