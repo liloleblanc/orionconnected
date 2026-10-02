@@ -34509,6 +34509,66 @@ function renderHeroHotelsAsync(f, target) {
   setTimeout(renderFromCache, 1500);  // give the fetch a moment
 }
 
+// v23930 — A ROUTE LINE NEVER CARRIES VERTICES MILLIONS OF PIXELS OFF THE MAP.
+//
+// Every route line on the gate maps is drawn with Leaflet's noClip, which
+// hands ALL of its vertices to the SVG unclipped. At the route zooms these
+// lines were written for that is a few thousand pixels and harmless. Since the
+// stand views (v23905, v23916) sit at z15-17, a long route from our own field
+// runs far off the frame: Moncton gate 1's dashed line to Calgary reached
+// x = -4,597,028 px on a 380x433 map. On the screen at the gate that line was
+// painted as a solid white wedge over the terminal: the open path filled,
+// closing itself with a straight line back to the stand. That shape stands for
+// nothing either airport or airline said. The fill could not be reproduced on
+// the development Mac's GPUs, but Chrome already drops the dashes there at
+// four times the length (Skia's dash limit), and the trigger, vertices
+// millions of pixels off the frame, is in this code and the same on every
+// board.
+//
+// So a noClip line keeps exactly today's behaviour while it fits within
+// _FIDS_ROUTE_CLIP_PAD of the frame (every route-zoom view), and a longer one
+// is cut to that padded frame. The dashes stay anchored where the line starts
+// on screen (the stand, the aeroplane), and the visible stretch is unchanged.
+// _fidsRouteClipParts is pure (Leaflet's own clip loop, with the frame grown
+// by the pad) so a test can drive it; the prototype hook below installs it at
+// load, before any map is built. Polygons keep their own clipper.
+var _FIDS_ROUTE_CLIP_PAD = 4096;
+function _fidsRouteClipParts(rings, pxBounds, frame, pad, clipSegment) {
+  if (!rings || !pxBounds || !pxBounds.min || !pxBounds.max || !frame || !frame.min || !frame.max) return null;
+  var b = { min: { x: frame.min.x - pad, y: frame.min.y - pad }, max: { x: frame.max.x + pad, y: frame.max.y + pad } };
+  if (pxBounds.min.x >= b.min.x && pxBounds.min.y >= b.min.y && pxBounds.max.x <= b.max.x && pxBounds.max.y <= b.max.y) return null;
+  var parts = [];
+  for (var i = 0, k = 0; i < rings.length; i++) {
+    var pts = rings[i] || [];
+    for (var j = 0, n = pts.length; j < n - 1; j++) {
+      var seg = clipSegment(pts[j], pts[j + 1], b, j, true);
+      if (!seg) continue;
+      parts[k] = parts[k] || [];
+      parts[k].push(seg[0]);
+      // the segment leaves the padded frame, or it is the last one: this part ends
+      if ((seg[1] !== pts[j + 1]) || (j === n - 2)) { parts[k].push(seg[1]); k++; }
+    }
+  }
+  return parts;
+}
+(function () {
+  try {
+    if (typeof L === 'undefined' || !L.Polyline || !L.Polyline.prototype._clipPoints || !L.LineUtil
+        || typeof L.LineUtil.clipSegment !== 'function' || L.Polyline.prototype._fidsClipGuard) return;
+    var _orig = L.Polyline.prototype._clipPoints;
+    L.Polyline.prototype._clipPoints = function () {
+      var rb = this._renderer && this._renderer._bounds;
+      if (!this.options || !this.options.noClip || !rb || !this._pxBounds || !this._pxBounds.isValid || !this._pxBounds.isValid()) return _orig.call(this);
+      // Off the frame altogether: nothing to draw, as Leaflet itself decides.
+      if (!this._pxBounds.intersects(rb)) return _orig.call(this);
+      var parts = _fidsRouteClipParts(this._rings, this._pxBounds, rb, _FIDS_ROUTE_CLIP_PAD, L.LineUtil.clipSegment);
+      if (!parts) return _orig.call(this);
+      this._parts = parts;
+    };
+    L.Polyline.prototype._fidsClipGuard = true;
+  } catch (e) {}
+})();
+
 function renderHeroMap(f) {
   return `<div class="hero-detail hero-detail-map">
     <div class="hero-detail-head">
