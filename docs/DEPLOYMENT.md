@@ -53,7 +53,9 @@ After a site deployment, verify:
 
 1. `index.html`, `fids.html`, `gids.html`, and `bids.html` load without missing
    local CSS, JavaScript, fonts, or images.
-2. YQM gate screens show the correct operating date for next-day flights.
+2. A gate whose flight is not today prints the day under its Boarding,
+   Departure and Arrival times ("Tomorrow | Demain", French first in Québec),
+   and a gate showing today's flight prints none (YQM gate 1 after WS813 leaves).
 3. The left and right status panels agree.
 4. Aircraft enrichment replaces its temporary state with the resolved type.
 5. Boarding text remains still for at least twelve seconds.

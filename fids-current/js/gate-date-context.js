@@ -15,10 +15,6 @@
     en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Morgen', it: 'Domani',
     pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا'
   };
-  var YESTERDAY = {
-    en: 'Yesterday', fr: 'Hier', es: 'Ayer', de: 'Gestern', it: 'Ieri',
-    pt: 'Ontem', ja: '昨日', zh: '昨天', ar: 'أمس'
-  };
 
   function validTimeZone(timeZone) {
     try {
@@ -68,24 +64,6 @@
       result.push(language);
     }
     return result.length ? result : ['en'];
-  }
-
-  function labelFor(timestamp, offset, timeZone, language) {
-    var locale = LOCALES[language] || LOCALES.en;
-    var date = new Date(Number(timestamp));
-    var prefix;
-    if (offset === 1) prefix = TOMORROW[language] || TOMORROW.en;
-    else if (offset === -1) prefix = YESTERDAY[language] || YESTERDAY.en;
-    else {
-      prefix = new Intl.DateTimeFormat(locale, {
-        timeZone: validTimeZone(timeZone), weekday: 'long'
-      }).format(date);
-      if (prefix) prefix = prefix.charAt(0).toUpperCase() + prefix.slice(1);
-    }
-    var calendarDate = new Intl.DateTimeFormat(locale, {
-      timeZone: validTimeZone(timeZone), month: 'short', day: 'numeric'
-    }).format(date);
-    return prefix + ' · ' + calendarDate;
   }
 
   // ── THE ONE PLACE A FLIGHT TIME BECOMES TEXT ────────────────────────────
@@ -159,23 +137,55 @@
     };
   }
 
-  function getFlightDateContext(options) {
+  // ── THE DAY A GATE TIME IS ON, WHEN IT IS NOT TODAY ──────────────────────
+  //
+  // A gate shows its next flight, and once tonight's has gone that is often
+  // tomorrow's. A time alone cannot say which day it belongs to: tomorrow's
+  // 6:15pm under a banner reading today's date reads as tonight's flight, still
+  // "On Time" hours after it left. So a time that is not on the board's today
+  // carries the day beside it, in the board's languages:
+  //
+  //   the next day          Tomorrow | Demain        (Demain | Tomorrow in Québec)
+  //   two or more days on   Sun, Oct 4 | dim. 4 oct.
+  //   today, or earlier     nothing
+  //
+  // Earlier days get nothing on purpose: a flight from before midnight that is
+  // still at its door is tonight's flight to the people standing there.
+  //
+  // The flight's calendar day is read in the zone its time is PRINTED in
+  // (timeZone); "today" is the board's own (nowTimeZone, defaulting to the
+  // same zone). An arrival printed in Calgary time on a Moncton board is
+  // "tomorrow" when it lands on Moncton's tomorrow's date in Calgary.
+  function getFlightDayWords(options) {
     options = options || {};
-    var flightTimestamp = Number(options.flightTimestamp);
-    var nowTimestamp = options.nowTimestamp == null ? Date.now() : Number(options.nowTimestamp);
-    var offset = dayOffset(flightTimestamp, nowTimestamp, options.timeZone);
-    if (offset === null || offset === 0) return { dayOffset: offset, labels: [], text: '' };
-    var picked = selectedLanguages(options.languages, options.frenchFirst);
-    var labels = picked.map(function (language) {
-      return labelFor(flightTimestamp, offset, options.timeZone, language);
+    var ts = Number(options.timestamp);
+    var now = options.nowTimestamp == null ? Date.now() : Number(options.nowTimestamp);
+    var empty = { dayOffset: null, words: [], text: '' };
+    if (!Number.isFinite(ts) || ts <= 0 || !Number.isFinite(now)) return empty;
+    var flightDay = zonedDateOrdinal(ts, options.timeZone);
+    var today = zonedDateOrdinal(now, options.nowTimeZone || options.timeZone);
+    if (flightDay === null || today === null) return empty;
+    var offset = flightDay - today;
+    if (offset < 1) return { dayOffset: offset, words: [], text: '' };
+    var zone = validTimeZone(options.timeZone);
+    var seen = Object.create(null), words = [];
+    selectedLanguages(options.languages, options.frenchFirst).forEach(function (language) {
+      var word = offset === 1
+        ? (TOMORROW[language] || TOMORROW.en)
+        : new Intl.DateTimeFormat(LOCALES[language] || LOCALES.en, {
+            timeZone: zone, weekday: 'short', month: 'short', day: 'numeric'
+          }).format(new Date(ts));
+      if (!word || seen[word.toLowerCase()]) return;
+      seen[word.toLowerCase()] = true;
+      words.push(word);
     });
-    return { dayOffset: offset, labels: labels, text: labels.join(' | ') };
+    return { dayOffset: offset, words: words, text: words.join(' | ') };
   }
 
   return {
     zonedDateOrdinal: zonedDateOrdinal,
     dayOffset: dayOffset,
     flightClock: flightClock,
-    getFlightDateContext: getFlightDateContext
+    getFlightDayWords: getFlightDayWords
   };
 });

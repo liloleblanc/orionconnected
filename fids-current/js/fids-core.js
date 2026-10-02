@@ -4991,6 +4991,20 @@ function updateDedicatedTimeOnly() {
         if (_dw !== _pd.w) { _pd.w = _dw; requestGateRebuild(); }
       }
     } catch (eD) {}
+    // v23930 — MIDNIGHT AT THE AIRPORT. A day line ("Tomorrow | Demain",
+    // _gateDayLineHtml) is true only until the airport's date changes, and
+    // nothing in the row changes with it. When the day the gate was painted on
+    // (window._gatePaintedDay, _gateNotePaintedDay) is no longer today and a
+    // day line is on screen, one rebuild is asked for; the painted day is
+    // updated first, so it is asked once. A gate showing only today's times
+    // has no day line and is left alone at midnight.
+    try {
+      const _pDay = window._gatePaintedDay;
+      if (_pDay && window.FIDSGateDate && document.querySelector('#gateView .v2-fi-dayline')) {
+        const _dNow = window.FIDSGateDate.zonedDateOrdinal(_nowMs3, _pDay.tz);
+        if (_dNow !== null && _dNow !== _pDay.d) { _pDay.d = _dNow; requestGateRebuild(); }
+      }
+    } catch (eDay) {}
   }
 }
 
@@ -8805,6 +8819,12 @@ function renderMobileGateHtml(ctx) {
   const depTime = currentFlight.upd || currentFlight.time || '';
   const schedTime = currentFlight.time || '—';
   const isRevised = !!(currentFlight.upd && currentFlight.upd !== currentFlight.time);
+  // v23930 — the day under a time that is not today, as on the TV gate
+  // (_gateDayWords): the departure as printed, the arrival in its own zone.
+  const _mFrF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
+  const _mDayDep = _gateDayWords((isRevised && currentFlight._revTs) || currentFlight._sortTs, tz, _mFrF);
+  const _mDayArr = _gateDayWords(Number(ctx.arrInstant) || 0, ctx.arrTz || tz, _mFrF, tz);
+  _gateNotePaintedDay(tz);
   // v192: terminal info (was missing on mobile gate even though present in data)
   const terminalVal = (currentFlight.terminal && currentFlight.terminal !== '—') ? currentFlight.terminal : '';
   const stColor = (function() {
@@ -8838,6 +8858,8 @@ function renderMobileGateHtml(ctx) {
     nextHtml = '<div class="mg-next-lbl" style="font-size:14px;letter-spacing:2px;font-weight:700;text-transform: none;margin-bottom:5px;">' + TL('nextDep') + '</div>'
              + '<div class="mg-next-val" style="font-size:clamp(24px,6vw,28px);font-weight:800;">'
              +   (nextFlight.flight || '—') + ' · ' + nLoc + ' · ' + (nextFlight.time || '—')
+             // v23930 — and its day when it is not today (_gateDayWords).
+             +   (function () { var _dwN = _gateDayWords(nextFlight._sortTs, tz, _mFrF); return _dwN ? ' · ' + _gateDayLineHtml(_dwN) : ''; })()
              + '</div>';
   }
   // Airline logo on a white card — constrain to the 56px header card.
@@ -9064,12 +9086,14 @@ function renderMobileGateHtml(ctx) {
     +       '<div style="' + FS.label + 'color:' + T.muted + ';margin-top:10px;">' + TL('departsLbl') + '</div>'
     +       '<div style="' + FS.value + 'color:' + T.ink + ';' + (isRevised ? 'opacity:0.5;' : '') + '">' + schedTime + '</div>'
     +       (isRevised ? '<div style="' + FS.value + 'color:#e0820a;">' + currentFlight.upd + '</div>' : '')
+    +       (_mDayDep ? '<div class="mg-dayline" style="' + FS.label + 'letter-spacing:0;color:' + T.ink + ';margin-top:4px;">' + _gateDayLineHtml(_mDayDep) + '</div>' : '')
     +     '</div>'
     +     '<div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;padding:0 6px;">' + _planeSvg + (durationStr ? '<div style="' + FS.label + 'color:' + T.muted2 + ';margin-top:8px;white-space:nowrap;">' + durationStr + '</div>' : '') + '</div>'
     +     '<div style="text-align:right;min-width:0;flex:1;">'
     +       '<div style="' + FS.hero + 'color:' + T.ink + ';">' + (destIata || '—') + '</div>'
     +       '<div style="' + FS.label + 'color:' + T.muted + ';margin-top:10px;">' + TL('arrivesAt') + '</div>'
     +       '<div style="' + FS.value + 'color:' + T.ink + ';">' + (arrTimeStr || '—') + '</div>'
+    +       (_mDayArr ? '<div class="mg-dayline" style="' + FS.label + 'letter-spacing:0;color:' + T.ink + ';margin-top:4px;">' + _gateDayLineHtml(_mDayArr) + '</div>' : '')
     +     '</div>'
     +   '</div>'
     + '</div>'
@@ -9816,7 +9840,6 @@ function _buildV2AircraftCol(ctx, vars) {
   var _inbOperating = vars._inbOperating;
   var airlineCode = vars.airlineCode;
   var equipRaw = vars.equipRaw, equipName = vars.equipName;
-  var _flightDateContext = vars.flightDateContext || { labels: [] };
 
   var _hasInb = !!(inboundFlight && _inbOperating);
   var _anyInb = !!inboundFlight;
@@ -10386,7 +10409,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _a = _s.split('\u0001');
         return [_a[0] || '', _a[1] || ''];
       }
-      function _shelf(icon, en, second, val, valCls, rowCls) {
+      function _shelf(icon, en, second, val, valCls, rowCls, under) {
         // v223 — the exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
         // Québec airports: French first on every pair.
@@ -10400,7 +10423,9 @@ function _buildV2AircraftCol(ctx, vars) {
           + '<div class="v2-fi-iconcol">' + icon + '</div>'
           + '<div class="v2-fi-textcol">'
           +   '<div class="v2-fi-title"><span class="v2-fi-lbl-en">' + _p1 + '</span>' + _sec + '</div>'
-          +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + '</div>'
+          // v23930 — `under` is the day line (_gateDayLineHtml), inside the
+          // value so the box fitter sizes the time and its day together.
+          +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + (under || '') + '</div>'
           + '</div>'
           + '</div>';
       }
@@ -10590,8 +10615,8 @@ function _buildV2AircraftCol(ctx, vars) {
         // selected from its sibling's class without :has(), which the kiosk
         // browsers drop silently.
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls, 'v2-fi-rowst-' + (_fiStCls || '').trim())
-        + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd))
-        + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time', _revRowCls(_fiDep))
+        + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd), _gateDayLineHtml(vars && vars.dayBoard))
+        + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time', _revRowCls(_fiDep), _gateDayLineHtml(vars && vars.dayDepart))
         + (function () {
             // v23240 — the code rides once at the END, accent-coloured
             // ('Arrival | Arrivée YYY' — the code in that same accent colour),
@@ -10600,7 +10625,7 @@ function _buildV2AircraftCol(ctx, vars) {
             var _arrT = _arrP[0]
               + (_arrP[1] ? ' <span class="v2-fi-sep">|</span> ' + _arrP[1] : '')
               + _codeSeg(_orbCode);
-            return _shelf(_badge(_svgArrive), _arrT, '', (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr));
+            return _shelf(_badge(_svgArrive), _arrT, '', (_amPm(_arrShow || (typeof window.fidsFormatTime12 === 'function' ? window.fidsFormatTime12(ctx.arrTimeStr || '') : (ctx.arrTimeStr || ''))) || '—'), 'v2-fi-time', _revRowCls(_fiArr), _gateDayLineHtml(vars && vars.dayArrive));
           })()
         + '</div>';
     }
@@ -11370,6 +11395,16 @@ function _buildV2MapCol(ctx, vars) {
                     : (_ibArrSchedStr
                         ? '<div class="v2-fi-mline2">' + _railT(_ibArrSchedStr) + ' <span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span></div>'
                         : ''))),
+        // v23930 — the inbound's own day, on its own line under its time, when
+        // it lands on a day that is not today (_gateDayWords): tomorrow's WS812
+        // for tomorrow's WS813. Tonight's inbound for tomorrow's first
+        // departure (PD2381 9:30pm for PD2370 11:55am) is today's, and gets
+        // none. It is a plain mline2 so _rcInboundShelf sets it beside the orb
+        // like the time above it; '' when there is no day to say.
+                  (function () {
+                    var _dwI = _gateDayWords(_ibEffArrTs || _ibArrTs, vars.tz, _frF);
+                    return _dwI ? '<div class="v2-fi-mline2">' + _gateDayLineHtml(_dwI) + '</div>' : '';
+                  })(),
         // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. The layout of the
         // panel is fixed: banner, then "WS668 · Calgary | YYC", then "Your
         // aircraft has arrived" when landed (and "at the gate" once at the
@@ -12644,6 +12679,52 @@ function _buildV2MapCol(ctx, vars) {
     + '</div>';
 }
 
+// v23930 — THE DAY BESIDE A GATE TIME THAT IS NOT TODAY.
+//
+// A gate shows its next flight, and once tonight's has left that is usually
+// tomorrow's (_gateFlightsAt has no look-ahead limit, and should not: the next
+// flight at this door is the right thing to show). The times carried no day,
+// so under a banner reading today's date tomorrow's 6:15pm read as tonight's
+// flight, still "On Time" hours after it had left: a claim nobody made. Every
+// time on the gate that is not on the board's today now carries its day in
+// the board's languages (FIDSGateDate.getFlightDayWords): "Tomorrow | Demain",
+// French first in Québec, the weekday and date two or more days out, nothing
+// for today. Each time is judged on its own: boarding and departure in the
+// airport's zone, the arrival in the zone it is printed in against the
+// board's today, the inbound by its own arrival.
+//
+// _gateDayWords answers null when there is nothing to print, so a caller can
+// test it; _gateDayLineHtml is the one markup for it. Its classes are its
+// own, so no label rule elsewhere (the title's grey second language, the
+// punctuation rule for bare spans) can restyle it: it takes the colour of the
+// time it sits under, never a status colour, and it never moves.
+function _gateDayWords(ts, tz, frF, boardTz) {
+  try {
+    if (!ts || !window.FIDSGateDate || typeof window.FIDSGateDate.getFlightDayWords !== 'function') return null;
+    var r = window.FIDSGateDate.getFlightDayWords({
+      timestamp: ts, nowTimestamp: Date.now(), timeZone: tz || 'UTC', nowTimeZone: boardTz || tz || 'UTC',
+      languages: (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en', 'fr'],
+      frenchFirst: !!frF
+    });
+    return (r && r.words && r.words.length) ? r : null;
+  } catch (e) { return null; }
+}
+function _gateDayLineHtml(dw) {
+  if (!dw || !dw.words || !dw.words.length) return '';
+  // Each language is one unbreakable unit; the only break offered is the one
+  // between them (the board's rule against severed phrases).
+  return '<span class="v2-fi-dayline" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w, i) {
+    return (i ? '<span class="v2-fi-day-sep"> | </span>' : '') + '<span class="v2-fi-day-w">' + fidsEscHtml(w) + '</span>';
+  }).join('') + '</span>';
+}
+// The airport's calendar day a gate was painted on. The one-second tick
+// (updateDedicatedTimeOnly) repaints once when it changes while a day line is
+// on screen: "Tomorrow" must not outlive the day it was true on.
+function _gateNotePaintedDay(tz) {
+  try {
+    if (window.FIDSGateDate) window._gatePaintedDay = { tz: tz || 'UTC', d: window.FIDSGateDate.zonedDateOrdinal(Date.now(), tz || 'UTC') };
+  } catch (e) {}
+}
 function uxgGateHtml(ctx) {
   const { currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs } = ctx;
   const gateVal = currentFlight.gate && currentFlight.gate !== '\u2014' ? currentFlight.gate : randomGate(currentFlight.terminal, currentFlight.flight);
@@ -12654,18 +12735,6 @@ function uxgGateHtml(ctx) {
   const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
   // Québec airports: French first on every bilingual pair.
   const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
-  var _flightDateContext = { dayOffset: null, labels: [], text: '' };
-  try {
-    if (window.FIDSGateDate && typeof window.FIDSGateDate.getFlightDateContext === 'function') {
-      _flightDateContext = window.FIDSGateDate.getFlightDateContext({
-        flightTimestamp: currentFlight._sortTs,
-        nowTimestamp: Date.now(),
-        timeZone: tz || 'UTC',
-        languages: (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs : ['en', 'fr'],
-        frenchFirst: _frF
-      });
-    }
-  } catch (e) {}
   const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
   const locale = uxgLocaleCode();
   // Short display names for the top banner — long names (NEW YORK KENNEDY) get
@@ -12804,6 +12873,9 @@ function uxgGateHtml(ctx) {
 
   // Arr time display
   var arrHtml = arrTimeStr ? _to12h(arrTimeStr) : '\u2014';
+  // v23930 — the instant of the arrival this field prints (renderDedicatedScreen
+  // works it out beside arrTimeStr), moved with it below, for its day line.
+  var _arrShownTs = Number(ctx.arrInstant) || 0;
   // If departure is delayed, estimate new arrival based on delay (math in 24h)
   if (depDelayed && arrTimeStr && currentFlight.time && currentFlight.upd) {
     // Strip any HTML (like +1 day marker) to get clean HH:MM for calculation
@@ -12823,6 +12895,7 @@ function uxgGateHtml(ctx) {
           var newArrH24 = String(Math.floor(newArrMins/60) % 24).padStart(2,'0');
           var newArrM = String(newArrMins % 60).padStart(2,'0');
           arrHtml = '<span class="g8-r2-strike">' + _to12h(_cleanArr) + '</span><span class="g8-r2-revised' + ((stKey === 'early') ? ' g8-rev-early' : '') + '">' + _to12h(newArrH24 + ':' + newArrM) + '</span>';
+          if (_arrShownTs) _arrShownTs += delayMins * 60000;
         }
       }
     }
@@ -12900,6 +12973,14 @@ function uxgGateHtml(ctx) {
   // v23925 — what this paint showed, for updateDedicatedTimeOnly: the schedule
   // boarding opens and closes on the clock, between feed refreshes and renders.
   try { window._gatePaintedDoor = { k: _gateRowKey(currentFlight), w: _door.word }; } catch (eP) {}
+  // v23930 — the day each printed time is on, when it is not today
+  // (_gateDayWords): the boarding time as printed, the departure as printed
+  // (the airport's revised time when that is the one shown), and the arrival
+  // in its own zone against this board's today.
+  var _dayBoard = _gateDayWords((typeof boardTs === 'number') ? boardTs : 0, tz, _frF);
+  var _dayDepart = _gateDayWords((String(depTimeHtml).indexOf('g8-r2-revised') !== -1 && currentFlight._revTs) || currentFlight._sortTs, tz, _frF);
+  var _dayArrive = _gateDayWords(_arrShownTs, ctx.arrTz || tz, _frF, tz);
+  _gateNotePaintedDay(tz);
 
   // Status badge class
   var stClass = '';
@@ -15928,7 +16009,8 @@ function uxgGateHtml(ctx) {
                 // aircraft column above the brand/reg/inbound blocks.
                 depTimeHtml: depTimeHtml, arrHtml: arrHtml, boardTimeHtml: boardTimeHtml,
                 stClass: stClass, stLabel: stLabel, stKey: stKey,
-                flightDateContext: _flightDateContext
+                // v23930 — the day lines under the three rail times.
+                dayBoard: _dayBoard, dayDepart: _dayDepart, dayArrive: _dayArrive
               });
             })()
       ) // end gate idle layout
@@ -18712,6 +18794,10 @@ const gView = document.getElementById('gateView');
       // Use AeroDataBox scheduled arrival time if available, else estimate
       let arrTimeStr = '';
       let durationStr = '';
+      // v23930 — the instant of the arrival arrTimeStr prints, for its day
+      // line (_gateDayWords): the gate prints the day under any time that is
+      // not on the board's today.
+      let _arrInstant = 0;
       // SANITY GUARD
       // : some feed records carry the DEPARTURE time in the arrival
       // slot — every YQM gate showed e.g. 'Departure 6:15pm / Arrival 6:15pm'.
@@ -18743,20 +18829,15 @@ const gView = document.getElementById('gateView');
             }
           }
         } catch (e) {}
-        // Check if arrival is next day vs departure (compare in LOCAL timezones, not UTC)
-        if (_arrLocal && currentFlight._sortTs) {
+        // v23930 — the arrival's instant: the feed's own arrival, moved by the
+        // same delay as the printed time above. Its day line replaces the
+        // amber "+1" that used to follow an overnight arrival here: amber is
+        // the delayed colour, and the marker counted days from the departure
+        // while every other day on the gate is counted from the board's today.
+        try {
           const _arrTs = adbTs(_arrLocal);
-          if (_arrTs) {
-            // Get departure date in departure airport timezone
-            const _depTzLocal = tz || 'UTC';
-            const _arrTzLocal = (AP[locIata] || {}).tz || _depTzLocal;
-            const _depDateStr = new Date(currentFlight._sortTs).toLocaleDateString('en-CA', { timeZone: _depTzLocal });
-            const _arrDateStr = new Date(_arrTs).toLocaleDateString('en-CA', { timeZone: _arrTzLocal });
-            if (_arrDateStr !== _depDateStr) {
-              arrTimeStr += ' <span style="font-size:14px;color:#eab308;font-weight:700;">+1</span>';
-            }
-          }
-        }
+          if (_arrTs) _arrInstant = _arrTs + ((typeof _dlyMs === 'number' && _dlyMs > 5 * 60000) ? _dlyMs : 0);
+        } catch (eAI) {}
         // Calculate duration from ORIGINAL scheduled dep to arr (not revised — flight time doesn't change)
         const origDepTs = currentFlight._sortTs;
         const arrTs = adbTs(currentFlight._arrSchedLocal);
@@ -18781,14 +18862,9 @@ const gView = document.getElementById('gateView');
         arrTimeStr = arrivalTs
           ? new Date(arrivalTs).toLocaleTimeString('en-GB', { timeZone: arrTz, hour: '2-digit', minute: '2-digit', hour12: false })
           : '';
-        // Overnight estimate → same +1 day marker the primary path shows.
-        if (arrivalTs && depTs) {
-          try {
-            const _dD2 = new Date(depTs).toLocaleDateString('en-CA', { timeZone: depTz });
-            const _aD2 = new Date(arrivalTs).toLocaleDateString('en-CA', { timeZone: arrTz });
-            if (_dD2 !== _aD2) arrTimeStr += ' <span style="font-size:14px;color:#eab308;font-weight:700;">+1</span>';
-          } catch (e) {}
-        }
+        // v23930 — an overnight estimate gets its day line from this instant
+        // (the amber "+1" marker is gone, as on the primary path above).
+        _arrInstant = arrivalTs || 0;
       }
       // Use revised time for boarding countdown when delayed
       const effectiveDepTs = currentFlight._revTs || currentFlight._sortTs;
@@ -19151,10 +19227,10 @@ const gView = document.getElementById('gateView');
         // Mobile: render a clean phone-friendly gate view; desktop: use full TV layout
         var _isMobileGate = (window.innerWidth || document.documentElement.clientWidth) < 700;
         if (_isMobileGate) {
-          gView.innerHTML = renderMobileGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs });
+          gView.innerHTML = renderMobileGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrInstant: _arrInstant, arrTz: arrTz });
         } else {
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
-          gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs });
+          gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrInstant: _arrInstant, arrTz: arrTz });
         }
         // v23166 — store what we ACTUALLY painted. The builders above could
         // settle fields the key reads, so the pre-build key could already be
@@ -37589,6 +37665,15 @@ function _gateMapNote(res) {
       var w = tbl[picked[i]];
       if (!w) continue;
       var tm = res.at ? _fidsClockForLang(new Date(res.at), tz, picked[i]) : '';
+      // v23930 — on another day than today the label says the day INSTEAD of
+      // the clock ("From Calgary · Tomorrow | De Calgary · Demain"): never
+      // both, so it is no longer than today's label and fits wherever that
+      // fits (the 1280x720 rail map is 288 px), and the time itself is on the
+      // Your Aircraft card beside it.
+      try {
+        var _dwM = (tm && window.FIDSGateDate) ? window.FIDSGateDate.getFlightDayWords({ timestamp: res.at, nowTimestamp: Date.now(), timeZone: tz || 'UTC', languages: [picked[i]] }) : null;
+        if (_dwM && _dwM.words && _dwM.words[0]) tm = _dwM.words[0];
+      } catch (eDW) {}
       var s = w + ' ' + _gateMapCity(res.other, picked[i]) + (tm ? ' · ' + tm : '');
       if (seen[s.toLowerCase()]) continue;
       seen[s.toLowerCase()] = 1;
@@ -47259,6 +47344,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // second language underneath) — rewriting its English labels to the
         // rotating language produced "Type d'appareil" twice (no English).
         if (el.closest && el.closest('.gad-map-col-v2')) return;
+        // v23930 — nor the day line under a gate time (_gateDayLineHtml): it is
+        // already in the board's languages, one word per language. Rewriting
+        // its English "Tomorrow" to the rotating language printed
+        // "Demain | Demain" on a French-first Montréal gate.
+        if (el.closest && el.closest('.v2-fi-dayline')) return;
         var s = (el.textContent || '').trim();
         for (var i=0;i<pairs.length;i++){
           if (pairs[i][0].test(s)) { el.textContent = t(pairs[i][1]); break; }

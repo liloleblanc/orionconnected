@@ -24103,3 +24103,26 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   top: 50% !important;
   transform: translateY(-50%) !important;
 }
+
+/* ══ v23930 — THE DAY UNDER A GATE TIME THAT IS NOT TODAY ══════════════════
+   "Tomorrow | Demain" (French first in Québec; the weekday and date two or
+   more days out) under the Boarding, Departure and Arrival times when they
+   are not on the board's today (_gateDayLineHtml in fids-core.js). Sized in
+   em of the time, so the rail's box fitter (_boxAssign) sizes the time and
+   its day together: never clipped, never wrapped. It takes the time's own
+   ink (the plate-ink rules colour every span in a value), never a status
+   colour, and it is static. The sixteen guards are this file's floor for a
+   rule appended after the boarding sign's block (boarding-sign.test.js). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value.v2-fi-time .v2-fi-dayline {
+  display: block !important;
+  font-size: .3em !important;
+  line-height: 1.12 !important;
+  margin-top: .1em !important;
+  letter-spacing: 0 !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+  color: inherit !important;
+}
+/* each language is one unbreakable unit; the bar between them is quieter */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-dayline .v2-fi-day-w { display: inline-block !important; white-space: nowrap !important; }
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .v2-fi-dayline .v2-fi-day-sep { opacity: .7 !important; }
