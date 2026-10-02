@@ -26204,7 +26204,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23927';
+var FIDS_BUILD_TAG = 'v23928';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -48426,8 +48426,9 @@ function _renderHeritageCard(el) {
       '<div class="hcard-wrap">'
       // The five layers of the gate aircraft scene, in its order: the sky plate
       // (::before), the cartoon fast band, the cumulus, the aeroplane, then the
-      // front band with the rush streaks riding on it (::after). The last two
-      // sit ABOVE the aeroplane exactly as they do on the gate shelf.
+      // front band with the rush streaks riding on it (::after). v23928: every
+      // cloud layer now passes BEHIND the aeroplane, as on the gate shelf; the
+      // front layer comes later in the markup but the aeroplane is stacked above it.
       +   '<div class="hcard-sky" aria-hidden="true">'
       // ONE element for the back plate, with the fast and cumulus bands as its
       // OWN pseudo-children — the shelf's topology, not merely its numbers.
