@@ -27432,7 +27432,11 @@ function render() {
         const tDate = new Date(today.toLocaleDateString('en-CA', tzOpt));
         const diffDays = Math.round((fDate - tDate) / 86400000);
         if (diffDays > 0) {
-          timeCellHtml = fmt12(f.time) + '<sup style="font-size:0.55em;color:#fbbf24;font-weight:900;margin-left:3px;vertical-align:super;">+' + diffDays + '</sup>';
+          // v23930 — the day marker takes the row's own ink. It was amber
+          // (#fbbf24), which on this board means delayed, and the alternate
+          // rows' white-ink rule repainted it white anyway, so the same "+1"
+          // read in two colours down one column. A day is not a status.
+          timeCellHtml = fmt12(f.time) + '<sup class="fids-dayplus" style="font-size:0.55em;color:inherit;font-weight:900;margin-left:3px;vertical-align:super;">+' + diffDays + '</sup>';
         }
       }
     }

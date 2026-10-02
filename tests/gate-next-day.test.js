@@ -159,3 +159,11 @@ test('the visual-label repair pass never rewrites the day line', () => {
   const pass = CORE.slice(i, CORE.indexOf('_ocEvery(fixVisibleGateLabels', i));
   assert.match(pass, /if \(el\.closest && el\.closest\('\.v2-fi-dayline'\)\) return;/);
 });
+
+test('the departures board\'s "+1" day marker takes the row\'s ink, not the delayed amber', () => {
+  // A day is not a status. The marker was inline amber (#fbbf24), and the
+  // alternate rows' white-ink rule repainted it, so one column showed it in
+  // two colours.
+  assert.match(CORE, /'<sup class="fids-dayplus" style="font-size:0\.55em;color:inherit;font-weight:900;margin-left:3px;vertical-align:super;">\+' \+ diffDays \+ '<\/sup>'/);
+  assert.doesNotMatch(CORE, /<sup style="font-size:0\.55em;color:#fbbf24/);
+});
