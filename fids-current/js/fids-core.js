@@ -5551,6 +5551,10 @@ function _opbyContrastFix(root) {
       }
       var bg = 'rgb(' + Math.round(acc.r) + ',' + Math.round(acc.g) + ',' + Math.round(acc.b) + ')';
       var dark = layers.length ? ((0.2126 * acc.r + 0.7152 * acc.g + 0.0722 * acc.b) < 140) : false;
+      // v23930 — on the lower right panel's plates the plate's own ink decides
+      // (a light plate is drawn for dark ink, whatever its luminance reads).
+      var _pInk5 = (typeof _rcPlateInkIsDark === 'function') ? _rcPlateInkIsDark(im) : null;
+      if (_pInk5 !== null) dark = !_pInk5;
       var pair = OPBY_WORDMARKS_THEMED[op];
       // v23332 — INLINE !important, OR NOTHING THIS PASS DOES EVER APPLIES.
       // display-overrides.css carries the v23206 rule for the caption strip
@@ -10625,6 +10629,46 @@ function _buildV2AircraftCol(ctx, vars) {
   return '<div class="gad-aircraft-col' + _bareCls + '"' + _bareAttr + '>' + _orderedHtml + '</div>';
 }
 
+// v23930 — THE INBOUND SECTION OF THE LOWER RIGHT PANEL.
+// Both inbound cards (the real one and the backstop) are written through this,
+// so they are one shelf by construction:
+//   AC656 from | de Montreal | YUL          line 1, across the full width
+//   (orb) 10:30am Arrival | Arrivée         the lines after it, beside the
+//         On time | À l'heure               carrier's orb, as on a left card
+// No title: the panel's banner says "Your Aircraft | Votre Avion" (_rcBanner).
+// The orb is written INTO the first line beside it (.v2-rc-lp-orbhost), so it
+// is sized in that line's em and grows with the line fitter's one shared
+// factor; every line beside it is .v2-rc-lp-beside, whose left padding (em
+// again) is the orb's room, and the fitter measures each line from the value
+// cell's left edge, so that room counts against the width as the type does.
+// A card with one line has the orb beside that line. The row says how many
+// lines it holds (.v2-rc-lp-n1/-n2/-n3): :has() is out on the kiosks.
+// `lines` are '<div class="v2-fi-mlineN">…</div>' strings or '' (absent).
+function _rcInboundShelf(orbHtml, lines) {
+  var ls = [], i;
+  for (i = 0; i < lines.length; i++) if (lines[i]) ls.push(String(lines[i]));
+  var host = ls.length >= 2 ? 1 : 0, placed = false, out = '';
+  for (i = 0; i < ls.length; i++) {
+    var ln = ls[i], m = /^<div class="(v2-fi-mline[123])">/.exec(ln);
+    if (m && i >= host) {
+      var isHost = !placed;
+      ln = '<div class="' + m[1] + ' v2-rc-lp-beside' + (isHost ? ' v2-rc-lp-orbhost' : '') + '">'
+        + (isHost ? orbHtml : '') + ln.slice(m[0].length);
+      placed = true;
+    }
+    out += ln;
+  }
+  return '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
+    + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
+    +   '<div class="v2-fi-row v2-rc-lp-n' + Math.min(3, Math.max(1, ls.length)) + '">'
+    // A line the pattern above does not know keeps the orb in its own column.
+    +     (placed ? '' : '<div class="v2-fi-iconcol">' + orbHtml + '</div>')
+    +     '<div class="v2-fi-textcol"><div class="v2-fi-value">' + out + '</div></div>'
+    +   '</div>'
+    + '</div></div>'
+    + '</div>';
+}
+
 // ─── V2 MAP COLUMN BUILDER ────────────────────────────────────────────────
 function _buildV2MapCol(ctx, vars) {
   var _frF = (typeof frFirstAirport === 'function') && frFirstAirport((vars && vars.iata) || (ctx && ctx.iata) || '');
@@ -11189,7 +11233,8 @@ function _buildV2MapCol(ctx, vars) {
       // the body already carried it: flight, times, and "Arrived" on its own
       // coloured line. The same fact twice, with the anchor doing the moving.
       // One label, always, and the status stays where it belongs underneath.
-      var _mcTitleKey = 'yourAircraftHdr';
+      // v23930 — that label (yourAircraftHdr) is now the lower panel's own
+      // banner, _rcBanner in the aircraft block below; this card has no title.
       // v23544 — WHICH CLOCK. for arrived,
       // then "5:05pm ... arrived at the gate". They are two different moments
       // and the feed already separates them: _actualArrTime is the ON-BLOCK
@@ -11243,20 +11288,15 @@ function _buildV2MapCol(ctx, vars) {
       // gets just the one word and no bar.
       var _mcFromConn = _gateLbl('fromConn', _frF, function (w) { return w; },
         ' <span class="v2-rc-bar">|</span> ');
-      var _mcTitle = _gateLbl(_mcTitleKey, _frF, function (w, i2) {
-        return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>';
-      }, '');
       var _mcTimes = '';
       if (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) {
         _mcTimes = '<span class="v2-rc-status-delayed">' + _railT(_ibArrRevStr) + '</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>';
       } else if (_ibArrSchedStr) {
         _mcTimes = _railT(_ibArrSchedStr);
       }
-      _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
-        + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
-        +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge' + _mcWrapCls + ' v2-fi-orbwrap" style="' + _mcBadge + '">'
+      // v23930 — the carrier's orb, on its own: _rcInboundShelf places it.
+      var _mcOrbHtml =
+              '<div class="v2-fi-icon-wrap v2-fi-icon-badge' + _mcWrapCls + ' v2-fi-orbwrap" style="' + _mcBadge + '">'
         +       (_mcOrbSrc
                   // v23222 — BITMAP ROUNDELS STAY NATIVE (a G4 screenshot:
                   // Rouge rendered as an empty square). rouge-icon.png is a
@@ -11268,7 +11308,7 @@ function _buildV2MapCol(ctx, vars) {
                   // the accent circle (the map hold's look), never a generic
                   // glyph: a KE board drew a passengers icon in the orb.
                   : '<span class="v2-fi-orb-code">' + (_mcOrbOp || _mcCode || '') + '</span>')
-        +     '</div></div>'
+        +     '</div>';
         // v23207 — THREE ROWS, per the sketch (the screenshot showed half
         // the words missing; Times and Status need to be 2 lines for 3
         // rows in total):
@@ -11277,12 +11317,12 @@ function _buildV2MapCol(ctx, vars) {
         //   From | De: Toronto | YYZ
         // Full words, no ellipsis — the times get their own line so nothing
         // is eaten.
-        +     '<div class="v2-fi-textcol">'
-        // v23207 — the banner CHANGES COLOUR when a change is imminent
-        //: amber for delayed/cancelled/diverted, green for an early
-        // revision — the same semantics as the left rail's status banner.
-        +       '<div class="v2-fi-title' + (/delayed|cancelled|diverted/.test(_stCls || '') ? ' v2-fi-title-warn' : ((_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr) ? ' v2-fi-title-good' : '')) + '">' + _mcTitle + '</div>'
-        +       '<div class="v2-fi-value">'
+        // v23207 gave the card a banner that CHANGED COLOUR (amber for
+        // delayed, cancelled or diverted, green for an early revision).
+        // v23930: the card has no title now. Its words are the lower panel's
+        // banner (_rcBanner), which never takes a status colour; the status
+        // is said here, in the lines, in the status colours.
+      _inboundCard = _rcInboundShelf(_mcOrbHtml, [
         // v23257 \u2014 the banner carries 'Arriving From | Provenant de', so
         // line 1 is flight and city ONLY
         // :
@@ -11296,19 +11336,19 @@ function _buildV2MapCol(ctx, vars) {
         // The two pipes on this line do different jobs and that is deliberate:
         // the first separates the LANGUAGES of the connector, the second is
         // _ibCityCode's own city/code divider.
-        +         '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' ' + _mcFromConn + ' ' + _ibCityCode + '</div>'
+                  '<div class="v2-fi-mline1">' + (_ibFltCompact || '\u2014') + ' ' + _mcFromConn + ' ' + _ibCityCode + '</div>',
         // v23544 — once it is down, the scheduled/revised pair steps aside.
         // the arrived panel reads "4:58pm | Your aircraft has arrived", so the
         // ONE time that matters is the one the event actually happened at, and
         // it belongs beside the sentence rather than on a line of its own.
-        +         (_stKey === 'arrived' ? '' : (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr
+                  (_stKey === 'arrived' ? '' : (_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr
                     ? '<div class="v2-fi-mline2">'
                       + '<span class="v2-rc-status-' + (_stCls || 'delayed') + '">' + _railT(_ibArrRevStr) + '</span>'
                       + ' <span class="v2-rc-bar">|</span> <span class="v2-rc-tval-old"><span>' + _railT(_ibArrSchedStr) + '</span></span>'
                       + ' <span class="v2-fi-mlbl">' + _gateLblSpans('revised', _frF) + '</span></div>'
                     : (_ibArrSchedStr
                         ? '<div class="v2-fi-mline2">' + _railT(_ibArrSchedStr) + ' <span class="v2-fi-mlbl">' + _gateLblSpans(_ibArrLblKey, _frF) + '</span></div>'
-                        : '')))
+                        : ''))),
         // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. The layout of the
         // panel is fixed: banner, then "WS668 · Calgary | YYC", then "Your
         // aircraft has arrived" when landed (and "at the gate" once at the
@@ -11317,7 +11357,7 @@ function _buildV2MapCol(ctx, vars) {
         // moved and the status appeared twice. It belongs on the changing side,
         // and it keeps the distinction the old header made: landed is not the
         // same as on stand. Any other state keeps the plain status word.
-        +         '<div class="v2-fi-mline3">'
+                  '<div class="v2-fi-mline3">'
         +           '<span class="v2-rc-fi-stline v2-rc-status-' + _stCls + '">'
         +             (_stKey === 'arrived'
                         // v23540 — ONE LANGUAGE, NOT TWO. The stacked pair
@@ -11347,11 +11387,7 @@ function _buildV2MapCol(ctx, vars) {
                         ? _mcArrLine
                         : _stShow)
         +           '</span></div>'
-        +       '</div>'
-        +     '</div>'
-        +   '</div>'
-        + '</div></div>'
-        + '</div>';
+      ]);
 
       // Speed/Altitude render at the bottom of the MAP section, ONLY while the
       // aircraft is in flight (real telemetry present); otherwise it disappears.
@@ -11458,10 +11494,8 @@ function _buildV2MapCol(ctx, vars) {
       // always say Your Aircraft | Votre Appareil. That ruling was applied
       // to one variant and never to this one, so the panel changed its name
       // depending on whether the inbound was known.
-      var _niTitle = _gateLbl('yourAircraftHdr', _frF, function (w, i4) {
-        return i4 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>'
-                  : '<span class="v2-fi-lbl-en">' + w + '</span>';
-      }, '');
+      // v23930 — and now neither variant has a title: the words are the lower
+      // panel's banner (_rcBanner), the same in both cases by construction.
       // v23720 — same connector the real card uses, built the same way, so the
       // two cannot drift apart in the one slot they share.
       var _niFromConn = _gateLbl('fromConn', _frF, function (w) { return w; },
@@ -11595,23 +11629,20 @@ function _buildV2MapCol(ctx, vars) {
         _niStatusLine = '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline">'
           + _gateLblSpans('toBeConfirmed', _frF) + '</span></div>';
       }
-      _inboundCard =
-          '<div class="v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft">'
-        + '<div class="g8-bir-shelves"><div class="v2-flightinfo-block">'
-        +   '<div class="v2-fi-row">'
-        +     '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge' + _niWrapCls + ' v2-fi-orbwrap" style="' + _niBadge + '">'
+      // v23930 — the same shelf as the real card (_rcInboundShelf): no title
+      // (the lower panel's banner carries it), the orb beside the lines.
+      var _niOrbHtml =
+              '<div class="v2-fi-icon-wrap v2-fi-icon-badge' + _niWrapCls + ' v2-fi-orbwrap" style="' + _niBadge + '">'
         +       (_niOrbSrc
                   ? '<img class="v2-fi-orb' + _niParts.nativeCls + '" src="' + _niOrbSrc + '" alt="" style="' + _niParts.imgStyle + (/\.png(\?|$)/i.test(_niOrbSrc) ? 'filter:none;' : '') + '" onerror="window._orbArtFailed(this,\'' + _orbMono(_niCode) + '\')">'
                   : '<span class="v2-fi-orb-code">' + (_niCode || '') + '</span>')
-        +     '</div></div>'
-        +     '<div class="v2-fi-textcol">'
-        +       '<div class="v2-fi-title">' + _niTitle + '</div>'
-        +       '<div class="v2-fi-value">'
+        +     '</div>';
+      _inboundCard = _rcInboundShelf(_niOrbHtml, [
         // v23313 — NEVER print '\u2014 \u00b7 From | Desde: \u2014'
         // A From line exists only when there is a flight or
         // an origin to put on it; a card that knows nothing carries the
         // status line alone.
-        +         (_niKnown
+                  (_niKnown
                     // v23720 \u2014 the backstop follows the real card's line 1.
                     // This is NOT a different panel: the condition above is
                     // `!_inboundCard`, so this renders into the SAME shelf and
@@ -11627,13 +11658,9 @@ function _buildV2MapCol(ctx, vars) {
                     // form \u2014 'from | de Montreal' with no flight reads as a
                     // fragment.
                     ? '<div class="v2-fi-mline1">' + (_niFlt ? _niEsc(_niFlt) : '') + (_niFlt && _niFrom ? ' ' + _niFromConn + ' ' : '') + (_niFrom ? (_niFlt ? _niFrom : '<span class="v2-fi-mlbl">' + _gateLbl('from', _frF, function (w, iF) { return iF ? '<span class="v2-fi-sep"> | </span><span>' + w + '</span>' : '<span>' + w + '</span>'; }, '') + '</span><span class="v2-fi-mcolon">:</span> ' + _niFrom) : '') + '</div>'
-                    : '')
-        +         _niStatusLine
-        +       '</div>'
-        +     '</div>'
-        +   '</div>'
-        + '</div></div>'
-        + '</div>';
+                    : ''),
+                  _niStatusLine
+      ]);
     } catch (e) {}
   }
 
@@ -11641,6 +11668,30 @@ function _buildV2MapCol(ctx, vars) {
   // "Aircraft Type:" label + value, with livery image above. This represents
   // the equipment serving this gate. ALWAYS at the bottom as specified's spec.
   var _aircraftBlock = '';
+  // v23930 — THE LOWER RIGHT PANEL'S BANNER. The panel is the aircraft
+  // picture, its caption and the inbound flight, and it now opens like a left
+  // card: one "Your Aircraft | Votre Avion" banner across its full width.
+  // It IS a left-column title (.g8-bir-shelves > .v2-flightinfo-block >
+  // .v2-fi-row > .v2-fi-textcol > .v2-fi-title), so the per-carrier rules
+  // written for the left titles paint it (Air Canada's grey with its red
+  // rule, PAL's navy, Porter's cream, WestJet's navy with its white rule),
+  // and the title fitters treat it as one of them. The words are the ones the
+  // inbound card used to carry (yourAircraftHdr, French first in Québec), and
+  // that card no longer has a title of its own.
+  // THE BANNER NEVER CHANGES COLOUR. The inbound card's title turned amber
+  // for a late aircraft and green for an early one (v23207), and on Air
+  // Canada that put the amber pill beside the carrier's red, which reads as
+  // a cancellation. A status colour belongs to the status words only: the
+  // inbound lines still say "Delayed | En retard" in amber and "Early | En
+  // avance" in green. So this element never carries a status class.
+  var _rcBanner =
+      '<div class="g8-bir-shelves v2-rc-lp-banner">'
+    +   '<div class="v2-flightinfo-block"><div class="v2-fi-row"><div class="v2-fi-textcol">'
+    +     '<div class="v2-fi-title">' + _gateLbl('yourAircraftHdr', _frF, function (w, i2) {
+            return i2 ? '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + w + '</span>' : '<span class="v2-fi-lbl-en">' + w + '</span>';
+          }, '') + '</div>'
+    +   '</div></div></div>'
+    + '</div>';
   try {
     var _cf = vars.currentFlight || {};
     var _ib2 = vars.inboundFlight || null;
@@ -12182,7 +12233,6 @@ function _buildV2MapCol(ctx, vars) {
       // (model, registration, qualifier) is nowrap — a line may only break
       // BETWEEN segments at the separator, never inside 'Boeing 737-800'.
       var _nbw = function (t) { return '<span style="white-space:nowrap;">' + t + '</span>'; };
-      var _acTypeVal;
       // THE REG ALWAYS TELLS YOU
       //
       // Until the registry has confirmed THIS tail's type,
@@ -12191,15 +12241,26 @@ function _buildV2MapCol(ctx, vars) {
       // qualifier stays on, and the resolver's instant rebuild replaces the
       // whole line the moment the registry answers.
       var _regConfirmed = !!(typeof _regTrue !== 'undefined' && _regTrue);
+      // v23930 — THE MODEL AND THE REGISTRATION ARE TWO LINES. The caption is
+      // the lower right panel's aircraft section now: the model alone on its
+      // first line, the registration (and the operator) on the second, so
+      // the model has the panel's whole width (the composition is below, at
+      // _typeCellHtml). The 'expected' qualifier still follows the model
+      // whenever the tail's type is unconfirmed, exactly as before. A tail
+      // with no type yet leads the first line itself.
+      var _acExpTag = ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
+        + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>';
+      var _acModelVal, _acRegVal = '';
       if (_acModel && !_acReg) {
-        _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
-          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>';
+        _acModelVal = _nbw(_acModel) + _acExpTag;
       } else if (_acModel && _acReg && !_regConfirmed) {
-        _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
-          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
-          + ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag);
+        _acModelVal = _nbw(_acModel) + _acExpTag;
+        _acRegVal = _nbw(_acReg + _acRegTag);
+      } else if (_acModel) {
+        _acModelVal = _nbw(_acModel);
+        _acRegVal = _acReg ? _nbw(_acReg + _acRegTag) : '';
       } else {
-        _acTypeVal = _nbw(_acModel) + (_acReg ? ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag) : '');
+        _acModelVal = _nbw(_acReg + _acRegTag);
       }
       // Shorter label per (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
@@ -12315,30 +12376,38 @@ function _buildV2MapCol(ctx, vars) {
           }
         }
       } catch (e) {}
-      // v23904 — ONE ROW. The caption was the model on one line and Operated By
-      // on a second, which made it the tallest thing under the aircraft. Now:
-      //   Aircraft:   Airbus A319 | C-FTOD        Operated By:    [LOGO]
-      //   Appareil:                               Exploité par:
-      // each label pair stacked, the model and the operator mark each as tall
-      // as the pair beside them. Labels follow the airport's language order.
-      var _acLbl = _gateLbl('aircraft', _frF8, function (w) { return '<span class="v2-rc-opby-lline v2-rc-acb-lline">' + w + ':</span>'; }, '');
-      // _acTypeVal is never empty (an unknown model still builds an empty
-      // nowrap span), so what decides is whether there is a model or a tail.
+      // v23930 — TWO LINES, AND NO "AIRCRAFT:" BESIDE THE MODEL. The caption
+      // is the aircraft section of the lower right panel, under the panel's
+      // "Your Aircraft | Votre Avion" banner (_rcBanner), so the label pair
+      // v23904 put beside the model said the same thing twice and is gone:
+      //   Mitsubishi CRJ900                          (the model, alone)
+      //   C-FUJZ | Operated By:    [Jazz]            (the registration, then
+      //            Exploité par:                      the operator)
+      // This replaces v23904's one row for this panel: with the model, a
+      // registration and an operator's mark on one 380px row the model came
+      // out smaller than the banner (19.7px under its 20.16px beside Jazz;
+      // 11.4px for a PAL-operated Dash 8-300 at 1280x720). On a line of its
+      // own the model gets the panel's whole width. The second line exists
+      // only when it has something on it. Sizes: _fitTypePanel.
+      // _acModelVal is never empty for a known aircraft, so what decides is
+      // whether there is a model or a tail.
       var _acKnown = !!(_acModel || _acReg);
-      var _typeCellHtml =
-          '<div class="v2-rc-acb-ac' + (_acKnown ? '' : ' is-pending') + '">'
-        +   (_acKnown ? '<span class="v2-rc-acb-lbl v2-rc-acb-opby-lbl">' + _acLbl + '</span>' : '')
-        +   '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acKnown ? _acTypeVal : _pendingAircraftText) + '</div>'
-        + '</div>'
+      var _acRow2 = (_acKnown && _acRegVal ? '<span class="v2-rc-acb-reg">' + _acRegVal + '</span>' : '')
         + (_opByVal
             ? '<div class="v2-rc-acb-opby"><span class="v2-rc-acb-opby-lbl">' + _opByLbl + '</span><span class="v2-rc-acb-opby-logo v2-rc-opby-val">' + _opByVal + '</span></div>'
             : '');
+      var _typeCellHtml =
+          '<div class="v2-rc-acb-ac' + (_acKnown ? '' : ' is-pending') + '">'
+        +   '<div class="v2-rc-acb-actype v2-rc-actype-val">' + (_acKnown ? _acModelVal : _pendingAircraftText) + '</div>'
+        + '</div>'
+        + (_acRow2 ? '<div class="v2-rc-acb-row2">' + _acRow2 + '</div>' : '');
       // v23926 — THE BAND SAYS WHAT IT HOLDS. The stylesheet lays the caption
       // out by its state (no model yet, an operator beside it), and :has() is
       // out on the kiosks, so the state is written on the band itself. Without
       // it the pending words were laid over the operator's label and mark
       // (seen on YHZ gate 58, a PAL-operated Air Canada flight).
-      var _capCls = 'v2-rc-acb-cap' + (_acKnown ? '' : ' is-pending') + (_opByVal ? ' has-op' : '');
+      // v23930 — and whether it has a second line (.has-row2).
+      var _capCls = 'v2-rc-acb-cap' + (_acKnown ? '' : ' is-pending') + (_opByVal ? ' has-op' : '') + (_acRow2 ? ' has-row2' : '');
       // The reserved aircraft area should remain an intentional branded panel
       // while a lookup finishes. Never guess a model; hold the airline mark in
       // the space instead of floating a raw "image pending" warning over it.
@@ -12391,6 +12460,7 @@ function _buildV2MapCol(ctx, vars) {
       } catch (e) {}
       _aircraftBlock =
           '<div class="v2-rc-shelf v2-rc-shelf-illus' + _facingCls + '"' + _acSkyDelayStyle() + '>'
+        +   _rcBanner
         +   '<div id="gateCloudsBg"></div>'
         // v23899 — the sky is a clip: the reference flight with its own aircraft removed. It starts
         // at the wall clock's phase, so a rebuild never restarts it and every gate shows the same sky.
@@ -12437,6 +12507,7 @@ function _buildV2MapCol(ctx, vars) {
     var _fallbackHold = '<div class="v2-rc-aircraft-hold">' + _fallbackMark + '</div>';
     _aircraftBlock =
         '<div class="v2-rc-shelf v2-rc-shelf-illus"' + _acSkyDelayStyle() + '>'
+      +   _rcBanner
       +   '<div id="gateCloudsBg"></div>'
       +   '<video id="gateSkyVid" autoplay muted loop playsinline aria-hidden="true" preload="auto" poster="/textures/gate-sky-model.jpg?v=23899" src="/textures/gate-sky-shelf.mp4?v=23899" onloadedmetadata="try{this.currentTime=(Date.now()/1000)%15}catch(e){}"></video>'
       +   '<i id="gateCloudsMid" aria-hidden="true"></i>'
@@ -15948,6 +16019,9 @@ function gateAutofit(root) {
   // v23261 — the Operated-By mark can only be contrast-checked once it is in
   // the DOM on its real strip; this pass rides every autofit invocation
   // (initial paint, font settle, resize) so repaints stay corrected.
+  // v23930 — first the ground it is checked against: the lower right panel's
+  // plate (_rcPlateGroundInk).
+  try { _rcPlateGroundInk(root); } catch (e00) {}
   try { _opbyContrastFix(root); } catch (e0) {}
   // Left-rail values/titles deliberately stay out of this generic pass. This
   // function is invoked synchronously during a gate rebuild, when those new
@@ -16531,6 +16605,15 @@ function gateAutofit(root) {
       var lines = [].slice.call(val.querySelectorAll('.v2-fi-mline1, .v2-fi-mline2, .v2-fi-mline3'));
       if (!lines.length) return;
       lines.forEach(function (ln) { ln.style.removeProperty('font-size'); });
+      // v23930 — THE PAIRS ARE MEASURED AS THEY WILL BE DRAWN. A bilingual
+      // pair that wraps is marked .is-stacked by the pair pass
+      // (_fidsPairSeparators), which runs a frame later; measured before it,
+      // the arrival sentence ('Arrived at the gate | 10:18am' over 'Arrivé à
+      // la porte | 10:18am') read as the card's full width, so the lines
+      // shrank under their base sizes (19.8 / 16.4px at 1680x1050) and stayed
+      // there once it stacked. The pass runs here first, at the base size,
+      // and again after the lines grow (below).
+      try { _fidsPairSeparators(val); } catch (eP) {}
       // v23256 — the budget is the VALUE CELL's own content width: it is the
       // element that carries overflow:hidden, and it is NARROWER than the
       // textcol (whose clientWidth includes its 15px padding) — measuring
@@ -16538,6 +16621,15 @@ function gateAutofit(root) {
       // 'YUL' losing its L). A 6px gutter keeps it snug, not grazing.
       var availW = Math.floor(val.clientWidth) - 6;
       if (availW < 60) return;
+      // v23930 — EACH LINE IS MEASURED FROM THE VALUE CELL'S LEFT EDGE. On the
+      // lower right panel the lines after the first sit beside the carrier's
+      // orb (_rcInboundShelf): their left padding is the orb's room, in em,
+      // so it grows with the type and counts against the width as the type
+      // does. A line that starts at the cell's edge measures as before.
+      var _v0 = (function () {
+        var vr = val.getBoundingClientRect(), vcs = getComputedStyle(val);
+        return vr.left + (parseFloat(vcs.borderLeftWidth) || 0) + (parseFloat(vcs.paddingLeft) || 0);
+      })();
       // v23258 — TRUE CONTENT WIDTH, via a Range
       // scrollWidth is floored at the element's own box width, so
       // a short line in a full-width grid cell measured as 'already full'
@@ -16546,8 +16638,8 @@ function gateAutofit(root) {
         try {
           var rg = document.createRange();
           rg.selectNodeContents(ln);
-          var w = rg.getBoundingClientRect().width;
-          return (w && isFinite(w)) ? w : ln.scrollWidth;
+          var b = rg.getBoundingClientRect(), w = b.width;
+          return (w && isFinite(w)) ? Math.max(w, b.right - _v0) : ln.scrollWidth;
         } catch (e) { return ln.scrollWidth; }
       };
       var row2 = val.closest('.v2-fi-row');
@@ -16586,14 +16678,17 @@ function gateAutofit(root) {
             var b = rg.getBoundingClientRect();
             if (b.width) { l = Math.min(l, b.left); r = Math.max(r, b.right); }
           }
-          return r > l ? r - l : _lnW(ln);
+          return r > l ? Math.max(r - l, r - _v0) : _lnW(ln);
         } catch (e) { return _lnW(ln); }
       };
       var _pairLn = null;
       if (lines.length === 1) {
         var _pl = lines[0].querySelector('.v2-rc-fi-stline');
+        // (the orb's own letters, where it has no art, are not the line's words)
+        var _ob = lines[0].querySelector('.v2-fi-orbwrap');
+        var _l0t = lines[0].textContent.replace(_ob ? _ob.textContent : '', '');
         if (_pl && _pl.children.length === 2 && !_pl.querySelector('[class]')
-            && lines[0].textContent.trim() === _pl.textContent.trim()) _pairLn = _pl;
+            && _l0t.trim() === _pl.textContent.trim()) _pairLn = _pl;
       }
       var f, _measure = _lnW;
       if (_pairLn) {
@@ -16613,6 +16708,8 @@ function gateAutofit(root) {
         var base = parseFloat(getComputedStyle(ln).fontSize) || 0; if (!base) return;
         ln.style.setProperty('font-size', (Math.floor(base * f * 10) / 10) + 'px', 'important');
       });
+      // (v23930: a pair that wraps at the new size is stacked before it is checked)
+      if (!_pairLn) { try { _fidsPairSeparators(val); } catch (eP2) {} }
       // v23256 — VERIFY AFTER APPLYING. Text width does not scale perfectly
       // linearly with font-size (hinting, spacing, bold runs), so the
       // projected factor could land a long delayed-status line a few percent
@@ -16802,43 +16899,43 @@ function gateAutofit(root) {
         ['font-size', 'white-space', 'margin-left', 'width', 'padding-left'].forEach(function (p) {
           try { el.style.removeProperty(p); } catch (e2) {}
         });
-        // v23904 — the one-row caption sets the model at twice its label. A
-        // model that does not fit on one line steps down a pixel at a time,
-        // but not far: below 1.25x the label it reads as a label, so instead
-        // it goes to TWO lines (model beside the first label, registration
-        // beside the second, no separator) at the largest size two lines fit
-        // in the band, stepping down from there to the label size. Each
-        // segment is nowrap, so nothing is ever cut inside 'Airbus A319'.
-        // v23926 — ONE ROW, AS LARGE AS IT FITS. The caption is now the band
-        // of the lower right panel (the picture, the caption and the Your
-        // Aircraft lines are one panel), still one row (the v23904 form), and
-        // the panel's extra height goes to that row: the band is the
-        // stylesheet's --rcp-cap, and the row's own scale, --acb-h, starts
-        // at the band and is lowered here, a pixel at a time, as far as v23904's
-        // own band (7/8 of it) while the row does not fit across the panel.
-        // Below that the v23904 steps take over, with one change: an operator's
-        // mark comes down WITH the model, keeping its proportion, because a
-        // wordmark the row cannot hold leaves the model no room at all (Jazz
-        // beside 'Mitsubishi CRJ900' cut it to 'Mitsubishi CR' on v23924).
-        // The mark is never set smaller than the model's own type (a carrier's
-        // mark is never smaller than the text beside it). A model holds at
-        // 1.25x its label on one line; with a registration it may take the
-        // two-line form (v23904). After the model the mark comes down alone,
-        // to the model's size, and for the widest rows the whole row comes
-        // down once more with those proportions kept (step 5). Nothing is
-        // ever cut: step 6 is the last resort.
+        // v23930 — THE AIRCRAFT SECTION IS TWO LINES, AND THE MODEL LEADS.
+        // The caption is the lower right panel's aircraft section, under the
+        // panel's "Your Aircraft | Votre Avion" banner:
+        //   line 1  the model, alone, on the panel's whole width;
+        //   line 2  the registration, then the operator ("Operated By: /
+        //           Exploité par:" and its mark), when there is either.
+        // This replaces the one-row fitter (v23904 / v23926) for this panel:
+        // one row could not hold a model, a registration and an operator's
+        // mark above the banner's size. Every size is measured against the
+        // banner's own type (its words, in this panel):
+        //   1. the model starts at 1.5x the banner (the stylesheet's
+        //      --rcl-vs) and comes down a quarter pixel at a time until its
+        //      line fits across the band, never below 1.25x the banner;
+        //   2. the second line (the registration's type and the mark's height
+        //      together, so the mark is never smaller than the type beside
+        //      it) starts at the model's size and comes down until it fits,
+        //      never below the banner's size;
+        //   3. if the two lines are then taller than the band, both come
+        //      down together, the second never larger than the model.
+        // Below a floor only as the last resort, so nothing is ever cut
+        // (window.__acbLastResort counts it, for the harness). The sizes are
+        // written as two custom properties on the band, --rcl-ms (the
+        // model) and --rcl-r2 (the second line), which the stylesheet's
+        // v23930 block applies; they sit on the 1/64px layout grid, so a mark
+        // set to the type's size never lands a hair under it.
         try {
           var _capEl = el.closest('.v2-rc-acb-cap');
+          var _row2 = _capEl.querySelector('.v2-rc-acb-row2');
           var _logoEl = _capEl.querySelector('img.v2-rc-opby-logo');
-          // v23926 — or the operator's NAME, where it has no mark on file or
-          // its file failed (the onerror fallback writes <b>Name</b>). It is
-          // drawn on the row's scale and comes down in step 4 like the mark.
+          // or the operator's NAME, where it has no mark on file or its file
+          // failed (the onerror fallback writes <b>Name</b>): the second
+          // line's type, like the registration.
           var _nameEl = _logoEl ? null : _capEl.querySelector('.v2-rc-acb-opby b');
           // The mark's width is only known once its file has loaded, and the
           // autofit passes (render, font settle, resize) can all run before
-          // that: PAL's wordmark arrived after them and pushed the row out.
-          // Fit this caption again when it lands (once per file), and when it
-          // fails: the name that replaces it is a different width again.
+          // that: fit this caption again when it lands (once per file), and
+          // when it fails (the name that replaces it is another width).
           if (_logoEl && !(_logoEl.complete && _logoEl.naturalWidth) && _logoEl.dataset.fitOnLoad !== _logoEl.src) {
             _logoEl.dataset.fitOnLoad = _logoEl.src;
             var _refit = function () {
@@ -16847,153 +16944,97 @@ function gateAutofit(root) {
             _logoEl.addEventListener('load', _refit, { once: true });
             _logoEl.addEventListener('error', _refit, { once: true });
           }
+          // Every earlier write goes: this pass sizes the band from scratch.
           el.classList.remove('is-2line');
           _capEl.style.removeProperty('--acb-h');
+          _capEl.style.removeProperty('--rcl-ms');
+          _capEl.style.removeProperty('--rcl-r2');
           if (_logoEl) { _logoEl.style.removeProperty('height'); _logoEl.style.removeProperty('max-height'); }
           if (_nameEl) _nameEl.style.removeProperty('font-size');
-          // The band's full height is the row's top scale (--acb-h starts at
-          // --rcp-cap, which is the band's border box); the model's own height
-          // is checked against the room inside it.
-          var _capH = _capEl.clientHeight, _bandH = _capEl.offsetHeight;
-          // Fits when the model's own box holds its text, nothing in the row
-          // runs past the band (the operator's half is never squeezed, so a
-          // row too wide shows up as the band overflowing), and the model is
-          // no taller than the band.
-          // v23926 — MEASURED TO THE FRACTION OF A PIXEL. scrollWidth and
-          // clientWidth are whole pixels, so a model 0.67px wider than its box
-          // passed (Porter's 'De Havilland Dash 8-400' at 1366x768: text right
-          // 1356.80, box right 1356.13) and its overflow:hidden shaved the
-          // last letter. The model's text is measured by its own runs (a
-          // Range) against its box's content edges, to 0.01px: that box cuts.
-          // The row's items are held inside the band's content box; the band
-          // itself clips only at its padding edge, 0.16 of the row further
-          // out, and the operator's half lands on the content edge by
-          // construction (space-between), so a layout rounding there is not
-          // an overflow (half a pixel of slack).
-          var _EPS = 0.01, _ROW_EPS = 0.5;
+          if (!el.isConnected || !(_capEl.clientWidth > 0) || !(_capEl.clientHeight > 0)) return;
+          var _EPS = 0.01, _SLACK = 0.5;
+          var _up64 = function (v) { return Math.ceil(v * 64 - 1e-6) / 64; };
+          var _dn64 = function (v) { return Math.floor(v * 64 + 1e-6) / 64; };
           var _innerOf = function (box) {
             var r = box.getBoundingClientRect(), cs = window.getComputedStyle(box);
             return {
               l: r.left + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.paddingLeft) || 0),
-              r: r.right - (parseFloat(cs.borderRightWidth) || 0) - (parseFloat(cs.paddingRight) || 0)
+              r: r.right - (parseFloat(cs.borderRightWidth) || 0) - (parseFloat(cs.paddingRight) || 0),
+              t: r.top + (parseFloat(cs.borderTopWidth) || 0) + (parseFloat(cs.paddingTop) || 0),
+              b: r.bottom - (parseFloat(cs.borderBottomWidth) || 0) - (parseFloat(cs.paddingBottom) || 0)
             };
           };
-          var _fits = function () {
-            if (el.scrollWidth > el.clientWidth || _capEl.scrollWidth > _capEl.clientWidth) return false;
+          var _px = function (x) { return parseFloat(window.getComputedStyle(x).fontSize) || 0; };
+          var ci = _innerOf(_capEl);
+          // The banner's type: its words in this panel (the title box itself
+          // can carry a harmonised inline size, its words do not), or the
+          // left titles' clamp where the banner is missing.
+          var _panel = _capEl.closest('.v2-rc-shelf-illus');
+          var _banW = _panel && _panel.querySelector('.v2-rc-lp-banner .v2-fi-title .v2-fi-lbl-en');
+          var _ban = (_banW && _px(_banW)) || Math.min(26, Math.max(15, (window.innerHeight || 1050) * 0.0192));
+          var _pending = _capEl.classList.contains('is-pending');
+          // Line 1 fits when the model's text, measured by its own runs (a
+          // Range, to the fraction of a pixel), is inside its box and the band.
+          var _fits1 = function () {
+            if (el.scrollWidth > el.clientWidth + 1) return false;
             var mi = _innerOf(el), rg = document.createRange();
             rg.selectNodeContents(el);
-            var mt = rg.getBoundingClientRect();
-            if (mt.width && (mt.right > mi.r + _EPS || mt.left < mi.l - _EPS)) return false;
-            var ci = _innerOf(_capEl);
-            for (var _ck = 0; _ck < _capEl.children.length; _ck++) {
-              var cr = _capEl.children[_ck].getBoundingClientRect();
-              if (cr.width && (cr.right > ci.r + _ROW_EPS || cr.left < ci.l - _ROW_EPS)) return false;
-            }
-            return !_capH || el.offsetHeight <= _capH;
+            var t = rg.getBoundingClientRect();
+            return !(t.width && (t.right > mi.r + _EPS || t.left < mi.l - _EPS || t.right > ci.r + _EPS));
           };
-          // (The band's width, not the model's: a wide operator's half can
-          // squeeze the model to nothing, and that is the case to fit.)
-          if (el.isConnected && _capEl.clientWidth > 0 && _capH > 0 && !_fits()) {
-            // 1. The whole row: labels, model, mark and spacing, together.
-            var _u = _bandH, _uMin = Math.round(_bandH * 0.875);
-            while (_u > _uMin && !_fits()) { _u = Math.max(_uMin, _u - 1); _capEl.style.setProperty('--acb-h', _u + 'px', 'important'); }
-            if (!_fits()) {
-              var _lblEl = _capEl.querySelector('.v2-rc-opby-lline');
-              var _lblPx = _lblEl ? (parseFloat(window.getComputedStyle(_lblEl).fontSize) || 10) : Math.round(_u * 0.24);
-              var _fs = parseFloat(window.getComputedStyle(el).fontSize) || 0;
-              var _lh = _logoEl ? (_logoEl.getBoundingClientRect().height || 0) : 0;
-              var _k = (_fs && _lh) ? _lh / _fs : 0;
-              // The mark's height is laid out on a 1/64px grid, so a height
-              // set equal to the model's size can land a hair under it (12.47
-              // beside 12.48): it is rounded UP to that grid, never down.
-              var _up64 = function (v) { return Math.ceil(v * 64 - 1e-6) / 64; };
-              var _setLh = function (px) {
-                _lh = _up64(px);
-                _logoEl.style.setProperty('height', _lh + 'px', 'important');
-                _logoEl.style.setProperty('max-height', _lh + 'px', 'important');
-              };
-              var _setFs = function (px) {
-                el.style.setProperty('font-size', px + 'px', 'important');
-                if (_k) _setLh(Math.max(px, Math.min(_lh, px * _k)));
-              };
-              var _pending = _capEl.classList.contains('is-pending');
-              // The model's floor beside a label of `lbl` px: 1.25x the label on
-              // one line (below that a model reads as a label); the label's own
-              // size for the pending words and the two-line form, which are
-              // already two lines of label-sized type.
-              var _mFloor = function (lbl) {
-                return (_pending || el.classList.contains('is-2line')) ? lbl : Math.round(lbl * 1.25 * 100) / 100;
-              };
-              // 2. The model (and the mark with it) steps down to its floor.
-              while (_fs > _mFloor(_lblPx) && !_fits()) { _fs = Math.max(_mFloor(_lblPx), _fs - 1); _setFs(_fs); }
-              // 3. With a registration: model over registration, at the
-              // largest size two lines fit in the band, down to the label.
-              if (!_fits() && el.querySelector('.v2-rc-acb-sep')) {
-                el.classList.add('is-2line');
-                _fs = Math.max(_lblPx, Math.min(Math.round(_u * 0.52), Math.floor(_capH * 0.44)));
-                _setFs(_fs);
-                while (_fs > _lblPx && !_fits()) { _fs = Math.max(_lblPx, _fs - 1); _setFs(_fs); }
-              }
-              // 4. The mark alone, down to the model's own size and no further.
-              if (_logoEl) {
-                while (_lh > _up64(_fs) && !_fits()) _setLh(Math.max(_fs, _lh - 1));
-              }
-              // The operator's name the same way: it starts under the model
-              // (0.34 of the row against 0.52) and is never brought below the
-              // model's own size, so a long name ('Air Wisconsin Airlines')
-              // gives way before anything is cut.
-              var _nm = _nameEl ? (parseFloat(window.getComputedStyle(_nameEl).fontSize) || 0) : 0;
-              if (_nameEl) {
-                while (_nm > _fs && !_fits()) {
-                  _nm = Math.max(_fs, _nm - 1);
-                  _nameEl.style.setProperty('font-size', _nm + 'px', 'important');
-                }
-              }
-              // 5. Only for the widest rows: the whole row again, below
-              // v23904's size, with the proportions kept: the model stays at
-              // its floor above the label (1.25x on one line, never down to the
-              // label's own size as v23926's first cut did, which left 'De
-              // Havilland Dash 8-300' at 6.7px on a 1024x768 Québec board) and
-              // the mark and the name at no less than the model. Floor: 0.7 of
-              // the band.
-              var _uFloor = Math.round(_bandH * 0.7);
-              while (!_fits() && _u > _uFloor && _lblEl) {
-                _u -= 1;
-                _capEl.style.setProperty('--acb-h', _u + 'px', 'important');
-                _lblPx = parseFloat(window.getComputedStyle(_lblEl).fontSize) || (_u * 0.24);
-                _fs = Math.min(_fs, _mFloor(_lblPx));
-                el.style.setProperty('font-size', _fs + 'px', 'important');
-                if (_logoEl) _setLh(Math.min(_lh, Math.max(_fs, _lh - 1)));
-                if (_nameEl) {
-                  _nm = Math.min(_nm, Math.max(_fs, _nm - 1));
-                  _nameEl.style.setProperty('font-size', _nm + 'px', 'important');
-                }
-              }
-              // 6. The last resort, so nothing is ever cut: a model that still
-              // does not fit at the row's floor comes down to the label's own
-              // size, and the mark and the name with it, never below it
-              // (window.__acbLastResort counts it, for the harness).
-              // REAL BOARDS REACH THIS STEP: every PAL-operated Air Canada
-              // Dash 8 (YHZ gate 2C at 16:50, AC7691/AC7677; gate 57 at
-              // 16:00, AC7669/AC7664 + C-GPFI). PAL's wordmark is 6.2 times
-              // as wide as it is tall and is held at the model's size, the
-              // model is one unbreakable phrase ('De Havilland Dash 8-400',
-              // 12.1 em at this size), and the two label pairs with their
-              // spacing are 3.6 of the row's scale. At 1680x1050 (a 380px
-              // panel) that leaves about 12.4px of model over 10px labels
-              // at best, which is where this lands (12.1 over 10.08, mark
-              // 12.6). One row cannot hold that caption at twice the label.
-              if (!_fits()) {
-                try { window.__acbLastResort = (window.__acbLastResort || 0) + 1; } catch (e6) {}
-                while (_fs > _lblPx && !_fits()) {
-                  _fs = Math.max(_lblPx, _fs - 0.5);
-                  el.style.setProperty('font-size', _fs + 'px', 'important');
-                  if (_logoEl && _lh > _up64(_fs)) _setLh(Math.max(_fs, Math.min(_lh, _fs * (_k || 1))));
-                  if (_nameEl && _nm > _fs) { _nm = _fs; _nameEl.style.setProperty('font-size', _nm + 'px', 'important'); }
-                }
-              }
+          // Line 2 fits when every box in it is inside the band's content width.
+          var _fits2 = function () {
+            if (!_row2) return true;
+            var els = _row2.querySelectorAll('*');
+            for (var i = 0; i < els.length; i++) {
+              var b = els[i].getBoundingClientRect();
+              if (b.width && (b.right > ci.r + _SLACK || b.left < ci.l - _SLACK)) return false;
+            }
+            return true;
+          };
+          // Both lines are inside the band's height.
+          var _fitsH = function () {
+            var a = el.getBoundingClientRect(), z = (_row2 || el).getBoundingClientRect();
+            return a.top >= ci.t - _SLACK && z.bottom <= ci.b + _SLACK;
+          };
+          var _setS = function (v) { _capEl.style.setProperty('--rcl-ms', v + 'px'); };
+          var _setR = function (v) { _capEl.style.setProperty('--rcl-r2', v + 'px'); };
+          var _sFloor = _up64(_ban * 1.25), _rFloor = _up64(_ban);
+          var _last = false;
+          var s = 0;
+          // 1. the model, on its own line
+          if (!_pending) {
+            s = _dn64(_px(el));
+            _setS(s);
+            while (s > _sFloor && !_fits1()) { s = Math.max(_sFloor, s - 0.25); _setS(s); }
+            while (!_fits1() && s > _ban * 0.6) { _last = true; s -= 0.25; _setS(s); }
+          }
+          // 2. the second line, never larger than the model. Under the pending
+          // words (which keep their own size) it starts at 1.5x the banner.
+          var r = _pending ? _up64(_ban * 1.5) : s;
+          if (_row2) {
+            _setR(r);
+            while (r > _rFloor && !_fits2()) { r = Math.max(_rFloor, r - 0.25); _setR(r); }
+            while (!_fits2() && r > _ban * 0.5) { _last = true; r -= 0.25; _setR(r); }
+          }
+          // 3. the band's height: both come down together
+          while (!_fitsH() && (_pending ? (_row2 && r > _rFloor) : s > _sFloor)) {
+            if (!_pending) { s = Math.max(_sFloor, s - 0.25); _setS(s); }
+            r = _pending ? Math.max(_rFloor, r - 0.25) : Math.min(r, s);
+            if (_row2) _setR(r);
+          }
+          // (the pending words over an operator come down last, as far as the
+          // operator's sub-label and no further)
+          if (_pending && !_fitsH()) {
+            var _sub = _capEl.querySelector('.v2-rc-opby-lline');
+            var _pMin = _sub ? _px(_sub) : _ban * 0.655, _pf = _px(el);
+            while (!_fitsH() && _pf > _pMin) {
+              _pf = Math.max(_pMin, _pf - 0.25);
+              el.style.setProperty('font-size', _pf + 'px', 'important');
             }
           }
+          if (!_fitsH()) _last = true;
+          if (_last) { try { window.__acbLastResort = (window.__acbLastResort || 0) + 1; } catch (e6) {} }
         } catch (e3) {}
         return;
       }
@@ -17211,6 +17252,93 @@ function _rcLowerGround(el) {
     return [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
   } catch (e) { return null; }
 }
+// v23930 — WHAT THE LOWER PANEL'S TYPE SITS ON NOW: THE CARRIER'S PLATE.
+// The aircraft section (the caption) and the inbound section of the lower
+// right panel sit on the carrier's own left-card plate (--plate-base under
+// --plate-tex, blended by --plate-blend; the v23930 block in
+// display-overrides.css), so the colour the two ink passes read for that panel
+// (--rc-ground-ink, _rcLowerGround above) is the plate's, not v23926's ramp.
+// It is measured once per plate: the texture as the caption paints it, drawn
+// over its base colour on a small canvas, and the end of it that type is
+// hardest to read on is taken: the 85th percentile by luminance on a dark
+// plate (light ink), the 15th on a light one (dark ink: American, Lufthansa,
+// Emirates, Qatar, Air France). It is written on the column, which every
+// render rebuilds, so each autofit pass puts the measured value back; the
+// first measurement of a plate re-runs both ink passes.
+// Whether the lower right panel's plate under `el` is drawn for dark ink (a
+// light plate: American, Lufthansa, Emirates, Qatar, Air France), from its
+// --plate-ink; null outside that panel or when the ink is not a plain hex.
+function _rcPlateInkIsDark(el) {
+  try {
+    if (!(el && el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-illus, .gad-map-col-v2 > .v2-rc-shelf-fi'))) return null;
+    var m = /^#?([0-9a-f]{6})$/i.exec(String(getComputedStyle(el).getPropertyValue('--plate-ink') || '').trim());
+    if (!m) return null;
+    var c = [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
+    return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) < 128;
+  } catch (e) { return null; }
+}
+var _rcPlateInkMemo = {};
+function _rcPlateGroundInk(root) {
+  var col = (root && root.querySelector && root.querySelector('.gad-map-col-v2')) || document.querySelector('.gad-map-col-v2');
+  var cap = col && col.querySelector('.v2-rc-shelf-illus .v2-rc-acb-cap');
+  if (!cap) return;
+  var cs = getComputedStyle(cap);
+  var inkHex = String(getComputedStyle(col).getPropertyValue('--plate-ink') || '').trim();
+  var key = cs.backgroundColor + '|' + cs.backgroundImage + '|' + cs.backgroundBlendMode + '|' + inkHex;
+  var put = function (hex) {
+    if (hex && col.isConnected && col.style.getPropertyValue('--rc-ground-ink') !== hex) col.style.setProperty('--rc-ground-ink', hex);
+  };
+  if (_rcPlateInkMemo[key]) { put(_rcPlateInkMemo[key]); return; }
+  if (_rcPlateInkMemo[key] === null) return;               // being measured
+  _rcPlateInkMemo[key] = null;
+  var rgb = function (c) {
+    var a = /rgba?\(([^)]+)\)/.exec(c);
+    if (a) return a[1].split(',').slice(0, 3).map(function (v) { return parseFloat(v) || 0; });
+    var b = /color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/.exec(c);
+    if (b) return [b[1], b[2], b[3]].map(function (v) { return parseFloat(v) * 255; });
+    return [11, 14, 20];
+  };
+  var hexOf = function (a) {
+    return '#' + a.slice(0, 3).map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
+  };
+  var lum = function (a) { return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2]; };
+  var base = rgb(cs.backgroundColor);
+  var im = /^#?([0-9a-f]{6})$/i.exec(inkHex);
+  var lightPlate = !!(im && lum([0, 2, 4].map(function (i) { return parseInt(im[1].slice(i, i + 2), 16); })) < 128);
+  var done = function (hex) {
+    _rcPlateInkMemo[key] = hex;
+    var c2 = document.querySelector('.gad-map-col-v2');
+    if (!c2) return;
+    col = c2; put(hex);
+    // only the lower panel's type is re-checked: nothing else sits on a plate
+    var low = c2.querySelectorAll(':scope > .v2-rc-shelf-illus, :scope > .v2-rc-shelf-fi');
+    for (var k = 0; k < low.length; k++) {
+      try { _opbyContrastFix(low[k]); } catch (e) {}
+      try { _gateCodeInk(low[k]); } catch (e) {}
+    }
+  };
+  var u = /url\("?([^")]+)"?\)/.exec(cs.backgroundImage || '');
+  if (!u) { done(hexOf(base)); return; }
+  var img = new Image();
+  img.onload = function () {
+    try {
+      var cv = document.createElement('canvas'); cv.width = 96; cv.height = 48;
+      var x = cv.getContext('2d');
+      x.fillStyle = 'rgb(' + base.map(Math.round).join(',') + ')';
+      x.fillRect(0, 0, 96, 48);
+      var bm = String(cs.backgroundBlendMode || 'normal').split(',')[0].trim();
+      x.globalCompositeOperation = ({ multiply: 'multiply', screen: 'screen', overlay: 'overlay', 'soft-light': 'soft-light',
+        'hard-light': 'hard-light', darken: 'darken', lighten: 'lighten' })[bm] || 'source-over';
+      x.drawImage(img, 0, 0, 96, 48);
+      var d = x.getImageData(0, 0, 96, 48).data, px = [];
+      for (var i = 0; i < d.length; i += 4) px.push([d[i], d[i + 1], d[i + 2]]);
+      px.sort(function (p, q) { return lum(p) - lum(q); });
+      done(hexOf(px[Math.floor(px.length * (lightPlate ? 0.15 : 0.85))]));
+    } catch (e) { done(hexOf(base)); }
+  };
+  img.onerror = function () { done(hexOf(base)); };
+  img.src = u[1];
+}
 function _ocGroundOf(el) {
   var _rcG = _rcLowerGround(el);
   if (_rcG) return _rcG;
@@ -17272,6 +17400,11 @@ function _gateCodeInk(root) {
       }
       var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
       var up = _ocLum(bg) < 0.5;                       // dark ground lift, light ground deepen
+      // v23930 — on the lower right panel's plates the plate's own ink says
+      // which way: American's light-blue plate measures under half luminance
+      // but is drawn for dark ink, and a lifted code went near-white on it.
+      var _pInk = _rcPlateInkIsDark(el);
+      if (_pInk !== null) up = !_pInk;
       var best = fg, bestCr = base;
       for (var step = 1; step <= 20; step++) {
         var l = up ? Math.min(0.97, hsl[2] + step * 0.04) : Math.max(0.06, hsl[2] - step * 0.04);
