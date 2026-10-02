@@ -13,7 +13,8 @@
 // Three things here are easy to undo by accident:
 //   1. The old frame art is hidden UNSCOPED. At every advert change the
 //      outgoing slide is lifted into a fading copy (div[data-ad-fading]) that
-//      sits in .gad-media-col, outside #gateAdCarousel, so a hide scoped to the
+//      sits in #gateAdCarousel's parent (the unnamed wrapper inside
+//      .gad-media-col), outside the carousel, so a hide scoped to the
 //      carousel let ad-frame-stream.png come back at full strength for about
 //      half a second.
 //   2. The block is the middle panel only. The right column (the v23926 two
@@ -123,7 +124,9 @@ test('the old frame art is hidden UNSCOPED, so it cannot return in the fading co
   assert.match(CORE, /bd\.className = 'ad-panel-backdrop';/, 'and the backdrop node');
   assert.match(CORE, /return '<div class="ad-tech-frame"/, '_adTechFrameHtml builds the per-advert frame');
   assert.match(CORE, /\/logos\/Backgrounds\/ad-frame-stream\.png/, 'with the stream art');
-  // The outgoing slide is lifted into a plain div in the column, outside the carousel.
+  // The outgoing slide is lifted into a plain div in the carousel's parent
+  // (a wrapper inside .gad-media-col), outside the carousel.
+  assert.match(CORE, /var _pr = el3\.parentNode;/);
   assert.match(CORE, /_old\.setAttribute\('data-ad-fading', '1'\);/);
   assert.match(CORE, /_pr\.appendChild\(_old\); \/\/ cover NOW/);
 
@@ -140,8 +143,16 @@ test('the old frame art is hidden UNSCOPED, so it cannot return in the fading co
   assert.equal(decl(ruleFor(' .ad-outer-frame'), 'background'), 'none');
   assert.equal(decl(ruleFor(' .ad-tech-frame'), 'background'), 'none');
   assert.equal(decl(ruleFor(' .ad-tech-media'), 'filter'), 'none');
-  // The dissolving copy takes the screen's corners.
-  assert.equal(decl(ruleFor(' .g8-wrap .gad-media-col > [data-ad-fading]'), 'border-radius'), 'var(--gx-irad)');
+  // The dissolving copy takes the screen's corners. It is parked in the
+  // carousel's parent, a wrapper INSIDE .gad-media-col, not a direct child of
+  // it, so the rule must be a descendant match: a child combinator here
+  // matched nothing and the copy showed square corners at every change.
+  const fade = ruleFor(' .g8-wrap .gad-media-col [data-ad-fading]');
+  assert.equal(decl(fade, 'border-radius'), 'var(--gx-irad)');
+  assert.equal(decl(fade, 'overflow'), 'hidden');
+  for (const r of rules()) {
+    for (const s of r.sels) assert.doesNotMatch(s, />\s*\[data-ad-fading\]/, s.slice(-80));
+  }
   // No hide of the frame art is scoped to the carousel.
   for (const r of rules()) {
     for (const s of r.sels) {
