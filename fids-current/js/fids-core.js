@@ -4386,23 +4386,51 @@ function fidsFlightPlan(flightNo, dateStr) {
 // every rebuild, and the renderers read it whenever the fresh object has
 // nothing of its own.
 window._ACRES = window._ACRES || {};
-function _acResolvedPut(fl, nm, cd, reg) {
+// ONE LEG, NOT ONE NUMBER. Keyed by the flight number alone, the answer for
+// today's WS813 (C-FBWS, Calgary's tail for that day) answered TOMORROW's
+// WS813 row as soon as the gate rolled over to it, for up to six hours, and
+// the gate never asked /acinfo for tomorrow's leg (Calgary names C-GIZG for
+// it). An answer now belongs to the leg it was resolved for: the same number
+// scheduled within six hours of the row (the webhook merge's rule, v23915;
+// the same rotation on the next day is 24 h away). A caller passes the ROW;
+// a row with no scheduled time gets no memory at all.
+var _ACRES_LEG_MS = 6 * 3600000;
+function _acResLeg(row) {
+  if (!row || typeof row !== 'object') return null;
+  var k = String(row.flight || '').replace(/\s+/g, '').toUpperCase();
+  var leg = Number(row._sortTs) || 0;
+  return (k && leg) ? { k: k, leg: leg } : null;
+}
+function _acResolvedPut(row, nm, cd, reg) {
   try {
-    var k = String(fl || '').replace(/\s+/g, '').toUpperCase();
-    if (!k || (!nm && !cd)) return;
-    var cur = window._ACRES[k] || {};
-    window._ACRES[k] = {
-      nm: nm || cur.nm || '', cd: cd || cur.cd || '', reg: reg || cur.reg || '', ts: Date.now()
-    };
+    var L = _acResLeg(row);
+    if (!L || (!nm && !cd)) return;
+    var list = Array.isArray(window._ACRES[L.k]) ? window._ACRES[L.k] : [];
+    var cur = null, rest = [];
+    for (var i = 0; i < list.length; i++) {
+      var v = list[i];
+      if (!v) continue;
+      if (!cur && Math.abs(v.leg - L.leg) <= _ACRES_LEG_MS) cur = v; else rest.push(v);
+    }
+    cur = cur || {};
+    rest.push({ leg: L.leg, nm: nm || cur.nm || '', cd: cd || cur.cd || '', reg: reg || cur.reg || '', ts: Date.now() });
+    window._ACRES[L.k] = rest;
   } catch (e) {}
 }
-function _acResolvedGet(fl) {
+function _acResolvedGet(row) {
   try {
-    var k = String(fl || '').replace(/\s+/g, '').toUpperCase();
-    var v = k && window._ACRES[k];
-    if (!v) return null;
-    if (Date.now() - v.ts > 6 * 3600000) { delete window._ACRES[k]; return null; }
-    return v;
+    var L = _acResLeg(row);
+    if (!L) return null;
+    var list = Array.isArray(window._ACRES[L.k]) ? window._ACRES[L.k] : [];
+    var now = Date.now(), keep = [], hit = null;
+    for (var i = 0; i < list.length; i++) {
+      var v = list[i];
+      if (!v || now - v.ts > 6 * 3600000) continue;
+      keep.push(v);
+      if (!hit && Math.abs(v.leg - L.leg) <= _ACRES_LEG_MS) hit = v;
+    }
+    if (keep.length) window._ACRES[L.k] = keep; else delete window._ACRES[L.k];
+    return hit;
   } catch (e) { return null; }
 }
 
@@ -4438,10 +4466,11 @@ function _acInfoKick(row, ourDir) {
       var cd = (typeof aircraftCodeToIata === 'function' && aircraftCodeToIata(j.type)) || j.type;
       var nm = (typeof formatAircraft === 'function') ? formatAircraft(j.type) : '';
       if (!nm && !cd) return;
-      if (_acResolvedGet(f)) return;   // resolved by another path meanwhile
+      var _leg = { flight: f, _sortTs: ts };
+      if (_acResolvedGet(_leg)) return;   // resolved by another path meanwhile
       // A registration only from the far end's feed for THIS flight today; the
       // usual-type answer never carries one.
-      _acResolvedPut(f, nm, cd, j.basis === 'feed' ? (j.reg || '') : '');
+      _acResolvedPut(_leg, nm, cd, j.basis === 'feed' ? (j.reg || '') : '');
       if (typeof requestGateRebuild === 'function') requestGateRebuild();
     }).catch(function () {});
   } catch (e) {}
@@ -4610,7 +4639,7 @@ async function _gateNumbersPoll() {
         try { console.log('[NUMPOLL] reg landed via poll:', _polledReg, 'for', flt); } catch (e3) {}
       }
       if (_acqType) {
-        _acResolvedPut(flt, inb._aircraft, inb._aircraftCode, inb._reg);
+        _acResolvedPut(inb, inb._aircraft, inb._aircraftCode, inb._reg);
         try { console.log('[NUMPOLL] aircraft for', flt, '→', inb._aircraft || inb._aircraftCode, inb._reg ? ('| ' + inb._reg) : '| no tail yet'); } catch (e5) {}
         try { window._lastGateKey = ''; render(); } catch (e2) {}
       }
@@ -4785,7 +4814,7 @@ async function _gateNumbersPoll() {
           if (_atNm && !inb._aircraft) { inb._aircraft = _atNm; _atFilled = true; }
           if (_atCd && !inb._aircraftCode) { inb._aircraftCode = _atCd; _atFilled = true; }
           if ((_atNm || _atCd) && typeof _acResolvedPut === 'function') {
-            _acResolvedPut(inb.flight || flt, _atNm, _atCd, inb._reg || '');
+            _acResolvedPut(inb, _atNm, _atCd, inb._reg || '');
           }
           // v23901 — the type was stored and never painted: this path returns
           // just below, and render() does not rebuild a gate on its own. Paint
@@ -9862,7 +9891,7 @@ function _buildV2AircraftCol(ctx, vars) {
   // panel still said 'aircraft details pending'. Same churn the outbound side
   // was already taught to survive.
   if (_anyInb && !_inbEquipNm && !_inbEquipCd && typeof _acResolvedGet === 'function') {
-    var _inbR = _acResolvedGet(inboundFlight.flight);
+    var _inbR = _acResolvedGet(inboundFlight);
     if (_inbR) {
       _inbEquipCd = _inbR.cd || '';
       _inbEquipNm = _inbR.nm || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '');
@@ -11766,7 +11795,7 @@ function _buildV2MapCol(ctx, vars) {
     var _inbEquipNm = (_anyInb && !_inbNmHistorical)
       ? (_ib2._aircraft || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '')) : '';
     if (_anyInb && !_inbEquipNm && !_inbEquipCd && typeof _acResolvedGet === 'function') {
-      var _inbR2 = _acResolvedGet(_ib2.flight);
+      var _inbR2 = _acResolvedGet(_ib2);
       if (_inbR2) {
         _inbEquipCd = _inbR2.cd || '';
         _inbEquipNm = _inbR2.nm || (_inbEquipCd ? formatAircraft(_inbEquipCd) : '');
@@ -12770,7 +12799,7 @@ function uxgGateHtml(ctx) {
   // Fall back to what the poll already resolved for this flight number — the
   // feed object is rebuilt constantly and arrives empty again each time.
   if (!equipName && !equipRaw) {
-    var _acR = (typeof _acResolvedGet === 'function') ? _acResolvedGet(currentFlight.flight) : null;
+    var _acR = (typeof _acResolvedGet === 'function') ? _acResolvedGet(currentFlight) : null;
     if (_acR) {
       equipRaw = _acR.cd || '';
       equipName = _acR.nm || (equipRaw ? formatAircraft(equipRaw) : '');
@@ -19936,7 +19965,7 @@ const gView = document.getElementById('gateView');
             // Flight rows are replaced on each feed refresh. Preserve the
             // resolved type outside the row so it cannot fall back to Pending.
             if (typeof _acResolvedPut === 'function') {
-              _acResolvedPut(currentFlight.flight, _nextAircraft, _nextAircraftCode,
+              _acResolvedPut(currentFlight, _nextAircraft, _nextAircraftCode,
                 _regTrustworthy ? _eq.reg : '');
             }
           }
@@ -29577,7 +29606,7 @@ function _fidsBoardEquip(f, iata) {
   var raw = f._aircraftCode || '';
   if (!raw && !f._aircraft) {
     try {
-      var r = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f.flight) : null;
+      var r = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f) : null;
       if (r) raw = r.cd || '';
     } catch (e) {}
   }
@@ -34205,7 +34234,7 @@ function toggleCardExpand(card) {
   // Aircraft
   var equipName = f._aircraft || (f._aircraftCode ? (typeof formatAircraft === 'function' ? formatAircraft(f._aircraftCode) : f._aircraftCode) : '');
   if (!equipName) {
-    var _acR3 = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f.flight) : null;
+    var _acR3 = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f) : null;
     if (_acR3) equipName = _acR3.nm || _acR3.cd || '';
   }
   if (equipName) rows.push({ label: 'Aircraft', value: equipName });
@@ -34314,7 +34343,7 @@ function renderHeroAircraft(f) {
   var equipRaw = f._aircraftCode || '';
   var equipName = f._aircraft || (equipRaw ? formatAircraft(equipRaw) : '');
   if (!equipName && !equipRaw) {
-    var _acR2 = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f.flight) : null;
+    var _acR2 = (typeof _acResolvedGet === 'function') ? _acResolvedGet(f) : null;
     if (_acR2) { equipRaw = _acR2.cd || ''; equipName = _acR2.nm || (equipRaw ? formatAircraft(equipRaw) : ''); }
   }
   const reg = f._reg || '';
@@ -35555,8 +35584,8 @@ function _mapPlaneSpec() {
   try {
     var cf = window._gateCurrentFlight || {};
     var inb = window._gateInbound || {};
-    var rc = (typeof _acResolvedGet === 'function' && cf.flight) ? _acResolvedGet(cf.flight) : null;
-    var ri = (typeof _acResolvedGet === 'function' && inb.flight) ? _acResolvedGet(inb.flight) : null;
+    var rc = (typeof _acResolvedGet === 'function' && cf.flight) ? _acResolvedGet(cf) : null;
+    var ri = (typeof _acResolvedGet === 'function' && inb.flight) ? _acResolvedGet(inb) : null;
     var _srcs = [(inb._reg && typeof _regTrueType === 'function') ? _regTrueType(inb._reg) : '',
                  inb._aircraftCode, inb._aircraft, ri && ri.cd, ri && ri.nm,
                  cf._aircraftCode, cf._aircraft, cf.aircraft, rc && rc.cd, rc && rc.nm];
@@ -38090,8 +38119,8 @@ function _gateApronSpec(inb, dep) {
         return (r && c && c[r]) || '';
       } catch (e) { return ''; }
     };
-    var ri = (typeof _acResolvedGet === 'function' && a.flight) ? _acResolvedGet(a.flight) : null;
-    var rb = (typeof _acResolvedGet === 'function' && b.flight) ? _acResolvedGet(b.flight) : null;
+    var ri = (typeof _acResolvedGet === 'function' && a.flight) ? _acResolvedGet(a) : null;
+    var rb = (typeof _acResolvedGet === 'function' && b.flight) ? _acResolvedGet(b) : null;
     var srcs = [regT(a._reg), a._aircraftCode, a._aircraft, ri && ri.cd, ri && ri.nm,
                 regT(b._reg), b._aircraftCode, b._aircraft, b.aircraft, rb && rb.cd, rb && rb.nm];
     var first = null, firstProp = null;

@@ -23,7 +23,7 @@ test('boarding fit has no standing resize heartbeat', () => {
 
 test('aircraft enrichment uses the flight operating date and persists the type', () => {
   assert.match(core, /fidsLocalDateKey\(currentFlight\._sortTs\s*\|\|\s*Date\.now\(\)/);
-  assert.match(core, /_acResolvedPut\(currentFlight\.flight/);
+  assert.match(core, /_acResolvedPut\(currentFlight,/);
   assert.match(core, /if \(changed && typeof requestGateRebuild === 'function'\) requestGateRebuild\(\)/);
 });
 
