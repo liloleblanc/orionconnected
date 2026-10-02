@@ -24,6 +24,13 @@
 // fids-core's mapADB covering the fields the gate rules read, and the real gate
 // rules and apron functions lifted out of fids-core.js, on the real gate file.
 //
+// v23930 changed what puts an aeroplane on the ground. A landing ("Arrived",
+// live or remembered) counts for 20 minutes, while it deplanes. After that
+// only its departure boarding (Boarding, Final call, Gate closed in the
+// feed's words) or a fresh live fix puts it there. The tests below put their
+// aeroplanes on the ground that way. The section at the end is the evening of
+// 2026-10-02 that showed the phantom.
+//
 // Four things the first cut got wrong, each pinned below. The worker's copy of
 // a dropped row (no tail, no type) replaced the copy the screen had seen with
 // the webhook's tail on it. Two Airbuses down overnight at gate 4 were both
@@ -96,8 +103,8 @@ const FNS = [
   '_gateLegGone', '_gateFamily', '_gateRowKey', '_gateRawStatus', '_gateRawLanded', '_gateRawAirborne', '_gatePushLeft',
   '_gateOutboundAtGate', '_gateTodayReg', '_gateIsProp', '_gateMinTurnMs', '_gateDepSchedTs',
   '_gateAcFamily', '_gateHereTz', '_gateLocalHour', '_gateNightStop', '_gateCouldTurn',
-  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnConsumed', '_gateOvernightOk', '_gateLandedAt',
-  '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
+  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnConsumed', '_gateLandedAt',
+  '_gateSeenOnly', '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
   '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateFeedKept', '_gateInboundForDeparture',
   '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', 'adbStatus',
   'adbStatusInferred', '_gateSeenSlim', '_gateSeenLoad', '_gateSeenSave', '_gateArrsSeen', 'aircraftCodeToIata',
@@ -109,6 +116,8 @@ const FNS = [
   '_gateApronIsOwn', '_gateApronAssign', '_gateApronStandSpot', '_gateApronPlan', '_gateApronClear',
   '_gateApronFit', '_gateApronSync', '_gateApronSince', '_gateApronOwnIndex', '_gateApronOwnRef', '_gateOwnParkSpot',
   '_gateSeenKeepIdentity',
+  // v23925 — the boarding the gate's own sign shows (v23930: the maps' door word)
+  '_gateDoorBasis', '_gateDoorRecord',
   // v23919 — every aeroplane in the picture
   '_gateApronFrame', '_gateApronFrameCentre',
 ];
@@ -151,6 +160,7 @@ function engine(ctx) {
   const gates = ctx.gates || { YQM };
   const src = [
     lineSource('var _GATE_DOWN_SEEN = {};'),
+    lineSource('var _GATE_DEPLANE_MS = '),
     lineSource('var _GATE_DEP_SEEN = '),
     lineSource('var _GATE_SEEN_KEY = '),
     blockSource('var _GATE_SEEN_FIELDS = [', '];'),
@@ -301,7 +311,7 @@ test('feed-router maps a remembered row as the raw evidence it is, and keeps it 
   assert.match(ROUTER, /const list = _split\.list;/);
 });
 
-test('09:00 on Sep 30: the Porter that stayed the night for PD2370 is on a walk-out of doors 3/4, drawn on gate 4\'s map', async () => {
+test('09:00 on Sep 30: the Porter that landed at 21:47 is not drawn on any map until PD2370 boards (v23930)', async () => {
   const now = T(9, 30, 9, 0);
   const m = await momentAt(now);
   // The worker handed back last night's landings the feed had dropped.
@@ -312,115 +322,143 @@ test('09:00 on Sep 30: the Porter that stayed the night for PD2370 is on a walk-
   assert.equal(g4.cf.flight, 'AC7995');
   assert.equal(g4.inb.flight, 'AC7992');
   assert.equal(g4.window._gateMapWhere.kind, 'none', 'the board\'s own map is its empty stand, as before');
-  assert.deepEqual(g4.others(), ['PD2381@5'], 'the Porter on stand 5, a walk-out of doors 3 and 4');
-  const it = g4.plan().items[0];
-  assert.equal(it.spec.art.src, '/logos/map-plane-dh4.svg');
-  assert.equal(it.prop, true);
-  assert.ok(!YQM.bridged.includes(it.stand), 'a turboprop walks out');
-  assert.ok(YQM.door_stands['3'].includes(it.stand) && YQM.door_stands['4'].includes(it.stand));
-  // No Air Canada aeroplane is on the ground at 09:00: last night's AC2040
-  // left on the 06:35 (the feed's "Departed at 6:33 AM").
-  assert.ok(!g4.others().some((s) => /^AC/.test(s)));
-  // Gate 3: that Porter IS its own aeroplane, on the same stand the single view gives it; nothing else.
+  // A landing eleven hours ago is not a place: nothing on the apron.
+  assert.deepEqual(g4.others(), []);
+  // Gate 3: the worker's memory still names PD2370's aeroplane, but parks nothing.
   const g3 = m.board('3');
   assert.equal(g3.cf.flight, 'PD2370');
   assert.equal(g3.inb.flight, 'PD2381');
   assert.equal(g3.inb._feedKept, true, 'found only because the worker remembered it');
-  assert.equal(g3.window._gateMapWhere.kind, 'stand');
-  assert.equal(g3.ownStand(), '5');
-  assert.deepEqual(g3.others(), [], 'never drawn twice');
-  // A screen with no memory of its own and none from the worker: no evidence, no aeroplane.
-  const bare = board(now, '3', { list: m.arrS.list, kept: [] }, { list: m.depS.list, kept: [] });
-  assert.equal(bare.inb, null);
-  assert.equal(bare.window._gateMapWhere.kind, 'none');
-  assert.deepEqual(bare.others(), []);
+  assert.equal(g3.window._gateMapWhere.kind, 'none');
+  assert.equal(g3.window._gateMapWhere.why, 'remembered', 'a memory puts no aeroplane on the ground');
+  assert.deepEqual(g3.others(), []);
+  // 11:25: PD2370 is boarding, in the feed's words. The Porter is at the door,
+  // on gate 3's own map on a walk-out of doors 3/4, and lighter on gate 4's.
+  const b = await momentAt(T(9, 30, 11, 25), null, { feed: { arrivals: MORNING.arrivals, departures: said(MORNING.departures, 'PD2370', 30, 'Boarding') } });
+  const b3 = b.board('3');
+  assert.equal(b3.window._gateMapWhere.kind, 'stand');
+  assert.equal(b3.window._gateMapWhere.why, 'boarding');
+  assert.equal(b3.ownStand(), '5');
+  assert.deepEqual(b3.others(), [], 'never drawn twice');
+  const b4 = b.board('4');
+  assert.deepEqual(b4.others(), ['PD2381@5']);
+  const it = b4.plan().items[0];
+  assert.equal(it.spec.art.src, '/logos/map-plane-dh4.svg');
+  assert.equal(it.prop, true);
+  assert.ok(!YQM.bridged.includes(it.stand), 'a turboprop walks out');
+  assert.ok(YQM.door_stands['3'].includes(it.stand) && YQM.door_stands['4'].includes(it.stand));
 });
 
-test('04:00 on Sep 30: last night\'s Air Canada jet on Bridge 1 and the Porter on its walk-out, each on the other\'s map', async () => {
+test('04:00 on Sep 30: last night\'s landings put nothing on any map; AC2037 boarding puts its Airbus on Bridge 1', async () => {
   const now = T(9, 30, 4, 0);
   // Before the first wave: AC2037 and AC7753 had not left yet.
   let dep = said(MORNING.departures, 'AC2037', 30, 'OnTime', '6:35 AM');
   dep = said(dep, 'AC7753', 30, 'OnTime', '7:10 AM');
   const m = await momentAt(now, null, { feed: { arrivals: MORNING.arrivals, departures: dep } });
-  // Gate 4: its own AC2037 flies last night's AC2040 (remembered by the worker), on the bridge.
+  // Gate 4: its own AC2037 flies last night's AC2040 (remembered by the worker), but nothing says it is here now.
   const g4 = m.board('4');
   assert.equal(g4.cf.flight, 'AC2037');
   assert.equal(g4.inb && g4.inb.flight, 'AC2040');
-  assert.equal(g4.window._gateMapWhere.kind, 'stand', 'a night stop: down at 21:38, the family\'s first departure after it');
-  assert.equal(g4.ownStand(), 'BR1');
-  assert.deepEqual(g4.others(), ['PD2381@5']);
-  // Gate 3: its own Porter on 5, and the Air Canada jet on the bridge beside it.
-  const g3 = m.board('3');
+  assert.equal(g4.window._gateMapWhere.kind, 'none', 'down at 21:38: a landing, not a place (v23930)');
+  for (const g of ['1', '2', '3', '4']) assert.deepEqual(m.board(g).others(), [], '04:00 gate ' + g);
+  // 06:05: AC2037 is boarding. Its Airbus is at the door: on the bridge on gate 4's map, lighter on gate 3's.
+  const b = await momentAt(T(9, 30, 6, 5), null, { feed: { arrivals: MORNING.arrivals, departures: said(dep, 'AC2037', 30, 'Boarding') } });
+  const b4 = b.board('4');
+  assert.equal(b4.window._gateMapWhere.kind, 'stand');
+  assert.equal(b4.ownStand(), 'BR1');
+  assert.deepEqual(b4.others(), [], 'the Porter waiting for 11:55 is not drawn');
+  const g3 = b.board('3');
   assert.deepEqual(g3.others(), ['AC2040@BR1']);
   const jet = g3.plan().items[0];
   assert.ok(YQM.bridged.includes(jet.stand) && !jet.prop, 'a jet takes the bridge');
 });
 
-test('an aeroplane the board\'s own view rules off its stand is still drawn, lighter, when it is on the ground for another departure', async () => {
+test('an aeroplane the board\'s own view rules off its stand is still drawn, lighter, when it is at another departure\'s door', async () => {
   // The Sep 28 schedule's shape (tests/gate-map-evidence.test.js): a 06:15
   // Porter from gate 4 flies the night-stop Porter first, so it is not
-  // PD2370's aeroplane — gate 3's own view is its empty stand — but it is on
-  // the ground all the same.
-  const now = T(9, 30, 4, 0);
+  // PD2370's aeroplane — gate 3's own view is its empty stand. v23930: it is
+  // on the apron once PD2294 is boarding, and not before.
   const pd2294 = Object.assign({}, MORNING.departures.find((r) => r.flightId === 'PD2294'),
     { localTimestamp: T(9, 30, 6, 15) / 1000 - 3 * 3600, displayDate: 'Sep 30', dateTime: 'Sep 30 - 6:15 AM', scheduledTime: '6:15 AM',
       actualTime: '6:15 AM', gate: '4', status: 'OnTime' });
   const dep = MORNING.departures.concat([pd2294]).sort((a, b) => a.localTimestamp - b.localTimestamp);
-  const m = await momentAt(now, null, { feed: { arrivals: MORNING.arrivals, departures: dep } });
+  const m4 = await momentAt(T(9, 30, 4, 0), null, { feed: { arrivals: MORNING.arrivals, departures: dep } });
+  assert.deepEqual(m4.board('3').others(), [], '04:00: nothing says where the Porter is');
+  const boarding = dep.map((r) => (r === pd2294 ? Object.assign({}, r, { status: 'Boarding' }) : r));
+  const now = T(9, 30, 5, 50);
+  const m = await momentAt(now, null, { feed: { arrivals: MORNING.arrivals, departures: boarding } });
   const g3 = m.board('3');
   assert.equal(g3.cf.flight, 'PD2370');
   assert.equal(g3.inb, null, 'PD2381 belongs to the 06:15');
   assert.equal(g3.window._gateMapWhere.kind, 'none');
-  assert.ok(g3.others().includes('PD2381@5'), 'on the ground for PD2294: drawn, not hidden as if it were this board\'s');
+  assert.ok(g3.others().includes('PD2381@5'), 'boarding PD2294: drawn, not hidden as if it were this board\'s');
   // Its empty stand is one nobody stands on: the free walk-out, not the
-  // Porter's stand 5 under the label — and the Porter is not moved for it,
-  // so gate 4's board beside it draws the Porter on stand 5 as well.
+  // Porter's stand 5 under the label — and every board puts the Porter on 5.
   assert.equal(g3.ownStand(), '6B');
   assert.ok(!g3.others().some((x) => x.endsWith('@6B')));
-  assert.ok(m.board('4').others().includes('PD2381@5'));
+  assert.equal(assertBoardsAgree(m, '05:50').PD2381, '5');
   // Once PD2294 has gone, so has it.
   const gone = dep.map((r) => (r === pd2294 ? Object.assign({}, r, { status: 'Departed at 6:21 AM' }) : r));
   const later = await momentAt(T(9, 30, 6, 40), null, { feed: { arrivals: MORNING.arrivals, departures: gone } });
   assert.ok(!later.board('3').others().some((x) => /^PD2381/.test(x)));
 });
 
-test('10:45: Air Canada\'s AC7992 is down — the jet on Bridge 1, the Porter still on its walk-out, distinct stands', async () => {
+test('10:45: Air Canada\'s AC7992 is down — the jet on Bridge 1 while it deplanes, then again when AC7995 boards', async () => {
   const now = T(9, 30, 10, 45);
-  const feed = { arrivals: said(MORNING.arrivals, 'AC7992', 30, 'Arrived at 10:27 AM', '10:27 AM'), departures: MORNING.departures };
-  const m = await momentAt(now, null, { feed });
-  // Gate 1 has no flights of its own this morning: it shows both, lighter.
+  const arrivals = said(MORNING.arrivals, 'AC7992', 30, 'Arrived at 10:27 AM', '10:27 AM');
+  const m = await momentAt(now, null, { feed: { arrivals, departures: MORNING.departures } });
+  // Gate 1 has no flights of its own this morning: it shows it, lighter. The
+  // Porter waiting for 11:55 is not drawn (v23930: nothing says it is there).
   const g1 = m.board('1');
-  assert.deepEqual(g1.others(), ['AC7992@BR1', 'PD2381@5']);
-  // Gate 3: its own Porter on 5, the jet on the bridge.
+  assert.deepEqual(g1.others(), ['AC7992@BR1']);
+  // Gate 3: its own empty stand, the jet on the bridge.
   const g3 = m.board('3');
-  assert.equal(g3.ownStand(), '5');
+  assert.equal(g3.window._gateMapWhere.kind, 'none');
   assert.deepEqual(g3.others(), ['AC7992@BR1']);
-  // Gate 4: AC7992 is its own (AC7995's) aeroplane now, on the bridge the single view gives it.
+  // Gate 4: AC7992 is its own (AC7995's) aeroplane, on the bridge the single view gives it.
   const g4 = m.board('4');
   assert.equal(g4.window._gateMapWhere.kind, 'stand');
   assert.equal(g4.ownStand(), 'BR1');
-  assert.deepEqual(g4.others(), ['PD2381@5']);
+  assert.deepEqual(g4.others(), []);
+  // 10:48: 21 minutes since "Arrived at 10:27". Nothing says it is still there.
+  const m2 = await momentAt(T(9, 30, 10, 48), null, { feed: { arrivals, departures: MORNING.departures } });
+  assert.deepEqual(m2.board('1').others(), []);
+  assert.equal(m2.board('4').window._gateMapWhere.kind, 'none');
+  // 10:50: AC7995 is boarding. Its aeroplane is at the door again, on every map.
+  const m3 = await momentAt(T(9, 30, 10, 50), null, { feed: { arrivals, departures: said(MORNING.departures, 'AC7995', 30, 'Boarding') } });
+  assert.equal(m3.board('4').window._gateMapWhere.why, 'boarding');
+  assert.equal(m3.board('4').ownStand(), 'BR1');
+  assert.deepEqual(m3.board('1').others(), ['AC7992@BR1']);
 });
 
-test('11:10: two Air Canada jets and the Porter at doors 3/4 — three aeroplanes, three stands', async () => {
-  const now = T(9, 30, 11, 10);
+test('11:22: two Air Canada jets and the Porter at doors 3/4 — three aeroplanes, three stands', async () => {
+  // v23930: each one on evidence of its own — AC7992 and the Porter at the
+  // door of a departure that is boarding, AC644 down 18 minutes ago.
+  const now = T(9, 30, 11, 22);
   let arr = said(MORNING.arrivals, 'AC7992', 30, 'Arrived at 10:27 AM', '10:27 AM');
   arr = said(arr, 'AC644', 30, 'Arrived at 11:04 AM', '11:04 AM');
-  const m = await momentAt(now, null, { feed: { arrivals: arr, departures: said(MORNING.departures, 'AC7995', 30, 'Boarding') } });
+  const dep = said(said(MORNING.departures, 'AC7995', 30, 'Boarding'), 'PD2370', 30, 'Boarding');
+  const m = await momentAt(now, null, { feed: { arrivals: arr, departures: dep } });
   const g1 = m.board('1');
   const others = g1.others();
-  assert.deepEqual(others, ['AC644@6B', 'AC7992@BR1', 'PD2381@5']);
+  assert.deepEqual(others, ['AC644@5', 'AC7992@BR1', 'PD2381@6B']);
   const stands = others.map((s) => s.split('@')[1]);
   assert.equal(new Set(stands).size, stands.length, 'no stand twice');
-  // Largest first, and the earlier departure's aeroplane keeps the bridge; the
-  // Porter keeps the walk-out it has stood on since last night — the second jet
-  // takes the next free stand, it does not move the Porter off its own.
-  assert.equal(g1.plan().items.find((i) => i.flight === 'AC7992').stand, 'BR1');
-  assert.equal(g1.plan().items.find((i) => i.flight === 'PD2381').stand, '5');
-  // On gate 4's board AC7995's aeroplane is its own, still on BR1; the others fit around it.
-  const g4 = m.board('4');
+  // Dealt in the order they came to be drawn: AC7992 on the bridge since
+  // 10:27, AC644 since 11:04 (the bridge taken, the door's first free stand),
+  // the Porter only since PD2370 began boarding — so it takes the next walk-out
+  // and moves nobody.
+  const before = await momentAt(T(9, 30, 11, 20), null, { feed: { arrivals: arr, departures: said(MORNING.departures, 'AC7995', 30, 'Boarding') } });
+  assert.deepEqual(before.board('1').others(), ['AC644@5', 'AC7992@BR1'], '11:20: the same stands before the Porter appears');
+  // Gates 3 and 4 each draw their own boarding aeroplane, the others round it.
+  const g3 = m.board('3'), g4 = m.board('4');
+  assert.equal(g3.window._gateMapWhere.why, 'boarding');
+  assert.equal(g3.ownStand(), '6B');
+  assert.deepEqual(g3.others(), ['AC644@5', 'AC7992@BR1']);
+  assert.equal(g4.window._gateMapWhere.why, 'boarding');
   assert.equal(g4.ownStand(), 'BR1');
-  assert.deepEqual(g4.others(), ['AC644@6B', 'PD2381@5']);
+  assert.deepEqual(g4.others(), ['AC644@5', 'PD2381@6B']);
+  assertBoardsAgree(m, '11:22');
 });
 
 test('12:10: an aeroplane the feed says has left is gone from every map', async () => {
@@ -430,16 +468,21 @@ test('12:10: an aeroplane the feed says has left is gone from every map', async 
   let dep = said(MORNING.departures, 'AC7995', 30, 'Departed at 11:20 AM', '11:20 AM');
   dep = said(dep, 'PD2370', 30, 'Departed at 12:02 PM', '12:02 PM');
   const m = await momentAt(now, null, { feed: { arrivals: arr, departures: dep } });
-  const g1 = m.board('1');
-  assert.deepEqual(g1.others(), ['AC644@BR1'], 'the Porter and AC7992\'s jet have gone; AC644\'s now has the bridge');
+  assert.deepEqual(m.board('1').others(), [], 'the Porter and AC7992\'s jet have gone, and AC644 is an hour past its landing');
+  // AC647 boarding: AC644's aeroplane is at its door, and it now has the bridge.
+  const b = await momentAt(now, null, { feed: { arrivals: arr, departures: said(dep, 'AC647', 30, 'Boarding') } });
+  assert.deepEqual(b.board('1').others(), ['AC644@BR1']);
   // Before it left, PD2370 boarding still had it on the stand.
   const boarding = await momentAt(T(9, 30, 11, 40), null, { feed: { arrivals: arr, departures: said(dep, 'PD2370', 30, 'Boarding') } });
   assert.ok(boarding.board('1').others().includes('PD2381@5'));
 });
 
 test('the board\'s own aeroplane keeps its stand and is never among the others', async () => {
-  const now = T(9, 30, 10, 45);
-  const feed = { arrivals: said(MORNING.arrivals, 'AC7992', 30, 'Arrived at 10:27 AM', '10:27 AM'), departures: MORNING.departures };
+  // 11:22, both doors boarding (v23930: the evidence that draws each board's own).
+  const now = T(9, 30, 11, 22);
+  let arrivals = said(MORNING.arrivals, 'AC7992', 30, 'Arrived at 10:27 AM', '10:27 AM');
+  arrivals = said(arrivals, 'AC644', 30, 'Arrived at 11:04 AM', '11:04 AM');
+  const feed = { arrivals, departures: said(said(MORNING.departures, 'AC7995', 30, 'Boarding'), 'PD2370', 30, 'Boarding') };
   const m = await momentAt(now, null, { feed });
   for (const gate of ['3', '4']) {
     const b = m.board(gate);
@@ -465,8 +508,9 @@ test('the board\'s own aeroplane keeps its stand and is never among the others',
 });
 
 test('drawn at ground zoom over our field only: lighter, under the board\'s own, no route, no label', async () => {
-  const now = T(9, 30, 9, 0);
-  const m = await momentAt(now);
+  // 11:25: PD2370 boarding puts the Porter at its door (v23930).
+  const now = T(9, 30, 11, 25);
+  const m = await momentAt(now, null, { feed: { arrivals: MORNING.arrivals, departures: said(MORNING.departures, 'PD2370', 30, 'Boarding') } });
   const markers = [];
   const L = {
     divIcon: (o) => o,
@@ -660,39 +704,51 @@ test('a row the worker remembered never wipes the tail, type and wheels-up this 
   assert.equal(d._actualDepTime, push.AC1983._actualDepTime);
 });
 
-test('the kept tail keeps last night\'s Airbus on the stand once AC1983 has left with another one', async () => {
-  // 05:58 on Sep 30, the Sep 28 schedule's shape (the first wave from gate 1):
-  // AC1983 left at 05:27 and its push named C-FYKW. A screen that saw AC2040
-  // land as C-FYJP knows AC1983 did not take it: AC2040 is still here for
-  // AC2037 at 06:35. (With the tail wiped, the claim rules gave AC2040 to AC1983.)
-  const mod = await import(workerPath);
-  mod._yqmSeenMem.arrivals = null; mod._yqmSeenMem.departures = null;
-  const kv = new Map();
-  const env = { FIDS_LIVE_FLIGHTS: {
-    async get(k, t) { const v = kv.has(k) ? kv.get(k) : null; return (v && t && t.type === 'json') ? JSON.parse(v) : v; },
-    async put(k, v) { kv.set(k, v); } } };
-  const wctx = { waitUntil() {} };
-  const E = engine({ now: T(9, 29, 22, 22) });
-  const poll = async (t, arrivals, departures, merge) => {
-    const a = JSON.parse((await mod.yqmWithMemory(env, wctx, 'arrivals', JSON.stringify(arrivals), t)).text);
-    const d = JSON.parse((await mod.yqmWithMemory(env, wctx, 'departures', JSON.stringify(departures), t)).text);
-    const aS = router.yqmSplitRemembered(a, 'Arrival'), dS = router.yqmSplitRemembered(d, 'Departure');
-    E.mapADB = mapLite(E, t);
-    E.window._yqmRemembered = { ap: 'YQM', arrivals: aS.kept, departures: dS.kept };
-    E.data.arr = E.mapADB({ arrivals: aS.list }, 'arr');
-    E.data.dep = E.mapADB({ departures: dS.list }, 'dep');
-    for (const r of E.data.arr.concat(E.data.dep)) if (merge[r.flight]) Object.assign(r, merge[r.flight]);
-    const arrs = E._gateArrsSeen(E._gateFeedRows('arr'), 'YQM', t), deps = E._gateDepsSeen(E._gateFeedRows('dep'), 'YQM', t);
-    return E._gateApronCollect('YQM', t, arrs, deps, 'America/Moncton').map((e) => e.inb.flight + '>' + e.dep.flight).sort();
+test('the kept tail says which Airbus boards AC2037 once AC1983 has left with another one', async () => {
+  // The Sep 28 schedule's shape (the first wave from gate 1): AC1983 left at
+  // 05:27 and its push named C-FYKW. A screen that saw AC2040 land as C-FYJP
+  // knows AC1983 did not take it: AC2040 is the aeroplane AC2037 boards at
+  // 06:05. (With the tail wiped, the claim rules gave AC2040 to AC1983.)
+  // v23930: before the boarding, a landing at 21:38 puts nothing on the apron.
+  const run = async (tail) => {
+    const mod = await import(workerPath);
+    mod._yqmSeenMem.arrivals = null; mod._yqmSeenMem.departures = null;
+    const kv = new Map();
+    const env = { FIDS_LIVE_FLIGHTS: {
+      async get(k, t) { const v = kv.has(k) ? kv.get(k) : null; return (v && t && t.type === 'json') ? JSON.parse(v) : v; },
+      async put(k, v) { kv.set(k, v); } } };
+    const wctx = { waitUntil() {} };
+    const E = engine({ now: T(9, 29, 22, 22) });
+    const poll = async (t, arrivals, departures, merge) => {
+      const a = JSON.parse((await mod.yqmWithMemory(env, wctx, 'arrivals', JSON.stringify(arrivals), t)).text);
+      const d = JSON.parse((await mod.yqmWithMemory(env, wctx, 'departures', JSON.stringify(departures), t)).text);
+      const aS = router.yqmSplitRemembered(a, 'Arrival'), dS = router.yqmSplitRemembered(d, 'Departure');
+      E.mapADB = mapLite(E, t);
+      E.window._yqmRemembered = { ap: 'YQM', arrivals: aS.kept, departures: dS.kept };
+      E.data.arr = E.mapADB({ arrivals: aS.list }, 'arr');
+      E.data.dep = E.mapADB({ departures: dS.list }, 'dep');
+      for (const r of E.data.arr.concat(E.data.dep)) if (merge[r.flight]) Object.assign(r, merge[r.flight]);
+      const arrs = E._gateArrsSeen(E._gateFeedRows('arr'), 'YQM', t), deps = E._gateDepsSeen(E._gateFeedRows('dep'), 'YQM', t);
+      return E._gateApronCollect('YQM', t, arrs, deps, 'America/Moncton')
+        .map((e) => (e.inb ? e.inb.flight : '-') + '>' + (e.dep ? e.dep.flight : '-')).sort();
+    };
+    await poll(T(9, 29, 22, 22), EVENING.arrivals, EVENING.departures, tail ? { AC2040: { _reg: 'C-FYJP', _regSource: 'push', _aircraft: 'Airbus A319' } } : {});
+    const dropped = EVENING.arrivals.filter((r) => !/^Arrived/.test(r.status));
+    await poll(T(9, 29, 23, 50), dropped, EVENING.departures, {});
+    const left = said(EVENING.departures, 'AC1983', 30, 'Departed at 5:27 AM', '5:27 AM');
+    const up = new Date(T(9, 30, 5, 27)).toISOString().slice(0, 16).replace('T', ' ') + 'Z';
+    const ac1983 = { AC1983: { _reg: 'C-FYKW', _regSource: 'push', _aircraft: 'Airbus A319', _pushStatus: 'active', _actualDepTime: up } };
+    const at0558 = await poll(T(9, 30, 5, 58), dropped, left, ac1983);
+    const at0605 = await poll(T(9, 30, 6, 5), dropped, said(left, 'AC2037', 30, 'Boarding'), ac1983);
+    return { at0558, at0605 };
   };
-  await poll(T(9, 29, 22, 22), EVENING.arrivals, EVENING.departures, { AC2040: { _reg: 'C-FYJP', _regSource: 'push', _aircraft: 'Airbus A319' } });
-  const dropped = EVENING.arrivals.filter((r) => !/^Arrived/.test(r.status));
-  await poll(T(9, 29, 23, 50), dropped, EVENING.departures, {});
-  const left = said(EVENING.departures, 'AC1983', 30, 'Departed at 5:27 AM', '5:27 AM');
-  const up = new Date(T(9, 30, 5, 27)).toISOString().slice(0, 16).replace('T', ' ') + 'Z';
-  const on = await poll(T(9, 30, 5, 58), dropped, left,
-    { AC1983: { _reg: 'C-FYKW', _regSource: 'push', _aircraft: 'Airbus A319', _pushStatus: 'active', _actualDepTime: up } });
-  assert.ok(on.includes('AC2040>AC2037'), on.join(' '));
+  const kept = await run(true);
+  assert.deepEqual(kept.at0558, [], '05:58: nothing says the Airbus is still there');
+  assert.ok(kept.at0605.includes('AC2040>AC2037'), kept.at0605.join(' '));
+  const wiped = await run(false);
+  // Without the tail the claim rules give AC2040 to AC1983: AC2037's boarding
+  // aeroplane is still drawn (the door word is the evidence), with no name.
+  assert.deepEqual(wiped.at0605, ['->AC2037']);
 });
 
 test('one aeroplane per departure: two Airbuses down at gate 4 overnight, the first wave from gate 1', async () => {
@@ -703,34 +759,38 @@ test('one aeroplane per departure: two Airbuses down at gate 4 overnight, the fi
   const at0030 = { arrivals: said(EVENING.arrivals, 'AC1986', 30, 'Arrived at 12:18 AM', '12:18 AM'), departures: EVENING.departures };
   const later = EVENING.arrivals.filter((r) => r.displayDate !== 'Sep 29' && r.flightId !== 'AC1986');
   const at = async (hh, mm, dep) => momentAt(T(9, 30, hh, mm), null, { polls: [[T(9, 30, 0, 30), at0030]], feed: { arrivals: later, departures: dep } });
-  // 05:00: AC1983 is boarding.
+  const pairsAt = (m, hh, mm) => {
+    const g1 = m.board('1'), t = T(9, 30, hh, mm);
+    return g1._gateApronCollect('YQM', t, g1._gateArrsSeen(g1._gateFeedRows('arr'), 'YQM', t),
+      g1._gateDepsSeen(g1._gateFeedRows('dep'), 'YQM', t), 'America/Moncton')
+      .map((e) => (e.inb ? e.inb.flight : '-') + '>' + (e.dep ? e.dep.flight : '-')).sort();
+  };
+  // 05:00: AC1983 is boarding. v23930: only a departure's door word puts an
+  // aeroplane on the ground this long after the landings, so the one drawn is
+  // AC1983's — and the gate-match gives it ONE of the two Airbuses.
   const m5 = await at(5, 0, said(EVENING.departures, 'AC1983', 30, 'Boarding'));
+  assert.deepEqual(pairsAt(m5, 5, 0), ['AC1986>AC1983'], 'one aeroplane for the one departure boarding');
   const g1 = m5.board('1');
-  const coll = g1._gateApronCollect('YQM', T(9, 30, 5, 0), g1._gateArrsSeen(g1._gateFeedRows('arr'), 'YQM', T(9, 30, 5, 0)),
-    g1._gateDepsSeen(g1._gateFeedRows('dep'), 'YQM', T(9, 30, 5, 0)), 'America/Moncton');
-  const pairs = coll.map((e) => (e.inb ? e.inb.flight : '-') + '>' + (e.dep ? e.dep.flight : '-')).sort();
-  assert.deepEqual(pairs, ['AC1986>AC1983', 'AC2040>AC2037', 'PD2381>PD2370'], 'each departure flies one of them');
-  // Gate 1 draws its own boarding aeroplane and, lighter, the other Airbus.
   assert.equal(g1.cf.flight, 'AC1983');
   assert.equal(g1.window._gateMapWhere.kind, 'stand');
   assert.equal(g1.ownStand(), 'BR2');
-  assert.deepEqual(g1.others(), ['AC2040@BR1', 'PD2381@5']);
-  assert.deepEqual(m5.board('3').others(), ['AC1986@BR2', 'AC2040@BR1']);
+  assert.deepEqual(g1.others(), [], 'AC2040 and the Porter: landed hours ago, nothing says they are here now');
+  assert.deepEqual(m5.board('3').others(), ['AC1986@BR2']);
   assertBoardsAgree(m5, '05:00');
-  // 05:30: AC1983 has left with ONE of them. The other is still here for AC2037, on every board.
+  // 05:30: AC1983 has left with ONE of them. Nothing else is boarding: nothing on any map.
   const gone = said(EVENING.departures, 'AC1983', 30, 'Departed at 5:27 AM', '5:27 AM');
   const m530 = await at(5, 30, gone);
-  for (const g of ['1', '2', '3', '4']) {
-    assert.ok(m530.board(g).others().includes('AC2040@BR1'), 'gate ' + g + ': ' + m530.board(g).others().join(' '));
-    assert.ok(!m530.board(g).others().some((x) => /^AC1986/.test(x)), 'gate ' + g + ': AC1986 left on AC1983');
-  }
+  assert.deepEqual(pairsAt(m530, 5, 30), []);
+  for (const g of ['1', '2', '3', '4']) assert.deepEqual(m530.board(g).others(), [], 'gate ' + g);
   // Gate 1's own view finds no inbound for AC2037 (it is at another gate): its
-  // empty stand is the free bridge, not a stand anybody stands on.
+  // empty stand is the free bridge.
   const g1b = m530.board('1');
   assert.equal(g1b.window._gateMapWhere.kind, 'none');
   assert.equal(g1b.ownStand(), 'BR2');
-  // 06:10: AC2037 boards — that Airbus is gate 1's own now, and nobody else's.
+  // 06:10: AC2037 boards. The other Airbus — not the one AC1983 took — is at
+  // its door: gate 1's own, and nobody else's.
   const m610 = await at(6, 10, said(gone, 'AC2037', 30, 'Boarding'));
+  assert.deepEqual(pairsAt(m610, 6, 10), ['AC2040>AC2037']);
   const g1c = m610.board('1');
   assert.equal(g1c.window._gateMapWhere.kind, 'stand');
   assert.ok(!g1c.others().some((x) => /^AC/.test(x)), g1c.others().join(' '));
@@ -738,46 +798,43 @@ test('one aeroplane per departure: two Airbuses down at gate 4 overnight, the fi
 });
 
 test('a parked aeroplane keeps its stand when another lands, and all four boards agree', async () => {
-  // (a) Night of Sep 29, no types: AC2040 on Bridge 1 since 21:38; AC1986
-  // lands at 00:18 with an earlier departure — it takes a free stand, it does
-  // not move AC2040.
-  const n1 = await momentAt(T(9, 29, 23, 55), null, { feed: { arrivals: EVENING.arrivals, departures: EVENING.departures } });
-  assert.equal(assertBoardsAgree(n1, '23:55').AC2040, 'BR1');
-  const at0030 = { arrivals: said(EVENING.arrivals, 'AC1986', 30, 'Arrived at 12:18 AM', '12:18 AM'), departures: EVENING.departures };
-  const n2 = await momentAt(T(9, 30, 0, 30), null, { feed: at0030 });
-  const s2 = assertBoardsAgree(n2, '00:30');
-  assert.equal(s2.AC2040, 'BR1', 'still on the bridge');
-  assert.equal(s2.PD2381, '5');
-  assert.equal(s2.AC1986, '6B', 'the free walk-out');
-  // (b) Sep 30 with types: the E175 on Bridge 1 since 10:27 keeps it when the
-  // longer A320 lands at 11:13 — on gate 4's board (whose own it is) as on the rest.
-  const types = { AC7992: 'E175', AC7995: 'E175', AC644: 'A320', AC647: 'A320', PD2370: 'DH8D', PD2381: 'DH8D' };
+  // v23930: every aeroplane here is on the ground on evidence that it is
+  // there now — deplaning (the first 20 minutes after "Arrived at"), or at
+  // the door of a departure that is boarding.
+  // (a) No types: AC7992 on Bridge 1 since 10:27; AC644 lands at 10:40 — it
+  // takes a free stand, it does not move AC7992.
   let arr = said(MORNING.arrivals, 'AC7992', 30, 'Arrived at 10:27 AM', '10:27 AM');
+  const a1 = await momentAt(T(9, 30, 10, 35), null, { feed: { arrivals: arr, departures: MORNING.departures } });
+  assert.equal(assertBoardsAgree(a1, '10:35').AC7992, 'BR1');
+  const a2 = await momentAt(T(9, 30, 10, 45), null, { feed: { arrivals: said(arr, 'AC644', 30, 'Arrived at 10:40 AM', '10:40 AM'), departures: MORNING.departures } });
+  const s2 = assertBoardsAgree(a2, '10:45');
+  assert.equal(s2.AC7992, 'BR1', 'still on the bridge');
+  assert.equal(s2.AC644, '5', 'the first free stand of its door');
+  // (b) With types: the E175 on Bridge 1 since 10:27 (AC7995 boarding) keeps it
+  // when the longer A320 lands at 11:13 — on gate 4's board (whose own it is) as on the rest.
+  const types = { AC7992: 'E175', AC7995: 'E175', AC644: 'A320', AC647: 'A320', PD2370: 'DH8D', PD2381: 'DH8D' };
   const b1 = await momentAt(T(9, 30, 11, 10), null, { types, feed: { arrivals: arr, departures: said(MORNING.departures, 'AC7995', 30, 'Boarding') } });
   assert.equal(assertBoardsAgree(b1, '11:10').AC7992, 'BR1');
   arr = said(arr, 'AC644', 30, 'Arrived at 11:13 AM', '11:13 AM');
   const b2 = await momentAt(T(9, 30, 11, 15), null, { types, feed: { arrivals: arr, departures: said(MORNING.departures, 'AC7995', 30, 'Boarding') } });
   const s3 = assertBoardsAgree(b2, '11:15');
-  assert.deepEqual([s3.AC7992, s3.AC644, s3.PD2381], ['BR1', '6B', '5']);
+  assert.deepEqual([s3.AC7992, s3.AC644], ['BR1', '5']);
+  assert.equal(s3.PD2381, undefined, 'the Porter waiting for 11:55 is not drawn before PD2370 boards');
   assert.equal(b2.board('4').ownStand(), 'BR1', 'gate 4\'s own E175');
-  assert.deepEqual(b2.board('4').others(), ['AC644@6B', 'PD2381@5']);
-  assert.deepEqual(b2.board('3').others(), ['AC644@6B', 'AC7992@BR1']);
-  // (c) The Porter on stand 5 all night keeps it when a Jazz Dash 8 with an
-  // earlier departure is put on the ground by its boarding (AC7754, down at
-  // 18:36 on the 29th — past four hours and no night stop, so not drawn
-  // overnight): the Dash 8 takes the next walk-out.
-  const jazz = dayBack(EVENING.arrivals.find((r) => r.flightId === 'AC7754'));
-  const jazzIn = Object.assign({}, jazz, { status: 'Arrived at 6:36 PM', actualTime: '6:36 PM' });
-  const typesC = Object.assign({ AC7754: 'DH8D', AC7753: 'DH8D', AC2040: 'A319', AC2037: 'A319' }, types);
-  const polls = [[T(9, 29, 18, 50), { arrivals: [jazzIn].concat(EVENING.arrivals), departures: EVENING.departures }]];
-  const c1 = await momentAt(T(9, 30, 6, 0), null, { types: typesC, polls,
-    feed: { arrivals: MORNING.arrivals, departures: said(said(MORNING.departures, 'AC2037', 30, 'Boarding'), 'AC7753', 30, 'OnTime', '7:10 AM') } });
-  assert.equal(assertBoardsAgree(c1, '06:00').PD2381, '5');
-  const c2 = await momentAt(T(9, 30, 6, 40), null, { types: typesC, polls,
-    feed: { arrivals: MORNING.arrivals, departures: said(MORNING.departures, 'AC7753', 30, 'Boarding') } });
+  assert.deepEqual(b2.board('4').others(), ['AC644@5']);
+  assert.deepEqual(b2.board('3').others(), ['AC644@5', 'AC7992@BR1']);
+  // (c) The Airbus at AC2037's door since its boarding began keeps Bridge 1
+  // when a Jazz Dash 8 is put on the ground by AC7753's boarding: the Dash 8
+  // takes a walk-out.
+  const typesC = Object.assign({ AC7753: 'DH8D', AC2040: 'A319', AC2037: 'A319' }, types);
+  const c1 = await momentAt(T(9, 30, 6, 10), null, { types: typesC,
+    feed: { arrivals: MORNING.arrivals, departures: said(MORNING.departures, 'AC2037', 30, 'Boarding') } });
+  assert.equal(assertBoardsAgree(c1, '06:10').AC2040, 'BR1');
+  const c2 = await momentAt(T(9, 30, 6, 40), null, { types: typesC,
+    feed: { arrivals: MORNING.arrivals, departures: said(said(MORNING.departures, 'AC2037', 30, 'Gate Closed'), 'AC7753', 30, 'Boarding') } });
   const s4 = assertBoardsAgree(c2, '06:40');
-  assert.equal(s4.PD2381, '5', 'the Porter is not moved');
-  assert.equal(s4.AC7754, '6B', 'the Dash 8 boarding AC7753 takes the next walk-out');
+  assert.equal(s4.AC2040, 'BR1', 'the Airbus is not moved');
+  assert.equal(s4.AC7753, '5', 'the Dash 8 boarding AC7753 takes the walk-out');
 });
 
 test('the empty stand is one nobody stands on, and nothing moves when this board\'s aeroplane lands', async () => {
@@ -791,19 +848,19 @@ test('the empty stand is one nobody stands on, and nothing moves when this board
   const g4 = m1.board('4');
   assert.equal(g4.cf.flight, 'AC7995');
   assert.equal(g4.window._gateMapWhere.kind, 'none');
-  assert.deepEqual(g4.others(), ['AC644@BR1', 'PD2381@5']);
-  assert.equal(g4.ownStand(), '6B');
+  assert.deepEqual(g4.others(), ['AC644@BR1'], 'the Porter waiting for 11:55 is not drawn (v23930)');
+  assert.equal(g4.ownStand(), '5');
   // The plan says so too, and the map's key carries it (a redraw when it changes).
-  assert.equal(g4.plan().own, '6B');
-  assert.equal(g4._gateApronOwnRef(), '6B');
+  assert.equal(g4.plan().own, '5');
+  assert.equal(g4._gateApronOwnRef(), '5');
   // 11:14: AC7992 is down. Gate 4's own aeroplane is drawn on that same stand; AC644 has not moved.
   const m2 = await momentAt(T(9, 30, 11, 14), null, { types,
     feed: { arrivals: said(arr, 'AC7992', 30, 'Arrived at 11:12 AM', '11:12 AM'), departures: MORNING.departures } });
   const g4b = m2.board('4');
   assert.equal(g4b.window._gateMapWhere.kind, 'stand');
-  assert.equal(g4b.ownStand(), '6B');
-  assert.deepEqual(g4b.others(), ['AC644@BR1', 'PD2381@5']);
-  assert.equal(assertBoardsAgree(m2, '11:14').AC7992, '6B');
+  assert.equal(g4b.ownStand(), '5');
+  assert.deepEqual(g4b.others(), ['AC644@BR1']);
+  assert.equal(assertBoardsAgree(m2, '11:14').AC7992, '5');
   // Every place the board draws its own aeroplane or its empty stand goes through the one deal.
   const sites = CORE.match(/_gateOwnParkSpot\((_hK, \[_hC\[0\], _hC\[1\]\]|_stI, _stC|_bcStI, _bcStC)\)/g) || [];
   assert.equal(sites.length, 4, 'both maps, both paths');
@@ -887,10 +944,16 @@ test('17:17 on Sep 30: the Porter boarding for PD2382 is on the other maps, what
   assert.deepEqual(withPush(m.board('2'), { PD2382: { _pushStatus: 'departed', _actualDepTime: up } }).others(), ['AC1984@BR1']);
   // "active" (en route) is in the air, whatever the board says.
   assert.deepEqual(withPush(m.board('2'), { PD2382: { _pushStatus: 'active' } }).others(), ['AC1984@BR1']);
-  // 17:21: cyqm.ca says Departed. Gone from every map.
-  const m2 = await momentAt(T(9, 30, 17, 21), null, { types,
-    feed: { arrivals, departures: said(MORNING.departures, 'PD2382', 30, 'Departed', '5:20 PM') } });
+  // 17:19: cyqm.ca says Departed. Gone from every map.
+  const departed = said(MORNING.departures, 'PD2382', 30, 'Departed', '5:19 PM');
+  const m2 = await momentAt(T(9, 30, 17, 19), null, { types, feed: { arrivals, departures: departed } });
   assert.deepEqual(m2.board('2').others(), ['AC1984@BR1']);
+  // 17:21: AC1984 is 21 minutes past "Arrived at 5:00 PM" and AC1987 is not
+  // boarding yet. Nothing says it is still on the bridge (v23930).
+  const m3 = await momentAt(T(9, 30, 17, 21), null, { types, feed: { arrivals, departures: departed } });
+  assert.deepEqual(m3.board('2').others(), []);
+  const m4 = await momentAt(T(9, 30, 17, 45), null, { types, feed: { arrivals, departures: said(departed, 'AC1987', 30, 'Boarding') } });
+  assert.deepEqual(m4.board('2').others(), ['AC1984@BR1'], '17:45: AC1987 boarding, its aeroplane at the door');
   // An arrival's row is never "boarding": its push is read as it always was
   // (PD2381's "departed" from Montréal is the inbound in the air).
   const arr = { flight: 'PD2381', status: 'scheduled', _pushStatus: 'departed' };
@@ -1006,4 +1069,227 @@ test('the camera moves as little as holds them all, and keeps this board\'s own 
   assert.deepEqual(t, [510, 500]);
   const t2 = F([100, 500], [300, 300], [[80, 480, 120, 520], [980, 480, 1020, 520]], [80, 480, 120, 520], 8);
   assert.equal(t2[0], 80 + 142, 'our own at the left edge, not off it');
+});
+
+// ── v23930 — a landing is not a place ──────────────────────────────────────
+//
+// Moncton, 2026-10-02, 19:26-19:50. Every gate map, on all four boards, drew a
+// jet on Bridge 1 (lighter, as another gate's aeroplane), with nothing parked
+// there. It was AC7754 from Ottawa. Its cyqm.ca row said "Arrived at 6:53 PM",
+// with no type, no tail and no live position. No departure took it, so the
+// 4-hour rule kept it on the stand until 22:53. The night-stop rule would then
+// have kept the evening's PD2381 and AC2040 there all night. The fixtures are
+// the worker's real answers at 19:35, the feed's rows plus the rows the worker
+// remembered (marked "remembered"). An aeroplane is now drawn on the apron
+// only with evidence that it is there NOW. That is a fresh live ground fix, or
+// its departure Boarding, on Final call or Gate closed in the feed's words, or
+// the first 20 minutes after the feed's arrival time (deplaning).
+const OCT2 = {
+  arrivals: JSON.parse(fixture('yqm-worker-2026-10-02-1935-arrivals.json')),
+  departures: JSON.parse(fixture('yqm-worker-2026-10-02-1935-departures.json')),
+};
+// The feed's own words for one row of the worker's answer: flight, its date
+// as cyqm.ca prints it ('Oct 2'), the status, the time, and whether it is a
+// row the worker remembered.
+function saidOn(rows, flight, date, status, actual, remembered) {
+  return rows.map((r) => (r.flightId === flight && r.displayDate === date && !!r.remembered === !!remembered)
+    ? Object.assign({}, r, { status, actualTime: actual || r.actualTime }) : r);
+}
+// A board of gate `gate` at `now` on the worker's answer `ans`, as the page splits it.
+function boardOn(now, gate, ans, extra) {
+  const arrS = router.yqmSplitRemembered(ans.arrivals, 'Arrival');
+  const depS = router.yqmSplitRemembered(ans.departures, 'Departure');
+  return board(now, gate, arrS, depS, extra);
+}
+const OCT = (d, hh, mm) => Date.UTC(2026, 9, d, hh + 3, mm);
+
+test('19:43 on Oct 2: AC7754\'s "Arrived at 6:53 PM" draws no aeroplane on any map, on any board', () => {
+  const now = OCT(2, 19, 43);
+  for (const g of ['1', '2', '3', '4']) {
+    const b = boardOn(now, g, OCT2);
+    assert.deepEqual(b.others(), [], 'gate ' + g + ': nothing on the apron');
+    assert.notEqual(b.window._gateMapWhere.kind, 'stand', 'gate ' + g + ': its own view parks nothing');
+  }
+  // What each board's own view says instead: its empty stand.
+  const g1 = boardOn(now, '1', OCT2), g3 = boardOn(now, '3', OCT2), g4 = boardOn(now, '4', OCT2);
+  assert.equal(g1.cf.flight, 'WS813');
+  assert.equal(g1.window._gateMapWhere.kind, 'none');
+  assert.equal(g3.cf.flight, 'PD2370');
+  assert.equal(g3.inb.flight, 'PD2381', 'the gate-match still names the aeroplane (the panel\'s "from" line)');
+  assert.equal(g3.window._gateMapWhere.kind, 'none');
+  assert.equal(g4.cf.flight, 'AC1983');
+  assert.equal(g4.window._gateMapWhere.kind, 'none');
+  // The row that drew the jet is still in the feed, and still counts as a landing.
+  const r = g4._gateFeedRows('arr').find((x) => x.flight === 'AC7754' && x._sortTs === OCT(2, 18, 38));
+  assert.ok(r && g4._gateRawLanded(r), 'cyqm.ca\'s own "Arrived"');
+  assert.equal(g4._gateLandedAt(r, now), OCT(2, 18, 53));
+  assert.equal(g4._gateStandVerdict(r, OCT(2, 18, 53), null, [], [], now, 'America/Moncton'), 'deplaned');
+});
+
+test('as reported: AC7754 (Arrived 6:53 PM, gate 4) is on no map at 19:42 without a fresh ground fix; WS812 (Arrived 4:46 PM, gate 1) on none at 19:33', () => {
+  // Gate 4 at 19:42, the screen in the report.
+  const at42 = OCT(2, 19, 42);
+  const g4 = boardOn(at42, '4', OCT2);
+  assert.deepEqual(g4.others(), [], 'gate 4: nothing on the apron');
+  assert.equal(g4.window._gateMapWhere.kind, 'none', 'gate 4: its own view is the empty stand');
+  const ac = g4._gateFeedRows('arr').find((r) => r.flight === 'AC7754' && r._sortTs === OCT(2, 18, 38));
+  assert.ok(ac && g4._gateRawLanded(ac) && ac._remembered !== true && ac._feedKept !== true, 'the live row, the feed\'s own "Arrived"');
+  const bare = g4._gateAircraftWhere(ac, null, at42);
+  assert.equal(bare.kind, 'none', 'its landing 49 minutes ago is not a place');
+  assert.equal(bare.why, 'deplaned');
+  for (const g of ['1', '2', '3']) {
+    assert.ok(!boardOn(at42, g, OCT2).others().some((x) => /^AC7754@/.test(x)), 'gate ' + g + ' at 19:42');
+  }
+  // Positive: a fresh live position on the ground here (FR24's own time, 40 s
+  // old through the worker's seen_pos) is evidence, drawn where it is.
+  const fix = { lat: 46.1126, lng: -64.6792, onGround: true, alt: 0, spd: 0, at: at42, fl: 'AC7754', via: 'flight', cs: 'JZA7754' };
+  g4.window._adsbLast = { AC7754: Object.assign({}, fix, { age: 40 }) };
+  const live = g4._gateAircraftWhere(ac, null, at42);
+  assert.equal(live.kind, 'fix');
+  assert.equal(live.onGround, true);
+  assert.equal(live.lat, 46.1126, 'where it is, not on a guessed stand');
+  // The same position 4 minutes old is not.
+  g4.window._adsbLast = { AC7754: Object.assign({}, fix, { age: 240 }) };
+  assert.equal(g4._gateAircraftWhere(ac, null, at42).kind, 'none');
+  // Gate 1 at 19:33: WS812, down at 4:46 PM, on no map.
+  const at33 = OCT(2, 19, 33);
+  for (const g of ['1', '2', '3', '4']) {
+    const b = boardOn(at33, g, OCT2);
+    assert.ok(!b.others().some((x) => /^WS812@/.test(x)), 'gate ' + g + ' at 19:33: ' + b.others().join(' '));
+    assert.deepEqual(b.others(), [], 'gate ' + g + ' at 19:33: nothing on the apron');
+  }
+  const g1 = boardOn(at33, '1', OCT2);
+  assert.equal(g1.window._gateMapWhere.kind, 'none', 'gate 1: its own view is the empty stand');
+  const ws = g1._gateFeedRows('arr').find((r) => r.flight === 'WS812' && r._sortTs === OCT(2, 17, 20));
+  assert.ok(ws && g1._gateRawLanded(ws));
+  assert.equal(g1._gateLandedAt(ws, at33), OCT(2, 16, 46));
+  assert.equal(g1._gateAircraftWhere(ws, null, at33).kind, 'none');
+  // Positive: the departure boarding at the gate, in the feed's own word.
+  const boarding = { arrivals: OCT2.arrivals, departures: saidOn(OCT2.departures, 'WS813', 'Oct 2', 'Boarding') };
+  const b1 = boardOn(OCT(2, 17, 40), '1', boarding);
+  assert.equal(b1.window._gateMapWhere.kind, 'stand');
+  assert.equal(b1.window._gateMapWhere.why, 'boarding');
+  assert.ok(boardOn(OCT(2, 17, 40), '4', boarding).others().some((x) => /@BR2$/.test(x)), 'and lighter on gate 4\'s map, at door 1\'s bridge');
+});
+
+test('AC7754 is on the apron while it deplanes, and only then: 18:55 to 19:13, gone at 19:14', () => {
+  for (const [hh, mm, on] of [[18, 55, true], [19, 5, true], [19, 13, true], [19, 14, false], [21, 0, false], [22, 52, false]]) {
+    const now = OCT(2, hh, mm);
+    for (const g of ['1', '2', '3', '4']) {
+      const b = boardOn(now, g, OCT2);
+      const has = b.others().some((x) => /^AC7754@/.test(x));
+      assert.equal(has, on, hh + ':' + String(mm).padStart(2, '0') + ' gate ' + g + ': ' + b.others().join(' '));
+    }
+  }
+  // While it is there, on a stand of the door it arrived at, the same on every board.
+  const s = assertBoardsAgree({ board: (g) => boardOn(OCT(2, 19, 0), g, OCT2) }, '19:00');
+  assert.ok(YQM.door_stands['4'].includes(s.AC7754), 'at door 4: ' + s.AC7754);
+});
+
+test('tonight\'s last arrivals: on the apron for their deplaning only, never all night, back when their departure boards', () => {
+  // PD2381 lands at 21:35, AC2040 at 21:44.
+  let arrivals = saidOn(OCT2.arrivals, 'PD2381', 'Oct 2', 'Arrived at 9:35 PM', '9:35 PM');
+  arrivals = saidOn(arrivals, 'AC2040', 'Oct 2', 'Arrived at 9:44 PM', '9:44 PM');
+  const evening = { arrivals, departures: OCT2.departures };
+  const at = (hh, mm, g, ans) => boardOn(OCT(2, hh, mm), g, ans || evening);
+  assert.deepEqual(at(21, 50, '1').others(), ['AC2040@BR1', 'PD2381@5'], '21:50: both deplaning');
+  assert.equal(at(21, 50, '3').window._gateMapWhere.kind, 'stand', 'gate 3 draws its own Porter while it deplanes');
+  assert.deepEqual(at(21, 58, '1').others(), ['AC2040@BR1'], '21:58: the Porter\'s 20 minutes are up');
+  assert.equal(at(21, 58, '3').window._gateMapWhere.kind, 'none');
+  assert.deepEqual(at(22, 10, '1').others(), [], '22:10: nothing says either is still there');
+  // 04:00 on Oct 3, with both rows only in the worker's memory: nothing.
+  const kept = (rows, flight, status, actual) => rows.map((r) => (r.flightId === flight && r.displayDate === 'Oct 2' && !r.remembered)
+    ? Object.assign({}, r, { status, actualTime: actual, remembered: true }) : r);
+  const night = { arrivals: kept(kept(OCT2.arrivals, 'PD2381', 'Arrived at 9:35 PM', '9:35 PM'), 'AC2040', 'Arrived at 9:44 PM', '9:44 PM'),
+                  departures: OCT2.departures };
+  for (const g of ['1', '2', '3', '4']) {
+    const b = boardOn(OCT(3, 4, 0), g, night);
+    assert.deepEqual(b.others(), [], '04:00 gate ' + g);
+    assert.notEqual(b.window._gateMapWhere.kind, 'stand', '04:00 gate ' + g);
+  }
+  // 11:25 on Oct 3: PD2370 boards. The Porter is at the door, on gate 3's map and the others.
+  const boarding = { arrivals: night.arrivals, departures: saidOn(OCT2.departures, 'PD2370', 'Oct 3', 'Boarding') };
+  const g3 = boardOn(OCT(3, 11, 25), '3', boarding);
+  assert.equal(g3.cf.flight, 'PD2370');
+  assert.equal(g3.window._gateMapWhere.kind, 'stand');
+  assert.equal(g3.window._gateMapWhere.why, 'boarding');
+  assert.ok(boardOn(OCT(3, 11, 25), '4', boarding).others().some((x) => /@5$/.test(x)), 'the Porter on its walk-out, on gate 4\'s map');
+});
+
+test('a "Boarding" this screen saved before the feed dropped the row is not an aeroplane at the door now', () => {
+  // A screen that saw WS813 boarding at 17:40 keeps that row (fids_gate_seen_v1).
+  // At 20:30 the feed lists the 5:55 PM departure no more, and the worker kept
+  // no row for it. Its saved "Boarding" draws nothing.
+  const storage = store();
+  const before = { arrivals: OCT2.arrivals, departures: saidOn(OCT2.departures, 'WS813', 'Oct 2', 'Boarding') };
+  const b1 = boardOn(OCT(2, 17, 40), '1', before, { storage });
+  assert.equal(b1.window._gateMapWhere.kind, 'stand', 'boarding, in the feed\'s words');
+  const dropped = { arrivals: OCT2.arrivals, departures: OCT2.departures.filter((r) => !(r.flightId === 'WS813' && r.displayDate === 'Oct 2')) };
+  const b2 = boardOn(OCT(2, 20, 30), '1', dropped, { storage });
+  const saved = b2._gateDepsSeen(b2._gateFeedRows('dep'), 'YQM', OCT(2, 20, 30)).find((r) => r.flight === 'WS813' && r._sortTs === OCT(2, 18, 15));
+  assert.ok(saved && saved._remembered === true && b2._gateRawStatus(saved) === 'boarding', 'the saved row still says Boarding');
+  assert.equal(b2._gateAircraftWhereIn(null, saved, OCT(2, 20, 30), 'YQM', [saved], [], 'America/Moncton').kind, 'none');
+  assert.deepEqual(b2.others(), []);
+});
+
+test('the same screen, no reload: a "Boarding" row the feed drops is a memory at once, and draws nothing', () => {
+  // The screen's seen-memory held the dropped row as it was, without the
+  // "remembered" mark a reload gives it, so its "Boarding" stood for 30 hours.
+  const before = { arrivals: OCT2.arrivals, departures: saidOn(OCT2.departures, 'WS813', 'Oct 2', 'Boarding') };
+  const E = boardOn(OCT(2, 17, 40), '1', before);
+  assert.equal(E.window._gateMapWhere.why, 'boarding');
+  assert.equal(E.window._gateMapWhere.kind, 'stand', 'gate 1 draws its own aeroplane at the door');
+  // The feed drops the row (a glitch, an empty answer) while the screen runs on.
+  const dropped = OCT2.departures.filter((r) => !(r.flightId === 'WS813' && r.displayDate === 'Oct 2'));
+  E.data.dep = E.mapADB({ departures: router.yqmSplitRemembered(dropped, 'Departure').list }, 'dep');
+  const t = OCT(2, 20, 30);
+  const deps = E._gateDepsSeen(E._gateFeedRows('dep'), 'YQM', t);
+  const kept = deps.find((r) => r.flight === 'WS813' && r._sortTs === OCT(2, 18, 15));
+  assert.ok(kept && E._gateRawStatus(kept) === 'boarding', 'the memory still says Boarding');
+  assert.equal(kept._remembered, true, 'and is marked a memory the moment the feed drops it');
+  assert.equal(E._gateAircraftWhereIn(null, kept, t, 'YQM', deps, [], 'America/Moncton').kind, 'none');
+  E.window._gateCurrentFlight = null; E.window._gateInbound = null; E.window._gateMapWhere = null;
+  assert.deepEqual((E._gateApronPlan('YQM', t) || { items: [] }).items.map((it) => it.flight), [], 'nothing on the apron');
+});
+
+test('a fresh live ground fix is drawn where it is; once it is 3 minutes old only the deplaning window is left', () => {
+  // AC2040 on the ground at Moncton by Flightradar24, before cyqm.ca says Arrived.
+  const now = OCT(2, 21, 46);
+  const b = boardOn(now, '4', OCT2);
+  const inb = b._gateFeedRows('arr').find((r) => r.flight === 'AC2040' && r._sortTs === OCT(2, 21, 38));
+  assert.ok(inb);
+  const fix = { lat: 46.1155, lng: -64.6876, onGround: true, alt: 0, spd: 0, at: now - 2.5 * 60000, fl: 'AC2040', via: 'flight', cs: 'ACA2040' };
+  b.window._adsbLast = { AC2040: Object.assign({}, fix, { at: now, age: 150 }) };   // the worker's seen_pos: 150 s
+  const live = b._gateAircraftWhere(inb, null, now);
+  assert.equal(live.kind, 'fix');
+  assert.equal(live.onGround, true);
+  // 3½ minutes old: no longer a position, but it was a landing at our field.
+  const later = now + 60000;
+  b.window._adsbLast = { AC2040: Object.assign({}, fix, { at: now, age: 150 }) };
+  const res = b._gateAircraftWhere(inb, null, later);
+  assert.notEqual(res.kind, 'fix');
+  assert.equal(res.kind, 'stand', 'deplaning, timed from the last fix');
+  assert.equal(b._gateAircraftWhere(inb, null, now - 2.5 * 60000 + 21 * 60000).kind, 'none', '20 minutes after the fix: nothing');
+});
+
+test('the map\'s door word is the gate sign\'s: boarding began at this gate, then "Delayed" — the aeroplane stays until it leaves', () => {
+  // v23925's rule for the sign: once the airport has said Boarding at this
+  // gate, a later Delayed keeps the sign up. The maps say the same.
+  const storage = store();
+  const at1740 = { arrivals: OCT2.arrivals, departures: saidOn(OCT2.departures, 'WS813', 'Oct 2', 'Boarding') };
+  const b1 = boardOn(OCT(2, 17, 40), '1', at1740, { storage });
+  assert.equal(b1.window._gateMapWhere.why, 'boarding');
+  const at1750 = { arrivals: OCT2.arrivals, departures: saidOn(OCT2.departures, 'WS813', 'Oct 2', 'Delayed until 6:30 PM', '6:30 PM') };
+  const b2 = boardOn(OCT(2, 17, 50), '1', at1750, { storage });
+  assert.equal(b2._gateRawStatus(b2.cf), 'delayed', 'the feed\'s word now');
+  assert.equal(b2._gateDoorBasis(b2.cf, OCT(2, 17, 50)).status, 'boarding', 'the sign stays up');
+  assert.equal(b2.window._gateMapWhere.kind, 'stand');
+  assert.equal(b2.window._gateMapWhere.why, 'boarding');
+  assert.ok(boardOn(OCT(2, 17, 50), '3', at1750, { storage }).others().some((x) => /@BR2$/.test(x)), 'gate 3 sees it at door 1\'s bridge');
+  // A screen that never saw the Boarding has only "Delayed": nothing says where the aeroplane is.
+  assert.equal(boardOn(OCT(2, 17, 50), '1', at1750, { storage: store() }).window._gateMapWhere.kind, 'none');
+  // Departed: gone.
+  const at1800 = { arrivals: OCT2.arrivals, departures: saidOn(OCT2.departures, 'WS813', 'Oct 2', 'Departed at 5:58 PM', '5:58 PM') };
+  const b3 = boardOn(OCT(2, 18, 0), '3', at1800, { storage });
+  assert.ok(!b3.others().some((x) => /@BR2$/.test(x)), b3.others().join(' '));
 });
