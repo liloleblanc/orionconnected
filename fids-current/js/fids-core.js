@@ -7900,6 +7900,9 @@ const IATA_AIRCRAFT = {
   'BCS':'Airbus A220','CS3':'Airbus A220-300','CS1':'Airbus A220-100',
   '73W':'Boeing 737-700','73K':'Boeing 737-800','73E':'Boeing 737-500','73C':'Boeing 737-300',
   'BEH':'Beechcraft 1900','BEK':'Beechcraft King Air',
+  // v23931 — YQB's feed sends the IATA type code alone for Pascan ('SF3'),
+  // which the caption printed raw.
+  'SF3':'Saab 340',
   '338':'Airbus A330-800neo','32Q':'Airbus A321neo','31N':'Airbus A319neo',
   '342':'Airbus A340-200','343':'Airbus A340-300','345':'Airbus A340-500','346':'Airbus A340-600',
   '146':'BAe 146','730':'Boeing 737','73S':'Boeing 737','E45':'Embraer EMB 145',
@@ -10898,8 +10901,20 @@ function _buildV2MapCol(ctx, vars) {
 
       // Origin display: "Calgary (YYC)"
       var _origCity = '';
+      // v23931 — A FEED THAT GAVE NO CODE. YQB's Pascan rows name the origin
+      // ('Iles de la Madeleine') with a null code, and the origin reaches here
+      // with the code the board resolved from the name already attached
+      // ('Iles de la Madeleine | YGR', formatCityIata). tc() below then cased
+      // the code along with the city ('Ygr'), and it never reached the code
+      // chip. Take the code off first and keep the feed's own city words.
+      var _ocFeedCity = '';
+      if (!_origIata) {
+        var _ocTail = /^(.*?)\s*\|\s*([A-Za-z]{3})\s*$/.exec(String(_ib.origin || ''));
+        if (_ocTail && _ocTail[1]) { _origIata = _ocTail[2].toUpperCase(); _ocFeedCity = _ocTail[1]; }
+      }
       try {
-        if (_origIata && typeof CITY !== 'undefined' && CITY[_origIata]) _origCity = CITY[_origIata];
+        if (_ocFeedCity) _origCity = _ocFeedCity;
+        else if (_origIata && typeof CITY !== 'undefined' && CITY[_origIata]) _origCity = CITY[_origIata];
         else if (_origIata && typeof AP !== 'undefined' && AP[_origIata] && AP[_origIata].city) _origCity = AP[_origIata].city;
         else _origCity = _ib.origin || '';
         if (typeof tc === 'function') _origCity = tc(_origCity);
