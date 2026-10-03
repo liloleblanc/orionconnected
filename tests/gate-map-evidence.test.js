@@ -19,6 +19,13 @@
 // this leg's, the feed's own words (never a status adbStatus made up from the
 // clock), or an actual time. Otherwise: no aeroplane, and the map is our gate.
 //
+// v23930: an aeroplane is drawn on the stand only with evidence that it is
+// there NOW. That means our departure boarding in the feed's words, a fresh
+// live fix, or the first 20 minutes after the feed's arrival time
+// (deplaning). Gate 3's PD2381 is no longer drawn through the night. A
+// landing is not a place (tests/gate-map-apron.test.js has the evening of
+// 2026-10-02 that showed it).
+//
 // These are the night's real rows, run through the real functions lifted out
 // of fids-core.js.
 
@@ -63,8 +70,8 @@ const FNS = [
   '_gateLegGone', '_gateFamily', '_gateRowKey', '_gateRawStatus', '_gateRawLanded', '_gateRawAirborne', '_gatePushLeft',
   '_gateOutboundAtGate', '_gateTodayReg', '_gateIsProp', '_gateMinTurnMs', '_gateDepSchedTs',
   '_gateAcFamily', '_gateHereTz', '_gateLocalHour', '_gateNightStop', '_gateCouldTurn',
-  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnConsumed', '_gateOvernightOk', '_gateLandedAt',
-  '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
+  '_gateDepOwnInbound', '_gateArrivalClaimed', '_gateTurnConsumed', '_gateLandedAt',
+  '_gateSeenOnly', '_gateStandVerdict', '_gateLegUp', '_gateAirEstProg', '_gateFixCheck', '_gateFixFor', '_gateDepsSeen',
   '_gateAircraftWhere', '_gateAircraftWhereIn', '_gateFeedRows', '_gateInboundForDeparture', '_gateMapCity', '_gateMapNote', 'fidsInboundAirborne',
   '_gcNm', '_fixCanReachByEta', '_estRouteFrac', '_gateRefNorm', 'adbTs', '_adbNearestDayTs', 'adbStatus',
   'adbStatusInferred', '_fidsClockForLang', '_gateMatchIsNew', '_fixAtLegOrigin', '_fixPlausibleForLeg',
@@ -86,6 +93,7 @@ function engine(ctx) {
   const window = Object.assign({ _gateIata: ctx.ap || 'YQM' }, ctx.window || {});
   const src = [
     lineSource('var _GATE_DOWN_SEEN = {};'),
+    lineSource('var _GATE_DEPLANE_MS = '),
     lineSource('var _GATE_DEP_SEEN = '),
     lineSource('var _GATE_SEEN_KEY = '),
     blockSource('var _GATE_SEEN_FIELDS = [', '];'),
@@ -184,30 +192,41 @@ test('gate 2: PB923 through Moncton — the same-number arrival is the inbound, 
   assert.equal(E._gateAircraftWhere(landed, cf, T(29, 11, 5)).kind, 'stand');
 });
 
-test('gate 3: PD2381, raw "Arrived at 9:47 PM", is on the stand for PD2370 — at 22:26 and through the night', () => {
+test('gate 3: PD2381, raw "Arrived at 9:47 PM", is PD2370\'s aeroplane — on the stand while it deplanes, not through the night', () => {
   const data = DATA();
   const E = engine({ data });
   const cf = find(data.dep, 'PD2370');
   const inb = E._gateInboundForDeparture(cf, '3', data.arr, data.dep);
   assert.equal(inb && inb.flight, 'PD2381');
-  const now = E._gateAircraftWhere(inb, cf, T(28, 22, 26));
-  assert.equal(now.kind, 'stand');
+  const now = E._gateAircraftWhere(inb, cf, T(28, 22, 0));
+  assert.equal(now.kind, 'stand', '13 minutes after its own "Arrived at 9:47 PM"');
   assert.equal(now.org, 'YQM');
   assert.equal(now.dst, 'YOW', 'parked at our stand, the route onward to Ottawa');
-  // 6 h 13 min on the ground by 04:00: a night stop — landed after 19:00 and
-  // PD2370 is Porter's first departure from Moncton after it.
-  assert.equal(E._gateAircraftWhere(inb, cf, T(29, 4, 0)).kind, 'stand');
+  assert.equal(E._gateAircraftWhere(inb, cf, T(28, 22, 7)).kind, 'stand', '20 minutes: the last of the deplaning window');
+  // v23930 — after that a landing is not a place: the aeroplane may stay on
+  // the stand, go to remote parking or leave on another number, and nothing
+  // says which. The map is our empty stand, the route dashed toward Ottawa.
+  const after = E._gateAircraftWhere(inb, cf, T(28, 22, 8));
+  assert.equal(after.kind, 'none');
+  assert.equal(after.why, 'deplaned');
+  assert.equal(after.leg, 'out');
+  assert.equal(E._gateMapNote(after), 'To Ottawa · 11:55am | À Ottawa · 11:55');
+  assert.equal(E._gateAircraftWhere(inb, cf, T(29, 4, 0)).kind, 'none', '04:00: not a night stop on the map');
+  // When the airport says PD2370 is boarding, an aeroplane is at the door.
+  const boarding = Object.assign({}, cf, { status: 'boarding', _stInferred: false });
+  assert.equal(E._gateAircraftWhere(inb, boarding, T(29, 11, 25)).kind, 'stand');
+  assert.equal(E._gateAircraftWhere(inb, boarding, T(29, 11, 25)).why, 'boarding');
 });
 
-test('gate 3 after midnight: the feed has dropped PD2381, the screen remembers it came down — even across a reload', () => {
-  // cyqm.ca keeps an arrived row for about an hour. At 00:40 the 21:47 landing
-  // was no longer listed, and the gate showed an empty stand all night while the
-  // Porter sat on it for the 11:55.
+test('gate 3 after midnight: the feed has dropped PD2381, the screen remembers it came down — a landing time, not a place', () => {
+  // cyqm.ca keeps an arrived row for about an hour. The screen keeps it for 30
+  // hours (fids_gate_seen_v1), across a reload, so the gate-match still names
+  // PD2370's aeroplane. v23930: the memory parks nothing.
   const screen = store();
   const evening = DATA();
   const E1 = engine({ data: evening, storage: screen });
-  E1._gateArrsSeen(evening.arr, 'YQM', T(28, 22, 26));          // the screen sees it land
-  E1._gateDepsSeen(evening.dep, 'YQM', T(28, 22, 26));
+  E1._gateArrsSeen(evening.arr, 'YQM', T(28, 22, 0));           // the screen sees it land
+  E1._gateDepsSeen(evening.dep, 'YQM', T(28, 22, 0));
   const night = DATA();
   night.arr = night.arr.filter((r) => r.flight !== 'PD2381' && !(r.flight === 'AC2040' && r.status === 'arrived'));
   const E2 = engine({ data: night, storage: screen });           // a reload: a new page, the same storage
@@ -216,7 +235,31 @@ test('gate 3 after midnight: the feed has dropped PD2381, the screen remembers i
   const inb = E2._gateInboundForDeparture(cf, '3', seen, E2._gateDepsSeen(night.dep, 'YQM', T(29, 0, 40)));
   assert.equal(inb && inb.flight, 'PD2381', 'the remembered landing is still the inbound');
   assert.equal(inb._remembered, true);
-  assert.equal(E2._gateAircraftWhere(inb, cf, T(29, 0, 40)).kind, 'stand');
+  const res = E2._gateAircraftWhere(inb, cf, T(29, 0, 40));
+  assert.equal(res.kind, 'none', 'its landing at 21:47 says nothing about where it is at 00:40');
+  assert.equal(res.why, 'remembered');
+  // Even within its deplaning minutes a memory alone draws nothing: the live
+  // row would (above), but once the feed has dropped it nothing the feed says
+  // now puts the aeroplane on the ground.
+  const E4 = engine({ data: night, storage: screen });
+  const seen4 = E4._gateArrsSeen(night.arr, 'YQM', T(28, 22, 5));
+  const inb4 = seen4.find((r) => r.flight === 'PD2381');
+  assert.equal(inb4 && inb4._remembered, true);
+  const res4 = E4._gateAircraftWhere(inb4, cf, T(28, 22, 5));
+  assert.equal(res4.kind, 'none');
+  assert.equal(res4.why, 'remembered');
+  // The same screen without a reload: the moment the feed drops the row it is
+  // a memory too, exactly as after the reload.
+  const E5 = engine({ data: night, storage: store() });
+  E5._gateArrsSeen(evening.arr, 'YQM', T(28, 22, 0));           // it saw the row at 22:00
+  const seen5 = E5._gateArrsSeen(night.arr, 'YQM', T(28, 22, 5));
+  const inb5 = seen5.find((r) => r.flight === 'PD2381');
+  assert.equal(inb5 && inb5._remembered, true, 'dropped by the feed: a memory');
+  assert.equal(E5._gateAircraftWhere(inb5, cf, T(28, 22, 5)).kind, 'none');
+  // And back in the feed it is a live row again.
+  const seen6 = E5._gateArrsSeen(evening.arr, 'YQM', T(28, 22, 6));
+  const inb6 = seen6.find((r) => r.flight === 'PD2381');
+  assert.notEqual(inb6._remembered, true);
   // A screen that never saw it land has nothing to go on, and draws nothing.
   const E3 = engine({ data: night, storage: store() });
   assert.equal(E3._gateInboundForDeparture(cf, '3', E3._gateArrsSeen(night.arr, 'YQM', T(29, 0, 40)), night.dep), null);
@@ -276,10 +319,11 @@ test('gate 3 on Sep 28\'s schedule: the night-stop Porter flies PD2294 at 06:15 
   assert.equal(E._gateInboundForDeparture(cf, '3', data.arr, data.dep), null);
   // And an inbound the gate kept from earlier is re-judged every tick.
   const kept = find(data.arr, 'PD2381');
-  assert.equal(E._gateAircraftWhere(kept, cf, T(28, 22, 26)).kind, 'stand', 'at 22:26 it is there');
+  assert.equal(E._gateAircraftWhere(kept, cf, T(28, 21, 55)).kind, 'stand', 'at 21:55 it is deplaning');
+  assert.equal(E._gateAircraftWhere(kept, cf, T(28, 22, 26)).why, 'deplaned', 'at 22:26 nothing says it is still there');
   const night = E._gateAircraftWhere(kept, cf, T(29, 4, 0));
-  assert.equal(night.kind, 'none', 'past a turn, and not PD2370\'s night stop: the 06:15 comes first');
-  assert.equal(night.why, 'ground-too-long');
+  assert.equal(night.kind, 'none');
+  assert.equal(night.why, 'deplaned');
   // After 06:15 the feed says it left, and the departure's row then leaves the
   // feed three hours later — the board remembers it did.
   const gone = find(data.dep, 'PD2294');
@@ -673,14 +717,14 @@ test('a hub with no registrations: every same-gate turn survives the pairing (Ca
   assert.equal(E._gateInboundForDeparture(ws3733, ws3733.gate, arrs, deps).flight, 'WS3394');
 });
 
-test('a hub with no registrations: a landed same-gate inbound is on its stand 20 minutes before the departure', () => {
+test('a hub with no registrations: a landed same-gate inbound is on its stand while it deplanes, and only on evidence after', () => {
   for (const keep of [{ type: true }, { type: false }]) {
     // One board through the morning: it remembers the departures it has seen
     // (_gateDepsSeen) the way a screen left running does.
     const data = { arr: [], dep: [] };
     const E = engine({ ap: 'YYC', data });
-    let n = 0;
-    const off = [];
+    let n = 0, later = 0;
+    const off = [], parked = [];
     for (const d of YYC.departures) {
       const [flight, gate, sched, , , , reg] = d;
       const depTs = Date.parse(sched);
@@ -688,17 +732,33 @@ test('a hub with no registrations: a landed same-gate inbound is on its stand 20
       const t = YYC.arrivals.filter((a) => a[6] === reg && a[1] === gate && Date.parse(a[2]) < depTs)
         .sort((a, b) => Date.parse(b[2]) - Date.parse(a[2]))[0];
       if (!t) continue;
-      const now = depTs - 20 * MIN;
-      if (Date.parse(t[3] || t[2]) > now) continue;               // not down yet
-      n++;
-      const arrs = hubList(YYC.arrivals, 'arr', now, keep), deps = hubList(YYC.departures, 'dep', now, keep);
-      data.arr = arrs; data.dep = deps;
-      const cf = deps.find((r) => r.flight === flight && r._sortTs === depTs);
-      const inb = arrs.find((r) => r.flight === t[0] && r._sortTs === Date.parse(t[2])) || hubRow(t, 'arr', now, keep);
-      const res = E._gateAircraftWhere(inb, cf, now);
-      if (res.kind !== 'stand') off.push(flight + ' ' + MDT(depTs) + ' ' + gate + ' <- ' + inb.flight + ': ' + res.kind + '/' + res.why);
+      const land = Date.parse(t[3] || t[2]);
+      const ask = (now) => {
+        const arrs = hubList(YYC.arrivals, 'arr', now, keep), deps = hubList(YYC.departures, 'dep', now, keep);
+        data.arr = arrs; data.dep = deps;
+        const cf = deps.find((r) => r.flight === flight && r._sortTs === depTs);
+        const inb = arrs.find((r) => r.flight === t[0] && r._sortTs === Date.parse(t[2])) || hubRow(t, 'arr', now, keep);
+        return { res: E._gateAircraftWhere(inb, cf, now), inb };
+      };
+      // 15 minutes after its landing, before its departure: deplaning at its gate.
+      const now = land + 15 * MIN;
+      if (now < depTs - 5 * MIN) {
+        n++;
+        const { res, inb } = ask(now);
+        if (res.kind !== 'stand') off.push(flight + ' ' + MDT(depTs) + ' ' + gate + ' <- ' + inb.flight + ': ' + res.kind + '/' + res.why);
+      }
+      // 20 minutes before its departure, when that is past the deplaning
+      // window: drawn only if the feed says it is boarding (v23930).
+      const pre = depTs - 20 * MIN;
+      if (pre > land + 20 * MIN) {
+        later++;
+        const { res, inb } = ask(pre);
+        if (res.kind === 'stand' && res.why !== 'boarding') parked.push(flight + ' <- ' + inb.flight + ': ' + res.why);
+      }
     }
     assert.ok(n >= 30, 'the fixture holds the morning\'s landed turns (' + n + ')');
     assert.deepEqual(off, [], (keep.type ? 'types kept' : 'no types') + ': ' + off.length + ' of ' + n + ' off their stands');
+    assert.ok(later >= 20, 'and turns long enough to outlast the window (' + later + ')');
+    assert.deepEqual(parked, [], 'parked on a landing alone');
   }
 });

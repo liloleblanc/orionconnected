@@ -19279,8 +19279,8 @@ const gView = document.getElementById('gateView');
         // else: keep the last known (non-reg-lookup) inbound, don't clear it.
         // v23915 — kept for the panel's sake only: the maps do not take its
         // word for where the aeroplane is. _gateAircraftWhere re-checks it on
-        // every tick (turn flown since? on the ground longer than a turn or a
-        // night stop?), so a kept inbound no longer stays "parked" until the
+        // every tick (turn flown since? v23930: past its deplaning minutes?),
+        // so a kept inbound no longer stays "parked" until the
         // departure changes. On Sep 28's schedule gate 3 kept PD2381 parked
         // straight through 06:15–11:14, while that aeroplane flew PD2294 to
         // Ottawa and came back as PD2293.
@@ -26204,7 +26204,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23929';
+var FIDS_BUILD_TAG = 'v23930';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -36561,9 +36561,11 @@ function _gateLegGone(row) {
 //                  drawn at another airport;
 //   air-est        no position, but the feed's own words say it took off: drawn
 //                  along the route, from the actual wheels-up when known;
-//   stand          at OUR stand — landed here on evidence, its turn not yet
-//                  flown, and not on the ground longer than a turn or a night
-//                  stop; or our own departure boarding in the feed's words;
+//   stand          at OUR stand — our own departure boarding, on final call
+//                  or closed in the feed's words; or (v23930) landed here on
+//                  evidence no more than _GATE_DEPLANE_MS ago, its turn not
+//                  flown. A landing longer ago than that is a landing, not a
+//                  place (_gateStandVerdict);
 //   none           nothing says where it is: no aeroplane, and the map shows
 //                  OUR gate, empty, the route dashed toward the other city and
 //                  a label naming it (_gateDrawEmptyStand).
@@ -36697,11 +36699,12 @@ function _gateNightStop(ts, tz) {
   return h >= 19 || (h >= 0 && h < 5);
 }
 // v23915 — COULD DEPARTURE `d` BE ARRIVAL `a`'S AEROPLANE AT ALL? Asked before
-// another departure is allowed to take (_gateArrivalClaimed), to have flown
-// (_gateTurnConsumed) or to come before (_gateOvernightOk) an arrival that
-// would otherwise be this gate's. Without it, at a busy airport whose feed
-// names no registrations (every authority feed but Calgary's) and keeps
-// arrivals for only three hours, almost any same-airline departure anywhere on
+// another departure is allowed to take (_gateArrivalClaimed) or to have flown
+// (_gateTurnConsumed) an arrival that would otherwise be this gate's (v23930:
+// the night-stop rule that also asked it is gone, see _gateStandVerdict).
+// Without it, at a busy airport whose feed names no registrations (every
+// authority feed but Calgary's) and keeps arrivals for only three hours,
+// almost any same-airline departure anywhere on
 // the field "took" the gate's aeroplane: measured on a real Calgary morning
 // with the tails removed, 27 of 37 same-gate turns were thrown away that way —
 // a WestJet Dash 8 turning at A01C taken by a 737 MAX leaving E74, a 737 at
@@ -36837,28 +36840,6 @@ function _gateTurnConsumed(inb, landTs, cf, deps, arrs, now) {
   }
   return null;
 }
-// A night stop: down in the evening (19:00 on, or after midnight before 05:00 —
-// AC1986 is due at 00:03) and our departure is that family's first from our
-// field after it, the next morning. The Porter that lands on gate 3 at 21:47
-// and leaves on PD2370 at 11:55 is on the stand all night; one whose family
-// has a 06:15 departure in between flew that one first.
-function _gateOvernightOk(inb, landTs, cf, deps, arrs, tz) {
-  if (!cf || !cf._sortTs || cf._sortTs <= landTs || cf._sortTs - landTs > 18 * 3600000) return false;
-  if (!_gateNightStop(landTs, tz)) return false;
-  var fam = _gateFamily(inb.airline), iReg = _gateTodayReg(inb), cReg = _gateTodayReg(cf);
-  var paired = !!(iReg && cReg && iReg === cReg);
-  for (var i = 0; i < (deps || []).length; i++) {
-    var d = deps[i];
-    if (!d || d === cf || (d.flight === cf.flight && d._sortTs === cf._sortTs)) continue;
-    if (_gateFamily(d.airline) !== fam || _gateLegGone(d) || !d._sortTs) continue;
-    if (!(d._sortTs > landTs && d._sortTs < cf._sortTs)) continue;
-    var dReg = _gateTodayReg(d);
-    if (iReg && dReg) { if (iReg === dReg) return false; continue; }
-    if (paired || !_gateCouldTurn(d, inb, arrs, landTs)) continue;
-    if (!_gateDepOwnInbound(d, inb, arrs)) return false;
-  }
-  return true;
-}
 // When the inbound came down HERE, on evidence: the feed's actual arrival
 // time, its own "Arrived"/"Landed", or a live ground fix at our field seen
 // earlier (_GATE_DOWN_SEEN). 0 when nothing says it has landed.
@@ -36872,17 +36853,59 @@ function _gateLandedAt(inb, now) {
   if (!t && _GATE_DOWN_SEEN[_gateRowKey(inb)]) t = _GATE_DOWN_SEEN[_gateRowKey(inb)];
   return t || 0;
 }
-// '' when a landed inbound is still at our stand; otherwise why it is not.
-// Ground time is capped at 4 h unless it is a night stop; the check re-runs on
-// every tick, including for the inbound the gate keeps after its row has left
-// the feed ("keep the last known", in the gate render).
+// v23930 — A LANDING IS NOT A PLACE. '' while a landed inbound is still
+// certainly at our stand; otherwise why nothing says it is.
+//
+// Moncton, 2026-10-02 at 19:26-19:50: every gate map drew a jet on Bridge 1
+// that was not there. It was AC7754 from Ottawa, whose row said "Arrived at
+// 6:53 PM": no type, no tail, no live position. No departure took it, so the
+// 4-hour rule kept it on the stand until 22:53, and on every board at once.
+// After AC2040 and PD2381 landed, the night-stop rule would have kept them
+// all night. An "Arrived" row, live or remembered (the worker's 30 h memory,
+// this screen's fids_gate_seen_v1), proves a landing, not that the aeroplane
+// is still there. Aeroplanes leave on other flight numbers, and they are
+// towed to remote or overnight parking. Decision of 2026-10-02: an aeroplane
+// is drawn on the apron only with evidence that it is there NOW:
+//   • a fresh live position on the ground (_gateFixFor / _gateFixCheck: at
+//     most 3 minutes old, by Flightradar24's own timestamp as the worker
+//     reports it in seen_pos), drawn where it is;
+//   • our departure Boarding, on Final call or Gate closed in the feed's own
+//     words, as the gate's sign shows it (a "Delayed" after boarding began
+//     keeps it, _gateDoorBasis; _gateAircraftWhereIn): an aeroplane is at
+//     the door;
+//   • or the first _GATE_DEPLANE_MS after the feed's arrival time, while its
+//     passengers are still getting off at the door they arrived at.
+// After that the stand is empty. A 4-hour turn, a night stop and the
+// schedule's pairing of an arrival with a later departure are not evidence
+// of presence. The pairing still names an aeroplane (the panel's "from"
+// line, the type), but it never puts one on the ground. The memories still
+// count for what they are evidence of: a landing time, a departure that has
+// gone, and the airport's boarding word (v23925).
+//
+// Why 20 minutes: the window covers a taxi-in at Moncton (2-5 min from
+// either runway) plus deplaning for every type that serves it. A Dash 8 or a
+// CRJ takes about 10 min, and an A319-A321 or a 737 on one door about 15-20.
+// The clock starts at the feed's own arrival time, never at when a screen
+// first saw the row, so a late "Arrived" shortens the window and nothing
+// lengthens it. A turn that boards later draws its aeroplane again through
+// the boarding rule. The gap between the two is an honest "not known".
+//
+// A remembered row never opens the window: one the feed no longer lists,
+// kept by the worker (_feedKept) or by this screen (_remembered, set by
+// _gateArrsSeen the moment the feed drops it, as after a reload). Moncton's
+// feed lists an arrived row for about an hour, so within the 20 minutes the
+// live row is always there; a memory alone puts no aeroplane on the ground.
+var _GATE_DEPLANE_MS = 20 * 60000;
+function _gateSeenOnly(row) {
+  return !!(row && (row._remembered === true || row._feedKept === true));
+}
 function _gateStandVerdict(inb, landTs, cf, deps, arrs, now, tz) {
   var ir = _gateTodayReg(inb), or = _gateTodayReg(cf);
   if (ir && or && ir !== or) return 'another-airframe';
   if (_gateTurnConsumed(inb, landTs, cf, deps, arrs, now)) return 'turn-flown';
-  if (now - landTs <= 4 * 3600000) return '';
-  if (_gateOvernightOk(inb, landTs, cf, deps, arrs, tz)) return '';
-  return 'ground-too-long';
+  if (_gateSeenOnly(inb)) return 'remembered';
+  if (now - landTs <= _GATE_DEPLANE_MS) return '';
+  return 'deplaned';
 }
 // Did the inbound leave, in the feed's own words? Returns the actual wheels-up
 // time, 0 when only the status says so, or -1 for no. Never the clock, never
@@ -37146,11 +37169,14 @@ var _GATE_DEP_SEEN = { ap: '', rows: {} };
 function _gateDepsSeen(list, ap, now) {
   try {
     if (_GATE_DEP_SEEN.ap !== ap) _GATE_DEP_SEEN = { ap: ap, rows: _gateSeenLoad(ap, 'dep') };
-    var rows = _GATE_DEP_SEEN.rows, out = [], changed = false;
+    var rows = _GATE_DEP_SEEN.rows, out = [], changed = false, listed = {};
     for (var i = 0; i < (list || []).length; i++) {
       var d = list[i];
       if (!d || !d.flight || !d._sortTs) continue;
       var key = _gateRowKey(d), was = rows[key];
+      listed[key] = true;
+      // A row the feed lists is not a memory, whatever an earlier tick said.
+      if (d._remembered === true) { try { delete d._remembered; } catch (eR) {} }
       // v23918 — a row the worker kept takes this screen's tail and wheels-up (_gateSeenKeepIdentity).
       try { if (was) _gateSeenKeepIdentity(d, was); } catch (eK) {}
       // v23925 — BOARDING BEGAN, REMEMBERED (decision of 2026-09-30: once the
@@ -37194,6 +37220,11 @@ function _gateDepsSeen(list, ap, now) {
     for (var k in rows) {
       if (!Object.prototype.hasOwnProperty.call(rows, k)) continue;
       if (now - (rows[k]._sortTs || 0) > 30 * 3600000) { delete rows[k]; changed = true; continue; }
+      // v23930 — dropped by the feed: from now on a memory, exactly as it
+      // would be after a reload (_gateSeenLoad). Its "Boarding" is no longer
+      // an aeroplane at the door (_gateAircraftWhereIn, _gateSeenOnly); its
+      // "Departed" still says the aeroplane has gone.
+      if (!listed[k]) rows[k]._remembered = true;
       out.push(rows[k]);
     }
     if (changed) _gateSeenSave(ap, 'dep', rows);
@@ -37210,7 +37241,10 @@ function _gateDepsSeen(list, ap, now) {
 // that took its aeroplane away would park that aeroplane at the stand again. The
 // memory lives in this browser's storage, so a reload (every build bump reloads
 // every board) does not wipe it. The rules re-check a remembered row exactly as
-// a live one: turn consumed, 4 h cap or night stop.
+// a live one: turn consumed, and (v23930) the deplaning window. Since v23930
+// the memory parks nothing: a remembered "Arrived" is a landing time, not a
+// place (_gateStandVerdict), and a remembered "Boarding" is no evidence of a
+// door now (_gateAircraftWhereIn).
 var _GATE_SEEN_KEY = 'fids_gate_seen_v1';
 // v23925 — '_doorSaid': the departures' boarding-began record (_gateDepsSeen).
 var _GATE_SEEN_FIELDS = ['flight', 'airline', 'gate', 'status', '_stInferred', '_sortTs', '_revTs',
@@ -37265,6 +37299,7 @@ function _gateArrsSeen(list, ap, now) {
       // screen's tail and type (_gateSeenKeepIdentity).
       try { if (rows[key]) _gateSeenKeepIdentity(f, rows[key]); } catch (eK) {}
       live[key] = true;
+      if (f._remembered === true) { try { delete f._remembered; } catch (eR) {} }
       out.push(f);
       // Only what the feed itself says came down is evidence worth keeping.
       if ((_gateRawLanded(f) || f._actualArrTime) && !_gateLegGone(f)) {
@@ -37275,7 +37310,10 @@ function _gateArrsSeen(list, ap, now) {
     for (var k in rows) {
       if (!Object.prototype.hasOwnProperty.call(rows, k)) continue;
       if (now - (rows[k]._sortTs || 0) > 30 * 3600000) { delete rows[k]; changed = true; continue; }
-      if (!live[k]) out.push(rows[k]);
+      // v23930 — dropped by the feed: a memory now, as after a reload. It
+      // still says when the aeroplane landed; it puts none on the ground
+      // (_gateStandVerdict, _gateSeenOnly).
+      if (!live[k]) { rows[k]._remembered = true; out.push(rows[k]); }
     }
     if (changed) _gateSeenSave(ap, 'arr', rows);
     return out;
@@ -37302,7 +37340,18 @@ function _gateAircraftWhereIn(inb, cf, t, ap, deps, arrs, tz) {
     return { kind: kind, leg: 'out', org: ap, dst: outDst || ap, other: outDst,
              at: (cf && (cf._revTs || cf._sortTs)) || 0, why: why };
   };
-  if (cf && !_gateLegGone(cf) && _gateOutboundAtGate(cf)) return out('stand', 'boarding');
+  // v23930 — the airport's door word as it stands NOW: a row the feed lists,
+  // never one this screen's storage kept after the feed dropped it
+  // (_gateDepsSeen marks those _remembered). A "Boarding" saved before a
+  // screen went dark is not an aeroplane at the door now. The word is the one
+  // the gate's own boarding display shows (_gateDoorBasis, v23925): after the
+  // airport said Boarding or Final call at this gate, a later "Delayed" keeps
+  // the sign up, and the aeroplane boarding began on stays at the door with
+  // it until the flight leaves. Never the schedule's boarding (_schedBoardingOn),
+  // and never a row the worker kept for the feed (_feedKept): _gateSeenOnly.
+  var door = cf;
+  try { if (cf && typeof _gateDoorBasis === 'function') door = _gateDoorBasis(cf, t) || cf; } catch (eD) { door = cf; }
+  if (cf && !_gateLegGone(cf) && !_gateSeenOnly(cf) && _gateOutboundAtGate(door)) return out('stand', 'boarding');
   if (!inb || !inb._locIata || _gateLegGone(inb)) return out('none', inb ? 'inbound-gone' : 'no-inbound');
   var org = String(inb._locIata).toUpperCase();
   var land = (inb._actualArrTime || _gateRawLanded(inb)) ? _gateLandedAt(inb, t) : 0;
@@ -37323,6 +37372,19 @@ function _gateAircraftWhereIn(inb, cf, t, ap, deps, arrs, tz) {
   }
   if (land) {
     var why = _gateStandVerdict(inb, land, cf, deps, arrs, t, tz);
+    // v23930 — past its deplaning minutes (or known only from a memory) a
+    // landed aeroplane is drawn only where a fresh live fix puts it: on the
+    // ground at our field, at most 3 minutes old (_gateFixCheck), and drawn
+    // where it is, never on a guessed stand. Without one, nothing.
+    if (why === 'deplaned' || why === 'remembered') {
+      var fx2 = null;
+      try { fx2 = _gateFixFor(inb, ap, t); } catch (eF) { fx2 = null; }
+      var hC2 = _lookupAirport(ap);
+      if (fx2 && fx2.onGround && hC2 && _gcNm([fx2.lat, fx2.lng], hC2) < 6) {
+        return { kind: 'fix', leg: 'in', org: org, dst: ap, other: org, lat: fx2.lat, lng: fx2.lng,
+                 onGround: true, alt: fx2.alt, spd: fx2.spd, at: fx2.at, src: fx2.src, why: fx2.src };
+      }
+    }
     return why ? out('none', why) : out('stand', 'landed');
   }
   var up = _gateLegUp(inb, t);
@@ -37690,15 +37752,20 @@ function _gateDrawEmptyStand(map, spot, d, note) {
 // Now both maps (gateMap and the takeover's window._bigCraftMap), whenever
 // they are at ground zoom (16 or closer) over our own field, also draw every
 // OTHER aeroplane the same evidence rules put on the ground here:
-//   • each departure from our field that has not left, whose aeroplane the
+//   • each departure from our field that has not left and is boarding, on
+//     final call or closed in the feed's own words — or whose aeroplane the
 //     gate-match finds (_gateInboundForDeparture) and the one answer places at
 //     a stand (_gateAircraftWhereIn: landed on evidence, its turn not flown,
-//     within a turn or a night stop) — or that is boarding, on final call or
-//     closed in the feed's own words;
+//     and v23930, still within its deplaning minutes);
 //   • each arrival that landed on evidence and that no departure still to
-//     leave has taken: the departure that will fly it (the pairing's own
-//     claim rule, _gateArrivalClaimed) decides a night stop, and with none the
-//     turn and 4-hour rules (_gateStandVerdict) decide alone.
+//     leave has taken, while it is within its deplaning minutes and its turn
+//     has not been flown (_gateStandVerdict). The pairing's own claim rule
+//     (_gateArrivalClaimed) says only which departure's door it stands at.
+// v23930 — NOTHING ELSE PUTS ONE ON THE GROUND. A 4-hour turn, a night stop
+// and the 30 h memories used to keep an arrival on the apron long after the
+// last word that it was there: AC7754's "Arrived at 6:53 PM" drew a jet on
+// Bridge 1 on all four Moncton maps that evening, with no aeroplane on it
+// (_gateStandVerdict has the rule and the window).
 // One aeroplane per airframe: one inbound row is one aeroplane, and a boarding
 // departure the gate-match found no inbound for takes the landed arrival its
 // claim rule gives it rather than drawing a second one. And one aeroplane per
@@ -37801,10 +37868,11 @@ function _gateApronDoor() {
 // only its departure's boarding puts here came to be drawn when boarding began,
 // taken as half an hour before that departure (when a Moncton departure is
 // called): one with no inbound found, and one the rules had ruled off the stand
-// until then — a Jazz Dash 8 down at 18:36 is past the four hours and no night
-// stop, so it is not drawn overnight, and when AC7753 boards at 06:40 it must
-// not come back "first" and take the walk-out the Porter has stood on since
-// 21:47. `deps` / `arrs` are the lists its stand was judged against. 0: unknown.
+// until then — a Jazz Dash 8 down at 18:36 is long past its deplaning minutes
+// (v23930; before it, past the four hours and no night stop), so it is not
+// drawn overnight, and when AC7753 boards at 06:40 it must not come back
+// "first" and take a stand from one already boarding beside it. `deps` /
+// `arrs` are the lists its stand was judged against. 0: unknown.
 function _gateApronSince(inb, dep, now, deps, arrs, tz) {
   var land = 0;
   try { land = inb ? (_gateLandedAt(inb, now) || 0) : 0; } catch (e) { land = 0; }
@@ -37836,11 +37904,12 @@ function _gateApronSince(inb, dep, now, deps, arrs, tz) {
 // until AC2037 boarded. Now each departure is given ONE aeroplane (`given`):
 // the gate-match's choice first, then the landed arrivals, the one that came
 // down last first (the gate-match's own tie-break, the most recent arrival).
-// A departure already given is not offered to the next arrival — it claims,
-// has flown or stands in the way of a night stop for one aeroplane only — so
-// AC2040 is re-claimed against the departures left and goes to AC2037. The
-// resolver's rules are untouched; they are only asked with that departure off
-// the list.
+// A departure already given is not offered to the next arrival — it claims
+// or has flown one aeroplane only — so AC2040 is re-claimed against the
+// departures left and goes to AC2037. The resolver's rules are untouched; they
+// are only asked with that departure off the list. (v23930: a claim only says
+// which door an aeroplane stands at. Only the evidence rules put it on the
+// ground: boarding now, or within its deplaning minutes.)
 function _gateApronCollect(ap, now, arrs, deps, tz) {
   var out = [], byKey = {}, given = {};
   var all = (deps || []).filter(function (d) { return d && d._sortTs && !_gateLegGone(d); })
@@ -37919,7 +37988,8 @@ function _gateApronCollect(ap, now, arrs, deps, tz) {
       continue;
     }
     // No departure still to leave will fly it: a departure that has gone
-    // since it landed took it (and no other), else the 4-hour rule decides.
+    // since it landed took it (and no other), else the deplaning window
+    // decides (v23930; it was the 4-hour rule).
     var fl = null;
     try { fl = _gateTurnConsumed(a, land, null, left, arrs, now); } catch (e) { fl = null; }
     if (fl) { given[_gateRowKey(fl)] = true; continue; }
@@ -37943,9 +38013,9 @@ function _gateApronCollect(ap, now, arrs, deps, tz) {
 // the view draws it here at all (at the stand on evidence, or live on the
 // ground at our field — parked, or taxiing in): only then can another row for
 // our inbound or our departure be that same aeroplane drawn twice. While our
-// inbound is still in the air, or the view has ruled it off our stand (its
-// night stop belongs to an earlier departure, say), an aeroplane the rules put
-// on the ground here is not the one this board draws, and it is drawn. A
+// inbound is still in the air, or the view has ruled it off our stand (an
+// earlier departure flew it, say), an aeroplane the rules put on the ground
+// here is not the one this board draws, and it is drawn. A
 // registration is the airframe wherever it is, so a row carrying ours never is.
 // `door` and `spec` are what the view places it by (our gate, _mapPlaneSpec);
 // `reserve` is the stand a live aeroplane taxiing on the ground here is on or
