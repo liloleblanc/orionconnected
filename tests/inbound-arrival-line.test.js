@@ -71,7 +71,7 @@ function sliceStmts(fromMarker, toMarker) {
 
 // _mcEvtHtml → _mcSentKey → _mcArrLine, exactly as the renderer builds them.
 const ARR_SRC = sliceStmts('var _mcEvtHtml = _mcEvtStr', 'var _mcFromConn');
-const CONN_SRC = sliceStmts('var _mcFromConn = _gateLbl(', 'var _mcTitle =');
+const CONN_SRC = sliceStmts('var _mcFromConn = _gateLbl(', 'var _mcTimes =');
 
 const railT = (t) => String(t || '').replace(/\s*([AP]M)\b/gi, (m, p) => p.toLowerCase());
 
