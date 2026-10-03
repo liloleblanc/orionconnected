@@ -26527,7 +26527,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23935';
+var FIDS_BUILD_TAG = 'v23936';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -48007,6 +48007,8 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 // sits at time-progress exactly like the mini map, captioned 'Estimated'.
 function _bigCraftTeardown() {
   try { (window._bigCraftTimers || []).forEach(function (id) { clearTimeout(id); clearInterval(id); }); window._bigCraftTimers = []; } catch (e) {}
+  // v23936 — stop following the screen (_bigCraftFollowScreen).
+  try { if (window._bigCraftFitStop) { var _fs = window._bigCraftFitStop; window._bigCraftFitStop = null; _fs(); } } catch (e) {}
   try { if (window._bigCraftMap) { window._bigCraftMap.remove(); window._bigCraftMap = null; } } catch (e) {}
   try { if (window._bigCraftOverlay) { window._bigCraftOverlay.remove(); window._bigCraftOverlay = null; } } catch (e) {}
   try { document.querySelectorAll('.g8-bigcraft-active').forEach(function (w) { w.classList.remove('g8-bigcraft-active'); }); } catch (e) {}
@@ -48028,6 +48030,68 @@ function _bigCraftTeardown() {
       setTimeout(function () { try { window._gateMapRetry(); } catch (e2) {} }, 120);
     }
   } catch (e) {}
+}
+// v23936 — THE BIG MAP FILLS THE SCREEN IT IS SHOWN ON, FOR AS LONG AS IT IS UP.
+// The takeover is an overlay on .g8-wrap, not a child of the screen, so its
+// box is written in pixels from #gateAdCarousel's rectangle (the frosted
+// window's screen, v23929). That was done once, when the overlay mounted, and
+// nothing wrote it again. A board laid out at one size and then shown at
+// another (a page loaded before its window reached full size, a review pane
+// resized after load) kept the first rectangle: seen live at 1680x1050 on YQM
+// gates 1 and 3, the map ran y 155-933, which is the screen of a 1680x963
+// layout, over a screen at y 169-1018, leaving an 85 px dark band under it.
+// Nothing that runs during the slide's dwell is sure to redraw it (in the
+// reproduction it stayed wrong until the slide ended), so the overlay now
+// follows the screen itself: re-measured when the
+// screen or the board changes size, on a window resize, and once a second as
+// a backstop for a move that changes neither. A change re-sizes Leaflet in the
+// same pass, so the tiles, the route, the labels and the OpenStreetMap credit
+// (pinned to the map's own corner) come with it.
+function _bigCraftFitToScreen(ov) {
+  try {
+    if (!ov || !ov.isConnected) return false;
+    var scr = document.getElementById('gateAdCarousel'), host = ov.parentNode;
+    if (!scr || !host || !host.getBoundingClientRect) return false;
+    var sr = scr.getBoundingClientRect();
+    // A screen with no box (lifted out by a rebuild for a moment, or a layout
+    // without one) leaves the last good fit where it is.
+    if (!(sr.width > 1 && sr.height > 1)) return false;
+    var hr = host.getBoundingClientRect();
+    var ox = hr.left + (host.clientLeft || 0), oy = hr.top + (host.clientTop || 0);
+    // The EDGES are rounded, not the size, so the right and bottom edges land
+    // on the screen's own pixels too.
+    var l = Math.round(sr.left - ox), t = Math.round(sr.top - oy);
+    var w = Math.round(sr.right - ox) - l, h = Math.round(sr.bottom - oy) - t;
+    var s = ov.style;
+    if (s.left === l + 'px' && s.top === t + 'px' && s.width === w + 'px' && s.height === h + 'px') return false;
+    s.left = l + 'px'; s.top = t + 'px'; s.width = w + 'px'; s.height = h + 'px';
+    var m = window._bigCraftMap;
+    if (m && m.getContainer && ov.contains(m.getContainer())) {
+      try { m.invalidateSize({ animate: false }); } catch (e1) {}
+      try { _mapHealRenderer(m); } catch (e2) {}
+    }
+    return true;
+  } catch (e) { return false; }
+}
+function _bigCraftFollowScreen(ov) {
+  var fit = function () { _bigCraftFitToScreen(ov); };
+  var ro = null;
+  try {
+    if (typeof ResizeObserver === 'function') {
+      ro = new ResizeObserver(fit);
+      var scr = document.getElementById('gateAdCarousel');
+      if (scr) ro.observe(scr);
+      if (ov.parentNode) ro.observe(ov.parentNode);
+    }
+  } catch (e) { ro = null; }
+  try { window.addEventListener('resize', fit); window.addEventListener('orientationchange', fit); } catch (e) {}
+  // The backstop. _bigCraftTeardown clears it with the slide's other timers.
+  try { (window._bigCraftTimers = window._bigCraftTimers || []).push(setInterval(fit, 1000)); } catch (e) {}
+  window._bigCraftFitStop = function () {
+    try { if (ro) ro.disconnect(); } catch (e) {}
+    try { window.removeEventListener('resize', fit); window.removeEventListener('orientationchange', fit); } catch (e) {}
+  };
+  fit();
 }
 function _renderBigCraft(el, ctx) {
   // Spec: ONE panel that GROWS into the screen — never the same content
@@ -48163,6 +48227,8 @@ function _renderBigCraft(el, ctx) {
   _bcWrapEl.appendChild(_bcOv);
   _bcWrapEl.classList.add('g8-bigcraft-active');
   window._bigCraftOverlay = _bcOv;
+  // v23936 — and it keeps that rectangle for as long as it is up.
+  try { _bigCraftFollowScreen(_bcOv); } catch (eFit) {}
   // Free the old carousel content AFTER the grow finishes (overlay now opaque
   // over it) — no dark gap, and no stale video decoding behind the panel.
   try {
