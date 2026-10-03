@@ -94,7 +94,7 @@ test('an unknown aircraft shows the pending words, the fallback caption too', ()
 });
 
 test('the sizes: the model from 1.5x the banner, the mark as tall as the type beside it', () => {
-  const tok = (n) => RULES.match(new RegExp(n.replace(/[-]/g, '\\-') + ':\\s*([^;]+);'))[1].trim();
+  const tok = (n) => RULES.match(new RegExp(n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':\\s*([^;]+);'))[1].trim();
   assert.equal(tok('--rcl-ban'), 'var(--fi-title-fs)', 'the banner\'s type is the left titles\', by name');
   assert.equal(tok('--rcl-vs'), 'calc(var(--rcl-ban) * 1.5)');
   assert.match(ruleFor(CAP + ' .v2-rc-acb-actype'), /font-size: var\(--rcl-ms, var\(--rcl-vs\)\) !important;/);

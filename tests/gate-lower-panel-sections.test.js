@@ -63,7 +63,7 @@ function ruleFor(tail, carrier) {
   return out.join('\n');
 }
 function tokenIn(css, name) {
-  const m = css.match(new RegExp(name.replace(/[-]/g, '\\-') + ':\\s*([^;]+);'));
+  const m = css.match(new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ':\\s*([^;]+);'));
   assert.ok(m, `no ${name}`);
   return m[1].trim();
 }
