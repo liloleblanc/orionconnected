@@ -102,12 +102,50 @@ test('the three rail times each carry their own day line, inside the value the f
   assert.doesNotMatch(CORE, /flightDateContext|getFlightDateContext/);
 });
 
-test('the Your Aircraft card dates the inbound by its own arrival', () => {
-  assert.match(CORE, /var _dwI = _gateDayWords\(_ibEffArrTs \|\| _ibArrTs, vars\.tz, _frF\);\s*return _dwI \? '<div class="v2-fi-mline2">' \+ _gateDayLineHtml\(_dwI\) \+ '<\/div>' : '';\s*\}\)\(\),/);
+test('the Your Aircraft card dates the inbound by the time it prints first', () => {
+  assert.match(CORE, /var _dwI = _gateDayWords\(_ibShownTs, vars\.tz, _frF\);\s*return _dwI \? '<div class="v2-fi-mline2">' \+ _gateDayLineHtml\(_dwI\) \+ '<\/div>' : '';\s*\}\)\(\),/);
   // A plain mline2, so the lower panel's shelf sets it beside the orb like
   // the time above it (_rcInboundShelf only indents lines it recognises).
-  const shelf = fnSource('_rcInboundShelf');
-  assert.match(shelf, /\^<div class="\(v2-fi-mline\[123\]\)">/);
+  assert.match(fnSource('_rcInboundShelf'), /\^<div class="\(v2-fi-mline\[123\]\)">/);
+  // Each condition is the one that prints that time: the revised/scheduled
+  // pair for an inbound still to come, _mcEvtStr once it is down.
+  assert.match(CORE, /var _ibShownTs = _gateInboundShownTs\(\{\s*arrived: _stKey === 'arrived',\s*onStandAt: \(_mcOnStand && _ib && typeof _ib\._actualArrTime === 'number'\) \? _ib\._actualArrTime : 0,\s*sched: _ibArrTs, rev: _ibRevTs,\s*revShown: \(_stKey === 'arrived'\) \? !!_ibArrRevStr : !!\(_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr\)\s*\}\);/);
+  assert.match(CORE, /\(_stKey === 'arrived' \? '' : \(_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr\s*\? '<div class="v2-fi-mline2">'\s*\+ '<span class="v2-rc-status-' \+ \(_stCls \|\| 'delayed'\) \+ '">' \+ _railT\(_ibArrRevStr\)/,
+    'the revised time is printed first under exactly the condition revShown repeats');
+  assert.match(CORE, /if \(_mcOnStand && _ib && typeof _ib\._actualArrTime === 'number' && _ib\._actualArrTime > 0\) \{\s*_mcEvtStr = _ibFmtT\(_ib\._actualArrTime\);\s*\} else \{\s*_mcEvtStr = _ibArrRevStr \|\| _ibArrSchedStr \|\| '';/);
+  assert.doesNotMatch(CORE, /_gateDayWords\(_ibEffArrTs/, 'the later-of-the-two rule is not a day source');
+});
+
+test('an early inbound that crosses midnight is tonight\'s, not tomorrow\'s', () => {
+  // YQM gate 4, 21:35 ADT on Oct 2, live and unrewritten: AC1986 from
+  // Toronto is due at 12:03am on Oct 3 and the feed says "Early at 11:45 PM".
+  // The card prints "11:45pm | 12:03am Revised"; the day under it must be the
+  // day of 11:45pm, which is tonight.
+  const AT_2135 = Date.parse('2026-10-03T00:35:00Z');        // Oct 2 21:35 ADT
+  const AC1986_SCHED = Date.parse('2026-10-03T03:03:00Z');   // Oct 3 12:03am ADT
+  const AC1986_REV = Date.parse('2026-10-03T02:45:00Z');     // Oct 2 11:45pm ADT
+  const shown = new Function(fnSource('_gateInboundShownTs') + '\nreturn _gateInboundShownTs;')();
+  const g = gateDay(AT_2135, ['en', 'fr']);
+  const day = (o) => g.words(shown(o), 'America/Moncton', false);
+
+  const early = { arrived: false, onStandAt: 0, sched: AC1986_SCHED, rev: AC1986_REV, revShown: true };
+  assert.equal(shown(early), AC1986_REV, 'the revised time is printed first, so it is the one dated');
+  assert.equal(day(early), null, '11:45pm tonight: no day line');
+  // The rule this replaces read the later of the two, the 12:03am schedule,
+  // and printed "Tomorrow | Demain" under a time that is tonight.
+  assert.equal(g.words(Math.max(AC1986_SCHED, AC1986_REV), 'America/Moncton', false).text, 'Tomorrow | Demain');
+
+  // The mirror case still dates forward: due 11:45pm, revised to 12:10am.
+  const late = { arrived: false, onStandAt: 0, sched: AC1986_REV, rev: Date.parse('2026-10-03T03:10:00Z'), revShown: true };
+  assert.equal(day(late).text, 'Tomorrow | Demain', 'a late revision past midnight is tomorrow\'s');
+  // Not revised: the schedule is the time printed, and the time dated.
+  assert.equal(day({ arrived: false, sched: AC1986_SCHED, rev: 0, revShown: false }).text, 'Tomorrow | Demain');
+  assert.equal(shown({ arrived: false, sched: AC1986_SCHED, rev: AC1986_REV, revShown: false }), AC1986_SCHED);
+  // Down and on stand: the gate time is the one printed.
+  const gateAt = Date.parse('2026-10-03T02:52:00Z');
+  assert.equal(shown({ arrived: true, onStandAt: gateAt, sched: AC1986_SCHED, rev: AC1986_REV, revShown: true }), gateAt);
+  assert.equal(shown({ arrived: true, onStandAt: 0, sched: AC1986_SCHED, rev: AC1986_REV, revShown: true }), AC1986_REV);
+  assert.equal(shown(null), 0);
 });
 
 test('the empty-stand label says the day instead of the clock, never both', () => {

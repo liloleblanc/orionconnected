@@ -11324,6 +11324,16 @@ function _buildV2MapCol(ctx, vars) {
           _mcEvtStr = _ibArrRevStr || _ibArrSchedStr || '';
         }
       }
+      // v23934 — the instant this card's day line is read from: the time it
+      // prints first (_gateInboundShownTs). Each condition here is the one
+      // that prints that time: the revised/scheduled pair below for an inbound
+      // still to come, _mcEvtStr above once it has arrived.
+      var _ibShownTs = _gateInboundShownTs({
+        arrived: _stKey === 'arrived',
+        onStandAt: (_mcOnStand && _ib && typeof _ib._actualArrTime === 'number') ? _ib._actualArrTime : 0,
+        sched: _ibArrTs, rev: _ibRevTs,
+        revShown: (_stKey === 'arrived') ? !!_ibArrRevStr : !!(_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr)
+      });
       // v23720 — THE EVENT LEADS, AND EACH LANGUAGE CARRIES ITS OWN CLOCK.
       //
       // v23544 put the time in front of a single shared sentence:
@@ -11428,10 +11438,12 @@ function _buildV2MapCol(ctx, vars) {
         // it lands on a day that is not today (_gateDayWords): tomorrow's WS812
         // for tomorrow's WS813. Tonight's inbound for tomorrow's first
         // departure (PD2381 9:30pm for PD2370 11:55am) is today's, and gets
-        // none. It is a plain mline2 so _rcInboundShelf sets it beside the orb
-        // like the time above it; '' when there is no day to say.
+        // none. The day is the day of the time printed first (_ibShownTs), so
+        // an early revision before midnight is tonight's even when its
+        // schedule is not. It is a plain mline2 so _rcInboundShelf sets it
+        // beside the orb like the time above it; '' when there is no day.
                   (function () {
-                    var _dwI = _gateDayWords(_ibEffArrTs || _ibArrTs, vars.tz, _frF);
+                    var _dwI = _gateDayWords(_ibShownTs, vars.tz, _frF);
                     return _dwI ? '<div class="v2-fi-mline2">' + _gateDayLineHtml(_dwI) + '</div>' : '';
                   })(),
         // v23538 — THE ARRIVAL SENTENCE MOVES DOWN HERE. The layout of the
@@ -12745,6 +12757,24 @@ function _gateDayLineHtml(dw) {
   return '<span class="v2-fi-dayline" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w, i) {
     return (i ? '<span class="v2-fi-day-sep"> | </span>' : '') + '<span class="v2-fi-day-w">' + fidsEscHtml(w) + '</span>';
   }).join('') + '</span>';
+}
+// Which instant the Your Aircraft card's day line is read from: the time the
+// card prints FIRST, the rule the rail already uses for its departure (the
+// airport's revised time when that is the one shown). It used to be the later
+// of scheduled and revised, so an EARLY revision that crosses midnight was
+// dated by its schedule. AC1986, due at 12:03am on Oct 3 and "Early at 11:45
+// PM", read "11:45pm | 12:03am Revised / Tomorrow | Demain" at 21:35 on Oct 2:
+// it lands tonight, and no source said otherwise.
+//   o.arrived    the inbound is down (the card's 'arrived' state)
+//   o.onStandAt  its on-block gate time, when it is on stand (printed first)
+//   o.sched      the scheduled arrival
+//   o.rev        the revised arrival
+//   o.revShown   whether the revised time is the one printed first
+function _gateInboundShownTs(o) {
+  if (!o) return 0;
+  if (o.arrived && Number(o.onStandAt) > 0) return Number(o.onStandAt);
+  if (o.revShown && Number(o.rev) > 0) return Number(o.rev);
+  return Number(o.sched) || 0;
 }
 // The airport's calendar day a gate was painted on. The one-second tick
 // (updateDedicatedTimeOnly) repaints once when it changes while a day line is
