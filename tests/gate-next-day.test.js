@@ -182,6 +182,15 @@ test('the phone layout dates its departure, arrival and next flight the same way
   assert.match(m, /_gateDayWords\(nextFlight\._sortTs, tz, _mFrF\)/);
 });
 
+test('the phone layout escapes its gate number, which can come from the test-flight form', () => {
+  // gateVal falls back to subScreenVal, which submitTestFlight() sets from the
+  // form's typed gate. CodeQL js/xss-through-dom traced that input into this
+  // markup once the phone layout's render call changed in v23934.
+  const m = fnSource('renderMobileGateHtml');
+  assert.match(m, /\+ fidsEscHtml\(gateVal\) \+/);
+  assert.doesNotMatch(m, /'>' \+ gateVal \+ '</);
+});
+
 test('the amber "+1" after an overnight arrival is gone: the day line says it, in the time\'s own ink', () => {
   assert.doesNotMatch(CORE, /color:#eab308;font-weight:700;">\+1</);
   const at = CSS.indexOf('v23934 — THE DAY UNDER A GATE TIME THAT IS NOT TODAY');

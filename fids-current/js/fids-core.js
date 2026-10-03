@@ -9097,7 +9097,7 @@ function renderMobileGateHtml(ctx) {
     +     '</div>'
     +     '<div style="flex:0 0 auto;text-align:right;">'
     +       '<div style="' + FS.label + 'color:' + T.muted + ';">' + TL('gateDep') + '</div>'
-    +       '<div style="' + FS.hero + 'color:' + T.ink + ';margin-top:2px;">' + gateVal + '</div>'
+    +       '<div style="' + FS.hero + 'color:' + T.ink + ';margin-top:2px;">' + fidsEscHtml(gateVal) + '</div>'
     +     '</div>'
     +   '</div>'
     + '</div>'
