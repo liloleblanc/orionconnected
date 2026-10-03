@@ -197,7 +197,7 @@ s not just start it's all the time now'). ?rotate= navigates with
   <link rel="stylesheet" href="css/baggage-display.css?v=23472">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23930">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23933">
   <style>
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
@@ -370,7 +370,10 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
     }
     #fidsLoader .ocb-dot{
       width:7px; height:7px; border-radius:50%; background:#eab308;
-      box-shadow:0 0 10px rgba(234,179,8,.7); animation:fids-loader-pulse 2s ease-in-out infinite;
+      box-shadow:0 0 10px rgba(234,179,8,.7);
+      /* v23933 — still. It pulsed (fids-loader-pulse, 2s); an amber light
+         that pulses reads as a status, and loading is not one. */
+      animation:none;
     }
     /* ── Stage ──────────────────────────────────────────────── */
     #fidsLoader .ocb-stage{
@@ -400,7 +403,10 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
       font-family:'AC Nord Text',system-ui,sans-serif; font-size:clamp(10px,.85vw,14px);
       letter-spacing:.1em; font-weight:500; color:var(--ld-text-muted); transition:color .3s, font-weight .3s;
     }
-    #fidsLoader .ocb-lang.is-on{ color:var(--ld-accent); font-weight:700; }
+    /* v23933 — the labels are a still row: the languages this screen
+       greets in. An amber highlight used to step along them with the
+       greeting every 2.8s; a travelling amber light reads as a status, and
+       the greeting word already says which language is showing. */
     /* Narrow / portrait screens: stack the rail on top. */
     @media (max-aspect-ratio:1/1){
       #fidsLoader .ocb{ flex-direction:column; }
@@ -450,13 +456,11 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
       heroEl.classList.add('is-swap');
       setTimeout(function(){
         heroEl.textContent = GREET[i][1];
-        for(var k=0;k<chips.length;k++) chips[k].classList.toggle('is-on', k===i);
         heroEl.classList.remove('is-swap');
       }, 260);
     }
     /* First paint (English) immediately, no fade. */
     heroEl.textContent = GREET[0][1];
-    chips[0].classList.add('is-on');
 
     var langTimer = setInterval(function(){ i=(i+1)%GREET.length; paint(); }, 2800);
 
@@ -885,11 +889,11 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <script src="/mapcdn/leaflet.js?v=22485"></script>
 <script src="/mapcdn/leaflet-arc.js?v=22485"></script>
 <script src="js/gids-layout.js?v=1"></script>
-<script src="js/fids-v2.js?v=23930"></script>
+<script src="js/fids-v2.js?v=23933"></script>
 <script src="data/airline-colors.js?v=5"></script>
 <script src="js/gate-date-context.js?v=23157"></script>
-<script src="js/feed-router.js?v=23930"></script>
-<script src="js/fids-core.js?v=23930"></script>
+<script src="js/feed-router.js?v=23933"></script>
+<script src="js/fids-core.js?v=23933"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>

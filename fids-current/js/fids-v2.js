@@ -221,7 +221,12 @@
       // across the board, the gate screens and the arrival card and none of
       // them know the row state, so the swap has to happen in CSS, which
       // does. See the -light.svg pairs in the same folder.
-      return '<img class="fids-wx-cell" data-wx="' + nameKey + '" src="/logos/weather/animated/' + nameKey + '.svg" alt="" aria-hidden="true" style="'
+      // v23933 — the URL carries the build tag. These files are edited in
+      // place (the thunderstorm bolts stopped blinking in v23933) and a board
+      // that had cached the old icon kept showing it, so every deploy mints
+      // fresh icon URLs, the same as the wordmarks.
+      const _wxV = (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
+      return '<img class="fids-wx-cell" data-wx="' + nameKey + '" src="/logos/weather/animated/' + nameKey + '.svg' + _wxV + '" alt="" aria-hidden="true" style="'
         + 'display:inline-block;width:' + size + 'px;height:' + size + 'px;'
         + 'flex-shrink:0;object-fit:contain;vertical-align:middle;">';
     }

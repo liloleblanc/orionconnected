@@ -26204,7 +26204,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23930';
+var FIDS_BUILD_TAG = 'v23933';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -47871,6 +47871,13 @@ function _wxAnimIcon(code, night) {
 // forecast-card references the card is being styled after. The animated set
 // stays on disk for the other boards.
 var _WX_ICON_DIR = '/logos/weather/flat/';
+// v23933 — the icon URLs carry the build tag. The thunderstorm icons were
+// edited in place (their bolts no longer dim, v23933), and a board holding the
+// old file in its cache kept the old motion; a build-tied query mints fresh
+// URLs on every deploy. _wxHydrateSvgs fetches with the same query.
+function _wxIconQ() {
+  return (typeof FIDS_BUILD_TAG !== 'undefined') ? '?v=' + encodeURIComponent(FIDS_BUILD_TAG) : '';
+}
 function _wxSceneKindOf(icon) {
   var n = String(icon || '');
   if (/thunder/.test(n)) return 'storm';
@@ -48073,7 +48080,10 @@ function _wxHydrateSvgs(root) {
       var dir = String(img.getAttribute('src') || '').replace(/[^\/]*$/, '') || '/logos/weather/animated/';
       var ckey = dir + name;
       if (window._wxSvgTxt[ckey]) { inject(window._wxSvgTxt[ckey]); return; }
-      fetch(dir + name + '.svg')
+      // v23933 — fetch with the image's own query (the build tag), so an
+      // icon edited in place is not served from a stale cache.
+      var q = (String(img.getAttribute('src') || '').match(/\?[^#]*$/) || [''])[0];
+      fetch(dir + name + '.svg' + q)
         .then(function (r) { return r.ok ? r.text() : null; })
         .then(function (txt) { if (txt) { window._wxSvgTxt[ckey] = txt; inject(txt); } })
         .catch(function () {});
@@ -49527,7 +49537,7 @@ function _renderWxCard(el) {
         +   '<div class="wxc-mon-info">'
         +     '<div class="wxc-mon-city"><span class="wxc-mon-name">' + _wxCityOf(iata) + '</span> <span class="wxc-mon-iata">' + _dispIata(iata) + '</span></div>'
         +     '<div class="wxc-mon-now">'
-        +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg" alt="">'
+        +       '<img class="wxanim" data-wx="' + sIc + '" src="' + _WX_ICON_DIR + sIc + '.svg' + _wxIconQ() + '" alt="">'
         +       '<div class="wxc-mon-temp">' + dT(w.temp) + '</div>'
         +     '</div>'
         +     '<div class="wxc-mon-cond">' + _wxPair(_WXLBL[sIc] || { en: '' }) + '</div>'
@@ -49628,7 +49638,7 @@ function _renderWxCard(el) {
       var _cols = _pts.map(function (p, i) {
         return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + '">'
           + '<div class="wxc-pt-time">' + (i === 0 ? _wxNowLbl : p.h.lbl) + '</div>'
-          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _WX_ICON_DIR + p.h.ic + '.svg" alt="">'
+          + '<img class="wxanim" data-wx="' + p.h.ic + '" src="' + _WX_ICON_DIR + p.h.ic + '.svg' + _wxIconQ() + '" alt="">'
           + '<div class="wxc-pt-temp">' + _wxDeg(p.h.temp) + '</div>'
           + '</div>';
       }).join('');
@@ -49775,7 +49785,7 @@ function _renderWxCard(el) {
         return '<div class="wxc-day2" style="--wxc-i:' + i + '">'
           + '<div class="wxc-dchip">' + _dayAbbr(d.dt, _wxLangs[0]) + (_wxLangs[1] ? _wxDia + _dayAbbr(d.dt, _wxLangs[1]) : '') + '</div>'
           + '<div class="wxc-dbody">'
-          +   '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg" alt="">'
+          +   '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg' + _wxIconQ() + '" alt="">'
           +   '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'
           +   '<div class="wxc-dlo">' + _wxDeg(d.lo) + '</div>'
           +   '<div class="wxc-dcond">' + _wxPairS(_WXLBL[d.ic] || { en: '' }) + '</div>'
