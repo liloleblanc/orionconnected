@@ -70,7 +70,7 @@ test('all display entry points load the date-context helper before core', () => 
 
 test('gate rendering carries one status key and a next-day context', () => {
   assert.match(core, /if \(stKey === 'scheduled' \|\| !stKey\) stKey = 'ontime'/);
-  // v23930 — the day lines under the rail times (tests/gate-next-day.test.js).
+  // v23934 — the day lines under the rail times (tests/gate-next-day.test.js).
   assert.match(core, /stKey:\s*stKey,[\s\S]*dayBoard:\s*_dayBoard,\s*dayDepart:\s*_dayDepart,\s*dayArrive:\s*_dayArrive/);
 });
 
