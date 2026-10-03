@@ -2,7 +2,7 @@
 
 // WHY THIS EXISTS
 //
-// v23931: on Québec City's gate 23 the inbound line of the lower right panel
+// v23934: on Québec City's gate 23 the inbound line of the lower right panel
 // read "P6687 de | from Iles De La Madeleine | Ygr", and the aircraft caption
 // read "SF3".
 //

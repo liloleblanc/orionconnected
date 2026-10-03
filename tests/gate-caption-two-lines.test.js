@@ -4,7 +4,7 @@
 //
 // The caption under the gate aircraft is the aircraft section of the lower
 // right panel, under that panel's "Your Aircraft | Votre Avion" banner. Since
-// v23930 it is TWO LINES:
+// v23934 it is TWO LINES:
 //
 //   Mitsubishi CRJ900                          the model, alone
 //   C-FUJZ | Operated By:    [Jazz]            the registration, then the
@@ -33,12 +33,12 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const CORE = fs.readFileSync(path.join(root, 'fids-current', 'js', 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(root, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
-const AT = CSS.indexOf('v23930 — THE LOWER RIGHT PANEL OPENS LIKE A LEFT CARD');
+const AT = CSS.indexOf('v23934 — THE LOWER RIGHT PANEL OPENS LIKE A LEFT CARD');
 const BLOCK = AT >= 0 ? CSS.slice(CSS.lastIndexOf('/*', AT)) : '';
 const RULES = BLOCK.replace(/\/\*[\s\S]*?\*\//g, '');
 const CAP = '.gad-map-col-v2 > .v2-rc-shelf-illus .v2-rc-acb-cap';
 
-/** Declarations of every rule in the v23930 block whose last selector ends with `tail`. */
+/** Declarations of every rule in the v23934 block whose last selector ends with `tail`. */
 function ruleFor(tail) {
   const re = /([^{}]+)\{([^}]*)\}/g;
   const out = [];
@@ -47,7 +47,7 @@ function ruleFor(tail) {
     const sels = m[1].split(/,\s*\n/).map((s) => s.trim());
     if (sels[sels.length - 1].endsWith(tail)) out.push(m[2]);
   }
-  assert.ok(out.length, `no v23930 rule for ${tail}`);
+  assert.ok(out.length, `no v23934 rule for ${tail}`);
   return out.join('\n');
 }
 /** The caption builder in _buildV2MapCol: from the model's values to the panel's markup. */
@@ -59,7 +59,7 @@ const BUILD = (() => {
 })();
 
 test('the caption is two lines: the model alone, then the registration and the operator', () => {
-  assert.ok(BLOCK.length > 1000, 'the v23930 block is in display-overrides.css');
+  assert.ok(BLOCK.length > 1000, 'the v23934 block is in display-overrides.css');
   // The model and the registration are separate values now, and the
   // registration leaves line 1 whenever there is a model to leave there.
   assert.match(BUILD, /_acModelVal = _nbw\(_acModel\);\s*_acRegVal = _acReg \? _nbw\(_acReg \+ _acRegTag\) : '';/);

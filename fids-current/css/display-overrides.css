@@ -2138,7 +2138,7 @@ html .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-row > .v2-fi-textcol
 html .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-textcol .v2-fi-title {
   font-size: clamp(14px, 2.0vh, 24px) !important;
   padding-bottom: clamp(2px, 0.3vh, 5px) !important;
-  border-bottom-width: var(--fi-title-bw) !important;   /* v23930: named below, at 'THE SHELF TITLES ARE TOO SMALL' */
+  border-bottom-width: var(--fi-title-bw) !important;   /* v23934: named below, at 'THE SHELF TITLES ARE TOO SMALL' */
 }
 html .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-textcol .v2-fi-value,
 html .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-textcol .v2-fi-value.v2-fi-dest {
@@ -15572,8 +15572,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   padding-bottom: var(--fi-title-py) !important;
   line-height: 1.16 !important;
 }
-/* v23930 — named, so the lower right panel's banner (a left-column title
-   across that panel, display-overrides.css v23930) can size its box from the
+/* v23934 — named, so the lower right panel's banner (a left-column title
+   across that panel, display-overrides.css v23934) can size its box from the
    same three values by reference: the titles' type and padding above, and
    their rule's weight (the 'Rail type sized to FIT' rule). */
 html .g8-wrap {
@@ -23555,7 +23555,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   will-change: auto !important;
 }
 
-/* ══ v23930 — THE LOWER RIGHT PANEL OPENS LIKE A LEFT CARD: ONE BANNER, THEN SECTIONS ══
+/* ══ v23934 — THE LOWER RIGHT PANEL OPENS LIKE A LEFT CARD: ONE BANNER, THEN SECTIONS ══
 
    The gate screen's lower right panel (the aircraft picture, its caption and
    the inbound flight) in the direction chosen from the 2026-10-02 pick sheet

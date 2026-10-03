@@ -11,7 +11,7 @@
 // its top and its own rounded foot, and a card on its own textured plate) with
 // gaps between them, and the lower group was not the size of the panel above.
 //
-// v23930 keeps this panel's box (its size, corners, frame and ground, pinned
+// v23934 keeps this panel's box (its size, corners, frame and ground, pinned
 // here) and lays a banner and two plated sections inside it; what is drawn
 // inside is pinned in gate-lower-panel-sections.test.js, and the rules here
 // for the caption's one row and the lines' title row are what it overrides.

@@ -2,7 +2,7 @@
 
 // WHY THIS EXISTS
 //
-// v23930: the gate screen's lower right panel (the aircraft picture, its
+// v23934: the gate screen's lower right panel (the aircraft picture, its
 // caption and the inbound flight) opens like a left card. One full-width
 // "Your Aircraft | Votre Avion" banner in the left column's banner style, then
 // the picture, then two sections, the aircraft's model and the inbound
@@ -33,7 +33,7 @@ const CORE = fs.readFileSync(path.join(root, 'fids-current', 'js', 'fids-core.js
 const CSS = fs.readFileSync(path.join(root, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
 const PLAIN = CSS.replace(/\/\*[\s\S]*?\*\//g, '');
 
-const AT = CSS.indexOf('v23930 — THE LOWER RIGHT PANEL OPENS LIKE A LEFT CARD');
+const AT = CSS.indexOf('v23934 — THE LOWER RIGHT PANEL OPENS LIKE A LEFT CARD');
 const START = AT >= 0 ? CSS.lastIndexOf('/*', AT) : -1;
 const NEXT = AT >= 0 ? CSS.indexOf('/* ══', AT + 10) : -1;
 const BLOCK = START >= 0 ? CSS.slice(START, NEXT > AT ? NEXT : undefined) : '';
@@ -52,14 +52,14 @@ function rules(css) {
   while ((m = re.exec(css))) out.push({ sels: m[1].split(/,\s*\n/).map((s) => s.trim()).filter(Boolean), body: m[2] });
   return out;
 }
-/** Declarations of the v23930 rules whose last selector ends with `tail` (generic, or for Air Canada). */
+/** Declarations of the v23934 rules whose last selector ends with `tail` (generic, or for Air Canada). */
 function ruleFor(tail, carrier) {
   const out = rules(RULES).filter((r) => {
     const last = r.sels[r.sels.length - 1];
     if (!last.endsWith(tail)) return false;
     return carrier ? last.startsWith('html body:is(' + carrier + ')') : !last.startsWith('html body:is(');
   }).map((r) => r.body);
-  assert.ok(out.length, `no v23930 rule for ${tail}`);
+  assert.ok(out.length, `no v23934 rule for ${tail}`);
   return out.join('\n');
 }
 function tokenIn(css, name) {
@@ -93,13 +93,13 @@ function px(expr, VW, VH) {
 const MAPCOL = CORE.slice(CORE.indexOf('function _buildV2MapCol(ctx, vars) {'), CORE.indexOf('function uxgGateHtml(ctx) {'));
 const SHELF = CORE.slice(CORE.indexOf('function _rcInboundShelf(orbHtml, lines) {'), CORE.indexOf('function _buildV2MapCol(ctx, vars) {'));
 
-test('the v23930 block is the last word on the lower panel, and only on it', () => {
-  assert.ok(BLOCK.length > 1000, 'the v23930 block is in display-overrides.css');
+test('the v23934 block is the last word on the lower panel, and only on it', () => {
+  assert.ok(BLOCK.length > 1000, 'the v23934 block is in display-overrides.css');
   const sels = rules(RULES).flatMap((r) => r.sels);
   assert.ok(sels.length > 40);
   for (const sel of sels) {
     assert.match(sel, /^html body(:is\(\[data-gate-airline="AC"\][^)]*\))?(:not\(#_\)){255}(:not\(\._\)){8} \.g8-wrap \.gad-map-col-v2( |$)/,
-      `selector without the v23930 weight, or outside the right column: ${sel.slice(0, 80)}`);
+      `selector without the v23934 weight, or outside the right column: ${sel.slice(0, 80)}`);
     // The upper panel, the middle panel and the left column are not touched.
     assert.doesNotMatch(sel, /v2-rc-shelf-map|v2-rc-map-life|gad-media-col|gad-aircraft-col|ad-panel|bigcraft|wxcard|hcard/, sel.slice(-80));
   }
@@ -228,7 +228,7 @@ test('the airport code in the panel is in the plate\'s ink, never the carrier\'s
   // reads as cancelled, next to a status colour, on something that is not a
   // status word.
   const code = rules(RULES).find((r) => r.sels.some((s) => s.endsWith('.gad-map-col-v2 > .v2-rc-shelf-fi :is(.v2-rc-iata, .v2-fi-code)')));
-  assert.ok(code, 'a v23930 rule writes the inbound section\'s code');
+  assert.ok(code, 'a v23934 rule writes the inbound section\'s code');
   assert.match(code.body, /(^|\s)color: var\(--plate-ink, #ffffff\) !important;/);
   assert.match(code.body, /-webkit-text-fill-color: var\(--plate-ink, #ffffff\) !important;/, 'the fill is what Blink paints glyphs with');
   for (const r of rules(RULES)) {

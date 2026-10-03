@@ -2832,7 +2832,7 @@ function applyCodeAccents() {
     if (!nodes.length) return;
     var accent = _caScreenAccent();
     nodes.forEach(function (el) {
-      // v23930 — the lower right panel's codes are in the plate's ink
+      // v23934 — the lower right panel's codes are in the plate's ink
       // (_rcCodeOnPlate); an accent written here before is taken back.
       if (_rcCodeOnPlate(el)) {
         if (el.hasAttribute('data-ca')) { el.style.removeProperty('color'); el.removeAttribute('data-ca'); }
@@ -5557,7 +5557,7 @@ function _opbyContrastFix(root) {
       }
       var bg = 'rgb(' + Math.round(acc.r) + ',' + Math.round(acc.g) + ',' + Math.round(acc.b) + ')';
       var dark = layers.length ? ((0.2126 * acc.r + 0.7152 * acc.g + 0.0722 * acc.b) < 140) : false;
-      // v23930 — on the lower right panel's plates the plate's own ink decides
+      // v23934 — on the lower right panel's plates the plate's own ink decides
       // (a light plate is drawn for dark ink, whatever its luminance reads).
       var _pInk5 = (typeof _rcPlateInkIsDark === 'function') ? _rcPlateInkIsDark(im) : null;
       if (_pInk5 !== null) dark = !_pInk5;
@@ -7900,7 +7900,7 @@ const IATA_AIRCRAFT = {
   'BCS':'Airbus A220','CS3':'Airbus A220-300','CS1':'Airbus A220-100',
   '73W':'Boeing 737-700','73K':'Boeing 737-800','73E':'Boeing 737-500','73C':'Boeing 737-300',
   'BEH':'Beechcraft 1900','BEK':'Beechcraft King Air',
-  // v23931 — YQB's feed sends the IATA type code alone for Pascan ('SF3'),
+  // v23934 — YQB's feed sends the IATA type code alone for Pascan ('SF3'),
   // which the caption printed raw.
   'SF3':'Saab 340',
   '338':'Airbus A330-800neo','32Q':'Airbus A321neo','31N':'Airbus A319neo',
@@ -10638,7 +10638,7 @@ function _buildV2AircraftCol(ctx, vars) {
   return '<div class="gad-aircraft-col' + _bareCls + '"' + _bareAttr + '>' + _orderedHtml + '</div>';
 }
 
-// v23930 — THE INBOUND SECTION OF THE LOWER RIGHT PANEL.
+// v23934 — THE INBOUND SECTION OF THE LOWER RIGHT PANEL.
 // Both inbound cards (the real one and the backstop) are written through this,
 // so they are one shelf by construction:
 //   AC656 from | de Montreal | YUL          line 1, across the full width
@@ -10901,7 +10901,7 @@ function _buildV2MapCol(ctx, vars) {
 
       // Origin display: "Calgary (YYC)"
       var _origCity = '';
-      // v23931 — A FEED THAT GAVE NO CODE. YQB's Pascan rows name the origin
+      // v23934 — A FEED THAT GAVE NO CODE. YQB's Pascan rows name the origin
       // ('Iles de la Madeleine') with a null code, and the origin reaches here
       // with the code the board resolved from the name already attached
       // ('Iles de la Madeleine | YGR', formatCityIata). tc() below then cased
@@ -11254,7 +11254,7 @@ function _buildV2MapCol(ctx, vars) {
       // the body already carried it: flight, times, and "Arrived" on its own
       // coloured line. The same fact twice, with the anchor doing the moving.
       // One label, always, and the status stays where it belongs underneath.
-      // v23930 — that label (yourAircraftHdr) is now the lower panel's own
+      // v23934 — that label (yourAircraftHdr) is now the lower panel's own
       // banner, _rcBanner in the aircraft block below; this card has no title.
       // v23544 — WHICH CLOCK. for arrived,
       // then "5:05pm ... arrived at the gate". They are two different moments
@@ -11315,7 +11315,7 @@ function _buildV2MapCol(ctx, vars) {
       } else if (_ibArrSchedStr) {
         _mcTimes = _railT(_ibArrSchedStr);
       }
-      // v23930 — the carrier's orb, on its own: _rcInboundShelf places it.
+      // v23934 — the carrier's orb, on its own: _rcInboundShelf places it.
       var _mcOrbHtml =
               '<div class="v2-fi-icon-wrap v2-fi-icon-badge' + _mcWrapCls + ' v2-fi-orbwrap" style="' + _mcBadge + '">'
         +       (_mcOrbSrc
@@ -11340,7 +11340,7 @@ function _buildV2MapCol(ctx, vars) {
         // is eaten.
         // v23207 gave the card a banner that CHANGED COLOUR (amber for
         // delayed, cancelled or diverted, green for an early revision).
-        // v23930: the card has no title now. Its words are the lower panel's
+        // v23934: the card has no title now. Its words are the lower panel's
         // banner (_rcBanner), which never takes a status colour; the status
         // is said here, in the lines, in the status colours.
       _inboundCard = _rcInboundShelf(_mcOrbHtml, [
@@ -11515,7 +11515,7 @@ function _buildV2MapCol(ctx, vars) {
       // always say Your Aircraft | Votre Appareil. That ruling was applied
       // to one variant and never to this one, so the panel changed its name
       // depending on whether the inbound was known.
-      // v23930 — and now neither variant has a title: the words are the lower
+      // v23934 — and now neither variant has a title: the words are the lower
       // panel's banner (_rcBanner), the same in both cases by construction.
       // v23720 — same connector the real card uses, built the same way, so the
       // two cannot drift apart in the one slot they share.
@@ -11650,7 +11650,7 @@ function _buildV2MapCol(ctx, vars) {
         _niStatusLine = '<div class="v2-fi-mline3"><span class="v2-rc-fi-stline">'
           + _gateLblSpans('toBeConfirmed', _frF) + '</span></div>';
       }
-      // v23930 — the same shelf as the real card (_rcInboundShelf): no title
+      // v23934 — the same shelf as the real card (_rcInboundShelf): no title
       // (the lower panel's banner carries it), the orb beside the lines.
       var _niOrbHtml =
               '<div class="v2-fi-icon-wrap v2-fi-icon-badge' + _niWrapCls + ' v2-fi-orbwrap" style="' + _niBadge + '">'
@@ -11689,7 +11689,7 @@ function _buildV2MapCol(ctx, vars) {
   // "Aircraft Type:" label + value, with livery image above. This represents
   // the equipment serving this gate. ALWAYS at the bottom as specified's spec.
   var _aircraftBlock = '';
-  // v23930 — THE LOWER RIGHT PANEL'S BANNER. The panel is the aircraft
+  // v23934 — THE LOWER RIGHT PANEL'S BANNER. The panel is the aircraft
   // picture, its caption and the inbound flight, and it now opens like a left
   // card: one "Your Aircraft | Votre Avion" banner across its full width.
   // It IS a left-column title (.g8-bir-shelves > .v2-flightinfo-block >
@@ -12262,7 +12262,7 @@ function _buildV2MapCol(ctx, vars) {
       // qualifier stays on, and the resolver's instant rebuild replaces the
       // whole line the moment the registry answers.
       var _regConfirmed = !!(typeof _regTrue !== 'undefined' && _regTrue);
-      // v23930 — THE MODEL AND THE REGISTRATION ARE TWO LINES. The caption is
+      // v23934 — THE MODEL AND THE REGISTRATION ARE TWO LINES. The caption is
       // the lower right panel's aircraft section now: the model alone on its
       // first line, the registration (and the operator) on the second, so
       // the model has the panel's whole width (the composition is below, at
@@ -12397,7 +12397,7 @@ function _buildV2MapCol(ctx, vars) {
           }
         }
       } catch (e) {}
-      // v23930 — TWO LINES, AND NO "AIRCRAFT:" BESIDE THE MODEL. The caption
+      // v23934 — TWO LINES, AND NO "AIRCRAFT:" BESIDE THE MODEL. The caption
       // is the aircraft section of the lower right panel, under the panel's
       // "Your Aircraft | Votre Avion" banner (_rcBanner), so the label pair
       // v23904 put beside the model said the same thing twice and is gone:
@@ -12427,7 +12427,7 @@ function _buildV2MapCol(ctx, vars) {
       // out on the kiosks, so the state is written on the band itself. Without
       // it the pending words were laid over the operator's label and mark
       // (seen on YHZ gate 58, a PAL-operated Air Canada flight).
-      // v23930 — and whether it has a second line (.has-row2).
+      // v23934 — and whether it has a second line (.has-row2).
       var _capCls = 'v2-rc-acb-cap' + (_acKnown ? '' : ' is-pending') + (_opByVal ? ' has-op' : '') + (_acRow2 ? ' has-row2' : '');
       // The reserved aircraft area should remain an intentional branded panel
       // while a lookup finishes. Never guess a model; hold the airline mark in
@@ -16040,7 +16040,7 @@ function gateAutofit(root) {
   // v23261 — the Operated-By mark can only be contrast-checked once it is in
   // the DOM on its real strip; this pass rides every autofit invocation
   // (initial paint, font settle, resize) so repaints stay corrected.
-  // v23930 — first the ground it is checked against: the lower right panel's
+  // v23934 — first the ground it is checked against: the lower right panel's
   // plate (_rcPlateGroundInk).
   try { _rcPlateGroundInk(root); } catch (e00) {}
   try { _opbyContrastFix(root); } catch (e0) {}
@@ -16626,7 +16626,7 @@ function gateAutofit(root) {
       var lines = [].slice.call(val.querySelectorAll('.v2-fi-mline1, .v2-fi-mline2, .v2-fi-mline3'));
       if (!lines.length) return;
       lines.forEach(function (ln) { ln.style.removeProperty('font-size'); });
-      // v23930 — THE PAIRS ARE MEASURED AS THEY WILL BE DRAWN. A bilingual
+      // v23934 — THE PAIRS ARE MEASURED AS THEY WILL BE DRAWN. A bilingual
       // pair that wraps is marked .is-stacked by the pair pass
       // (_fidsPairSeparators), which runs a frame later; measured before it,
       // the arrival sentence ('Arrived at the gate | 10:18am' over 'Arrivé à
@@ -16642,7 +16642,7 @@ function gateAutofit(root) {
       // 'YUL' losing its L). A 6px gutter keeps it snug, not grazing.
       var availW = Math.floor(val.clientWidth) - 6;
       if (availW < 60) return;
-      // v23930 — EACH LINE IS MEASURED FROM THE VALUE CELL'S LEFT EDGE. On the
+      // v23934 — EACH LINE IS MEASURED FROM THE VALUE CELL'S LEFT EDGE. On the
       // lower right panel the lines after the first sit beside the carrier's
       // orb (_rcInboundShelf): their left padding is the orb's room, in em,
       // so it grows with the type and counts against the width as the type
@@ -16729,7 +16729,7 @@ function gateAutofit(root) {
         var base = parseFloat(getComputedStyle(ln).fontSize) || 0; if (!base) return;
         ln.style.setProperty('font-size', (Math.floor(base * f * 10) / 10) + 'px', 'important');
       });
-      // (v23930: a pair that wraps at the new size is stacked before it is checked)
+      // (v23934: a pair that wraps at the new size is stacked before it is checked)
       if (!_pairLn) { try { _fidsPairSeparators(val); } catch (eP2) {} }
       // v23256 — VERIFY AFTER APPLYING. Text width does not scale perfectly
       // linearly with font-size (hinting, spacing, bold runs), so the
@@ -16920,7 +16920,7 @@ function gateAutofit(root) {
         ['font-size', 'white-space', 'margin-left', 'width', 'padding-left'].forEach(function (p) {
           try { el.style.removeProperty(p); } catch (e2) {}
         });
-        // v23930 — THE AIRCRAFT SECTION IS TWO LINES, AND THE MODEL LEADS.
+        // v23934 — THE AIRCRAFT SECTION IS TWO LINES, AND THE MODEL LEADS.
         // The caption is the lower right panel's aircraft section, under the
         // panel's "Your Aircraft | Votre Avion" banner:
         //   line 1  the model, alone, on the panel's whole width;
@@ -16943,7 +16943,7 @@ function gateAutofit(root) {
         // (window.__acbLastResort counts it, for the harness). The sizes are
         // written as two custom properties on the band, --rcl-ms (the
         // model) and --rcl-r2 (the second line), which the stylesheet's
-        // v23930 block applies; they sit on the 1/64px layout grid, so a mark
+        // v23934 block applies; they sit on the 1/64px layout grid, so a mark
         // set to the type's size never lands a hair under it.
         try {
           var _capEl = el.closest('.v2-rc-acb-cap');
@@ -17273,10 +17273,10 @@ function _rcLowerGround(el) {
     return [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
   } catch (e) { return null; }
 }
-// v23930 — WHAT THE LOWER PANEL'S TYPE SITS ON NOW: THE CARRIER'S PLATE.
+// v23934 — WHAT THE LOWER PANEL'S TYPE SITS ON NOW: THE CARRIER'S PLATE.
 // The aircraft section (the caption) and the inbound section of the lower
 // right panel sit on the carrier's own left-card plate (--plate-base under
-// --plate-tex, blended by --plate-blend; the v23930 block in
+// --plate-tex, blended by --plate-blend; the v23934 block in
 // display-overrides.css), so the colour the two ink passes read for that panel
 // (--rc-ground-ink, _rcLowerGround above) is the plate's, not v23926's ramp.
 // It is measured once per plate: the texture as the caption paints it, drawn
@@ -17299,14 +17299,14 @@ function _rcPlateInkIsDark(el) {
     return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) < 128;
   } catch (e) { return null; }
 }
-// v23930 — A CODE ON THE LOWER RIGHT PANEL IS BODY TEXT IN THE PLATE'S INK.
+// v23934 — A CODE ON THE LOWER RIGHT PANEL IS BODY TEXT IN THE PLATE'S INK.
 // Everywhere else on the board an airport code wears the carrier's accent
 // (applyCodeAccents, then _gateCodeInk keeps it legible). On this panel the
 // inbound line sits right beside the status words, and Air Canada's accent,
 // lifted for contrast on its black plate, came out #E88584: next to the
 // cancelled red (#F87171), directly over the amber "Delayed" on a late
 // inbound. A status colour belongs to status words only, so here the code is
-// written in --plate-ink by the v23930 block, as the left column's own titles
+// written in --plate-ink by the v23934 block, as the left column's own titles
 // write theirs in their ink, and both accent passes leave it alone.
 function _rcCodeOnPlate(el) {
   return !!(el && el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-fi, .gad-map-col-v2 > .v2-rc-shelf-illus'));
@@ -17390,7 +17390,7 @@ function _gateCodeInk(root) {
     var els = (root || document).querySelectorAll('.g8-wrap .v2-fi-code, .g8-wrap .v2-rc-iata');
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
-      // v23930 — the lower right panel's codes are in the plate's ink
+      // v23934 — the lower right panel's codes are in the plate's ink
       // (_rcCodeOnPlate): no accent to keep legible, so nothing to fit. Only
       // this pass's own override is undone, as below.
       if (_rcCodeOnPlate(el)) {
@@ -26369,7 +26369,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23933';
+var FIDS_BUILD_TAG = 'v23934';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
