@@ -12776,6 +12776,24 @@ function _gateInboundShownTs(o) {
   if (o.revShown && Number(o.rev) > 0) return Number(o.rev);
   return Number(o.sched) || 0;
 }
+// The Arrival field of a delayed departure: the arrival before the delay
+// moved it, struck through, beside the arrival after it, which is the one
+// renderDedicatedScreen computed (arrTimeStr). Nothing here moves a time;
+// '' means the field prints arrTimeStr as it is.
+//   o.shown       the moved arrival, 'HH:MM' (arrTimeStr)
+//   o.was         the arrival before the move, 'HH:MM'
+//   o.movedMs     how far it was moved; only a later arrival is struck through
+//   o.depDelayed  the departure carries a time the feed published
+//   o.early       the departure's word is Early (the revised time inks green)
+//   o.fmt         the gate's 12-hour formatter
+function _gateArrMovedHtml(o) {
+  if (!o || !o.depDelayed || !(Number(o.movedMs) > 0)) return '';
+  var shown = String(o.shown || '').trim(), was = String(o.was || '').trim();
+  if (!shown || !was || shown === was) return '';
+  var fmt = (typeof o.fmt === 'function') ? o.fmt : function (t) { return t; };
+  return '<span class="g8-r2-strike">' + fidsEscHtml(fmt(was)) + '</span>'
+    + '<span class="g8-r2-revised' + (o.early ? ' g8-rev-early' : '') + '">' + fidsEscHtml(fmt(shown)) + '</span>';
+}
 // The airport's calendar day a gate was painted on. The one-second tick
 // (updateDedicatedTimeOnly) repaints once when it changes while a day line is
 // on screen: "Tomorrow" must not outlive the day it was true on.
@@ -12884,8 +12902,8 @@ function uxgGateHtml(ctx) {
   const iataCode = locIata || '';
 
   // Helper: convert internal 24h "HH:MM" string to display "H:MM AM/PM".
-  // Internal arithmetic (delay carry-over below) stays in 24h. This only
-  // formats for display in the banner.
+  // Times arrive as 24h strings (renderDedicatedScreen does any arithmetic on
+  // them). This only formats for display.
   function _to12h(s) {
     if (!s) return s;
     var m = String(s).match(/^(\d{1,2}):(\d{2})/);
@@ -12933,32 +12951,22 @@ function uxgGateHtml(ctx) {
   // Arr time display
   var arrHtml = arrTimeStr ? _to12h(arrTimeStr) : '\u2014';
   // v23934 — the instant of the arrival this field prints (renderDedicatedScreen
-  // works it out beside arrTimeStr), moved with it below, for its day line.
+  // works it out beside arrTimeStr, already moved by any delay), for its day line.
   var _arrShownTs = Number(ctx.arrInstant) || 0;
-  // If departure is delayed, estimate new arrival based on delay (math in 24h)
-  if (depDelayed && arrTimeStr && currentFlight.time && currentFlight.upd) {
-    // Strip any HTML (like +1 day marker) to get clean HH:MM for calculation
-    var _cleanArr = arrTimeStr.replace(/<[^>]+>/g, '').trim();
-    var origParts = currentFlight.time.split(':'), updParts = currentFlight.upd.split(':');
-    if (origParts.length === 2 && updParts.length === 2) {
-      var delayMins = (parseInt(updParts[0])*60+parseInt(updParts[1])) - (parseInt(origParts[0])*60+parseInt(origParts[1]));
-      // v23158 — MIDNIGHT WRAP: wall-clock HH:MM strings subtract to -1410 when a
-      // 23:50 departure is revised to 00:20; the >0 guard then skipped the shift
-      // and the arrival sat unrevised and white. Only a swing past half a day is
-      // a wrap; genuinely earlier times stay negative and are skipped.
-      if (delayMins < -720) delayMins += 1440;
-      if (delayMins > 0 && _cleanArr !== '\u2014') {
-        var arrParts = _cleanArr.split(':');
-        if (arrParts.length === 2) {
-          var newArrMins = parseInt(arrParts[0])*60 + parseInt(arrParts[1]) + delayMins;
-          var newArrH24 = String(Math.floor(newArrMins/60) % 24).padStart(2,'0');
-          var newArrM = String(newArrMins % 60).padStart(2,'0');
-          arrHtml = '<span class="g8-r2-strike">' + _to12h(_cleanArr) + '</span><span class="g8-r2-revised' + ((stKey === 'early') ? ' g8-rev-early' : '') + '">' + _to12h(newArrH24 + ':' + newArrM) + '</span>';
-          if (_arrShownTs) _arrShownTs += delayMins * 60000;
-        }
-      }
-    }
-  }
+  // v23934 — ONE MOVE, NOT TWO. renderDedicatedScreen has already moved
+  // arrTimeStr by the departure's delay (by the gap between the revised and
+  // scheduled departures, or by estimating from the revised departure), and
+  // the phone layout prints it as it comes. This block used to move it AGAIN
+  // by the gap between the feed's new and old departure clocks, so a 75-minute
+  // delay put the arrival 150 minutes late: AC1983 revised 5:25am -> 6:40am,
+  // due 6:15am, read 8:45am where 7:30am is the only time the delay implies.
+  // It now strikes the unmoved arrival through beside the moved one
+  // (_gateArrMovedHtml), and its day line (_arrShownTs) is the moved one's.
+  var _arrMovedHtml = _gateArrMovedHtml({
+    shown: arrTimeStr, was: ctx.arrSchedStr, movedMs: ctx.arrMovedMs,
+    depDelayed: depDelayed, early: stKey === 'early', fmt: _to12h
+  });
+  if (_arrMovedHtml) arrHtml = _arrMovedHtml;
 
   // Boarding time estimate (35 min before dep)
   // v23925 — THE BOARDING TIME AND THE DOOR WORD, ONE ANSWER (_gateDoor). The
@@ -18857,6 +18865,12 @@ const gView = document.getElementById('gateView');
       // line (_gateDayWords): the gate prints the day under any time that is
       // not on the board's today.
       let _arrInstant = 0;
+      // v23934 — the arrival BEFORE the departure's delay moved it, and by how
+      // much it was moved. arrTimeStr is the moved one and is moved only here;
+      // uxgGateHtml strikes _arrSchedStr through beside it instead of moving
+      // arrTimeStr a second time.
+      let _arrSchedStr = '';
+      let _arrMovedMs = 0;
       // SANITY GUARD
       // : some feed records carry the DEPARTURE time in the arrival
       // slot — every YQM gate showed e.g. 'Departure 6:15pm / Arrival 6:15pm'.
@@ -18869,6 +18883,7 @@ const gView = document.getElementById('gateView');
       if (currentFlight._arrSchedLocal && !_arrBogus) {
         const _arrLocal = currentFlight._arrSchedLocal;
         arrTimeStr = adbHHMM(_arrLocal) || '';
+        _arrSchedStr = arrTimeStr;
         // A revised (later) departure makes the ORIGINAL arrival impossible —
         // the airplane still needs the same block time (gate 4: dep
         // revised to 6:20pm Moncton while arrival still read 6:20pm Montréal,
@@ -18885,6 +18900,7 @@ const gView = document.getElementById('gateView');
             if (_hm) {
               var _tot = ((+_hm[1] * 60 + +_hm[2]) + Math.round(_dlyMs / 60000)) % 1440;
               arrTimeStr = String(Math.floor(_tot / 60)).padStart(2, '0') + ':' + String(_tot % 60).padStart(2, '0');
+              _arrMovedMs = _dlyMs;
             }
           }
         } catch (e) {}
@@ -18921,6 +18937,13 @@ const gView = document.getElementById('gateView');
         arrTimeStr = arrivalTs
           ? new Date(arrivalTs).toLocaleTimeString('en-GB', { timeZone: arrTz, hour: '2-digit', minute: '2-digit', hour12: false })
           : '';
+        // v23934 — the same estimate from the SCHEDULED departure, and the
+        // move between the two, for the struck-through time (see above).
+        const schedArrivalTs = currentFlight._sortTs && flightMins ? currentFlight._sortTs + flightMins * 60000 : null;
+        _arrSchedStr = schedArrivalTs
+          ? new Date(schedArrivalTs).toLocaleTimeString('en-GB', { timeZone: arrTz, hour: '2-digit', minute: '2-digit', hour12: false })
+          : '';
+        _arrMovedMs = (arrivalTs && schedArrivalTs) ? arrivalTs - schedArrivalTs : 0;
         // v23934 — an overnight estimate gets its day line from this instant
         // (the amber "+1" marker is gone, as on the primary path above).
         _arrInstant = arrivalTs || 0;
@@ -19289,7 +19312,7 @@ const gView = document.getElementById('gateView');
           gView.innerHTML = renderMobileGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrInstant: _arrInstant, arrTz: arrTz });
         } else {
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
-          gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrInstant: _arrInstant, arrTz: arrTz });
+          gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrSchedStr: _arrSchedStr, arrMovedMs: _arrMovedMs, arrInstant: _arrInstant, arrTz: arrTz });
         }
         // v23166 — store what we ACTUALLY painted. The builders above could
         // settle fields the key reads, so the pre-build key could already be

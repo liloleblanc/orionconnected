@@ -92,7 +92,10 @@ test('the three rail times each carry their own day line, inside the value the f
   assert.match(uxg, /var _dayBoard = _gateDayWords\(\(typeof boardTs === 'number'\) \? boardTs : 0, tz, _frF\);/);
   assert.match(uxg, /var _dayDepart = _gateDayWords\(\(String\(depTimeHtml\)\.indexOf\('g8-r2-revised'\) !== -1 && currentFlight\._revTs\) \|\| currentFlight\._sortTs, tz, _frF\);/);
   assert.match(uxg, /var _dayArrive = _gateDayWords\(_arrShownTs, ctx\.arrTz \|\| tz, _frF, tz\);/);
-  assert.match(uxg, /if \(_arrShownTs\) _arrShownTs \+= delayMins \* 60000;/, 'the arrival\'s day follows the delay shift of the printed time');
+  // The printed arrival is moved by a delay once, in renderDedicatedScreen,
+  // and arrInstant is moved with it there (tests/gate-arrival-moved-once.test.js).
+  assert.match(uxg, /var _arrShownTs = Number\(ctx\.arrInstant\) \|\| 0;/);
+  assert.doesNotMatch(uxg, /_arrShownTs\s*\+=/, 'the arrival\'s day is the printed time\'s, moved once');
   // The arrival's instant comes from where its time is worked out, on both
   // layouts.
   const render = fnSource('renderDedicatedScreen');
