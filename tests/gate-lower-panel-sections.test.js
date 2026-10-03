@@ -189,11 +189,96 @@ test('what the type sits on: the ink passes read the plate, and the plate\'s ink
   assert.match(fn, /col\.style\.setProperty\('--rc-ground-ink', hex\)/, 'published where _rcLowerGround reads it');
   assert.match(fn, /px\[Math\.floor\(px\.length \* \(lightPlate \? 0\.15 : 0\.85\)\)\]/, 'the end of the plate type is hardest to read on');
   // Only the lower panel's type is re-checked when a plate is first measured:
-  // a document-wide re-run recoloured the left column's Arrival code.
-  assert.match(fn, /_gateCodeInk\(low\[k\]\)/);
-  assert.doesNotMatch(fn, /_gateCodeInk\(document\)|_opbyContrastFix\(document\)/);
-  assert.match(CORE, /var _pInk = _rcPlateInkIsDark\(el\);\s*if \(_pInk !== null\) up = !_pInk;/, 'a light plate deepens the code, never lifts it');
-  assert.match(CORE, /var _pInk5 = \(typeof _rcPlateInkIsDark === 'function'\) \? _rcPlateInkIsDark\(im\) : null;\s*if \(_pInk5 !== null\) dark = !_pInk5;/, 'and takes the operator\'s light-ground lettering');
+  // a document-wide re-run recoloured the left column's Arrival code. The
+  // panel's codes are in the plate's ink (next test), so only the operator's
+  // mark is re-checked.
+  assert.match(fn, /_opbyContrastFix\(low\[k\]\)/);
+  assert.doesNotMatch(fn, /_gateCodeInk\(|_opbyContrastFix\(document\)/);
+  assert.match(CORE, /var _pInk5 = \(typeof _rcPlateInkIsDark === 'function'\) \? _rcPlateInkIsDark\(im\) : null;\s*if \(_pInk5 !== null\) dark = !_pInk5;/, 'a light plate takes the operator\'s light-ground lettering');
+});
+
+/** A top-level function's source, to the first column-0 closing brace. */
+function fnSrc(name) {
+  const a = CORE.indexOf('function ' + name + '(');
+  assert.ok(a >= 0, `no ${name}`);
+  return CORE.slice(a, CORE.indexOf('\n}\n', a) + 2);
+}
+/** A stand-in element: in the lower panel's inbound section, or in the left column. */
+function fakeCode(onPlate, inline) {
+  const style = { ...inline };
+  const data = {};
+  const attrs = {};
+  return {
+    onPlate, style: {
+      setProperty: (k, v) => { style[k] = v; },
+      removeProperty: (k) => { delete style[k]; },
+    },
+    css: style, dataset: data, isConnected: true, parentElement: null, previousElementSibling: null,
+    getClientRects: () => [1],
+    closest: (sel) => (onPlate && /\.gad-map-col-v2 > \.v2-rc-shelf-fi/.test(sel) ? {} : null),
+    hasAttribute: (k) => k in attrs, getAttribute: (k) => (k in attrs ? attrs[k] : null),
+    setAttribute: (k, v) => { attrs[k] = String(v); }, removeAttribute: (k) => { delete attrs[k]; },
+  };
+}
+
+test('the airport code in the panel is in the plate\'s ink, never the carrier\'s red', () => {
+  // On a delayed Air Canada inbound the code was #E88584 (the carrier's red,
+  // lifted for its black plate) directly over the amber "Delayed | En
+  // retard", and beside the green status words on an early one: a red that
+  // reads as cancelled, next to a status colour, on something that is not a
+  // status word.
+  const code = rules(RULES).find((r) => r.sels.some((s) => s.endsWith('.gad-map-col-v2 > .v2-rc-shelf-fi :is(.v2-rc-iata, .v2-fi-code)')));
+  assert.ok(code, 'a v23930 rule writes the inbound section\'s code');
+  assert.match(code.body, /(^|\s)color: var\(--plate-ink, #ffffff\) !important;/);
+  assert.match(code.body, /-webkit-text-fill-color: var\(--plate-ink, #ffffff\) !important;/, 'the fill is what Blink paints glyphs with');
+  for (const r of rules(RULES)) {
+    if (!r.sels.some((s) => /v2-rc-iata|v2-fi-code/.test(s))) continue;
+    assert.doesNotMatch(r.body, /--airline-accent|--plate-(warn|bad|ok)/, 'no accent or status colour on a code in this panel');
+  }
+  // The plate's ink itself is never a red or an amber, on any carrier.
+  const hue = (hex) => {
+    const [r, g, b] = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+    if (!d) return { h: 0, s: 0 };
+    const s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
+    let h = mx === r ? (g - b) / d + (g < b ? 6 : 0) : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { h: h * 60, s };
+  };
+  const inks = [...PLAIN.matchAll(/--plate-ink:\s*#([0-9a-f]{6})\b/gi)].map((m) => m[1]);
+  assert.ok(inks.length >= 5);
+  for (const ink of inks) {
+    const { h, s } = hue(ink);
+    assert.ok(s < 0.25 || (h > 65 && h < 330), `--plate-ink #${ink} reads as a status colour`);
+  }
+  // Both accent passes leave the panel's codes alone, and take back only
+  // what they wrote themselves. Run against stand-ins for one code on the
+  // plate and one in the left column.
+  assert.match(fnSrc('_rcCodeOnPlate'), /closest\('\.gad-map-col-v2 > \.v2-rc-shelf-fi, \.gad-map-col-v2 > \.v2-rc-shelf-illus'\)/);
+  const RED = [216, 47, 46], LIFTED = 'rgb(232, 133, 132)';
+  // eslint-disable-next-line no-new-func
+  const accents = Function('document', 'getComputedStyle', '_caScreenAccent', '_caBgBehind', '_caParse', '_caFit',
+    fnSrc('_rcCodeOnPlate') + fnSrc('applyCodeAccents') + 'return applyCodeAccents;');
+  const plate = fakeCode(true), left = fakeCode(false);
+  plate.setAttribute('data-ca', 'rgb(247,212,212)'); plate.style.setProperty('color', 'rgb(247,212,212)');
+  const doc = { documentElement: { getAttribute: () => null }, querySelectorAll: () => Object.assign([plate, left], { forEach: Array.prototype.forEach }) };
+  accents(doc, () => ({ color: 'rgb(255,255,255)' }), () => RED, () => [11, 14, 20], () => [255, 255, 255], () => RED)();
+  assert.equal(plate.css.color, undefined, 'the accent pass writes nothing on the panel\'s code, and takes back what it wrote');
+  assert.equal(plate.getAttribute('data-ca'), null);
+  assert.equal(left.css.color, 'rgb(216,47,46)', 'the left column keeps the carrier\'s accent');
+  // eslint-disable-next-line no-new-func
+  const ink = Function('document', 'getComputedStyle', '_ocGroundOf', '_ocColorParts', '_ocCr', '_ocToHsl', '_ocFromHsl', '_ocLum',
+    fnSrc('_rcCodeOnPlate') + fnSrc('_gateCodeInk') + 'return _gateCodeInk;');
+  const plate2 = fakeCode(true, { color: LIFTED, '-webkit-text-fill-color': LIFTED });
+  plate2.dataset.inkApplied = '1';
+  const left2 = fakeCode(false);
+  const root = { querySelectorAll: () => [plate2, left2] };
+  let cr = 0;
+  ink(root, () => ({ color: 'rgb(216, 47, 46)', webkitTextFillColor: 'rgb(216, 47, 46)' }), () => [11, 14, 20],
+    (c) => c.match(/\d+/g).slice(0, 3).map(Number), () => (cr++ ? 5 : 3), () => [0, 0.66, 0.51], () => [232, 133, 132], () => 0.01)(root);
+  assert.equal(plate2.css.color, undefined, 'the contrast pass undoes its own lift on the panel\'s code');
+  assert.equal(plate2.css['-webkit-text-fill-color'], undefined);
+  assert.equal(plate2.dataset.inkApplied, undefined);
+  assert.equal(left2.css['-webkit-text-fill-color'], 'rgb(232, 133, 132)', 'and still lifts a code in the left column');
 });
 
 test('the panel keeps its v23926 box: the same size as the upper one, top corners round, foot square and flush', () => {

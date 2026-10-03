@@ -2832,6 +2832,12 @@ function applyCodeAccents() {
     if (!nodes.length) return;
     var accent = _caScreenAccent();
     nodes.forEach(function (el) {
+      // v23930 — the lower right panel's codes are in the plate's ink
+      // (_rcCodeOnPlate); an accent written here before is taken back.
+      if (_rcCodeOnPlate(el)) {
+        if (el.hasAttribute('data-ca')) { el.style.removeProperty('color'); el.removeAttribute('data-ca'); }
+        return;
+      }
       var bg = _caBgBehind(el);
       var ink = _caParse(getComputedStyle(el.parentElement || el).color) || null;
       var rgb = _caFit(accent, bg, ink);
@@ -17264,7 +17270,8 @@ function _rcLowerGround(el) {
 // plate (light ink), the 15th on a light one (dark ink: American, Lufthansa,
 // Emirates, Qatar, Air France). It is written on the column, which every
 // render rebuilds, so each autofit pass puts the measured value back; the
-// first measurement of a plate re-runs both ink passes.
+// first measurement of a plate re-runs the operator's mark pass (the panel's
+// codes take no accent: _rcCodeOnPlate).
 // Whether the lower right panel's plate under `el` is drawn for dark ink (a
 // light plate: American, Lufthansa, Emirates, Qatar, Air France), from its
 // --plate-ink; null outside that panel or when the ink is not a plain hex.
@@ -17276,6 +17283,18 @@ function _rcPlateInkIsDark(el) {
     var c = [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
     return (0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]) < 128;
   } catch (e) { return null; }
+}
+// v23930 — A CODE ON THE LOWER RIGHT PANEL IS BODY TEXT IN THE PLATE'S INK.
+// Everywhere else on the board an airport code wears the carrier's accent
+// (applyCodeAccents, then _gateCodeInk keeps it legible). On this panel the
+// inbound line sits right beside the status words, and Air Canada's accent,
+// lifted for contrast on its black plate, came out #E88584: next to the
+// cancelled red (#F87171), directly over the amber "Delayed" on a late
+// inbound. A status colour belongs to status words only, so here the code is
+// written in --plate-ink by the v23930 block, as the left column's own titles
+// write theirs in their ink, and both accent passes leave it alone.
+function _rcCodeOnPlate(el) {
+  return !!(el && el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-fi, .gad-map-col-v2 > .v2-rc-shelf-illus'));
 }
 var _rcPlateInkMemo = {};
 function _rcPlateGroundInk(root) {
@@ -17312,9 +17331,9 @@ function _rcPlateGroundInk(root) {
     col = c2; put(hex);
     // only the lower panel's type is re-checked: nothing else sits on a plate
     var low = c2.querySelectorAll(':scope > .v2-rc-shelf-illus, :scope > .v2-rc-shelf-fi');
+    // (its codes are in the plate's ink, _rcCodeOnPlate: no code pass here)
     for (var k = 0; k < low.length; k++) {
       try { _opbyContrastFix(low[k]); } catch (e) {}
-      try { _gateCodeInk(low[k]); } catch (e) {}
     }
   };
   var u = /url\("?([^")]+)"?\)/.exec(cs.backgroundImage || '');
@@ -17356,6 +17375,17 @@ function _gateCodeInk(root) {
     var els = (root || document).querySelectorAll('.g8-wrap .v2-fi-code, .g8-wrap .v2-rc-iata');
     for (var i = 0; i < els.length; i++) {
       var el = els[i];
+      // v23930 — the lower right panel's codes are in the plate's ink
+      // (_rcCodeOnPlate): no accent to keep legible, so nothing to fit. Only
+      // this pass's own override is undone, as below.
+      if (_rcCodeOnPlate(el)) {
+        if (el.dataset.inkApplied) {
+          el.style.removeProperty('color');
+          el.style.removeProperty('-webkit-text-fill-color');
+          delete el.dataset.inkApplied;
+        }
+        continue;
+      }
       if (!el.isConnected || !el.getClientRects().length) continue;
       // v23502 — DO NOT STRIP AND RE-APPLY ON EVERY PASS.
       // This runs from gateAutofit, which fires on paint, font
@@ -17376,15 +17406,7 @@ function _gateCodeInk(root) {
       var fg = _ocColorParts(el.dataset.inkBase);
       if (!fg) continue;
       var base = _ocCr(fg, bg);
-      // v23926 — ON THE MERGED PANEL'S SHEET THE CODE IS BODY TEXT. Every line
-      // of the Your Aircraft card is held to 4.5:1, and the code is part of the
-      // first line: Air Canada's red measured 3.8:1 on its near-black sheet
-      // and American's blue 3.5:1, both above the 3.2 floor that lets an
-      // accent stand. Here the floor is the body-text bar, with a margin for
-      // the sheet's lighter top edge; the hue is kept, as everywhere else.
-      var _onSheet = !!(el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-fi'));
-      var _floor = _onSheet ? 4.8 : FLOOR, _target = _onSheet ? 5 : TARGET;
-      if (base >= _floor) {                            // already legible — the accent stands
+      if (base >= FLOOR) {                             // already legible — the accent stands
         // v23502c — ONLY EVER UNDO OUR OWN OVERRIDE.
         // Calling removeProperty unconditionally stripped the
         // inline colour the BOARD itself had set, so a code that was already
@@ -17400,18 +17422,13 @@ function _gateCodeInk(root) {
       }
       var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
       var up = _ocLum(bg) < 0.5;                       // dark ground lift, light ground deepen
-      // v23930 — on the lower right panel's plates the plate's own ink says
-      // which way: American's light-blue plate measures under half luminance
-      // but is drawn for dark ink, and a lifted code went near-white on it.
-      var _pInk = _rcPlateInkIsDark(el);
-      if (_pInk !== null) up = !_pInk;
       var best = fg, bestCr = base;
       for (var step = 1; step <= 20; step++) {
         var l = up ? Math.min(0.97, hsl[2] + step * 0.04) : Math.max(0.06, hsl[2] - step * 0.04);
         var cand = _ocFromHsl(hsl[0], hsl[1], l);
         var cr = _ocCr(cand, bg);
         if (cr > bestCr) { bestCr = cr; best = cand; }
-        if (cr >= _target) break;
+        if (cr >= TARGET) break;
       }
       if (bestCr <= base) continue;                    // nothing better available — keep the brand colour
       var css = 'rgb(' + best[0] + ', ' + best[1] + ', ' + best[2] + ')';
