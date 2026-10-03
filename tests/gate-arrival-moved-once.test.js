@@ -2,7 +2,7 @@
 
 // WHY THIS EXISTS
 //
-// v23934. A delayed departure's arrival was moved twice on the TV gate.
+// v23935. A delayed departure's arrival was moved twice on the TV gate.
 // renderDedicatedScreen moves arrTimeStr by the departure's delay (the gap
 // between the revised and scheduled departures, or an estimate from the
 // revised departure), and the phone layout prints it as it comes. uxgGateHtml

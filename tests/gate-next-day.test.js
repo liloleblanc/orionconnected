@@ -2,7 +2,7 @@
 
 // WHY THIS EXISTS
 //
-// v23934. A gate shows its next flight, and once tonight's has left that is
+// v23935. A gate shows its next flight, and once tonight's has left that is
 // usually tomorrow's. The gate printed tomorrow's times with no day anywhere,
 // under a banner carrying today's date: on 2026-10-02 at 19:33, Moncton gate 1
 // read "WS813 Calgary, On Time, Boarding 5:40pm, Departure 6:15pm" for the
@@ -185,7 +185,7 @@ test('the phone layout dates its departure, arrival and next flight the same way
 test('the phone layout escapes its gate number, which can come from the test-flight form', () => {
   // gateVal falls back to subScreenVal, which submitTestFlight() sets from the
   // form's typed gate. CodeQL js/xss-through-dom traced that input into this
-  // markup once the phone layout's render call changed in v23934.
+  // markup once the phone layout's render call changed in v23935.
   const m = fnSource('renderMobileGateHtml');
   assert.match(m, /\+ fidsEscHtml\(gateVal\) \+/);
   assert.doesNotMatch(m, /'>' \+ gateVal \+ '</);
@@ -193,7 +193,7 @@ test('the phone layout escapes its gate number, which can come from the test-fli
 
 test('the amber "+1" after an overnight arrival is gone: the day line says it, in the time\'s own ink', () => {
   assert.doesNotMatch(CORE, /color:#eab308;font-weight:700;">\+1</);
-  const at = CSS.indexOf('v23934 — THE DAY UNDER A GATE TIME THAT IS NOT TODAY');
+  const at = CSS.indexOf('v23935 — THE DAY UNDER A GATE TIME THAT IS NOT TODAY');
   assert.ok(at >= 0, 'the day-line block exists');
   const block = CSS.slice(at, CSS.indexOf('.v2-fi-day-sep { opacity', at) + 60);
   assert.match(block, /\.v2-fi-value\.v2-fi-time \.v2-fi-dayline \{[^}]*display: block !important;[^}]*font-size: \.3em !important;[^}]*white-space: nowrap !important;[^}]*color: inherit !important;/);

@@ -24104,7 +24104,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   transform: translateY(-50%) !important;
 }
 
-/* ══ v23934 — THE DAY UNDER A GATE TIME THAT IS NOT TODAY ══════════════════
+/* ══ v23935 — THE DAY UNDER A GATE TIME THAT IS NOT TODAY ══════════════════
    "Tomorrow | Demain" (French first in Québec; the weekday and date two or
    more days out) under the Boarding, Departure and Arrival times when they
    are not on the board's today (_gateDayLineHtml in fids-core.js). Sized in
