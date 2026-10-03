@@ -320,7 +320,7 @@ test('the map draws the aeroplane the panel names: the registration\'s type firs
   // is a Dash 8-400 in this test's world.
   const REG = { 'C-GKQF': 'De Havilland Canada Dash 8-400', 'C-FEJT': 'Embraer 195' };
   const specNow = (cf, inb, store) => new Function('window', '_acResolvedGet', '_regTrueType', '_mapPlaneSpecFor', 'return (' + fnSource('_mapPlaneSpec') + ')')(
-    { _gateCurrentFlight: cf, _gateInbound: inb }, (fl) => (store && store[fl]) || null, (r) => REG[r] || '', specFor)();
+    { _gateCurrentFlight: cf, _gateInbound: inb }, (row) => (store && row && store[row.flight]) || null, (r) => REG[r] || '', specFor)();
   // The swap: the departure row is scheduled as an E195, the aeroplane that
   // turns here is a Dash 8-400 by its registration. The panel says Dash 8-400;
   // so does the map, and it walks out to its stand instead of taking the bridge.
