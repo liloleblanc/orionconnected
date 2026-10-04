@@ -1836,6 +1836,8 @@ test('(D) the phone-width gate and the Designer templates say what the TV gate a
   assert.match(TR, /if \(f && typeof window\.fidsShownRow === 'function'\) f = window\.fidsShownRow\(f\) \|\| f;/);
   for (const page of ['fids.html', 'gids.html', 'bids.html']) {
     const html = fs.readFileSync(path.join(root, 'fids-current', page), 'utf8');
-    assert.match(html, /js\/template-renderer\.js\?v=23925/, page + ' loads the changed renderer');
+    // v23925 or any later build of it
+    const v = /js\/template-renderer\.js\?v=(\d+)/.exec(html);
+    assert.ok(v && Number(v[1]) >= 23925, page + ' loads the changed renderer');
   }
 });
