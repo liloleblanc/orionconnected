@@ -3326,6 +3326,9 @@ function submitTestFlight() {
   }
   if (operator && operator !== testFlight.airline) {
     testFlight._opCode = operator;
+    // v23944 — the gate's ladder (fidsResolveOperator) reads _opEv, so a test
+    // flight's chosen operator is evidence it honours.
+    testFlight._opEv = { op: operator, src: 'test', basis: 'test flight' };
     var _OP_NAMES = { 'RV':'Air Canada Rouge','QK':'Jazz Aviation','WR':'WestJet Encore',
                       '9X':'Mokulele','MQ':'Envoy Air','OH':'PSA Airlines','PT':'Piedmont Airlines',
                       '9E':'Endeavor Air','OO':'SkyWest Airlines','YV':'Mesa Airlines',
@@ -4003,7 +4006,7 @@ function _gateRebuildFire() {
 // under several marketing numbers; keep the row whose marketing carrier
 // matches the OPERATING carrier's family, and rebrand a lone foreign-
 // codeshare row to the operator's mainline.
-var _CS_REGIONAL_FAM = { 'QK':'AC','RV':'AC','ZX':'AC','9M':'AC','PB':'AC','WR':'WS','P3':'PD','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','OO':'UA','YV':'UA','G7':'UA','YX':'UA','QX':'AS' };
+var _CS_REGIONAL_FAM = { 'QK':'AC','RV':'AC','ACEX':'AC','ZX':'AC','9M':'AC','PB':'AC','WR':'WS','P3':'PD','SP':'PB','MQ':'AA','OH':'AA','PT':'AA','9E':'DL','OO':'UA','YV':'UA','G7':'UA','YX':'UA','QX':'AS' };
 function _gateCsPick(list) {
   function fam(c) { return _CS_REGIONAL_FAM[c] || c || ''; }
   function foreign(f) { return !!(f._opCode && fam(f._opCode) !== fam(f.airline)); }
@@ -5219,7 +5222,7 @@ function _equipSaneForCarrier(mktCode, opCode, reg, acStr) {
   try {
     var c = String(opCode || mktCode || '').toUpperCase();
     var r = String(reg || '').toUpperCase().replace(/[\s-]/g, '');
-    var CA = { AC:1, RV:1, QK:1, ZX:1, '9M':1, PD:1, P3:1, WS:1, WR:1, TS:1, PB:1, SP:1, F8:1, WG:1, JV:1, WT:1 };
+    var CA = { AC:1, RV:1, QK:1, ZX:1, '9M':1, PD:1, P3:1, WS:1, WR:1, TS:1, PB:1, SP:1, F8:1, WG:1, JV:1, WT:1, ACEX:1 };
     var US = { AA:1, DL:1, UA:1, WN:1, B6:1, F9:1, NK:1, AS:1, MX:1, G4:1, SY:1, XP:1 };
     if (r) {
       if (CA[c] && !/^C[FGI]/.test(r)) return false;
@@ -5227,7 +5230,10 @@ function _equipSaneForCarrier(mktCode, opCode, reg, acStr) {
     }
     var s = String(acStr || '').toUpperCase();
     if (s.trim()) {
-      if (c === 'RV' && !/319|320|321|32N|32Q|32S|32A|32B/.test(s)) return false;
+      // v23944 — Rouge flies the 737 MAX 8 too: 39 of them are registered to
+      // Air Canada rouge LP, and Rouge's 20xx flights fly them (FR24 B38M).
+      // Mainline also has MAX 8s, so the type alone never proves Rouge.
+      if (c === 'RV' && !/319|320|321|32N|32Q|32S|32A|32B|7M8|38M|MAX/.test(s)) return false;
       if ((c === 'PD' || c === 'P3') && !/DH8|DH4|DHC|DASH|Q400|E19|195|E29|290|EMBRAER/.test(s)) return false;
       // v23310 — FLAIR FLIES THE MAX 8, NOTHING ELSE
       // This function is the guard against exactly that
@@ -5377,6 +5383,11 @@ var LOCAL_LOGOS = {
 var OPERATOR_LOGOS = {
   // Air Canada family
   'RV':  '/logos/airlines/canadian/rouge.svg',                                 // Air Canada Rouge (rouge.png didn't exist → text fallback)
+  // v23944 — the brand Jazz and PAL both fly as, for the Express block whose
+  // records name both (fidsResolveOperator). Air Canada's own lockup, as
+  // drawn: no lettering-only file and no white version exist, so on a dark
+  // caption bar it sits on its white mount (_opbyBarPick), never recoloured.
+  'ACEX': '/logos/airlines/canadian-regional/aircanada-express.svg',
   'QK':  '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz Aviation
   'ROU': '/logos/airlines/canadian/rouge.svg',                                 // Rouge ICAO
   'JZA': '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz ICAO
@@ -5454,7 +5465,10 @@ var OPERATOR_LOGOS_THEMED = {
   'QK':  { light:'/logos/airlines/canadian-regional/jazz-monochrome-black.svg',           dark:'/logos/airlines/canadian-regional/jazz-monochrome-white.svg' },
   'JZA': { light:'/logos/airlines/canadian-regional/jazz-monochrome-black.svg',           dark:'/logos/airlines/canadian-regional/jazz-monochrome-white.svg' },
   'PB':  { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
-  'PVL': { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' }
+  'PVL': { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
+  // v23944 — the Express lockup's lettering is black and no white version is
+  // published, so a dark ground gets the name in type instead (no art).
+  'ACEX': { light:'/logos/airlines/canadian-regional/aircanada-express.svg',            dark:null }
 };
 // v23208 — WORDMARK-ONLY art for the Operated-By caption
 // — this applies to all airlines).
@@ -5584,6 +5598,7 @@ var OPBY_ART_INK = {
   '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg':    ['#1C3474'],
   '/logos/airlines/canadian-regional/jazz-wordmark-light.svg':            ['#FFFFFF'],
   '/logos/airlines/canadian-regional/jazz-wordmark-color.svg':            ['#CE3728'],
+  '/logos/airlines/canadian-regional/aircanada-express.svg':              ['#000000', '#F01428'],
   '/logos/airlines/canadian/porter.svg':                                  ['#152C53'],
   '/logos/airlines/us-regional/republic-wordmark-light.svg':              ['#FFFFFF'],
   '/logos/airlines/us-regional/republic-wordmark-dark.svg':               ['#04243C'],
@@ -5755,7 +5770,7 @@ function operatorLogoUrlThemed(opCode, isDark) {
   // black monochrome one (per the ruling: white is fine, black is not).
   if (isDark) {
     var v = OPERATOR_LOGOS_THEMED[c];
-    if (v) return v.dark;
+    if (v) return v.dark || null;
   }
   return operatorLogoUrl(c);
 }
@@ -7671,26 +7686,212 @@ function getAirlineAccent(code) {
     || '#0033A1';
 }
 
-// ── AIR CANADA EXPRESS OPERATOR MATRIX ───────────────────────────────────
-// Marketing AC flight-number ranges may identify the operating partner for
-// branding/boarding rules. They NEVER identify equipment: AC7992/AC7995 are a
-// concrete counterexample to the old range-based DH4 assumption. Aircraft
-// comes only from today's registration/live/scheduled truth chain.
-function acExpressMatrix(fn) {
-  if (isNaN(fn)) return null;
-  if (fn >= 7000 && fn <= 7299) return { op:'PB', opName:'PAL Airlines' };
-  // v22929 — AC77xx is PAL too
-  // 
-  // The type was already correct — a Dash 8-400 — but 7753 fell in NO band, so
-  // _opCode came out empty and the LIVERY fell back to the default Jazz-painted
-  // Express aircraft. Deliberately scoped to the 7700-7799 block that
-  // named rather than the whole 7300-7949 gap: an invented band is what put
-  // 'Operated by PAL Airlines' on AC7053 to Vancouver. If PAL flies more of
-  // the gap, widen it on evidence, one block at a time.
-  if (fn >= 7700 && fn <= 7799) return { op:'PB', opName:'PAL Airlines' };
-  if (fn >= 7950 && fn <= 8249) return { op:'QK', opName:'Jazz Aviation' };
-  if (fn >= 8250 && fn <= 8999) return { op:'QK', opName:'Jazz Aviation' };
+// ── WHO OPERATES THIS FLIGHT — ONE LADDER FOR EVERY SURFACE (v23944) ─────
+// The departures board and the three gate paths each guessed the operator of
+// an Air Canada flight from flight-number bands of their own, and the bands
+// disagreed: Rouge was 1600-1999 on the gate and 1600-2099 on the board, and
+// the gate let its band overrule whatever the feed said. One function now
+// answers for every surface, from the same inputs, best evidence first:
+//   1. own      the airport's own record names the operator: Montréal's
+//               FlightId prefix when it is the flight's only record
+//               (feed-router.js yulOperatorEvidence), a feed's operator field,
+//               a registration on our row the worker can name.
+//   2. far/live the far end's record of the same flight today (St. John's
+//               lists our AC7203 as PB7203), or the callsign of an FR24 answer
+//               the screens already paid for today — the worker's /opinfo,
+//               held in window._OPEV for the board and every gate alike.
+//   3. callsign a callsign on our row (CALLSIGN_ICAO). The marketing carrier's
+//               own designator says nothing: ACA is on every Air Canada row,
+//               Jazz's 77xx included.
+//   4. type     an aircraft only one partner flies for the carrier, from the
+//               row's own feed (CRJ-900 and E175: Jazz; Dash 8 on WestJet:
+//               Encore). Never a remembered "usual" type.
+//   5. band     a flight-number block, only where every record on hand shows
+//               one operator (_AC_OP_BANDS). Where both partners' records turn
+//               up (77xx), the line names the brand both fly as — Air Canada
+//               Express — never a guessed Jazz or PAL. Outside the listed
+//               blocks there is no operator line without evidence.
+// The gate reads the row's own fields and the same shared store, so it can
+// never say something the departures board does not.
+var AC_EXPRESS_OP = 'ACEX';
+var _OP_LADDER_NAMES = { QK: 'Jazz Aviation', PB: 'PAL Airlines', RV: 'Air Canada Rouge',
+                         WR: 'WestJet Encore', ACEX: 'Air Canada Express' };
+// Air Canada blocks, checked 2026-10-04 against Montréal's prefixes (1,021
+// rows), St. John's numbers and callsigns, Calgary's tails and today's FR24
+// callsigns:
+//   1600-2099  Rouge: 86 of 86 ROU at Montréal; 14 of 14 tails on AC20xx at
+//              Calgary are registered to Air Canada rouge LP.
+//   7600-7699  PAL's Halifax flying: PB7672 at St. John's, PVL7692 live.
+//   7700-7799  BOTH: every one has an ACA+JZA twin at Montréal, while
+//              PVL7754 and PVL7705 flew live and St. John's lists PB numbers.
+//              The brand both fly under, never a guess at which.
+//   7800-8999  Jazz: every Montréal record in it is JZA, no other prefix.
+// Not listed, so no line without evidence: 7000-7599 holds mainline A320
+// extras (AC7050 Toronto-Montréal), a Jazz flight (AC7190 Atlanta) and PAL's
+// own (AC7203 is PB7203); 2100-2299 holds only Rouge sun flights (AC2246 to
+// Samaná, AC2124 to Fort-de-France on a 737 MAX 8).
+var _AC_OP_BANDS = [
+  { lo: 1600, hi: 2099, op: 'RV' },
+  { lo: 7600, hi: 7699, op: 'PB' },
+  { lo: 7700, hi: 7799, op: AC_EXPRESS_OP },
+  { lo: 7800, hi: 8999, op: 'QK' }
+];
+function acOperatorBand(fn) {
+  var n = Number(fn);
+  if (!isFinite(n)) return null;
+  for (var i = 0; i < _AC_OP_BANDS.length; i++) {
+    if (n >= _AC_OP_BANDS[i].lo && n <= _AC_OP_BANDS[i].hi) return _AC_OP_BANDS[i].op;
+  }
   return null;
+}
+// Is this an Air Canada Express flight (Jazz, PAL, or the shared brand)?
+// The zone rule reads it: Express boards to Zone 4, mainline and Rouge to 6.
+function acExpressOperated(op) {
+  return op === 'QK' || op === 'PB' || op === AC_EXPRESS_OP;
+}
+function _opLadderName(op) {
+  return _OP_LADDER_NAMES[op] || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[op]) || op);
+}
+// "AC7203.YYT.a.1791121800": flight, far airport, OUR direction, scheduled
+// epoch seconds — the leg as the worker's /opinfo knows it. A departure row
+// carries dest, an arrival row origin.
+function _opEvLegId(f) {
+  if (!f || !f.flight || !f._sortTs) return '';
+  var fl = String(f.flight).replace(/\s+/g, '').toUpperCase();
+  if (!/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d{1,4}[A-Z]?$/.test(fl)) return '';
+  var oth = String(f._locIata || '').toUpperCase();
+  if (!/^[A-Z]{3}$/.test(oth)) oth = '-';
+  var dir = (f.dest === undefined && f.origin !== undefined) ? 'a' : 'd';
+  return fl + '.' + oth + '.' + dir + '.' + Math.round(Number(f._sortTs) / 1000);
+}
+function _opEvFarGet(f) {
+  try {
+    var S = (typeof window !== 'undefined' && window._OPEV) || null;
+    if (!S) return null;
+    var k = _opEvLegId(f);
+    return k ? (S[k] || null) : null;
+  } catch (e) { return null; }
+}
+var _OP_JAZZ_ONLY_TYPE = /\b(CRJ|CR[279]|E75|E7W|E175|E-?175|ERJ.?175|EMBRAER.?175)\b/;
+var _OP_WS_DASH8 = /DH8|DH4|DHC[- ]?8|Q[ -]?400|DASH[ -]?8/;
+// → { op, name, src, basis }; op '' when nothing says who operates it. `home`
+// is the airport the row belongs to (route fit for a band).
+function fidsResolveOperator(f, home) {
+  var none = { op: '', name: '', src: '', basis: '' };
+  if (!f) return none;
+  var mkt = String(f.airline || '').trim().toUpperCase();
+  var flight = String(f.flight || '').replace(/\s+/g, '').toUpperCase();
+  var nm = flight.match(/^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])(\d{1,4})/);
+  var fn = nm ? parseInt(nm[1], 10) : NaN;
+  var hit = function (op, src, basis) {
+    op = String(op || '').trim().toUpperCase();
+    if (op.length === 3 && typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[op]) op = CALLSIGN_TO_IATA[op];
+    if (!op || op === mkt) return null;
+    return { op: op, name: _opLadderName(op), src: src, basis: String(basis || '') };
+  };
+  var r;
+  // 1. own record
+  var ev = f._opEv;
+  if (ev && ev.op && (r = hit(ev.op, ev.src || 'own', ev.basis))) return r;
+  // 2. the far end's record, or today's FR24 answer
+  var far = _opEvFarGet(f);
+  if (far && far.op && (r = hit(far.op, far.src || 'far', far.basis))) return r;
+  // 3. a callsign on our row
+  var cs = String(f._feedCs || '').replace(/\s+/g, '').toUpperCase();
+  var csP = (cs.match(/^([A-Z]{3})\d/) || [])[1];
+  if (csP && typeof CALLSIGN_ICAO !== 'undefined' && CALLSIGN_ICAO[csP] && (r = hit(CALLSIGN_ICAO[csP], 'callsign', cs))) return r;
+  // 4. an aircraft only one partner flies, from the row's own feed
+  var ty = String(f._feedAcCode || '').toUpperCase();
+  if (ty) {
+    if (mkt === 'AC' && _OP_JAZZ_ONLY_TYPE.test(ty) && (r = hit('QK', 'type', ty))) return r;
+    if (mkt === 'WS' && _OP_WS_DASH8.test(ty) && (r = hit('WR', 'type', ty))) return r;
+  }
+  // 5. a block whose records all name one operator — if it can fly the leg
+  var band = null;
+  if (mkt === 'AC' && !isNaN(fn)) band = acOperatorBand(fn);
+  else if (mkt === 'WS' && fn >= 3000 && fn <= 3999) band = 'WR';
+  if (band) {
+    var fits = (typeof _regionalOpFitsRoute !== 'function')
+      || _regionalOpFitsRoute(band === AC_EXPRESS_OP ? 'QK' : band, home, f._locIata);
+    if (fits && (r = hit(band, band === AC_EXPRESS_OP ? 'brand' : 'band', mkt + ' ' + fn))) return r;
+  }
+  return none;
+}
+// Writes the answer onto a row; true when it changed.
+function fidsApplyOperator(row, home) {
+  if (!row) return false;
+  var res = fidsResolveOperator(row, home);
+  var op = res.op || null;
+  var nm = op ? res.name : null;
+  if (row._opCode === op && row._opName === nm && row._opSrc === res.src) return false;
+  row._opCode = op;
+  row._opName = nm;
+  row._opSrc = res.src;
+  row._opBasis = res.basis;
+  return true;
+}
+// The shared far-end answers: one /opinfo question per board refresh, asked
+// with the same sorted legs by every screen at an airport (so the edge cache
+// answers them alike), for Air Canada rows from 1600 up that their own record
+// does not already settle. No FR24 call is made for it.
+var _OPINFO_BASE = 'https://fids-proxy.n-leblanc1984.workers.dev/opinfo';
+var _opEvAsked = Object.create(null);
+function _opEvNeeds(r) {
+  if (!r || (r._opEv && r._opEv.op)) return false;
+  if (String(r.airline || '').toUpperCase() !== 'AC') return false;
+  var m = String(r.flight || '').replace(/\s+/g, '').toUpperCase().match(/^AC(\d{1,4})/);
+  return !!m && parseInt(m[1], 10) >= 1600;
+}
+function _opEvLegsFor(rows, now) {
+  var ids = [];
+  (rows || []).forEach(function (r) {
+    if (!_opEvNeeds(r)) return;
+    var ts = Number(r._sortTs) || 0;
+    if (ts < now - 6 * 3600000 || ts > now + 30 * 3600000) return;
+    var id = _opEvLegId(r);
+    if (id && ids.indexOf(id) === -1) ids.push(id);
+  });
+  ids.sort();
+  return ids.slice(0, 60);
+}
+function _opEvRefresh(home, rows) {
+  try {
+    if (typeof fetch !== 'function') return;
+    home = String(home || '').toUpperCase();
+    if (!/^[A-Z]{3}$/.test(home)) return;
+    var now = Date.now();
+    var ids = _opEvLegsFor(rows, now);
+    if (!ids.length) return;
+    var q = home + '|' + ids.join(',');
+    if (_opEvAsked[q] && now - _opEvAsked[q] < 4 * 60000) return;
+    _opEvAsked[q] = now;
+    fetch(_OPINFO_BASE + '?ap=' + home + '&legs=' + ids.join(','), { cache: 'no-store' })
+      .then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (j) {
+        if (!j || !j.legs || typeof j.legs !== 'object') return;
+        var S = window._OPEV = window._OPEV || {};
+        var t = Date.now();
+        Object.keys(S).forEach(function (k) { if (!S[k] || t - (S[k].at || 0) > 36 * 3600000) delete S[k]; });
+        Object.keys(j.legs).forEach(function (k) {
+          var v = j.legs[k];
+          if (v && /^[A-Z0-9]{2,4}$/.test(String(v.op || ''))) S[k] = { op: String(v.op), src: String(v.src || 'far'), basis: String(v.basis || ''), at: t };
+        });
+        var changed = false;
+        try {
+          if (typeof data !== 'undefined' && data) {
+            (data.dep || []).concat(data.arr || []).forEach(function (row) {
+              if (fidsApplyOperator(row, home)) changed = true;
+            });
+          }
+        } catch (e) {}
+        if (!changed) return;
+        try {
+          if (typeof screenType !== 'undefined' && screenType === 'gate') {
+            if (typeof requestGateRebuild === 'function') requestGateRebuild();
+          } else if (typeof render === 'function') render();
+        } catch (e) {}
+      }).catch(function () {});
+  } catch (e) {}
 }
 
 // ── THE PARTNER HAS TO BE ABLE TO FLY THE LEG ────────────────────────────
@@ -9005,28 +9206,14 @@ function renderMobileGateHtml(ctx) {
   // Aircraft image — show the equipment livery if available
   // Rouge override: AC flights operated by RV use Rouge liveries (321r.png etc.)
   const equipRaw = currentFlight._aircraftCode || '';
-  // Operator code for the badge + livery. Prefer any operator the feed pre-tagged,
-  // but ALWAYS fall back to the deterministic flight-number mapping so the
-  // "Operated by" logo and Rouge/Jazz/PAL liveries fire even when the feed left
-  // the operator blank (e.g. AC7995 with no equipment tagged the operator empty).
-  let _opCode = currentFlight._opCode || '';
-  (function(){
-    var _fn = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
-    if (isNaN(_fn)) return;
-    var _fitsRoute = function (op) {
-      return (typeof _regionalOpFitsRoute !== 'function') || _regionalOpFitsRoute(op, iata, destIata);
-    };
-    if (airline === 'AC') {
-      var _mxm = (typeof acExpressMatrix === 'function') ? acExpressMatrix(_fn) : null;
-      if (_mxm && _fitsRoute(_mxm.op)) _opCode = _mxm.op;
-      else if (((_fn >= 7600 && _fn <= 7699) || (_fn >= 2200 && _fn <= 2299)) && _fitsRoute('PB')) _opCode = 'PB';
-      else if (_fn >= 1600 && _fn <= 1999) _opCode = 'RV';
-    } else if (airline === 'WS' && _fn >= 3000 && _fn <= 3999 && _fitsRoute('WR')) {
-      _opCode = 'WR';
-    }
-    // Never keep a partner the route rules out (see _regionalOpFitsRoute).
-    if (_opCode && !_fitsRoute(_opCode)) _opCode = '';
-  })();
+  // Operator code for the badge + livery: the one ladder every surface reads
+  // (fidsResolveOperator), so this badge says what the departures board says.
+  // Other carriers keep the operator already on the row when it has nothing.
+  let _opCode = '';
+  try {
+    var _resM = (typeof fidsResolveOperator === 'function') ? fidsResolveOperator(currentFlight, iata) : null;
+    _opCode = (_resM && _resM.op) || ((airline === 'AC' || airline === 'WS') ? '' : (currentFlight._opCode || ''));
+  } catch (e) { _opCode = ''; }
   let _acImgHtml = '';
   let _liveryEqDebug = '';
   if (equipRaw && typeof aircraftImgTag === 'function') {
@@ -9075,7 +9262,7 @@ function renderMobileGateHtml(ctx) {
   let _opBadgeHtml = '';
   if (_opCode && _opCode !== airline) {
     const _opLogoUrl = (typeof operatorLogoUrlThemed === 'function') ? operatorLogoUrlThemed(_opCode, !_lt) : null;
-    const _opName = currentFlight._opName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) || _opCode;
+    const _opName = (_resM && _resM.op === _opCode && _resM.name) || currentFlight._opName || (typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) || _opCode;
     var _opBadgeBg = _lt ? 'rgba(13,22,38,0.05)' : 'rgba(255,255,255,0.05)';
     _opBadgeHtml = '<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px;padding:8px 12px;background:' + _opBadgeBg + ';border-radius:8px;">'
       + '<span style="font-size:11px;color:' + T.muted2 + ';letter-spacing:1.5px;font-weight:700;text-transform:none;">Operated by</span>';
@@ -9543,7 +9730,11 @@ window._orbKeepsColour = function (code) {
 // instead of copied into each. The rail is the original; the card now asks it
 // the same question and gets the same answer by construction.
 window._gateOrbParts = function (code) {
-  var c = String(code == null ? '' : code).trim().toUpperCase();
+  // v23944 — a brand with no emblem of its own resolves to its carrier's
+  // (_orbEmblemCarrier, beside _airlineOrbEmblem: Air Canada Express → AC).
+  var c = (typeof _orbEmblemCarrier === 'function')
+    ? _orbEmblemCarrier(code)
+    : String(code == null ? '' : code).trim().toUpperCase();
   var tb = (window._BADGE_TILE_BRANDS && window._BADGE_TILE_BRANDS[c]) || null;
   var path = (tb && tb.icon)
     || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(c) : '');
@@ -9883,8 +10074,23 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
 // keeps its own IATA_TO_* lockup system. Every call site renders the result
 // with onerror, so a carrier with no art anywhere lands exactly where it does
 // today: an empty orb, not a broken image.
+// v23944 — A BRAND WITH NO EMBLEM OF ITS OWN WEARS ITS CARRIER'S.
+// 'ACEX' (AC_EXPRESS_OP) is the code the operator ladder gives a flight it can
+// only place in the Air Canada Express block: the brand Jazz and PAL both fly
+// as. It is not an airline designator and no orb art is keyed on it, so every
+// emblem table missed it and the orb printed the four letters on a red disc
+// (YUL gate A30, AC7773). Express aircraft wear Air Canada's roundel, so every
+// round orb resolves the brand to AC: the art, the disc, the colour rules and
+// the last-resort letters all come out exactly as they do for Air Canada.
+// The caption and the badge keep the brand's own lockup (OPERATOR_LOGOS).
+// A plain function declaration with no table outside it, so it answers the
+// same however early a caller reaches it (_gateOrbParts sits above it).
+function _orbEmblemCarrier(code) {
+  var c = String(code == null ? '' : code).trim().toUpperCase();
+  return c === 'ACEX' ? 'AC' : c;
+}
 function _airlineOrbEmblem(code) {
-  var c = String(code || '').trim().toUpperCase();
+  var c = _orbEmblemCarrier(code);
   if (!c) return '';
   if (GATE_TOP_ROUND_EMBLEM_FILES[c]) return GATE_TOP_ROUND_EMBLEM_FILES[c];
   if (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[c]) return window._AIRLINE_EMBLEM_FILES[c];
@@ -9908,7 +10114,8 @@ function _airlineOrbEmblem(code) {
 // so it is hard-limited to the shape a carrier code actually has. Anything the
 // feed sends that is not A-Z0-9 cannot reach the attribute.
 function _orbMono(code) {
-  return String(code == null ? '' : code).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+  var c = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(code) : String(code == null ? '' : code).toUpperCase();
+  return c.replace(/[^A-Z0-9]/g, '').slice(0, 3);
 }
 // v23440 — THE AIRCRAFT PLATE GETS THE ROW TILE TOO.
 //
@@ -10067,12 +10274,16 @@ function _buildV2AircraftCol(ctx, vars) {
   // Same-carrier flights get a clean airline brand block; different operators
   // get the "Operated by" label, e.g. AC marketed, Jazz-operated.
   var _marketingCode = String(airlineCode || '').trim().toUpperCase();
-  var _opCodeRaw = String(currentFlight._opCode || _marketingCode || '').trim().toUpperCase();
+  // v23944 — Air Canada and WestJet through the one ladder (fidsResolveOperator),
+  // like the board; other carriers as the row has them.
+  var _resV = (typeof fidsResolveOperator === 'function' && (_marketingCode === 'AC' || _marketingCode === 'WS'))
+    ? fidsResolveOperator(currentFlight, (ctx && ctx.iata) || (vars && vars.iata) || '') : null;
+  var _opCodeRaw = String((_resV ? (_resV.op || _marketingCode) : currentFlight._opCode) || _marketingCode || '').trim().toUpperCase();
   // ADB/live feeds may hand us ICAO callsign prefixes (POE/JZA/ROU) while
   // the marketing carrier is IATA (PD/AC). Normalize before comparing so
   // Porter does not become "Operated by porter" on its own flights.
   var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
-  var _opName = currentFlight._opName || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) || _opCode);
+  var _opName = (_resV && _resV.op && _resV.op === _opCode && _resV.name) || currentFlight._opName || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) || _opCode);
   var _sameBrandAlias = (_marketingCode === 'AC' && (_opCode === 'AC' || _opCode === 'RV'))
                     || (_marketingCode === 'PD' && _opCode === 'PD')
                     || (_marketingCode === 'WS' && (_opCode === 'WS' || _opCode === 'WR'));
@@ -10089,7 +10300,7 @@ function _buildV2AircraftCol(ctx, vars) {
   // For RV/QK route image lookup through parent AC so the AC folder
   // resolves correctly. aircraftImgTag uses LIVERY_FOLDERS to pick path.
   var _liveryAirline = _opCode;
-  if (_opCode === 'RV' || _opCode === 'QK') _liveryAirline = 'AC';
+  if (_opCode === 'RV' || _opCode === 'QK' || _opCode === AC_EXPRESS_OP) _liveryAirline = 'AC';
 
   var _acImg = '';
   try {
@@ -11348,6 +11559,7 @@ function _buildV2MapCol(ctx, vars) {
       var _mcOrbOp = '';
       try { var _oRaw_mcOrb = String((vars.currentFlight && vars.currentFlight._opCode) || '').trim().toUpperCase();
         _mcOrbOp = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_oRaw_mcOrb]) ? CALLSIGN_TO_IATA[_oRaw_mcOrb] : _oRaw_mcOrb;
+        _mcOrbOp = _orbEmblemCarrier(_mcOrbOp);   // v23944 — Air Canada Express wears AC's roundel
         if (_mcOrbOp === _mcCode) _mcOrbOp = ''; } catch (e) {}
       var _mcOrbSrc = '';
       try {
@@ -11763,6 +11975,9 @@ function _buildV2MapCol(ctx, vars) {
         || ''
       ).trim().toUpperCase();
       var _niCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_niCodeRaw]) ? CALLSIGN_TO_IATA[_niCodeRaw] : _niCodeRaw;
+      // v23944 — Air Canada Express (ACEX) wears Air Canada's roundel, so on an
+      // Air Canada gate it is the same carrier as the top orb, not letters.
+      _niCode = _orbEmblemCarrier(_niCode);
       var _niOrbSrc = '';
       try { _niOrbSrc = _airlineOrbEmblem(_niCode) || ''; } catch (e) {}
       // v23392 — SAME CARRIER, SAME ORB.
@@ -11998,62 +12213,25 @@ function _buildV2MapCol(ctx, vars) {
       }
     } catch (e) {}
 
-    var _opCodeRaw = String(_cf._opCode || vars.airlineCode || '').trim().toUpperCase();
-    var _opCode = (typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opCodeRaw]) ? CALLSIGN_TO_IATA[_opCodeRaw] : _opCodeRaw;
-    // WestJet Encore flies the Dash 8-400s for WestJet on 3xxx flight numbers.
-    // Infer Encore from the flight number (not just the equipment) — the feed
-    // leaves the marketing carrier as WS, and demo WS flights default to 737s,
-    // so an equipment-only check never fires. Livery still keys off WS below.
-    var _acFlNum = parseInt(String(_cf.flight || (vars.currentFlight && vars.currentFlight.flight) || '').replace(/\D/g, ''), 10);
-    if (_opCode === 'WS') {
-      var _wsEq = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
-      if (/DH8|DH4|DHC[- ]?8|Q[ -]?40|DASH[ -]?8/.test(_wsEq)) _opCode = 'WR';
-      else if (!isNaN(_acFlNum) && _acFlNum >= 3000 && _acFlNum <= 3999) _opCode = 'WR';
-    }
-    // Air Canada Express: the marketing carrier is AC, but 4-digit flights are
-    // flown by its regional partners — PAL (7600-7699 / 2200-2299, Eastern
-    // Canada), Jazz (8xxx / 75xx), Rouge (16xx-19xx). Key off the MARKETING
-    // carrier + flight number, NOT whatever operator the feed pre-tagged: the
-    // feed often labels these "Jazz" or "AC", which made the badge wrong. The
-    // flight number is deterministic. (Livery still keys off AC below.)
-    var _mktIsAC = String(vars.airlineCode || '').toUpperCase() === 'AC';
-    var _mxGate = (_mktIsAC && typeof acExpressMatrix === 'function') ? acExpressMatrix(_acFlNum) : null;
-    // THE BUG THAT BLANKED EVERY GATE'S AIRCRAFT (days of gates showing no
-    // aircraft): the three route-fit checks below said bare `iata` /
-    // `locIata` — names that exist in uxgGateHtml but NOT in this function.
-    // Every render of this block threw ReferenceError at the first check,
-    // the catch below swallowed it, and the last-resort guard printed
-    // 'Aircraft details pending' — on every gate, every flight, regardless
-    // of how much data the poll had resolved. The airport pair lives on
-    // vars/ctx here.
+    // v23944 — WHO OPERATES IT: the one ladder every surface reads
+    // (fidsResolveOperator — the airport's own record, the far end's record
+    // or today's FR24 callsign, a callsign on the row, an aircraft only one
+    // partner flies, then a block every record agrees on). This used to let a
+    // flight-number band OVERRULE what the feed said, with bands the
+    // departures board did not share (Rouge stopped at 1999 here and at 2099
+    // there, so Moncton's AC2037 was Rouge on the board and mainline here),
+    // and it named PAL from a registration only this screen could see. Now
+    // the evidence leads, and the gate and the board read the same answer.
+    // With no operator the marketing carrier stands alone, as before. The
+    // Express block both partners fly (77xx) names Air Canada Express.
+    // Other carriers keep what the row or the banner's regional inference
+    // already put on the flight when the ladder has nothing.
     var _apIataRt = String((vars && vars.iata) || (ctx && ctx.iata) || '');
-    var _destIataRt = String((vars && vars.locIata) || (ctx && ctx.locIata)
-      || (_cf && _cf._locIata) || '');
-    // The band only decides the operator if that operator's fleet can fly this
-    // leg (see _regionalOpFitsRoute) — otherwise it isn't their flight.
-    if (_mxGate && typeof _regionalOpFitsRoute === 'function'
-        && !_regionalOpFitsRoute(_mxGate.op, _apIataRt, _destIataRt)) _mxGate = null;
-    if (_mktIsAC && !isNaN(_acFlNum)) {
-      if (_mxGate) _opCode = _mxGate.op;
-      else if (((_acFlNum >= 7600 && _acFlNum <= 7699) || (_acFlNum >= 2200 && _acFlNum <= 2299))
-               && (typeof _regionalOpFitsRoute !== 'function' || _regionalOpFitsRoute('PB', _apIataRt, _destIataRt))) _opCode = 'PB';
-      else if (_acFlNum >= 1600 && _acFlNum <= 1999) _opCode = 'RV';
-    }
-    // A band-derived partner the route rules out is no attribution at all —
-    // the marketing carrier stands alone rather than a fabricated operator.
-    if (_opCode && typeof _regionalOpFitsRoute === 'function'
-        && !_regionalOpFitsRoute(_opCode, _apIataRt, _destIataRt)) _opCode = '';
-    // Air Canada Express Dash 8-400s are flown by BOTH Jazz AND PAL Airlines.
-    // The two are told apart by REGISTRATION: PAL uses its distinctive "P" series
-    // (C-FP•• / C-GP••), while Jazz's Dash 8-400s are C-GG••. So a Jazz-attributed
-    // Express flight on a PAL airframe is actually operated by PAL.
-    // (Skip the registration heuristic when the flight number is inside the
-    // enforced Express matrix — the contractual pairing wins.)
-    if (_opCode === 'QK' && !_mxGate && _acReg) {
-      var _regUp = String(_acReg).toUpperCase().replace(/[\s-]/g, '');
-      var _PAL_REGS = { 'CFPAL':1, 'CFPQI':1, 'CGPAO':1, 'CGPIX':1, 'CFPVJ':1, 'CGPFI':1 };
-      if (_PAL_REGS[_regUp] || /^C[FG]P[A-Z][A-Z]$/.test(_regUp)) _opCode = 'PB';
-    }
+    var _resG = (typeof fidsResolveOperator === 'function') ? fidsResolveOperator(_cf, _apIataRt) : null;
+    var _mktG = String(vars.airlineCode || '').trim().toUpperCase();
+    var _opLegacy = String(_cf._opCode || '').trim().toUpperCase();
+    if (_opLegacy && typeof CALLSIGN_TO_IATA !== 'undefined' && CALLSIGN_TO_IATA[_opLegacy]) _opLegacy = CALLSIGN_TO_IATA[_opLegacy];
+    var _opCode = (_resG && _resG.op) || ((_mktG === 'AC' || _mktG === 'WS') ? _mktG : (_opLegacy || _mktG));
     // GHOST-TAIL PURGE (harness-proven): a foreign tail carried in once by a
     // stale cross-gate inbound was then RESURRECTED for up to 6 h by the
     // sticky shelf above — 'Canadair CRJ-701ER | N632SK' stalking Porter and
@@ -12121,7 +12299,8 @@ function _buildV2MapCol(ctx, vars) {
     // Jazz flight number the attribution is internally inconsistent; trust the
     // (deterministic) flight number and show a representative Jazz type so the
     // equipment can't contradict the "Operated by Jazz" badge below it.
-    if (_opCode === 'QK' && (_equipCd || _equipNm)) {
+    // (The Air Canada Express brand is Jazz or PAL: regional metal either way.)
+    if ((_opCode === 'QK' || _opCode === AC_EXPRESS_OP) && (_equipCd || _equipNm)) {
       var _qkEqUp = (String(_equipCd || '') + ' ' + String(_equipNm || '')).toUpperCase();
       var _qkRegional = /CRJ|\bCR[0-9]\b|DASH|DH[0-9]|DHC|Q400|\bE1[79]0\b|\bE175\b|\bE75\b|EMBRAER/.test(_qkEqUp);
       if (!_qkRegional) {
@@ -12288,12 +12467,13 @@ function _buildV2MapCol(ctx, vars) {
         // AIRLINE_NAME holds the PARENT brand for the Express partners
         // (QK→"Air Canada", etc.), so use proper operator names for the ones we
         // infer locally; US regionals keep the resolved name from the feed.
-        var _EXPRESS_OP_NAMES = { 'PB':'PAL Airlines', 'QK':'Jazz Aviation', 'RV':'Air Canada Rouge', 'WR':'WestJet Encore' };
+        var _EXPRESS_OP_NAMES = { 'PB':'PAL Airlines', 'QK':'Jazz Aviation', 'RV':'Air Canada Rouge', 'WR':'WestJet Encore', 'ACEX':'Air Canada Express' };
         var _opNameForAlt = _EXPRESS_OP_NAMES[_opCode]
           || (vars.currentFlight && vars.currentFlight._opName)
           || ((typeof AIRLINE_NAME !== 'undefined') ? AIRLINE_NAME[_opCode] : _opCode)
           || _opCode;
-        var _opShortName = String(_opNameForAlt).replace(/^Air Canada\s+/i, '');
+        // (The shared Express brand keeps its whole name: "Express" alone names nobody.)
+        var _opShortName = (_opCode === AC_EXPRESS_OP) ? String(_opNameForAlt) : String(_opNameForAlt).replace(/^Air Canada\s+/i, '');
         // Candidate URL chain — tries the primary path from OPERATOR_LOGOS
         // first, then peel off the extension and try .png/.svg/-icon variants.
         // Final fallback is wordmark text in the same badge shell.
@@ -12456,7 +12636,7 @@ function _buildV2MapCol(ctx, vars) {
       var _opByVal = '';
       var _mktCode6 = String(vars.airlineCode || '').trim().toUpperCase();
       if (_opCode && _opCode !== _mktCode6) {
-        var _opNm6 = _cf._opName
+        var _opNm6 = (_resG && _resG.op === _opCode && _resG.name) || _cf._opName
           || ((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[_opCode]) ? AIRLINE_NAME[_opCode] : _opCode);
         _opNm6 = String(_opNm6).replace(/[<>"']/g, '');
         // v23206 — THE WORDMARK BY ITSELF, colour or black — no chip, no
@@ -12510,7 +12690,10 @@ function _buildV2MapCol(ctx, vars) {
       // Now that the operator is known, re-point the module's tagged orb at
       // the operator's logo.
       try {
-        if (_opCode && _inboundCard && _inboundCard.indexOf('v2-fi-orb') !== -1) {
+        // v23944 — the orb asks for the carrier whose roundel the operator
+        // wears: Air Canada Express (ACEX) repaints exactly as Air Canada does.
+        var _opOrb = (typeof _orbEmblemCarrier === 'function') ? _orbEmblemCarrier(_opCode) : _opCode;
+        if (_opOrb && _inboundCard && _inboundCard.indexOf('v2-fi-orb') !== -1) {
           // v23208 — EMBLEM ONLY in the orb
           // all airlines — whoever operates the aircraft supplies the
           // logo. v23207 preferred operatorLogoUrl
@@ -12518,7 +12701,7 @@ function _buildV2MapCol(ctx, vars) {
           // the orb. No wordmark fallbacks: an operator without emblem art
           // keeps the marketing carrier's emblem the builder already baked.
             // v23312 — through the shared resolver, like every other orb.
-            var _orbFix = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_opCode) : '') || '';
+            var _orbFix = ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(_opOrb) : '') || '';
           if (_orbFix) _inboundCard = _inboundCard.replace(/(class="v2-fi-orb" src=")[^"]*(")/, '$1' + _orbFix + '$2');
           // v23222 — a bitmap roundel swapped in here must ALSO drop any
           // invert the builder baked for the original vector art (Rouge's
@@ -12530,7 +12713,7 @@ function _buildV2MapCol(ctx, vars) {
           // no emblem file the marketing carrier's mark stays, and ITS
           // colour exemption governs (a UA globe left in place by a SkyWest
           // leg must not be re-silhouetted by the operator repaint).
-          var _orbArtCode = _orbFix ? _opCode : _mktCode6;
+          var _orbArtCode = _orbFix ? _opOrb : _mktCode6;
           if (_orbFixPng || (window._CARD_COLOR_EMBLEMS && window._CARD_COLOR_EMBLEMS[_orbArtCode])) {
             _inboundCard = _inboundCard.replace(/(class="v2-fi-orb"[^>]*?)filter:brightness\(0\) invert\(1\);/, '$1');
           }
@@ -12544,8 +12727,8 @@ function _buildV2MapCol(ctx, vars) {
           // the bottom-right card alone. The colours are the brands'
           // own script inks: jazz.svg paints #ce3728, rouge.svg #A21C37.
           var _CARD_ORB_GROUND = { 'QK': '#ce3728', 'RV': '#A21C37', 'ROU': '#A21C37' };
-          var _opAcc = _CARD_ORB_GROUND[_opCode]
-            || (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_opCode] && AIRLINE_BRAND[_opCode].accent) || '';
+          var _opAcc = _CARD_ORB_GROUND[_opOrb]
+            || (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[_opOrb] && AIRLINE_BRAND[_opOrb].accent) || '';
           if (_opAcc) {
             _inboundCard = _inboundCard.replace(/(v2-fi-orbwrap" style="[^"]*?)background:var\(--airline-accent,[^)]*\)/, '$1background:' + _opAcc);
             var _oh = _opAcc.replace('#',''); if (_oh.length === 3) _oh = _oh.replace(/./g, function (c) { return c + c; });
@@ -12589,7 +12772,7 @@ function _buildV2MapCol(ctx, vars) {
         // an operator whose wordmark is far wider than it is tall (PAL 6.2:1,
         // SkyWest 4.3:1, Encore 4.25:1), which takes its own row layout.
         + (_acTypeVal && _acTypeVal.indexOf('v2-rc-acb-sep') !== -1 ? ' has-reg' : '')
-        + (_opByVal && /^(PB|PVL|SP|OO|SKW|WR|WEN)$/.test(String(_opCode || '').toUpperCase()) ? ' has-widemark' : '');
+        + (_opByVal && /^(PB|PVL|SP|OO|SKW|WR|WEN|ACEX)$/.test(String(_opCode || '').toUpperCase()) ? ' has-widemark' : '');
       // The reserved aircraft area should remain an intentional branded panel
       // while a lookup finishes. Never guess a model; hold the airline mark in
       // the space instead of floating a raw "image pending" warning over it.
@@ -14459,15 +14642,12 @@ function uxgGateHtml(ctx) {
       // Air Canada family boards by ZONE:
       // priority Zones 1•2 first, then general boarding Zone 3, then Zones
       // 4•5•6 on Mainline/Rouge — Express (Jazz/PAL) tops out at Zone 4.
-      // NOTE: the local _opCode/_opName vars are declared later in this
-      // function — read the flight object directly, plus the contractual
-      // AC-Express flight-number ranges (AC7000-8999 = Jazz/PAL).
+      // v23944 — Express is whatever the one ladder says (fidsResolveOperator:
+      // Jazz, PAL, or the Air Canada Express brand both fly as); a mainline
+      // extra in the 70xx block (AC7050) boards like mainline.
       var _acExpress = (airlineCode === 'QK')
-        || currentFlight._opCode === 'QK' || currentFlight._opCode === 'PB'
-        || (function () {
-             var m = String(currentFlight.flight || '').match(/(\d+)/);
-             return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
-           })();
+        || (typeof acExpressOperated === 'function' && typeof fidsResolveOperator === 'function'
+            && acExpressOperated(fidsResolveOperator(currentFlight, iata).op));
       _grpLbl = 'Zone';
       // Lane model per the physical AC gate signs: priority Zones 1
       // (black, Lane 1) and 2 (red, Lane 2) get their own quarter panels AT
@@ -14691,11 +14871,8 @@ function uxgGateHtml(ctx) {
       // — every group called.
       var _fcAcFam = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK');
       var _fcExpress = (airlineCode === 'QK')
-        || currentFlight._opCode === 'QK' || currentFlight._opCode === 'PB'
-        || (function () {
-             var m = String(currentFlight.flight || '').match(/(\d+)/);
-             return !!(m && typeof acExpressMatrix === 'function' && acExpressMatrix(parseInt(m[1], 10)));
-           })();
+        || (typeof acExpressOperated === 'function' && typeof fidsResolveOperator === 'function'
+            && acExpressOperated(fidsResolveOperator(currentFlight, iata).op));
       var _grpValCls = _g8GrpValCls;
       var _fcNext, _fcNextLbl = _gateLbl('zones', _frF, _gateLblHalf, ' <span class="g8-bir-sep">|</span> ', true);
       if (airlineCode === 'WS' || airlineCode === 'WR') _fcNext = '2 – 9';
@@ -20190,9 +20367,11 @@ const gView = document.getElementById('gateView');
           try {
             if (_eq && _eqStrength(_eq) < 3) {
               var _mktC = String(currentFlight.airline || '').toUpperCase();
-              var _fnRv = parseInt(String(currentFlight.flight || '').replace(/\D/g, ''), 10);
-              var _opC = (_mktC === 'AC' && !isNaN(_fnRv) && _fnRv >= 1600 && _fnRv <= 1999)
-                ? 'RV' : String(_eq.opCode || '').toUpperCase();
+              // v23944 — the operator from the one ladder (fidsResolveOperator),
+              // not a Rouge band of this check's own (1600-1999, while Rouge
+              // flies to 2099).
+              var _resQ = (typeof fidsResolveOperator === 'function') ? fidsResolveOperator(currentFlight, _enrichIata) : null;
+              var _opC = (_resQ && _resQ.op) || String(_eq.opCode || '').toUpperCase();
               var _eqAcStr = String(_eq.aircraftCode || '') + ' ' + String(_eq.aircraft || '');
               // Judge the REG and the TYPE separately — nulling the whole
               // record for a bad tail also erased a perfectly sane type and
@@ -26840,7 +27019,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23943';
+var FIDS_BUILD_TAG = 'v23944';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -29237,22 +29416,16 @@ function rfgPickAircraft(airlineCode, seed) {
 }
 
 // Demo-only: assign a plausible operator code + name for visual testing
-// of the "Operated By" block. Matches the same flight-number ranges used by
-// the real-time detection so the demo output mirrors live behavior.
+// of the "Operated By" block. The live ladder's own blocks (acOperatorBand),
+// so the demo output mirrors live behavior.
 function rfgOperatorCode(al, num) {
-  if (al === 'AC') {
-    if ((num >= 8000 && num <= 8999) || (num >= 7500 && num <= 7999)) return 'QK';
-    if (num >= 1600 && num <= 1999) return 'RV';
-  }
-  if (al === 'WS' && num >= 3200 && num <= 3799) return 'WR';
+  if (al === 'AC') return (typeof acOperatorBand === 'function') ? acOperatorBand(num) : null;
+  if (al === 'WS' && num >= 3000 && num <= 3999) return 'WR';
   return null;
 }
 function rfgOperatorName(al, num) {
   var code = rfgOperatorCode(al, num);
-  if (code === 'QK') return 'Jazz Aviation';
-  if (code === 'RV') return 'Air Canada Rouge';
-  if (code === 'WR') return 'WestJet Encore';
-  return null;
+  return code ? ((typeof _opLadderName === 'function') ? _opLadderName(code) : code) : null;
 }
 
 function rfgFlightNum(al, range, seed) {
@@ -29368,7 +29541,7 @@ function buildRandomFlights(iata) {
     // WestJet Encore (WR) = Dash 8-400 only.
     var _acftForEntry = (_opCodeForEntry === 'QK')
       ? rfgPick(['CR9', 'DH4', 'E75'], seed + i * 23)
-      : (_opCodeForEntry === 'WR')
+      : (_opCodeForEntry === 'WR' || _opCodeForEntry === 'PB' || _opCodeForEntry === AC_EXPRESS_OP)
         ? 'DH4'
         : rfgPickAircraft(alEntry.al, seed + i * 23);
     const entry = { time, upd, flight, airline: alEntry.al, status, gate, terminal: term,
@@ -29377,7 +29550,9 @@ function buildRandomFlights(iata) {
                     _aircraft: _acftForEntry,
                     _aircraftCode: '',
                     _opCode: _opCodeForEntry,
-                    _opName: rfgOperatorName(alEntry.al, _flNumForOp) };
+                    _opName: rfgOperatorName(alEntry.al, _flNumForOp),
+                    // v23944 — the demo's operator, as evidence the gate's ladder reads.
+                    _opEv: _opCodeForEntry ? { op: _opCodeForEntry, src: 'demo', basis: 'demo' } : null };
     if (isDep) entry.dest   = route.c;
     else        entry.origin = route.c;
     return entry;
@@ -31941,33 +32116,19 @@ function mapADB(raw, mode, kept) {
     const _opIata = (opLeg?.airline?.iata || '').trim().toUpperCase();
     const _opIcao = (opLeg?.airline?.icao || '').trim().toUpperCase();
     const _opApiName = (opLeg?.airline?.name || '').trim();
-    // Show operator only when different from the display airline
-    var _opCode = (_opIata && _opIata !== airline && _opIata !== code) ? _opIata : null;
-    // v194: prefer local AIRLINE_NAME map over API name (same reasoning as faAirlineName above)
-    var _opName = _opCode ? (AIRLINE_NAME[_opCode] || _opApiName || '') : '';
-    // Rouge detection by flight number range for departure board.
-    // Rouge currently uses several blocks of AC numbering. The 1600-2099
-    // range covers virtually all Rouge departures in 2026.
-    if (!_opCode && airline === 'AC') {
-      var _fnum = parseInt(flight.replace(/\D/g, ''));
-      if (_fnum >= 1600 && _fnum <= 2099) {
-        _opCode = 'RV';
-        _opName = 'Air Canada Rouge';
-      }
-      // Jazz Aviation (Air Canada Express) flies AC's regional fleet under
-      // AC marketing codes. The 7000-8999 block is the Express range,
-      // but only the Dash 8 / CRJ subset is Jazz (other ranges in that
-      // block can be Express services flown by Sky Regional / PAL etc.).
-      // We also check the equipment string when available to avoid false
-      // positives — only mark as Jazz if it's a known Jazz aircraft.
-      else if (_fnum >= 7000 && _fnum <= 8999) {
-        var _eqRaw = (f.aircraft && (f.aircraft.model || '')) || '';
-        if (/dash[\s-]*8|dhc[\s-]*8|crj/i.test(_eqRaw)) {
-          _opCode = 'QK';
-          _opName = 'Jazz Aviation';
-        }
-      }
-    }
+    // v23944 — the airport's OWN record of who operates the flight, as
+    // evidence for the one ladder (fidsResolveOperator, applied below once the
+    // row is built): _opEv from the feed (Montréal's FlightId prefix, a tail
+    // the worker named on our row), the feed's operator field (the worker's
+    // _opCode: Washington's reg_code, Detroit's regional), or a leg airline
+    // that differs from the display airline. The board used to run flight-
+    // number bands of its own here (Rouge 1600-2099, and "Jazz" on a Dash 8
+    // match that never fired on the feeds' DH4/CR9 codes) that the gate did
+    // not share.
+    var _ownEv = (f._opEv && f._opEv.op) ? f._opEv
+      : (f._opCode ? { op: String(f._opCode).trim().toUpperCase(), src: 'own', basis: 'operator field' }
+      : ((_opIata && _opIata !== airline && _opIata !== code) ? { op: _opIata, src: 'own', basis: (_opApiName || 'leg airline') } : null));
+    var _opCode = _ownEv ? _ownEv.op : null;
     const _timeLeg=mode==='dep'?(f.departure||{}):(f.arrival||{});
     const _actualL=(_timeLeg.runwayTime&&(_timeLeg.runwayTime.local||_timeLeg.runwayTime.utc))||null;
     const _predL=(_timeLeg.predictedTime&&(_timeLeg.predictedTime.local||_timeLeg.predictedTime.utc))||null;
@@ -32073,10 +32234,6 @@ function mapADB(raw, mode, kept) {
     const dateTag=dayDiff>0?fDay+'+'+dayDiff:fDay;
     // Extract callsign to identify actual operating carrier
     const _callSign = (f.callSign || '').trim().toUpperCase();
-    const _csPrefix = _callSign.replace(/\d.*/,'').trim();
-    const _csOpIata = _csPrefix ? (CALLSIGN_ICAO[_csPrefix] || null) : null;
-    const _csOpDiffers = _csOpIata && _csOpIata !== airline;
-    const _csOpName = _csOpDiffers ? (AIRLINE_NAME[_csOpIata] || _csOpIata) : null;
     let _aircraftRaw=(f.aircraft&&(f.aircraft.model||f.aircraft.iataCode||f.aircraft.iata))||'';
     // ── PORTER → YTZ RUNWAY CONSTRAINT ──
     // Billy Bishop (YTZ) has a 4,000-ft runway too short for jets. Porter
@@ -32263,9 +32420,12 @@ function mapADB(raw, mode, kept) {
     // board row reading 'Unknown' helps no traveler and should not be
     // there.
     if (!locIata && (!cityName || /^unknown$/i.test(String(cityName).trim()))) return null;
-    return mode==='dep'
-      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus}
-      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opCode:_csOpIata||_opCode||null,_opName:_csOpName||_opName||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus};
+    const _row = mode==='dep'
+      ?{time,upd,dateTag,flight,dest:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_arrSchedLocal:f.arrival?.scheduledTime?.local||null,_arrTz:(AP[locIata]||{}).tz||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opEv:_ownEv,_feedCs:_callSign||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus}
+      :{time,upd,dateTag,flight,origin:locName,_stops:(Array.isArray(f._stops)&&f._stops.length>1)?f._stops:null,airline,status:st,terminal,gate,_sortTs:schedTs,_revTs:revTs||null,_depSchedLocal:f.departure?.scheduledTime?.local||null,_flightKey:flight,_locIata:locIata,_airlineName:faAirlineName,_aircraft,_aircraftCode:_aircraftRaw,_feedAcCode:_aircraftRaw,_reg,_actualDepTime,_actualArrTime,_belt,_checkIn,_liveLat,_liveLng,_liveAlt,_liveSpd,_liveOnGround,_liveAt,_durationMins,_opEv:_ownEv,_feedCs:_callSign||null,_callSign:_callSign||null,_stInferred,_stExplicit,_pushStatus};
+    // v23944 — who operates it, from the one ladder the gates read too.
+    fidsApplyOperator(_row, (mode==='dep' ? f.departure?.airport?.iata : f.arrival?.airport?.iata) || (document.getElementById('apSel') || {}).value || '');
+    return _row;
   }).filter(Boolean).sort((a,b)=>a._sortTs-b._sortTs), mode);
 }
 
@@ -32387,6 +32547,9 @@ async function fetchLive() {
     // on a cold one.
     if (depRaw) data.dep = _fidsCollapseRevisions(mapADB(depRaw, 'dep'), _revTz);
     if (arrRaw) data.arr = _fidsCollapseRevisions(mapADB(arrRaw, 'arr'), _revTz);
+    // v23944 — the far end's record of who operates our Air Canada flights
+    // (the worker's /opinfo), shared by the board and every gate here.
+    try { _opEvRefresh(iata, (data.dep || []).concat(data.arr || [])); } catch (e) {}
     // [BELT SUMMARY v218.18] Quick breakdown of belt assignments.
     try {
       const _belts = data.arr.map(f => f._belt).filter(Boolean);

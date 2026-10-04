@@ -462,7 +462,42 @@ function yulAirlineIata(number) {
   const m = String(number || '').trim().toUpperCase().match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\s?\d/);
   return m ? m[1] : '';
 }
-function yulToAdbFlight(f) {
+// v23944 — WHO OPERATES IT, FROM MONTRÉAL'S OWN RECORD. ADM prefixes each
+// row's FlightId with a carrier code ("[1004JZA7932YULYQB"). The prefix is
+// evidence only when it is the flight's ONLY record and not ACA: every AC77xx
+// row comes with an ACA twin, and the JZA one is a cancelled leftover (ADM's
+// details call), while the callsigns and St. John's numbers say PAL. ACA is
+// the marketing code on every Air Canada row and names nobody. These are
+// ADM's codes for the Air Canada family only — carried as the row's _opEv
+// field, never added to CALLSIGN_ICAO. The worker's OPEV_DESIGNATOR holds the
+// same three (tests/operated-by-evidence.test.js).
+const YUL_OPERATOR_CODES = { JZA: 'QK', PVL: 'PB', ROU: 'RV' };
+function yulGroupKey(f) {
+  return String(f.PublicDisplayFlightNumber || '').trim().toUpperCase() + '|'
+    + String(f.AirportIataCode || '').toUpperCase() + '|'
+    + (String(f.ArrivalOrDeparture || '').toUpperCase() === 'A' ? 'A' : 'D') + '|'
+    + String(f.ScheduledTime || '');
+}
+// key → { op, src:'own', basis } for every flight whose only record names
+// its operator.
+function yulOperatorEvidence(rows) {
+  const codes = Object.create(null);
+  for (const f of (Array.isArray(rows) ? rows : [])) {
+    if (!f || !f.PublicDisplayFlightNumber) continue;
+    const k = yulGroupKey(f);
+    const m = String(f.FlightId || '').match(/^[[A-Z]?\d{4}([A-Z]{3})\d/);
+    (codes[k] = codes[k] || new Set()).add(m ? m[1] : '?');
+  }
+  const out = Object.create(null);
+  for (const k of Object.keys(codes)) {
+    if (codes[k].size !== 1) continue;
+    const c = [...codes[k]][0];
+    const op = c !== 'ACA' ? YUL_OPERATOR_CODES[c] : null;
+    if (op && op !== yulAirlineIata(k.split('|')[0])) out[k] = { op, src: 'own', basis: 'YUL ' + c };
+  }
+  return out;
+}
+function yulToAdbFlight(f, ev) {
   if (!f || typeof f !== 'object') return null;
   const isDep = String(f.ArrivalOrDeparture || '').toUpperCase() !== 'A';
   const number = String(f.PublicDisplayFlightNumber || '').trim().toUpperCase();
@@ -509,10 +544,12 @@ function yulToAdbFlight(f) {
   // v23233 — no fabricated far-side time: the feed only knows the local
   // movement clock, and echoing it painted every card "Arr == Dep".
   const otherSide = { airport: other, airline, quality: ['Live'] };
+  const opEv = ev && ev[yulGroupKey(f)];
   return {
     number, callSign: null,
     status: yulStatus(f.OperationalStatusDescription),
     codeshareStatus: 'IsOperator', isCargo: false,
+    ...(opEv ? { _opEv: opEv } : {}),
     departure: isDep ? homeSide : otherSide,
     arrival: isDep ? otherSide : homeSide
   };
@@ -926,9 +963,10 @@ async function adbFetch(iata, direction) {
       if (r.ok) {
         const j = await r.json();
         const rows = Array.isArray(j && j.list) ? j.list : [];
+        const opEv = yulOperatorEvidence(rows);
         const list = rows
           .filter(f => (String(f.ArrivalOrDeparture || '').toUpperCase() !== 'A') === wantDep)
-          .map(yulToAdbFlight).filter(Boolean);
+          .map(f => yulToAdbFlight(f, opEv)).filter(Boolean);
         console.log(`[FIDS] YUL feed ${direction}: ${list.length} flights`);
         if (list.length) return wantDep ? { departures: list } : { arrivals: list };
         console.warn('[FIDS] YUL feed empty — falling back to ADB scrape');

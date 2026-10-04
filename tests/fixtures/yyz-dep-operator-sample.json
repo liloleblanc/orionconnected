@@ -1,0 +1,182 @@
+{
+ "_note": "Toronto Pearson departures (/flights/yyz), captured 2026-10-04, trimmed to the flights the operator tests name.",
+ "list": [
+  {
+   "key": "A1003ACA858YYZLHR",
+   "id": "ACA858",
+   "id2": "AC858",
+   "type": "DEP",
+   "schTime": "2026-10-03T23:50:00-04:00",
+   "latestTm": "2026-10-04T00:27:00-04:00",
+   "gate": "E76",
+   "status": "DEP",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "AEE3057",
+     "id2": "A33057",
+     "alName": "Aegean Airlines"
+    },
+    {
+     "id": "ETH1141",
+     "id2": "ET1141",
+     "alName": "Ethiopian Airlines"
+    },
+    {
+     "id": "DLH6559",
+     "id2": "LH6559",
+     "alName": "Lufthansa"
+    },
+    {
+     "id": "MEA4522",
+     "id2": "ME4522",
+     "alName": "Middle East Airlines"
+    },
+    {
+     "id": "MSR9619",
+     "id2": "MS9619",
+     "alName": "Egyptair"
+    },
+    {
+     "id": "AUA8288",
+     "id2": "OS8288",
+     "alName": "Austrian Airlines"
+    },
+    {
+     "id": "THA5806",
+     "id2": "TG5806",
+     "alName": "Thai Airways International"
+    },
+    {
+     "id": "UAL8412",
+     "id2": "UA8412",
+     "alName": "United Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "LHR",
+     "name": "London Heathrow Airport",
+     "short": "Heathrow",
+     "city": "London",
+     "cnty": "GBR",
+     "region": ""
+    }
+   ],
+   "carousel": null,
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": "5",
+   "zone": null,
+   "stand": "176"
+  },
+  {
+   "key": "A1004JZA7884YYZYUL",
+   "id": "JZA7884",
+   "id2": "AC7884",
+   "type": "DEP",
+   "schTime": "2026-10-04T00:30:00-04:00",
+   "latestTm": "2026-10-04T00:24:00-04:00",
+   "gate": "D9",
+   "status": "DEP",
+   "term": "T1",
+   "al": "Air Canada Jazz",
+   "alCode": "JZA",
+   "ids": [],
+   "routes": [
+    {
+     "code": "YUL",
+     "name": "Montreal / Pierre Elliott Trudeau International Airport",
+     "short": "",
+     "city": "Montreal",
+     "cnty": "CAN",
+     "region": "QC"
+    }
+   ],
+   "carousel": null,
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": "2",
+   "zone": null,
+   "stand": "109"
+  },
+  {
+   "key": "A1004ACA1978YYZYOW",
+   "id": "ACA1978",
+   "id2": "AC1978",
+   "type": "DEP",
+   "schTime": "2026-10-04T00:30:00-04:00",
+   "latestTm": "2026-10-04T01:24:00-04:00",
+   "gate": "D32",
+   "status": "DEP",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "EVA3142",
+     "id2": "BR3142",
+     "alName": "EVA Air"
+    },
+    {
+     "id": "CPA1606",
+     "id2": "CX1606",
+     "alName": "Cathay Pacific"
+    },
+    {
+     "id": "LOT4143",
+     "id2": "LO4143",
+     "alName": "LOT Polish Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YOW",
+     "name": "Ottawa Macdonald-Cartier International Airport",
+     "short": "",
+     "city": "Ottawa",
+     "cnty": "CAN",
+     "region": "ON"
+    }
+   ],
+   "carousel": null,
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": "2",
+   "zone": null,
+   "stand": "132"
+  },
+  {
+   "key": "[1004ACA7050YYZYUL",
+   "id": "ACA7050",
+   "id2": "AC7050",
+   "type": "DEP",
+   "schTime": "2026-10-04T17:00:00-04:00",
+   "latestTm": "2026-10-04T17:00:00-04:00",
+   "gate": "H7",
+   "status": "ONT",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [],
+   "routes": [
+    {
+     "code": "YUL",
+     "name": "Montreal / Pierre Elliott Trudeau International Airport",
+     "short": "",
+     "city": "Montreal",
+     "cnty": "CAN",
+     "region": "QC"
+    }
+   ],
+   "carousel": null,
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": "2",
+   "zone": null,
+   "stand": "H7"
+  }
+ ]
+}
