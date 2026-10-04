@@ -89,8 +89,9 @@ function cityHelpers(langNow, frFirst) {
     'var window = { _gateIata: "YQM" }; var document = { getElementById: function () { return null; } };',
     'var _UPPER_TOKENS = ' + CORE.slice(CORE.indexOf('const _UPPER_TOKENS = ') + 'const _UPPER_TOKENS = '.length, CORE.indexOf(';', CORE.indexOf('const _UPPER_TOKENS = '))) + ';',
     'function _dispIata(c) { return c === "YHU" ? "MET" : c; }',
-    fnSource('_apSublineNames'), fnSource('_apSubLang'), fnSource('_apSubline'),
-    fnSource('_cityAp'), fnSource('_cityApHtml'), fnSource('tc'),
+    'var CITY = ' + JSON.stringify(CITY) + '; var CITY_FR = ' + JSON.stringify(CITY_FR) + ';',
+    fnSource('_apSublineNames'), fnSource('_apQcBoard'), fnSource('_apSubLang'), fnSource('_apSubline'),
+    fnSource('_apCitySpelling'), fnSource('_cityAp'), fnSource('_cityApHtml'), fnSource('tc'),
     'return { _cityAp, _cityApHtml, _apSubline, tc };'
   ].join('\n');
   return new Function(src)();
@@ -193,16 +194,17 @@ const NAMES = [...LONGEST, ...SUBLINES, ...NAMED];
 // break allowed after a space and after a hyphen that has a letter on both
 // sides, never at a no-break space. 'unit' text (a whole phrase) breaks only
 // when `loose`.
-function layout(parts, px, wrap, loose, s, fontW) {
+function layout(parts, px, wrap, loose, s, fontW, sub) {
   const cw = (c) => (fontW[c] != null ? fontW[c] : (fontW[c.toLowerCase()] != null ? fontW[c.toLowerCase()] : 0.62));
   const subPx = (k) => (k === 1 ? px : Math.max(px * k, s.cssFloor));
   // tokens: [{w, trail}] — w without its trailing space, trail the space's width
   const toks = []; let cur = 0, prevCh = '';
   const flat = [];
-  for (const p of parts) for (const c of p.text) flat.push({ c, k: p.k || 1, unit: !!p.unit });
+  for (const p of parts) for (const c of p.text) flat.push({ c, k: p.k || 1, unit: !!p.unit, ap: !!p.ap });
   for (let i = 0; i < flat.length; i++) {
-    const { c, k, unit } = flat[i];
-    const sz = subPx(k), w = cw(c) * sz + s.ls * sz;
+    const { c, k, unit, ap } = flat[i];
+    // the airport's name at the size the fitter gave it (sub), or its own step
+    const sz = (ap && sub) ? sub : subPx(k), w = cw(c) * sz + s.ls * sz;
     const next = flat[i + 1] ? flat[i + 1].c : '';
     const spaceBreak = c === ' ' && (!unit || loose);
     const hyphenBreak = c === '-' && /\p{L}/u.test(prevCh) && /\p{L}/u.test(next);
@@ -223,7 +225,7 @@ function layout(parts, px, wrap, loose, s, fontW) {
 }
 function partsFor(shape, nm) {
   const city = nm.sub ? nm.name.slice(0, nm.name.lastIndexOf(' · ')) : nm.name;
-  const ap = nm.sub ? [{ text: ' ' }, { text: '·\u00a0' + nm.name.slice(nm.name.lastIndexOf(' · ') + 3), k: 0.8, glue: true }] : [];
+  const ap = nm.sub ? [{ text: ' ' }, { text: '·\u00a0' + nm.name.slice(nm.name.lastIndexOf(' · ') + 3), k: 0.8, glue: true, ap: true }] : [];
   // an under-name is one piece: its spaces do not break
   const glue = (ps) => ps.map((p) => (p.glue ? { ...p, text: p.text.replace(/ /g, '\u00a0') } : p));
   switch (shape) {
@@ -248,14 +250,14 @@ test('the fixture is the boards\' own geometry, at every size, for every surface
 });
 
 test('the 20 longest names in our city tables and every airport under-name fit every surface, at every size, never under the floor', () => {
-  const fails = [];
+  const fails = [], shrunk = [];
   let checked = 0;
   for (const s of MODEL.surfaces) {
     const fontW = MODEL.fonts[s.font];
     for (const nm of NAMES) {
       const parts = partsFor(s.shape, nm);
-      const fits = (px, wrap, loose) => {
-        const L = layout(parts, px, wrap, loose, s, fontW);
+      const fits = (px, wrap, loose, sub) => {
+        const L = layout(parts, px, wrap, loose, s, fontW, sub);
         if (L.widths.some((w) => w > s.w + 0.5)) return false;
         if (L.lines > (wrap ? (loose ? s.lines * 2 : s.lines) : 1)) return false;
         // lines at the fitter's 1.08 line height, the last one its glyphs' full height
@@ -264,11 +266,26 @@ test('the 20 longest names in our city tables and every airport under-name fit e
       };
       const r = _fxPlan(s.base, s.floor, s.lines, !!nm.sub, !!s.units, fits);
       checked++;
-      if (r.over || r.px < s.floor - 1e-9 || !fits(r.px, r.wrap, r.loose)) fails.push(`${s.surface} @${s.size}: "${nm.name}" (${r.over ? 'over at the floor' : r.px})`);
+      if (r.over || r.px < s.floor - 1e-9 || (r.sub && r.sub < s.floor - 1e-9) || !fits(r.px, r.wrap, r.loose, r.sub)) fails.push(`${s.surface} @${s.size}: "${nm.name}" (${r.over ? 'over at the floor' : r.px})`);
+      // the airport's name never costs its city its size where the airport,
+      // at the floor, has room beside the city or under it; only where even
+      // that does not fit does the city come down, and then no further than
+      // it must (a 1280 board's narrow destination column)
+      if (nm.sub) {
+        const room = fits(s.base, false, false, s.floor) || (s.lines > 1 && fits(s.base, true, false, s.floor));
+        const alone = { px: room ? s.base : 0 };
+        if (alone.px >= s.base - 1e-9 && r.px < s.base - 1e-9) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" (${r.px} against ${s.base})`);
+        // and where the city does come down, it is not for want of trying
+        // the airport at the floor first
+        if (!room && r.px < s.base - 1e-9 && r.sub && r.sub > s.floor + 1e-9 && !r.wrap) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" airport at ${r.sub} over the floor while the city came down`);
+      }
     }
   }
   assert.ok(checked > 1000, `only ${checked} cases`);
   assert.deepEqual(fails, []);
+  // v23972 — a city keeps its full size beside its airport wherever the
+  // airport has room at the floor
+  assert.deepEqual(shrunk, []);
 });
 
 test('the decision: one line when it is close, two when they read bigger, the airport under the city first', () => {
@@ -278,6 +295,19 @@ test('the decision: one line when it is close, two when they read bigger, the ai
   assert.equal(_fxPlan(28, 14, 2, false, false, make(24, 27)).wrap, false, '24px on one line beats 27px on two');
   assert.equal(_fxPlan(28, 14, 2, false, false, make(18, 27)).wrap, true, '18px on one line loses to 27px on two');
   assert.equal(_fxPlan(28, 14, 2, true, false, make(26, 27)).wrap, true, 'a city keeps its size: its airport goes under it');
+  // v23972 — the airport gives way before the city: on a row with no second
+  // line, the city stays at its size and its airport's name comes down
+  // (it was the city that shrank: 'Montréal · Métropolitain' at 23.5px
+  // against 28px on the other rows)
+  const subAt = (cityFits, subMax) => (px, wrap, loose, sub) => !wrap && px <= cityFits && (sub || px * 0.8) <= subMax;
+  const kept = _fxPlan(28, 14, 1, true, false, subAt(28, 16));
+  assert.ok(kept.px === 28 && !kept.wrap && kept.sub > 15.5 && kept.sub <= 16, JSON.stringify(kept));
+  assert.equal(_fxPlan(28, 14, 1, true, false, subAt(28, 10)).sub, 14, 'not under the floor: the city comes down instead');
+  assert.equal(_fxPlan(28, 14, 1, true, false, subAt(28, 10)).px < 28, true);
+  // with a second line, a name that would have to drop under 0.65 of its
+  // city goes under the city at its own step instead
+  const under = (px, wrap, loose, sub) => (wrap ? px <= 28 : (px <= 28 && (sub || px * 0.8) <= 15));
+  assert.deepEqual(_fxPlan(28, 14, 2, true, false, under), { px: 28, wrap: true });
   assert.equal(_fxPlan(28, 14, 2, false, false, make(10, 10)).over, true, 'nothing at the floor: reported');
   assert.equal(_fxPlan(10, 14, 1, false, false, make(30, 30)).px, 14, 'a designed size under the floor comes up to it');
   const r = _fxPlan(28, 14, 2, false, true, (px, wrap, loose) => !!loose && px <= 20);
@@ -290,14 +320,24 @@ test('a city with two of our airports names the airport after the city', () => {
   const h = helpers, f = helpersFr;
   assert.equal(h._cityAp('Toronto', 'YTZ', 'en'), 'Toronto · Billy Bishop');
   assert.equal(h._cityAp('Toronto', 'YYZ', 'en'), 'Toronto · Pearson');
-  assert.equal(h._cityAp('Montreal', 'YUL', 'en'), 'Montreal · Trudeau');
-  assert.equal(h._cityAp('Montreal', 'YHU', 'en'), 'Montreal · Métropolitain');
-  assert.equal(h._cityAp('Montreal', 'MET', 'en'), 'Montreal · Métropolitain', 'the code passengers see is the same airport');
+  // v23972 — Montréal keeps its accent, in English too, from our tables,
+  // where a feed writes it without ('Montreal -MET')
+  assert.equal(h._cityAp('Montreal', 'YUL', 'en'), 'Montréal · Trudeau');
+  assert.equal(h._cityAp('Montreal', 'YHU', 'en'), 'Montréal · Métropolitain');
+  assert.equal(h._cityAp('Montreal', 'MET', 'en'), 'Montréal · Métropolitain', 'the code passengers see is the same airport');
+  assert.equal(h._cityAp('MONTREAL', 'YHU', 'en'), 'MONTRÉAL · Métropolitain', 'capitals stay capitals');
+  assert.equal(f._cityAp('Montreal', 'YHU', 'fr'), 'Montréal · Métropolitain');
+  assert.equal(CITY.YUL, 'MONTRÉAL');
+  assert.equal(CITY.YHU, 'MONTRÉAL');
+  assert.equal(CITY_FR.YHU, 'MONTRÉAL');
+  assert.equal(h._cityAp('Londres', 'LHR', 'en'), 'Londres · Heathrow', 'another name is not respelled');
   // French first in Québec: each airport's French name
   assert.equal(f._cityAp('Toronto', 'YTZ', 'fr'), 'Toronto · Billy-Bishop');
   assert.equal(f._cityAp('Paris', 'CDG', 'fr'), 'Paris · Charles-de-Gaulle');
   assert.equal(f._cityAp('Montréal', 'YUL', 'fr'), 'Montréal · Trudeau');
   assert.equal(cityHelpers('en', true)._cityAp('Toronto', 'YTZ'), 'Toronto · Billy-Bishop', 'a Québec board takes the French form');
+  assert.equal(cityHelpers('en', true)._cityAp('Toronto', 'YTZ', 'en'), 'Toronto · Billy-Bishop', 'in its English phase too');
+  assert.equal(cityHelpers('en', true)._cityAp('Paris', 'CDG', 'en'), 'Paris · Charles-de-Gaulle');
   // once, and in the language asked for, however often it is formatted
   assert.equal(h._cityAp(h._cityAp('Toronto', 'YTZ', 'en'), 'YTZ', 'en'), 'Toronto · Billy Bishop');
   assert.equal(f._cityAp('Toronto · Billy Bishop', 'YTZ', 'fr'), 'Toronto · Billy-Bishop');
@@ -320,6 +360,9 @@ test('only cities with two or more of the airports we show are listed', () => {
   assert.equal(helpersFr._apSubline('SDU', 'fr'), 'Santos-Dumont');
   assert.equal(helpersFr._apSubline('ORD', 'fr'), "O'Hare");
   assert.equal(helpersFr._apSubline('DCA', 'fr'), 'Reagan National', 'not a person\'s full name: as written');
+  // v23972 — an airport, never what reads as a second city or a bare word
+  assert.equal(SUB.DFW, 'Fort Worth Intl');
+  assert.equal(SUB.PEK, 'Capital Intl');
   // the four that started it
   assert.deepEqual([SUB.YTZ, SUB.YYZ, SUB.YUL, SUB.YHU], ['Billy Bishop', 'Pearson', 'Trudeau', 'Métropolitain']);
 });
@@ -359,6 +402,16 @@ test('names are cased the way they are written', () => {
   assert.equal(tc("L'ANSE-AU-LOUP"), "L'Anse-au-Loup");
   assert.equal(tc("ST. JOHN'S"), "St. John's");
   assert.equal(tc('FORT MCMURRAY'), 'Fort McMurray');
+  // v23972 — small words between spaces too, never a first word
+  assert.equal(tc('RIO DE JANEIRO'), 'Rio de Janeiro');
+  assert.equal(tc('SANTA CRUZ DE LA SIERRA'), 'Santa Cruz de la Sierra');
+  assert.equal(tc('FOZ DO IGUACU'), 'Foz do Iguacu');
+  assert.equal(tc('PORT OF SPAIN'), 'Port of Spain');
+  assert.equal(tc('MAR DEL PLATA'), 'Mar del Plata');
+  assert.equal(tc('LA PAZ'), 'La Paz');
+  assert.equal(tc('DES MOINES'), 'Des Moines');
+  assert.equal(tc('LOS ANGELES'), 'Los Angeles');
+  assert.equal(tc('RIO DE JANEIRO · Santos Dumont'), 'Rio de Janeiro · Santos Dumont');
   assert.equal(tc('TORONTO · Billy Bishop'), 'Toronto · Billy Bishop');
   assert.equal(tc("CHICAGO · O'Hare"), "Chicago · O'Hare");
   assert.equal(tc('NEW YORK · LaGuardia'), 'New York · LaGuardia');
@@ -371,4 +424,107 @@ test('names are cased the way they are written', () => {
   assert.match(CORE, /YHU:\{ name:'Montréal Metropolitan Airport \(MET\)'/);
   assert.match(CORE, /\{c:'YHU',n:'Montréal Métropolitain \(MET\)'\}/);
   assert.match(read('js/feed-router.js'), /const home = \{ iata: 'YHU', icao: 'CYHU', name: 'Montréal Métropolitain' \};/);
+});
+
+// ── 4. THE SECOND PASS (v23972) ────────────────────────────────────────────
+//
+// What a review of v23962 found still cut, or wrong, measured on the boards
+// with headless Chrome: the map's stand label spilling out of its own pill,
+// the boarding Destination dropping its airport, the belt sign's second
+// language (a ::after) cut on every portrait belt, a portrait board's carrier
+// header and its header clock and date, the 1280 aircraft caption with a
+// typed operator, the weather card's '· VISIBILIDADE', the airport name
+// costing its city the size, and Montréal without its accent.
+
+const rulesSrc = () => CORE.slice(CORE.indexOf('var FIDS_FIT_RULES = ['), CORE.indexOf('\n];', CORE.indexOf('var FIDS_FIT_RULES = [')));
+
+test('a hung label is held inside its own pill, and the pill inside the map', () => {
+  // the pill's border box, not its letters, is what is slid inside the map
+  assert.match(fnSource('_fxNudge'), /var pr = el\.getBoundingClientRect\(\);/);
+  // and its text is measured against the pill too, so the pair stacks
+  // rather than spill out of it ('… · 06:10' 18px past the pill at 1920)
+  assert.match(fnSource('fidsFitText'), /if \(m\.ok && o\.nudge\) \{\s*var mo = _fxMeasure\(el, el, 0, false\);/);
+  // stacked, it hugs its two lines: one language a line, the bar gone
+  assert.match(OVR, /\.gate-map-note\.fx-wrap:not\(\.fx-loose\) > \.fx-unit \{ display: block !important; \}/);
+  assert.match(OVR, /\.gate-map-note\.fx-wrap:not\(\.fx-loose\) > \.fx-brk \{ display: none !important; \}/);
+});
+
+test('the boarding row\'s Destination is the rail\'s: the airport, the casing, the box rule', () => {
+  const row = fnSource('_boardInfoRowHtml');
+  assert.match(row, /_bDest = \(typeof _cityForIata === 'function' \? _cityForIata\(_bdIata\) : ''\)/);
+  assert.match(row, /_bDest = normalizeDisplayCity\(_bDest, _bdIata\);/);
+  assert.match(row, /_bDest = _cityAp\(_bDest, _bdIata\);/);
+  assert.match(row, /_bDest = _cityApHtml\(_bDest\);/);
+  assert.doesNotMatch(row, /CITY\[locIata\]/, 'no table read of its own');
+  assert.match(row, /'<div class="v2-fi-value' \+ \(icon === 'ac-ico-dest' \? ' v2-fi-dest' : ''\) \+ '">'/);
+});
+
+test('every name and title the review found is handed to the one fitter', () => {
+  const r = rulesSrc();
+  assert.match(r, /\{ sel: '\.bidsv2-carousel-label', lines: 2, group: '\.bidsv2-carousel-block' \}/);
+  assert.match(r, /\{ sel: '\.fids-banner-board \.fids-board-label > span', box: '\.fids-banner-board', lines: 1, group: '\.fids-board-label',/);
+  assert.match(r, /\{ sel: '\.fids-banner-time-block \.fids-banner-date', box: '\.fids-banner-time-block', lines: 2, units: true,/);
+  assert.match(r, /avoid: '\.fids-airport-logo-img, \.fids-airport-text, \.fids-airport-pill:not\(\.has-logo\)', avoidIn: '\.fids-banner'/);
+  // a header's words may use its cell's padding, down as well as across
+  assert.match(r, /\{ sel: '#fidsTable thead th', lines: 2, pad: true, h: function \(el\) \{ var tr = el\.closest\('tr'\); return tr \? Math\.max\(0, tr\.clientHeight - 2\) : 0; \} \}/);
+  // the lines of one sign share one size, the smallest any needed
+  assert.match(fnSource('fidsFitAll'), /if \(r\.group && fr && fr\.px\)/);
+  assert.match(fnSource('fidsFitAll'), /ge\[b\]\.style\.setProperty\('font-size', mn \+ 'px', 'important'\);/);
+  // what the artwork beside a title takes is off its box
+  assert.match(fnSource('_fxAvoidCap'), /if \(\(r\.left \+ r\.right\) \/ 2 >= mid\)/);
+  assert.match(fnSource('_fxMeasure'), /if \(cap\.r != null && cap\.r < ib\.r\) ib\.r = cap\.r;/);
+});
+
+test('the belt sign\'s second language is a line of the band, not a ::after', () => {
+  assert.match(CORE, /'<div class="bidsv2-carousel-label bidsv2-carousel-label2">' \+ fidsEscHtml\(_crslW2\) \+ '<\/div>'/);
+  assert.match(CORE, /'<div class="bidsv2-carousel-block' \+ \(_crslL2 \? ' has-l2el' : ''\) \+ '"/);
+  assert.match(OVR, /\.bidsv3 \.bidsv2-carousel-block\.has-l2el::after \{\s*content: none !important;\s*display: none !important;/);
+  assert.match(OVR, /\.bidsv3 \.bidsv2-carousel-label\.bidsv2-carousel-label2 \{\s*grid-row: 2 !important;/);
+  assert.match(OVR, /\.bidsv3 \.bidsv2-carousel-block \{\s*grid-template-columns: minmax\(0, 1fr\) !important;/);
+});
+
+test('a portrait board\'s carrier column has no header word at all', () => {
+  assert.match(CORE, /const _alHdr = _hdrPortrait \? '' : _T\('airline'\);/);
+  assert.equal((CORE.match(/\{ cls: 'col-airline',  txt: _alHdr  \}/g) || []).length, 2);
+});
+
+test('the header date is two whole phrases, one language each, when it must stack', () => {
+  const d = fnSource('_ocClockDate');
+  assert.match(d, /return '<span class="fx-unit">' \+ w \+ '<\/span>';/);
+  assert.match(d, /\.join\(' <span class="cl-sep fx-brk">\|<\/span> '\)/);
+});
+
+test('the aircraft caption puts its operator under the aircraft before it opens the model', () => {
+  const at = CORE.indexOf('function _fitTypePanel(el) {');
+  const src = CORE.slice(at, CORE.indexOf("root.querySelectorAll('.gad-map-col-v2 .v2-rc-acb-actype').forEach", at));
+  const stack = src.indexOf("_capEl.classList.add('acb-stack');"), open = src.indexOf('// 7b. A model that still does not fit');
+  assert.ok(stack > 0 && open > stack, 'step 7a (stack) comes before 7b (open)');
+  assert.ok(src.indexOf("_capEl.classList.remove('acb-stack')") > 0, 'and is cleared before each pass');
+  const capRule = OVR.slice(OVR.indexOf('.v2-rc-acb-cap.acb-stack {'), OVR.indexOf('}', OVR.indexOf('.v2-rc-acb-cap.acb-stack {')));
+  assert.match(capRule, /flex-direction: column !important;/);
+  // past 255 ids Chrome counts no more: the classes decide, and these carry
+  // more of them than the row rules they override
+  const line = OVR.split('\n').find((l) => l.includes('.v2-rc-acb-cap.acb-stack {'));
+  assert.ok((line.match(/:not\(\._\)/g) || []).length >= 12, 'the stacked caption out-ranks the ×255 + 6 row rules');
+  // the model is written as its unbreakable parts: never inside 'Dash 8-400'
+  const groups = new Function('return (' + fnSource('_acbModelGroups') + ');')();
+  assert.deepEqual(groups('De Havilland Dash 8-400'), ['De Havilland', 'Dash 8-400']);
+  assert.deepEqual(groups('Boeing 737 MAX 8'), ['Boeing 737', 'MAX 8']);
+  assert.deepEqual(groups('Airbus A220-300'), ['Airbus A220-300']);
+  assert.equal((CORE.match(/_acTypeVal = _nbwModel\(_acModel\)/g) || []).length, 3);
+});
+
+test('the "expected" qualifier speaks the board\'s languages, all nine', () => {
+  const t = vm.runInNewContext('(' + CORE.slice(CORE.indexOf('acExpected:{') + 'acExpected:'.length, CORE.indexOf('},', CORE.indexOf('acExpected:{')) + 1) + ')');
+  for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) assert.ok(t[l] && t[l].trim(), 'acExpected.' + l);
+  const code = CORE.split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  assert.doesNotMatch(code, /expected <span class="v2-rc-fi-sep">\|<\/span> prévu|'expected \| prévu'|expected \| prévu<\/span>|\(expected \| prévu\)/);
+  assert.ok((CORE.match(/_acExpectedHtml\(/g) || []).length >= 5);
+});
+
+test('the weather card\'s words: the amber dot stays with its word, a long one gives up its tracking', () => {
+  assert.match(OVR, /\.wxcard-wrap \.wxc-l2::before \{ content: ' ·\\00a0' !important;/);
+  assert.match(fnSource('_fxGuard'), /st\.setProperty\('letter-spacing', '0px', 'important'\);/);
+  // and the plate's city may take its second line (the name was held nowrap)
+  assert.match(OVR, /\.wxcard-wrap \.wxc-mon-city\.fx-wrap \.wxc-mon-name \{ white-space: normal !important; \}/);
 });

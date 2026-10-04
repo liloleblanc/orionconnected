@@ -2098,9 +2098,15 @@ function _fxInner(box, padOk) {
   return { l: r.left + pl * sx, r: r.right - pr * sx, t: r.top + pt * sy, b: r.bottom - pb * sy, sx: sx || 1, sy: sy || 1 };
 }
 // Does the text sit inside the box: no glyph past either side, no more lines
-// than allowed, no taller than hMax (screen px; 0 = any height).
-function _fxMeasure(el, box, hMax, padOk) {
+// than allowed, no taller than hMax (screen px; 0 = any height). `cap`
+// narrows the box ({l, r} in screen px): the part of it a logo beside the
+// text already takes (o.avoid).
+function _fxMeasure(el, box, hMax, padOk, cap) {
   var ib = _fxInner(box, padOk);
+  if (cap) {
+    if (cap.l != null && cap.l > ib.l) ib.l = cap.l;
+    if (cap.r != null && cap.r < ib.r) ib.r = cap.r;
+  }
   var rs = _fxRects(el);
   if (!rs.length) return { ok: true, lines: 0, w: 0, h: 0 };
   var L = Infinity, R = -Infinity, T = Infinity, B = -Infinity;
@@ -2158,14 +2164,15 @@ function _fxBreakSeps(el, wrap) {
 }
 // A label that hangs off a point (the map's stand label is centred under the
 // stand) is slid sideways, never past its point by more than it must, so all
-// of it stays inside the box when it is narrower than the box.
+// of it stays inside the box when it is narrower than the box. It is the
+// label's own border box that is kept inside — its dark pill, not only its
+// letters (the pill's padding stood 8px outside the small map).
 function _fxNudge(el, box) {
   try {
     el.style.setProperty('margin-left', '0px', 'important');
-    var rs = _fxRects(el);
-    if (!rs.length) return;
-    var L = Infinity, R = -Infinity;
-    for (var i = 0; i < rs.length; i++) { if (rs[i].left < L) L = rs[i].left; if (rs[i].right > R) R = rs[i].right; }
+    var pr = el.getBoundingClientRect();
+    if (!(pr.width > 0.5)) return;
+    var L = pr.left, R = pr.right;
     var ib = _fxInner(box), pad = 6, dx = 0;
     if (R - L > ib.r - ib.l - 2 * pad) dx = (ib.l + ib.r) / 2 - (L + R) / 2;   // wider than the room: centre it
     else if (L < ib.l + pad) dx = ib.l + pad - L;
@@ -2173,12 +2180,17 @@ function _fxNudge(el, box) {
     if (Math.abs(dx) > 0.5) el.style.setProperty('margin-left', (dx / (_fxInner(el).sx || 1)) + 'px', 'important');
   } catch (e) {}
 }
-// THE DECISION, apart from the page. at(px, wrap, loose) answers whether the
-// text fits its box at that size, on one line or wrapped (loose: its phrases
-// opened at their spaces too). Kept free of the DOM so the tests can run it
-// against a model of every surface's box (tests/no-name-cut.test.js).
+// THE DECISION, apart from the page. at(px, wrap, loose, sub) answers
+// whether the text fits its box at that size, on one line or wrapped (loose:
+// its phrases opened at their spaces too; sub: the airport's name after a
+// city set at that many px instead of its own step, 0.8em). Kept free of the
+// DOM so the tests can run it against a model of every surface's box
+// (tests/no-name-cut.test.js).
 //   · a designed size under the floor is brought up to the floor;
 //   · one line at the designed size, if it fits;
+//   · a city with an airport's name keeps its own size first: the airport's
+//     name gives way (smaller, down to the floor), or goes under the city
+//     on the box's second line, before the city is made any smaller;
 //   · else the largest single line and the largest wrapped size are both
 //     found, down to the floor, and one line is kept when it is within 80%
 //     of the design or 90% of the wrapped size — except that a city with an
@@ -2188,16 +2200,44 @@ function _fxNudge(el, box) {
 function _fxPlan(base, floor, lines, hasSub, units, at) {
   if (base < floor) base = floor;
   if (at(base, false)) return { px: base, wrap: false };
+  var sub = 0;
+  if (hasSub) {
+    // THE AIRPORT GIVES WAY, NOT THE CITY. Its own step is 0.8 of the city;
+    // on one line it may come down to the floor while the city keeps its
+    // size. Under the city, on the second line, it keeps its step. One line
+    // is kept while the airport holds 0.65 of the city; smaller than that it
+    // reads better under the city, if the box has that line.
+    var subTop = base * 0.8;
+    var sOne = subTop > floor
+      ? _fxSearch(floor, subTop, function (q) { return at(base, false, false, q); })
+      : (at(base, false, false, floor) ? floor : 0);
+    var underOk = lines > 1 && at(base, true);
+    if (sOne && (sOne >= base * 0.65 || !underOk)) return { px: base, wrap: false, sub: sOne };
+    if (underOk) return { px: base, wrap: true };
+    if (lines > 1) {
+      var sTwo = subTop > floor
+        ? _fxSearch(floor, subTop, function (q) { return at(base, true, false, q); })
+        : (at(base, true, false, floor) ? floor : 0);
+      if (sTwo) return { px: base, wrap: true, sub: sTwo };
+    }
+    // The city itself does not fit at its size: everything below runs with
+    // the airport at the floor, so the city keeps as much as it can.
+    sub = floor;
+    var at0 = at;
+    at = function (px, wrap, loose) { return at0(px, wrap, loose, Math.min(sub, px)); };
+  }
   var s1 = _fxSearch(floor, base, function (p) { return at(p, false); });
   var s2 = lines > 1 ? _fxSearch(floor, base, function (p) { return at(p, true); }) : 0;
   var keepOne = hasSub ? (s1 >= s2) : (s1 >= base * 0.8 || s1 >= s2 * 0.9);
-  if (s1 && (!s2 || keepOne)) return { px: s1, wrap: false };
-  if (s2) return { px: s2, wrap: true };
-  if (units && lines > 1) {
+  var res;
+  if (s1 && (!s2 || keepOne)) res = { px: s1, wrap: false };
+  else if (s2) res = { px: s2, wrap: true };
+  else if (units && lines > 1) {
     var s3 = _fxSearch(floor, base, function (p) { return at(p, true, true); });
-    return s3 ? { px: s3, wrap: true, loose: true } : { px: floor, wrap: true, loose: true, over: true };
-  }
-  return { px: floor, wrap: lines > 1, over: true };
+    res = s3 ? { px: s3, wrap: true, loose: true } : { px: floor, wrap: true, loose: true, over: true };
+  } else res = { px: floor, wrap: lines > 1, over: true };
+  if (sub) res.sub = Math.min(sub, res.px);
+  return res;
 }
 // How much the element is scaled on screen (a card in its entrance, a
 // rotated board's frame). Its box against its own layout size; offsetHeight
@@ -2257,10 +2297,23 @@ function _fxGuard(el, box, o, lines, hMax, key, txt) {
     var m = _fxMeasure(el, box, hm);
     return m.ok && m.lines <= (wrap ? lines : 1);
   };
+  if (el.__fxLs) { st.removeProperty('letter-spacing'); el.__fxLs = false; }
+  // a report from an earlier pass is taken back before this one measures
+  if (el.hasAttribute('data-fx-over')) { el.removeAttribute('data-fx-over'); st.removeProperty('overflow'); }
   var m0 = _fxMeasure(el, box, hm);
   if (cur < floor - 0.05 || !(m0.ok && m0.lines <= (el.__fxGuardWrap ? lines : 1))) {
     var base = Math.max(cur, Math.ceil(floor * 4) / 4);
     res = _fxPlan(base, Math.ceil(floor * 4) / 4, lines, false, false, at);
+    // v23972 — as in fidsFitText: a word that will not fit at the floor
+    // gives up its letters' extra tracking before it is reported (the weather
+    // card's spaced capitals, '· VISIBILIDADE' in a 1280 board's fact cell)
+    if (res.over && (parseFloat(getComputedStyle(el).letterSpacing) || 0) > 0) {
+      var lsK = st.getPropertyValue('letter-spacing'), lsP = st.getPropertyPriority('letter-spacing');
+      st.setProperty('letter-spacing', '0px', 'important');
+      var res2 = _fxPlan(base, Math.ceil(floor * 4) / 4, lines, false, false, at);
+      if (!res2.over) { res = res2; el.__fxLs = true; }
+      else if (lsK) st.setProperty('letter-spacing', lsK, lsP); else st.removeProperty('letter-spacing');
+    }
     res.guard = true;
     wrapOn(res.wrap);
     el.__fxGuardWrap = !!res.wrap;
@@ -2275,9 +2328,35 @@ function _fxGuard(el, box, o, lines, hMax, key, txt) {
   el.__fxRes = res;
   return res;
 }
+// What a logo beside the text already takes of its box (o.avoid): the
+// screen's own artwork in the same band — the airport's logo in the middle of
+// a board's header — caps the box on the side it stands, less a gap, so the
+// title on its left and the clock on its right never run into it. Returns
+// {l, r} in screen px, or null.
+function _fxAvoidCap(el, box, o) {
+  if (!o.avoid) return null;
+  try {
+    var scope = (o.avoidIn && el.closest(o.avoidIn)) || document;
+    var obs = scope.querySelectorAll(o.avoid);
+    var br = box.getBoundingClientRect(), er = el.getBoundingClientRect();
+    var mid = (br.left + br.right) / 2, gap = Math.max(8, Math.round(Math.min(window.innerWidth || 0, window.innerHeight || 0) * 0.012));
+    var cap = { l: null, r: null };
+    for (var i = 0; i < obs.length; i++) {
+      var r = obs[i].getBoundingClientRect();
+      if (!(r.width > 2 && r.height > 2)) continue;
+      if (getComputedStyle(obs[i]).visibility === 'hidden') continue;
+      // only what shares the text's band
+      if (r.bottom <= er.top || r.top >= er.bottom) continue;
+      if ((r.left + r.right) / 2 >= mid) { var cr = r.left - gap; if (cap.r == null || cr < cap.r) cap.r = cr; }
+      else { var cl = r.right + gap; if (cap.l == null || cl > cap.l) cap.l = cl; }
+    }
+    return (cap.l == null && cap.r == null) ? null : cap;
+  } catch (e) { return null; }
+}
 // Fit one element. o: { box: element or selector of the ancestor that bounds
 // it (default: the element itself), lines: 1 or 2, h: max height in CSS px
-// (number or function(el, box)), min: a floor above the shared one }.
+// (number or function(el, box)), min: a floor above the shared one, avoid: a
+// selector for artwork the text must not run into (avoidIn: where to look) }.
 function fidsFitText(el, o) {
   o = o || {};
   try {
@@ -2296,6 +2375,7 @@ function fidsFitText(el, o) {
         || sr0.left > (window.innerWidth || 0) || sr0.top > (window.innerHeight || 0)) return null;
     if (getComputedStyle(el).visibility === 'hidden') return null;
     var hMax = typeof o.h === 'function' ? (o.h(el, box) || 0) : (o.h || 0);
+    var cap = _fxAvoidCap(el, box, o);
     // the element's on-screen scale is in the key: a card fitted mid-way
     // through its entrance (scaled) is fitted again once it has settled
     var sc0 = Math.round(_fxScale(el, sr0) * 50);
@@ -2305,6 +2385,7 @@ function fidsFitText(el, o) {
       + (window.innerWidth || 0) + 'x' + (window.innerHeight || 0) + '|' + (_fxFontsEpoch || 0) + '|'
       + document.documentElement.className + '|' + (document.body ? document.body.className + (document.body.getAttribute('data-fids-theme') || '') : '')
       + (o.nudge ? '|' + _fxAnchorAt(el, box) : '')
+      + (cap ? '|' + Math.round(cap.l || 0) + ',' + Math.round(cap.r || 0) : '')
       + (o.guard ? '|' + (el.style.getPropertyValue('font-size') || '') : '');
     if (el.__fxKey === key) return el.__fxRes || null;
     if (o.guard) return _fxGuard(el, box, o, lines, hMax, key, txt);
@@ -2313,9 +2394,24 @@ function fidsFitText(el, o) {
     st.removeProperty('line-height');
     st.removeProperty('overflow');
     st.setProperty('text-overflow', 'clip', 'important');
+    // and the box it is fitted in never draws an ellipsis either: a fitted
+    // temperature whose padding ran a pixel past a portrait board's weather
+    // cell left the cell's own ellipsis on it ('26°…', JFK at 1080x1920)
+    if (box !== el) box.style.setProperty('text-overflow', 'clip', 'important');
     el.removeAttribute('data-fx-over');
     el.classList.add('fx-fit');
     el.classList.remove('fx-wrap');
+    // An airport's name after the city (.ap-sub, _cityApHtml) gives way
+    // before the city does (_fxPlan): its size is set here, px or its own
+    // step (0.8em) when 0.
+    var subs = (el.querySelectorAll && el.querySelectorAll('.ap-sub')) || [];
+    var setSub = function (px) {
+      for (var k = 0; k < subs.length; k++) {
+        if (px) subs[k].style.setProperty('font-size', px + 'px', 'important');
+        else subs[k].style.removeProperty('font-size');
+      }
+    };
+    setSub(0);
     var cs = getComputedStyle(el);
     var base = parseFloat(cs.fontSize) || 0;
     if (!base) return null;
@@ -2341,23 +2437,28 @@ function fidsFitText(el, o) {
     // phrase is wider than the box even at the floor.
     el.classList.remove('fx-loose');
     // a label hung off a point has no box of its own to wrap in: it is given
-    // the box's width, less the margin _fxNudge keeps, as its widest
+    // the box's width, less the margin _fxNudge keeps, as its widest — and
+    // its text is held inside that width too, not only inside the map: a
+    // pair wider than its own pill spilled out of it, white on the light
+    // map ('… · 06:10' 18px past the pill at 1920x1080).
     if (o.nudge) {
       var nib = _fxInner(box);
       st.setProperty('max-width', Math.max(40, (nib.r - nib.l) / (nib.sx || 1) - 12) + 'px', 'important');
     }
-    var at = function (px, wrap, loose) {
+    var at = function (px, wrap, loose, sub) {
       el.classList.toggle('fx-loose', !!loose);
       setWrap(wrap);
       st.setProperty('font-size', px + 'px', 'important');
+      if (subs.length) setSub(sub || 0);
       if (o.nudge) _fxNudge(el, box);
-      var m = _fxMeasure(el, box, hm, !!o.pad);
+      var m = _fxMeasure(el, box, hm, !!o.pad, cap);
+      if (m.ok && o.nudge) {
+        var mo = _fxMeasure(el, el, 0, false);
+        if (!mo.ok || el.scrollWidth > el.clientWidth + 1) return false;
+      }
       return m.ok && m.lines <= (wrap ? (loose ? lines * 2 : lines) : 1);
     };
-    // An airport's name after the city (.ap-sub, _cityApHtml) must not cost
-    // the city its size: where a second line exists it goes there before the
-    // line is shrunk for it.
-    var hasSub = !!(el.querySelector && el.querySelector('.ap-sub'));
+    var hasSub = subs.length > 0;
     if (el.__fxLs) { st.removeProperty('letter-spacing'); el.__fxLs = false; }
     var res = _fxPlan(base, floor, lines, hasSub, !!o.units, at);
     // Nothing fits at the floor: the letters' extra tracking is given up
@@ -2372,6 +2473,7 @@ function fidsFitText(el, o) {
     el.classList.toggle('fx-loose', !!res.loose);
     setWrap(res.wrap);
     st.setProperty('font-size', res.px + 'px', 'important');
+    if (subs.length) setSub(res.sub || 0);
     if (o.nudge) _fxNudge(el, box);
     // A separator a line break landed beside is dropped: an airport name
     // that went under its city loses its "·", a language pair stacked onto
@@ -2404,14 +2506,48 @@ var FIDS_FIT_RULES = [
   // departures / arrivals board: one fixed-height row per flight
   { sel: '#fidsTable tbody td.td-dest', lines: 2, h: _fxBoardCellH },
   { sel: '#fidsTable tbody td.td-status', lines: 2, h: _fxBoardCellH },
-  { sel: '#fidsTable thead th', lines: 2, pad: true, h: function (el) { var cs = getComputedStyle(el); var tr = el.closest('tr'); return tr ? tr.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0) : 0; } },
+  // (a header's words may use its cell's padding, across and down: a theme
+  // with 10px of padding over a 35px header row left 15px, under the floor's
+  // own line, and every header of a portrait YHZ or YUL board was reported)
+  { sel: '#fidsTable thead th', lines: 2, pad: true, h: function (el) { var tr = el.closest('tr'); return tr ? Math.max(0, tr.clientHeight - 2) : 0; } },
   { sel: '#fidsTable tbody td.td-wx .fids-cell-weather span:not(.fids-wx-cell)', box: 'td', lines: 1 },
   { sel: '#fidsTable tbody td.td-time, #fidsTable tbody td.td-time-rev', lines: 1 },
   // the belts
   { sel: '.bidsv3 .b3-from', lines: 2, h: function (el) { var r = el.closest('.b3-row'); return r ? r.clientHeight * 0.86 : 0; } },
-  { sel: '.bidsv3 .b3-airline-name', box: '.b3-flight', lines: 2, h: function (el) { var r = el.closest('.b3-row'); return r ? r.clientHeight * 0.36 : 0; } },
+  // (the name may have the row's height less the flight number under it: a
+  // portrait belt's 61px row holds 'AIR SAINT-PIERRE' on two lines over its
+  // number, where a fixed 36% of the row did not and reported it)
+  { sel: '.bidsv3 .b3-airline-name', box: '.b3-flight', lines: 2, h: function (el) {
+      var r = el.closest('.b3-row'); if (!r) return 0;
+      var f = el.closest('.b3-flight'), n = f && f.querySelector('.b3-num');
+      return Math.max(r.clientHeight * 0.36, r.clientHeight * 0.92 - (n ? n.offsetHeight : 0));
+    } },
   { sel: '.bidsv2-airline-name', lines: 1 },
-  { sel: '.bidsv2-carousel-label', box: '.bidsv2-carousel-block', lines: 2 },
+  // the belt sign's band: each language is its own line of the band, inside
+  // the band's own padding, and the two share one size (group). The second
+  // language was a CSS ::after no script can measure, cut at the card's edge
+  // on a portrait belt ('Recolh[a] de bagage[m]'); it is a real element now.
+  { sel: '.bidsv2-carousel-label', lines: 2, group: '.bidsv2-carousel-block' },
+  // the board's and the belts' header title (Departures | Départs), one line
+  // per language, kept clear of the airport's logo beside it and the two
+  // languages at one size ('Recolha de bagagem' ran under the YQM logo on a
+  // portrait belt, 'Retrait des bagages' into the YUL logo at 1280x720)
+  { sel: '.fids-banner-board .fids-board-label > span', box: '.fids-banner-board', lines: 1, group: '.fids-board-label',
+    avoid: '.fids-airport-logo-img, .fids-airport-text, .fids-airport-pill:not(.has-logo)', avoidIn: '.fids-banner' },
+  // and the clock and date on the header's right: the date sets the block's
+  // width, and a German or Portuguese date pushed the block, clock and all,
+  // past the screen's right edge on a portrait board ('…de outubr[o]')
+  // One language a line when the pair will not share one (each language is
+  // a whole phrase, .fx-unit, from _ocClockDate), inside the band's height.
+  { sel: '.fids-banner-time-block .fids-banner-date', box: '.fids-banner-time-block', lines: 2, units: true,
+    avoid: '.fids-airport-logo-img, .fids-airport-text, .fids-airport-pill:not(.has-logo)', avoidIn: '.fids-banner',
+    h: function (el) {
+      var bn = el.closest('.fids-banner'), tb = el.closest('.fids-banner-time-block');
+      var ck = tb && tb.querySelector('.fids-banner-time');
+      if (!bn) return 0;
+      var room = bn.getBoundingClientRect().height - (ck ? ck.getBoundingClientRect().height : 0) - 8;
+      return Math.max(0, room / (_fxScale(el) || 1));
+    } },
   // the gate's weather card: the city on each plate of the first screen
   { sel: '.wxc-mon-city', box: '.wxc-mon-info', lines: 2 },
   // the gate maps' empty-stand label ("From Ottawa · 4:33pm | De Ottawa · 16:33")
@@ -2456,9 +2592,31 @@ function fidsFitAll(root) {
   for (var i = 0; i < FIDS_FIT_RULES.length; i++) {
     var r = FIDS_FIT_RULES[i], els;
     try { els = scope.querySelectorAll(r.sel); } catch (e) { continue; }
+    var groups = null;
     for (var j = 0; j < els.length; j++) {
       if (seen) { if (seen.has(els[j])) continue; seen.add(els[j]); }
-      fidsFitText(els[j], r);
+      var fr = fidsFitText(els[j], r);
+      if (r.group && fr && fr.px) {
+        var g = els[j].closest(r.group);
+        if (g) {
+          groups = groups || [];
+          var gi = -1;
+          for (var q = 0; q < groups.length; q++) if (groups[q].g === g) { gi = q; break; }
+          if (gi < 0) { groups.push({ g: g, els: [] }); gi = groups.length - 1; }
+          groups[gi].els.push(els[j]);
+        }
+      }
+    }
+    // o.group: the lines of one sign (a pair's two languages) take one size,
+    // the smallest any of them needed. A smaller size than its own fit
+    // always still fits, on the same lines.
+    if (groups) {
+      for (var gk = 0; gk < groups.length; gk++) {
+        var ge = groups[gk].els, mn = Infinity;
+        for (var a = 0; a < ge.length; a++) if (ge[a].__fxRes && ge[a].__fxRes.px < mn) mn = ge[a].__fxRes.px;
+        if (!(mn < Infinity)) continue;
+        for (var b = 0; b < ge.length; b++) ge[b].style.setProperty('font-size', mn + 'px', 'important');
+      }
     }
   }
 }
@@ -10156,7 +10314,7 @@ function renderMobileGateHtml(ctx) {
     +   '<div style="' + FS.label + 'color:' + T.muted + ';margin-bottom:10px;">' + TL('aircraftLbl') + '</div>'
     +   ((_acType || _acCode) ? '<div style="' + FS.value + 'color:' + T.ink + ';">' + (_acType || _acCode) + '</div>' : '')
     +   (_acReg ? '<div style="margin-top:10px;"><div style="' + FS.label + 'color:' + T.muted + ';">' + TL('reg') + '</div><div style="' + FS.body + 'color:' + T.muted2 + ';margin-top:2px;">' + _acReg
-          + (/^history/.test(String(currentFlight._regSource || '')) ? ' <span style="display:block;font-size:0.6em;font-weight:600;opacity:0.7;white-space:nowrap;">expected | prévu</span>' : '') + '</div></div>' : '')
+          + (/^history/.test(String(currentFlight._regSource || '')) ? _acExpectedHtml(false, 'display:block;font-size:0.6em;font-weight:600;opacity:0.7;white-space:nowrap;') : '') + '</div></div>' : '')
     +   (_acImgHtml ? '<div style="text-align:center;margin-top:14px;">' + _acImgHtml.replace(/max-height:120px/g, 'max-height:170px') + '</div>' : '')
     + '</div>'
     + (_opBadgeHtml ? '<div style="background:' + T.panel + ';padding:0 20px 14px;">' + _opBadgeHtml + '</div>' : '')
@@ -11664,7 +11822,7 @@ function _buildV2AircraftCol(ctx, vars) {
     _regBlock =
         '<div class="v2-reg-block">'
       +   '<div class="v2-reg-lbl">' + (TL('reg') || 'Registration') + '</div>'
-      +   '<div class="v2-reg-val">' + _reg + (_regHist ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> prévu</span>' : '') + '</div>'
+      +   '<div class="v2-reg-val">' + _reg + (_regHist ? _acExpectedHtml(_acExpFr()) : '') + '</div>'
       + '</div>';
   }
 
@@ -13930,8 +14088,7 @@ function _buildV2MapCol(ctx, vars) {
       // the enrichment retry lands today's reg (regSource flips off history).
       var _acRegSrc = String((vars.currentFlight && vars.currentFlight._regSource) || '');
       var _acRegTag = (/^history/.test(_acRegSrc) && _acReg)
-        ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> '
-          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
+        ? _acExpectedHtml(_acExpFr(vars.iata))
         : '';
       // TYPE WITHOUT A TAIL IS A PLAN, NOT A FACT
       // — a Delta flight 10 h out with no assigned airframe).
@@ -13943,6 +14100,15 @@ function _buildV2MapCol(ctx, vars) {
       // (model, registration, qualifier) is nowrap — a line may only break
       // BETWEEN segments at the separator, never inside 'Boeing 737-800'.
       var _nbw = function (t) { return '<span style="white-space:nowrap;">' + t + '</span>'; };
+      // v23972 — the model as its unbreakable parts (_acbModelGroups): where
+      // the caption lets a model alone open at its spaces, it opens only
+      // between the maker and the type, never inside 'Dash 8-400' (the
+      // hyphen included) or 'De Havilland'
+      var _nbwModel = function (t) {
+        var g = (typeof _acbModelGroups === 'function') ? _acbModelGroups(t) : [t];
+        return '<span style="white-space:nowrap;">'
+          + (g.length > 1 ? g.map(function (x) { return '<span class="fx-unit">' + x + '</span>'; }).join(' ') : t) + '</span>';
+      };
       var _acTypeVal;
       // THE REG ALWAYS TELLS YOU
       //
@@ -13953,14 +14119,12 @@ function _buildV2MapCol(ctx, vars) {
       // whole line the moment the registry answers.
       var _regConfirmed = !!(typeof _regTrue !== 'undefined' && _regTrue);
       if (_acModel && !_acReg) {
-        _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
-          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>';
+        _acTypeVal = _nbwModel(_acModel) + _acExpectedHtml(_acExpFr(vars.iata), 'white-space:nowrap;');
       } else if (_acModel && _acReg && !_regConfirmed) {
-        _acTypeVal = _nbw(_acModel) + ' <span class="v2-rc-reg-expected" style="white-space:nowrap;">expected <span class="v2-rc-fi-sep">|</span> '
-          + (_lang2b === 'es' ? 'prevista' : 'prévu') + '</span>'
+        _acTypeVal = _nbwModel(_acModel) + _acExpectedHtml(_acExpFr(vars.iata), 'white-space:nowrap;')
           + ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag);
       } else {
-        _acTypeVal = _nbw(_acModel) + (_acReg ? ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag) : '');
+        _acTypeVal = _nbwModel(_acModel) + (_acReg ? ' <span class="v2-rc-acb-sep">|</span> ' + _nbw(_acReg + _acRegTag) : '');
       }
       // Shorter label per (was "Aircraft type").
       var _typeL2 = (_lang2b === 'es') ? 'Aeronave' : 'Appareil';
@@ -14610,7 +14774,7 @@ function uxgGateHtml(ctx) {
     CDG: 'Paris', ORY: 'Paris',
     NRT: 'Tokyo', HND: 'Tokyo',
     DCA: 'Washington', IAD: 'Washington', BWI: 'Baltimore',
-    YTZ: 'Toronto', YYZ: 'Toronto', YUL: 'Montreal', YHU: 'Montreal'
+    YTZ: 'Toronto', YYZ: 'Toronto', YUL: 'Montréal', YHU: 'Montréal'
   };
   let displayLoc = _LOC_SHORT[locIata] || normalizeDisplayCity(String(loc || locIata || '').split(/\s+[\u2013\u2022|]\s+/)[0] || locIata || '', locIata);
   // v218.41: aggressively de-duplicate any airport-code suffix from the
@@ -14928,7 +15092,7 @@ function uxgGateHtml(ctx) {
   }
   if (equipName || currentFlight._reg) {
     var _regHistT = /^history/.test(String(currentFlight._regSource || ''));
-    var regStr = currentFlight._reg ? ' · ' + currentFlight._reg + (_regHistT ? ' (expected | prévu)' : '') : '';
+    var regStr = currentFlight._reg ? ' · ' + currentFlight._reg + (_regHistT ? ' (' + _acExpectedText(_acExpFr()) + ')' : '') : '';
     r3Right = TL('equipToday')+' ' + (equipName || '') + regStr;
     // Reset aircraft image when flight changes
     if (window._gateLastFlight !== currentFlight.flight) {
@@ -15414,14 +15578,23 @@ function uxgGateHtml(ctx) {
   // Each cell is a mini rail shelf: brushed-metal card, round accent icon
   // badge, bilingual title with accent underline, big navy value.
   function _boardInfoRowHtml(statusKey) {
-    var _bDest = (typeof CITY !== 'undefined' && CITY[locIata]) || currentFlight.dest || '';
-    // — the gate info row reads title-case, not the
-    // board's ALL-CAPS. Only re-case strings that are fully upper (leave mixed
-    // names like 'Fort McMurray' untouched). Word breaks on space/hyphen only,
-    // so apostrophes (St. John's) keep their trailing lowercase.
-    if (_bDest && _bDest === _bDest.toUpperCase()) {
-      _bDest = _bDest.toLowerCase().replace(/(^|[\s\-])([a-zà-ÿ])/g, function (m, p, c) { return p + c.toUpperCase(); });
-    }
+    // v23972 — THE SAME WORDS AS THE RAIL'S DESTINATION. This row replaces
+    // the rail while the flight boards, and it read the city table with its
+    // own casing regex: the airport's name vanished exactly when boarding
+    // began ('MET Montreal' with no Métropolitain, 'Toronto' with no Billy
+    // Bishop), and names came out wrong ('Îles-De-La-Madeleine', 'Fort
+    // Mcmurray'). It now takes the rail's path: _cityForIata, the shared
+    // casing (tc, inside normalizeDisplayCity), the airport after a city
+    // with two of ours (_cityAp), and its markup (_cityApHtml).
+    var _bDest = '';
+    try {
+      var _bdIata = String(locIata || (currentFlight && currentFlight.dest) || '').toUpperCase();
+      _bDest = (typeof _cityForIata === 'function' ? _cityForIata(_bdIata) : '') || (currentFlight && currentFlight.dest) || '';
+      // (normalizeDisplayCity ends in tc(): the shared casing)
+      if (typeof normalizeDisplayCity === 'function') _bDest = normalizeDisplayCity(_bDest, _bdIata);
+      if (typeof _cityAp === 'function') _bDest = _cityAp(_bDest, _bdIata);
+      if (typeof _cityApHtml === 'function') _bDest = _cityApHtml(_bDest);
+    } catch (eBd) {}
     // v23688 — the code the destination badge wears while boarding. Resolved
     // exactly as the rail resolves it (:8770): through _dispIata, then held to
     // a real 3-4 letter code, so a feed sending a city name or an em-dash
@@ -15561,7 +15734,10 @@ function uxgGateHtml(ctx) {
         + '</div></div>'
         + '<div class="v2-fi-textcol">'
         +   '<div class="v2-fi-title">' + (titleHtml || ('<span class="v2-fi-lbl-en">' + _t1 + '</span>' + _sec)) + '</div>'
-        +   '<div class="v2-fi-value">' + (val || '\u2014') + '</div>'
+        // v23972 — the destination is the rail's destination (.v2-fi-dest):
+        // the same box fitter rule, which may put an airport's name under
+        // its city rather than shrink the city for it
+        +   '<div class="v2-fi-value' + (icon === 'ac-ico-dest' ? ' v2-fi-dest' : '') + '">' + (val || '\u2014') + '</div>'
         + '</div></div>';
     }
     // The value column is
@@ -19065,6 +19241,7 @@ function gateAutofit(root) {
           el.style.removeProperty('overflow');
           el.style.removeProperty('white-space');
           for (var _rs = 0; _rs < _kids.length; _rs++) { _kids[_rs].style.removeProperty('white-space'); _kids[_rs].style.removeProperty('overflow-wrap'); }
+          if (_capEl.classList && _capEl.classList.remove) _capEl.classList.remove('acb-stack');
           _capEl.style.removeProperty('--acb-h');
           _capEl.style.removeProperty('height'); _capEl.style.removeProperty('max-height');
           _capEl.style.removeProperty('min-height'); _capEl.style.removeProperty('overflow');
@@ -19214,11 +19391,64 @@ function gateAutofit(root) {
               // 7. v23962 — and never under the readable floor. The labels
               // are held at --fx-floor by the stylesheet now (they were 12.7px
               // at 1680 and 8.6px at 1280), so the model, which never goes
-              // below its label, cannot either. A model that still does not
-              // fit opens at its own spaces ('De Havilland' over 'Dash 8-400',
-              // over the registration), the shared fitter's rule; if even
-              // that will not hold it, it is left showing and reported
-              // (data-fx-over), never cut.
+              // below its label, cannot either.
+              // 7a. v23972 — a caption with an operator that still does not
+              // fit puts the operator UNDER the aircraft: two rows, each the
+              // panel's full width (the lower panel's two-line caption). The
+              // band grows to hold them; the illustration above gives up the
+              // height. Then the model, the mark and the name are sized again
+              // from the top, in that room. Opening the model came first, and
+              // on a 1280 board with a typed operator ('Air Saint-Pierre') it
+              // went one word per line, 'De / Havilland / Dash / 8- / 400',
+              // German 'Havilland' running 28px into 'Durchgeführt von:'.
+              var _grow = function () {
+                if (!_capEl.style) return;
+                _capEl.style.setProperty('height', 'auto', 'important');
+                _capEl.style.setProperty('max-height', 'none', 'important');
+                _capEl.style.setProperty('min-height', _bandH + 'px', 'important');
+                _capEl.style.setProperty('overflow', 'visible', 'important');
+                _capH = 0;
+              };
+              if (!_fits() && _capEl.classList.contains('has-op') && _capEl.querySelector('.v2-rc-acb-opby')) {
+                _capEl.classList.add('acb-stack');
+                _grow();
+                _capEl.style.removeProperty('--acb-h');
+                _u = _bandH;
+                _lblPx = _lblEl ? (parseFloat(window.getComputedStyle(_lblEl).fontSize) || _lblPx) : _lblPx;
+                el.style.removeProperty('font-size');
+                if (_logoEl) { _logoEl.style.removeProperty('height'); _logoEl.style.removeProperty('max-height'); }
+                if (_nameEl) _nameEl.style.removeProperty('font-size');
+                _fs = parseFloat(window.getComputedStyle(el).fontSize) || _fs;
+                _lh = _logoEl ? (_logoEl.getBoundingClientRect().height || 0) : 0;
+                _k = (_fs && _lh) ? _lh / _fs : 0;
+                _nm = _nameEl ? (parseFloat(window.getComputedStyle(_nameEl).fontSize) || 0) : 0;
+                // the model on ONE line in the stacked form, down to its
+                // label's size, the mark and the name with it and never below
+                // it; each row is checked on its own (the band no longer has
+                // a height to hold to: it grows)
+                var _m1 = (el.children && el.children.length) ? el.children : [];
+                for (var _m1i = 0; _m1i < _m1.length; _m1i++) _m1[_m1i].style.setProperty('white-space', 'nowrap', 'important');
+                el.style.setProperty('white-space', 'nowrap', 'important');
+                while (_fs > _lblPx && !_fits()) {
+                  _fs = Math.max(_lblPx, _fs - 0.5);
+                  el.style.setProperty('font-size', _fs + 'px', 'important');
+                  if (_logoEl && _lh > _up64(_fs) && _k) _setLh(Math.max(_fs, Math.min(_lh, _fs * _k)));
+                }
+                if (_logoEl) { while (_lh > _up64(_fs) && !_fits()) _setLh(Math.max(_fs, _lh - 1)); }
+                if (_nameEl) {
+                  while (_nm > _lblPx && !_fits()) {
+                    _nm = Math.max(_lblPx, _nm - 0.5);
+                    _nameEl.style.setProperty('font-size', _nm + 'px', 'important');
+                  }
+                }
+              }
+              // 7b. A model that still does not fit opens at its own spaces,
+              // the shared fitter's rule, but only between the maker and the
+              // type: 'De Havilland' over 'Dash 8-400', 'Boeing 737' over
+              // 'MAX 8'. The model is written as those parts (_nbwModel, each
+              // a nowrap .fx-unit), so nothing breaks inside 'Dash 8-400' (its
+              // hyphen included) or 'De Havilland'. If even that will not hold
+              // it, it is left showing and reported (data-fx-over), never cut.
               if (!_fits()) {
                 var _mSpans = (el.children && el.children.length) ? el.children : [el];
                 for (var _ms = 0; _ms < _mSpans.length; _ms++) {
@@ -19230,13 +19460,7 @@ function gateAutofit(root) {
                 // 8. A band that cannot hold the wrapped model (a portrait
                 // gate's 237px column) grows to it, never cuts it: the
                 // illustration above gives up the height.
-                if (!_fits() && _capEl.style) {
-                  _capEl.style.setProperty('height', 'auto', 'important');
-                  _capEl.style.setProperty('max-height', 'none', 'important');
-                  _capEl.style.setProperty('min-height', _bandH + 'px', 'important');
-                  _capEl.style.setProperty('overflow', 'visible', 'important');
-                  _capH = 0;
-                }
+                if (!_fits()) _grow();
                 if (!_fits()) {
                   if (el.setAttribute) el.setAttribute('data-fx-over', '1');
                   el.style.setProperty('overflow', 'visible', 'important');
@@ -22930,8 +23154,18 @@ const gView = document.getElementById('gateView');
                     }).join('')
                 + '</g></svg>'
               : '';
-            return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
+            // v23972 — on the b3 sign the second language is a real line of
+            // the band, not the ::after: the shared fitter (FIDS_FIT_RULES)
+            // can measure an element and never a pseudo-element's text, and
+            // at 5.4vh the ::after was cut at the card's edge on a portrait
+            // belt in every language pair ('Recolh[a] de bagage[m]'). The two
+            // lines are fitted to the band together, at one size.
+            var _crslL2 = (_bidsV3On && _crslW2)
+              ? '<div class="bidsv2-carousel-label bidsv2-carousel-label2">' + fidsEscHtml(_crslW2) + '</div>'
+              : '';
+            return '<div class="bidsv2-carousel-block' + (_crslL2 ? ' has-l2el' : '') + '" style="' + _crslVars + '">'
               + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
+              + _crslL2
               + _crslArt
               // subScreenVal is a belt key the feed supplied (updateSubScreens
               // builds the list from f._belt / f.gate / f.flight), and only the
@@ -23533,7 +23767,7 @@ const CITY = {
   ADS:'DALLAS ADDISON', FAE:'FAROE ISLANDS',  PPT:'PAPEETE',      FMN:'FARMINGTON',
   LHE:'LAHORE',         GIB:'GIBRALTAR',      ISB:'ISLAMABAD',    HAN:'HANOI',
   KSC:'KOSICE',         GCI:'GUERNSEY',       BOJ:'BURGAS',       MLA:'MALTA',
-  YYZ:'TORONTO',        YUL:'MONTREAL',       YVR:'VANCOUVER',    YYC:'CALGARY',
+  YYZ:'TORONTO',        YUL:'MONTRÉAL',       YVR:'VANCOUVER',    YYC:'CALGARY',
   YEG:'EDMONTON',       YOW:'OTTAWA',         YQM:'MONCTON',      YHZ:'HALIFAX',
   YQB:'QUEBEC CITY',    YWG:'WINNIPEG',       YXE:'SASKATOON',    YYJ:'VICTORIA',    YXX:'ABBOTSFORD',
   YDF:'DEER LAKE',      YYR:'GOOSE BAY',      YQX:'GANDER',       YSJ:'SAINT JOHN',
@@ -23657,7 +23891,7 @@ const CITY = {
   SAW:'ISTANBUL',TIJ:'TIJUANA',
   YBR:'BRANDON',        YCB:'CAMBRIDGE BAY',     YCG:'CASTLEGAR',
   YCH:'MIRAMICHI',      YDA:'DAWSON CITY',       YEK:'ARVIAT',
-  YEV:'INUVIK',         YGW:'CHISASIBI',         YHU:'MONTREAL',
+  YEV:'INUVIK',         YGW:'CHISASIBI',         YHU:'MONTRÉAL',
   YHY:'HAY RIVER',      YKL:'SCHEFFERVILLE',     YKZ:'BUTTONVILLE',
   YLL:'LLOYDMINSTER',   YMJ:'MOOSE JAW',         YMO:'MOOSONEE',
   YNA:'NATASHQUAN',     YOC:'OLD CROW',          YOJ:'HIGH LEVEL',
@@ -24369,6 +24603,8 @@ const CITY = {
 const CITY_FR = {
   // ── CANADA — noms officiels français ──────────────────────────────────
   YYZ:'TORONTO',           YUL:'MONTRÉAL',          YVR:'VANCOUVER',
+  // v23972 — Montréal-Métropolitain (YHU, shown as MET) is Montréal too
+  YHU:'MONTRÉAL',
   YYC:'CALGARY',           YEG:'EDMONTON',           YOW:'OTTAWA',
   YQM:'MONCTON',           YHZ:'HALIFAX',            YQB:'QUÉBEC',
   YWG:'WINNIPEG',          YXE:'SASKATOON',          YYJ:'VICTORIA',          YXX:'ABBOTSFORD',
@@ -27947,6 +28183,12 @@ function tc(s) {
   // (the casing above made them 'Saint-Pierre-Et-Miquelon', 'Val-D'or').
   r = r.replace(/-(De|Du|Des|La|Le|Les|Et|Sur|En|Au|Aux|Sous)(?=-)/g, function (m, w) { return '-' + w.toLowerCase(); });
   r = r.replace(/-D'(\S)/g, function (m, c) { return "-d'" + c.toUpperCase(); });
+  // v23972 — and between spaces, inside a name, never as its first or last
+  // word: Rio de Janeiro, Santa Cruz de la Sierra, Foz do Iguaçu, São José
+  // dos Campos, Mar del Plata, Isle of Man, Port of Spain, Turks and Caicos
+  // (they read 'Rio De Janeiro'). A first word stays a name: La Paz, Des
+  // Moines, Los Angeles.
+  r = r.replace(/(\s)(De|Da|Do|Dos|Das|Del|Di|Du|Des|La|Of|And|Upon|Et)(?=\s)/g, function (m, sp, w) { return sp + w.toLowerCase(); });
   // and the word after an elided D', L' or O' is a name too: La Seu d'Urgell
   // reads 'D'Urgell', L'Anse-au-Loup 'L'Anse' (the casing above stops at the
   // apostrophe: 'D'urgell')
@@ -28291,7 +28533,7 @@ var AIRPORT_SUBLINE = {
   ORD: "O'Hare",             MDW: 'Midway',
   IAD: 'Dulles',             DCA: 'Reagan National',
   IAH: 'Intercontinental',   HOU: 'Hobby',
-  DFW: 'Fort Worth',         DAL: 'Love Field',
+  DFW: 'Fort Worth Intl',    DAL: 'Love Field',
   // Europe
   LHR: 'Heathrow',           LGW: 'Gatwick',      STN: 'Stansted',
   LTN: 'Luton',              LCY: 'City',
@@ -28304,7 +28546,7 @@ var AIRPORT_SUBLINE = {
   ICN: 'Incheon',            GMP: 'Gimpo',
   KIX: 'Kansai',             ITM: 'Itami',
   BKK: 'Suvarnabhumi',       DMK: 'Don Mueang',
-  PEK: 'Capital',            PKX: 'Daxing',
+  PEK: 'Capital Intl',       PKX: 'Daxing',
   PVG: 'Pudong',             SHA: 'Hongqiao',
   // South America
   EZE: 'Ezeiza',             AEP: 'Aeroparque',
@@ -28328,24 +28570,47 @@ function _apSublineNames() {
   });
   return _AP_SUB_ALL;
 }
+// Is this screen a Québec board (French first)?
+function _apQcBoard() {
+  try {
+    var ap = String(window._gateIata || (document.getElementById('apSel') || {}).value || '').toUpperCase();
+    return !!(ap && typeof frFirstAirport === 'function' && frFirstAirport(ap));
+  } catch (e) { return false; }
+}
 // Which language the airport's name is written in: the one asked for, else a
 // Québec board's French, else the board's current language.
 function _apSubLang(langOverride) {
   if (langOverride) return String(langOverride);
-  try {
-    var ap = String(window._gateIata || (document.getElementById('apSel') || {}).value || '').toUpperCase();
-    if (ap && typeof frFirstAirport === 'function' && frFirstAirport(ap)) return 'fr';
-  } catch (e) {}
+  if (_apQcBoard()) return 'fr';
   try { if (typeof lang !== 'undefined' && lang) return lang; } catch (e2) {}
   return 'en';
 }
-// The airport's name for a code, or '' when its city has only the one.
+// The airport's name for a code, or '' when its city has only the one. A
+// name that honours a person takes its French, hyphenated form on a French
+// page and on every page of a Québec board, its English phase included
+// (v23972: the YUL board's English phase read 'Billy Bishop').
 function _apSubline(code, langOverride) {
   var c = String(_realIata(String(code || '').toUpperCase().trim()));
   if (!c || !Object.prototype.hasOwnProperty.call(AIRPORT_SUBLINE, c)) return '';
   var lg = _apSubLang(langOverride);
-  if (lg === 'fr' && AIRPORT_SUBLINE_PERSON.indexOf(c) !== -1) return String(AIRPORT_SUBLINE[c]).replace(/ /g, '-');
+  if ((lg === 'fr' || _apQcBoard()) && AIRPORT_SUBLINE_PERSON.indexOf(c) !== -1) return String(AIRPORT_SUBLINE[c]).replace(/ /g, '-');
   return AIRPORT_SUBLINE[c];
+}
+// The city's own spelling from our tables, where the feed's text is the same
+// name without its accents: the feeds write 'Montreal' ('Montreal -MET'),
+// the tables 'MONTRÉAL', for both of its airports (v23972). The case the
+// text came in is kept (all capitals stay capitals).
+function _apCitySpelling(s, code, langOverride) {
+  try {
+    var c = String(_realIata(String(code || '').toUpperCase().trim()));
+    var lg = _apSubLang(langOverride);
+    var t = (lg === 'fr' && typeof CITY_FR !== 'undefined' && CITY_FR[c]) || (typeof CITY !== 'undefined' && CITY[c]) || '';
+    if (!t || t === t.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) return s;
+    var fold = function (v) { return String(v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/\s+/g, ' ').trim(); };
+    if (fold(s) !== fold(t)) return s;
+    if (s === s.toUpperCase()) return t.toUpperCase();
+    return (typeof tc === 'function') ? tc(t) : t;
+  } catch (e) { return s; }
 }
 // 'Toronto' + YTZ -> 'Toronto · Billy Bishop'. Idempotent: an airport name
 // already on the string (in either language's form) is replaced, not doubled,
@@ -28356,7 +28621,8 @@ function _cityAp(city, code, langOverride) {
   if (!sub || !s.trim()) return s;
   var i = s.lastIndexOf(' · ');
   if (i > 0 && _apSublineNames()[s.slice(i + 3).trim().toLowerCase()]) s = s.slice(0, i);
-  return s.replace(/\s+$/, '') + ' · ' + sub;
+  s = _apCitySpelling(s.replace(/\s+$/, ''), code, langOverride);
+  return s + ' · ' + sub;
 }
 // The same, as markup: the city, then the airport's name in its own span —
 // a step smaller, and kept in one piece with its "·". `text` is plain text
@@ -28683,6 +28949,9 @@ var _GATE_LBL = {
   yourAc:   { en:'Your Aircraft', fr:'Votre Avion',    es:'Su Aeronave',  de:'Ihr Flugzeug',it:'Il Tuo Aereo',pt:'Sua Aeronave',ja:'ご搭乗機', zh:'您的航机', ar:'طائرتك' },
   acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Detalhes da aeronave pendentes', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
   acImgPending:{ en:'Aircraft image pending', fr:'Image de l\u2019appareil à venir', es:'Imagen del avión pendiente', de:'Flugzeugbild folgt', it:'Immagine dell\u2019aereo in arrivo', pt:'Imagem da aeronave pendente', ja:'機体画像は準備中', zh:'机型图片即将显示', ar:'صورة الطائرة قريباً' },
+  // v23972 — the qualifier on a registration or a type the airline has not
+  // confirmed for today (it was 'expected | prévu' in every language pair)
+  acExpected:{ en:'expected', fr:'prévu', es:'prevista', de:'erwartet', it:'previsto', pt:'previsto', ja:'予定', zh:'预计', ar:'متوقع' },
   acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
   // v23904 — the caption's own label, stacked beside the model like Operated By.
@@ -28944,6 +29213,39 @@ function _gateLbl1(key, frF) {
   } catch (e) { return ''; }
 }
 
+// v23972 — an aircraft model's unbreakable parts, for the one place it may
+// open (the caption's last step): a short particle (De, of) is held to the
+// word after it, and a part with a digit to the word before it, so the only
+// breaks are between the maker and the type. 'De Havilland Dash 8-400' ->
+// ['De Havilland', 'Dash 8-400']; 'Boeing 737 MAX 8' -> ['Boeing 737', 'MAX 8'].
+function _acbModelGroups(text) {
+  var toks = String(text || '').replace(/\s+/g, ' ').trim().split(' ');
+  var out = [];
+  for (var i = 0; i < toks.length; i++) {
+    var t = toks[i];
+    if (!t) continue;
+    var prevShort = out.length && /^[A-Za-zÀ-ÿ]{1,2}$/.test(out[out.length - 1].split(' ').pop());
+    if (out.length && (/\d/.test(t) || prevShort)) out[out.length - 1] += ' ' + t;
+    else out.push(t);
+  }
+  return out;
+}
+// v23972 — the 'expected' qualifier on an unconfirmed registration or type,
+// in the board's own two languages (_GATE_LBL.acExpected; it was 'expected |
+// prévu' on every board, a German and Portuguese one included). With its
+// leading space, as a span: _acExpectedHtml(frFirst, [style]).
+function _acExpectedHtml(frFirst, style) {
+  return ' <span class="v2-rc-reg-expected"' + (style ? ' style="' + style + '"' : '') + '>'
+    + _gateLbl('acExpected', !!frFirst, null, ' <span class="v2-rc-fi-sep">|</span> ') + '</span>';
+}
+// and as plain text ('expected | prévu', 'erwartet | previsto')
+function _acExpectedText(frFirst) {
+  return _gateLbl('acExpected', !!frFirst, null, ' | ');
+}
+// French first on a Québec gate (the airport given, else the gate's own)
+function _acExpFr(iata) {
+  try { return (typeof frFirstAirport === 'function') && frFirstAirport(String(iata || window._gateIata || '')); } catch (e) { return false; }
+}
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
   var o = _GATE_LBL[key];
   if (!o) return '';
@@ -29893,8 +30195,16 @@ function render() {
   const _theadRow = document.querySelector('#fidsTable thead tr');
   if (_theadRow) {
     const _T = (k) => (typeof window.fidsT === 'function') ? window.fidsT(k, lang) : TL(k);
+    // v23972 — a portrait board's carrier column has no header: the emblem
+    // tile is the label, as the portrait stylesheet says (font-size 0). The
+    // word was still drawn there at about 13px all the same, and in German
+    // it was cut at the column's edge ('Fluggesellschaf[t]'); it is not
+    // written at all now.
+    let _hdrPortrait = false;
+    try { _hdrPortrait = document.documentElement.classList.contains('fids-portrait'); } catch (e) {}
+    const _alHdr = _hdrPortrait ? '' : _T('airline');
     const _depHeaders = [
-      { cls: 'col-airline',  txt: _T('airline')  },
+      { cls: 'col-airline',  txt: _alHdr  },
       { cls: 'col-flight',   txt: _T('flight')   },
       { cls: 'col-wx',       txt: _T('weather')  },
       { cls: 'col-dest',     txt: _T('to')       },
@@ -29905,7 +30215,7 @@ function render() {
       { cls: 'col-status',   txt: _T('status')   }
     ];
     const _arrHeaders = [
-      { cls: 'col-airline',  txt: _T('airline')  },
+      { cls: 'col-airline',  txt: _alHdr  },
       { cls: 'col-flight',   txt: _T('flight')   },
       { cls: 'col-dest',     txt: _T('from')     },
       ...(_isMcoBoard ? [{ cls: 'col-term', txt: _airsideLabel }] : []),
@@ -36072,7 +36382,12 @@ function _ocClockDate(now, tz) {
     seen[w] = 1;
     out.push(w);
   }
-  return out.join(' <span class="cl-sep">|</span> ') || _one('en');
+  // v23972 — each language a whole phrase (.fx-unit), the bar between them
+  // dropped when the pair stacks (.fx-brk): the shared fitter puts a long
+  // German or Portuguese date on two lines, one language each, rather than
+  // past the screen's edge or broken mid-phrase
+  return out.map(function (w) { return '<span class="fx-unit">' + w + '</span>'; })
+    .join(' <span class="cl-sep fx-brk">|</span> ') || _one('en');
 }
 // v23474 — the calendar day _ocClockDate is currently showing, as 'YYYY-MM-DD'.
 // It has to follow _ocClockDate's timezone rule EXACTLY, which is why this is
@@ -51403,7 +51718,7 @@ function _renderBigCraft(el, ctx) {
   var acImg = '';
   try { var im = document.querySelector('.v2-rc-shelf-illus img, .g8-aircraft-img'); if (im && im.src) acImg = im.src; } catch (e) {}
   var reg = inb._reg ? '  |  ' + String(inb._reg).toUpperCase()
-    + (/^history/.test(String(inb._regSource || '')) ? ' <span class="v2-rc-reg-expected">expected <span class="v2-rc-fi-sep">|</span> prévu</span>' : '') : '';
+    + (/^history/.test(String(inb._regSource || '')) ? _acExpectedHtml(frFirstAirport(window._gateIata || '')) : '') : '';
   function row(l1, l2, val, cls) {
     return '<div class="v2-rc-fi-trow"><div class="v2-rc-fi-tlbl"><span>' + l1 + '</span><span>' + l2 + '</span></div>'
          + '<div class="v2-rc-fi-tval' + (cls ? ' ' + cls : '') + '">' + val + '</div></div>';
