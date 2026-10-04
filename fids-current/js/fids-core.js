@@ -1425,11 +1425,12 @@ function changeFont(f) {
   // brand type, the BIDS carousel, the gate map pill. Terminal theme reads
   // var(--font-mono), which is untouched, so it stays monospace.
   //
-  // Set on BODY and WITHOUT !important, both deliberately: display-overrides
-  // has `html.fids-stream body { --font-primary: 'AC Nord Display Bold' …
-  // !important }`, and an !important inline value here would outrank it and
-  // flatten the Accor stream's brand font. Non-important loses to that one
-  // rule and wins everywhere else — which is precisely the wanted behaviour.
+  // Set on BODY and WITHOUT !important. (v23386 kept it non-important so it
+  // would yield to a stream-only `html.fids-stream body { --font-primary:
+  // AC Nord … !important }` rule. v23950 removed that rule — it put AC Nord
+  // on every streamed board whatever the airport was assigned — so a stream
+  // and a wall board now resolve the font the same way. Non-important is
+  // still right: it beats the :root default and nothing else needs beating.)
   try { document.body.style.setProperty('--font-primary', fam); } catch (e) {}
   // Force font on ALL elements including gate/baggage screens
   let s = document.getElementById('fids-font-override');
@@ -1582,11 +1583,10 @@ function restoreFontChoice(defaultFont) {
         }
       }
       if (_stack) {
-        // v23386 — was set !important here, which outranked
-        // `html.fids-stream body { --font-primary: 'AC Nord Display Bold' …
-        // !important }` and flattened the Accor stream's brand font whenever a
-        // board also had a configured font. Non-important still beats the
-        // :root default on every normal board and now yields to that one rule.
+        // v23386 made this non-important so it would yield to a stream-only
+        // AC Nord rule in display-overrides.css. v23950 removed that rule, so
+        // the stream now shows this same configured font; non-important still
+        // beats the :root default, which is all it has to do.
         document.body.style.setProperty('--font-primary', _stack);
         var s = document.getElementById('fids-font-override');
         if (!s) { s = document.createElement('style'); s.id = 'fids-font-override'; document.head.appendChild(s); }
@@ -27182,7 +27182,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23955';
+var FIDS_BUILD_TAG = 'v23966';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27291,7 +27291,7 @@ var _BIDSV3_ON = true; //
     // once every 10 minutes. A current rotator publishes __ocRotatorVer and is
     // never touched, so this goes quiet for good the moment the stream is
     // running new code. Cross-origin access throws and is ignored.
-    var _OC_ROTATOR_MIN = 23518;   // must equal __ocRotatorVer in rotate.html
+    var _OC_ROTATOR_MIN = 23950;   // must equal __ocRotatorVer in rotate.html (v23950: raised so the boxes drop the copy whose self-check misfired)
     try {
       if (window.parent && window.parent !== window) {
         // v23426 — IDENTIFY THE ROTATOR BY ITS URL, NOT BY A JS MARKER.
@@ -33127,10 +33127,10 @@ function applyAirportConfigToBoard(iata) {
     };
     if (_fontStacks[_font]) {
       var _stack = _fontStacks[_font];
-      // v23386 — was !important, which outranked `html.fids-stream body {
-      // --font-primary: 'AC Nord Display Bold' … !important }` and flattened
-      // the Accor stream's brand font. Non-important still beats the :root
-      // default on every normal board and now yields to that one rule.
+      // v23386 made this non-important so it would yield to a stream-only
+      // AC Nord rule in display-overrides.css. v23950 removed that rule, so
+      // a stream board shows the airport's font exactly as the wall board
+      // does; non-important still beats the :root default.
       document.body.style.setProperty('--font-primary', _stack);
       document.body.dataset.fidsFont = _font;
       // Nuclear override — inject *, *::before, *::after rule so the font

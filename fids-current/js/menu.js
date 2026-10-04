@@ -2215,6 +2215,7 @@ function cuSetPosition(pos) {
 function cuFontChanged() {
   var sel = document.getElementById('cuFontSelect');
   if (!sel) return;
+  _cuFontExplicitDefault = (sel.value === '');   // v23950 — see cuApplyAndSave
   _cuApplyFont(sel.value);
   cuApplyAndSave();
 }
@@ -2515,6 +2516,14 @@ function _cuApplyDisplayMode(mode) {
 
 // Save form, then re-apply config to the live board
 var _cuThemeExplicitDefault = false;
+// v23950 — PICKING "DEFAULT" IN THE FONT PICKER CLEARS THE AIRPORT'S FONT.
+// The save below merges the form over what is stored, and _cuReadForm only
+// writes a font when one is picked, so choosing Default left the old pick in
+// place on this device and in the airport config: the picker said Default
+// and every board of that airport kept the old face. Same pattern as the
+// theme's explicit default above: only a deliberate pick of Default clears
+// the font, so an untouched or unpainted picker can never erase a saved one.
+var _cuFontExplicitDefault = false;
 function cuApplyAndSave() {
   // MERGE the form over what's saved — an unsynced/untouched control must
   // never erase a saved setting (observed: changing the FONT reverted the
@@ -2532,6 +2541,10 @@ function cuApplyAndSave() {
   if (form.theme && !form.themePresetId) delete prefs.themePresetId;
   // Explicitly choosing "Use airport default" is the ONE case that clears it.
   if (_cuThemeExplicitDefault) { prefs.theme = ''; delete prefs.themePresetId; _cuThemeExplicitDefault = false; }
+  // v23950 — and the font's explicit Default. An empty string, not a delete:
+  // _cuCloudPush only sends fields that are defined, and the airport config
+  // has to be told the font is cleared or the boards keep reading the old one.
+  if (_cuFontExplicitDefault) { prefs.font = ''; _cuFontExplicitDefault = false; }
   _cuSave(prefs);
   // v23214 — and through to the cloud, so every screen of this airport gets
   // the same look (see _cuCloudPush).
