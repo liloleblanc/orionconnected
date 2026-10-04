@@ -642,7 +642,9 @@ test('paint mode is what is live, over the globe alone', () => {
   }
   assert.doesNotMatch(CODE, /_WX_INTRO_CLIP_FR|wxc-intro-film/, 'and so is film mode');
   const h = paint(['en', 'fr'], false);
-  assert.match(h, /^<div class="wxc-intro wxc-intro-paint" aria-hidden="true"><video class="wxc-intro-bg"[^>]*src="\/logos\/Backgrounds\/video\/wx-title-globe-bg\.mp4"><\/video><div class="wxc-paint">/,
+  // (data-i18n-all: the title shows every board language by design, each
+  // line marked with its own — tests/render/words.mjs reads it that way)
+  assert.match(h, /^<div class="wxc-intro wxc-intro-paint" data-i18n-all aria-hidden="true"><video class="wxc-intro-bg"[^>]*src="\/logos\/Backgrounds\/video\/wx-title-globe-bg\.mp4"><\/video><div class="wxc-paint">/,
     'the overlay is the backdrop and the lockup — no scrim, no panel, no sheen');
 });
 

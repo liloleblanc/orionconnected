@@ -55,17 +55,39 @@
   //         beside a Japanese 17:07.
   // colon   the label-to-value colon in that language's typography
   // script  the script a value must contain (the guard checks ja/zh/ar)
+  // stop    a Latin-script language's short words, which give a sentence's
+  //         language away (looksLike): a feed asked for one language often
+  //         answers in English (Accor answers Accept-Language with English
+  //         where it has nothing else). English's carries a few of the words
+  //         a hotel's English copy is made of ('pool', 'center', 'indoor'),
+  //         so a list of amenities with no small words in it is still told
+  //         apart.
   var META = {
-    en: { dir: 'ltr', intl: 'en-CA', clock24: false, colon: ': ',  script: 'latin', name: 'English' },
-    fr: { dir: 'ltr', intl: 'fr-CA', clock24: true,  colon: ' : ', script: 'latin', name: 'Français' },
-    es: { dir: 'ltr', intl: 'es',    clock24: true,  colon: ': ',  script: 'latin', name: 'Español' },
-    de: { dir: 'ltr', intl: 'de',    clock24: true,  colon: ': ',  script: 'latin', name: 'Deutsch' },
-    it: { dir: 'ltr', intl: 'it',    clock24: true,  colon: ': ',  script: 'latin', name: 'Italiano' },
-    pt: { dir: 'ltr', intl: 'pt',    clock24: true,  colon: ': ',  script: 'latin', name: 'Português' },
+    en: { dir: 'ltr', intl: 'en-CA', clock24: false, colon: ': ',  script: 'latin', name: 'English',
+      stop: 'the and of to with in for our your is are at from on by this that you we its it an as be has have will all each every just than '
+      + 'center indoor outdoor pool free room rooms breakfast meeting meetings space located steps away walk minutes downtown near new home '
+      + 'welcome luxury best heart city view views guest guests stay family friendly shopping nearby perfect ideal comfortable spacious world '
+      + 'hot tub gym laundry kids offers enjoy discover experience modern contemporary situated' },
+    fr: { dir: 'ltr', intl: 'fr-CA', clock24: true,  colon: ' : ', script: 'latin', name: 'Français',
+      stop: 'le la les des du de et à au aux pour avec dans est une un nos votre vos sur par en ce cette qui que où son sa ses' },
+    es: { dir: 'ltr', intl: 'es',    clock24: true,  colon: ': ',  script: 'latin', name: 'Español',
+      stop: 'el la los las de del y en con para su sus un una es al por que nuestro nuestra este esta' },
+    de: { dir: 'ltr', intl: 'de',    clock24: true,  colon: ': ',  script: 'latin', name: 'Deutsch',
+      stop: 'der die das und mit für ist im in den dem des ein eine zu zum zur von bei auf unser unsere ihr ihre' },
+    it: { dir: 'ltr', intl: 'it',    clock24: true,  colon: ': ',  script: 'latin', name: 'Italiano',
+      stop: 'il lo la le gli i di e con per un una è del della dei delle nel nella al alla che nostro nostra' },
+    pt: { dir: 'ltr', intl: 'pt',    clock24: true,  colon: ': ',  script: 'latin', name: 'Português',
+      stop: 'o a os as de e com para um uma é do da dos das no na nos nas ao pelo pela que nosso nossa seu sua' },
     ja: { dir: 'ltr', intl: 'ja',    clock24: true,  colon: '：',  script: 'jpan',  name: '日本語' },
     zh: { dir: 'ltr', intl: 'zh',    clock24: true,  colon: '：',  script: 'hans',  name: '中文' },
     ar: { dir: 'rtl', intl: 'ar',    clock24: true,  colon: ': ',  script: 'arab',  name: 'العربية' }
   };
+
+  var _stopSet = {};
+  Object.keys(META).forEach(function (l) {
+    _stopSet[l] = Object.create(null);
+    String(META[l].stop || '').split(' ').forEach(function (w) { if (w) _stopSet[l][w] = true; });
+  });
 
   // ── FRENCH FIRST IN QUÉBEC ──────────────────────────────────────────────
   // The only list. frFirstAirport() in fids-core.js asks this, and the
@@ -633,13 +655,27 @@
     var rtl = META[lang].dir === 'rtl';
     var e = entry(key);
     var careful = !!(e && e.$src && e.$src[lang] === 'careful');
-    var m = /^<(span|div|b|i|em|strong|bdi|small)\b([^>]*)>/.exec(h);
+    // A half that opens with its separator (' | ' in a span of its own, as
+    // the second half of a pair is often built) is marked on the element
+    // after it, the one that holds the words: marking the separator left
+    // the words in the board's language (a Japanese label under lang="en",
+    // drawn with Japanese glyphs only by luck, and Chinese with Japanese
+    // ones).
+    var lead = /^(\s*(?:<(span|b|i|small)\b[^>]*class="[^"]*(?:sep|bar)[^"]*"[^>]*>[^<]*<\/\2>\s*)+)/.exec(h);
+    var pre = lead ? lead[1] : '';
+    var rest = lead ? h.slice(pre.length) : h;
+    var m = /^<(span|div|b|i|em|strong|bdi|small)\b([^>]*)>/.exec(rest);
     if (m) {
       var attrs = m[2];
       if (!/\slang=/.test(attrs)) attrs += ' lang="' + lang + '"';
       if (rtl && !/\sdir=/.test(attrs)) attrs += ' dir="rtl"';
       if (careful) attrs += ' data-i18n-src="careful"';
-      return '<' + m[1] + attrs + '>' + h.slice(m[0].length);
+      return pre + '<' + m[1] + attrs + '>' + rest.slice(m[0].length);
+    }
+    if (lead && rest) {
+      if (!BARE_MARK[lang] && !careful) return h;
+      return pre + '<bdi lang="' + lang + '"' + (rtl ? ' dir="rtl"' : '')
+        + (careful ? ' data-i18n-src="careful"' : '') + '>' + rest + '</bdi>';
     }
     if (!h || (!BARE_MARK[lang] && !careful)) return h;
     return '<bdi lang="' + lang + '"' + (rtl ? ' dir="rtl"' : '')
@@ -728,6 +764,75 @@
         .replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
     } catch (e) { return ''; }
   }
+  // ── THE BOARD'S CLOCK ───────────────────────────────────────────────────
+  // A board's own times (its clock, its rows, its gate times) read the clock
+  // of the language it LEADS with — the first of its languages, French first
+  // in Québec: English reads 5:35pm as the boards always have, the other
+  // eight read 17:35. 'PM' is an English word: a German board printed it
+  // beside rows at 17:20, because the rows already followed the first
+  // language (_bidsTimeForLang) and the clocks did not. Every board time goes
+  // through boardTime (a Date) or boardClockText (a time a feed already
+  // wrote), so a screen reads one clock. A half that names its own language
+  // (the welcome strip's clock in each language) keeps that language's own.
+  function boardClock24(list) {
+    var L = cleanList(list || boardLangs() || []);
+    return L.length > 0 && !!META[L[0]].clock24;
+  }
+  // o.hour       '2-digit' | 'numeric' (the 12-hour form's hour; default numeric)
+  // o.hourOnly   the hour alone: '3 PM' / '15:00'
+  // o.list       the languages to decide by (default: the board's)
+  function boardTime(d, tz, o) {
+    o = o || {};
+    var dt = toDate(d);
+    if (isNaN(dt.getTime())) return '';
+    try {
+      if (boardClock24(o.list)) {
+        var o24 = { hour: '2-digit', minute: '2-digit', hour12: false };
+        if (tz) o24.timeZone = tz;
+        var s = dt.toLocaleTimeString('en-GB', o24).replace(/^24:/, '00:');
+        return o.hourOnly ? s.replace(/:\d\d$/, ':00') : s;
+      }
+      var o12 = o.hourOnly ? { hour: 'numeric', hour12: true } : { hour: o.hour || 'numeric', minute: '2-digit', hour12: true };
+      if (tz) o12.timeZone = tz;
+      return dt.toLocaleTimeString('en-US', o12);
+    } catch (e) { return ''; }
+  }
+  // Every 12-hour time inside a text — '6:15 PM', '6:15pm', '12:03am',
+  // '7:01PM', '5:20 p.m.' — in the board's clock: unchanged on a board that
+  // leads in English, 'HH:MM' on any other.
+  function boardClockText(text, list) {
+    var t = String(text == null ? '' : text);
+    if (!boardClock24(list)) return t;
+    return t.replace(/\b(\d{1,2}):(\d{2})(?:\s|\u00A0|\u202F)?([AaPp])\.?\s?[Mm]\b\.?/g, function (m, h, mm, ap) {
+      var n = parseInt(h, 10) % 12;
+      if (/[Pp]/.test(ap)) n += 12;
+      return (n < 10 ? '0' : '') + n + ':' + mm;
+    });
+  }
+
+  // Is a feed's text in this language? Japanese, Chinese and Arabic by their
+  // script; the five Latin languages by their own short words against
+  // English's. Text a passenger would read as English on a board that is not
+  // showing English is the one thing a board must not print, so a feed's
+  // answer is shown in a language only when it looks like that language.
+  function looksLike(text, l) {
+    var t = String(text == null ? '' : text);
+    if (!t.trim() || !isLang(l)) return false;
+    if (l === 'ja') return /[\u3040-\u30FF\u3400-\u9FFF]/.test(t);
+    if (l === 'zh') return /[\u3400-\u9FFF]/.test(t) && !/[\u3040-\u30FF]/.test(t);
+    if (l === 'ar') return /[\u0600-\u06FF]/.test(t);
+    if (/[\u3040-\u30FF\u3400-\u9FFF\u0600-\u06FF]/.test(t)) return false;
+    var words = t.toLowerCase().match(/[a-z\u00e0-\u00ff\u0153']+/g) || [];
+    var own = 0, en = 0;
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i].replace(/^'+|'+$/g, '').replace(/'s$/, '');
+      if (_stopSet.en[w]) en++;
+      if (l !== 'en' && _stopSet[l] && _stopSet[l][w]) own++;
+    }
+    if (l === 'en') return true;
+    return !(en >= 1 && en > own);
+  }
+
   // A bare 'HH:MM' from a feed, in one language's convention.
   function clockText(hhmm, lang) {
     var m = String(hhmm || '').trim().match(/^(\d{1,2}):(\d{2})$/);
@@ -895,6 +1000,10 @@
   api.list = list;
   api.time = time;
   api.clockText = clockText;
+  api.boardClock24 = boardClock24;
+  api.boardTime = boardTime;
+  api.boardClockText = boardClockText;
+  api.looksLike = looksLike;
   api.date = date;
   api.weekday = weekday;
   api.defaultLangs = defaultLangs;

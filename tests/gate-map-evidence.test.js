@@ -151,6 +151,10 @@ const ARRS = [
   arr('AC1984', 'YYZ', '4', 29, 17, 23, { _reg: 'C-GEJN', _aircraft: 'Boeing 737 MAX 8' }),
   arr('PB924', 'YYY', '2', 29, 17, 50), arr('AC7754', 'YOW', '4', 29, 18, 38),
 ];
+// The map note is markup: each language's half marked with its language
+// (an Arabic one reads right to left). Read as text, it is the line a
+// passenger sees.
+const noteText = (h) => String(h).replace(/<[^>]+>/g, '');
 const DATA = () => ({ arr: ARRS.map((r) => Object.assign({}, r)), dep: DEPS.map((r) => Object.assign({}, r)) });
 const find = (list, flight, d) => list.find((r) => r.flight === flight && (!d || new Date(r._sortTs - 3 * 3600000).getUTCDate() === d));
 
@@ -165,7 +169,7 @@ test('gate 1: no inbound for AC1983 at 22:20 — no aeroplane anywhere, the map 
   assert.equal(res.leg, 'out');
   assert.equal(res.org, 'YQM');
   assert.equal(res.dst, 'YYZ', 'the route dashed from our stand toward Toronto');
-  assert.equal(E._gateMapNote(res), 'To Toronto · 5:25am | À Toronto · 05:25');
+  assert.equal(noteText(E._gateMapNote(res)), 'To Toronto · 5:25am | À Toronto · 05:25');
   // At 05:10 the feed's own "Boarding" is evidence an aeroplane is at our gate; the clock's is not.
   const boarding = Object.assign({}, cf, { status: 'boarding', _stInferred: false });
   assert.equal(E._gateAircraftWhere(null, boarding, T(29, 5, 10)).kind, 'stand');
@@ -186,7 +190,7 @@ test('gate 2: PB923 through Moncton — the same-number arrival is the inbound, 
   assert.equal(res.leg, 'in');
   assert.equal(res.org, 'YDF');
   assert.equal(res.dst, 'YQM');
-  assert.equal(E._gateMapNote(res), 'From Deer Lake · 11:00am | De Deer Lake · 11:00');
+  assert.equal(noteText(E._gateMapNote(res)), 'From Deer Lake · 11:00am | De Deer Lake · 11:00');
   // The evening's PB924 pairs with its own through arrival, not with the morning's PB923.
   const pb924 = find(data.dep, 'PB924');
   assert.equal(E._gateInboundForDeparture(pb924, '2', data.arr, data.dep).flight, 'PB924');
@@ -214,7 +218,7 @@ test('gate 3: PD2381, raw "Arrived at 9:47 PM", is PD2370\'s aeroplane — on th
   assert.equal(after.kind, 'none');
   assert.equal(after.why, 'deplaned');
   assert.equal(after.leg, 'out');
-  assert.equal(E._gateMapNote(after), 'To Ottawa · 11:55am | À Ottawa · 11:55');
+  assert.equal(noteText(E._gateMapNote(after)), 'To Ottawa · 11:55am | À Ottawa · 11:55');
   assert.equal(E._gateAircraftWhere(inb, cf, T(29, 4, 0)).kind, 'none', '04:00: not a night stop on the map');
   // When the airport says PD2370 is boarding, an aeroplane is at the door.
   const boarding = Object.assign({}, cf, { status: 'boarding', _stInferred: false });

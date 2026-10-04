@@ -351,6 +351,15 @@ html[data-boot-ground="1"] #fidsLoader {
 /* Each half is isolated, so an Arabic half and a Latin half (or a Japanese
    date and an Arabic one) can never reorder each other. */
 .bs-h, bdi[lang] { unicode-bidi: isolate; }
+/* A board that shows ONE language at a time carries it on its table or its
+   screen (lang="ar" on #fidsTable, on the baggage view). Its columns keep
+   their order, so the direction is set where the words are — each heading,
+   each status, each label — never on the table or the screen itself, which
+   would mirror the columns. */
+#fidsTable:lang(ar) th, #fidsTable:lang(ar) td.td-status,
+[lang="ar"] .b3-status, [lang="ar"] .bidsv2-carousel-label,
+[lang="ar"] .bidsv2-col-hdr, [lang="ar"] .bidsv2-status, [lang="ar"] .bidsv2-empty,
+#fidsTable:lang(ar) .fids-empty, [lang="ar"] .fids-empty-msg { direction: rtl; unicode-bidi: isolate; }
 
 /* ?i18n=provenance (localhost only): every careful translation — our words,
    where the airline or government publishes none in that language — is

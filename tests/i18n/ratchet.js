@@ -80,6 +80,17 @@ function pragmaCounts(files, read) {
       const k = f + ' ' + m[1];
       out[k] = (out[k] || 0) + 1;
     }
+    // translate="no" tells the rendered check (tests/render/words.mjs) that
+    // an element's words are data: an exception like any other
+    for (const m of src.matchAll(/translate=\\?["']no\\?["']/g)) {
+      const k = f + ' translate="no"';
+      out[k] = (out[k] || 0) + 1;
+    }
+    // data-i18n-all: a piece that shows every board language by design
+    for (const m of src.matchAll(/data-i18n-(all|feed)\b/g)) {
+      const k = f + ' data-i18n-' + m[1];
+      out[k] = (out[k] || 0) + 1;
+    }
   }
   return out;
 }

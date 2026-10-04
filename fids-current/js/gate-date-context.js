@@ -148,7 +148,7 @@
     var offset = flightDay - today;
     if (offset < 1) return { dayOffset: offset, words: [], text: '' };
     var zone = validTimeZone(options.timeZone);
-    var seen = Object.create(null), words = [];
+    var seen = Object.create(null), words = [], languages = [];
     selectedLanguages(options.languages, options.frenchFirst).forEach(function (language) {
       var word = offset === 1
         ? Strings.bs('tomorrow', language)
@@ -156,8 +156,11 @@
       if (!word || seen[word.toLowerCase()]) return;
       seen[word.toLowerCase()] = true;
       words.push(word);
+      languages.push(language);
     });
-    return { dayOffset: offset, words: words, text: words.join(' | ') };
+    // `languages[i]` is the language of `words[i]`, so the caller can mark
+    // each with it (an Arabic 'tomorrow' reads right to left)
+    return { dayOffset: offset, words: words, languages: languages, text: words.join(' | ') };
   }
 
   return {

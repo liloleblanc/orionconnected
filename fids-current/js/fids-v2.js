@@ -121,13 +121,16 @@
   window.fidsFormatStatus = formatStatusCell;
 
   // ── Time formatting ─────────────────────────────────────────────────────
-  // 12-hour with AM/PM, e.g. "5:28 AM" / "11:42 PM"
+  // 12-hour with AM/PM, e.g. "5:28 AM" / "11:42 PM", on a board that leads
+  // in English; on any other, the 24-hour "17:28" its language reads
+  // (BoardStrings.boardClock24 — a board reads one clock).
   function formatTime12(hhmm) {
     if (!hhmm) return '';
     const m = String(hhmm).match(/^(\d{1,2}):(\d{2})/);
     if (!m) return hhmm;
     let h = parseInt(m[1], 10);
     const mm = m[2];
+    if (window.BoardStrings && BoardStrings.boardClock24()) return (h < 10 ? '0' : '') + h + ':' + mm;
     const ampm = h >= 12 ? 'PM' : 'AM';
     h = h % 12; if (h === 0) h = 12;
     return h + ':' + mm + ' ' + ampm;

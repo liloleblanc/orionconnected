@@ -125,7 +125,7 @@ const KEY_HELPERS = {
   adTL: ['AD_I18N'],
   fidsT: ['TX'],
   TLin: ['LS', 'STR'], SLpair: ['SS', 'STR'], _bidsHdr: ['LS', 'STR'],
-  bsList: ['LISTS'], _tickerText: ['LISTS']
+  bsList: ['LISTS'], _tickerHtml: ['LISTS']
 };
 // Helpers whose name another file uses for a different helper: B6 reads
 // these per file. { file: { helper: [tables] } }

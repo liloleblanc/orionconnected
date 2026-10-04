@@ -1263,7 +1263,7 @@ function run(options) {
   }
   const pragmaCounts = {};
   for (const r of pragmaHits.values()) pragmaCounts[r] = (pragmaCounts[r] || 0) + 1;
-  return { findings, pragmaCounts, entries, tables, textObjects: allTextObjects };
+  return { findings, pragmaCounts, entries, tables, textObjects: allTextObjects, listObjects, dataVocab: [...DATA_VOCAB] };
 }
 
 // ── markup lexing ─────────────────────────────────────────────────────────

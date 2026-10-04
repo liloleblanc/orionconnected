@@ -5066,7 +5066,7 @@ function updateDedicatedTimeOnly() {
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  const timeStr = now.toLocaleTimeString('en-US', { ...tzOpts, hour:'2-digit', minute:'2-digit', hour12:true });
+  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23960 — the board's clock
   // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
   const _loc = (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23960 — the store's locale
   // Weekday, month, day number and year all come from the AIRPORT's clock —
@@ -5146,7 +5146,7 @@ function getTzAbbr(tz) {
 function getTimeInTz(ts, tz) {
   if (!ts || !tz) return '';
   try {
-    return new Date(ts).toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: true });
+    return BoardStrings.boardTime(ts, tz, { hour: '2-digit' });
   } catch(e) { return ''; }
 }
 
@@ -10994,7 +10994,9 @@ function _buildV2AircraftCol(ctx, vars) {
       var _destValue = _dfCity || _destCityName || _destIataDisp;
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
       // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
-      function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
+      // '5:46 PM' → '5:46pm' on a board that leads in English; '17:46' on
+      // any other (the board reads one clock)
+      function _amPm(h) { return BoardStrings.boardClockText(String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; })); }
       // A REVISED (later) departure means the flight is delayed — reflect that
       // in the status label AND colour even if the raw feed still says
       // "scheduled" (that's why the departure time already shows orange).
@@ -11022,20 +11024,21 @@ function _buildV2AircraftCol(ctx, vars) {
         else if (_stk === 'scheduled' || _stk === '') _stk = 'ontime';
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
-          var _enTC = _fidsTitleCase(_ss.en); // Title Case the EN
-          // Status STACKED — EN over FR.
-          // v22956 — stacked in the SELECTED languages, not hard EN/FR.
+          // Status STACKED, in the SELECTED languages (v22956), each word
+          // marked with its language (v23960: an Arabic status read left to
+          // right under lang="en", a Chinese one took Japanese glyphs). Title
+          // Case is English's; other languages keep their own capitals.
           var _stPick = BoardStrings.pairLangs(langs, _frF);   // v23960 — the one chooser
-          var _stW = [], _stSeen = {};
+          var _stW = [], _stL = [], _stSeen = {};
           for (var _swi = 0; _swi < _stPick.length && _stW.length < 2; _swi++) {
             var _sw = _ss[_stPick[_swi]];
             if (!_sw) continue;
-            _sw = _fidsTitleCase(_sw);
+            _sw = _fidsTitleCaseIn(_sw, _stPick[_swi]);
             if (_stSeen[_sw.toLowerCase()]) continue;
             _stSeen[_sw.toLowerCase()] = 1;
-            _stW.push(_sw);
+            _stW.push(_sw); _stL.push(_stPick[_swi]);
           }
-          _stBiling = _stW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('') || ('<span class="v2-fi-st2">' + _enTC + '</span>');
+          _stBiling = _stW.map(function (w, i) { return BoardStrings.markHalf('<span class="v2-fi-st2">' + w + '</span>', _stL[i]); }).join('');
         }
       } catch (e) {}
       if (!_stBiling) _stBiling = _fiStLbl || '—';
@@ -11337,7 +11340,7 @@ function _buildV2MapCol(ctx, vars) {
         if (_ib._depSchedLocal) {
           var _ibDepTs = (typeof adbTs === 'function') ? adbTs(_ib._depSchedLocal) : 0;
           if (_ibDepTs) {
-            _ibDepStr = new Date(_ibDepTs).toLocaleTimeString('en-US', { timeZone: _tz, hour: '2-digit', minute: '2-digit', hour12: true });
+            _ibDepStr = BoardStrings.boardTime(_ibDepTs, _tz, { hour: '2-digit' });
           }
         }
       } catch (e) {}
@@ -11399,7 +11402,7 @@ function _buildV2MapCol(ctx, vars) {
       // strike + revised time when the ETA moved: green when earlier (early
       // is good), amber when later. Label flips to Arrived once it's in.
       var _ibFmtT = function (ts) {
-        try { return new Date(ts).toLocaleTimeString('en-US', { timeZone: _tz || 'UTC', hour: 'numeric', minute: '2-digit', hour12: true }); }
+        try { return BoardStrings.boardTime(ts, _tz || 'UTC'); }
         catch (e) { return ''; }
       };
       var _ibArrSchedStr = _ibArrTs ? _ibFmtT(_ibArrTs) : '';
@@ -11977,9 +11980,7 @@ function _buildV2MapCol(ctx, vars) {
       var _niTimeStr = '';
       if (_niTs) {
         try {
-          _niTimeStr = new Date(_niTs).toLocaleTimeString('en-US', {
-            timeZone: vars.tz || 'UTC', hour: '2-digit', minute: '2-digit', hour12: true
-          });
+          _niTimeStr = BoardStrings.boardTime(_niTs, vars.tz || 'UTC', { hour: '2-digit' });
         } catch (e) { _niTimeStr = ''; }
       }
       var _niStatusLine = '';
@@ -12946,9 +12947,12 @@ function _gateDayWords(ts, tz, frF, boardTz) {
 function _gateDayLineHtml(dw) {
   if (!dw || !dw.words || !dw.words.length) return '';
   // Each language is one unbreakable unit; the only break offered is the one
-  // between them (the board's rule against severed phrases).
+  // between them (the board's rule against severed phrases). v23960 — and
+  // each carries its language (and an Arabic one its direction).
+  var _dl = dw.languages || [];
   return '<span class="v2-fi-dayline" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w, i) {
-    return (i ? '<span class="v2-fi-day-sep"> | </span>' : '') + '<span class="v2-fi-day-w">' + fidsEscHtml(w) + '</span>';
+    var _w = '<span class="v2-fi-day-w">' + fidsEscHtml(w) + '</span>';
+    return (i ? '<span class="v2-fi-day-sep"> | </span>' : '') + (_dl[i] ? BoardStrings.markHalf(_w, _dl[i]) : _w);
   }).join('') + '</span>';
 }
 // Which instant the Your Aircraft card's day line is read from: the time the
@@ -13178,14 +13182,14 @@ function uxgGateHtml(ctx) {
   if (_effDepForBoard) {
     var boardTs = _bt.boardTs;
     var bd = new Date(boardTs);
-    boardTimeHtml = bd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
+    boardTimeHtml = BoardStrings.boardTime(bd, tz || 'UTC');
     // If delayed, show original boarding time struck through + new boarding time
     // (v23925 — "delayed" as the boarding time's own row has it: on a kept
     // sign that is the row from before the delay, so nothing is struck.)
     if (_bt.depDelayed && currentFlight._sortTs) {
       var origBoardTs = currentFlight._sortTs - boardLeadMins*60000;
       var origBd = new Date(origBoardTs);
-      var origBoardStr = origBd.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'numeric', minute:'2-digit', hour12:true });
+      var origBoardStr = BoardStrings.boardTime(origBd, tz || 'UTC');
       if (origBoardStr !== boardTimeHtml) {
         boardTimeHtml = '<span class="g8-r2-strike">' + origBoardStr + '</span><span class="g8-r2-revised' + ((stKey === 'early') ? ' g8-rev-early' : '') + '">' + boardTimeHtml + '</span>';
       }
@@ -13396,7 +13400,7 @@ function uxgGateHtml(ctx) {
     if (inboundFlight._depSchedLocal) {
       var depTs = adbTs(inboundFlight._depSchedLocal);
       if (depTs) {
-        inDepTime = new Date(depTs).toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'2-digit', minute:'2-digit', hour12:true });
+        inDepTime = BoardStrings.boardTime(depTs, tz || 'UTC', { hour: '2-digit' });
       } else {
         inDepTime = adbHHMM(inboundFlight._depSchedLocal) || inboundFlight.time || '';
       }
@@ -13421,7 +13425,7 @@ function uxgGateHtml(ctx) {
     var inSchedArr = '';
     if (inboundFlight._sortTs) {
       var iad = new Date(inboundFlight._sortTs);
-      inSchedArr = iad.toLocaleTimeString('en-US', { timeZone: tz||'UTC', hour:'2-digit', minute:'2-digit', hour12:true });
+      inSchedArr = BoardStrings.boardTime(iad, tz || 'UTC', { hour: '2-digit' });
     }
     var inArrHtml = '';
     if (inArrived) {
@@ -13841,15 +13845,14 @@ function uxgGateHtml(ctx) {
     var _stTxt = '';
     if (_stP) {
       var _svPick = BoardStrings.pairLangs(langs, _frF);   // v23960 — the one chooser
-      var _svW = [], _svSeen = {};
+      var _svW = [], _svL = [], _svSeen = {};
       for (var _svi = 0; _svi < _svPick.length && _svW.length < 2; _svi++) {
         var _svw = _stP[_svPick[_svi]];
         if (!_svw || _svSeen[String(_svw).toLowerCase()]) continue;
         _svSeen[String(_svw).toLowerCase()] = 1;
-        _svW.push(_svw);
+        _svW.push(_svw); _svL.push(_svPick[_svi]);
       }
-      if (!_svW.length && _stP.en) _svW.push(_stP.en);
-      _stTxt = _svW.map(function (w) { return '<span class="v2-fi-st2">' + w + '</span>'; }).join('');
+      _stTxt = _svW.map(function (w, i) { return BoardStrings.markHalf('<span class="v2-fi-st2">' + w + '</span>', _svL[i]); }).join('');
     }
     // Flair brand palette: airline icon = the plain green dot; every
     // other badge is BLACK with the green glyph inside.
@@ -16101,7 +16104,7 @@ function uxgGateHtml(ctx) {
             // (rounded top, soft border/shadow separation).
             var _e = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
             var _tbNow1 = '—';
-            try { _tbNow1 = new Date().toLocaleTimeString('en-US', _tbTz ? { timeZone: _tbTz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
+            try { _tbNow1 = BoardStrings.boardTime(new Date(), _tbTz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; }); } catch (e) {}
             var _tbDate1 = '', _tbDay1 = '';
             try { _tbDate1 = _ocClockDate(new Date(), _tbTz || null); } catch (e) {}
             try { _tbDay1 = _ocLocalDayKey(_tbTz || null); } catch (e) {}
@@ -19282,7 +19285,7 @@ const gView = document.getElementById('gateView');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  const timeStr = now.toLocaleTimeString('en-US', { ...tzOpts, hour:'2-digit', minute:'2-digit', hour12:true });
+  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23960 — the board's clock
   // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
   const _loc = (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23960 — the store's locale
   // Weekday, month, day number and year all come from the AIRPORT's clock —
@@ -20874,12 +20877,13 @@ const gView = document.getElementById('gateView');
       var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
       var out = [], seen = {};
       for (var i = 0; i < picked.length; i++) {
-        var w = String(o[picked[i]] || (i === 0 ? (o.en || key) : '')).replace(/\s*#\s*$/, '');
+        var w = String(o[picked[i]] || '').replace(/\s*#\s*$/, '');
         if (!w || seen[w.toLowerCase()]) continue;
         seen[w.toLowerCase()] = 1;
-        out.push(w);
+        // each half carries its language (and an Arabic one its direction)
+        out.push(BoardStrings.half(picked[i], w, 'bidsv2-hh'));
       }
-      return out.join(' <span class="bidsv2-hsep">|</span> ') || String(o.en || key);
+      return out.join(' <span class="bidsv2-hsep">|</span> ');
     }
     // MCO: remind travellers which terminal this carousel sits in. The belt
     // key is "A-9"-style, so the prefix is the terminal letter; fall back to
@@ -21220,9 +21224,8 @@ Bilingual baggage-hall messages loop in a
              marquee; the track is doubled so the wrap is seamless. -->
         <div class="bidsv2-bottom-band bidsv2-ticker" aria-hidden="true">
           ${(function(){
-            const _txt = _tickerText('bagsTicker').map(function (m) { return m.replace('✈  ', '✈︎  '); }).join('   ·   ') + '   ·   ';
-            const _esc = _txt.replace(/&/g,'&amp;').replace(/</g,'&lt;');
-            return '<div class="bidsv2-ticker-track"><span>' + _esc + '</span><span>' + _esc + '</span></div>';
+            const _html = _tickerHtml('bagsTicker', '✈︎', '   ·   ') + '   ·   ';
+            return '<div class="bidsv2-ticker-track"><span>' + _html + '</span><span>' + _html + '</span></div>';
           })()}
         </div>
 
@@ -24384,7 +24387,7 @@ function gateWeatherWidget(depIata, destIata, arrivalTs) {
     const arr = tioArrivalWeather(destIata, arrivalTs);
     if (arr && arr.temp !== undefined) {
       hasAny = true;
-      const arrTime = new Date(arr.ts).toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:true });
+      const arrTime = BoardStrings.boardTime(arr.ts, null, { hour: '2-digit' });
       html += tioPanelHtml(destIata, '@ ' + arrTime, arr);
     } else if (destWx.current && destWx.current.temp !== undefined) {
       hasAny = true;
@@ -25791,7 +25794,7 @@ const LS = {
   equipmentType:   { en:'Equipment Type',fr:'Type d\'appareil',es:'Tipo de aeronave',de:'Flugzeugtyp',it:'Tipo di aeromobile',pt:'Tipo de aeronave',ja:'機材タイプ',zh:'机型',ar:'نوع الطائرة' },
   reg:             { en:'Registration',fr:'Immatriculation',es:'Matrícula',de:'Kennzeichen',it:'Immatricolazione',pt:'Matrícula',ja:'登録番号',zh:'注册号',ar:'رقم التسجيل' },
   inbound:         { en:'Inbound Aircraft',fr:'Avion à l\'arrivée',es:'Aeronave entrante',de:'Ankommendes Flugzeug',it:'Aereo in arrivo',pt:'Aeronave de chegada',ja:'到着機',zh:'到达飞机',ar:'الطائرة القادمة' },
-  from:            { en:'from',fr:'de',es:'desde',de:'aus',it:'da',pt:'de',ja:'発',zh:'来自',ar:'من', $ctx: 'connective' },
+  from:            { en:'from',fr:'de',es:'desde',de:'aus',it:'da',pt:'de',ja:'出発地',zh:'来自',ar:'من', $ctx: 'connective' },
   flightPath:      { en:'FLIGHT PATH',fr:'TRAJECTOIRE',es:'RUTA DE VUELO',de:'FLUGROUTE',it:'ROTTA',pt:'ROTA DE VOO',ja:'飛行ルート',zh:'飞行路线',ar:'مسار الرحلة' },
   featuredLbl:     { en:'FEATURED',fr:'À LA UNE',es:'DESTACADO',de:'EMPFOHLEN',it:'IN EVIDENZA',pt:'EM DESTAQUE',ja:'おすすめ',zh:'精选',ar:'مميز' },
 
@@ -26163,6 +26166,14 @@ function formatCityIata(raw, iata, langOverride) {
   if (code && (!rawStr || rawStr.replace(/[^A-Za-z]/g, '').toUpperCase() === code)) {
     rawStr = airportCityNameSafe_v21877(code, langOverride) || rawStr;
   }
+  // v23960 — a city has its own name in a language when the board keeps one
+  // (CITY_FR: 'Montréal'), and a board showing that language uses it rather
+  // than the feed's English spelling ('Montreal' on a French board).
+  if (code && langOverride && langOverride !== 'en') {
+    var _locName = airportCityNameSafe_v21877(code, langOverride);
+    var _enName = airportCityNameSafe_v21877(code, 'en');
+    if (_locName && _enName && _locName !== _enName) rawStr = _locName;
+  }
 
   var city = normalizeDisplayCity(rawStr, code);
   // v22736 — last resort: the feed gave a city but no code. Resolve it from
@@ -26467,6 +26478,21 @@ function toggleLang(l) {
     var _lsAp = (document.getElementById('apSel') || {}).value || '';
     if (_lsAp) localStorage.setItem('fids_langs_' + _lsAp.toUpperCase(), langs.join(','));
   } catch (e) {}
+  _applyBoardLangs();
+}
+// v23960 — everything that follows a change of the board's languages, in one
+// place: toggleLang (the operator's button) runs it, and so does
+// setBoardLangs (the rendered language check, tests/render/words.mjs, which
+// puts every board into each of the nine languages in turn).
+function setBoardLangs(list) {
+  var L = BoardStrings.frenchFirst(BoardStrings.parseList(Array.isArray(list) ? list.join(',') : list), (document.getElementById('apSel') || {}).value || '');
+  if (!L.length) return;
+  langs = L;
+  langIdx = 0;
+  lang = langs[langIdx];
+  _applyBoardLangs();
+}
+function _applyBoardLangs() {
   updateLangButtons();
   updateTicker();
   startLangRotation();
@@ -26490,6 +26516,20 @@ function toggleLang(l) {
   try {
     var _wxC = document.getElementById('gateAdCarousel');
     if (_wxC && _wxC.querySelector('.wxcard-wrap') && typeof _renderWxCard === 'function') _renderWxCard(_wxC);
+    // v23960 — and so does the slide on screen: a text ad, the Welcome slide
+    // or the map takeover was painted in the languages of the moment it
+    // arrived and kept them until its dwell ran out (measured: 'Welcome
+    // aboard | Bienvenue à bord' on a German gate). It is painted again in
+    // place; an operator's own image or video carries no board words and is
+    // left playing.
+    else if (_wxC && _wxC.firstChild && typeof _getGateAdSlideAt === 'function') {
+      var _adS = _getGateAdSlideAt(_gateAdIndex);
+      if (_adS && _adS.type !== 'custom') {
+        window._gateAdAuthChange = true;
+        try { renderGateAd(_gateAdIndex); } catch (eAd) {}
+        window._gateAdAuthChange = false;
+      }
+    }
   } catch (eWx) {}
 }
 function updateLangButtons() {
@@ -26519,6 +26559,15 @@ function updateLangButtons() {
 // their word. Non-Latin scripts pass through toUpperCase untouched.
 function _fidsTitleCase(s) {
   return String(s == null ? '' : s).replace(/(^|[\s\-'’])([a-zà-ÿ])/g, function (m, p, c) { return p + c.toUpperCase(); });
+}
+// v23960 — Title Case is English's convention, not French, Spanish, Italian,
+// Portuguese or German typography ('À L'Heure', 'Das Boarding Beginnt In
+// Kürze'): a word in another language keeps the capitals the store gives it,
+// with only its first letter raised.
+function _fidsTitleCaseIn(s, l) {
+  if (!l || l === 'en') return _fidsTitleCase(s);
+  var t = String(s == null ? '' : s);
+  return t ? t.charAt(0).toLocaleUpperCase((BoardStrings.META[l] || BoardStrings.META.en).intl) + t.slice(1) : t;
 }
 // One table, one helper, and the call sites stop hard-coding a language pair.
 var _GATE_LBL = {
@@ -26593,7 +26642,7 @@ var _GATE_LBL = {
   // line 1 ('PD2381 from | de Montreal | MET'). Distinct from `from` below,
   // which is the capitalised FIELD LABEL used in the rail's From/De column;
   // this one is mid-phrase and must not be capitalised.
-  fromConn: { en:'from', fr:'de', es:'desde', de:'aus', it:'da', pt:'de', ja:'発', zh:'来自', ar:'من', $ctx: 'connective' },
+  fromConn: { en:'from', fr:'de', es:'desde', de:'aus', it:'da', pt:'de', ja:'出発地', zh:'来自', ar:'من', $ctx: 'connective' },
   // Was hardcoded English ('Time left for arrival:') in the v2 inbound block,
   // on a board whose every other label is bilingual.
   timeToArr: { en:'Time to arrival', fr:'Temps avant l’arrivée', es:'Tiempo hasta la llegada', de:'Zeit bis zur Ankunft', it:'Tempo all’arrivo', pt:'Tempo até à chegada', ja:'到着まで', zh:'距到达时间', ar:'الوقت حتى الوصول' },
@@ -26784,7 +26833,7 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
     seen[k] = 1;
     parts.push(w); partLangs.push(picked[i]);
   }
-  if (!parts.length) { parts.push(o.en); partLangs.push('en'); }
+  if (!parts.length) return '';
   // v23161 — wrap() now receives the index. The lane labels need their two
   // halves in addressable spans so they can STACK when they cannot share a
   // line; without that the pair is bare text and CSS has nothing to move.
@@ -26815,7 +26864,7 @@ function _gateLaneLbl(nums, plural, frFirst) {
     seen[k] = 1;
     parts.push(w + ' ' + nums); partLangs.push(picked[i]);
   }
-  if (!parts.length) { parts.push(o.en + ' ' + nums); partLangs.push('en'); }
+  if (!parts.length) return '';
   // v23116 — A SENTENCE NEVER BREAKS
   // Each language's line is one nowrap
   // unit; when both don't fit side by side the sign STACKS them whole —
@@ -27225,17 +27274,23 @@ var _BIDSV3_ON = true; //
 // v23960 — the ticker lines live in the store (BoardStrings.LISTS.ticker and
 // .bagsTicker), nine languages each. The pair is the board's own two
 // languages, French first in Québec, through BoardStrings.pairLangs.
-function _tickerText(listKey) {
+// The same lines as markup, each message marked with its language (and an
+// Arabic one its direction): one text node holding Arabic beside Japanese
+// read left to right in the board's language, and drew the Chinese with
+// Japanese glyphs. `plane` is the line's lead glyph.
+function _tickerHtml(listKey, plane, sep) {
   const _ap = (document.getElementById('apSel') || {}).value || '';
   const pair = BoardStrings.pairLangs(langs, _ap);
   const a = BoardStrings.list(listKey, pair[0]);
   const b = pair[1] ? BoardStrings.list(listKey, pair[1]) : null;
-  return a.map((msg, i) => '✈  ' + msg + (b && b[i] ? '  ·  ' + b[i] : ''));
+  const esc = BoardStrings.esc;
+  return a.map((msg, i) => plane + '  ' + BoardStrings.half(pair[0], esc(msg), 'tk-h')
+    + (b && b[i] ? '  ·  ' + BoardStrings.half(pair[1], esc(b[i]), 'tk-h') : '')).join(sep);
 }
 function updateTicker() {
   const ticker = document.querySelector('.ticker span');
   if (!ticker) return;
-  ticker.textContent = _tickerText('ticker').join('  ·  ') + '  ·  ✈';
+  ticker.innerHTML = _tickerHtml('ticker', '✈', '  ·  ') + '  ·  ✈';
 }
 
 // ── THEME PRESETS ────────────────────────────────────────────────────────
@@ -33491,12 +33546,13 @@ function _boardLabelBilingual(key) {
   var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
   var out = [], seen = {};
   for (var i = 0; i < picked.length; i++) {
-    var w = o[picked[i]] || (i === 0 ? o.en : '');
+    var w = o[picked[i]] || '';
     if (!w || seen[w]) continue;
     seen[w] = 1;
-    out.push('<span class="' + (out.length ? 'fbl-fr' : 'fbl-en') + '">' + w + '</span>');
+    // the slot classes are positions (first, second), not languages: each
+    // half carries its own language and, for Arabic, its direction
+    out.push(BoardStrings.markHalf('<span class="' + (out.length ? 'fbl-fr' : 'fbl-en') + '">' + w + '</span>', picked[i]));
   }
-  if (!out.length) out.push('<span class="fbl-en">' + (o.en || key) + '</span>');
   return out.join('') + _boardFilterChipHtml();
 }
 
@@ -33549,20 +33605,18 @@ function _ocOrdinal(n) { var s = ['th', 'st', 'nd', 'rd'], v = n % 100; return s
 // Single 12h time '10:29PM' — for the FIDS/BIDS
 // banner clocks. (_ocClockTime stays DUAL for the rail shelf clocks.)
 function _ocClockTime1(now, tz) {
-  var o = { hour: 'numeric', minute: '2-digit', hour12: true }; if (tz) o.timeZone = tz;
-  return now.toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
+  return BoardStrings.boardTime(now, tz).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
 }
 // Dual time '6:26PM | 18 h 26' — PLAIN text (used in textContent contexts too).
+// v23960 — each half in its own language's clock (BoardStrings.time): the
+// English 12-hour, the other 24-hour; on a board that does not lead in
+// English the 12-hour half is not there.
 function _ocClockTime(now, tz) {
-  var eo = { hour: 'numeric', minute: '2-digit', hour12: true }; if (tz) eo.timeZone = tz;
-  var en = now.toLocaleTimeString('en-US', eo).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
-  var po = { hour: '2-digit', minute: '2-digit', hour12: false }; if (tz) po.timeZone = tz;
-  var H = '0', M = '00';
-  new Intl.DateTimeFormat('en-GB', po).formatToParts(now).forEach(function (p) {
-    if (p.type === 'hour') H = p.value; else if (p.type === 'minute') M = p.value;
-  });
-  //
-  return en + ' | ' + String(parseInt(H, 10)) + 'h ' + M;
+  var en = BoardStrings.time(now, 'en', tz).replace(/([ap])m$/i, function (_, p) { return p.toUpperCase() + 'M'; });
+  var h24 = BoardStrings.time(now, 'fr', tz);
+  var m = /^(\d{2}):(\d{2})$/.exec(h24);
+  var fr = m ? String(parseInt(m[1], 10)) + 'h ' + m[2] : h24;
+  return BoardStrings.boardClock24() ? fr : en + ' | ' + fr;
 }
 function _ocClockDate(now, tz) {
   // v22959 — the banner date follows the SELECTED languages
@@ -38210,9 +38264,13 @@ function _gateMapNote(res) {
       var s = w + ' ' + _gateMapCity(res.other, picked[i]) + (tm ? ' · ' + tm : '');
       if (seen[s.toLowerCase()]) continue;
       seen[s.toLowerCase()] = 1;
-      parts.push(s);
+      // v23960 — each half is markup marked with its language (and an Arabic
+      // one its direction): one plain line under lang="en" drew 'إلى Toronto
+      // · 18:15' left to right, so an Arabic reader met the time, then the
+      // city, then 'to'.
+      parts.push(BoardStrings.half(picked[i], BoardStrings.esc(s)));
     }
-    return parts.join(' | ');
+    return parts.join(' <span class="bs-sep">|</span> ');
   } catch (e) { return ''; }
 }
 // Draw the answer on the small map. Both controllers (tryInitMap and the 10 s
@@ -38514,10 +38572,11 @@ function _gateDrawEmptyStand(map, spot, d, note) {
     }
     out.push(L.circleMarker(s, { radius: 5, color: '#60a5fa', weight: 2, fill: false, interactive: false }).addTo(map));
     if (note) {
-      var esc = String(note).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      // `note` is markup from _gateMapNote: each half escaped and marked
+      // with its language there
       out.push(L.marker(s, { interactive: false, keyboard: false, zIndexOffset: 900,
         icon: L.divIcon({ className: 'gate-map-note-pin', iconSize: [0, 0], iconAnchor: [0, 0],
-                          html: '<div class="gate-map-note">' + esc + '</div>' }) }).addTo(map));
+                          html: '<div class="gate-map-note">' + note + '</div>' }) }).addTo(map));
     }
     var c = s;
     try { var pl = _gateParkPlace(spot, d); if (isFinite(pl.lat) && isFinite(pl.lng)) c = [pl.lat, pl.lng]; } catch (eP) { c = s; }
@@ -42866,6 +42925,9 @@ function buildGateAmenities() {
 }
 
 function buildGateAdHtml(ad) {
+  // a slot whose ad has gone (the deck was rebuilt between the pick and the
+  // paint) draws nothing rather than throwing
+  if (!ad) return '';
   // ── HELPER: render a logo using the per-brand treatment map ────────────
   // When `compact` is true, skip the white card wrapper. Used by layouts
   // that already provide their own backdrop (e.g. Accor hotel cards with
@@ -43299,7 +43361,11 @@ function buildGateAdHtml(ad) {
     // a separate source from the list aggregation and still returns it for
     // hotels that don't include it (Fairmont). No card advertises breakfast.
     var _noBkfst = function (arr) { return (arr || []).filter(function (x) { return !/breakfast|d[ée]jeuner/i.test(String(x)); }); };
-    var _detAmen = _detail ? _noBkfst(_detail.topAmenities) : [];
+    // v23960 — and only lines in the language being shown: the language-less
+    // cache entry, or Accor's English answer to a request in another
+    // language, is not printed under a Japanese or German heading.
+    var _inCur = function (arr) { return (arr || []).filter(function (x) { return BoardStrings.looksLike(x, _curLang); }); };
+    var _detAmen = _detail ? _inCur(_noBkfst(_detail.topAmenities)) : [];
     if (_detAmen.length) {
       _topics.push({ title: TL('amenities'), items: _detAmen.slice(0, 5) });
     }
@@ -43307,7 +43373,7 @@ function buildGateAdHtml(ad) {
     if (_detResto.length) {
       _topics.push({ title: TL('restaurants'), items: _detResto });
     }
-    var _detFac = _detail ? _noBkfst(_detail.facilities) : [];
+    var _detFac = _detail ? _inCur(_noBkfst(_detail.facilities)) : [];
     if (_detFac.length) {
       _topics.push({ title: TL('facilities'), items: _detFac });
     }
@@ -44218,8 +44284,8 @@ function buildAccorAdOnlyV6(ad) {
   function _reviewsW(L){ return TLin('reviews', L); }
   // The score is a number in any language; only the word after it changes, so
   // the two words share one row rather than duplicating the figure.
-  var reviewsLabel=_reviewsW(accorLang());
-  if (_L2 && _reviewsW(_L2) !== reviewsLabel) reviewsLabel += ' · ' + _reviewsW(_L2);
+  var reviewsLabel = '<span' + _biAttr(accorLang()) + '>' + _reviewsW(accorLang()) + '</span>';
+  if (_L2 && _reviewsW(_L2) !== _reviewsW(accorLang())) reviewsLabel += ' · <span' + _biAttr(_L2) + '>' + _reviewsW(_L2) + '</span>';
   // Never let an object reach the card: an upstream shape change would print
   // '[object Object]/5' on a paying advertiser's slide.
   if (rating && typeof rating === 'object') {
@@ -44276,9 +44342,11 @@ function buildAccorAdOnlyV6(ad) {
   var _scanT2 = _L2 ? _scanFor(_L2) : '';
   // The property name is the same words in both languages — it is printed once,
   // under the two invitations, not duplicated.
-  var _scanHtml = _scanMark(_scanT1)
-    + ((_scanT2 && _scanT2 !== _scanT1) ? '<span class="axr-bi-line">' + _scanMark(_scanT2) + '</span>' : '');
-  var _qrCaption = _scanHtml + '<br><span class="axr-bub-name">' + esc(_fullName) + '</span>';
+  // each invitation marked with its language (and an Arabic one its
+  // direction), so a Japanese one is not set under the page's English
+  var _scanHtml = '<span' + _biAttr(accorLang()) + '>' + _scanMark(_scanT1) + '</span>'
+    + ((_scanT2 && _scanT2 !== _scanT1) ? '<span class="axr-bi-line"' + _biAttr(_L2) + '>' + _scanMark(_scanT2) + '</span>' : '');
+  var _qrCaption = _scanHtml + '<br><span class="axr-bub-name" translate="no">' + esc(_fullName) + '</span>';
   var bubbleHtml=(factsheetUrl&&factsheetUrl!=='#')?'<div class="axr-bubble"><div class="axr-bubble-copy">'+_qrCaption+'</div><div class="axr-qr hotel-ad-qr" data-qr-url="'+esc(factsheetUrl)+'"></div></div>':'';
   var _ll=(['en','fr','ar','zh'].indexOf(accorLang())!==-1?accorLang():'en'); // i18n-ok: data
   // EN → official 'Members of ALL' stacked signature (Brand Book p.123).
@@ -44293,7 +44361,10 @@ function buildAccorAdOnlyV6(ad) {
   var _allxBrand=_ALL_X_BRAND[String(ad.brand||'').toUpperCase()]||'';
 
   var _fullAddr = first(ad.fullAddress, '');
-  var _addrLineHtml = _fullAddr ? '<div class="axr-addr-line">' + esc(_fullAddr) + '</div>' : '';
+  // The street address is the hotel's own (data, never translated: 'Front
+  // Street' is its name), in the language Accor sent it in — marked with that
+  // language, so the country it names in Arabic reads right to left.
+  var _addrLineHtml = _fullAddr ? '<div class="axr-addr-line" translate="no"' + _biAttr(accorLang()) + '>' + esc(_fullAddr) + '</div>' : '';
   // Location distance lines — distance from the destination AIRPORT and from
   // DOWNTOWN, localized. Each shown only when we have the figure.
   var _lgD = accorLang();
@@ -44316,9 +44387,11 @@ function buildAccorAdOnlyV6(ad) {
   // One row per FACT, both languages inside it. A second .axr-loc-line per
   // language would be read by the stylesheet as the next fact and get the
   // city-centre glyph, so the languages share the row and the pin.
+  // v23960 — each language's line carries its language (and an Arabic one
+  // its direction): '1 km من وسط المدينة' read left to right under lang="en".
   function _locRow(t1, t2){
-    return '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span><span>' + esc(t1) + '</span>'
-      + ((t2 && t2 !== t1) ? '<b class="axr-bi-sep"></b><span>' + esc(t2) + '</span>' : '')
+    return '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span><span' + _biAttr(_lgD) + '>' + esc(t1) + '</span>'
+      + ((t2 && t2 !== t1) ? '<b class="axr-bi-sep"></b><span' + _biAttr(_L2) + '>' + esc(t2) + '</span>' : '')
       + '</div>';
   }
   function _tpl(map, L, km, city){
@@ -44500,6 +44573,12 @@ function buildAccorAdOnlyV6(ad) {
   }
   var _blurb  = _mkBlurb(ad);
   var _blurbB = _ad2 ? _mkBlurb(_ad2) : '';
+  // v23960 — a feed's text is shown in a language only when it IS that
+  // language (BoardStrings.looksLike): Accor answers a Japanese or Arabic
+  // request with its English copy, which then sat in the Japanese column
+  // ('Welcome to a new era of luxury.' on a Japanese gate, marked lang="ja").
+  if (_blurb && !BoardStrings.looksLike(_blurb, _lgD)) _blurb = '';
+  if (_blurbB && !BoardStrings.looksLike(_blurbB, _L2)) _blurbB = '';
   // A SECOND paragraph for page 3, from a different source than page 2's — the
   // destination text (what's around the hotel), or the next sentence of the
   // hotel's own copy. Without it page 3 was a logo, a name and a QR code and
@@ -44544,6 +44623,8 @@ function buildAccorAdOnlyV6(ad) {
     && String(ad.destinationDescription).trim() !== String(_ad2.destinationDescription).trim());
   var _blurb2  = _mkBlurb2(ad,  _blurb,  _destTranslated);
   var _blurb2B = _ad2 ? _mkBlurb2(_ad2, _blurbB, _destTranslated) : '';
+  if (_blurb2 && !BoardStrings.looksLike(_blurb2, _lgD)) _blurb2 = '';
+  if (_blurb2B && !BoardStrings.looksLike(_blurb2B, _L2)) _blurb2B = '';
 
   var _acL = accorLang();
   var _kHotel  = BoardStrings.bs('theHotel', _acL);
@@ -44611,7 +44692,7 @@ function buildAccorAdOnlyV6(ad) {
       }
       return art + (nameHtml || '');
     }
-    return '<div class="axr-idtext">' + esc(_fullName) + '</div>';
+    return '<div class="axr-idtext" translate="no">' + esc(_fullName) + '</div>';
   }
   var _starsRow  = starsHtml ? '<div class="axr-sub">'+starsHtml+'</div>' : '';
   var _ratingRow = ratingHtml ? '<div class="axr-sub axr-sub-rating">'+ratingHtml+'</div>' : '';
@@ -44691,8 +44772,22 @@ function buildAccorAdOnlyV6(ad) {
       : '';
   }
   var _amenRank2 = _ad2 ? _rankAmen(_ad2, _detail2, _L2) : null;
-  var _advsAll  = _mkAdvs(ad, _amenSell);
-  var _advsAllB = _ad2 ? _mkAdvs(_ad2, _amenRank2 ? _amenRank2.sell : []) : [];
+  // Each language's lines only when they are in it (no English standing in
+  // for Japanese), and one fact once: Accor lists 'Home to Library Bar,
+  // ranked 23 on Canada's 50 Best Bars' AND 'Home to Library Bar, one of
+  // North America's 50 Best Bars', which printed the same fact twice.
+  function _advFilter(list, L) {
+    var seenLead = {};
+    return list.filter(function (o) {
+      if (!BoardStrings.looksLike(o.t, L)) return false;
+      var lead = String(o.t).toLowerCase().split(/[\s,]+/).slice(0, 4).join(' ');
+      if (seenLead[lead]) return false;
+      seenLead[lead] = 1;
+      return true;
+    });
+  }
+  var _advsAll  = _advFilter(_mkAdvs(ad, _amenSell), _lgD);
+  var _advsAllB = _ad2 ? _advFilter(_mkAdvs(_ad2, _amenRank2 ? _amenRank2.sell : []), _L2) : [];
   var _advs = [], _advsB = [];
   if (_ad2) {
     var _bByIdx = {};
@@ -44772,14 +44867,16 @@ function buildAccorAdOnlyV6(ad) {
       // when the deck's side is effectively empty, which beats blank.
       var _keep = (_visibleLen(a) >= 24) ? a : b;
       var _lang = (_keep === a) ? _lgD : _L2;
-      return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lang) + '>' + _keep + '</div></div>';
+      return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col" data-i18n-feed' + _biAttr(_lang) + '>' + _keep + '</div></div>';
     }
-    if (!a) { return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_L2) + '>' + b + '</div></div>'; }
-    if (!b || b === a) return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col"' + _biAttr(_lgD) + '>' + a + '</div></div>';
+    // data-i18n-feed: the hotel's own words, in the language the column is
+    // marked with (looksLike already turned away any that are not)
+    if (!a) { return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col" data-i18n-feed' + _biAttr(_L2) + '>' + b + '</div></div>'; }
+    if (!b || b === a) return '<div class="axr-bi axr-bi-1"><div class="axr-bi-col" data-i18n-feed' + _biAttr(_lgD) + '>' + a + '</div></div>';
     return '<div class="axr-bi">'
-      + '<div class="axr-bi-col"' + _biAttr(_lgD) + '>' + a + '</div>'
+      + '<div class="axr-bi-col" data-i18n-feed' + _biAttr(_lgD) + '>' + a + '</div>'
       + '<div class="axr-bi-rule"></div>'
-      + '<div class="axr-bi-col"' + _biAttr(_L2) + '>' + b + '</div>'
+      + '<div class="axr-bi-col" data-i18n-feed' + _biAttr(_L2) + '>' + b + '</div>'
       + '</div>';
   }
   // No advantages AND no prose → there is nothing to say on this page, so it
@@ -44808,7 +44905,7 @@ function buildAccorAdOnlyV6(ad) {
   // Restaurants flow inline in the advantages treatment — caps, gold middots —
   // never as a bulleted list.
   var _restInline = _restList.length
-    ? '<div class="axr-fai-feats">' + _restList.slice(0, 3).map(function (r) {
+    ? '<div class="axr-fai-feats" translate="no">' + _restList.slice(0, 3).map(function (r) {
         return '<span>' + esc(r) + '</span>';
       }).join('') + '</div>'
     : '';
@@ -47674,11 +47771,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         } else if (els[i].getAttribute('data-fmt') === 'dual' && typeof _ocClockTime === 'function') {
           s = _ocClockTime(new Date(), tz || null);
         } else {
-          var o = tz ? { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true } : { hour: 'numeric', minute: '2-digit', hour12: true };
           // data-mer="up" → uppercase 'PM' (silk banner clock); default stays
           // lowercase 'pm' for the rail shelf clocks.
           var _up = els[i].getAttribute('data-mer') === 'up';
-          s = new Date().toLocaleTimeString('en-US', o).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
+          s = BoardStrings.boardTime(new Date(), tz || null).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return _up ? (p.toUpperCase() + 'M') : (p.toLowerCase() + 'm'); });
         }
         if (s && els[i].textContent !== s) els[i].textContent = s;
       } catch (e) {}
@@ -48372,19 +48468,18 @@ function _renderBigCraft(el, ctx) {
   // Japanese/Arabic screens. Same two-word cap as the rail cards.
   var stShow = (function () {
     if (!ss) return inb.status || '—';
-    var _cap = _fidsTitleCase;
+    var _cap = _fidsTitleCaseIn;
     var picked = BoardStrings.pairLangs(langs, String(window._gateIata || ''));   // v23960
     var seen = Object.create(null), parts = [];
     for (var i = 0; i < picked.length && parts.length < 2; i++) {
       var w = ss[picked[i]];
       if (!w) continue;
-      w = _cap(w);
+      w = _cap(w, picked[i]);
       var k = w.toLowerCase();
       if (seen[k]) continue;
       seen[k] = 1;
-      parts.push(w);
+      parts.push(BoardStrings.half(picked[i], w));
     }
-    if (!parts.length) parts.push(_cap(ss.en));
     return parts.join(' <span class="v2-rc-fi-sep">|</span> ');
   })();
   var stCls = /delay|retard/i.test(stKey) ? 'delayed' : (/cancel/i.test(stKey) ? 'cancelled' : 'scheduled');
@@ -49685,7 +49780,8 @@ function _wxIntroPaintHtml(frFirst) {
   var byLang = {}; rows.forEach(function (r) { byLang[r.l] = r; });
   var hero = [], seen = {};
   picked.forEach(function (l) { var r = byLang[l]; if (r && !seen[l]) { seen[l] = 1; hero.push(r); } });
-  if (!hero.length) { hero.push(byLang.en || rows[0]); seen[hero[0].l] = 1; }
+  // (no line of the board's own languages can be drawn here: the others
+  // still settle under, and no English stands in for them)
   var rank = rows.filter(function (r) { return !seen[r.l]; });
   var h = '<div class="wxc-paint"><i class="wxc-pk" aria-hidden="true"><b></b><b></b></i>';
   hero.forEach(function (r, i) {
@@ -49706,7 +49802,9 @@ function _wxIntroPaintHtml(frFirst) {
     h += '</div>';
   }
   h += '</div>';
-  return '<div class="wxc-intro wxc-intro-paint" aria-hidden="true">' + _wxIntroBackdropHtml() + h + '</div>';
+  // data-i18n-all: this title shows every board language by design, each
+  // line marked with its own (tests/render/words.mjs reads it that way)
+  return '<div class="wxc-intro wxc-intro-paint" data-i18n-all aria-hidden="true">' + _wxIntroBackdropHtml() + h + '</div>';
 }
 
 // The two hero lines share ONE size, the way the film set them: the size is
@@ -49775,7 +49873,7 @@ function _wxIntroHtml(frFirst) {
   // A drawn sky needs far less knocking back than footage does, so the
   // overlay says which it got and the scrim and the plate soften to match.
   var _sky = (_WX_INTRO_BACKDROP === 'sky');
-  return '<div class="wxc-intro' + (_sky ? ' wxc-intro-drawn' : '') + '" aria-hidden="true">'
+  return '<div class="wxc-intro' + (_sky ? ' wxc-intro-drawn' : '') + '" data-i18n-all aria-hidden="true">'
        + _wxIntroBackdropHtml()
        + '<i class="wxc-intro-scrim"></i>'
        + '<i class="wxc-intro-panel"></i>'
@@ -49908,7 +50006,9 @@ function _renderWxCard(el) {
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
         var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
-        seen[String(t).toLowerCase()] = 1; w.push(t);
+        // v23960 — each word carries its language (an Arabic condition read
+        // left to right under lang="en", a Chinese one took Japanese glyphs)
+        seen[String(t).toLowerCase()] = 1; w.push(BoardStrings.markHalf(t, _wxLangs[_wi]));
       }
       return w.join(_wxSep);
     };
@@ -49930,7 +50030,7 @@ function _renderWxCard(el) {
         var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
-        w.push('<span class="wxc-t-part">' + t + '</span>');
+        w.push(BoardStrings.markHalf('<span class="wxc-t-part">' + t + '</span>', _wxLangs[_wi]));
       }
       return w.join(_wxSep);
     };
@@ -49946,6 +50046,13 @@ function _renderWxCard(el) {
     var _dayName = function (d, lg) {
       var loc = _WX_LOCALE(lg);
       var day = d.toLocaleDateString(loc, { weekday: 'short' });
+      // Three capital letters is a Latin-script convention. Japanese and
+      // Chinese short forms are a glyph or two already, and Arabic has no
+      // short form: cutting its name to three letters made Sunday, Monday
+      // and Tuesday read الأ / الا / الث — the store's own rule
+      // (BoardStrings.weekday never slices a weekday).
+      var m = BoardStrings.META[lg];
+      if (m && m.script !== 'latin') return day.replace(/[.\s]+$/, '');
       return day.replace(/[^\p{L}]/gu, '').slice(0, 3).toUpperCase();
     };
     var _dayLine = function (d, lg, extraCls) {
@@ -49971,7 +50078,7 @@ function _renderWxCard(el) {
       // layout shows. `date` is left computed but unused so the abbreviated-
       // month logic above stays available if dates are ever wanted back.
       void date;
-      return '<div class="wxc-d' + extraCls + '">' + day + '</div>';
+      return BoardStrings.markHalf('<div class="wxc-d' + extraCls + '">' + day + '</div>', lg);
     };
     var _dayAbbr = _dayName;
     var _mlbl = function (key) {
@@ -49980,7 +50087,7 @@ function _renderWxCard(el) {
         wind:  BoardStrings.entry('wxWind'),
         hum:   BoardStrings.entry('wxHumidity')
       };
-      return _wxPair(M[key] || { en: key });
+      return _wxPair(M[key] || {});
     };
 
     // 7-DAY outlook: prefer the daily route; fall back to 48h hourly rollup.
@@ -50032,7 +50139,6 @@ function _renderWxCard(el) {
     try {
       var _hTz = (AP[dest] || {}).tz;
       var _hNow = Date.now();
-      var _hFmt = _hTz ? { timeZone: _hTz, hour: 'numeric', hour12: true } : { hour: 'numeric', hour12: true };
       var _hFmt24 = _hTz ? { timeZone: _hTz, hour12: false, hour: '2-digit' } : { hour12: false, hour: '2-digit' }; // i18n-ok: code
       (wx.hourly || [])
         .filter(function (h) { return h && typeof h.temp === 'number' && h.ts && h.ts >= _hNow - 1800000; })
@@ -50040,7 +50146,8 @@ function _renderWxCard(el) {
         .slice(0, 8)
         .forEach(function (h) {
           var hd = new Date(h.ts);
-          var lbl = hd.toLocaleTimeString('en-US', _hFmt).replace(/:00/, '').replace(/\s/g, ' '); // "3 PM"
+          // "3 PM" on a card led by English, "15:00" on any other
+          var lbl = BoardStrings.boardTime(hd, _hTz || null, { hourOnly: true, list: _wxLangs }).replace(/\s/g, ' ');
           var hNight = false;
           try { hNight = !!_wxNightAt(dest, h.ts); } catch (eHN) {
             var h24 = Number(hd.toLocaleTimeString('en-GB', _hFmt24).slice(0, 2)); // i18n-ok: code
@@ -50141,8 +50248,7 @@ function _renderWxCard(el) {
       try {
         var z = (AP[iata] || {}).tz;
         if (!z) return '';
-        return new Date(ts).toLocaleTimeString('en-US',
-          { timeZone: z, hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s/g, ' ');
+        return BoardStrings.boardTime(ts, z, { list: _wxLangs }).replace(/\s/g, ' ');
       } catch (eK) { return ''; }
     };
 
@@ -50307,7 +50413,7 @@ function _renderWxCard(el) {
         var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
-        w.push('<span class="wxc-t-part">' + t + '</span>');
+        w.push(BoardStrings.markHalf('<span class="wxc-t-part">' + t + '</span>', _wxLangs[_wi]));
       }
       return w.join(_wxDia);
     };
@@ -50318,7 +50424,7 @@ function _renderWxCard(el) {
         var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
-        w.push('<span class="wxc-l' + (w.length + 1) + '">' + t + '</span>');
+        w.push(BoardStrings.markHalf('<span class="wxc-l' + (w.length + 1) + '">' + t + '</span>', _wxLangs[_wi]));
       }
       return w.join('');
     };
@@ -50381,7 +50487,9 @@ function _renderWxCard(el) {
       // own title carries both languages, so the column takes the board's
       // first one.
       var _wxNowLbl = (function () {
-        return BoardStrings.bs('wxNowCol', _wxLangs[0]);
+        // the first language's word, marked with it (an Arabic 'now' reads
+        // right to left; a Chinese one takes the simplified-Chinese glyphs)
+        return BoardStrings.markHalf(BoardStrings.bs('wxNowCol', _wxLangs[0]), _wxLangs[0]);
       })();
       var _cols = _pts.map(function (p, i) {
         return '<div class="wxc-pt ' + (p.h.night ? 'wxc-pt-night' : 'wxc-pt-day') + '" style="--wxc-i:' + i + '">'
@@ -50497,9 +50605,7 @@ function _renderWxCard(el) {
         if (!iso) return '';
         try {
           var z = (AP[iata] || {}).tz;
-          return new Date(iso).toLocaleTimeString('en-US',
-            z ? { timeZone: z, hour: 'numeric', minute: '2-digit', hour12: true }
-              : { hour: 'numeric', minute: '2-digit', hour12: true }).replace(/\s/g, ' ');
+          return BoardStrings.boardTime(iso, z || null, { list: _wxLangs }).replace(/\s/g, ' ');
         } catch (eH) { return ''; }
       };
       var _facts = '';
@@ -50531,7 +50637,7 @@ function _renderWxCard(el) {
       var _dayCols = _wxDays.map(function (d, i) {
         var _dSlot = _wxSceneKindOf(d.ic) + '-day';
         return '<div class="wxc-day2" style="--wxc-i:' + i + '">'
-          + '<div class="wxc-dchip">' + _dayAbbr(d.dt, _wxLangs[0]) + (_wxLangs[1] ? _wxDia + _dayAbbr(d.dt, _wxLangs[1]) : '') + '</div>'
+          + '<div class="wxc-dchip">' + BoardStrings.markHalf(_dayAbbr(d.dt, _wxLangs[0]), _wxLangs[0]) + (_wxLangs[1] ? _wxDia + BoardStrings.markHalf(_dayAbbr(d.dt, _wxLangs[1]), _wxLangs[1]) : '') + '</div>'
           + '<div class="wxc-dbody">'
           +   '<img class="wxanim" data-wx="' + d.ic + '" src="' + _WX_ICON_DIR + d.ic + '.svg' + _wxIconQ() + '" alt="">'
           +   '<div class="wxc-dhi">' + _wxDeg(d.hi) + '</div>'

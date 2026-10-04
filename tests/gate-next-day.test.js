@@ -58,9 +58,11 @@ test('tomorrow\'s departure carries its day; today\'s carries none', () => {
   const g = gateDay(AT_1933, ['en', 'fr']);
   const dw = g.words(WS813_OCT3, 'America/Moncton', false);
   assert.equal(dw.text, 'Tomorrow | Demain');
+  // each word carries its language (an Arabic 'tomorrow' reads right to left)
+  assert.deepEqual(dw.languages, ['en', 'fr']);
   assert.equal(g.line(dw),
-    '<span class="v2-fi-dayline" data-day-offset="1"><span class="v2-fi-day-w">Tomorrow</span>'
-    + '<span class="v2-fi-day-sep"> | </span><span class="v2-fi-day-w">Demain</span></span>');
+    '<span class="v2-fi-dayline" data-day-offset="1"><span class="v2-fi-day-w" lang="en">Tomorrow</span>'
+    + '<span class="v2-fi-day-sep"> | </span><span class="v2-fi-day-w" lang="fr">Demain</span></span>');
   assert.equal(g.words(WS813_OCT2, 'America/Moncton', false), null, 'today: nothing to print');
   assert.equal(g.line(null), '');
   assert.equal(g.words(0, 'America/Moncton', false), null, 'no time, no day');
@@ -164,13 +166,16 @@ test('an early inbound that crosses midnight is tonight\'s, not tomorrow\'s', ()
 });
 
 test('the empty-stand label says the day instead of the clock, never both', () => {
-  const LBL = { from: { en: 'From', fr: 'De' }, to: { en: 'To', fr: 'À' } };
+  const LBL = { from: { en: 'From', fr: 'De', ar: 'من' }, to: { en: 'To', fr: 'À', ar: 'إلى' } };
   const note = (nowMs, at, langs) => new Function('window', 'langs', '_GATE_LBL', 'frFirstAirport', 'AP', '_fidsClockForLang', '_gateMapCity', 'Date',
     'return (' + fnSource('_gateMapNote') + ')')(
     { _gateIata: 'YQM', FIDSGateDate: gateDate }, langs, LBL, () => false, { YQM: { tz: 'America/Moncton' } },
     (d, tz, lg) => (lg === 'fr' ? '17:20' : '5:20pm'), () => 'Calgary', clockAt(nowMs))({ leg: 'in', other: 'YYC', at });
-  assert.equal(note(AT_1933, Date.parse('2026-10-03T20:20:00Z'), ['en', 'fr']), 'From Calgary · Tomorrow | De Calgary · Demain');
-  assert.equal(note(AT_1933, Date.parse('2026-10-02T20:20:00Z'), ['en', 'fr']), 'From Calgary · 5:20pm | De Calgary · 17:20');
+  // each half is marked with its language, so an Arabic one reads right to left
+  const pairOf = (a, b) => '<span class="bs-h" lang="en">' + a + '</span> <span class="bs-sep">|</span> <span class="bs-h" lang="fr">' + b + '</span>';
+  assert.equal(note(AT_1933, Date.parse('2026-10-03T20:20:00Z'), ['en', 'fr']), pairOf('From Calgary · Tomorrow', 'De Calgary · Demain'));
+  assert.equal(note(AT_1933, Date.parse('2026-10-02T20:20:00Z'), ['en', 'fr']), pairOf('From Calgary · 5:20pm', 'De Calgary · 17:20'));
+  assert.match(note(AT_1933, Date.parse('2026-10-02T20:20:00Z'), ['ar']), /^<span class="bs-h" lang="ar" dir="rtl">/);
 });
 
 test('at the airport\'s midnight a gate with a day line repaints once, and one without is left alone', () => {
