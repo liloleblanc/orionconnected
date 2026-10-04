@@ -90,7 +90,7 @@ test('Air France keeps its red virgule on the Welcome card', () => {
 });
 
 test('the deck marks the slide and the renderer leaves a marked emblem alone', () => {
-  assert.match(SRC, /logoOwnColours: !!_FB_WELCOME_OWN_COLOURS\[code\]/,
+  assert.match(SRC, /logoOwnColours: !!\(?_FB_WELCOME_OWN_COLOURS\[code\]/,
     'the Welcome slide carries the flag');
   const keep = SRC.indexOf('if (ad.logoOwnColours) _adKeepColour = true;');
   const filt = SRC.indexOf('var _stdLogoFilter = (_adLightBg || _adKeepColour)');
@@ -127,19 +127,14 @@ const LETTERFORMS_WHITE = {
 };
 
 // NOT A DECISION. Colour emblems this card still whitens, because their
-// colours disappear into their own card (share of ink at 3:1 or better).
-// Whitening them breaks the rule; the fix is a different ground behind the
-// mark. Listed so the set is visible and cannot grow, and pinned below so a
-// carrier leaves it only by being fixed.
-const STILL_WHITENED_OPEN = {
-  F9: 'Frontier green, 0% readable on its card',
-  FI: 'Icelandair navy fin, 0%',
-  HA: 'Hawaiian pualani, 48%',
-  AA: 'American flight symbol, 56% (American usually shows its own creative instead)',
-  PT: 'American flight symbol (Piedmont)',
-  MQ: 'American flight symbol (Envoy)',
-  OH: 'American flight symbol (PSA)'
-};
+// colours disappear into their own card. Whitening them breaks the rule; the
+// fix is a different ground behind the mark. Pinned below so a carrier can
+// leave this list only by being fixed, and none can join it. Empty since
+// _FB_WELCOME_ON_DISC gave the last seven a white disc.
+const STILL_WHITENED_OPEN = {};
+
+// Colour marks shown on a white disc: their colours fail on the navy card.
+const ON_DISC = table('var _FB_WELCOME_ON_DISC = {');
 
 function isWhiteOnly(file) {
   if (!/\.svg$/i.test(file)) return false;
@@ -172,12 +167,13 @@ test('every carrier that can reach the card is drawn white, a tile, in its own c
     const file = path.join(PUB, url.split('?')[0]);
     assert.ok(fs.existsSync(file), code + ': ' + url);
     const tile = /\/logos\/airline-tiles\//.test(url) && !/PB-arrow/i.test(url);
-    const ok = tile || OWN[code] || isWhiteOnly(file) || cssExempt(url)
+    const ok = tile || OWN[code] || ON_DISC[code] || isWhiteOnly(file) || cssExempt(url)
       || LETTERFORMS_WHITE[code] || STILL_WHITENED_OPEN[code];
     if (!ok) unexplained.push(code + ' ' + url);
     if (OWN[code]) assert.ok(!tile, code + ': a tile is already covered by the folder rule');
+    if (ON_DISC[code]) assert.ok(!tile && !OWN[code], code + ': on the disc, or in colour on the card, not both');
     if (LETTERFORMS_WHITE[code] || STILL_WHITENED_OPEN[code]) {
-      assert.ok(!OWN[code] && !tile, code + ': cannot be both whitened and kept in colour');
+      assert.ok(!OWN[code] && !ON_DISC[code] && !tile, code + ': cannot be both whitened and kept in colour');
     }
   }
   assert.deepEqual(unexplained, [], 'whitened on the Welcome card and on neither list');
@@ -186,12 +182,7 @@ test('every carrier that can reach the card is drawn white, a tile, in its own c
 test('the open list only shrinks', () => {
   // A colour emblem that is still whitened is an open problem, not a choice.
   // Nothing joins this list; a carrier leaves it when its card is fixed.
-  assert.deepEqual(Object.keys(STILL_WHITENED_OPEN).sort(),
-    ['AA', 'F9', 'FI', 'HA', 'MQ', 'OH', 'PT']);
-  for (const code of Object.keys(STILL_WHITENED_OPEN)) {
-    assert.ok(!isWhiteOnly(path.join(PUB, (WELCOME_LOGO[code] || EMBLEMS[code]).split('?')[0])),
-      code + ' is colour art, which is why it is open');
-  }
+  assert.deepEqual(Object.keys(STILL_WHITENED_OPEN), []);
 });
 
 test('PAL shows its gold tile, not the white arrow drawn for the orb badge', () => {
@@ -210,4 +201,58 @@ test('the colour marks named for the card read on it', () => {
       assert.ok(contrast(art.fills[0], g) >= 3, code + ' ' + art.fills[0] + ' on ' + g + ' = ' + contrast(art.fills[0], g).toFixed(2));
     }
   }
+});
+
+// ── v23942 — the colour marks their card swallows sit on a white disc ───────
+
+const vm = require('node:vm');
+function render(ad) {
+  const b = block('function buildGateAdHtml(ad) {');
+  const sandbox = { window: {}, LOGO_TREATMENT: {}, _adWrap: (h) => h, resolveLogo: (x) => x };
+  vm.createContext(sandbox);
+  vm.runInContext(SRC.slice(b.at, b.to), sandbox);
+  return sandbox.buildGateAdHtml(ad);
+}
+
+test('the seven are on the disc: Frontier, Icelandair, Hawaiian and American\'s symbol', () => {
+  assert.deepEqual(Object.keys(ON_DISC).sort(), ['AA', 'F9', 'FI', 'HA', 'MQ', 'OH', 'PT']);
+  assert.match(SRC, /logoOwnColours: !!\(_FB_WELCOME_OWN_COLOURS\[code\] \|\| _FB_WELCOME_ON_DISC\[code\]\),\s*logoDisc: !!_FB_WELCOME_ON_DISC\[code\]/,
+    'the Welcome slide carries both flags');
+  for (const code of Object.keys(ON_DISC)) {
+    assert.ok(!LETTERFORMS_WHITE[code], code);
+    const art = welcomeArt(code);
+    assert.ok(!isWhiteOnly(art.file), code + ' is colour art');
+    // single-ink marks are checked against the disc; the multi-colour two
+    // (American's gradients, Hawaiian's pualani) were drawn for a light ground
+    if (art.fills.length === 1) {
+      assert.ok(contrast(art.fills[0], '#ffffff') >= 3, code + ' ' + art.fills[0] + ' on white');
+      for (const g of cardGround(code)) {
+        assert.ok(contrast(art.fills[0], g) < 3, code + ' fails on its card ' + g + ', which is why it needs the disc');
+      }
+    }
+  }
+});
+
+test('the renderer draws the disc white and the mark untouched', () => {
+  const html = render({ logo: '/logos/airlines/european/icelandair-fin.svg', logoOwnColours: true, logoDisc: true,
+    headline: 'Welcome aboard', bg: '#14213d' });
+  const disc = /<div class="gad-ad-logo-disc" style="([^"]*)">/.exec(html);
+  assert.ok(disc, 'a disc wraps the mark');
+  assert.match(disc[1], /border-radius:50%/);
+  assert.match(disc[1], /aspect-ratio:1\/1/);
+  assert.match(disc[1], /background:#FFFFFF/);
+  assert.match(disc[1], /height:100%/, 'the disc is the full height of the logo box, as tall as any other Welcome logo');
+  const img = /<img class="gad-ad-logo" src="[^"]*icelandair-fin\.svg" alt="" style="([^"]*)"/.exec(html);
+  assert.ok(img, 'the mark is inside');
+  assert.doesNotMatch(img[1], /invert|brightness/, 'never whitened');
+  assert.match(img[1], /filter:none/);
+});
+
+test('without the disc flag nothing changes', () => {
+  const own = render({ logo: '/a.svg', logoOwnColours: true, headline: 'x' });
+  assert.doesNotMatch(own, /gad-ad-logo-disc/);
+  assert.doesNotMatch(own, /invert/, 'own colours: no white-force');
+  const plain = render({ logo: '/porter-p.svg', headline: 'x' });
+  assert.doesNotMatch(plain, /gad-ad-logo-disc/);
+  assert.match(plain, /filter:brightness\(0\) invert\(1\)/, 'a mark drawn white is still inked white, as before');
 });

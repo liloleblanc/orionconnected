@@ -43763,7 +43763,24 @@ function buildGateAdHtml(ad) {
   var _stdLogoFilter = (_adLightBg || _adKeepColour)
     ? (_adKeepColour ? 'filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));' : '')
     : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
-  var _stdLogoHtml = ad.logo
+  // v23942 — A WHITE DISC FOR A COLOUR MARK ITS OWN CARD SWALLOWS.
+  // Some emblems keep their colours and still cannot be seen on their card:
+  // Frontier's green and Icelandair's navy fin measure 0% readable on the
+  // navy ground, American's symbol 56%, Hawaiian's pualani 48%. Whitening
+  // them is the one treatment never allowed, so the ground changes instead:
+  // the mark sits in its own colours on a white disc, the white-outer,
+  // colour-interior treatment the gate orb already gives American and
+  // Hawaiian. Same box as every other Welcome logo; the disc is the box's
+  // height, the mark inset by the orb's own ratio (about 16% a side).
+  var _stdLogoHtml = (ad.logo && ad.logoDisc)
+    ? '<div style="flex-shrink:0;width:100%;margin-bottom:clamp(20px,3vh,40px);height:clamp(120px,20vh,230px);display:flex;align-items:center;justify-content:center;">'
+      + '<div class="gad-ad-logo-disc" style="flex:0 0 auto;height:100%;aspect-ratio:1/1;border-radius:50%;background:#FFFFFF;box-sizing:border-box;padding:clamp(19px,3.2vh,37px);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 10px rgba(0,0,0,0.35);">'
+      + '<img class="gad-ad-logo" src="' + ad.logo + '" alt="" '
+      + 'style="width:100%;height:100%;object-fit:contain;display:block;filter:none;" '
+      + 'onerror="this.parentNode.style.display=\'none\';">'
+      + '</div>'
+      + '</div>'
+    : ad.logo
     ? '<div style="flex-shrink:0;width:100%;margin-bottom:clamp(20px,3vh,40px);height:clamp(120px,20vh,230px);display:flex;align-items:center;justify-content:center;">'
       // Height-driven: the logo fills the tall box. Width is a VIEWPORT cap
       // (min(720px,80vw)) — a % max-width resolves against this shrink-wrapped
@@ -46281,17 +46298,26 @@ function _buildGateAdSlideList() {
       // Still white here: marks drawn white (Porter's p, the Delta Connection
       // widget, Breeze's wordmark), where the filter changes nothing; and
       // Jazz's J and Rouge's r, the letterforms the orb rules keep white.
-      // NOT SETTLED, and still whitened by this list: Frontier (0%),
-      // Icelandair (0%), Hawaiian (48%) and American's symbol (56%, also
-      // Piedmont, Envoy and PSA). Their colours disappear into their own card,
-      // so keeping the colours is not enough on its own; what they need is a
-      // different ground behind the mark, never a whitened mark.
+      // Frontier (0%), Icelandair (0%), Hawaiian (48%) and American's symbol
+      // (56%, also Piedmont, Envoy and PSA) keep their colours too, but on a
+      // white disc: _FB_WELCOME_ON_DISC below.
       var _FB_WELCOME_OWN_COLOURS = {
         'AF':1,
         'A3':1, 'EW':1, 'PC':1, 'LL':1,
         'AC':1, 'AC1':1, 'ZX':1, '9M':1, '9L':1,
         'BA':1, 'BAW':1, 'CJ':1,
         'CS':1, '4C':1, 'JJ':1, 'LA':1, '9X':1, 'BW':1, 'XP':1
+      };
+      // v23942 — COLOUR MARKS THEIR OWN CARD SWALLOWS, ON A WHITE DISC.
+      // Their colours measure unreadable on their card's navy, so the ground
+      // changes rather than the mark: white outer, the carrier's own colours
+      // inside, as the gate orb already draws American and Hawaiian. On white
+      // each reads as its brand's positive form: Icelandair's #001B71 fin at
+      // 15:1, Frontier's #026845 at 6.8:1, Hawaiian's purple #463C8F at 9:1,
+      // and American's symbol as drawn for a light ground.
+      var _FB_WELCOME_ON_DISC = {
+        'F9':1, 'FI':1, 'HA':1,
+        'AA':1, 'PT':1, 'MQ':1, 'OH':1
       };
       // Welcome marks that ALREADY carry the carrier's name, so the sub line
       // below must stay empty or the card says it twice.
@@ -46385,7 +46411,8 @@ function _buildGateAdSlideList() {
           } catch (e) { return ''; }
         })(),
         logo: _fbLogo,
-        logoOwnColours: !!_FB_WELCOME_OWN_COLOURS[code]
+        logoOwnColours: !!(_FB_WELCOME_OWN_COLOURS[code] || _FB_WELCOME_ON_DISC[code]),
+        logoDisc: !!_FB_WELCOME_ON_DISC[code]
       } }];
     }
   }
