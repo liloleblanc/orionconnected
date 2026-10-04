@@ -23615,8 +23615,10 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    --rc-ground-ink, and its side from the bar's own ink, --rc2-a-ink), and a
    mark that does not reach 3:1 there gets a small white mount instead, with
    the art drawn for a light ground on it: a mark with no pair on a dark bar
-   (Jazz's red lettering on Air Canada's red), and Encore on WestJet's teal,
-   where neither half reads (_opbyBarPick, OPBY_ART_INK).
+   (GoJet's and Envoy's on the US blues), and Encore on WestJet's teal,
+   where neither half reads (_opbyBarPick, OPBY_ART_INK). A published white
+   half that reads is always preferred to the mount: since v23941 Jazz's
+   white lettering sits straight on Air Canada's red (7.50:1).
 
    Nothing here moves or flashes. The left and middle columns, the upper
    panel's ground and the caption fitter are untouched. No :has() (the
@@ -23727,6 +23729,19 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   background: #ffffff !important;
   padding: calc(var(--acb-h) * 0.06) calc(var(--acb-h) * 0.10) !important;
   border-radius: 3px !important;
+}
+
+/* ── v23941: Jazz's published white lettering, straight on the bar. It took
+   the mount's place on Air Canada's red, and it keeps the mount's footprint:
+   the same box (the mount's padding, with no ground), so the lettering is
+   the same size and in the same place as the red lettering was on the
+   mount, and the caption's fitter, which measures the mark's box, lays the
+   row out exactly as before. Only the ground goes and the lettering turns
+   white (7.50:1 on #A6192E). ── */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap img.v2-rc-opby-logo[src="/logos/airlines/canadian-regional/jazz-wordmark-light.svg"]:not(.v2-rc-opby-mount) {
+  box-sizing: content-box !important;
+  background: none !important;
+  padding: calc(var(--acb-h) * 0.06) calc(var(--acb-h) * 0.10) !important;
 }
 
 /* ── a wide operator wordmark (PAL 6.2:1, SkyWest 4.3:1, Encore 4.25:1)

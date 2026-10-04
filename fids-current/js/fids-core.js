@@ -5525,6 +5525,17 @@ var OPBY_WORDMARKS_THEMED = {
   // already use it; its crimson on a light one.
   'RV':  { onDark:'/logos/airlines/canadian/rouge-monochrome-white.svg',           onLight:'/logos/airlines/canadian/rouge.svg' },
   'ROU': { onDark:'/logos/airlines/canadian/rouge-monochrome-white.svg',           onLight:'/logos/airlines/canadian/rouge.svg' },
+  // v23941 — Jazz, the same way. Its red lettering (#CE3728, 1.50:1 on Air
+  // Canada's red caption bar, #A6192E) sat on a small white mount there.
+  // Jazz publishes its wordmark in white lettering, drawn on
+  // the colour wordmark's own canvas (the same paths, the viewBox within 0.11
+  // of a unit): 7.50:1 on the red bar, no mount. On the bar it keeps the
+  // mount's footprint with no ground (display-overrides.css, the v23940
+  // block), so the caption fitter, which measures the mark's box, sets the
+  // lettering at the size and in the place the red lettering had. The colour
+  // wordmark on a light ground, as before.
+  'QK':  { onDark:'/logos/airlines/canadian-regional/jazz-wordmark-light.svg',     onLight:'/logos/airlines/canadian-regional/jazz-wordmark-color.svg' },
+  'JZA': { onDark:'/logos/airlines/canadian-regional/jazz-wordmark-light.svg',     onLight:'/logos/airlines/canadian-regional/jazz-wordmark-color.svg' },
   'YV':  { onDark:'/logos/airlines/us-regional/mesa-airlines.svg',                 onLight:'/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg' },
   'ASH': { onDark:'/logos/airlines/us-regional/mesa-airlines.svg',                 onLight:'/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg' },
   '9E':  { onDark:'/logos/airlines/us-regional/endeavor-air-monochrome-white.svg', onLight:'/logos/airlines/us-regional/endeavor-air.svg' },
@@ -5555,7 +5566,8 @@ var OPBY_WORDMARKS_THEMED = {
 // v23940 — THE COLOURS EACH MARK IS DRAWN IN, for the lower panel's
 // coloured caption bar (_rc2Pair's first colour). Every half above, and the
 // vector art with no pair of the operators that fly for a carrier with a bar
-// (Jazz, Porter's affiliates), as its file draws it against the ground: the
+// (Porter's affiliates; Jazz's colour wordmark, a half since v23941), as its
+// file draws it against the ground: the
 // mark's own lettering first. A part drawn INSIDE the mark is left out,
 // because it never meets the bar: the white sliver in the colour Encore
 // leaf, and the white file's teal copy of it, which is drawn at fill-opacity
@@ -5570,6 +5582,7 @@ var OPBY_ART_INK = {
   '/logos/airlines/canadian/rouge.svg':                                   ['#A21C37', '#EC1C2B'],
   '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg':    ['#FFFFFF'],
   '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg':    ['#1C3474'],
+  '/logos/airlines/canadian-regional/jazz-wordmark-light.svg':            ['#FFFFFF'],
   '/logos/airlines/canadian-regional/jazz-wordmark-color.svg':            ['#CE3728'],
   '/logos/airlines/canadian/porter.svg':                                  ['#152C53'],
   '/logos/airlines/us-regional/republic-wordmark-light.svg':              ['#FFFFFF'],
@@ -5595,11 +5608,16 @@ var OPBY_ART_INK = {
 // `lumaDark` the side the board's luma cut (< 140) gives the same colour.
 // A published pair gives the half for that side, a mark with no pair keeps
 // its art. The art goes on its small white mount when it is drawn for a light
-// ground and the bar is dark (Jazz's red on Air Canada's red), or when any
+// ground and the bar is dark (a mark with no pair: GoJet's and Envoy's on the
+// US blues), or when any
 // colour it is drawn in is under 3:1 on the bar (OPBY_ART_INK): Encore on
 // WestJet's teal, where the white half is 2.64:1 and the colour half's teal
 // letters vanish. On the mount the art is the half drawn for a light ground,
 // on the white it was drawn for. Never a filter, never a recolour.
+// v23941 — a published white half that reads on the bar (3:1) is preferred
+// to the mount: Jazz's white lettering on Air Canada's red (7.50:1) is a
+// pair now, so the mount is left for marks with no published half that
+// reads (Encore on the teal, GoJet, Envoy, the SP mark on PAL's blue).
 // A mark with no pair keeps v23940's mount wherever EITHER side is dark. Five
 // bars are dark by the luma cut and light by their own ink (WestJet's teal
 // #00B2A9, Canadian North's #00A9CE, JetBlue's and KLM's #00A1DE, Asiana's
@@ -5684,8 +5702,9 @@ function _opbyContrastFix(root) {
       }
       // v23940 — A MARK THAT DOES NOT READ ON THE BAR GOES ON A MOUNT. An
       // operator that publishes no light-ground/dark-ground pair keeps its art
-      // as drawn (below), and Jazz's red lettering on Air Canada's red bar
-      // would vanish; a published half can fail too (Encore on WestJet's
+      // as drawn (below), and GoJet's blue lettering on United's blue bar
+      // would vanish (Jazz's red on Air Canada's red did, until v23941 gave it
+      // its published white half); a published half can fail too (Encore on WestJet's
       // teal). The mark is never recoloured; it gets a small white mount
       // instead (display-overrides.css, the v23940 block). _opbyBarPick
       // decides, and names the art for the mount; a mark with no pair keeps

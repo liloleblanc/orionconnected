@@ -499,10 +499,13 @@ test('every operator that flies for a carrier reads on its bar: its half at 3:1,
     }
   }
   assert.ok(seen >= 40, `operators measured on their carriers' bars: ${seen}`);
-  // The mounted ones, exactly: Jazz on Air Canada's red, Encore on WestJet's
-  // teal, Porter's mark on PAL's blue, GoJet and Envoy on the US blues. Every
-  // other operator's half reads on its carrier's bar as it is.
-  assert.deepEqual(mounted.sort(), ['ENY/AA', 'G7/DL', 'G7/UA', 'GJS/DL', 'GJS/UA', 'JZA/AC', 'MQ/AA', 'QK/AC', 'SP/PB', 'WEN/WS', 'WR/WS']);
+  // The mounted ones, exactly: Encore on WestJet's teal (its white half is
+  // 2.64:1 there), the SP mark on PAL's blue, GoJet and Envoy on the US blues
+  // (no published half that reads is on file for any of them). Every other
+  // operator's half reads on its carrier's bar as it is: since v23941 that
+  // includes Jazz, whose published white lettering is 7.50:1 on Air Canada's
+  // red, so it is no longer mounted there.
+  assert.deepEqual(mounted.sort(), ['ENY/AA', 'G7/DL', 'G7/UA', 'GJS/DL', 'GJS/UA', 'MQ/AA', 'SP/PB', 'WEN/WS', 'WR/WS']);
 });
 
 test('every paired operator, on every carrier\'s bar: its half at 3:1, or on its white mount', () => {
@@ -526,9 +529,13 @@ test('every paired operator, on every carrier\'s bar: its half at 3:1, or on its
 test('every mark on file, on every bar: as v23940 put it, but on the five bars that change side and where a colour on file is under 3:1', () => {
   // v23940's own decision, before the bar's ink gave the side: the luma cut;
   // a pair's half for that side, never mounted; a mark with no pair mounted
-  // on a dark bar unless its file is drawn for one.
+  // on a dark bar unless its file is drawn for one. Jazz had no pair then
+  // (v23941 gave it its published one), so v23940's table is today's
+  // without it.
+  const JAZZ = new Set(['QK', 'JZA']);
+  const PAIR_V23940 = Object.fromEntries(Object.entries(OP_PAIR).filter(([op]) => !JAZZ.has(op)));
   const v23940 = (bar, op) => {
-    const pair = OP_PAIR[op], src = OP_WORDMARK[op] || OP_LOGO[op], dark = lumaDarkOf(bar);
+    const pair = PAIR_V23940[op], src = OP_WORDMARK[op] || OP_LOGO[op], dark = lumaDarkOf(bar);
     return { art: pair ? (dark ? pair.onDark : pair.onLight) : src, mount: !pair && dark && !/white|-light|monochrome/i.test(src) };
   };
   // The colours a file draws: on file, or measured from the SVG itself.
@@ -547,12 +554,29 @@ test('every mark on file, on every bar: as v23940 put it, but on the five bars t
   const flipBars = new Set(flips.map((b) => b.bar));
   const ops = [...new Set([...Object.keys(OP_WORDMARK), ...Object.keys(OP_LOGO), ...Object.keys(OP_PAIR)])];
   let runs = 0, changed = 0;
-  for (const { code, bar } of bars.values()) {
+  const jazzWhite = [];
+  for (const { code, bar, ink } of bars.values()) {
     for (const op of ops) {
       const was = v23940(bar, op), now = onBar(code, op), pair = OP_PAIR[op];
       const at = `${op} on ${code || '(none)'} ${bar}: ${was.art}${was.mount ? ' (mounted)' : ''} -> ${now.art}${now.mount ? ' (mounted)' : ''}`;
       runs++;
-      if (!pair) {
+      if (JAZZ.has(op)) {
+        // v23941: Jazz's pair, its half for the bar's own side; the mount only
+        // where that half has a colour under 3:1, with the colour wordmark on
+        // it. Against the rule before it (the same picker with no pair: the
+        // colour wordmark, mounted on a dark bar or under 3:1) the one change
+        // is a mount given up for the white lettering, where the white reads.
+        const dark = lumOf(ink) > lumOf(bar);
+        const half = dark ? pair.onDark : pair.onLight;
+        assert.equal(now.mount, under3(half, bar), 'its mount: ' + at);
+        assert.equal(now.art, now.mount ? pair.onLight : half, 'its half: ' + at);
+        const before = PICK(null, OP_WORDMARK[op] || OP_LOGO[op], bar, dark, lumaDarkOf(bar));
+        if (now.art !== before.src || now.mount !== before.mount) {
+          assert.ok(before.mount && !now.mount && now.art === pair.onDark,
+            `only a mount given up for the white lettering: ${op} on ${code || '(none)'} ${bar}: ${before.src}${before.mount ? ' (mounted)' : ''} -> ${now.art}`);
+          jazzWhite.push(code + ' ' + bar);
+        }
+      } else if (!pair) {
         // A mark with no pair keeps its art and v23940's mount, on every bar;
         // one more mount only where a colour on file is under 3:1 there.
         assert.equal(now.art, was.art, 'its art: ' + at);
@@ -580,6 +604,8 @@ test('every mark on file, on every bar: as v23940 put it, but on the five bars t
   }
   assert.ok(runs >= 2000, `marks on bars: ${runs}`);
   assert.ok(changed > 0, 'the five bars and the 3:1 mounts change something');
+  // Air Canada's red is one of the bars where Jazz now wears its white.
+  assert.ok(jazzWhite.some((b) => b.endsWith(' #A6192E')), 'Jazz on Air Canada\'s red: ' + jazzWhite.join(', '));
   // Why the luma side still mounts a mark with no pair: on the five bars these
   // marks, whose colours are not on file, would sit bare at under 3:1 (GoJet,
   // Envoy, Canadian North, First Air, Air North, Perimeter, Calm Air, Air
@@ -620,6 +646,67 @@ test('Encore on WestJet\'s teal: neither half reads on the bar, so the colour ha
   }
 });
 
+test('Jazz on Air Canada\'s red: its published white lettering on the bar, no mount, the same size', () => {
+  // v23941. Jazz's red lettering (#CE3728) was 1.50:1 on Air Canada's red
+  // bar, so v23940 set it on a small white mount. Jazz publishes its
+  // wordmark in white lettering, and a
+  // published half that reads is preferred to the mount.
+  const red = RC2._rc2Pair('AC', TABLES).a;
+  assert.equal(red, '#A6192E');
+  const WHITE = '/logos/airlines/canadian-regional/jazz-wordmark-light.svg';
+  const COLOUR = '/logos/airlines/canadian-regional/jazz-wordmark-color.svg';
+  for (const op of ['QK', 'JZA']) {
+    assert.equal(OP_PAIR[op].onDark, WHITE, op);
+    assert.equal(OP_PAIR[op].onLight, COLOUR, op);
+    assert.equal(OP_WORDMARK[op], COLOUR, op + ': the colour wordmark is still the base mark');
+    const got = onBar('AC', op);
+    assert.equal(got.mount, false, op + ' is not mounted on the red');
+    assert.equal(got.art, WHITE, op + ': the white lettering');
+  }
+  const cr = RC2._rc2Contrast('#FFFFFF', red);
+  assert.ok(cr >= 3 && cr > 7.4, `white on Air Canada's red: ${cr.toFixed(2)}:1`);
+  assert.ok(RC2._rc2Contrast('#CE3728', red) < 3, 'the red lettering does not read there, which is why it was mounted');
+  // The file is the white lettering and nothing else.
+  assert.deepEqual([...svgColours(WHITE)], ['#FFFFFF']);
+  // The same art as the colour wordmark on the same canvas, so at the
+  // caption's height it lands at the same size: the same paths, and a
+  // viewBox within 0.11 of a unit (an aspect ratio within 0.1%).
+  const svgW = fs.readFileSync(path.join(root, 'fids-current', WHITE), 'utf8');
+  const svgC = fs.readFileSync(path.join(root, 'fids-current', COLOUR), 'utf8');
+  const art = (s) => s.replace(/fill:#[0-9a-f]{6}/gi, '').replace(/viewBox="[^"]*"/, '');
+  assert.equal(art(svgW), art(svgC), 'the same paths');
+  const vb = (s) => /viewBox="([^"]+)"/.exec(s)[1].trim().split(/\s+/).map(Number);
+  const [w, c] = [vb(svgW), vb(svgC)];
+  for (let i = 0; i < 4; i++) assert.ok(Math.abs(w[i] - c[i]) < 0.11, `viewBox[${i}] ${w[i]} vs ${c[i]}`);
+  assert.ok(Math.abs((w[2] / w[3]) / (c[2] / c[3]) - 1) < 0.001, 'the same aspect ratio');
+  // On the bar the white lettering keeps the mount's footprint, with no
+  // ground: the same box model and padding as the mount, so the caption
+  // fitter (which measures the mark's box) sets the lettering at the size and
+  // in the place the red lettering had on the mount. Measured at 1680x1050,
+  // 1280x720 and 1920x1080 on YQB gate 32 (AC8397, CRJ900): the art 83.2 x
+  // 29.2, 55.5 x 19.5 and 85.3 x 30.0, the same as on the mount.
+  const mount = ruleFor('img.v2-rc-opby-logo.v2-rc-opby-mount');
+  const bare = ruleFor('img.v2-rc-opby-logo[src="/logos/airlines/canadian-regional/jazz-wordmark-light.svg"]:not(.v2-rc-opby-mount)');
+  const decl = (body, prop) => (new RegExp('(?:^|\\n)\\s*' + prop + ': ([^;]+);').exec(body) || [])[1];
+  for (const prop of ['box-sizing', 'padding']) {
+    assert.ok(decl(mount, prop), 'the mount sets ' + prop);
+    assert.equal(decl(bare, prop), decl(mount, prop), prop + ': the mount\'s footprint');
+  }
+  assert.equal(decl(bare, 'background'), 'none !important', 'and no ground');
+  assert.doesNotMatch(bare, /filter|border-radius/);
+  // Air Canada's three partners with a published white all wear it on the red.
+  for (const op of ['RV', 'ROU', 'PB', 'PVL', 'QK', 'JZA']) {
+    const got = onBar('AC', op);
+    assert.equal(got.mount, false, op);
+    assert.equal(got.art, OP_PAIR[op].onDark, op);
+  }
+  // The mount stays only where no published half reads: Encore on WestJet's
+  // teal (its white 2.64:1), and GoJet and Envoy, which have no white on file.
+  assert.ok(RC2._rc2Contrast('#FFFFFE', RC2._rc2Pair('WS', TABLES).a) < 3);
+  for (const op of ['WR', 'WEN']) assert.equal(onBar('WS', op).mount, true, op);
+  for (const op of ['G7', 'GJS', 'MQ', 'ENY']) assert.equal(OP_PAIR[op], undefined, op + ' publishes no pair on file');
+});
+
 test('the operator\'s mark takes the bar\'s side from the bar\'s own ink; the art is never recoloured', () => {
   const fix = fnSource('_opbyContrastFix');
   // The side, on the lower bar: the bar's ink against the bar.
@@ -645,10 +732,9 @@ test('the operator\'s mark takes the bar\'s side from the bar\'s own ink; the ar
   const mount = ruleFor('img.v2-rc-opby-logo.v2-rc-opby-mount');
   assert.match(mount, /background: #ffffff !important;/);
   assert.doesNotMatch(mount, /filter/);
-  // Jazz publishes no pair; PAL, Rouge and Encore do.
+  // PAL, Rouge, Encore and (since v23941) Jazz publish a pair.
   const themed = CORE.slice(CORE.indexOf('var OPBY_WORDMARKS_THEMED = {'), CORE.indexOf('var OPBY_ART_INK = {'));
-  assert.doesNotMatch(themed, /'QK':/);
-  for (const op of ['PB', 'RV', 'WR']) assert.match(themed, new RegExp("'" + op + "':\\s*\\{ onDark:"));
+  for (const op of ['PB', 'RV', 'WR', 'QK', 'JZA']) assert.match(themed, new RegExp("'" + op + "':\\s*\\{ onDark:"));
 });
 
 test('the bars between the caption\'s words hold 3:1 on every bar, and stay lighter than the words', () => {
