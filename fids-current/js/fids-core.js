@@ -1013,17 +1013,29 @@ function getOverrideForFlight(flightNum) {
 // ══════════════════════════════════════════════════════════════════════
 // GATE CHANGE TRACKING
 // ══════════════════════════════════════════════════════════════════════
-// Stores per-flight gate history so we can detect when a flight moves to
-// a different gate and surface that to passengers at the OLD gate.
+// Stores per-departure gate history so we can detect when a flight moves to
+// a different gate and surface that to passengers at the OLD gate (the
+// departures board's NEW GATE badge, and the gate screen's "Later at this
+// gate" strip and gate-change notice, _gateLaterModel).
 //
-// Structure (localStorage, 'fids_gate_history'):
-//   { "AC8616": { currentGate:"F34", previousGate:"F98", changedAt:1234567890 } }
+// Structure (localStorage, 'fids_gate_history'), keyed by _gateRowKey —
+// flight AND scheduled time:
+//   { "AC1987|1791137700000": { flight:"AC1987", currentGate:"2",
+//       previousGate:"4", left:["4"], changedAt:1791130000000 } }
 //
-// The entry persists until the flight departs (we see status === 'departed'
-// or the flight is no longer in the ADB response) or is superseded by a
-// newer gate change. Supersession means: if F34 later becomes F52, the old
-// entry (F98→F34) is replaced by (F34→F52) — the alert always reflects the
-// LATEST move, and follows the passenger as they re-consult screens.
+// v23973 — ONE RECORD PER DEPARTURE, DEPARTURES ONLY. Until this version the
+// key was the flight number alone and arrivals were tracked in the same map.
+// The feed lists the same number on consecutive days (Moncton's AC1987 today
+// and tomorrow), so two rows with different gates under one number read as a
+// gate change on every refresh, back and forth; and an arrival's gate (the
+// feed's arrival gate, often a phantom) overwrote its departure namesake's.
+// Now each departure is its own record, and `left` lists every gate the feed
+// has moved it away from, so a flight moved 4 -> 2 -> 3 is still news at
+// gate 4. Only the feed's own gate is compared ('—' is no gate); an operator
+// override is applied to the gate's own copy later and is never seen here.
+//
+// The entry persists until the flight departs or is cancelled (the feed's
+// status) or leaves the feed.
 // ══════════════════════════════════════════════════════════════════════
 var _GATE_HISTORY_KEY = 'fids_gate_history';
 
@@ -1034,43 +1046,83 @@ function setGateHistory(obj) {
   try { localStorage.setItem(_GATE_HISTORY_KEY, JSON.stringify(obj)); } catch(e) {}
 }
 
-// Call this on every FIDS data refresh with the full set of flights.
-// Detects gate changes by comparing each flight's current gate against
-// its last-known gate, and records the change in history.
+// v23973 — A RECORD FROM BEFORE THIS VERSION is keyed by the flight number
+// alone. It is carried over to its departure once, so a move the board saw
+// before the deploy is still news after it (and a screen that last saw gate 9
+// and now reads 16 badges the row, as it did before). Only when it is
+// unambiguous: exactly one departure in this pass carries the number (two rows
+// under one number are the case the old key confused). A record whose earlier
+// gate is the gate the feed gives now is the old key's flip-flop (an arrival
+// or a namesake overwrote it on every refresh) and is not carried; that would
+// also drop a genuine move back, once, at the deploy. '—' is no gate. The
+// old key is purged with the rest (it is never active), so this runs once.
+function _gateLegacyRecord(hist, f, perNum, curGate) {
+  var num = String(f.flight).toUpperCase();
+  var old = hist[num];
+  if (!old || typeof old !== 'object' || perNum[num] !== 1) return null;
+  var cur = _gcGate(old.currentGate);
+  if (!cur) return null;
+  var prev = _gcGate(old.previousGate);
+  if (prev && prev === curGate && cur !== prev) return null;
+  var e = { flight: num, currentGate: cur, changedAt: 0 };
+  if (prev && prev !== cur) { e.previousGate = prev; e.left = [prev]; e.changedAt = +old.changedAt || 0; }
+  return e;
+}
+
+// Call this on every FIDS data refresh with the departures. Detects gate
+// changes by comparing each departure's gate in the feed against the gate
+// the feed gave it last time, and records the change in history.
 function trackGateChanges(flightsArr) {
   if (!flightsArr || !flightsArr.length) return;
   var hist = getGateHistory();
   var changed = false;
   var now = Date.now();
-  var activeFlights = {};
+  var active = {};
+  var perNum = {};
+  flightsArr.forEach(function (f) {
+    if (f && f.flight && f._sortTs) { var n = String(f.flight).toUpperCase(); perNum[n] = (perNum[n] || 0) + 1; }
+  });
 
   flightsArr.forEach(function(f) {
-    if (!f.flight) return;
-    var key = f.flight.toUpperCase();
-    activeFlights[key] = true;
-    var curGate = (f.gate || '').trim();
-    if (!curGate) return;
-
+    if (!f || !f.flight || !f._sortTs) return;
+    var key = _gateRowKey(f);
+    active[key] = true;
     var entry = hist[key];
+    var st = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
 
-    // Flight has departed — remove any gate-change record.
-    if (f.status === 'departed' || f.status === 'cancelled') {
+    // Flight has departed or is cancelled — remove any gate-change record.
+    if (st === 'departed' || st === 'cancelled' || st === 'canceled') {
       if (entry) { delete hist[key]; changed = true; }
       return;
     }
 
-    // No history: first time we've seen this flight — just record current gate.
+    var curGate = _gcGate(f.gate);
+    if (!curGate) return;
+
+    // A record from before v23973, keyed by the number (_gateLegacyRecord).
     if (!entry) {
-      hist[key] = { currentGate: curGate, changedAt: 0 };
+      entry = _gateLegacyRecord(hist, f, perNum, curGate);
+      if (entry) { hist[key] = entry; changed = true; }
+    }
+
+    // No history: first time we've seen this departure — just record its gate.
+    if (!entry) {
+      hist[key] = { flight: String(f.flight).toUpperCase(), currentGate: curGate, changedAt: 0 };
       changed = true;
       return;
     }
 
     // Gate has changed since last observation.
     if (entry.currentGate !== curGate) {
+      var was = Array.isArray(entry.left) ? entry.left.slice() : (entry.previousGate ? [entry.previousGate] : []);
+      was.push(entry.currentGate);
+      var left = [];
+      was.forEach(function (g) { if (g && g !== curGate && left.indexOf(g) < 0) left.push(g); });
       hist[key] = {
+        flight: String(f.flight).toUpperCase(),
         currentGate: curGate,
         previousGate: entry.currentGate,
+        left: left.slice(-4),
         changedAt: now
       };
       changed = true;
@@ -1078,28 +1130,28 @@ function trackGateChanges(flightsArr) {
     }
   });
 
-  // Purge records for flights no longer active (departed, cancelled, or
-  // dropped from the FIDS feed).
+  // Purge records for departures no longer in the feed.
   Object.keys(hist).forEach(function(k) {
-    if (!activeFlights[k]) { delete hist[k]; changed = true; }
+    if (!active[k]) { delete hist[k]; changed = true; }
   });
 
   if (changed) setGateHistory(hist);
 }
 
 // Is this screen (identified by its subScreenVal) watching a gate that a
-// flight has moved AWAY from? If yes, we need to show the redirect banner.
+// flight has moved AWAY from? The most recent such move, or null.
 function getInboundGateRedirect(gateNumber) {
   if (!gateNumber) return null;
   var hist = getGateHistory();
   var match = null;
   Object.keys(hist).forEach(function(k) {
     var e = hist[k];
-    if (e && e.previousGate === gateNumber && e.currentGate && e.changedAt) {
-      // Only the most recent move wins
-      if (!match || e.changedAt > match.changedAt) {
-        match = { flight: k, fromGate: e.previousGate, toGate: e.currentGate, changedAt: e.changedAt };
-      }
+    if (!e || !e.currentGate || !e.changedAt || e.currentGate === gateNumber) return;
+    var left = Array.isArray(e.left) ? e.left : (e.previousGate ? [e.previousGate] : []);
+    if (left.indexOf(gateNumber) < 0) return;
+    // Only the most recent move wins
+    if (!match || e.changedAt > match.changedAt) {
+      match = { flight: e.flight || String(k).split('|')[0], fromGate: gateNumber, toGate: e.currentGate, changedAt: e.changedAt };
     }
   });
   return match;
@@ -4148,7 +4200,9 @@ function getDedicatedRenderKey() {
       // v23925 — and the door word a sign opens on (_gateDoorFor): the schedule
       // boarding opens on the clock, with nothing in the row changing.
       first: first ? { flight:first.flight, status:first.status, upd:first.upd, time:first.time, gate:first.gate, airline:first.airline, loc:first._locIata, sort:first._sortTs, door:_gateDoorFor(first, _nowMs2, iata).word } : null,
-      second: second ? { flight:second.flight, status:second.status, upd:second.upd, time:second.time, gate:second.gate, airline:second.airline, loc:second._locIata, sort:second._sortTs } : null
+      second: second ? { flight:second.flight, status:second.status, upd:second.upd, time:second.time, gate:second.gate, airline:second.airline, loc:second._locIata, sort:second._sortTs } : null,
+      // v23973 — what Later at this gate and the gate-change notice show.
+      later: _gateLaterKeyNow(iata)
     });
   }
   if (screenType === 'baggage') {
@@ -5071,7 +5125,8 @@ function updateDedicatedTimeOnly() {
     if (bidsDate) bidsDate.textContent = _bilingualDate(now, tz);
   }
   const emptyTime = document.getElementById('dedicatedEmptyTime');
-  if (emptyTime) emptyTime.textContent = timeStr;
+  // v23973 — the gate-change screen's band (_gateChangeSoloHtml) reads 5:00 PM, not 05:00 PM.
+  if (emptyTime) emptyTime.textContent = (emptyTime.classList && emptyTime.classList.contains('gl-solo-clock')) ? String(timeStr).replace(/^0(\d)/, '$1') : timeStr;
   // Update boarding countdown
   if (screenType === 'gate') {
     const _nowMs3 = Date.now();
@@ -5098,6 +5153,20 @@ function updateDedicatedTimeOnly() {
         if (_dw !== _pd.w) { _pd.w = _dw; requestGateRebuild(); }
       }
     } catch (eD) {}
+    // v23973 — LATER AT THIS GATE FOLLOWS THE CLOCK. A moved flight's notice
+    // ends when the flight leaves (_gateFlightLive), a later flight moves up
+    // when the one before it goes, and a day word changes at midnight, all
+    // with nothing in the feed changing. Every five seconds the strip's key
+    // is read again; when it is not what was painted (window._gateLaterPainted,
+    // _gateLaterAfterPaint), one rebuild is asked for, and the painted key is
+    // updated first, so it is asked once.
+    try {
+      if (typeof window._gateLaterPainted === 'string' && _nowMs3 - (window._gateLaterCheckedAt || 0) >= 5000) {
+        window._gateLaterCheckedAt = _nowMs3;
+        const _glk = _gateLaterKeyNow(iata);
+        if (_glk !== window._gateLaterPainted) { window._gateLaterPainted = _glk; requestGateRebuild(); }
+      }
+    } catch (eGl) {}
     // v23935 — MIDNIGHT AT THE AIRPORT. A day line ("Tomorrow | Demain",
     // _gateDayLineHtml) is true only until the airport's date changes, and
     // nothing in the row changes with it. When the day the gate was painted on
@@ -9587,6 +9656,661 @@ function _mobileNavHtml(T) {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// v23973 — LATER AT THIS GATE | PLUS TARD À CETTE PORTE
+// ────────────────────────────────────────────────────────────────────────────
+// The approved design (row A of the colour question: NEUTRAL GLASS). The
+// frosted window shrinks from the bottom and, under it, a strip the height of
+// the left column's bottom card (top and bottom edges aligned with that card)
+// lists the next departures from THIS gate after the one on screen:
+//
+//   - up to GATE_LATER_MAX of them, in time order, each its time (with its
+//     day, "Tomorrow | Demain" or the date, when it is not the airport's
+//     today), its flight number and its city. A city with two airports
+//     (Montréal: YUL and MET; Toronto: YYZ and YTZ; London; New York…) also
+//     says which airport (_gateLaterPlace);
+//   - (B) a departure the airport's feed MOVED AWAY from this gate:
+//     "→ now Gate 2 | maintenant porte 2" over its flight and city, for as
+//     long as it would have stayed on this gate's own screen: until it leaves
+//     (the airport says Departed or Cancelled, or its time plus the gate's
+//     usual grace has passed, _gateFlightLive). A flight moved an hour or ten
+//     hours out keeps its notice at the old door until then, because the
+//     passengers who come to the old door are still on their way;
+//   - (C) when the moved flight is the one this door would be showing and no
+//     other flight leaves from here that day, the whole body of the screen
+//     says so instead (_gateChangeNoticeHtml): "Gate change | Changement de
+//     porte", the flight and its city, the new gate in the airline's own
+//     colour, "Please proceed to Gate 2", its departure time;
+//   - (D) a departure moved TO this gate is simply one of this gate's flights,
+//     so it appears in the list with no notice.
+//
+// When there is nothing later, the strip is not drawn and the window keeps its
+// full height. It NEVER says there are no other departures: a feed's
+// look-ahead ends somewhere, so the board cannot know that.
+//
+// A gate change is the airport feed's word only: trackGateChanges sees the
+// feed publish this gate for a departure and later another gate for the SAME
+// departure (flight and scheduled time, _gateRowKey). Nothing is inferred
+// from aircraft positions, schedules or the clock.
+//
+// No status colour (amber, red, green) is used in the strip, and nothing in it
+// moves or flashes; the new gate's pill on the full-screen notice is the
+// airline's own colour. Every word is in all nine board languages
+// (_GATE_LBL: laterAtGate, nowGate, gateChange, gateMovedProceed, and the existing
+// gate and departure), each language an unbreakable unit, French first in
+// Québec. Long names are never cut: _gateLaterFit steps the type down, then
+// lets a line wrap between whole words.
+//
+// THE LONG-NAMES / AIRPORT-SUBLINES WORK: the strip names a place through
+// _gateLaterPlace alone, so when that work lands the strip takes its airport
+// names by changing that one function.
+var GATE_LATER_MAX = 3;
+
+// The gate number as the feed gives it, or '' for none ('—' is the board's
+// no-gate mark, not a gate).
+function _gcGate(g) {
+  var s = String(g == null ? '' : g).trim();
+  return (s && s !== '—' && s !== '-') ? s : '';
+}
+
+// Departures the feed has moved AWAY from gate `sub` and that have not left:
+// [{ f: row, to: newGate, at: whenTheFeedMovedIt }], in time order. One
+// departure sold under several flight numbers is listed once (_gateCsPick).
+function _gateMovedAway(sub, nowMs) {
+  var g = _gcGate(sub);
+  if (!g) return [];
+  var now = nowMs || Date.now();
+  var hist = {};
+  try { hist = getGateHistory() || {}; } catch (e) { hist = {}; }
+  var all = (typeof data !== 'undefined' && data && data.dep) || [];
+  var byKey = {};
+  for (var i = 0; i < all.length; i++) {
+    var r = all[i];
+    if (r && r.flight && r._sortTs) byKey[_gateRowKey(r)] = r;
+  }
+  var rows = [], to = {}, at = {};
+  Object.keys(hist).forEach(function (k) {
+    var e = hist[k];
+    if (!e || !e.changedAt || !e.currentGate || e.currentGate === g) return;
+    var left = Array.isArray(e.left) ? e.left : (e.previousGate ? [e.previousGate] : []);
+    if (left.indexOf(g) < 0) return;
+    var row = byKey[k];
+    if (!row || _gcGate(row.gate) !== e.currentGate) return;
+    try { if (!_gateFlightLive(row, now)) return; } catch (eL) { return; }
+    rows.push(row); to[k] = e.currentGate; at[k] = e.changedAt;
+  });
+  if (!rows.length) return [];
+  rows.sort(function (a, b) { return (a._sortTs || 0) - (b._sortTs || 0); });
+  var picked = rows;
+  try { picked = _gateCsPick(rows); } catch (eC) { picked = rows; }
+  return picked.map(function (row) {
+    var k = _gateRowKey(row);
+    return { f: row, to: to[k], at: at[k] };
+  });
+}
+
+function _gateLaterTz(iata) {
+  var ap = String(iata || '').toUpperCase() || _pageAirport();
+  try { return (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || 'UTC'; } catch (e) { return 'UTC'; }
+}
+function _gateLaterDay(ts, tz) {
+  try {
+    if (typeof window !== 'undefined' && window.FIDSGateDate) return window.FIDSGateDate.zonedDateOrdinal(ts, tz);
+  } catch (e) {}
+  return Math.floor((Number(ts) || 0) / 86400000);
+}
+
+// What the strip and the notice show for gate `sub` now:
+//   { main, entries: [{ f, to? }], full: { f, to, at } | null, tz }
+// entries is empty whenever the strip is not drawn (nothing later, or the
+// full-screen notice is up).
+function _gateLaterModel(sub, nowMs, iata) {
+  var now = nowMs || Date.now();
+  var ap = String(iata || '').toUpperCase() || _pageAirport();
+  var tz = _gateLaterTz(ap);
+  var gf = [];
+  // The same call the gate's paint makes, so `main` is the flight on screen.
+  try { gf = _gateFlightsAt(sub, now) || []; } catch (e) { gf = []; }
+  var main = gf[0] || null;
+  var moved = [];
+  try { moved = _gateMovedAway(sub, now) || []; } catch (e2) { moved = []; }
+  // (C) the moved flight is the one this door would be showing (nothing here
+  // leaves before it), and no other flight leaves from this door that day.
+  var full = null;
+  for (var i = 0; i < moved.length && !full; i++) {
+    var m = moved[i];
+    if (main && !((m.f._sortTs || 0) < (main._sortTs || 0))) continue;
+    if (main && _gateLaterDay(main._sortTs, tz) === _gateLaterDay(m.f._sortTs, tz)) continue;
+    full = m;
+  }
+  var entries = [];
+  if (!full) {
+    // A move is news a passenger needs, so moved flights are never pushed
+    // out of the strip by flights that are simply later.
+    for (var j = 0; j < moved.length && entries.length < GATE_LATER_MAX; j++) {
+      entries.push({ f: moved[j].f, to: moved[j].to });
+    }
+    for (var n = 1; n < gf.length && entries.length < GATE_LATER_MAX; n++) entries.push({ f: gf[n] });
+    entries.sort(function (a, b) { return (a.f._sortTs || 0) - (b.f._sortTs || 0); });
+  }
+  return { sub: sub, main: main, entries: entries, full: full, tz: tz, ap: ap };
+}
+
+// The time a passenger should read for a row: the airport's new time when it
+// has published one with its Delayed or Early, otherwise the schedule. The
+// rail's own form, "6:35am".
+function _gateLaterHHMM(f) {
+  if (!f) return '';
+  var st = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  return ((st === 'delayed' || st === 'early') && f.upd) ? f.upd : (f.time || '');
+}
+function _gateLaterTs(f) {
+  if (!f) return 0;
+  var st = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  return ((st === 'delayed' || st === 'early') && f.upd && f._revTs) ? f._revTs : (f._sortTs || 0);
+}
+function _gateLaterClock(f) {
+  var t = _gateLaterHHMM(f);
+  if (!t) return '';
+  var s = (typeof window !== 'undefined' && typeof window.fidsFormatTime12 === 'function') ? window.fidsFormatTime12(t) : t;
+  return String(s).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
+}
+
+// Which cities have more than one airport: two or more codes in the board's
+// city table under one name (Montréal YUL and YHU, shown MET; Toronto YYZ and
+// YTZ; New York; London, where Ontario's YXU and Heathrow share the word).
+// Only PASSENGER airports count: a code missing from the board's
+// passenger-airport table (_IATA_CC, the airline-route-data extract that
+// classifies the departures board) is a general-aviation field, a heliport or
+// a base, and naming it would only cost the strip width. So Atlanta (ATL with
+// DeKalb-Peachtree, PDK), Denver (DEN with Rocky Mountain Metro, BJC),
+// Cincinnati (CVG with Lunken, LUK) and Anchorage (ANC with Merrill Field,
+// MRI) read as the city alone. Miami (OPF), Seattle (BFI, LKE) and Victoria
+// (VCT, Texas) keep their code: that table lists those fields as passenger
+// airports. A board without the table (a test stub) counts every code.
+var _GATE_TWIN_CITY = null;
+function _gateLaterTwinCity(iata) {
+  var c = String(iata || '').toUpperCase();
+  if (!c) return false;
+  if (!_GATE_TWIN_CITY) {
+    var seen = {}, twin = {};
+    var pax = null;
+    try { pax = (typeof _IATA_CC !== 'undefined' && _IATA_CC) ? _IATA_CC : null; } catch (eP) { pax = null; }
+    try {
+      Object.keys(CITY).forEach(function (k) {
+        if (pax && !pax[k]) return;
+        var nm = String(CITY[k] || '');
+        try { nm = nm.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (eN) {}
+        nm = nm.toUpperCase().replace(/[^A-Z]/g, '');
+        if (!nm) return;
+        (seen[nm] = seen[nm] || []).push(k);
+      });
+    } catch (e) {}
+    Object.keys(seen).forEach(function (nm) {
+      if (seen[nm].length > 1) seen[nm].forEach(function (k) { twin[k] = 1; });
+    });
+    _GATE_TWIN_CITY = twin;
+  }
+  var real = c;
+  try { if (typeof _realIata === 'function') real = String(_realIata(c)).toUpperCase(); } catch (e2) {}
+  return !!(_GATE_TWIN_CITY[c] || _GATE_TWIN_CITY[real]);
+}
+
+// The place a row flies to: the Destination card's own city (_cityForIata,
+// normalizeDisplayCity), and the airport's code as passengers read it
+// (_dispIata: MET for Saint-Hubert) only when the city has two airports.
+function _gateLaterPlace(f) {
+  var ia = String((f && f._locIata) || '').toUpperCase();
+  var city = '';
+  try {
+    city = ia ? _cityForIata(ia) : '';
+    if (city && typeof normalizeDisplayCity === 'function') city = normalizeDisplayCity(city, ia);
+    if (typeof _stripCityCode === 'function') city = _stripCityCode(city);
+  } catch (e) {}
+  if (!city || city === ia) {
+    var d = String((f && f.dest) || '').split('|')[0].trim();
+    try { if (d && typeof _stripCityCode === 'function') d = _stripCityCode(d); } catch (e2) {}
+    if (d) city = d;
+  }
+  var code = '';
+  try { code = (ia && _gateLaterTwinCity(ia)) ? _dispIata(ia) : ''; } catch (e3) { code = ''; }
+  if (!city) { city = code || ia; code = ''; }
+  return { city: city, code: code };
+}
+
+// The words the strip shows under a flight's time, or null when it is today.
+function _gateLaterDayWords(f, m) {
+  var ts = _gateLaterTs(f);
+  if (!ts) return null;
+  var frF = false;
+  try { frF = !!frFirstAirport(m && m.ap); } catch (e) {}
+  return _gateDayWords(ts, (m && m.tz) || 'UTC', frF);
+}
+
+// Everything the strip and the notice print, as one string: the render keys
+// (getDedicatedRenderKey, the gate's own key) and the once-a-few-seconds
+// check in updateDedicatedTimeOnly compare it, so the screen repaints when a
+// later flight, a move, a day word or the languages change, and not otherwise.
+function _gateLaterKey(m) {
+  if (!m) return '';
+  var lt = (typeof langs !== 'undefined' && Array.isArray(langs)) ? langs.join('+') : '';
+  var one = function (f, to) {
+    var dw = _gateLaterDayWords(f, m);
+    return String(f.flight || '') + '@' + (f._sortTs || '') + '=' + _gateLaterHHMM(f) + (to ? '>' + to : '') + '~' + (dw ? dw.text : '');
+  };
+  var e = (m.entries || []).map(function (x) { return one(x.f, x.to); }).join(',');
+  var fu = m.full ? ('F:' + one(m.full.f, m.full.to)) : '';
+  return e + '|' + fu + '|' + lt;
+}
+
+// One label from _GATE_LBL as its board languages, each an unbreakable unit.
+function _gateLaterPairHtml(key, frF, sub) {
+  return _gateLbl(key, frF, function (w) {
+    var s = (sub != null) ? String(w).split('{GATE}').join(sub) : w;
+    return '<span class="gl-u">' + fidsEscHtml(s) + '</span>';
+  }, '<span class="gl-sep"> | </span>');
+}
+
+function _gateLaterSlotHtml(x, m, frF) {
+  var f = x.f;
+  var pl = _gateLaterPlace(f);
+  var sub = '<div class="gl-sub">'
+    + '<span class="gl-fl">' + fidsEscHtml(f.flight || '') + '</span>'
+    + '<span class="gl-dot"> · </span>'
+    + '<span class="gl-place"><span class="gl-city">' + fidsEscHtml(pl.city) + '</span>'
+    + (pl.code ? '<span class="gl-dot"> · </span><span class="gl-code">' + fidsEscHtml(pl.code) + '</span>' : '')
+    + '</span></div>';
+  if (x.to) {
+    // (B) the feed moved it away: the new gate, never a time.
+    var now = _gateLbl('nowGate', frF, function (w) { return '<span class="gl-now-w">' + fidsEscHtml(w) + '</span>'; }, '');
+    return '<div class="gl-slot gl-moved" data-gl-to="' + fidsEscHtml(x.to) + '">'
+      + '<div class="gl-top"><span class="gl-arrow">→</span><span class="gl-now">' + now + '</span>'
+      + '<span class="gl-pill">' + fidsEscHtml(x.to) + '</span></div>'
+      + sub + '</div>';
+  }
+  var dw = _gateLaterDayWords(f, m);
+  var day = (dw && dw.words && dw.words.length)
+    ? '<span class="gl-day" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w) {
+        return '<span class="gl-day-w">' + fidsEscHtml(w) + '</span>';
+      }).join('') + '</span>'
+    : '';
+  return '<div class="gl-slot">'
+    + '<div class="gl-top"><span class="gl-time">' + fidsEscHtml(_gateLaterClock(f)) + '</span>' + day + '</div>'
+    + sub + '</div>';
+}
+
+// The strip, drawn inside .gad-media-col (buildV2GateLayout). '' when there is
+// nothing later at this gate. titleKey/icon: the boarding takeover's band
+// (_gateLaterTakeoverHtml) draws the same strip under "Gate change".
+function _gateLaterStripHtml(m, titleKey, icon) {
+  if (!m || !m.entries || !m.entries.length) return '';
+  var frF = false;
+  try { frF = !!frFirstAirport(m.ap); } catch (e) {}
+  return '<div class="gl-strip" data-gl-n="' + m.entries.length + '">'
+    + '<div class="gl-card">'
+    +   '<div class="gl-orb"><span class="ac-ico ac-ico-' + (icon || 'time') + '"></span></div>'
+    +   '<div class="gl-body">'
+    +     '<div class="gl-title">' + _gateLaterPairHtml(titleKey || 'laterAtGate', frF) + '</div>'
+    +     '<div class="gl-list">' + m.entries.map(function (x) { return _gateLaterSlotHtml(x, m, frF); }).join('') + '</div>'
+    +   '</div>'
+    + '</div>'
+    + '</div>';
+}
+
+// (B) DURING THE BOARDING TAKEOVER. The strip lives in the three-column
+// layout, and while the gate's next flight has the whole screen (its
+// countdown, the boarding sign, Final Call: about forty minutes before it
+// leaves) there is no strip. A flight the feed moved away from this door is
+// still news there: its passengers are walking to the old door in exactly
+// those minutes (YQM gate 4: AC2037 at 6:35 moved to gate 2 while AC7753's
+// "Boarding Will Begin Shortly" fills the screen from 6:30). So the takeover
+// carries the moved flights alone, in the strip's own neutral glass under
+// "Gate change | Changement de porte", as a band at the foot of the screen,
+// for as long as the strip would carry them (until the flight leaves:
+// Departed, Cancelled, or its time plus the gate's grace). Later flights that
+// were not moved stay off the takeover, as in the approved design. '' when
+// nothing was moved (and on the phone layout, which has neither).
+function _gateLaterTakeoverHtml(iata) {
+  var m = null;
+  try {
+    if (((window.innerWidth || document.documentElement.clientWidth) || 0) < 700) return '';
+    m = _gateLaterModel(subScreenVal, Date.now(), iata);
+  } catch (e) { m = null; }
+  return _gateLaterTakeoverFrom(m);
+}
+function _gateLaterTakeoverFrom(m) {
+  if (!m) return '';
+  var mv = m.full ? [{ f: m.full.f, to: m.full.to }]
+    : (m.entries || []).filter(function (x) { return x && x.to; });
+  if (!mv.length) return '';
+  mv = mv.slice(0, GATE_LATER_MAX);
+  var strip = '';
+  try { strip = _gateLaterStripHtml({ entries: mv, ap: m.ap, tz: m.tz, sub: m.sub }, 'gateChange', 'depart'); } catch (e2) { strip = ''; }
+  return strip ? '<div class="gl-tk" style="--gl-n:' + mv.length + ';">' + strip + '</div>' : '';
+}
+
+// The airline's own colour for the new gate's pill on the notice: the gate's
+// banner accent when the moved flight is the same carrier, otherwise that
+// carrier's own accent.
+function _gateChangeAccent(code) {
+  try { return getAirlineAccent(code); } catch (e) { return ''; }
+}
+// The notice's own --airline-accent3 (the title tab's rule, .v2-fi-title),
+// worked out as the gate's layout works out its own: the carrier's third brand
+// colour (data/airline-colors.js r3) when it has one, else its accent. Without
+// it the solo notice, which has no layout around it, fell to the stylesheet's
+// marigold #FAC120, an amber.
+function _gateChangeAccent3(code, acc) {
+  try {
+    var s = (typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS) ? window.AIRLINE_BRAND_COLORS[code] : null;
+    if (s && /^#[0-9a-f]{6}$/i.test(String(s.r3 || ''))) return s.r3;
+  } catch (e) {}
+  return acc || '';
+}
+function _gateChangeOrbHtml(code) {
+  var c = String(code || '').toUpperCase();
+  if (!c) return '';
+  try {
+    var parts = (typeof window !== 'undefined' && typeof window._gateOrbParts === 'function') ? window._gateOrbParts(c) : null;
+    var path = (parts && parts.path) || ((typeof _airlineOrbEmblem === 'function') ? _airlineOrbEmblem(c) : '');
+    if (!parts || !path) return '';
+    return '<span class="gl-gc-orb"><span class="v2-fi-icon-wrap v2-fi-emblem-wrap' + (parts.native ? ' v2-fi-emblem-native' : '') + '" style="' + parts.badge + '">'
+      + '<img src="' + fidsEscHtml(path) + '" alt="" class="v2-fi-emblem-img" style="' + parts.imgStyle + '" onerror="this.style.display=\'none\'">'
+      + '</span></span>';
+  } catch (e) { return ''; }
+}
+
+// (C) The full-screen gate-change notice for model m (m.full set). Drawn over
+// the body of the gate (under the banner) by buildV2GateLayout, or as the
+// whole screen when the gate has no flight at all (_gateChangeSoloHtml).
+function _gateChangeNoticeHtml(m) {
+  if (!m || !m.full) return '';
+  var f = m.full.f, to = m.full.to;
+  var frF = false;
+  try { frF = !!frFirstAirport(m.ap); } catch (e) {}
+  var pl = _gateLaterPlace(f);
+  var code = String(f.airline || '').toUpperCase();
+  var acc = _gateChangeAccent(code);
+  var dw = _gateLaterDayWords(f, m);
+  var gateW = _gateLbl('gate', frF, function (w) { return '<span>' + fidsEscHtml(w) + '</span>'; }, '');
+  var acc3 = _gateChangeAccent3(code, acc);
+  return '<div class="gl-gc" data-gl-gc="' + fidsEscHtml(String(f.flight || '') + '>' + to) + '"' + (acc ? ' style="--airline-accent:' + fidsEscHtml(acc) + ';--airline-accent3:' + fidsEscHtml(acc3) + ';--gl-pill:' + fidsEscHtml(acc) + ';"' : '') + '>'
+    + '<div class="gl-gc-glass"></div>'
+    + '<div class="gl-gc-inner">'
+    +   '<div class="gl-gc-card g8-bir-shelves"><div class="v2-flightinfo-block"><div class="v2-fi-row gl-gc-row">'
+    +     '<div class="v2-fi-textcol">'
+    +       '<div class="v2-fi-title gl-gc-title">' + _gateLbl('gateChange', frF, function (w, i) {
+              return '<span class="' + (i ? 'v2-fi-lbl-2' : 'v2-fi-lbl-en') + '">' + fidsEscHtml(w) + '</span>';
+            }, '<span class="v2-fi-sep"> | </span>') + '</div>'
+    +       '<div class="gl-gc-body">'
+    +         '<div class="gl-gc-flight">' + _gateChangeOrbHtml(code)
+    +           '<span class="gl-gc-fl">' + fidsEscHtml(f.flight || '') + '</span>'
+    +           '<span class="gl-gc-city">' + fidsEscHtml(pl.city) + (pl.code ? '<span class="gl-gc-code"> · ' + fidsEscHtml(pl.code) + '</span>' : '') + '</span>'
+    +         '</div>'
+    +         '<div class="gl-gc-to"><span class="gl-gc-arrow">→</span><span class="gl-gc-pill"><span class="gl-gc-plbl">' + gateW + '</span><span class="gl-gc-pnum">' + fidsEscHtml(to) + '</span></span></div>'
+    +         '<div class="gl-gc-msg">' + _gateLbl('gateMovedProceed', frF, function (w) {
+              return '<span class="gl-u gl-line">' + fidsEscHtml(String(w).split('{GATE}').join(to)) + '</span>';
+            }, '') + '</div>'
+    +         '<div class="gl-gc-dep">' + _gateLaterPairHtml('departure', frF)
+    +           '<span class="gl-gc-deptime">' + fidsEscHtml(_gateLaterClock(f)) + '</span>'
+    +           ((dw && dw.words && dw.words.length) ? '<span class="gl-gc-day">' + dw.words.map(function (w) { return '<span class="gl-u">' + fidsEscHtml(w) + '</span>'; }).join('<span class="gl-sep"> | </span>') + '</span>' : '')
+    +         '</div>'
+    +       '</div>'
+    +     '</div>'
+    +   '</div></div></div>'
+    + '</div>'
+    + '</div>';
+}
+
+// (C) at a gate with no flight at all: the notice is the whole screen, under a
+// plain band carrying this gate's number and the clock (the clock is the
+// empty screen's own #dedicatedEmptyTime, which updateDedicatedTimeOnly
+// ticks).
+function _gateChangeSoloHtml(m, timeStr) {
+  if (!m || !m.full) return '';
+  var frF = false;
+  try { frF = !!frFirstAirport(m.ap); } catch (e) {}
+  var code = String(m.full.f.airline || '').toUpperCase();
+  var acc = _gateChangeAccent(code);
+  var gateW = _gateLbl('gate', frF, function (w) { return '<span>' + fidsEscHtml(w) + '</span>'; }, '');
+  // The airport's own mark (airport-config, as the gate banner uses it), else its name.
+  var apHtml = '';
+  try {
+    var cfg = (typeof getAirportConfig === 'function') ? getAirportConfig(m.ap) : null;
+    var u = (cfg && cfg.logo && cfg.logo.url) ? cfg.logo.url : '';
+    var nm = (typeof AP !== 'undefined' && AP[m.ap] && AP[m.ap].name) || m.ap || '';
+    apHtml = u ? '<img class="gl-solo-aplogo" src="' + fidsEscHtml(u) + '" alt="' + fidsEscHtml(nm) + '">'
+               : '<span class="gl-solo-apname">' + fidsEscHtml(nm) + '</span>';
+  } catch (eAp) { apHtml = ''; }
+  return '<div class="g8-wrap gl-solo g8-airline-' + fidsEscHtml(code) + '"' + (acc ? ' style="--airline-accent:' + fidsEscHtml(acc) + ';--airline-accent3:' + fidsEscHtml(_gateChangeAccent3(code, acc)) + ';"' : '') + '>'
+    + '<div class="gl-solo-band">'
+    +   '<div class="gl-solo-ap">' + apHtml + '</div>'
+    +   '<div class="gl-solo-clock" id="dedicatedEmptyTime">' + fidsEscHtml(String(timeStr || '').replace(/^0(\d)/, '$1')) + '</div>'
+    +   '<div class="gl-solo-gate"><span class="gl-solo-glbl">' + gateW + '</span><span class="gl-solo-gnum">' + fidsEscHtml(m.sub || '') + '</span></div>'
+    + '</div>'
+    + '<div class="gl-solo-body">' + _gateChangeNoticeHtml(m) + '</div>'
+    + '</div>';
+}
+
+// The key for what the gate shows now (getDedicatedRenderKey, the gate's own
+// render key, the clock tick's check).
+function _gateLaterKeyNow(iata) {
+  try { return _gateLaterKey(_gateLaterModel(subScreenVal, Date.now(), iata)); } catch (e) { return ''; }
+}
+// After every paint of the gate: remember what was painted (the clock tick
+// asks for one repaint when it changes), mark the page while the notice is
+// up (the big-map takeover, an overlay on the board, stays under it), and fit
+// the strip's and the notice's type once now and again when the fonts land.
+function _gateLaterAfterPaint(iata) {
+  try { window._gateLaterPainted = _gateLaterKeyNow(iata); } catch (e) {}
+  try { document.documentElement.classList.toggle('gl-gc-on', !!document.querySelector('#gateView .gl-gc')); } catch (e2) {}
+  try {
+    _gateLaterFit();
+    setTimeout(function () { _gateLaterFit(); }, 400);
+    setTimeout(function () { _gateLaterFit(); }, 1600);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { _gateLaterFit(); });
+  } catch (e3) {}
+}
+
+// NO CUT WORDS. One scale for the whole strip (so the three slots read as a
+// set): step --gl-k down until every slot and the title fit their boxes; if a
+// slot still does not fit at the floor, let its lines wrap between whole words
+// (each language and each city + code stays one unit) and fit again. The
+// notice does the same with --gl-gk. Font sizes only; the words never change.
+// wide: boxes whose width must hold their line; tall: boxes whose height must
+// hold their lines (a row of type is allowed its own line-box rounding).
+// overW (optional) says whether a box's words run past its width; it defaults
+// to _gateLaterInkOver.
+function _gateLaterFitBox(host, varName, wide, tall, floor, overW) {
+  var ow = (typeof overW === 'function') ? overW : _gateLaterInkOver;
+  var over = function () {
+    var i;
+    for (i = 0; i < wide.length; i++) if (ow(wide[i])) return true;
+    for (i = 0; i < tall.length; i++) if (tall[i].scrollHeight > tall[i].clientHeight + 1) return true;
+    return false;
+  };
+  var k = 1;
+  host.style.setProperty(varName, '1');
+  while (over() && k > floor) {
+    k = Math.max(floor, k - 0.02);
+    host.style.setProperty(varName, k.toFixed(2));
+  }
+  return !over();
+}
+
+// On a page drawn at a scale (a transform on an ancestor), rectangles are
+// scaled and computed lengths are not; this is that scale. offsetWidth is a
+// whole number of pixels, so anything within 2% of 1 is rounding, not scale.
+function _gateLaterScale(el, rect) {
+  var s = (el && el.offsetWidth && rect && rect.width) ? (rect.width / el.offsetWidth) : 1;
+  return (s > 0 && Math.abs(s - 1) > 0.02) ? s : 1;
+}
+
+// Do a box's words run past its CONTENT box? Its padding is not room for
+// words. scrollWidth cannot say so: Chrome leaves a box's end padding out of
+// it, so at YUL gate C87 "AC8825 · Washington · DCA" ran 13 px into the slot's
+// end padding, flush on the card's rounded rim, and still passed. So the ink
+// is measured instead: every text run's own rectangles (each line of a
+// wrapped one) and the pills' and orbs' boxes, against the box less its
+// border and padding, both sides (a right-to-left line overflows to the left).
+// Half a pixel of rounding is allowed.
+function _gateLaterInkOver(box) {
+  if (!box || !box.getBoundingClientRect) return false;
+  var doc = box.ownerDocument || document;
+  var win = doc.defaultView || window;
+  var r = box.getBoundingClientRect();
+  var cs = win.getComputedStyle(box);
+  var s = _gateLaterScale(box, r);
+  var px = function (v) { return (parseFloat(v) || 0) * s; };
+  var L = r.left + px(cs.borderLeftWidth) + px(cs.paddingLeft);
+  var R = r.right - px(cs.borderRightWidth) - px(cs.paddingRight);
+  var out = function (q) { return !!q && q.width > 0 && (q.left < L - 0.5 || q.right > R + 0.5); };
+  var rg = doc.createRange();
+  var tw = doc.createTreeWalker(box, 4);   // NodeFilter.SHOW_TEXT
+  var hit = false;
+  for (var t = tw.nextNode(); t && !hit; t = tw.nextNode()) {
+    if (!/\S/.test(t.nodeValue || '')) continue;
+    rg.selectNodeContents(t);
+    var rs = rg.getClientRects();
+    for (var i = 0; i < rs.length && !hit; i++) hit = out(rs[i]);
+  }
+  if (!hit && box.querySelectorAll) {
+    var pills = box.querySelectorAll('.gl-pill, .gl-gc-pill, .gl-gc-orb');
+    for (var j = 0; j < pills.length && !hit; j++) hit = out(pills[j].getBoundingClientRect());
+  }
+  try { if (rg.detach) rg.detach(); } catch (eD) {}
+  return hit;
+}
+
+// THE STRIP SITS ON THE ARRIVAL CARD, MEASURED. The stylesheet's own
+// geometry (the v23973 block) is worked out from the rail's 3px frame and its
+// plate inset, which is what Air Canada, WestJet, PAL, Porter and Flair draw.
+// Delta's rail has a 2px frame, so its six rows are a third of a pixel taller
+// and the strip sat 0.7 px high at the top and 1 px at the bottom of its card
+// (and the glass's foot 0.7 px off the Departure card's). So the cards are
+// read where they are: the fifth card's plate foot (Departure) and the sixth
+// card's plate (Arrival), in the middle column's own box, become --gl-foot-m,
+// --gl-top-m and --gl-bot-m on the column, which the stylesheet reads ahead
+// of its worked-out fallback. Without the rail's six cards (another layout)
+// the measured values are removed and the fallback stands.
+function _gateLaterAlign(doc) {
+  var col = doc.querySelector('.gad-media-col.gl-on');
+  if (!col || !col.style) return false;
+  var props = ['--gl-top-m', '--gl-bot-m', '--gl-foot-m'];
+  var clear = function () { props.forEach(function (p) { col.style.removeProperty(p); }); return false; };
+  var rows = doc.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block > .v2-fi-row');
+  if (!rows || rows.length !== 6) return clear();
+  var win = doc.defaultView || window;
+  var c = col.getBoundingClientRect();
+  var s = _gateLaterScale(col, c);
+  // The card is the row's box less its plate's inset (the row's ::before).
+  // Its top is read from the row's outer edge, not from inside the row's 1px
+  // top rule: the card's title tab and rim start there, a pixel above the
+  // plate itself, and that is the edge the eye lines the strip up with.
+  var plate = function (row) {
+    var b = win.getComputedStyle(row, '::before');
+    if (!b || b.content === 'none' || b.position !== 'absolute') return null;
+    var t = parseFloat(b.top), bt = parseFloat(b.bottom);
+    if (isNaN(t) || isNaN(bt)) return null;
+    var rr = row.getBoundingClientRect();
+    return { top: rr.top + t * s, bottom: rr.bottom - bt * s };
+  };
+  var p5 = plate(rows[4]), p6 = plate(rows[5]);
+  if (!p5 || !p6) return clear();
+  var ccs = win.getComputedStyle(col);
+  var top0 = c.top + (parseFloat(ccs.borderTopWidth) || 0) * s;
+  var bot0 = c.bottom - (parseFloat(ccs.borderBottomWidth) || 0) * s;
+  var H = (bot0 - top0) / s;
+  var top = (p6.top - top0) / s, bot = (bot0 - p6.bottom) / s, foot = (bot0 - p5.bottom) / s;
+  if (!(H > 0 && top > 0 && bot >= 0 && foot > bot && top + bot < H && foot < H)) return clear();
+  col.style.setProperty('--gl-top-m', top.toFixed(2) + 'px');
+  col.style.setProperty('--gl-bot-m', bot.toFixed(2) + 'px');
+  col.style.setProperty('--gl-foot-m', foot.toFixed(2) + 'px');
+  return true;
+}
+
+// THE BOARDING SIGN UNDER THE BAND (display-overrides.css, the v23973 block,
+// 4b). The sign is sized by the screen, so with the moved flights' band at
+// the takeover's foot its panels are shorter than its type expects. --gl-ss
+// scales every screen-unit length of the sign; it steps down from 1 by 3%
+// only while a panel's words reach into its disc band (the panel's own
+// bottom padding, which the arrows and the Next line sit in) or under a disc,
+// to a floor of .6. Each step lets the sign's own pair pass
+// (_fidsPairSeparators: a pair shrinks before it stacks) measure afresh, so
+// the two agree. The countdown is sized by its panel and needs none of this.
+function _gateLaterSignFits(sign) {
+  var cols = sign.querySelectorAll('.g8-sign-col');
+  for (var i = 0; i < cols.length; i++) {
+    var col = cols[i];
+    if (col.scrollHeight > col.clientHeight + 1) return false;
+    var flowBottom = -Infinity, absTop = Infinity;
+    for (var j = 0; j < col.children.length; j++) {
+      var c = col.children[j];
+      var cs = getComputedStyle(c);
+      if (cs.display === 'none') continue;
+      var r = c.getBoundingClientRect();
+      if (!r.height) continue;
+      if (cs.position === 'absolute') absTop = Math.min(absTop, r.top);
+      else flowBottom = Math.max(flowBottom, r.bottom);
+    }
+    if (flowBottom > absTop - 2) return false;
+  }
+  return true;
+}
+function _gateLaterSignFit(doc) {
+  var wraps = doc.querySelectorAll('.g8-wrap');
+  for (var w = 0; w < wraps.length; w++) {
+    var wrap = wraps[w];
+    if (!wrap.classList.contains('gl-tk-on')) { wrap.style.removeProperty('--gl-ss'); continue; }
+    var sign = wrap.querySelector('.g8-sign');
+    var set = function (k) {
+      wrap.style.setProperty('--gl-ss', k.toFixed(2));
+      if (!sign) return;
+      // the pair pass keeps the size it measured; let it measure this one
+      var ps = sign.querySelectorAll('.g8-pair[data-g8-base]');
+      for (var i = 0; i < ps.length; i++) { ps[i].removeAttribute('data-g8-base'); ps[i].style.removeProperty('font-size'); }
+      try { if (typeof _fidsPairSeparators === 'function') _fidsPairSeparators(sign); } catch (eP) {}
+    };
+    if (!sign) { wrap.style.removeProperty('--gl-ss'); continue; }
+    var k = 1;
+    set(k);
+    while (!_gateLaterSignFits(sign) && k > 0.6) { k = Math.max(0.6, k - 0.03); set(k); }
+  }
+}
+
+function _gateLaterFit(root) {
+  var doc = root || (typeof document !== 'undefined' ? document : null);
+  if (!doc || !doc.querySelector) return;
+  try { _gateLaterAlign(doc); } catch (eA) {}
+  try { _gateLaterSignFit(doc); } catch (eS) {}
+  try {
+    var sts = doc.querySelectorAll('.gl-strip');
+    for (var si = 0; si < sts.length; si++) {
+      var st = sts[si];
+      if (!st.clientWidth) continue;
+      st.classList.remove('gl-wrap');
+      var slots = [].slice.call(st.querySelectorAll('.gl-slot'));
+      var wide = slots.concat([].slice.call(st.querySelectorAll('.gl-title')));
+      if (!_gateLaterFitBox(st, '--gl-k', wide, slots, 0.72)) {
+        st.classList.add('gl-wrap');
+        _gateLaterFitBox(st, '--gl-k', wide, slots, 0.5);
+      }
+    }
+    var gc = doc.querySelector('.gl-gc');
+    if (gc && gc.clientWidth) {
+      _gateLaterFitBox(gc, '--gl-gk',
+        [].slice.call(gc.querySelectorAll('.gl-gc-flight, .gl-gc-to, .gl-gc-msg, .gl-gc-dep, .gl-gc-title')),
+        [].slice.call(gc.querySelectorAll('.gl-gc-body')), 0.45);
+    }
+  } catch (e) {}
+}
+try {
+  if (typeof window !== 'undefined') {
+    window._gateLaterFit = _gateLaterFit;
+    window.addEventListener('resize', function () { try { _gateLaterFit(); } catch (e) {} });
+  }
+} catch (e) {}
+
+// ════════════════════════════════════════════════════════════════════════════
 // GATE LAYOUT V2 — 3-column (aircraft | media | map) with growable bottom bar
 // ────────────────────────────────────────────────────────────────────────────
 // Layout:
@@ -9625,12 +10349,22 @@ function buildV2GateLayout(ctx, vars) {
   // unchanged so renderGateAd() keeps writing into them as before.
   // No "FEATURED" header — the ad content fills the entire column so the
   // existing slide artwork has room to breathe.
+  // v23973 — LATER AT THIS GATE (_gateLaterModel). With later flights the
+  // column carries .gl-on, which shrinks the frosted window from the bottom
+  // (display-overrides.css, the v23973 block), and the strip is drawn under
+  // it. With none, nothing changes. (C) the gate-change notice covers the
+  // body of the screen below the banner.
+  var _gl = null, _glStrip = '', _glNotice = '';
+  try { _gl = _gateLaterModel(subScreenVal, Date.now(), iata); } catch (eGl) { _gl = null; }
+  try { _glStrip = _gl ? _gateLaterStripHtml(_gl) : ''; } catch (eGs) { _glStrip = ''; }
+  try { _glNotice = (_gl && _gl.full) ? _gateChangeNoticeHtml(_gl) : ''; } catch (eGn) { _glNotice = ''; }
   var mediaCol =
-      '<div class="gad-media-col" style="display:flex;flex-direction:row;flex:1 1 var(--col-center, 50%);min-width:0;overflow:hidden;position:relative;">'
+      '<div class="gad-media-col' + (_glStrip ? ' gl-on' : '') + '" style="display:flex;flex-direction:row;flex:1 1 var(--col-center, 50%);min-width:0;overflow:hidden;position:relative;">'
     +   '<div id="gateAdLogo" class="gate-ad-logo-rail" style="display:none;flex:0 0 0;width:0;min-width:0;max-width:0;overflow:hidden;"></div>'
     +   '<div style="flex:1;min-width:0;min-height:0;overflow:hidden;position:relative;">'
     +     '<div id="gateAdCarousel" style="position:absolute;inset:0;overflow:hidden;"></div>'
     +   '</div>'
+    +   _glStrip
     + '</div>';
 
   // ─── MAP COLUMN (right, 25%) ────────────────────────────────────────────
@@ -9680,6 +10414,7 @@ function buildV2GateLayout(ctx, vars) {
     +     _cols
     +   '</div>'
     +   msgStripHtml
+    +   _glNotice
     + '</div>';
 }
 
@@ -16268,6 +17003,11 @@ function uxgGateHtml(ctx) {
     return '#' + X.map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
   })((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119');
 
+  // v23973 — (B) the moved flights' band at the takeover's foot
+  // (_gateLaterTakeoverHtml); .gl-tk-on lets the boarding sign give up its
+  // height (display-overrides.css, the v23973 block, 4b).
+  var _glTk = '';
+  try { _glTk = (boardActive || finalActive || showCountdown) ? _gateLaterTakeoverHtml(iata) : ''; } catch (eTk) { _glTk = ''; }
   return '<div class="g8-wrap'
        // v23115 — the boarding takeovers move the clock OUT of the banner and
        // into the white strip. CSS can't reach up from the
@@ -16275,6 +17015,7 @@ function uxgGateHtml(ctx) {
        // hardware and cost us every light-board adaptation the last time it
        // was used here — so the state is marked on the wrap instead.
        + ((finalActive || boardActive || showCountdown) ? ' g8-takeover' : '')
+       + (_glTk ? ' gl-tk-on' : '')
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
        + ((function () {
            // light-banner = LUMINANCE, not the literal '#FFFFFF' — Porter's
@@ -16601,6 +17342,9 @@ function uxgGateHtml(ctx) {
       //
       // NOT between the banner and the info row. ═══
       ? '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
+      // v23973 — (B) a flight the feed moved away from this door, at the
+      // takeover's foot (_gateLaterTakeoverHtml); above the status bar.
+      + _glTk
       + (r3Left ? '<div class="g8-r3 g8-r3-bottom" style="background:rgba(0,0,0,0.85);border-top:2px solid ' + (accent || '#eab308') + ';flex-shrink:0;">' + r3Left + '</div>' : '')
       // ═══ IDLE MODE ═══
       : (
@@ -17047,7 +17791,9 @@ function gateAutofit(root) {
     // rail vs 18px strip). The chip now takes the shared CSS clamp
     // verbatim — identical on both surfaces by construction — and only
     // shrinks if that specific title genuinely overflows its own bar.
-    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title, .g8-bir-shelves .v2-flightinfo-block .v2-fi-title').forEach(function (el) {
+    // v23973 — not the gate-change notice's title (.gl-gc-title): it is the
+    // notice's headline, sized with the notice (_gateLaterFit), not a rail label.
+    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block .v2-fi-title, .g8-bir-shelves .v2-flightinfo-block .v2-fi-title:not(.gl-gc-title)').forEach(function (el) {
       el.style.removeProperty('font-size');
       try { delete el.dataset.faKey; } catch (e) {}
       var guard = 14;
@@ -17263,7 +18009,7 @@ function gateAutofit(root) {
     // the smallest size any title landed on, so there is ONE number across
     // rail and strip, always, and it cannot drift between rebuilds.
     try {
-      var _tAll = root.querySelectorAll('.gad-aircraft-col .v2-fi-title, .g8-bir-shelves .v2-fi-title');
+      var _tAll = root.querySelectorAll('.gad-aircraft-col .v2-fi-title, .g8-bir-shelves .v2-fi-title:not(.gl-gc-title)');
       if (_tAll.length > 1) {
         var _tMin = Infinity;
         _tAll.forEach(function (t) { var f = parseFloat(getComputedStyle(t).fontSize); if (f && f < _tMin) _tMin = f; });
@@ -18374,7 +19120,7 @@ function _gateCodeInk(root) {
 function _gateTitleFit(root) {
   try {
     var titles = (root || document).querySelectorAll(
-      '.gad-aircraft-col .v2-fi-title, .g8-bir-shelves .v2-fi-title');
+      '.gad-aircraft-col .v2-fi-title, .g8-bir-shelves .v2-fi-title:not(.gl-gc-title)');
     for (var i = 0; i < titles.length; i++) {
       var t = titles[i];
       if (!t.isConnected || t.clientWidth <= 1) continue;   // not laid out yet
@@ -20117,7 +20863,10 @@ const gView = document.getElementById('gateView');
         var _redir = getInboundGateRedirect(subScreenVal);
         _msgTag = (_redir ? ('R:' + _redir.flight + '>' + _redir.toGate + '@' + _redir.changedAt) : '')
                 + '|' + (_ovMsg ? 'O:1' : '')
-                + '|' + (currentFlight._aircraftPending ? 'P:1' : '');
+                + '|' + (currentFlight._aircraftPending ? 'P:1' : '')
+                // v23973 — and what Later at this gate and the gate-change
+                // notice show (_gateLaterKeyNow).
+                + '|' + _gateLaterKeyNow(iata);
       } catch(e) {}
       // v22957 — THE LANGUAGES BELONG IN THIS KEY. This is the guard that was
       // actually eating language changes, found after six wrong guesses. Every
@@ -20251,6 +21000,8 @@ const gView = document.getElementById('gateView');
           // Don't stop gate ads here — let the timer persist across DOM rebuilds
           gView.innerHTML = uxgGateHtml({ currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs, arrSchedStr: _arrSchedStr, arrRevised: _arrRevised, arrEarly: _arrEarly, arrTerm: _arrTerm, arrGate: _arrGate, arrInstant: _arrInstant, arrTz: arrTz });
         }
+        // v23973 — Later at this gate: what was painted, and its type fitted.
+        _gateLaterAfterPaint(iata);
         // v23166 — store what we ACTUALLY painted. The builders above could
         // settle fields the key reads, so the pre-build key could already be
         // stale. Re-read it here and an unchanged flight compares equal on the
@@ -21098,6 +21849,19 @@ const gView = document.getElementById('gateView');
       }
 
     } else {
+      // v23973 — (C) A GATE WITH NO FLIGHT LEFT BECAUSE THE AIRPORT MOVED IT.
+      // The whole screen says where it went (_gateChangeSoloHtml) until it
+      // leaves; the empty-gate screen below comes back after that.
+      var _glSolo = null;
+      try {
+        var _glM = ((window.innerWidth || document.documentElement.clientWidth) >= 700) ? _gateLaterModel(subScreenVal, Date.now(), iata) : null;
+        if (_glM && _glM.full) _glSolo = _glM;
+      } catch (eSolo) { _glSolo = null; }
+      if (_glSolo) {
+        gView.innerHTML = _gateChangeSoloHtml(_glSolo, timeStr);
+        _gateLaterAfterPaint(iata);
+        return;
+      }
       // Empty gate — show airport city photo, name, time, and local weather
       const apName = (AP[iata]||{}).name || iata;
       const apCity = cityCode(iata);
@@ -21148,6 +21912,7 @@ const gView = document.getElementById('gateView');
 
       // Load airport's own city photo
       setGateBg(document.getElementById('gateBgEmpty'), iata);
+      _gateLaterAfterPaint(iata);
     }
   }
 
@@ -27287,7 +28052,17 @@ var _GATE_LBL = {
   tickerGateCloses:     { en:'{AIRLINE}: BOARDING GATE CLOSES {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FERMETURE DE LA PORTE D’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: LA PUERTA DE EMBARQUE CIERRA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS GATE SCHLIESST {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: IL GATE CHIUDE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O PORTÃO DE EMBARQUE FECHA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗口は出発{MIN}分前に締め切ります', zh:'{AIRLINE}：登机口于起飞前{MIN}分钟关闭', ar:'{AIRLINE}: تُغلق بوابة الصعود قبل {MIN} دقيقة من المغادرة' },
   tickerBoardingCloses: { en:'{AIRLINE}: BOARDING CLOSES {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FIN DE L’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: EL EMBARQUE CIERRA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS BOARDING ENDET {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: L’IMBARCO CHIUDE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O EMBARQUE ENCERRA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗は出発{MIN}分前に締め切ります', zh:'{AIRLINE}：登机于起飞前{MIN}分钟截止', ar:'{AIRLINE}: ينتهي الصعود قبل {MIN} دقيقة من المغادرة' },
   tickerBoardingEnds:   { en:'{AIRLINE}: BOARDING ENDS {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FIN DE L’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: EL EMBARQUE TERMINA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS BOARDING ENDET {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: L’IMBARCO TERMINA {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O EMBARQUE TERMINA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗は出発{MIN}分前に終了します', zh:'{AIRLINE}：登机于起飞前{MIN}分钟结束', ar:'{AIRLINE}: ينتهي الصعود قبل {MIN} دقيقة من المغادرة' },
-  tickerGateBeAt:       { en:'{AIRLINE}: BE AT THE BOARDING GATE {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : PRÉSENTEZ-VOUS À LA PORTE D’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: PRESÉNTESE EN LA PUERTA DE EMBARQUE {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: SEIEN SIE {MIN} MINUTEN VOR ABFLUG AM GATE', it:'{AIRLINE}: PRESENTARSI AL GATE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: ESTEJA NO PORTÃO DE EMBARQUE {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：出発{MIN}分前までに搭乗口へお越しください', zh:'{AIRLINE}：请于起飞前{MIN}分钟到达登机口', ar:'{AIRLINE}: يرجى التواجد عند بوابة الصعود قبل {MIN} دقيقة من المغادرة' }
+  tickerGateBeAt:       { en:'{AIRLINE}: BE AT THE BOARDING GATE {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : PRÉSENTEZ-VOUS À LA PORTE D’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: PRESÉNTESE EN LA PUERTA DE EMBARQUE {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: SEIEN SIE {MIN} MINUTEN VOR ABFLUG AM GATE', it:'{AIRLINE}: PRESENTARSI AL GATE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: ESTEJA NO PORTÃO DE EMBARQUE {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：出発{MIN}分前までに搭乗口へお越しください', zh:'{AIRLINE}：请于起飞前{MIN}分钟到达登机口', ar:'{AIRLINE}: يرجى التواجد عند بوابة الصعود قبل {MIN} دقيقة من المغادرة' },
+  // v23973 — LATER AT THIS GATE (_gateLaterStripHtml, _gateChangeNoticeHtml).
+  // The strip's title; the label before a moved flight's new gate number
+  // ("now Gate 2 | maintenant porte 2", the number in its own pill); the
+  // full-screen notice's title and its sentence. gateMovedProceed is LS's
+  // gateChangeProceed word for word, here so _gateLbl can show the board's
+  // two languages, each sentence whole on its own line ({GATE} is the gate).
+  laterAtGate: { en:'Later at this gate', fr:'Plus tard à cette porte', es:'Más tarde en esta puerta', de:'Später an diesem Gate', it:'Più tardi a questo gate', pt:'Mais tarde neste portão', ja:'このゲートのこの後の便', zh:'本登机口稍后航班', ar:'لاحقًا من هذه البوابة' },
+  nowGate:     { en:'now Gate', fr:'maintenant porte', es:'ahora puerta', de:'jetzt Gate', it:'ora gate', pt:'agora portão', ja:'変更後のゲート', zh:'现登机口', ar:'البوابة الجديدة' },
+  gateChange:  { en:'Gate change', fr:'Changement de porte', es:'Cambio de puerta', de:'Gate-Wechsel', it:'Cambio gate', pt:'Mudança de portão', ja:'ゲート変更', zh:'登机口变更', ar:'تغيير البوابة' },
+  gateMovedProceed: { en:'Please proceed to Gate {GATE}', fr:'Veuillez vous diriger vers la porte {GATE}', es:'Diríjase a la puerta {GATE}', de:'Bitte begeben Sie sich zu Gate {GATE}', it:'Procedere al gate {GATE}', pt:'Dirija-se ao portão {GATE}', ja:'ゲート {GATE} へお進みください', zh:'请前往 {GATE} 登机口', ar:'يرجى التوجه إلى البوابة {GATE}' }
 };
 
 // Clock string in ONE language's own convention (v23115). English and the
@@ -27571,7 +28346,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23975';
+var FIDS_BUILD_TAG = 'v23976';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -28832,8 +29607,9 @@ function render() {
     // the wrong wing. Uses the existing per-flight gate-change history.
     let _gateChanged = false;
     try {
+      // v23973 — the record is per departure (_gateRowKey), not per number.
       const _gh = (typeof getGateHistory === 'function') ? getGateHistory() : null;
-      const _ge = _gh && _gh[f.flight];
+      const _ge = _gh && _gh[_gateRowKey(f)];
       if (_ge && _ge.changedAt && (Date.now() - _ge.changedAt) < 15 * 60000 && _ge.previousGate) _gateChanged = true;
     } catch (e) {}
     const _apUpRow = (((document.getElementById('apSel') || {}).value) || '').toUpperCase();
@@ -33363,7 +34139,8 @@ async function fetchLive() {
     } catch(e) { console.warn('[BELT SUMMARY] failed:', e.message); }
     // Track gate assignments so we can detect changes between refreshes
     // and surface them as alerts on affected screens.
-    try { trackGateChanges(data.dep.concat(data.arr)); } catch(e) { console.warn('[FIDS] gate tracking:', e.message); }
+    // v23973 — departures only: a gate change is a departure's (trackGateChanges).
+    try { trackGateChanges(data.dep); } catch(e) { console.warn('[FIDS] gate tracking:', e.message); }
     // Dynamic lookahead based on airport size.
     //
     // v23270 — MEASURE THE AIRPORT, NOT THE LAST DECISION.
@@ -48788,6 +49565,10 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         // its English "Tomorrow" to the rotating language printed
         // "Demain | Demain" on a French-first Montréal gate.
         if (el.closest && el.closest('.v2-fi-dayline')) return;
+        // v23973 — nor Later at this gate and the gate-change notice: their
+        // day words are one language per span too, so a Québec board's
+        // "Demain | Tomorrow" read "Demain | Demain".
+        if (el.closest && el.closest('.gl-strip, .gl-gc')) return;
         var s = (el.textContent || '').trim();
         for (var i=0;i<pairs.length;i++){
           if (pairs[i][0].test(s)) { el.textContent = t(pairs[i][1]); break; }
