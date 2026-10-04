@@ -53,9 +53,9 @@ test('checkSelf does not depend on headers the CDN omits', () => {
 // The rotator's own signature function, sliced out of rotate.html and run as
 // is, so these tests cannot drift from what ships.
 const SIG_SRC = (() => {
-  const a = ROTATE.indexOf('var CF_INJECTED = ');
+  const a = ROTATE.indexOf('var SELF_END = ');
   const b = ROTATE.indexOf('function checkSelf()');
-  assert.ok(a > 0 && b > a, 'rotate.html must define CF_INJECTED and selfSigOf before checkSelf');
+  assert.ok(a > 0 && b > a, 'rotate.html must define SELF_END and selfSigOf before checkSelf');
   return ROTATE.slice(a, b);
 })();
 const sig = new Function(SIG_SRC + '\nreturn selfSigOf;')();
@@ -112,13 +112,13 @@ test('Cloudflare\'s appended script does not change the signature', () => {
 });
 
 test('other Cloudflare insertions are ignored too', () => {
-  const page = '<html><body><p>board</p>\n</body></html>';
-  const beacon = page.replace('</body>',
-    '<script defer src="https://static.cloudflare' + 'insights.com/beacon.min.js" data-cf-beacon=\'{"token":"x"}\'></script></body>');
-  const email = page.replace('</body>',
-    '<script data-cfasync="false" src="/cdn' + '-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>');
-  assert.equal(sig(beacon), sig(page), 'the analytics beacon is not part of the page');
-  assert.equal(sig(email), sig(page), 'nor is the email-protection script');
+  const beacon = ROTATE.replace(/\n<\/body>/, '\n' +
+    '<script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon=\'{"token":"x"}\'></script></body>');
+  const email = ROTATE.replace(/\n<\/body>/, '\n' +
+    '<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>');
+  assert.notEqual(beacon, ROTATE);
+  assert.equal(sig(beacon), sig(ROTATE), 'the analytics beacon is not part of the page');
+  assert.equal(sig(email), sig(ROTATE), 'nor is the email-protection script');
 });
 
 test('a real change to the rotator is still seen, with or without the inserted script', () => {
@@ -129,19 +129,23 @@ test('a real change to the rotator is still seen, with or without the inserted s
     'and must still be seen when both copies carry the inserted script');
 });
 
-test('the rotator\'s own script can never be mistaken for Cloudflare\'s', () => {
-  // The strip drops any <script> element whose text names Cloudflare's script
-  // paths. If rotate.html ever spelled one of those words out, its own script
-  // would be stripped from its own signature and no deploy would be seen.
-  for (const w of ['cdn' + '-cgi', '__CF' + '$cv', 'cloudflare' + 'insights']) {
-    assert.ok(!ROTATE.toLowerCase().includes(w.toLowerCase()),
-      `rotate.html must not contain the literal "${w}" — build the pattern from pieces`);
-  }
-  assert.equal((ROTATE.match(/<\/script/gi) || []).length, 1,
-    'one closing tag: the rotator is a single <script> element, so the strip sees it whole');
-  const at = ROTATE.indexOf('function checkSelf()');
-  const fn = ROTATE.slice(at, ROTATE.indexOf('\n      }', at) + 8);
+test('the end marker is the last line of the rotator, so all of the rotator is signed', () => {
+  // selfSigOf() signs the page up to the LAST occurrence of the marker. If
+  // the marker moved up, or code were added below it, a change to that code
+  // would never be seen by a running stream.
+  const m = ROTATE.match(/var SELF_END = '([^']+)'/);
+  assert.ok(m, 'rotate.html must name its end marker');
+  const at = ROTATE.lastIndexOf(m[1]);
+  const rest = ROTATE.slice(at).split('\n').slice(1).join('\n');
+  assert.match(rest, /^(\s*\/\/[^\n]*\n)*\s*<\/script>\s*<\/body>\s*<\/html>\s*$/,
+    'only comment lines may follow the marker, then the end of the script and the page');
+  const fnAt = ROTATE.indexOf('function checkSelf()');
+  const fn = ROTATE.slice(fnAt, ROTATE.indexOf('\n      }', fnAt) + 8);
   assert.match(fn, /r\.text\(\)\.then\(selfSigOf\)/, 'checkSelf must sign with selfSigOf');
+  // A change on the rotator's very last line of code is still seen.
+  const edited = ROTATE.replace('if anything fails, the first board still shows', 'if anything fails, the first board shows');
+  assert.notEqual(edited, ROTATE);
+  assert.notEqual(sig(edited), sig(ROTATE), 'the last line of code before the marker is signed');
 });
 
 test('a pinned single-airport stream can still reload itself', () => {
