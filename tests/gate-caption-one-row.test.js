@@ -129,7 +129,7 @@ test('the row comes down as one before the model does, as far as v23904', () => 
 test('the band says what it holds: the pending words never sit under the operator', () => {
   // (v23940 adds two more states after these, has-reg and has-widemark;
   // tests/gate-lower-two-colours.test.js pins them.)
-  assert.match(CORE, /var _capCls = 'v2-rc-acb-cap' \+ \(_acKnown \? '' : ' is-pending'\) \+ \(_opByVal \? ' has-op' : ''\)\s*(?:\/\/[^\n]*\s*)*\+ /);
+  assert.match(CORE, /var _capCls = 'v2-rc-acb-cap' \+ \(_acKnown \? '' : ' is-pending'\) \+ \(_opByVal \? ' has-op' : ''\)\n(?:[ \t]*\/\/[^\n]*\n)*[ \t]*\+ /);
   assert.match(CORE, /'<div class="' \+ _capCls \+ '">' \+ _typeCellHtml \+ '<\/div>'/);
   assert.match(CORE, /'<div class="v2-rc-acb-cap is-pending">'/, 'the fallback caption is pending too');
   // One language over the other, no bar, and laid out by class (no :has()).
