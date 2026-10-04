@@ -147,7 +147,35 @@ function _fidsInk(fg, bg, floor) {
   var lb = _fidsRelLum(bg);
   return (lb !== null && lb > 0.45) ? '#111111' : '#ffffff';
 }
-try { window._fidsInk = _fidsInk; window._fidsContrast = _fidsContrast; } catch (e) {}
+// v23967 — A STATUS WORD'S INK REACHES 4.5:1 AND STAYS ITS COLOUR.
+// The floor above is for the operator's own picks. The status words (Early
+// and Arrived green, Boarding/Delayed amber) are the board's colours, not the
+// operator's, and a custom palette's mid-tone stripe left both variants short:
+// Early was 4.38:1 on Montréal's pink stripe, 3.66:1 on Québec's pale blue and
+// 4.41:1 on Vancouver's teal. Same hue, moved toward black or white in small
+// steps until the word reads; the nearest step wins. Pure function of the
+// palette, run once when the palette is applied — not a painter.
+function _fidsStatusInk(fg, bg, floor) {
+  floor = floor || 4.5;
+  var c = _fidsContrast(fg, bg);
+  if (c === null || c >= floor) return fg;
+  var m = /^#([0-9a-f]{6})$/i.exec(String(fg || '').trim());
+  if (!m) return _fidsInk(fg, bg, floor);
+  var rgb = [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
+  var hex = function (t, to) {
+    return '#' + rgb.map(function (v) {
+      var x = Math.round(v + (to - v) * t);
+      return (x < 16 ? '0' : '') + x.toString(16);
+    }).join('');
+  };
+  for (var t = 0.05; t <= 1.0001; t += 0.05) {
+    var dark = hex(t, 0), light = hex(t, 255);
+    var cd = _fidsContrast(dark, bg), cl = _fidsContrast(light, bg);
+    if (cd >= floor || cl >= floor) return cd >= cl ? dark : light;
+  }
+  return _fidsInk(fg, bg, floor);
+}
+try { window._fidsInk = _fidsInk; window._fidsContrast = _fidsContrast; window._fidsStatusInk = _fidsStatusInk; } catch (e) {}
 
 // In-memory cache, populated lazily. Keys are normalized airport codes.
 const _airportConfigCache = {};
@@ -2431,6 +2459,12 @@ function changeScreenType(val) {
     try { localStorage.setItem('fids_screen_state', JSON.stringify({ t: val, s: (typeof subScreenVal !== 'undefined' ? subScreenVal : '') })); } catch (e) {}
   }
   document.body.classList.toggle('uxg-gate-mode', val === 'gate');
+  // v23967 — the gate's carrier skin hook goes with the gate. The gate render
+  // stamps body[data-gate-airline] on every pass and nothing removed it, so a
+  // display switched from a gate back to the board kept the gate airline's
+  // skin variables, and the board's airport codes took that airline's colour.
+  // The next gate render stamps it again.
+  if (val !== 'gate') { try { document.body.removeAttribute('data-gate-airline'); } catch (e) {} }
   if (val !== 'gate') { if (typeof stopGateAds==='function') stopGateAds(); } else { if (typeof startGateAds==='function' && !_gateAdTimer) startGateAds(); }
   
   const subSel = document.getElementById('subScreenSel');
@@ -2729,7 +2763,15 @@ function _caBgBehind(el) {
 // The SCREEN's accent: the board's own banner accent where the airport has
 // one, else the airline accent as a last resort, else a neutral blue. Read
 // once per pass, so every code on the board is the same hue.
-function _caScreenAccent() {
+//
+// v23967 — `boardOnly` keeps a gate's carrier out of the board's codes. The
+// gate render stamps body[data-gate-airline] and, before this build, nothing
+// took it off again when the same page went back to the main board, so the
+// departures board's codes turned the last gate's airline colour (Air Canada
+// red, lifted to pink on the navy rows) — on whichever screen had visited a
+// gate first, and not on the others. A code in the board table or the belt
+// list is the airport's, never a carrier's.
+function _caScreenAccent(boardOnly) {
   var tries = [];
   try {
     var cs = getComputedStyle(document.body);
@@ -2746,7 +2788,7 @@ function _caScreenAccent() {
     // The carrier accent is only consulted when the screen actually declares a
     // gate airline, so board and baggage screens keep the airport accent they
     // have always used.
-    if (document.body.getAttribute('data-gate-airline')) {
+    if (!boardOnly && document.body.getAttribute('data-gate-airline')) {
       tries.push(cs.getPropertyValue('--airline-accent-ink'));
       tries.push(cs.getPropertyValue('--airline-accent'));
     }
@@ -2820,7 +2862,29 @@ function _caFit(accent, bg, avoid) {
   if (best && _caIsBrown(best)) best = null;
   return best || (_caIsBrown(accent) ? [255, 255, 255] : accent);
 }
-function applyCodeAccents() {
+// ── v23967 — A STATUS ROW'S INK BELONGS TO THE STATUS GRAMMAR ──────────────
+// Delayed, Final call, Cancelled, Diverted and the history rows (Departed,
+// Arrived, Gate closed) are coloured as a whole by flight-display.css and
+// display-overrides.css: one ground and one ink for every glyph on the row.
+// The per-cell painters below (applyCodeAccents, _fidsRowInk) measured those
+// rows at run time and wrote an inline !important ink over the grammar's —
+// an accent on the code, a lifted ink on the revised time and the weather —
+// and the board rebuilds its rows every 12 s (language and °C/°F slides,
+// polls, paging), which wiped the paint until the painter's own timer came
+// round again. So a status row showed the grammar's ink for a few seconds
+// and the painter's for a few more, over and over, which reads as flashing
+// on a row whose colour already carries a status. Those rows are now left to
+// the stylesheet entirely; the painters only touch rows on the plain stripes.
+var FIDS_STATUS_ROW_SEL = 'tr.row-delayed, tr.row-final, tr.row-cancelled, tr.row-diverted, '
+  + 'tr.row-departed, tr.row-arrived, tr.row-gate-closed, '
+  + '.bidsv2-flight-row.bidsv2-row-delayed, .bidsv2-flight-row.bidsv2-row-cancelled, .bidsv2-flight-row.bidsv2-row-diverted';
+function _fidsOnStatusRow(el) {
+  try {
+    var row = el && el.closest ? el.closest('#fidsTable tbody tr, .bidsv2-flight-row') : null;
+    return !!(row && row.matches(FIDS_STATUS_ROW_SEL));
+  } catch (e) { return false; }
+}
+function applyCodeAccents(root) {
   try {
     if (document.documentElement.getAttribute('data-city-code-accent') === 'off') return;
     // v23295 — .g8-city-code matches NOTHING on the gate screen. The gate's
@@ -2828,10 +2892,29 @@ function applyCodeAccents() {
     // only the board's class is why the gate accents never changed however
     // many times this was reported fixed
     // Verified by counting the elements on a live gate.
-    var nodes = document.querySelectorAll('.dest-iata, .g8-city-code, .v2-fi-code, .v2-rc-iata');
+    var nodes = (root || document).querySelectorAll('.dest-iata, .g8-city-code, .v2-fi-code, .v2-rc-iata');
     if (!nodes.length) return;
-    var accent = _caScreenAccent();
+    var screenAccent = null, boardAccent = null;
     nodes.forEach(function (el) {
+      // v23967 — the board and belt lists: the airport's accent only, and no
+      // paint at all on a status row (see FIDS_STATUS_ROW_SEL). A row is a
+      // fresh element after every rebuild, so a status row normally carries
+      // no paint to undo; the undo covers a row whose class changed in place.
+      var onList = !!(el.closest && el.closest('#fidsTable, .bidsv2-flight-row'));
+      if (onList && _fidsOnStatusRow(el)) {
+        if (el.hasAttribute('data-ca')) {
+          el.style.removeProperty('color');
+          el.removeAttribute('data-ca');
+          var sep0 = el.previousElementSibling;
+          if (sep0 && sep0.classList && sep0.classList.contains('dest-iata-sep')) {
+            sep0.style.removeProperty('color');
+            sep0.style.removeProperty('opacity');
+          }
+        }
+        return;
+      }
+      var accent = onList ? (boardAccent || (boardAccent = _caScreenAccent(true)))
+                          : (screenAccent || (screenAccent = _caScreenAccent(false)));
       var bg = _caBgBehind(el);
       var ink = _caParse(getComputedStyle(el.parentElement || el).color) || null;
       var rgb = _caFit(accent, bg, ink);
@@ -18310,7 +18393,23 @@ and the constraint that makes it tractable — "without taking over".
    moved toward whichever end has headroom — so a code stays recognisably its own
    colour instead of being flattened to black. Only cells that actually fail the
    floor are touched; a row that already reads is left exactly as the operator's
-   palette painted it. */
+   palette painted it.
+
+   v23967 — THREE CHANGES, SO THE PASS CAN NO LONGER FLIP A CELL.
+   1. Status rows are skipped (FIDS_STATUS_ROW_SEL): the status grammar owns
+      their ink, and a measurement taken at run time can only disagree with
+      it. Whatever the pass painted on those rows lasted until the next
+      rebuild wiped it, so a Delayed or Departed cell changed colour every
+      few seconds.
+   2. Each cell is measured against ITS OWN ground, not the row's. The NEW GATE
+      badge is navy on its own amber chip; judged against the navy row it
+      "failed" and was lifted to a pale ink that vanished into the chip — the
+      empty amber square that came and went in the Gate column.
+   3. The airport code and its bar are applyCodeAccents' alone. Two painters on
+      one element took turns: whichever ran last after a rebuild won.
+   render() now runs this pass (and applyCodeAccents) in the same task as the
+   rows are rebuilt — _fidsBoardInk — so the first paint of a new slide
+   already carries the final ink, and the 5 s heartbeat finds nothing to do. */
 function _fidsRowInk(root) {
   try {
     if (typeof _ocColorParts !== 'function') return;
@@ -18319,9 +18418,21 @@ function _fidsRowInk(root) {
     for (var i = 0; i < rows.length; i++) {
       var tr = rows[i];
       if (!tr.getClientRects().length) continue;
-      var bg = _ocGroundOf(tr);
-      if (!bg) continue;
-      var key = bg.join(',');
+      if (tr.matches(FIDS_STATUS_ROW_SEL)) {
+        if (tr.dataset.rowInkKey) {
+          var _own = tr.querySelectorAll('[data-ink-applied]');
+          for (var u = 0; u < _own.length; u++) {
+            _own[u].style.removeProperty('color');
+            _own[u].style.removeProperty('-webkit-text-fill-color');
+            delete _own[u].dataset.inkApplied;
+          }
+          delete tr.dataset.rowInkKey;
+        }
+        continue;
+      }
+      var rowBg = _ocGroundOf(tr);
+      if (!rowBg) continue;
+      var key = rowBg.join(',') + '|' + tr.className;
       if (tr.dataset.rowInkKey === key) continue;     // same ground — nothing to redo
       tr.dataset.rowInkKey = key;
       var nodes = tr.querySelectorAll('td, td *');
@@ -18330,6 +18441,9 @@ function _fidsRowInk(root) {
         // Only elements that actually paint text of their own.
         if (!el.firstChild || el.querySelector('*')) continue;
         if (!String(el.textContent || '').trim()) continue;
+        if (el.classList.contains('dest-iata') || el.classList.contains('dest-iata-sep')) continue;
+        var bg = _ocGroundOf(el);
+        if (!bg) continue;
         // Remember the palette's own colour once; never strip-and-restore on a
         // later pass (see the note in _gateCodeInk — that is what made the gate
         // codes flicker).
@@ -18372,6 +18486,21 @@ function _fidsRowInk(root) {
     }
   } catch (e) {}
 }
+
+// v23967 — EVERY INK THE BOARD'S ROWS WEAR, SET IN ONE PLACE AND ONE ORDER.
+// Called by render() in the same task as `tbody.innerHTML`, so a rebuilt row
+// is never painted without its inks (it used to show the stylesheet's colours
+// for up to 1.2 s — the code — and 5 s — the lifted cells — then switch).
+// The order is fixed: the codes first, then the legibility floor, which skips
+// the codes. The heartbeats still call both; with the inputs unchanged they
+// compare and write nothing.
+function _fidsBoardInk() {
+  var table = document.getElementById('fidsTable');
+  if (!table) return;
+  try { applyCodeAccents(table); } catch (e) {}
+  try { _fidsRowInk(table); } catch (e) {}
+}
+if (typeof window !== 'undefined') window._fidsBoardInk = _fidsBoardInk;
 
 function _fidsAirportLogoFit() {
   try {
@@ -21223,8 +21352,10 @@ const gView = document.getElementById('gateView');
                 const _b3StCls = isArr || isEarly ? 's-arrived' : (isDelayed ? 's-delayed'
                                : (_bStKey === 'cancelled' || _bStKey === 'diverted') ? 's-cancelled' : 's-other');
                 const _b3WmOne = '';   // v23350 — lockups are not wordmarks; see the note on the main board
+                // v23967 — the Delayed bar is yellow with navy lettering, so its
+                // wordmark takes the dark artwork, as the bidsv2 row below does.
                 const _b3Wm = _bidsEmblemOnly ? '' : (_bWmBase
-                  ? '<img class="b3-wordmark" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, 'light') + '" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
+                  ? '<img class="b3-wordmark" alt="' + _bSafeName + '" src="' + wordmarkSrc(_bWmBase, isDelayed ? 'dark' : 'light') + '" onerror="this.outerHTML=\'<div class=&quot;b3-airline-name&quot;>' + _bSafeName + '</div>\'">'
                   : _b3WmOne
                   ? '<img class="b3-wordmark fids-wm-mono" alt="' + _bSafeName + '" src="' + _b3WmOne + '">'
                   : '<div class="b3-airline-name">' + fidsEscHtml(airlineName) + '</div>');
@@ -27182,7 +27313,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23966';
+var FIDS_BUILD_TAG = 'v23967';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -28257,7 +28388,12 @@ function render() {
     // stylesheet rule — a navy or black brand rendered black on the red
     // block whenever the white-ink artwork failed to load
     // 
-    const _brandInkOk = !(isDelayed || stKey === 'final-call' || isCanc || isDiv);
+    // v23967 — the history rows (Departed, Arrived, Gate closed) join them:
+    // their ink is the stylesheet's white on the faded slate, and a brand
+    // colour inlined with !important would beat it (a navy name on the slate
+    // was readable only while the legibility pass had lifted it).
+    const _brandInkOk = !(isDelayed || stKey === 'final-call' || isCanc || isDiv
+      || stKey === 'departed' || stKey === 'arrived' || stKey === 'gate-closed');
     const _nameStyle = (_brandColor && _brandInkOk) ? ` style="color:${_brandColor} !important;"` : '';
     // onerror: RETRY once with a unique cache-buster before falling back to the
     // text name — a transient asset hiccup (or a stale cached 404) must not
@@ -28285,7 +28421,7 @@ function render() {
     const WORDMARK_ONE_OK = false;
     const _wmOne = (WORDMARK_ONE_OK && !_wordmarkBase) ? (IATA_WORDMARK_ONE[_airlineCodeForLogo] || '') : '';
     const _airlineLabelHtml = (_airlineStyleForRow === 'emblem') ? '' : (_wordmarkBase
-      ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase, _rowWmVariant)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${_brandColor ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
+      ? `<img class="fids-airline-wordmark" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${wordmarkSrc(_wordmarkBase, _rowWmVariant)}" onerror="if(!this.dataset.r){this.dataset.r='1';this.src=this.src.split('?')[0]+'?r='+Date.now();}else{this.outerHTML='<span class=&quot;fids-airline-name&quot;${(_brandColor && _brandInkOk) ? ' style=&quot;color:' + _brandColor + ' !important;&quot;' : ''}>${_airlineDisplay}</span>';}">`
       : _wmOne
       ? `<img class="fids-airline-wordmark fids-wm-mono" data-code="${_airlineCodeForLogo}" alt="${_airlineDisplay}" src="${_wmOne}" onerror="this.outerHTML='<span class=&quot;fids-airline-name&quot;>' + this.alt + '</span>'">`
       : `<span class="fids-airline-name"${_nameStyle}>${_airlineDisplay}</span>`);
@@ -28531,6 +28667,11 @@ function render() {
     // 12 s language cycle. One
     // task → one paint → the new language arrives already fitted.
     try { boardAutofit(true); } catch (e) {}
+    // v23967 — and already inked, by the same rule: the code accent and the
+    // legibility floor used to arrive on their own timers 1.2 s and 5 s
+    // later, so every slide (°C/°F, language, poll, page) flashed every row's
+    // code and the history rows' text between two colours. See _fidsBoardInk.
+    try { _fidsBoardInk(); } catch (e) {}
     // settle pass for late layout (web fonts, images shifting metrics)
     try { setTimeout(function () { boardAutofit(false); }, 350); } catch (e) {}
   }
@@ -33258,10 +33399,14 @@ function applyAirportConfigToBoard(iata) {
       // green variant (bright dark-board / deep light-board) measures the
       // higher contrast on the row it actually lands on.
       var _pickSt  = function (bright, deep, ground) {
-        return (_fidsContrast(bright, ground) >= _fidsContrast(deep, ground)) ? bright : deep;
+        var pick = (_fidsContrast(bright, ground) >= _fidsContrast(deep, ground)) ? bright : deep;
+        return _fidsStatusInk(pick, ground);
       };
-      var _okOdd   = _pickSt('#34d399', '#0E7A3C', _gOdd);
-      var _okEven  = _pickSt('#34d399', '#0E7A3C', _gEven);
+      // v23967 — the deep green is #0C7337, not #0E7A3C: on a pale grey-blue
+      // stripe (#E3EAF0) the old green was 4.47:1, under the 4.5:1 floor;
+      // one step darker is 4.91:1 there and 5.96:1 on white.
+      var _okOdd   = _pickSt('#34d399', '#0C7337', _gOdd);
+      var _okEven  = _pickSt('#34d399', '#0C7337', _gEven);
       // The muted secondary line carries opacity .75, which costs real
       // contrast. Where the floor had to substitute an ink, drop the fade so
       // the substitution isn't undone by transparency.
