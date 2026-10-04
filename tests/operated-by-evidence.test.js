@@ -206,6 +206,9 @@ test('the FR24 memory keeps a callsign and tail for the day it saw them, and onl
   // Yesterday's answer is no evidence for today's leg.
   assert.equal(W.opevLive(a, 'AC7754', d2 + 60000), null);
   assert.deepEqual(W.opevLive(b, 'AC7754', d2 + 60000), { op: 'QK', basis: 'FR24 JZA7754' });
+  // Nor is last evening's answer for this morning's leg of the same number.
+  assert.equal(W.opevLive(a, 'AC7754', d1 + 14 * 3600000), null, '14 h later is another flight');
+  assert.deepEqual(W.opevLive(a, 'AC7754', d1 + 3 * 3600000), { op: 'PB', basis: 'FR24 PVL7754' }, 'a late arrival still counts');
   // The marketing carrier's own callsign says nothing.
   assert.equal(W.opevLive(W.acMemAddObservation(null, 'B38M', d2, { cs: 'ACA2040' }), 'AC2040', d2), null);
 });

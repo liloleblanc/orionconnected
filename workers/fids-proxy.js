@@ -2446,13 +2446,15 @@ function opevPickIndex(index, flight, ap, ts) {
 __name(opevPickIndex, "opevPickIndex");
 
 // Today's FR24 answer for the flight (acMemRemember): callsign, then tail.
-// Only an observation made within 18 h of the leg's scheduled time counts.
+// Only an observation made within 12 h of the leg's scheduled time counts:
+// the same window the far ends' records get (opevPickIndex), so an answer for
+// the same number yesterday evening never names this morning's operator.
 function opevLive(rec, flight, ts) {
   const mkt = opevPrefix(flight);
   const obs = (rec && Array.isArray(rec.obs)) ? rec.obs : [];
   for (let i = obs.length - 1; i >= 0; i--) {
     const o = obs[i];
-    if (!o || typeof o.ts !== "number" || Math.abs(o.ts - ts) > 18 * 3600000) continue;
+    if (!o || typeof o.ts !== "number" || Math.abs(o.ts - ts) > 12 * 3600000) continue;
     const cs = opevCallsign(o.cs, mkt);
     if (cs) return { op: cs, basis: `FR24 ${o.cs}` };
     const tail = opevTail(o.r);
