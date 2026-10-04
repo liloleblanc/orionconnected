@@ -14394,6 +14394,73 @@ body[data-fids-banner="silk"]:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):no
   text-shadow: none !important;
 }
 
+/* ── v23955 — THE BAND MIRRORS, AND BOTH SIDES WEAR ONE INK ───────────────
+   The rule above is why the Ottawa clock went dark. It was written for the
+   brushed-silver band, whose right end was a near-white cream, and it caught
+   every palette band too: Ottawa's tail is deep purple, so its clock and date
+   read #14213a on purple at 2.0:1 and 1.6:1 while the title beside them read
+   white at 11:1. Measured on all 62 live airports at 1680x1050:
+     - the title and the clock wore different inks on 61 of 62 (all but Moncton);
+     - the clock side missed 4.5:1 on 37 boards and 35 baggage screens;
+     - the title side missed it on 40 boards and 61 baggage screens — light
+       palette colours under it, and 'Retrait des bagages' running onto the
+       fade to white;
+     - the 18 airports with no logo printed their own name white on the white
+       centre, at 1.04:1.
+
+   One rule replaces the pair. Whatever ink the title wears, the clock and the
+   date wear the same one — a single property, --fids-banner-ink, read by both
+   sides — and the ground under each side is the mirror of the other:
+     1. the band is symmetric about the airport's mark: solid colour under the
+        words on both sides, from the same distance off centre, white under the
+        mark, and equal fades between (fids-core measures the words and the mark
+        and writes the stops; the numbers below are only the fallback);
+     2. the silk photo is the mirror of its own left half, so it lifts both ends
+        alike — the original is 38% brighter under the clock than under the
+        title, which is why the same purple read darker on one side;
+     3. both ends of the palette are held to one depth (fids-core), so the ink
+        clears 4.5:1 on each.
+   The band with no logo palette takes the same layout in its own navy, so its
+   right end stops being cream; the airport's name, standing in for the mark,
+   sits on the white centre in navy. Positions are untouched — only colour
+   moves. The Acadian flag keeps its hand-drawn stops and its white ink; it
+   already mirrored, and gets the mirrored silk with everyone else. */
+@media (min-width: 701px) {
+  html body[data-fids-banner="silk"]:not(#_):not(#_) :is(.fids-banner, .bidsv2-fids-banner) {
+    background: linear-gradient(100deg,
+      var(--fids-band-1, #0b1220) 0%, var(--fids-band-1, #0b1220) var(--fids-band-s1, 11%),
+      var(--fids-band-2, #10233f) var(--fids-band-m1, 24%),
+      #ffffff var(--fids-band-w1, 39%), #ffffff var(--fids-band-w2, 54%),
+      var(--fids-band-3, #10233f) var(--fids-band-m2, 62%),
+      var(--fids-band-4, #0b1220) var(--fids-band-s2, 68%), var(--fids-band-4, #0b1220) 100%) !important;
+  }
+  html body:is([data-fids-banner="silk"], [data-fids-banner="silk-acadian"]):not(#_):not(#_) :is(.fids-banner, .bidsv2-fids-banner)::before,
+  html body:is([data-fids-banner="silk"], [data-fids-banner="silk-acadian"]):not(#_):not(#_) :is(.fids-banner, .bidsv2-fids-banner)::after {
+    background-image: url("/logos/Backgrounds/banner-silk-mirror.jpg?v=1") !important;
+  }
+  /* the palette band's sheen (v22637) for every silk band, so the navy band
+     is lifted no more than a palette one */
+  html body[data-fids-banner="silk"]:not(#_):not(#_) :is(.fids-banner, .bidsv2-fids-banner)::before {
+    mix-blend-mode: overlay !important;
+    opacity: .80 !important;
+  }
+  html body[data-fids-banner="silk"]:not(#_):not(#_) :is(.fids-banner, .bidsv2-fids-banner)::after {
+    opacity: .18 !important;
+  }
+  html body:is([data-fids-banner="silk"], [data-fids-banner="silk-acadian"]) {
+    --fids-banner-ink: #ffffff;
+  }
+  html body:is([data-fids-banner="silk"], [data-fids-banner="silk-acadian"]):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) :is(.fids-banner, .bidsv2-fids-banner) :is(.fids-board-label, .fids-board-label *, .fids-banner-time-block, .fids-banner-time-block *, .fids-banner-time, .fids-banner-date, .fids-banner-time-text) {
+    color: var(--fids-banner-ink) !important;
+    -webkit-text-fill-color: var(--fids-banner-ink) !important;
+  }
+  html body[data-fids-banner="silk"]:not(#_):not(#_) :is(.fids-banner, .bidsv2-fids-banner) .fids-airport-pill :is(.fids-airport-iata, .fids-airport-name) {
+    color: #0d2440 !important;
+    -webkit-text-fill-color: #0d2440 !important;
+    text-shadow: none !important;
+  }
+}
+
 /* ── v23219 — REVISED TIMES READ AS ONE COLOUR, AND THEIR TOPPERS FLIP
 
 + 'Every topper banner above the time NEEDS to
