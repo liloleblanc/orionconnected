@@ -15,7 +15,7 @@
      the studio's own copy of it read fids.orionconnected.com as an airport
      called FIDS, which is the failure this file exists to prevent. It must come
      before the app resolves its airport, hence the head. -->
-<script src="js/host-airport.js?v=23835"></script>
+<script src="js/host-airport.js?v=23939"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -100,8 +100,8 @@
     font-family:inherit;font-size:15.5px;font-weight:500;}
   .search input::placeholder{color:var(--faint);font-weight:500;}
   .hint{padding:9px 20px 0;color:var(--muted);font-size:12.5px;font-weight:500;display:flex;align-items:center;gap:7px;}
-  .hint .live{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 0 rgba(22,163,74,.5);animation:pulse 2.4s infinite;}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(22,163,74,.45)}70%{box-shadow:0 0 0 6px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+  /* v23939 — the "Live departures" dot is solid, like the boards' LIVE dot. */
+  .hint .live{width:7px;height:7px;border-radius:50%;background:var(--green);animation:none;}
   /* ── Views ───────────────────────────────────────── */
   .view{display:none;} .view.active{display:block;}
   /* ── Ad banner ───────────────────────────────────── */
@@ -406,7 +406,7 @@
 </div>
 
 <script src="js/shared-names.js?v=23233"></script>
-<script src="js/feed-router.js?v=23936"></script>
+<script src="js/feed-router.js?v=23939"></script>
 <script>
 const PROXY='https://fids-proxy.n-leblanc1984.workers.dev';
 const SVG={
@@ -685,6 +685,9 @@ function applyLang(){
 }
 function svg(p){return '<svg class="ic" viewBox="0 0 24 24">'+p+'</svg>';}
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+// An airport's code as passengers see it: the one table in host-airport.js
+// (MET for YHU). Lookups keep the real code.
+function dispIata(c){return (window.fidsDisplayIata?window.fidsDisplayIata(c):c);}
 // Real colour airline logos — same source the main board uses.
 // Official airline wordmarks. Naming quirk: the "-wordmark-light.svg" file uses
 // LIGHT (white) ink — for dark backgrounds — and "-wordmark-dark.svg" uses DARK
@@ -845,7 +848,7 @@ function render(){
   const cards=document.getElementById('cards');
   let list=FLIGHTS;
   if(q)list=list.filter(f=>{const city=(cityOf(f)||'').toLowerCase();
-    return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
+    return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q)||String(dispIata(f.cityIata||'')).toLowerCase().includes(q);});
   const isArr=DIR==='arr', tLbl=isArr?T('arrives'):T('departs');
   if(!list.length){cards.innerHTML='<div class="empty">'+svg('<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>')
     +'<div>'+(q?T('noMatch')+' “'+esc(q)+'”':(isArr?T('noArr'):T('noDep')))+'</div></div>';RENDERED=[];return;}
@@ -862,7 +865,7 @@ function render(){
     const otherLine=f.otherTime?'<div class="arr">'+(isArr?T('depShort'):T('arrShort'))+' '+esc((f.otherTime||'').slice(0,5))+'</div>':'';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'" onclick="openFlight('+i+')">'+cardMark(f.airline,!BUB_LIGHT[f.airline])+'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div>'
       +'<span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
-      +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
+      +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(dispIata(f.cityIata||''))+'</b> · '+esc(f.flight)+esc(via)+'</div></div>'
       +'<div class="time"><div class="hh">'+esc(sched)+'</div><div class="lbl">'+tLbl+'</div>'+otherLine+'</div></div>'
       +(gate||belt||ac?'<div class="meta">'+gate+belt+ac+'</div>':'')+'</div>';
   }).join('');
@@ -1115,7 +1118,7 @@ function renderBags(){
   const wrap=document.getElementById('bagCards');
   let list=ARRIVALS.slice();
   if(q)list=list.filter(f=>{const city=(cityOf(f)||'').toLowerCase();
-    return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q);});
+    return (f.flight||'').toLowerCase().includes(q)||city.includes(q)||(f.cityIata||'').toLowerCase().includes(q)||String(dispIata(f.cityIata||'')).toLowerCase().includes(q);});
   if(!list.length){wrap.innerHTML='<div class="empty">'+svg('<rect x="5" y="7" width="14" height="13" rx="2.5"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/>')
     +'<div>'+(q?T('noArrMatch')+' “'+esc(q)+'”':T('noArr'))+'</div></div>';return;}
   wrap.innerHTML=list.map(f=>{
@@ -1125,7 +1128,7 @@ function renderBags(){
                         :'<div class="belt-tbd">'+T('tbd')+'</div><div class="belt-lbl">'+T('belt')+'</div>';
     return '<div class="fcard '+(BUB_LIGHT[f.airline]?'light':'dark')+'" style="--brand:'+(BRAND[f.airline]||'transparent')+';background:'+bubBg(f.airline)+'">'+cardMark(f.airline,!BUB_LIGHT[f.airline])
       +'<div class="row1"><div class="al">'+bubWordmark(f.airline)+'</div><span class="st '+s.c+'"><span class="d"></span>'+s.t+'</span></div>'
-      +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(f.cityIata||'')+'</b> · '+esc(f.flight)+' · arr '+esc(sched)+'</div></div>'
+      +'<div class="row2"><div><div class="city">'+esc(city)+'</div><div class="sub"><b>'+esc(dispIata(f.cityIata||''))+'</b> · '+esc(f.flight)+' · arr '+esc(sched)+'</div></div>'
       +'<div class="belt-box">'+beltBig+'</div></div></div>';
   }).join('');
 }
@@ -1135,9 +1138,9 @@ async function loadBrand(code){
     const r=await fetch(PROXY+'/api/airport-config/'+encodeURIComponent(code),{cache:'no-cache'});
     if(r.ok){const c=await r.json();const u=c&&c.logo&&c.logo.url;
       const el=document.getElementById('apLogo');
-      if(u){el.innerHTML='<img src="'+u+'" alt="'+esc(code)+'" onerror="this.parentNode.textContent=\''+esc(code)+'\'">';}
-      else{el.textContent=code;}}
-  }catch(e){document.getElementById('apLogo').textContent=code;}
+      if(u){el.innerHTML='<img src="'+u+'" alt="'+esc(dispIata(code))+'" onerror="this.parentNode.textContent=\''+esc(dispIata(code))+'\'">';}
+      else{el.textContent=dispIata(code);}}
+  }catch(e){document.getElementById('apLogo').textContent=dispIata(code);}
 }
 function setAirport(code,_boot){
   CURAP=code;
@@ -1158,9 +1161,9 @@ function setAirport(code,_boot){
     history.replaceState(null,'',u);
   }catch(e){}
   document.getElementById('apName').textContent=AP_NAME[code]||code;
-  document.getElementById('apIata').textContent=code;
+  document.getElementById('apIata').textContent=dispIata(code);
   document.getElementById('apSelect').value=code;
-  document.getElementById('apLogo').textContent=code;
+  document.getElementById('apLogo').textContent=dispIata(code);
   FLIGHTS=[];ARRIVALS=[];render();
   if(curView==='bag')loadBags(); else load();
   loadBrand(code);
@@ -1209,8 +1212,8 @@ function openFlight(i){
     +'<div><div class="k">'+T('aircraft')+'</div><div class="v">'+esc(acName(f.aircraft))+'</div>'
     +(f.reg?'<div class="sub">'+T('reg')+' '+esc(f.reg)+'</div>':'')+'</div></div>';
   // Route endpoints: for an arrival, origin city → here; for a departure, here → destination.
-  const epHere='<div class="ep"><div class="city">'+esc(AP_NAME[CURAP]||CURAP)+'</div><div class="code">'+esc(CURAP)+'</div></div>';
-  const epOther='<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(f.cityIata||'')+'</div></div>';
+  const epHere='<div class="ep"><div class="city">'+esc(AP_NAME[CURAP]||CURAP)+'</div><div class="code">'+esc(dispIata(CURAP))+'</div></div>';
+  const epOther='<div class="ep"><div class="city">'+esc(city)+'</div><div class="code">'+esc(dispIata(f.cityIata||''))+'</div></div>';
   document.getElementById('detailBody').innerHTML=
     '<div class="dt-hero">'+heroWordmark(f.airline)
     +'<div class="flt">'+esc(f.flight)+'</div>'
@@ -1304,7 +1307,7 @@ function buildAirportOptions(){
   ['CA','US','INT'].forEach(r=>{
     if(!groups[r].length)return;
     html+='<optgroup label="'+REGION_LABEL[r]+'">';
-    groups[r].forEach(k=>{html+='<option value="'+k+'">'+esc(AIRPORTS[k].n)+' ('+k+')</option>';});
+    groups[r].forEach(k=>{html+='<option value="'+k+'">'+esc(AIRPORTS[k].n)+(String(AIRPORTS[k].n).indexOf('('+dispIata(k)+')')>=0?'':' ('+esc(dispIata(k))+')')+'</option>';});
     html+='</optgroup>';
   });
   sel.innerHTML=html;

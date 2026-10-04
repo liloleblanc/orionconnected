@@ -1709,7 +1709,7 @@ function cityCodeSplitHtml(disp) {
     var code = (m[1] || m[2] || '').toUpperCase();
     if (!code) return fidsEscHtml(str);
     return fidsEscHtml(_stripCityCode(str))
-      + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + fidsEscHtml(code) + '</span>';
+      + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + fidsEscHtml(_dispIata(code)) + '</span>';
   } catch (e) { return fidsEscHtml(str); }
 }
 if (typeof window !== 'undefined') window.cityCodeSplitHtml = cityCodeSplitHtml;
@@ -5135,7 +5135,8 @@ function _destFlipStops(stops, kind, cls) {
       if (!name) name = _cityFromStopLabel(String((s && s.city) || '')) || ia;
       try { if (typeof normalizeDisplayCity === 'function') name = normalizeDisplayCity(name, ia); } catch (e) {}
       try { if (typeof tc === 'function' && name === name.toUpperCase()) name = tc(name); } catch (e) {}
-      return { c: name, ia: ia };
+      // The item is what the flip PRINTS: the code as passengers see it.
+      return { c: name, ia: _dispIata(ia) };
     });
     return _destFlipFromItems(items, kind, cls);
   } catch (e) { return null; }
@@ -8814,7 +8815,7 @@ function renderMobileBaggageHtml(ctx) {
     + '<div style="flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px 16px;">' + flightCards + '</div>'
     // footer
     + '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 18px;font-size:11px;color:' + T.muted + ';letter-spacing:1px;font-weight:700;background:' + T.header + ';border-top:1px solid ' + T.line + ';">'
-    +   '<span>' + fidsEscHtml(iata || '') + '</span>'
+    +   '<span>' + fidsEscHtml(_dispIata(iata || '')) + '</span>'
     +   '<span style="font-variant-numeric:tabular-nums;">' + fidsEscHtml(timeStr) + '</span>'
     + '</div>'
     // bottom nav (Back / Search)
@@ -8985,14 +8986,30 @@ function renderMobileGateHtml(ctx) {
   // Home airport (origin for a departure) + destination — cleaned of trailing "(code)" and cased
   function _cleanCity(s){
     s = String(s || '').trim();
+    // v23938 — our own labels end ' | CODE' (formatCityIata), and tc() above
+    // has already title-cased that code ('Montreal | Met', 'Toronto | Ytz').
+    // Lift the code off first, clean only the city, and put the code back as
+    // a code: upper case, in the form passengers see (_dispIata: MET).
+    var _ccm = s.match(/\s*\|\s*([A-Za-z]{2,4})\s*$/);
+    var _ccCode = _ccm ? _ccm[1].toUpperCase() : '';
+    if (_ccm) s = s.slice(0, _ccm.index);
     s = s.replace(/\s*\([^)]*\)\s*$/, '');     // drop trailing "(YOW)" / "(yow)"
     s = s.replace(/_/g, ' ').replace(/,.*$/, '').trim();  // "Saint_John,_NB" -> "Saint John"
-    if (!s) return '';
+    if (!s) return _ccCode ? _dispIata(_ccCode) : '';
     // Title-case if it's all-caps or all-lower
     if (s === s.toUpperCase() || s === s.toLowerCase()) {
       s = _fidsTitleCase(s.toLowerCase());
     }
-    return s;
+    return _ccCode ? (s + ' | ' + _dispIata(_ccCode)) : s;
+  }
+  // A city and its code are one phrase (the board's rule: two lines are fine,
+  // a severed phrase is not). An inline-block is placed whole, so a narrow
+  // title wraps BEFORE the city, never after its bar ('Moncton to Toronto |'
+  // over a lone 'YTZ'); max-width lets a phrase wider than the column wrap
+  // inside itself rather than run out of it. A no-break space cannot do this:
+  // '|' allows a break after itself even with one beside it.
+  function _cityUnit(s){
+    return s ? '<span style="display:inline-block;max-width:100%;">' + s + '</span>' : '';
   }
   var _homeIata = iata || '';
   var _homeRaw = (typeof CITY !== 'undefined' && CITY[_homeIata]) ? CITY[_homeIata] : (_cityForIata(_homeIata) || _homeIata);
@@ -9054,7 +9071,11 @@ function renderMobileGateHtml(ctx) {
       if (_onStand) _etaStr = TL('atGateLbl');
       else if (_minsToArr > 0 && _minsToArr < 1440)
         _etaStr = _minsToArr >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(_minsToArr/60) + 'h ' + (_minsToArr%60) + 'm') : (TL('arrivesIn') + ' ' + _minsToArr + ' min');
-      var _fromDisplay = _fromCity ? (_fromCity + (_fromIata ? ' | ' + _fromIata : '')) : (_fromIata || (_inb.flight || ''));
+      // v23938 — the code through _dispIata like every other chip: the feed's
+      // YHU reads MET here too (it printed 'from Montreal | YHU').
+      var _fromDisplay = _fromCity
+        ? (_fromIata ? (_stripCityCode(_fromCity) + ' | ' + _dispIata(_fromIata)) : _fromCity)
+        : (_dispIata(_fromIata) || (_inb.flight || ''));
       // MOBILE = SAME PROGRAMMING:
       // the live route MAP (same #gateMapBox the shared map engine + 10 s
       // tick target) and the live Speed/Altitude line (same data-gtelem spans
@@ -9074,7 +9095,7 @@ function renderMobileGateHtml(ctx) {
           '<div style="' + _dot + 'margin:0 20px;"></div>'
         + '<div style="background:' + T.panel + ';padding:16px 20px;">'
         +   '<div style="' + FS.label + 'color:' + T.muted + ';margin-bottom:6px;">' + (TL('incomingAircraft')||'').toUpperCase() + '</div>'
-        +   '<div style="' + FS.value + 'color:' + T.ink + ';">' + TL('from') + ' ' + _fromDisplay + '</div>'
+        +   '<div style="' + FS.value + 'color:' + T.ink + ';">' + TL('from') + ' ' + _cityUnit(_fromDisplay) + '</div>'
         +   '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px;">'
         +     '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_inb.flight || '') + '</span>'
         +     (_etaStr ? '<span style="' + FS.body + 'color:' + (_onStand ? (_lt ? '#0e7c4a' : '#1bbf74') : T.accent) + ';">' + _etaStr + '</span>' : '')
@@ -9092,7 +9113,7 @@ function renderMobileGateHtml(ctx) {
     +   (_logoBlock ? '<div style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;">' + _logoBlock + '</div>' : '')
     +   '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">'
     +     '<div style="flex:1;min-width:0;">'
-    +       '<div style="' + FS.title + 'color:' + T.accent + ';">' + _homeCity + ' ' + TL('toLbl') + ' ' + _destCity + '</div>'
+    +       '<div style="' + FS.title + 'color:' + T.accent + ';">' + _homeCity + ' ' + TL('toLbl') + ' ' + _cityUnit(_destCity) + '</div>'
     +       '<div style="' + FS.value + 'color:' + T.muted2 + ';margin-top:6px;">' + flightNum + (terminalVal ? '   \u00b7   ' + TL('terminal') + ' ' + terminalVal : '') + '</div>'
     +     '</div>'
     +     '<div style="flex:0 0 auto;text-align:right;">'
@@ -9111,7 +9132,7 @@ function renderMobileGateHtml(ctx) {
     + '<div style="background:' + T.panel + ';padding:14px 20px 24px;">'
     +   '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">'
     +     '<div style="text-align:left;min-width:0;flex:1;">'
-    +       '<div style="' + FS.hero + 'color:' + T.ink + ';">' + (_homeIata || '—') + '</div>'
+    +       '<div style="' + FS.hero + 'color:' + T.ink + ';">' + (_dispIata(_homeIata) || '—') + '</div>'
     +       '<div style="' + FS.label + 'color:' + T.muted + ';margin-top:10px;">' + TL('departsLbl') + '</div>'
     +       '<div style="' + FS.value + 'color:' + T.ink + ';' + (isRevised ? 'opacity:0.5;' : '') + '">' + schedTime + '</div>'
     +       (isRevised ? '<div style="' + FS.value + 'color:#e0820a;">' + currentFlight.upd + '</div>' : '')
@@ -9119,7 +9140,7 @@ function renderMobileGateHtml(ctx) {
     +     '</div>'
     +     '<div style="flex:0 0 auto;display:flex;flex-direction:column;align-items:center;padding:0 6px;">' + _planeSvg + (durationStr ? '<div style="' + FS.label + 'color:' + T.muted2 + ';margin-top:8px;white-space:nowrap;">' + durationStr + '</div>' : '') + '</div>'
     +     '<div style="text-align:right;min-width:0;flex:1;">'
-    +       '<div style="' + FS.hero + 'color:' + T.ink + ';">' + (destIata || '—') + '</div>'
+    +       '<div style="' + FS.hero + 'color:' + T.ink + ';">' + (_dispIata(destIata) || '—') + '</div>'
     +       '<div style="' + FS.label + 'color:' + T.muted + ';margin-top:10px;">' + TL('arrivesAt') + '</div>'
     +       '<div style="' + FS.value + 'color:' + T.ink + ';">' + (arrTimeStr || '—') + '</div>'
     +       (_mDayArr ? '<div class="mg-dayline" style="' + FS.label + 'letter-spacing:0;color:' + T.ink + ';margin-top:4px;">' + _gateDayLineHtml(_mDayArr) + '</div>' : '')
@@ -9154,7 +9175,7 @@ function renderMobileGateHtml(ctx) {
 
     // ── FOOTER ──
     + '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;' + FS.label + 'color:' + T.muted + ';background:' + T.header + ';border-top:1px solid ' + T.line + ';">'
-    +   '<span style="max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (_homeIata || '') + '</span>'
+    +   '<span style="max-width:60%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (_dispIata(_homeIata) || '') + '</span>'
     +   '<span style="font-variant-numeric:tabular-nums;">' + timeStr + '</span>'
     + '</div>'
 
@@ -10029,8 +10050,10 @@ function _buildV2AircraftCol(ctx, vars) {
         : _minsToArr + ' min';
     }
     var _fromDisplay = '';
-    if (_fromCity) _fromDisplay = _fromCity + (_fromIata ? ' | ' + _fromIata : '');
-    else if (_fromIata) _fromDisplay = _fromIata;
+    // v23938 — the code through _dispIata (YHU reads MET), and the city's own
+    // tail, if it carries one, dropped so the code is not printed twice.
+    if (_fromCity) _fromDisplay = _fromIata ? (_stripCityCode(_fromCity) + ' | ' + _dispIata(_fromIata)) : _fromCity;
+    else if (_fromIata) _fromDisplay = _dispIata(_fromIata);
     var _inbFlightTxt = inboundFlight.flight || '';
     var _inbMain = _fromDisplay || _inbFlightTxt || '';
     if (_inbFlightTxt && _fromDisplay) _inbMain = _fromDisplay + ' · ' + _inbFlightTxt;
@@ -10159,7 +10182,7 @@ function _buildV2AircraftCol(ctx, vars) {
 
       _wxBlock =
           '<div class="v2-wx-block">'
-        +   '<div class="v2-wx-lbl">' + (locIata ? locIata + ' ' : '') + (TL('weatherShort') || 'Weather') + '</div>'
+        +   '<div class="v2-wx-lbl">' + (locIata ? _dispIata(locIata) + ' ' : '') + (TL('weatherShort') || 'Weather') + '</div>'
         +   '<div class="v2-wx-2col">' + _wxRowHtml + '</div>'
         + '</div>';
     }
@@ -10556,7 +10579,7 @@ function _buildV2AircraftCol(ctx, vars) {
       // collapse to one word (v23165), so the banner reads
       // 'Destination | YYY' or 'Destination | Destino | YYY'.
       var _codeSeg = function (c) {
-        return c ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + c + '</span>' : '';
+        return c ? ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _dispIata(c) + '</span>' : '';
       };
       // v23678 —
       //
@@ -10964,7 +10987,8 @@ function _buildV2MapCol(ctx, vars) {
       var _ocFeedCity = '';
       if (!_origIata) {
         var _ocTail = /^(.*?)\s*\|\s*([A-Za-z]{3})\s*$/.exec(String(_ib.origin || ''));
-        if (_ocTail && _ocTail[1]) { _origIata = _ocTail[2].toUpperCase(); _ocFeedCity = _ocTail[1]; }
+        // (v23937: our own label carries MET for YHU; read it back as YHU.)
+        if (_ocTail && _ocTail[1]) { _origIata = _ocTail[2].toUpperCase(); if (typeof _realIata === 'function') _origIata = String(_realIata(_origIata)); _ocFeedCity = _ocTail[1]; }
       }
       try {
         if (_ocFeedCity) _origCity = _ocFeedCity;
@@ -10973,7 +10997,7 @@ function _buildV2MapCol(ctx, vars) {
         else _origCity = _ib.origin || '';
         if (typeof tc === 'function') _origCity = tc(_origCity);
       } catch (e) { _origCity = _ib.origin || ''; }
-      var _origDisplay = _origCity + (_origIata ? ' | ' + _origIata : '');
+      var _origDisplay = _origCity + (_origIata ? ' | ' + _dispIata(_origIata) : '');
 
       // Inbound dep time (in destination tz)
       var _ibDepStr = '';
@@ -13743,7 +13767,7 @@ function uxgGateHtml(ctx) {
         }
         _sec = '';
         if (_midWord) _sec += '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">' + _midWord + '</span>';
-        if (_isCode) _sec += ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _tail + '</span>';
+        if (_isCode) _sec += ' <span class="v2-fi-sep">|</span> <span class="v2-fi-code v2-rc-iata">' + _dispIata(_tail) + '</span>';
       }
       return '<div class="v2-fi-row' + (cls ? ' ' + cls : '') + '">'
         + '<div class="v2-fi-iconcol"><div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + _BIR_BADGE_STYLE + '">'
@@ -15961,7 +15985,7 @@ function uxgGateHtml(ctx) {
               +     (iata
                       ? (String(iata).toUpperCase() === 'YQM'
                           ? '<span class="octb-apmark" role="img" aria-label="YQM"></span>'
-                          : '<span class="octb-ap">' + _e(String(iata).toUpperCase()) + '</span>')
+                          : '<span class="octb-ap">' + _e(String(_dispIata(iata)).toUpperCase()) + '</span>')
                         + '<span class="octb-apsep">|</span>'
                       : '')
               +     '<span class="v2-fi-clock-val octb-clock" data-tz="' + _e(_tbTz) + '" data-mer="up">' + _tbNow1 + '</span>'
@@ -15978,7 +16002,7 @@ function uxgGateHtml(ctx) {
             // caption is gone: the row now reads as the airport's local clock
             // because the airport code is standing right beside the time.
             + '<span style="transform:skewX(24deg);display:flex;align-items:baseline;gap:.34em;line-height:1.05;">'
-            +   (iata ? '<span style="font-size:clamp(20px,2.8vh,40px);font-weight:900;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">' + _e(String(iata).toUpperCase()) + '</span>'
+            +   (iata ? '<span style="font-size:clamp(20px,2.8vh,40px);font-weight:900;color:' + _tbInkSoft + ';letter-spacing:.04em;white-space:nowrap;">' + _e(String(_dispIata(iata)).toUpperCase()) + '</span>'
             +           '<span style="font-size:clamp(18px,2.4vh,34px);font-weight:700;color:' + _tbInkSoft + ';opacity:.55;">|</span>' : '')
             +   '<span class="v2-fi-clock-val" data-tz="' + _tbTz + '" data-mer="up" style="font-size:clamp(40px,6vh,84px);font-weight:900;color:' + _tbInk + ';white-space:nowrap;">' + (_tbNow || '—') + '</span>'
             + '</span>'
@@ -20496,7 +20520,7 @@ const gView = document.getElementById('gateView');
             // the rest becomes handlers on this img.
             +   (_lg ? '<img class="fids-airport-logo-img" src="' + fidsEscHtml(_lg) + '" alt="" onerror="this.style.display=\'none\'">' : '')
             +   '<div class="fids-airport-text">'
-            +     '<div class="fids-airport-iata">' + iata + '</div>'
+            +     '<div class="fids-airport-iata">' + _dispIata(iata) + '</div>'
             +     '<div class="fids-airport-name">' + ((AP[iata] || {}).name || iata) + '</div>'
             +   '</div>'
             + '</div>'
@@ -20648,7 +20672,7 @@ const gView = document.getElementById('gateView');
                 let _b3City = String(cityDisplay || ''), _b3Code = '';
                 try {
                   const _cm = _b3City.match(_CITY_CODE_TAIL);
-                  if (_cm) { _b3Code = (_cm[1] || _cm[2] || '').toUpperCase(); _b3City = _stripCityCode(_b3City); }
+                  if (_cm) { _b3Code = _dispIata((_cm[1] || _cm[2] || '').toUpperCase()); _b3City = _stripCityCode(_b3City); }
                 } catch (e) {}
                 // Flight number, city, code, time and status are all feed
                 // text. _bidsTimeForLang and SL() both hand back their argument
@@ -23905,8 +23929,8 @@ function gateWeatherWidget(depIata, destIata, arrivalTs) {
   // City name helper — "Toronto YYZ" style
   function wxCityLabel(iataCode) {
     var city = CITY[iataCode] || _cityForIata(iataCode) || '';
-    if (city) return tc(city) + ' ' + iataCode;
-    return iataCode || '';
+    if (city) return tc(city) + ' ' + _dispIata(iataCode);
+    return _dispIata(iataCode) || '';
   }
 
   // Tomorrow.io dest panel — IDENTICAL to dep panel style (same function-body, same sizes).
@@ -25535,6 +25559,33 @@ const _UPPER_TOKENS = new Set([
 ]);
 function tc(s) {
   if (!s) return '';
+  s = String(s);
+  // v23939 — a code is a code, not a word. Our own labels end ' | CODE'
+  // (formatCityIata) and the feed's end ' (CODE)'; title-casing the whole
+  // string turned 'MONTREAL | MET' into 'Montreal | Met' on every line that
+  // cases a label (the phone gate's Next departure and destination weather,
+  // the TV gate's next-departure footers, the welcome screen). Lift the code
+  // off, case only the city, and put the code back upper case in the form
+  // passengers see (_dispIata: YHU reads MET). A label that is nothing but a
+  // code we display differently (a bare 'YHU' fallback) is that code too.
+  var _tcShown = function (code) {
+    var c = String(code).toUpperCase();
+    return (typeof _dispIata === 'function') ? String(_dispIata(c)) : c;
+  };
+  var _tcBare = s.trim().toUpperCase();
+  if (/^[A-Z]{3}$/.test(_tcBare) && typeof _dispIata === 'function'
+      && (String(_dispIata(_tcBare)) !== _tcBare
+          || (typeof _realIata === 'function' && String(_realIata(_tcBare)) !== _tcBare))) {
+    return _tcShown(_tcBare);
+  }
+  var _tcTail = '';
+  var _tcM = s.match(/\s*\|\s*([A-Za-z]{2,4})\s*$/);
+  if (_tcM) _tcTail = ' | ' + _tcShown(_tcM[1]);
+  else if ((_tcM = s.match(/\s*\(\s*([A-Za-z]{3})\s*\)\s*$/))) _tcTail = ' (' + _tcShown(_tcM[1]) + ')';
+  if (_tcM) {
+    var _tcHead = s.slice(0, _tcM.index);
+    return _tcHead.trim() ? (tc(_tcHead) + _tcTail) : _tcTail.replace(/^\s*\|\s*|^\s*\(|\)$/g, '');
+  }
   // Title case: capitalize after space, dash, slash, period
   var r = s.toLowerCase().replace(/(^|[\s\-\/\.])(\S)/g, (m,p,c) => p + c.toUpperCase());
   // Protect "St." / "Ste." — both English "Saint" and French "Sainte"
@@ -25572,6 +25623,8 @@ function airportCityNameSafe_v21877(code, langOverride) {
 function _isRealApCode(code) {
   var c = String(code || '').toUpperCase();
   if (!/^[A-Z]{3}$/.test(c)) return false;
+  // v23937 — our own display codes (MET for YHU) are codes, not words.
+  if (typeof _realIata === 'function' && _realIata(c) !== c) return true;
   if (typeof CITY !== 'undefined' && CITY[c]) return true;
   if (typeof CITY_FR !== 'undefined' && CITY_FR[c]) return true;
   if (typeof CITY_ES !== 'undefined' && CITY_ES[c]) return true;
@@ -25597,14 +25650,16 @@ function normalizeDisplayCity(raw, iata) {
 
   // If the supplied city is actually just the airport code, look up the city.
   // Examples: YYZ -> Toronto, SEA -> Seattle, PDX -> Portland.
-  if (code && s.replace(/[^A-Za-z]/g, '').toUpperCase() === code) {
+  // (v23937: or the code passengers see for it, MET for YHU.)
+  if (code && (s.replace(/[^A-Za-z]/g, '').toUpperCase() === code
+               || s.replace(/[^A-Za-z]/g, '').toUpperCase() === String(_dispIata(code)).toUpperCase())) {
     var looked = airportCityNameSafe_v21877(code);
     if (looked) s = looked;
   }
 
   // If no code is supplied and the whole value is just one airport code, look it up.
   if (!code && /^[A-Za-z]{3}$/.test(s)) {
-    code = s.toUpperCase();
+    code = String(_realIata(s.toUpperCase()));
     var looked2 = airportCityNameSafe_v21877(code);
     if (looked2) s = looked2;
   }
@@ -25619,18 +25674,25 @@ function normalizeDisplayCity(raw, iata) {
       mp = null;
     }
     var m = mp || s.match(/^(.+?)(?:\s+|-|\/|,)\s*([A-Za-z]{3})$/);
-    if (m && (mp || _isRealApCode(m[2]))) code = String(m[2] || '').toUpperCase();
+    if (m && (mp || _isRealApCode(m[2]))) code = String(_realIata(String(m[2] || '').toUpperCase()));
   }
 
   // Remove only explicit duplicate copies of the same code.
   // IMPORTANT: no bare suffix rule. This will NOT turn Miami into Mi.
+  // v23937 — and of the code passengers see for it: our own label reads
+  // 'Montreal | MET' for YHU, and that MET is the same airport's code.
   if (code) {
-    var esc = code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    var _ndCodes = [code];
+    var _ndShown = String(_dispIata(code)).toUpperCase();
+    if (_ndShown && _ndShown !== code) _ndCodes.push(_ndShown);
     var changed = true;
     while (changed) {
       var before = s;
-      s = s.replace(new RegExp('\\s*\\(\\s*' + esc + '\\s*\\)\\s*$', 'i'), '').trim();
-      s = s.replace(new RegExp('[\\s\\-/,]+' + esc + '\\s*$', 'i'), '').trim();
+      for (var _ndi = 0; _ndi < _ndCodes.length; _ndi++) {
+        var esc = _ndCodes[_ndi].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        s = s.replace(new RegExp('\\s*\\(\\s*' + esc + '\\s*\\)\\s*$', 'i'), '').trim();
+        s = s.replace(new RegExp('[\\s\\-/,]+' + esc + '\\s*$', 'i'), '').trim();
+      }
       changed = s !== before;
     }
   }
@@ -25692,18 +25754,22 @@ function _iataFromCityName(name) {
 
 function formatCityIata(raw, iata, langOverride) {
   var rawStr = String(raw || '').replace(/\s+/g, ' ').trim();
+  // v23937 — our own pipe label ('Montreal | MET') read back with no code is
+  // folded to the parenthesised shape the parsers below know, exactly as
+  // normalizeDisplayCity does; it came out as 'Montreal | | MET'.
+  rawStr = rawStr.replace(/\s*\|\s*([A-Za-z]{2,4})\s*$/, ' ($1)');
   var code = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
 
   // Handle malformed code-only labels: YYZ(YYZ), YYZ (YYZ), (YYZ)
   if (!code) {
     var cc = rawStr.match(/^\s*([A-Za-z]{3})\s*\(\s*([A-Za-z]{3})\s*\)\s*$/);
     if (cc && cc[1].toUpperCase() === cc[2].toUpperCase()) {
-      code = cc[2].toUpperCase();
+      code = String(_realIata(cc[2].toUpperCase()));
       rawStr = airportCityNameSafe_v21877(code, langOverride) || code;
     } else {
       var solo = rawStr.match(/^\s*\(\s*([A-Za-z]{3})\s*\)\s*$/);
       if (solo) {
-        code = solo[1].toUpperCase();
+        code = String(_realIata(solo[1].toUpperCase()));
         rawStr = airportCityNameSafe_v21877(code, langOverride) || code;
       }
     }
@@ -25713,7 +25779,7 @@ function formatCityIata(raw, iata, langOverride) {
     var dup = rawStr.match(/^(.+?)\s*\(\s*([A-Za-z]{3})\s*\)\s*\(\s*([A-Za-z]{3})\s*\)$/);
     if (dup && dup[2].toUpperCase() === dup[3].toUpperCase()) {
       rawStr = dup[1].trim();
-      code = dup[3].toUpperCase();
+      code = String(_realIata(dup[3].toUpperCase()));
     } else {
       var mp2 = rawStr.match(/^(.+?)\s*\(\s*([A-Za-z]{3})\s*\)$/);
       if (mp2 && !_isRealApCode(mp2[2])) {
@@ -25724,9 +25790,9 @@ function formatCityIata(raw, iata, langOverride) {
       var m = mp2 || rawStr.match(/^(.+?)(?:\s+|-|\/|,)\s*([A-Za-z]{3})$/);
       if (m && (mp2 || _isRealApCode(m[2]))) {
         rawStr = m[1].trim();
-        code = m[2].toUpperCase();
+        code = String(_realIata(m[2].toUpperCase()));
       } else if (/^[A-Za-z]{3}$/.test(rawStr)) {
-        code = rawStr.toUpperCase();
+        code = String(_realIata(rawStr.toUpperCase()));
         rawStr = airportCityNameSafe_v21877(code, langOverride) || rawStr;
       }
     }
@@ -25750,7 +25816,9 @@ function formatCityIata(raw, iata, langOverride) {
   // the code appended a second time ('Montreal | | YUL' on the live board).
   // Strip whatever code tail is there, in either form, then append once.
   city = _stripCityCode(city) || city;
-  return code ? (city + ' | ' + code) : city;
+  // v23937 — the code as passengers see it (MET for YHU). This string is the
+  // flight's display city (f.dest / f.origin); lookups read f._locIata.
+  return code ? (city + ' | ' + _dispIata(code)) : city;
 }
 
 // cityCode(iata, [overrideCity], [langOverride]) — returns "Chicago (MDW)" format
@@ -25772,7 +25840,11 @@ function formatCityIata(raw, iata, langOverride) {
 // Display-only IATA overrides. The real code still drives weather,
 // coords and data-iata logic; only the code CHIP shown to travellers changes.
 // YHU (Montréal Saint-Hubert) shows as the Montréal metro code MET.
-var AIRPORT_DISPLAY_IATA = { YHU: 'MET' };
+// v23937 — the table itself lives in host-airport.js (FIDS_DISPLAY_IATA),
+// the first script every board loads, so the boot splash and this file read
+// one answer. _dispIata is how this file asks; _realIata turns a code read
+// back off our own label ('Montreal | MET') into the one lookups use.
+var AIRPORT_DISPLAY_IATA = (typeof window !== 'undefined' && window.FIDS_DISPLAY_IATA) || {};
 // ── CITY | CODE ──────────────────────────────────────────────────────────
 //
 // t want to see anywhere no longer Moncton (YQM)'. The display
@@ -25795,12 +25867,32 @@ function _cityHasCode(s, code) {
   return !!got && got === String(code || '').toUpperCase();
 }
 function _dispIata(code) {
-  var c = String(code || '').toUpperCase().trim();
-  return AIRPORT_DISPLAY_IATA[c] || code;
+  var c = String(code == null ? '' : code).toUpperCase().trim();
+  var m = (typeof AIRPORT_DISPLAY_IATA !== 'undefined' && AIRPORT_DISPLAY_IATA)
+    || (typeof window !== 'undefined' && window.FIDS_DISPLAY_IATA) || {};
+  return Object.prototype.hasOwnProperty.call(m, c) ? m[c] : code;
+}
+function _realIata(code) {
+  var c = String(code == null ? '' : code).toUpperCase().trim();
+  var m = (typeof AIRPORT_DISPLAY_IATA !== 'undefined' && AIRPORT_DISPLAY_IATA)
+    || (typeof window !== 'undefined' && window.FIDS_DISPLAY_IATA) || {};
+  for (var k in m) { if (Object.prototype.hasOwnProperty.call(m, k) && m[k] === c) return k; }
+  return code;
+}
+// A 'City | CODE' label with its code as passengers see it. Our own city
+// strings are built with the display code already (formatCityIata, cityCode);
+// this is for a string that may have come from somewhere else.
+function _dispCityLabel(s) {
+  var str = String(s == null ? '' : s);
+  var m = str.match(_CITY_CODE_TAIL);
+  if (!m) return str;
+  var code = (m[1] || m[2] || '').toUpperCase();
+  var shown = _dispIata(code);
+  return shown === code ? str : (_stripCityCode(str) + ' | ' + shown);
 }
 
 function cityCode(iata, overrideCity, langOverride) {
-  var code = String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3);
+  var code = String(_realIata(String(iata || '').replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 3)));
   // v22753 — the v22736 fallback lived only in formatCityIata, so rows that
   // render through THIS path still showed a bare city with no chip when the
   // feed omitted the code ('Hartford' on the Tampa board, which we do know as
@@ -25814,7 +25906,8 @@ function cityCode(iata, overrideCity, langOverride) {
   var city = String(overrideCity || '').replace(/\s+/g, ' ').trim();
 
   // If overrideCity is just the same airport code, use the real city lookup.
-  if (city.replace(/[^A-Za-z]/g, '').toUpperCase() === code) city = '';
+  if (city.replace(/[^A-Za-z]/g, '').toUpperCase() === code
+      || city.replace(/[^A-Za-z]/g, '').toUpperCase() === String(_dispIata(code)).toUpperCase()) city = '';
 
   if (!city) city = airportCityNameSafe_v21877(code, langOverride);
   if (!city) return _dispIata(code);
@@ -26527,7 +26620,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23936';
+var FIDS_BUILD_TAG = 'v23939';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27682,11 +27775,11 @@ function render() {
       } else if (_tailCode) {
         // Split the code off and style it — as a separator, never parentheses
         //').
-        _label = _cityPlain + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _tailCode.toUpperCase() + '</span>';
+        _label = _cityPlain + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _dispIata(_tailCode.toUpperCase()) + '</span>';
       } else if (_iataUp && _iataUp.length >= 2 && _iataUp.length <= 4
                  && !cityDisp.toUpperCase().includes(_iataUp)) {
         // No code on the string yet and we have a valid IATA to append
-        _label = cityDisp + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _iataUp + '</span>';
+        _label = cityDisp + ' <span class="dest-iata-sep">|</span> <span class="dest-iata">' + _dispIata(_iataUp) + '</span>';
       } else {
         // City name only (no IATA to add, or IATA already inline)
         _label = cityDisp;
@@ -32948,7 +33041,7 @@ function onApChange() {
   // / layout to <body>. Theme presets live in fids-v2.css (navy/grey/
   // amber/green via body[data-fids-theme]). Airport→theme mapping below.
   const _aIata = document.getElementById('fidsAirportIata');
-  if (_aIata) _aIata.textContent = iata;
+  if (_aIata) _aIata.textContent = _dispIata(iata);
   // Phase 4: apply admin-saved config (theme, logo, toggles). Idempotent —
   // also runs again automatically when the async config load finishes.
   applyAirportConfigToBoard(iata);
@@ -34533,7 +34626,7 @@ function renderHeroHotelsAsync(f, target) {
     const cacheEntry = (typeof _accorCacheFor === 'function') ? _accorCacheFor(f._locIata) : null;
     const list = (cacheEntry && cacheEntry.hotels) || [];
     if (!list.length) {
-      target.innerHTML = '<div class="hero-section-empty">No stays found for ' + f._locIata + '</div>';
+      target.innerHTML = '<div class="hero-section-empty">No stays found for ' + _dispIata(f._locIata) + '</div>';
       return;
     }
     const cityName = (CITY[f._locIata] || f._locIata);
@@ -35844,7 +35937,7 @@ function initGateMap(org,dst,prog,waitAt,note){
           _gateMapTileLayer().addTo(gateMap);
           var _kC = _oK || _dK, _kL = _oK ? org : dst, _kCol = _oK ? '#60a5fa' : '#ef4444';
           gateMap.setView([20, _kC[1]], 1);
-          L.circleMarker(_kC,{radius:6,color:_kCol,fillColor:_kCol,fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_kL,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+          L.circleMarker(_kC,{radius:6,color:_kCol,fillColor:_kCol,fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(_kL),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
           setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
         } else if (mb) {
           mb.innerHTML = '';
@@ -35986,7 +36079,7 @@ function initGateMap(org,dst,prog,waitAt,note){
   // its pin, out of frame.
   var _pinlessO = (_parked || _empty) && !_hereIsDst;
   var _pinlessD = _hereIsDst || ((_parked || _empty) && String(org).toUpperCase() === String(dst).toUpperCase());
-  if (!_pinlessO) _estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));if (!_pinlessD) _estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  if (!_pinlessO) _estOv.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(org),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));if (!_pinlessD) _estOv.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(dst),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));_gateMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -36164,7 +36257,7 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
           _gateMapTileLayer().addTo(gateMap);
           var _kC2 = _oK2 || _dK2, _kL2 = _oK2 ? org : dst, _kCol2 = _oK2 ? '#60a5fa' : '#ef4444';
           gateMap.setView([20, _kC2[1]], 1);
-          L.circleMarker(_kC2,{radius:6,color:_kCol2,fillColor:_kCol2,fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_kL2,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+          L.circleMarker(_kC2,{radius:6,color:_kCol2,fillColor:_kCol2,fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(_kL2),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
           setTimeout(function(){ if (gateMap) gateMap.invalidateSize(); }, 300);
         } else if (mb) {
           mb.innerHTML = '';
@@ -36472,8 +36565,8 @@ function initGateMapLive(org,dst,planeLat,planeLng,fixAt){
   if (_rwyP) { try { _a2 = L.polyline(_rwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(gateMap); } catch (e) { _a2 = null; } }
   if (!_a2) _a2 = _gcAddArc(gateMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
   if(_a2)_ov.push(_a2);
-  _ov.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
-  _ov.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
+  _ov.push(L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(org),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
+  _ov.push(L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(gateMap).bindTooltip(_dispIata(dst),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]}));
   var planePos=L.latLng(planeLat,planeLng);
   var dLng=(d[1]-planeLng)*Math.PI/180;
   var lat1=planeLat*Math.PI/180,lat2=d[0]*Math.PI/180;
@@ -42538,7 +42631,7 @@ function buildGateAdHtml(ad) {
       +   '<div style="position:absolute;right:0;top:0;bottom:0;width:55%;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;padding:0 5% 0 0;text-align:right;z-index:2;">'
       +     '<div style="font-size:clamp(14px,1.3vw,20px);color:rgba(255,255,255,0.7);font-weight:600;letter-spacing:0.4em;margin-bottom:14px;">' + _gLabel + '</div>'
       +     '<div style="font-size:clamp(36px,5.5vw,76px);font-weight:900;color:#fff;line-height:1.05;letter-spacing:-0.02em;text-shadow:0 4px 20px rgba(0,0,0,0.5);max-width:100%;">' + (_gCity || '\u2014') + '</div>'
-      +     (_gIata ? '<div style="font-size:clamp(20px,2.4vw,32px);color:#D82F2E;font-weight:800;letter-spacing:0.1em;margin-top:10px;">' + _gIata + '</div>' : '')
+      +     (_gIata ? '<div style="font-size:clamp(20px,2.4vw,32px);color:#D82F2E;font-weight:800;letter-spacing:0.1em;margin-top:10px;">' + _dispIata(_gIata) + '</div>' : '')
       +   '</div>'
       + '</div>';
     return _adWrap(globeHtml);
@@ -46801,7 +46894,8 @@ function normalizeCityIataTextNodes(root) {
       if (!m) return;
       var code = String(m[2]).toUpperCase();
       var city = normalizeDisplayCity(m[1], code);
-      el.innerHTML = '<span class="g8-city-name">' + city + '</span> <span class="g8-city-code">(' + code + ')</span>';
+      // The label is read back from textContent, so it goes back in escaped.
+      el.innerHTML = '<span class="g8-city-name">' + fidsEscHtml(city) + '</span> <span class="g8-city-code">(' + fidsEscHtml(_dispIata(code)) + ')</span>';
       el.dataset.cityIataNormalized = '1';
     });
   } catch(e) {}
@@ -46828,7 +46922,8 @@ function normalizeGateHeaderCityNames(root) {
       var m = txt.match(/^(.+?)\s*\(\s*([A-Za-z]{3})\s*\)\s*\(\s*([A-Za-z]{3})\s*\)$/);
       if (m && m[2].toUpperCase() === m[3].toUpperCase()) {
         var codeDup = m[3].toUpperCase();
-        el.innerHTML = '<span class="g8-city-name">' + normalizeDisplayCity(m[1], codeDup) + '</span> <span class="g8-city-code">(' + codeDup + ')</span>';
+        // Read back from textContent, so it goes back in escaped.
+        el.innerHTML = '<span class="g8-city-name">' + fidsEscHtml(normalizeDisplayCity(m[1], codeDup)) + '</span> <span class="g8-city-code">(' + fidsEscHtml(_dispIata(codeDup)) + ')</span>';
         return;
       }
 
@@ -46838,7 +46933,7 @@ function normalizeGateHeaderCityNames(root) {
 
       var code = String(m[2]).toUpperCase();
       var city = normalizeDisplayCity(m[1], code);
-      el.innerHTML = '<span class="g8-city-name">' + city + '</span> <span class="g8-city-code">(' + code + ')</span>';
+      el.innerHTML = '<span class="g8-city-name">' + fidsEscHtml(city) + '</span> <span class="g8-city-code">(' + fidsEscHtml(_dispIata(code)) + ')</span>';
     });
   } catch(e) {}
 }
@@ -46997,7 +47092,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
         var city = airportCityNameSafe_v21877(code);
         if (!city) return;
 
-        el.innerHTML = '<span class="g8-city-name">' + escAirport21877(normalizeDisplayCity(city, code)) + '</span> <span class="g8-city-code">(' + escAirport21877(code) + ')</span>';
+        el.innerHTML = '<span class="g8-city-name">' + escAirport21877(normalizeDisplayCity(city, code)) + '</span> <span class="g8-city-code">(' + escAirport21877(_dispIata(code)) + ')</span>';
       });
     } catch(e) {}
   }
@@ -48203,7 +48298,9 @@ function _renderBigCraft(el, ctx) {
               // hours after an unconfirmed arrival's time.
               var _capKey = (ctx && ctx.out) ? 'departure' : _gateInbCaptionKey(_capF, Date.now());
               var _capFlt = String(_capF.flight || '').trim();
-              var _capPlc = String(((ctx && ctx.out) ? (_capF.dest || _capF._locIata) : (_capF.origin || _capF._locIata)) || '').trim();
+              // v23937 — the place as passengers read it: a city label's code,
+              // or a bare code, both through the one display table (MET for YHU).
+              var _capPlc = _dispIata(_dispCityLabel(String(((ctx && ctx.out) ? (_capF.dest || _capF._locIata) : (_capF.origin || _capF._locIata)) || '').trim()));
               if (!_capFlt && !_capPlc) return '';
               var _capLbl = _gateLbl(_capKey, false, function (w, iC) {
                 return (iC ? '<span class="bigcraft-cap-sep"> | </span>' : '') + '<span>' + w + '</span>';
@@ -48378,7 +48475,22 @@ var _WX_SCENE_TAKES = {
   'snow-day': ['wx-scene-snow-day-4575302', 'wx-scene-snow-day-47730037', 'wx-scene-snow-day-49923056', 'wx-scene-snow-day-5878391', 'wx-scene-snow-day-5931286', 'wx-scene-snow-day-5931286', 'wx-scene-snow-day-77933981', 'wx-scene-snow-day-78747566'],
   'snow-night': ['wx-scene-snow-night-3273178', 'wx-scene-snow-night-39671420', 'wx-scene-snow-night-4644922', 'wx-scene-snow-night-4644922', 'wx-scene-snow-night-54072404', 'wx-scene-snow-night-74288910', 'wx-scene-snow-night-79178366', 'wx-scene-snow-night-86012973'],
   'storm-day': ['wx-scene-storm-day-1615031', 'wx-scene-storm-day-1797779', 'wx-scene-storm-day-52189937', 'wx-scene-storm-day-52873990', 'wx-scene-storm-day-5905698', 'wx-scene-storm-day-7537320', 'wx-scene-storm-day-82114209'],
-  'storm-night': ['wx-scene-storm-night-12821882', 'wx-scene-storm-night-2018910', 'wx-scene-storm-night-2018910', 'wx-scene-storm-night-4846434', 'wx-scene-storm-night-4915798', 'wx-scene-storm-night-5018766', 'wx-scene-storm-night-82480163', 'wx-scene-storm-night-85833526', 'wx-scene-storm-night-85833526']
+  // v23937 — NO MORE THAN THREE FLASHES IN ANY ONE SECOND. The general-flash
+  // limit (WCAG 2.3.1, from ITU-R BT.1702): a flash is a pair of opposing
+  // changes of 10% or more in relative luminance, darker side below 0.80,
+  // over at least a quarter of a 10-degree field (21,824 px of a 1680x1050
+  // board); more than three in any second fails. The card plays these at
+  // every airport and the stream broadcasts them, so a take over the limit
+  // is out of the rotation. Measured on the decoded files, the visible crop at
+  // the size the card draws it (842x849, cover), every 1 s window including
+  // the loop seam, by two independent methods (scripts/wx-scenes/flashcheck.swift
+  // and flashpairs.swift): 12821882, 2018910, 4915798, 5018766, 82480163 and
+  // 85833526 flicker 8-10 transitions a second (lightning restrikes, 4-5
+  // flashes); 4846434 has 1-2.
+  // The files stay on disk (licensed footage, re-cuttable), only the draw
+  // changes. Lightning itself stays, white. One take is all that passes, so
+  // this slot does not shuffle until a replacement is measured and added.
+  'storm-night': ['wx-scene-storm-night-4846434']
 };
 // The chosen file is part of the card's rebuild signature, so drawing again
 // inside a visit would change the markup, restart the clip, and take the rest
@@ -50746,7 +50858,7 @@ function _bigMapClone(org,dst,prog,waitAt,note){var _p0=(typeof prog==='number'&
   // No pin where the map stands (see initGateMap); the far end keeps its pin.
   var _bcPinlessO = (_bcParked || _bcEmpty) && !_bcHereIsDst;
   var _bcPinlessD = _bcHereIsDst || ((_bcParked || _bcEmpty) && String(org).toUpperCase() === String(dst).toUpperCase());
-  if (!_bcPinlessO)   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});if (!_bcPinlessD) L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});_bigMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
+  if (!_bcPinlessO)   L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(_dispIata(org),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});if (!_bcPinlessD) L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(_dispIata(dst),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});_bigMapSettle(o,d,p,100);if(arc && p >= 0.02){var ll=arc.getLatLngs(),pp=Math.max(.02,Math.min(.98,p));var planeIdx=Math.min(Math.floor(pp*ll.length),ll.length-1);
       var planePos=ll[planeIdx];
       var nextIdx=Math.min(planeIdx+3,ll.length-1);
       var prevIdx=Math.max(planeIdx-3,0);
@@ -50893,8 +51005,8 @@ function _bigMapCloneLive(org,dst,planeLat,planeLng,fixAt){
   var _bcA2 = _bcGndHere ? L.polyline([], {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap) : null;
   if (_bcRwyP) { try { _bcA2 = L.polyline(_bcRwyP, {color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true}).addTo(window._bigCraftMap); } catch (e) { _bcA2 = null; } }
   if (!_bcA2) _bcA2 = _gcAddArc(window._bigCraftMap,_pp,d,{vertices:60,color:'#60a5fa',weight:3,opacity:0.6,dashArray:'8,6',noClip:true});
-  L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(org,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
-  L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(dst,{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  L.circleMarker(o,{radius:6,color:'#60a5fa',fillColor:'#60a5fa',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(_dispIata(org),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
+  L.circleMarker(d,{radius:6,color:'#ef4444',fillColor:'#ef4444',fillOpacity:1,weight:0}).addTo(window._bigCraftMap).bindTooltip(_dispIata(dst),{permanent:true,direction:'bottom',className:'gate-map-label',offset:[0,5]});
   // (Removed the separate 'actual flown track' polyline — it was the SAME blue
   // as the assigned route arc above, so wherever the real path differed from
   // the great-circle it drew a second parallel line = the 'double line for the

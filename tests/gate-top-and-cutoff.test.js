@@ -29,8 +29,10 @@ function cellTitle(label) {
     if (SRC[k] === '{') d++;
     else if (SRC[k] === '}') { d--; if (!d) { end = k + 1; break; } }
   }
-  const cell = new Function('_frF', '_BIR_BADGE_STYLE',
-    SRC.slice(at, end) + '\nreturn _cell;')(false, '');
+  // v23937 — the code is printed through the board's display table (_dispIata);
+  // these labels carry no code it changes, so it is passed as the identity.
+  const cell = new Function('_frF', '_BIR_BADGE_STYLE', '_dispIata',
+    SRC.slice(at, end) + '\nreturn _cell;')(false, '', (c) => c);
   return cell('ac-ico-dest', label, '', 'Toronto', true);
 }
 

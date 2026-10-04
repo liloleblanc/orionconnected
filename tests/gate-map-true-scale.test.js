@@ -563,6 +563,7 @@ function liveWorld(type) {
     'function _gcFullRoute(a,b){ return [a,b]; }',
     'function _gateMapTileLayer(){ return { addTo: function(){ return this; } }; }',
     'function _gateMapWatchResize(){}',
+    'function _dispIata(c){ return c; }',   // v23937: map labels print through the display table
     'function _bcFadeInWhenReady(t){ return t; }',
     'function _bcSizeNow(){}',
     'function _gateApplyParked(v, lat, lng){ LOG.push("applyParked"); if (v.marker) v.marker.setLatLng([lat,lng]); }',

@@ -145,8 +145,9 @@ body {
 .ctrl-bg-btn:hover { border-color: #eab308; transform: scale(1.15); }
 .ctrl-bg-btn.active { border-color: #eab308; box-shadow: 0 0 0 1px #eab308; }
 .live-pill { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: 2px; color: #10b981; }
-.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: blink 1.5s infinite; }
-@keyframes blink { 0%,100% { opacity:1 } 50% { opacity:0.1 } }
+/* v23937 — the LIVE dot is SOLID. A light that blinks on a board reads as a
+   status change; this one only says the feed is live, so it holds still. */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: none; }
 
 /* ─── HEADER (Zinc 800) ──────────────────────────────────────────── */
 .hdr {
