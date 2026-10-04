@@ -533,17 +533,19 @@
       // list — Ottawa, Halifax and the European boards among them. A pinned
       // stream (Moncton) reloads the same way, boot screen and all.
       //
-      // So every <script> element that loads or configures Cloudflare's own
-      // scripts is removed before hashing. The pattern is built from pieces so
-      // that this script's own text never matches it; if it did, a change to
-      // the rotator itself would be stripped from its own signature and never
-      // seen. tests/rotator-selfheal.test.js runs this function on a captured
-      // response and keeps those words out of this file.
-      var CF_INJECTED = new RegExp('cdn' + '-cgi/|__CF' + '\\$cv|cloudflare' + 'insights', 'i');
+      // So the signature stops where this script ends. The last line of the
+      // script is a marker comment; selfSigOf() hashes the page up to its last
+      // occurrence and ignores whatever follows it, which is where the CDN puts
+      // its additions. Everything we write — the styles, the tour list, every
+      // line of this rotator — sits before the marker and is still signed,
+      // and nothing here needs to know what the CDN adds.
+      // tests/rotator-selfheal.test.js runs this on the script as captured
+      // from production and keeps the marker the script's last line.
+      var SELF_END = 'oc-rotator-end-of-page';
       function selfSigOf(t) {
-        t = String(t || '').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, function (el) {
-          return CF_INJECTED.test(el) ? '' : el;
-        });
+        t = String(t || '');
+        var end = t.lastIndexOf(SELF_END);
+        if (end > 0) t = t.slice(0, end);
         if (!t) return '';
         var h = 0;
         for (var i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) | 0; }
@@ -856,6 +858,9 @@
       window.__ocRotator = { get: function () { return { aps: aps, apIdx: apIdx, idx: idx, seq: seq, isTour: isTour, frames: Object.keys(frames).map(function (a) { return a + ':' + Object.keys(frames[a]).join('+'); }), pending: !!pendingShow, reloadPending: reloadPending }; } };
     } catch (e) { /* if anything fails, the first board still shows */ }
   })();
+  // oc-rotator-end-of-page: selfSigOf() signs the page up to this line and
+  // nothing after it, so the CDN's additions below can never read as a deploy.
+  // Keep this the last line of the script.
   </script>
 </body>
 </html>
