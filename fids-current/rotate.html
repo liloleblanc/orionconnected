@@ -657,6 +657,27 @@
         if (isTour && idx === seq.length - 1) ensureFrame(aps[(apIdx + 1) % aps.length], seq[0]);
       }
 
+      // v23950 — THE SKIP HAS ITS OWN CURSOR; apIdx STAYS ON THE AIRPORT ON AIR.
+      //
+      // The empty-airport skip below used to walk apIdx itself. Its first step
+      // set apIdx to the airport it was skipping and picked that same airport
+      // again, destroyed it, recreated it, and returned false to wait for the
+      // new copy to load, with apIdx already moved. On the next beats the
+      // rotator took the skipped airport for the one on air: `cur` named a
+      // frame that did not exist (cur.classList threw inside the heartbeat),
+      // the retire went to the skipped airport, and the real on-air airport
+      // was never retired. Its frames stayed oc-active underneath every later
+      // board, showed through each black hold, and kept running for the rest
+      // of the run. That happened at every skip, so every night an airport's
+      // first board loaded empty.
+      //
+      // apIdx now only moves when a switch is committed. While a skip waits for
+      // the next candidate to load, the candidate is held here, so the next
+      // beat resumes from it instead of starting over (which would recreate the
+      // airport it had just skipped). Neither variable touches `aps`.
+      var skipAt = -1;      // index in aps of the candidate a skip is waiting on
+      var skipCount = 0;    // airports passed over in the switch under way
+
       // Returns false when the switch must wait (next airport's board not ready
       // yet, within grace) so the heartbeat retries a second later.
       function advance() {
@@ -668,7 +689,9 @@
         // this airport has had its time, the next board shown is the first
         // board of the next airport, wherever we happen to be in the sequence.
         if (isTour && apDwellMs && (Date.now() - airportStart) >= apDwellMs) nextIdx = 0;
-        var nextAp = (isTour && nextIdx === 0) ? aps[(apIdx + 1) % aps.length] : curAp;
+        var nextApIdx = (apIdx + 1) % aps.length;
+        if (isTour && nextIdx === 0 && skipAt >= 0) nextApIdx = skipAt;   // a skip under way resumes
+        var nextAp = (isTour && nextIdx === 0) ? aps[nextApIdx] : curAp;
         // v23422 — RELOAD EVEN WHEN THE AIRPORT NEVER CHANGES. This used to
         // fire only on an airport switch, which is a trap: a single-airport run
         // has nextAp === curAp forever, so a stream pinned to one board could
@@ -683,23 +706,29 @@
         if (nextAp !== curAp && !isReady(nxt) && (Date.now() - slotStart) < minMs + READY_GRACE_MS) return false;
         // v23337 — skip an airport whose board has loaded with nothing on it,
         // and try the one after it. Bounded by the roster length so a quiet
-        // night everywhere still shows a board rather than stalling on black.
+        // night everywhere still shows a board rather than stalling on black:
+        // once every other airport has been passed over, the last one tried
+        // is shown, empty or not.
+        // v23950 — the candidate moves (nextApIdx, held in skipAt across
+        // beats); apIdx does not. See "THE SKIP HAS ITS OWN CURSOR" above.
         if (nextAp !== curAp && isTour && isReady(nxt) && !hasFlights(nxt)) {
-          for (var _s = 0; _s < aps.length - 1; _s++) {
+          while (skipCount < aps.length - 2) {
             var _skipped = nextAp;
-            apIdx = (apIdx + 1) % aps.length;
-            nextAp = aps[apIdx];
-            if (nextAp === curAp) { apIdx = (apIdx + 1) % aps.length; nextAp = aps[apIdx]; }
+            nextApIdx = (nextApIdx + 1) % aps.length;
+            if (aps[nextApIdx] === curAp) nextApIdx = (nextApIdx + 1) % aps.length;
+            nextAp = aps[nextApIdx];
+            skipAt = nextApIdx;
+            skipCount++;
             try { console.log('[TOUR] skipping', _skipped, '— no flights on its board right now; trying', nextAp); } catch (e) {}
             try { destroyAirport(_skipped); } catch (e) {}
             nxt = ensureFrame(nextAp, seq[nextIdx]);
             if (!isReady(nxt)) return false;            // give the new one a tick to load
             if (hasFlights(nxt)) break;
           }
-          apIdx = (apIdx - 1 + aps.length) % aps.length;  // the switch below advances it
         }
         var retire = null;
-        if (nextAp !== curAp) { retire = curAp; apIdx = (apIdx + 1) % aps.length; }
+        if (nextAp !== curAp) { retire = curAp; apIdx = nextApIdx; }
+        skipAt = -1; skipCount = 0;      // the switch is committed
         idx = nextIdx;
         slotStart = Date.now();
         if (nxt === cur) return true;
