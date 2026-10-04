@@ -24063,4 +24063,85 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value.v2-fi-time .v2-fi-arrplace.v2-fi-arrplace-noterm .v2-fi-arrplace-t {
   display: none !important;
+
+/* ══ v23968 — THE AIRLINE'S GATE-CLOSE LINE: A FOOTER ACROSS THE BOARDING CARD ══
+   "Gate closes 15 min before departure · 6:00pm" over « Fermeture de la porte
+   15 min avant le départ · 18:00 » (French first in Québec), at the foot of the
+   gate's Boarding card before boarding starts (_gateCloseLineHtml in
+   fids-core.js). It spans the whole card, under the icon and the text, so the
+   airline's whole sentence reads at a size that can be read. One language per
+   line, each an unbreakable unit; the rail's box fitter (gateAutofit,
+   _boxAssign) sizes it and makes the card taller by exactly its height, so the
+   boarding time keeps the size every other time on the rail has (the first
+   draft put the line inside the time's box and the time shrank under it). Never cut:
+   below the fitter's floor a language wraps at its words. The plate's ink:
+   it is not a status, so it never wears a status colour, and it is static.
+   The sixteen guards are this file's floor for a rule appended after the
+   boarding sign's block (boarding-sign.test.js). */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row.v2-fi-row-close {
+  grid-template-rows: minmax(0, 1fr) auto !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-flightinfo-block > .v2-fi-row.v2-fi-row-close > .v2-fi-closefoot {
+  grid-column: 1 / -1 !important;
+  grid-row: 2 !important;
+  align-self: end !important;
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-closefoot .v2-fi-closeline {
+  /* one language per line, each line as wide as its own words: a line too
+     wide for the card overflows to the right whatever its direction, where
+     the fitter measures it (an Arabic block line overflowed to the left,
+     unseen, and lost its first words) */
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  font-size: 12px;
+  line-height: 1.14 !important;
+  font-weight: 700 !important;
+  letter-spacing: 0 !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  text-transform: none !important;
+  text-align: left !important;
+  /* The board's own fitting face (font.css: "a bilingual string that overruns
+     its cell can be condensed to fit instead of being cut"), then the script
+     faces for Japanese, Chinese and Arabic. */
+  font-family: 'Bricolage Grotesque Cond', 'Bricolage Grotesque', -apple-system, BlinkMacSystemFont, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important;
+  font-stretch: 75% !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-closefoot .v2-fi-closeline .v2-fi-close-w {
+  display: block !important;
+  flex: 0 0 auto !important;
+  max-width: none !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  overflow-wrap: normal !important;
+  unicode-bidi: isolate !important;
+  /* the plate's own ink, as every rail word ("Ink follows the plate"):
+     white on the dark plates, near-black on the five bright ones (American's
+     among them) */
+  color: var(--plate-ink, #ffffff) !important;
+  -webkit-text-fill-color: var(--plate-ink, #ffffff) !important;
+  text-shadow: var(--plate-ink-sh, 0 1px 3px rgba(0, 0, 0, 0.78)) !important;
+  opacity: 1 !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+  font-family: inherit !important;   /* the board's universal font rule names every element; this one takes its line's */
+  font-stretch: inherit !important;
+  line-height: inherit !important;
+}
+/* never cut: still too wide at the fitter's floor, a language wraps at its
+   word boundaries (gateAutofit sets the class) */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-aircraft-col .v2-fi-closefoot .v2-fi-closeline.v2-fi-closeline-wrap .v2-fi-close-w {
+  white-space: normal !important;
+  overflow-wrap: break-word !important;
+  max-width: 100% !important;
+  text-wrap: balance;   /* two even lines, not a full line and a stub */
 }

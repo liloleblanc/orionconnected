@@ -33,7 +33,7 @@ test('yyg: arrivals — 11 rows incl. the Sep 5 straggler; AC2016 twice on its o
   assert.equal(landed.arrival.revisedTime.utc, '2026-09-06 02:56:00+00:00');
   assert.equal(landed._authTs, Date.parse('2026-09-05T23:59:00-03:00'));
   assert.equal(due.arrival.scheduledTime.local, '2026-09-06 23:59:00-03:00');
-  assert.equal(due.status, 'scheduled');                                          // "On Time"
+  assert.equal(due.status, 'ontime');                                          // "On Time"
   assert.equal(due.arrival.revisedTime, undefined);                              // 23:59 == 23:59
   assert.equal(due.departure.airport.iata, 'YYZ');                               // "Toronto"
   assert.equal(due.departure.airport.name, 'Toronto');
@@ -75,7 +75,7 @@ test('yyg: departures — 10 rows, home side on the departure, AC2013 05:20 to T
     assert.equal(x.departure.airport.iata, 'YYG');
     assert.ok(x.departure.scheduledTime.local.startsWith('2026-09-06 '), 'all dated Sep 6');
     assert.ok(x.departure.scheduledTime.local.endsWith('-03:00'), 'ADT');
-    assert.equal(x.status, 'scheduled');
+    assert.equal(x.status, 'ontime');
     assert.equal(x.departure.revisedTime, undefined);
   }
   const first = dep[0];
@@ -105,7 +105,7 @@ test('yyg: 03:06 capture — the Sep 5 straggler has rolled off, 10 + 10', () =>
   assert.equal(arr.filter((x) => x.number === 'AC2016').length, 1);
   assert.equal(arr[0].number, 'AC2030');
   assert.equal(arr[0].arrival.scheduledTime.local, '2026-09-06 10:30:00-03:00');
-  assert.ok(arr.every((x) => x.status === 'scheduled' && !x.arrival.revisedTime), 'all On Time, no revisions');
+  assert.ok(arr.every((x) => x.status === 'ontime' && !x.arrival.revisedTime), 'all On Time, no revisions');
 });
 
 test('yyg: synthetic rows — delayed/cancelled/departed, cross-midnight revision, dateless row, fallbacks', () => {

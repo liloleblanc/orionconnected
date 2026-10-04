@@ -37,7 +37,7 @@ test('yqy departures: "05:05 AM" and "5:20 PM" both land on ADT, gate 2, On Time
   assert.equal(ac.departure.scheduledTime.local, '2026-09-06 05:05:00-03:00');   // zero-padded form
   assert.equal(ac.departure.scheduledTime.utc, '2026-09-06 08:05:00+00:00');
   assert.equal(ac._authTs, Date.parse('2026-09-06T05:05:00-03:00'));
-  assert.equal(ac.status, 'scheduled');                                          // "On Time"
+  assert.equal(ac.status, 'ontime');                                          // "On Time"
   assert.equal(ac.departure.revisedTime, undefined);                             // actualtime == scheduletime
   assert.equal(ac.departure.gate, '2');
   assert.equal(ac.arrival.airport.iata, 'YYZ');                                  // "Toronto" via the city map
@@ -53,7 +53,7 @@ test('yqy departures: "05:05 AM" and "5:20 PM" both land on ADT, gate 2, On Time
   assert.equal(jazz.departure.scheduledTime.utc, '2026-09-06 20:20:00+00:00');
   assert.equal(jazz.arrival.airport.iata, 'YUL');                                // "Montreal"
   assert.equal(jazz.departure.gate, '2');
-  assert.equal(jazz.status, 'scheduled');
+  assert.equal(jazz.status, 'ontime');
 });
 
 test('yqy arrivals: 12:12 AM is 00:12, an early actual becomes revisedTime, "" gate is dropped', () => {
@@ -75,7 +75,7 @@ test('yqy arrivals: 12:12 AM is 00:12, an early actual becomes revisedTime, "" g
   const jazz = arr.find((x) => x.number === 'AC8096');
   assert.ok(jazz, 'AC8096 present');
   assert.equal(jazz.arrival.scheduledTime.local, '2026-09-06 16:14:00-03:00');
-  assert.equal(jazz.status, 'scheduled');
+  assert.equal(jazz.status, 'ontime');
   assert.equal(jazz.arrival.revisedTime, undefined);
   assert.equal(jazz.departure.airport.iata, 'YUL');
   assert.equal(jazz.departure.airport.name, 'Montreal');
@@ -95,7 +95,7 @@ test('yqy: the 01:48 capture keeps yesterday\'s Departed row with its own date (
   assert.equal(gone.departure.gate, '2');
   const next = both.find((x) => x.departure.scheduledTime.local.startsWith('2026-09-06'));
   assert.equal(next._authTs - gone._authTs, 864e5, 'same wall clock a day apart, both ADT');
-  assert.equal(next.status, 'scheduled');
+  assert.equal(next.status, 'ontime');
   // Today's window (Halifax local bounds, as fmt12 sends them) keeps the 6th and drops the 5th.
   const from = windowTsIn('America/Halifax', '2026-09-06T00:00'), to = windowTsIn('America/Halifax', '2026-09-07T00:00');
   const inWin = dep.filter((f) => f._authTs >= from && f._authTs < to).map((f) => f.number);
@@ -126,7 +126,7 @@ test('yqy: a 12 AM update on an 11 PM flight settles onto the next day; winter r
 });
 
 test('yqy: TSI remarks map onto the board vocabulary', () => {
-  assert.equal(yqyStatus('On Time'), 'scheduled');
+  assert.equal(yqyStatus('On Time'), 'ontime');
   assert.equal(yqyStatus('Early'), 'scheduled');
   assert.equal(yqyStatus('Late'), 'delayed');
   assert.equal(yqyStatus('Delayed'), 'delayed');

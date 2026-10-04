@@ -41,7 +41,7 @@ test('yqx: arrivals table — 18 rows, AC1170 from Toronto on NDT (-02:30)', () 
   assert.equal(ac.departure.airport.name, 'Toronto');
   assert.equal(ac.arrival.airline.iata, 'AC');
   assert.equal(ac.arrival.airline.name, 'Air Canada');
-  assert.equal(ac.status, 'scheduled');                      // "OnTime"
+  assert.equal(ac.status, 'ontime');                      // "OnTime"
   assert.equal(ac.arrival.revisedTime, undefined);           // Revised == Scheduled
   assert.equal(ac.callSign, null);
   // Six days of AC1170 (06–11 Sep); the schedule shifts to 13:39 from the 8th.
@@ -83,7 +83,7 @@ test('yqx: departures table — 18 rows, AC1171 to Toronto, PB921 through-flight
   assert.equal(ac.arrival.airport.name, 'Toronto');
   assert.equal(ac.departure.airline.iata, 'AC');
   assert.equal(ac.departure.airline.name, 'Air Canada');
-  assert.equal(ac.status, 'scheduled');
+  assert.equal(ac.status, 'ontime');
   assert.equal(ac.departure.revisedTime, undefined);
   assert.equal(dep[0].number, 'AC1171');
   // PB921 lands from St. John's at 14:25 and leaves for Goose Bay at 14:45:
@@ -120,7 +120,7 @@ test('yqx: revised time, status words, midnight settle, winter offset', () => {
   assert.ok(m[0].arrival.revisedTime.utc > m[0].arrival.scheduledTime.utc, 'a delay, not a jump back');
   // Status vocabulary the boards understand.
   const st = (s) => parseYqxPage(page(DEP, [['AC1171', 'Air Canada', '06 Sep', '14:25', '14:25', 'Gander', 'Toronto', s]]), 'dep', NOW)[0].status;
-  assert.equal(st('OnTime'), 'scheduled');
+  assert.equal(st('OnTime'), 'ontime');
   assert.equal(st('Departed'), 'departed');
   assert.equal(st('Landed'), 'arrived');
   assert.equal(st('Boarding'), 'boarding');

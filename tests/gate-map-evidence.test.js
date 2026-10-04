@@ -371,8 +371,9 @@ test('the tail decides when both rows carry one: a mismatch rules an arrival out
 test('an "On Time" arrival 40 minutes past its time, with nothing else, is NOT at our stand', () => {
   const E = engine({});
   const sched = T(29, 16, 33), now = sched + 40 * MIN;
-  // What cyqm.ca sends for PD2373 until it says "Arrived at": a neutral status.
-  const raw = { status: 'scheduled', arrival: { scheduledTime: { local: '2026-09-29 16:33-03:00' } } };
+  // What cyqm.ca sends for PD2373 until it says "Arrived at": a neutral status
+  // (v23968 — its "OnTime", which feed-router now keeps as 'ontime').
+  const raw = { status: 'ontime', arrival: { scheduledTime: { local: '2026-09-29 16:33-03:00' } } };
   const st = E.adbStatus(raw, 'arr', sched, now);
   // v23925 — the clock no longer makes claims anywhere: the board's status
   // column keeps the airport's own neutral word, and nothing is inferred.

@@ -27,7 +27,14 @@
     departures: { en:'Departures', fr:'Départs',     es:'Salidas',   de:'Abflüge',          it:'Partenze',  pt:'Partidas',  ja:'出発',     zh:'出发',     ar:'المغادرات' },
     arrivals:   { en:'Arrivals',   fr:'Arrivées',    es:'Llegadas',  de:'Ankünfte',         it:'Arrivi',    pt:'Chegadas',  ja:'到着',     zh:'到达',     ar:'الوصول' },
     // Status words
-    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Planmäßig',        it:'Previsto',         pt:'Previsto',         ja:'予定',     zh:'预定',     ar:'مجدول' },
+    // v23968 — the gate's words for Scheduled (SS.scheduled), so the board and
+    // the gate print the same one in every language: the board said
+    // Planmäßig / Previsto / 预定 where the gate said Geplant / Programado / 计划.
+    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Geplant',          it:'Previsto',         pt:'Programado',       ja:'予定',     zh:'计划',     ar:'مجدول' },
+    // v23968 — an airport's own "Expected", which the adapters now keep
+    // (fidsNeutralWord in feed-router.js) instead of folding it into
+    // Scheduled; the same words as the gate's SS.expected.
+    'st-expected':    { en:'Expected',    fr:'Attendu',       es:'Esperado',       de:'Erwartet',         it:'Atteso',           pt:'Esperado',         ja:'見込み',   zh:'预计',     ar:'متوقع' },
     'st-on-time':     { en:'On time',     fr:'À l\'heure',    es:'A tiempo',       de:'Pünktlich',        it:'In orario',        pt:'No horário',       ja:'定刻',     zh:'准点',     ar:'في الموعد' },
     'st-boarding':    { en:'Boarding',    fr:'Embarquement',  es:'Embarcando',     de:'Boarding',         it:'Imbarco',          pt:'Embarque',         ja:'搭乗中',   zh:'登机中',   ar:'الصعود' },
     'st-final-call':  { en:'Final call',  fr:'Dernier appel', es:'Última llamada', de:'Letzter Aufruf',   it:'Ultima chiamata',  pt:'Última chamada',   ja:'最終案内', zh:'最后呼叫', ar:'النداء الأخير' },
@@ -77,7 +84,11 @@
     if (s === 'final-call' || s === 'final' || s.includes('final call') || s.includes('last call')) return 'final-call';
     if (s === 'boarding' || s === 'gate-open' || s === 'now-boarding') return 'boarding';
     if (s === 'active' || s === 'en-route') return 'en-route';   // v23925 — see 'st-en-route'
-    if (s === 'departed' || s === 'expected' || s === 'enroute' || s === 'inair' || s === 'in-air') return 'departed';
+    // v23968 — 'expected' is an airport's own neutral "Expected", which the
+    // adapters now keep (fidsNeutralWord in feed-router.js); it is not a
+    // departure, and reads as itself, as on the gate.
+    if (s === 'expected') return 'expected';
+    if (s === 'departed' || s === 'enroute' || s === 'inair' || s === 'in-air') return 'departed';
     if (s === 'arrived' || s === 'landed' || s === 'at-gate' || s === 'gate') return 'arrived';
     if (s === 'delayed' || s === 'late') return 'delayed';
     if (s === 'early' || s === 'ahead-of-schedule') return 'early';
@@ -109,7 +120,8 @@
       // stays green, Scheduled reverts to the plain row ink, because a green
       // Prévu clashes with the early state.
       'on-time':     'fids-status-ontime',
-      'scheduled':   'fids-status-scheduled'
+      'scheduled':   'fids-status-scheduled',
+      'expected':    'fids-status-scheduled'   // v23968 — plain row ink, like Scheduled
     };
     return {
       html: T('st-' + st, lang),

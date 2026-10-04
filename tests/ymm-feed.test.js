@@ -26,7 +26,7 @@ test('ymm departures: Mountain offset, gate, city split, WS/AC, no revision when
     assert.equal(x.departure.airport.iata, 'YMM');
     assert.equal(x.departure.airport.icao, 'CYMM');
     assert.equal(x.departure.airport.name, 'Fort McMurray');
-    assert.equal(x.status, 'scheduled');                       // every row reads "On Time"
+    assert.equal(x.status, 'ontime');                       // every row reads "On Time"
     assert.equal(x.departure.revisedTime, undefined);          // actualtime == scheduletime throughout
     assert.equal(x.codeshareStatus, 'IsOperator');
   }
@@ -106,7 +106,7 @@ test('ymm: the 87-byte empty day and garbage both parse to nothing', () => {
 });
 
 test('ymm: status words map onto the board keys; novel wording passes through', () => {
-  assert.equal(ymmStatus('On Time'), 'scheduled');
+  assert.equal(ymmStatus('On Time'), 'ontime');
   assert.equal(ymmStatus('Early'), 'scheduled');
   assert.equal(ymmStatus(''), 'scheduled');
   assert.equal(ymmStatus(null), 'scheduled');

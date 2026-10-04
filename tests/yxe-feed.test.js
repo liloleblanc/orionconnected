@@ -71,7 +71,7 @@ test('yxe dep: Rise Air milk-run — 4T from icon, first stop is the leg, PM clo
 test('yxe dep: status vocabulary', () => {
   const dep = yxeParsePage(fx('yxe-dep-sample.html'), 'dep', NOW);
   const st = new Set(dep.map((f) => f.status));
-  assert.ok(st.has('departed') && st.has('scheduled') && st.has('boarding'), [...st].join(','));
+  assert.ok(st.has('departed') && st.has('ontime') && st.has('boarding'), [...st].join(','));   // v23968 — "On Time" is its own word
   assert.equal(dep.filter((f) => f.status === 'boarding').length, 1 + 1 + 3);   // Final Call ×4, Pre-Boarding ×1
   assert.equal(yxeParsePage(fx('yxe-dep-sample.html'), 'dep', NOW).filter((f) => f.status === 'cancelled').length, 0);
 });

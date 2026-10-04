@@ -89,7 +89,12 @@
 
   function statusClass(status) {
     if (status === 'Cancelled' || status === 'Diverted') return 'status-bad';
-    return status === 'Delayed' || status === 'Gate closed' ? 'status-warn' : 'status-good';
+    if (status === 'Delayed' || status === 'Gate closed') return 'status-warn';
+    // v23968 — Scheduled and Expected are the airport's neutral words: the
+    // row's own ink, as on the departures board (fids-v2.js), not the on-time
+    // green, which would say what the airport did not.
+    if (status === 'Scheduled' || status === 'Expected') return 'status-plain';
+    return 'status-good';
   }
 
   function timeToMinutes(value) {

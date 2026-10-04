@@ -29,7 +29,7 @@ test('slc dep: full day parses, date from table-title, MDT offset, gate, live st
   const b6 = dep.find((x) => x.number === 'B6248');    // printed "B60248"
   assert.ok(b6, 'B60248 → B6248 present');
   assert.equal(b6.departure.scheduledTime.local, '2026-09-05 23:59:00-06:00');
-  assert.equal(b6.status, 'scheduled');                // "On Time"
+  assert.equal(b6.status, 'ontime');                // "On Time"
   assert.equal(b6.arrival.airport.iata, 'BOS');
   const am = dep.find((x) => x.number === 'AM793');
   assert.ok(am, 'AM793 present');

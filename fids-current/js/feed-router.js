@@ -141,6 +141,24 @@ function yqmClockToMin(s) {
   if (ap === 'AM' && h === 12) h = 0;
   return h * 60 + min;
 }
+// v23968 — THE AIRPORT'S OWN NEUTRAL WORD, KEPT. Every adapter used to fold
+// "On Time", "Expected", "Scheduled" and a blank status into one 'scheduled',
+// and adbStatus then made "On time" out of it by the clock (90 minutes before
+// a departure, 60 before an arrival). So a gate whose feed said only
+// "Scheduled", or nothing at all, printed "On Time | À l'heure": a claim the
+// airport never made. The feed's word now travels through: "On Time" (and
+// "OnTime", "ON TIME") is 'ontime', "Expected" is 'expected', and
+// "Scheduled" or nothing is 'scheduled' — at every moment, on the gate and the
+// departures board alike. A revised time still makes Delayed or Early
+// (adbStatus), as before. The worker's adapters use the same rule
+// (neutralStatus in workers/fids-proxy.js).
+function fidsNeutralWord(s) {
+  const t = String(s || '').toLowerCase().replace(/[\s_-]+/g, '');
+  if (t.includes('ontime')) return 'ontime';
+  if (t.includes('expected')) return 'expected';
+  return 'scheduled';
+}
+try { if (typeof window !== 'undefined') window.fidsNeutralWord = fidsNeutralWord; } catch (e) {}
 // Map the human status string ("Departed at 8:20 PM", "On Time", …) onto
 // the lowercase keywords the board keys on.
 // v23925 — THE BOARD NOW PRINTS ONLY THE AIRPORT'S WORD (adbStatus no longer
@@ -152,13 +170,16 @@ function yqmStatus(s) {
   const t = String(s || '').toLowerCase();
   if (t.includes('cancel')) return 'cancelled';
   if (t.includes('divert')) return 'diverted';
-  if (t.includes('gate closed')) return 'gateclosed';
+  // v23968 — Moncton says a bare "Closed" once its gate has closed (WS813,
+  // 2026-10-04 18:00, after "Pre-Boarding" and before "Departed at"). It fell
+  // through to the neutral word and read Scheduled on a closed gate.
+  if (t.includes('gate closed') || /^\s*closed\s*$/.test(t)) return 'gateclosed';
   if (t.includes('final call') || t.includes('last call')) return 'final';
   if (t.includes('board')) return 'boarding';
   if (t.includes('depart')) return 'departed';
   if (t.includes('arriv') || t.includes('land')) return 'arrived';
   if (t.includes('delay')) return 'delayed';
-  return 'scheduled';   // "On Time", "Expected", "Scheduled", ""
+  return fidsNeutralWord(t);   // v23968 — "OnTime" / "Expected" / "Scheduled" or ""
 }
 function yqmToAdbFlight(f, direction) {
   if (!f || typeof f !== 'object') return null;
@@ -261,7 +282,7 @@ function tpaStatus(code, content) {
   if (t.includes('bag') || t.includes('arriv') || t.includes('land')) return 'arrived';
   if (t.includes('delay')) return 'delayed';
   if (t.includes('board')) return 'boarding';
-  return 'scheduled';
+  return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
 function tpaToAdbFlight(f) {
   if (!f || typeof f !== 'object') return null;
@@ -384,7 +405,9 @@ function yyzStatus(code) {
   if (c === 'GTO') return 'scheduled';
   if (c === 'BRD' || c === 'BOR' || c === 'BOA' || c === 'FBO') return 'boarding';
   if (c === 'ARR' || c === 'LDD' || c === 'LND' || c === 'BAG' || c === 'ONB') return 'arrived';
-  // ONT = on time, SKD/ETD = scheduled/estimated → treat as scheduled
+  // v23968 — ONT is Pearson's "on time" and reads On time; SKD/ETD
+  // (scheduled / estimated) and anything else read Scheduled.
+  if (c === 'ONT') return 'ontime';
   return 'scheduled';
 }
 function yyzToAdbFlight(f) {
@@ -455,7 +478,7 @@ function yulStatus(s) {
   if (t.includes('early')) return 'early';
   if (t.includes('depart')) return 'departed';
   if (t.includes('arriv') || t.includes('land')) return 'arrived';
-  return 'scheduled';
+  return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
 // "AC7738" → "AC" (two-char IATA airline designator, letter+digit forms too)
 function yulAirlineIata(number) {
@@ -570,7 +593,7 @@ function yhuStatus(s) {
   if (t.includes('depart')) return 'departed';
   if (t.includes('arriv') || t.includes('land')) return 'arrived';
   if (t.includes('board')) return 'boarding';
-  return 'scheduled';
+  return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
 function yhuToAdbFlight(f) {
   if (!f || typeof f !== 'object' || !f.flightId || !f.flightState) return null;
@@ -654,7 +677,7 @@ function ytzStatus(s) {
   if (t.includes('depart')) return 'departed';
   if (t.includes('arriv') || t.includes('land')) return 'arrived';
   if (t.includes('board')) return 'boarding';
-  return 'scheduled';
+  return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
 function ytzToAdbFlight(f) {
   if (!f || typeof f !== 'object') return null;
@@ -713,7 +736,7 @@ function panynjStatus(s, isDep) {
   if (t.includes('arriv') || t.includes('land')) return isDep ? 'departed' : 'arrived';
   if (t.includes('board') || t.includes('final')) return 'boarding';
   if (t.includes('route')) return 'enroute';
-  return 'scheduled';
+  return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
 // "2026-07-30" + "06:00 AM" → {local, utc} stamped with the Eastern offset
 // for that date. tpaTimeObj already does the ET math — LGA/JFK/EWR live in
@@ -814,7 +837,7 @@ function miaStatus(statusText, delayMin) {
   if (t.startsWith('board')) return 'boarding';
   if (t.startsWith('delay')) return 'delayed';
   if (delayMin >= MIA_DELAY_MIN) return 'delayed';
-  return 'scheduled';
+  return fidsNeutralWord(t);   // v23968 — the feed's own neutral word
 }
 
 function miaToAdbFlight(f, direction) {
@@ -1519,7 +1542,7 @@ async function adbFetch(iata, direction) {
           // was cancelled, AC7753 might have been filtered out entirely).
           const _STATUS_ENUM = {
             0: 'scheduled',     // Unknown → treat as scheduled (safe default)
-            1: 'scheduled',     // Expected
+            1: 'scheduled',     // Expected — AeroDataBox's default for every planned flight, i.e. its "Scheduled" (v23968 keeps the AIRPORTS' own "Expected", not this enum)
             2: 'active',        // EnRoute (in flight)
             3: 'scheduled',     // CheckIn (pre-boarding)
             4: 'boarding',      // Boarding

@@ -35,12 +35,12 @@ test('msp arrivals: 100 rows, Central offset, glued airline cell, terminal+gate 
   const last = arr[arr.length - 1];
   assert.equal(last.number, 'DL2834');
   assert.ok(last.arrival.scheduledTime.local.startsWith('2026-09-06 08:58'), last.arrival.scheduledTime.local);
-  assert.equal(last.status, 'scheduled');            // "On Time"
+  assert.equal(last.status, 'ontime');            // "On Time"
   // A bare "T1"/"T2" cell means terminal known, no gate yet.
   const bare = arr.find((x) => x.arrival.terminal && !x.arrival.gate);
   assert.ok(bare, 'a terminal-only row exists');
   const st = new Set(arr.map((x) => x.status));
-  assert.ok(st.has('delayed') && st.has('arrived') && st.has('scheduled'), [...st].join(','));
+  assert.ok(st.has('delayed') && st.has('arrived') && st.has('ontime'), [...st].join(','));   // v23968 — "On Time" kept
 });
 
 test('msp departures: statuses map, gate change stays scheduled, terminal 1 gates', () => {

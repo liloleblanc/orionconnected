@@ -64,7 +64,7 @@ test('phx arrivals: tomorrow rows carry the explicit "September 6," clock; "Now 
   assert.ok(wn, 'WN1697 present');
   assert.equal(wn.arrival.scheduledTime.local, '2026-09-06 05:05:00-07:00');
   assert.equal(wn.arrival.scheduledTime.utc, '2026-09-06 12:05:00+00:00');
-  assert.equal(wn.status, 'scheduled');                                  // ON — the board derives early/delayed
+  assert.equal(wn.status, 'ontime');                                  // ON — the board derives early/delayed
   assert.equal(wn.arrival.revisedTime.local, '2026-09-06 04:52:00-07:00');
   assert.ok(wn.arrival.revisedTime.utc < wn.arrival.scheduledTime.utc, 'an early estimate, same day');
   assert.equal(wn.departure.airport.iata, 'OGG');
@@ -78,7 +78,7 @@ test('phx arrivals: tomorrow rows carry the explicit "September 6," clock; "Now 
   // On time with Estimated == Scheduled → no revision at all.
   const on = arr.find((x) => x.number === 'AC1771');
   assert.ok(on, 'AC1771 present');
-  assert.equal(on.status, 'scheduled');                                  // StatusCode "" + "On Time"
+  assert.equal(on.status, 'ontime');                                  // StatusCode "" + "On Time"
   assert.equal(on.arrival.revisedTime, undefined);
   assert.equal(on.arrival.terminal, '3');
 });
@@ -133,7 +133,7 @@ test('phx departures: chock as gate clock, Terminal 3/4, no belts, route cities,
   const an = dep.find((x) => x.number === 'AN2001');
   assert.ok(an, 'AN2001 present');
   assert.equal(an.departure.scheduledTime.local, '2026-09-06 08:42:00-07:00');
-  assert.equal(an.status, 'scheduled');
+  assert.equal(an.status, 'ontime');
   assert.equal(an.departure.revisedTime.local, '2026-09-06 10:54:00-07:00');
   assert.equal(an.departure.terminal, '3');
   assert.equal(an.departure.gate, 'F13');
@@ -142,7 +142,7 @@ test('phx departures: chock as gate clock, Terminal 3/4, no belts, route cities,
   // Far-out, on time: no revision.
   const ua = dep.filter((x) => x.number === 'UA337');
   assert.equal(ua.length, 2);                                            // to DEN and to MFR — one feed ID
-  assert.ok(ua.every((x) => x.status === 'scheduled' && x.departure.revisedTime === undefined));
+  assert.ok(ua.every((x) => x.status === 'ontime' && x.departure.revisedTime === undefined));   // v23968 — ON is On Time
   // WN3167 lists three route cities on one ID and gate.
   const wn3 = dep.filter((x) => x.number === 'WN3167');
   assert.deepEqual(wn3.map((x) => x.arrival.airport.iata).sort(), ['BNA', 'DCA', 'PVD']);

@@ -100,7 +100,8 @@ function L(win) {
 }
 
 // Montréal's adapter, as the board runs it.
-const ROUTER_FNS = ['yulStatus', 'yulAirlineIata', 'tpaTimeObj', 'yulGroupKey', 'yulOperatorEvidence', 'yulToAdbFlight',
+// fidsNeutralWord: the adapters' shared neutral word (v23968, gate-close-time.test.js).
+const ROUTER_FNS = ['fidsNeutralWord', 'yulStatus', 'yulAirlineIata', 'tpaTimeObj', 'yulGroupKey', 'yulOperatorEvidence', 'yulToAdbFlight',
   'yqmTimeObj', 'yqmClockToMin', 'yqmStatus', 'yqmToAdbFlight'];
 function router() {
   const src = [lineIn(ROUTER, 'YUL_OPERATOR_CODES'), ...ROUTER_FNS.map((n) => fnIn(ROUTER, n)),

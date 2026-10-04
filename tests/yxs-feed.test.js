@@ -38,7 +38,7 @@ test('yxs arrivals: count, Pacific offset, AC8349 fields, estimate one minute of
   assert.equal(ac.arrival.revisedTime.utc, '2026-09-06 06:35:00+00:00');
   assert.equal(ac.arrival.gate, '2A');
   assert.equal(ac.arrival.baggageBelt, undefined);            // data-baggage=""
-  assert.equal(ac.status, 'scheduled');                       // "On Time"
+  assert.equal(ac.status, 'ontime');                       // "On Time"
   assert.equal(ac.departure.airport.iata, 'YVR');
   assert.equal(ac.departure.airport.name, 'Vancouver');
   assert.equal(ac.arrival.airline.iata, 'AC');                // icon-ac.png
@@ -104,7 +104,7 @@ test('yxs departures: count, first/last rows, four-day horizon, gate but never a
   assert.equal(dep[0].departure.scheduledTime.local, '2026-09-06 06:15:00-07:00');
   assert.equal(dep[0].departure.gate, '2A');
   assert.equal(dep[0].arrival.airport.iata, 'YVR');
-  assert.equal(dep[0].status, 'scheduled');
+  assert.equal(dep[0].status, 'ontime');
   const last = dep[dep.length - 1];
   assert.equal(last.number, 'AC8350');
   assert.equal(last.departure.scheduledTime.local, '2026-09-09 20:20:00-07:00');
@@ -116,7 +116,7 @@ test('yxs departures: count, first/last rows, four-day horizon, gate but never a
   assert.equal(k.arrival.airport.iata, 'YLW');
   assert.equal(k.arrival.baggageBelt, undefined);
   // Nothing revised and everything "On Time" in this capture (dep side).
-  assert.ok(dep.every((f) => f.status === 'scheduled' && !f.departure.revisedTime));
+  assert.ok(dep.every((f) => f.status === 'ontime' && !f.departure.revisedTime));   // v23968 — every row "On Time"
   // A departures read of the arrivals-only slice is empty and vice versa (panel split, not aria text).
   const html = JSON.parse(fx('yxs-feed-sample.json')).data.html;
   const arrOnly = html.slice(0, html.indexOf('id="panel-departures"'));
@@ -153,7 +153,7 @@ test('yxs evening capture: Late / Delayed / Departed with the expected clock as 
   // The estimate moves between captures: AC8349 read 23:29 at 21:48 and 23:35 at 23:07.
   const ac = arr.find((f) => f.number === 'AC8349' && f.arrival.scheduledTime.local.startsWith('2026-09-05'));
   assert.equal(ac.arrival.revisedTime.local, '2026-09-05 23:29:00-07:00');
-  assert.deepEqual([...new Set([...arr, ...dep].map((f) => f.status))].sort(), ['delayed', 'departed', 'scheduled']);
+  assert.deepEqual([...new Set([...arr, ...dep].map((f) => f.status))].sort(), ['delayed', 'departed', 'ontime']);
 });
 
 // A minimal row in the plugin's own markup, for the cases the captures
@@ -241,7 +241,7 @@ test('yxs synthetic: winter offset, New Year rollover, carrier/city fallbacks, b
 });
 
 test('yxs status vocabulary', () => {
-  assert.equal(yxsStatus('On Time'), 'scheduled');
+  assert.equal(yxsStatus('On Time'), 'ontime');
   assert.equal(yxsStatus('Early'), 'scheduled');
   assert.equal(yxsStatus('Late', 'late'), 'delayed');
   assert.equal(yxsStatus('Delayed'), 'delayed');
@@ -253,7 +253,7 @@ test('yxs status vocabulary', () => {
   assert.equal(yxsStatus('Boarding'), 'boarding');
   assert.equal(yxsStatus('Final Call'), 'boarding');
   assert.equal(yxsStatus('Gate Closed'), 'gateclosed');
-  assert.equal(yxsStatus('', 'on-time'), 'scheduled');
+  assert.equal(yxsStatus('', 'on-time'), 'ontime');
   assert.equal(yxsStatus(null), 'scheduled');
 });
 
