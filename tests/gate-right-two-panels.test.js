@@ -448,8 +448,9 @@ test('an operator\'s mark on Air Canada\'s near-black ground clears 3:1', () => 
   // The caption used to be a light grey strip on Air Canada, and Rouge's and
   // PAL's colour lettering was drawn for it. On the panel's own ground
   // (#0b0d10) Rouge's crimson read 2.5:1 and PAL's navy less. Each takes its
-  // published white lettering there (_opbyContrastFix, onDark); Jazz keeps
-  // its own red, which clears 3:1.
+  // published white lettering there (_opbyContrastFix, onDark), and so, since
+  // v23941, does Jazz (its red cleared 3:1 on the near-black, not on the red
+  // caption bar v23940 put it on).
   const objSrc = (name) => {
     const at = CORE.indexOf('var ' + name + ' = {');
     assert.ok(at > 0, name);
