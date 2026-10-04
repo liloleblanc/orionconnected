@@ -319,7 +319,7 @@
       pillContent =
         '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 19h19v2h-19zM22.07 9.64c-.21-.8-.94-1.28-1.73-1.28-.2 0-.4.03-.59.09L14.76 10 8 3.57 6.55 4.04l4.15 7.18-4.76 1.64L4.16 11.3l-1.06.36 2.23 3.87.04.06 1.11-.38L22.07 9.64z"/></svg>'
         + '<div>'
-        +   '<div class="fids-iata">' + (iata || '—') + '</div>'
+        +   '<div class="fids-iata">' + ((window.fidsDisplayIata ? window.fidsDisplayIata(iata) : iata) || '—') + '</div>'
         + (cfg.sub ? '<div class="fids-airport-sub">' + cfg.sub + '</div>' : '')
         + '</div>';
     }

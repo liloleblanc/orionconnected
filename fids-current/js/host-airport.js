@@ -73,3 +73,40 @@
     window.fidsHostAirport = hostAirport;
   } catch (e) {}
 })();
+
+/* ───────────────────────────────────────────────────────────────────────────
+ * AN AIRPORT'S CODE AS PASSENGERS SEE IT  (v23937)
+ *
+ * Montréal Saint-Hubert is YHU to IATA, ICAO (CYHU), the feeds, FR24 and every
+ * table in this codebase, and MET (Montréal Métropolitain) on every surface a
+ * passenger reads. Its own terminal and Moncton's airport both print MET, so
+ * a board that printed YHU beside them disagreed with the airport about its
+ * own name.
+ *
+ * THIS IS THE ONE TABLE. It lives here because this file is the first script
+ * every board (fids, gids, bids) and the companion app load, so even the
+ * boot splash, which runs before fids-core.js exists, reads the same answer.
+ * Every lookup (coordinates, weather, feeds, FR24, gate files, emblem maps)
+ * keeps the real code; only the letters printed for people change.
+ *
+ *   fidsDisplayIata('YHU') -> 'MET'   any other code comes back unchanged
+ *   fidsRealIata('MET')    -> 'YHU'   for reading our own labels back in
+ * ─────────────────────────────────────────────────────────────────────────── */
+(function () {
+  'use strict';
+  var DISPLAY = { YHU: 'MET' };
+  function up(code) { return String(code == null ? '' : code).toUpperCase().trim(); }
+  try {
+    window.FIDS_DISPLAY_IATA = DISPLAY;
+    window.fidsDisplayIata = function (code) {
+      return Object.prototype.hasOwnProperty.call(DISPLAY, up(code)) ? DISPLAY[up(code)] : code;
+    };
+    window.fidsRealIata = function (code) {
+      var c = up(code);
+      for (var k in DISPLAY) {
+        if (Object.prototype.hasOwnProperty.call(DISPLAY, k) && DISPLAY[k] === c) return k;
+      }
+      return code;
+    };
+  } catch (e) {}
+})();

@@ -258,8 +258,10 @@ test('status motion, white light and gentle motion are left alone', () => {
   assert.match(read('css/fids.css'), /\.p-final\s+\{ animation: textPulse 2s ease-in-out infinite;/);
   // the white stars on a clear night still twinkle
   assert.match(winning('.wxcard-wrap .wxc-mon-fx.wxc-fx-clear-night::before', ['animation', 'animation-name']).value, /^wxcFxTwinkle /);
-  // the night-storm footage (white lightning) is unchanged
-  assert.match(CORE, /'storm-night': \['wx-scene-storm-night-12821882'/);
+  // the night-storm footage keeps its white lightning; v23937 took the takes
+  // that flicker past three flashes a second out of the draw
+  // (tests/storm-night-flash-limit.test.js), and the one that passes stays
+  assert.match(CORE, /'storm-night': \['wx-scene-storm-night-4846434'/);
   // rain over the photo still falls
   assert.match(winning('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::before', ['animation', 'animation-name']).value, /^wxcFxRain2 /);
 });
