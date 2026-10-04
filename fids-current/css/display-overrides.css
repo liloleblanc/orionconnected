@@ -2405,7 +2405,7 @@ html .bidsv2-list-header > div {
 /* ==========================================================================
    Orion YouTube / stream mode  —  ?stream=1  (also compact=1 / yt=1)
  The stream must look EXACTLY like the normal display:
-   same Geist font, full-size airport + airline logos, mist theme. Stream
+   same font (the airport's own), full-size airport + airline logos. Stream
    mode does ONLY four things: hide the operator chrome, hide the login chip,
    lock the page to the viewport, and let the flight table fill the frame so
    a light-traffic airport doesn't leave a grey gap under the last row.
@@ -2442,25 +2442,26 @@ html.fids-stream #fidsBoard {
 html.fids-stream .content-area { flex: 1 1 auto !important; overflow: hidden !important; }
 html.fids-stream .ticker { flex: 0 0 auto !important; }
 
-/* Force AC Nord Bold Display on ALL text
-— it was falling back to Possibility). Icons keep their
-   icon font; logos are SVG/img so unaffected. */
-html.fids-stream body {
-  --font-primary: 'AC Nord Display Bold', 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
-}
-/* v22718 — .axr exempt, same guard the three JS font overrides carry: the
-   stream nuke was the LAST un-guarded path and it flattened Fairmont's The
- Seasons to AC Nord on the streamed screens (gate-4 photos showed the wrong
-   font on Fairmont, not the chosen one). Accor brand typography renders
-   per brand book everywhere, stream included. */
-html.fids-stream body,
-html.fids-stream body *:not(.ac-ico):not([class*="ac-ico"]):not(.axr):not(.axr *) {
-  /* v23299 — 'AC Nord Display Bold' is not a declared family anywhere in the
-     project: font.css declares 'AC Nord Display' at weights 400/500/700/800.
-     A name that resolves to nothing is dead weight at the head of the stack,
-     so the first thing the browser can actually use now leads it. */
-  font-family: 'AC Nord Display', 'AC Nord Text', Arial, sans-serif !important;
-}
+/* v23950 — THE STREAM SETS IN THE AIRPORT'S OWN FONT, LIKE THE BOARD.
+   Two rules used to sit here that forced AC Nord on every element of every
+   streamed board — `--font-primary` and a `font-family: … !important` sweep
+   under html.fids-stream — whatever font the airport was assigned. They were
+   written when AC Nord was the face of every board. Since then the face is
+   chosen per airport in Customize (stored with the airport config, Bricolage
+   Grotesque when none is chosen), and the sweep kept overriding that choice
+   on the streams only: Moncton's live board showed its assigned Cabinet
+   Grotesk while the Moncton stream showed AC Nord, and every touring stream
+   that forwards stream=1 did the same to every airport.
+
+   The stream now runs the same font code as the board on the wall — the
+   airport config pass and restoreFontChoice in fids-core.js — which is what
+   the header of this section always promised ("look EXACTLY like the normal
+   display"). tests/stream-font-parity.test.js fails if any html.fids-stream
+   rule sets a font family or --font-primary again.
+
+   The icon-font guard below stays: it only keeps the AC icon glyphs on their
+   icon font. Accor's own ads (.axr) keep their brand typography from
+   hotel-ads.css, on the stream and off it. */
 html.fids-stream .ac-ico,
 html.fids-stream [class*="ac-ico"],
 html.fids-stream .ac-ico::before,
