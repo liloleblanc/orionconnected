@@ -46,7 +46,7 @@ function build(preActive, lang) {
   // with it or the function throws on the first call.
   const helpers = ['_pdCabinHdr', '_pdLaneRow', '_pdClassicMark'].map(lift).join('\n');
   const fn = new Function(
-    '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF',
+    '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF', '_gateLang1',
     helpers + '\n' + lift('_pdLanesBodyHtml') + '\nreturn _pdLanesBodyHtml;',
   )(
     (key) => '[' + key + ']',
@@ -64,16 +64,18 @@ function build(preActive, lang) {
     // artwork picks its language off THIS flag, so with it pinned no test could
     // ever have caught a mark stuck in the wrong language.
     lang === 'fr',
+    // the sign's first language — the one its artwork follows (v23960)
+    () => lang,
   );
   return fn('23–33', '12–22', preActive);
 }
 
 // The roster as it actually ships, pulled from the translation table.
+// It lives in the one store (board-strings.js), with where its words come from.
 const TABLE = (() => {
-  const at = SRC.indexOf('preboardList: {');
-  assert.ok(at >= 0, 'the published pre-boarding roster must exist in the translation table');
-  const body = SRC.slice(at, SRC.indexOf('},', at) + 2);
-  return new Function('return {' + body + '}.preboardList;')();
+  const e = require('../fids-current/js/board-strings.js').entry('preboardList');
+  assert.ok(e, 'the published pre-boarding roster must exist in the store');
+  return e;
 })();
 
 test('the roster carries every group Porter publishes', () => {
@@ -134,12 +136,17 @@ test('the French sign says it in French', () => {
 // pages, so a bilingual sign cannot print the English form twice. That is the
 // specific thing these tests hold.
 
+// They live in the one store (board-strings.js), marked as Porter's own
+// words in English and French.
 function cabinNames() {
-  const at = SRC.indexOf('  pdReserve: {');
-  assert.ok(at >= 0, 'fids-core.js must declare the pdReserve cabin label');
-  const end = SRC.indexOf('  photoId: {', at);
-  assert.ok(end > at, 'expected pdClassic and photoId to follow pdReserve');
-  return new Function('return {' + SRC.slice(at, end) + '};')();
+  const S = require('../fids-current/js/board-strings.js');
+  const n = { pdReserve: S.entry('pdReserve'), pdClassic: S.entry('pdClassic') };
+  assert.ok(n.pdReserve && n.pdClassic, 'the store must declare the Porter cabin labels');
+  for (const k of ['pdReserve', 'pdClassic']) {
+    assert.equal(n[k].$src.en, 'airline:PD');
+    assert.equal(n[k].$src.fr, 'airline:PD');
+  }
+  return n;
 }
 
 test('the cabin names are the closed-up forms Porter publishes', () => {
@@ -234,9 +241,10 @@ test('the tier collective name is renamed in French, not translated', () => {
   // Porter does not translate it, it renames it: "Grand Voyageur fait
   // référence aux niveaux d'adhésion Passeport, Horizon, Essor et Première".
   // Hardcoding the English would print it on the French half of the sign.
-  const at = SRC.indexOf('  avidTraveller: {');
-  assert.ok(at >= 0, 'fids-core.js must declare the avidTraveller label');
-  const lbl = new Function('return {' + SRC.slice(at, SRC.indexOf('},', at) + 2) + '}.avidTraveller;')();
+  const lbl = require('../fids-current/js/board-strings.js').entry('avidTraveller');
+  assert.ok(lbl, 'the store must declare the avidTraveller label');
+  assert.equal(lbl.$src.en, 'airline:PD', 'Porter\'s own name');
+  assert.equal(lbl.$src.fr, 'airline:PD', 'Porter\'s own French name');
   assert.equal(lbl.en, 'AvidTraveller');
   assert.equal(lbl.fr, 'Grand Voyageur');
   assert.notEqual(lbl.fr, lbl.en, 'the French side must not print the English brand');
@@ -298,7 +306,7 @@ function mark(tier, label, fr) {
   const at = src.indexOf('function _pdMark(');
   assert.ok(at >= 0, '_pdMark must still exist');
   const body = src.slice(at, src.indexOf('\n    }', at) + 6);
-  return new Function('_frF', decl[0] + '\n' + body + '\nreturn _pdMark;')(fr)(tier, label);
+  return new Function('_frF', '_gateLang1', decl[0] + '\n' + body + '\nreturn _pdMark;')(fr, () => (fr ? 'fr' : 'en'))(tier, label);
 }
 
 test('the tier marks follow the language where French art exists', () => {

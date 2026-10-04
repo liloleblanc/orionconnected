@@ -31,9 +31,9 @@ function fmt12(d, tz) {
   // hours and the windowing breaks because "18:30" becomes "06:30".
   if (tz) {
     try {
-      const parts = new Intl.DateTimeFormat('en-US', {
+      const parts = new Intl.DateTimeFormat('en-US', { // i18n-ok: code
         timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit',
-        hour:'2-digit', minute:'2-digit', hour12: false
+        hour:'2-digit', minute:'2-digit', hour12: false // i18n-ok: code
       }).formatToParts(d);
       const get = type => parts.find(p => p.type === type).value;
       const hh = get('hour') === '24' ? '00' : get('hour');
@@ -121,7 +121,7 @@ function yqmTimeObj(tsSeconds) {
   const H = String(d.getUTCHours()).padStart(2, '0'), Mi = String(d.getUTCMinutes()).padStart(2, '0'), S = String(d.getUTCSeconds()).padStart(2, '0');
   let off = '-04:00';
   try {
-    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Moncton', timeZoneName: 'shortOffset' }).formatToParts(d);
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Moncton', timeZoneName: 'shortOffset' }).formatToParts(d); // i18n-ok: code
     const tz = (p.find((x) => x.type === 'timeZoneName') || {}).value || '';
     const m = tz.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
     if (m) off = `${m[1]}${m[2].padStart(2, '0')}:${(m[3] || '00')}`;
@@ -235,7 +235,7 @@ function tpaTimeObj(isoLocal) {
   const ref = new Date(`${Y}-${Mo}-${Da}T${H}:${Mi}:${S}Z`);
   let off = '-05:00';
   try {
-    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(ref);
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(ref); // i18n-ok: code
     const tz = (p.find((x) => x.type === 'timeZoneName') || {}).value || '';
     const mm = tz.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
     if (mm) off = `${mm[1]}${mm[2].padStart(2, '0')}:${(mm[3] || '00')}`;

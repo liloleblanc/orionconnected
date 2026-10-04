@@ -38,10 +38,21 @@ test('bs(): every key in every language, and never a key name', () => {
   for (const key of Object.keys(BS.STR)) {
     for (const l of LANGS) {
       const v = BS.bs(key, l);
-      assert.ok(v && v !== key && !/undefined/.test(v), `${key}.${l}`);
+      assert.ok(v && v === BS.STR[key][l] && !/undefined/.test(v), `${key}.${l}`);
     }
   }
   assert.equal(BS.bs('noSuchKey', 'fr'), '', 'a missing key renders nothing, not its name');
+});
+
+// every placeholder the store uses, filled with a sample value
+const FIELDS = {};
+for (const e of Object.values(BS.STR)) for (const l of LANGS) for (const m of String(e[l] || '').matchAll(/\{([A-Za-z0-9_]+)\}/g)) FIELDS[m[1]] = 'X' + m[1];
+
+test('every placeholder appears in every language of its entry', () => {
+  for (const [key, e] of Object.entries(BS.STR)) {
+    const want = (String(e.en).match(/\{[A-Za-z0-9_]+\}/g) || []).sort().join();
+    for (const l of LANGS) assert.equal((String(e[l]).match(/\{[A-Za-z0-9_]+\}/g) || []).sort().join(), want, `${key}.${l}`);
+  }
 });
 
 test('bsPair(): only the selected languages, each half marked with its language and direction', () => {
@@ -50,18 +61,18 @@ test('bsPair(): only the selected languages, each half marked with its language 
     for (const langs of PAIRS) {
       for (const frFirst of [false, true]) {
         const want = BS.pairLangs(langs, frFirst);
-        const html = BS.pair(key, { langs, frFirst, keepDup: true, fields: { FLIGHT: 'AC 123', GATE: '4', CITY: 'Calgary', N: '3', M: '5' } });
+        const html = BS.pair(key, { langs, frFirst, keepDup: true, fields: FIELDS });
         const got = halves(html);
         assert.equal(got.length, want.length, `${key} ${langs} ${frFirst}`);
         got.forEach((h, i) => {
           assert.equal(h.lang, want[i], `${key} ${langs}: half ${i} is ${want[i]}`);
           assert.equal(h.rtl, h.lang === 'ar', `${key}: an Arabic half reads right to left, and only it`);
           assert.ok(!/undefined|\{[A-Z]+\}/.test(h.text), `${key}.${h.lang}: placeholders filled`);
-          assert.notEqual(h.text, key);
+          assert.equal(h.text, BS.fill(e[h.lang], FIELDS), `${key}.${h.lang} is that language's own words`);
           assert.ok(h.text.length > 0);
           assert.ok(e[h.lang] != null);
         });
-        const plain = BS.pair(key, { langs, frFirst, plain: true, keepDup: true, fields: { FLIGHT: 'AC 123', GATE: '4', CITY: 'Calgary', N: '3', M: '5' } });
+        const plain = BS.pair(key, { langs, frFirst, plain: true, keepDup: true, fields: FIELDS });
         assert.equal(plain.split(' | ').length, want.length);
       }
     }

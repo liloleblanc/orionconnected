@@ -120,15 +120,337 @@
   // If the English already exists on a screen, reuse that key, or its exact
   // translations: the guard fails two different translations of one phrase.
   var STR = {
-    // ── DAYS ──
+    // ── DAYS ──────────────────────────────────────────────────────────────
     // The gate's day line (gate-date-context.js getFlightDayWords) and the
     // weather strips. Moved here from TOMORROW and LS.tomorrow, which held
     // the same nine words twice.
-    tomorrow: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Morgen', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' }
+    tomorrow: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Morgen', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
+
+    // ── LOADERS AND STATUS LINES ──────────────────────────────────────────
+    // The boot loader of fids/gids/bids/index (it greets in the board's own
+    // languages now, not a fixed six) and its status line. The greetings copy
+    // the boards' own words: _GATE_LBL.nowBoarding, _GATE_LBL.welcome and
+    // LS.bagClaim.
+    greetGate: { en: 'Now boarding', fr: 'Embarquement', es: 'Embarcando ahora', de: 'Jetzt Boarding', it: 'Imbarco in corso', pt: 'Embarque em curso', ja: '搭乗中', zh: '正在登机', ar: 'الصعود الآن' },
+    greetBoard: { en: 'Welcome', fr: 'Bienvenue', es: 'Bienvenido', de: 'Willkommen', it: 'Benvenuto', pt: 'Bem-vindo', ja: 'ようこそ', zh: '欢迎', ar: 'أهلاً' },
+    greetBags: { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje', de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem', ja: '手荷物受取所', zh: '行李提取', ar: 'استلام الأمتعة' },
+    loading: { en: 'Loading', fr: 'Chargement', es: 'Cargando', de: 'Wird geladen', it: 'Caricamento', pt: 'Carregando', ja: '読み込み中', zh: '加载中', ar: 'جارٍ التحميل' },
+    fetchingLive: { en: 'Fetching live data', fr: 'Récupération des données en direct', es: 'Obteniendo datos en vivo', de: 'Live-Daten werden abgerufen', it: 'Recupero dei dati in tempo reale', pt: 'Obtendo dados ao vivo', ja: 'ライブデータを取得中', zh: '正在获取实时数据', ar: 'جارٍ جلب البيانات المباشرة' },
+    loadingDemo: { en: 'Loading demo data', fr: 'Chargement des données de démonstration', es: 'Cargando datos de demostración', de: 'Demodaten werden geladen', it: 'Caricamento dei dati dimostrativi', pt: 'Carregando dados de demonstração', ja: 'デモデータを読み込み中', zh: '正在加载演示数据', ar: 'جارٍ تحميل بيانات العرض التوضيحي' },
+    preparingGate: { en: 'Preparing gate screen', fr: 'Préparation de l’écran de la porte', es: 'Preparando la pantalla de la puerta', de: 'Gate-Anzeige wird vorbereitet', it: 'Preparazione dello schermo del gate', pt: 'Preparando a tela do portão', ja: 'ゲート画面を準備中', zh: '正在准备登机口屏幕', ar: 'جارٍ تجهيز شاشة البوابة' },
+    preparingBags: { en: 'Preparing baggage screen', fr: 'Préparation de l’écran des bagages', es: 'Preparando la pantalla de equipaje', de: 'Gepäckanzeige wird vorbereitet', it: 'Preparazione dello schermo bagagli', pt: 'Preparando a tela de bagagem', ja: '手荷物画面を準備中', zh: '正在准备行李屏幕', ar: 'جارٍ تجهيز شاشة الأمتعة' },
+    live: { en: 'Live', fr: 'En direct', es: 'En vivo', de: 'Live', it: 'In diretta', pt: 'Ao vivo', ja: 'ライブ', zh: '实时', ar: 'مباشر' },
+    // The loader's 'GATE 4' line, before the gate's own table has loaded (the words of _GATE_LBL.gate).
+    gateWord: { en: 'Gate', fr: 'Porte', es: 'Puerta', de: 'Gate', it: 'Gate', pt: 'Portão', ja: 'ゲート', zh: '登机口', ar: 'البوابة' },
+    login: { en: 'Login', fr: 'Connexion', es: 'Iniciar sesión', de: 'Anmelden', it: 'Accedi', pt: 'Entrar', ja: 'ログイン', zh: '登录', ar: 'تسجيل الدخول' },
+
+    // ── EMPTY AND ERROR PANELS ────────────────────────────────────────────
+    // Drawn in capitals by the panel's CSS; written here in sentence case so
+    // each language keeps its own capitalisation rules.
+    noFlightsWindow: { en: 'No flights in window', fr: 'Aucun vol dans la plage horaire', es: 'Sin vuelos en este intervalo', de: 'Keine Flüge im Zeitfenster', it: 'Nessun volo in questa fascia oraria', pt: 'Sem voos neste intervalo', ja: '表示時間内の便はありません', zh: '当前时段无航班', ar: 'لا رحلات في هذه الفترة' },
+    noFlightsWindowSub: { en: 'No departures or arrivals in the current time window', fr: 'Aucun départ ni aucune arrivée dans la plage horaire actuelle', es: 'No hay salidas ni llegadas en el intervalo actual', de: 'Keine Abflüge oder Ankünfte im aktuellen Zeitfenster', it: 'Nessuna partenza o arrivo nella fascia oraria attuale', pt: 'Nenhuma partida ou chegada no intervalo atual', ja: '現在の時間帯に出発便・到着便はありません', zh: '当前时段没有出发或到达航班', ar: 'لا توجد رحلات مغادرة أو وصول في الفترة الحالية' },
+    noLiveData: { en: 'No live data for this airport', fr: 'Aucune donnée en direct pour cet aéroport', es: 'Sin datos en vivo para este aeropuerto', de: 'Keine Live-Daten für diesen Flughafen', it: 'Nessun dato in tempo reale per questo aeroporto', pt: 'Sem dados ao vivo para este aeroporto', ja: 'この空港のライブデータはありません', zh: '本机场暂无实时数据', ar: 'لا توجد بيانات مباشرة لهذا المطار' },
+    noFeedYet: { en: '{AIRPORT} has no flight feed yet', fr: '{AIRPORT} n’a pas encore de flux de vols', es: '{AIRPORT} aún no tiene fuente de vuelos', de: '{AIRPORT} hat noch keinen Flugdaten-Feed', it: '{AIRPORT} non ha ancora un flusso di voli', pt: '{AIRPORT} ainda não tem fonte de voos', ja: '{AIRPORT}のフライト情報はまだありません', zh: '{AIRPORT} 暂无航班数据源', ar: 'لا يتوفر بعد مصدر بيانات رحلات لـ {AIRPORT}' },
+    liveDataError: { en: 'Live data error', fr: 'Erreur des données en direct', es: 'Error en los datos en vivo', de: 'Fehler bei den Live-Daten', it: 'Errore nei dati in tempo reale', pt: 'Erro nos dados ao vivo', ja: 'ライブデータのエラー', zh: '实时数据错误', ar: 'خطأ في البيانات المباشرة' },
+    noResultsFor: { en: 'No results for “{Q}”', fr: 'Aucun résultat pour « {Q} »', es: 'Sin resultados para «{Q}»', de: 'Keine Ergebnisse für „{Q}“', it: 'Nessun risultato per «{Q}»', pt: 'Nenhum resultado para “{Q}”', ja: '「{Q}」に一致する結果はありません', zh: '没有与“{Q}”匹配的结果', ar: 'لا توجد نتائج لـ «{Q}»' },
+    noData: { en: 'No data', fr: 'Aucune donnée', es: 'Sin datos', de: 'Keine Daten', it: 'Nessun dato', pt: 'Sem dados', ja: 'データなし', zh: '无数据', ar: 'لا توجد بيانات' },
+
+    // ── GATE ──────────────────────────────────────────────────────────────
+    // The aircraft panel's qualifier for a registration or type taken from
+    // the aircraft's usual rotation rather than confirmed: 'C-GWJO expected'.
+    // It was written into markup six times as English plus French or Spanish,
+    // by airport default rather than by the board's languages.
+    expected: { en: 'expected', fr: 'prévu', es: 'prevista', de: 'voraussichtlich', it: 'previsto', pt: 'prevista', ja: '予定', zh: '预计', ar: 'متوقعة',
+      $ctx: 'aircraft' },
+    aircraftDetails: { en: 'Aircraft details', fr: 'Détails de l’appareil', es: 'Datos del avión', de: 'Flugzeugdaten', it: 'Dettagli dell’aereo', pt: 'Detalhes da aeronave', ja: '機材情報', zh: '机型信息', ar: 'تفاصيل الطائرة' },
+    dataBusy: { en: 'Data service busy — retrying', fr: 'Service de données occupé — nouvel essai', es: 'Servicio de datos ocupado — reintentando', de: 'Datendienst ausgelastet — neuer Versuch', it: 'Servizio dati occupato — nuovo tentativo', pt: 'Serviço de dados ocupado — nova tentativa', ja: 'データサービス混雑中 — 再試行しています', zh: '数据服务繁忙 — 正在重试', ar: 'خدمة البيانات مشغولة — جارٍ إعادة المحاولة' },
+    dataDown: { en: 'Data service unavailable ({N})', fr: 'Service de données indisponible ({N})', es: 'Servicio de datos no disponible ({N})', de: 'Datendienst nicht verfügbar ({N})', it: 'Servizio dati non disponibile ({N})', pt: 'Serviço de dados indisponível ({N})', ja: 'データサービス利用不可（{N}）', zh: '数据服务不可用（{N}）', ar: 'خدمة البيانات غير متاحة ({N})' },
+    // The gate's welcome screen. The curated phrase LS.nextDep carried until a
+    // later duplicate of the key overwrote it with 'Next departure'.
+    nextDepGate: { en: 'Next departure from this gate', fr: 'Prochain départ de cette porte', es: 'Próxima salida desde esta puerta', de: 'Nächster Abflug von diesem Gate', it: 'Prossima partenza da questo gate', pt: 'Próxima partida deste portão', ja: 'このゲートからの次の出発', zh: '本登机口下一航班', ar: 'المغادرة التالية من هذه البوابة' },
+    flightToCity: { en: '{FLIGHT} to {CITY}', fr: '{FLIGHT} à destination de {CITY}', es: '{FLIGHT} a {CITY}', de: '{FLIGHT} nach {CITY}', it: '{FLIGHT} per {CITY}', pt: '{FLIGHT} para {CITY}', ja: '{FLIGHT}便 {CITY}行き', zh: '{FLIGHT} 飞往 {CITY}', ar: 'الرحلة {FLIGHT} إلى {CITY}',
+      $ctx: 'sentence' },
+    // A revised time: the words of fids-v2.js TX.now, which the boards already
+    // print beside a revised time.
+    nowAt: { en: 'Now {TIME}', fr: 'Maintenant {TIME}', es: 'Ahora {TIME}', de: 'Jetzt {TIME}', it: 'Ora {TIME}', pt: 'Agora {TIME}', ja: '変更 {TIME}', zh: '现改为 {TIME}', ar: 'الآن {TIME}',
+      $ctx: 'revised-time' },
+    // Moved here from LS: the generic boarding sign asked _gateLbl for them,
+    // found nothing in _GATE_LBL, and fell back to one language.
+    boardNow: { en: 'Boarding now', fr: 'Embarquement en cours', es: 'Embarcando ahora', de: 'Jetzt Boarding', it: 'Imbarco in corso', pt: 'Embarque agora', ja: '搭乗中', zh: '正在登机', ar: 'الصعود الآن' },
+    boardNext: { en: 'Boarding next', fr: 'Prochain embarquement', es: 'Próximo embarque', de: 'Nächstes Boarding', it: 'Prossimo imbarco', pt: 'Próximo embarque', ja: '次の搭乗', zh: '下一组登机', ar: 'الصعود التالي' },
+    demoStamp: { en: 'Demonstration', fr: 'Démonstration', es: 'Demostración', de: 'Demonstration', it: 'Dimostrazione', pt: 'Demonstração', ja: 'デモンストレーション', zh: '演示', ar: 'عرض توضيحي' },
+    notLiveFlight: { en: 'not a live flight', fr: 'vol fictif', es: 'vuelo ficticio', de: 'kein echter Flug', it: 'volo fittizio', pt: 'voo fictício', ja: '実際の便ではありません', zh: '非真实航班', ar: 'ليست رحلة حقيقية' },
+
+    // ── PRE-BOARDING, TRAVEL DOCUMENTS, LOYALTY AND CABINS ────────────────
+    // Moved here from _GATE_LBL so each carries where its words come from.
+    // The airline's own published wording is used in every language the
+    // airline publishes; the rest are careful translations, marked so that
+    // ?i18n=provenance (localhost) outlines them on the pictures. Porter
+    // publishes English and French only: PorterReserve / PorterRéserve,
+    // PorterClassic / PorterClassique and AvidTraveller / Grand Voyageur are
+    // its own names (flyporter.com, en-ca and fr-ca), kept as brand names in
+    // the other seven languages.
+    preboard: { en: 'Pre-boarding', fr: 'Pré-embarquement', es: 'Preembarque', de: 'Vorab-Einstieg', it: 'Preimbarco', pt: 'Pré-embarque', ja: '優先搭乗', zh: '优先登机', ar: 'صعود مسبق',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    genboard: { en: 'General boarding', fr: 'Embarquement général', es: 'Embarque general', de: 'Allgemeines Boarding', it: 'Imbarco generale', pt: 'Embarque geral', ja: '一般搭乗', zh: '普通登机', ar: 'صعود عام',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    photoId: { en: 'Have your ID ready for presentation', fr: 'Veuillez avoir votre pièce d’identité prête', es: 'Tenga su identificación con foto lista', de: 'Halten Sie Ihren Lichtbildausweis bereit', it: 'Tenete pronto un documento con foto', pt: 'Tenha sua identificação com foto pronta', ja: '写真付き身分証明書をご用意ください', zh: '请准备好带照片的身份证件', ar: 'يرجى تجهيز بطاقة هوية تحمل صورة',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Porter's own pre-boarding list, condensed for the sign.
+    preboardList: { en: 'Passengers with disabilities · Unaccompanied minors · Families with children 2 and under · Premium VIPorter · PorterReserve', fr: 'Passagers handicapés · Mineurs non accompagnés · Familles avec enfants de 2 ans et moins · VIPorter Premium · PorterReserve', es: 'Pasajeros con discapacidad · Menores no acompañados · Familias con niños de 2 años o menos · VIPorter Premium · PorterReserve', de: 'Passagiere mit Behinderung · Alleinreisende Kinder · Familien mit Kindern bis 2 Jahre · Premium VIPorter · PorterReserve', it: 'Passeggeri con disabilità · Minori non accompagnati · Famiglie con bambini fino a 2 anni · Premium VIPorter · PorterReserve', pt: 'Passageiros com deficiência · Menores desacompanhados · Famílias com crianças até 2 anos · Premium VIPorter · PorterReserve', ja: 'お手伝いが必要なお客様 · お子様のひとり旅 · 2歳以下のお子様連れ · プレミアムVIPorter · PorterReserve', zh: '需协助旅客 · 无人陪伴儿童 · 携2岁及以下儿童的家庭 · 高级VIPorter · PorterReserve', ar: 'الركاب ذوو الإعاقة · القاصرون غير المصحوبين · العائلات مع أطفال حتى سنتين · VIPorter بريميوم · PorterReserve',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    pdReserve: { en: 'PorterReserve', fr: 'PorterRéserve', es: 'PorterReserve', de: 'PorterReserve', it: 'PorterReserve', pt: 'PorterReserve', ja: 'PorterReserve', zh: 'PorterReserve', ar: 'PorterReserve',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    pdClassic: { en: 'PorterClassic', fr: 'PorterClassique', es: 'PorterClassic', de: 'PorterClassic', it: 'PorterClassic', pt: 'PorterClassic', ja: 'PorterClassic', zh: 'PorterClassic', ar: 'PorterClassic',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    avidTraveller: { en: 'AvidTraveller', fr: 'Grand Voyageur', es: 'AvidTraveller', de: 'AvidTraveller', it: 'AvidTraveller', pt: 'AvidTraveller', ja: 'AvidTraveller', zh: 'AvidTraveller', ar: 'AvidTraveller',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinBiz: { en: 'Business Class', fr: 'Classe affaires', es: 'Clase Ejecutiva', de: 'Business Class', it: 'Business Class', pt: 'Classe Executiva', ja: 'ビジネスクラス', zh: '商务舱', ar: 'درجة رجال الأعمال',
+      $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinFirst: { en: 'First Class', fr: 'Première classe', es: 'Primera Clase', de: 'First Class', it: 'Prima Classe', pt: 'Primeira Classe', ja: 'ファーストクラス', zh: '头等舱', ar: 'الدرجة الأولى',
+      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinClub: { en: 'Club Class', fr: 'Classe Club', es: 'Clase Club', de: 'Club Class', it: 'Classe Club', pt: 'Classe Club', ja: 'クラブクラス', zh: '俱乐部舱', ar: 'درجة كلوب',
+      $src: { en: 'airline:TS', fr: 'airline:TS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinEcon: { en: 'Economy Class', fr: 'Classe économique', es: 'Clase Económica', de: 'Economy Class', it: 'Classe Economica', pt: 'Classe Económica', ja: 'エコノミークラス', zh: '经济舱', ar: 'الدرجة السياحية',
+      $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinPremiumWS: { en: 'Premium', fr: 'Premium', es: 'Premium', de: 'Premium', it: 'Premium', pt: 'Premium', ja: 'プレミアム', zh: '高级舱', ar: 'بريميوم',
+      $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinEconWS: { en: 'Economy', fr: 'Économie', es: 'Económica', de: 'Economy', it: 'Economica', pt: 'Económica', ja: 'エコノミー', zh: '经济舱', ar: 'اقتصادي',
+      $src: { en: 'airline:WS', fr: 'airline:WS', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinPremRouge: { en: 'Premium Rouge', fr: 'Premium Rouge', es: 'Premium Rouge', de: 'Premium Rouge', it: 'Premium Rouge', pt: 'Premium Rouge', ja: 'Premium Rouge', zh: 'Premium Rouge', ar: 'Premium Rouge',
+      $src: { en: 'airline:AC', fr: 'airline:AC', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinUnitedFirst: { en: 'United First', fr: 'United First', es: 'United First', de: 'United First', it: 'United First', pt: 'United First', ja: 'United First', zh: 'United First', ar: 'United First',
+      $src: { en: 'airline:UA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    cabinUnitedEcon: { en: 'United Economy', fr: 'United Economy', es: 'United Economy', de: 'United Economy', it: 'United Economy', pt: 'United Economy', ja: 'United Economy', zh: 'United Economy', ar: 'United Economy',
+      $src: { en: 'airline:UA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+
+    // ── HERITAGE CARD ("FROM THE ARCHIVE") ────────────────────────────────
+    // The kicker and the captions of the archive card on the gate. Captions
+    // are careful translations of historical facts; place names follow each
+    // language's own form (Neuschottland, Terranova).
+    heritageKicker: { en: 'From the archive', fr: 'Depuis les archives', es: 'Del archivo', de: 'Aus dem Archiv', it: 'Dall’archivio', pt: 'Do arquivo', ja: 'アーカイブより', zh: '档案回顾', ar: 'من الأرشيف' },
+    'heritage:air-atlantic': { en: 'St. John’s, Newfoundland · a Canadian Partner · until 1998', fr: 'St. John’s (Terre-Neuve) · partenaire de Canadien · jusqu’en 1998', es: 'St. John’s (Terranova) · socio de Canadian · hasta 1998', de: 'St. John’s (Neufundland) · Partner von Canadian · bis 1998', it: 'St. John’s (Terranova) · partner di Canadian · fino al 1998', pt: 'St. John’s (Terra Nova) · parceira da Canadian · até 1998', ja: 'セントジョンズ（ニューファンドランド）· カナディアン航空の提携会社 · 1998年まで', zh: '圣约翰斯（纽芬兰）· 加拿大国际航空合作伙伴 · 至1998年', ar: 'سانت جونز (نيوفاوندلاند) · شريك لشركة كنديان · حتى 1998' },
+    'heritage:air-nova': { en: 'Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001', fr: 'Halifax (Nouvelle-Écosse) · premier Connecteur Air Canada · 1986–2001', es: 'Halifax (Nueva Escocia) · el primer Air Canada Connector · 1986–2001', de: 'Halifax (Neuschottland) · der erste Air Canada Connector · 1986–2001', it: 'Halifax (Nuova Scozia) · il primo Air Canada Connector · 1986–2001', pt: 'Halifax (Nova Escócia) · o primeiro Air Canada Connector · 1986–2001', ja: 'ハリファックス（ノバスコシア）· 最初のエア・カナダ・コネクター · 1986–2001', zh: '哈利法克斯（新斯科舍）· 首家加航联运航空公司 · 1986–2001', ar: 'هاليفاكس (نوفا سكوشا) · أول شركة «إير كندا كونكتور» · 1986–2001' },
+    'heritage:canadian-airlines': { en: 'Calgary · 1987–2001', fr: 'Calgary · 1987–2001', es: 'Calgary · 1987–2001', de: 'Calgary · 1987–2001', it: 'Calgary · 1987–2001', pt: 'Calgary · 1987–2001', ja: 'カルガリー · 1987–2001', zh: '卡尔加里 · 1987–2001', ar: 'كالغاري · 1987–2001' },
+    'heritage:air-canada': { en: 'Montreal · DC-9 · 1966–2002', fr: 'Montréal · DC-9 · 1966–2002', es: 'Montreal · DC-9 · 1966–2002', de: 'Montreal · DC-9 · 1966–2002', it: 'Montréal · DC-9 · 1966–2002', pt: 'Montreal · DC-9 · 1966–2002', ja: 'モントリオール · DC-9 · 1966–2002', zh: '蒙特利尔 · DC-9 · 1966–2002', ar: 'مونتريال · DC-9 · 1966–2002' },
+    'heritage:air-canada-caps': { en: 'Montreal · DC-9 · 1966–2002', fr: 'Montréal · DC-9 · 1966–2002', es: 'Montreal · DC-9 · 1966–2002', de: 'Montreal · DC-9 · 1966–2002', it: 'Montréal · DC-9 · 1966–2002', pt: 'Montreal · DC-9 · 1966–2002', ja: 'モントリオール · DC-9 · 1966–2002', zh: '蒙特利尔 · DC-9 · 1966–2002', ar: 'مونتريال · DC-9 · 1966–2002' },
+
+    // ── WEATHER ───────────────────────────────────────────────────────────
+    // The weather strips' condition words (one entry per phrase; tioLabel()
+    // maps a WMO or Tomorrow.io code to its key). They replace TIO_LABEL and
+    // its parallel _FR/_ES/_DE tables, which stopped at four languages. Where
+    // the weather card already says the same phrase (_WXLBL) its words are
+    // reused, so a strip and the card never disagree.
+    wxClear: { en: 'Clear', fr: 'Dégagé', es: 'Despejado', de: 'Klar', it: 'Sereno', pt: 'Limpo', ja: '快晴', zh: '晴朗', ar: 'صافٍ' },
+    wxMostlyClear: { en: 'Mostly Clear', fr: 'Généralement dégagé', es: 'Mayormente despejado', de: 'Überwiegend klar', it: 'Prevalentemente sereno', pt: 'Predominantemente limpo', ja: 'おおむね晴れ', zh: '大部晴朗', ar: 'صافٍ في الغالب' },
+    wxPartlyCloudy: { en: 'Partly Cloudy', fr: 'Partiellement nuageux', es: 'Parcialmente nublado', de: 'Teils bewölkt', it: 'Parzialmente nuvoloso', pt: 'Parcialmente nublado', ja: '晴れ時々曇り', zh: '多云', ar: 'غائم جزئياً' },
+    wxCloudy: { en: 'Cloudy', fr: 'Nuageux', es: 'Nublado', de: 'Bewölkt', it: 'Nuvoloso', pt: 'Nublado', ja: '曇り', zh: '阴', ar: 'غائم' },
+    wxMostlyCloudy: { en: 'Mostly Cloudy', fr: 'Généralement nuageux', es: 'Mayormente nublado', de: 'Überwiegend bewölkt', it: 'Prevalentemente nuvoloso', pt: 'Predominantemente nublado', ja: 'おおむね曇り', zh: '大部多云', ar: 'غائم في الغالب' },
+    wxFog: { en: 'Fog', fr: 'Brouillard', es: 'Niebla', de: 'Nebel', it: 'Nebbia', pt: 'Nevoeiro', ja: '霧', zh: '雾', ar: 'ضباب' },
+    wxRimeFog: { en: 'Rime Fog', fr: 'Brouillard givrant', es: 'Niebla helada', de: 'Raureifnebel', it: 'Nebbia gelata', pt: 'Nevoeiro gelado', ja: '着氷霧', zh: '冻雾', ar: 'ضباب متجمد' },
+    wxLightFog: { en: 'Light Fog', fr: 'Brume légère', es: 'Niebla ligera', de: 'Leichter Nebel', it: 'Nebbia leggera', pt: 'Nevoeiro fraco', ja: '薄い霧', zh: '轻雾', ar: 'ضباب خفيف' },
+    wxLightDrizzle: { en: 'Light Drizzle', fr: 'Bruine légère', es: 'Llovizna ligera', de: 'Leichter Nieselregen', it: 'Pioviggine leggera', pt: 'Chuvisco fraco', ja: '弱い霧雨', zh: '小毛毛雨', ar: 'رذاذ خفيف' },
+    wxDrizzle: { en: 'Drizzle', fr: 'Bruine', es: 'Llovizna', de: 'Nieselregen', it: 'Pioviggine', pt: 'Chuvisco', ja: '霧雨', zh: '毛毛雨', ar: 'رذاذ' },
+    wxHeavyDrizzle: { en: 'Heavy Drizzle', fr: 'Forte bruine', es: 'Llovizna fuerte', de: 'Starker Nieselregen', it: 'Pioviggine intensa', pt: 'Chuvisco forte', ja: '強い霧雨', zh: '大毛毛雨', ar: 'رذاذ كثيف' },
+    wxFzDrizzle: { en: 'Fz. Drizzle', fr: 'Bruine verg.', es: 'Llovizna helada', de: 'Gefr. Nieselregen', it: 'Pioviggine gelata', pt: 'Chuvisco congelante', ja: '着氷性の霧雨', zh: '冻毛毛雨', ar: 'رذاذ متجمد' },
+    wxHvyFzDrizzle: { en: 'Hvy. Fz. Drizzle', fr: 'Forte bruine verg.', es: 'Llovizna helada fuerte', de: 'Starker gefr. Nieselregen', it: 'Forte pioviggine gelata', pt: 'Chuvisco congelante forte', ja: '強い着氷性の霧雨', zh: '强冻毛毛雨', ar: 'رذاذ متجمد كثيف' },
+    wxLightRain: { en: 'Light Rain', fr: 'Pluie légère', es: 'Lluvia ligera', de: 'Leichter Regen', it: 'Pioggia leggera', pt: 'Chuva fraca', ja: '小雨', zh: '小雨', ar: 'مطر خفيف' },
+    wxRain: { en: 'Rain', fr: 'Pluie', es: 'Lluvia', de: 'Regen', it: 'Pioggia', pt: 'Chuva', ja: '雨', zh: '雨', ar: 'مطر' },
+    wxHeavyRain: { en: 'Heavy Rain', fr: 'Pluie forte', es: 'Lluvia fuerte', de: 'Starkregen', it: 'Pioggia forte', pt: 'Chuva forte', ja: '大雨', zh: '大雨', ar: 'مطر غزير' },
+    wxFzRain: { en: 'Fz. Rain', fr: 'Pluie verg.', es: 'Lluvia helada', de: 'Gefrierender Regen', it: 'Pioggia gelata', pt: 'Chuva congelante', ja: '着氷性の雨', zh: '冻雨', ar: 'مطر متجمد' },
+    wxHvyFzRain: { en: 'Hvy. Fz. Rain', fr: 'Forte pluie verg.', es: 'Lluvia helada fuerte', de: 'Starker gefr. Regen', it: 'Forte pioggia gelata', pt: 'Chuva congelante forte', ja: '強い着氷性の雨', zh: '强冻雨', ar: 'مطر متجمد غزير' },
+    wxLtFzRain: { en: 'Lt. Fz. Rain', fr: 'Pluie verg. lég.', es: 'Lluvia helada ligera', de: 'Leichter gefr. Regen', it: 'Pioggia gelata leggera', pt: 'Chuva congelante fraca', ja: '弱い着氷性の雨', zh: '小冻雨', ar: 'مطر متجمد خفيف' },
+    wxLightSnow: { en: 'Light Snow', fr: 'Neige légère', es: 'Nieve ligera', de: 'Leichter Schneefall', it: 'Neve leggera', pt: 'Neve fraca', ja: '小雪', zh: '小雪', ar: 'ثلج خفيف' },
+    wxSnow: { en: 'Snow', fr: 'Neige', es: 'Nieve', de: 'Schnee', it: 'Neve', pt: 'Neve', ja: '雪', zh: '雪', ar: 'ثلج' },
+    wxHeavySnow: { en: 'Heavy Snow', fr: 'Neige forte', es: 'Nieve intensa', de: 'Starker Schneefall', it: 'Neve intensa', pt: 'Neve forte', ja: '大雪', zh: '大雪', ar: 'ثلوج كثيفة' },
+    wxSnowGrains: { en: 'Snow Grains', fr: 'Grains de neige', es: 'Granos de nieve', de: 'Schneegriesel', it: 'Granelli di neve', pt: 'Grãos de neve', ja: '霧雪', zh: '米雪', ar: 'حبيبات ثلجية' },
+    wxFlurries: { en: 'Flurries', fr: 'Averses neige', es: 'Copos', de: 'Schneeflocken', it: 'Nevischio', pt: 'Flocos de neve', ja: 'ちらつく雪', zh: '零星小雪', ar: 'زخات ثلج خفيفة' },
+    wxLightShowers: { en: 'Light Showers', fr: 'Averses légères', es: 'Chubascos ligeros', de: 'Leichte Schauer', it: 'Rovesci leggeri', pt: 'Aguaceiros fracos', ja: '弱いにわか雨', zh: '小阵雨', ar: 'زخات خفيفة' },
+    wxShowers: { en: 'Showers', fr: 'Averses', es: 'Chubascos', de: 'Schauer', it: 'Rovesci', pt: 'Aguaceiros', ja: 'にわか雨', zh: '阵雨', ar: 'زخات مطر' },
+    wxHeavyShowers: { en: 'Heavy Showers', fr: 'Fortes averses', es: 'Chubascos fuertes', de: 'Starke Schauer', it: 'Forti rovesci', pt: 'Aguaceiros fortes', ja: '強いにわか雨', zh: '强阵雨', ar: 'زخات غزيرة' },
+    wxSnowShowers: { en: 'Snow Showers', fr: 'Averses neige', es: 'Chubascos de nieve', de: 'Schneeschauer', it: 'Rovesci di neve', pt: 'Aguaceiros de neve', ja: 'にわか雪', zh: '阵雪', ar: 'زخات ثلجية' },
+    wxHvySnowShowers: { en: 'Hvy. Snow Showers', fr: 'Fortes averses neige', es: 'Chubascos de nieve fuertes', de: 'Starke Schneeschauer', it: 'Forti rovesci di neve', pt: 'Aguaceiros de neve fortes', ja: '強いにわか雪', zh: '强阵雪', ar: 'زخات ثلجية كثيفة' },
+    wxThunderstorm: { en: 'Thunderstorm', fr: 'Orage', es: 'Tormenta', de: 'Gewitter', it: 'Temporale', pt: 'Trovoada', ja: '雷雨', zh: '雷暴', ar: 'عاصفة رعدية' },
+    wxThunderHail: { en: 'Thunderstorm + Hail', fr: 'Orage avec grêle', es: 'Tormenta con granizo', de: 'Gewitter mit Hagel', it: 'Temporale con grandine', pt: 'Trovoada com granizo', ja: 'ひょうを伴う雷雨', zh: '雷暴伴冰雹', ar: 'عاصفة رعدية مع برد' },
+    wxHvyThunderstorm: { en: 'Hvy. Thunderstorm', fr: 'Fort orage', es: 'Tormenta fuerte', de: 'Schweres Gewitter', it: 'Forte temporale', pt: 'Trovoada forte', ja: '激しい雷雨', zh: '强雷暴', ar: 'عاصفة رعدية قوية' },
+    wxLightWind: { en: 'Light Wind', fr: 'Vent léger', es: 'Viento ligero', de: 'Leichter Wind', it: 'Vento debole', pt: 'Vento fraco', ja: '弱い風', zh: '微风', ar: 'رياح خفيفة' },
+    wxWindy: { en: 'Windy', fr: 'Venteux', es: 'Ventoso', de: 'Windig', it: 'Ventoso', pt: 'Ventoso', ja: '強風', zh: '大风', ar: 'عاصف' },
+    wxStrongWind: { en: 'Strong Wind', fr: 'Vent fort', es: 'Viento fuerte', de: 'Starker Wind', it: 'Vento forte', pt: 'Vento forte', ja: '暴風', zh: '强风', ar: 'رياح قوية' },
+    wxIcePellets: { en: 'Ice Pellets', fr: 'Grésil', es: 'Granizo', de: 'Graupel', it: 'Grandine', pt: 'Granizo', ja: 'ひょう', zh: '冰雹', ar: 'برد' },
+    wxHeavyIce: { en: 'Heavy Ice', fr: 'Fort grésil', es: 'Granizo fuerte', de: 'Starker Graupel', it: 'Grandine forte', pt: 'Granizo forte', ja: '強いひょう', zh: '大冰雹', ar: 'برد كثيف' },
+    wxLtIcePellets: { en: 'Lt. Ice Pellets', fr: 'Grésil léger', es: 'Granizo ligero', de: 'Leichter Graupel', it: 'Grandine leggera', pt: 'Granizo fraco', ja: '弱いひょう', zh: '小冰雹', ar: 'برد خفيف' },
+    // The credit MET Norway's licence asks for, in the board's languages.
+    wxCredit: { en: 'Weather data generously provided by MET Norway', fr: 'Données météo gracieusement fournies par MET Norway', es: 'Datos meteorológicos cortesía de MET Norway', de: 'Wetterdaten freundlicherweise bereitgestellt von MET Norway', it: 'Dati meteo gentilmente forniti da MET Norway', pt: 'Dados meteorológicos gentilmente fornecidos pelo MET Norway', ja: '気象データ提供：MET Norway', zh: '天气数据由 MET Norway 慷慨提供', ar: 'بيانات الطقس مقدَّمة بسخاء من MET Norway' },
+    // The weather card's titles and fact labels, moved here from inline
+    // objects in _renderWxCard.
+    wxReport: { en: 'WEATHER REPORT', fr: 'BULLETIN MÉTÉO', es: 'INFORME DEL CLIMA', de: 'WETTERBERICHT', it: 'BOLLETTINO METEO', pt: 'BOLETIM METEOROLÓGICO', ja: '天気予報', zh: '天气预报', ar: 'نشرة الطقس' },
+    wxNextHours: { en: 'NEXT HOURS', fr: 'PROCHAINES HEURES', es: 'PRÓXIMAS HORAS', de: 'NÄCHSTE STUNDEN', it: 'PROSSIME ORE', pt: 'PRÓXIMAS HORAS', ja: '今後の天気', zh: '未来几小时', ar: 'الساعات القادمة' },
+    wxForecastN: { en: '{N}-DAY FORECAST', fr: 'PRÉVISIONS {N} JOURS', es: 'PRONÓSTICO {N} DÍAS', de: '{N}-TAGE-VORHERSAGE', it: 'PREVISIONI {N} GIORNI', pt: 'PREVISÃO {N} DIAS', ja: '{N}日間予報', zh: '{N}天预报', ar: 'توقعات {N} أيام' },
+    wxNowTitle: { en: 'NOW', fr: 'MAINTENANT', es: 'AHORA', de: 'JETZT', it: 'ORA', pt: 'AGORA', ja: '現在', zh: '现在', ar: 'الآن',
+      $ctx: 'weather' },
+    // One column an eighth of the card wide: the French is abbreviated.
+    wxNowCol: { en: 'Now', fr: 'Maint.', es: 'Ahora', de: 'Jetzt', it: 'Ora', pt: 'Agora', ja: '今', zh: '现在', ar: 'الآن',
+      $ctx: 'weather-column' },
+    wxFeels: { en: 'Feels like', fr: 'Ressenti', es: 'Sensación', de: 'Gefühlt', it: 'Percepita', pt: 'Sensação', ja: '体感', zh: '体感', ar: 'الإحساس' },
+    wxWind: { en: 'Wind', fr: 'Vent', es: 'Viento', de: 'Wind', it: 'Vento', pt: 'Vento', ja: '風', zh: '风', ar: 'الرياح' },
+    wxHumidity: { en: 'Humidity', fr: 'Humidité', es: 'Humedad', de: 'Luftfeuchte', it: 'Umidità', pt: 'Umidade', ja: '湿度', zh: '湿度', ar: 'الرطوبة' },
+    wxGusts: { en: 'Gusts', fr: 'Rafales', es: 'Ráfagas', de: 'Böen', it: 'Raffiche', pt: 'Rajadas', ja: '突風', zh: '阵风', ar: 'هبات' },
+    wxVisibility: { en: 'Visibility', fr: 'Visibilité', es: 'Visibilidad', de: 'Sicht', it: 'Visibilità', pt: 'Visibilidade', ja: '視程', zh: '能见度', ar: 'الرؤية' },
+    wxCloud: { en: 'Cloud', fr: 'Nuages', es: 'Nubes', de: 'Wolken', it: 'Nuvole', pt: 'Nuvens', ja: '雲量', zh: '云量', ar: 'الغيوم' },
+    wxPressure: { en: 'Pressure', fr: 'Pression', es: 'Presión', de: 'Druck', it: 'Pressione', pt: 'Pressão', ja: '気圧', zh: '气压', ar: 'الضغط' },
+    wxSunrise: { en: 'Sunrise', fr: 'Lever', es: 'Amanecer', de: 'Aufgang', it: 'Alba', pt: 'Nascer', ja: '日の出', zh: '日出', ar: 'الشروق' },
+    wxSunset: { en: 'Sunset', fr: 'Coucher', es: 'Atardecer', de: 'Untergang', it: 'Tramonto', pt: 'Pôr', ja: '日の入', zh: '日落', ar: 'الغروب' },
+    tempIn: { en: '{TEMP} in {CITY}', fr: '{TEMP} à {CITY}', es: '{TEMP} en {CITY}', de: '{TEMP} in {CITY}', it: '{TEMP} a {CITY}', pt: '{TEMP} em {CITY}', ja: '{CITY}の気温 {TEMP}', zh: '{CITY}气温 {TEMP}', ar: '{TEMP} في {CITY}' },
+
+    // ── ADVERTISING ───────────────────────────────────────────────────────
+    // Words the ad cards draw around a hotel or an airline offer. Ad copy
+    // itself stays in AD_I18N, keyed by its English.
+    // The same words as the Accor card's own distance line (_DT_SHORT).
+    kmFromDowntown: { en: '{KM} from downtown', fr: 'à {KM} du centre-ville', es: 'a {KM} del centro', de: '{KM} vom Stadtzentrum', it: 'a {KM} dal centro', pt: 'a {KM} do centro', ja: '中心部から{KM}', zh: '距市中心{KM}', ar: '{KM} من وسط المدينة' },
+    theDestination: { en: 'The destination', fr: 'La destination', es: 'El destino', de: 'Das Reiseziel', it: 'La destinazione', pt: 'O destino', ja: '目的地について', zh: '目的地介绍', ar: 'عن الوجهة' },
+    theHotel: { en: 'The hotel', fr: 'L\'hôtel', es: 'El hotel', de: 'Das Hotel', it: 'L\'hotel', pt: 'O hotel', ja: 'ホテル', zh: '酒店', ar: 'الفندق' },
+    diningReviews: { en: 'Dining & reviews', fr: 'Restauration & avis', es: 'Gastronomía y reseñas', de: 'Gastronomie & Bewertungen', it: 'Ristorazione e recensioni', pt: 'Restauração e avaliações', ja: 'ダイニング＆レビュー', zh: '餐饮与评价', ar: 'المطاعم والتقييمات' },
+    dineRestaurant: { en: 'On-site restaurant', fr: 'Restaurant sur place', es: 'Restaurante en el hotel', de: 'Restaurant im Haus', it: 'Ristorante interno', pt: 'Restaurante no local', ja: '館内レストラン', zh: '酒店餐厅', ar: 'مطعم داخل الفندق' },
+    dineBar: { en: 'Bar & lounge', fr: 'Bar-salon', es: 'Bar y salón', de: 'Bar & Lounge', it: 'Bar e lounge', pt: 'Bar e lounge', ja: 'バー・ラウンジ', zh: '酒吧及休息室', ar: 'بار وصالة' },
+    dineRoomService: { en: 'Room service', fr: 'Service aux chambres', es: 'Servicio de habitaciones', de: 'Zimmerservice', it: 'Servizio in camera', pt: 'Serviço de quartos', ja: 'ルームサービス', zh: '客房服务', ar: 'خدمة الغرف' },
+    dineOffer: { en: 'Dining offers for guests', fr: 'Offres restauration pour les clients', es: 'Ofertas gastronómicas para huéspedes', de: 'Gastronomie-Angebote für Gäste', it: 'Offerte ristorazione per gli ospiti', pt: 'Ofertas de restauração para hóspedes', ja: 'ご宿泊者向けダイニング特典', zh: '住客餐饮优惠', ar: 'عروض المطاعم للنزلاء' },
+    welcomeAboard: { en: 'Welcome aboard', fr: 'Bienvenue à bord', es: 'Bienvenido a bordo', de: 'Willkommen an Bord', it: 'Benvenuti a bordo', pt: 'Bem-vindo a bordo', ja: 'ご搭乗ありがとうございます', zh: '欢迎登机', ar: 'أهلاً بكم على متن الرحلة' },
+    starsN: { en: '{N}-star', fr: '{N} étoiles', es: '{N} estrellas', de: '{N} Sterne', it: '{N} stelle', pt: '{N} estrelas', ja: '{N}つ星', zh: '{N}星级', ar: '{N} نجوم' },
+    starN1: { en: '1-star', fr: '1 étoile', es: '1 estrella', de: '1 Stern', it: '1 stella', pt: '1 estrela', ja: '1つ星', zh: '1星级', ar: 'نجمة واحدة' },
+    // The eco-label's own name; its Canadian programme is bilingual (Clé Verte).
+    greenKey: { en: 'Green Key', fr: 'Clé Verte', es: 'Green Key', de: 'Green Key', it: 'Green Key', pt: 'Green Key', ja: 'Green Key', zh: 'Green Key', ar: 'Green Key' },
+    petFriendly: { en: 'Pet-friendly', fr: 'Animaux acceptés', es: 'Se admiten mascotas', de: 'Haustiere erlaubt', it: 'Animali ammessi', pt: 'Aceita animais de estimação', ja: 'ペット可', zh: '可携带宠物', ar: 'يُسمح بالحيوانات الأليفة' },
+
+    // ── BOARD LABELS ──────────────────────────────────────────────────────
+    // Labels the boards had written as English literals or read through keys
+    // no table held. The words copy the screens' own: terminal and weather
+    // are fids-v2's TX.terminal and LS.wx.
+    terminal: { en: 'Terminal', fr: 'Terminal', es: 'Terminal', de: 'Terminal', it: 'Terminal', pt: 'Terminal', ja: 'ターミナル', zh: '航站楼', ar: 'المبنى' },
+    weather: { en: 'Weather', fr: 'Météo', es: 'Clima', de: 'Wetter', it: 'Meteo', pt: 'Clima', ja: '天気', zh: '天气', ar: 'الطقس' },
+    // Tampa's own name for its satellite terminals (Airside A/C/E/F); it publishes no other language, so the others are careful translations.
+    airside: { en: 'Airside', fr: 'Satellite', es: 'Satélite', de: 'Satellit', it: 'Satellite', pt: 'Satélite', ja: 'サテライト', zh: '卫星厅', ar: 'المبنى الفرعي',
+      $src: { en: 'airport:TPA', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // ALL is Accor Live Limitless, the brand; only the word for rating is translated.
+    allRating: { en: '(ALL rating)', fr: '(note ALL)', es: '(valoración ALL)', de: '(ALL-Bewertung)', it: '(valutazione ALL)', pt: '(avaliação ALL)', ja: '(ALL評価)', zh: '(ALL评分)', ar: '(تقييم ALL)' },
+
+    // ── STUDIO PLAYER ─────────────────────────────────────────────────────
+    // A screen built in the Studio (studio-render.js, template-renderer.js):
+    // its table heads, statuses and module words. The statuses and heads copy
+    // the boards' own tables, so a Studio screen and a board beside it say the
+    // same thing; the rest are new.
+    // The Studio's statuses: the boards' own words (SS), so a Studio screen and a board beside it agree.
+    stOnTime: { en: 'On time', fr: 'À l\'heure', es: 'A tiempo', de: 'Pünktlich', it: 'In orario', pt: 'No horário', ja: '定刻', zh: '准点', ar: 'في الموعد' },
+    stEnRoute: { en: 'En route', fr: 'En vol', es: 'En vuelo', de: 'Unterwegs', it: 'In volo', pt: 'Em voo', ja: '飛行中', zh: '飞行中', ar: 'في الطريق' },
+    stBoarding: { en: 'Boarding', fr: 'Embarquement', es: 'Embarcando', de: 'Boarding', it: 'Imbarco', pt: 'Embarque', ja: '搭乗中', zh: '登机中', ar: 'الصعود',
+      $ctx: 'status' },
+    stFinalCall: { en: 'Final call', fr: 'Dernier appel', es: 'Última llamada', de: 'Letzter Aufruf', it: 'Ultima chiamata', pt: 'Última chamada', ja: '最終案内', zh: '最后登机', ar: 'النداء الأخير' },
+    stGateClosed: { en: 'Gate closed', fr: 'Porte fermée', es: 'Puerta cerrada', de: 'Gate geschlossen', it: 'Gate chiuso', pt: 'Portão fechado', ja: '搭乗終了', zh: '登机口已关闭', ar: 'البوابة مغلقة' },
+    stDeparted: { en: 'Departed', fr: 'Parti', es: 'Despegó', de: 'Gestartet', it: 'Partito', pt: 'Partiu', ja: '出発済', zh: '已起飞', ar: 'غادرت' },
+    stArrived: { en: 'Arrived', fr: 'Arrivé', es: 'Llegó', de: 'Gelandet', it: 'Arrivato', pt: 'Chegou', ja: '到着済', zh: '已到达', ar: 'وصلت' },
+    stDelayed: { en: 'Delayed', fr: 'En retard', es: 'Retrasado', de: 'Verspätet', it: 'In ritardo', pt: 'Atrasado', ja: '遅延', zh: '延误', ar: 'متأخر' },
+    stCancelled: { en: 'Cancelled', fr: 'Annulé', es: 'Cancelado', de: 'Annulliert', it: 'Cancellato', pt: 'Cancelado', ja: '欠航', zh: '取消', ar: 'ملغاة' },
+    stDiverted: { en: 'Diverted', fr: 'Dérouté', es: 'Desviado', de: 'Umgeleitet', it: 'Dirottato', pt: 'Desviado', ja: '目的地変更', zh: '备降', ar: 'محوّلة' },
+    stScheduled: { en: 'Scheduled', fr: 'Prévu', es: 'Programado', de: 'Geplant', it: 'Previsto', pt: 'Programado', ja: '予定', zh: '计划', ar: 'مجدول' },
+    // The Studio flight table's column heads, in the boards' words.
+    colAirline: { en: 'Airline', fr: 'Ligne aérienne', es: 'Aerolínea', de: 'Fluggesellschaft', it: 'Compagnia', pt: 'Companhia', ja: '航空会社', zh: '航空公司', ar: 'شركة الطيران' },
+    colFrom: { en: 'From', fr: 'De', es: 'Desde', de: 'Von', it: 'Da', pt: 'De', ja: '出発地', zh: '出发地', ar: 'من' },
+    colTo: { en: 'To', fr: 'À', es: 'A', de: 'Nach', it: 'A', pt: 'Para', ja: '行き先', zh: '目的地', ar: 'إلى' },
+    colFlight: { en: 'Flight', fr: 'Vol', es: 'Vuelo', de: 'Flug', it: 'Volo', pt: 'Voo', ja: '便', zh: '航班', ar: 'رحلة' },
+    colTime: { en: 'Time', fr: 'Heure', es: 'Hora', de: 'Zeit', it: 'Ora', pt: 'Hora', ja: '時刻', zh: '时间', ar: 'الوقت' },
+    colStatus: { en: 'Status', fr: 'Statut', es: 'Estado', de: 'Status', it: 'Stato', pt: 'Estado', ja: '状況', zh: '状态', ar: 'الحالة' },
+    colBelt: { en: 'Carousel', fr: 'Carrousel', es: 'Carrusel', de: 'Band', it: 'Nastro', pt: 'Esteira', ja: 'ターンテーブル', zh: '行李转盘', ar: 'الحزام' },
+    colPage: { en: 'Page', fr: 'Page', es: 'Página', de: 'Seite', it: 'Pagina', pt: 'Página', ja: 'ページ', zh: '页', ar: 'صفحة' },
+    noScheduled: { en: 'No scheduled flights', fr: 'Aucun vol prévu', es: 'No hay vuelos programados', de: 'Keine geplanten Flüge', it: 'Nessun volo previsto', pt: 'Nenhum voo programado', ja: '予定便はありません', zh: '暂无计划航班', ar: 'لا توجد رحلات مجدولة' },
+    airportNamed: { en: '{IATA} Airport', fr: 'Aéroport {IATA}', es: 'Aeropuerto {IATA}', de: 'Flughafen {IATA}', it: 'Aeroporto {IATA}', pt: 'Aeroporto {IATA}', ja: '{IATA}空港', zh: '{IATA}机场', ar: 'مطار {IATA}' },
+    advertisement: { en: 'Advertisement', fr: 'Publicité', es: 'Publicidad', de: 'Anzeige', it: 'Pubblicità', pt: 'Publicidade', ja: '広告', zh: '广告', ar: 'إعلان' },
+    oversizeTitle: { en: 'Oversized baggage', fr: 'Bagages hors format', es: 'Equipaje de gran tamaño', de: 'Sperrgepäck', it: 'Bagagli fuori misura', pt: 'Bagagem de grandes dimensões', ja: '大型手荷物', zh: '超大行李', ar: 'الأمتعة كبيرة الحجم' },
+    oversizeBody: { en: 'Collect oversized items beside belt {BELT}.', fr: 'Récupérez les bagages hors format à côté du carrousel {BELT}.', es: 'Recoja el equipaje de gran tamaño junto a la cinta {BELT}.', de: 'Sperrgepäck erhalten Sie neben Band {BELT}.', it: 'Ritirate i bagagli fuori misura accanto al nastro {BELT}.', pt: 'Retire a bagagem de grandes dimensões ao lado da esteira {BELT}.', ja: '大型手荷物はターンテーブル{BELT}の横でお受け取りください。', zh: '超大行李请在{BELT}号转盘旁提取。', ar: 'استلم الأمتعة كبيرة الحجم بجانب الحزام {BELT}.' },
+    checkinOpens: { en: 'Check-in opens 2 hours before departure.', fr: 'L’enregistrement ouvre 2 heures avant le départ.', es: 'La facturación abre 2 horas antes de la salida.', de: 'Der Check-in öffnet 2 Stunden vor Abflug.', it: 'Il check-in apre 2 ore prima della partenza.', pt: 'O check-in abre 2 horas antes da partida.', ja: 'チェックインは出発の2時間前に開始します。', zh: '值机柜台于起飞前2小时开放。', ar: 'يبدأ تسجيل الوصول قبل ساعتين من المغادرة.' },
+    countersRange: { en: 'Counters {RANGE}', fr: 'Comptoirs {RANGE}', es: 'Mostradores {RANGE}', de: 'Schalter {RANGE}', it: 'Banchi {RANGE}', pt: 'Balcões {RANGE}', ja: 'カウンター {RANGE}', zh: '柜台 {RANGE}', ar: 'المكاتب {RANGE}' },
+    counterOpen: { en: 'Open', fr: 'Ouvert', es: 'Abierto', de: 'Geöffnet', it: 'Aperto', pt: 'Aberto', ja: '受付中', zh: '开放', ar: 'مفتوح' },
+    queueSample: { en: 'Queue time about {N} minutes · All lanes open', fr: 'Attente d’environ {N} minutes · Toutes les files ouvertes', es: 'Espera de unos {N} minutos · Todas las filas abiertas', de: 'Wartezeit etwa {N} Minuten · Alle Spuren geöffnet', it: 'Attesa di circa {N} minuti · Tutte le corsie aperte', pt: 'Espera de cerca de {N} minutos · Todas as filas abertas', ja: '待ち時間 約{N}分 · 全レーン開放中', zh: '排队约{N}分钟 · 所有通道开放', ar: 'وقت الانتظار نحو {N} دقائق · جميع المسارات مفتوحة' },
+    emergencyTitle: { en: 'Emergency', fr: 'Urgence', es: 'Emergencia', de: 'Notfall', it: 'Emergenza', pt: 'Emergência', ja: '緊急', zh: '紧急情况', ar: 'حالة طوارئ' },
+    followStaff: { en: 'Follow staff instructions', fr: 'Suivez les consignes du personnel', es: 'Siga las instrucciones del personal', de: 'Folgen Sie den Anweisungen des Personals', it: 'Seguite le istruzioni del personale', pt: 'Siga as instruções da equipe', ja: '係員の指示に従ってください', zh: '请听从工作人员指示', ar: 'يرجى اتباع تعليمات الموظفين' },
+    actual: { en: 'Actual', fr: 'Réel', es: 'Real', de: 'Tatsächlich', it: 'Effettivo', pt: 'Real', ja: '実際', zh: '实际', ar: 'الفعلي' },
+    remaining: { en: 'Remaining', fr: 'Restant', es: 'Restante', de: 'Verbleibend', it: 'Rimanente', pt: 'Restante', ja: '残り', zh: '剩余', ar: 'المتبقي' },
+
+    // ── PHONE LAYOUT ──────────────────────────────────────────────────────
+    // The cards and hero panels a phone shows (one language: fids_mobile_lang,
+    // else the phone's own), and its gate navigation.
+    operator: { en: 'Operator', fr: 'Exploitant', es: 'Operador', de: 'Betreiber', it: 'Operatore', pt: 'Operador', ja: '運航会社', zh: '运营商', ar: 'المشغّل' },
+    manufacturer: { en: 'Manufacturer', fr: 'Constructeur', es: 'Fabricante', de: 'Hersteller', it: 'Costruttore', pt: 'Fabricante', ja: 'メーカー', zh: '制造商', ar: 'الشركة المصنّعة' },
+    range: { en: 'Range', fr: 'Autonomie', es: 'Autonomía', de: 'Reichweite', it: 'Autonomia', pt: 'Autonomia', ja: '航続距離', zh: '航程', ar: 'المدى' },
+    estimated: { en: 'Estimated', fr: 'Estimé', es: 'Estimado', de: 'Erwartet', it: 'Stimato', pt: 'Estimado', ja: '予定', zh: '预计', ar: 'متوقع' },
+    hotels: { en: 'Hotels', fr: 'Hôtels', es: 'Hoteles', de: 'Hotels', it: 'Hotel', pt: 'Hotéis', ja: 'ホテル', zh: '酒店', ar: 'فنادق' },
+    map: { en: 'Map', fr: 'Carte', es: 'Mapa', de: 'Karte', it: 'Mappa', pt: 'Mapa', ja: '地図', zh: '地图', ar: 'الخريطة' },
+    noDestData: { en: 'No destination data', fr: 'Aucune donnée sur la destination', es: 'Sin datos del destino', de: 'Keine Zieldaten', it: 'Nessun dato sulla destinazione', pt: 'Sem dados do destino', ja: '目的地の情報はありません', zh: '暂无目的地数据', ar: 'لا توجد بيانات عن الوجهة' },
+    hotelsUnavailable: { en: 'Hotels unavailable', fr: 'Hôtels indisponibles', es: 'Hoteles no disponibles', de: 'Hotels nicht verfügbar', it: 'Hotel non disponibili', pt: 'Hotéis indisponíveis', ja: 'ホテル情報はありません', zh: '酒店信息不可用', ar: 'الفنادق غير متاحة' },
+    noStaysFor: { en: 'No stays found for {CITY}', fr: 'Aucun hébergement trouvé pour {CITY}', es: 'No se encontraron alojamientos en {CITY}', de: 'Keine Unterkünfte in {CITY} gefunden', it: 'Nessun alloggio trovato a {CITY}', pt: 'Nenhuma hospedagem encontrada em {CITY}', ja: '{CITY}の宿泊施設は見つかりませんでした', zh: '未找到{CITY}的住宿', ar: 'لم يتم العثور على إقامة في {CITY}' },
+    staysIn: { en: 'Stays in {CITY}', fr: 'Hébergement à {CITY}', es: 'Alojamiento en {CITY}', de: 'Unterkünfte in {CITY}', it: 'Alloggi a {CITY}', pt: 'Hospedagem em {CITY}', ja: '{CITY}の宿泊施設', zh: '{CITY}住宿', ar: 'الإقامة في {CITY}' },
+    loadingStays: { en: 'Loading stays', fr: 'Chargement des hébergements', es: 'Cargando alojamientos', de: 'Unterkünfte werden geladen', it: 'Caricamento degli alloggi', pt: 'Carregando hospedagens', ja: '宿泊施設を読み込み中', zh: '正在加载住宿', ar: 'جارٍ تحميل أماكن الإقامة' },
+    coordsUnavailable: { en: 'Coordinates unavailable', fr: 'Coordonnées indisponibles', es: 'Coordenadas no disponibles', de: 'Koordinaten nicht verfügbar', it: 'Coordinate non disponibili', pt: 'Coordenadas indisponíveis', ja: '座標情報はありません', zh: '坐标不可用', ar: 'الإحداثيات غير متاحة' },
+    mapUnavailable: { en: 'Map unavailable', fr: 'Carte indisponible', es: 'Mapa no disponible', de: 'Karte nicht verfügbar', it: 'Mappa non disponibile', pt: 'Mapa indisponível', ja: '地図を表示できません', zh: '地图不可用', ar: 'الخريطة غير متاحة' },
+    go: { en: 'Go', fr: 'Aller', es: 'Ir', de: 'Los', it: 'Vai', pt: 'Ir', ja: '検索', zh: '搜索', ar: 'انتقال' },
+    menu: { en: 'Menu', fr: 'Menu', es: 'Menú', de: 'Menü', it: 'Menu', pt: 'Menu', ja: 'メニュー', zh: '菜单', ar: 'القائمة' },
+    back: { en: 'Back', fr: 'Retour', es: 'Atrás', de: 'Zurück', it: 'Indietro', pt: 'Voltar', ja: '戻る', zh: '返回', ar: 'رجوع' },
+    openGateScreen: { en: 'Open gate {GATE} screen', fr: 'Ouvrir l’écran de la porte {GATE}', es: 'Abrir la pantalla de la puerta {GATE}', de: 'Anzeige von Gate {GATE} öffnen', it: 'Apri lo schermo del gate {GATE}', pt: 'Abrir a tela do portão {GATE}', ja: 'ゲート{GATE}の画面を開く', zh: '打开{GATE}号登机口屏幕', ar: 'افتح شاشة البوابة {GATE}' },
+    openCarouselScreen: { en: 'Open carousel {GATE} screen', fr: 'Ouvrir l’écran du carrousel {GATE}', es: 'Abrir la pantalla del carrusel {GATE}', de: 'Anzeige von Band {GATE} öffnen', it: 'Apri lo schermo del nastro {GATE}', pt: 'Abrir a tela da esteira {GATE}', ja: 'ターンテーブル{GATE}の画面を開く', zh: '打开{GATE}号行李转盘屏幕', ar: 'افتح شاشة الحزام {GATE}' },
+    // The phone offer on the opener (index.html): the question, its two answers and the note under them. The French is the offer's own wording.
+    mobileAsk: { en: 'Open the mobile app?', fr: 'Ouvrir l’application mobile ?', es: '¿Abrir la aplicación móvil?', de: 'Mobile App öffnen?', it: 'Aprire l’app mobile?', pt: 'Abrir o aplicativo móvel?', ja: 'モバイルアプリを開きますか？', zh: '打开移动应用？', ar: 'هل تريد فتح تطبيق الجوال؟' },
+    mobileYes: { en: 'Use the mobile app', fr: 'Utiliser l’application mobile', es: 'Usar la aplicación móvil', de: 'Mobile App verwenden', it: 'Usa l’app mobile', pt: 'Usar o aplicativo móvel', ja: 'モバイルアプリを使う', zh: '使用移动应用', ar: 'استخدام تطبيق الجوال' },
+    mobileNo: { en: 'Stay on the regular site', fr: 'Rester sur le site normal', es: 'Quedarse en el sitio normal', de: 'Auf der normalen Website bleiben', it: 'Resta sul sito normale', pt: 'Permanecer no site normal', ja: '通常のサイトのまま', zh: '留在常规网站', ar: 'البقاء على الموقع العادي' },
+    mobileNote: { en: 'We’ll remember your choice. Add {ASK} to be asked again.', fr: 'Votre choix sera retenu. Ajoutez {ASK} pour qu’on vous redemande.', es: 'Recordaremos su elección. Añada {ASK} para que se lo volvamos a preguntar.', de: 'Wir merken uns Ihre Wahl. Fügen Sie {ASK} hinzu, um erneut gefragt zu werden.', it: 'Ricorderemo la vostra scelta. Aggiungete {ASK} per ricevere di nuovo la domanda.', pt: 'Vamos lembrar a sua escolha. Adicione {ASK} para ser perguntado novamente.', ja: '選択内容は保存されます。もう一度確認するには {ASK} を追加してください。', zh: '我们会记住您的选择。添加 {ASK} 可再次询问。', ar: 'سنتذكر اختيارك. أضف {ASK} ليُطرح عليك السؤال مرة أخرى.' }
   };
 
   // Lists: per language, equal length. Tickers.
-  var LISTS = {};
+  var LISTS = {
+    // ── TICKERS
+    // The scrolling lines of the main board and the gate (ticker) and of the
+    // baggage hall (bagsTicker). Each language's list has the same length;
+    // line N is the same message in every language. Moved here from
+    // TICKER_MSG and BAGS_TICKER_MSG; the baggage list had stopped at three
+    // languages, so a German or Japanese hall scrolled English or dropped
+    // its second language. Lines it shares with the main ticker use that
+    // ticker's words.
+    ticker: {
+      en: ['PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES', 'UNATTENDED ITEMS WILL BE CONFISCATED BY SECURITY', 'PROCEED TO YOUR GATE 30 MINUTES BEFORE DEPARTURE', 'BOARDING GATES CLOSE 15 MINUTES PRIOR TO DEPARTURE', 'REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF', 'CHECK MONITORS FOR UPDATED GATE INFORMATION'],
+      fr: ['VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS', 'LES OBJETS SANS SURVEILLANCE SERONT CONFISQUÉS', 'PRÉSENTEZ-VOUS À LA PORTE 30 MINUTES AVANT LE DÉPART', 'FERMETURE DES PORTES 15 MINUTES AVANT LE DÉPART', 'SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL', 'CONSULTEZ LES ÉCRANS POUR TOUTE MISE À JOUR'],
+      es: ['MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO', 'ARTÍCULOS DESATENDIDOS SERÁN CONFISCADOS', 'DIRÍJASE A SU PUERTA 30 MINUTOS ANTES DEL VUELO', 'PUERTAS CIERRAN 15 MIN ANTES DE LA SALIDA', 'REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL', 'CONSULTE LOS MONITORES PARA INFORMACIÓN ACTUALIZADA'],
+      de: ['BEHALTEN SIE IHR GEPÄCK STETS BEI SICH', 'UNBEAUFSICHTIGTE GEGENSTÄNDE WERDEN KONFISZIERT', 'BEGEBEN SIE SICH 30 MIN VOR ABFLUG ZUM GATE', 'GATES SCHLIEßEN 15 MIN VOR ABFLUG', 'MELDEN SIE VERDÄCHTIGE AKTIVITÄTEN', 'PRÜFEN SIE DIE MONITORE FÜR AKTUELLE INFORMATIONEN'],
+      it: ['TENERE SEMPRE CON SÉ IL BAGAGLIO', 'OGGETTI INCUSTODITI SARANNO CONFISCATI', 'PRESENTARSI AL GATE 30 MINUTI PRIMA', 'I GATE CHIUDONO 15 MINUTI PRIMA DELLA PARTENZA', 'SEGNALARE ATTIVITÀ SOSPETTE AL PERSONALE', 'CONTROLLARE I MONITOR PER AGGIORNAMENTI'],
+      pt: ['MANTENHA SUA BAGAGEM CONSIGO EM TODOS OS MOMENTOS', 'ITENS ABANDONADOS SERÃO CONFISCADOS', 'DIRIJA-SE AO PORTÃO 30 MINUTOS ANTES', 'PORTÕES FECHAM 15 MINUTOS ANTES DA PARTIDA', 'REPORTE ATIVIDADE SUSPEITA AO PESSOAL', 'CONSULTE OS MONITORES PARA ATUALIZAÇÕES'],
+      ja: ['手荷物は常にお手元にお持ちください', '放置された荷物は撤去されます', '出発30分前にはゲートへお越しください', '搭乗ゲートは出発15分前に閉鎖されます', '不審な行動は職員にお知らせください', 'ゲート情報の更新はモニターをご確認ください'],
+      zh: ['请随时看管好您的行李', '无人看管的物品将被没收', '请在起飞前30分钟前往登机口', '登机口在起飞前15分钟关闭', '如发现可疑活动请报告工作人员', '请查看显示屏获取最新登机口信息'],
+      ar: ['يرجى الاحتفاظ بأمتعتكم معكم في جميع الأوقات', 'سيتم مصادرة الأغراض المتروكة', 'توجهوا إلى البوابة قبل 30 دقيقة من الإقلاع', 'تغلق بوابات الصعود قبل 15 دقيقة من المغادرة', 'أبلغوا عن أي نشاط مشبوه لموظفي المطار', 'تحققوا من الشاشات للحصول على أحدث المعلومات']
+    },
+
+    // ── 
+    bagsTicker: {
+      en: ['MANY BAGS LOOK ALIKE — PLEASE CHECK YOUR BAG TAG', 'LUGGAGE CARTS ARE AVAILABLE NEAR THE EXIT', 'REPORT DAMAGED OR MISSING BAGGAGE TO YOUR AIRLINE', 'PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES', 'REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF', 'THANK YOU FOR FLYING WITH US — WELCOME'],
+      fr: ['PLUSIEURS VALISES SE RESSEMBLENT — VÉRIFIEZ VOTRE ÉTIQUETTE', 'DES CHARIOTS À BAGAGES SONT DISPONIBLES PRÈS DE LA SORTIE', 'SIGNALEZ TOUT BAGAGE ENDOMMAGÉ OU MANQUANT À VOTRE TRANSPORTEUR', 'VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS', 'SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL', 'MERCI D’AVOIR VOYAGÉ AVEC NOUS — BIENVENUE'],
+      es: ['MUCHAS MALETAS SON PARECIDAS — VERIFIQUE SU ETIQUETA', 'HAY CARRITOS DE EQUIPAJE CERCA DE LA SALIDA', 'REPORTE EQUIPAJE DAÑADO O FALTANTE A SU AEROLÍNEA', 'MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO', 'REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL', 'GRACIAS POR VOLAR CON NOSOTROS — BIENVENIDOS'],
+      de: ['VIELE KOFFER SEHEN GLEICH AUS — PRÜFEN SIE IHR GEPÄCKETIKETT', 'GEPÄCKWAGEN STEHEN AM AUSGANG BEREIT', 'MELDEN SIE BESCHÄDIGTES ODER FEHLENDES GEPÄCK IHRER FLUGGESELLSCHAFT', 'BEHALTEN SIE IHR GEPÄCK STETS BEI SICH', 'MELDEN SIE VERDÄCHTIGE AKTIVITÄTEN', 'DANKE, DASS SIE MIT UNS GEFLOGEN SIND — WILLKOMMEN'],
+      it: ['MOLTI BAGAGLI SI SOMIGLIANO — CONTROLLATE L’ETICHETTA', 'I CARRELLI PORTABAGAGLI SONO DISPONIBILI VICINO ALL’USCITA', 'SEGNALATE I BAGAGLI DANNEGGIATI O MANCANTI ALLA VOSTRA COMPAGNIA AEREA', 'TENERE SEMPRE CON SÉ IL BAGAGLIO', 'SEGNALARE ATTIVITÀ SOSPETTE AL PERSONALE', 'GRAZIE PER AVER VOLATO CON NOI — BENVENUTI'],
+      pt: ['MUITAS MALAS SÃO PARECIDAS — CONFIRA SUA ETIQUETA', 'HÁ CARRINHOS DE BAGAGEM PERTO DA SAÍDA', 'COMUNIQUE BAGAGEM DANIFICADA OU EXTRAVIADA À SUA COMPANHIA AÉREA', 'MANTENHA SUA BAGAGEM CONSIGO EM TODOS OS MOMENTOS', 'REPORTE ATIVIDADE SUSPEITA AO PESSOAL', 'OBRIGADO POR VOAR CONOSCO — BEM-VINDOS'],
+      ja: ['よく似た手荷物が多数あります — 手荷物タグをご確認ください', '手荷物カートは出口付近にございます', '手荷物の破損・紛失はご利用の航空会社へお申し出ください', '手荷物は常にお手元にお持ちください', '不審な行動は職員にお知らせください', 'ご搭乗ありがとうございました — ようこそ'],
+      zh: ['许多行李外观相似 — 请核对您的行李牌', '出口附近有行李手推车', '行李损坏或丢失请向您的航空公司报告', '请随时看管好您的行李', '如发现可疑活动请报告工作人员', '感谢您的搭乘 — 欢迎'],
+      ar: ['تتشابه حقائب كثيرة — يرجى التحقق من بطاقة أمتعتكم', 'تتوفر عربات الأمتعة بالقرب من المخرج', 'أبلغوا شركة الطيران عن الأمتعة التالفة أو المفقودة', 'يرجى الاحتفاظ بأمتعتكم معكم في جميع الأوقات', 'أبلغوا عن أي نشاط مشبوه لموظفي المطار', 'شكراً لسفركم معنا — أهلاً وسهلاً']
+    },
+
+    // ── ACCOR AMENITY FALLBACK
+    // The three amenity lines an Accor card shows when the feed sends none.
+    amenFallback: {
+      en: ['Restaurant', 'Wi‑Fi', 'Comfort rooms'],
+      fr: ['Restaurant', 'Wi‑Fi', 'Chambres confortables'],
+      es: ['Restaurante', 'Wi‑Fi', 'Habitaciones confortables'],
+      de: ['Restaurant', 'WLAN', 'Komfortzimmer'],
+      it: ['Ristorante', 'Wi‑Fi', 'Camere confortevoli'],
+      pt: ['Restaurante', 'Wi‑Fi', 'Quartos confortáveis'],
+      ja: ['レストラン', 'Wi‑Fi', '快適な客室'],
+      zh: ['餐厅', 'Wi‑Fi', '舒适客房'],
+      ar: ['مطعم', 'واي فاي', 'غرف مريحة']
+    }
+  };
 
   // ━━ HELPERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -202,6 +524,14 @@
     });
   }
   function fmt(key, lang, fields, raw) { return fill(bs(key, lang), fields, raw); }
+  // An entry with its placeholders filled in every language, for the helpers
+  // that take a whole language object (the weather card's _wxPair family).
+  function filled(key, fields, raw) {
+    var e = entry(key), out = {};
+    if (!e) { miss(key, '*'); return out; }
+    LANGS.forEach(function (l) { out[l] = fill(e[l], fields, raw); });
+    return out;
+  }
 
   function isFrFirst(iata) { return !!_frFirstSet[String(iata || '').toUpperCase()]; }
 
@@ -248,6 +578,48 @@
       + '>' + html + '</span>';
   }
 
+  // The same marks written onto a half someone else already wrapped (the
+  // gate's own `<span class="g8-pair-h">…`): lang, dir for Arabic and the
+  // careful flag go on the half's first tag, so no extra element and no
+  // stylesheet change. A bare half in Japanese, Chinese or Arabic — where
+  // the language picks the font, the line breaking or the direction — is
+  // isolated in a <bdi>; a bare Latin half is left as it is.
+  var BARE_MARK = { ja: 1, zh: 1, ar: 1 };
+  function markHalf(html, lang, key) {
+    var h = String(html == null ? '' : html);
+    if (!isLang(lang)) return h;
+    var rtl = META[lang].dir === 'rtl';
+    var e = entry(key);
+    var careful = !!(e && e.$src && e.$src[lang] === 'careful');
+    var m = /^<(span|div|b|i|em|strong|bdi|small)\b([^>]*)>/.exec(h);
+    if (m) {
+      var attrs = m[2];
+      if (!/\slang=/.test(attrs)) attrs += ' lang="' + lang + '"';
+      if (rtl && !/\sdir=/.test(attrs)) attrs += ' dir="rtl"';
+      if (careful) attrs += ' data-i18n-src="careful"';
+      return '<' + m[1] + attrs + '>' + h.slice(m[0].length);
+    }
+    if (!h || (!BARE_MARK[lang] && !careful)) return h;
+    return '<bdi lang="' + lang + '"' + (rtl ? ' dir="rtl"' : '')
+      + (careful ? ' data-i18n-src="careful"' : '') + '>' + h + '</bdi>';
+  }
+
+  // The web fonts that carry Japanese, Chinese and Arabic, put into a font
+  // stack before its generic family. Every stack the board sets at run time
+  // goes through this, so those languages never fall to a host font that
+  // may not exist (the stream host has none). Static stacks in the
+  // stylesheets carry the same tail.
+  // The variable is resolved on each element (shared.css sets it per
+  // language), so Chinese takes the simplified-Chinese forms and Japanese the
+  // Japanese ones; the fallback list serves a page without the stylesheet.
+  var SCRIPT_FONTS = "var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic')";
+  function withScripts(stack) {
+    var s = String(stack == null ? '' : stack).replace(/\s+$/, '');
+    if (!s || s.indexOf('--fids-script-fonts') >= 0) return s;
+    var m = /,\s*(sans-serif|serif|monospace|system-ui|cursive|fantasy)\s*$/i.exec(s);
+    return m ? s.slice(0, m.index) + ', ' + SCRIPT_FONTS + s.slice(m.index) : s + ', ' + SCRIPT_FONTS;
+  }
+
   var SEP_HTML = ' <span class="bs-sep">|</span> ';
 
   // The one-line Label | Label pair.
@@ -258,6 +630,7 @@
   //   o.sep       separator markup (default ' | ' in a .bs-sep span)
   //   o.cls       class added to each half
   //   o.plain     text only, no markup (for attributes and measuring)
+  //   o.upper     capitals, by each language's own rules
   function pair(key, o) {
     o = o || {};
     var e = entry(key);
@@ -267,6 +640,7 @@
     for (var i = 0; i < L.length; i++) {
       var w = e[L[i]];
       if (typeof w !== 'string' || !w) { miss(key, L[i]); continue; }
+      if (o.upper) w = w.toLocaleUpperCase(META[L[i]].intl);
       w = fill(w, o.fields, o.raw);
       var k = w.toLowerCase();
       if (!o.keepDup && seen[k]) continue;
@@ -287,18 +661,23 @@
   // The only place a locale or hour12 is chosen. A time in a 24-hour
   // language reads 17:35; English reads 5:35pm, as the boards always have.
   function toDate(d) { return d instanceof Date ? d : new Date(d); }
-  function time(d, lang, tz) {
+  // opts.clock24 true forces 24 hours (a designer's choice); opts.seconds
+  // adds the seconds.
+  function time(d, lang, tz, opts) {
     var l = isLang(lang) ? lang : 'en';
     var dt = toDate(d);
     if (isNaN(dt.getTime())) return '';
+    opts = opts || {};
     try {
-      if (META[l].clock24) {
+      if (META[l].clock24 || opts.clock24 === true) {
         var o24 = { hour: '2-digit', minute: '2-digit', hour12: false };
+        if (opts.seconds) o24.second = '2-digit';
         if (tz) o24.timeZone = tz;
         var s = dt.toLocaleTimeString('en-GB', o24);
         return s.replace(/^24:/, '00:');
       }
       var o12 = { hour: 'numeric', minute: '2-digit', hour12: true };
+      if (opts.seconds) o12.second = '2-digit';
       if (tz) o12.timeZone = tz;
       return dt.toLocaleTimeString('en-US', o12)
         .replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
@@ -382,13 +761,88 @@
     return { langs: frenchFirst(list, String(o.iata || '')), source: source };
   }
 
+  // ── BEFORE THE BOARD HAS RESOLVED ITS LANGUAGES ─────────────────────────
+  // The boot loader and the page's static text run before fids-core.js has
+  // decided `langs`. They ask the same resolver with what a page knows at
+  // that point: the URL, the saved choice and the airport's default.
+  function bootLangs() {
+    var L = boardLangs();
+    if (L) return cleanList(L);
+    var iata = '', search = '', saved = null;
+    try {
+      search = String(location.search || '');
+      var q = new URLSearchParams(search);
+      iata = String(q.get('ap') || '');
+      if (!iata) { try { iata = sessionStorage.getItem('fids_airport') || ''; } catch (e1) {} }
+      iata = iata.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4);
+      try { saved = localStorage.getItem('fids_langs_' + iata); } catch (e2) {}
+    } catch (e) {}
+    return resolveLangs({ iata: iata, search: search, saved: saved }).langs;
+  }
+  // A loader status line: the board's first language, in capitals, trailing
+  // ellipsis ('CHARGEMENT…'); `bare` leaves the ellipsis off ('PORTE 4').
+  function loaderLine(key, bare) {
+    var l = bootLangs()[0] || 'en';
+    return bs(key, l).toLocaleUpperCase(META[l].intl) + (bare ? '' : '…');
+  }
+  // Marks an element as being in one language: lang, and dir for Arabic.
+  function setLang(el, l) {
+    if (!el || !el.setAttribute || !isLang(l)) return;
+    el.setAttribute('lang', l);
+    if (META[l].dir === 'rtl') el.setAttribute('dir', 'rtl'); else el.removeAttribute('dir');
+  }
+  // Static page text: every element carrying data-i18n="key" is filled from
+  // the store — the board's pair, or with data-i18n-one its first language;
+  // data-i18n-upper sets capitals. Run at boot and again whenever the
+  // languages change (toggleLang).
+  function applyStatic(root) {
+    try {
+      var doc = root || (typeof document !== 'undefined' ? document : null);
+      if (!doc || !doc.querySelectorAll) return;
+      var L = bootLangs();
+      var els = doc.querySelectorAll('[data-i18n]');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i], key = el.getAttribute('data-i18n');
+        var upper = el.hasAttribute('data-i18n-upper');
+        if (el.hasAttribute('data-i18n-one')) {
+          var l = L[0] || 'en', w = bs(key, l);
+          el.textContent = upper ? w.toLocaleUpperCase(META[l].intl) : w;
+          setLang(el, l);
+        } else {
+          el.innerHTML = pair(key, { langs: L, upper: upper });
+        }
+      }
+    } catch (e) {}
+  }
+  if (typeof document !== 'undefined' && document.addEventListener) {
+    document.addEventListener('DOMContentLoaded', function () { applyStatic(); });
+  }
+
+  // ── PROVENANCE (localhost only) ─────────────────────────────────────────
+  // ?i18n=provenance outlines every careful translation on screen with a ≈,
+  // so the pictures show which words are ours rather than the airline's or
+  // the government's (display-overrides.css, [data-i18n-src]).
+  try {
+    if (typeof location !== 'undefined' && /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname)
+        && /[?&]i18n=provenance\b/.test(location.search)) {
+      document.documentElement.setAttribute('data-i18n-provenance', '1');
+    }
+  } catch (e) {}
+
+  api.bootLangs = bootLangs;
+  api.loaderLine = loaderLine;
+  api.setLang = setLang;
+  api.applyStatic = applyStatic;
   api.isLang = isLang;
   api.bs = bs;
   api.fmt = fmt;
   api.fill = fill;
+  api.filled = filled;
   api.esc = esc;
   api.entry = entry;
   api.half = half;
+  api.markHalf = markHalf;
+  api.withScripts = withScripts;
   api.pair = pair;
   api.pairLangs = pairLangs;
   api.frenchFirst = frenchFirst;

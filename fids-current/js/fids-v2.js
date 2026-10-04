@@ -16,42 +16,42 @@
   const TX = {
     // Column headers
     airline:    { en:'Airline', fr:'Ligne aérienne', es:'Aerolínea', de:'Fluggesellschaft', it:'Compagnia', pt:'Companhia', ja:'航空会社', zh:'航空公司', ar:'شركة الطيران' },
-    to:         { en:'Destination', fr:'Destination',   es:'A',         de:'Nach',             it:'Per',       pt:'Para',      ja:'行先',     zh:'前往',     ar:'إلى' },
-    from:       { en:'From',    fr:'De',             es:'Desde',     de:'Von',              it:'Da',        pt:'De',        ja:'出発地',   zh:'始发',     ar:'من' },
+    to:         { en:'Destination', fr:'Destination',   es:'Destino',         de:'Ziel',             it:'Destinazione',       pt:'Destino',      ja:'目的地',     zh:'目的地',     ar:'الوجهة' },
+    from:       { en:'From',    fr:'De',             es:'Desde',     de:'Von',              it:'Da',        pt:'De',        ja:'出発地',   zh:'出发地',     ar:'من' },
     weather:    { en:'Weather', fr:'Météo',          es:'Clima',     de:'Wetter',           it:'Meteo',     pt:'Clima',     ja:'天気',     zh:'天气',     ar:'الطقس' },
     flight:     { en:'Flight #',  fr:'Vol #',            es:'Vuelo #',     de:'Flug #',             it:'Volo #',      pt:'Voo #',       ja:'便名 #',     zh:'航班 #',     ar:'# رحلة' },
     gate:       { en:'Gate',    fr:'Porte',          es:'Puerta',    de:'Gate',             it:'Gate',      pt:'Portão',    ja:'ゲート',   zh:'登机口',   ar:'البوابة' },
     carousel:   { en:'Carousel',fr:'Carrousel',      es:'Carrusel',  de:'Band',             it:'Nastro',    pt:'Esteira',   ja:'ターンテーブル', zh:'行李转盘', ar:'الحزام' },
     time:       { en:'Time',    fr:'Heure',          es:'Hora',      de:'Zeit',             it:'Ora',       pt:'Hora',      ja:'時刻',     zh:'时间',     ar:'الوقت' },
-    status:     { en:'Status',  fr:'Statut',         es:'Estado',    de:'Status',           it:'Stato',     pt:'Status',    ja:'状態',     zh:'状态',     ar:'الحالة' },
+    status:     { en:'Status',  fr:'Statut',         es:'Estado',    de:'Status',           it:'Stato',     pt:'Estado',    ja:'状況',     zh:'状态',     ar:'الحالة' },
     departures: { en:'Departures', fr:'Départs',     es:'Salidas',   de:'Abflüge',          it:'Partenze',  pt:'Partidas',  ja:'出発',     zh:'出发',     ar:'المغادرات' },
     arrivals:   { en:'Arrivals',   fr:'Arrivées',    es:'Llegadas',  de:'Ankünfte',         it:'Arrivi',    pt:'Chegadas',  ja:'到着',     zh:'到达',     ar:'الوصول' },
     // Status words
-    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Planmäßig',        it:'Previsto',         pt:'Previsto',         ja:'予定',     zh:'预定',     ar:'مجدول' },
+    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Geplant',        it:'Previsto',         pt:'Programado',         ja:'予定',     zh:'计划',     ar:'مجدول' },
     'st-on-time':     { en:'On time',     fr:'À l\'heure',    es:'A tiempo',       de:'Pünktlich',        it:'In orario',        pt:'No horário',       ja:'定刻',     zh:'准点',     ar:'في الموعد' },
-    'st-boarding':    { en:'Boarding',    fr:'Embarquement',  es:'Embarcando',     de:'Boarding',         it:'Imbarco',          pt:'Embarque',         ja:'搭乗中',   zh:'登机中',   ar:'الصعود' },
-    'st-final-call':  { en:'Final call',  fr:'Dernier appel', es:'Última llamada', de:'Letzter Aufruf',   it:'Ultima chiamata',  pt:'Última chamada',   ja:'最終案内', zh:'最后呼叫', ar:'النداء الأخير' },
+    'st-boarding':    { en:'Boarding',    fr:'Embarquement',  es:'Embarcando',     de:'Boarding',         it:'Imbarco',          pt:'Embarque',         ja:'搭乗中',   zh:'登机中',   ar:'الصعود', $ctx: 'status' },
+    'st-final-call':  { en:'Final call',  fr:'Dernier appel', es:'Última llamada', de:'Letzter Aufruf',   it:'Ultima chiamata',  pt:'Última chamada',   ja:'最終案内', zh:'最后登机', ar:'النداء الأخير' },
     'st-gate-closed': { en:'Gate closed', fr:'Porte fermée',  es:'Puerta cerrada', de:'Gate geschlossen', it:'Gate chiuso',      pt:'Portão fechado',   ja:'搭乗終了', zh:'登机口已关闭', ar:'البوابة مغلقة' },
     // v23925 — an arrival the feed says is in the air ('active') read
     // "Scheduled | Prévu" because no state matched it. The words are the
     // board's own for that state (SS.active in fids-core.js).
     'st-en-route':    { en:'En route',    fr:'En vol',        es:'En vuelo',       de:'Unterwegs',        it:'In volo',          pt:'Em voo',           ja:'飛行中',   zh:'飞行中',   ar:'في الطريق' },
-    'st-departed':    { en:'Departed',    fr:'Parti',         es:'Salido',         de:'Abgeflogen',       it:'Partito',          pt:'Partiu',           ja:'出発済',   zh:'已起飞',   ar:'غادرت' },
-    'st-arrived':     { en:'Arrived',     fr:'Arrivé',        es:'Llegado',        de:'Angekommen',       it:'Arrivato',         pt:'Chegou',           ja:'到着',     zh:'已到达',   ar:'وصلت' },
+    'st-departed':    { en:'Departed',    fr:'Parti',         es:'Despegó',         de:'Gestartet',       it:'Partito',          pt:'Partiu',           ja:'出発済',   zh:'已起飞',   ar:'غادرت' },
+    'st-arrived':     { en:'Arrived',     fr:'Arrivé',        es:'Llegó',        de:'Gelandet',       it:'Arrivato',         pt:'Chegou',           ja:'到着済',     zh:'已到达',   ar:'وصلت' },
     'st-delayed':     { en:'Delayed',     fr:'En retard',     es:'Retrasado',      de:'Verspätet',        it:'In ritardo',       pt:'Atrasado',         ja:'遅延',     zh:'延误',     ar:'متأخر' },
     'st-early':       { en:'Early',       fr:'En avance',     es:'Adelantado',     de:'Verfrüht',         it:'In anticipo',      pt:'Adiantado',        ja:'早着',     zh:'提前',     ar:'مبكر' },
 
     'st-cancelled':   { en:'Cancelled',   fr:'Annulé',        es:'Cancelado',      de:'Annulliert',       it:'Cancellato',       pt:'Cancelado',        ja:'欠航',     zh:'取消',     ar:'ملغاة' },
-    'st-diverted':    { en:'Diverted',    fr:'Dérouté',       es:'Desviado',       de:'Umgeleitet',       it:'Dirottato',        pt:'Desviado',         ja:'目的地変更', zh:'改航', ar:'محول' },
+    'st-diverted':    { en:'Diverted',    fr:'Dérouté',       es:'Desviado',       de:'Umgeleitet',       it:'Dirottato',        pt:'Desviado',         ja:'目的地変更', zh:'备降', ar:'محوّلة' },
     // v22880 — filtered-board chip
     // Same 9-language table as
     // every other board word, so a filtered monitor speaks whatever the
     // rotation is currently showing instead of a hardcoded EN/FR pair.
-    terminal:         { en:'Terminal',      fr:'Aérogare',        es:'Terminal',       de:'Terminal',        it:'Terminal',       pt:'Terminal',      ja:'ターミナル', zh:'航站楼',   ar:'المبنى' },
+    terminal:         { en:'Terminal',      fr:'Terminal',        es:'Terminal',       de:'Terminal',        it:'Terminal',       pt:'Terminal',      ja:'ターミナル', zh:'航站楼',   ar:'المبنى' },
     'f-domestic':      { en:'Domestic',      fr:'Intérieur',       es:'Nacional',       de:'Inland',          it:'Nazionali',      pt:'Doméstico',     ja:'国内線',     zh:'国内',     ar:'داخلي' },
-    'f-transborder':   { en:'Transborder',   fr:'Transfrontalier', es:'Transfronterizo', de:'Transborder',    it:'Transfrontaliero', pt:'Transfronteiriço', ja:'米国線', zh:'美国航线', ar:'عبر الحدود' },
+    'f-transborder':   { en:'Transborder',   fr:'Transfrontalier', es:'Transfronterizo', de:'USA-Flüge',    it:'Transfrontaliero', pt:'Transfronteiriço', ja:'米国線', zh:'美国航线', ar:'عبر الحدود' },
     'f-international': { en:'International', fr:'International',   es:'Internacional',  de:'International',   it:'Internazionali', pt:'Internacional', ja:'国際線',     zh:'国际',     ar:'دولي' },
-    now:              { en:'Now',         fr:'Maintenant',    es:'Ahora',          de:'Jetzt',            it:'Ora',              pt:'Agora',            ja:'変更',     zh:'现改为',   ar:'الآن' }
+    now:              { en:'Now',         fr:'Maintenant',    es:'Ahora',          de:'Jetzt',            it:'Ora',              pt:'Agora',            ja:'変更',     zh:'现改为',   ar:'الآن', $ctx: 'revised-time' }
   };
 
   // T(key, lang) — get a translated string. Falls back to English.

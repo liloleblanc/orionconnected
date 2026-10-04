@@ -13,7 +13,7 @@
 
   function validTimeZone(timeZone) {
     try {
-      new Intl.DateTimeFormat('en-CA', { timeZone: timeZone || 'UTC' }).format(0);
+      new Intl.DateTimeFormat('en-CA', { timeZone: timeZone || 'UTC' }).format(0); // i18n-ok: code
       return timeZone || 'UTC';
     } catch (e) {
       return 'UTC';
@@ -23,7 +23,7 @@
   function zonedDateOrdinal(timestamp, timeZone) {
     var value = Number(timestamp);
     if (!Number.isFinite(value)) return null;
-    var parts = new Intl.DateTimeFormat('en-CA', {
+    var parts = new Intl.DateTimeFormat('en-CA', { // i18n-ok: code
       timeZone: validTimeZone(timeZone),
       year: 'numeric', month: '2-digit', day: '2-digit'
     }).formatToParts(new Date(value));
@@ -92,12 +92,9 @@
     var zone = validTimeZone(options.timeZone);
     var now = options.nowTimestamp == null ? Date.now() : Number(options.nowTimestamp);
 
-    var time = new Intl.DateTimeFormat(options.locale || 'en-US', {
-      timeZone: zone,
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: options.hour12 === undefined ? true : !!options.hour12
-    }).format(new Date(instant));
+    // v23960 — the boards' one clock (board-strings.js): 5:20pm in English,
+    // 17:20 in every other language; options.lang picks it.
+    var time = Strings.time(instant, Strings.isLang(options.lang) ? options.lang : 'en', zone);
 
     // Offset against the AIRPORT's today, never the viewer's. A board in Sydney
     // showing Moncton must still say "tomorrow" by Moncton's calendar.

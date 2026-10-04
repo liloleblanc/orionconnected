@@ -12,13 +12,16 @@
 <body class="player-body">
   <main class="player-stage">
     <div class="player-frame" id="playerFrame" hidden></div>
-    <section class="player-setup" id="playerSetup" hidden>
+    <!-- Setup and status for whoever installs the player: operator text. -->
+    <section class="player-setup" id="playerSetup" data-operator hidden>
       <h1>Orion Display Player</h1>
       <p id="playerSetupCopy">Nothing is published for this player yet.</p>
       <div id="playerSetupList"></div>
     </section>
   </main>
-  <aside class="player-badge" id="playerBadge" hidden></aside>
+  <aside class="player-badge" id="playerBadge" data-operator hidden></aside>
+  <!-- the one store for passenger words: a screen speaks the language it shows -->
+  <script src="../js/board-strings.js?v=23941"></script>
   <script src="../js/studio-airports.js?v=6"></script>
   <script src="../js/studio-data.js?v=7"></script>
   <script src="../js/studio-schema.js?v=9"></script>

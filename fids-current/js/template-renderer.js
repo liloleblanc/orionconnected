@@ -18,6 +18,36 @@
 (function () {
   'use strict';
 
+  // ── PASSENGER WORDS ─────────────────────────────────────────────────────
+  // v23960 — a template runs on a board page, so its words come from the
+  // board's own tables in the language the board is showing (`lang`): the
+  // gate's labels (_GATE_LBL), the boards' (LS), then the one store
+  // (board-strings.js). Statuses go through SL, as on the board.
+  function _lang() {
+    try { if (typeof lang !== 'undefined' && lang) return lang; } catch (e) {}
+    return (window.BoardStrings && BoardStrings.bootLangs()[0]) || 'en';
+  }
+  function _w(key) {
+    try {
+      const l = _lang();
+      const o = (typeof _GATE_LBL !== 'undefined' && _GATE_LBL[key])
+        || (typeof LS !== 'undefined' && LS[key])
+        || (window.BoardStrings && BoardStrings.entry(key));
+      return (o && (o[l] || o.en)) || '';
+    } catch (e) { return ''; }
+  }
+  const _ST_CODE = { finalcall: 'final', enroute: 'active', ontime: 'ontime', canceled: 'cancelled' };
+  function _stWord(s) {
+    if (!s) return '';
+    const code = String(s).replace(/[\s_-]+/g, '').toLowerCase();
+    try {
+      const k = _ST_CODE[code] || code;
+      const w = (typeof SL === 'function') ? SL(k) : '';
+      if (w) return w;
+    } catch (e) {}
+    return String(s);
+  }
+
   function whichDisplay() {
     // <body data-page="gids"> | "bids" — fids.html doesn't set one, fall back to filename
     const dp = document.body && document.body.getAttribute('data-page');
@@ -134,9 +164,12 @@
       el.style.fontFamily = _fontStack(p.fontFamily);
       const tick = () => {
         const d = new Date();
-        const opts = { hour: '2-digit', minute: '2-digit', hour12: p.format !== '24h' };
-        if (p.showSeconds === true || p.showSeconds === 'true') opts.second = '2-digit';
-        el.textContent = d.toLocaleTimeString([], opts);
+        // v23960 — the boards' clock in the board's language; the designer's
+        // 24h choice forces 24 hours, otherwise the language's own convention.
+        el.textContent = BoardStrings.time(d, _lang(), undefined, {
+          clock24: p.format === '24h' ? true : undefined,
+          seconds: p.showSeconds === true || p.showSeconds === 'true'
+        });
       };
       tick();
       setInterval(tick, 1000);
@@ -228,9 +261,10 @@
       }
     } catch (e) {}
     return [
-      { flight:'AC8421', airline:'AC', destination:'Toronto',  time:'14:30', status:'Boarding', gate:'A3' },
-      { flight:'WS3120', airline:'WS', destination:'Calgary',  time:'15:05', status:'On time',  gate:'B1' },
-      { flight:'AC8662', airline:'AC', destination:'Montréal', time:'16:15', status:'Delayed',  gate:'A4' }
+      // sample rows: status codes, put into words by _stWord when drawn
+      { flight:'AC8421', airline:'AC', destination:'Toronto',  time:'14:30', status:'boarding', gate:'A3' },
+      { flight:'WS3120', airline:'WS', destination:'Calgary',  time:'15:05', status:'ontime',  gate:'B1' },
+      { flight:'AC8662', airline:'AC', destination:'Montréal', time:'16:15', status:'delayed',  gate:'A4' }
     ];
   }
   function _fontStack(name) {
@@ -379,14 +413,14 @@
       }
     } catch (e) {}
     const rows = [
-      ['To', flight.destination], ['Scheduled', flight.time], ['Actual', flight.actualTime],
-      ['Ground speed', flight.speed], ['Altitude', flight.altitude], ['Remaining', remaining],
-      ['Aircraft', flight.aircraft], ['Gate', flight.gate]
+      [_w('to'), flight.destination], [_w('scheduled'), flight.time], [_w('actual'), flight.actualTime],
+      [_w('speed'), flight.speed], [_w('altitude'), flight.altitude], [_w('remaining'), remaining],
+      [_w('aircraft'), flight.aircraft], [_w('gate'), flight.gate]
     ].filter(r => r[1]);
     return '<div style="height:100%;box-sizing:border-box;padding:20px 22px;background:rgba(0,0,0,0.28);' +
       'border-left:1px solid rgba(255,255,255,0.08);font-family:Inter,system-ui,sans-serif;display:flex;flex-direction:column;">' +
-      '<div style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' + _esc(flight.airlineName || flight.airline || 'Flight') + '</div>' +
-      '<div style="font-size:34px;font-weight:900;color:' + _esc(accent) + ';line-height:1.1;margin:2px 0 14px;">' + _esc(flight.status || 'Scheduled') + '</div>' +
+      '<div style="font-size:13px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(255,255,255,0.5);">' + _esc(flight.airlineName || flight.airline || _w('flight')) + '</div>' +
+      '<div style="font-size:34px;font-weight:900;color:' + _esc(accent) + ';line-height:1.1;margin:2px 0 14px;">' + _esc(_stWord(flight.status || 'scheduled')) + '</div>' +
       rows.map(r =>
         '<div style="display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.07);">' +
           '<span style="font-size:14px;color:rgba(255,255,255,0.55);">' + _esc(r[0]) + '</span>' +
@@ -404,8 +438,9 @@
     const coords = window.AIRPORT_COORDS || {};
     const o = coords[rt.org], d = coords[rt.dst];
     const accent = p.accent || '#3b82f6';
-    if (typeof L === 'undefined' || typeof L.map !== 'function') { note('Map engine unavailable.'); return null; }
-    if (!o || !d) { note('Flight Map needs valid airport codes (origin: "' + (rt.org||'—') + '", destination: "' + (rt.dst||'—') + '").'); return null; }
+    if (typeof L === 'undefined' || typeof L.map !== 'function') { note(_w('mapUnavailable')); return null; }
+    // a template set up without its two airports: the operator's to fix
+    if (!o || !d) { note('Flight Map needs valid airport codes (origin: "' + (rt.org||'—') + '", destination: "' + (rt.dst||'—') + '").'); return null; } // i18n-ok: operator
     container.innerHTML = '';
     const mapDiv = document.createElement('div');
     mapDiv.style.cssText = 'position:absolute;inset:0;background:#0f172a;';
@@ -417,7 +452,7 @@
         scrollWheelZoom: false, doubleClickZoom: false, boxZoom: false,
         keyboard: false, touchZoom: false, fadeAnimation: false, zoomAnimation: false
       });
-    } catch (e) { note('Map could not start.'); return null; }
+    } catch (e) { note(_w('mapUnavailable')); return null; }
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
       { subdomains: 'abcd', maxZoom: 18, crossOrigin: true }).addTo(map);
     let arc;
@@ -556,7 +591,7 @@
   function _buildFlightListHTML(p, rows) {
     const cols = p.cols || {};
     const order = ['logo','flight','airline','destination','time','status','gate'];
-    const labels = { logo:'', flight:'Flight', airline:'Airline', destination:'Destination', time:'Time', status:'Status', gate:'Gate' };
+    const labels = { logo:'', flight:_w('flight'), airline:_w('airline'), destination:_w('dest'), time:_w('time'), status:_w('status'), gate:_w('gate') };
     const active = order.filter(k => cols[k]);
     const max = Math.max(1, parseInt(p.maxRows, 10) || 8);
     const visible = rows.slice(0, max);
@@ -600,7 +635,7 @@
     if (p.headerText) {
       html += '<div style="font-size:' + (p.headerSize || 32) + 'px;font-weight:800;color:' + _esc(p.headerColor || '#fff') + ';margin-bottom:10px;letter-spacing:0.02em;border-bottom:2px solid ' + _esc(p.accent || '#3b82f6') + ';padding-bottom:8px;' + cellOverflow + '">' + _esc(p.headerText) + '</div>';
     }
-    if (active.length === 0) return html + '<div style="color:#9ca3af;font-size:14px;">No columns selected.</div></div>';
+    if (active.length === 0) return html + '<div style="color:#9ca3af;font-size:14px;">No columns selected.</div></div>'; // i18n-ok: operator
     html += '<div style="display:flex;gap:' + gap + 'px;font-size:' + Math.round(rowFontPx * 0.55) + 'px;font-weight:700;color:' + _esc(p.headerColor || '#fff') + ';opacity:0.7;letter-spacing:0.08em;text-transform:uppercase;padding:' + headerPad + 'px 4px;">';
     active.forEach(k => html += '<div style="' + colFlex(k) + cellOverflow + '">' + _esc(labels[k]) + '</div>');
     html += '</div>';
@@ -616,9 +651,11 @@
             : '<span style="font-size:' + Math.round(rowFontPx * 0.55) + 'px;color:#9ca3af;">' + _esc(r.airline || '') + '</span>';
           html += '<div style="' + colFlex(k) + 'display:flex;align-items:center;justify-content:center;">' + inner + '</div>';
         } else if (k === 'status') {
+          // the designer's own remark wins; otherwise the board's word
           const friendly = mapRemark(r[k]);
-          const col = statusColor(friendly);
-          html += '<div style="' + colFlex(k) + cellOverflow + (col ? 'color:' + _esc(col) + ';font-weight:700;' : '') + '">' + _esc(friendly) + '</div>';
+          const col = statusColor(friendly) || statusColor(_stWord(r[k]));
+          const shown = friendly !== r[k] ? friendly : _stWord(r[k]);
+          html += '<div style="' + colFlex(k) + cellOverflow + (col ? 'color:' + _esc(col) + ';font-weight:700;' : '') + '">' + _esc(shown) + '</div>';
         } else {
           html += '<div style="' + colFlex(k) + cellOverflow + '">' + _esc(r[k] || '') + '</div>';
         }

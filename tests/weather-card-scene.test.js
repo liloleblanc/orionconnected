@@ -283,9 +283,11 @@ test('the manifest knows about all of it', () => {
 // ── Housekeeping ─────────────────────────────────────────────────────────
 
 test('MET is capitalised in the credit', () => {
-  const m = SRC.match(/class="wxc-credit">([^<]*)</);
-  assert.ok(m, 'the credit line must exist');
-  assert.match(m[1], /\bMET Norway\b/, 'must credit "MET Norway", not "Met Norway"');
+  // The credit is in the card's languages now (the store's wxCredit); the
+  // name stays as MET Norway writes it in every one of them.
+  assert.match(SRC, /class="wxc-credit">' \+ BoardStrings\.pair\('wxCredit'/, 'the credit line must exist');
+  const S = require('../fids-current/js/board-strings.js');
+  for (const l of S.LANGS) assert.match(S.bs('wxCredit', l), /\bMET Norway\b/, 'must credit "MET Norway", not "Met Norway" (' + l + ')');
 });
 
 test('no malformed percentages reached the stylesheet', () => {

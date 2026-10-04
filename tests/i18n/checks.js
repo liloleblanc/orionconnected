@@ -54,7 +54,7 @@ const RE_WORD = /[A-Za-z\u00C0-\u024F]{2,}|[\u0600-\u06FF\u3040-\u30FF\u3400-\u9
 function stripTags(s) { return String(s).replace(/<[^>]*>/g, ' '); }
 function stripEntities(s) { return String(s).replace(/&(?:[a-z]+|#\d+|#x[0-9a-f]+);/gi, ' '); }
 function norm(s) {
-  return stripEntities(stripTags(s)).replace(/\{[A-Za-z0-9_]+\}/g, ' ').replace(/[\s\u00A0\u202F:\u00B7\u2022|\u2026.,;!?'\u2019"\u00AB\u00BB()\[\]\-\u2013\u2014/]+/g, ' ').trim().toLowerCase();
+  return stripEntities(stripTags(s)).replace(/\{[A-Za-z0-9_]+\}|%[a-z]\b/g, ' ').replace(/[\s\u00A0\u202F:\u00B7\u2022|\u2026.,;!?'\u2019"\u00AB\u00BB()\[\]\-\u2013\u2014/]+/g, ' ').trim().toLowerCase();
 }
 function shortText(s) { return String(s).replace(/\s+/g, ' ').trim().slice(0, 80); }
 function id(f) { return `${f.check}:${f.file}:${f.fn || '-'}:${shortText(f.text)}`; }
@@ -67,13 +67,14 @@ const FUNCTION_WORDS = new Set(['the', 'to', 'for', 'of', 'your', 'our', 'now', 
 function run(options) {
   options = options || {};
   const P = options.policy || require('./policy');
+  DATA_KEYS_SET = new Set(Object.keys(P.DATA_KEYS || {}));
   const LANGS = P.LANGS;
   const LSET = new Set(LANGS);
   const read = options.read || ((rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8'));
   const exists = options.exists || ((rel) => fs.existsSync(path.join(ROOT, rel)));
   const load = (rel) => scan.load(rel, options.read ? read(rel) : undefined);
   const findings = [];
-  const used = { brand: new Set(), same: new Set(), op: new Set(), rewriters: new Set(), nontext: new Set(), storage: new Set(), data: new Set() };
+  const used = { brand: new Set(), same: new Set(), op: new Set(), rewriters: new Set(), nontext: new Set(), storage: new Set(), data: new Set(), records: new Set() };
   const pragmaHits = new Map();        // "file:line" -> reason
   const pragmaUsed = new Set();
   const add = (f) => {
@@ -211,6 +212,9 @@ function run(options) {
       const allCodes = vals.every((v) => v.literal && /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(String(v.value)));
       const reg = registeredObj.has(rel + ':' + o.open);
       if (nontext(rel, o)) continue;
+      // artwork per language (a logo file for each): files, not words
+      const allFiles = vals.every((v) => v.literal && /^(\/|https?:\/\/|\.\.?\/)\S+\.(svg|png|jpe?g|webp|gif|avif|mp4|webm|json)$/i.test(String(v.value)));
+      if (allFiles) continue;
       if (allNum || allCodes) {
         if (!isStore) add({ check: 'B11', file: rel, line: o.line, fn: o.fn, text: '{' + Object.keys(lo.langs).join(',') + '}' + (allCodes ? ' locales' : ''), msg: 'a private per-language setting; it lives in BoardStrings.META (board-strings.js), read through bsTime/bsDate/bsWeekday' });
         continue;
@@ -279,6 +283,40 @@ function run(options) {
       }
     }
   }
+
+  // Language-record tables: [{ l: 'en', t: '…' }, …] — the weather card's
+  // opening title. Registered ones (LANG_RECORD_TABLES) are held to all nine
+  // languages; any other is a table outside the store (B2).
+  const recordTables = [];
+  for (const { rel, unit, isStore } of jsUnits) {
+    const t = unit.toks;
+    const byFrame = new Map();
+    for (const o of unit.objects) {
+      const f = unit.frameOf[o.open];
+      if (!byFrame.has(f)) byFrame.set(f, []);
+      byFrame.get(f).push(o);
+    }
+    for (const [i, kids] of byFrame) {
+      if (i < 0 || t[i].v !== '[') continue;
+      const recs = kids.filter((o) => o.keys.some((k) => k.k === 'l' && LSET.has(k.str)) && o.keys.some((k) => k.k === 't'));
+      if (recs.length < 3) continue;
+      const name = t[i - 1] && t[i - 1].v === '=' && t[i - 2] && t[i - 2].t === 'id' ? t[i - 2].v : '(list)';
+      for (const o of recs) unit.langRecordObjs = (unit.langRecordObjs || new Set()).add(o.open);
+      const reg = ((P.LANG_RECORD_TABLES || {})[rel] || {})[name];
+      if (isStore) continue;
+      if (!reg) { add({ check: 'B2', file: rel, line: t[i].line, fn: unit.fnAt[i], text: name, msg: 'a [{ l, t }] language list outside the store; derive it from BOARD_STR (all nine languages)' }); continue; }
+      used.records.add(rel + ':' + name);
+      const have = new Map(recs.map((o) => [o.keys.find((k) => k.k === 'l').str, o.keys.find((k) => k.k === 't')]));
+      const missing = LANGS.filter((l) => !have.has(l));
+      if (missing.length) add({ check: 'B1', file: rel, line: t[i].line, fn: null, text: name, msg: `missing ${missing.join(' ')}` });
+      for (const [l, k] of have) {
+        if (!k.simple || !String(k.str || '').trim()) add({ check: 'B1', file: rel, line: k.line, fn: null, text: name + ' ' + l, msg: `${l} is empty or an expression` });
+        else if (RE_SCRIPT[l] && !RE_SCRIPT[l].test(k.str)) add({ check: 'B3', file: rel, line: k.line, fn: null, text: name + ' ' + l, msg: `${l} '${k.str}' has no characters of its own script` });
+      }
+      recordTables.push({ rel, name, langs: Object.fromEntries([...have].map(([l, k]) => [l, k.str])) });
+    }
+  }
+  for (const r of recordTables) if (r.langs.en) allTextObjects.push({ file: r.rel, line: 0, fn: null, table: r.name, key: '(record)', langs: r.langs });
 
   // B2: [code, text] arrays (loader GREET) and parallel X_FR tables
   for (const { rel, unit, isStore } of jsUnits) {
@@ -392,6 +430,7 @@ function run(options) {
   for (const o of allTextObjects) {
     const en = o.langs.en;
     if (!en || !RE_WORD.test(en)) continue;
+    if (P.DECISION_FILES && P.DECISION_FILES[o.file]) continue;   // its wording waits on a decision
     const k = norm(en) + '|' + (o.ctx || '');
     if (!byPhrase.has(k)) byPhrase.set(k, []);
     byPhrase.get(k).push(o);
@@ -522,7 +561,9 @@ function run(options) {
       if (tk.t === 'id' && (tk.v === 'return' || tk.v === 'case')) { reset(top()); continue; }
       if (tk.t !== 'str' && tk.t !== 'tpl') continue;
       const f = top();
-      const ctx = literalContext(t, i, unit);
+      let ctx = literalContext(t, i, unit);
+      if (t[i - 1] && t[i - 1].v === ':' && t[i - 2] && t[i - 2].v === 't' && unit.langRecordObjs && unit.langRecordObjs.has(unit.frameOf[i])) ctx = 'langvalue';
+      if (dataKeyOf(t, i, unit)) ctx = 'excluded';
       const fn = unit.fnAt[i];
       const isOp = fnIsOperator(rel, fn, unit.fnPathAt[i]);
       // object keys and table values are not markup
@@ -554,7 +595,7 @@ function run(options) {
       const plain = stripEntities(stripTags(tk.v));
       // a literal put straight into a text sink
       const sink = sinkBefore(t, i);
-      if (sink && !res.tag && countsAsWords(plain.trim())) add({ check: 'B5', file: rel, line: tk.line, fn, text: plain.trim(), msg: `'${shortText(plain)}' is put into ${sink} \u2014 render it from the store` });
+      if (sink && !res.tag && !cssLike && countsAsWords(plain.trim())) add({ check: 'B5', file: rel, line: tk.line, fn, text: plain.trim(), msg: `'${shortText(plain)}' is put into ${sink} \u2014 render it from the store` });
       // a fallback after a label helper:  TL('x') || 'Text'
       if (t[i - 1] && t[i - 1].v === '||' && t[i - 2] && t[i - 2].v === ')' && RE_WORD.test(plain)) {
         const callee = calleeOfClose(t, i - 2);
@@ -780,6 +821,7 @@ function run(options) {
   for (const [rel, list] of Object.entries(P.TEXT_REWRITERS)) for (const fn of Object.keys(list)) if (!used.rewriters.has(rel + ':' + fn)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'TEXT_REWRITERS ' + fn, msg: `TEXT_REWRITERS ${fn} is not run on a timer in ${rel} any more \u2014 remove it` });
   for (const [rel, list] of Object.entries(P.LANG_STORAGE_FUNCTIONS)) for (const fn of Object.keys(list)) if (!used.storage.has(rel + ':' + fn)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'LANG_STORAGE_FUNCTIONS ' + fn, msg: `${fn} no longer touches fids_langs_ \u2014 remove it` });
   for (const [rel, list] of Object.entries(P.DATA_TABLES || {})) for (const name of Object.keys(list)) if (!used.data.has(rel + ':' + name)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'DATA_TABLES ' + name, msg: `data table ${name} not found in ${rel} — remove it` });
+  for (const [rel, list] of Object.entries(P.LANG_RECORD_TABLES || {})) for (const name of Object.keys(list)) if (!used.records.has(rel + ':' + name)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'LANG_RECORD_TABLES ' + name, msg: 'matches nothing — remove it' });
   for (const n of P.NONTEXT_TABLES) if (!used.nontext.has(n.file + ':' + (n.name || n.fn))) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NONTEXT_TABLES ' + (n.name || n.fn), msg: 'matches nothing \u2014 remove it' });
   for (const [rel, why] of Object.entries(P.NON_PASSENGER)) if (!P.REASONS.includes(String(why).split(':')[0])) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NON_PASSENGER ' + rel, msg: `reason '${why}' must start with one of: ${P.REASONS.join(', ')}` });
   for (const k of pragmaHits.keys()) if (!pragmaUsed.has(k)) {
@@ -796,7 +838,7 @@ function run(options) {
   }
   const pragmaCounts = {};
   for (const r of pragmaHits.values()) pragmaCounts[r] = (pragmaCounts[r] || 0) + 1;
-  return { findings, pragmaCounts, entries, tables };
+  return { findings, pragmaCounts, entries, tables, textObjects: allTextObjects };
 }
 
 // ── markup lexing ─────────────────────────────────────────────────────────
@@ -926,6 +968,19 @@ const CSS_LIKE = /:(not|where|is|has)\(|^\s*[*.#\[][^\s]*\s*[{,]|\{[^}]*:[^}]*[;
 
 // A sweep over the page's text: what a post-render rewriter does.
 const SWEEP = /createTreeWalker|\.nodeValue\s*=|querySelectorAll\s*\(\s*"(body \*|\*)"\s*\)/;
+
+// The property a literal is the value of — directly, or as an element of an
+// array value: `quality: ['Live']` → 'quality'. Keys in DATA_KEYS carry data
+// (feed fields), not words a passenger reads.
+let DATA_KEYS_SET = new Set();
+function dataKeyOf(t, i, unit) {
+  let k = i;
+  const fr = unit.frameOf[i];
+  if (fr >= 0 && t[fr].v === '[') k = fr;
+  const p = t[k - 1], key = t[k - 2];
+  if (p && p.v === ':' && key && (key.t === 'id' || key.t === 'str') && DATA_KEYS_SET.has(String(key.v))) return String(key.v);
+  return null;
+}
 
 function sinkBefore(t, i) {
   const p = t[i - 1], p2 = t[i - 2], p3 = t[i - 3];

@@ -192,10 +192,15 @@ test('the no-feed panel builds the airport code as text, not as markup', () => {
   assert.ok(!/innerHTML[\s\S]{0,200}String\(ap\)/.test(branch),
     '?ap= must not reach innerHTML — #apSel is a hidden input, so it is ' +
     'whatever the URL said, and the no-feed branch is the one it lands in');
-  assert.ok(/_sub\.textContent = String\(ap\)\.toUpperCase\(\)/.test(branch),
+  // The words come from the store in the board's languages; the code rides in
+  // them as a field, and the whole line is set as TEXT on a node the branch
+  // builds.
+  assert.ok(/var _apTxt = String\(ap\)\.toUpperCase\(\);/.test(branch)
+    && /_sub\.textContent = BoardStrings\.pair\('noFeedYet', \{[^}]*plain: true[^}]*fields: \{ AIRPORT: _apTxt \}/.test(branch),
     'the code must be set as text on a node the branch builds');
-  // The fixed half is our own constant markup and stays markup.
-  assert.ok(branch.includes("el.innerHTML = 'NO FLIGHTS IN WINDOW"),
+  // The fixed half is our own markup — the store's words for the board's
+  // languages — and stays markup; nothing from the URL is in it.
+  assert.ok(branch.includes("el.innerHTML = BoardStrings.pair('noFlightsWindow'"),
     'the has-feed message is ours and constant');
 });
 

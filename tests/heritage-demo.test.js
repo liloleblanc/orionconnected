@@ -89,9 +89,15 @@ test('the stamp is permanent, prominent and bilingual', () => {
   const at = SRC.indexOf('function _heritageMarkBoard');
   assert.ok(at >= 0, 'the stamp must be applied from the core');
   const body = SRC.slice(at, at + 900);
-  assert.match(body, /DEMONSTRATION/, 'it must say so in English');
-  assert.match(body, /DÉMONSTRATION/, 'and in French, like everything else a passenger reads');
-  assert.match(body, /not a live flight/, 'and say plainly that the flight is not real');
+  // The words come from the one store (board-strings.js), in the board's own
+  // two languages — English and French on a Canadian board, like everything
+  // else a passenger reads.
+  const S = require('../fids-current/js/board-strings.js');
+  assert.match(body, /BoardStrings\.pair\('demoStamp'/, 'it must say so');
+  assert.equal(S.bs('demoStamp', 'en'), 'Demonstration', 'in English');
+  assert.equal(S.bs('demoStamp', 'fr'), 'Démonstration', 'and in French');
+  assert.match(body, /BoardStrings\.pair\('notLiveFlight'/, 'and say plainly that the flight is not real');
+  assert.equal(S.bs('notLiveFlight', 'en'), 'not a live flight');
   assert.match(body, /data-heritage/, 'and flag the document so the styling can hang off it');
   // position:fixed on the root, not inside the board — a gate re-render must
   // not be able to drop it.

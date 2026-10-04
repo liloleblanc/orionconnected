@@ -2462,7 +2462,7 @@ body[data-fids-theme="cream"] .fids-airport-iata { color: #0a2236 !important; }
   padding-left: 12px !important;
 }
 .flight-card.has-gate::after {
-  content: '\01F446 TAP';
+  content: '\01F446';   /* v23960 — the hand alone: the English 'TAP' read the same in every language */
   position: absolute;
   top: 6px;
   right: 8px;

@@ -106,6 +106,11 @@ test('the ledger only shrinks against main', (t) => {
   const frozenBefore = show('tests/i18n/legacy-keys.json');
   if (frozenBefore) {
     const prev = JSON.parse(frozenBefore), now = JSON.parse(fs.readFileSync(ledger.FROZEN, 'utf8'));
+    // a table leaves the freeze only when the policy says it grows (the ad copy)
+    const growable = new Set(policy.LEGACY_STORES.filter((t) => t.growable).map((t) => t.name));
+    for (const name of Object.keys(prev)) {
+      if (!now[name] && !growable.has(name) && policy.LEGACY_STORES.some((t) => t.name === name)) assert.fail(`${name} was taken off the freeze list; its new keys go in BOARD_STR`);
+    }
     for (const [name, keys] of Object.entries(now)) {
       const had = new Set(prev[name] || []);
       const added = keys.filter((k) => !had.has(k));

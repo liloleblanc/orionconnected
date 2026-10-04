@@ -100,21 +100,24 @@
     }).join('') || '<a href="index.html">Open the Studio →</a>';
   }
 
-  function clockNow() {
+  // v23960 — the clock and date in the language on screen, from the boards'
+  // one clock (board-strings.js): 5:35pm in English, 17:35 in the others.
+  function clockNow(language) {
     const timezone = documentModel && documentModel.airport.timezone;
+    const lang = BoardStrings.isLang(language) ? language : 'en';
     const now = new Date();
     let time, date, minutes;
     try {
-      time = now.toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit', timeZone: timezone });
-      date = now.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric', timeZone: timezone });
-      const parts = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: timezone }).split(':');
+      time = BoardStrings.time(now, lang, timezone);
+      date = BoardStrings.date(now, lang, { weekday: 'long', month: 'long', day: 'numeric' }, timezone);
+      const parts = BoardStrings.time(now, 'fr', timezone).split(':');
       minutes = Number(parts[0]) * 60 + Number(parts[1]);
     } catch (error) {
-      time = now.toLocaleTimeString('en-CA', { hour: 'numeric', minute: '2-digit' });
-      date = now.toLocaleDateString('en-CA', { weekday: 'long', month: 'long', day: 'numeric' });
+      time = BoardStrings.time(now, lang);
+      date = BoardStrings.date(now, lang, { weekday: 'long', month: 'long', day: 'numeric' });
       minutes = now.getHours() * 60 + now.getMinutes();
     }
-    return { time: time.replace(/\./g, '').toUpperCase(), date: date, minutes: minutes };
+    return { time: time, date: date, minutes: minutes };
   }
 
   function baseRows(direction) {
@@ -139,8 +142,9 @@
     if (fixedLanguage) return '';
     const enabled = documentModel.languages.enabled;
     if (enabled.length < 2) return '';
-    const next = enabled[(languageIndex + 1) % enabled.length];
-    return next.toUpperCase() + ' in ' + (documentModel.languages.rotationSeconds || 12) + 's';
+    // the next language's code alone: the footer chip is on the passenger
+    // screen, and 'FR in 12s' was English whatever was showing
+    return enabled[(languageIndex + 1) % enabled.length].toUpperCase();
   }
 
   function dataBadge() {
@@ -153,7 +157,7 @@
     if (!documentModel) return;
     const frame = $('#playerFrame');
     const language = Schema.LANGUAGES.find(function (item) { return item.code === activeLanguage(); }) || Schema.LANGUAGES[0];
-    const clock = clockNow();
+    const clock = clockNow(language.code);
     const rows = { departures: baseRows('departures'), arrivals: baseRows('arrivals') };
     const scene = Render.evaluateStateRules(documentModel, { clock: clock, rows: rows });
     const sceneEntry = documentModel.scenes.find(function (item) { return item.id === scene; });
@@ -231,7 +235,7 @@
       flightRowsLoaded = true;
     } catch (error) {
       flightRowsLoaded = true;
-      dataHealth = { ok: false, source: 'preview', fallback: true, reason: error && error.message || 'Airport data unavailable.' };
+      dataHealth = { ok: false, source: 'preview', fallback: true, reason: error && error.message || 'Airport data unavailable.' }; // i18n-ok: debug
     }
     renderFrame();
   }

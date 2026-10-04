@@ -1,345 +1,13 @@
 [
  {
-  "id": "B1:fids-current/js/fids-core.js:-:/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_The_Queen_El",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_The_Queen_El",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:buildGateAdHtml:from downtown",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "from downtown",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:buildAccorAdOnlyV6:[4 language codes]",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildAccorAdOnlyV6",
-  "text": "[4 language codes]",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_dineT:Bar & lounge",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_dineT",
-  "text": "Bar & lounge",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_dineT:Dining offers for guests",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_dineT",
-  "text": "Dining offers for guests",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_dineT:On-site restaurant",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_dineT",
-  "text": "On-site restaurant",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_dineT:Room service",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_dineT",
-  "text": "Room service",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_The_Queen_El",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "/logos/hotels/accor-luxury/fairmont/editable_svg_white/010_Fairmont_The_Queen_El",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:buildAccorAdOnlyV6:Dining & reviews",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildAccorAdOnlyV6",
-  "text": "Dining & reviews",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:buildAccorAdOnlyV6:reviews",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildAccorAdOnlyV6",
-  "text": "reviews",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:buildAccorAdOnlyV6:The hotel",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildAccorAdOnlyV6",
-  "text": "The hotel",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:buildGateAdHtml:from downtown",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "from downtown",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_badgeLabel:Ecocertified",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_badgeLabel",
-  "text": "Ecocertified",
-  "count": 2,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_badgeLabel:Family-friendly",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_badgeLabel",
-  "text": "Family-friendly",
-  "count": 2,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_badgeLabel:Green Key",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_badgeLabel",
-  "text": "Green Key",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_badgeLabel:Pet-friendly",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_badgeLabel",
-  "text": "Pet-friendly",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildAccorAdOnlyV6:The hotel",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildAccorAdOnlyV6",
-  "text": "The hotel",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildAccorAdOnlyV6:the sebel",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildAccorAdOnlyV6",
-  "text": "the sebel",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:(ALL Rating)",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "(ALL Rating)",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:Customer review rating",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Customer review rating",
-  "count": 2,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:Facilities",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Facilities",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:from downtown",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "from downtown",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:Member of",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Member of",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:Restaurants",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Restaurants",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:reviews",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "reviews",
-  "count": 2,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:Scan to unlock limitless experiences with ALL.",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Scan to unlock limitless experiences with ALL.",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:Star",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Star",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:Stars",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Stars",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:The destination",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "The destination",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:buildGateAdHtml:The Limitless Loyalty Programme",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "The Limitless Loyalty Programme",
-  "count": 2,
-  "surface": "Advertising"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:_badgeLabel:TL('greenKey')",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_badgeLabel",
-  "text": "TL('greenKey')",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:_badgeLabel:TL('petFriendly')",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_badgeLabel",
-  "text": "TL('petFriendly')",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_badgeLabel:Ecocertified",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_badgeLabel",
-  "text": "Ecocertified",
-  "count": 2,
-  "surface": "Advertising"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_badgeLabel:Family-friendly",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_badgeLabel",
-  "text": "Family-friendly",
-  "count": 2,
-  "surface": "Advertising"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_scanFor:Scan to discover",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_scanFor",
-  "text": "Scan to discover",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:buildGateAdHtml:Facilities",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Facilities",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:buildGateAdHtml:Restaurants",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildGateAdHtml",
-  "text": "Restaurants",
-  "count": 1,
-  "surface": "Advertising"
- },
- {
   "id": "B10:fids-current/heritage-board.html:-:A winter morning at Moncton, 1991.",
   "check": "B10",
   "file": "fids-current/heritage-board.html",
   "fn": null,
   "text": "A winter morning at Moncton, 1991.",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Aircraft",
@@ -348,7 +16,8 @@
   "fn": null,
   "text": "Aircraft",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Appareil",
@@ -357,7 +26,8 @@
   "fn": null,
   "text": "Appareil",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Demonstration",
@@ -366,7 +36,8 @@
   "fn": null,
   "text": "Demonstration",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Démonstration",
@@ -375,7 +46,8 @@
   "fn": null,
   "text": "Démonstration",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Destination",
@@ -384,7 +56,8 @@
   "fn": null,
   "text": "Destination",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Every flight here is invented. The network is not: Air Nova to Montreal, Halifax",
@@ -393,7 +66,8 @@
   "fn": null,
   "text": "Every flight here is invented. The network is not: Air Nova to Montreal, Halifax",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Flight",
@@ -402,7 +76,8 @@
   "fn": null,
   "text": "Flight",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Gate",
@@ -411,7 +86,8 @@
   "fn": null,
   "text": "Gate",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Heure",
@@ -420,7 +96,8 @@
   "fn": null,
   "text": "Heure",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Moncton",
@@ -429,7 +106,8 @@
   "fn": null,
   "text": "Moncton",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:None of that is recoverable from any surviving source. These carriers are gone a",
@@ -438,7 +116,8 @@
   "fn": null,
   "text": "None of that is recoverable from any surviving source. These carriers are gone a",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:not a live flight &nbsp;/&nbsp; vol fictif",
@@ -447,7 +126,8 @@
   "fn": null,
   "text": "not a live flight &nbsp;/&nbsp; vol fictif",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Porte",
@@ -456,7 +136,8 @@
   "fn": null,
   "text": "Porte",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Status",
@@ -465,7 +146,8 @@
   "fn": null,
   "text": "Status",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Statut",
@@ -474,7 +156,8 @@
   "fn": null,
   "text": "Statut",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:The day's first movement is the DC-9 that came in from Toronto around midnight, ",
@@ -483,7 +166,8 @@
   "fn": null,
   "text": "The day's first movement is the DC-9 that came in from Toronto around midnight, ",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Time",
@@ -492,7 +176,8 @@
   "fn": null,
   "text": "Time",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:To",
@@ -501,7 +186,8 @@
   "fn": null,
   "text": "To",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage-board.html:-:Vol",
@@ -510,7 +196,8 @@
   "fn": null,
   "text": "Vol",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage.html:-:From the archive &nbsp;·&nbsp; Depuis les archives",
@@ -519,7 +206,8 @@
   "fn": null,
   "text": "From the archive &nbsp;·&nbsp; Depuis les archives",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage.html:-:Gate boards rendered in the identity of carriers that no longer fly. Every fligh",
@@ -528,7 +216,8 @@
   "fn": null,
   "text": "Gate boards rendered in the identity of carriers that no longer fly. Every fligh",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage.html:-:Heritage gates",
@@ -537,7 +226,8 @@
   "fn": null,
   "text": "Heritage gates",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B10:fids-current/heritage.html:-:Portes d’époque",
@@ -546,7 +236,8 @@
   "fn": null,
   "text": "Portes d’époque",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Aircraft",
@@ -555,7 +246,8 @@
   "fn": null,
   "text": "Aircraft",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Arrived from Charlottetown",
@@ -564,7 +256,8 @@
   "fn": null,
   "text": "Arrived from Charlottetown",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Arrived from Halifax",
@@ -573,7 +266,8 @@
   "fn": null,
   "text": "Arrived from Halifax",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Boarding",
@@ -582,7 +276,8 @@
   "fn": null,
   "text": "Boarding",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Boston",
@@ -591,7 +286,8 @@
   "fn": null,
   "text": "Boston",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Charlottetown",
@@ -600,7 +296,8 @@
   "fn": null,
   "text": "Charlottetown",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Charter",
@@ -609,7 +306,8 @@
   "fn": null,
   "text": "Charter",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Check-in",
@@ -618,7 +316,8 @@
   "fn": null,
   "text": "Check-in",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Continues to Charlottetown — night stop",
@@ -627,7 +326,8 @@
   "fn": null,
   "text": "Continues to Charlottetown — night stop",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Departed",
@@ -636,7 +336,8 @@
   "fn": null,
   "text": "Departed",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Departures",
@@ -645,7 +346,8 @@
   "fn": null,
   "text": "Departures",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Final call",
@@ -654,7 +356,8 @@
   "fn": null,
   "text": "Final call",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Flight",
@@ -663,7 +366,8 @@
   "fn": null,
   "text": "Flight",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Fredericton",
@@ -672,7 +376,8 @@
   "fn": null,
   "text": "Fredericton",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Gate",
@@ -681,7 +386,8 @@
   "fn": null,
   "text": "Gate",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Gate closed",
@@ -690,7 +396,8 @@
   "fn": null,
   "text": "Gate closed",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Halifax",
@@ -699,7 +406,8 @@
   "fn": null,
   "text": "Halifax",
   "count": 2,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Moncton",
@@ -708,7 +416,8 @@
   "fn": null,
   "text": "Moncton",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Montreal",
@@ -717,7 +426,8 @@
   "fn": null,
   "text": "Montreal",
   "count": 2,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Orlando",
@@ -726,7 +436,8 @@
   "fn": null,
   "text": "Orlando",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Saint John",
@@ -735,7 +446,8 @@
   "fn": null,
   "text": "Saint John",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Scheduled",
@@ -744,7 +456,8 @@
   "fn": null,
   "text": "Scheduled",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Status",
@@ -753,7 +466,8 @@
   "fn": null,
   "text": "Status",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Time",
@@ -762,7 +476,8 @@
   "fn": null,
   "text": "Time",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:To",
@@ -771,7 +486,8 @@
   "fn": null,
   "text": "To",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B1:fids-current/js/heritage-board.js:-:Toronto",
@@ -780,7 +496,8 @@
   "fn": null,
   "text": "Toronto",
   "count": 2,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B11:fids-current/js/heritage-board.js:rowHtml:L.en",
@@ -789,7 +506,8 @@
   "fn": "rowHtml",
   "text": "L.en",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B11:fids-current/js/heritage-board.js:rowHtml:STATUS.en",
@@ -798,7 +516,8 @@
   "fn": "rowHtml",
   "text": "STATUS.en",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B11:fids-current/js/heritage-board.js:rowHtml:STATUS.fr",
@@ -807,7 +526,8 @@
   "fn": "rowHtml",
   "text": "STATUS.fr",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Arrived from Charlottetown",
@@ -816,7 +536,8 @@
   "fn": null,
   "text": "Arrived from Charlottetown",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Arrived from Halifax",
@@ -825,7 +546,8 @@
   "fn": null,
   "text": "Arrived from Halifax",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Boston",
@@ -834,7 +556,8 @@
   "fn": null,
   "text": "Boston",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Charlottetown",
@@ -843,7 +566,8 @@
   "fn": null,
   "text": "Charlottetown",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Continues to Charlottetown — night stop",
@@ -852,7 +576,8 @@
   "fn": null,
   "text": "Continues to Charlottetown — night stop",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Fredericton",
@@ -861,7 +586,8 @@
   "fn": null,
   "text": "Fredericton",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Halifax",
@@ -870,7 +596,8 @@
   "fn": null,
   "text": "Halifax",
   "count": 2,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Moncton",
@@ -879,7 +606,8 @@
   "fn": null,
   "text": "Moncton",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Montreal",
@@ -888,7 +616,8 @@
   "fn": null,
   "text": "Montreal",
   "count": 2,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Orlando",
@@ -897,7 +626,8 @@
   "fn": null,
   "text": "Orlando",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Saint John",
@@ -906,7 +636,8 @@
   "fn": null,
   "text": "Saint John",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B2:fids-current/js/heritage-board.js:-:Toronto",
@@ -915,7 +646,8 @@
   "fn": null,
   "text": "Toronto",
   "count": 2,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B3:fids-current/js/heritage-board.js:-:Boston fr",
@@ -924,7 +656,8 @@
   "fn": null,
   "text": "Boston fr",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B3:fids-current/js/heritage-board.js:-:Charlottetown fr",
@@ -933,7 +666,8 @@
   "fn": null,
   "text": "Charlottetown fr",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B3:fids-current/js/heritage-board.js:-:Fredericton fr",
@@ -942,7 +676,8 @@
   "fn": null,
   "text": "Fredericton fr",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B3:fids-current/js/heritage-board.js:-:Halifax fr",
@@ -951,7 +686,8 @@
   "fn": null,
   "text": "Halifax fr",
   "count": 2,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B3:fids-current/js/heritage-board.js:-:Moncton fr",
@@ -960,7 +696,8 @@
   "fn": null,
   "text": "Moncton fr",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B3:fids-current/js/heritage-board.js:-:Orlando fr",
@@ -969,7 +706,8 @@
   "fn": null,
   "text": "Orlando fr",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B3:fids-current/js/heritage-board.js:-:Saint John fr",
@@ -978,7 +716,8 @@
   "fn": null,
   "text": "Saint John fr",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B3:fids-current/js/heritage-board.js:-:Toronto fr",
@@ -987,7 +726,8 @@
   "fn": null,
   "text": "Toronto fr",
   "count": 2,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:, so an entry under it",
@@ -996,7 +736,8 @@
   "fn": null,
   "text": ", so an entry under it",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:· a Canadian Partner · until 1998",
@@ -1005,7 +746,8 @@
   "fn": null,
   "text": "· a Canadian Partner · until 1998",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:· the first Air Canada Connector · 1986–2001",
@@ -1014,7 +756,8 @@
   "fn": null,
   "text": "· the first Air Canada Connector · 1986–2001",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:AC is very much in service",
@@ -1023,7 +766,8 @@
   "fn": null,
   "text": "AC is very much in service",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:BAe 146-200 · Dash 8-100",
@@ -1032,7 +776,8 @@
   "fn": null,
   "text": "BAe 146-200 · Dash 8-100",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:BAe 146-200 · Dash 8-100 · Dash 8-300",
@@ -1041,7 +786,8 @@
   "fn": null,
   "text": "BAe 146-200 · Dash 8-100 · Dash 8-300",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:Boeing 737 · 767 · 747",
@@ -1050,7 +796,8 @@
   "fn": null,
   "text": "Boeing 737 · 767 · 747",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:Calgary",
@@ -1059,7 +806,8 @@
   "fn": null,
   "text": "Calgary",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:code to move it to while the mark still reads as Air Canada. The second mark’s",
@@ -1068,7 +816,8 @@
   "fn": null,
   "text": "code to move it to while the mark still reads as Air Canada. The second mark’s",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:date could not be confirmed either — the rondelle’s 1964 origin is well",
@@ -1077,7 +826,8 @@
   "fn": null,
   "text": "date could not be confirmed either — the rondelle’s 1964 origin is well",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:documented, that one is not, and nothing goes on a board here unchecked.",
@@ -1086,7 +836,8 @@
   "fn": null,
   "text": "documented, that one is not, and nothing goes on a board here unchecked.",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:Halifax, Nova Scotia",
@@ -1095,7 +846,8 @@
   "fn": null,
   "text": "Halifax, Nova Scotia",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:its flights carry, and",
@@ -1104,7 +856,8 @@
   "fn": null,
   "text": "its flights carry, and",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:Open the gate · Ouvrir",
@@ -1113,7 +866,8 @@
   "fn": null,
   "text": "Open the gate · Ouvrir",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:St. John’s, Newfoundland",
@@ -1122,7 +876,8 @@
   "fn": null,
   "text": "St. John’s, Newfoundland",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:Two Air Canada marks sit in the same archive — the 1964 rondelle and a later",
@@ -1131,7 +886,8 @@
   "fn": null,
   "text": "Two Air Canada marks sit in the same archive — the 1964 rondelle and a later",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:variant — and are not offered here. A heritage gate takes over whatever code",
@@ -1140,7 +896,8 @@
   "fn": null,
   "text": "variant — and are not offered here. A heritage gate takes over whatever code",
   "count": 1,
-  "surface": "Archive pages"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B5:fids-current/js/heritage-index.js:-:would repaint the live airline; unlike the carriers above, there is no free",
@@ -1149,1465 +906,8 @@
   "fn": null,
   "text": "would repaint the live airline; unlike the carriers above, there is no free",
   "count": 1,
-  "surface": "Archive pages"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Arrived",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arrived",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Boarding",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Cancelled",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Cancelled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Delayed",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Delayed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Early",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Early",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:En route",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "En route",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:On time",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "On time",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Scheduled",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:/logos/hotels/sofitel/sofitel-montreal-en.svg",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "/logos/hotels/sofitel/sofitel-montreal-en.svg",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:⚡ Go Live",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "⚡ Go Live",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:✚ Add Flight",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "✚ Add Flight",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:AvidTraveller",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "AvidTraveller",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:BAGS_TICKER_MSG",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "BAGS_TICKER_MSG",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:Calgary · 1987–2001",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Calgary · 1987–2001",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:Enter Board",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Enter Board",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:Flight · City · Airline",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Flight · City · Airline",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:Montreal · DC-9 · 1966–2002",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Montreal · DC-9 · 1966–2002",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:PorterClassic",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "PorterClassic",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:PorterReserve",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "PorterReserve",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:St. John’s, Newfoundland · a Canadian Partner · until 1998",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "St. John’s, Newfoundland · a Canadian Partner · until 1998",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_bidsHdr:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_bidsHdr",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_boardInfoRowHtml:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_boardInfoRowHtml",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_boardLabelBilingual:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_boardLabelBilingual",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_boardWelcomeStripHtml:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_boardWelcomeStripHtml",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_buildGateAdSlideList:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildGateAdSlideList",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_buildV2AircraftCol:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_buildV2MapCol:_ST_I18N.en",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "_ST_I18N.en",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_buildV2MapCol:_ST_I18N[lang]",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "_ST_I18N[lang]",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_buildV2MapCol:=== 'es' ?",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "=== 'es' ?",
-  "count": 3,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_buildV2MapCol:boardLangsFor()[]",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "boardLangsFor()[]",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_buildV2MapCol:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_bwSide:_GATE_LBL[lang]",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_bwSide",
-  "text": "_GATE_LBL[lang]",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_g8SignNext:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_g8SignNext",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_gateMapNote:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_gateMapNote",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_ocClockDate:{en,fr,es,de,it,pt,ja,zh,ar} locales",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_ocClockDate",
-  "text": "{en,fr,es,de,it,pt,ja,zh,ar} locales",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_ocClockDate:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_ocClockDate",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_pdClassicMark:_frF ?",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdClassicMark",
-  "text": "_frF ?",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_pdLanesBodyHtml:_frF ?",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdLanesBodyHtml",
-  "text": "_frF ?",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_pdPrioMarksHtml:_frF ?",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdPrioMarksHtml",
-  "text": "_frF ?",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_renderBigCraft:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderBigCraft",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:renderDedicatedScreen:{en,fr,es,de,it,pt,ja,zh,ar} locales",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "{en,fr,es,de,it,pt,ja,zh,ar} locales",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:updateDedicatedTimeOnly:{en,fr,es,de,it,pt,ja,zh,ar} locales",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "updateDedicatedTimeOnly",
-  "text": "{en,fr,es,de,it,pt,ja,zh,ar} locales",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:updateTicker:TICKER_MSG[lang]",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "updateTicker",
-  "text": "TICKER_MSG[lang]",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:uxgLocaleCode:{fr,en,es,de,it,pt,ja,zh,ar} locales",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgLocaleCode",
-  "text": "{fr,en,es,de,it,pt,ja,zh,ar} locales",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_amenOf:en,fr,es,de,it,pt,ja,zh,ar",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_amenOf",
-  "text": "en,fr,es,de,it,pt,ja,zh,ar",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildGateAdSlideList:Welcome aboard",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildGateAdSlideList",
-  "text": "Welcome aboard",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Arrived",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arrived",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Boarding",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Cancelled",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Cancelled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Delayed",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Delayed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Early",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Early",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:En route",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "En route",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:On time",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "On time",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Scheduled",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:/logos/hotels/sofitel/sofitel-montreal-en.svg",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "/logos/hotels/sofitel/sofitel-montreal-en.svg",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:Calgary · 1987–2001",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Calgary · 1987–2001",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:Montreal · DC-9 · 1966–2002",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Montreal · DC-9 · 1966–2002",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:St. John’s, Newfoundland · a Canadian Partner · until 1998",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "St. John’s, Newfoundland · a Canadian Partner · until 1998",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B3:fids-current/js/fids-core.js:-:Airline de",
-  "check": "B3",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Airline de",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B3:fids-current/js/fids-core.js:-:Calgary · 1987–2001 fr",
-  "check": "B3",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Calgary · 1987–2001 fr",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:· Data service busy — retrying | Service occupé",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "· Data service busy — retrying | Service occupé",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:· Data service unavailable (",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "· Data service unavailable (",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:Aircraft details pending | Détails de l’appareil à venir",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Aircraft details pending | Détails de l’appareil à venir",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:Aircraft&nbsp;Type",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Aircraft&nbsp;Type",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:Current",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Current",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:expected",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "expected",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:expected | prévu",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "expected | prévu",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:Gate",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Gate",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:prévu",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "prévu",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:Registration",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Registration",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:Tomorrow",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Tomorrow",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2AircraftCol:Weather",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Weather",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2MapCol:expected",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "expected",
-  "count": 3,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2MapCol:prevista",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "prevista",
-  "count": 3,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_buildV2MapCol:prévu",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "prévu",
-  "count": 3,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_paintFeedSource:, and may be visited at",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_paintFeedSource",
-  "text": ", and may be visited at",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_paintFeedSource:Flight data for this airport is provided by",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_paintFeedSource",
-  "text": "Flight data for this airport is provided by",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_pdLanesBodyHtml:AvidTraveller",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdLanesBodyHtml",
-  "text": "AvidTraveller",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_pdLanesBodyHtml:Pre-boarding",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdLanesBodyHtml",
-  "text": "Pre-boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_pdPrioMarksHtml:AvidTraveller",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdPrioMarksHtml",
-  "text": "AvidTraveller",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_renderBigCraft:expected",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderBigCraft",
-  "text": "expected",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_renderBigCraft:expected | prévu",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderBigCraft",
-  "text": "expected | prévu",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_renderBigCraft:prévu",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderBigCraft",
-  "text": "prévu",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:-:DEMO",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "DEMO",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:-:DEMO MODE",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "DEMO MODE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:-:Elevated economy · Complimentary snacks & beverages on board",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Elevated economy · Complimentary snacks & beverages on board",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:-:Extra legroom · Priority services on select fares",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Extra legroom · Priority services on select fares",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:-:LIVE",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "LIVE",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:-:worker SYD_STATUS / sydStatus — Boarding, Final Call, Gate Closed in archived da",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "worker SYD_STATUS / sydStatus — Boarding, Final Call, Gate Closed in archived da",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:applyAirportConfigToBoard:*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "applyAirportConfigToBoard",
-  "text": "*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:changeFont:*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "changeFont",
-  "text": "*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:fetchLive:LIVE",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fetchLive",
-  "text": "LIVE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:fetchLive:LIVE ·",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fetchLive",
-  "text": "LIVE ·",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:fetchLive:LIVE DATA ERROR",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fetchLive",
-  "text": "LIVE DATA ERROR",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:loadDemo:DEMO",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "loadDemo",
-  "text": "DEMO",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:loadDemo:DEMO MODE",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "loadDemo",
-  "text": "DEMO MODE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:render:Revised",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "render",
-  "text": "Revised",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderDedicatedScreen:Gate",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "Gate",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderDedicatedScreen:GATE",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "GATE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderDedicatedScreen:Next departure from this gate",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "Next departure from this gate",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderDedicatedScreen:Now",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "Now",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderDedicatedScreen:Page",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "Page",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderDedicatedScreen:Terminal",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "Terminal",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderDedicatedScreen:to",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "to",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:restoreFontChoice:*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "restoreFontChoice",
-  "text": "*:where(:not(.axr):not(.axr *):not(.ac-ico)), *:where(:not(.axr):not(.axr *):not",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:setState:NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "setState",
-  "text": "NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:setState:NO FLIGHTS IN WINDOW",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "setState",
-  "text": "NO FLIGHTS IN WINDOW",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:setState:NO LIVE DATA FOR THIS AIRPORT",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "setState",
-  "text": "NO LIVE DATA FOR THIS AIRPORT",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:setTheme:body { background:",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "setTheme",
-  "text": "body { background:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:uxgGateHtml:(expected | prévu)",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "(expected | prévu)",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:uxgGateHtml:scheduled",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:uxgGateHtml:Scheduled",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "Scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:-:Earn Avios points · Oneworld Alliance",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Earn Avios points · Oneworld Alliance",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:-:Elevated economy · Complimentary snacks & beverages on board",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Elevated economy · Complimentary snacks & beverages on board",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:-:Extra legroom · Priority services on select fares",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Extra legroom · Priority services on select fares",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:uxgGateHtml:_gateLbl('boardNext')",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "_gateLbl('boardNext')",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:uxgGateHtml:_gateLbl('boardNow')",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "_gateLbl('boardNow')",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_boardFilterChipHtml:Terminal",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_boardFilterChipHtml",
-  "text": "Terminal",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_boardWelcomeStripHtml:Now Boarding",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_boardWelcomeStripHtml",
-  "text": "Now Boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Scheduled",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_bwSide:Status",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_bwSide",
-  "text": "Status",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_pdCabinHdr:PorterClassic",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdCabinHdr",
-  "text": "PorterClassic",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_pdCabinHdr:PorterReserve",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdCabinHdr",
-  "text": "PorterReserve",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_pdLanesBodyHtml:Pre-boarding",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_pdLanesBodyHtml",
-  "text": "Pre-boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_renderBigCraft:Estimated position",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderBigCraft",
-  "text": "Estimated position",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Clear",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Clear",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Cloudy",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Cloudy",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Drizzle",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Drizzle",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Fog",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Fog",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Group",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Group",
-  "count": 14,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Heavy Rain",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Heavy Rain",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Heavy Snow",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Heavy Snow",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Ice Pellets",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Ice Pellets",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:PAGE",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "PAGE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Partly Cloudy",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Partly Cloudy",
-  "count": 3,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Rain",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Rain",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Snow",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Snow",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Thunderstorm",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Thunderstorm",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Windy",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Windy",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:-:Zone",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Zone",
-  "count": 13,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:fetchLive:Arrival",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fetchLive",
-  "text": "Arrival",
-  "count": 3,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:fetchLive:Departure",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fetchLive",
-  "text": "Departure",
-  "count": 3,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:getZoneCount:Zone",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "getZoneCount",
-  "text": "Zone",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:render:Revised",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "render",
-  "text": "Revised",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:render:Terminal",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "render",
-  "text": "Terminal",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:renderDedicatedScreen:Carousel",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "Carousel",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:uxgGateHtml:Zone",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "Zone",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B3:fids-current/js/fids-v2.js:-:Transborder de",
-  "check": "B3",
-  "file": "fids-current/js/fids-v2.js",
-  "fn": null,
-  "text": "Transborder de",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/gate-visual-integrity.js:-:Aircraft image pending",
-  "check": "B5",
-  "file": "fids-current/js/gate-visual-integrity.js",
-  "fn": null,
-  "text": "Aircraft image pending",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/gate-visual-integrity.js:-:Aircraft image pending | Image de l’appareil à venir",
-  "check": "B5",
-  "file": "fids-current/js/gate-visual-integrity.js",
-  "fn": null,
-  "text": "Aircraft image pending | Image de l’appareil à venir",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B5:fids-current/js/gate-visual-integrity.js:-:Image de l’appareil à venir",
-  "check": "B5",
-  "file": "fids-current/js/gate-visual-integrity.js",
-  "fn": null,
-  "text": "Image de l’appareil à venir",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B11:fids-current/js/feed-router.js:fmt12:DateTimeFormat('en-US')",
-  "check": "B11",
-  "file": "fids-current/js/feed-router.js",
-  "fn": "fmt12",
-  "text": "DateTimeFormat('en-US')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/feed-router.js:fmt12:hour12",
-  "check": "B11",
-  "file": "fids-current/js/feed-router.js",
-  "fn": "fmt12",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/feed-router.js:tpaTimeObj:DateTimeFormat('en-US')",
-  "check": "B11",
-  "file": "fids-current/js/feed-router.js",
-  "fn": "tpaTimeObj",
-  "text": "DateTimeFormat('en-US')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/feed-router.js:yqmTimeObj:DateTimeFormat('en-US')",
-  "check": "B11",
-  "file": "fids-current/js/feed-router.js",
-  "fn": "yqmTimeObj",
-  "text": "DateTimeFormat('en-US')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_acSkyIsNight:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_acSkyIsNight",
-  "text": "hour12",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_acSkyIsNight:toLocaleTimeString('en-GB')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_acSkyIsNight",
-  "text": "toLocaleTimeString('en-GB')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_airportDateLine:toLocaleDateString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_airportDateLine",
-  "text": "toLocaleDateString('en-CA')",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_bilingualDate:toLocaleDateString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_bilingualDate",
-  "text": "toLocaleDateString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_bilingualDate:toLocaleDateString('fr-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_bilingualDate",
-  "text": "toLocaleDateString('fr-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Archive pages",
+  "decision": "D11"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_buildV2MapCol:hour12",
@@ -2616,7 +916,8 @@
   "fn": "_buildV2MapCol",
   "text": "hour12",
   "count": 2,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_buildV2MapCol:toLocaleTimeString('en-US')",
@@ -2625,70 +926,8 @@
   "fn": "_buildV2MapCol",
   "text": "toLocaleTimeString('en-US')",
   "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_fidsDayNightPeriod:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_fidsDayNightPeriod",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_fidsDayNightPeriod:toLocaleTimeString('en-GB')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_fidsDayNightPeriod",
-  "text": "toLocaleTimeString('en-GB')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_fidsWallTsToUtc:DateTimeFormat('en-US')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_fidsWallTsToUtc",
-  "text": "DateTimeFormat('en-US')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_fidsWallTsToUtc:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_fidsWallTsToUtc",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_gateBoardingTimes:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_gateBoardingTimes",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_gateBoardingTimes:toLocaleTimeString('en-GB')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_gateBoardingTimes",
-  "text": "toLocaleTimeString('en-GB')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_gateLocalHour:toLocaleString('en-GB')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_gateLocalHour",
-  "text": "toLocaleString('en-GB')",
-  "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_ibFmtT:hour12",
@@ -2697,7 +936,8 @@
   "fn": "_ibFmtT",
   "text": "hour12",
   "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_ibFmtT:toLocaleTimeString('en-US')",
@@ -2706,7 +946,8 @@
   "fn": "_ibFmtT",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_ocClockTime:DateTimeFormat('en-GB')",
@@ -2715,7 +956,8 @@
   "fn": "_ocClockTime",
   "text": "DateTimeFormat('en-GB')",
   "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_ocClockTime:hour12",
@@ -2724,7 +966,8 @@
   "fn": "_ocClockTime",
   "text": "hour12",
   "count": 2,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_ocClockTime:toLocaleTimeString('en-US')",
@@ -2733,7 +976,8 @@
   "fn": "_ocClockTime",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_ocClockTime1:hour12",
@@ -2742,7 +986,8 @@
   "fn": "_ocClockTime1",
   "text": "hour12",
   "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_ocClockTime1:toLocaleTimeString('en-US')",
@@ -2751,34 +996,8 @@
   "fn": "_ocClockTime1",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_ocLocalDayKey:toLocaleDateString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_ocLocalDayKey",
-  "text": "toLocaleDateString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_one:toLocaleDateString('en-US')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_one",
-  "text": "toLocaleDateString('en-US')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_one:toLocaleDateString('fr-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_one",
-  "text": "toLocaleDateString('fr-CA')",
-  "count": 2,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_tick:hour12",
@@ -2787,7 +1006,8 @@
   "fn": "_tick",
   "text": "hour12",
   "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_tick:toLocaleTimeString('en-US')",
@@ -2796,97 +1016,8 @@
   "fn": "_tick",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:applySearch:DateTimeFormat('en-US')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "applySearch",
-  "text": "DateTimeFormat('en-US')",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:applySearch:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "applySearch",
-  "text": "hour12",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:build:toLocaleTimeString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "build",
-  "text": "toLocaleTimeString('en-CA')",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:buildDemoFlights:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildDemoFlights",
-  "text": "hour12",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:buildDemoFlights:toLocaleTimeString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildDemoFlights",
-  "text": "toLocaleTimeString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:buildRandomFlights:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "buildRandomFlights",
-  "text": "hour12",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:fetchLive:toLocaleTimeString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fetchLive",
-  "text": "toLocaleTimeString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:fidsLocalDateKey:toLocaleDateString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fidsLocalDateKey",
-  "text": "toLocaleDateString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:getDestTod:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "getDestTod",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:getDestTod:toLocaleString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "getDestTod",
-  "text": "toLocaleString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:getTimeInTz:hour12",
@@ -2895,7 +1026,8 @@
   "fn": "getTimeInTz",
   "text": "hour12",
   "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:getTimeInTz:toLocaleTimeString('en-US')",
@@ -2904,52 +1036,8 @@
   "fn": "getTimeInTz",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:getTzAbbr:DateTimeFormat('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "getTzAbbr",
-  "text": "DateTimeFormat('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:mapADB:toLocaleDateString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "mapADB",
-  "text": "toLocaleDateString('en-CA')",
-  "count": 3,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:openTestFlight:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "openTestFlight",
-  "text": "hour12",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:openTestFlight:toLocaleTimeString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "openTestFlight",
-  "text": "toLocaleTimeString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:render:toLocaleDateString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "render",
-  "text": "toLocaleDateString('en-CA')",
-  "count": 4,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:renderDedicatedScreen:hour12",
@@ -2957,17 +1045,9 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "renderDedicatedScreen",
   "text": "hour12",
-  "count": 3,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:renderDedicatedScreen:toLocaleTimeString('en-GB')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "toLocaleTimeString('en-GB')",
-  "count": 2,
-  "surface": "Clocks and dates"
+  "count": 1,
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:renderDedicatedScreen:toLocaleTimeString('en-US')",
@@ -2976,43 +1056,8 @@
   "fn": "renderDedicatedScreen",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:submitTestFlight:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "submitTestFlight",
-  "text": "hour12",
-  "count": 2,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:submitTestFlight:toLocaleTimeString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "submitTestFlight",
-  "text": "toLocaleTimeString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:trackChanges:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "trackChanges",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:trackChanges:toLocaleTimeString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "trackChanges",
-  "text": "toLocaleTimeString('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:updateDedicatedTimeOnly:hour12",
@@ -3021,7 +1066,8 @@
   "fn": "updateDedicatedTimeOnly",
   "text": "hour12",
   "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:updateDedicatedTimeOnly:toLocaleTimeString('en-US')",
@@ -3030,16 +1076,8 @@
   "fn": "updateDedicatedTimeOnly",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:uxgGateHtml:DateTimeFormat('en')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "DateTimeFormat('en')",
-  "count": 1,
-  "surface": "Clocks and dates"
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:uxgGateHtml:hour12",
@@ -3047,8 +1085,9 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "uxgGateHtml",
   "text": "hour12",
-  "count": 7,
-  "surface": "Clocks and dates"
+  "count": 5,
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:uxgGateHtml:toLocaleTimeString('en-US')",
@@ -3056,35 +1095,9 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "uxgGateHtml",
   "text": "toLocaleTimeString('en-US')",
-  "count": 7,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/gate-date-context.js:flightClock:hour12",
-  "check": "B11",
-  "file": "fids-current/js/gate-date-context.js",
-  "fn": "flightClock",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/gate-date-context.js:validTimeZone:DateTimeFormat('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/gate-date-context.js",
-  "fn": "validTimeZone",
-  "text": "DateTimeFormat('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
- },
- {
-  "id": "B11:fids-current/js/gate-date-context.js:zonedDateOrdinal:DateTimeFormat('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/gate-date-context.js",
-  "fn": "zonedDateOrdinal",
-  "text": "DateTimeFormat('en-CA')",
-  "count": 1,
-  "surface": "Clocks and dates"
+  "count": 5,
+  "surface": "Clocks and dates",
+  "decision": "D1"
  },
  {
   "id": "B1:fids-current/app.html:-:I18N",
@@ -3093,7 +1106,8 @@
   "fn": null,
   "text": "I18N",
   "count": 2,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Advertisement",
@@ -3102,7 +1116,8 @@
   "fn": null,
   "text": "Advertisement",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Arrivals",
@@ -3111,7 +1126,8 @@
   "fn": null,
   "text": "Arrivals",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Arriving flights & baggage belts",
@@ -3120,7 +1136,8 @@
   "fn": null,
   "text": "Arriving flights & baggage belts",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Baggage",
@@ -3129,7 +1146,8 @@
   "fn": null,
   "text": "Baggage",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Coming soon",
@@ -3138,7 +1156,8 @@
   "fn": null,
   "text": "Coming soon",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Departures",
@@ -3147,7 +1166,8 @@
   "fn": null,
   "text": "Departures",
   "count": 2,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Duty-free, your way",
@@ -3156,7 +1176,8 @@
   "fn": null,
   "text": "Duty-free, your way",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Explore",
@@ -3165,7 +1186,8 @@
   "fn": null,
   "text": "Explore",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Explore offers",
@@ -3174,7 +1196,8 @@
   "fn": null,
   "text": "Explore offers",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Explore the airport",
@@ -3183,7 +1206,8 @@
   "fn": null,
   "text": "Explore the airport",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Find shops, food, lounges and washrooms — and how to get to them.",
@@ -3192,7 +1216,8 @@
   "fn": null,
   "text": "Find shops, food, lounges and washrooms — and how to get to them.",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Flight details",
@@ -3201,7 +1226,8 @@
   "fn": null,
   "text": "Flight details",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Flights",
@@ -3210,7 +1236,8 @@
   "fn": null,
   "text": "Flights",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Grab a coffee before you fly",
@@ -3219,7 +1246,8 @@
   "fn": null,
   "text": "Grab a coffee before you fly",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Greater Moncton",
@@ -3228,7 +1256,8 @@
   "fn": null,
   "text": "Greater Moncton",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Live departures",
@@ -3237,7 +1266,8 @@
   "fn": null,
   "text": "Live departures",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Members",
@@ -3246,7 +1276,8 @@
   "fn": null,
   "text": "Members",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Offers near your gate — tap to see",
@@ -3255,7 +1286,8 @@
   "fn": null,
   "text": "Offers near your gate — tap to see",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Pre-order and pick up at the gate.",
@@ -3264,7 +1296,8 @@
   "fn": null,
   "text": "Pre-order and pick up at the gate.",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Save your flight and boarding pass for quick access. Sign in to unlock.",
@@ -3273,7 +1306,8 @@
   "fn": null,
   "text": "Save your flight and boarding pass for quick access. Sign in to unlock.",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Sponsored",
@@ -3282,7 +1316,8 @@
   "fn": null,
   "text": "Sponsored",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Trip",
@@ -3291,7 +1326,8 @@
   "fn": null,
   "text": "Trip",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B10:fids-current/app.html:-:Your trip",
@@ -3300,7 +1336,8 @@
   "fn": null,
   "text": "Your trip",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B11:fids-current/app.html:adbFmt:DateTimeFormat('en-US')",
@@ -3309,7 +1346,8 @@
   "fn": "adbFmt",
   "text": "DateTimeFormat('en-US')",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B11:fids-current/app.html:adbFmt:hour12",
@@ -3318,7 +1356,8 @@
   "fn": "adbFmt",
   "text": "hour12",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B11:fids-current/app.html:cycleLang:[3 language codes]",
@@ -3327,7 +1366,8 @@
   "fn": "cycleLang",
   "text": "[3 language codes]",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Air Nova — the Air Canada Connector",
@@ -3336,7 +1376,8 @@
   "fn": null,
   "text": "Air Nova — the Air Canada Connector",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Book your ride home",
@@ -3345,7 +1386,8 @@
   "fn": null,
   "text": "Book your ride home",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Book your ride home before you land.",
@@ -3354,7 +1396,8 @@
   "fn": null,
   "text": "Book your ride home before you land.",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Cafés near your gate — tap to see",
@@ -3363,7 +1406,8 @@
   "fn": null,
   "text": "Cafés near your gate — tap to see",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Day passes available",
@@ -3372,7 +1416,8 @@
   "fn": null,
   "text": "Day passes available",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Day passes available — comfort before you fly.",
@@ -3381,7 +1426,8 @@
   "fn": null,
   "text": "Day passes available — comfort before you fly.",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Duty-free, your way",
@@ -3390,7 +1436,8 @@
   "fn": null,
   "text": "Duty-free, your way",
   "count": 2,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Grab a coffee before you fly",
@@ -3399,7 +1446,8 @@
   "fn": null,
   "text": "Grab a coffee before you fly",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Hungry before you board?",
@@ -3408,7 +1456,8 @@
   "fn": null,
   "text": "Hungry before you board?",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Order ahead from restaurants near your gate.",
@@ -3417,7 +1466,8 @@
   "fn": null,
   "text": "Order ahead from restaurants near your gate.",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Pre-order and pick up at the gate.",
@@ -3426,7 +1476,8 @@
   "fn": null,
   "text": "Pre-order and pick up at the gate.",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Pre-order, pick up at the gate",
@@ -3435,7 +1486,8 @@
   "fn": null,
   "text": "Pre-order, pick up at the gate",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Relax in the lounge",
@@ -3444,7 +1496,8 @@
   "fn": null,
   "text": "Relax in the lounge",
   "count": 2,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:-:Skip the taxi line",
@@ -3453,7 +1506,8 @@
   "fn": null,
   "text": "Skip the taxi line",
   "count": 2,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B5:fids-current/app.html:renderBags:· arr",
@@ -3462,7 +1516,8 @@
   "fn": "renderBags",
   "text": "· arr",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B8:fids-current/app.html:fetchDir:Arrival",
@@ -3471,7 +1526,8 @@
   "fn": "fetchDir",
   "text": "Arrival",
   "count": 1,
-  "surface": "Companion app"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B8:fids-current/app.html:fetchDir:Departure",
@@ -3480,2554 +1536,8 @@
   "fn": "fetchDir",
   "text": "Departure",
   "count": 1,
-  "surface": "Companion app"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_renderHeritageCard:frF ?",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderHeritageCard",
-  "text": "frF ?",
-  "count": 1,
-  "surface": "Heritage card"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_heritageMarkBoard:· DÉMONSTRATION",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_heritageMarkBoard",
-  "text": "· DÉMONSTRATION",
-  "count": 1,
-  "surface": "Heritage card"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_heritageMarkBoard:· not a live flight / vol fictif",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_heritageMarkBoard",
-  "text": "· not a live flight / vol fictif",
-  "count": 1,
-  "surface": "Heritage card"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_heritageMarkBoard:DEMONSTRATION",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_heritageMarkBoard",
-  "text": "DEMONSTRATION",
-  "count": 1,
-  "surface": "Heritage card"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_renderHeritageCard:Depuis les archives | From the archive",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderHeritageCard",
-  "text": "Depuis les archives | From the archive",
-  "count": 1,
-  "surface": "Heritage card"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_renderHeritageCard:From the archive | Depuis les archives",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderHeritageCard",
-  "text": "From the archive | Depuis les archives",
-  "count": 1,
-  "surface": "Heritage card"
- },
- {
-  "id": "B10:fids-current/index.html:-:Accès en direct",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Accès en direct",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:Administrator &amp; display entry · Entrée administrateur et affichage",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Administrator &amp; display entry · Entrée administrateur et affichage",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:Airport Display System",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Airport Display System",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:CANCEL",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "CANCEL",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:Connecting Beyond",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Connecting Beyond",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:DEMO",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "DEMO",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:FIDS",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "FIDS",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:Live access",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Live access",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:LIVE DATA REQUIRES AUTHENTICATED ACCESS",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "LIVE DATA REQUIRES AUTHENTICATED ACCESS",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:LOGIN",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "LOGIN",
-  "count": 2,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:ORION CONNECTED",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "ORION CONNECTED",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:PASSWORD · MOT DE PASSE",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "PASSWORD · MOT DE PASSE",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:SECURE ENTRY",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "SECURE ENTRY",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:USERNAME · NOM D'UTILISATEUR",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "USERNAME · NOM D'UTILISATEUR",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:v8 · ORION CONNECTED",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "v8 · ORION CONNECTED",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/index.html:-:Welcome",
-  "check": "B10",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Welcome",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B2:fids-current/index.html:-:[EN, Welcome]",
-  "check": "B2",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "[EN, Welcome]",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B5:fids-current/index.html:-:?mobile=ask",
-  "check": "B5",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "?mobile=ask",
-  "count": 2,
-  "surface": "Opening page"
- },
- {
-  "id": "B5:fids-current/index.html:-:Open the mobile app?",
-  "check": "B5",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Open the mobile app?",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B5:fids-current/index.html:-:pour qu’on vous redemande.",
-  "check": "B5",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "pour qu’on vous redemande.",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B5:fids-current/index.html:-:Stay on the regular site",
-  "check": "B5",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Stay on the regular site",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B5:fids-current/index.html:-:to be asked again.",
-  "check": "B5",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "to be asked again.",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B5:fids-current/index.html:-:Use the mobile app",
-  "check": "B5",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Use the mobile app",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B5:fids-current/index.html:-:Votre choix sera retenu. Ajoutez",
-  "check": "B5",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Votre choix sera retenu. Ajoutez",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B5:fids-current/index.html:-:We’ll remember your choice. Add",
-  "check": "B5",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "We’ll remember your choice. Add",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B8:fids-current/index.html:-:Welcome",
-  "check": "B8",
-  "file": "fids-current/index.html",
-  "fn": null,
-  "text": "Welcome",
-  "count": 1,
-  "surface": "Opening page"
- },
- {
-  "id": "B10:fids-current/bids.html:-:⏱ HEURE RÉVISÉE: 10:38",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "⏱ HEURE RÉVISÉE: 10:38",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:✈ PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES · VEUILLEZ GARDER VOS BAGAGES A",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "✈ PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES · VEUILLEZ GARDER VOS BAGAGES A",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Arrivé · 10:38",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Arrivé · 10:38",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Baggage Arrival Gateway Screen",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Baggage Arrival Gateway Screen",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Carrousel",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Carrousel",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Carrousel 2",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Carrousel 2",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Carrousel 3",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Carrousel 3",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Carrousel 4",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Carrousel 4",
-  "count": 5,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Connecting Beyond",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Connecting Beyond",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Date",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Date",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:De",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "De",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Departures",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Departures",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:FETCHING LIVE DATA",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "FETCHING LIVE DATA",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Greater Moncton",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Greater Moncton",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Heure",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Heure",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Ligne aérienne",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Ligne aérienne",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:LOADING",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "LOADING",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Login",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Login",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Météo",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Météo",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Mont-Joli",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Mont-Joli",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Montréal",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Montréal",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:NO FLIGHTS IN WINDOW",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "NO FLIGHTS IN WINDOW",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Ottawa",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Ottawa",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:PAGE 1 / 2",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "PAGE 1 / 2",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Prévu",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Prévu",
-  "count": 7,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Statut",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Statut",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Terminal",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Terminal",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Toronto",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Toronto",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Toronto Centreville",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Toronto Centreville",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Vol",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Vol",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/bids.html:-:Welcome",
-  "check": "B10",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Welcome",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B2:fids-current/bids.html:-:[EN, Baggage claim]",
-  "check": "B2",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "[EN, Baggage claim]",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/bids.html:-:LIVE",
-  "check": "B5",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "LIVE",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/bids.html:-:LIVE · LOADING…",
-  "check": "B5",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "LIVE · LOADING…",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/bids.html:-:LOADING DEMO DATA…",
-  "check": "B5",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "LOADING DEMO DATA…",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B8:fids-current/bids.html:-:Baggage claim",
-  "check": "B8",
-  "file": "fids-current/bids.html",
-  "fn": null,
-  "text": "Baggage claim",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:⏱ HEURE RÉVISÉE: 10:38",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "⏱ HEURE RÉVISÉE: 10:38",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:✈ PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES · VEUILLEZ GARDER VOS BAGAGES A",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "✈ PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES · VEUILLEZ GARDER VOS BAGAGES A",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Arrivé · 10:38",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Arrivé · 10:38",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Carrousel",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Carrousel",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Carrousel 2",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Carrousel 2",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Carrousel 3",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Carrousel 3",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Carrousel 4",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Carrousel 4",
-  "count": 5,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Connecting Beyond",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Connecting Beyond",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Date",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Date",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:De",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "De",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Departures",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Departures",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:FETCHING LIVE DATA",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "FETCHING LIVE DATA",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Flight Information Display Screen",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Flight Information Display Screen",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Greater Moncton",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Greater Moncton",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Heure",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Heure",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Ligne aérienne",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Ligne aérienne",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:LOADING",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "LOADING",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Login",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Login",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Météo",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Météo",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Mont-Joli",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Mont-Joli",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Montréal",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Montréal",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:NO FLIGHTS IN WINDOW",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "NO FLIGHTS IN WINDOW",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Ottawa",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Ottawa",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:PAGE 1 / 2",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "PAGE 1 / 2",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Prévu",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Prévu",
-  "count": 7,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Statut",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Statut",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Terminal",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Terminal",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Toronto",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Toronto",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Toronto Centreville",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Toronto Centreville",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Vol",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Vol",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/fids.html:-:Welcome",
-  "check": "B10",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Welcome",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B2:fids-current/fids.html:-:[EN, Welcome]",
-  "check": "B2",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "[EN, Welcome]",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/fids.html:-:LIVE",
-  "check": "B5",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "LIVE",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/fids.html:-:LOADING DEMO DATA…",
-  "check": "B5",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "LOADING DEMO DATA…",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B8:fids-current/fids.html:-:Welcome",
-  "check": "B8",
-  "file": "fids-current/fids.html",
-  "fn": null,
-  "text": "Welcome",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:⏱ HEURE RÉVISÉE: 10:38",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "⏱ HEURE RÉVISÉE: 10:38",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:✈ PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES · VEUILLEZ GARDER VOS BAGAGES A",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "✈ PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES · VEUILLEZ GARDER VOS BAGAGES A",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Arrivé · 10:38",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Arrivé · 10:38",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Carrousel",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Carrousel",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Carrousel 2",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Carrousel 2",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Carrousel 3",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Carrousel 3",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Carrousel 4",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Carrousel 4",
-  "count": 5,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Connecting Beyond",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Connecting Beyond",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Date",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Date",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:De",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "De",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Departures",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Departures",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:FETCHING LIVE DATA",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "FETCHING LIVE DATA",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Gate & Advertisement Terminal Experience",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Gate & Advertisement Terminal Experience",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Greater Moncton",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Greater Moncton",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Heure",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Heure",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Ligne aérienne",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Ligne aérienne",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:LOADING",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "LOADING",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Login",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Login",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Météo",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Météo",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Mont-Joli",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Mont-Joli",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Montréal",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Montréal",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "NO DEPARTURES OR ARRIVALS IN CURRENT TIME WINDOW",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:NO FLIGHTS IN WINDOW",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "NO FLIGHTS IN WINDOW",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Ottawa",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Ottawa",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:PAGE 1 / 2",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "PAGE 1 / 2",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Prévu",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Prévu",
-  "count": 7,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Statut",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Statut",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Terminal",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Terminal",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Toronto",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Toronto",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Toronto Centreville",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Toronto Centreville",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Vol",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Vol",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B10:fids-current/gids.html:-:Welcome",
-  "check": "B10",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Welcome",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B2:fids-current/gids.html:-:[EN, Now boarding]",
-  "check": "B2",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "[EN, Now boarding]",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/gids.html:-:LIVE",
-  "check": "B5",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "LIVE",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/gids.html:-:LIVE · LOADING…",
-  "check": "B5",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "LIVE · LOADING…",
-  "count": 2,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/gids.html:-:LOADING DEMO DATA…",
-  "check": "B5",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "LOADING DEMO DATA…",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B8:fids-current/gids.html:-:GATE",
-  "check": "B8",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "GATE",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B8:fids-current/gids.html:-:Now boarding",
-  "check": "B8",
-  "file": "fids-current/gids.html",
-  "fn": null,
-  "text": "Now boarding",
-  "count": 1,
-  "surface": "Page markup and loaders"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_mobileNavHtml:Go",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_mobileNavHtml",
-  "text": "Go",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_mobileNavHtml:MENU",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_mobileNavHtml",
-  "text": "MENU",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:flightCards:FROM",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "flightCards",
-  "text": "FROM",
-  "count": 2,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:initHeroMap:Coordinates unavailable",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "initHeroMap",
-  "text": "Coordinates unavailable",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:initHeroMap:Map unavailable",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "initHeroMap",
-  "text": "Map unavailable",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderFromCache:No stays found for",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderFromCache",
-  "text": "No stays found for",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderFromCache:Stays in",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderFromCache",
-  "text": "Stays in",
-  "count": 2,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroAircraft:Aircraft",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroAircraft",
-  "text": "Aircraft",
-  "count": 2,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroAircraft:Manufacturer",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroAircraft",
-  "text": "Manufacturer",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroAircraft:Operator",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroAircraft",
-  "text": "Operator",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroAircraft:Range",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroAircraft",
-  "text": "Range",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroAircraft:Registration",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroAircraft",
-  "text": "Registration",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroAircraft:Type",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroAircraft",
-  "text": "Type",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroFlight:Distance",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroFlight",
-  "text": "Distance",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroFlight:Duration",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroFlight",
-  "text": "Duration",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroFlight:Estimated",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroFlight",
-  "text": "Estimated",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroFlight:Flight",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroFlight",
-  "text": "Flight",
-  "count": 3,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroFlight:Scheduled",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroFlight",
-  "text": "Scheduled",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroHotelsAsync:Hotels unavailable",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroHotelsAsync",
-  "text": "Hotels unavailable",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroHotelsAsync:No destination data",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroHotelsAsync",
-  "text": "No destination data",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderHeroMap:Map",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroMap",
-  "text": "Map",
-  "count": 2,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderMobile:NO FLIGHTS IN WINDOW",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderMobile",
-  "text": "NO FLIGHTS IN WINDOW",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderMobile:NO RESULTS FOR \"",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderMobile",
-  "text": "NO RESULTS FOR \"",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderMobileBaggageHtml:BELT",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderMobileBaggageHtml",
-  "text": "BELT",
-  "count": 2,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderMobileGateHtml:expected | prévu",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderMobileGateHtml",
-  "text": "expected | prévu",
-  "count": 2,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderMobileGateHtml:in",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderMobileGateHtml",
-  "text": "in",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:renderMobileGateHtml:Operated by",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderMobileGateHtml",
-  "text": "Operated by",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:toggleHeroSection:Loading stays...",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleHeroSection",
-  "text": "Loading stays...",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:toggleHeroSection:No data",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleHeroSection",
-  "text": "No data",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:renderFromCache:TL('hotels')",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderFromCache",
-  "text": "TL('hotels')",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:renderHeroAircraft:TL('aircraft')",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroAircraft",
-  "text": "TL('aircraft')",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:renderHeroMap:TL('map')",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderHeroMap",
-  "text": "TL('map')",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B6:fids-current/js/fids-core.js:renderMobileGateHtml:TL('terminal')",
-  "check": "B6",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderMobileGateHtml",
-  "text": "TL('terminal')",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Aircraft",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Aircraft",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Arrival",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Arrival",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Carousel",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Carousel",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Departure",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Departure",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Flight",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:From",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "From",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Gate",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Gate",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Operated by",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Operated by",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Registration",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Registration",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Status",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Status",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Terminal",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Terminal",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:toggleCardExpand:Weather",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "toggleCardExpand",
-  "text": "Weather",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/gids-mobile-nav.js:injectNav:Back",
-  "check": "B5",
-  "file": "fids-current/js/gids-mobile-nav.js",
-  "fn": "injectNav",
-  "text": "Back",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/gids-mobile-nav.js:injectNav:Go",
-  "check": "B5",
-  "file": "fids-current/js/gids-mobile-nav.js",
-  "fn": "injectNav",
-  "text": "Go",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B5:fids-current/js/gids-mobile-nav.js:injectNav:MENU",
-  "check": "B5",
-  "file": "fids-current/js/gids-mobile-nav.js",
-  "fn": "injectNav",
-  "text": "MENU",
-  "count": 1,
-  "surface": "Phone layout"
- },
- {
-  "id": "B10:fids-current/tour.html:-:Arrivée à",
-  "check": "B10",
-  "file": "fids-current/tour.html",
-  "fn": null,
-  "text": "Arrivée à",
-  "count": 1,
-  "surface": "Stream"
- },
- {
-  "id": "B10:fids-current/tour.html:-:Now Arriving",
-  "check": "B10",
-  "file": "fids-current/tour.html",
-  "fn": null,
-  "text": "Now Arriving",
-  "count": 1,
-  "surface": "Stream"
- },
- {
-  "id": "B11:fids-current/tour.html:paintCard:hour12",
-  "check": "B11",
-  "file": "fids-current/tour.html",
-  "fn": "paintCard",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Stream"
- },
- {
-  "id": "B11:fids-current/tour.html:paintCard:toLocaleTimeString('en-US')",
-  "check": "B11",
-  "file": "fids-current/tour.html",
-  "fn": "paintCard",
-  "text": "toLocaleTimeString('en-US')",
-  "count": 1,
-  "surface": "Stream"
- },
- {
-  "id": "B5:fids-current/js/studio-data.js:flights:Airport data unavailable.",
-  "check": "B5",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "flights",
-  "text": "Airport data unavailable.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-data.js:request:Airport data unavailable.",
-  "check": "B5",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "request",
-  "text": "Airport data unavailable.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:-:Arrived",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": null,
-  "text": "Arrived",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:-:Boarding",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": null,
-  "text": "Boarding",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:-:Delayed",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": null,
-  "text": "Delayed",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:-:On time",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": null,
-  "text": "On time",
-  "count": 3,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:flights:Arrival",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "flights",
-  "text": "Arrival",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:flights:Departure",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "flights",
-  "text": "Departure",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Arrived",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Arrived",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Boarding",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Boarding",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Cancelled",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Cancelled",
-  "count": 2,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Delayed",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Delayed",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Departed",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Departed",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Diverted",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Diverted",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:En route",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "En route",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Final call",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Final call",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Gate closed",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Gate closed",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:On time",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "On time",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:readableStatus:Scheduled",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "readableStatus",
-  "text": "Scheduled",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-data.js:weather:Clear",
-  "check": "B8",
-  "file": "fids-current/js/studio-data.js",
-  "fn": "weather",
-  "text": "Clear",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B11:fids-current/js/studio-player.js:clockNow:hour12",
-  "check": "B11",
-  "file": "fids-current/js/studio-player.js",
-  "fn": "clockNow",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B11:fids-current/js/studio-player.js:clockNow:toLocaleDateString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/studio-player.js",
-  "fn": "clockNow",
-  "text": "toLocaleDateString('en-CA')",
-  "count": 2,
-  "surface": "Studio player"
- },
- {
-  "id": "B11:fids-current/js/studio-player.js:clockNow:toLocaleTimeString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/studio-player.js",
-  "fn": "clockNow",
-  "text": "toLocaleTimeString('en-CA')",
-  "count": 2,
-  "surface": "Studio player"
- },
- {
-  "id": "B11:fids-current/js/studio-player.js:clockNow:toLocaleTimeString('en-GB')",
-  "check": "B11",
-  "file": "fids-current/js/studio-player.js",
-  "fn": "clockNow",
-  "text": "toLocaleTimeString('en-GB')",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-player.js:refreshData:Airport data unavailable.",
-  "check": "B5",
-  "file": "fids-current/js/studio-player.js",
-  "fn": "refreshData",
-  "text": "Airport data unavailable.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:advertisementContent:ADVERTISEMENT",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "advertisementContent",
-  "text": "ADVERTISEMENT",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:advertisementContent:Airport-scoped campaign and destination content.",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "advertisementContent",
-  "text": "Airport-scoped campaign and destination content.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:advertisementContent:Welcome to New Brunswick.",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "advertisementContent",
-  "text": "Welcome to New Brunswick.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:claimHeroContent:BAGGAGE CLAIM ·",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "claimHeroContent",
-  "text": "BAGGAGE CLAIM ·",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:claimHeroContent:BELT",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "claimHeroContent",
-  "text": "BELT",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:counterStatusContent:OPEN",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "counterStatusContent",
-  "text": "OPEN",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:destinationWeatherContent:Weather contract not connected",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "destinationWeatherContent",
-  "text": "Weather contract not connected",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:destinationWeatherContent:WEATHER PREVIEW",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "destinationWeatherContent",
-  "text": "WEATHER PREVIEW",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:emergencyOverlayHTML:· All displays takeover · Audio paging active",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "emergencyOverlayHTML",
-  "text": "· All displays takeover · Audio paging active",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:emergencyOverlayHTML:EMERGENCY OVERRIDE",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "emergencyOverlayHTML",
-  "text": "EMERGENCY OVERRIDE",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:emergencyOverlayHTML:Follow staff instructions",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "emergencyOverlayHTML",
-  "text": "Follow staff instructions",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:gateFlightContent:Gate",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "gateFlightContent",
-  "text": "Gate",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:moduleContent:Check-in opens 2 hours before departure.",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "moduleContent",
-  "text": "Check-in opens 2 hours before departure.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:queueGuidanceContent:Queue time about 8 minutes · All lanes open",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "queueGuidanceContent",
-  "text": "Queue time about 8 minutes · All lanes open",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:tableContent:✎ Edit flights",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "tableContent",
-  "text": "✎ Edit flights",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:tableContent:No scheduled flights",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "tableContent",
-  "text": "No scheduled flights",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/studio-render.js:tableContent:PAGE",
-  "check": "B5",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "tableContent",
-  "text": "PAGE",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-render.js:boardingStateContent:· Gate",
-  "check": "B8",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "boardingStateContent",
-  "text": "· Gate",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-render.js:label:Airline",
-  "check": "B8",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "label",
-  "text": "Airline",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-render.js:label:Flight",
-  "check": "B8",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "label",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-render.js:label:From",
-  "check": "B8",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "label",
-  "text": "From",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-render.js:label:Gate",
-  "check": "B8",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "label",
-  "text": "Gate",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-render.js:label:Status",
-  "check": "B8",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "label",
-  "text": "Status",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-render.js:label:Time",
-  "check": "B8",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "label",
-  "text": "Time",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/studio-render.js:moduleContent:Welcome",
-  "check": "B8",
-  "file": "fids-current/js/studio-render.js",
-  "fn": "moduleContent",
-  "text": "Welcome",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B11:fids-current/js/template-renderer.js:tick:hour12",
-  "check": "B11",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "tick",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/template-renderer.js:_buildFlightListHTML:No columns selected.",
-  "check": "B5",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_buildFlightListHTML",
-  "text": "No columns selected.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/template-renderer.js:_flightMapGeoLive:Map could not start.",
-  "check": "B5",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_flightMapGeoLive",
-  "text": "Map could not start.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B5:fids-current/js/template-renderer.js:_flightMapGeoLive:Map engine unavailable.",
-  "check": "B5",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_flightMapGeoLive",
-  "text": "Map engine unavailable.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_buildFlightListHTML:Airline",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_buildFlightListHTML",
-  "text": "Airline",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_buildFlightListHTML:Destination",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_buildFlightListHTML",
-  "text": "Destination",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_buildFlightListHTML:Flight",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_buildFlightListHTML",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_buildFlightListHTML:Gate",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_buildFlightListHTML",
-  "text": "Gate",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_buildFlightListHTML:Status",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_buildFlightListHTML",
-  "text": "Status",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_buildFlightListHTML:Time",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_buildFlightListHTML",
-  "text": "Time",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_flightInfoHTML:Aircraft",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_flightInfoHTML",
-  "text": "Aircraft",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_flightInfoHTML:Altitude",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_flightInfoHTML",
-  "text": "Altitude",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_flightInfoHTML:Flight",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_flightInfoHTML",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_flightInfoHTML:Gate",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_flightInfoHTML",
-  "text": "Gate",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_flightInfoHTML:Scheduled",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_flightInfoHTML",
-  "text": "Scheduled",
-  "count": 2,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_flightMapGeoLive:\", destination: \"",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_flightMapGeoLive",
-  "text": "\", destination: \"",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_liveFlights:Boarding",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_liveFlights",
-  "text": "Boarding",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_liveFlights:Delayed",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_liveFlights",
-  "text": "Delayed",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B8:fids-current/js/template-renderer.js:_liveFlights:On time",
-  "check": "B8",
-  "file": "fids-current/js/template-renderer.js",
-  "fn": "_liveFlights",
-  "text": "On time",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B10:fids-current/studio/player.html:-:Nothing is published for this player yet.",
-  "check": "B10",
-  "file": "fids-current/studio/player.html",
-  "fn": null,
-  "text": "Nothing is published for this player yet.",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B10:fids-current/studio/player.html:-:Orion Display Player",
-  "check": "B10",
-  "file": "fids-current/studio/player.html",
-  "fn": null,
-  "text": "Orion Display Player",
-  "count": 1,
-  "surface": "Studio player"
- },
- {
-  "id": "B9:fids-current/css/gate-display.css:-:Aircraft",
-  "check": "B9",
-  "file": "fids-current/css/gate-display.css",
-  "fn": null,
-  "text": "Aircraft",
-  "count": 1,
-  "surface": "Stylesheets"
- },
- {
-  "id": "B9:fids-current/css/gate-display.css:-:AIRCRAFT DETAILS",
-  "check": "B9",
-  "file": "fids-current/css/gate-display.css",
-  "fn": null,
-  "text": "AIRCRAFT DETAILS",
-  "count": 1,
-  "surface": "Stylesheets"
- },
- {
-  "id": "B9:fids-current/css/gate-display.css:-:Registration",
-  "check": "B9",
-  "file": "fids-current/css/gate-display.css",
-  "fn": null,
-  "text": "Registration",
-  "count": 1,
-  "surface": "Stylesheets"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) ar",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) ar",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) de",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) de",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) en",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) en",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) es",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) es",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) fr",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) fr",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) it",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) it",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) ja",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) ja",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) pt",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) pt",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_renderWxCard:(arg) zh",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "(arg) zh",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:tioLabel:_byLang",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "tioLabel",
-  "text": "_byLang",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:tioLabel:_byLang de",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "tioLabel",
-  "text": "_byLang de",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:tioLabel:_byLang es",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "tioLabel",
-  "text": "_byLang es",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:tioLabel:_byLang fr",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "tioLabel",
-  "text": "_byLang fr",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_renderWxCard:{en,fr,es,de,it,pt,ja,zh,ar} locales",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "{en,fr,es,de,it,pt,ja,zh,ar} locales",
-  "count": 1,
-  "surface": "Weather card and strips"
+  "surface": "Companion app",
+  "decision": "D6"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_renderWxCard:hour12",
@@ -6035,35 +1545,9 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "_renderWxCard",
   "text": "hour12",
-  "count": 2,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_renderWxCard:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "langs.slice(0, 2)",
   "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_renderWxCard:toLocaleDateString('en-US')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "toLocaleDateString('en-US')",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_renderWxCard:toLocaleTimeString('en-GB')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "toLocaleTimeString('en-GB')",
-  "count": 1,
-  "surface": "Weather card and strips"
+  "surface": "Weather card and strips",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_renderWxCard:toLocaleTimeString('en-US')",
@@ -6072,7 +1556,8 @@
   "fn": "_renderWxCard",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Weather card and strips"
+  "surface": "Weather card and strips",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_wxClock:hour12",
@@ -6081,7 +1566,8 @@
   "fn": "_wxClock",
   "text": "hour12",
   "count": 1,
-  "surface": "Weather card and strips"
+  "surface": "Weather card and strips",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_wxClock:toLocaleTimeString('en-US')",
@@ -6090,7 +1576,8 @@
   "fn": "_wxClock",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Weather card and strips"
+  "surface": "Weather card and strips",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_wxHm:hour12",
@@ -6099,7 +1586,8 @@
   "fn": "_wxHm",
   "text": "hour12",
   "count": 2,
-  "surface": "Weather card and strips"
+  "surface": "Weather card and strips",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:_wxHm:toLocaleTimeString('en-US')",
@@ -6108,43 +1596,8 @@
   "fn": "_wxHm",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_wxIntroPaintHtml:langs.slice(0, 2)",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_wxIntroPaintHtml",
-  "text": "langs.slice(0, 2)",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_wxLocalDate:toLocaleDateString('en-CA')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_wxLocalDate",
-  "text": "toLocaleDateString('en-CA')",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_wxNightAt:hour12",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_wxNightAt",
-  "text": "hour12",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B11:fids-current/js/fids-core.js:_wxNightAt:toLocaleTimeString('en-GB')",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_wxNightAt",
-  "text": "toLocaleTimeString('en-GB')",
-  "count": 1,
-  "surface": "Weather card and strips"
+  "surface": "Weather card and strips",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:gateWeatherWidget:hour12",
@@ -6153,7 +1606,8 @@
   "fn": "gateWeatherWidget",
   "text": "hour12",
   "count": 1,
-  "surface": "Weather card and strips"
+  "surface": "Weather card and strips",
+  "decision": "D1"
  },
  {
   "id": "B11:fids-current/js/fids-core.js:gateWeatherWidget:toLocaleTimeString('en-US')",
@@ -6162,555 +1616,7 @@
   "fn": "gateWeatherWidget",
   "text": "toLocaleTimeString('en-US')",
   "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_mlbl:Feels like",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_mlbl",
-  "text": "Feels like",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_mlbl:Humidity",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_mlbl",
-  "text": "Humidity",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_mlbl:Wind",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_mlbl",
-  "text": "Wind",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Arrival",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Arrival",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Cloud",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Cloud",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Departure",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Departure",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:en,fr,es,de,it,pt,ja,zh,ar",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "en,fr,es,de,it,pt,ja,zh,ar",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Feels like",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Feels like",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Gusts",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Gusts",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Humidity",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Humidity",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:NEXT HOURS",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "NEXT HOURS",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Now",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Now",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:NOW",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "NOW",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Pressure",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Pressure",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Sunrise",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Sunrise",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Sunset",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Sunset",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Visibility",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Visibility",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:WEATHER REPORT",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "WEATHER REPORT",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_renderWxCard:Wind",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Wind",
-  "count": 2,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:TIO_LABEL_DE",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "TIO_LABEL_DE",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:TIO_LABEL_ES",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "TIO_LABEL_ES",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:TIO_LABEL_FR",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "TIO_LABEL_FR",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:tioLabel:fr,es,de",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "tioLabel",
-  "text": "fr,es,de",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:_renderWxCard:Weather data generously provided by MET Norway",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_renderWxCard",
-  "text": "Weather data generously provided by MET Norway",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:gateWeatherWidget:Loading...",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "gateWeatherWidget",
-  "text": "Loading...",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B5:fids-current/js/fids-core.js:gateWeatherWidget:WEATHER",
-  "check": "B5",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "gateWeatherWidget",
-  "text": "WEATHER",
-  "count": 1,
-  "surface": "Weather card and strips"
- },
- {
-  "id": "B7:*:-:en route",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "en route",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:boarding",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:delayed",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "delayed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:early",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "early",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:cancelled",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "cancelled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:arrived",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "arrived",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:scheduled",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:departures",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "departures",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:destination",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "destination",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:from",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "from",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:flight #",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "flight #",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:airline",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "airline",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:now",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "now",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:terminal",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "terminal",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:status",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "status",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:now boarding",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "now boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:flight",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "flight",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:departure",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "departure",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:arrival",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "arrival",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:zone",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "zone",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:operated by",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "operated by",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:aircraft",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "aircraft",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:registration",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "registration",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:inbound aircraft",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "inbound aircraft",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:to",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "to",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:reviews",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "reviews",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:gate closed",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "gate closed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:revised",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "revised",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:arriving from",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "arriving from",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:your aircraft",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "your aircraft",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:arrived at the gate",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "arrived at the gate",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:departed",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "departed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:final call",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "final call",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:diverted",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "diverted",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:*:-:humidity",
-  "check": "B7",
-  "file": "*",
-  "fn": null,
-  "text": "humidity",
-  "count": 1,
-  "surface": "Boards and gate"
+  "surface": "Weather card and strips",
+  "decision": "D1"
  }
 ]

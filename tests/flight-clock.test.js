@@ -25,7 +25,7 @@ const NOON_SEP17_ADT = Date.parse('2026-09-17T15:00:00Z');
 
 test('the airport clock is what renders, not the host clock', () => {
   const r = flightClock({ timestamp: YQM_1720, timeZone: 'America/Moncton', nowTimestamp: NOON_SEP17_ADT });
-  assert.equal(r.time, '5:20 PM');
+  assert.equal(r.time, '5:20pm');
   assert.equal(r.dayOffset, 0);
   assert.equal(r.marker, '');
 });
@@ -43,7 +43,7 @@ test('the same instant renders identically whatever TZ the host is set to', () =
     execFileSync(process.execPath, ['-e', script], { env: { ...process.env, TZ: tz } }).toString();
 
   const moncton = under('America/Moncton');
-  assert.equal(moncton, '5:20 PM', 'baseline in the airport\'s own zone');
+  assert.equal(moncton, '5:20pm', 'baseline in the airport\'s own zone');
   for (const tz of ['America/Toronto', 'UTC', 'Australia/Hobart', 'Pacific/Auckland']) {
     assert.equal(under(tz), moncton,
       `a host in ${tz} rendered a different time for the same flight`);
@@ -52,10 +52,10 @@ test('the same instant renders identically whatever TZ the host is set to', () =
 
 test('a next-day flight always carries its marker, and the marker is bold', () => {
   const r = flightClock({ timestamp: YQM_NEXT, timeZone: 'America/Moncton', nowTimestamp: NOON_SEP17_ADT });
-  assert.equal(r.time, '5:25 AM');
+  assert.equal(r.time, '5:25am');
   assert.equal(r.dayOffset, 1);
   assert.equal(r.marker, '+1');
-  assert.equal(r.text, '5:25 AM+1');
+  assert.equal(r.text, '5:25am+1');
   assert.match(r.html, /<b class="fids-dayoff">\+1<\/b>/,
     'the marker renders bold and in its own element');
 });
@@ -73,7 +73,7 @@ test('the day offset is measured against the AIRPORT\'s today, not the viewer\'s
 test('a bare wall clock is refused rather than guessed at', () => {
   // Without an offset there is no instant, only a reading. Guessing which zone
   // it was read in is how this whole class of bug starts.
-  for (const bare of ['2026-09-17 17:20:00', '17:20', '5:20 PM']) {
+  for (const bare of ['2026-09-17 17:20:00', '17:20', '5:20pm']) {
     const r = flightClock({ timestamp: bare, timeZone: 'America/Moncton' });
     assert.equal(r.ok, false, `accepted a bare wall clock: ${bare}`);
     assert.equal(r.text, '');
@@ -83,8 +83,8 @@ test('a bare wall clock is refused rather than guessed at', () => {
 test('an offset-bearing string is accepted, in either ISO spelling', () => {
   const spaced = flightClock({ timestamp: '2026-09-17 17:20:00-03:00', timeZone: 'America/Moncton', nowTimestamp: NOON_SEP17_ADT });
   const tee = flightClock({ timestamp: '2026-09-17T20:20:00Z', timeZone: 'America/Moncton', nowTimestamp: NOON_SEP17_ADT });
-  assert.equal(spaced.text, '5:20 PM');
-  assert.equal(tee.text, '5:20 PM');
+  assert.equal(spaced.text, '5:20pm');
+  assert.equal(tee.text, '5:20pm');
 });
 
 test('a missing zone is reported rather than silently assumed', () => {
@@ -105,12 +105,12 @@ test('one instant, two airports, two different day offsets', () => {
   const now = NOON_SEP17_ADT;                       // 2026-09-17T15:00Z
 
   const hba = flightClock({ timestamp: instant, timeZone: 'Australia/Hobart', nowTimestamp: now });
-  assert.equal(hba.time, '6:00 AM');
+  assert.equal(hba.time, '6:00am');
   assert.equal(hba.dayOffset, 0, 'Sep 18 in Hobart, and Hobart is already on Sep 18');
   assert.equal(hba.marker, '');
 
   const yqm = flightClock({ timestamp: instant, timeZone: 'America/Moncton', nowTimestamp: now });
-  assert.equal(yqm.time, '5:00 PM');
+  assert.equal(yqm.time, '5:00pm');
   assert.equal(yqm.dayOffset, 0, 'still Sep 17 in Moncton');
 
   // Same instant, 14 hours apart on the clock, and each station right.
@@ -131,8 +131,8 @@ test('Moncton: the same wall clock is a different instant in ADT and AST', () =>
   // so the two differ by an hour in UTC while reading the same on the board.
   const sept = flightClock({ timestamp: Date.parse('2026-09-17T20:20:00Z'), timeZone: 'America/Moncton' });
   const dec = flightClock({ timestamp: Date.parse('2026-12-17T21:20:00Z'), timeZone: 'America/Moncton' });
-  assert.equal(sept.time, '5:20 PM', 'ADT, UTC-3');
-  assert.equal(dec.time, '5:20 PM', 'AST, UTC-4');
+  assert.equal(sept.time, '5:20pm', 'ADT, UTC-3');
+  assert.equal(dec.time, '5:20pm', 'AST, UTC-4');
 });
 
 test('Moncton: the hour the clocks go back is handled, not fudged', () => {
@@ -141,8 +141,8 @@ test('Moncton: the hour the clocks go back is handled, not fudged', () => {
   // locally — the repeated hour — and both must render honestly.
   const beforeFallBack = flightClock({ timestamp: Date.parse('2026-11-01T04:59:00Z'), timeZone: 'America/Moncton' });
   const afterFallBack = flightClock({ timestamp: Date.parse('2026-11-01T06:00:00Z'), timeZone: 'America/Moncton' });
-  assert.equal(beforeFallBack.time, '1:59 AM', 'still ADT');
-  assert.equal(afterFallBack.time, '2:00 AM', 'now AST, one UTC hour later');
+  assert.equal(beforeFallBack.time, '1:59am', 'still ADT');
+  assert.equal(afterFallBack.time, '2:00am', 'now AST, one UTC hour later');
 });
 
 test('Hobart: southern DST runs the other way round', () => {
@@ -150,8 +150,8 @@ test('Hobart: southern DST runs the other way round', () => {
   // September and AEDT (UTC+11) from 2026-10-04.
   const sept = flightClock({ timestamp: Date.parse('2026-09-17T20:00:00Z'), timeZone: 'Australia/Hobart' });
   const nov = flightClock({ timestamp: Date.parse('2026-11-17T19:00:00Z'), timeZone: 'Australia/Hobart' });
-  assert.equal(sept.time, '6:00 AM', 'AEST, UTC+10');
-  assert.equal(nov.time, '6:00 AM', 'AEDT, UTC+11');
+  assert.equal(sept.time, '6:00am', 'AEST, UTC+10');
+  assert.equal(nov.time, '6:00am', 'AEDT, UTC+11');
 });
 
 test('Honolulu never shifts, and must not be shifted for', () => {
@@ -160,8 +160,8 @@ test('Honolulu never shifts, and must not be shifted for', () => {
   // eight months.
   const summer = flightClock({ timestamp: Date.parse('2026-07-15T20:00:00Z'), timeZone: 'Pacific/Honolulu' });
   const winter = flightClock({ timestamp: Date.parse('2026-12-15T20:00:00Z'), timeZone: 'Pacific/Honolulu' });
-  assert.equal(summer.time, '10:00 AM');
-  assert.equal(winter.time, '10:00 AM', 'no seasonal shift in Hawaii');
+  assert.equal(summer.time, '10:00am');
+  assert.equal(winter.time, '10:00am', 'no seasonal shift in Hawaii');
 });
 
 test('the day marker respects DST too', () => {

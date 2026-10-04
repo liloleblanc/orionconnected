@@ -25,6 +25,10 @@ const path = require('node:path');
 const ROOT = path.resolve(__dirname, '..');
 const SRC = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(ROOT, 'fids-current', 'css', 'display-overrides.css'), 'utf8');
+// The pre-boarding, travel-document, loyalty and cabin words moved from
+// _GATE_LBL to the one store (board-strings.js), where _gateLbl and _gateLbl1
+// also look; a key the sign asks for may be in either.
+const STORE = require('../fids-current/js/board-strings.js');
 
 /** The boardHtml assembly — from its opening to the end of the if-block. */
 function assembly() {
@@ -105,7 +109,7 @@ test('every title the sign asks for exists where the gate looks', () => {
   assert.ok(at >= 0, '_GATE_LBL must exist');
   const T = SRC.slice(at, at + 40000);
   for (const key of ['priority', 'zones', 'rows', 'groupLabel', 'boarding', 'preboard', 'genboard', 'allPax', 'pdReserve', 'pdClassic', 'nextUp', 'boardConv']) {
-    assert.match(T, new RegExp('^  ' + key + ':\\s*\\{', 'm'), `_GATE_LBL must carry '${key}' — the sign asks for it`);
+    assert.ok(new RegExp('^  ' + key + ':\\s*\\{', 'm').test(T) || STORE.entry(key), `_GATE_LBL or the store must carry '${key}' — the sign asks for it`);
   }
   assert.match(T, /^  groupLabel:\{ en:'Group', fr:'Groupe'/m, "'Group' must read in both languages");
   // the table's own entry is column-aligned, so the spacing is loose here
@@ -130,9 +134,11 @@ test('every word the sign can say, it can say in all nine languages', () => {
   const short = [];
   for (const k of KEYS) {
     const m = new RegExp('^  ' + k + ':\\s*\\{([\\s\\S]*?)\\n  \\}|^  ' + k + ':\\s*\\{([^\\n]*)\\}', 'm').exec(T);
-    assert.ok(m, `_GATE_LBL must carry '${k}'`);
-    const body = m[1] || m[2] || '';
-    const have = FULL.filter((l) => new RegExp('(^|[\\s,{])' + l + ':').test(body));
+    const stored = STORE.entry(k);
+    assert.ok(m || stored, `_GATE_LBL or the store must carry '${k}'`);
+    const body = m ? (m[1] || m[2] || '') : '';
+    const have = m ? FULL.filter((l) => new RegExp('(^|[\\s,{])' + l + ':').test(body))
+      : FULL.filter((l) => typeof stored[l] === 'string' && stored[l]);
     const missing = FULL.filter((l) => !have.includes(l));
     if (missing.length && !BRAND.has(k)) short.push(`${k}: ${missing.join(' ')}`);
     if (BRAND.has(k)) assert.ok(have.includes('en') && have.includes('fr'), `${k} must at least carry en and fr`);
@@ -147,7 +153,11 @@ test('the Next line is whole phrases, one per language', () => {
   const n = fn('_g8SignNext');
   assert.match(n, /nextUp/, "reads the 'Next' label");
   assert.match(n, /g8-sign-line/, 'emits one line per language');
-  assert.match(n, /lg === 'fr' \? ' : ' : ': '/, "French takes the space before the colon");
+  assert.match(n, /BoardStrings\.META\[lg\]\.colon/, "each language's own colon");
+  assert.match(n, /BoardStrings\.pairLangs\(langs, _frF\)/, 'the pair comes from the one chooser');
+  const BS = require('../fids-current/js/board-strings.js');
+  assert.equal(BS.META.fr.colon, ' : ', 'French takes the space before the colon');
+  assert.equal(BS.META.ja.colon, '\uff1a', 'Japanese takes the full-width colon');
   assert.match(SRC, /nextUp:\s*\{ en:'Next', fr:'Prochain'/, "the label exists in both languages");
   assert.match(SRC, /boardConv:\s*\{ en:'Board at your convenience', fr:'Embarquez à votre convenance'/,
     'and so does the standing priority note');
@@ -207,7 +217,7 @@ test('what the review found, held so it stays fixed', () => {
   assert.match(a, /value: _g8SignPair\(_pbPre \? 'boardSoon' : 'genboard'\)/);
   assert.match(a, /next: _pbPre \? _g8SignNext\(null, null, 'genboard'\) : ''/);
   // Zone carriers are titled Zones, and a single zone is singular.
-  assert.match(a, /AIRLINE_ZONES\[airlineCode\] \|\| \{\}\)\.label === 'Zone'\) \? 'zones' : 'groupLabel'/);
+  assert.match(a, /AIRLINE_ZONES\[airlineCode\] \|\| \{\}\)\.call === 'zone'\) \? 'zones' : 'groupLabel'/);
   assert.match(fn('_g8SignNext'), /groupKey = 'zone'/, 'a single number takes the singular');
   // A word that is the same in both languages is printed once — 'Zones', not
   // 'Zones | Zones' — and only doubles when the second language differs.
@@ -237,7 +247,7 @@ test("each airline's cabins, named the way it names them", () => {
   // every key the map names exists in _GATE_LBL
   const lblAt = SRC.indexOf('var _GATE_LBL = {');
   const T = SRC.slice(lblAt, lblAt + 80000);
-  for (const [, pair] of Object.entries(map)) for (const k of pair) assert.match(T, new RegExp('^  ' + k + ':\\s*\\{', 'm'), `${k} must be a gate label`);
+  for (const [, pair] of Object.entries(map)) for (const k of pair) assert.ok(new RegExp('^  ' + k + ':\\s*\\{', 'm').test(T) || STORE.entry(k), `${k} must be a gate label`);
   // the helper is what the panels read, and a missing cabin is an empty string
   assert.match(fn('_g8CabinPair'), /return \(c && c\[which\]\) \? _g8SignPair\(c\[which\]\) : '';/);
   const a = assembly();
@@ -263,7 +273,8 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(T, /^  priority:\s*\{ en:'Priority',\s*fr:'Prioritaire'/m, 'Priority | Prioritaire');
   assert.match(T, /^  nowBoarding: \{ en:'Now Boarding', fr:'Embarquement',/m, 'the strip says Embarquement, plain');
   assert.match(SRC, /^  nowBoarding:\{ en:'NOW BOARDING',fr:'EMBARQUEMENT',/m, 'and so does the board countdown');
-  assert.match(T, /photoId: \{\s*en:'Have your ID ready for presentation',\s*fr:'Veuillez avoir votre pièce d’identité prête',/, 'the reminder, in both languages');
+  assert.equal(STORE.bs('photoId', 'en'), 'Have your ID ready for presentation', 'the reminder');
+  assert.equal(STORE.bs('photoId', 'fr'), 'Veuillez avoir votre pièce d’identité prête', 'in French');
   // The strip carries the reminder for Porter's general phase only, gated by
   // the same five-minute rule the sign uses for pre-boarding.
   const noteFn = fn('_pdIdNote');
@@ -287,8 +298,8 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(fc, /label: _g8SignPair\(_gkey\), value: _g8SignPair\('all'\)/, 'and the generic one');
   // Each half of a pair carries its language, so Porter blue lands on the
   // French half wherever the airport puts it (first at YUL/YQB).
-  assert.match(fn('_g8SignPair'), /' lang="' \+ langsOf\[i\] \+ '"'/, 'halves carry lang=');
-  assert.match(SRC, /return wrap\(w, i, partLangs\[i\]\);/, '_gateLbl hands the language to wrap()');
+  assert.match(fn('_g8SignPair'), /BoardStrings\.markHalf\('<span class="g8-pair-h">' \+ w \+ '<\/span>', langsOf\[i\], key\)/, 'halves carry lang=');
+  assert.match(SRC, /BoardStrings\.markHalf\(wrap\(w, i, partLangs\[i\]\), partLangs\[i\], key\)/, '_gateLbl hands the language to wrap() and marks the half');
   // The fitter measures a row's word against the column less the number.
   const pairPass = SRC.slice(SRC.indexOf('function _fidsPairSeparators('), SRC.indexOf('\n}\n', SRC.indexOf('function _fidsPairSeparators(')));
   assert.match(pairPass, /var rowEl = col\.classList\.contains\('g8-sign-row'\) \? col : null;\s*if \(rowEl && rowEl\.parentElement\) col = rowEl\.parentElement;/, 'a row word is measured against the column, not the row');

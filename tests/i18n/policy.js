@@ -94,11 +94,10 @@ const LEGACY_STORES = [
   { file: 'fids-current/js/fids-core.js', name: 'LS', helpers: ['TL', 'TLF', 'TLbi'] },
   { file: 'fids-current/js/fids-core.js', name: 'SS', helpers: ['SL', 'SLbi'] },
   { file: 'fids-current/js/fids-core.js', name: '_GATE_LBL', helpers: ['_gateLbl', '_gateLbl1', '_gateLblSpans', '_g8SignPair', '_g8SignLines', '_g8SignNext'] },
-  { file: 'fids-current/js/fids-core.js', name: 'TICKER_MSG', list: true },
-  { file: 'fids-current/js/fids-core.js', name: 'BAGS_TICKER_MSG', list: true },
   { file: 'fids-current/js/fids-core.js', name: '_WXLBL', helpers: ['_wxPair', '_wxPairT', '_wxPairS', '_wxPairD'] },
-  { file: 'fids-current/js/fids-core.js', name: 'AD_I18N', keyIsEnglish: true, helpers: ['adTL'] },
-  { file: 'fids-current/js/fids-core.js', name: '_ST_I18N' },
+  // AD_I18N is the ad-copy table, keyed by the English line: it grows with
+  // every new ad (B6 requires the row), so it is not frozen (L1).
+  { file: 'fids-current/js/fids-core.js', name: 'AD_I18N', keyIsEnglish: true, growable: true, helpers: ['adTL'] },
   { file: 'fids-current/js/fids-core.js', name: '_AIR_TPL' },
   { file: 'fids-current/js/fids-core.js', name: '_DT_TPL' },
   { file: 'fids-current/js/fids-core.js', name: '_DT_SHORT' },
@@ -134,14 +133,46 @@ const NONTEXT_TABLES = [
   { file: 'fids-current/js/fids-core.js', name: 'AC_VIDEO_HARDCODED', reason: 'data: Air Canada video ids per language' }
 ];
 
+// Pages whose own wording waits on an open decision (docs/BOARD-LANGUAGES.md
+// §6). Their gaps stay in the debt ledger, tagged with the decision; B7 does
+// not hold their wording to the boards' meanwhile, since the decision may be
+// to keep it as it is. { file: decision }
+const DECISION_FILES = {
+  'fids-current/app.html': 'D6',
+  'fids-current/js/heritage-board.js': 'D11',
+  'fids-current/heritage-board.html': 'D11',
+  'fids-current/js/heritage-index.js': 'D11',
+  'fids-current/heritage.html': 'D11'
+};
+
 // Data tables: their string values are data (names, codes, notes), not
 // labels. B5 and B8 skip literals inside them. { file: { NAME: reason } }
 const DATA_TABLES = {
+  'fids-current/js/feed-router.js': {
+    _QUALITY_ENUM: 'data: AeroDataBox\'s data-quality codes',
+    _CSSTATUS_ENUM: 'data: AeroDataBox\'s codeshare-status codes'
+  },
   'fids-current/js/fids-core.js': {
     AP: 'data: airport names (decision D2)',
+    CITY_FR: 'data: French city names (decision D2)',
+    FEED_SAYS_GATE_WORDS: 'debug: notes on which feeds publish gate words, never rendered',
     AIRLINE_AMENITIES: 'data: operator notes on each airline, never rendered',
     AIRLINE_NAME: 'data: airline names',
     CITY: 'data: city names (decision D2)'
+  }
+};
+
+// Property names whose values are feed data, not words: `quality: ['Live']`
+// is AeroDataBox's data-quality flag, carried on every normalised row.
+const DATA_KEYS = {
+  quality: 'data: the feed row\'s data-quality flags (AeroDataBox shape)'
+};
+
+// Language lists of the shape [{ l: 'en', t: '…' }, …], registered and held
+// to all nine languages. { file: { NAME: reason } }
+const LANG_RECORD_TABLES = {
+  'fids-current/js/fids-core.js': {
+    _WX_INTRO_LINES: 'the weather card\'s opening title, which shows every language in turn'
   }
 };
 
@@ -179,7 +210,14 @@ const BRAND_TERMS = {
   'The Hoxton': 'brand: hotel brand',
   'The Sebel': 'brand: hotel brand',
   'Our Habitas': 'brand: hotel brand',
-  'Fairmont The Queen Elizabeth': 'brand: hotel name (French is Fairmont Le Reine Elizabeth)'
+  'Fairmont The Queen Elizabeth': 'brand: hotel name (French is Fairmont Le Reine Elizabeth)',
+  'Green Key': 'brand: the eco-label (its Canadian programme is also Clé Verte)',
+  // The boot screen's brand rail: the product's name and the words its
+  // initials spell (F.I.D.S., G.A.T.E., B.A.G.S.), English by design.
+  'Connecting Beyond': 'brand: Orion Connected\'s tagline',
+  'Flight Information Display Screen': 'brand: what the letters F.I.D.S. spell',
+  'Gate & Advertisement Terminal Experience': 'brand: what the letters G.A.T.E. spell',
+  'Baggage Arrival Gateway Screen': 'brand: what the letters B.A.G.S. spell'
 };
 
 // Units of measure, left as written.
@@ -216,8 +254,16 @@ const SAME_AS_ENGLISH = {
   'Premium': { langs: ['fr', 'es', 'de', 'it', 'pt'], why: 'WestJet\'s cabin name' },
   'Bar & lounge': { langs: ['de'], why: 'the German usage' },
   'From': { langs: ['pt'], why: 'Portuguese De is also the French' },
+  'Airside': { langs: ['it'], why: 'the Italian word, Satellite, is also the French' },
   'from': { langs: ['pt'], why: 'Portuguese de is also the French' },
-  'Status': { langs: ['de', 'pt'], why: 'German and Brazilian Portuguese use Status' }
+  'Status': { langs: ['de', 'pt'], why: 'German and Brazilian Portuguese use Status' },
+  'Live': { langs: ['de'], why: 'German boards say Live' },
+  'Hotels': { langs: ['de'], why: 'the German word' },
+  'Menu': { langs: ['fr', 'it', 'pt'], why: 'the French, Italian and Portuguese word' },
+  'Demonstration': { langs: ['de'], why: 'the German word' },
+  '{TEMP} in {CITY}': { langs: ['de'], why: 'German in' },
+  'Calgary · 1987–2001': { langs: ['fr', 'es', 'de', 'it', 'pt'], why: 'data: a city and two years' },
+  'Montreal · DC-9 · 1966–2002': { langs: ['es', 'de', 'it', 'pt'], why: 'data: a city, a type and two years (Italian writes Montréal)' }
 };
 
 // Functions that only build operator UI. B5 and B8 skip them; each must
@@ -231,13 +277,17 @@ const OPERATOR_FUNCTIONS = {
     manageCustomBgUrls: 'operator: custom background manager',
     attemptLogin: 'operator: sign-in',
     menuSearchFlight: 'operator: the menu\'s flight search',
-    updateSubScreens: 'operator: the screen selector'
+    updateSubScreens: 'operator: the screen selector',
+    _paintFeedSource: 'operator: the control bar\'s feed-source badge (#apiLabel)',
+    openTestFlight: 'operator: the test-flight form',
+    submitTestFlight: 'operator: the test-flight form'
   },
   'fids-current/index.html': {
     attemptLogin: 'operator: sign-in'
   },
   'fids-current/js/studio-player.js': {
-    renderSetup: 'operator: the player\'s setup screen, before a display is chosen'
+    renderSetup: 'operator: the player\'s setup screen, before a display is chosen',
+    dataBadge: 'operator: which data source the player is reading (preview, read-only, fallback)'
   },
   'fids-current/js/studio-render.js': {
     canvasHTML: 'operator: the editor canvas\'s empty-document hint',
@@ -265,7 +315,7 @@ const LANG_STORAGE_FUNCTIONS = {
 };
 
 module.exports = {
-  REASONS, PASSENGER_PAGES, PASSENGER_SCRIPTS, PASSENGER_STYLES, NON_PASSENGER, STORE_FILE, LANGS, DATA_TABLES,
-  LEGACY_STORES, KEY_HELPERS, NONTEXT_TABLES, BRAND_TERMS, UNIT_TERMS, SAME_AS_ENGLISH,
+  REASONS, PASSENGER_PAGES, PASSENGER_SCRIPTS, PASSENGER_STYLES, NON_PASSENGER, STORE_FILE, LANGS, DATA_TABLES, DATA_KEYS, LANG_RECORD_TABLES,
+  LEGACY_STORES, KEY_HELPERS, NONTEXT_TABLES, BRAND_TERMS, UNIT_TERMS, SAME_AS_ENGLISH, DECISION_FILES,
   OPERATOR_FUNCTIONS, TEXT_REWRITERS, LANG_STORAGE_FUNCTIONS
 };

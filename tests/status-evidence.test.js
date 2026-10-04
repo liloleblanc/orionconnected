@@ -882,8 +882,11 @@ test('(C) the notice reads in the board\'s two languages, French first in Québe
   assert.equal(lbl.en, 'The incoming aircraft has been delayed. Updated boarding time to follow.');
   const wrap = (w, i) => '<span class="g8-msg-l g8-msg-l' + (i + 1) + '">' + w + '</span>';
   const qc = E._gateLbl('inbDelayed', true, wrap, '');
-  assert.equal(qc, '<span class="g8-msg-l g8-msg-l1">' + lbl.fr + '</span><span class="g8-msg-l g8-msg-l2">' + lbl.en + '</span>');
-  assert.ok(E._gateLbl('inbDelayed', false, wrap, '').startsWith('<span class="g8-msg-l g8-msg-l1">' + lbl.en));
+  // each half carries its own language (BoardStrings.markHalf)
+  assert.equal(qc, '<span class="g8-msg-l g8-msg-l1" lang="fr">' + lbl.fr + '</span><span class="g8-msg-l g8-msg-l2" lang="en">' + lbl.en + '</span>');
+  assert.ok(E._gateLbl('inbDelayed', false, wrap, '').startsWith('<span class="g8-msg-l g8-msg-l1" lang="en">' + lbl.en));
+  const ar = engine({ langs: ['ar', 'en'] })._gateLbl('inbDelayed', false, wrap, '');
+  assert.ok(ar.startsWith('<span class="g8-msg-l g8-msg-l1" lang="ar" dir="rtl">' + lbl.ar), 'an Arabic half reads right to left');
   // Wired: the idle strip and the takeover bar both carry it, an operator's
   // message still wins, and a change in the inbound's lateness repaints.
   assert.match(UXG, /var inbDelayed = _gateInbLateNotice\(currentFlight, inboundFlight, stKey, effectiveDepTs, Date\.now\(\)\);/);

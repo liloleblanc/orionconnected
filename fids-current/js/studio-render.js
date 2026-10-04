@@ -1,13 +1,48 @@
 (function (root, factory) {
   const schema = root && root.OrionStudioSchema || (typeof require === 'function' ? require('./studio-schema.js') : null);
-  const api = factory(schema);
+  // The one store for passenger words (board-strings.js), loaded before this
+  // file by the player and the Studio. docs/BOARD-LANGUAGES.md.
+  const strings = root && root.BoardStrings || (typeof require === 'function' ? require('./board-strings.js') : null);
+  const api = factory(schema, strings);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.OrionStudioRender = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function (Schema) {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Schema, Strings) {
   'use strict';
 
+  // ── PASSENGER WORDS ─────────────────────────────────────────────────────
+  // v23960 — every word a Studio screen shows comes from the store, in the
+  // language the player is showing (context.language). Statuses travel as
+  // the canonical English codes studio-data.js writes (the scene rules
+  // compare them) and are put into words only here, at the last moment.
+  function langOf(context) {
+    const l = context && context.language;
+    return Strings && Strings.isLang(l) ? l : 'en';
+  }
+  function T(key, context) { return Strings ? Strings.bs(key, langOf(context)) : ''; }
+  function TU(key, context) {
+    const l = langOf(context);
+    return T(key, context).toLocaleUpperCase(Strings ? Strings.META[l].intl : 'en');
+  }
+  function TF(key, context, fields) { return Strings ? Strings.fill(T(key, context), fields, true) : ''; }
+  const STATUS_KEYS = Object.freeze({
+    'On time': 'stOnTime', 'En route': 'stEnRoute', 'Boarding': 'stBoarding', 'Final call': 'stFinalCall',
+    'Gate closed': 'stGateClosed', 'Departed': 'stDeparted', 'Arrived': 'stArrived', 'Delayed': 'stDelayed',
+    'Cancelled': 'stCancelled', 'Diverted': 'stDiverted', 'Scheduled': 'stScheduled'
+  });
+  function statusText(status, context) {
+    const key = STATUS_KEYS[status];
+    return key ? T(key, context) : String(status == null ? '' : status);
+  }
+  // A row's time ('5:30 AM' or '17:30') in the language's own clock.
+  function displayTime(value, context) {
+    const minutes = timeToMinutes(value);
+    if (minutes == null || !Strings) return String(value == null ? '' : value);
+    const hhmm = String(Math.floor(minutes / 60)).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0');
+    return Strings.clockText(hhmm, langOf(context));
+  }
+
   const TRANSLATED_TITLES = Object.freeze({
-    en: 'Departures', fr: 'Départs', ar: 'المغادرة', es: 'Salidas', de: 'Abflüge',
+    en: 'Departures', fr: 'Départs', ar: 'المغادرات', es: 'Salidas', de: 'Abflüge',
     it: 'Partenze', pt: 'Partidas', zh: '出发', ja: '出発'
   });
 
@@ -47,7 +82,7 @@
     const weather = context.weather || {};
     return {
       'airport.iata': context.airport.iata,
-      'airport.name': context.airport.name || context.airport.iata + ' Airport',
+      'airport.name': context.airport.name || TF('airportNamed', context, { IATA: context.airport.iata }),
       'airport.host': context.airport.siteHost || '',
       'time': context.clock.time,
       'date': context.clock.date,
@@ -55,13 +90,13 @@
       'flight.flight': departure[0],
       'flight.city': departure[1],
       'flight.gate': departure[2],
-      'flight.time': departure[3],
-      'flight.status': departure[4],
+      'flight.time': displayTime(departure[3], context),
+      'flight.status': statusText(departure[4], context),
       'arrival.flight': arrival[0],
       'arrival.city': arrival[1],
       'arrival.belt': arrival[2],
-      'arrival.time': arrival[3],
-      'arrival.status': arrival[4],
+      'arrival.time': displayTime(arrival[3], context),
+      'arrival.status': statusText(arrival[4], context),
       'weather.temp': weather.temperature != null ? weather.temperature + '°' + (weather.unit || 'C') : '—',
       'weather.condition': weather.condition || '—'
     };
@@ -124,7 +159,7 @@
       : escapeHTML(TRANSLATED_TITLES[context.language] || TRANSLATED_TITLES.en);
     const airportName = module.props.brandName
       ? resolveTokens(module.props.brandName, context)
-      : escapeHTML(context.airport.name || context.airport.iata + ' Airport');
+      : escapeHTML(context.airport.name || TF('airportNamed', context, { IATA: context.airport.iata }));
     const brandLogo = context.brandLogo
       ? '<img class="fx-brand-logo" src="' + escapeHTML(context.brandLogo) + '" alt="">'
       : '<span class="fx-orbit"></span>';
@@ -137,12 +172,12 @@
 
   const TABLE_COLUMNS = Object.freeze([
     { key: 'logo', track: '3.2cqw', label: function () { return ''; } },
-    { key: 'airline', track: '10cqw', label: function () { return 'Airline'; } },
-    { key: 'destination', track: '1.7fr', label: function (arrivals) { return arrivals ? 'From' : 'To'; } },
-    { key: 'flight', track: '1fr', label: function () { return 'Flight'; } },
-    { key: 'gate', track: '.8fr', label: function (arrivals) { return arrivals ? 'Belt' : 'Gate'; } },
-    { key: 'time', track: '1fr', label: function () { return 'Time'; } },
-    { key: 'status', track: '1.2fr', label: function () { return 'Status'; } }
+    { key: 'airline', track: '10cqw', label: function (arrivals, context) { return T('colAirline', context); } },
+    { key: 'destination', track: '1.7fr', label: function (arrivals, context) { return T(arrivals ? 'colFrom' : 'colTo', context); } },
+    { key: 'flight', track: '1fr', label: function (arrivals, context) { return T('colFlight', context); } },
+    { key: 'gate', track: '.8fr', label: function (arrivals, context) { return T(arrivals ? 'colBelt' : 'gateWord', context); } },
+    { key: 'time', track: '1fr', label: function (arrivals, context) { return T('colTime', context); } },
+    { key: 'status', track: '1.2fr', label: function (arrivals, context) { return T('colStatus', context); } }
   ]);
 
   function tableCell(key, row, context) {
@@ -155,8 +190,8 @@
       case 'destination': return '<span' + field + '>' + escapeHTML(String(row[1]).replace(/\s*\([A-Z]{3}\)$/, '')) + '</span>';
       case 'flight': return '<span' + field + '>' + escapeHTML(row[0]) + '</span>';
       case 'gate': return '<span class="fx-gate"' + field + '>' + escapeHTML(row[2]) + '</span>';
-      case 'time': return '<span' + field + '>' + escapeHTML(row[3]) + '</span>';
-      default: return '<span class="' + statusClass(row[4]) + '"' + field + '>' + escapeHTML(row[4]) + '</span>';
+      case 'time': return '<span' + field + '>' + escapeHTML(displayTime(row[3], context)) + '</span>';
+      default: return '<span class="' + statusClass(row[4]) + '"' + field + '>' + escapeHTML(statusText(row[4], context)) + '</span>';
     }
   }
 
@@ -183,7 +218,7 @@
     const nowMs = Number.isFinite(context.nowMs) ? context.nowMs : Date.now();
     const page = pages > 1 ? Math.floor(nowMs / 1000 / pageSeconds) % pages : 0;
     const source = indexed.slice(page * perPage, page * perPage + perPage);
-    const header = '<div class="fx-cols" style="' + grid + '">' + columns.map(function (column) { return '<span>' + column.label(arrivals) + '</span>'; }).join('') + '</div>';
+    const header = '<div class="fx-cols" style="' + grid + '">' + columns.map(function (column) { return '<span>' + escapeHTML(column.label(arrivals, context)) + '</span>'; }).join('') + '</div>';
     let body = source.map(function (entry) {
       const row = entry.row;
       const editRef = context.editing ? ' data-flight-index="' + entry.index + '"' : '';
@@ -191,24 +226,26 @@
         columns.map(function (column) { return tableCell(column.key, row, context); }).join('') + '</div>';
     }).join('');
     for (let filler = source.length; source.length && filler < perPage; filler += 1) body += '<div class="fx-row fx-row-blank"></div>';
-    if (!source.length) body = '<div class="fx-empty">No scheduled flights</div>';
-    const pager = pages > 1 ? '<span class="fx-page">PAGE ' + (page + 1) + ' / ' + pages + '</span>' : '';
+    if (!source.length) body = '<div class="fx-empty">' + escapeHTML(T('noScheduled', context)) + '</div>';
+    const pager = pages > 1 ? '<span class="fx-page">' + escapeHTML(TU('colPage', context)) + ' ' + (page + 1) + ' / ' + pages + '</span>' : '';
     const editPill = context.editing && context.selectedId === module.id
-      ? '<button type="button" class="cm-edit-pill" data-edit-flights>✎ Edit flights</button>' : '';
+      ? '<button type="button" class="cm-edit-pill" data-edit-flights>✎ Edit flights</button>' : ''; // i18n-ok: operator
     return '<div class="fx-table' + surfaceClass(module) + '">' + header + body + pager + editPill + '</div>';
   }
 
   function advertisementContent(module, context) {
-    const fallbackHeadline = context.airport.id === 'yqm' ? 'Welcome to\nNew Brunswick.' : 'Welcome to\n{airport.iata}.';
-    const headline = resolveTokens(module.props.headline || fallbackHeadline, context);
-    const body = resolveTokens(module.props.body || 'Airport-scoped campaign and destination content.', context);
-    return '<div class="preview-ad mod-fill"><small>ADVERTISEMENT</small><b>' + headline + '</b><small>' + body + '</small></div>';
+    // v23960 — an ad with no copy yet greets in the screen's language; the
+    // English sample lines it carried showed on any screen left unedited.
+    const headline = module.props.headline ? resolveTokens(module.props.headline, context) : escapeHTML(T('greetBoard', context));
+    const body = module.props.body ? resolveTokens(module.props.body, context) : '';
+    return '<div class="preview-ad mod-fill"><small>' + escapeHTML(TU('advertisement', context)) + '</small><b>' + headline + '</b><small>' + body + '</small></div>';
   }
 
   function weatherFooterContent(module, context) {
     const weather = context.weather || {};
     const temperature = weather.temperature != null ? weather.temperature + '°' + (weather.unit || 'C') : '—';
-    const ticker = resolveTokens(module.props.ticker || 'Welcome to {airport.name}', context);
+    const ticker = module.props.ticker ? resolveTokens(module.props.ticker, context)
+      : escapeHTML(T('greetBoard', context)) + ' · ' + resolveTokens('{airport.name}', context);
     const chip = context.nextLanguage ? escapeHTML(context.nextLanguage) : escapeHTML(String(context.language || 'EN').toUpperCase());
     return '<div class="fx-footer"><span class="fx-temp">' + escapeHTML(temperature) + '<small>' + escapeHTML(weather.condition || '') + '</small></span>' +
       '<span class="fx-ticker">' + ticker + '</span>' +
@@ -220,60 +257,62 @@
     const weather = context.weather || {};
     const temperature = weather.temperature != null ? weather.temperature + '°' + (weather.unit || 'C') : '—';
     const city = escapeHTML(String(departure[1]).split(' (')[0]);
-    return '<div class="preview-ad mod-fill"><small>WEATHER PREVIEW</small><b>' + city + '<br>' + escapeHTML(temperature) + '</b><small>' + escapeHTML(weather.condition ? weather.condition : 'Weather contract not connected') + '</small></div>';
+    return '<div class="preview-ad mod-fill"><small>' + escapeHTML(TU('weather', context)) + '</small><b>' + city + '<br>' + escapeHTML(temperature) + '</b><small>' + escapeHTML(weather.condition ? weather.condition : T('noData', context)) + '</small></div>';
   }
 
   function gateFlightContent(module, context) {
     const departure = firstRow(context, 'departures');
     const gate = module.props.gate ? escapeHTML(module.props.gate) : escapeHTML(departure[2]);
-    return '<div class="preview-panel mod-fill mod-center' + surfaceClass(module) + '"><small>' + escapeHTML(departure[4]) + '</small>' +
+    return '<div class="preview-panel mod-fill mod-center' + surfaceClass(module) + '"><small>' + escapeHTML(statusText(departure[4], context)) + '</small>' +
       '<h1 class="mod-huge">' + escapeHTML(departure[0]) + '</h1><h2>' + escapeHTML(departure[1]) + '</h2>' +
-      '<p class="' + statusClass(departure[4]) + '">Gate ' + gate + ' · ' + escapeHTML(departure[3]) + '</p></div>';
+      '<p class="' + statusClass(departure[4]) + '">' + escapeHTML(T('gateWord', context)) + ' ' + gate + ' · ' + escapeHTML(displayTime(departure[3], context)) + '</p></div>';
   }
 
   function boardingStateContent(module, context) {
     const departure = firstRow(context, 'departures');
     const text = module.props.body
       ? resolveTokens(module.props.body, context)
-      : escapeHTML(departure[0]) + ' · ' + escapeHTML(departure[4]) + ' · Gate ' + escapeHTML(departure[2]);
+      : escapeHTML(departure[0]) + ' · ' + escapeHTML(statusText(departure[4], context)) + ' · ' + escapeHTML(T('gateWord', context)) + ' ' + escapeHTML(departure[2]);
     return '<div class="mod-band">' + text + '</div>';
   }
 
   function claimHeroContent(module, context) {
     const arrival = firstRow(context, 'arrivals');
-    return '<div class="preview-panel mod-fill mod-center"><small>BAGGAGE CLAIM · ' + escapeHTML(arrival[4]) + '</small>' +
+    return '<div class="preview-panel mod-fill mod-center"><small>' + escapeHTML(TU('greetBags', context)) + ' · ' + escapeHTML(statusText(arrival[4], context)) + '</small>' +
       '<h2 style="margin:.2em 0">' + escapeHTML(arrival[0]) + ' · ' + escapeHTML(arrival[1]) + '</h2>' +
-      '<div class="mod-belt"><small>BELT</small><div>' + escapeHTML(arrival[2]) + '</div></div></div>';
+      '<div class="mod-belt"><small>' + escapeHTML(TU('colBelt', context)) + '</small><div>' + escapeHTML(arrival[2]) + '</div></div></div>';
   }
 
   function messageContent(module, context, fallbackTitle, fallbackBody) {
-    const title = resolveTokens(module.props.title || fallbackTitle, context);
-    const body = resolveTokens(module.props.body || fallbackBody, context);
+    // the fallbacks are store keys; a body may carry a {token} for the data
+    const title = resolveTokens(module.props.title || T(fallbackTitle, context), context);
+    const body = resolveTokens(module.props.body || TF(fallbackBody, context, { BELT: '{arrival.belt}' }), context);
     return '<div class="mod-band"><b>' + title + '</b><span>' + body + '</span></div>';
   }
 
   function airlineBrandContent(module, context) {
     const airline = escapeHTML(module.props.airline || 'AIR CANADA');
-    const counters = escapeHTML(module.props.counters || 'COUNTERS 01–04');
+    const counters = escapeHTML(module.props.counters || TF('countersRange', context, { RANGE: '01–04' }).toLocaleUpperCase());
     return '<div class="mod-header mod-checkin"><div><h2>' + airline + '</h2><small>' + escapeHTML(context.airport.name || '') + '</small></div><div></div><div><h2>' + counters + '</h2><small>' + escapeHTML(context.clock.time) + '</small></div></div>';
   }
 
   function flightAssignmentContent(module, context) {
     const departure = firstRow(context, 'departures');
-    return '<div class="mod-dark-panel"><h2>' + escapeHTML(departure[0]) + ' · ' + escapeHTML(departure[1]) + ' · ' + escapeHTML(departure[3]) + '</h2><span class="' + statusClass(departure[4]) + '">' + escapeHTML(String(departure[4]).toUpperCase()) + '</span></div>';
+    return '<div class="mod-dark-panel"><h2>' + escapeHTML(departure[0]) + ' · ' + escapeHTML(departure[1]) + ' · ' + escapeHTML(displayTime(departure[3], context)) + '</h2><span class="' + statusClass(departure[4]) + '">' + escapeHTML(statusText(departure[4], context).toLocaleUpperCase()) + '</span></div>';
   }
 
-  function counterStatusContent(module) {
+  function counterStatusContent(module, context) {
     const count = Math.min(8, Math.max(2, Number(module.props.counters) || 4));
     const cells = [];
+    const open = escapeHTML(TU('counterOpen', context));
     for (let index = 1; index <= count; index += 1) {
-      cells.push('<div><b>' + String(index).padStart(2, '0') + '</b><small>OPEN</small></div>');
+      cells.push('<div><b>' + String(index).padStart(2, '0') + '</b><small>' + open + '</small></div>');
     }
     return '<div class="mod-counters" style="grid-template-columns:repeat(' + count + ',1fr)">' + cells.join('') + '</div>';
   }
 
   function queueGuidanceContent(module, context) {
-    const body = resolveTokens(module.props.body || 'Queue time about 8 minutes · All lanes open', context);
+    const body = module.props.body ? resolveTokens(module.props.body, context) : escapeHTML(TF('queueSample', context, { N: '8' }));
     return '<div class="mod-band">' + body + '</div>';
   }
 
@@ -317,7 +356,9 @@
       'justify-content:' + (props.align === 'center' ? 'center' : props.align === 'right' ? 'flex-end' : 'flex-start') + ';' +
       'text-align:' + (props.align === 'center' ? 'center' : props.align === 'right' ? 'right' : 'left') + ';' +
       (props.uppercase === false ? '' : 'text-transform:uppercase;letter-spacing:.04em;');
-    return '<div class="fx-text" style="' + style + '">' + resolveTokens(props.text || 'Text block — edit me', context) + '</div>';
+    // the placeholder is for the editor only; a published screen shows nothing
+    const text = props.text || (context.editing ? 'Text block — edit me' : '');
+    return '<div class="fx-text" style="' + style + '">' + resolveTokens(text, context) + '</div>';
   }
 
   function boxBlockContent(module) {
@@ -358,11 +399,11 @@
       case 'gate-flight': return gateFlightContent(module, context);
       case 'boarding-state': return boardingStateContent(module, context);
       case 'belt-hero': return claimHeroContent(module, context);
-      case 'oversize-message': return messageContent(module, context, 'Oversized baggage', 'Collect oversized items beside belt {arrival.belt}.');
-      case 'passenger-message': return messageContent(module, context, 'Welcome', 'Check-in opens 2 hours before departure.');
+      case 'oversize-message': return messageContent(module, context, 'oversizeTitle', 'oversizeBody');
+      case 'passenger-message': return messageContent(module, context, 'greetBoard', 'checkinOpens');
       case 'airline-brand': return airlineBrandContent(module, context);
       case 'flight-assignment': return flightAssignmentContent(module, context);
-      case 'counter-status': return counterStatusContent(module);
+      case 'counter-status': return counterStatusContent(module, context);
       case 'queue-guidance': return queueGuidanceContent(module, context);
       case 'ramp-milestones': return rampMilestonesContent(module, context);
       case 'transfer-bags': return transferBagsContent();
@@ -444,8 +485,11 @@
   }
 
   function emergencyOverlayHTML(context) {
-    return '<div class="cm-emergency"><div><small>EMERGENCY OVERRIDE</small><h1>Follow staff instructions</h1><p>' +
-      escapeHTML(context.airport.name || context.airport.iata) + ' · All displays takeover · Audio paging active</p></div></div>';
+    // v23960 — the passenger's words from the store; the operator's notes
+    // (every display taken over, paging active) are for the Studio, not the
+    // screen.
+    return '<div class="cm-emergency"><div><small>' + escapeHTML(TU('emergencyTitle', context)) + '</small><h1>' + escapeHTML(T('followStaff', context)) + '</h1><p>' +
+      escapeHTML(context.airport.name || context.airport.iata) + '</p></div></div>';
   }
 
   function canvasHTML(documentModel, context) {
@@ -463,6 +507,8 @@
 
   return {
     TRANSLATED_TITLES,
+    statusText,
+    displayTime,
     airlineFromFlight,
     escapeHTML,
     resolveTokens,

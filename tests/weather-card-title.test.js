@@ -615,8 +615,9 @@ function fnOf(name) {
 }
 const paint = (langsNow, frFirst) => {
   const linesSrc = JS.slice(JS.indexOf('var _WX_INTRO_LINES = ['), JS.indexOf('];', JS.indexOf('var _WX_INTRO_LINES = [')) + 2);
-  return new Function('langs', '_WX_INTRO_BACKDROP', '_WX_INTRO_CLIP',
-    linesSrc + '\nfunction _wxIntroHasGlyphs() { return true; }\n' + fnOf('_wxIntroBackdropHtml') + '\n' + fnOf('_wxIntroPaintHtml') + '\nreturn _wxIntroPaintHtml(' + (frFirst ? 'true' : 'false') + ');')(langsNow, 'paint', '/logos/Backgrounds/video/wx-title-globe-bg.mp4');
+  // the pair comes from the one store's chooser (BoardStrings.pairLangs)
+  return new Function('langs', '_WX_INTRO_BACKDROP', '_WX_INTRO_CLIP', 'BoardStrings',
+    linesSrc + '\nfunction _wxIntroHasGlyphs() { return true; }\n' + fnOf('_wxIntroBackdropHtml') + '\n' + fnOf('_wxIntroPaintHtml') + '\nreturn _wxIntroPaintHtml(' + (frFirst ? 'true' : 'false') + ');')(langsNow, 'paint', '/logos/Backgrounds/video/wx-title-globe-bg.mp4', require('../fids-current/js/board-strings.js'));
 };
 const heroOf = h => [...h.matchAll(/<div class="wxc-ph wxc-ph(\d)" lang="([a-z]{2})"[^>]*><span>([^<]*)<\/span>/g)].map(m => ({ n: +m[1], l: m[2], t: m[3] }));
 const rankOf = h => [...h.matchAll(/<span class="wxc-pr" lang="([a-z]{2})"[^>]*style="--wxc-i:(\d+)">([^<]*)<\/span>/g)].map(m => ({ l: m[1], i: +m[2], t: m[3] }));
