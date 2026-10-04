@@ -34,7 +34,7 @@ const policy = Object.assign({}, real, {
 });
 const R = checks.run({ policy, frozen: { LS: ['dep', 'gate'] } });
 const F = R.findings;
-const has = (check, file, re) => F.some((f) => f.check === check && f.file === FX + file && (!re || re.test(f.text) || re.test(f.msg)));
+const has = (check, file, re) => F.some((f) => f.check === check && (f.file === FX + file || f.file === '*') && (!re || re.test(f.text) || re.test(f.msg)));
 
 const SEEDED = [
   ['B1', 'store.js', /noArabic|Boarding pass/, 'a table missing ar'],
@@ -55,7 +55,7 @@ const SEEDED = [
   ['B5', 'legacy.js', /Please proceed/, 'an English sentence literal'],
   ['B5', 'legacy.js', /Loading flights/, 'a literal put into textContent'],
   ['B6', 'legacy.js', /greenKey/, 'a key that does not exist'],
-  ['B7', 'store.js', /Departures/, 'two translations of one phrase'],
+  ['B7', 'store.js', /^departures$/, 'two translations of one phrase'],
   ['B8', 'legacy.js', /^Departures/, 'a known label written as a literal'],
   ['B9', 'bad.css', /Aircraft/, 'CSS content text'],
   ['B9', 'bad.html', /data-baremsg/, 'data-* text drawn by content: attr()'],

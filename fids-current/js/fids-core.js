@@ -10786,12 +10786,6 @@ function _buildV2AircraftCol(ctx, vars) {
       }
       var _emblemHtml = _fnCarrier ? _emblemImg(_fnCarrier) : '';
 
-      // v218.99.26 — Detect "revised" times: if the time HTML carries the
-      // .g8-r2-revised marker (set by upstream formatter when actual ≠
-      // scheduled), the label switches to "REVISED" instead of "EST.".
-      function _label(baseEst, baseRevised, html) {
-        return (html && html.indexOf('g8-r2-revised') !== -1) ? baseRevised : baseEst;
-      }
       // For revised display: only show the new time, strip the strike-through scheduled
       //
       // PARSED, NOT REGEXED. The old form was one non-greedy pass —
@@ -10831,8 +10825,6 @@ function _buildV2AircraftCol(ctx, vars) {
         return s.indexOf('g8-rev-early') !== -1 ? 'v2-fi-rowrev-early' : 'v2-fi-rowrev-delayed';
       }
 
-      var _depLabel = _label('Scheduled Departure', 'Revised Departure', _fiDep);
-      var _arrLabel = _label('Estimated Arrival',   'Revised Arrival',   _fiArr);
       var _depShow  = _stripScheduledStrike(_fiDep);
       var _arrShow  = _stripScheduledStrike(_fiArr);
 
@@ -10862,11 +10854,6 @@ function _buildV2AircraftCol(ctx, vars) {
         return '<div class="v2-fi-icon-wrap v2-fi-icon-badge" style="' + BADGE_STYLE + '">' + svg + '</div>';
       }
 
-      // v221 — bilingual SHELF rows: icon (centred) + EN label / VALUE / 2nd-lang label.
-      // Second language is per-airport (French default, Spanish for La Paz).
-      var _li2 = 'fr';
-      try { if (typeof boardLangsFor === 'function') _li2 = boardLangsFor((vars && vars.iata) || locIata || '')[1] || 'fr'; } catch (e) {}
-      function _L2(fr, es) { return (_li2 === 'es' ? (es || fr) : fr); }
       // v22956 — the left rail follows `langs` like every other surface.
       // _L2 picked French-or-Spanish BY AIRPORT and never consulted the
       // user's selection — a fourth parallel label system (after the right
@@ -10909,16 +10896,6 @@ function _buildV2AircraftCol(ctx, vars) {
       } catch (e) {}
 
       var _depRev = !!(_fiDep && String(_fiDep).indexOf('g8-r2-revised') !== -1);
-      var _arrRev = !!(_fiArr && String(_fiArr).indexOf('g8-r2-revised') !== -1);
-      var _brdRev = !!(_fiBrd && String(_fiBrd).indexOf('g8-r2-revised') !== -1);
-      // When a time is revised, the LABEL itself becomes "Revised - <X>"
-      // (no separate pill/badge). Second language gets its own prefix.
-      var _depEnL = _depRev ? 'Revised - Departure' : 'Departure Time';
-      var _arrEnL = _arrRev ? 'Revised - Arrival'   : 'Arrival Time';
-      var _brdEnL = _brdRev ? 'Revised - Boarding'  : 'Boarding Time';
-      var _depL2L = _depRev ? _L2('Révisé - Départ','Revisado - Salida')       : _L2('Heure de départ','Hora de salida');
-      var _arrL2L = _arrRev ? _L2('Révisé - Arrivée','Revisado - Llegada')      : _L2('Heure d’arrivée','Hora de llegada');
-      var _brdL2L = _brdRev ? _L2('Révisé - Embarquement','Revisado - Embarque') : _L2('Heure d’embarquement','Hora de embarque');
 
       // v222 — the specified 6 equal panels (top→bottom):
       //   Flight·Vol | Destination | Status·Statut | Boarding·Embarquement
@@ -11012,14 +10989,6 @@ function _buildV2AircraftCol(ctx, vars) {
       // still use that shape.
       var _destLabel = _gateLbl('dest', _frF, function (w) { return w; }, ' <span class="v2-fi-sep">|</span> ', true);
       var _destValue = _dfCity || _destCityName || _destIataDisp;
-      // Label stays "Boarding | Embarquement" even when the time is revised —
-      // the orange/amber revised time already signals the change, and prefixing
-      // "Revised -" to BOTH languages overflows the shelf. (Same rule as Departure.)
-      var _brdShortEn = 'Boarding';
-      var _brdShortL2 = _L2('Embarquement','Embarque');
-      // Label stays "Departure | Départ" even when the time is revised.
-      var _depShortEn = 'Departure';
-      var _depShortL2 = _L2('Départ','Salida');
       var _durValue = (ctx && ctx.durationStr) ? ctx.durationStr : '—';
       // Time format to match the picture: "8:00am" — lowercase am/pm, no space.
       function _amPm(h) { return String(h == null ? '' : h).replace(/\s*([AP])\.?\s*M\.?/gi, function(_, p){ return p.toLowerCase() + 'm'; }); }
@@ -11287,9 +11256,7 @@ function _buildV2MapCol(ctx, vars) {
       } catch (e) {}
       if (!_ibAirlineName) _ibAirlineName = _ibAirlineCode || '';
 
-      // "WestJet Flight 812"
       var _ibFlightNum = String(_ib.flight || '').replace(/^[A-Z]{2,3}\s*/i, '');
-      var _ibTitle = (_ibAirlineName + ' Flight ' + _ibFlightNum).trim();
 
       // Status sentence — localized to the current display language so it
       // matches the rest of the panel (was hardcoded English → "Avion à
@@ -11386,42 +11353,6 @@ function _buildV2MapCol(ctx, vars) {
         }
       } catch (e) {}
 
-      // Inbound arr time
-      var _ibArrStr = '';
-      try {
-        if (_ib._sortTs) {
-          _ibArrStr = new Date(_ib._sortTs).toLocaleTimeString('en-US', { timeZone: _tz, hour: '2-digit', minute: '2-digit', hour12: true });
-        }
-      } catch (e) {}
-
-      // SPD/ALT inline pills (only when telemetry is live)
-      var _telem = '';
-      if (_liveSpd !== null || _liveAlt !== null) {
-        var _telemBits = [];
-        if (_showSpd && _liveSpd !== null) _telemBits.push('<span class="v2-rc-telem-k">SPD</span> <span class="v2-rc-telem-v" data-gtelem="spd-kt">' + _liveSpdD + '</span>');
-        if (_showAlt && _liveAlt !== null) _telemBits.push('<span class="v2-rc-telem-k">ALT</span> <span class="v2-rc-telem-v" data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span>');
-        if (_telemBits.length) _telem = '<div class="v2-rc-telem">' + _telemBits.join('<span class="v2-rc-telem-sep">·</span>') + '</div>';
-      }
-
-      // Speed + Altitude — ALWAYS shown for the inbound airframe.
-      // Live values from AeroDataBox when the plane is airborne; an em-dash
-      // while it's still on the ground (so the panel is consistent and the
-      // numbers light up the moment it's in the air).
-      var _isAirborne = (_liveSpd !== null || _liveAlt !== null);
-      var _spdLbl = ({en:'Speed',fr:'Vitesse',es:'Velocidad',de:'Geschw.',it:'Velocità',pt:'Velocidade',ja:'速度',zh:'速度',ar:'السرعة'})[_ibLang] || 'Speed';
-      var _altLbl = ({en:'Altitude',fr:'Altitude',es:'Altitud',de:'Höhe',it:'Altitudine',pt:'Altitude',ja:'高度',zh:'高度',ar:'الارتفاع'})[_ibLang] || 'Altitude';
-      var _keystatsHtml =
-            '<div class="v2-rc-keystats">'
-          +   '<div class="v2-rc-keystat">'
-          +     '<div class="v2-rc-keystat-lbl">' + _spdLbl + '</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveSpd !== null ? ('<span data-gtelem="spd-kt">' + _liveSpdD.toLocaleString() + '</span> kt') : '—') + '</div>'
-          +   '</div>'
-          +   '<div class="v2-rc-keystat">'
-          +     '<div class="v2-rc-keystat-lbl">' + _altLbl + '</div>'
-          +     '<div class="v2-rc-keystat-val">' + (_liveAlt !== null ? ('<span data-gtelem="alt-ft">' + _liveAltD.toLocaleString() + '</span> ft') : '—') + '</div>'
-          +   '</div>'
-          + '</div>';
-
       // v218.99.68 — Compact, readable right-column header as specified.
       // ONE block instead of duplicated info top + bottom. No truncated labels.
       // e.g. "WS812". Don't prepend the code if the number already carries it —
@@ -11436,12 +11367,6 @@ function _buildV2MapCol(ctx, vars) {
       var _ibRevTs = _ib._revTs || 0;
       var _ibEffArrTs = (_ibRevTs && _ibRevTs > _ibArrTs) ? _ibRevTs : _ibArrTs;
       var _ibMinsToArr = _ibEffArrTs ? Math.round((_ibEffArrTs - Date.now()) / 60000) : 0;
-      var _ibEtaStr = '';
-      if (_ibMinsToArr > 0 && _ibMinsToArr < 1440) {
-        _ibEtaStr = _ibMinsToArr >= 60
-          ? Math.floor(_ibMinsToArr / 60) + 'h ' + (_ibMinsToArr % 60) + 'm'
-          : _ibMinsToArr + ' min';
-      }
 
       // Status class for color — the SAME key as the shown word. It used to
       // re-derive from the raw feed status while the text upgraded to
@@ -11455,48 +11380,6 @@ function _buildV2MapCol(ctx, vars) {
       // feed or the by-number fetch). When there is no live fix, we show "—" —
       // we do NOT fabricate a value. No estimates.
       var _spdKph = (_liveSpd !== null) ? Math.round(_liveSpdD * 1.852) : null;
-      var _altUnit = ({en:'ft',fr:'pieds',es:'pies',de:'ft',it:'piedi',pt:'pés',ja:'ft',zh:'英尺',ar:'قدم'})[_ibLang] || 'ft';
-      var _spdUnit = ({en:'kph',fr:'kph',es:'km/h',de:'kph',it:'kph',pt:'kph',ja:'kph',zh:'kph',ar:'kph'})[_ibLang] || 'kph';
-      var _ICO_SPD = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 1 1 16 0"/><path d="M12 18l4.5-5.5"/></svg>';
-      var _ICO_ALT = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 19l6-9 3.5 4.5L15 11l6 8z"/></svg>';
-      var _ICO_PLANE = '<svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M21 16v-1.7l-7.5-4.6V4.6a1.6 1.6 0 0 0-3.2 0v5.1L2.8 14.3V16l7.5-2.3v4.7l-2 1.4V21l3.6-1 3.6 1v-1.2l-2-1.4v-4.7z"/></svg>';
-
-      // 2nd language: French everywhere, Spanish for La Paz (per-airport).
-      var _lang2 = (typeof boardLangsFor === 'function') ? (boardLangsFor(vars.iata)[1] || 'fr') : 'fr';
-      function _t2(o){ return o[_lang2] || o.fr || o.en || ''; }
-      var _L = {
-        status:   {en:'Status',      fr:'Statut',       es:'Estado'},
-        flight:   {en:'Flight',      fr:'Vol',          es:'Vuelo'},
-        arriving: {en:'Arriving in', fr:'Arrive dans',  es:'Llega en'},
-        departure:{en:'Departure',   fr:'Départ',       es:'Salida'},
-        departed: {en:'Departed',    fr:'Parti',        es:'Salió'},
-        arrival:  {en:'Arrival',     fr:'Arrivée',      es:'Llegada'},
-        arrived:  {en:'Arrived',     fr:'Arrivé',       es:'Aterrizó'},
-        delayed:  {en:'Delayed',     fr:'En retard',      es:'Retrasado'},
-        title:    {en:'Your Incoming Aircraft Information', fr:'Information sur votre avion entrant', es:'Información de su avión entrante'}
-      };
-      // Status-adaptive Departure / Arrival labels
-      // ETD/ETA → ATD/ATA once actually departed / arrived (status-adaptive)
-      var _departed = (_stKey === 'enroute' || _stKey === 'arrived');
-      var _arrived  = (_stKey === 'arrived');
-      var _delayedSt = (_stKey === 'delayed');
-      // Departure / Arrival labels adapt to status (Departed / Arrived / Delayed)
-      var _depAbbr = _departed ? 'Departed At' : 'Departure Time';
-      var _arrAbbr = _arrived ? 'Arrived' : (_delayedSt ? 'Delayed' : 'Arrival Time');
-      var _depWordObj = _departed ? {fr:'Parti à',es:'Salió a'} : {fr:'Heure de départ',es:'Hora de salida'};
-      var _arrWordObj = _arrived ? {fr:'Arrivé',es:'Aterrizado'} : (_delayedSt ? {fr:'En retard',es:'Retrasado'} : {fr:"Heure d'arrivée",es:'Hora de llegada'});
-      function _i3(en, val, l2, cls){
-        return '<div class="v2-rc-i3cell"><div class="v2-rc-i3lbl">' + en + '</div>'
-             + '<div class="v2-rc-i3val ' + (cls||'') + '">' + val + '</div>'
-             + '<div class="v2-rc-i3lbl2">' + l2 + '</div></div>';
-      }
-      // r2 cell: ABBR on top · "IATA  time" value · 2nd-lang word under
-      function _r2(abbr, valStr, wordObj){
-        return '<div class="v2-rc-r2cell"><div class="v2-rc-r2lbl">' + abbr + '</div>'
-             + '<div class="v2-rc-r2val">' + valStr + '</div>'
-             + '<div class="v2-rc-r2lbl2">' + _t2(wordObj) + '</div></div>';
-      }
-
       // ── v22945 — THE INBOUND CARD'S STATUS FOLLOWS THE SELECTED LANGUAGES.
       // The old comment here read "bilingual inline (EN | FR), never
       // switches", and it meant it: this cell took .en and .fr off the status
@@ -13159,11 +13042,6 @@ function _gateNotePaintedDay(tz) {
 function uxgGateHtml(ctx) {
   const { currentFlight, nextFlight, inboundFlight, iata, tz, timeStr, now, logoHtml, loc, locIata, arrTimeStr, durationStr, effectiveDepTs } = ctx;
   const gateVal = currentFlight.gate && currentFlight.gate !== '\u2014' ? currentFlight.gate : randomGate(currentFlight.terminal, currentFlight.flight);
-  // v221 \u2014 bilingual SIDE-BY-SIDE header labels (English / second language).
-  // Second language is per-airport: French everywhere, Spanish for La Paz.
-  const _hdr2nd = (typeof boardLangsFor === 'function' ? (boardLangsFor(iata)[1] || 'fr') : 'fr');
-  const _flightLbl2 = ({fr:'Vol', es:'Vuelo', en:'Flight', de:'Flug', it:'Volo', pt:'Voo'})[_hdr2nd] || 'Vol';
-  const _gateLbl2 = ({fr:'Porte', es:'Puerta', en:'Gate', de:'Gate', it:'Uscita', pt:'Porta'})[_hdr2nd] || 'Porte';
   // Québec airports: French first on every bilingual pair.
   const _frF = (typeof frFirstAirport === 'function') && frFirstAirport(iata);
   const _flightNumDisp = (String(currentFlight.flight || '').replace(/^[A-Za-z]+\s*/, '').trim()) || String(currentFlight.flight || '');
@@ -14847,8 +14725,6 @@ function uxgGateHtml(ctx) {
     // banner-bg/accent vars.
     var _acLanes = (airlineCode === 'AC' || airlineCode === 'RV' || airlineCode === 'QK'
                     || airlineCode === 'WS' || airlineCode === 'WR');
-    var _nowLbl = _acLanes ? '' : _grpLbl;
-    var _nextLbl = _acLanes ? 'Zones' : _grpLbl;
     // v23706 — same pairing for the two column headers. See the note at
     // _grpLbl: these were the other half of the monolingual generic panel.
     var _hdrNow = _gateLbl('boardNow', _frF, function (w) { return w; },
@@ -21191,11 +21067,6 @@ const gView = document.getElementById('gateView');
         ${(function () {
           var _lg = '';
           try { _lg = window._fidsResolvedAirportLogo || localStorage.getItem('fids_airport_logo_' + iata) || ''; } catch (e) {}
-          // Single language, rotating with the board's language cycle —
-          // exactly like the FIDS board label ('Departures' / 'Départs').
-          var _ttlMap = { en: 'Baggage claim', fr: 'Retrait des bagages', es: 'Recogida de equipaje',
-                          de: 'Gepäckausgabe', it: 'Ritiro bagagli', pt: 'Recolha de bagagem' };
-          var _ttl = _ttlMap[(typeof lang !== 'undefined' && lang) || 'en'] || _ttlMap.en;
           // Clock matches the GATE exactly
           // : the time over
           // the bilingual date, via the shared helpers.
@@ -24209,20 +24080,6 @@ const COORDS = {
 };
 
 // ── WEATHER SYSTEM (Tomorrow.io only) ────────────────────────────────────
-const WX_LABELS = {
-  clear:{en:'CLEAR',fr:'DÉGAGÉ'},partcloud:{en:'PARTLY CLOUDY',fr:'SEMI-COUVERT'},
-  cloudy:{en:'CLOUDY',fr:'NUAGEUX'},fog:{en:'FOG',fr:'BROUILLARD'},
-  drizzle:{en:'DRIZZLE',fr:'BRUINE'},fzdrizzle:{en:'FZ. DRIZZLE',fr:'BRUINE VERGL.'},
-  rain:{en:'RAIN',fr:'PLUIE'},hvyrain:{en:'HEAVY RAIN',fr:'FORTE PLUIE'},
-  fzrain:{en:'FZ. RAIN',fr:'PLUIE VERGL.'},snow:{en:'SNOW',fr:'NEIGE'},
-  hvysnow:{en:'HEAVY SNOW',fr:'FORTE NEIGE'},showers:{en:'SHOWERS',fr:'AVERSES'},
-  snowshow:{en:'SNOW SHOWERS',fr:'AVERSES NEIGE'},tstorm:{en:'T-STORM',fr:'ORAGE'},
-};
-const wxLabel = (key) => (WX_LABELS[key]||{})[lang] || key;
-const WX_KEY_CODE = {
-  clear:0,partcloud:1,cloudy:3,fog:45,drizzle:51,fzdrizzle:56,
-  rain:61,hvyrain:65,fzrain:66,snow:71,hvysnow:75,showers:80,snowshow:85,tstorm:95,
-};
 
 // All destination IATAs a flight's board row can display — the primary dest
 // PLUS every through-flight leg (multi-city rows did not give us
@@ -48199,45 +48056,15 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 })();
 
 
-/* V9 bilingual label repair: visual labels only, no operational logic changes */
-(function(){
-  function t(map){ 
-    var l = (typeof lang !== 'undefined' && lang) ? lang : 'en';
-    return map[l] || map.en;
-  }
-  function fixVisibleGateLabels(){
-    try {
-      var pairs = [
-        [/^Scheduled Departure:$/i, {en:'Scheduled Departure:', fr:'Départ prévu:'}],
-        [/^Estimated Arrival:$/i, {en:'Estimated Arrival:', fr:'Arrivée prévue:'}],
-        [/^Estimated Boarding:$/i, {en:'Estimated Boarding:', fr:'Embarquement prévu:'}],
-        [/^Weather at destination$/i, {en:'Weather at destination', fr:'Météo à destination'}],
-        [/^Today$/i, {en:'Today', fr:"Aujourd'hui"}],
-        [/^Tomorrow$/i, {en:'Tomorrow', fr:'Demain'}],
-        [/^Aircraft type$/i, {en:'Aircraft type', fr:"Type d’appareil"}],
-        [/^Tail number:$/i, {en:'Tail number:', fr:'Immatriculation:'}]
-      ];
-      document.querySelectorAll('body *').forEach(function(el){
-        if (!el || el.children.length) return;
-        // The v2 right panel is bilingual BY LAYOUT (English label on top,
-        // second language underneath) — rewriting its English labels to the
-        // rotating language produced "Type d'appareil" twice (no English).
-        if (el.closest && el.closest('.gad-map-col-v2')) return;
-        // v23935 — nor the day line under a gate time (_gateDayLineHtml): it is
-        // already in the board's languages, one word per language. Rewriting
-        // its English "Tomorrow" to the rotating language printed
-        // "Demain | Demain" on a French-first Montréal gate.
-        if (el.closest && el.closest('.v2-fi-dayline')) return;
-        var s = (el.textContent || '').trim();
-        for (var i=0;i<pairs.length;i++){
-          if (pairs[i][0].test(s)) { el.textContent = t(pairs[i][1]); break; }
-        }
-      });
-    } catch(e) {}
-  }
-  document.addEventListener('DOMContentLoaded', fixVisibleGateLabels);
-  _ocEvery(fixVisibleGateLabels, 1000);
-})();
+/* vLANG — the V9 "bilingual label repair" pass is gone. Every second it swept
+   the page and rewrote any leaf whose text was exactly an English label
+   ('Today', 'Tomorrow', 'Aircraft type'…) into the rotating language, from an
+   English/French-only map: it printed "Demain | Demain" on a French-first gate
+   (v23935 had to fence the day line off from it), and it would have done the
+   same to any new element that happened to carry one of those words. None of
+   the labels it repaired is rendered in English any more; every one comes
+   from the store in the board's own languages. The board-languages guard
+   (B13) fails any timer that sweeps and rewrites the page's text. */
 
 /* V16 Accor layout safety net: keep ad text inside panel bounds. */
 (function(){
@@ -48315,73 +48142,11 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   _ocEvery(run,1000);
 })();
 
-/* V21 Accor layout hard-lock: prevents legacy rescue patches from re-expanding text/logos. */
-(function(){
-  const shortCopy = {
-    en: 'A refined stay close to your destination.',
-    fr: 'Un séjour raffiné près de votre destination.'
-  };
-  function lockAccor(){
-    const ad = document.querySelector('#adPanel.ad-accor6, .ad-accor6');
-    if(!ad) return;
-    ad.style.display = 'grid';
-    ad.style.gridTemplateColumns = '52% 48%';
-    ad.style.overflow = 'hidden';
-    const panel = ad.querySelector('.accor6-panel, .accor-panel');
-    if(panel){
-      panel.style.overflow = 'hidden';
-      panel.style.padding = '56px 54px 42px 44px';
-    }
-    const brand = ad.querySelector('.accor6-brand, .accor6-logo, .accor-brand, .accor-logo, .accor6-wordmark, .accor-wordmark');
-    if(brand){
-      brand.style.maxWidth = '318px';
-      brand.style.width = '100%';
-      brand.style.margin = '0 auto 32px auto';
-      brand.style.overflow = 'visible';
-    }
-    const name = ad.querySelector('.accor6-name, .accor6-title, .accor-hotel-name');
-    if(name){
-      name.style.fontSize = 'clamp(30px, 2.35vw, 46px)';
-      name.style.lineHeight = '1.04';
-      name.style.whiteSpace = 'normal';
-      name.style.overflow = 'visible';
-      name.style.textOverflow = 'clip';
-      name.style.maxHeight = '100px';
-    }
-    const desc = ad.querySelector('.accor6-description, .accor-description, .accor6-blurb');
-    if(desc){
-      const t = (desc.textContent || '').trim();
-      if(t.length > 110 || /Novotel Toronto Vaughan|complimentary|water filling|Restaurant & Lounge|business and leisure/i.test(t)){
-        desc.textContent = /[àéèêôûç]|séjour|destination/i.test(t) ? shortCopy.fr : shortCopy.en;
-      }
-      desc.style.overflow = 'hidden';
-      desc.style.display = '-webkit-box';
-      desc.style.webkitLineClamp = '3';
-      desc.style.webkitBoxOrient = 'vertical';
-      desc.style.maxHeight = '108px';
-    }
-    const qrBox = ad.querySelector('.accor6-qr-bubble, .accor-qr-bubble, .accor6-qrBox, .accor-qrBox');
-    if(qrBox){
-      qrBox.style.width = '424px';
-      qrBox.style.height = '128px';
-      qrBox.style.display = 'grid';
-      qrBox.style.gridTemplateColumns = '1fr 98px';
-      qrBox.style.columnGap = '18px';
-      qrBox.style.overflow = 'visible';
-      qrBox.style.padding = '20px 18px 20px 22px';
-    }
-    const qr = ad.querySelector('.accor6-qr, .accor-qr');
-    if(qr){
-      qr.style.width = '98px'; qr.style.height = '98px'; qr.style.overflow = 'hidden';
-      Array.from(qr.children).forEach((child, i) => {
-        if(i > 0 && !/canvas|img|svg/i.test(child.tagName)) child.style.display = 'none';
-        child.style.width = '98px'; child.style.height = '98px'; child.style.maxWidth = '98px'; child.style.maxHeight = '98px';
-      });
-    }
-  }
-  window.addEventListener('load', lockAccor);
-  _ocEvery(lockAccor, 500);
-})();
+/* vLANG — the V21 Accor "hard-lock" is gone. It looked every half second for
+   .ad-accor6 markup that no Accor card has produced since the V6 cards, and
+   on finding it replaced a long description with an English or French line
+   ("A refined stay close to your destination."), whatever the board's
+   language. */
 
 // ── SELF-UPDATE ─────────────────────────────────────────────────────────
 // Kiosk pages run for days and never re-fetch their HTML, so deploys only

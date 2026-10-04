@@ -213,13 +213,13 @@ test('the amber "+1" after an overnight arrival is gone: the day line says it, i
     'a day is not a status: no status colour, nothing moving');
 });
 
-test('the visual-label repair pass never rewrites the day line', () => {
-  // It turns any lone "Tomorrow" into the rotating language's word, which
-  // printed "Demain | Demain" on a French-first Montréal gate.
-  const i = CORE.indexOf('[/^Tomorrow$/i, {en:\'Tomorrow\', fr:\'Demain\'}]');
-  assert.ok(i >= 0);
-  const pass = CORE.slice(i, CORE.indexOf('_ocEvery(fixVisibleGateLabels', i));
-  assert.match(pass, /if \(el\.closest && el\.closest\('\.v2-fi-dayline'\)\) return;/);
+test('no repair pass rewrites the day line — or anything else — after render', () => {
+  // The V9 "visual-label repair" pass turned any lone "Tomorrow" into the
+  // rotating language's word, which printed "Demain | Demain" on a
+  // French-first Montréal gate. It is gone; the board-languages guard (B13)
+  // fails any timer that sweeps the page and rewrites its text.
+  assert.doesNotMatch(CORE, /function fixVisibleGateLabels/);
+  assert.doesNotMatch(CORE, /\[\/\^Tomorrow\$\/i, \{en:'Tomorrow', fr:'Demain'\}\]/);
 });
 
 test('the departures board\'s "+1" day marker takes the row\'s ink, not the delayed amber', () => {

@@ -406,7 +406,9 @@ function run(options) {
     }
     if (diffs.length) {
       const first = list[0];
-      add({ check: 'B7', file: first.file, line: first.line, fn: null, text: first.langs.en, msg: `'${first.langs.en}' is translated differently in ${list.map((o) => o.table + '.' + o.key).join(', ')} (${diffs.join(' ')}); reuse one wording, or separate the meanings with $ctx` });
+      // one finding per phrase, whichever table it is first met in: the id
+      // must not move when a table is deleted or reordered
+      add({ check: 'B7', file: '*', line: 0, fn: null, text: norm(first.langs.en), msg: `'${first.langs.en}' is translated differently in ${list.map((o) => o.table + '.' + o.key).join(', ')} (${diffs.join(' ')}); reuse one wording, or separate the meanings with $ctx` });
     }
   }
 

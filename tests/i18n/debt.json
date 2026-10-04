@@ -1152,38 +1152,11 @@
   "surface": "Archive pages"
  },
  {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:(object)",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "(object)",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Arrival",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arrival",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Arrived",
   "check": "B1",
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "Arrived",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Arriving in",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arriving in",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -1211,24 +1184,6 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "Delayed",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Departed",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Departed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Departure",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Departure",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -1251,15 +1206,6 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Flight",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:On time",
   "check": "B1",
   "file": "fids-current/js/fids-core.js",
@@ -1274,24 +1220,6 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "Scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Status",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Status",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:_buildV2MapCol:Your Incoming Aircraft Information",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Your Incoming Aircraft Information",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -1323,15 +1251,6 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B1:fids-current/js/fids-core.js:-:A refined stay close to your destination.",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "A refined stay close to your destination.",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B1:fids-current/js/fids-core.js:-:AvidTraveller",
   "check": "B1",
   "file": "fids-current/js/fids-core.js",
@@ -1359,33 +1278,6 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B1:fids-current/js/fids-core.js:-:CLEAR",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "CLEAR",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:CLOUDY",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "CLOUDY",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:DRIZZLE",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "DRIZZLE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B1:fids-current/js/fids-core.js:-:Enter Board",
   "check": "B1",
   "file": "fids-current/js/fids-core.js",
@@ -1404,56 +1296,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B1:fids-current/js/fids-core.js:-:FOG",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "FOG",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:FZ. DRIZZLE",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "FZ. DRIZZLE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:FZ. RAIN",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "FZ. RAIN",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B1:fids-current/js/fids-core.js:-:Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001",
   "check": "B1",
   "file": "fids-current/js/fids-core.js",
   "fn": null,
   "text": "Halifax, Nova Scotia · the first Air Canada Connector · 1986–2001",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:HEAVY RAIN",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "HEAVY RAIN",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:HEAVY SNOW",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "HEAVY SNOW",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -1464,15 +1311,6 @@
   "fn": null,
   "text": "Montreal · DC-9 · 1966–2002",
   "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:PARTLY CLOUDY",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "PARTLY CLOUDY",
-  "count": 1,
   "surface": "Boards and gate"
  },
  {
@@ -1494,155 +1332,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B1:fids-current/js/fids-core.js:-:RAIN",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "RAIN",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:SHOWERS",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "SHOWERS",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:SNOW",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "SNOW",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:SNOW SHOWERS",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "SNOW SHOWERS",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B1:fids-current/js/fids-core.js:-:St. John’s, Newfoundland · a Canadian Partner · until 1998",
   "check": "B1",
   "file": "fids-current/js/fids-core.js",
   "fn": null,
   "text": "St. John’s, Newfoundland · a Canadian Partner · until 1998",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:-:T-STORM",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "T-STORM",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:fixVisibleGateLabels:Aircraft type",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Aircraft type",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:fixVisibleGateLabels:Estimated Arrival:",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Estimated Arrival:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:fixVisibleGateLabels:Estimated Boarding:",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Estimated Boarding:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:fixVisibleGateLabels:Scheduled Departure:",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Scheduled Departure:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:fixVisibleGateLabels:Tail number:",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Tail number:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:fixVisibleGateLabels:Today",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Today",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:fixVisibleGateLabels:Tomorrow",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Tomorrow",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:fixVisibleGateLabels:Weather at destination",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Weather at destination",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:renderDedicatedScreen:Baggage claim",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "Baggage claim",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:uxgGateHtml:Flight",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B1:fids-current/js/fids-core.js:uxgGateHtml:Gate",
-  "check": "B1",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "Gate",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -1692,15 +1386,6 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B11:fids-current/js/fids-core.js:_buildV2AircraftCol:boardLangsFor()[]",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "boardLangsFor()[]",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B11:fids-current/js/fids-core.js:_buildV2AircraftCol:langs.slice(0, 2)",
   "check": "B11",
   "file": "fids-current/js/fids-core.js",
@@ -1742,7 +1427,7 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "boardLangsFor()[]",
-  "count": 2,
+  "count": 1,
   "surface": "Boards and gate"
  },
  {
@@ -1863,29 +1548,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B11:fids-current/js/fids-core.js:uxgGateHtml:boardLangsFor()[]",
-  "check": "B11",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "boardLangsFor()[]",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B11:fids-current/js/fids-core.js:uxgLocaleCode:{fr,en,es,de,it,pt,ja,zh,ar} locales",
   "check": "B11",
   "file": "fids-current/js/fids-core.js",
   "fn": "uxgLocaleCode",
   "text": "{fr,en,es,de,it,pt,ja,zh,ar} locales",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B13:fids-current/js/fids-core.js:-:fixVisibleGateLabels",
-  "check": "B13",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "fixVisibleGateLabels",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -1908,47 +1575,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Altitude",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Altitude",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Arrival",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arrival",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Arrivé",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arrivé",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Arrived",
   "check": "B2",
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "Arrived",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Arriving in",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arriving in",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -1976,24 +1607,6 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "Delayed",
-  "count": 2,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Departed",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Departed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Departure",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Departure",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -2007,65 +1620,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:En retard",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "En retard",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:En route",
   "check": "B2",
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "En route",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Flight",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:ft",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "ft",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Heure d'arrivée",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Heure d'arrivée",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Heure de départ",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Heure de départ",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:kph",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "kph",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -2079,47 +1638,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Parti à",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Parti à",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Scheduled",
   "check": "B2",
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "Scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Speed",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Speed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Status",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Status",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:_buildV2MapCol:Your Incoming Aircraft Information",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Your Incoming Aircraft Information",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -2133,74 +1656,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B2:fids-current/js/fids-core.js:-:A refined stay close to your destination.",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "A refined stay close to your destination.",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B2:fids-current/js/fids-core.js:-:Calgary · 1987–2001",
   "check": "B2",
   "file": "fids-current/js/fids-core.js",
   "fn": null,
   "text": "Calgary · 1987–2001",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:CLEAR",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "CLEAR",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:CLOUDY",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "CLOUDY",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:DRIZZLE",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "DRIZZLE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:FOG",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "FOG",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:FZ. DRIZZLE",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "FZ. DRIZZLE",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:FZ. RAIN",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "FZ. RAIN",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -2214,24 +1674,6 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B2:fids-current/js/fids-core.js:-:HEAVY RAIN",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "HEAVY RAIN",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:HEAVY SNOW",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "HEAVY SNOW",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B2:fids-current/js/fids-core.js:-:Montreal · DC-9 · 1966–2002",
   "check": "B2",
   "file": "fids-current/js/fids-core.js",
@@ -2241,164 +1683,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B2:fids-current/js/fids-core.js:-:PARTLY CLOUDY",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "PARTLY CLOUDY",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:RAIN",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "RAIN",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:SHOWERS",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "SHOWERS",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:SNOW",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "SNOW",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:SNOW SHOWERS",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "SNOW SHOWERS",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B2:fids-current/js/fids-core.js:-:St. John’s, Newfoundland · a Canadian Partner · until 1998",
   "check": "B2",
   "file": "fids-current/js/fids-core.js",
   "fn": null,
   "text": "St. John’s, Newfoundland · a Canadian Partner · until 1998",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:-:T-STORM",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "T-STORM",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:fixVisibleGateLabels:Aircraft type",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Aircraft type",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:fixVisibleGateLabels:Estimated Arrival:",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Estimated Arrival:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:fixVisibleGateLabels:Estimated Boarding:",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Estimated Boarding:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:fixVisibleGateLabels:Scheduled Departure:",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Scheduled Departure:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:fixVisibleGateLabels:Tail number:",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Tail number:",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:fixVisibleGateLabels:Today",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Today",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:fixVisibleGateLabels:Tomorrow",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Tomorrow",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:fixVisibleGateLabels:Weather at destination",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "fixVisibleGateLabels",
-  "text": "Weather at destination",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:renderDedicatedScreen:Baggage claim",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "renderDedicatedScreen",
-  "text": "Baggage claim",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:uxgGateHtml:Flight",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B2:fids-current/js/fids-core.js:uxgGateHtml:Gate",
-  "check": "B2",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "Gate",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -2934,375 +2223,6 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B7:fids-current/js/fids-core.js:-:Aircraft",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Aircraft",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Airline",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Airline",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Altitude",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Altitude",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Arrival",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Arrival",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Arrived",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Arrived",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Arrived at the gate",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Arrived at the gate",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Arriving from",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Arriving from",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Boarding",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Cancelled",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Cancelled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Delayed",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Delayed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Departed",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Departed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Departure",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Departure",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Departures",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Departures",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Destination",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Destination",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Diverted",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Diverted",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Early",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Early",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:En route",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "En route",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Final call",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Final call",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Flight",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Flight",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Flight #",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Flight #",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:From",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "From",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Gate",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Gate",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:GATE CLOSED",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "GATE CLOSED",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:HEAVY RAIN",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "HEAVY RAIN",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:HEAVY SNOW",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "HEAVY SNOW",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Humidity",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Humidity",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Inbound aircraft",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Inbound aircraft",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:NOW",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "NOW",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:NOW BOARDING",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "NOW BOARDING",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Operated by",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Operated by",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:PARTLY CLOUDY",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "PARTLY CLOUDY",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Registration",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Registration",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:reviews",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "reviews",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Revised",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Revised",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Scheduled",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Speed",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Speed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Status",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Status",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Terminal",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Terminal",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:to",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "to",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:YOUR AIRCRAFT",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "YOUR AIRCRAFT",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B7:fids-current/js/fids-core.js:-:Zone",
-  "check": "B7",
-  "file": "fids-current/js/fids-core.js",
-  "fn": null,
-  "text": "Zone",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B8:fids-current/js/fids-core.js:_boardFilterChipHtml:Terminal",
   "check": "B8",
   "file": "fids-current/js/fids-core.js",
@@ -3321,128 +2241,11 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2AircraftCol:Arrival Time",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Arrival Time",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2AircraftCol:Boarding",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Boarding",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2AircraftCol:Boarding Time",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Boarding Time",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2AircraftCol:Departure",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Departure",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2AircraftCol:Departure Time",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2AircraftCol",
-  "text": "Departure Time",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Altitude",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Altitude",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Arrival Time",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arrival Time",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Arrived",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Arrived",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Delayed",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Delayed",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Departed At",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Departed At",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Departure Time",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Departure Time",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Flight",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Flight",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Scheduled",
   "check": "B8",
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "Scheduled",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
-  "id": "B8:fids-current/js/fids-core.js:_buildV2MapCol:Speed",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "_buildV2MapCol",
-  "text": "Speed",
   "count": 1,
   "surface": "Boards and gate"
  },
@@ -3690,15 +2493,6 @@
   "surface": "Boards and gate"
  },
  {
-  "id": "B8:fids-current/js/fids-core.js:uxgGateHtml:Zones",
-  "check": "B8",
-  "file": "fids-current/js/fids-core.js",
-  "fn": "uxgGateHtml",
-  "text": "Zones",
-  "count": 1,
-  "surface": "Boards and gate"
- },
- {
   "id": "B3:fids-current/js/fids-v2.js:-:Transborder de",
   "check": "B3",
   "file": "fids-current/js/fids-v2.js",
@@ -3821,7 +2615,7 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "hour12",
-  "count": 3,
+  "count": 2,
   "surface": "Clocks and dates"
  },
  {
@@ -3830,7 +2624,7 @@
   "file": "fids-current/js/fids-core.js",
   "fn": "_buildV2MapCol",
   "text": "toLocaleTimeString('en-US')",
-  "count": 3,
+  "count": 2,
   "surface": "Clocks and dates"
  },
  {
@@ -7603,5 +6397,320 @@
   "text": "WEATHER",
   "count": 1,
   "surface": "Weather card and strips"
+ },
+ {
+  "id": "B7:*:-:en route",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "en route",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:boarding",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "boarding",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:delayed",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "delayed",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:early",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "early",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:cancelled",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "cancelled",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:arrived",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "arrived",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:scheduled",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "scheduled",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:departures",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "departures",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:destination",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "destination",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:from",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "from",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:flight #",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "flight #",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:airline",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "airline",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:now",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "now",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:terminal",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "terminal",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:status",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "status",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:now boarding",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "now boarding",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:flight",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "flight",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:departure",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "departure",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:arrival",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "arrival",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:zone",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "zone",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:operated by",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "operated by",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:aircraft",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "aircraft",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:registration",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "registration",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:inbound aircraft",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "inbound aircraft",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:to",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "to",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:reviews",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "reviews",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:gate closed",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "gate closed",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:revised",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "revised",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:arriving from",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "arriving from",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:your aircraft",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "your aircraft",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:arrived at the gate",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "arrived at the gate",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:departed",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "departed",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:final call",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "final call",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:diverted",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "diverted",
+  "count": 1,
+  "surface": "Boards and gate"
+ },
+ {
+  "id": "B7:*:-:humidity",
+  "check": "B7",
+  "file": "*",
+  "fn": null,
+  "text": "humidity",
+  "count": 1,
+  "surface": "Boards and gate"
  }
 ]
