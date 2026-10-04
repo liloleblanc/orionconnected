@@ -1160,7 +1160,7 @@ body, body.gids-page, body.gate-page{
    Prevents the column from looking like a broken empty rectangle.
    The JS appends a class to .gad-aircraft-col when content is bare. */
 .gad-aircraft-col.is-bare::after{
-  /* v23960 — the words come from the board's pair in data-baremsg (below);
+  /* v23970 — the words come from the board's pair in data-baremsg (below);
      the English-only default is gone, the filler box stays. */
   content:'';
   flex:1 1 auto;
@@ -2963,7 +2963,7 @@ body, body.gids-page, body.gate-page{
   align-self: stretch !important;
   margin: 0 !important;
 }
-/* v23960 — the "Aircraft" / "Registration" pseudo-labels that stood here were
+/* v23970 — the "Aircraft" / "Registration" pseudo-labels that stood here were
    English-only and already switched off below (content: none); removed. */
 
 /* v218.99.64 — Incoming Aircraft shelf at TOP of aircraft block (header).

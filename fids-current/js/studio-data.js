@@ -5,7 +5,7 @@
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
 
-  // v23960 — statuses travel as these canonical English codes ('On time',
+  // v23970 — statuses travel as these canonical English codes ('On time',
   // 'Boarding'…): the scene rules compare them, and studio-render.js turns
   // them into the screen's language (statusText) only when it draws them.
   // The preview flights, weather and times below are sample data.

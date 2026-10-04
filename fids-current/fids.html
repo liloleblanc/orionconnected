@@ -15,11 +15,11 @@ The loader's palette in shared.css is the
   <!-- v23803 — yqm.orionconnected.com shows Moncton. Loaded FIRST: it fills in
        sessionStorage.fids_airport, which every board reads as its default, and the
        earliest reader is an inline script further down this page. -->
-  <script src="js/host-airport.js?v=23967"></script>
+  <script src="js/host-airport.js?v=23970"></script>
   <!-- The one store for passenger words (board-strings.js). Loaded first, before
        the loader below, so the loader greets in the board's own languages. Its
        ?v= always equals fids-core.js's (tests/board-languages.test.js B14). -->
-  <script src="js/board-strings.js?v=23967"></script>
+  <script src="js/board-strings.js?v=23970"></script>
 
   <script>
   (function () {
@@ -191,21 +191,21 @@ s not just start it's all the time now'). ?rotate= navigates with
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
-  <!-- v23960 — Japanese, Chinese and Arabic, so those board languages render on
+  <!-- v23970 — Japanese, Chinese and Arabic, so those board languages render on
        a host with no fonts of its own. The browser fetches only the slices a
        screen uses. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Sans+Arabic:wght@400;700;900&display=swap">
   <link rel="stylesheet" href="css/font.css?v=330">
   <link rel="stylesheet" href="css/airport-fonts.css?v=312">
   <link rel="stylesheet" href="css/leaflet-embed.css?v=311">
-  <link rel="stylesheet" href="css/shared.css?v=23967">
-  <link rel="stylesheet" href="css/menu.css?v=23967">
-  <link rel="stylesheet" href="css/fids.css?v=23967">
-  <link rel="stylesheet" href="css/flight-display.css?v=23967">
-  <link rel="stylesheet" href="css/baggage-display.css?v=23967">
+  <link rel="stylesheet" href="css/shared.css?v=23970">
+  <link rel="stylesheet" href="css/menu.css?v=23970">
+  <link rel="stylesheet" href="css/fids.css?v=23970">
+  <link rel="stylesheet" href="css/flight-display.css?v=23970">
+  <link rel="stylesheet" href="css/baggage-display.css?v=23970">
   <link rel="stylesheet" href="css/mobile.css?v=311">
   <link rel="stylesheet" href="css/mobile-display.css?v=312">
-  <link rel="stylesheet" href="css/display-overrides.css?v=23967">
+  <link rel="stylesheet" href="css/display-overrides.css?v=23970">
   <style>
     /* v23322 — no banner until the theme is applied (see fids-core.js
        applyAirportConfigToBoard). Opacity, not display: the top-watchdog
@@ -251,7 +251,7 @@ s not just start it's all the time now'). ?rotate= navigates with
     }, 8000);
   } catch (e) {}
   </script>
-  <link rel="stylesheet" href="css/gate-display.css?v=23960">
+  <link rel="stylesheet" href="css/gate-display.css?v=23970">
   <link rel="stylesheet" href="css/hotel-ads.css?v=23891">
   <link rel="preload" as="image" href="logos/Backgrounds/PD/porter-pattern-panel.png" data-fids-patch="porter-pattern-bg">
   <link rel="preload" as="image" href="logos/Backgrounds/AC/aircanada-roundel-fade.svg" data-fids-patch="ac-roundel-bg">
@@ -411,7 +411,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
       var gate = (q.get('gate') || '').toUpperCase();
       // The code as passengers see it (host-airport.js: MET for YHU).
       if (ap && window.fidsDisplayIata) ap = String(window.fidsDisplayIata(ap));
-      // v23960 — in the board's first language (board-strings.js).
+      // v23970 — in the board's first language (board-strings.js).
       var _lbl = (ap ? ap + ' · ' : '') + BoardStrings.loaderLine('loading', true);
       var bootEl = root.querySelector('.ocb-boot');
       if (bootEl) {
@@ -422,7 +422,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
     } catch(e) {}
 
 
-    // v23960 — the greeting in the board's own languages, from the store; it
+    // v23970 — the greeting in the board's own languages, from the store; it
     // was a fixed list of six (no Italian, Japanese or Arabic) whatever the
     // board spoke.
     var GREET = BoardStrings.bootLangs().map(function (l) {
@@ -756,22 +756,22 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 
 <script src="/mapcdn/leaflet.js?v=22485"></script>
 <script src="/mapcdn/leaflet-arc.js?v=22485"></script>
-<script src="js/fids-v2.js?v=23967"></script>
+<script src="js/fids-v2.js?v=23970"></script>
 <script src="js/gids-layout.js?v=1"></script>
-<script src="data/airline-colors.js?v=23967"></script>
-<script src="js/gate-date-context.js?v=23967"></script>
-<script src="js/feed-router.js?v=23967"></script>
-<script src="js/fids-core.js?v=23967"></script>
-<script src="js/gate-visual-integrity.js?v=23967"></script>
+<script src="data/airline-colors.js?v=23970"></script>
+<script src="js/gate-date-context.js?v=23970"></script>
+<script src="js/feed-router.js?v=23970"></script>
+<script src="js/fids-core.js?v=23970"></script>
+<script src="js/gate-visual-integrity.js?v=23970"></script>
 <script src="js/ui-options.js?v=1"></script>
 <script src="js/local-media.js?v=2"></script>
 <script src="js/media-adjust.js?v=7"></script>
 <script src="js/media-base.js?v=2"></script>
-<script src="js/airport-coords.js?v=23960"></script>
+<script src="js/airport-coords.js?v=23970"></script>
 <script src="js/airport-runways.js?v=23035"></script>
-<script src="js/template-renderer.js?v=23960"></script>
+<script src="js/template-renderer.js?v=23970"></script>
 <script src="js/screen-capture.js?v=1"></script>
-<script src="js/menu.js?v=23967"></script>
+<script src="js/menu.js?v=23970"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="js/menubar.js?v=23233"></script>
 <script src="js/editor-roles.js?v=1"></script>

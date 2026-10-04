@@ -28,7 +28,7 @@
     var wrap = document.querySelector('.g8-wrap');
     if (!wrap) return;
 
-    // v23960 — the phone's own language (one, fids_mobile_lang or the phone's),
+    // v23970 — the phone's own language (one, fids_mobile_lang or the phone's),
     // from the store; these were English on every phone.
     var S = window.BoardStrings;
     var esc = S.esc;

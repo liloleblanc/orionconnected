@@ -258,7 +258,7 @@
       var holder = img.closest('.v2-rc-aircraft-img');
       if (!holder) return;
       holder.className = 'v2-rc-aircraft-pending';
-      // v23960 — the board's pair, from the gate's own label (it was English |
+      // v23970 — the board's pair, from the gate's own label (it was English |
       // French whatever the board spoke).
       var ap = String(window._gateIata || (document.getElementById('apSel') || {}).value || '').toUpperCase();
       var frF = typeof window.frFirstAirport === 'function' && window.frFirstAirport(ap);

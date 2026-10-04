@@ -1429,7 +1429,7 @@ function getAirlineBgSlideLabel(slide, idx) {
 }
 
 function changeFont(f) {
-  // v23960 — with the Japanese, Chinese and Arabic web fonts before the generic.
+  // v23970 — with the Japanese, Chinese and Arabic web fonts before the generic.
   const fam = BoardStrings.withScripts("'" + f + "', sans-serif");
   document.body.style.fontFamily = fam;
   // v23386 — DRIVE --font-primary, not just the universal rule.
@@ -2402,7 +2402,7 @@ function _fidsSyncUrl(t, s) {
 // — gids.html/bids.html call it directly on URL-param boots, and the saved
 // screen-state restore calls it too. Idempotent: applies only when a saved
 // set exists and differs from what is showing.
-// v23960 — through the one resolver, so the URL keeps its precedence: a
+// v23970 — through the one resolver, so the URL keeps its precedence: a
 // screen pinned with ?langs= is no longer overridden by a saved choice when
 // this re-runs on a screen-type change.
 function _restoreApLangs() {
@@ -5066,9 +5066,9 @@ function updateDedicatedTimeOnly() {
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23960 — the board's clock
+  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23970 — the board's clock
   // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
-  const _loc = (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23960 — the store's locale
+  const _loc = (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23970 — the store's locale
   // Weekday, month, day number and year all come from the AIRPORT's clock —
   // see _airportDateLine for the mixed-clock bug this replaces.
   const dateDisplay = _airportDateLine(now, tzOpts, _loc, timeStr);
@@ -5084,7 +5084,7 @@ function updateDedicatedTimeOnly() {
     if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
   } else {
     if (banClock) banClock.textContent = timeStr;
-    // v23960 — the board's two languages (it was French · English always)
+    // v23970 — the board's two languages (it was French · English always)
     if (bidsDate) bidsDate.innerHTML = _ocClockDate(now, tz);
   }
   const emptyTime = document.getElementById('dedicatedEmptyTime');
@@ -8533,7 +8533,7 @@ function randomGate(terminal, flightNum) {
 
 
 function uxgLocaleCode() {
-  return (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23960 — the store's locale
+  return (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23970 — the store's locale
 }
 // ── BUNDLED AIRCRAFT LIVERY IMAGES ───────────────────────────────────────
 // Local PNGs at /aircraft/{AL}/{EQUIP}.png with fallback to /aircraft/{EQUIP}.png
@@ -10527,7 +10527,7 @@ function _buildV2AircraftCol(ctx, vars) {
       var _ah = window._adbHealth || null;
       var _bsSub = '';
       if (_ah && _ah.failStatus && (!_ah.okTs || (_ah.failTs || 0) > _ah.okTs)) {
-        // v23960 — in the board's pair, from the store
+        // v23970 — in the board's pair, from the store
         _bsSub = ' · ' + ((_ah.failStatus === 429)
           ? BoardStrings.pair('dataBusy', { frFirst: _frF, plain: true })
           : BoardStrings.pair('dataDown', { frFirst: _frF, plain: true, raw: true, fields: { N: String(_ah.failStatus) } }));
@@ -11025,10 +11025,10 @@ function _buildV2AircraftCol(ctx, vars) {
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
           // Status STACKED, in the SELECTED languages (v22956), each word
-          // marked with its language (v23960: an Arabic status read left to
+          // marked with its language (v23970: an Arabic status read left to
           // right under lang="en", a Chinese one took Japanese glyphs). Title
           // Case is English's; other languages keep their own capitals.
-          var _stPick = BoardStrings.pairLangs(langs, _frF);   // v23960 — the one chooser
+          var _stPick = BoardStrings.pairLangs(langs, _frF);   // v23970 — the one chooser
           var _stW = [], _stL = [], _stSeen = {};
           for (var _swi = 0; _swi < _stPick.length && _stW.length < 2; _swi++) {
             var _sw = _ss[_stPick[_swi]];
@@ -11267,7 +11267,7 @@ function _buildV2MapCol(ctx, vars) {
       // matches the rest of the panel (was hardcoded English → "Avion à
       // l'arrivée" kicker over "Awaiting Departure" status, etc.).
       var _rawSt = String(_ib.status || '').toLowerCase().trim();
-      // v23960 — the status words are the board's own (SS), in the board's
+      // v23970 — the status words are the board's own (SS), in the board's
       // pair. This card kept two private tables: _ST_SHORT (en/fr/es) and
       // _ST_I18N, whose German 'Früher' sat beside the board's 'Verfrüht' on
       // the same gate and whose 'Wartet auf Abflug' translated a word the
@@ -12947,7 +12947,7 @@ function _gateDayWords(ts, tz, frF, boardTz) {
 function _gateDayLineHtml(dw) {
   if (!dw || !dw.words || !dw.words.length) return '';
   // Each language is one unbreakable unit; the only break offered is the one
-  // between them (the board's rule against severed phrases). v23960 — and
+  // between them (the board's rule against severed phrases). v23970 — and
   // each carries its language (and an Arabic one its direction).
   var _dl = dw.languages || [];
   return '<span class="v2-fi-dayline" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w, i) {
@@ -13661,7 +13661,7 @@ function uxgGateHtml(ctx) {
     var _bwClock = '';
     try {
       var _bwTz = ((typeof AP !== 'undefined' && AP[iata]) || {}).tz || '';
-      // v23960 — the board's pair through the one chooser (BoardStrings).
+      // v23970 — the board's pair through the one chooser (BoardStrings).
       var _bwLangs = BoardStrings.pairLangs(langs, _frF);
       var _bwL1 = _bwLangs[0] || 'en';
       var _bwL2 = _bwLangs[1] || _bwL1;                 // one language \u2192 repeat
@@ -13844,7 +13844,7 @@ function uxgGateHtml(ctx) {
     // stack, words from the selected languages, de-duplicated.
     var _stTxt = '';
     if (_stP) {
-      var _svPick = BoardStrings.pairLangs(langs, _frF);   // v23960 — the one chooser
+      var _svPick = BoardStrings.pairLangs(langs, _frF);   // v23970 — the one chooser
       var _svW = [], _svL = [], _svSeen = {};
       for (var _svi = 0; _svi < _svPick.length && _svW.length < 2; _svi++) {
         var _svw = _stP[_svPick[_svi]];
@@ -14463,7 +14463,7 @@ function uxgGateHtml(ctx) {
   // colon.
   function _g8SignNext(groupKey, value, valueKey) {
     if (!value && !valueKey) return '';
-    // v23960 — the board's pair through the one chooser (it sliced `langs`
+    // v23970 — the board's pair through the one chooser (it sliced `langs`
     // itself), and each language's own colon: 'Prochain : …', '次：…'.
     var L = BoardStrings.pairLangs(langs, _frF);
     // 'Next: Zone 6', not 'Next: Zones 6' — a single number takes the singular.
@@ -18552,7 +18552,7 @@ function boardAutofit(full) {
                 });
                 maxW = Math.max(maxW, _w0);
               });
-              // v23960 — THE STATUS COLUMN IS SIZED FOR EVERY STATUS ITS
+              // v23970 — THE STATUS COLUMN IS SIZED FOR EVERY STATUS ITS
               // LANGUAGE HAS, not only the ones on screen when the widths were
               // taken: the geometry is cached per flight set, so a row that
               // turned to 'Embarquement' after a board of 'Prévu' was cut to
@@ -19298,7 +19298,7 @@ function renderDedicatedScreen() {
 
 const gView = document.getElementById('gateView');
   const bView = document.getElementById('baggageView');
-  // v23960 — the baggage board speaks one language at a time (`lang`); say so,
+  // v23970 — the baggage board speaks one language at a time (`lang`); say so,
   // so its Japanese, Chinese or Arabic takes that script's font and breaking.
   try { if (bView && BoardStrings.isLang(lang)) bView.setAttribute('lang', lang); } catch (eL) {}
   const contentArea = document.querySelector('.content-area');
@@ -19306,9 +19306,9 @@ const gView = document.getElementById('gateView');
   const tz = (AP[iata] || {}).tz;
   const now = new Date();
   const tzOpts = tz ? {timeZone:tz} : {};
-  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23960 — the board's clock
+  const timeStr = BoardStrings.boardTime(now, tz, { hour: '2-digit' });   // v23970 — the board's clock
   // Use Intl for all 9 languages — BCP-47 locale codes match our LS keys
-  const _loc = (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23960 — the store's locale
+  const _loc = (BoardStrings.META[lang] || BoardStrings.META.en).intl;   // v23970 — the store's locale
   // Weekday, month, day number and year all come from the AIRPORT's clock —
   // see _airportDateLine for the mixed-clock bug this replaces.
   const dateDisplay = _airportDateLine(now, tzOpts, _loc, timeStr);
@@ -20894,7 +20894,7 @@ const gView = document.getElementById('gateView');
     // found; the reported board had EN/FR headers over Spanish values).
     function _bidsHdr(key) {
       var o = (typeof LS !== 'undefined' && LS[key]) || {};
-      // v23960 — the one chooser, French first in Québec like every other pair
+      // v23970 — the one chooser, French first in Québec like every other pair
       var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
       var out = [], seen = {};
       for (var i = 0; i < picked.length; i++) {
@@ -24110,7 +24110,7 @@ const TIO_ICON = {
   8000:'thunderstorms-rain',
 };
 // weatherCode → the store key of its words (WMO, then Tomorrow.io codes).
-// v23960 — the words live in board-strings.js (wxClear … wxLtIcePellets), all
+// v23970 — the words live in board-strings.js (wxClear … wxLtIcePellets), all
 // nine languages; TIO_LABEL and its _FR/_ES/_DE tables stopped at four, so
 // an Italian, Portuguese, Japanese, Chinese or Arabic strip read English.
 const TIO_KEY = {
@@ -24154,7 +24154,7 @@ function tioIcon(weatherCode, size) {
 if (typeof window !== 'undefined') window.TIO_ICON = TIO_ICON;
 
 // v22959 — weather labels follow the FIRST selected language (French first
-// in Québec). v23960 — in all nine, from the store.
+// in Québec). v23970 — in all nine, from the store.
 function tioLabel(weatherCode) {
   var _key = TIO_KEY[weatherCode];
   if (!_key) return '';
@@ -25878,7 +25878,7 @@ const ES_BOARD_AIRPORTS = new Set(BoardStrings.ES_AIRPORTS);
 // Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
 // drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
 //
-// v23960 — THE TABLE MOVED TO board-strings.js (BoardStrings.LANG_DEFAULTS),
+// v23970 — THE TABLE MOVED TO board-strings.js (BoardStrings.LANG_DEFAULTS),
 // beside the one Québec list it is now derived from. v23767 named YUL and YQB
 // here by hand while frFirstAirport() listed twenty-six Québec codes, so
 // Saint-Hubert's gate led in French and its departures board in English. Every
@@ -26187,7 +26187,7 @@ function formatCityIata(raw, iata, langOverride) {
   if (code && (!rawStr || rawStr.replace(/[^A-Za-z]/g, '').toUpperCase() === code)) {
     rawStr = airportCityNameSafe_v21877(code, langOverride) || rawStr;
   }
-  // v23960 — a city has its own name in a language when the board keeps one
+  // v23970 — a city has its own name in a language when the board keeps one
   // (CITY_FR: 'Montréal'), and a board showing that language uses it rather
   // than the feed's English spelling ('Montreal' on a French board).
   if (code && langOverride && langOverride !== 'en') {
@@ -26313,7 +26313,7 @@ function cityCode(iata, overrideCity, langOverride) {
 }
 
 // TL() returns current rotation language only.
-// v23960 — a key that is not in LS falls through to the one store
+// v23970 — a key that is not in LS falls through to the one store
 // (board-strings.js), where every new word lives; LS is frozen. A key that is
 // in neither gives '' — never the key itself, which put 'greenKey' and
 // 'petFriendly' on an Accor badge and made every `TL(k) || 'fallback'` dead.
@@ -26340,7 +26340,7 @@ const SL = k => {
   return BoardStrings.bs(k, lang);
 };
 // Pair variants for the web cards — the board's own one or two languages
-// joined with ' · '. v23960: these were English · French by construction, so a
+// joined with ' · '. v23970: these were English · French by construction, so a
 // phone set to Japanese (one language, fids_mobile_lang) read 'On time · À
 // l'heure'. They now follow `langs` like every other pair.
 function _legacyPair(table, k) {
@@ -26358,7 +26358,7 @@ const SLbi = k => _legacyPair(SS, k);
 // One legacy-table word in a given language: what a direct LS[k][l] read did,
 // through the helper, falling through to the store.
 const TLin = (k, l) => { const o = LS[k]; if (o) return o[l] || ''; return BoardStrings.bs(k, l); };
-// v23960 — the qualifier on a registration or type taken from the aircraft's
+// v23970 — the qualifier on a registration or type taken from the aircraft's
 // usual rotation rather than confirmed: 'C-GWJO expected | prévu'. It was
 // written into markup six times as English plus French or Spanish, picked by
 // the airport's DEFAULT second language, never the board's own.
@@ -26486,7 +26486,7 @@ function toggleLang(l) {
     while (langs.length > BoardStrings.LANGS.length) langs.shift();
     if (langIdx >= langs.length) langIdx = 0;
   }
-  // v23960 — the Québec rule holds through a toggle too: French leads at a
+  // v23970 — the Québec rule holds through a toggle too: French leads at a
   // French-first airport whenever it is selected (BoardStrings.frenchFirst).
   try { langs = BoardStrings.frenchFirst(langs, (document.getElementById('apSel') || {}).value || ''); } catch (eF) {}
   lang = langs[langIdx];
@@ -26501,7 +26501,7 @@ function toggleLang(l) {
   } catch (e) {}
   _applyBoardLangs();
 }
-// v23960 — everything that follows a change of the board's languages, in one
+// v23970 — everything that follows a change of the board's languages, in one
 // place: toggleLang (the operator's button) runs it, and so does
 // setBoardLangs (the rendered language check, tests/render/words.mjs, which
 // puts every board into each of the nine languages in turn).
@@ -26517,7 +26517,7 @@ function _applyBoardLangs() {
   updateLangButtons();
   updateTicker();
   startLangRotation();
-  // v23960 — static page words (data-i18n) follow the new languages too
+  // v23970 — static page words (data-i18n) follow the new languages too
   try { BoardStrings.applyStatic(); } catch (eS) {}
   const testBtn = document.getElementById('testFlightBtn');
   if (testBtn) testBtn.textContent = TL('addFlight');
@@ -26537,7 +26537,7 @@ function _applyBoardLangs() {
   try {
     var _wxC = document.getElementById('gateAdCarousel');
     if (_wxC && _wxC.querySelector('.wxcard-wrap') && typeof _renderWxCard === 'function') _renderWxCard(_wxC);
-    // v23960 — and so does the slide on screen: a text ad, the Welcome slide
+    // v23970 — and so does the slide on screen: a text ad, the Welcome slide
     // or the map takeover was painted in the languages of the moment it
     // arrived and kept them until its dwell ran out (measured: 'Welcome
     // aboard | Bienvenue à bord' on a German gate). It is painted again in
@@ -26581,7 +26581,7 @@ function updateLangButtons() {
 function _fidsTitleCase(s) {
   return String(s == null ? '' : s).replace(/(^|[\s\-'’])([a-zà-ÿ])/g, function (m, p, c) { return p + c.toUpperCase(); });
 }
-// v23960 — Title Case is English's convention, not French, Spanish, Italian,
+// v23970 — Title Case is English's convention, not French, Spanish, Italian,
 // Portuguese or German typography ('À L'Heure', 'Das Boarding Beginnt In
 // Kürze'): a word in another language keeps the capitals the store gives it,
 // with only its first letter raised.
@@ -26696,7 +26696,7 @@ var _GATE_LBL = {
   // air until v23530), and its text is "Your Aircraft Is Arriving From", which
   // is a sentence about a state. This is a label about a panel.
   yourAircraftHdr: { en:'Your Aircraft', fr:'Votre avion', es:'Su avión', de:'Ihr Flugzeug', it:'Il tuo aereo', pt:'Seu avião', ja:'\u3054\u642d\u4e57\u6a5f', zh:'您的飞机', ar:'طائرتك' },
-  // v23960 — preboard, genboard, pdReserve, pdClassic, avidTraveller, photoId
+  // v23970 — preboard, genboard, pdReserve, pdClassic, avidTraveller, photoId
   // and preboardList moved to the one store (board-strings.js), each with
   // where its words come from ($src): Porter's own names in English and
   // French, careful translations marked as such in the other languages.
@@ -26711,7 +26711,7 @@ var _GATE_LBL = {
   // 6 was. Same values as LS, here where _gateLbl looks. 'zone' is the
   // singular for a Next line naming one zone.
   groupLabel:{ en:'Group', fr:'Groupe', es:'Grupo', de:'Gruppe', it:'Gruppo', pt:'Grupo', ja:'グループ', zh:'组', ar:'المجموعة' },
-  // v23960 — the cabin names (cabinBiz … cabinUnitedEcon, v23771) moved to the
+  // v23970 — the cabin names (cabinBiz … cabinUnitedEcon, v23771) moved to the
   // one store with their sources, beside the pre-boarding words.
   zone:      { en:'Zone', fr:'Zone', es:'Zona', de:'Zone', it:'Zona', pt:'Zona', ja:'ゾーン', zh:'区', ar:'المنطقة' },
   nextUp:    { en:'Next', fr:'Prochain', es:'Siguiente', de:'Nächste', it:'Prossimo', pt:'Próximo', ja:'次', zh:'下一个', ar:'التالي' },
@@ -26759,7 +26759,7 @@ var _GATE_LBL = {
 // get '17:35'. Used by the boarding screen's white strip, which shows the
 // same instant twice — once per board language — and would read as a mistake
 // if both halves used the same format.
-// v23960 — the convention per language now lives in BoardStrings.META
+// v23970 — the convention per language now lives in BoardStrings.META
 // (clock24), the one place a locale or hour12 is chosen. Arabic joined the
 // 24-hour languages: it was the one language left out of this list and the
 // baggage list below, so an Arabic half read 5:07pm beside a Japanese 17:07.
@@ -26812,7 +26812,7 @@ function _gateLblHalf(w, i) {
 // long for the biggest line on the panel or for a five-item list. This returns
 // ONE language from the same table the pairs come from, following the board's
 // own language rotation so each pass shows it in one of them.
-// v23960 — the French-first flag only REORDERS. It returned French whenever
+// v23970 — the French-first flag only REORDERS. It returned French whenever
 // the airport was in Québec, even on a board whose languages did not include
 // French; it now returns the first of the pair the board actually shows
 // (BoardStrings.pairLangs: French leads in Québec only when it is selected).
@@ -26835,7 +26835,7 @@ function _gateLbl1(key, frF) {
 }
 
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
-  // v23960 — _GATE_LBL is frozen; a new key lives in the one store
+  // v23970 — _GATE_LBL is frozen; a new key lives in the one store
   // (board-strings.js) and is found here by falling through. The languages
   // come from BoardStrings.pairLangs, the one picker every pair uses.
   var o = _GATE_LBL[key] || BoardStrings.entry(key);
@@ -26861,7 +26861,7 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
   // Existing callers that ignore the second argument are unaffected.
   // v23773 — and the language of the half (third argument), so a rule can
   // find the French half wherever the airport puts it.
-  // v23960 — each half carries its language (and an Arabic half its
+  // v23970 — each half carries its language (and an Arabic half its
   // direction), so a half holding a Latin city reads right to left and two
   // halves never reorder each other (BoardStrings.markHalf).
   if (typeof wrap === 'function') return parts.map(function (w, i) { return BoardStrings.markHalf(wrap(w, i, partLangs[i]), partLangs[i], key); }).join(sep || '');
@@ -27032,7 +27032,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23960';
+var FIDS_BUILD_TAG = 'v23970';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27292,7 +27292,7 @@ var _BIDSV3_ON = true; //
 })();
 
 
-// v23960 — the ticker lines live in the store (BoardStrings.LISTS.ticker and
+// v23970 — the ticker lines live in the store (BoardStrings.LISTS.ticker and
 // .bagsTicker), nine languages each. The pair is the board's own two
 // languages, French first in Québec, through BoardStrings.pairLangs.
 // The same lines as markup, each message marked with its language (and an
@@ -27720,7 +27720,7 @@ function render() {
   // Arrivals columns:   Airline | From     |         | Flight | Carousel | Time | Status
   // We rewrite the entire <thead> so column order matches the row template.
   document.getElementById('hdrBoard').innerHTML = _boardLabelBilingual(mode);
-  // v23960 — the table speaks the language the page is showing (`lang`)
+  // v23970 — the table speaks the language the page is showing (`lang`)
   try { var _ftL = document.getElementById('fidsTable'); if (_ftL && BoardStrings.isLang(lang)) _ftL.setAttribute('lang', lang); } catch (eL) {}
   // v2 banner: set body[data-fids-mode] so the plane icon flips down for
   // arrivals (CSS rotates the SVG 180deg when data-fids-mode="arr").
@@ -28385,7 +28385,7 @@ function render() {
     // later, so every slide (°C/°F, language, poll, page) flashed every row's
     // code and the history rows' text between two colours. See _fidsBoardInk.
     try { _fidsBoardInk(); } catch (e) {}
-    // v23960 — and no status is ever cut: on a board whose columns keep the
+    // v23970 — and no status is ever cut: on a board whose columns keep the
     // stylesheet's widths (no geometry pass), 'Embarquement' overflowed the
     // French status column to 'Embarqueme…'. Each status cell steps its own
     // size down until its word fits, whatever language the page is in.
@@ -28468,7 +28468,7 @@ function setState(which, show) {
         // The half that carries the code is built as nodes and set as text, so
         // there is no string for a URL to be markup in.
         if (_fidsAirportHasFeed(ap)) {
-          // v23960 — the board's own pair, from the store
+          // v23970 — the board's own pair, from the store
           el.innerHTML = BoardStrings.pair('noFlightsWindow', { iata: ap, upper: true })
             + '<div class="sub">' + BoardStrings.pair('noFlightsWindowSub', { iata: ap, upper: true }) + '</div>';
         } else {
@@ -29293,7 +29293,7 @@ function _heritageMarkBoard() {
     var car = HERITAGE_CARRIERS[code];
     var el = document.createElement('div');
     el.id = 'heritageStamp';
-    // v23960 — in the board's pair, from the store
+    // v23970 — in the board's pair, from the store
     var _hdL = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
     el.innerHTML = '<b>' + BoardStrings.pair('demoStamp', { langs: _hdL, upper: true, sep: ' · ' }) + '</b>'
       + '<span>' + car.name + ' · ' + car.era + ' · ' + BoardStrings.pair('notLiveFlight', { langs: _hdL, sep: ' / ' }) + '</span>';
@@ -32641,7 +32641,7 @@ async function fetchLive() {
       const p = document.getElementById('panelError');
       // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
       // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
-      // v23960 — the exception's own words ('both direction fetches failed')
+      // v23970 — the exception's own words ('both direction fetches failed')
       // are an operator's diagnosis in English, not a passenger's message:
       // they show only to a signed-in operator or with ?debug, in a line
       // marked data-operator. A passenger reads the store's message alone.
@@ -32818,7 +32818,7 @@ function applyAirportConfigToBoard(iata) {
   // means only these nine two-letter literals can ever enter, whatever the
   // URL says.
   //
-  // v23960 — ONE RESOLVER. The URL, saved, configured and default layers and
+  // v23970 — ONE RESOLVER. The URL, saved, configured and default layers and
   // the constant-matching above now live in BoardStrings.resolveLangs
   // (board-strings.js), which the boot loader and _restoreApLangs also call,
   // so the three can no longer disagree; it also applies the Québec rule
@@ -33574,7 +33574,7 @@ function loadDemo() {
 function _boardLabelBilingual(key) {
   var _k = (key === 'baggage') ? 'bagClaim' : (key === 'arr' ? 'arr' : 'dep');
   var o = (typeof LS !== 'undefined' && LS[_k]) || {};
-  // v23960 — the one chooser, French first in Québec like every other pair
+  // v23970 — the one chooser, French first in Québec like every other pair
   var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
   var out = [], seen = {};
   for (var i = 0; i < picked.length; i++) {
@@ -33640,7 +33640,7 @@ function _ocClockTime1(now, tz) {
   return BoardStrings.boardTime(now, tz).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
 }
 // Dual time '6:26PM | 18 h 26' — PLAIN text (used in textContent contexts too).
-// v23960 — each half in its own language's clock (BoardStrings.time): the
+// v23970 — each half in its own language's clock (BoardStrings.time): the
 // English 12-hour, the other 24-hour; on a board that does not lead in
 // English the 12-hour half is not there.
 function _ocClockTime(now, tz) {
@@ -33660,7 +33660,7 @@ function _ocClockDate(now, tz) {
   var eo = { weekday: 'long', month: 'long', day: 'numeric' };
   var wo = { weekday: 'long' }, dd = { day: 'numeric' }, mo = { month: 'long' };
   if (tz) { eo.timeZone = tz; wo.timeZone = tz; dd.timeZone = tz; mo.timeZone = tz; }
-  // v23960 — the locale is the store's (BoardStrings.META), not a private map
+  // v23970 — the locale is the store's (BoardStrings.META), not a private map
   var _loc = function (l) { return (BoardStrings.META[l] || BoardStrings.META.en).intl; };
   function _one(l) {
     try {
@@ -33673,7 +33673,7 @@ function _ocClockDate(now, tz) {
       return d.charAt(0).toUpperCase() + d.slice(1);
     } catch (e) { return now.toLocaleDateString(_loc('en'), eo); }
   }
-  // v23960 — the one chooser (BoardStrings.pairLangs)
+  // v23970 — the one chooser (BoardStrings.pairLangs)
   var picked = BoardStrings.pairLangs(langs, (document.getElementById('apSel') || {}).value || '');
   var out = [], seen = {};
   for (var i = 0; i < picked.length && out.length < 2; i++) {
@@ -34567,7 +34567,7 @@ function mkCardLogo(code, airlineName) {
 }
 
 function renderMobile() {
-  // v23960 — a phone shows one language: the phone list is in it
+  // v23970 — a phone shows one language: the phone list is in it
   try { var _mv = document.getElementById('mobileView'); if (_mv && BoardStrings.isLang(lang)) _mv.setAttribute('lang', lang); } catch (eL) {}
   const nowTs   = Date.now();
   const isDep   = mobileMode === 'dep';
@@ -38276,7 +38276,7 @@ function _gateMapNote(res) {
     var tbl = (typeof _GATE_LBL !== 'undefined') ? _GATE_LBL[res.leg === 'out' ? 'to' : 'from'] : null;
     if (!tbl) return '';
     var ap = String(window._gateIata || '').toUpperCase();
-    var picked = BoardStrings.pairLangs(langs, ap);   // v23960 — the one chooser
+    var picked = BoardStrings.pairLangs(langs, ap);   // v23970 — the one chooser
     var tz = '';
     try { tz = (typeof AP !== 'undefined' && AP[ap] && AP[ap].tz) || ''; } catch (e) { tz = ''; }
     var parts = [], seen = {};
@@ -38296,7 +38296,7 @@ function _gateMapNote(res) {
       var s = w + ' ' + _gateMapCity(res.other, picked[i]) + (tm ? ' · ' + tm : '');
       if (seen[s.toLowerCase()]) continue;
       seen[s.toLowerCase()] = 1;
-      // v23960 — each half is markup marked with its language (and an Arabic
+      // v23970 — each half is markup marked with its language (and an Arabic
       // one its direction): one plain line under lang="en" drew 'إلى Toronto
       // · 18:15' left to right, so an Arabic reader met the time, then the
       // city, then 'to'.
@@ -42768,7 +42768,7 @@ var AD_I18N = {
   'Language':                         { fr:'Langue', es:'Idioma', de:'Sprache', it:'Lingua', pt:'Idioma', ja:'言語', zh:'语言', ar:'اللغة' },
   'Time Zone':                        { fr:'Fuseau horaire', es:'Zona horaria', de:'Zeitzone', it:'Fuso orario', pt:'Fuso horário', ja:'時間帯', zh:'时区', ar:'المنطقة الزمنية' },
   'Typical Temp':                     { fr:'Temp. typique', es:'Temp. típica', de:'Typ. Temperatur', it:'Temp. tipica', pt:'Temp. típica', ja:'平均気温', zh:'平均气温', ar:'درجة الحرارة' },
-  // v23960 — the three ad lines that had no row (Porter, British Airways).
+  // v23970 — the three ad lines that had no row (Porter, British Airways).
   // Careful translations: Porter's and BA's own wording in these languages
   // is not on file. The sentence pattern copies the rows above.
   'Elevated economy \u00b7 Complimentary snacks & beverages on board': { fr:'Économie rehaussée · Collations et boissons offertes à bord', es:'Clase económica superior · Snacks y bebidas de cortesía a bordo', de:'Gehobene Economy · Kostenlose Snacks & Getränke an Bord', it:'Economy di livello superiore · Snack e bevande offerti a bordo', pt:'Classe econômica superior · Snacks e bebidas de cortesia a bordo', ja:'ワンランク上のエコノミー · 機内で軽食と飲み物を無料提供', zh:'升级经济舱 · 机上免费小食和饮料', ar:'درجة اقتصادية مميّزة · وجبات خفيفة ومشروبات مجانية على متن الطائرة' },
@@ -43393,7 +43393,7 @@ function buildGateAdHtml(ad) {
     // a separate source from the list aggregation and still returns it for
     // hotels that don't include it (Fairmont). No card advertises breakfast.
     var _noBkfst = function (arr) { return (arr || []).filter(function (x) { return !/breakfast|d[ée]jeuner/i.test(String(x)); }); };
-    // v23960 — and only lines in the language being shown: the language-less
+    // v23970 — and only lines in the language being shown: the language-less
     // cache entry, or Accor's English answer to a request in another
     // language, is not printed under a Japanese or German heading.
     var _inCur = function (arr) { return (arr || []).filter(function (x) { return BoardStrings.looksLike(x, _curLang); }); };
@@ -44419,7 +44419,7 @@ function buildAccorAdOnlyV6(ad) {
   // One row per FACT, both languages inside it. A second .axr-loc-line per
   // language would be read by the stylesheet as the next fact and get the
   // city-centre glyph, so the languages share the row and the pin.
-  // v23960 — each language's line carries its language (and an Arabic one
+  // v23970 — each language's line carries its language (and an Arabic one
   // its direction): '1 km من وسط المدينة' read left to right under lang="en".
   function _locRow(t1, t2){
     return '<div class="axr-loc-line"><span class="axr-loc-pin">◉</span><span' + _biAttr(_lgD) + '>' + esc(t1) + '</span>'
@@ -44605,7 +44605,7 @@ function buildAccorAdOnlyV6(ad) {
   }
   var _blurb  = _mkBlurb(ad);
   var _blurbB = _ad2 ? _mkBlurb(_ad2) : '';
-  // v23960 — a feed's text is shown in a language only when it IS that
+  // v23970 — a feed's text is shown in a language only when it IS that
   // language (BoardStrings.looksLike): Accor answers a Japanese or Arabic
   // request with its English copy, which then sat in the Japanese column
   // ('Welcome to a new era of luxury.' on a Japanese gate, marked lang="ja").
@@ -45883,7 +45883,7 @@ function renderGateAd(index) {
 // into an ad-like object so it can ride the regular hotel rendering path
 // (logo on the left, photo in the middle). Returns null if we can't
 // resolve a usable logo file for the brand.
-// v23960 — HOTEL BRAND NORMALISATION, ONE COPY. A hotel feed's brand field
+// v23970 — HOTEL BRAND NORMALISATION, ONE COPY. A hotel feed's brand field
 // often names the parent group (Hilton, Marriott, IHG, Accor, Ennismore) or a
 // long form; the property's own name says which brand it is. Each rule is
 // [brand as sent, test on the property's name (null: always), brand to use],
@@ -46484,7 +46484,7 @@ function _buildGateAdSlideList() {
         headline: (function () {
           // v23768 — the halves and the separator are addressable, so the
           // separator can be dropped when the pair stacks onto two rows.
-          // v23960 — the board's pair, French first in Québec, from the store.
+          // v23970 — the board's pair, French first in Québec, from the store.
           return BoardStrings.pair('welcomeAboard', { iata: (document.getElementById('apSel') || {}).value || '',
             cls: 'g8-pair-h', sep: '<span class="g8-pair-sep"> · </span>' });
         })(),
@@ -47926,7 +47926,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
 })();
 
 
-/* v23960 — the V9 "bilingual label repair" pass is gone. Every second it swept
+/* v23970 — the V9 "bilingual label repair" pass is gone. Every second it swept
    the page and rewrote any leaf whose text was exactly an English label
    ('Today', 'Tomorrow', 'Aircraft type'…) into the rotating language, from an
    English/French-only map: it printed "Demain | Demain" on a French-first gate
@@ -48012,7 +48012,7 @@ window.ALLIANCE_SIZE_OVERRIDE_V21864 = {
   _ocEvery(run,1000);
 })();
 
-/* v23960 — the V21 Accor "hard-lock" is gone. It looked every half second for
+/* v23970 — the V21 Accor "hard-lock" is gone. It looked every half second for
    .ad-accor6 markup that no Accor card has produced since the V6 cards, and
    on finding it replaced a long description with an English or French line
    ("A refined stay close to your destination."), whatever the board's
@@ -48501,7 +48501,7 @@ function _renderBigCraft(el, ctx) {
   var stShow = (function () {
     if (!ss) return inb.status || '—';
     var _cap = _fidsTitleCaseIn;
-    var picked = BoardStrings.pairLangs(langs, String(window._gateIata || ''));   // v23960
+    var picked = BoardStrings.pairLangs(langs, String(window._gateIata || ''));   // v23970
     var seen = Object.create(null), parts = [];
     for (var i = 0; i < picked.length && parts.length < 2; i++) {
       var w = ss[picked[i]];
@@ -49155,7 +49155,7 @@ var _WXLBL = {
 // It is scoped to airports the carrier actually served. A heritage card for
 // an Atlantic Canada feeder at a European gate would be a non sequitur, and
 // worse, would read as a data error.
-// v23960 — each mark's caption lives in the store as 'heritage:<key>', in all
+// v23970 — each mark's caption lives in the store as 'heritage:<key>', in all
 // nine languages (board-strings.js); the records carry the art and facts only.
 var HERITAGE_MARKS = [
   {
@@ -49321,7 +49321,7 @@ function _renderHeritageCard(el) {
     };
     // One line per language of the board's pair, French first at the
     // French-first airports — the same order every other pair on this board
-    // uses. v23960 — the kicker and the captions come from the store in all
+    // uses. v23970 — the kicker and the captions come from the store in all
     // nine languages; they were English and French whatever the board spoke.
     var _hLangs = BoardStrings.pairLangs(langs, frF);
     var _capKey = 'heritage:' + mark.key;
@@ -49808,7 +49808,7 @@ function _wxIntroHasGlyphs(s) {
 function _wxIntroPaintHtml(frFirst) {
   var rows = _WX_INTRO_LINES.filter(function (r) { return _wxIntroHasGlyphs(r.t); });
   if (!rows.length) return '';
-  var picked = BoardStrings.pairLangs(langs, !!frFirst);   // v23960 — the one chooser
+  var picked = BoardStrings.pairLangs(langs, !!frFirst);   // v23970 — the one chooser
   var byLang = {}; rows.forEach(function (r) { byLang[r.l] = r; });
   var hero = [], seen = {};
   picked.forEach(function (l) { var r = byLang[l]; if (r && !seen[l]) { seen[l] = 1; hero.push(r); } });
@@ -50031,14 +50031,14 @@ function _renderWxCard(el) {
     // condition pair, day/month name arrays, _mlbl(en,fr) — one more retired
     // language picker. Everything now resolves from `langs` (≤2, de-duped,
     // fr-first at the French-first airports) like the rest of the build.
-    var _wxLangs = BoardStrings.pairLangs(langs, _wxFrF);   // v23960 — the one chooser
+    var _wxLangs = BoardStrings.pairLangs(langs, _wxFrF);   // v23970 — the one chooser
     var _wxSep = ' <span class="v2-rc-fi-sep">|</span> ';
     var _wxPair = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
         var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
-        // v23960 — each word carries its language (an Arabic condition read
+        // v23970 — each word carries its language (an Arabic condition read
         // left to right under lang="en", a Chinese one took Japanese glyphs)
         seen[String(t).toLowerCase()] = 1; w.push(BoardStrings.markHalf(t, _wxLangs[_wi]));
       }
@@ -50070,7 +50070,7 @@ function _renderWxCard(el) {
     // Day cells keep the approved layout — first language's day + date
     // ABOVE the icon, second language's BELOW — via each language's own
     // locale (single language selected → no bottom line).
-    // v23960 — the store's locale for each language (BoardStrings.META)
+    // v23970 — the store's locale for each language (BoardStrings.META)
     var _WX_LOCALE = function (lg) { return (BoardStrings.META[lg] || BoardStrings.META.en).intl; };
     // The three-letter day as TEXT — what the chips on the days screen use
     // directly, and what _dayLine wraps for a tile. Kept as text so no caller
@@ -50698,7 +50698,7 @@ function _renderWxCard(el) {
     // rather than 'weather by': it is MET's open DATA the boards render, the
     // week's highs and lows are derived from it (CC BY asks that be indicated),
     // and nothing implies MET endorses or produced these boards.
-    // v23960 — the credit in the card's own pair (it was English in every language)
+    // v23970 — the credit in the card's own pair (it was English in every language)
     var _wxCredit = '<div class="wxc-credit">' + BoardStrings.pair('wxCredit', { frFirst: _wxFrF, sep: ' <span class="wxc-credit-sep">|</span> ' }) + '</div>';
     // v23724 — THE BACKGROUND MOVES.
     //

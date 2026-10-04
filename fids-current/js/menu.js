@@ -2308,7 +2308,7 @@ function _cuApplyFont(fontKey) {
     if (delBtn) delBtn.style.display = (fontKey && fontKey.indexOf('custom:') === 0) ? '' : 'none';
   } catch (e) {}
   if (fontKey && stacks[fontKey]) {
-    // v23960 — with the Japanese, Chinese and Arabic web fonts (board-strings.js).
+    // v23970 — with the Japanese, Chinese and Arabic web fonts (board-strings.js).
     var stack = (typeof BoardStrings !== 'undefined') ? BoardStrings.withScripts(stacks[fontKey]) : stacks[fontKey];
     // 1) Set the token (clean approach for tokenized rules)
     st.setProperty('--font-primary', stack, 'important');

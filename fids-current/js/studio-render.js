@@ -10,7 +10,7 @@
   'use strict';
 
   // ── PASSENGER WORDS ─────────────────────────────────────────────────────
-  // v23960 — every word a Studio screen shows comes from the store, in the
+  // v23970 — every word a Studio screen shows comes from the store, in the
   // language the player is showing (context.language). Statuses travel as
   // the canonical English codes studio-data.js writes (the scene rules
   // compare them) and are put into words only here, at the last moment.
@@ -234,7 +234,7 @@
   }
 
   function advertisementContent(module, context) {
-    // v23960 — an ad with no copy yet greets in the screen's language; the
+    // v23970 — an ad with no copy yet greets in the screen's language; the
     // English sample lines it carried showed on any screen left unedited.
     const headline = module.props.headline ? resolveTokens(module.props.headline, context) : escapeHTML(T('greetBoard', context));
     const body = module.props.body ? resolveTokens(module.props.body, context) : '';
@@ -486,7 +486,7 @@
   }
 
   function emergencyOverlayHTML(context) {
-    // v23960 — the passenger's words from the store; the operator's notes
+    // v23970 — the passenger's words from the store; the operator's notes
     // (every display taken over, paging active) are for the Studio, not the
     // screen.
     return '<div class="cm-emergency"><div><small>' + escapeHTML(TU('emergencyTitle', context)) + '</small><h1>' + escapeHTML(T('followStaff', context)) + '</h1><p>' +

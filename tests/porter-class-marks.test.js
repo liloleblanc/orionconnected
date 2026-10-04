@@ -50,7 +50,7 @@ test('every class mark exists on disk', () => {
 function renderedMarks() {
   const tiers = [...SRC.matchAll(/_pdMark\('(\w+)'/g)].map((m) => m[1]);
   assert.ok(tiers.length >= 4, `expected the four elite tiers, found ${tiers.length}`);
-  // v23960 — the set lives inside the one mark helper (_pdMark) as FR_ART
+  // v23970 — the set lives inside the one mark helper (_pdMark) as FR_ART
   const frm = /FR_ART = (\{[^}]*\})/.exec(SRC);
   assert.ok(frm, 'the set of tiers with French art must be declared');
   const fr = new Function('return ' + frm[1] + ';')();

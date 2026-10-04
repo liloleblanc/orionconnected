@@ -235,7 +235,7 @@ test('TL()/SL(): a key outside the legacy table comes from the store; a missing 
   }
 });
 
-// ── v23960 (second pass) ──────────────────────────────────────────────────
+// ── v23970 (second pass) ──────────────────────────────────────────────────
 
 test('the store is frozen: a run-time write changes nothing', () => {
   const deep = (o, path) => {

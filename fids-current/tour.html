@@ -9,7 +9,7 @@
   <title>Orion Airport Tour</title>
   <link rel="stylesheet" href="css/airport-fonts.css">
   <!-- The one store for passenger words and times (board-strings.js). -->
-  <script src="js/board-strings.js?v=23960"></script>
+  <script src="js/board-strings.js?v=23970"></script>
   <style>
     html, body { margin: 0; height: 100%; width: 100%; overflow: hidden;
                  background: #0b1a2b; cursor: none; }
@@ -329,7 +329,7 @@
       // need it; read it here for the same reason.
       var cardLangs = null;
       try {
-        // v23960 — read by the boards' own resolver (board-strings.js), so the
+        // v23970 — read by the boards' own resolver (board-strings.js), so the
         // card and the board behind it accept exactly the same list.
         var _cl = BoardStrings.resolveLangs({ search: String(location.search || '') });
         if (_cl.source === 'url') cardLangs = _cl.langs;
@@ -386,7 +386,7 @@
         if (tz) {
           var t = '';
           try {
-            // v23960 — the clock every board reads, in the card's first language
+            // v23970 — the clock every board reads, in the card's first language
             t = BoardStrings.time(new Date(), pair[0], tz);
           } catch (e) { t = ''; }
           elTime.textContent = t;

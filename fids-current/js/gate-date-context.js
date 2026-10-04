@@ -92,7 +92,7 @@
     var zone = validTimeZone(options.timeZone);
     var now = options.nowTimestamp == null ? Date.now() : Number(options.nowTimestamp);
 
-    // v23960 — the boards' one clock (board-strings.js): 5:20pm in English,
+    // v23970 — the boards' one clock (board-strings.js): 5:20pm in English,
     // 17:20 in every other language; options.lang picks it.
     var time = Strings.time(instant, Strings.isLang(options.lang) ? options.lang : 'en', zone);
 

@@ -287,7 +287,7 @@ test('the hostname parse still has exactly one home', () => {
 
 // ── both languages, and the order of them ─────────────────────────────────
 
-// v23960 — the offer's words live in the one store (board-strings.js), in all
+// v23970 — the offer's words live in the one store (board-strings.js), in all
 // nine languages, and the airport's pair is picked by the boards' own
 // resolver; the page kept a private list of four Québec codes.
 const BS = require('../fids-current/js/board-strings.js');

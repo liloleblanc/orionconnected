@@ -3,7 +3,7 @@
 <head>
   <!-- The one store for passenger words (board-strings.js): the phone offer
        below reads it. docs/BOARD-LANGUAGES.md. -->
-  <script src="js/board-strings.js?v=23960"></script>
+  <script src="js/board-strings.js?v=23970"></script>
   <!-- v23803 — orionconnected.app IS THE APP.
        This page is the opener: it paints, then replaces itself with a board.
        On the .app domain it should hand over to the Airport Companion instead.
@@ -272,12 +272,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,700;0,9..40,900;1,9..40,400&display=swap">
-  <!-- v23960 — Japanese, Chinese and Arabic, so those board languages render on
+  <!-- v23970 — Japanese, Chinese and Arabic, so those board languages render on
        a host with no fonts of its own. The browser fetches only the slices a
        screen uses. -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;900&family=Noto+Sans+SC:wght@400;700;900&family=Noto+Sans+Arabic:wght@400;700;900&display=swap">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap">
-  <link rel="stylesheet" href="css/shared.css?v=23967">
+  <link rel="stylesheet" href="css/shared.css?v=23970">
   <link rel="stylesheet" href="css/font.css?v=1">
   <link rel="stylesheet" href="css/entry.css?v=35">
   <link rel="stylesheet" href="css/mobile.css?v=1">
@@ -307,7 +307,7 @@
     if (document.documentElement.getAttribute('data-oc-offer') !== '1') return;
     var o = window.__ocOffer || {};
 
-    // v23960 — the airport's own pair of languages, through the one store:
+    // v23970 — the airport's own pair of languages, through the one store:
     // French first at the Québec airports (BoardStrings.FR_FIRST — this page
     // kept its own list of four), Spanish where the airport speaks it, and
     // every word in all nine languages. The rule is about the airport, not

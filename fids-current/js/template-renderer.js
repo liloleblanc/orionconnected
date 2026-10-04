@@ -19,7 +19,7 @@
   'use strict';
 
   // ── PASSENGER WORDS ─────────────────────────────────────────────────────
-  // v23960 — a template runs on a board page, so its words come from the
+  // v23970 — a template runs on a board page, so its words come from the
   // board's own tables in the language the board is showing (`lang`): the
   // gate's labels (_GATE_LBL), the boards' (LS), then the one store
   // (board-strings.js). Statuses go through SL, as on the board.
@@ -164,7 +164,7 @@
       el.style.fontFamily = _fontStack(p.fontFamily);
       const tick = () => {
         const d = new Date();
-        // v23960 — the boards' clock in the board's language; the designer's
+        // v23970 — the boards' clock in the board's language; the designer's
         // 24h choice forces 24 hours, otherwise the language's own convention.
         el.textContent = BoardStrings.time(d, _lang(), undefined, {
           clock24: p.format === '24h' ? true : undefined,

@@ -1,6 +1,6 @@
 'use strict';
 
-// v23960 — NO STATUS IS EVER CUT.
+// v23970 — NO STATUS IS EVER CUT.
 //
 // On a French-only departures board, and at Montréal (fr,en), 'Embarquement'
 // was cut to 'Embarqueme…' in the status column. The column keeps the

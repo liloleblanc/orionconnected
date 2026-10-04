@@ -324,7 +324,7 @@ html[data-boot-ground="1"] #fidsLoader {
 
 
 /* ═══ THE NINE BOARD LANGUAGES — scripts, direction, line breaking ═════════
-   v23960. Every half of a pair carries its language (lang="…"), and an Arabic
+   v23970. Every half of a pair carries its language (lang="…"), and an Arabic
    half its direction (dir="rtl", which the browser isolates), so these rules
    reach exactly the words in that language. docs/BOARD-LANGUAGES.md.        */
 

@@ -100,7 +100,7 @@
     }).join('') || '<a href="index.html">Open the Studio →</a>';
   }
 
-  // v23960 — the clock and date in the language on screen, from the boards'
+  // v23970 — the clock and date in the language on screen, from the boards'
   // one clock (board-strings.js): 5:35pm in English, 17:35 in the others.
   function clockNow(language) {
     const timezone = documentModel && documentModel.airport.timezone;
@@ -205,7 +205,7 @@
     window._yqmCacheAircraftMerge = window._yqmCacheAircraftMerge || async function () {};
     pilotRouterPromise = new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = '../js/feed-router.js?v=23967';
+      script.src = '../js/feed-router.js?v=23970';
       script.async = true;
       script.addEventListener('load', function () {
         if (typeof window.adbFetch === 'function') resolve(window.adbFetch);

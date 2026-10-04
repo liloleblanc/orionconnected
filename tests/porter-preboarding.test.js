@@ -44,7 +44,7 @@ function build(preActive, lang) {
   // its status strip, the split lane row, and the base-tier mark on the general
   // side). They live beside it rather than inside it, so they have to be lifted
   // with it or the function throws on the first call.
-  // v23960 — and the tier marks moved into two shared helpers (_pdMark,
+  // v23970 — and the tier marks moved into two shared helpers (_pdMark,
   // _pdMarksRow), so the sign and the lanes panel draw one row.
   const helpers = ['_pdCabinHdr', '_pdLaneRow', '_pdClassicMark', '_pdMark', '_pdMarksRow'].map(lift).join('\n');
   const fn = new Function(
@@ -67,7 +67,7 @@ function build(preActive, lang) {
     // artwork picks its language off THIS flag, so with it pinned no test could
     // ever have caught a mark stuck in the wrong language.
     lang === 'fr',
-    // the sign's first language — the one its artwork follows (v23960)
+    // the sign's first language — the one its artwork follows (v23970)
     () => lang,
   );
   return fn('23–33', '12–22', preActive);
