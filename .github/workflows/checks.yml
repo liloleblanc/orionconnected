@@ -13,6 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # the board-languages ledger is compared with main's (it may only
+          # shrink), so the job needs main's history, not a shallow clone
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 20

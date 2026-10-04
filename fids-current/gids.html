@@ -478,7 +478,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 
 <!-- ─── FIDS BOARD ────────────────────────────────────────────────── -->
 <div id="fidsBoard">
-<div class="ctrl show">
+<div class="ctrl show" data-operator>
   <button class="btn btn-toggle" onclick="var p=document.getElementById(&#39;apPanel&#39;);p.classList.toggle(&#39;hidden&#39;);" id="btnAirport">✈ AIRPORT</button>
   <div class="screen-type-wrap">
     <label>DISPLAY:</label>
@@ -509,7 +509,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
   <span class="mode-badge live" id="modeBadge">LIVE</span>
   <div class="live-pill"><div class="live-dot" style="background: rgb(16, 185, 129);"></div><span id="liveLabel">LIVE</span></div>
 </div>
-<div id="apPanel" class="ap-panel hidden">
+<div id="apPanel" class="ap-panel hidden" data-operator>
   <div style="position:relative;display:inline-block;min-width:260px;">
     <input id="apSelInput" type="text" autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Search airport…" style="background:#27272a;color:#fff;border:1px solid #52525b;padding:5px 10px;
              font-size:13px;border-radius:4px;outline:none;width:100%;" oninput="apAutoSearch(this.value,&#39;ctrl&#39;)" onkeydown="apAutoKey(event,&#39;ctrl&#39;)" onfocus="this.select()">
@@ -524,7 +524,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 </div>
 
 <!-- ── GATE OVERRIDE PANEL ──────────────────────────────────── -->
-<div id="overridePanel" class="gate-override-panel">
+<div id="overridePanel" class="gate-override-panel" data-operator>
   <div class="gov-inner">
     <div style="display:flex;align-items:center;justify-content:space-between;">
       <span class="gov-title">⚙ Gate Screen Overrides <span id="govFlightTag" style="color:#fff;font-weight:700;"></span></span>
@@ -666,7 +666,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 <div id="baggageView" style="display: none;"></div>
 
 <!-- Login Modal -->
-<div id="loginModal" style="display: none; position: fixed; inset: 0px; z-index: 9500; background: rgba(0, 0, 0, 0.85); align-items: center; justify-content: center;">
+<div id="loginModal" data-operator style="display: none; position: fixed; inset: 0px; z-index: 9500; background: rgba(0, 0, 0, 0.85); align-items: center; justify-content: center;">
   <div style="background:#1e1e21;border:2px solid #eab308;border-radius:0;padding:40px;width:420px;max-width:94vw;color:#fff;text-align:center;">
     <div style="font-size:13px;font-weight:700;letter-spacing:6px;color:rgba(255,255,255,0.25);margin-bottom:12px;">✈ FIDS</div>
     <div style="font-size:24px;font-weight:900;letter-spacing:4px;color:#eab308;margin-bottom:6px;">LIVE ACCESS</div>
@@ -690,7 +690,7 @@ v23166 — THE OLD CONSOLE-THEME INJECTOR IS REMOVED, NOT PATCHED.
 </div>
 
 <!-- Test Flight Modal -->
-<div id="testFlightModal" style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
+<div id="testFlightModal" data-operator style="display:none;position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;">
   <div style="background:#1e1e21;border:1px solid #3f3f46;border-radius:4px;padding:32px;width:480px;max-width:94vw;color:#fff;">
     <div style="font-size:18px;font-weight:900;letter-spacing:3px;color:#eab308;margin-bottom:20px;">✚ TEST FLIGHT / VOL TEST</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">

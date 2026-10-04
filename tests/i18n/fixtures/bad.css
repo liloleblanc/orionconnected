@@ -1,0 +1,4 @@
+/* Self-test fixture */
+.lbl::before { content: "Aircraft"; }
+.ok::before { content: "\2022"; }
+.attr::after { content: attr(data-baremsg); }
