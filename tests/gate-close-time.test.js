@@ -100,7 +100,7 @@ function engine(langs) {
 const DEP = Date.parse('2026-10-04T21:15:00Z');
 const TZ = 'America/Moncton';
 const row = (o) => Object.assign({ flight: 'AC1987', airline: 'AC', status: 'ontime', _sortTs: DEP, _locIata: 'YYZ', time: '18:15' }, o || {});
-const text = (html) => [...String(html).matchAll(/<span class="v2-fi-close-w"[^>]*>([^<]*)<\/span>/g)].map((m) => m[1].replace(/&amp;/g, '&').replace(/&#39;/g, "'").replace(/\u00a0/g, ' '));
+const text = (html) => [...String(html).matchAll(/<span class="v2-fi-close-w"[^>]*>([^<]*)<\/span>/g)].map((m) => m[1].replace(/\u00a0/g, ' '));
 
 // ════════════════════════════════════════════════════════════════════════════
 // (1) THE GATE-CLOSE TIME
@@ -119,7 +119,9 @@ test('(1) every airline\'s minutes are the ones it publishes, in its own word, e
     assert.equal(p.min, min, code);
     assert.equal(p.kind, kind, code);
     assert.ok(Wd[kind] && L[Wd[kind].card] && L[Wd[kind].ticker], code + ': its kind has its words in _GATE_LBL');
-    assert.match(p.src, new RegExp('^https://(www\\.)?' + host.replace(/\./g, '\\.') + '/'), code + ' is read on the airline\'s own site');
+    const u = new URL(p.src);
+    assert.equal(u.protocol, 'https:', code);
+    assert.ok(u.hostname === host || u.hostname === 'www.' + host, code + ' is read on the airline\'s own site: ' + u.hostname);
     assert.match(p.checked, /^\d{4}-\d{2}-\d{2}$/, code + ' carries the date it was checked');
   }
   // Porter's 10 is its Conditions of Carriage ("Boarding Gate Closes 10 minutes").
