@@ -364,3 +364,34 @@ test('the caption stays one row and writes its states as classes', () => {
   assert.match(CORE, /var _opByLbl = _gateLbl\('operatedBy', _frF8,/);
   assert.doesNotMatch(CORE, /v2-rc-lp-banner|_rcBanner|_rcInboundShelf/, 'v23934\'s banner and sections are gone');
 });
+
+test('an inbound line draws an accented capital whole: the lines and their row do not clip', () => {
+  // v23926's 1.04 leading under overflow:hidden cut the top of 'Î' flat at the
+  // line's box (27px of type over a 23px line at 1680x1050). v23934 fixed it;
+  // the fix outlives that design.
+  for (const tail of [
+    '> .v2-rc-shelf-fi .v2-fi-row',
+    '> .v2-rc-shelf-fi .v2-fi-textcol',
+    '> .v2-rc-shelf-fi .v2-fi-value > :is(.v2-fi-mline1, .v2-fi-mline2, .v2-fi-mline3)',
+  ]) {
+    const body = ruleFor(tail);
+    assert.match(body, /overflow: visible !important;/, tail + ' must not clip its own type');
+    assert.match(body, /text-overflow: clip !important;/, tail + ' takes no ellipsis');
+  }
+  // The rule outweighs the rules that clip: the v23246 line rule and
+  // gate-display.css's row and text column.
+  const mlineClip = CSS.indexOf('.g8-wrap .gad-map-col-v2 .v2-fi-mline1 {');
+  assert.ok(mlineClip > 0 && mlineClip < AT, 'the old clipping rule on the line comes before the block');
+  assert.match(GATE, /\.v2-fi-row \.v2-fi-textcol \{[^}]*overflow: hidden !important;/);
+  // Nothing spills instead: the fitter still holds every line inside the
+  // card's width, and the panel still clips at its own edge.
+  assert.match(CORE, /for \(var _fit = 0; _fit < 3; _fit\+\+\) \{\s*var _over = 1;\s*lines\.forEach\(function \(ln\) \{ var w = _measure\(ln\); if \(w > availW\) _over = Math\.max\(_over, w \/ availW\); \}\);/);
+  const panel = CSS.slice(CSS.indexOf('v23926 — THE RIGHT COLUMN IS TWO PANELS'), AT);
+  const shelfRule = rules(panel.replace(/\/\*[\s\S]*?\*\//g, ''))
+    .filter((r) => r.sels.some((s) => s.endsWith('.gad-map-col-v2 > .v2-rc-shelf-fi')))
+    .map((r) => r.body).join('\n');
+  assert.match(shelfRule, /overflow: hidden !important;/, 'the panel clips at its edge');
+  // The board's own names that need it, French first at YQB and YUL.
+  assert.match(CORE, new RegExp(reEsc("YGR:'ÎLES-DE-LA-MADELEINE'")));
+  assert.match(CORE, new RegExp(reEsc("EDI:'ÉDIMBOURG'")));
+});
