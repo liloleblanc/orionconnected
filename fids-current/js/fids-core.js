@@ -2835,6 +2835,14 @@ function applyCodeAccents() {
       var bg = _caBgBehind(el);
       var ink = _caParse(getComputedStyle(el.parentElement || el).color) || null;
       var rgb = _caFit(accent, bg, ink);
+      // v23937 — on the lower right panel a code is never a status colour
+      // (see _gateCodeInk, which applies the same rule to the colour it
+      // lifts): Flair's lime is the On time green's family, Air Canada's red
+      // the Cancelled red's. Such a code takes the area's white type.
+      if (typeof _rc2StatusLike === 'function' && el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-fi')
+          && _rc2StatusLike('#' + rgb.map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16); return h.length < 2 ? '0' + h : h; }).join(''))) {
+        rgb = [255, 255, 255];
+      }
       var css = 'rgb(' + rgb[0] + ',' + rgb[1] + ',' + rgb[2] + ')';
       if (el.getAttribute('data-ca') !== css) {
         el.style.setProperty('color', css, 'important');
@@ -5596,6 +5604,16 @@ function _opbyContrastFix(root) {
       var bg = 'rgb(' + Math.round(acc.r) + ',' + Math.round(acc.g) + ',' + Math.round(acc.b) + ')';
       var dark = layers.length ? ((0.2126 * acc.r + 0.7152 * acc.g + 0.0722 * acc.b) < 140) : false;
       var pair = OPBY_WORDMARKS_THEMED[op];
+      // v23937 — A MARK WITH NO HALF FOR THIS GROUND, ON THE LOWER PANEL'S
+      // COLOURED BAR. The caption bar is the carrier's first colour now
+      // (_rc2Pair), and an operator that publishes no light-ground/dark-ground
+      // pair keeps its art as drawn (below): Jazz's red lettering on Air
+      // Canada's red bar would vanish. The mark is never recoloured; it gets a
+      // small white mount instead (display-overrides.css, the v23937 block),
+      // only on a dark bar and only for art not drawn for one (a white or
+      // light file needs none).
+      var _mount = !!(_rcG2 && !pair && dark && !/white|-light|monochrome/i.test(im.getAttribute('src') || ''));
+      if (_mount !== im.classList.contains('v2-rc-opby-mount')) im.classList.toggle('v2-rc-opby-mount', _mount);
       // v23332 — INLINE !important, OR NOTHING THIS PASS DOES EVER APPLIES.
       // display-overrides.css carries the v23206 rule for the caption strip
       // ('.v2-rc-acb-cap .v2-rc-opby-logo { filter: none !important }' — the
@@ -12456,7 +12474,13 @@ function _buildV2MapCol(ctx, vars) {
       // out on the kiosks, so the state is written on the band itself. Without
       // it the pending words were laid over the operator's label and mark
       // (seen on YHZ gate 58, a PAL-operated Air Canada flight).
-      var _capCls = 'v2-rc-acb-cap' + (_acKnown ? '' : ' is-pending') + (_opByVal ? ' has-op' : '');
+      var _capCls = 'v2-rc-acb-cap' + (_acKnown ? '' : ' is-pending') + (_opByVal ? ' has-op' : '')
+        // v23937 — and two more states the two-colour block lays out by: a
+        // registration beside the model (the separator is in the value), and
+        // an operator whose wordmark is far wider than it is tall (PAL 6.2:1,
+        // SkyWest 4.3:1, Encore 4.25:1), which takes its own row layout.
+        + (_acTypeVal && _acTypeVal.indexOf('v2-rc-acb-sep') !== -1 ? ' has-reg' : '')
+        + (_opByVal && /^(PB|PVL|SP|OO|SKW|WR|WEN)$/.test(String(_opCode || '').toUpperCase()) ? ' has-widemark' : '');
       // The reserved aircraft area should remain an intentional branded panel
       // while a lookup finishes. Never guess a model; hold the airline mark in
       // the space instead of floating a raw "image pending" warning over it.
@@ -15738,6 +15762,12 @@ function uxgGateHtml(ctx) {
          })(_bannerSpec)
        // v23926 — what the lower right panel's type sits on (see above).
        + ';--rc-ground-ink:' + _gateLowerInkGround
+       // v23937 — the lower right panel's two colours (_rc2Pair): the caption
+       // bar, the type on it, and the Your Aircraft area under it.
+       + (function () {
+           var p = _rc2Pair(airlineCode);
+           return ';--rc2-a:' + p.a + ';--rc2-a-ink:' + p.ink + ';--rc2-b:' + p.b;
+         })()
        // WAS: color-mix(accent 42%, #0a1f12). Darkening an accent by mixing it
        // toward black IS brown when the accent is warm — Southwest gold
        // #F9B612 came out #6e5e12 and Sunwing amber #F7941D came out #6e5017,
@@ -17402,6 +17432,195 @@ function _rcLowerGround(el) {
     return [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
   } catch (e) { return null; }
 }
+// v23937 — THE LOWER RIGHT PANEL IN THE AIRLINE'S OWN TWO COLOURS.
+// The gate screen's lower right panel (the aircraft picture, its one-row
+// caption, the Your Aircraft lines) is painted in two of the carrier's own
+// colours: the caption bar across the foot of the picture in the first (the
+// brighter one, `a`, with the ink `ink` for every word on it), and the area
+// under it, which holds the carrier's orb, the title and the inbound lines,
+// in the second (the darker one, `b`, white words and the status words in
+// their status colours). display-overrides.css (the v23937 block) paints
+// them from the custom properties uxgGateHtml writes on .g8-wrap
+// (--rc2-a, --rc2-a-ink, --rc2-b), and publishes each one as the
+// --rc-ground-ink of the part it paints, so the ink passes (_opbyContrastFix
+// for the operator's mark on the bar, _gateCodeInk for the codes in the
+// lines) read the colour the type actually sits on.
+//
+// A STATUS COLOUR BELONGS TO THE STATUS WORDS ONLY: amber is Delayed, red is
+// Cancelled, green is On time. No colour of the panel may read as one. So a
+// carrier's brand colour that sits in one of those families, or within dE76
+// 12 of a colour the gate paints a status in (RC2_STATUS), is never used:
+// the carrier's other colour is (a deeper brand shade where one is
+// published, its blue or its white otherwise).
+//
+// RC2_PAIRS are the pairs chosen by hand, from each carrier's published
+// palette (memory of the brand guides: Delta Blue + Delta Dark Blue, United
+// Blue + Rhapsody Blue, Southwest Bold Blue + Midnight Blue, Alaska Atlas +
+// Midnight, Hawaiian fuchsia + purple, Avelo blue + purple). Every other
+// carrier is resolved by _rc2Pair from the board's own tokens
+// (data/airline-colors.js, AIRLINE_ACCENT, AIRLINE_BRAND) under the same
+// rules, so a carrier added to those tables later gets a safe pair without
+// an entry here. tests/gate-lower-two-colours.test.js runs every carrier the
+// board knows through it.
+//
+// ONE EXCEPTION, ON PURPOSE: Air Canada's bar is Air Canada red, in a
+// DEEPER shade than the board's #D82F2E (which is dE 5.5 from the Cancelled
+// #dc2626). #A6192E is the red of the chosen design (the 2026-10-04 pick
+// sheet, option 1), and it is not any Cancelled red the gate paints: dE76 16.7
+// from #c01622, 16.8 from #b91c1c, 26.5 from #dc2626, 9.6 from the
+// Cancelled pill ground #991b1b and 9.8 from #be123c. It is still a red, so
+// the guard would refuse it; the table holds it on purpose (Jazz and Rouge
+// fly as Air Canada and take the same pair).
+var RC2_STATUS = {
+  delayed:   ['#F59E0B', '#FBBF24', '#D97706', '#B45309', '#E0820A'],
+  cancelled: ['#DC2626', '#C01622', '#B91C1C', '#F87171', '#EF4444', '#FCA5A5', '#991B1B', '#BE123C'],
+  ontime:    ['#34D399', '#10B981', '#1BBF74', '#0E7C4A', '#16A34A', '#22C55E', '#15803D', '#065F46']
+};
+// The words the second colour carries: white, and the panel's status inks
+// (v23926's --plate-ok/-warn/-bad/-info). Each must read at 4.5:1 on it.
+var RC2_B_WORDS = ['#FFFFFF', '#34D399', '#FBBF24', '#FCA5A5', '#93C5FD'];
+var RC2_PAIRS = (function () {
+  var P = {
+    // Air Canada red (deeper, see above) + Air Canada black (the board's AC ground)
+    AC:  { a: '#A6192E', ink: '#FFFFFF', b: '#0B0D10' },
+    // WestJet teal (the Gate tab, the orbs) + WestJet navy, navy type on the teal
+    WS:  { a: '#00B2A9', ink: '#002B55', b: '#003366' },
+    // PAL blue + PAL navy (the left banner's pair). PAL's orange #FCA404 is
+    // the board's Delayed amber (dE76 3.5 from #f59e0b), so it is not used.
+    PB:  { a: '#3E57BE', ink: '#FFFFFF', b: '#183677' },
+    // Porter cream + Porter navy (the banner's own pair)
+    PD:  { a: '#EFE8DA', ink: '#152C53', b: '#152C53' },
+    // Air Transat blue (#00B3F0, its confirmed accent) + its navy
+    TS:  { a: '#00B3F0', ink: '#0F172A', b: '#0F4C81' },
+    // Flair: its lime is the On time green's family; black and white instead
+    F8:  { a: '#F2F4F7', ink: '#1C1C1C', b: '#1C1C1C' },
+    // Delta: red #C01933 is a Cancelled red (dE76 9.5 from #c01622, and a
+    // saturated red); Delta Blue (654c) + Delta Dark Blue
+    DL:  { a: '#003366', ink: '#FFFFFF', b: '#041C2C' },
+    // United Blue + Rhapsody Blue
+    UA:  { a: '#0033A0', ink: '#FFFFFF', b: '#0C2340' },
+    // American: AA Blue + the board's American dark
+    AA:  { a: '#0078D2', ink: '#FFFFFF', b: '#101820' },
+    // Southwest: Sunrise Yellow is the Delayed amber; Bold Blue + Midnight Blue
+    WN:  { a: '#304CB2', ink: '#FFFFFF', b: '#111B40' },
+    // Frontier: its green #0F6744 is the On time green's family (dE76 6.8
+    // from #065f46); the board's two Frontier blues
+    F9:  { a: '#0E5FB0', ink: '#FFFFFF', b: '#0A3D6B' },
+    // Alaska: Atlas Blue + Midnight Blue
+    AS:  { a: '#2774AE', ink: '#FFFFFF', b: '#01426A' },
+    // Hawaiian: fuchsia (219 C) + purple
+    HA:  { a: '#CE0C88', ink: '#FFFFFF', b: '#4B286D' },
+    // Avelo: blue (319 C) + purple (268 C); its yellow is the Delayed amber
+    XP:  { a: '#1CBED1', ink: '#0F172A', b: '#502E90' },
+    // Lufthansa: its yellow is the Delayed amber; white + Lufthansa Blue
+    LH:  { a: '#F2F4F7', ink: '#05164D', b: '#05164D' },
+    // Singapore: its yellow is the Delayed amber; white + its blue (7687 C)
+    SQ:  { a: '#F2F4F7', ink: '#1D4886', b: '#1D4886' }
+  };
+  // The same carrier under the codes it reaches the gate with (Jazz and
+  // Rouge fly as Air Canada; ICAO designators from the feeds that send them).
+  var ALIAS = { ACA: 'AC', QK: 'AC', JZA: 'AC', RV: 'AC', ROU: 'AC', WR: 'WS', WEN: 'WS', WJA: 'WS',
+                SP: 'PB', PVL: 'PB', POE: 'PD', TSC: 'TS', FLE: 'F8', DAL: 'DL', UAL: 'UA', AAL: 'AA',
+                SWA: 'WN', FFT: 'F9', ASA: 'AS', HAL: 'HA', VXP: 'XP', DLH: 'LH', SIA: 'SQ' };
+  Object.keys(ALIAS).forEach(function (k) { P[k] = P[ALIAS[k]]; });
+  return P;
+})();
+function _rc2Rgb(hex) {
+  var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  return m ? [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); }) : null;
+}
+function _rc2Lin(v) { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
+// WCAG contrast ratio between two colours.
+function _rc2Contrast(h1, h2) {
+  var a = _rc2Rgb(h1), b = _rc2Rgb(h2);
+  if (!a || !b) return 0;
+  var L = function (c) { return 0.2126 * _rc2Lin(c[0]) + 0.7152 * _rc2Lin(c[1]) + 0.0722 * _rc2Lin(c[2]); };
+  var x = L(a), y = L(b);
+  return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+}
+// CIE76 colour difference (sRGB, D65), the measure the pick sheet used.
+function _rc2DeltaE(h1, h2) {
+  var lab = function (hex) {
+    var c = _rc2Rgb(hex).map(_rc2Lin);
+    var X = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / 0.95047;
+    var Y = 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    var Z = (0.0193 * c[0] + 0.1192 * c[1] + 0.9505 * c[2]) / 1.08883;
+    var f = function (t) { return t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116; };
+    return [116 * f(Y) - 16, 500 * (f(X) - f(Y)), 200 * (f(Y) - f(Z))];
+  };
+  if (!_rc2Rgb(h1) || !_rc2Rgb(h2)) return Infinity;
+  var p = lab(h1), q = lab(h2);
+  return Math.sqrt(Math.pow(p[0] - q[0], 2) + Math.pow(p[1] - q[1], 2) + Math.pow(p[2] - q[2], 2));
+}
+// Which status a colour would be read as ('delayed', 'cancelled', 'ontime'),
+// or '' when it reads as none. A colour in the amber, green or red family is
+// read as that status whatever its exact value (green from a lower
+// saturation: Flair's code, its lime mixed toward black, is a plain mid
+// green at s 0.34); any other colour within dE76 12 of a colour the gate
+// paints a status in is read as that one.
+function _rc2StatusLike(hex) {
+  var c = _rc2Rgb(hex);
+  if (!c) return '';
+  var r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn, l = (mx + mn) / 2;
+  var s = d ? d / (1 - Math.abs(2 * l - 1)) : 0, h = 0;
+  if (d) {
+    h = mx === r ? ((g - b) / d) % 6 : (mx === g ? (b - r) / d + 2 : (r - g) / d + 4);
+    h *= 60; if (h < 0) h += 360;
+  }
+  if (s >= 0.45 && l >= 0.25 && l <= 0.85 && h >= 18 && h <= 72) return 'delayed';
+  if (s >= 0.25 && l >= 0.15 && l <= 0.90 && h >= 75 && h <= 165) return 'ontime';
+  if (s >= 0.45 && l >= 0.22 && l <= 0.80 && (h >= 340 || h <= 17)) return 'cancelled';
+  var best = '', bestD = 12;
+  Object.keys(RC2_STATUS).forEach(function (k) {
+    RC2_STATUS[k].forEach(function (sc) { var e = _rc2DeltaE(hex, sc); if (e < bestD) { bestD = e; best = k; } });
+  });
+  return best;
+}
+// The two colours for a carrier: { a, ink, b }. `tables` is for the tests
+// ({ accent, brand, colors }); the board passes nothing and the live tables
+// are read.
+function _rc2Pair(code, tables) {
+  var c = String(code || '').trim().toUpperCase();
+  var hit = RC2_PAIRS[c];
+  if (hit) return { a: hit.a, ink: hit.ink, b: hit.b };
+  var T = tables || {};
+  var acc = T.accent || ((typeof AIRLINE_ACCENT !== 'undefined') ? AIRLINE_ACCENT : {});
+  var brand = T.brand || ((typeof AIRLINE_BRAND !== 'undefined') ? AIRLINE_BRAND : {});
+  var colors = T.colors || ((typeof window !== 'undefined' && window.AIRLINE_BRAND_COLORS) || {});
+  var spec = colors[c] || {}, br = brand[c] || {};
+  var accent = acc[c] || br.accent || '';
+  var ok = function (h) { return !!_rc2Rgb(h); };
+  var wordsOn = function (h) { return Math.min.apply(null, RC2_B_WORDS.map(function (w) { return _rc2Contrast(h, w); })); };
+  // b: the darkest of the carrier's own colours that holds every word of
+  // the inbound lines at 4.5:1 and is not itself a status colour; the
+  // board's own neutral dark when it has none.
+  var b = '';
+  [spec.r1, spec.r1Text, spec.bodyText, br.bg1, accent, spec.r2].some(function (h) {
+    if (ok(h) && wordsOn(h) >= 4.5 && !_rc2StatusLike(h)) { b = h; return true; }
+    return false;
+  });
+  if (!b) b = '#0C1119';
+  // a: the brighter brand colour, in the tables' order, that is not a
+  // status colour, reads as a second colour beside b (dE76 20 or more) and
+  // carries white, b, or the board's dark type at 4.5:1.
+  var inkOn = function (h) {
+    if (_rc2Contrast(h, '#FFFFFF') >= 4.5) return '#FFFFFF';
+    if (_rc2Contrast(h, b) >= 4.5) return b;
+    if (_rc2Contrast(h, '#0F172A') >= 4.5) return '#0F172A';
+    return '';
+  };
+  var a = '', ink = '';
+  [spec.r2, accent, spec.r3, spec.r1].some(function (h) {
+    if (!ok(h) || _rc2StatusLike(h) || _rc2DeltaE(h, b) < 20) return false;
+    var k = inkOn(h);
+    if (!k) return false;
+    a = h; ink = k; return true;
+  });
+  // None: the carrier's white, with its dark for the type.
+  if (!a) { a = '#F2F4F7'; ink = (_rc2Contrast(a, b) >= 4.5) ? b : '#0F172A'; }
+  return { a: String(a).toUpperCase(), ink: String(ink).toUpperCase(), b: String(b).toUpperCase() };
+}
 function _ocGroundOf(el) {
   var _rcG = _rcLowerGround(el);
   if (_rcG) return _rcG;
@@ -17447,7 +17666,22 @@ function _gateCodeInk(root) {
       // the sheet's lighter top edge; the hue is kept, as everywhere else.
       var _onSheet = !!(el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-fi'));
       var _floor = _onSheet ? 4.8 : FLOOR, _target = _onSheet ? 5 : TARGET;
-      if (base >= _floor) {                            // already legible — the accent stands
+      // v23937 — ON THE LOWER PANEL A CODE IS NEVER A STATUS COLOUR. The code
+      // ends the inbound's first line ('AC1984 from | de Toronto | YYZ'),
+      // right over the status words, and the panel's second colour is the
+      // carrier's own dark (_rc2Pair). In the carrier's accent, lifted for
+      // that dark, Air Canada's red is the Cancelled red's family, over an
+      // amber 'Delayed | En retard' on a late inbound. A code whose colour
+      // would read as a status (_rc2StatusLike) takes the area's white type
+      // instead; an accent that is no status colour (WestJet's teal, PAL's
+      // blue) stays. The left column's codes are not touched.
+      var _stSafe = function (c) {
+        if (!_onSheet || typeof _rc2StatusLike !== 'function') return c;
+        var hx = '#' + c.map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
+        return _rc2StatusLike(hx) ? [255, 255, 255] : c;
+      };
+      var _safeFg = _stSafe(fg);
+      if (base >= _floor && _safeFg === fg) {          // already legible — the accent stands
         // v23502c — ONLY EVER UNDO OUR OWN OVERRIDE.
         // Calling removeProperty unconditionally stripped the
         // inline colour the BOARD itself had set, so a code that was already
@@ -17461,17 +17695,22 @@ function _gateCodeInk(root) {
         }
         continue;
       }
-      var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
-      var up = _ocLum(bg) < 0.5;                       // dark ground lift, light ground deepen
       var best = fg, bestCr = base;
-      for (var step = 1; step <= 20; step++) {
-        var l = up ? Math.min(0.97, hsl[2] + step * 0.04) : Math.max(0.06, hsl[2] - step * 0.04);
-        var cand = _ocFromHsl(hsl[0], hsl[1], l);
-        var cr = _ocCr(cand, bg);
-        if (cr > bestCr) { bestCr = cr; best = cand; }
-        if (cr >= _target) break;
+      if (_safeFg !== fg) {
+        best = _safeFg;                                // v23937 — a status colour on the lower panel
+      } else {
+        var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
+        var up = _ocLum(bg) < 0.5;                     // dark ground lift, light ground deepen
+        for (var step = 1; step <= 20; step++) {
+          var l = up ? Math.min(0.97, hsl[2] + step * 0.04) : Math.max(0.06, hsl[2] - step * 0.04);
+          var cand = _ocFromHsl(hsl[0], hsl[1], l);
+          var cr = _ocCr(cand, bg);
+          if (cr > bestCr) { bestCr = cr; best = cand; }
+          if (cr >= _target) break;
+        }
+        if (bestCr <= base) continue;                  // nothing better available — keep the brand colour
+        best = _stSafe(best);                          // (v23937 — and lifted, still no status colour)
       }
-      if (bestCr <= base) continue;                    // nothing better available — keep the brand colour
       var css = 'rgb(' + best[0] + ', ' + best[1] + ', ' + best[2] + ')';
       el.dataset.inkApplied = '1';
       el.style.setProperty('color', css, 'important');
