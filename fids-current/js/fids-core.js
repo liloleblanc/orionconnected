@@ -18552,6 +18552,27 @@ function boardAutofit(full) {
                 });
                 maxW = Math.max(maxW, _w0);
               });
+              // v23960 — THE STATUS COLUMN IS SIZED FOR EVERY STATUS ITS
+              // LANGUAGE HAS, not only the ones on screen when the widths were
+              // taken: the geometry is cached per flight set, so a row that
+              // turned to 'Embarquement' after a board of 'Prévu' was cut to
+              // 'Embarqueme…' on a French-only board and at Montréal.
+              if (td0.classList.contains('td-status')) {
+                try {
+                  var _scs = getComputedStyle(td0);
+                  probe.style.fontFamily = _scs.fontFamily;
+                  probe.style.fontWeight = _scs.fontWeight;
+                  probe.style.letterSpacing = _scs.letterSpacing;
+                  probe.style.fontSize = _probePx + 'px';
+                  Object.keys(SS).forEach(function (k) {
+                    if (k === 'atbelt') return;           // the baggage hall's, not a flight board's
+                    var _sw = SL(k);                       // the page's language
+                    if (!_sw) return;
+                    probe.textContent = String(_sw);
+                    if (probe.offsetWidth > maxW) maxW = probe.offsetWidth;
+                  });
+                } catch (eSt) {}
+              }
               // The HEADER label needs room too — 'AIRSIDE' was clipping to
               // 'AIRSID' over a column whose cells only hold one letter.
               try {
@@ -25629,7 +25650,7 @@ function mkLogo(code, faName) {
 // ── LANGUAGE STRINGS & THEME SYSTEM ──────────────────────────────────────
 const LS = {
   dep:     { en:'Departures',fr:'Départs',es:'Salidas',de:'Abflüge',it:'Partenze',pt:'Partidas',ja:'出発',zh:'出发',ar:'المغادرات' },
-  bagClaim:{ en:'Baggage claim',fr:'Retrait des bagages',es:'Recogida de equipaje',de:'Gepäckausgabe',it:'Ritiro bagagli',pt:'Recolha de bagagem',ja:'手荷物受取所',zh:'行李提取',ar:'استلام الأمتعة' },
+  bagClaim:{ en:'Baggage claim',fr:'Retrait des bagages',es:'Recogida de equipaje',de:'Gepäckausgabe',it:'Ritiro bagagli',pt:'Retirada de bagagem',ja:'手荷物受取所',zh:'行李提取',ar:'استلام الأمتعة' },
   arr:     { en:'Arrivals',fr:'Arrivées',es:'Llegadas',de:'Ankünfte',it:'Arrivi',pt:'Chegadas',ja:'到着',zh:'到达',ar:'الوصول' },
   sdep:    { en:'Arrivals',fr:'Arrivées',es:'Llegadas',de:'Ankünfte',it:'Arrivi',pt:'Chegadas',ja:'到着',zh:'到达',ar:'الوصول' },
   sarr:    { en:'Departures',fr:'Départs',es:'Salidas',de:'Abflüge',it:'Partenze',pt:'Partidas',ja:'出発',zh:'出发',ar:'المغادرات' },
@@ -25638,15 +25659,15 @@ const LS = {
   destDep: { en:'Destination',fr:'Destination',es:'Destino',de:'Ziel',it:'Destinazione',pt:'Destino',ja:'目的地',zh:'目的地',ar:'الوجهة' },
   destArr: { en:'From',fr:'De',es:'Desde',de:'Von',it:'Da',pt:'De',ja:'出発地',zh:'出发地',ar:'من' },
   flight:  { en:'Flight #',fr:'Vol #',es:'Vuelo #',de:'Flug #',it:'Volo #',pt:'Voo #',ja:'便名 #',zh:'航班 #',ar:'# رحلة' },
-  airline: { en:'Airline',fr:'Ligne aérienne',es:'Aerolínea',de:'Fluggesellschaft',it:'Compagnia',pt:'Companhia',ja:'航空会社',zh:'航空公司',ar:'شركة الطيران' },
+  airline: { en:'Airline',fr:'Compagnie',es:'Aerolínea',de:'Fluggesellschaft',it:'Compagnia',pt:'Companhia',ja:'航空会社',zh:'航空公司',ar:'شركة الطيران' },
   wx:      { en:'Weather',fr:'Météo',es:'Clima',de:'Wetter',it:'Meteo',pt:'Clima',ja:'天気',zh:'天气',ar:'الطقس' },
   now:     { en:'NOW',fr:'ACTUELLEMENT',es:'AHORA',de:'JETZT',it:'ORA',pt:'AGORA',ja:'現在',zh:'现在',ar:'الآن' },
-  feelsLike:{ en:'Feels',fr:'Ressenti',es:'Sensación',de:'Gefühlt',it:'Percepita',pt:'Sensação',ja:'体感',zh:'体感',ar:'يشعر' },
+  feelsLike:{ en:'Feels',fr:'Ressenti',es:'Sensación',de:'Gefühlt',it:'Percepita',pt:'Sensação',ja:'体感',zh:'体感',ar:'الحرارة المحسوسة' },
   gateDep: { en:'Gate',fr:'Porte',es:'Puerta',de:'Gate',it:'Gate',pt:'Portão',ja:'ゲート',zh:'登机口',ar:'البوابة' },
-  gateArr: { en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'الحزام' },
+  gateArr: { en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'سير الأمتعة' },
   termDep: { en:'Terminal',fr:'Terminal',es:'Terminal',de:'Terminal',it:'Terminal',pt:'Terminal',ja:'ターミナル',zh:'航站楼',ar:'المبنى' },
   termArr: { en:'Terminal',fr:'Terminal',es:'Terminal',de:'Terminal',it:'Terminal',pt:'Terminal',ja:'ターミナル',zh:'航站楼',ar:'المبنى' },
-  status:  { en:'Status',fr:'Statut',es:'Estado',de:'Status',it:'Stato',pt:'Estado',ja:'状況',zh:'状态',ar:'الحالة' },
+  status:  { en:'Status',fr:'Statut',es:'Estado',de:'Status',it:'Stato',pt:'Status',ja:'状況',zh:'状态',ar:'الحالة' },
   boardsIn: { en:'BOARDS IN',fr:'EMBARQUEMENT DANS',es:'EMBARQUE EN',de:'BOARDING IN',it:'IMBARCO TRA',pt:'EMBARQUE EM',ja:'搭乗まで',zh:'登机倒计时',ar:'الصعود خلال' },
   depBoards: { en:'Departs in',fr:'Départ dans',es:'Sale en',de:'Abflug in',it:'Parte tra',pt:'Sai em',ja:'出発まで',zh:'出发倒计时',ar:'يغادر خلال' },
   nowBoarding:{ en:'NOW BOARDING',fr:'EMBARQUEMENT',es:'EMBARCANDO AHORA',de:'JETZT BOARDING',it:'IMBARCO IN CORSO',pt:'EMBARQUE EM CURSO',ja:'搭乗中',zh:'正在登机',ar:'الصعود الآن' },
@@ -25654,7 +25675,7 @@ const LS = {
   flightDur: { en:'flight',fr:'de vol',es:'de vuelo',de:'Flug',it:'di volo',pt:'de voo',ja:'飛行',zh:'飞行',ar:'الرحلة', $ctx: 'duration' },
   duration:  { en:'Duration',fr:'Durée',es:'Duración',de:'Dauer',it:'Durata',pt:'Duração',ja:'所要時間',zh:'飞行时间',ar:'المدة' },
   arrivesFrom:{en:'THIS FLIGHT ARRIVES FROM',fr:'CE VOL ARRIVE DE',es:'ESTE VUELO LLEGA DESDE',de:'DIESER FLUG KOMMT AUS',it:'QUESTO VOLO ARRIVA DA',pt:'ESTE VOO CHEGA DE',ja:'この便の出発地',zh:'此航班来自',ar:'هذه الرحلة قادمة من' },
-  schedAbbr: { en:'Sched.',fr:'Prév.',es:'Prog.',de:'Plan.',it:'Prev.',pt:'Prev.',ja:'予定',zh:'计划',ar:'مجدول' },
+  schedAbbr: { en:'Sched.',fr:'Prév.',es:'Prog.',de:'Plan.',it:'Prev.',pt:'Prev.',ja:'定刻',zh:'计划',ar:'مجدول' },
   minutes:   { en:'MINUTES',fr:'MINUTES',es:'MINUTOS',de:'MINUTEN',it:'MINUTI',pt:'MINUTOS',ja:'分',zh:'分钟',ar:'دقيقة' },
   minute:    { en:'MINUTE',fr:'MINUTE',es:'MINUTO',de:'MINUTE',it:'MINUTO',pt:'MINUTO',ja:'分',zh:'分钟',ar:'دقيقة' },
   depTime: { en:'Departure',fr:'Départ',es:'Salida',de:'Abflug',it:'Partenza',pt:'Partida',ja:'出発',zh:'出发',ar:'المغادرة' },
@@ -25673,7 +25694,7 @@ const LS = {
   enterBoard:{ en:'Enter Board',fr:'Accéder au tableau',es:'Entrar al tablero',de:'Zur Anzeige',it:'Apri il tabellone',pt:'Abrir o painel',ja:'ボードを開く',zh:'进入显示屏',ar:'الدخول إلى اللوحة' },
   goLive:  { en:'⚡ Go Live',fr:'⚡ En direct',es:'⚡ En vivo',de:'⚡ Live schalten',it:'⚡ In diretta',pt:'⚡ Ao vivo',ja:'⚡ ライブ',zh:'⚡ 实时',ar:'⚡ مباشر' },
   addFlight:{ en:'✚ Add Flight',fr:'✚ Ajouter vol',es:'✚ Agregar vuelo',de:'✚ Flug hinzufügen',it:'✚ Aggiungi volo',pt:'✚ Adicionar voo',ja:'✚ 便を追加',zh:'✚ 添加航班',ar:'✚ إضافة رحلة' },
-  carousel:{ en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'الحزام' },
+  carousel:{ en:'Carousel',fr:'Carrousel',es:'Carrusel',de:'Band',it:'Nastro',pt:'Esteira',ja:'ターンテーブル',zh:'行李转盘',ar:'سير الأمتعة' },
 
   estDep:    { en:'Est. departure',fr:'Départ prévu',es:'Salida est.',de:'Abflug (gesch.)',it:'Part. stimata',pt:'Partida est.',ja:'出発予定',zh:'预计起飞',ar:'المغادرة المقدرة' },
   estArr:    { en:'Est. arrival',fr:'Arrivée prévue',es:'Llegada est.',de:'Ankunft (gesch.)',it:'Arr. stimato',pt:'Chegada est.',ja:'到着予定',zh:'预计到达',ar:'الوصول المقدر' },
@@ -25701,7 +25722,7 @@ const LS = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
  // own gate signage says. Title Case kept as specified's design.
-  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:'L’embarquement débutera sous peu', es:'El embarque comenzará en breve', de:'Das Boarding beginnt in Kürze', it:'L’imbarco inizierà a breve', pt:'O embarque começará em breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   // v23202 — the altimeter's labels follow the CHOSEN languages like every
   // other label on the board
   // ; they were hard-coded English with a hard-coded French unit.
@@ -25712,7 +25733,7 @@ const LS = {
   estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
   // Short unit — the mockup sets it on ONE line beside the number ('5 mins'),
   // where the full 'MINUTES' would not fit next to a digit that size.
-  minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  minsShort: { en:'mins', fr:'min', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   remainSeated:{ en:'Please remain seated until your zone is called',fr:'Veuillez rester assis jusqu\'à l\'appel de votre zone',es:'Por favor permanezca sentado hasta que llamen su zona',de:'Bitte bleiben Sie sitzen bis Ihre Zone aufgerufen wird',it:'Si prega di restare seduti fino alla chiamata della zona',pt:'Por favor permaneça sentado até sua zona ser chamada',ja:'ゾーンが呼ばれるまでお待ちください',zh:'请在座位上等待登机区域呼叫',ar:'يرجى البقاء جالساً حتى يتم استدعاء منطقتك' },
 
@@ -25781,10 +25802,10 @@ const LS = {
   attentionMsg:{ en:'ATTENTION',fr:'ATTENTION',es:'ATENCIÓN',de:'ACHTUNG',it:'ATTENZIONE',pt:'ATENÇÃO',ja:'お知らせ',zh:'请注意',ar:'تنبيه' },
 
   // ── INBOUND PANEL LABELS ── (used by TL(), not SL())
-  scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
-  revised:         { en:'Revised',fr:'Révisé',es:'Revisado',de:'Geändert',it:'Rivisto',pt:'Revisado',ja:'変更',zh:'更新',ar:'مُعدل' },
+  scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'定刻',zh:'计划',ar:'مجدول' },
+  revised:         { en:'Revised',fr:'Révisé',es:'Revisado',de:'Geändert',it:'Rivisto',pt:'Revisado',ja:'変更',zh:'更新',ar:'الوقت المعدَّل' },
   arrivingFrom:    { en:'Arriving from',fr:'Provenant de',es:'Procedente de',de:'Ankommend aus',it:'In arrivo da',pt:'Proveniente de',ja:'出発地',zh:'来自',ar:'قادمة من' },
-  yourAircraftLbl: { en:'YOUR AIRCRAFT',fr:'VOTRE AVION',es:'SU AVIÓN',de:'IHR FLUGZEUG',it:'IL TUO AEREO',pt:'SEU AVIÃO',ja:'ご搭乗機',zh:'您的飞机',ar:'طائرتك' },
+  yourAircraftLbl: { en:'YOUR AIRCRAFT',fr:'Votre avion',es:'Su avión',de:'IHR FLUGZEUG',it:'Il tuo aereo',pt:'Seu avião',ja:'ご搭乗機',zh:'您的飞机',ar:'طائرتك' },
   willBoardIn:     { en:'Your flight will begin boarding in approximately',fr:'Votre vol commencera l\'embarquement dans environ',es:'Su vuelo iniciará el embarque en aproximadamente',de:'Ihr Flug beginnt mit dem Boarding in etwa',it:'L\'imbarco del vostro volo inizierà tra circa',pt:'O seu voo iniciará o embarque em aproximadamente',ja:'ご搭乗開始まで約',zh:'您的航班将在大约',ar:'سيبدأ صعود رحلتكم خلال حوالي' },
   arrivedAtGate:   { en:'Arrived at the gate',fr:'Arrivé à la porte',es:'Llegó a la puerta',de:'Am Gate angekommen',it:'Arrivato al gate',pt:'Chegou ao portão',ja:'ゲートに到着',zh:'已到达登机口',ar:'وصلت إلى البوابة' },
   inMin:           { en:'Arriving in',fr:'Arrive dans',es:'Llega en',de:'Ankunft in',it:'Arrivo tra',pt:'Chega em',ja:'到着まで',zh:'到达还有',ar:'يصل خلال' },
@@ -25806,18 +25827,18 @@ const LS = {
 const SS = {
   ontime:    { en:'On time',fr:"À l'heure",es:'A tiempo',de:'Pünktlich',it:'In orario',pt:'No horário',ja:'定刻',zh:'准点',ar:'في الموعد' },
   boarding:  { en:'Boarding',fr:'Embarquement',es:'Embarcando',de:'Boarding',it:'Imbarco',pt:'Embarque',ja:'搭乗中',zh:'登机中',ar:'الصعود', $ctx: 'status' },
-  delayed:   { en:'Delayed',fr:'En retard',es:'Retrasado',de:'Verspätet',it:'In ritardo',pt:'Atrasado',ja:'遅延',zh:'延误',ar:'متأخر' },
+  delayed:   { en:'Delayed',fr:'En retard',es:'Retrasado',de:'Verspätet',it:'In ritardo',pt:'Atrasado',ja:'遅延',zh:'延误',ar:'متأخرة' },
   cancelled: { en:'Cancelled',fr:'Annulé',es:'Cancelado',de:'Annulliert',it:'Cancellato',pt:'Cancelado',ja:'欠航',zh:'取消',ar:'ملغاة' },
   departed:  { en:'Departed',fr:'Parti',es:'Despegó',de:'Gestartet',it:'Partito',pt:'Partiu',ja:'出発済',zh:'已起飞',ar:'غادرت' },
   arrived:   { en:'Arrived',fr:'Arrivé',es:'Llegó',de:'Gelandet',it:'Arrivato',pt:'Chegou',ja:'到着済',zh:'已到达',ar:'وصلت' },
-  scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
+  scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'定刻',zh:'计划',ar:'مجدول' },
   final:     { en:'Final call',fr:'Dernier appel',es:'Última llamada',de:'Letzter Aufruf',it:'Ultima chiamata',pt:'Última chamada',ja:'最終案内',zh:'最后登机',ar:'النداء الأخير' },
   gateclosed:{ en:'Gate closed',fr:'Porte fermée',es:'Puerta cerrada',de:'Gate geschlossen',it:'Gate chiuso',pt:'Portão fechado',ja:'搭乗終了',zh:'登机口已关闭',ar:'البوابة مغلقة' },
   landed:    { en:'Landed',fr:'Atterri',es:'Aterrizó',de:'Gelandet',it:'Atterrato',pt:'Pousou',ja:'着陸',zh:'已着陆',ar:'هبط' },
   diverted:  { en:'Diverted',fr:'Dérouté',es:'Desviado',de:'Umgeleitet',it:'Dirottato',pt:'Desviado',ja:'目的地変更',zh:'备降',ar:'محوّلة' },
   active:    { en:'En route',fr:'En vol',es:'En vuelo',de:'Unterwegs',it:'In volo',pt:'Em voo',ja:'飛行中',zh:'飞行中',ar:'في الطريق' },
   early:     { en:'Early',fr:'En avance',es:'Adelantado',de:'Verfrüht',it:'In anticipo',pt:'Adiantado',ja:'早着',zh:'提前',ar:'مبكر' },
-  atbelt:    { en:'At belt',fr:'Au tapis roulant',es:'En banda',de:'Am Band',it:'Al nastro',pt:'Na esteira',ja:'受取可',zh:'在行李带',ar:'عند الحزام' },
+  atbelt:    { en:'At belt',fr:'Au tapis roulant',es:'En banda',de:'Am Band',it:'Al nastro',pt:'Na esteira',ja:'受取可',zh:'在行李带',ar:'عند سير الأمتعة' },
 };
 const PILLCLS = {
   ontime:'p-ontime', boarding:'p-boarding', delayed:'p-delayed',
@@ -26575,7 +26596,7 @@ var _GATE_LBL = {
   from:      { en:'From',          fr:'De',             es:'Desde',        de:'Von',         it:'Da',          pt:'De',         ja:'出発地',    zh:'出发地', ar:'من' },
   to:        { en:'To',            fr:'À',              es:'A',            de:'Nach',        it:'A',           pt:'Para',       ja:'行き先',    zh:'目的地', ar:'إلى' },
   dest:      { en:'Destination',   fr:'Destination',    es:'Destino',      de:'Ziel',        it:'Destinazione',pt:'Destino',    ja:'目的地',    zh:'目的地', ar:'الوجهة' },
-  status:    { en:'Status',        fr:'Statut',         es:'Estado',       de:'Status',      it:'Stato',       pt:'Estado',     ja:'状況',      zh:'状态',   ar:'الحالة' },
+  status:    { en:'Status',        fr:'Statut',         es:'Estado',       de:'Status',      it:'Stato',       pt:'Status',     ja:'状況',      zh:'状态',   ar:'الحالة' },
   departure: { en:'Departure',     fr:'Départ',         es:'Salida',       de:'Abflug',      it:'Partenza',    pt:'Partida',    ja:'出発',      zh:'出发',   ar:'المغادرة' },
   arrival:   { en:'Arrival',       fr:'Arrivée',        es:'Llegada',      de:'Ankunft',     it:'Arrivo',      pt:'Chegada',    ja:'到着',      zh:'到达',   ar:'الوصول' },
   arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Gelandet',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصلت' },
@@ -26647,9 +26668,9 @@ var _GATE_LBL = {
   // on a board whose every other label is bilingual.
   timeToArr: { en:'Time to arrival', fr:'Temps avant l’arrivée', es:'Tiempo hasta la llegada', de:'Zeit bis zur Ankunft', it:'Tempo all’arrivo', pt:'Tempo até à chegada', ja:'到着まで', zh:'距到达时间', ar:'الوقت حتى الوصول' },
   boarding:  { en:'Boarding',      fr:'Embarquement',   es:'Embarque',     de:'Boarding',    it:'Imbarco',     pt:'Embarque',   ja:'搭乗',      zh:'登机',   ar:'الصعود' },
-  revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'مُعدل' },
+  revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'الوقت المعدَّل' },
   gate:      { en:'Gate',          fr:'Porte',          es:'Puerta',       de:'Gate',        it:'Gate',        pt:'Portão',     ja:'ゲート',    zh:'登机口', ar:'البوابة' },
-  yourAc:    { en:'Your Aircraft', fr:'Votre Avion',    es:'Su Avión',  de:'Ihr Flugzeug',it:'Il Tuo Aereo',pt:'Seu Avião',ja:'ご搭乗機', zh:'您的飞机', ar:'طائرتك' },
+  yourAc:    { en:'Your Aircraft', fr:'Votre avion',    es:'Su avión',  de:'Ihr Flugzeug',it:'Il tuo aereo',pt:'Seu avião',ja:'ご搭乗機', zh:'您的飞机', ar:'طائرتك' },
   acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Detalhes da aeronave pendentes', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
   acImgPending:{ en:'Aircraft image pending', fr:'Image de l\u2019appareil à venir', es:'Imagen del avión pendiente', de:'Flugzeugbild folgt', it:'Immagine dell\u2019aereo in arrivo', pt:'Imagem da aeronave pendente', ja:'機体画像は準備中', zh:'机型图片即将显示', ar:'صورة الطائرة قريباً' },
   acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
@@ -26674,7 +26695,7 @@ var _GATE_LBL = {
   // have printed the raw key, exactly as `preboard` and `preboardList` did on
   // air until v23530), and its text is "Your Aircraft Is Arriving From", which
   // is a sentence about a state. This is a label about a panel.
-  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre Avion', es:'Su Avión', de:'Ihr Flugzeug', it:'Il Tuo Aereo', pt:'Seu Avião', ja:'\u3054\u642d\u4e57\u6a5f', zh:'您的飞机', ar:'طائرتك' },
+  yourAircraftHdr: { en:'Your Aircraft', fr:'Votre avion', es:'Su avión', de:'Ihr Flugzeug', it:'Il tuo aereo', pt:'Seu avião', ja:'\u3054\u642d\u4e57\u6a5f', zh:'您的飞机', ar:'طائرتك' },
   // v23960 — preboard, genboard, pdReserve, pdClassic, avidTraveller, photoId
   // and preboardList moved to the one store (board-strings.js), each with
   // where its words come from ($src): Porter's own names in English and
@@ -26709,7 +26730,7 @@ var _GATE_LBL = {
   // phrasing: time-neutral ('shortly' promises nothing a delay would break,
   // where 'quelques minutes' promised minutes), and it is what Air Canada's
  // own gate signage says. Title Case kept as specified's design.
-  boardSoon: { en:'Boarding Will Begin Shortly', fr:"L'embarquement Débutera Sous Peu", es:'El Embarque Comenzará En Breve', de:'Das Boarding Beginnt In Kürze', it:"L'Imbarco Inizierà A Breve", pt:'O Embarque Começará Em Breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
+  boardSoon: { en:'Boarding Will Begin Shortly', fr:'L’embarquement débutera sous peu', es:'El embarque comenzará en breve', de:'Das Boarding beginnt in Kürze', it:'L’imbarco inizierà a breve', pt:'O embarque começará em breve', ja:'まもなく搭乗を開始します', zh:'登机即将开始', ar:'سيبدأ الصعود قريباً' },
   // v23202 — the altimeter's labels follow the CHOSEN languages like every
   // other label on the board
   // ; they were hard-coded English with a hard-coded French unit.
@@ -26719,7 +26740,7 @@ var _GATE_LBL = {
   feetUnit: { en:'Feet', fr:'Pieds', es:'Pies', de:'Fuß', it:'Piedi', pt:'Pés', ja:'フィート', zh:'英尺', ar:'قدم' },
   estPos: { en:'Estimated position', fr:'Position estimée', es:'Posición estimada', de:'Geschätzte Position', it:'Posizione stimata', pt:'Posição estimada', ja:'推定位置', zh:'预估位置', ar:'الموقع التقديري' },
   nowBoarding: { en:'Now Boarding', fr:'Embarquement', es:'Embarcando ahora', de:'Jetzt Boarding', it:'Imbarco in corso', pt:'Embarque em curso', ja:'搭乗中', zh:'正在登机', ar:'الصعود الآن' },
-  minsShort: { en:'mins', fr:'mins', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
+  minsShort: { en:'mins', fr:'min', es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
   minShort:  { en:'min',  fr:'min',  es:'min', de:'Min.', it:'min', pt:'min', ja:'分', zh:'分钟', ar:'دقيقة' },
  // Clock label for the boarding screen's white strip. The concept wrote
   // 'Heure Actuelle'; corrected to French sentence capitalisation, which is
@@ -28364,8 +28385,13 @@ function render() {
     // later, so every slide (°C/°F, language, poll, page) flashed every row's
     // code and the history rows' text between two colours. See _fidsBoardInk.
     try { _fidsBoardInk(); } catch (e) {}
+    // v23960 — and no status is ever cut: on a board whose columns keep the
+    // stylesheet's widths (no geometry pass), 'Embarquement' overflowed the
+    // French status column to 'Embarqueme…'. Each status cell steps its own
+    // size down until its word fits, whatever language the page is in.
+    try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e) {}
     // settle pass for late layout (web fonts, images shifting metrics)
-    try { setTimeout(function () { boardAutofit(false); }, 350); } catch (e) {}
+    try { setTimeout(function () { boardAutofit(false); try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e2) {} }, 350); } catch (e) {}
   }
   // Phase 4: expose flight lists to the Search tab
   try {
@@ -32615,9 +32641,15 @@ async function fetchLive() {
       const p = document.getElementById('panelError');
       // Render the exception message as TEXT, not HTML (CodeQL: "Exception text
       // reinterpreted as HTML"). Static markup via innerHTML; message via textContent.
-      p.innerHTML = BoardStrings.pair('liveDataError', { upper: true }) + '<div class="sub" style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
+      // v23960 — the exception's own words ('both direction fetches failed')
+      // are an operator's diagnosis in English, not a passenger's message:
+      // they show only to a signed-in operator or with ?debug, in a line
+      // marked data-operator. A passenger reads the store's message alone.
+      p.innerHTML = BoardStrings.pair('liveDataError', { upper: true }) + '<div class="sub" data-operator style="font-size:14px;white-space:pre-wrap;max-width:700px;text-align:left;margin-top:8px;"></div>';
       var _pSub = p.querySelector('.sub');
-      if (_pSub) _pSub.textContent = String((e && e.message) || '');
+      var _pOp = false;
+      try { _pOp = !!(localStorage.getItem('fids_token') || sessionStorage.getItem('fids_token')) || /[?&]debug=/.test(location.search); } catch (eOp) {}
+      if (_pSub && _pOp) _pSub.textContent = String((e && e.message) || '');
       p.style.display = 'block';
     }
     // v23514 — ARM IT EVEN WHEN THE COLD START IS WHAT FAILED. This guard used
@@ -42623,7 +42655,7 @@ var AD_I18N = {
   // ── AC headlines & subs ──
   'More to Travel':                   { fr:'Plus à voyager', es:'Más para viajar', de:'Mehr zum Reisen', it:'Più da viaggiare', pt:'Mais para viajar', ja:'もっと旅を', zh:'尽享旅行', ar:'المزيد من السفر' },
   'Discover expanded services and rewards with Aeroplan': { fr:'Découvrez les services et récompenses Aeroplan', es:'Descubra servicios y recompensas con Aeroplan', de:'Entdecken Sie Services und Prämien mit Aeroplan', it:'Scopri servizi e premi con Aeroplan', pt:'Descubra serviços e recompensas com Aeroplan', ja:'Aeroplanのサービスと特典を発見', zh:'探索 Aeroplan 服务与奖励', ar:'اكتشف خدمات ومكافآت Aeroplan' },
-  'Your Ticket to Travelling Better': { fr:'Votre billet pour mieux voyager', es:'Su boleto para viajar mejor', de:'Ihr Ticket für besseres Reisen', it:'Il tuo biglietto per viaggiare meglio', pt:'Seu bilhete para viajar melhor', ja:'より良い旅へのチケット', zh:'更好旅行的通行证', ar:'تذكرتك للسفر بشكل أفضل' },
+  'Your Ticket to Travelling Better': { fr:'Votre billet pour mieux voyager', es:'Su boleto para viajar mejor', de:'Ihr Ticket für besseres Reisen', it:'Il tuo biglietto per viaggiare meglio', pt:'Sua passagem para viajar melhor', ja:'より良い旅へのチケット', zh:'更好旅行的通行证', ar:'تذكرتك للسفر بشكل أفضل' },
   'Unlock Elite Status perks and premium card benefits': { fr:'Débloquez les avantages Statut Élite et carte premium', es:'Desbloquee beneficios Estatus Élite y tarjeta premium', de:'Entdecken Sie Elite-Status-Vorteile und Premium-Karten', it:'Sblocca i vantaggi Elite Status e carta premium', pt:'Desbloqueie benefícios Status Elite e cartão premium', ja:'エリートステータスとプレミアムカード特典', zh:'解锁精英会员与高级卡权益', ar:'افتح مزايا النخبة والبطاقة المميزة' },
   'Everyday Rewards, Extraordinary Journeys': { fr:'Récompenses quotidiennes, voyages extraordinaires', es:'Recompensas diarias, viajes extraordinarios', de:'Tägliche Prämien, außergewöhnliche Reisen', it:'Premi quotidiani, viaggi straordinari', pt:'Recompensas diárias, viagens extraordinárias', ja:'毎日のリワード、特別な旅', zh:'每日奖励，非凡旅程', ar:'مكافآت يومية، رحلات استثنائية' },
   'Turn your daily routines into your next getaway': { fr:'Transformez votre quotidien en prochaine escapade', es:'Convierta su rutina en su próxima escapada', de:'Verwandeln Sie Ihren Alltag in Ihre nächste Reise', it:'Trasforma la routine nella prossima fuga', pt:'Transforme a rotina na próxima escapada', ja:'日常を次の旅へ', zh:'把日常变成下次度假', ar:'حوّل روتينك إلى عطلتك القادمة' },
@@ -44685,7 +44717,7 @@ function buildAccorAdOnlyV6(ad) {
     if (!_useTextId) {
       var art = logoHtml;
       if (_qcPair) {
-        var src = ((pageIdx || 0) % 2 === 0) ? _qcPair.fr : _qcPair.en;
+        var src = ((pageIdx || 0) % 2 === 0) ? _qcPair.fr : _qcPair.en; // i18n-ok: brand
         var alt = ((pageIdx || 0) % 2 === 0) ? _qcPair.nameFr : _qcPair.nameEn;
         art = '<div class="axr-logo"><img class="axr-hotel-svg" src="' + esc(src)
             + '" data-crop="" alt="' + esc(alt) + '"></div>';
@@ -49083,12 +49115,12 @@ function _wxNightAt(iata, ts) {
 var _WXLBL = {
   'clear-day':   { en:'Sunny', fr:'Ensoleillé', es:'Soleado', de:'Sonnig', it:'Soleggiato', pt:'Ensolarado', ja:'晴れ', zh:'晴', ar:'مشمس' },
   'clear-night': { en:'Clear', fr:'Dégagé', es:'Despejado', de:'Klar', it:'Sereno', pt:'Limpo', ja:'快晴', zh:'晴朗', ar:'صافٍ' },
-  'partly-cloudy-day':   { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'多云', ar:'غائم جزئياً' },
-  'partly-cloudy-night': { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'多云', ar:'غائم جزئياً' },
+  'partly-cloudy-day':   { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'局部多云', ar:'غائم جزئياً' },
+  'partly-cloudy-night': { en:'Partly cloudy', fr:'Partiellement nuageux', es:'Parcialmente nublado', de:'Teils bewölkt', it:'Parzialmente nuvoloso', pt:'Parcialmente nublado', ja:'晴れ時々曇り', zh:'局部多云', ar:'غائم جزئياً' },
   'overcast-day': { en:'Overcast', fr:'Couvert', es:'Cubierto', de:'Bedeckt', it:'Coperto', pt:'Encoberto', ja:'曇天', zh:'阴天', ar:'ملبد بالغيوم' },
   'overcast':     { en:'Overcast', fr:'Couvert', es:'Cubierto', de:'Bedeckt', it:'Coperto', pt:'Encoberto', ja:'曇天', zh:'阴天', ar:'ملبد بالغيوم' },
   'cloudy': { en:'Cloudy', fr:'Nuageux', es:'Nublado', de:'Bewölkt', it:'Nuvoloso', pt:'Nublado', ja:'曇り', zh:'阴', ar:'غائم' },
-  'fog':    { en:'Fog', fr:'Brouillard', es:'Niebla', de:'Nebel', it:'Nebbia', pt:'Nevoeiro', ja:'霧', zh:'雾', ar:'ضباب' },
+  'fog':    { en:'Fog', fr:'Brouillard', es:'Niebla', de:'Nebel', it:'Nebbia', pt:'Neblina', ja:'霧', zh:'雾', ar:'ضباب' },
   'mist':   { en:'Mist', fr:'Brume', es:'Neblina', de:'Dunst', it:'Foschia', pt:'Névoa', ja:'もや', zh:'薄雾', ar:'سديم' },
   'drizzle': { en:'Drizzle', fr:'Bruine', es:'Llovizna', de:'Nieselregen', it:'Pioviggine', pt:'Chuvisco', ja:'霧雨', zh:'毛毛雨', ar:'رذاذ' },
   'rain':    { en:'Rain', fr:'Pluie', es:'Lluvia', de:'Regen', it:'Pioggia', pt:'Chuva', ja:'雨', zh:'雨', ar:'مطر' },
@@ -49096,7 +49128,7 @@ var _WXLBL = {
   'snow':         { en:'Snow', fr:'Neige', es:'Nieve', de:'Schnee', it:'Neve', pt:'Neve', ja:'雪', zh:'雪', ar:'ثلج' },
   'extreme-snow': { en:'Heavy snow', fr:'Neige forte', es:'Nieve intensa', de:'Starker Schneefall', it:'Neve intensa', pt:'Neve forte', ja:'大雪', zh:'大雪', ar:'ثلوج كثيفة' },
   'sleet': { en:'Freezing rain', fr:'Pluie verglaçante', es:'Lluvia helada', de:'Gefrierender Regen', it:'Pioggia gelata', pt:'Chuva congelante', ja:'着氷性の雨', zh:'冻雨', ar:'مطر متجمد' },
-  'hail':  { en:'Ice pellets', fr:'Grésil', es:'Granizo', de:'Graupel', it:'Grandine', pt:'Granizo', ja:'ひょう', zh:'冰雹', ar:'برد' },
+  'hail':  { en:'Ice pellets', fr:'Grésil', es:'Gránulos de hielo', de:'Eiskörner', it:'Granuli di ghiaccio', pt:'Pelotas de gelo', ja:'凍雨', zh:'冰粒', ar:'حبيبات جليدية' },
   'thunderstorms-day-rain': { en:'Thunderstorm', fr:'Orage', es:'Tormenta', de:'Gewitter', it:'Temporale', pt:'Trovoada', ja:'雷雨', zh:'雷暴', ar:'عاصفة رعدية' },
   'thunderstorms-rain':     { en:'Thunderstorm', fr:'Orage', es:'Tormenta', de:'Gewitter', it:'Temporale', pt:'Trovoada', ja:'雷雨', zh:'雷暴', ar:'عاصفة رعدية' },
   'wind': { en:'Windy', fr:'Venteux', es:'Ventoso', de:'Windig', it:'Ventoso', pt:'Ventoso', ja:'強風', zh:'大风', ar:'عاصف' }

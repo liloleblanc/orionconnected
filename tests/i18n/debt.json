@@ -1368,5 +1368,55 @@
   "count": 1,
   "surface": "Companion app",
   "decision": "D6"
+ },
+ {
+  "id": "B11:fids-current/js/heritage-board.js:pair:map.en",
+  "check": "B11",
+  "file": "fids-current/js/heritage-board.js",
+  "fn": "pair",
+  "text": "map.en",
+  "count": 1,
+  "surface": "Archive pages",
+  "decision": "D11"
+ },
+ {
+  "id": "B11:fids-current/js/heritage-board.js:routeHtml:p.en",
+  "check": "B11",
+  "file": "fids-current/js/heritage-board.js",
+  "fn": "routeHtml",
+  "text": "p.en",
+  "count": 1,
+  "surface": "Archive pages",
+  "decision": "D11"
+ },
+ {
+  "id": "B11:fids-current/js/heritage-board.js:rowHtml:charter.en",
+  "check": "B11",
+  "file": "fids-current/js/heritage-board.js",
+  "fn": "rowHtml",
+  "text": "charter.en",
+  "count": 1,
+  "surface": "Archive pages",
+  "decision": "D11"
+ },
+ {
+  "id": "B11:fids-current/js/heritage-board.js:rowHtml:note.en",
+  "check": "B11",
+  "file": "fids-current/js/heritage-board.js",
+  "fn": "rowHtml",
+  "text": "note.en",
+  "count": 1,
+  "surface": "Archive pages",
+  "decision": "D11"
+ },
+ {
+  "id": "B11:fids-current/app.html:T:I18N.en",
+  "check": "B11",
+  "file": "fids-current/app.html",
+  "fn": "T",
+  "text": "I18N.en",
+  "count": 1,
+  "surface": "Companion app",
+  "decision": "D6"
  }
 ]

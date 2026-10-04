@@ -430,7 +430,7 @@ function run(options) {
       const nv = norm(v);
       if (nen && nv === nen && !brand(en) && !sameAllowed(en, l) && !P.UNIT_TERMS.includes(en.trim()))
         add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ' + l, msg: `${l} is the English '${v}' \u2014 translate it, or list it in SAME_AS_ENGLISH if it is that language's own word` });
-      else if (l !== 'fr' && o.langs.fr && nv === norm(o.langs.fr) && nv !== nen && !sameAllowed(en, l))
+      else if (l !== 'fr' && o.langs.fr && nv === norm(o.langs.fr) && nv !== nen && !sameAllowed(en, l) && !P.UNIT_TERMS.includes(nv) && !P.UNIT_TERMS.includes(String(v).trim()))
         add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ' + l, msg: `${l} is the French '${v}'` });
       // the English, with something added: 'Tomorrow (morgen)'
       else if (nen.length >= 3 && nv !== nen && (' ' + nv + ' ').includes(' ' + nen + ' ') && !brand(en) && !sameAllowed(en, l) && !P.UNIT_TERMS.includes(en.trim()))
@@ -1008,6 +1008,14 @@ function run(options) {
       // an English fallback: o[lang] || o.en — the missing language shows English
       if (tk.t === 'punc' && (tk.v === '||' || tk.v === '??') && t[i + 1] && t[i + 1].t === 'id' && t[i + 2] && t[i + 2].v === '.' && t[i + 3] && t[i + 3].v === 'en' && !(t[i + 4] && t[i + 4].v === '(')) {
         add({ check: 'B11', file: rel, line: tk.line, fn, text: '|| ' + t[i + 1].v + '.en', msg: 'an English fallback: a missing language shows English. Every entry has all nine (B1); render the language asked for, or nothing' });
+      }
+      // any read of a word table's English outside the store's helpers:
+      // x.en standing in for the language on screen (a fallback, or a fixed
+      // English half). META.en (settings) is not words.
+      if (tk.t === 'id' && tk.v === 'en' && t[i - 1] && t[i - 1].v === '.' && t[i - 2] && t[i - 2].t === 'id' && t[i - 2].v !== 'META'
+          && !(t[i + 1] && /^(\(|=|\+=|\|\|=|\?\?=)$/.test(t[i + 1].v)) && !(t[i - 3] && t[i - 3].v === '.' && t[i - 4] && t[i - 4].v === 'META')
+          && !(t[i - 3] && t[i - 3].v === '||')) {
+        add({ check: 'B11', file: rel, line: tk.line, fn, text: t[i - 2].v + '.en', msg: 'the English read directly — a fallback, or a half fixed in English. Read the language the board is showing (every entry has all nine)' });
       }
       if (tk.t === 'punc' && (tk.v === '||' || tk.v === '??') && t[i + 1] && t[i + 1].t === 'id' && t[i + 2] && t[i + 2].v === '[' && t[i + 3] && t[i + 3].t === 'str' && t[i + 3].v === 'en' && t[i + 4] && t[i + 4].v === ']') {
         add({ check: 'B11', file: rel, line: tk.line, fn, text: "|| " + t[i + 1].v + "['en']", msg: 'an English fallback: a missing language shows English' });

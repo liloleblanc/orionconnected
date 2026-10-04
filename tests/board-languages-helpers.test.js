@@ -234,3 +234,59 @@ test('TL()/SL(): a key outside the legacy table comes from the store; a missing 
     assert.equal(H.SL('noSuchStatus'), '');
   }
 });
+
+// ── v23960 (second pass) ──────────────────────────────────────────────────
+
+test('the store is frozen: a run-time write changes nothing', () => {
+  const deep = (o, path) => {
+    assert.ok(Object.isFrozen(o), path + ' is frozen');
+    for (const k of Object.keys(o)) if (o[k] && typeof o[k] === 'object') deep(o[k], path + '.' + k);
+  };
+  deep(BS.STR, 'STR'); deep(BS.LISTS, 'LISTS'); deep(BS.META, 'META');
+  assert.ok(Object.isFrozen(BS.LANGS) && Object.isFrozen(BS.FR_FIRST));
+  assert.throws(() => { 'use strict'; BS.STR.tomorrow.fr = 'Lendemain'; }, TypeError);
+  assert.equal(BS.bs('tomorrow', 'fr'), 'Demain');
+});
+
+test('every LISTS entry carries all nine languages, of one length, and list() never falls back to English', () => {
+  for (const [key, e] of Object.entries(BS.LISTS)) {
+    const n = e.en.length;
+    for (const l of LANGS) {
+      assert.ok(Array.isArray(e[l]), `${key}.${l}`);
+      assert.equal(e[l].length, n, `${key}.${l} has ${n} lines`);
+      assert.deepEqual(BS.list(key, l), e[l]);
+    }
+  }
+  assert.deepEqual(BS.list('noSuchList', 'fr'), []);
+});
+
+test('a board reads one clock: the clock of the language it leads with', () => {
+  const t = Date.UTC(2026, 9, 4, 22, 1);   // 7:01pm in Moncton
+  assert.equal(BS.boardTime(t, 'America/Moncton', { list: ['en', 'fr'] }), '7:01 PM');
+  assert.equal(BS.boardTime(t, 'America/Moncton', { list: ['en', 'fr'], hour: '2-digit' }), '07:01 PM');
+  for (const L of [['fr'], ['fr', 'en'], ['de'], ['de', 'pt'], ['ja', 'ar'], ['es', 'zh']])
+    assert.equal(BS.boardTime(t, 'America/Moncton', { list: L }), '19:01', L.join(','));
+  assert.equal(BS.boardTime(t, 'America/Moncton', { list: ['de'], hourOnly: true }), '19:00');
+  assert.equal(BS.boardClockText('7:01PM · 6:15 pm · 12:03am · 5:20 p.m. · 11:55 AM', ['de']), '19:01 · 18:15 · 00:03 · 17:20 · 11:55');
+  assert.equal(BS.boardClockText('7:01PM', ['en', 'fr']), '7:01PM', 'a board led by English keeps its own');
+  assert.ok(BS.boardClock24(['fr', 'en']) && !BS.boardClock24(['en', 'fr']));
+});
+
+test('looksLike(): a feed answer is shown in a language only when it is in it', () => {
+  for (const l of ['fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
+    assert.equal(BS.looksLike('Welcome to a new era of luxury.', l), false, 'English is not ' + l);
+    assert.equal(BS.looksLike('Fitness center, indoor pool, hot tub, sauna', l), false, 'an English amenity list is not ' + l);
+  }
+  assert.ok(BS.looksLike('Le Fairmont Royal York est situé en centre-ville de Toronto', 'fr'));
+  assert.ok(BS.looksLike('Gimnasio, piscina cubierta, bañera de hidromasaje y sauna', 'es'));
+  assert.ok(BS.looksLike('中心部から1 km', 'ja'));
+  assert.ok(BS.looksLike('距市中心1 km', 'zh') && !BS.looksLike('中心部から1 km', 'zh'));
+  assert.ok(BS.looksLike('1 km من وسط المدينة', 'ar') && !BS.looksLike('1 km from downtown', 'ar'));
+  assert.ok(BS.looksLike('Anything', 'en'));
+});
+
+test('markHalf marks the word, not the separator in front of it', () => {
+  assert.equal(BS.markHalf('<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2">ご搭乗機</span>', 'ja'),
+    '<span class="v2-fi-sep"> | </span><span class="v2-fi-lbl-2" lang="ja">ご搭乗機</span>');
+  assert.equal(BS.markHalf('<span class="x">الآن</span>', 'ar'), '<span class="x" lang="ar" dir="rtl">الآن</span>');
+});

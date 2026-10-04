@@ -15,19 +15,19 @@
   // are not translated — they're universal identifiers.
   const TX = {
     // Column headers
-    airline:    { en:'Airline', fr:'Ligne aérienne', es:'Aerolínea', de:'Fluggesellschaft', it:'Compagnia', pt:'Companhia', ja:'航空会社', zh:'航空公司', ar:'شركة الطيران' },
+    airline:    { en:'Airline', fr:'Compagnie', es:'Aerolínea', de:'Fluggesellschaft', it:'Compagnia', pt:'Companhia', ja:'航空会社', zh:'航空公司', ar:'شركة الطيران' },
     to:         { en:'Destination', fr:'Destination',   es:'Destino',         de:'Ziel',             it:'Destinazione',       pt:'Destino',      ja:'目的地',     zh:'目的地',     ar:'الوجهة' },
     from:       { en:'From',    fr:'De',             es:'Desde',     de:'Von',              it:'Da',        pt:'De',        ja:'出発地',   zh:'出发地',     ar:'من' },
     weather:    { en:'Weather', fr:'Météo',          es:'Clima',     de:'Wetter',           it:'Meteo',     pt:'Clima',     ja:'天気',     zh:'天气',     ar:'الطقس' },
     flight:     { en:'Flight #',  fr:'Vol #',            es:'Vuelo #',     de:'Flug #',             it:'Volo #',      pt:'Voo #',       ja:'便名 #',     zh:'航班 #',     ar:'# رحلة' },
     gate:       { en:'Gate',    fr:'Porte',          es:'Puerta',    de:'Gate',             it:'Gate',      pt:'Portão',    ja:'ゲート',   zh:'登机口',   ar:'البوابة' },
-    carousel:   { en:'Carousel',fr:'Carrousel',      es:'Carrusel',  de:'Band',             it:'Nastro',    pt:'Esteira',   ja:'ターンテーブル', zh:'行李转盘', ar:'الحزام' },
+    carousel:   { en:'Carousel',fr:'Carrousel',      es:'Carrusel',  de:'Band',             it:'Nastro',    pt:'Esteira',   ja:'ターンテーブル', zh:'行李转盘', ar:'سير الأمتعة' },
     time:       { en:'Time',    fr:'Heure',          es:'Hora',      de:'Zeit',             it:'Ora',       pt:'Hora',      ja:'時刻',     zh:'时间',     ar:'الوقت' },
-    status:     { en:'Status',  fr:'Statut',         es:'Estado',    de:'Status',           it:'Stato',     pt:'Estado',    ja:'状況',     zh:'状态',     ar:'الحالة' },
+    status:     { en:'Status',  fr:'Statut',         es:'Estado',    de:'Status',           it:'Stato',     pt:'Status',    ja:'状況',     zh:'状态',     ar:'الحالة' },
     departures: { en:'Departures', fr:'Départs',     es:'Salidas',   de:'Abflüge',          it:'Partenze',  pt:'Partidas',  ja:'出発',     zh:'出发',     ar:'المغادرات' },
     arrivals:   { en:'Arrivals',   fr:'Arrivées',    es:'Llegadas',  de:'Ankünfte',         it:'Arrivi',    pt:'Chegadas',  ja:'到着',     zh:'到达',     ar:'الوصول' },
     // Status words
-    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Geplant',        it:'Previsto',         pt:'Programado',         ja:'予定',     zh:'计划',     ar:'مجدول' },
+    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Geplant',        it:'Previsto',         pt:'Programado',         ja:'定刻',     zh:'计划',     ar:'مجدول' },
     'st-on-time':     { en:'On time',     fr:'À l\'heure',    es:'A tiempo',       de:'Pünktlich',        it:'In orario',        pt:'No horário',       ja:'定刻',     zh:'准点',     ar:'في الموعد' },
     'st-boarding':    { en:'Boarding',    fr:'Embarquement',  es:'Embarcando',     de:'Boarding',         it:'Imbarco',          pt:'Embarque',         ja:'搭乗中',   zh:'登机中',   ar:'الصعود', $ctx: 'status' },
     'st-final-call':  { en:'Final call',  fr:'Dernier appel', es:'Última llamada', de:'Letzter Aufruf',   it:'Ultima chiamata',  pt:'Última chamada',   ja:'最終案内', zh:'最后登机', ar:'النداء الأخير' },
@@ -38,7 +38,7 @@
     'st-en-route':    { en:'En route',    fr:'En vol',        es:'En vuelo',       de:'Unterwegs',        it:'In volo',          pt:'Em voo',           ja:'飛行中',   zh:'飞行中',   ar:'في الطريق' },
     'st-departed':    { en:'Departed',    fr:'Parti',         es:'Despegó',         de:'Gestartet',       it:'Partito',          pt:'Partiu',           ja:'出発済',   zh:'已起飞',   ar:'غادرت' },
     'st-arrived':     { en:'Arrived',     fr:'Arrivé',        es:'Llegó',        de:'Gelandet',       it:'Arrivato',         pt:'Chegou',           ja:'到着済',     zh:'已到达',   ar:'وصلت' },
-    'st-delayed':     { en:'Delayed',     fr:'En retard',     es:'Retrasado',      de:'Verspätet',        it:'In ritardo',       pt:'Atrasado',         ja:'遅延',     zh:'延误',     ar:'متأخر' },
+    'st-delayed':     { en:'Delayed',     fr:'En retard',     es:'Retrasado',      de:'Verspätet',        it:'In ritardo',       pt:'Atrasado',         ja:'遅延',     zh:'延误',     ar:'متأخرة' },
     'st-early':       { en:'Early',       fr:'En avance',     es:'Adelantado',     de:'Verfrüht',         it:'In anticipo',      pt:'Adiantado',        ja:'早着',     zh:'提前',     ar:'مبكر' },
 
     'st-cancelled':   { en:'Cancelled',   fr:'Annulé',        es:'Cancelado',      de:'Annulliert',       it:'Cancellato',       pt:'Cancelado',        ja:'欠航',     zh:'取消',     ar:'ملغاة' },

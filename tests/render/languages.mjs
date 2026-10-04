@@ -35,7 +35,10 @@ const PORT = 8400 + Math.floor(Math.random() * 90);
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const W = 1680, H = 1050;
 
-const SETS = [['de', 'pt'], ['pt', 'de'], ['ar', 'ja'], ['ja', 'ar'], ['es', 'zh'], ['zh', 'es']];
+// French alone and French first too: 'Embarquement' was cut to
+// 'Embarqueme…' in the departures board's status column on a French-only
+// board and at Montréal (fr,en), and no picture ever put French first.
+const SETS = [['de', 'pt'], ['pt', 'de'], ['ar', 'ja'], ['ja', 'ar'], ['es', 'zh'], ['zh', 'es'], ['fr'], ['fr', 'en']];
 const SURFACES = {
   gate: (l) => `/gids.html?ap=YQM&mode=live&gate=4&langs=${l}`,
   departures: (l) => `/fids.html?ap=YQM&mode=live&langs=${l}`,
@@ -107,20 +110,35 @@ const CHECK = `(async function () {
     }
     if (tb.right > vw + 1 || tb.left < -1) clipped.push(t.slice(0, 60) + ' [off screen]');
   }
-  var notRtl = [].slice.call(document.querySelectorAll('span[lang="ar"], bdi[lang="ar"], div[lang="ar"].bs-h, [lang="ar"][class*="-h"]'))
-    .filter(function (e) { var b = e.getBoundingClientRect(); return b.width > 0 && getComputedStyle(e).direction !== 'rtl'; })
-    .map(function (e) { return e.textContent.trim().slice(0, 40); });
+  // every Arabic word on screen, not only the elements already marked
+  // lang="ar": its element must read right to left, and Chinese must sit
+  // under lang="zh" so it takes the simplified-Chinese glyphs
+  var notRtl = [], zhNotZh = [];
+  var tw2 = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n2;
+  var Lset = null; try { Lset = langs.slice(); } catch (e) {}
+  while ((n2 = tw2.nextNode())) {
+    var t2 = n2.nodeValue.trim(), el2 = n2.parentElement;
+    if (!t2 || !el2 || /^(SCRIPT|STYLE)$/.test(el2.tagName) || el2.closest('[data-operator]')) continue;
+    var b2 = el2.getBoundingClientRect();
+    if (b2.width < 1 || b2.height < 1 || !shown(el2)) continue;
+    if (/[\u0600-\u06ff]/.test(t2) && getComputedStyle(el2).direction !== 'rtl') notRtl.push(t2.slice(0, 40));
+    if (Lset && Lset.indexOf('zh') >= 0 && Lset.indexOf('ja') < 0 && /[\u4e00-\u9fff]/.test(t2)) {
+      var lz = el2.closest('[lang]');
+      if (!lz || !/^zh/.test(lz.getAttribute('lang'))) zhNotZh.push(t2.slice(0, 40));
+    }
+  }
   var fonts = {};
   document.fonts.forEach(function (f) { if (/Noto Sans (JP|SC|Arabic)/.test(f.family) && f.status === 'loaded') fonts[f.family.replace(/["']/g, '')] = 1; });
   var L = null; try { L = langs.slice(); } catch (e) {}
-  return JSON.stringify({ langs: L, clipped: clipped, notRtl: notRtl, script: script, scriptBare: scriptBare, fontsLoaded: Object.keys(fonts) });
+  return JSON.stringify({ langs: L, clipped: clipped, notRtl: notRtl, zhNotZh: zhNotZh, script: script, scriptBare: scriptBare, fontsLoaded: Object.keys(fonts) });
 })()`;
 
 // ── the browser ───────────────────────────────────────────────────────────
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function shoot(url, out) {
   const port = String(9300 + Math.floor(Math.random() * 600));
-  const prof = fs.mkdtempSync(path.join(OUT, '.prof-'));
+  // PROFILE_DIR: where the throwaway profile goes (default: beside the pictures)
+  const prof = fs.mkdtempSync(process.env.PROFILE_DIR ? path.join(process.env.PROFILE_DIR, 'prof-pics-') : path.join(OUT, '.prof-'));
   // perl's alarm puts a hard ceiling on the browser even if this
   // script dies before it can kill it
   const chrome = spawn('perl', ['-e', 'alarm 120; exec @ARGV', CHROME, '--headless=new', '--disable-gpu', '--hide-scrollbars', `--user-data-dir=${prof}`,
@@ -184,6 +202,7 @@ try {
       if (String(r.langs) !== String(set)) problems.push(`the board shows ${r.langs}, not ${l}`);
       for (const c of r.clipped) problems.push('clipped: ' + c);
       for (const a of r.notRtl) problems.push('Arabic not right to left: ' + a);
+      for (const z of r.zhNotZh) problems.push('Chinese not marked lang="zh" (drawn with Japanese glyph forms): ' + z);
       for (const s of r.scriptBare) problems.push('no script font in the stack: ' + s);
       const need = set.map((x) => ({ ja: 'Noto Sans JP', zh: 'Noto Sans SC', ar: 'Noto Sans Arabic' })[x]).filter(Boolean);
       for (const f of need) if (r.script && !r.fontsLoaded.includes(f)) problems.push(f + ' never loaded');
