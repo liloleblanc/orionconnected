@@ -75,10 +75,11 @@ test('gate rendering carries one status key and a next-day context', () => {
 });
 
 test('diverted flights use a full red row on flight and baggage boards', () => {
+  // v23967 — the even strip is #DA3544 (white 4.59:1); #DE4B58 was 4.00:1.
   assert.doesNotMatch(flightCss, /row-diverted[^}]*#185A9D/i);
   assert.doesNotMatch(baggageCss, /row-diverted[^}]*#185A9D/i);
   assert.match(css, /row-diverted:nth-child\(odd\)[\s\S]*background-color:\s*#A61B2B\s*!important/);
-  assert.match(css, /row-diverted:nth-child\(even\)[\s\S]*background-color:\s*#DE4B58\s*!important/);
+  assert.match(css, /row-diverted:nth-child\(even\)[\s\S]*background-color:\s*#DA3544\s*!important/);
 });
 
 test('the gate banner date refreshes itself over a day boundary', () => {

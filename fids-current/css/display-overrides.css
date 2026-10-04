@@ -5953,7 +5953,7 @@ html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(n) td.td-st
 }
 html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) td.td-status,
 html:not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) td.td-status.fids-status-final {
-  background: #DE4B58 !important;
+  background: #DA3544 !important;
 }
 /* every logo image on a cancelled/diverted row renders white — tile,
    emblem, monogram and wordmark alike */
@@ -7480,15 +7480,19 @@ The v22643 block already asked for white on every glyph of a
    Deliberately NOT covered: the airline art. Raster wordmarks are swapped to
    their white-ink variant at the source (fids-core _rowWmVariant); a colour
    rule cannot recolour a PNG and a filter would wreck it (the Breeze
-   white-square lesson). */
+   white-square lesson).
+
+   v23967 — nor the NEW GATE badge: it is a chip with its own amber ground,
+   and white on that amber is 1.83:1. It keeps its own navy (the rule after
+   the Diverted strip, below). */
 html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td,
-html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td *,
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-cancelled td *:not(.gate-changed-badge),
 html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td,
-html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td *,
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted td *:not(.gate-changed-badge),
 html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled,
-html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled *,
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-cancelled *:not(.gate-changed-badge),
 html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted,
-html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted *:not(.gate-changed-badge) {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
   text-decoration: none !important;
@@ -12845,7 +12849,9 @@ html body .g8-wrap .gad-map-col-v2 .v2-rc-aircraft-hold-text {
 
 /* Diverted is an irregular-operation alarm, not an airline/theme colour.
    Keep every FIDS and BIDS cell on the same alternating red strip so a
-   theme's ordinary blue row cannot split the row from its Status cell. */
+   theme's ordinary blue row cannot split the row from its Status cell.
+   v23967 — the even strip is #DA3544, not #DE4B58: the same hue one step
+   darker, so its white lettering is 4.59:1 instead of 4.00:1. */
 html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(odd),
 html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(odd) > td,
 html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted:nth-child(odd) {
@@ -12854,14 +12860,27 @@ html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted:nth-chi
 html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even),
 html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted:nth-child(even) > td,
 html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted:nth-child(even) {
-  background-color: #DE4B58 !important;
+  background-color: #DA3544 !important;
 }
 html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted > td,
-html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted > td *,
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr.row-diverted > td *:not(.gate-changed-badge),
 html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted,
-html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted * {
+html:not(#_):not(#_) body:not(#_) .bidsv2-flight-row.bidsv2-row-diverted *:not(.gate-changed-badge) {
   color: #ffffff !important;
   -webkit-text-fill-color: #ffffff !important;
+}
+/* v23967 — THE NEW GATE BADGE ON A RED ROW KEEPS ITS NAVY. The white above
+   is for words on the red strip; the badge is a chip with its own amber
+   ground, and the row's white on that amber is 1.83:1. The gate history
+   drops departed and cancelled flights but keeps a diverted one (departures
+   and arrivals alike) for 15 min after a move, so a moved flight that is
+   then diverted carries the badge on this row. Navy #102437 on the amber is
+   8.6:1, the badge's own ink everywhere else on the board. Cancelled shares
+   the red rows' white rule, so it is named too: the badge reads the same on
+   every red row, whatever the history keeps. */
+html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable tbody tr:is(.row-diverted, .row-cancelled) td .gate-changed-badge {
+  color: #102437 !important;
+  -webkit-text-fill-color: #102437 !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -15282,6 +15301,21 @@ Centring them left a deep empty band above a short belt —
 .bidsv3 .b3-row.b3-delayed   { background: linear-gradient(100deg,#8a5f00 0%,#c98f10 55%,#eec052 100%); border-color: #5e4100; }
 .bidsv3 .b3-row.b3-cancelled,
 .bidsv3 .b3-row.b3-diverted  { background: linear-gradient(100deg,#7c1620 0%,#a82633 55%,#d05560 100%); border-color: #55070f; }
+
+/* v23967 — THE DELAYED BAR TAKES THE BOARD'S DELAYED GRAMMAR: YELLOW, NAVY
+   LETTERING. White and pale blue on the dark-gold-to-yellow ramp above were
+   2.3:1 to 4.0:1 under the glyphs (ground read with the text hidden): the
+   time and the code sit where the ramp is already light. No single ink holds
+   on a ramp from #8a5f00 to #eec052, so the ramp moves into the departures
+   board's Delayed yellow and the lettering takes its navy, as the Delayed
+   row on the board does. Navy on this ramp is 6.9:1 at its darkest end. The
+   status pill's amber word is one step deeper (#8A5C00, 5.6:1 on the pill;
+   #A66F00 was 4.1:1). The wordmark takes its dark artwork on this bar
+   (fids-core.js), and the mono marks were already inked black here. */
+.bidsv3 .b3-row.b3-delayed { background: linear-gradient(100deg,#D9A400 0%,#EDBB00 55%,#F5C441 100%); border-color: #8a5f00; color: #16283C; }
+.bidsv3 .b3-row.b3-delayed :is(.b3-airline-name, .b3-num, .b3-from, .b3-city, .b3-code, .b3-time) { color: #16283C; text-shadow: none; }
+.bidsv3 .b3-row.b3-delayed .b3-sep { color: rgba(22,40,60,.55); }
+.bidsv3 .b3-status.s-delayed { color: #8A5C00; border-color: #8A5C00; }
 
 .bidsv3 .bidsv2-empty { font-size: 34px; color: #16283C; text-align: center; }
 .bidsv3 .bidsv2-page-indicator { color: #16283C; }
@@ -19568,6 +19602,68 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   object-fit: cover !important;
 }
 
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v23967 — THE HISTORY ROWS HAVE AN INK OF THEIR OWN.
+
+   Departed, Arrived and Gate closed rows paint every cell #262D36 (a dark
+   slate) and fade the whole row to 0.55 (flight-display.css). Their text had
+   no ink of its own: it took --fids-text, which a custom palette sets to its
+   Row Text after flooring it against the BOARD background, not against this
+   slate. On Ottawa's palette that is #18181B, 1.16:1 on the slate, so the
+   history rows were unreadable until _fidsRowInk lifted them, and readable
+   only until the next 12 s rebuild wiped the lift: they changed colour every
+   few seconds. The painters no longer touch status rows (v23967 in
+   fids-core.js), so the stylesheet states the ink: white on every cell, the
+   status word and the revised time included. Amber stays with flights that
+   have not gone (v22656). Kept above the v23773 sign block: every selector
+   from that block to the end of this file carries its 16 guards
+   (tests/boarding-sign.test.js).
+
+   THE FADE IS 0.7, NOT 0.55. The fade is group opacity: the whole row, ink
+   and ground together, is mixed with whatever is painted behind the table,
+   so the ratio depends on that backdrop. At 0.55, white on the slate is
+   4.41:1 over Ottawa's cyan (measured on the screen pixels) and 3.6:1 over
+   Moncton's pale mint (its backdrop, read with the rows hidden); no ink can
+   reach 4.5:1 over a light backdrop at that fade. At 0.7 the three pairs a
+   history row carries clear 4.5:1 over ANY backdrop, black to white (worst
+   case over the whole colour cube):
+     white on the dark slate #262D36        5.29:1
+     black on the light-board slate #AEB7C1 5.23:1
+     black on the NEW GATE amber #FFB000    5.22:1
+   So the rows still read as gone, and every word on them reads. Inside the
+   fade nothing dims again: the superseded scheduled time keeps full ink
+   (its own 0.75 dim made it 3.2:1), as it already does on Delayed, Final
+   call, Cancelled and Diverted rows.
+
+   THE NEW GATE BADGE KEEPS ITS OWN INK. It is a chip with its own amber
+   ground, so the row's white (or black) is the wrong ink for it; white on
+   the amber is 1.8:1. On a history row it takes black, the one ink that
+   holds 4.5:1 on the amber inside the fade (navy is 4.17:1 at Ottawa). The
+   gate history keeps a moved gate-closed flight for 15 min, so the badge
+   does reach these rows.
+
+   LIGHT BOARDS: the history rows wore the amber revised time and Gate
+   closed word (#A66F00, 2.11:1 on the pale slate before the fade) and a
+   0.48-alpha Departed word (2.41:1). Black on every cell, like the dark
+   boards' white. */
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) {
+  opacity: 0.7 !important;
+}
+html:not(#_):not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td,
+html:not(#_):not(#_) body:not(.fids-light-board):not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td *:not(.gate-changed-badge) {
+  color: #FFFFFF !important;
+}
+html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td,
+html:not(#_):not(#_) body.fids-light-board:not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td *:not(.gate-changed-badge) {
+  color: #000000 !important;
+}
+html:not(#_):not(#_) body:not(#_):not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td .gate-changed-badge {
+  color: #000000 !important;
+}
+html:not(#_):not(#_) body:not(#_) #fidsTable tbody tr:is(.row-departed, .row-arrived, .row-gate-closed) td.td-time-sched.is-revised {
+  opacity: 1 !important;
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    v23773 — THE SIGN, TO THE PICTURE.
