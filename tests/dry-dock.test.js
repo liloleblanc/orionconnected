@@ -287,3 +287,59 @@ test('the on-air snapshot is a copy, never the live list', () => {
   assert.doesNotMatch(body, /\baps\b/,
     'and the poll still does not name the running list — not even in a comment');
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23950 — A COLD PAGE DOES NOT RELOAD FOR A DOCK THAT CHANGES NOTHING ON AIR.
+//
+// On a fresh profile the run is built before any copy of the dock is cached,
+// so the first poll always "sees a change". It used to raise reloadPending
+// whenever anything at all was docked — Sydney is, and is not on the tour —
+// so every fresh profile reloaded at its first airport switch and started the
+// tour over. These run the real poll, sliced from rotate.html.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function runDockPoll({ cached, served, onAir }) {
+  const at = ROTATE.indexOf('var DOCK_URL = ');
+  const end = ROTATE.indexOf('checkDock();', at);
+  assert.ok(at > 0 && end > at, 'rotate.html must still define the dock poll');
+  const store = new Map(cached === undefined ? [] : [['oc_dry_dock', cached]]);
+  const ls = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => { store.set(k, String(v)); },
+  };
+  let reloads = 0;
+  const loc = { reload: () => { reloads++; } };
+  const fetchStub = () => Promise.resolve({ ok: true, json: () => Promise.resolve(served) });
+  const run = new Function('fetch', 'localStorage', 'location', 'window', 'console',
+    'var reloadPending = false;\n' + ROTATE.slice(at, end) +
+    '\nreturn new Promise(function (res) { checkDock(); setTimeout(function () { res(reloadPending); }, 0); });');
+  return run(fetchStub, ls, loc, { _runOnAir: onAir }, { log() {}, warn() {} })
+    .then((pending) => ({ pending, reloads, cached: ls.getItem('oc_dry_dock') }));
+}
+
+const TOUR_ON_AIR = ['ORD', 'DEN', 'SFO', 'YOW', 'YHZ'];
+
+test('a cold page with nothing docked on air keeps playing — no reload, list cached', async () => {
+  const r = await runDockPoll({ served: { docked: ['SYD'] }, onAir: TOUR_ON_AIR });
+  assert.equal(r.reloads, 0, 'nothing on air is docked, so there is nothing to reload for');
+  assert.equal(r.pending, false, 'and no reload at the next switch either — it would only restart the tour');
+  assert.equal(r.cached, JSON.stringify({ docked: ['SYD'] }), 'the list is still cached for the next build');
+});
+
+test('a cold page with a docked airport on air reloads at once', async () => {
+  const r = await runDockPoll({ served: { docked: ['YOW'] }, onAir: TOUR_ON_AIR });
+  assert.equal(r.reloads, 1, 'the run must be rebuilt without the docked airport');
+});
+
+test('a running page still applies a change at the next switch', async () => {
+  const dock = await runDockPoll({ cached: JSON.stringify({ docked: ['SYD'] }),
+    served: { docked: ['SYD', 'LHR'] }, onAir: TOUR_ON_AIR });
+  assert.equal(dock.pending, true, 'a newly docked airport is applied at the next switch');
+  const undock = await runDockPoll({ cached: JSON.stringify({ docked: ['SYD', 'YOW'] }),
+    served: { docked: ['SYD'] }, onAir: ['ORD', 'DEN'] });
+  assert.equal(undock.pending, true, 'and an undocked airport comes back the same way');
+  const same = await runDockPoll({ cached: JSON.stringify({ docked: ['SYD'] }),
+    served: { docked: ['SYD'] }, onAir: TOUR_ON_AIR });
+  assert.equal(same.pending, false, 'an unchanged list does nothing');
+  assert.equal(same.reloads, 0);
+});

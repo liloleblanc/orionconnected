@@ -45,19 +45,103 @@ test('checkSelf does not depend on headers the CDN omits', () => {
   assert.doesNotMatch(fn, /method:\s*'HEAD'/,
     'a HEAD gives no body to fall back on when /rotate carries no etag');
   assert.match(fn, /r\.text\(\)/, 'it must be able to signature the body');
-  assert.match(fn, /charCodeAt/, 'the body fallback must actually hash the bytes');
+  // v23950 — the hashing moved into selfSigOf (see the Cloudflare tests below).
+  const sf = ROTATE.slice(ROTATE.indexOf('function selfSigOf('), at);
+  assert.match(sf, /charCodeAt/, 'the body fallback must actually hash the bytes');
 });
 
+// The rotator's own signature function, sliced out of rotate.html and run as
+// is, so these tests cannot drift from what ships.
+const SIG_SRC = (() => {
+  const a = ROTATE.indexOf('var CF_INJECTED = ');
+  const b = ROTATE.indexOf('function checkSelf()');
+  assert.ok(a > 0 && b > a, 'rotate.html must define CF_INJECTED and selfSigOf before checkSelf');
+  return ROTATE.slice(a, b);
+})();
+const sig = new Function(SIG_SRC + '\nreturn selfSigOf;')();
+
 test('the body hash changes when the page changes, and only then', () => {
-  const at = ROTATE.indexOf('              var h = 0;');
-  const end = ROTATE.indexOf('return t.length', at);
-  const sig = new Function('t', ROTATE.slice(at, end) + "return t.length + ':' + h;");
   assert.equal(sig('hello world'), sig('hello world'), 'same bytes must give the same signature');
   assert.notEqual(sig('rotator v1'), sig('rotator v2'), 'a changed page must change the signature');
   // The realistic case: one build tag differs deep inside an otherwise identical page.
   const a = 'x'.repeat(4000) + "__ocRotatorVer = 23518;" + 'y'.repeat(4000);
   const b = 'x'.repeat(4000) + "__ocRotatorVer = 23520;" + 'y'.repeat(4000);
   assert.notEqual(sig(a), sig(b), 'a one-token change mid-file must still be detected');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v23950 — CLOUDFLARE EDITS THE PAGE; THE SIGNATURE MUST NOT SEE ITS EDITS.
+//
+// Measured on production on 2026-10-04. /rotate is served with a script of
+// Cloudflare's own appended before </body> (its bot check), carrying a new
+// request id and timestamp on every response, to a browser that has not yet
+// passed the check — which is the state the page is usually in when its
+// first self-check runs at load. So the first 30-minute poll "found a new
+// page", the rotator reloaded at the next airport switch, and the tour went
+// back to its first airport; for a browser that never passes the check this
+// repeats every half hour, and the tour never reaches Ottawa (21st of 26).
+// Headless Chrome against production, with the 30-minute poll
+// shortened to 20 seconds: the load-time check read 42,871 characters with
+// the script, the next read 41,933 without it, reloadPending went true and the
+// page reloaded at the first airport switch, starting over at Chicago.
+// ═══════════════════════════════════════════════════════════════════════════
+
+// The script exactly as Cloudflare appended it to a production response of
+// /rotate on 2026-10-04 (only the request id and timestamp vary).
+const cfScript = (ray, ts) =>
+  '<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);' +
+  "if(b){var d=b.createElement('script');d.innerHTML=\"window.__CF$cv$params={r:'" + ray + "',t:'" + ts + "'};" +
+  "var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';" +
+  "document.getElementsByTagName('head')[0].appendChild(a);\";b.getElementsByTagName('head')[0].appendChild(d)}}" +
+  "if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';" +
+  "a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);" +
+  "if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);" +
+  "else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);" +
+  "'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>";
+// How the edge serves the file: the script goes in just before </body>.
+const served = (html, ray, ts) => html.replace(/\n<\/body>/, '\n' + cfScript(ray, ts) + '</body>');
+
+test('Cloudflare\'s appended script does not change the signature', () => {
+  const one = served(ROTATE, 'a45732d0b89f39c3', 'MTc5MTE0ODQ5MA==');
+  const two = served(ROTATE, 'a45732d1fdb1ebbd', 'MTc5MTE0ODQ5MQ==');
+  assert.notEqual(one, ROTATE, 'the fixture must actually insert the script');
+  assert.equal(sig(one), sig(ROTATE),
+    'the copy served with the bot-check script must sign the same as the copy served without it');
+  assert.equal(sig(one), sig(two),
+    'and two copies with different request ids must sign the same — this is the reload');
+});
+
+test('other Cloudflare insertions are ignored too', () => {
+  const page = '<html><body><p>board</p>\n</body></html>';
+  const beacon = page.replace('</body>',
+    '<script defer src="https://static.cloudflare' + 'insights.com/beacon.min.js" data-cf-beacon=\'{"token":"x"}\'></script></body>');
+  const email = page.replace('</body>',
+    '<script data-cfasync="false" src="/cdn' + '-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body>');
+  assert.equal(sig(beacon), sig(page), 'the analytics beacon is not part of the page');
+  assert.equal(sig(email), sig(page), 'nor is the email-protection script');
+});
+
+test('a real change to the rotator is still seen, with or without the inserted script', () => {
+  const changed = ROTATE.replace("'YOW', 'YHZ'", "'YHZ', 'YOW'");
+  assert.notEqual(changed, ROTATE, 'the fixture edit must land (TOUR_DEFAULT order)');
+  assert.notEqual(sig(changed), sig(ROTATE), 'an edit to the tour list must change the signature');
+  assert.notEqual(sig(served(changed, 'a1', 'b1')), sig(served(ROTATE, 'a2', 'b2')),
+    'and must still be seen when both copies carry the inserted script');
+});
+
+test('the rotator\'s own script can never be mistaken for Cloudflare\'s', () => {
+  // The strip drops any <script> element whose text names Cloudflare's script
+  // paths. If rotate.html ever spelled one of those words out, its own script
+  // would be stripped from its own signature and no deploy would be seen.
+  for (const w of ['cdn' + '-cgi', '__CF' + '$cv', 'cloudflare' + 'insights']) {
+    assert.ok(!ROTATE.toLowerCase().includes(w.toLowerCase()),
+      `rotate.html must not contain the literal "${w}" — build the pattern from pieces`);
+  }
+  assert.equal((ROTATE.match(/<\/script/gi) || []).length, 1,
+    'one closing tag: the rotator is a single <script> element, so the strip sees it whole');
+  const at = ROTATE.indexOf('function checkSelf()');
+  const fn = ROTATE.slice(at, ROTATE.indexOf('\n      }', at) + 8);
+  assert.match(fn, /r\.text\(\)\.then\(selfSigOf\)/, 'checkSelf must sign with selfSigOf');
 });
 
 test('a pinned single-airport stream can still reload itself', () => {

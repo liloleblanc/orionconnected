@@ -27291,7 +27291,7 @@ var _BIDSV3_ON = true; //
     // once every 10 minutes. A current rotator publishes __ocRotatorVer and is
     // never touched, so this goes quiet for good the moment the stream is
     // running new code. Cross-origin access throws and is ignored.
-    var _OC_ROTATOR_MIN = 23518;   // must equal __ocRotatorVer in rotate.html
+    var _OC_ROTATOR_MIN = 23950;   // must equal __ocRotatorVer in rotate.html (v23950: raised so the boxes drop the copy whose self-check misfired)
     try {
       if (window.parent && window.parent !== window) {
         // v23426 — IDENTIFY THE ROTATOR BY ITS URL, NOT BY A JS MARKER.

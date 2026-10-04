@@ -135,6 +135,11 @@ test('tour=1 still forces the tour, tour=0 still opts out, tour=LIST still works
 // TOUR_DEFAULT[0], a full lap is two to three and a half hours, and anything
 // that reloads the page inside that time (a box restart, a self-refresh after
 // a deploy, a dock change) went back to the top. Ottawa is 21st of 26.
+// The reload measured on production was the self-check misreading
+// Cloudflare's edits to the page as a deploy (half an hour after a load, and
+// every half hour for a browser that never passes Cloudflare's check); that is
+// fixed at its source (tests/rotator-selfheal.test.js). The resume below keeps
+// any remaining reload from costing the tour its place.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const STREAM2 = 'ap=MIA&mode=live&stream=2&langs=en,es&rotate=gids,fids,gids,bids&dwell=60';
@@ -219,4 +224,17 @@ test('the resume only chooses the start; nothing reorders the live list afterwar
     'it is written each time a new airport comes up');
   assert.match(HTML, /ocTell\(frames\[aps\[0\]\]\[seq\[0\]\], true\);\s*noteTourNext\(\);/,
     'and when the run starts, so a restart during the first airport moves on too');
+});
+
+// v23950 — the bare-tour fallback runs before the dry dock, so the dock
+// applies to it. It used to run after, so a bare rotate.html (and a stream
+// aimed only at a dead airport) toured docked airports.
+test('a bare tour, and a tour that replaced a dead airport, both leave docked airports out', () => {
+  const docked = () => store({ oc_dry_dock: JSON.stringify({ docked: ['YOW'] }) });
+  for (const q of ['mode=live&rotate=fids', 'ap=ZZZ&mode=live&stream=1&rotate=fids']) {
+    const r = select(q, { ls: docked() });
+    assert.ok(r.isTour, `${q} still tours`);
+    assert.ok(!r.aps.includes('YOW'), `${q} must not put a docked airport on air`);
+    assert.ok(r.aps.length === r.TOUR_DEFAULT.length - 1, 'and only the docked one is left out');
+  }
 });
