@@ -1,0 +1,97 @@
+{
+ "captured": "2026-10-04T16:41Z via fids-proxy /flights/airports/iata/YDF/...?direction=Arrival, X-Feed-Source ydf-authority",
+ "arrivals": [
+  {
+   "number": "PB924",
+   "callSign": null,
+   "status": "scheduled",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YQM",
+     "icao": null,
+     "name": "Moncton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 20:25:00-02:30",
+     "utc": "2026-10-04 22:55:00+00:00"
+    },
+    "airline": {
+     "iata": "PB",
+     "icao": null,
+     "name": "PAL Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YDF",
+     "icao": "CYDF",
+     "name": "Deer Lake"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 20:25:00-02:30",
+     "utc": "2026-10-04 22:55:00+00:00"
+    },
+    "airline": {
+     "iata": "PB",
+     "icao": null,
+     "name": "PAL Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1791154500000
+  },
+  {
+   "number": "PB924",
+   "callSign": null,
+   "status": "scheduled",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "departure": {
+    "airport": {
+     "iata": "YQM",
+     "icao": null,
+     "name": "Moncton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-05 20:25:00-02:30",
+     "utc": "2026-10-05 22:55:00+00:00"
+    },
+    "airline": {
+     "iata": "PB",
+     "icao": null,
+     "name": "PAL Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YDF",
+     "icao": "CYDF",
+     "name": "Deer Lake"
+    },
+    "scheduledTime": {
+     "local": "2026-10-05 20:25:00-02:30",
+     "utc": "2026-10-05 22:55:00+00:00"
+    },
+    "airline": {
+     "iata": "PB",
+     "icao": null,
+     "name": "PAL Airlines"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "_authTs": 1791240900000
+  }
+ ]
+}

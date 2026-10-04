@@ -24011,3 +24011,56 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gad-map-col-v2 > .v2-rc-shelf-fi .v2-fi-title:is(.v2-fi-title-warn, .v2-fi-title-good) .v2-fi-sep {
   opacity: 0.62 !important;
 }
+
+/* ══ v23946 — THE DESTINATION'S TERMINAL AND ARRIVAL GATE ══════════════════
+   Under the gate's Arrival time, the terminal and arrival gate the
+   destination airport publishes ("Terminal 1 · Gate D53" over "Aérogare 1 ·
+   Porte D53", French first in Québec; _gateArrPlaceHtml in fids-core.js).
+   Each language is an unbreakable unit; on one line the quieter bar sits
+   between them (.v2-fi-arrplace-one, "Gate A12 | Porte A12"), otherwise a
+   line per language. .v2-fi-arrplace-noterm leaves the terminal out and
+   keeps the gate.
+   THE LINE NEVER COSTS THE TIME ITS SIZE. The rail's fitter sizes the Arrival
+   time (and its day line) with this line hidden, exactly as the Departure
+   and Boarding times beside it are sized, so the rail's times stay one size.
+   _gateArrPlaceFit then puts the line in the room that time leaves in the
+   plate: full, then the gate alone, one line before two, never larger than
+   .26em of the time and never smaller than three quarters of that (nor 11px).
+   With no such room it is not shown (inline display:none). ON THE MAIN
+   LANDSCAPE SCREENS THERE IS NO SUCH ROOM: at 1920x1080, 1680x1050 and
+   1280x720 the Arrival time fills its row and the line is never shown; it
+   shows at 1280x1024 and in portrait. Where it goes on landscape is an open
+   design call. Where it reaches the Login chip at the screen's bottom-left,
+   the fitter starts it just right of the chip (_gateClearOfLoginChip, an
+   inline padding-left). It takes the time's own ink, never a status colour
+   of its own, and it is static. Same sixteen guards as the day line's
+   rule. */
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value.v2-fi-time .v2-fi-arrplace {
+  display: block !important;
+  font-size: .26em !important;
+  line-height: 1.14 !important;
+  margin-top: .14em !important;
+  letter-spacing: 0 !important;
+  font-weight: 800 !important;
+  white-space: nowrap !important;
+  color: inherit !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value.v2-fi-time .v2-fi-arrplace .v2-fi-arrplace-w {
+  display: block !important;
+  white-space: nowrap !important;
+  font-size: inherit !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value.v2-fi-time .v2-fi-arrplace.v2-fi-arrplace-one .v2-fi-arrplace-w {
+  display: inline-block !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value.v2-fi-time .v2-fi-arrplace .v2-fi-arrplace-sep {
+  display: none !important;
+  opacity: .7 !important;
+  font-size: inherit !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value.v2-fi-time .v2-fi-arrplace.v2-fi-arrplace-one .v2-fi-arrplace-sep {
+  display: inline !important;
+}
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col,.g8-bir-shelves) .v2-fi-value.v2-fi-time .v2-fi-arrplace.v2-fi-arrplace-noterm .v2-fi-arrplace-t {
+  display: none !important;
+}

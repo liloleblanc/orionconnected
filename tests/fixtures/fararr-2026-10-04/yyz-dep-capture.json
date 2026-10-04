@@ -1,0 +1,261 @@
+{
+ "captured": "2026-10-04T16:22Z, Pearson getflightlist?type=DEP&day=today from a home connection (512 rows; these kept). Pearson answered the same request with its Radware challenge from the worker all day and from the same home connection 9 minutes later, so no arrivals list could be captured on 2026-10-04.",
+ "lastUpdate": "2026-10-04T12:20:00.0878051-04:00",
+ "list": [
+  {
+   "key": "A1004ACA644YYZYQM",
+   "id": "ACA644",
+   "id2": "AC644",
+   "type": "DEP",
+   "schTime": "2026-10-04T08:10:00-04:00",
+   "latestTm": "2026-10-04T08:04:00-04:00",
+   "gate": "D32",
+   "status": "DEP",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL8369",
+     "id2": "UA8369",
+     "alName": "United Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YQM",
+     "name": "Greater Moncton International Airport",
+     "short": "",
+     "city": "Moncton",
+     "cnty": "CAN",
+     "region": "NB"
+    }
+   ],
+   "carousel": null,
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": "2",
+   "zone": null,
+   "stand": "132"
+  },
+  {
+   "key": "A1004ACA1984YYZYQM",
+   "id": "ACA1984",
+   "id2": "AC1984",
+   "type": "DEP",
+   "schTime": "2026-10-04T14:20:00-04:00",
+   "latestTm": "2026-10-04T14:20:00-04:00",
+   "gate": "D26",
+   "status": "ONT",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAE5759",
+     "id2": "EK5759",
+     "alName": "Emirates"
+    },
+    {
+     "id": "UAL8393",
+     "id2": "UA8393",
+     "alName": "United Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YQM",
+     "name": "Greater Moncton International Airport",
+     "short": "",
+     "city": "Moncton",
+     "cnty": "CAN",
+     "region": "NB"
+    }
+   ],
+   "carousel": null,
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": "2",
+   "zone": null,
+   "stand": "126"
+  },
+  {
+   "key": "A1004ACA1986YYZYQM",
+   "id": "ACA1986",
+   "id2": "AC1986",
+   "type": "DEP",
+   "schTime": "2026-10-04T21:00:00-04:00",
+   "latestTm": "2026-10-04T21:00:00-04:00",
+   "gate": "D36",
+   "status": "ONT",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "UAL8080",
+     "id2": "UA8080",
+     "alName": "United Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "YQM",
+     "name": "Greater Moncton International Airport",
+     "short": "",
+     "city": "Moncton",
+     "cnty": "CAN",
+     "region": "NB"
+    }
+   ],
+   "carousel": null,
+   "termzone": "CAN",
+   "svctype": "J",
+   "aisle": "2",
+   "zone": null,
+   "stand": "136"
+  },
+  {
+   "key": "A1003ACA858YYZLHR",
+   "id": "ACA858",
+   "id2": "AC858",
+   "type": "DEP",
+   "schTime": "2026-10-03T23:50:00-04:00",
+   "latestTm": "2026-10-04T00:27:00-04:00",
+   "gate": "E76",
+   "status": "DEP",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "AEE3057",
+     "id2": "A33057",
+     "alName": "Aegean Airlines"
+    },
+    {
+     "id": "ETH1141",
+     "id2": "ET1141",
+     "alName": "Ethiopian Airlines"
+    },
+    {
+     "id": "DLH6559",
+     "id2": "LH6559",
+     "alName": "Lufthansa"
+    },
+    {
+     "id": "MEA4522",
+     "id2": "ME4522",
+     "alName": "Middle East Airlines"
+    },
+    {
+     "id": "MSR9619",
+     "id2": "MS9619",
+     "alName": "Egyptair"
+    },
+    {
+     "id": "AUA8288",
+     "id2": "OS8288",
+     "alName": "Austrian Airlines"
+    },
+    {
+     "id": "THA5806",
+     "id2": "TG5806",
+     "alName": "Thai Airways International"
+    },
+    {
+     "id": "UAL8412",
+     "id2": "UA8412",
+     "alName": "United Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "LHR",
+     "name": "London Heathrow Airport",
+     "short": "Heathrow",
+     "city": "London",
+     "cnty": "GBR",
+     "region": ""
+    }
+   ],
+   "carousel": null,
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": "5",
+   "zone": null,
+   "stand": "176"
+  },
+  {
+   "key": "A1004ACA858YYZLHR",
+   "id": "ACA858",
+   "id2": "AC858",
+   "type": "DEP",
+   "schTime": "2026-10-04T23:50:00-04:00",
+   "latestTm": "2026-10-04T23:50:00-04:00",
+   "gate": "E79",
+   "status": "ONT",
+   "term": "T1",
+   "al": "Air Canada",
+   "alCode": "ACA",
+   "ids": [
+    {
+     "id": "AEE3057",
+     "id2": "A33057",
+     "alName": "Aegean Airlines"
+    },
+    {
+     "id": "ETH1141",
+     "id2": "ET1141",
+     "alName": "Ethiopian Airlines"
+    },
+    {
+     "id": "DLH6559",
+     "id2": "LH6559",
+     "alName": "Lufthansa"
+    },
+    {
+     "id": "MEA4522",
+     "id2": "ME4522",
+     "alName": "Middle East Airlines"
+    },
+    {
+     "id": "MSR9619",
+     "id2": "MS9619",
+     "alName": "Egyptair"
+    },
+    {
+     "id": "AUA8288",
+     "id2": "OS8288",
+     "alName": "Austrian Airlines"
+    },
+    {
+     "id": "THA5806",
+     "id2": "TG5806",
+     "alName": "Thai Airways International"
+    },
+    {
+     "id": "UAL8412",
+     "id2": "UA8412",
+     "alName": "United Airlines"
+    }
+   ],
+   "routes": [
+    {
+     "code": "LHR",
+     "name": "London Heathrow Airport",
+     "short": "Heathrow",
+     "city": "London",
+     "cnty": "GBR",
+     "region": ""
+    }
+   ],
+   "carousel": null,
+   "termzone": "INTL",
+   "svctype": "J",
+   "aisle": "5",
+   "zone": null,
+   "stand": "179"
+  }
+ ]
+}
