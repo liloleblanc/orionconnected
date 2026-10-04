@@ -9507,6 +9507,17 @@ window._CARD_COLOR_EMBLEMS = {
   // treatments side by side to confirm white-on-accent is the crisp one.
   // Only genuinely single-colour art is removed here; multicolour marks stay
   // in the list, because whitening those would flatten them.
+  //
+  // v23942 — 'AF'. One colour is not the test; LETTERFORM is. Air France's
+  // virgule is a single red (#EB212B), so the derived rule above left it off
+  // and both gate orbs inked it white: a white slash on the navy rail orb and
+  // on the Your Aircraft caption. It is an emblem whose red IS the brand, not
+  // a letter drawn to be inked white, and an emblem is never whitened. It
+  // keeps its navy disc (#002157, the carrier accent the five glyph badges
+  // beside it also wear): the red measures 3.5:1 on it, and red on navy is
+  // Air France's own reversed treatment, so the column stays one colour and
+  // only the virgule changes.
+  'AF': true
 };
 // One rule for "this orb keeps its real colours", so no call site can drift
 // from another again.
@@ -15702,6 +15713,25 @@ function uxgGateHtml(ctx) {
     ? ((!_apIsYQM && _silkInkLum < 120) ? _silkBase : '#0A2E6B')
     : '#ffffff';
   var _silkInkSoft = _silkLightBand ? 'rgba(10,46,107,0.86)' : 'rgba(255,255,255,0.82)';
+  // v23942 — THE SKYTEAM BADGE READS ON THE BAND IT SITS ON.
+  //
+  // ALLIANCE_LOGOS hands every SkyTeam carrier skyteam-white.png, a white mark
+  // drawn for the near-black banner. Since v23646 every banner is a LIGHT band
+  // (a pale tint of the carrier's colour), so on the Air France gate the badge
+  // beside the wordmark was white on pale grey and could barely be seen. Star
+  // Alliance (an opaque metallic tile) and oneworld (a navy ball) were never
+  // affected: their marks carry their own colour.
+  //
+  // skyteam-colour.svg is the official colour mark already in the repo
+  // (skyteam.svg) with only its white background square taken out, so the
+  // band shows round it. Its navy, #234B8D, is the SkyTeam blue the KLM
+  // SkyTeam lockup also draws (#1F508F there). A dark band, which only the
+  // classic-banner opt-in still paints, keeps the white mark.
+  function _skyTeamOnBand(html) {
+    if (!html || _allianceKey !== 'skyteam') return html;
+    if (!(_silkBanner && _silkLightBand)) return html;
+    return html.replace('skyteam-white.png', 'skyteam-colour.svg');
+  }
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
   // gate tab on the right). The gate tab covers the right ~25%, so the accent
   // stop lands just before it and reads as one continuous fabric.
@@ -15928,7 +15958,7 @@ function uxgGateHtml(ctx) {
           if (_allianceKey === 'oneworld' && starHtml && r1LogoHtml) {
             return starHtml + '<span class="g8-r1-alliance-div" aria-hidden="true"></span>' + r1LogoHtml;
           }
-          return r1LogoHtml + starHtml;
+          return r1LogoHtml + _skyTeamOnBand(starHtml);
         })() + '</div>'
     +   _apBandTop
     // TIME TAB
@@ -26810,7 +26840,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23941';
+var FIDS_BUILD_TAG = 'v23942';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -43727,6 +43757,9 @@ function buildGateAdHtml(ad) {
     var _lf = String(ad.logo || '').split('/').pop().replace(/\.[a-z0-9]+(\?.*)?$/i, '');
     _adKeepColour = (typeof LOGO_TREATMENT !== 'undefined' && LOGO_TREATMENT[_lf] === 'no_filter');
   } catch (e) {}
+  // v23942 — the Welcome card names the carriers whose emblem keeps its own
+  // colours (_FB_WELCOME_OWN_COLOURS); the white-force never reaches them.
+  if (ad.logoOwnColours) _adKeepColour = true;
   var _stdLogoFilter = (_adLightBg || _adKeepColour)
     ? (_adKeepColour ? 'filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));' : '')
     : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
@@ -46212,6 +46245,17 @@ function _buildGateAdSlideList() {
         'F8': '/logos/airlines/canadian/flair-dot.svg?v=2',
         'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2'
       };
+      // v23942 — EMBLEMS SHOWN IN THEIR OWN COLOURS ON THE WELCOME CARD.
+      //
+      // The standard ad renderer white-forces its logo (brightness(0)
+      // invert(1)), which is right for a mark drawn to be inked white and
+      // wrong for an emblem whose colour IS the brand: Air France's red
+      // virgule came out as a white slash in the middle screen. An emblem is
+      // never whitened, so a carrier named here keeps the artwork exactly as
+      // drawn. Each entry is checked against its card's ground first: the
+      // virgule (#EB212B) measures 3.9:1 on Air France's #1A1A2E, so it
+      // reads as itself and needs no other file.
+      var _FB_WELCOME_OWN_COLOURS = { 'AF':1 };
       // Welcome marks that ALREADY carry the carrier's name, so the sub line
       // below must stay empty or the card says it twice.
       var _FB_LOGO_HAS_NAME = { 'BA':1, 'BAW':1, 'MX':1 };
@@ -46303,7 +46347,8 @@ function _buildGateAdSlideList() {
             return _base ? wordmarkSrc(_base, 'light') : '';
           } catch (e) { return ''; }
         })(),
-        logo: _fbLogo
+        logo: _fbLogo,
+        logoOwnColours: !!_FB_WELCOME_OWN_COLOURS[code]
       } }];
     }
   }
