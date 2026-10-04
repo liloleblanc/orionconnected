@@ -66,7 +66,7 @@ test('the boards fetch the new stylesheets, not a cached blinking one', () => {
   for (const p of ['fids.html', 'gids.html', 'bids.html']) {
     const html = read(p);
     for (const sheet of ['css/fids.css', 'css/shared.css']) {
-      const m = html.match(new RegExp(sheet.replace(/[.\/]/g, '\\$&') + '\\?v=(\\d+)'));
+      const m = html.match(new RegExp(sheet.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&') + '\\?v=(\\d+)'));
       assert.ok(m, `${p} loads ${sheet} with a cache buster`);
       assert.ok(+m[1] >= 23937, `${p} must bust ${sheet} past the blinking version (v=${m[1]})`);
     }

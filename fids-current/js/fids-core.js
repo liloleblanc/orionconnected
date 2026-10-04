@@ -46894,7 +46894,8 @@ function normalizeCityIataTextNodes(root) {
       if (!m) return;
       var code = String(m[2]).toUpperCase();
       var city = normalizeDisplayCity(m[1], code);
-      el.innerHTML = '<span class="g8-city-name">' + city + '</span> <span class="g8-city-code">(' + _dispIata(code) + ')</span>';
+      // The label is read back from textContent, so it goes back in escaped.
+      el.innerHTML = '<span class="g8-city-name">' + fidsEscHtml(city) + '</span> <span class="g8-city-code">(' + fidsEscHtml(_dispIata(code)) + ')</span>';
       el.dataset.cityIataNormalized = '1';
     });
   } catch(e) {}
@@ -46921,7 +46922,8 @@ function normalizeGateHeaderCityNames(root) {
       var m = txt.match(/^(.+?)\s*\(\s*([A-Za-z]{3})\s*\)\s*\(\s*([A-Za-z]{3})\s*\)$/);
       if (m && m[2].toUpperCase() === m[3].toUpperCase()) {
         var codeDup = m[3].toUpperCase();
-        el.innerHTML = '<span class="g8-city-name">' + normalizeDisplayCity(m[1], codeDup) + '</span> <span class="g8-city-code">(' + _dispIata(codeDup) + ')</span>';
+        // Read back from textContent, so it goes back in escaped.
+        el.innerHTML = '<span class="g8-city-name">' + fidsEscHtml(normalizeDisplayCity(m[1], codeDup)) + '</span> <span class="g8-city-code">(' + fidsEscHtml(_dispIata(codeDup)) + ')</span>';
         return;
       }
 
@@ -46931,7 +46933,7 @@ function normalizeGateHeaderCityNames(root) {
 
       var code = String(m[2]).toUpperCase();
       var city = normalizeDisplayCity(m[1], code);
-      el.innerHTML = '<span class="g8-city-name">' + city + '</span> <span class="g8-city-code">(' + _dispIata(code) + ')</span>';
+      el.innerHTML = '<span class="g8-city-name">' + fidsEscHtml(city) + '</span> <span class="g8-city-code">(' + fidsEscHtml(_dispIata(code)) + ')</span>';
     });
   } catch(e) {}
 }

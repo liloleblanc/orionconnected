@@ -156,7 +156,7 @@ test('every surface that prints a code asks the table', () => {
     /return \{ c: name, ia: _dispIata\(ia\) \};/,
     /'<div class="v2-wx-lbl">' \+ \(locIata \? _dispIata\(locIata\)/,
     /return code \? \(city \+ ' \| ' \+ _dispIata\(code\)\) : city;/,
-    /\(' \+ _dispIata\(code\) \+ '\)<\/span>/
+    /\(' \+ fidsEscHtml\(_dispIata\(code\)\) \+ '\)<\/span>/
   ];
   for (const re of sites) assert.match(CORE, re);
   // the boot splash (before fids-core.js exists) and the banner in fids-v2.js
