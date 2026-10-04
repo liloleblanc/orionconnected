@@ -144,9 +144,10 @@ test('every word the sign can say, it can say in all nine languages', () => {
     if (BRAND.has(k)) assert.ok(have.includes('en') && have.includes('fr'), `${k} must at least carry en and fr`);
   }
   assert.deepEqual(short, [], 'these labels are missing languages the board offers:\n  ' + short.join('\n  '));
-  // and the fallback that hides a gap really is there, so a missing language
-  // shows English rather than nothing
-  assert.match(SRC, /function _gateLbl1\([\s\S]{0,400}return t\.en \|\| '';/, '_gateLbl1 must fall back to English');
+  // and no fallback hides a gap: a language the board shows is that
+  // language's word, never the English one standing in for it (every entry
+  // carries all nine; tests/board-languages.test.js holds them to it)
+  assert.doesNotMatch(SRC, /function _gateLbl1\([\s\S]{0,400}return t\.en/, '_gateLbl1 must not fall back to English');
 });
 
 test('the Next line is whole phrases, one per language', () => {

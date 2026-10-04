@@ -156,7 +156,7 @@
   function headerContent(module, context) {
     const title = module.props.title
       ? resolveTokens(module.props.title, context)
-      : escapeHTML(TRANSLATED_TITLES[context.language] || TRANSLATED_TITLES.en);
+      : escapeHTML(TRANSLATED_TITLES[langOf(context)] || '');
     const airportName = module.props.brandName
       ? resolveTokens(module.props.brandName, context)
       : escapeHTML(context.airport.name || TF('airportNamed', context, { IATA: context.airport.iata }));
@@ -249,7 +249,7 @@
     const chip = context.nextLanguage ? escapeHTML(context.nextLanguage) : escapeHTML(String(context.language || 'EN').toUpperCase());
     return '<div class="fx-footer"><span class="fx-temp">' + escapeHTML(temperature) + '<small>' + escapeHTML(weather.condition || '') + '</small></span>' +
       '<span class="fx-ticker">' + ticker + '</span>' +
-      '<span class="fx-foot-right"><small>' + escapeHTML(context.sceneLabel || '') + '</small><span class="fx-chip">' + chip + '</span></span></div>';
+      '<span class="fx-foot-right"><small>' + escapeHTML(context.editing ? (context.sceneLabel || '') : '') + '</small><span class="fx-chip">' + chip + '</span></span></div>';
   }
 
   function destinationWeatherContent(module, context) {
@@ -357,6 +357,7 @@
       'text-align:' + (props.align === 'center' ? 'center' : props.align === 'right' ? 'right' : 'left') + ';' +
       (props.uppercase === false ? '' : 'text-transform:uppercase;letter-spacing:.04em;');
     // the placeholder is for the editor only; a published screen shows nothing
+    // the editor's hint for an empty block, never on a passenger screen — i18n-ok: operator
     const text = props.text || (context.editing ? 'Text block — edit me' : '');
     return '<div class="fx-text" style="' + style + '">' + resolveTokens(text, context) + '</div>';
   }

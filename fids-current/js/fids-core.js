@@ -1628,7 +1628,7 @@ function restoreFontChoice(defaultFont) {
   } catch (e) {}
   var f = '';
   try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
-  changeFont(f || defaultFont || 'Bricolage Grotesque');  // the board default
+  changeFont(f || defaultFont || 'Bricolage Grotesque');  // the board default // i18n-ok: code
 }
 
 // Start / stop the airline background rotation timer. Runs only when
@@ -6335,7 +6335,7 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
 
     // Fairmont Pacific Rim, Vancouver/YVR.
     if (/\bpacific\s*rim\b/.test(hay) || /\bfairmont\s+pacific\s+rim\b/.test(hay)) {
-      out.hotelName = 'Fairmont Pacific Rim';
+      out.hotelName = 'Fairmont Pacific Rim'; // i18n-ok: data
       out.brand = 'FAI';
       out.brandName = 'Fairmont';
       out.logo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
@@ -6348,7 +6348,7 @@ function resolveAccorPropertySpecificAd_v21861(ad, airportCode, contextText) {
     // YVR/Vancouver should prefer Fairmont Pacific Rim when the feed gives a generic
     // Fairmont/Accor Vancouver hotel ad without a specific lockup.
     if ((/\byvr\b|\bvancouver\b/.test(hay)) && /\bfairmont\b/.test(hay) && !/\bwaterfront\b|\bairport\b/.test(hay)) {
-      out.hotelName = 'Fairmont Pacific Rim';
+      out.hotelName = 'Fairmont Pacific Rim'; // i18n-ok: data
       out.brand = 'FAI';
       out.brandName = 'Fairmont';
       out.logo = '/logos/hotels/accor-luxury/fairmont-monochrome-white.svg';
@@ -7803,7 +7803,7 @@ function getAirlineAccent(code) {
 //               blocks there is no operator line without evidence.
 // The gate reads the row's own fields and the same shared store, so it can
 // never say something the departures board does not.
-var AC_EXPRESS_OP = 'ACEX';
+var AC_EXPRESS_OP = 'ACEX'; // i18n-ok: code
 var _OP_LADDER_NAMES = { QK: 'Jazz Aviation', PB: 'PAL Airlines', RV: 'Air Canada Rouge',
                          WR: 'WestJet Encore', ACEX: 'Air Canada Express' };
 // Air Canada blocks, checked 2026-10-04 against Montréal's prefixes (1,021
@@ -7903,7 +7903,7 @@ function fidsResolveOperator(f, home) {
   if (band) {
     var fits = (typeof _regionalOpFitsRoute !== 'function')
       || _regionalOpFitsRoute(band === AC_EXPRESS_OP ? 'QK' : band, home, f._locIata);
-    if (fits && (r = hit(band, band === AC_EXPRESS_OP ? 'brand' : 'band', mkt + ' ' + fn))) return r;
+    if (fits && (r = hit(band, band === AC_EXPRESS_OP ? 'brand' : 'band', mkt + ' ' + fn))) return r; // i18n-ok: debug
   }
   return none;
 }
@@ -13514,6 +13514,9 @@ function uxgGateHtml(ctx) {
   // Dark-banner-safe variants — the colored lockups (black Star Alliance
   // wordmark, navy oneworld) were invisible on the black R1 band, which is
   // why alliance logos never appeared to show.
+  // The alliances' own names, as each writes it (brands, the same in every
+  // language): the alt text of the alliance mark.
+  var ALLIANCE_NAMES = { star: 'Star Alliance', skyteam: 'SkyTeam', oneworld: 'oneworld' };
   var ALLIANCE_LOGOS = {
     // Star Alliance MEMBER TILE — the metallic 'STAR ALLIANCE' chip
     // (brushed-metal square, chrome 3D star + wordmark) sat after the airline
@@ -13549,7 +13552,7 @@ function uxgGateHtml(ctx) {
     // global kill switch: one transient 404 disabled alliance logos for the
     // rest of the session.
     var _allianceSrc = _ALLIANCE_MARK_OVERRIDE[airlineCode] || ALLIANCE_LOGOS[_allianceKey];
-    starHtml = '<img class="' + _allianceCls + '" src="' + _allianceSrc + '" alt="' + _allianceKey + ' alliance" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
+    starHtml = '<img class="' + _allianceCls + '" src="' + _allianceSrc + '" alt="' + (ALLIANCE_NAMES[_allianceKey] || '') + '" onload="this.classList.add(\'loaded\')" onerror="this.style.display=\'none\';">';
   }
 
   // Clean diagonal lane arrow (plain stroke SVG — the unicode arrows render
@@ -13678,10 +13681,11 @@ function uxgGateHtml(ctx) {
       var _bwStWord = function (lang) {
         try {
           var _o = (typeof SS !== 'undefined') ? (SS[_bwStKey] || SS[_bwStKey.replace(/ /g, '')]) : null;
-          var w = (_o && (_o[lang] || _o.en)) || _bwStKey;
-          w = String(w);
-          return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
-        } catch (e) { return _bwStKey; }
+          var w = String((_o && _o[lang]) || BoardStrings.bs(_bwStKey.replace(/ /g, ''), lang) || '');
+          // a capital first letter, the rest as the store writes it (German
+          // nouns keep theirs: 'Letzter Aufruf', never 'Letzter aufruf')
+          return w ? w.charAt(0).toLocaleUpperCase(BoardStrings.META[lang] ? BoardStrings.META[lang].intl : 'en') + w.slice(1) : '';
+        } catch (e) { return ''; }
       };
       var _bwSide = function (lang, cls) {
         // v23211 — NO CLOCK IN THE STRIP
@@ -13711,7 +13715,7 @@ function uxgGateHtml(ctx) {
       var _bwNB = _lblEntry('nowBoarding');
       var _bwNBl1 = (typeof _bwL1 === 'string' && _bwL1) ? _bwL1 : 'en';
       var _bwNBl2 = (typeof _bwL2 === 'string' && _bwL2) ? _bwL2 : _bwNBl1;
-      var _bwNB1 = _bwNB[_bwNBl1] || _bwNB.en;
+      var _bwNB1 = _bwNB[_bwNBl1] || '';
       var _bwNB2 = _bwNB[_bwNBl2] || _bwNB1;
       _bwMidWords = BoardStrings.markHalf(_bwNB1, _bwNBl1) + ' <span class="g8-bw-sep">|</span> ' + BoardStrings.markHalf(_bwNB2, _bwNBl2);
     } else {
@@ -14152,21 +14156,39 @@ function uxgGateHtml(ctx) {
   function _pdPrioMarksHtml() {
     var hdr = '<div class="g8-pd-marks-hdr">'
       + _gateLbl1('avidTraveller', _frF) + '</div>';
-    var FR = { passport: 'Passeport', venture: 'Horizon', ascent: 'Essor', first: 'Première' };
+    return hdr + _pdMarksRow();
+  }
+  // One VIPorter tier as Porter's own artwork. The files key on the ENGLISH
+  // tier with a language suffix, so the tier is the identity and the language
+  // is a swap: Porter RENAMES the tiers in French (Passeport, Horizon, Essor,
+  // Première), so the French files are different artwork. FR_ART names the
+  // tiers whose French file exists; a tier missing from it draws its English
+  // file — the wrong language but PRESENT, whereas a constructed path pointing
+  // at nothing draws nothing and the tier silently vanishes (that is how Ascent
+  // went unnoticed). The tier's NAME, in every board language, is the store's
+  // pdTier* entry: the alt text a failed image falls back to.
+  function _pdMark(tier, key) {
+    var FR_ART = { passport: 1, venture: 1, ascent: 1, first: 1 };
+    var fr = _gateLang1(_frF) === 'fr' && FR_ART[tier];
+    return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
+      + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="' + _gateLbl1(key, _frF) + '"></span>';
+  }
+  // The priority marks: all four elite tiers, then PorterReserve. Porter's
+  // pre-boarding list says "Premium VIPorter members", which tells a passenger
+  // nothing about whether their own card qualifies; naming every tier says it
+  // exactly, and excludes nobody. PorterReserve is the FIFTH entry in Porter's
+  // published list, after the four tiers, so its mark belongs in this row as
+  // an entitlement, not as the column heading. One copy, shared by the
+  // unified sign (_pdPrioMarksHtml) and the lanes panel (_pdLanesBodyHtml).
+  function _pdMarksRow() {
     var _artFr = _gateLang1(_frF) === 'fr';
-    function mark(tier, label) {
-      var fr = _artFr && FR[tier];
-      return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
-        + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="VIPorter '
-        + (fr || label) + '"></span>';
-    }
-    return hdr + '<div class="g8-pd-preboard-marks">'
-      + mark('passport', 'Passport')
-      + mark('venture', 'Venture')
-      + mark('ascent', 'Ascent')
-      + mark('first', 'First')
+    return '<div class="g8-pd-preboard-marks">'
+      + _pdMark('passport', 'pdTierPassport')
+      + _pdMark('venture', 'pdTierVenture')
+      + _pdMark('ascent', 'pdTierAscent')
+      + _pdMark('first', 'pdTierFirst')
       + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo'
-        + (_artFr ? '_fr' : '') + '.svg" alt="PorterReserve"></span>'
+        + (_artFr ? '_fr' : '') + '.svg" alt="' + _gateLbl1('pdReserve', _frF) + '"></span>'
       + '</div>';
   }
   function _pdLanesBodyHtml(rowsVal, comingVal, preActive) {
@@ -14240,45 +14262,8 @@ function uxgGateHtml(ctx) {
     // marks are different artwork rather than colour variants:
     //   Passport → Passeport    Venture → Horizon
     //   Ascent   → Essor        First   → Première
-    // A French sign showing "Ascent" is wrong, not merely untranslated.
-    //
-    // The files key on the ENGLISH tier with a language suffix, so the tier is
-    // the identity and the language is a swap. _PD_MARK_FR names the tiers whose
-    // French artwork actually exists, and names them with the word Porter itself
-    // uses. All four are covered today; the table stays because the fallback it
-    // drives is the safe direction — a tier missing from it draws its English
-    // file, which is the wrong language but PRESENT, whereas a constructed path
-    // pointing at nothing draws nothing and the tier silently vanishes from the
-    // sign. That is exactly how Ascent went unnoticed for so long.
-    var _PD_MARK_FR = {
-      passport: 'Passeport', venture: 'Horizon', ascent: 'Essor', first: 'Première',
-    };
-    function _pdMark(tier, label) {
-      // The French name doubles as the alt text, so a file that fails to load
-      // falls back to the word on Porter's own French card rather than to a
-      // tier name their French members have never seen.
-      var fr = _gateLang1(_frF) === 'fr' && _PD_MARK_FR[tier];
-      return '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_'
-        + tier + '_single_line_' + (fr ? 'fr' : 'en') + '.svg" alt="VIPorter '
-        + (fr || label) + '"></span>';
-    }
-    // All four elite tiers. Porter's pre-boarding list says "Premium VIPorter
-    // members", which tells a passenger nothing about whether their own card
-    // qualifies; naming every tier says it exactly, and excludes nobody.
-    var _prioMarks = _prioMarksHdr + '<div class="g8-pd-preboard-marks">'
-        + _pdMark('passport', 'Passport')
-        + _pdMark('venture', 'Venture')
-        + _pdMark('ascent', 'Ascent')
-        + _pdMark('first', 'First')
-        // PorterReserve is the FIFTH entry in Porter's published pre-boarding
-        // list, after the four elite tiers — "Premium VIPorter members,
-        // PorterReserve passengers" — so its mark belongs in this row as an
-        // entitlement, not as the column heading. (The heading above names the
-        // cabin; this says the fare pre-boards.) It has both languages, so it
-        // follows the sign like the tiers do.
-        + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/porter_reserve_logo'
-          + (_gateLang1(_frF) === 'fr' ? '_fr' : '') + '.svg" alt="PorterReserve"></span>' // i18n-ok: code
-        + '</div>';
+    // The tier artwork row is _pdMarksRow (one copy, shared with the sign).
+    var _prioMarks = _prioMarksHdr + _pdMarksRow();
     // The roster is pre-boarding only; the marks are not.
     var _prioSub = preActive
       ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1('preboardList', _frF) + '</span></div>' + _prioMarks
@@ -14368,7 +14353,7 @@ function uxgGateHtml(ctx) {
   function _pdClassicMark() {
     return '<div class="g8-pd-preboard-marks g8-pd-marks-classic">'
       + '<span class="g8-pd-mark"><img src="/logos/airlines/canadian/porter/viporter_member_single_line_'
-        + (_gateLang1(_frF) === 'fr' ? 'fr' : 'en') + '.svg" alt="VIPorter"></span>' // i18n-ok: code
+        + (_gateLang1(_frF) === 'fr' ? 'fr' : 'en') + '.svg" alt="VIPorter"></span>'
       + '</div>';
   }
 
@@ -14483,9 +14468,9 @@ function uxgGateHtml(ctx) {
     var nx = _lblEntry('nextUp') || {}, grp = groupKey ? (_lblEntry(groupKey) || {}) : {}, vk = valueKey ? (_lblEntry(valueKey) || {}) : null;
     var seen = {}, out = '';
     for (var i = 0; i < L.length; i++) {
-      var lg = L[i], gw = grp[lg] || grp.en || '';
-      var v = vk ? (vk[lg] || vk.en || '') : value;
-      var line = (nx[lg] || nx.en || '') + BoardStrings.META[lg].colon + (gw ? gw + ' ' : '') + v;
+      var lg = L[i], gw = grp[lg] || '';
+      var v = vk ? (vk[lg] || '') : value;
+      var line = (nx[lg] || '') + BoardStrings.META[lg].colon + (gw ? gw + ' ' : '') + v;
       if (seen[line]) continue;
       seen[line] = 1;
       out += BoardStrings.markHalf('<span class="g8-sign-line">' + line + '</span>', lg);
@@ -14886,7 +14871,7 @@ function uxgGateHtml(ctx) {
     // v218.99.55 — Force IATA codes in parens to uppercase: "(yhz)" → "(YHZ)"
     nLoc = nLoc.replace(/\(([a-z]{3})\)/gi, function(m, code) { return '(' + code.toUpperCase() + ')'; });
     var nDelay = '';
-    if (nextFlight.upd && nextFlight.status === 'delayed') nDelay = ' → Now ' + nextFlight.upd;
+    if (nextFlight.upd && nextFlight.status === 'delayed') nDelay = ' → ' + TL('nowRevised') + ' ' + nextFlight.upd;
     nextHtml = '<span class="g8-r5-next">' + TL('nextDep') + ': ' + nLoc + ' · ' + nextFlight.flight + ' · ' + nextFlight.time + nDelay + '</span>';
   }
 
@@ -26302,7 +26287,7 @@ function cityCode(iata, overrideCity, langOverride) {
 // 'petFriendly' on an Accor badge and made every `TL(k) || 'fallback'` dead.
 const TL = k => {
   const obj = LS[k];
-  if (obj) return obj[lang] || obj.en || '';
+  if (obj) return obj[lang] || '';
   return BoardStrings.bs(k, lang);
 };
 // TLF() — TL with field interpolation. Pass an object with values for
@@ -26319,7 +26304,7 @@ const TLF = (k, fields) => {
 // SL() returns current rotation language status (sentence case preserved)
 const SL = k => {
   const obj = SS[k];
-  if (obj) return obj[lang] || obj.en || '';
+  if (obj) return obj[lang] || '';
   return BoardStrings.bs(k, lang);
 };
 // Pair variants for the web cards — the board's own one or two languages
@@ -26340,7 +26325,7 @@ function _legacyPair(table, k) {
 const SLbi = k => _legacyPair(SS, k);
 // One legacy-table word in a given language: what a direct LS[k][l] read did,
 // through the helper, falling through to the store.
-const TLin = (k, l) => { const o = LS[k]; if (o) return o[l] || o.en || ''; return BoardStrings.bs(k, l); };
+const TLin = (k, l) => { const o = LS[k]; if (o) return o[l] || ''; return BoardStrings.bs(k, l); };
 // v23960 — the qualifier on a registration or type taken from the aircraft's
 // usual rotation rather than confirmed: 'C-GWJO expected | prévu'. It was
 // written into markup six times as English plus French or Spanish, picked by
@@ -26775,7 +26760,7 @@ function _gateLbl1(key, frF) {
     if (!t) return '';
     var L = BoardStrings.pairLangs(langs, !!frF);
     for (var i = 0; i < L.length; i++) { if (t[L[i]]) return t[L[i]]; }
-    return t.en || '';
+    return '';
   } catch (e) { return ''; }
 }
 
@@ -32087,7 +32072,7 @@ function mapADB(raw, mode, kept) {
     // not share.
     var _ownEv = (f._opEv && f._opEv.op) ? f._opEv
       : (f._opCode ? { op: String(f._opCode).trim().toUpperCase(), src: 'own', basis: 'operator field' }
-      : ((_opIata && _opIata !== airline && _opIata !== code) ? { op: _opIata, src: 'own', basis: (_opApiName || 'leg airline') } : null));
+      : ((_opIata && _opIata !== airline && _opIata !== code) ? { op: _opIata, src: 'own', basis: (_opApiName || 'leg airline') } : null)); // i18n-ok: debug
     var _opCode = _ownEv ? _ownEv.op : null;
     const _timeLeg=mode==='dep'?(f.departure||{}):(f.arrival||{});
     const _actualL=(_timeLeg.runwayTime&&(_timeLeg.runwayTime.local||_timeLeg.runwayTime.utc))||null;
@@ -34324,7 +34309,7 @@ function applySearch(flights) {
   if (filterRegion) {
     const _rWant = new Set(String(filterRegion).toUpperCase().split(',')
       .map(s => s.trim())
-      .map(s => (s === 'DOMESTIC' ? 'DOM' : s === 'TRANSBORDER' ? 'TRANS' : s === 'INTERNATIONAL' ? 'INTL' : s))
+      .map(s => (s === 'DOMESTIC' ? 'DOM' : s === 'TRANSBORDER' ? 'TRANS' : s === 'INTERNATIONAL' ? 'INTL' : s)) // i18n-ok: code
       .filter(Boolean));
     const _home = (document.getElementById('apSel') || {}).value || '';
     list = list.filter(f => _rWant.has(flightRegionKey(f, _home).toUpperCase()));
@@ -35551,7 +35536,7 @@ if (document.readyState === 'loading') {
 window.addEventListener('DOMContentLoaded', () => {
   // RocGrotesk is only the DEFAULT — a font the user picked (and which
   // changeFont persisted) must never be stomped on reload.
-  try { restoreFontChoice('Bricolage Grotesque'); } catch (e) {}
+  try { restoreFontChoice('Bricolage Grotesque'); } catch (e) {} // i18n-ok: code
   const bgCtrls = document.getElementById('ctrlBgGroup');
   if (bgCtrls && screenType === 'gate') bgCtrls.style.display = 'flex';
   // If airline mode was restored from localStorage, kick off rotation.
@@ -41440,7 +41425,7 @@ function fetchAccorBrand(brandCode) {
 
 // Strip garbled prefixes from Accor hotel names
 function cleanAccorName(name) {
-  if (!name) return 'Accor Hotel';
+  if (!name) return 'Accor';
   // Remove known CRS/system prefixes (may be chained: "FX - ROTW Novotel...")
   var prev = '';
   while (prev !== name) {
@@ -41453,7 +41438,7 @@ function cleanAccorName(name) {
   name = name.replace(/\s{2,}/g, ' ').trim();
   // Fix abbreviations
   name = name.replace(/\bCntr\b/g, 'Centre');
-  return name || 'Accor Hotel';
+  return name || 'Accor';
 }
 
 // Ensure hotel name includes brand name
@@ -41788,7 +41773,7 @@ function fetchAccorHotelText(hotelId, langWanted) {
         ts: Date.now(),
         hotelId: hotelId,
         _adLang: langWanted,
-        description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'),
+        description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'), // i18n-ok: data
         destinationDescription: h.destinationDescription || '',
         advantages: Array.isArray(h.advantages) ? h.advantages : []
       };
@@ -41981,14 +41966,14 @@ function fetchAccorHotelDetail(hotelId, langWanted) {
       accs.forEach(function(acc) {
         var rn = String(acc.name || acc.label || acc.title || (acc.room && (acc.room.name || acc.room.label)) || '').replace(/\s+/g, ' ').trim();
         // Accor bed codes read like fare buckets ('DBL/DBL') — spell them
-        // out.
-        rn = rn.replace(/\bDBL\s*\/\s*DBL\b/gi, '2 Double Beds')
-               .replace(/\bTWN\s*\/\s*TWN\b/gi, '2 Twin Beds')
-               .replace(/\bQUE\s*\/\s*QUE\b/gi, '2 Queen Beds')
-               .replace(/\bKNG\b/gi, 'King Bed')
-               .replace(/\bQUE\b/gi, 'Queen Bed')
-               .replace(/\bDBL\b/gi, 'Double Bed')
-               .replace(/\bTWN\b/gi, 'Twin Beds');
+        // out, in the language the room was fetched in (the store's words).
+        rn = rn.replace(/\bDBL\s*\/\s*DBL\b/gi, BoardStrings.bs('bedTwoDouble', curLang))
+               .replace(/\bTWN\s*\/\s*TWN\b/gi, BoardStrings.bs('bedTwoTwin', curLang))
+               .replace(/\bQUE\s*\/\s*QUE\b/gi, BoardStrings.bs('bedTwoQueen', curLang))
+               .replace(/\bKNG\b/gi, BoardStrings.bs('bedKing', curLang))
+               .replace(/\bQUE\b/gi, BoardStrings.bs('bedQueen', curLang))
+               .replace(/\bDBL\b/gi, BoardStrings.bs('bedDouble', curLang))
+               .replace(/\bTWN\b/gi, BoardStrings.bs('bedTwin', curLang));
         if (!rn || roomsSeen[rn.toLowerCase()]) return;
         roomsSeen[rn.toLowerCase()] = 1;
         var rp = '';
@@ -42442,7 +42427,7 @@ function _processAccorData(data, destIata, langKey) {
       // Accor's own FR copy for Royal York ships a literal 'Vene z savourer'
       // Their typo, our display —
       // repaired narrowly: exactly this broken word, nothing else touched.
-      description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'),
+      description: String(h.description || '').replace(/\bVene z\b/g, 'Venez'), // i18n-ok: data
       destinationDescription: h.destinationDescription || '',
       // v218.99.41 — address + distance + rating for the new bottom strip layout
       // Short address (city/district only) — used on the compact mini-line
@@ -42552,7 +42537,7 @@ function _processAccorData(data, destIata, langKey) {
   // English, that is Accor's feed missing French — not a bug on our side.
   try {
     var _ph = hotels[0] || {};
-    var _pdesc = String(_ph.description || _ph.destinationDescription || _ph.shortDescription || '(no description field)');
+    var _pdesc = String(_ph.description || _ph.destinationDescription || _ph.shortDescription || '(no description field)'); // i18n-ok: debug
     console.log('%c[ACCOR-LANG PROOF] requested=' + _ckLang + ' for ' + destIata
       + ' | hotel=' + (_ph.name || _ph.hotelName || _ph.propertyName || '?')
       + '\n  description returned (first 200 chars): ' + _pdesc.slice(0, 200),
@@ -42833,8 +42818,8 @@ function getGateAds() {
   var generic = GATE_ADS_GENERIC.map(function(ad) {
     return {
       bg: ad.bg,
-      headline: adTL(ad.headline).replace('{CITY}', destCity || 'your destination'),
-      sub: adTL(ad.sub).replace('{CITY}', destCity || 'your destination'),
+      headline: adTL(ad.headline).replace('{CITY}', destCity || TL('yourDestination')),
+      sub: adTL(ad.sub).replace('{CITY}', destCity || TL('yourDestination')),
       logo: ad.logo || null,
       brand: ad.brand || '',
       gicon: ad.gicon || null,
@@ -43330,12 +43315,6 @@ function buildGateAdHtml(ad) {
     // added as a bullet topic — they're marketing paragraphs that read
     // as word salad once chip-truncated. We only surface clean structured
     // data (topAmenities / restaurants / facilities) as specified's feedback.
-    if (false && ad.description && ad.description.length > 20) {
-      _topics.push({ title: 'About', items: [ad.description.slice(0, 200) + (ad.description.length > 200 ? '…' : '')] });
-    }
-    if (false && ad.destinationDescription && ad.destinationDescription.length > 20) {
-      _topics.push({ title: BoardStrings.bs('theDestination', lang), items: [ad.destinationDescription.slice(0, 200) + (ad.destinationDescription.length > 200 ? '…' : '')] });
-    }
 
     var _bullets = '';
     if (_topics.length) {
@@ -44003,7 +43982,7 @@ function _accorFrName(name) {
   return String(name || '')
     .replace(/\bMontreal\b/g, 'Montréal')
     .replace(/\bQuebec\b/g, 'Québec')
-    .replace(/\bAirport\b/g, 'Aéroport');
+    .replace(/\bAirport\b/g, 'Aéroport'); // i18n-ok: data
 }
 
 function buildAccorAdOnlyV6(ad) {
@@ -44014,13 +43993,6 @@ function buildAccorAdOnlyV6(ad) {
   // chose for this slide), NOT the global board `lang` — TL() reads the board
   // lang, which is what split the card into half-French/half-English labels vs
   // content. Same source as the content now.
-  function safeTL(k,f){
-    try {
-      var o = (typeof LS !== 'undefined' && LS[k]) ? LS[k] : null;
-      if (o) { var l = accorLang(); return o[l] || o.en || f; }
-    } catch(e){}
-    return f;
-  }
   // Use the SAME language the ad deck forced for this slide (_accorLangNow),
   // not the raw board language. The deck flips EN/FR per slide via
   // _accorAdForcedLang; this builder used to read the board `lang` instead, so
@@ -44102,7 +44074,7 @@ function buildAccorAdOnlyV6(ad) {
   }
 
   var brandRaw   = first(ad.brandLabel, ad.brandName, ad.hotelBrand, ad.chain, ad.brand, ad.logoBrand, '');
-  var hotelName  = first(ad.headline, ad.name, ad.hotelName, ad.propertyName, 'Accor Hotel');
+  var hotelName  = first(ad.headline, ad.name, ad.hotelName, ad.propertyName, 'Accor');
   var brandLower = lower(brandRaw + ' ' + hotelName);
   var address    = first(localized(ad,'address'), localized(ad,'city'), localized(ad,'location'), localized(ad,'destinationName'), '');
   var factsheetUrl = first(ad.factsheetUrl, ad.url, ad.bookingUrl, ad.link, '#');
@@ -44272,7 +44244,7 @@ function buildAccorAdOnlyV6(ad) {
   var logoHtml=haveLogo
     ? (_inlineLockup
         ? '<div class="axr-logo">'+_inlineLockup+'</div>'   // inline so the property-name font actually renders
-        : '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'Hotel')+'"></div>')
+        : '<div class="axr-logo"><img class="axr-hotel-svg" src="'+esc(logo)+'" data-crop="'+esc(_logoCrop)+'" alt="'+esc(brandWord||brandRaw||'')+'"></div>')
     : '<div class="axr-logo axr-logo-text">'+esc(brandWord||brandRaw||hotelName)+'</div>';
 
   // QR caption — always invite discovery of the property by its FULL name
@@ -44350,7 +44322,7 @@ function buildAccorAdOnlyV6(ad) {
       + '</div>';
   }
   function _tpl(map, L, km, city){
-    var s = map[L] || map.en;
+    var s = map[L] || '';
     return s.replace('%k', km).replace('%c', city || '');
   }
   var _locLineHtml = '';
@@ -44746,7 +44718,7 @@ function buildAccorAdOnlyV6(ad) {
   // Falls back to a single full-width column when the second
   // language hasn't loaded yet or the two records carry the same words, so
   // the card is never half empty.
-  function _biAttr(L){ return ' lang="' + esc(L) + '"' + ((L === 'ar') ? ' dir="rtl"' : ''); }
+  function _biAttr(L){ var m = BoardStrings.META[L]; return ' lang="' + esc(m ? L : 'en') + '"' + ((m && m.dir === 'rtl') ? ' dir="rtl"' : ''); }
   // v23299 — TWO COLUMNS ONLY WHEN THEY ARE THE SAME THING IN TWO LANGUAGES.
   // Accor does not return matched pairs: for Fairmont Royal York the English
   // field carries a one-line tagline ('Welcome to a new era of luxury.') while
@@ -44878,7 +44850,7 @@ function buildAccorAdOnlyV6(ad) {
   try { _brandCrop = _accorBrandMarkCrop(brandWord, brandRaw, ad.brand); } catch (e) {}
   var _footerBrand = _brandMark
     ? '<span class="axr-all-brand"><img class="axr-all-svg" src="' + esc(_brandMark)
-      + '" data-crop="' + esc(_brandCrop) + '" alt="' + esc(brandWord || brandRaw || 'Hotel') + '"></span>'
+      + '" data-crop="' + esc(_brandCrop) + '" alt="' + esc(brandWord || brandRaw || '') + '"></span>'
       + '<span class="axr-all-sep"></span>'
     : '';
   var _footerHtml = '<footer class="axr-all axr-all-simple' + (_footerBrand ? ' axr-all-cobrand' : '') + '">'
@@ -45782,6 +45754,78 @@ function renderGateAd(index) {
 // into an ad-like object so it can ride the regular hotel rendering path
 // (logo on the left, photo in the middle). Returns null if we can't
 // resolve a usable logo file for the brand.
+// v23960 — HOTEL BRAND NORMALISATION, ONE COPY. A hotel feed's brand field
+// often names the parent group (Hilton, Marriott, IHG, Accor, Ennismore) or a
+// long form; the property's own name says which brand it is. Each rule is
+// [brand as sent, test on the property's name (null: always), brand to use],
+// applied in order, each to the result of the one before. These are brand
+// names — data, the same in every language. _buildDestHotelAdObj and
+// buildDestInfoSlide each carried the same 52 rules as inline ifs.
+var HOTEL_BRAND_RULES = [
+  ['Holiday Inn', /express/i, 'Holiday Inn Express'],
+  ['Hilton', /garden/i, 'Hilton Garden Inn'],
+  ['Hilton', /doubletree/i, 'DoubleTree'],
+  ['Hilton', /hampton/i, 'Hampton'],
+  ['Hilton', /embassy/i, 'Embassy Suites'],
+  ['Hilton', /homewood/i, 'Homewood Suites'],
+  ['Marriott', /courtyard/i, 'Courtyard'],
+  ['Marriott', /fairfield/i, 'Fairfield Inn'],
+  ['Marriott', /residence inn/i, 'Residence Inn'],
+  ['Marriott', /springhill/i, 'SpringHill Suites'],
+  ['Marriott', /westin/i, 'Westin'],
+  ['Marriott', /sheraton/i, 'Sheraton'],
+  ['Marriott', /ritz/i, 'Ritz-Carlton'],
+  ['IHG', /holiday inn express/i, 'Holiday Inn Express'],
+  ['IHG', /holiday inn/i, 'Holiday Inn'],
+  ['IHG', /crowne/i, 'Crowne Plaza'],
+  ['IHG', /intercontinental/i, 'InterContinental'],
+  ['Marriott', /delta hotels?/i, 'Delta Hotels'],
+  ['Delta', null, 'Delta Hotels'],
+  ['Delta Hotels and Resorts', null, 'Delta Hotels'],
+  ['Accor', /orient express/i, 'Orient Express'],
+  ['Accor', /faena/i, 'Faena'],
+  ['Accor', /raffles/i, 'Raffles'],
+  ['Accor', /sofitel/i, 'Sofitel'],
+  ['Accor', /fairmont/i, 'Fairmont'],
+  ['Accor', /pullman/i, 'Pullman'],
+  ['Accor', /swiss(o|ô)tel/i, 'Swissotel'],
+  ['Accor', /ibis budget/i, 'ibis budget'],
+  ['Accor', /ibis styles/i, 'ibis Styles'],
+  ['Accor', /\bibis\b/i, 'ibis'],
+  ['Accor', /novotel/i, 'Novotel'],
+  ['Accor', /mercure/i, 'Mercure'],
+  ['Accor', /m(ö|o)venpick/i, 'Movenpick'],
+  ['Ennismore', /mondrian/i, 'Mondrian'],
+  ['Ennismore', /hyde/i, 'Hyde'],
+  ['Ennismore', /sls/i, 'SLS'],
+  ['Ennismore', /delano/i, 'Delano'],
+  ['Ennismore', /the hoxton/i, 'The Hoxton'],
+  ['Ennismore', /mama shelter/i, 'Mama Shelter'],
+  ['Ennismore', /25hours/i, '25hours'],
+  ['Ennismore', /rixos/i, 'Rixos'],
+  ['Ennismore', /morgans/i, 'Morgans Originals'],
+  ['Ennismore', /21c/i, '21c Museum Hotel'],
+  ['Mövenpick', null, 'Movenpick'],
+  ['Swissôtel', null, 'Swissotel'],
+  ['SO/', null, 'so'],
+  ['SO', null, 'so'],
+  ['21c Museum Hotels', null, '21c Museum Hotel'],
+  ['Emblems', null, 'Emblems Collection'],
+  ['Emblems Collection by Accor', null, 'Emblems Collection'],
+  ['Hoxton', null, 'The Hoxton']
+];
+function _normHotelBrand(brand, name) {
+  var b = String(brand || '').trim(), n = String(name || '').toLowerCase();
+  for (var i = 0; i < HOTEL_BRAND_RULES.length; i++) {
+    var r = HOTEL_BRAND_RULES[i];
+    if (b === r[0] && (!r[1] || r[1].test(n))) b = r[2];
+  }
+  // Hard Rock — a partner brand Accor distributes in some markets: every
+  // variant ("Hard Rock Hotel", "Seminole Hard Rock" …) is the one slug.
+  if (/^hard.rock\b/i.test(b) || /^seminole hard rock/i.test(b)) b = 'Hard Rock'; // i18n-ok: data
+  return b;
+}
+
 function _buildDestHotelAdObj(info, cityName) {
   var hotels = info.hotels || [];
   if (!hotels.length) return null;
@@ -45789,68 +45833,8 @@ function _buildDestHotelAdObj(info, cityName) {
   window._destHotelIdx = ((window._destHotelIdx || 0) + 1) % hotels.length;
   var h = hotels[window._destHotelIdx];
   if (!h) return null;
-  // Brand normalization (same logic as buildDestInfoSlide)
-  var brandKey = (h.brand || '').trim();
-  var hName = (h.name || '').toLowerCase();
-  if (brandKey === 'Holiday Inn' && /express/i.test(hName)) brandKey = 'Holiday Inn Express';
-  if (brandKey === 'Hilton' && /garden/i.test(hName)) brandKey = 'Hilton Garden Inn';
-  if (brandKey === 'Hilton' && /doubletree/i.test(hName)) brandKey = 'DoubleTree';
-  if (brandKey === 'Hilton' && /hampton/i.test(hName)) brandKey = 'Hampton';
-  if (brandKey === 'Hilton' && /embassy/i.test(hName)) brandKey = 'Embassy Suites';
-  if (brandKey === 'Hilton' && /homewood/i.test(hName)) brandKey = 'Homewood Suites';
-  if (brandKey === 'Marriott' && /courtyard/i.test(hName)) brandKey = 'Courtyard';
-  if (brandKey === 'Marriott' && /fairfield/i.test(hName)) brandKey = 'Fairfield Inn';
-  if (brandKey === 'Marriott' && /residence inn/i.test(hName)) brandKey = 'Residence Inn';
-  if (brandKey === 'Marriott' && /springhill/i.test(hName)) brandKey = 'SpringHill Suites';
-  if (brandKey === 'Marriott' && /westin/i.test(hName)) brandKey = 'Westin';
-  if (brandKey === 'Marriott' && /sheraton/i.test(hName)) brandKey = 'Sheraton';
-  if (brandKey === 'Marriott' && /ritz/i.test(hName)) brandKey = 'Ritz-Carlton';
-  if (brandKey === 'IHG' && /holiday inn express/i.test(hName)) brandKey = 'Holiday Inn Express';
-  if (brandKey === 'IHG' && /holiday inn/i.test(hName)) brandKey = 'Holiday Inn';
-  if (brandKey === 'IHG' && /crowne/i.test(hName)) brandKey = 'Crowne Plaza';
-  if (brandKey === 'IHG' && /intercontinental/i.test(hName)) brandKey = 'InterContinental';
-  // Delta Hotels (Marriott family) — keep separate from "Delta" airline.
-  // AI may return brand as "Marriott" for a Delta property, or as "Delta"
-  // alone (which would otherwise slug to /logos/delta.svg = the airline).
-  if (brandKey === 'Marriott' && /delta hotels?/i.test(hName)) brandKey = 'Delta Hotels';
-  if (brandKey === 'Delta' || brandKey === 'Delta Hotels and Resorts') brandKey = 'Delta Hotels';
-  // Accor family — AI can return long-form names that don't slug cleanly,
-  // or sub-brands attributed to the parent ("Ennismore" instead of the actual brand).
-  if (brandKey === 'Accor' && /orient express/i.test(hName)) brandKey = 'Orient Express';
-  if (brandKey === 'Accor' && /faena/i.test(hName)) brandKey = 'Faena';
-  if (brandKey === 'Accor' && /raffles/i.test(hName)) brandKey = 'Raffles';
-  if (brandKey === 'Accor' && /sofitel/i.test(hName)) brandKey = 'Sofitel';
-  if (brandKey === 'Accor' && /fairmont/i.test(hName)) brandKey = 'Fairmont';
-  if (brandKey === 'Accor' && /pullman/i.test(hName)) brandKey = 'Pullman';
-  if (brandKey === 'Accor' && /swiss(o|ô)tel/i.test(hName)) brandKey = 'Swissotel';
-  if (brandKey === 'Accor' && /ibis budget/i.test(hName)) brandKey = 'ibis budget';
-  if (brandKey === 'Accor' && /ibis styles/i.test(hName)) brandKey = 'ibis Styles';
-  if (brandKey === 'Accor' && /\bibis\b/i.test(hName)) brandKey = 'ibis';
-  if (brandKey === 'Accor' && /novotel/i.test(hName)) brandKey = 'Novotel';
-  if (brandKey === 'Accor' && /mercure/i.test(hName)) brandKey = 'Mercure';
-  if (brandKey === 'Accor' && /m(ö|o)venpick/i.test(hName)) brandKey = 'Movenpick';
-  // Ennismore brand attribution → real brand
-  if (brandKey === 'Ennismore' && /mondrian/i.test(hName)) brandKey = 'Mondrian';
-  if (brandKey === 'Ennismore' && /hyde/i.test(hName)) brandKey = 'Hyde';
-  if (brandKey === 'Ennismore' && /sls/i.test(hName)) brandKey = 'SLS';
-  if (brandKey === 'Ennismore' && /delano/i.test(hName)) brandKey = 'Delano';
-  if (brandKey === 'Ennismore' && /the hoxton/i.test(hName)) brandKey = 'The Hoxton';
-  if (brandKey === 'Ennismore' && /mama shelter/i.test(hName)) brandKey = 'Mama Shelter';
-  if (brandKey === 'Ennismore' && /25hours/i.test(hName)) brandKey = '25hours';
-  if (brandKey === 'Ennismore' && /rixos/i.test(hName)) brandKey = 'Rixos';
-  if (brandKey === 'Ennismore' && /morgans/i.test(hName)) brandKey = 'Morgans Originals';
-  if (brandKey === 'Ennismore' && /21c/i.test(hName)) brandKey = '21c Museum Hotel';
-  // Long-form / variant brand names → canonical slug match
-  if (brandKey === 'Mövenpick') brandKey = 'Movenpick';
-  if (brandKey === 'Swissôtel') brandKey = 'Swissotel';
-  if (brandKey === 'SO/' || brandKey === 'SO') brandKey = 'so';
-  if (brandKey === '21c Museum Hotels') brandKey = '21c Museum Hotel';
-  if (brandKey === 'Emblems' || brandKey === 'Emblems Collection by Accor') brandKey = 'Emblems Collection';
-  if (brandKey === 'Hoxton') brandKey = 'The Hoxton';
-  // Hard Rock — partner brand distributed by Accor in some markets.
-  // Collapse all variants ("Hard Rock Hotel", "Hard Rock Hotels & Casinos",
-  // "Seminole Hard Rock", etc.) to the single "Hard Rock" slug.
-  if (/^hard.rock\b/i.test(brandKey) || /^seminole hard rock/i.test(brandKey)) brandKey = 'Hard Rock';
+  // Brand normalization: _normHotelBrand (one copy, shared with buildDestInfoSlide)
+  var brandKey = _normHotelBrand(h.brand, h.name);
   // Logo slug + path - use KNOWN_LOGO_EXT to pick the right format
   var logoSlug = brandKey.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
   if (!logoSlug || !LOGO_TREATMENT[logoSlug]) return null; // skip if no logo treatment
@@ -46964,68 +46948,8 @@ function buildDestInfoSlide(info, type, cityName) {
     if (!h) return '';
     var starStr = '';
     for (var si = 0; si < (h.stars || 0); si++) starStr += '\u2605';
-    // Normalize brand — AI sometimes strips sub-brands from the brand field
-    var brandKey = (h.brand || '').trim();
-    var hName = (h.name || '').toLowerCase();
-    if (brandKey === 'Holiday Inn' && /express/i.test(hName)) brandKey = 'Holiday Inn Express';
-    if (brandKey === 'Hilton' && /garden/i.test(hName)) brandKey = 'Hilton Garden Inn';
-    if (brandKey === 'Hilton' && /doubletree/i.test(hName)) brandKey = 'DoubleTree';
-    if (brandKey === 'Hilton' && /hampton/i.test(hName)) brandKey = 'Hampton';
-    if (brandKey === 'Hilton' && /embassy/i.test(hName)) brandKey = 'Embassy Suites';
-    if (brandKey === 'Hilton' && /homewood/i.test(hName)) brandKey = 'Homewood Suites';
-    if (brandKey === 'Marriott' && /courtyard/i.test(hName)) brandKey = 'Courtyard';
-    if (brandKey === 'Marriott' && /fairfield/i.test(hName)) brandKey = 'Fairfield Inn';
-    if (brandKey === 'Marriott' && /residence inn/i.test(hName)) brandKey = 'Residence Inn';
-    if (brandKey === 'Marriott' && /springhill/i.test(hName)) brandKey = 'SpringHill Suites';
-    if (brandKey === 'Marriott' && /westin/i.test(hName)) brandKey = 'Westin';
-    if (brandKey === 'Marriott' && /sheraton/i.test(hName)) brandKey = 'Sheraton';
-    if (brandKey === 'Marriott' && /ritz/i.test(hName)) brandKey = 'Ritz-Carlton';
-    if (brandKey === 'IHG' && /holiday inn express/i.test(hName)) brandKey = 'Holiday Inn Express';
-    if (brandKey === 'IHG' && /holiday inn/i.test(hName)) brandKey = 'Holiday Inn';
-    if (brandKey === 'IHG' && /crowne/i.test(hName)) brandKey = 'Crowne Plaza';
-    if (brandKey === 'IHG' && /intercontinental/i.test(hName)) brandKey = 'InterContinental';
-    // Delta Hotels (Marriott family) — keep separate from "Delta" airline.
-    // AI may return brand as "Marriott" for a Delta property, or as "Delta"
-    // alone (which would otherwise slug to /logos/delta.svg = the airline).
-    if (brandKey === 'Marriott' && /delta hotels?/i.test(hName)) brandKey = 'Delta Hotels';
-    if (brandKey === 'Delta' || brandKey === 'Delta Hotels and Resorts') brandKey = 'Delta Hotels';
-    // Accor family — AI can return long-form names that don't slug cleanly,
-    // or sub-brands attributed to the parent ("Ennismore" instead of the actual brand).
-    if (brandKey === 'Accor' && /orient express/i.test(hName)) brandKey = 'Orient Express';
-    if (brandKey === 'Accor' && /faena/i.test(hName)) brandKey = 'Faena';
-    if (brandKey === 'Accor' && /raffles/i.test(hName)) brandKey = 'Raffles';
-    if (brandKey === 'Accor' && /sofitel/i.test(hName)) brandKey = 'Sofitel';
-    if (brandKey === 'Accor' && /fairmont/i.test(hName)) brandKey = 'Fairmont';
-    if (brandKey === 'Accor' && /pullman/i.test(hName)) brandKey = 'Pullman';
-    if (brandKey === 'Accor' && /swiss(o|ô)tel/i.test(hName)) brandKey = 'Swissotel';
-    if (brandKey === 'Accor' && /ibis budget/i.test(hName)) brandKey = 'ibis budget';
-    if (brandKey === 'Accor' && /ibis styles/i.test(hName)) brandKey = 'ibis Styles';
-    if (brandKey === 'Accor' && /\bibis\b/i.test(hName)) brandKey = 'ibis';
-    if (brandKey === 'Accor' && /novotel/i.test(hName)) brandKey = 'Novotel';
-    if (brandKey === 'Accor' && /mercure/i.test(hName)) brandKey = 'Mercure';
-    if (brandKey === 'Accor' && /m(ö|o)venpick/i.test(hName)) brandKey = 'Movenpick';
-    // Ennismore brand attribution → real brand
-    if (brandKey === 'Ennismore' && /mondrian/i.test(hName)) brandKey = 'Mondrian';
-    if (brandKey === 'Ennismore' && /hyde/i.test(hName)) brandKey = 'Hyde';
-    if (brandKey === 'Ennismore' && /sls/i.test(hName)) brandKey = 'SLS';
-    if (brandKey === 'Ennismore' && /delano/i.test(hName)) brandKey = 'Delano';
-    if (brandKey === 'Ennismore' && /the hoxton/i.test(hName)) brandKey = 'The Hoxton';
-    if (brandKey === 'Ennismore' && /mama shelter/i.test(hName)) brandKey = 'Mama Shelter';
-    if (brandKey === 'Ennismore' && /25hours/i.test(hName)) brandKey = '25hours';
-    if (brandKey === 'Ennismore' && /rixos/i.test(hName)) brandKey = 'Rixos';
-    if (brandKey === 'Ennismore' && /morgans/i.test(hName)) brandKey = 'Morgans Originals';
-    if (brandKey === 'Ennismore' && /21c/i.test(hName)) brandKey = '21c Museum Hotel';
-    // Long-form / variant brand names → canonical slug match
-    if (brandKey === 'Mövenpick') brandKey = 'Movenpick';
-    if (brandKey === 'Swissôtel') brandKey = 'Swissotel';
-    if (brandKey === 'SO/' || brandKey === 'SO') brandKey = 'so';
-    if (brandKey === '21c Museum Hotels') brandKey = '21c Museum Hotel';
-    if (brandKey === 'Emblems' || brandKey === 'Emblems Collection by Accor') brandKey = 'Emblems Collection';
-    if (brandKey === 'Hoxton') brandKey = 'The Hoxton';
-    // Hard Rock — partner brand distributed by Accor in some markets.
-    // Collapse all variants ("Hard Rock Hotel", "Hard Rock Hotels & Casinos",
-    // "Seminole Hard Rock", etc.) to the single "Hard Rock" slug.
-    if (/^hard.rock\b/i.test(brandKey) || /^seminole hard rock/i.test(brandKey)) brandKey = 'Hard Rock';
+    // Brand normalization: _normHotelBrand (one copy, shared with _buildDestHotelAdObj)
+    var brandKey = _normHotelBrand(h.brand, h.name);
     // Hotel logo — local file in /logos/ folder, slug from brand name
     var logoSlug = brandKey.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     // Try PNG first (transparent bg works with filter), then SVG, then webp
@@ -49982,7 +49906,7 @@ function _renderWxCard(el) {
     var _wxPair = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
-        var t = obj[_wxLangs[_wi]] || obj.en;
+        var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1; w.push(t);
       }
@@ -50003,7 +49927,7 @@ function _renderWxCard(el) {
     var _wxPairT = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
-        var t = obj[_wxLangs[_wi]] || obj.en;
+        var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
         w.push('<span class="wxc-t-part">' + t + '</span>');
@@ -50380,7 +50304,7 @@ function _renderWxCard(el) {
     var _wxPairD = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
-        var t = obj[_wxLangs[_wi]] || obj.en;
+        var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
         w.push('<span class="wxc-t-part">' + t + '</span>');
@@ -50391,7 +50315,7 @@ function _renderWxCard(el) {
     var _wxPairS = function (obj) {
       var w = [], seen = {};
       for (var _wi = 0; _wi < _wxLangs.length; _wi++) {
-        var t = obj[_wxLangs[_wi]] || obj.en;
+        var t = obj[_wxLangs[_wi]];
         if (!t || seen[String(t).toLowerCase()]) continue;
         seen[String(t).toLowerCase()] = 1;
         w.push('<span class="wxc-l' + (w.length + 1) + '">' + t + '</span>');

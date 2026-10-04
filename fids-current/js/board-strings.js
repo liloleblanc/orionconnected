@@ -201,6 +201,18 @@
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     pdReserve: { en: 'PorterReserve', fr: 'PorterRéserve', es: 'PorterReserve', de: 'PorterReserve', it: 'PorterReserve', pt: 'PorterReserve', ja: 'PorterReserve', zh: 'PorterReserve', ar: 'PorterReserve',
       $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // The four VIPorter elite tiers, as Porter names them (flyporter.com en-ca
+    // and fr-ca: Porter RENAMES them in French). The other seven languages
+    // keep Porter's English names: a tier name is a brand. Alt text of the
+    // tier artwork on the priority sign.
+    pdTierPassport: { en: 'VIPorter Passport', fr: 'VIPorter Passeport', es: 'VIPorter Passport', de: 'VIPorter Passport', it: 'VIPorter Passport', pt: 'VIPorter Passport', ja: 'VIPorter Passport', zh: 'VIPorter Passport', ar: 'VIPorter Passport',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'airline:PD', de: 'airline:PD', it: 'airline:PD', pt: 'airline:PD', ja: 'airline:PD', zh: 'airline:PD', ar: 'airline:PD' } },
+    pdTierVenture: { en: 'VIPorter Venture', fr: 'VIPorter Horizon', es: 'VIPorter Venture', de: 'VIPorter Venture', it: 'VIPorter Venture', pt: 'VIPorter Venture', ja: 'VIPorter Venture', zh: 'VIPorter Venture', ar: 'VIPorter Venture',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'airline:PD', de: 'airline:PD', it: 'airline:PD', pt: 'airline:PD', ja: 'airline:PD', zh: 'airline:PD', ar: 'airline:PD' } },
+    pdTierAscent: { en: 'VIPorter Ascent', fr: 'VIPorter Essor', es: 'VIPorter Ascent', de: 'VIPorter Ascent', it: 'VIPorter Ascent', pt: 'VIPorter Ascent', ja: 'VIPorter Ascent', zh: 'VIPorter Ascent', ar: 'VIPorter Ascent',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'airline:PD', de: 'airline:PD', it: 'airline:PD', pt: 'airline:PD', ja: 'airline:PD', zh: 'airline:PD', ar: 'airline:PD' } },
+    pdTierFirst: { en: 'VIPorter First', fr: 'VIPorter Première', es: 'VIPorter First', de: 'VIPorter First', it: 'VIPorter First', pt: 'VIPorter First', ja: 'VIPorter First', zh: 'VIPorter First', ar: 'VIPorter First',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'airline:PD', de: 'airline:PD', it: 'airline:PD', pt: 'airline:PD', ja: 'airline:PD', zh: 'airline:PD', ar: 'airline:PD' } },
     pdClassic: { en: 'PorterClassic', fr: 'PorterClassique', es: 'PorterClassic', de: 'PorterClassic', it: 'PorterClassic', pt: 'PorterClassic', ja: 'PorterClassic', zh: 'PorterClassic', ar: 'PorterClassic',
       $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     avidTraveller: { en: 'AvidTraveller', fr: 'Grand Voyageur', es: 'AvidTraveller', de: 'AvidTraveller', it: 'AvidTraveller', pt: 'AvidTraveller', ja: 'AvidTraveller', zh: 'AvidTraveller', ar: 'AvidTraveller',
@@ -399,7 +411,23 @@
     mobileAsk: { en: 'Open the mobile app?', fr: 'Ouvrir l’application mobile ?', es: '¿Abrir la aplicación móvil?', de: 'Mobile App öffnen?', it: 'Aprire l’app mobile?', pt: 'Abrir o aplicativo móvel?', ja: 'モバイルアプリを開きますか？', zh: '打开移动应用？', ar: 'هل تريد فتح تطبيق الجوال؟' },
     mobileYes: { en: 'Use the mobile app', fr: 'Utiliser l’application mobile', es: 'Usar la aplicación móvil', de: 'Mobile App verwenden', it: 'Usa l’app mobile', pt: 'Usar o aplicativo móvel', ja: 'モバイルアプリを使う', zh: '使用移动应用', ar: 'استخدام تطبيق الجوال' },
     mobileNo: { en: 'Stay on the regular site', fr: 'Rester sur le site normal', es: 'Quedarse en el sitio normal', de: 'Auf der normalen Website bleiben', it: 'Resta sul sito normale', pt: 'Permanecer no site normal', ja: '通常のサイトのまま', zh: '留在常规网站', ar: 'البقاء على الموقع العادي' },
-    mobileNote: { en: 'We’ll remember your choice. Add {ASK} to be asked again.', fr: 'Votre choix sera retenu. Ajoutez {ASK} pour qu’on vous redemande.', es: 'Recordaremos su elección. Añada {ASK} para que se lo volvamos a preguntar.', de: 'Wir merken uns Ihre Wahl. Fügen Sie {ASK} hinzu, um erneut gefragt zu werden.', it: 'Ricorderemo la vostra scelta. Aggiungete {ASK} per ricevere di nuovo la domanda.', pt: 'Vamos lembrar a sua escolha. Adicione {ASK} para ser perguntado novamente.', ja: '選択内容は保存されます。もう一度確認するには {ASK} を追加してください。', zh: '我们会记住您的选择。添加 {ASK} 可再次询问。', ar: 'سنتذكر اختيارك. أضف {ASK} ليُطرح عليك السؤال مرة أخرى.' }
+    mobileNote: { en: 'We’ll remember your choice. Add {ASK} to be asked again.', fr: 'Votre choix sera retenu. Ajoutez {ASK} pour qu’on vous redemande.', es: 'Recordaremos su elección. Añada {ASK} para que se lo volvamos a preguntar.', de: 'Wir merken uns Ihre Wahl. Fügen Sie {ASK} hinzu, um erneut gefragt zu werden.', it: 'Ricorderemo la vostra scelta. Aggiungete {ASK} per ricevere di nuovo la domanda.', pt: 'Vamos lembrar a sua escolha. Adicione {ASK} para ser perguntado novamente.', ja: '選択内容は保存されます。もう一度確認するには {ASK} を追加してください。', zh: '我们会记住您的选择。添加 {ASK} 可再次询问。', ar: 'سنتذكر اختيارك. أضف {ASK} ليُطرح عليك السؤال مرة أخرى.' },
+
+    // ── ADDED WITH THE GUARD'S SECOND PASS ────────────────────────────────
+    // A delayed next departure on the gate's footer: '→ Now 6:40pm'. The same
+    // words as fids-v2.js TX.now (the revised-time 'Now').
+    nowRevised: { en: 'Now', fr: 'Maintenant', es: 'Ahora', de: 'Jetzt', it: 'Ora', pt: 'Agora', ja: '変更', zh: '现改为', ar: 'الآن', $ctx: 'revised-time' },
+    // An airline ad's {CITY} when the destination has no name yet.
+    yourDestination: { en: 'your destination', fr: 'votre destination', es: 'su destino', de: 'Ihr Reiseziel', it: 'la vostra destinazione', pt: 'seu destino', ja: '目的地', zh: '目的地', ar: 'وجهتك' },
+    // Accor's bed codes in a room's name ('DBL/DBL'), spelled out in the
+    // language the room was fetched in.
+    bedTwoDouble: { en: '2 Double Beds', fr: '2 lits doubles', es: '2 camas dobles', de: '2 Doppelbetten', it: '2 letti matrimoniali', pt: '2 camas de casal', ja: 'ダブルベッド2台', zh: '2张双人床', ar: 'سريران مزدوجان' },
+    bedTwoTwin: { en: '2 Twin Beds', fr: '2 lits simples', es: '2 camas individuales', de: '2 Einzelbetten', it: '2 letti singoli', pt: '2 camas de solteiro', ja: 'シングルベッド2台', zh: '2张单人床', ar: 'سريران فرديان' },
+    bedTwoQueen: { en: '2 Queen Beds', fr: '2 grands lits Queen', es: '2 camas Queen', de: '2 Queen-Size-Betten', it: '2 letti queen size', pt: '2 camas queen', ja: 'クイーンベッド2台', zh: '2张大号双人床', ar: 'سريران بحجم كوين' },
+    bedKing: { en: 'King Bed', fr: 'Très grand lit King', es: 'Cama King', de: 'Kingsize-Bett', it: 'Letto king size', pt: 'Cama king', ja: 'キングベッド', zh: '特大号床', ar: 'سرير بحجم كينغ' },
+    bedQueen: { en: 'Queen Bed', fr: 'Grand lit Queen', es: 'Cama Queen', de: 'Queen-Size-Bett', it: 'Letto queen size', pt: 'Cama queen', ja: 'クイーンベッド', zh: '大号双人床', ar: 'سرير بحجم كوين' },
+    bedDouble: { en: 'Double Bed', fr: 'Lit double', es: 'Cama doble', de: 'Doppelbett', it: 'Letto matrimoniale', pt: 'Cama de casal', ja: 'ダブルベッド', zh: '双人床', ar: 'سرير مزدوج' },
+    bedTwin: { en: 'Twin Beds', fr: 'Lits jumeaux', es: 'Camas gemelas', de: 'Zwei Einzelbetten', it: 'Letti gemelli', pt: 'Camas de solteiro', ja: 'ツインベッド', zh: '双床', ar: 'سريران منفصلان' }
   };
 
   // Lists: per language, equal length. Tickers.
@@ -451,6 +479,20 @@
       ar: ['مطعم', 'واي فاي', 'غرف مريحة']
     }
   };
+
+  // ━━ FROZEN ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  // The words are fixed where they are declared. A run-time write
+  // (BOARD_STR.tomorrow.fr = …, Object.assign(BOARD_STR.x, …), a push into a
+  // ticker list) would overwrite one silently — the CITY_FR collapse again,
+  // where no duplicate-key check can see it — so every table is frozen to the
+  // last string. tests/board-languages.test.js (B16) refuses such a write in
+  // the source; this makes one do nothing in a browser.
+  function deepFreeze(o) {
+    if (!o || typeof o !== 'object' || Object.isFrozen(o)) return o;
+    Object.keys(o).forEach(function (k) { deepFreeze(o[k]); });
+    return Object.freeze(o);
+  }
+  [LANGS, META, FR_FIRST, LANG_DEFAULTS, ES_AIRPORTS, STR, LISTS].forEach(deepFreeze);
 
   // ━━ HELPERS ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -652,9 +694,12 @@
 
   function list(key, lang) {
     var e = LISTS[key];
-    if (!e) { miss(key, lang || '*'); return []; }
-    var v = e[lang || boardLang()];
-    return Array.isArray(v) ? v : (e.en || []);
+    var l = lang || boardLang();
+    if (!e) { miss(key, l); return []; }
+    var v = e[l];
+    // never another language's list: a missing one is nothing, not English
+    if (!Array.isArray(v)) { miss(key, l); return []; }
+    return v;
   }
 
   // ── TIMES, DATES AND WEEKDAYS ───────────────────────────────────────────

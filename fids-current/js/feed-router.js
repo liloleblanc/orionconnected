@@ -66,7 +66,7 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
       }
       if (!r.ok) {
         let body = ''; try { body = await r.text(); } catch(e) {}
-        lastErr = `HTTP ${r.status} for ${iata} ${direction} [${fromStr} → ${toStr}]\n${body.slice(0,300)}`;
+        lastErr = `HTTP ${r.status} for ${iata} ${direction} [${fromStr} → ${toStr}]\n${body.slice(0,300)}`; // i18n-ok: debug
         console.error('[FIDS] ADB error:', lastErr);
         // Note: useProxy reference removed (no longer in scope; was throwing
         // ReferenceError in this error path and masking the actual API error).
@@ -1206,7 +1206,7 @@ async function adbFetch(iata, direction) {
         if (list.length) {
           // Same webhook aircraft merge as Moncton — no-ops until a KTPA
           // Flight-Alert subscription feeds the cache.
-          try { await _yqmCacheAircraftMerge(list, direction, 'KTPA'); } catch (e2) {}
+          try { await _yqmCacheAircraftMerge(list, direction, 'KTPA'); } catch (e2) {} // i18n-ok: code
           return wantDep ? { departures: list } : { arrivals: list };
         }
         console.warn('[FIDS] TPA feed empty — falling back to ADB scrape');
@@ -1268,7 +1268,7 @@ async function adbFetch(iata, direction) {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const r = await fetch(yqmUrl, { headers: { 'Accept': 'application/json' } });
-        if (!r.ok) { _lastWhy = `HTTP ${r.status}`; }
+        if (!r.ok) { _lastWhy = `HTTP ${r.status}`; } // i18n-ok: debug
         else {
           const raw = await r.json();
           const rowsAll = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
@@ -1425,7 +1425,7 @@ async function adbFetch(iata, direction) {
         // feeds the cache. MCO's window-scoped enrichment above is already
         // foreign-leg-proof (airport-scoped list, minute-keyed match); this
         // adds the push path for tails ADB's scrape misses.
-        try { await _yqmCacheAircraftMerge(list, direction, 'KMCO'); } catch (e3) {}
+        try { await _yqmCacheAircraftMerge(list, direction, 'KMCO'); } catch (e3) {} // i18n-ok: code
         console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
         // Cache this good GOAA result so a transient blip on the next poll
         // returns the last-known GOAA list instead of swapping the whole board

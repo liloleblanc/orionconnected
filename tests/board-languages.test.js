@@ -119,6 +119,59 @@ test('the ledger only shrinks against main', (t) => {
   }
 });
 
+// ── THE EXCEPTION RATCHET ────────────────────────────────────────────────
+// A new brand term, operator function, "not passenger" file, data table,
+// pragma or loosened call list is how a label gets past every check above.
+// None of them may grow against main without an approval recorded in
+// tests/i18n/approved-exceptions.json. Every one is printed either way.
+const ratchet = require('./i18n/ratchet');
+test('no exception grows against main without a recorded approval', (t) => {
+  let base = null;
+  try {
+    base = execFileSync('git', ['merge-base', 'HEAD', 'origin/main'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch (e) { /* no origin/main here */ }
+  if (!base) {
+    if (process.env.CI) assert.fail('no origin/main to compare the exceptions with — checks.yml must fetch with fetch-depth: 0');
+    t.skip('no origin/main in this checkout; the comparison runs in CI');
+    return;
+  }
+  const show = (file) => {
+    try { return execFileSync('git', ['show', `${base}:${file}`], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 << 20 }); }
+    catch (e) { return null; }
+  };
+  const policySrc = show('tests/i18n/policy.js');
+  if (policySrc == null) { t.skip('main has no policy yet: this change introduces it'); return; }
+  const req = (id) => {
+    if (/board-strings\.js$/.test(id)) return require('../fids-current/js/board-strings.js');
+    if (id === './scan') return require('./i18n/scan');
+    return require(id);
+  };
+  const before = ratchet.evalModule(policySrc, req);
+  const added = ratchet.exceptionsAdded(before, policy);
+  const checksSrc = show('tests/i18n/checks.js');
+  let beforeLoose = null;
+  try { beforeLoose = checksSrc ? ratchet.evalModule(checksSrc, req).LOOSENERS : null; } catch (e) { beforeLoose = null; }
+  added.push(...ratchet.loosenersAdded(beforeLoose, checks.LOOSENERS));
+  const files = [...new Set(policy.PASSENGER_SCRIPTS.concat(policy.PASSENGER_PAGES, before.PASSENGER_SCRIPTS || [], before.PASSENGER_PAGES || []))];
+  const prBefore = ratchet.pragmaCounts(files, (f) => show(f));
+  const prNow = ratchet.pragmaCounts(files, (f) => fs.readFileSync(path.join(ROOT, f), 'utf8'));
+  added.push(...ratchet.pragmasAdded(prBefore, prNow));
+  const approvals = ratchet.loadApprovals();
+  const bad = ratchet.unapproved(added, approvals);
+  const line = (x) => `  ${x.list}: ${x.entry}${x.count != null ? ` (${x.was} → ${x.count})` : ''}`;
+  if (added.length) {
+    const msg = `New exceptions in this change (${added.length}, ${added.length - bad.length} approved):\n` + added.map(line).join('\n');
+    console.log(msg);
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      try { fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, `\n**New exceptions in this change: ${added.length}, ${added.length - bad.length} approved**\n\n` + added.map((x) => '-' + line(x).slice(1)).join('\n') + '\n'); } catch (e) {}
+    }
+  }
+  assert.equal(bad.length, 0, '\nThese exceptions are new against main and have no approval:\n' + bad.map(line).join('\n')
+    + '\n\nA passenger word goes in the store (board-strings.js) instead. If this really is operator UI, a brand,\n'
+    + 'a unit, a code, data or debug output, it needs an approval in review, recorded in\n'
+    + 'tests/i18n/approved-exceptions.json as { "list", "entry", "approved": "the PR it was approved in" }.\n');
+});
+
 test('summary', () => {
   const entries = ledger.load();
   const occurrences = entries.reduce((n, e) => n + e.count, 0);

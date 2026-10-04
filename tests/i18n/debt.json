@@ -865,7 +865,7 @@
   "file": "fids-current/js/heritage-index.js",
   "fn": null,
   "text": "Open the gate · Ouvrir",
-  "count": 1,
+  "count": 2,
   "surface": "Archive pages",
   "decision": "D11"
  },
@@ -1618,5 +1618,25 @@
   "count": 1,
   "surface": "Weather card and strips",
   "decision": "D1"
+ },
+ {
+  "id": "B15:fids-current/app.html:-:A Class Above",
+  "check": "B15",
+  "file": "fids-current/app.html",
+  "fn": null,
+  "text": "A Class Above",
+  "count": 1,
+  "surface": "Companion app",
+  "decision": "D6"
+ },
+ {
+  "id": "B11:fids-current/app.html:T:|| I18N.en",
+  "check": "B11",
+  "file": "fids-current/app.html",
+  "fn": "T",
+  "text": "|| I18N.en",
+  "count": 1,
+  "surface": "Companion app",
+  "decision": "D6"
  }
 ]

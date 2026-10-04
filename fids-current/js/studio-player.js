@@ -175,7 +175,9 @@
       language: language.code,
       direction: language.direction,
       scene: scene,
-      sceneLabel: sceneEntry ? sceneEntry.label : 'Default',
+      // the scene's name is the operator's; the canvas shows it only in the
+      // editor (studio-render.js weatherFooterContent)
+      sceneLabel: sceneEntry ? sceneEntry.label : '',
       dataBadge: badge.canvas,
       clock: clock,
       weather: weatherNow,
@@ -192,7 +194,7 @@
     badgeNode.hidden = false;
     badgeNode.className = 'player-badge' + (badge.fallback ? ' is-fallback' : '');
     badgeNode.innerHTML = '<i></i><b>' + Render.escapeHTML(displayName || documentModel.name) + '</b> ' +
-      Render.escapeHTML((documentIsDraft ? 'draft preview' : 'v' + documentVersion) + ' · ' + badge.label + ' · ' + documentModel.airport.iata);
+      Render.escapeHTML((documentIsDraft ? 'draft preview' : 'v' + documentVersion) + ' · ' + badge.label + ' · ' + documentModel.airport.iata); // i18n-ok: operator
   }
 
   function ensurePilotRouter() {
@@ -244,7 +246,7 @@
     const resolved = resolveDocument();
     if (!resolved) { documentModel = null; renderSetup(); return; }
     documentModel = resolved;
-    document.title = documentModel.name + ' · Orion Display Player';
+    document.title = documentModel.name + ' · Orion Display Player'; // i18n-ok: operator
     renderFrame();
   }
 

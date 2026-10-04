@@ -44,7 +44,9 @@ function build(preActive, lang) {
   // its status strip, the split lane row, and the base-tier mark on the general
   // side). They live beside it rather than inside it, so they have to be lifted
   // with it or the function throws on the first call.
-  const helpers = ['_pdCabinHdr', '_pdLaneRow', '_pdClassicMark'].map(lift).join('\n');
+  // v23960 — and the tier marks moved into two shared helpers (_pdMark,
+  // _pdMarksRow), so the sign and the lanes panel draw one row.
+  const helpers = ['_pdCabinHdr', '_pdLaneRow', '_pdClassicMark', '_pdMark', '_pdMarksRow'].map(lift).join('\n');
   const fn = new Function(
     '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF', '_gateLang1',
     helpers + '\n' + lift('_pdLanesBodyHtml') + '\nreturn _pdLanesBodyHtml;',
@@ -52,7 +54,8 @@ function build(preActive, lang) {
     (key) => '[' + key + ']',
     // v23530 — the sign reads ONE language from _GATE_LBL for the phase name
     // and the roster; TL() reads a different table and returned the raw keys.
-    (key) => (key === 'preboardList' ? TABLE[lang] : (key === 'preboard' ? 'Pre-boarding' : '[' + key + ']')),
+    (key) => (key === 'preboardList' ? TABLE[lang] : (key === 'preboard' ? 'Pre-boarding'
+      : (/^pdTier|^pdReserve$/.test(key) ? STORE.entry(key)[lang] : '[' + key + ']'))),
     () => '',
     (v) => v,
     (key) => '[' + key + ']',
@@ -70,6 +73,7 @@ function build(preActive, lang) {
   return fn('23–33', '12–22', preActive);
 }
 
+const STORE = require('../fids-current/js/board-strings.js');
 // The roster as it actually ships, pulled from the translation table.
 // It lives in the one store (board-strings.js), with where its words come from.
 const TABLE = (() => {
@@ -230,11 +234,13 @@ test('AvidTraveller labels the tier marks, which is where it is true', () => {
   assert.match(body, /g8-pd-marks-hdr/, 'the marks row must be headed');
   assert.match(body, /_gateLbl1\('avidTraveller'/,
     'the name is a LABEL, not a literal — the sign is bilingual');
-  // Above the marks, not floating elsewhere in the column.
-  const hdrAt = body.indexOf('g8-pd-marks-hdr');
-  const marksAt = body.indexOf('g8-pd-preboard-marks');
-  assert.ok(hdrAt > 0 && marksAt > hdrAt,
+  // Above the marks, not floating elsewhere in the column: the heading, then
+  // the one shared row of marks.
+  assert.match(body, /_prioMarksHdr \+ _pdMarksRow\(\)/,
     'the heading must be emitted immediately before the marks it names');
+  assert.match(lift('_pdMarksRow'), /g8-pd-preboard-marks/);
+  const html = build(true, 'en');
+  assert.ok(html.indexOf('g8-pd-marks-hdr') > 0 && html.indexOf('g8-pd-preboard-marks') > html.indexOf('g8-pd-marks-hdr'));
 });
 
 test('the tier collective name is renamed in French, not translated', () => {
@@ -262,7 +268,7 @@ test('all four elite tiers are named, Ascent included', () => {
   // lang + '.svg' — so a literal search finds none of them. Read the tier list
   // off the calls instead, the way the branding contract resolves constructed
   // tile paths rather than grepping for filenames that no longer appear.
-  const tiers = [...body.matchAll(/_pdMark\('(\w+)'/g)].map((m) => m[1]);
+  const tiers = [...lift('_pdMarksRow').matchAll(/_pdMark\('(\w+)'/g)].map((m) => m[1]);
   for (const tier of ['passport', 'venture', 'ascent', 'first']) {
     assert.ok(tiers.includes(tier), `the ${tier} tier must be on the priority marks`);
   }
@@ -276,11 +282,11 @@ test('every tier mark points at a file that exists', () => {
   // A missing mark fails silently — the img just does not draw, and the sign
   // looks fine with one fewer tier on it. That is how Ascent went unnoticed.
   const dir = path.resolve(__dirname, '..', 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
-  const body = lift('_pdLanesBodyHtml') + lift('_pdClassicMark');
+  const body = lift('_pdLanesBodyHtml') + lift('_pdClassicMark') + lift('_pdMarksRow');
   // Resolve what the renderer BUILDS, in every language it can build it in —
   // a constructed path that points at nothing draws nothing, and the tier just
   // vanishes from the sign with no error. That is how Ascent went unnoticed.
-  const fr = new Function('return ' + /_PD_MARK_FR = (\{[^}]*\})/.exec(body)[1] + ';')();
+  const fr = new Function('return ' + /FR_ART = (\{[^}]*\})/.exec(lift('_pdMark'))[1] + ';')();
   const refs = [];
   for (const m of body.matchAll(/_pdMark\('(\w+)'/g)) {
     refs.push(`viporter_${m[1]}_single_line_en.svg`);
@@ -300,13 +306,11 @@ test('every tier mark points at a file that exists', () => {
 // the function was written with, so renaming one local variable failed it while
 // the sign kept rendering perfectly — a test of the spelling, not the output.
 function mark(tier, label, fr) {
-  const src = lift('_pdLanesBodyHtml');
-  const decl = /var _PD_MARK_FR = \{[^}]*\};/.exec(src);
-  assert.ok(decl, 'the set of tiers with French art must be declared explicitly');
-  const at = src.indexOf('function _pdMark(');
-  assert.ok(at >= 0, '_pdMark must still exist');
-  const body = src.slice(at, src.indexOf('\n    }', at) + 6);
-  return new Function('_frF', '_gateLang1', decl[0] + '\n' + body + '\nreturn _pdMark;')(fr, () => (fr ? 'fr' : 'en'))(tier, label);
+  const src = lift('_pdMark');
+  assert.ok(/var FR_ART = \{[^}]*\};/.test(src), 'the set of tiers with French art must be declared explicitly');
+  const key = 'pdTier' + tier.charAt(0).toUpperCase() + tier.slice(1);
+  const l = fr ? 'fr' : 'en';
+  return new Function('_frF', '_gateLang1', '_gateLbl1', src + '\nreturn _pdMark;')(fr, () => l, (k) => STORE.entry(k)[l])(tier, key);
 }
 
 test('the tier marks follow the language where French art exists', () => {
@@ -359,8 +363,8 @@ test('a tier without French art falls back to English, never to nothing', () => 
   // This is the important half. A missing image draws nothing at all and the
   // tier silently vanishes from the sign — exactly how Ascent went unnoticed.
   // Wrong-language-but-present beats absent.
-  const src = lift('_pdLanesBodyHtml');
-  const frSet = new Function('return ' + /(_PD_MARK_FR = )(\{[^}]*\})/.exec(src)[2] + ';')();
+  const src = lift('_pdMark');
+  const frSet = new Function('return ' + /(FR_ART = )(\{[^}]*\})/.exec(src)[2] + ';')();
   const dir = path.resolve(__dirname, '..', 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
   for (const tier of ['passport', 'venture', 'ascent', 'first']) {
     // Every tier must have English art — that is the fallback.

@@ -54,11 +54,13 @@
     now:              { en:'Now',         fr:'Maintenant',    es:'Ahora',          de:'Jetzt',            it:'Ora',              pt:'Agora',            ja:'変更',     zh:'现改为',   ar:'الآن', $ctx: 'revised-time' }
   };
 
-  // T(key, lang) — get a translated string. Falls back to English.
+  // T(key, lang) — the word in that language. A missing key or language
+  // gives '' — never English, never the key's own name (every entry carries
+  // all nine languages; tests/board-languages.test.js holds it to that).
   function T(key, lang) {
     const entry = TX[key];
-    if (!entry) return key;
-    return entry[lang || 'en'] || entry.en || key;
+    if (!entry) return '';
+    return entry[lang || 'en'] || '';
   }
   window.fidsT = T;
 

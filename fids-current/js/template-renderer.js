@@ -33,7 +33,7 @@
       const o = (typeof _GATE_LBL !== 'undefined' && _GATE_LBL[key])
         || (typeof LS !== 'undefined' && LS[key])
         || (window.BoardStrings && BoardStrings.entry(key));
-      return (o && (o[l] || o.en)) || '';
+      return (o && o[l]) || '';
     } catch (e) { return ''; }
   }
   const _ST_CODE = { finalcall: 'final', enroute: 'active', ontime: 'ontime', canceled: 'cancelled' };
@@ -671,7 +671,7 @@
     el.style.overflow = 'hidden';
     el.style.justifyContent = 'center';
     el.style.fontFamily = "'Inter', system-ui, sans-serif";
-    const items = Array.isArray(p.items) && p.items.length ? p.items : [{ type:'text', text:'(no items)', bg:'#374151', color:'#fff' }];
+    const items = Array.isArray(p.items) && p.items.length ? p.items : [{ type:'text', text:'', bg:'#374151', color:'#fff' }];
     let i = 0;
     const show = () => {
       const item = items[i % items.length];

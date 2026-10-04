@@ -14,7 +14,18 @@
     twoWordings: { en: 'Departures', fr: 'Départs', es: 'Salidas', de: 'Abflüge', it: 'Partenze', pt: 'Partidas', ja: '出発', zh: '出发', ar: 'المغادرة' },
     badCode: { en: 'Exit', fr: 'Sortie', es: 'Salida', de: 'Ausgang', it: 'Uscita', pt: 'Saída', ja: '出口', zh: '出口', ar: 'مخرج', pt_BR: 'Saída' },
     expression: { en: 'Gate ' + 1, fr: 'Porte', es: 'Puerta', de: 'Gate', it: 'Gate', pt: 'Portão', ja: 'ゲート', zh: '登机口', ar: 'البوابة' },
-    empty: { en: 'Belt', fr: '', es: 'Cinta', de: 'Band', it: 'Nastro', pt: 'Esteira', ja: 'ターンテーブル', zh: '行李转盘', ar: 'الحزام' }
+    empty: { en: 'Belt', fr: '', es: 'Cinta', de: 'Band', it: 'Nastro', pt: 'Esteira', ja: 'ターンテーブル', zh: '行李转盘', ar: 'الحزام' },
+    // the reviewer's store attacks
+    atkFrOnly: { fr: 'Fermeture de la porte' },
+    atkZeroWidth: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Tomor\u200Brow', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
+    atkEnglishInside: { en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Tomorrow (morgen)', it: 'Domani', pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا' },
+    atkSpanishInGerman: { en: 'Today', fr: 'Aujourd’hui', es: 'Mañana', de: 'Mañana', it: 'Oggi', pt: 'Hoje', ja: '今日', zh: '今天', ar: 'اليوم' },
+    atkKanaInChinese: { en: 'Departure', fr: 'Départ', es: 'Salida', de: 'Abflug', it: 'Partenza', pt: 'Partida', ja: '出発', zh: 'しゅっぱつ', ar: 'المغادرة' }
   };
-  return { FR_FIRST: FR_FIRST, STR: STR };
+  var LISTS = {
+    atkFrList: { fr: ['FERMETURE DE LA PORTE'] }
+  };
+  // the store rewriting itself at run time
+  STR.gate.fr = 'Portail';
+  return { FR_FIRST: FR_FIRST, STR: STR, LISTS: LISTS };
 });

@@ -45,7 +45,14 @@ const PASSENGER_SCRIPTS = [
   'fids-current/js/studio-data.js',
   'fids-current/js/studio-player.js',
   'fids-current/js/heritage-board.js',
-  'fids-current/js/heritage-index.js'
+  'fids-current/js/heritage-index.js',
+  // Data files: scanned like every other script, so a label cannot hide in
+  // one; their tables are registered in DATA_TABLES below.
+  'fids-current/js/shared-names.js',
+  'fids-current/js/airport-coords.js',
+  'fids-current/js/airport-runways.js',
+  'fids-current/js/studio-airports.js',
+  'fids-current/data/airline-colors.js'
 ];
 
 // Stylesheets passenger pages load. Checked for CSS `content:` text (B9).
@@ -58,7 +65,10 @@ const PASSENGER_STYLES = [
   'fids-current/css/studio-modules.css', 'fids-current/css/studio-canvas.css', 'fids-current/css/studio-player.css'
 ];
 
-// Loaded by passenger pages, and not passenger text. Each with its reason.
+// Loaded by passenger pages, and not passenger text: operator UI and vendor
+// code only, each with its reason. A data file is a passenger script (above)
+// whose tables are DATA_TABLES. This list may not grow without an approval
+// recorded in tests/i18n/approved-exceptions.json (ratcheted against main).
 const NON_PASSENGER = {
   'fids-current/js/host-airport.js': 'code: maps an airport code to the code passengers see',
   'fids-current/js/menu.js': 'operator: the operator menu',
@@ -70,12 +80,7 @@ const NON_PASSENGER = {
   'fids-current/js/media-adjust.js': 'operator: media adjustment panel',
   'fids-current/js/media-base.js': 'operator: media library',
   'fids-current/js/screen-capture.js': 'operator: screen capture tool',
-  'fids-current/js/airport-coords.js': 'data: airport positions',
-  'fids-current/js/airport-runways.js': 'data: runway geometry',
-  'fids-current/js/shared-names.js': 'data: city and airline names (decision D2)',
-  'fids-current/js/studio-airports.js': 'data: airport list for the Studio',
   'fids-current/js/studio-schema.js': 'operator: the Studio document schema and editor labels',
-  'fids-current/data/airline-colors.js': 'data: airline colours',
   'fids-current/css/menu.css': 'operator: the operator menu',
   '/mapcdn/leaflet.js': 'code: map library (vendor)',
   '/mapcdn/leaflet-arc.js': 'code: map library (vendor)'
@@ -118,7 +123,16 @@ const KEY_HELPERS = {
   bs: ['STR'], bsFmt: ['STR'], bsPair: ['STR'],
   _wxPair: ['_WXLBL'], _wxPairT: ['_WXLBL'], _wxPairS: ['_WXLBL'], _wxPairD: ['_WXLBL'],
   adTL: ['AD_I18N'],
-  fidsT: ['TX']
+  fidsT: ['TX'],
+  TLin: ['LS', 'STR'], SLpair: ['SS', 'STR'], _bidsHdr: ['LS', 'STR'],
+  bsList: ['LISTS'], _tickerText: ['LISTS']
+};
+// Helpers whose name another file uses for a different helper: B6 reads
+// these per file. { file: { helper: [tables] } }
+const KEY_HELPERS_BY_FILE = {
+  'fids-current/js/studio-render.js': { T: ['STR'], TU: ['STR'], TF: ['STR'] },
+  'fids-current/js/fids-v2.js': { T: ['TX'] },
+  'fids-current/app.html': { T: ['I18N'] }
 };
 
 // Language-keyed objects whose values are not words (video ids, artwork,
@@ -150,7 +164,9 @@ const DECISION_FILES = {
 const DATA_TABLES = {
   'fids-current/js/feed-router.js': {
     _QUALITY_ENUM: 'data: AeroDataBox\'s data-quality codes',
-    _CSSTATUS_ENUM: 'data: AeroDataBox\'s codeshare-status codes'
+    _CSSTATUS_ENUM: 'data: AeroDataBox\'s codeshare-status codes',
+    PANYNJ_HOME: 'data: the Port Authority airports\' codes and names',
+    _CACHED_AIRPORTS: 'data: airport codes'
   },
   'fids-current/js/fids-core.js': {
     AP: 'data: airport names (decision D2)',
@@ -158,14 +174,56 @@ const DATA_TABLES = {
     FEED_SAYS_GATE_WORDS: 'debug: notes on which feeds publish gate words, never rendered',
     AIRLINE_AMENITIES: 'data: operator notes on each airline, never rendered',
     AIRLINE_NAME: 'data: airline names',
-    CITY: 'data: city names (decision D2)'
+    CITY: 'data: city names (decision D2)',
+    IATA_AIRCRAFT: 'data: aircraft type names by IATA code',
+    AC_VIDEO_DEST_MAP: 'data: destination names matched against video titles',
+    ACCOR_BRAND_NAMES: 'data: Accor brand names',
+    BRAND_WORDS: 'data: hotel brand names matched in a hotel\'s name',
+    _known: 'data: hotel brand names matched in a hotel\'s name',
+    _later: 'data: hotel brand names',
+    luxury: 'data: hotel brand names that take the luxury layout',
+    _NON_PASSENGER_PATTERNS: 'data: feed operator names that mark a non-passenger flight',
+    _CITY_DISAMBIGUATION: 'data: place names sent to the geocoder',
+    knownMakers: 'data: aircraft makers',
+    FIDS_ICAO_EXCEPTIONS: 'data: ICAO airport codes',
+    _OPNAMES: 'data: operating airline names',
+    _AIRLINE_NAME_OVERRIDE: 'data: airline names',
+    QC_LOCKUP_PAIRS: 'data: hotel property names',
+    AP_LIST: 'data: airport names (decision D2)',
+    DOWNTOWN_COORDS: 'data: city names and positions',
+    HERITAGE_MARKS: 'data: heritage airline names and artwork',
+    ALLIANCE_NAMES: 'data: the alliances\' own names (brands)',
+    HOTEL_BRAND_RULES: 'data: hotel brand names, as a feed sends them and as the logo files are named',
+    HERITAGE_CARRIERS: 'data: heritage airlines, their homes, fleets and networks (the words they show are BOARD_STR heritage entries)'
+  },
+  'fids-current/js/shared-names.js': {
+    FIDS_SHARED_CITY: 'data: city names (decision D2)',
+    FIDS_SHARED_AIRLINE: 'data: airline names',
+    FIDS_SHARED_WORDMARK: 'data: airline wordmark files'
+  },
+  'fids-current/js/airport-coords.js': { AIRPORT_COORDS: 'data: airport positions' },
+  'fids-current/js/airport-runways.js': { AIRPORT_RUNWAYS: 'data: runway geometry' },
+  'fids-current/js/studio-airports.js': { AIRPORTS: 'data: airport names for the Studio (decision D2)' },
+  'fids-current/data/airline-colors.js': { AIRLINE_BRAND_COLORS: 'data: airline colours' },
+  'fids-current/app.html': {
+    ACTYPE: 'data: aircraft type names',
+    REGIONAL_OP: 'data: regional airline names',
+    AIRPORTS: 'data: airport names (decision D2)',
+    CITY: 'data: city names (decision D2)',
+    CACHED_ICAO: 'data: airport codes'
+  },
+  'fids-current/js/heritage-board.js': {
+    CARRIERS: 'data: heritage airline names',
+    EQUIP: 'data: aircraft type names'
   }
 };
 
 // Property names whose values are feed data, not words: `quality: ['Live']`
 // is AeroDataBox's data-quality flag, carried on every normalised row.
 const DATA_KEYS = {
-  quality: 'data: the feed row\'s data-quality flags (AeroDataBox shape)'
+  quality: 'data: the feed row\'s data-quality flags (AeroDataBox shape)',
+  basis: 'debug: which evidence named a flight\'s operator (fidsResolveOperator), never rendered',
+  icao: 'data: an airport\'s ICAO code'
 };
 
 // Language lists of the shape [{ l: 'en', t: '…' }, …], registered and held
@@ -207,11 +265,13 @@ const BRAND_TERMS = {
   'Frequent Flyer': 'brand: Qantas Frequent Flyer, the programme\'s name',
   'OpenStreetMap': 'brand: the map data credit the licence requires',
   'Hotels & Resorts': 'brand: the hotel brand line, as German brand copy writes it',
-  'The Hoxton': 'brand: hotel brand',
-  'The Sebel': 'brand: hotel brand',
-  'Our Habitas': 'brand: hotel brand',
-  'Fairmont The Queen Elizabeth': 'brand: hotel name (French is Fairmont Le Reine Elizabeth)',
+  'Canadian Partner': 'brand: Canadian Airlines\' feeder brand, as painted on the aircraft (heritage card)',
   'Green Key': 'brand: the eco-label (its Canadian programme is also Clé Verte)',
+  'VIPorter Passport': 'brand: Porter\'s elite tier (French VIPorter Passeport); Porter publishes it in English and French only',
+  'VIPorter Venture': 'brand: Porter\'s elite tier (French VIPorter Horizon)',
+  'VIPorter Ascent': 'brand: Porter\'s elite tier (French VIPorter Essor)',
+  'VIPorter First': 'brand: Porter\'s elite tier (French VIPorter Première)',
+  'Wi\u2011Fi': 'brand: the Wi-Fi Alliance\'s trademark, written as is in every language but German (WLAN) and Arabic',
   // The boot screen's brand rail: the product's name and the words its
   // initials spell (F.I.D.S., G.A.T.E., B.A.G.S.), English by design.
   'Connecting Beyond': 'brand: Orion Connected\'s tagline',
@@ -243,6 +303,7 @@ const SAME_AS_ENGLISH = {
   'MINUTE': { langs: ['fr', 'de'], why: 'the French and German word' },
   'MINUTES': { langs: ['fr'], why: 'the French word' },
   'Restaurants': { langs: ['fr', 'de'], why: 'the French and German word' },
+  'Restaurant': { langs: ['fr', 'de'], why: 'the French and German word' },
   'Wind': { langs: ['de'], why: 'the German word' },
   'Arr': { langs: ['fr'], why: 'the French abbreviation' },
   'International': { langs: ['fr', 'de'], why: 'the French and German word' },
@@ -280,7 +341,13 @@ const OPERATOR_FUNCTIONS = {
     updateSubScreens: 'operator: the screen selector',
     _paintFeedSource: 'operator: the control bar\'s feed-source badge (#apiLabel)',
     openTestFlight: 'operator: the test-flight form',
-    submitTestFlight: 'operator: the test-flight form'
+    submitTestFlight: 'operator: the test-flight form',
+    getAirlineBgSlideLabel: 'operator: the background picker\'s slide names (menu dropdown)',
+    setCityCodeAccent: 'operator: the menu\'s code-accent switch',
+    changeScreenType: 'operator: the menu\'s screen-type switch',
+    showAllOverrides: 'operator: the overrides list',
+    vecteezySearchStock: 'operator: the stock-footage search',
+    vecteezyImportLibraryItem: 'operator: the stock-footage import'
   },
   'fids-current/index.html': {
     attemptLogin: 'operator: sign-in'
@@ -314,8 +381,27 @@ const LANG_STORAGE_FUNCTIONS = {
   }
 };
 
+// Functions allowed to take a language by its position in `langs` (B11):
+// the board starts on its first language. Every other use goes through
+// bsPairLangs (the pair) or `lang` (the language on screen).
+const LANG_POSITION_FUNCTIONS = {
+  'fids-current/js/fids-core.js': {
+    _restoreApLangs: 'code: the board starts on its first language',
+    startLangRotation: 'code: the rotation starts on the first language',
+    applyAirportConfigToBoard: 'code: the board starts on its first language',
+    startPaging: 'code: paging starts on the first language'
+  }
+};
+
+// Pages a passenger script opens that are not passenger pages, each with its
+// reason (C2). A new one needs a recorded approval, like every exception.
+const NON_PASSENGER_PAGES = {
+  'fids-current/picker.html': 'operator: the airport and screen picker',
+  'fids-current/screen.html': 'operator: the pairing screen an unclaimed display shows to its installer'
+};
+
 module.exports = {
   REASONS, PASSENGER_PAGES, PASSENGER_SCRIPTS, PASSENGER_STYLES, NON_PASSENGER, STORE_FILE, LANGS, DATA_TABLES, DATA_KEYS, LANG_RECORD_TABLES,
-  LEGACY_STORES, KEY_HELPERS, NONTEXT_TABLES, BRAND_TERMS, UNIT_TERMS, SAME_AS_ENGLISH, DECISION_FILES,
-  OPERATOR_FUNCTIONS, TEXT_REWRITERS, LANG_STORAGE_FUNCTIONS
+  LEGACY_STORES, KEY_HELPERS, KEY_HELPERS_BY_FILE, NONTEXT_TABLES, BRAND_TERMS, UNIT_TERMS, SAME_AS_ENGLISH, DECISION_FILES,
+  OPERATOR_FUNCTIONS, TEXT_REWRITERS, LANG_STORAGE_FUNCTIONS, LANG_POSITION_FUNCTIONS, NON_PASSENGER_PAGES
 };

@@ -37,7 +37,9 @@
     return {
       id: normalized,
       iata: normalized.toUpperCase(),
-      name: normalized.toUpperCase() + ' Airport',
+      // no name of its own: the canvas words it from the store
+      // ('{IATA} Airport', BOARD_STR airportNamed) in the screen's language
+      name: '',
       timezone: 'UTC',
       siteHost: normalized + '.orionconnected.com',
       provisional: true

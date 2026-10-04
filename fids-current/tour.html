@@ -375,7 +375,7 @@
         // there is no second half to show, so the divider goes too rather than
         // leaving "Now Arriving |" hanging with nothing after it.
         var pair = langsFor(code);
-        var l1 = CARD_LABELS[pair[0]] || CARD_LABELS.en;
+        var l1 = CARD_LABELS[pair[0]] || ['', ''];
         var l2 = (pair[1] && pair[1] !== pair[0]) ? CARD_LABELS[pair[1]] : null;
         elK1.textContent = l1[0];
         elK2.textContent = l2 ? l2[0] : '';

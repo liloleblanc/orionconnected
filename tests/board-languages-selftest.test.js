@@ -19,18 +19,25 @@ const real = require('./i18n/policy');
 const FX = 'tests/i18n/fixtures/';
 const policy = Object.assign({}, real, {
   PASSENGER_PAGES: [FX + 'bad.html'],
-  PASSENGER_SCRIPTS: [FX + 'store.js', FX + 'legacy.js', FX + 'clean.js'],
+  PASSENGER_SCRIPTS: [FX + 'store.js', FX + 'legacy.js', FX + 'clean.js', FX + 'attacks.js', FX + 'datafile.js'],
   PASSENGER_STYLES: [FX + 'bad.css'],
   NON_PASSENGER: {},
+  NON_PASSENGER_PAGES: {},
   STORE_FILE: FX + 'store.js',
   LEGACY_STORES: [{ file: FX + 'legacy.js', name: 'LS', helpers: ['TL'] }],
-  KEY_HELPERS: { TL: ['LS', 'STR'], bs: ['STR'], bsPair: ['STR'] },
+  KEY_HELPERS: { TL: ['LS', 'STR'], TLin: ['LS', 'STR'], bs: ['STR'], bsPair: ['STR'], bsList: ['LISTS'] },
+  KEY_HELPERS_BY_FILE: { [FX + 'attacks.js']: { T: ['STR'], TU: ['STR'] } },
   NONTEXT_TABLES: [],
+  DATA_TABLES: { [FX + 'datafile.js']: { FX_CITY: 'data: fixture city names' } },
+  DATA_KEYS: {},
+  LANG_RECORD_TABLES: {},
+  DECISION_FILES: {},
   BRAND_TERMS: {},
   SAME_AS_ENGLISH: { Gate: { langs: ['de', 'it'], why: 'fixture' } },
   OPERATOR_FUNCTIONS: {},
   TEXT_REWRITERS: {},
-  LANG_STORAGE_FUNCTIONS: {}
+  LANG_STORAGE_FUNCTIONS: {},
+  LANG_POSITION_FUNCTIONS: {}
 });
 const R = checks.run({ policy, frozen: { LS: ['dep', 'gate'] } });
 const F = R.findings;
@@ -82,6 +89,70 @@ for (const [check, file, re, what] of SEEDED) {
       + F.filter((f) => f.check === check).map((f) => `  ${f.file}:${f.line} ${f.text}`).join('\n'));
   });
 }
+
+// The reviewer's bypasses (2026-10-04), one function each in
+// fixtures/attacks.js: each must draw a finding.
+const ATTACKS = (() => {
+  const src = require('node:fs').readFileSync(require('node:path').join(__dirname, 'i18n/fixtures/attacks.js'), 'utf8');
+  return [...src.matchAll(/^function ((atk_\w+|_legacyPair))\(/gm)].map((m) => m[1]);
+})();
+for (const fn of ATTACKS) {
+  test(`self-test: the guard sees ${fn}`, () => {
+    const hits = F.filter((f) => f.file === FX + 'attacks.js' && f.fn === fn);
+    assert.ok(hits.length > 0, `nothing reported inside ${fn}() in fixtures/attacks.js`);
+  });
+}
+const STORE_ATTACKS = [
+  ['B1', /atkFrOnly/, 'an entry with only French'],
+  ['B1', /Tomorrow de/, 'a zero-width space hiding a copied word'],
+  ['B3', /Tomorrow de/, "the English inside the German ('Tomorrow (morgen)')"],
+  ['B3', /Today de/, 'German copied from Spanish'],
+  ['B3', /Departure zh/, 'Japanese kana in the Chinese'],
+  ['B1', /atkFrList/, 'a ticker list with only French'],
+  ['B16', /STR/, 'the store rewriting itself at run time']
+];
+for (const [check, re, what] of STORE_ATTACKS) {
+  test(`self-test: ${check} catches ${what}`, () => {
+    assert.ok(F.some((f) => f.check === check && f.file === FX + 'store.js' && (re.test(f.text) || re.test(f.msg))),
+      `${check} did not report ${what}\n` + F.filter((f) => f.file === FX + 'store.js').map((f) => `  ${f.check} ${f.line} ${f.text}`).join('\n'));
+  });
+}
+test('self-test: B15 catches a label added to a data file (shared-names.js)', () => {
+  assert.ok(F.some((f) => f.check === 'B15' && f.file === FX + 'datafile.js' && /Gate closes/.test(f.text)));
+  assert.ok(!F.some((f) => f.file === FX + 'datafile.js' && /MONCTON|HALIFAX/.test(f.text)), 'the data table itself is data');
+});
+test('self-test: C2 catches a script injected at run time', () => {
+  assert.ok(F.some((f) => f.check === 'C2' && /injected\.js/.test(f.text)));
+});
+
+// The ratchet: a new exception of any kind is reported against main.
+const ratchet = require('./i18n/ratchet');
+test('self-test: the ratchet reports every new exception', () => {
+  const before = real;
+  const now = Object.assign({}, real, {
+    BRAND_TERMS: Object.assign({ 'Gate closes': 'brand: test' }, real.BRAND_TERMS),
+    NON_PASSENGER: Object.assign({ 'fids-current/js/gate-extra.js': 'operator: extra' }, real.NON_PASSENGER),
+    OPERATOR_FUNCTIONS: Object.assign({}, real.OPERATOR_FUNCTIONS, { 'fids-current/js/fids-core.js': Object.assign({ _gcOpLabel: 'operator: test' }, real.OPERATOR_FUNCTIONS['fids-current/js/fids-core.js']) }),
+    DATA_TABLES: Object.assign({}, real.DATA_TABLES, { 'fids-current/js/fids-core.js': Object.assign({ GATE_WORDS: 'data: test' }, real.DATA_TABLES['fids-current/js/fids-core.js']) }),
+    SAME_AS_ENGLISH: Object.assign({ 'Gate closes': { langs: ['de'], why: 'test' } }, real.SAME_AS_ENGLISH),
+    REASONS: real.REASONS.concat('passenger')
+  });
+  const added = ratchet.exceptionsAdded(before, now).map((x) => x.list + ': ' + x.entry);
+  for (const want of ['BRAND_TERMS: Gate closes', 'NON_PASSENGER: fids-current/js/gate-extra.js', 'OPERATOR_FUNCTIONS: fids-current/js/fids-core.js _gcOpLabel',
+    'DATA_TABLES: fids-current/js/fids-core.js GATE_WORDS', 'SAME_AS_ENGLISH: Gate closes de', 'REASONS: passenger'])
+    assert.ok(added.includes(want), want + ' was not reported');
+  assert.deepEqual(ratchet.exceptionsAdded(real, real), []);
+  // a pragma more than main has, per file and reason
+  const p = ratchet.pragmasAdded({ 'a.js data': 2 }, { 'a.js data': 3, 'a.js code': 1 });
+  assert.deepEqual(p.map((x) => x.entry + ' ' + x.count), ['a.js data 3', 'a.js code 1']);
+  // a loosened call list in checks.js
+  const l = ratchet.loosenersAdded({ EXCLUDED_CALLS: new Set(['log']) }, { EXCLUDED_CALLS: new Set(['log', 'append']) });
+  assert.deepEqual(l.map((x) => x.entry), ['append']);
+  // an approval clears exactly its entry, and a pragma approval its count
+  const appr = [{ list: 'BRAND_TERMS', entry: 'Gate closes', approved: 'PR #1' }, { list: 'i18n-ok', entry: 'a.js data', count: 3, approved: 'PR #1' }];
+  assert.deepEqual(ratchet.unapproved([{ list: 'BRAND_TERMS', entry: 'Gate closes' }, { list: 'BRAND_TERMS', entry: 'Other' }], appr).map((x) => x.entry), ['Other']);
+  assert.equal(ratchet.unapproved([{ list: 'i18n-ok', entry: 'a.js data', count: 4 }], appr).length, 1, 'an approval for 3 pragmas does not cover 4');
+});
 
 test('self-test: the clean twin passes every check', () => {
   const bad = F.filter((f) => f.file === FX + 'clean.js');
