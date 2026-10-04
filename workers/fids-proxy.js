@@ -2499,6 +2499,10 @@ async function opevForLegs(ap, legs, env, deps) {
   const out = {};
   const want = (Array.isArray(legs) ? legs : []).filter(Boolean);
   const listOf = new Map();
+  // An FR24 answer is from the past and counts within 12 h of the leg
+  // (opevLive), so a leg more than 12 h ahead cannot have one: its memory is
+  // not read, which keeps the KV reads to the legs that could answer.
+  const nowMs = typeof D.now === "function" ? D.now() : Date.now();
   const farList = async (other, theirDir) => {
     const k = `${other}|${theirDir}`;
     if (listOf.has(k)) return listOf.get(k);
@@ -2547,7 +2551,7 @@ async function opevForLegs(ap, legs, env, deps) {
         if (e && e.op !== mkt) ev = { op: e.op, src: "far", basis: `${leg.other} ${e.basis}` };
       }
     }
-    if (!ev) {
+    if (!ev && leg.ts <= nowMs + 12 * 3600000) {
       try {
         const rec = D.acmem ? await D.acmem(leg.f)
           : (env && env.FIDS_LIVE_FLIGHTS ? await env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${leg.f}`, { type: "json" }) : null);

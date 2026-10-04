@@ -192,6 +192,15 @@ test('/opinfo: Moncton\'s flights from the far ends\' records and today\'s FR24 
   assert.deepEqual(out[legs[1].id], { op: 'PB', src: 'far', basis: 'YYT PB7203' }, 'AC7203: St. John\'s lists it under PAL\'s own number');
   assert.equal(out[legs[2].id], undefined, 'AC7753: nothing names its operator');
   assert.deepEqual(out[legs[3].id], { op: 'PB', src: 'live', basis: 'FR24 PVL7754' }, 'AC7754: today\'s callsign');
+  // A leg more than 12 h ahead cannot have an FR24 answer yet, so its memory
+  // is never read (KV reads only where one could answer).
+  const asked = [];
+  const later = await W.opevForLegs('YQM', [legs[3]], {}, {
+    farRows: async () => null, now: () => legs[3].ts - 13 * 3600000,
+    acmem: async (f) => { asked.push(f); return mem; }
+  });
+  assert.deepEqual(later, {});
+  assert.deepEqual(asked, [], 'no memory read for a leg 13 h ahead');
 });
 
 test('the FR24 memory keeps a callsign and tail for the day it saw them, and only that day', async () => {
