@@ -15702,6 +15702,25 @@ function uxgGateHtml(ctx) {
     ? ((!_apIsYQM && _silkInkLum < 120) ? _silkBase : '#0A2E6B')
     : '#ffffff';
   var _silkInkSoft = _silkLightBand ? 'rgba(10,46,107,0.86)' : 'rgba(255,255,255,0.82)';
+  // v23942 — THE SKYTEAM BADGE READS ON THE BAND IT SITS ON.
+  //
+  // ALLIANCE_LOGOS hands every SkyTeam carrier skyteam-white.png, a white mark
+  // drawn for the near-black banner. Since v23646 every banner is a LIGHT band
+  // (a pale tint of the carrier's colour), so on the Air France gate the badge
+  // beside the wordmark was white on pale grey and could barely be seen. Star
+  // Alliance (an opaque metallic tile) and oneworld (a navy ball) were never
+  // affected: their marks carry their own colour.
+  //
+  // skyteam-colour.svg is the official colour mark already in the repo
+  // (skyteam.svg) with only its white background square taken out, so the
+  // band shows round it. Its navy, #234B8D, is the SkyTeam blue the KLM
+  // SkyTeam lockup also draws (#1F508F there). A dark band, which only the
+  // classic-banner opt-in still paints, keeps the white mark.
+  function _skyTeamOnBand(html) {
+    if (!html || _allianceKey !== 'skyteam') return html;
+    if (!(_silkBanner && _silkLightBand)) return html;
+    return html.replace('skyteam-white.png', 'skyteam-colour.svg');
+  }
   // Flow: dark (airline + time) → white centre (airport logo) → accent (into the
   // gate tab on the right). The gate tab covers the right ~25%, so the accent
   // stop lands just before it and reads as one continuous fabric.
@@ -15928,7 +15947,7 @@ function uxgGateHtml(ctx) {
           if (_allianceKey === 'oneworld' && starHtml && r1LogoHtml) {
             return starHtml + '<span class="g8-r1-alliance-div" aria-hidden="true"></span>' + r1LogoHtml;
           }
-          return r1LogoHtml + starHtml;
+          return r1LogoHtml + _skyTeamOnBand(starHtml);
         })() + '</div>'
     +   _apBandTop
     // TIME TAB
@@ -26810,7 +26829,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23941';
+var FIDS_BUILD_TAG = 'v23942';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
