@@ -2400,13 +2400,18 @@ function _fidsSyncUrl(t, s) {
 // — gids.html/bids.html call it directly on URL-param boots, and the saved
 // screen-state restore calls it too. Idempotent: applies only when a saved
 // set exists and differs from what is showing.
+// vLANG — through the one resolver, so the URL keeps its precedence: a
+// screen pinned with ?langs= is no longer overridden by a saved choice when
+// this re-runs on a screen-type change.
 function _restoreApLangs() {
   try {
     var _apL = (document.getElementById('apSel') || {}).value || '';
     if (!_apL) return;
-    var _savedL = localStorage.getItem('fids_langs_' + _apL.toUpperCase());
-    if (!_savedL) return;
-    var _arrL = _savedL.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 9);
+    var _savedL = null;
+    try { _savedL = localStorage.getItem('fids_langs_' + _apL.toUpperCase()); } catch (eS) {}
+    var _r = BoardStrings.resolveLangs({ iata: _apL, search: window.location.search, saved: _savedL });
+    if (_r.source !== 'url' && _r.source !== 'saved') return;
+    var _arrL = _r.langs;
     if (!_arrL.length || _arrL.join(',') === langs.join(',')) return;
     langs = _arrL;
     langIdx = 0;
@@ -7742,10 +7747,12 @@ function g8LogoFail(img) {
 }
 
 // Operating carrier for regional flights
-// Québec-province airports show FRENCH FIRST on every bilingual pair
-//
+// Québec-province airports show FRENCH FIRST on every bilingual pair.
+// The list lives in board-strings.js (BoardStrings.FR_FIRST), the only copy:
+// the per-airport defaults are derived from the same list, so a Québec
+// airport cannot lead in French on its gate and in English on its board.
 function frFirstAirport(iata) {
-  return /^(YUL|YQB|YHU|YMX|YMY|YBG|YVO|YZV|YUY|YGP|YGL|YGW|YKQ|YPX|YVP|YHR|YNA|YBC|YTF|AKV|YIK|YZG|YQC|YHA|YKG|XGR)$/.test(String(iata || '').toUpperCase());
+  return BoardStrings.isFrFirst(iata);
 }
 
 // Legible ink for a LIGHT carrier accent, without muddying it. Prefers the
@@ -26030,7 +26037,6 @@ const LS = {
   accorTagline:     { en:'ACCOR · LIVE LIMITLESS', fr:'ACCOR · VIVRE SANS LIMITES', es:'ACCOR · LIVE LIMITLESS', de:'ACCOR · LIVE LIMITLESS', it:'ACCOR · LIVE LIMITLESS', pt:'ACCOR · LIVE LIMITLESS', ja:'ACCOR · LIVE LIMITLESS', zh:'ACCOR · LIVE LIMITLESS', ar:'ACCOR · LIVE LIMITLESS' },
   facilities:       { en:'Facilities',        fr:'Installations',    es:'Instalaciones',    de:'Einrichtungen',         it:'Strutture',          pt:'Instalações',      ja:'施設',     zh:'设施',     ar:'مرافق' },
   today:            { en:'Today',              fr:"Aujourd'hui",      es:'Hoy',              de:'Heute',                 it:'Oggi',               pt:'Hoje',             ja:'今日',     zh:'今天',     ar:'اليوم' },
-  tomorrow:         { en:'Tomorrow',           fr:'Demain',           es:'Mañana',           de:'Morgen',                it:'Domani',             pt:'Amanhã',           ja:'明日',     zh:'明天',     ar:'غدًا' },
   currentWx:        { en:'Current',            fr:'Actuel',           es:'Actual',           de:'Aktuell',               it:'Attuale',            pt:'Atual',            ja:'現在',     zh:'当前',     ar:'الحالي' },
   departureTime:    { en:'Departure Time',     fr:"Heure de départ",  es:'Hora de salida',   de:'Abflugzeit',            it:'Orario di partenza', pt:'Hora de partida',  ja:'出発時刻', zh:'出发时间', ar:'وقت المغادرة' },
   arrivalTime:      { en:'Arrival Time',       fr:"Heure d'arrivée",  es:'Hora de llegada',  de:'Ankunftszeit',          it:'Orario di arrivo',   pt:'Hora de chegada',  ja:'到着時刻', zh:'到达时间', ar:'وقت الوصول' },
@@ -26120,9 +26126,7 @@ let lang = 'en';
 // Spanish-speaking airports rotate English + Spanish (and use Celsius)
 // instead of the Canada default of English + French. Add IATA codes here
 // to switch a station's displays to ES. (Bolivia network for now.)
-const ES_BOARD_AIRPORTS = new Set([
-  'LPB','VVI','CBB','SRZ','UYU','TJA','SRE','POI','TDD','CIJ','RIB','GYA','BVL'
-]);
+const ES_BOARD_AIRPORTS = new Set(BoardStrings.ES_AIRPORTS);
 // v23076 — per-airport language DEFAULT, baked into the code.
 //
 // Orlando is meant to run English+Spanish. Until now that only happened via
@@ -26138,58 +26142,17 @@ const ES_BOARD_AIRPORTS = new Set([
 //
 // Deliberately NOT done by adding MCO to ES_BOARD_AIRPORTS: that set also
 // drives boardMetricFor(), and Orlando is a US board that keeps Fahrenheit.
-const BOARD_LANG_DEFAULTS = {
-  // v23767 — QUÉBEC BOARDS LEAD IN FRENCH.
-  //
-  // Everything else in this table picks WHICH two languages a board speaks.
-  // These two pick the ORDER, and the order is the point: in Québec French is
-  // not the translation, it is the first language a passenger reads. The
-  // en/fr fallback below put English first on a Montréal board, which is the
-  // wrong way round for the province it is standing in.
-  //
-  // Both live Québec airports are named rather than derived, because there is
-  // no province field to derive from — the board knows IATA codes, not
-  // jurisdictions. Add a code here when a Québec airport goes live; YMX
-  // (Mirabel) and YRJ (Roberval) are deliberately absent, being referenced as
-  // destinations only and served by no feed.
-  //
-  // The saved per-airport choice and ?langs= still sit above this, so an
-  // operator can still put English first on a specific screen.
-  YUL: ['fr', 'en'],
-  YQB: ['fr', 'en'],
-
-  MCO: ['en', 'es'],
- // v23247 — Miami runs English+Spanish (those boards are assigned en/es;
-  // without a baked default a profile-wiped display fell back to the Canada
-  // en/fr pair — French 'Carrousel' on a Miami baggage screen).
-  MIA: ['en', 'es'],
-
-  // v23317 — the rest of the multi-airport tour (stream 2 now travels). The
-  // en/fr fallback below made sense when every board was Canadian and put
-  // French on a San Juan board the moment one wasn't (measured live: SJU
-  // served 'Départs / Heure à San Juan'). US + Caribbean stops are en/es.
-  // The Canadian stops (YYZ/YUL/YYC/YVR) are deliberately ABSENT — en/fr is
-  // already their answer. OGG is also absent, deliberately: en/ja was tried
-  // and the stream host has no CJK font (tofu), and the gate board's label
-  // maps carry no 'ja' and fall through to French — so Maui keeps the plain
-  // default until both of those are fixed.
-  FLL: ['en', 'es'],
-  TPA: ['en', 'es'],
-  ATL: ['en', 'es'],
-  JFK: ['en', 'es'],
-  BOS: ['en', 'es'],
-  ORD: ['en', 'es'],
-  DFW: ['en', 'es'],
-  LAX: ['en', 'es'],
-  SFO: ['en', 'es'],
-  SEA: ['en', 'es'],
-  CUN: ['en', 'es'],
-  SJU: ['en', 'es']
-};
+//
+// vLANG — THE TABLE MOVED TO board-strings.js (BoardStrings.LANG_DEFAULTS),
+// beside the one Québec list it is now derived from. v23767 named YUL and YQB
+// here by hand while frFirstAirport() listed twenty-six Québec codes, so
+// Saint-Hubert's gate led in French and its departures board in English. Every
+// FR_FIRST airport now defaults to French then English. The US and Caribbean
+// tour rows (v23247, v23317) moved unchanged; OGG still keeps the plain
+// default (no CJK face on the stream host when it was tried, see v23317).
+const BOARD_LANG_DEFAULTS = BoardStrings.LANG_DEFAULTS;
 function boardLangsFor(iata) {
-  var _k = String(iata || '').toUpperCase();
-  if (BOARD_LANG_DEFAULTS[_k]) return BOARD_LANG_DEFAULTS[_k].slice();
-  return ES_BOARD_AIRPORTS.has(_k) ? ['en','es'] : ['en','fr'];
+  return BoardStrings.defaultLangs(iata);
 }
 // v23317 — EXPORTED for the same reason as AP (v23265): tour.html captions its
 // arrival card in the arriving airport's own second language, and resolving it
@@ -26213,14 +26176,9 @@ try { if (typeof window !== 'undefined') window.boardLangsFor = boardLangsFor; }
 // URL param, the saved set and the per-airport config, so it is read first
 // and boardLangsFor() is only the floor.
 function _boardLangPair() {
-  try {
-    if (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) {
-      // A board pinned to ONE language keeps one — a monolingual board should
-      // render a monolingual card, not have a second language invented for it.
-      return langs.slice(0, 2);
-    }
-  } catch (e) {}
-  return ['en', 'fr'];
+  // A board pinned to ONE language keeps one — a monolingual board should
+  // render a monolingual card, not have a second language invented for it.
+  return BoardStrings.pairLangs(langs);
 }
 // Metric (Celsius) for Spanish-language stations; Canada keeps the C/F flip.
 function boardMetricFor(iata) {
@@ -26611,10 +26569,15 @@ function cityCode(iata, overrideCity, langOverride) {
   return _cityHasCode(_nd, _dispIata(code)) ? _nd : (_stripCityCode(_nd) + ' | ' + _dispIata(code));
 }
 
-// TL() returns current rotation language only
+// TL() returns current rotation language only.
+// vLANG — a key that is not in LS falls through to the one store
+// (board-strings.js), where every new word lives; LS is frozen. A key that is
+// in neither gives '' — never the key itself, which put 'greenKey' and
+// 'petFriendly' on an Accor badge and made every `TL(k) || 'fallback'` dead.
 const TL = k => {
-  const obj = LS[k] || {};
-  return obj[lang] || obj.en || k;
+  const obj = LS[k];
+  if (obj) return obj[lang] || obj.en || '';
+  return BoardStrings.bs(k, lang);
 };
 // TLF() — TL with field interpolation. Pass an object with values for
 // placeholders like {FLIGHT}, {GATE}, etc. in the translation string.
@@ -26629,14 +26592,27 @@ const TLF = (k, fields) => {
 };
 // SL() returns current rotation language status (sentence case preserved)
 const SL = k => {
-  const obj = SS[k] || {};
-  return obj[lang] || obj.en || k;
+  const obj = SS[k];
+  if (obj) return obj[lang] || obj.en || '';
+  return BoardStrings.bs(k, lang);
 };
-// Bilingual variants — always show English · French together. The web cards
-// (mobile) otherwise show only the single rotation language; the boards are
-// already bilingual, so these bring the cards in line.
-const SLbi = k => { const o = SS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
-const TLbi = k => { const o = LS[k] || {}; const en = o.en || k; return (o.fr && o.fr !== en) ? (en + ' · ' + o.fr) : en; };
+// Pair variants for the web cards — the board's own one or two languages
+// joined with ' · '. vLANG: these were English · French by construction, so a
+// phone set to Japanese (one language, fids_mobile_lang) read 'On time · À
+// l'heure'. They now follow `langs` like every other pair.
+function _legacyPair(table, k) {
+  const o = table[k] || BoardStrings.entry(k);
+  if (!o) return '';
+  const seen = Object.create(null), out = [];
+  BoardStrings.pairLangs(langs).forEach(function (l) {
+    const w = o[l] || '';
+    if (!w || seen[w.toLowerCase()]) return;
+    seen[w.toLowerCase()] = 1; out.push(w);
+  });
+  return out.join(' · ');
+}
+const SLbi = k => _legacyPair(SS, k);
+const TLbi = k => _legacyPair(LS, k);
 
 // ── LANGUAGE ROTATION — flips between selected languages ─────────────────
 // ── v22949 — LANGUAGE ROTATION REMOVED (
@@ -26739,9 +26715,12 @@ function toggleLang(l) {
     // themselves to the first two selected, so the assignment itself can
     // carry the full set and the slide clock walks every one of them.
     langs.push(l);
-    while (langs.length > 9) langs.shift();
+    while (langs.length > BoardStrings.LANGS.length) langs.shift();
     if (langIdx >= langs.length) langIdx = 0;
   }
+  // vLANG — the Québec rule holds through a toggle too: French leads at a
+  // French-first airport whenever it is selected (BoardStrings.frenchFirst).
+  try { langs = BoardStrings.frenchFirst(langs, (document.getElementById('apSel') || {}).value || ''); } catch (eF) {}
   lang = langs[langIdx];
   // v22961 — REMEMBER THE CHOICE PER AIRPORT
   //
@@ -26776,7 +26755,7 @@ function toggleLang(l) {
   } catch (eWx) {}
 }
 function updateLangButtons() {
-  ['en','fr','es','de','it','pt','ja','zh','ar'].forEach(l => {
+  BoardStrings.LANGS.forEach(l => {
     const btn = document.getElementById('lLang' + l.charAt(0).toUpperCase() + l.slice(1));
     if (btn) btn.classList.toggle('active', langs.includes(l));
   });
@@ -27037,18 +27016,12 @@ var _GATE_LBL = {
 // get '17:35'. Used by the boarding screen's white strip, which shows the
 // same instant twice — once per board language — and would read as a mistake
 // if both halves used the same format.
+// vLANG — the convention per language now lives in BoardStrings.META
+// (clock24), the one place a locale or hour12 is chosen. Arabic joined the
+// 24-hour languages: it was the one language left out of this list and the
+// baggage list below, so an Arabic half read 5:07pm beside a Japanese 17:07.
 function _fidsClockForLang(now, tz, lang) {
-  var _24 = { fr: 1, de: 1, it: 1, pt: 1, es: 1, ja: 1, zh: 1 };
-  var o = { hour: 'numeric', minute: '2-digit', hour12: !_24[lang] };
-  if (tz) o.timeZone = tz;
-  try {
-    if (_24[lang]) {
-      o.hour = '2-digit';
-      return now.toLocaleTimeString(lang === 'fr' ? 'fr-CA' : 'en-GB', o).replace(/\s*h\s*/i, ':');
-    }
-    return now.toLocaleTimeString('en-US', o)
-      .replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toLowerCase() + 'm'; });
-  } catch (e) { return ''; }
+  return BoardStrings.time(now, lang, tz);
 }
 
 // v23218 — the flight TIMES follow the chosen language on the BAGGAGE board
@@ -27062,19 +27035,12 @@ function _bidsTimeForLang(t) {
     var s = String(t || '').trim();
     var m = s.match(/^(\d{1,2}):(\d{2})$/);
     if (!m) return t;
-    var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-    try {
-      var _ap = (document.getElementById('apSel') || {}).value || '';
-      if (typeof frFirstAirport === 'function' && frFirstAirport(_ap)) {
-        var _fi = picked.indexOf('fr');
-        if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
-      }
-    } catch (e0) {}
-    var _24 = { fr: 1, de: 1, it: 1, pt: 1, es: 1, ja: 1, zh: 1 };
-    if (_24[picked[0]]) return s;
-    var h = +m[1], mm = m[2], mer = h >= 12 ? 'pm' : 'am';
-    h = h % 12; if (h === 0) h = 12;
-    return h + ':' + mm + mer;
+    var _ap = '';
+    try { _ap = (document.getElementById('apSel') || {}).value || ''; } catch (e0) {}
+    var picked = BoardStrings.pairLangs(langs, _ap);
+    // The feed's own HH:MM is kept as written for a 24-hour language.
+    if (BoardStrings.META[picked[0]] && BoardStrings.META[picked[0]].clock24) return s;
+    return BoardStrings.clockText(s, picked[0]);
   } catch (e) { return t; }
 }
 
@@ -27100,26 +27066,28 @@ function _gateLblHalf(w, i) {
 // long for the biggest line on the panel or for a five-item list. This returns
 // ONE language from the same table the pairs come from, following the board's
 // own language rotation so each pass shows it in one of them.
+// vLANG — the French-first flag only REORDERS. It returned French whenever
+// the airport was in Québec, even on a board whose languages did not include
+// French; it now returns the first of the pair the board actually shows
+// (BoardStrings.pairLangs: French leads in Québec only when it is selected).
+// A key that is not in _GATE_LBL falls through to the one store.
 function _gateLbl1(key, frF) {
   try {
-    var t = (typeof _GATE_LBL !== 'undefined') && _GATE_LBL[key];
+    var t = ((typeof _GATE_LBL !== 'undefined') && _GATE_LBL[key]) || BoardStrings.entry(key);
     if (!t) return '';
-    if (frF && t.fr) return t.fr;
-    var L = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length) ? langs : ['en'];
+    var L = BoardStrings.pairLangs(langs, !!frF);
     for (var i = 0; i < L.length; i++) { if (t[L[i]]) return t[L[i]]; }
     return t.en || '';
   } catch (e) { return ''; }
 }
 
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
-  var o = _GATE_LBL[key];
+  // vLANG — _GATE_LBL is frozen; a new key lives in the one store
+  // (board-strings.js) and is found here by falling through. The languages
+  // come from BoardStrings.pairLangs, the one picker every pair uses.
+  var o = _GATE_LBL[key] || BoardStrings.entry(key);
   if (!o) return '';
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-    ? langs.slice(0, 2) : ['en', 'fr'];
-  if (frFirst) {
-    var _fi = picked.indexOf('fr');
-    if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
-  }
+  var picked = BoardStrings.pairLangs(langs, !!frFirst);
   var seen = Object.create(null), parts = [], partLangs = [];
   for (var i = 0; i < picked.length && parts.length < 2; i++) {
     var w = o[picked[i]];
@@ -27151,12 +27119,7 @@ function _gateLbl(key, frFirst, wrap, sep, keepDup) {
 function _gateLaneLbl(nums, plural, frFirst) {
   var o = _GATE_LBL[plural ? 'useLanes' : 'useLane'];
   if (!o) return '';
-  var picked = (typeof langs !== 'undefined' && Array.isArray(langs) && langs.length)
-    ? langs.slice(0, 2) : ['en', 'fr'];
-  if (frFirst) {
-    var _fi = picked.indexOf('fr');
-    if (_fi > 0) { picked.splice(_fi, 1); picked.unshift('fr'); }
-  }
+  var picked = BoardStrings.pairLangs(langs, !!frFirst);
   var seen = Object.create(null), parts = [];
   for (var i = 0; i < picked.length && parts.length < 2; i++) {
     var w = o[picked[i]];
@@ -33088,36 +33051,21 @@ function applyAirportConfigToBoard(iata) {
   // transform what it keeps; taint analysis is right not to treat that as a
   // sanitizer, and `langs` does reach rendered markup. Matching to a constant
   // means only these nine two-letter literals can ever enter, whatever the
-  // URL says. Keep in sync with the language keys in _GATE_LBL.
-  var _URL_LANG_OK = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
-  var _urlLangs = null;
-  try {
-    var _lq = new URLSearchParams(window.location.search);
-    var _lraw = _lq.get('langs') || _lq.get('lang') || '';
-    if (_lraw) {
-      var _picked = [];
-      String(_lraw).toLowerCase().split(/[,+\s]+/).forEach(function (tok) {
-        if (_picked.length >= 9) return;
-        var _i = _URL_LANG_OK.indexOf(tok);
-        if (_i >= 0 && _picked.indexOf(_URL_LANG_OK[_i]) < 0) _picked.push(_URL_LANG_OK[_i]);
-      });
-      if (_picked.length) _urlLangs = _picked;
-    }
-  } catch (e3) {}
+  // URL says.
+  //
+  // vLANG — ONE RESOLVER. The URL, saved, configured and default layers and
+  // the constant-matching above now live in BoardStrings.resolveLangs
+  // (board-strings.js), which the boot loader and _restoreApLangs also call,
+  // so the three can no longer disagree; it also applies the Québec rule
+  // (French leads at a FR_FIRST airport when it is selected).
   try {
     var _cfgLangs = _pref('langs');
     var _savedSet = null;
-    try {
-      var _sv = localStorage.getItem('fids_langs_' + String(iata || '').toUpperCase());
-      if (_sv) {
-        _savedSet = _sv.split(',').filter(function (l) { return /^[a-z]{2}$/.test(l); }).slice(0, 9);
-        if (!_savedSet.length) _savedSet = null;
-      }
-    } catch (e2) {}
-    langs = _urlLangs ? _urlLangs.slice()
-      : _savedSet ? _savedSet
-      : (Array.isArray(_cfgLangs) && _cfgLangs.length) ? _cfgLangs.slice()
-      : boardLangsFor(iata);
+    try { _savedSet = localStorage.getItem('fids_langs_' + String(iata || '').toUpperCase()); } catch (e2) {}
+    langs = BoardStrings.resolveLangs({
+      iata: iata, search: window.location.search, saved: _savedSet,
+      configured: Array.isArray(_cfgLangs) ? _cfgLangs : null
+    }).langs;
     if (langIdx >= langs.length) langIdx = 0;
     lang = langs[langIdx] || langs[0] || 'en';
   } catch (e) {}
@@ -35489,17 +35437,14 @@ try {
   try {
     var _isMobile = (window.innerWidth || document.documentElement.clientWidth) < 700;
     if (!_isMobile) return;
-    var _validLangs = ['en','fr','es','de','it','pt','ja','zh','ar'];
     var _saved = null;
     try { _saved = localStorage.getItem('fids_mobile_lang'); } catch(e) {}
-    var _chosen = null;
-    if (_saved && _validLangs.indexOf(_saved) >= 0) {
-      _chosen = _saved;
-    } else {
-      // Auto-detect from browser. navigator.language returns "en-CA", "fr-FR", etc.
-      var _br = (navigator.language || navigator.userLanguage || 'en').toLowerCase().split('-')[0];
-      _chosen = (_validLangs.indexOf(_br) >= 0) ? _br : 'en';
-    }
+    // Saved choice, else the browser's own language (navigator.language is
+    // "en-CA", "fr-FR", …), else English — through the one resolver.
+    var _chosen = BoardStrings.resolveLangs({
+      phone: true, phoneSaved: _saved,
+      navigatorLang: navigator.language || navigator.userLanguage || 'en'
+    }).langs[0];
     langs = [_chosen];
     langIdx = 0;
     lang = _chosen;

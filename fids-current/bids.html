@@ -16,6 +16,10 @@ The loader's palette in shared.css is the
        sessionStorage.fids_airport, which every board reads as its default, and the
        earliest reader is an inline script further down this page. -->
   <script src="js/host-airport.js?v=23967"></script>
+  <!-- The one store for passenger words (board-strings.js). Loaded first, before
+       the loader below, so the loader greets in the board's own languages. Its
+       ?v= always equals fids-core.js's (tests/board-languages.test.js B14). -->
+  <script src="js/board-strings.js?v=23967"></script>
 
   <script>
   (function () {

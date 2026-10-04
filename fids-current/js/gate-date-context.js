@@ -1,20 +1,15 @@
 /* Gate-flight calendar context. Dependency-free for browser and Node tests. */
 (function (root, factory) {
-  var api = factory();
+  // The words and the language rules come from the one store,
+  // board-strings.js, which every page loads first.
+  var strings = (root && root.BoardStrings) || (typeof require === 'function' ? require('./board-strings.js') : null);
+  var api = factory(strings);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.FIDSGateDate = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Strings) {
   'use strict';
 
   var DAY_MS = 86400000;
-  var LOCALES = {
-    en: 'en-CA', fr: 'fr-CA', es: 'es', de: 'de', it: 'it', pt: 'pt',
-    ja: 'ja', zh: 'zh', ar: 'ar'
-  };
-  var TOMORROW = {
-    en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Morgen', it: 'Domani',
-    pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا'
-  };
 
   function validTimeZone(timeZone) {
     try {
@@ -47,22 +42,10 @@
     return flightDay - currentDay;
   }
 
+  // The pair a gate shows: BoardStrings.pairLangs, the one picker.
   function selectedLanguages(languages, frenchFirst) {
-    var picked = Array.isArray(languages) && languages.length ? languages.slice() : ['en', 'fr'];
-    if (frenchFirst) {
-      var frIndex = picked.indexOf('fr');
-      if (frIndex > 0) {
-        picked.splice(frIndex, 1);
-        picked.unshift('fr');
-      }
-    }
-    var seen = Object.create(null), result = [];
-    for (var i = 0; i < picked.length && result.length < 2; i++) {
-      var language = String(picked[i] || '').toLowerCase();
-      if (!LOCALES[language] || seen[language]) continue;
-      seen[language] = true;
-      result.push(language);
-    }
+    var list = Array.isArray(languages) && languages.length ? languages : ['en', 'fr'];
+    var result = Strings.pairLangs(list, !!frenchFirst);
     return result.length ? result : ['en'];
   }
 
@@ -171,10 +154,8 @@
     var seen = Object.create(null), words = [];
     selectedLanguages(options.languages, options.frenchFirst).forEach(function (language) {
       var word = offset === 1
-        ? (TOMORROW[language] || TOMORROW.en)
-        : new Intl.DateTimeFormat(LOCALES[language] || LOCALES.en, {
-            timeZone: zone, weekday: 'short', month: 'short', day: 'numeric'
-          }).format(new Date(ts));
+        ? Strings.bs('tomorrow', language)
+        : Strings.date(ts, language, { weekday: 'short', month: 'short', day: 'numeric' }, zone);
       if (!word || seen[word.toLowerCase()]) return;
       seen[word.toLowerCase()] = true;
       words.push(word);

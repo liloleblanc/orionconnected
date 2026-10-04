@@ -39,6 +39,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+// The gate's label helpers pick their languages through the one store
+// (board-strings.js), which every board page loads first; loading it here
+// puts BoardStrings on the global the lifted functions resolve against.
+require('../fids-current/js/board-strings.js');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
