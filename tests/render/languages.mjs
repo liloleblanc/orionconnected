@@ -94,12 +94,17 @@ const CHECK = `(async function () {
     }
     if (seen.has(el) || !/\\p{L}/u.test(t)) continue;
     seen.add(el);
-    for (var e = el, k = 0; e && e !== document.body && k < 4; e = e.parentElement, k++) {
-      var cs = getComputedStyle(e);
-      if ((/hidden|clip/.test(cs.overflowX) || /hidden|clip/.test(cs.overflow)) && e.scrollWidth > e.clientWidth + 2) { clipped.push(t.slice(0, 60) + ' [' + e.scrollWidth + '>' + e.clientWidth + ']'); break; }
-      if (cs.textOverflow === 'ellipsis' && e.scrollWidth > e.clientWidth + 1) { clipped.push(t.slice(0, 60) + ' [ellipsis]'); break; }
-    }
+    // the words themselves, against every box that clips them: a container
+    // that is wider than the screen for some other reason is not clipped text
     var r = document.createRange(); r.selectNodeContents(n); var tb = r.getBoundingClientRect();
+    for (var e = el, k = 0; e && e !== document.body && k < 6; e = e.parentElement, k++) {
+      var cs = getComputedStyle(e);
+      if (k === 0 && cs.textOverflow === 'ellipsis' && e.scrollWidth > e.clientWidth + 1) { clipped.push(t.slice(0, 60) + ' [ellipsis]'); break; }
+      if (/hidden|clip/.test(cs.overflowX) || /hidden|clip/.test(cs.overflow)) {
+        var eb = e.getBoundingClientRect();
+        if (tb.right > eb.right + 1 || tb.left < eb.left - 1) { clipped.push(t.slice(0, 60) + ' [cut at ' + Math.round(tb.right > eb.right + 1 ? eb.right : eb.left) + 'px]'); break; }
+      }
+    }
     if (tb.right > vw + 1 || tb.left < -1) clipped.push(t.slice(0, 60) + ' [off screen]');
   }
   var notRtl = [].slice.call(document.querySelectorAll('span[lang="ar"], bdi[lang="ar"], div[lang="ar"].bs-h, [lang="ar"][class*="-h"]'))
