@@ -249,6 +249,22 @@
         aps = aps.filter(function (c) { return LIVE[c]; });
         try { console.warn('[TOUR] no feed for ' + dropped.join(', ') + ' — dropped from this tour'); } catch (e) {}
       }
+
+      // v23414 — NO AIRPORT NAMED, SO TOUR.
+      //
+      // The tour was built and the list was right, but it only ran when the URL
+      // said so. With no ap= and no tour=, this fell back to the single airport
+      // 'YQM' — and a ONE-airport run is not a tour, so isTour is false, which
+      // switches off BOTH the rotation and the skip-an-empty-board rule below.
+      // The stream therefore sat on one small airport that is empty for most of
+      // the night, which is exactly the empty screen seen on the stream.
+      // Touring is the safe default: a bare rotate.html now walks the working
+      // airports, and a single airport still happens whenever ap= asks for one.
+      // v23950 — moved up from below the dry dock, so the dock applies to this
+      // fallback too. It used to run after the dock filter, so a bare
+      // rotate.html (or one aimed only at a dead airport) toured docked airports.
+      if (aps.length === 0) aps = TOUR_DEFAULT.slice();
+
       // v23796 — AND NOT THE ONES IN DRY DOCK.
       // Docked airports are being built or repaired: they keep their feed and
       // stay reachable by direct link, they simply do not go on air. The list
@@ -298,17 +314,8 @@
           }
         }
       } catch (e) {}
-
-      // v23414 — NO AIRPORT NAMED, SO TOUR.
-      // 
-      // The tour was built and the list was right, but it only ran when the URL
-      // said so. With no ap= and no tour=, this fell back to the single airport
-      // 'YQM' — and a ONE-airport run is not a tour, so isTour is false, which
-      // switches off BOTH the rotation and the skip-an-empty-board rule below.
-      // The stream therefore sat on one small airport that is empty for most of
-      // the night, which is exactly the empty screen seen on the stream.
-      // Touring is the safe default: a bare rotate.html now walks the working
-      // airports, and a single airport still happens whenever ap= asks for one.
+      // The dock never empties a run (see above), so this is only a guard:
+      // nothing below may start from an empty list.
       if (aps.length === 0) aps = TOUR_DEFAULT.slice();
 
       // v23950 — A RESTART PICKS THE TOUR UP WHERE IT LEFT OFF.
@@ -322,6 +329,14 @@
       // is 21st, then Halifax and the four European boards — could go a whole
       // day without reaching the air, although their feeds and their boards
       // work exactly as they do on a direct link.
+      //
+      // Measured on production the same day: the self-check below misread
+      // Cloudflare's edits to the page as a deploy and reloaded the page —
+      // after the first half hour of every load, and every half hour for a
+      // browser that never passes Cloudflare's check (see selfSigOf). That is
+      // fixed at its source; this resume is what keeps any remaining reload —
+      // a deploy, a dock change, a box restart — from costing the tour its
+      // place.
       //
       // So the run starts where the last one stopped. The airport AFTER the
       // one on air is written down each time an airport comes up (see
@@ -482,7 +497,11 @@
       // whether the page around it is current. A rotator older than 23422
       // cannot reload itself when it is pinned to one airport, so the board
       // rescues it (see fids-core.js).
-      try { window.__ocRotatorVer = 23518; } catch (e) {}
+      // v23950 — raised together with _OC_ROTATOR_MIN in fids-core.js, so the
+      // running boxes swap to this copy within minutes of the deploy: the copy
+      // they run now reloads on Cloudflare's edits rather than on ours (see
+      // selfSigOf below).
+      try { window.__ocRotatorVer = 23950; } catch (e) {}
       var selfSig = null, reloadPending = false;
       // v23518 — THE SELF-REFRESH WAS INERT IN PRODUCTION. Measured on the live
       // site: https://fids.orionconnected.com/rotate answers 200 with
@@ -497,18 +516,46 @@
       // Use a signature the CDN cannot withhold: the page's own bytes. Still
       // one request every 30 minutes, now a GET so there is a body to hash.
       // Headers are still preferred when present — cheaper and exact.
+      //
+      // v23950 — THE SIGNATURE IS OF THE PAGE AS WE WROTE IT, NOT AS SERVED.
+      //
+      // Measured on production on 2026-10-04: Cloudflare appends a script of its
+      // own just before </body> (its bot check), and that script carries a new
+      // request id and timestamp on every response. A browser that has not yet
+      // passed the check is sent the page with it; one that has, without it.
+      // The check that runs as this page loads is the one most likely not to
+      // have passed yet, so selfSig came from a copy no later fetch could ever
+      // equal, and the first 30-minute poll found a "new" page. The rotator then
+      // reloaded at the next airport switch, and every load started the tour
+      // from the top. A browser that never passes the check gets the script on
+      // every response, and for it this repeats every half hour: the touring
+      // stream goes back to Chicago and never reaches the second half of its
+      // list — Ottawa, Halifax and the European boards among them. A pinned
+      // stream (Moncton) reloads the same way, boot screen and all.
+      //
+      // So every <script> element that loads or configures Cloudflare's own
+      // scripts is removed before hashing. The pattern is built from pieces so
+      // that this script's own text never matches it; if it did, a change to
+      // the rotator itself would be stripped from its own signature and never
+      // seen. tests/rotator-selfheal.test.js runs this function on a captured
+      // response and keeps those words out of this file.
+      var CF_INJECTED = new RegExp('cdn' + '-cgi/|__CF' + '\\$cv|cloudflare' + 'insights', 'i');
+      function selfSigOf(t) {
+        t = String(t || '').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, function (el) {
+          return CF_INJECTED.test(el) ? '' : el;
+        });
+        if (!t) return '';
+        var h = 0;
+        for (var i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) | 0; }
+        return t.length + ':' + h;
+      }
       function checkSelf() {
         try {
           fetch(window.location.pathname + '?_oc=' + Date.now(), { cache: 'no-store' }).then(function (r) {
             if (!r || !r.ok) return null;
             var sig = r.headers.get('etag') || r.headers.get('last-modified') || '';
             if (sig) return sig;
-            return r.text().then(function (t) {
-              if (!t) return '';
-              var h = 0;
-              for (var i = 0; i < t.length; i++) { h = (h * 31 + t.charCodeAt(i)) | 0; }
-              return t.length + ':' + h;
-            });
+            return r.text().then(selfSigOf);
           }).then(function (sig) {
             if (!sig) return;
             if (selfSig === null) selfSig = sig;
@@ -574,6 +621,15 @@
                 location.reload();
                 return;
               }
+              // v23950 — A COLD PAGE WITH NOTHING DOCKED ON AIR HAS NOTHING TO
+              // APPLY. With no copy cached when this run was built, the run
+              // was built with no dock at all; if none of the docked airports
+              // is in it, it is already exactly the run the dock would give,
+              // and a reload would only send the tour back to its first stop.
+              // That happened on every fresh profile while anything at all
+              // was docked (Sydney is, and is not on the tour). A list seen
+              // change on a running page still waits for the next switch.
+              if (prev === null) return;
               try { console.log('[DOCK] list changed — reloading at the next switch'); } catch (e) {}
               reloadPending = true;
             }
