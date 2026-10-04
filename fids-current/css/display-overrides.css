@@ -16494,10 +16494,12 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    AC Nord Display ships Regular/Medium/Bold/Heavy, so 400 resolves to a real
    drawn Regular rather than a synthesised thin. tabular-nums keeps the five
    tiles' digits on a common rhythm so the row does not jitter between two-
-   and three-character temperatures. */
+   and three-character temperatures.
+   v23950 — the family is the board's own (var(--font-primary)), no longer a
+   literal AC Nord: see "THE WEATHER CARD SETS IN THE BOARD'S OWN FACE". */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht {
-  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-family: var(--font-primary, 'Bricolage Grotesque', system-ui, sans-serif) !important;
   font-size: clamp(26px, 4.4vh, 56px) !important;
   font-weight: 400 !important;
   color: #ffffff !important;
@@ -16507,7 +16509,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   margin-top: clamp(1px, 0.3vh, 4px) !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo {
-  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-family: var(--font-primary, 'Bricolage Grotesque', system-ui, sans-serif) !important;
   font-size: clamp(15px, 2.5vh, 31px) !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.60) !important;
@@ -16989,6 +16991,15 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
    The Merriweather webfont fetched for the earlier pass is removed with this
    change; there is no point shipping 170KB of unused face to every board.
+
+   v23950 — THE BOARD'S FACE IS NOW THE AIRPORT'S, SO THE CARD FOLLOWS IT.
+   The reasoning above was "match the board", and at the time the board was
+   AC Nord everywhere. The face is now chosen per airport (Bricolage
+   Grotesque unless Customize says otherwise), and a literal AC Nord here
+   made the weather card the one thing on a Bricolage or Cabinet board still
+   set in the old face, on the wall and on the streams alike. It reads
+   var(--font-primary), the same variable the board's own cells read, so it
+   keeps matching whatever the airport picks. Weights are untouched.
    ═════════════════════════════════════════════════════════════════════════ */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht,
@@ -17002,7 +17013,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-cond,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-kicker {
-  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-family: var(--font-primary, 'Bricolage Grotesque', system-ui, sans-serif) !important;
   font-style: normal !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
@@ -18115,6 +18126,9 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    the end of the title ("Destination | YYC"). The code moves into the orb, and
    the title goes back to being a clean bilingual pair.
 
+   v23950 — set in the board's face (var(--font-primary)) like the rest of the
+   rail, not a literal AC Nord.
+
    Sized with cqw-free arithmetic: 0.30 of the orb's own height, so it tracks
    the badge at every board size rather than needing its own clamp. Three
    characters is the whole design space here — every IATA code is exactly
@@ -18126,7 +18140,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   justify-content: center !important;
   width: 100% !important;
   height: 100% !important;
-  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-family: var(--font-primary, 'Bricolage Grotesque', system-ui, sans-serif) !important;
   font-size: clamp(15px, 3.0vh, 34px) !important;
   font-weight: 700 !important;
   letter-spacing: 0.5px !important;

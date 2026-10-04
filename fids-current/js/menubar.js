@@ -139,7 +139,7 @@
     var apBtn = document.getElementById('btnAirport');
     if (apBtn) { gDisplay.panel.appendChild(apBtn); }
     move('ctrlBgGroup', gDisplay.panel, 'Background');
-    // Font — mirror the console's canonical list (brand fonts + AC Nord +
+    // Font — mirror the console's canonical list (brand fonts and
     // custom uploads) instead of the stale legacy #fontSel list; changes
     // proxy through cuFontChanged() so persistence stays canonical.
     (function () {

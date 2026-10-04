@@ -2125,6 +2125,17 @@ function _cuReadForm() {
   return p;
 }
 
+// v23950 — what the font picker shows for a saved key. The ac-nord-* options
+// are gone (AC Nord is retired as a board face; fidsLiveFontKey in
+// fids-core.js resolves those keys to the board default), so setting the
+// select to one of them matched no option and left the box blank, and the
+// menu bar's copy of the picker blank with it. An airport still saved on one
+// renders the default, so the picker says Default.
+function _cuPickerFontKey(key) {
+  key = String(key || '');
+  return /^ac-nord(-|$)/i.test(key) ? '' : key;
+}
+
 function _cuPaintForm(prefs) {
   var theme = document.getElementById('cuThemeSelect');
   // A preset id only speaks for the selection while the theme IS 'custom' —
@@ -2154,7 +2165,7 @@ function _cuPaintForm(prefs) {
   if (ae) { ae.checked = (prefs.airlineStyle === 'emblem'); ae.dataset.painted = '1'; }
   // Font picker
   var fontSel = document.getElementById('cuFontSelect');
-  if (fontSel) fontSel.value = prefs.font || '';
+  if (fontSel) fontSel.value = _cuPickerFontKey(prefs.font);
   // Day & night scheduling
   var dnEn = document.getElementById('cuDnEnabled');
   if (dnEn) {
@@ -2271,18 +2282,9 @@ function _cuApplyFont(fontKey) {
     'ginto-nord-ultra':    "'ABC Ginto Nord Ultra', 'ABC Ginto Nord', sans-serif",
     'ginto-nord-hairline': "'ABC Ginto Nord Hairline', 'ABC Ginto Nord', sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
-    'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
-    'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
-    'ac-nord-display-regular': "'AC Nord Display Regular', 'AC Nord Display', sans-serif",
-    'ac-nord-display-medium':  "'AC Nord Display Medium', 'AC Nord Display', sans-serif",
-    'ac-nord-display-bold':    "'AC Nord Display Bold', 'AC Nord Display', sans-serif",
-    'ac-nord-display-heavy':   "'AC Nord Display Heavy', 'AC Nord Display', sans-serif",
-    'ac-nord-text-light':      "'AC Nord Text Light', 'AC Nord Text', sans-serif",
-    'ac-nord-text-regular':    "'AC Nord Text Regular', 'AC Nord Text', sans-serif",
-    'ac-nord-text-italic':     "'AC Nord Text Italic', 'AC Nord Text', sans-serif",
-    'ac-nord-text-medium':     "'AC Nord Text Medium', 'AC Nord Text', sans-serif",
-    'ac-nord-text-bold':       "'AC Nord Text Bold', 'AC Nord Text', sans-serif",
-    'ac-nord-text-heavy':      "'AC Nord Text Heavy', 'AC Nord Text', sans-serif",
+    // v23950 — no ac-nord-* stacks: AC Nord is retired as a board face and
+    // those keys resolve to 'bricolage' (fidsLiveFontKey in fids-core.js), so
+    // the panel's preview shows what the board and the stream will show.
     'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
     'inter':         "'Inter', system-ui, -apple-system, sans-serif",
     'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -2306,6 +2308,7 @@ function _cuApplyFont(fontKey) {
     var delBtn = document.getElementById('cuFontDeleteBtn');
     if (delBtn) delBtn.style.display = (fontKey && fontKey.indexOf('custom:') === 0) ? '' : 'none';
   } catch (e) {}
+  if (typeof fidsLiveFontKey === 'function') fontKey = fidsLiveFontKey(fontKey);
   if (fontKey && stacks[fontKey]) {
     var stack = stacks[fontKey];
     // 1) Set the token (clean approach for tokenized rules)

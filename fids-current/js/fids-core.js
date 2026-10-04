@@ -1527,6 +1527,25 @@ var FIDS_FONT_STACKS = {
   'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
 };
+// ── v23950 — AC NORD IS RETIRED AS A BOARD FACE ────────────────────────────
+// AC Nord is Accor's brand typeface. It was the face of every board until the
+// default moved to Bricolage Grotesque (v23870-72, SIL OFL). Picks saved in
+// the airport config still name it (ac-nord-display-bold, -medium,
+// -text-bold …), and they kept it on most airports' boards (36 of the 62
+// roster airports on 2026-10-04) and on the touring stream. Every ac-nord*
+// key now resolves to the board default, in the one function both font
+// paths call (restoreFontChoice below and the airport config pass), so a
+// wall board and a stream board can never disagree about it.
+// The saved value itself is left alone; nothing is written back. The
+// Customize panel shows such an airport as Default (_cuPickerFontKey in
+// menu.js). A later save of another setting keeps the old key, which still
+// resolves here; picking Default clears it.
+// Accor's own advertising (.axr in hotel-ads.css) is not a board face and
+// keeps AC Nord.
+function fidsLiveFontKey(key) {
+  if (/^ac-nord(-|$)/i.test(String(key || ''))) return 'bricolage';
+  return key;
+}
 // Re-apply the saved font on page load. Priority:
 //   1. FIDS Console → Customize panel pick (per-airport pref) — the UI users
 //      actually use. The GATE screen never applied this on load (only the
@@ -1573,8 +1592,9 @@ function restoreFontChoice(defaultFont) {
       if (_urlFont) {
         _stack = FIDS_FONT_STACKS[_urlFont];
       } else if (_cfg && _cfg.font) {
-        if (FIDS_FONT_STACKS[_cfg.font]) {
-          _stack = FIDS_FONT_STACKS[_cfg.font];
+        var _cfgFont = fidsLiveFontKey(_cfg.font);   // v23950 — retired AC Nord → default
+        if (FIDS_FONT_STACKS[_cfgFont]) {
+          _stack = FIDS_FONT_STACKS[_cfgFont];
         } else if (String(_cfg.font).indexOf('custom:') === 0) {
           // User-uploaded font ("custom:Name") — menu.js re-injects its
           // @font-face from fids_custom_fonts on every load; we just point at it.
@@ -1598,6 +1618,8 @@ function restoreFontChoice(defaultFont) {
   } catch (e) {}
   var f = '';
   try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
+  // v23950 — a device-saved AC Nord family is retired with the keys above.
+  if (/^'?ac nord/i.test(f)) f = '';
   changeFont(f || defaultFont || 'Bricolage Grotesque');  // the board default
 }
 
@@ -33054,7 +33076,10 @@ function applyAirportConfigToBoard(iata) {
   try { _urlFontKey = String(new URLSearchParams(location.search).get('font') || '').toLowerCase(); } catch (eU) {}
   if (_urlFontKey && !(typeof FIDS_FONT_STACKS !== 'undefined' && FIDS_FONT_STACKS[_urlFontKey])) _urlFontKey = '';
   const _font = _urlFontKey || _pref('font');
-  if (_font) {
+  // v23950 — a retired AC Nord pick resolves to the board default here too,
+  // through the same function restoreFontChoice uses (see fidsLiveFontKey).
+  const _fontKey = (typeof fidsLiveFontKey === 'function') ? fidsLiveFontKey(_font) : _font;
+  if (_fontKey) {
     var _fontStacks = {
       'cabinet': "'Cabinet Grotesk', -apple-system, BlinkMacSystemFont, sans-serif",
       'cabinet-light': "'Cabinet Grotesk Light', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -33104,18 +33129,8 @@ function applyAirportConfigToBoard(iata) {
       'abc-gravity-xx-compressed': "'ABC Gravity XX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
       'abc-gravity-xxxx-compressed': "'ABC Gravity XXXX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
-      'ac-nord-display': "'AC Nord Display', 'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
-      'ac-nord-text':    "'AC Nord Text', -apple-system, BlinkMacSystemFont, sans-serif",
-      'ac-nord-display-regular': "'AC Nord Display Regular', 'AC Nord Display', sans-serif",
-      'ac-nord-display-medium':  "'AC Nord Display Medium', 'AC Nord Display', sans-serif",
-      'ac-nord-display-bold':    "'AC Nord Display Bold', 'AC Nord Display', sans-serif",
-      'ac-nord-display-heavy':   "'AC Nord Display Heavy', 'AC Nord Display', sans-serif",
-      'ac-nord-text-light':      "'AC Nord Text Light', 'AC Nord Text', sans-serif",
-      'ac-nord-text-regular':    "'AC Nord Text Regular', 'AC Nord Text', sans-serif",
-      'ac-nord-text-italic':     "'AC Nord Text Italic', 'AC Nord Text', sans-serif",
-      'ac-nord-text-medium':     "'AC Nord Text Medium', 'AC Nord Text', sans-serif",
-      'ac-nord-text-bold':       "'AC Nord Text Bold', 'AC Nord Text', sans-serif",
-      'ac-nord-text-heavy':      "'AC Nord Text Heavy', 'AC Nord Text', sans-serif",
+      // v23950 — no ac-nord-* stacks: those keys resolve to 'bricolage'
+      // before this table is read (fidsLiveFontKey).
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
       'manrope':       "'Manrope', system-ui, -apple-system, sans-serif",
@@ -33125,14 +33140,14 @@ function applyAirportConfigToBoard(iata) {
       'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
       'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
     };
-    if (_fontStacks[_font]) {
-      var _stack = _fontStacks[_font];
+    if (_fontStacks[_fontKey]) {
+      var _stack = _fontStacks[_fontKey];
       // v23386 made this non-important so it would yield to a stream-only
       // AC Nord rule in display-overrides.css. v23950 removed that rule, so
       // a stream board shows the airport's font exactly as the wall board
       // does; non-important still beats the :root default.
       document.body.style.setProperty('--font-primary', _stack);
-      document.body.dataset.fidsFont = _font;
+      document.body.dataset.fidsFont = _fontKey;
       // Nuclear override — inject *, *::before, *::after rule so the font
       // also lands on hardcoded inline styles and JS-generated SVG/HTML.
       var _ovr = document.getElementById('fids-font-override');
