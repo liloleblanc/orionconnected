@@ -171,6 +171,54 @@ test('every surface that prints a code asks the table', () => {
   assert.doesNotMatch(app, /<div class="code">'\+esc\(CURAP\)/);
 });
 
+test('the gate\'s inbound line prints the display code, on the phone view and the v2 aircraft column', () => {
+  // renderMobileGateHtml ("INCOMING AIRCRAFT / from Montreal | YHU" at 390 px)
+  // and _buildV2AircraftCol's .v2-inbound line both built the label from the
+  // feed's raw _locIata.
+  assert.match(blockOf('function renderMobileGateHtml(ctx)'),
+    /var _fromDisplay = _fromCity\s*\?\s*\(_fromIata \? \(_stripCityCode\(_fromCity\) \+ ' \| ' \+ _dispIata\(_fromIata\)\) : _fromCity\)\s*:\s*\(_dispIata\(_fromIata\)/);
+  assert.match(JS, /if \(_fromCity\) _fromDisplay = _fromIata \? \(_stripCityCode\(_fromCity\) \+ ' \| ' \+ _dispIata\(_fromIata\)\) : _fromCity;\s*else if \(_fromIata\) _fromDisplay = _dispIata\(_fromIata\);/);
+  // and no label anywhere glues a raw code variable after its ' | ' (a bare
+  // '|' is a cache key, not something a passenger reads)
+  for (const f of ['js/fids-core.js', 'js/fids-v2.js', 'js/feed-router.js', 'gids.html', 'fids.html', 'bids.html']) {
+    const src = read(f).replace(/^\s*\/\/.*$/gm, '');
+    const raw = src.match(/'(?:\s|\\u00a0)+\|(?:\s|\\u00a0)+'\s*\+\s*[A-Za-z_$][\w$.]*(?:[Ii]ata|IATA)\b(?!\s*\()/g) || [];
+    assert.deepEqual(raw, [], `${f} prints a raw code after a pipe: ${raw.join(', ')}`);
+  }
+});
+
+test('the phone gate\'s title keeps a code a code: "Montreal | MET", not "Montreal | Met"', () => {
+  const win = hostWindow();
+  const src = [
+    "var AIRPORT_DISPLAY_IATA = (typeof window !== 'undefined' && window.FIDS_DISPLAY_IATA) || {};",
+    blockOf('function _dispIata(code)'),
+    blockOf('function _fidsTitleCase(s)'),
+    blockOf('function _cleanCity(s)'),
+    'return _cleanCity;'
+  ].join('\n');
+  const cleanCity = new Function('window', src)(win);
+  // the title is built from tc(loc), which has already title-cased the code
+  assert.equal(cleanCity('Montreal | Met'), 'Montreal | MET');
+  assert.equal(cleanCity('MONTREAL | YHU'), 'Montreal | MET');
+  assert.equal(cleanCity('Toronto | Ytz'), 'Toronto | YTZ');
+  assert.equal(cleanCity('MONCTON'), 'Moncton');
+  assert.equal(cleanCity('Toronto (YYZ)'), 'Toronto', 'the feed\'s parenthesised code is still dropped');
+  assert.equal(cleanCity('Saint_John,_NB'), 'Saint John');
+  assert.equal(cleanCity(''), '');
+  for (const s of ['Montreal | Met', 'MONTREAL | YHU', 'montreal | yhu']) assert.doesNotMatch(cleanCity(s), /YHU|Met\b/);
+  // and the city with its code is placed whole, so the title never leaves the
+  // code alone on the next line ('Moncton to Toronto |' over 'YTZ')
+  const mob = blockOf('function renderMobileGateHtml(ctx)');
+  assert.match(blockOf('function _cityUnit(s)'), /display:inline-block;max-width:100%;/);
+  assert.match(mob, /TL\('toLbl'\) \+ ' ' \+ _cityUnit\(_destCity\)/);
+  assert.match(mob, /TL\('from'\) \+ ' ' \+ _cityUnit\(_fromDisplay\)/);
+});
+
+test('an airport logo\'s alt text names the display code too (screen readers read it out)', () => {
+  assert.match(read('app.html'), /<img src="'\+u\+'" alt="'\+esc\(dispIata\(code\)\)\+'"/);
+  assert.match(read('js/fids-v2.js'), /alt="' \+ \(\(window\.fidsDisplayIata \? window\.fidsDisplayIata\(iata\) : iata\) \|\| ''\) \+ '"/);
+});
+
 test('lookups keep YHU: coordinates, feeds, FR24 and the airport tables are untouched', () => {
   assert.match(read('js/airport-coords.js'), /YHU:\[45\.52,-73\.42\]/);
   assert.match(read('js/feed-router.js'), /if \(iata === 'YHU'\) \{/);

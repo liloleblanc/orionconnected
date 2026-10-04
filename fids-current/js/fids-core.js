@@ -8986,14 +8986,30 @@ function renderMobileGateHtml(ctx) {
   // Home airport (origin for a departure) + destination — cleaned of trailing "(code)" and cased
   function _cleanCity(s){
     s = String(s || '').trim();
+    // v23938 — our own labels end ' | CODE' (formatCityIata), and tc() above
+    // has already title-cased that code ('Montreal | Met', 'Toronto | Ytz').
+    // Lift the code off first, clean only the city, and put the code back as
+    // a code: upper case, in the form passengers see (_dispIata: MET).
+    var _ccm = s.match(/\s*\|\s*([A-Za-z]{2,4})\s*$/);
+    var _ccCode = _ccm ? _ccm[1].toUpperCase() : '';
+    if (_ccm) s = s.slice(0, _ccm.index);
     s = s.replace(/\s*\([^)]*\)\s*$/, '');     // drop trailing "(YOW)" / "(yow)"
     s = s.replace(/_/g, ' ').replace(/,.*$/, '').trim();  // "Saint_John,_NB" -> "Saint John"
-    if (!s) return '';
+    if (!s) return _ccCode ? _dispIata(_ccCode) : '';
     // Title-case if it's all-caps or all-lower
     if (s === s.toUpperCase() || s === s.toLowerCase()) {
       s = _fidsTitleCase(s.toLowerCase());
     }
-    return s;
+    return _ccCode ? (s + ' | ' + _dispIata(_ccCode)) : s;
+  }
+  // A city and its code are one phrase (the board's rule: two lines are fine,
+  // a severed phrase is not). An inline-block is placed whole, so a narrow
+  // title wraps BEFORE the city, never after its bar ('Moncton to Toronto |'
+  // over a lone 'YTZ'); max-width lets a phrase wider than the column wrap
+  // inside itself rather than run out of it. A no-break space cannot do this:
+  // '|' allows a break after itself even with one beside it.
+  function _cityUnit(s){
+    return s ? '<span style="display:inline-block;max-width:100%;">' + s + '</span>' : '';
   }
   var _homeIata = iata || '';
   var _homeRaw = (typeof CITY !== 'undefined' && CITY[_homeIata]) ? CITY[_homeIata] : (_cityForIata(_homeIata) || _homeIata);
@@ -9055,7 +9071,11 @@ function renderMobileGateHtml(ctx) {
       if (_onStand) _etaStr = TL('atGateLbl');
       else if (_minsToArr > 0 && _minsToArr < 1440)
         _etaStr = _minsToArr >= 60 ? (TL('arrivesIn') + ' ' + Math.floor(_minsToArr/60) + 'h ' + (_minsToArr%60) + 'm') : (TL('arrivesIn') + ' ' + _minsToArr + ' min');
-      var _fromDisplay = _fromCity ? (_fromCity + (_fromIata ? ' | ' + _fromIata : '')) : (_fromIata || (_inb.flight || ''));
+      // v23938 — the code through _dispIata like every other chip: the feed's
+      // YHU reads MET here too (it printed 'from Montreal | YHU').
+      var _fromDisplay = _fromCity
+        ? (_fromIata ? (_stripCityCode(_fromCity) + ' | ' + _dispIata(_fromIata)) : _fromCity)
+        : (_dispIata(_fromIata) || (_inb.flight || ''));
       // MOBILE = SAME PROGRAMMING:
       // the live route MAP (same #gateMapBox the shared map engine + 10 s
       // tick target) and the live Speed/Altitude line (same data-gtelem spans
@@ -9075,7 +9095,7 @@ function renderMobileGateHtml(ctx) {
           '<div style="' + _dot + 'margin:0 20px;"></div>'
         + '<div style="background:' + T.panel + ';padding:16px 20px;">'
         +   '<div style="' + FS.label + 'color:' + T.muted + ';margin-bottom:6px;">' + (TL('incomingAircraft')||'').toUpperCase() + '</div>'
-        +   '<div style="' + FS.value + 'color:' + T.ink + ';">' + TL('from') + ' ' + _fromDisplay + '</div>'
+        +   '<div style="' + FS.value + 'color:' + T.ink + ';">' + TL('from') + ' ' + _cityUnit(_fromDisplay) + '</div>'
         +   '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-top:6px;">'
         +     '<span style="' + FS.body + 'color:' + T.muted2 + ';">' + (_inb.flight || '') + '</span>'
         +     (_etaStr ? '<span style="' + FS.body + 'color:' + (_onStand ? (_lt ? '#0e7c4a' : '#1bbf74') : T.accent) + ';">' + _etaStr + '</span>' : '')
@@ -9093,7 +9113,7 @@ function renderMobileGateHtml(ctx) {
     +   (_logoBlock ? '<div style="display:flex;align-items:center;justify-content:center;margin-bottom:16px;">' + _logoBlock + '</div>' : '')
     +   '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;">'
     +     '<div style="flex:1;min-width:0;">'
-    +       '<div style="' + FS.title + 'color:' + T.accent + ';">' + _homeCity + ' ' + TL('toLbl') + ' ' + _destCity + '</div>'
+    +       '<div style="' + FS.title + 'color:' + T.accent + ';">' + _homeCity + ' ' + TL('toLbl') + ' ' + _cityUnit(_destCity) + '</div>'
     +       '<div style="' + FS.value + 'color:' + T.muted2 + ';margin-top:6px;">' + flightNum + (terminalVal ? '   \u00b7   ' + TL('terminal') + ' ' + terminalVal : '') + '</div>'
     +     '</div>'
     +     '<div style="flex:0 0 auto;text-align:right;">'
@@ -10030,8 +10050,10 @@ function _buildV2AircraftCol(ctx, vars) {
         : _minsToArr + ' min';
     }
     var _fromDisplay = '';
-    if (_fromCity) _fromDisplay = _fromCity + (_fromIata ? ' | ' + _fromIata : '');
-    else if (_fromIata) _fromDisplay = _fromIata;
+    // v23938 — the code through _dispIata (YHU reads MET), and the city's own
+    // tail, if it carries one, dropped so the code is not printed twice.
+    if (_fromCity) _fromDisplay = _fromIata ? (_stripCityCode(_fromCity) + ' | ' + _dispIata(_fromIata)) : _fromCity;
+    else if (_fromIata) _fromDisplay = _dispIata(_fromIata);
     var _inbFlightTxt = inboundFlight.flight || '';
     var _inbMain = _fromDisplay || _inbFlightTxt || '';
     if (_inbFlightTxt && _fromDisplay) _inbMain = _fromDisplay + ' · ' + _inbFlightTxt;
@@ -26571,7 +26593,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23937';
+var FIDS_BUILD_TAG = 'v23938';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
