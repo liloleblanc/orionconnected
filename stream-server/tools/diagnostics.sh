@@ -32,6 +32,10 @@ for c in $(find /opt -name config.env 2>/dev/null | sort); do
   cch='STALE!';  grep -q 'rm -rf .*chrome-profile' "$d/run.sh" 2>/dev/null && cch='cache-ok'
   printf '%-4s %-9s %-10s %-8s %-8s key…%s\n' \
     "${ap:-?}" "$st" "$hw@${br:-?}" "$cbr" "$cch" "${key: -4}"
+  # The airport code alone cannot tell a pinned box from a touring one:
+  # stream=1 pins to ap=, any other stream= or tour=1 tours, tour=0 pins.
+  # The board URL holds no secret, so show its query on one short line.
+  printf '     %s\n' "$(echo "${url#*\?}" | cut -c1-72)"
 done
 
 echo "------------------------------------------------------------"
