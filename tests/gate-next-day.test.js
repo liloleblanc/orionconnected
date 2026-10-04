@@ -106,10 +106,22 @@ test('the three rail times each carry their own day line, inside the value the f
 });
 
 test('the Your Aircraft card dates the inbound by the time it prints first', () => {
-  assert.match(CORE, /var _dwI = _gateDayWords\(_ibShownTs, vars\.tz, _frF\);\s*return _dwI \? '<div class="v2-fi-mline2">' \+ _gateDayLineHtml\(_dwI\) \+ '<\/div>' : '';\s*\}\)\(\),/);
-  // A plain mline2, so the lower panel's shelf sets it beside the orb like
-  // the time above it (_rcInboundShelf only indents lines it recognises).
-  assert.match(fnSource('_rcInboundShelf'), /\^<div class="\(v2-fi-mline\[123\]\)">/);
+  assert.match(CORE, /var _dwI = _gateDayWords\(_ibShownTs, vars\.tz, _frF\);\s*return _dwI \? '<div class="v2-fi-mline2">' \+ _gateDayLineHtml\(_dwI\) \+ '<\/div>' : '';\s*\}\)\(\)/);
+  // v23937 — the card is one string concatenation again (v23934's line list
+  // is gone), so the day line is joined with '+' between the time line and
+  // the status line. A comma there ends the card after its time line: the
+  // assignment takes everything before it, and the status line and the
+  // card's closing tags are thrown away.
+  const card = CORE.slice(CORE.indexOf("'<div class=\"v2-rc-shelf v2-rc-shelf-fi v2-rc-shelf-fi4 v2-rc-shelf-asleft\">'"));
+  const M3 = "'<div class=\"v2-fi-mline3\">'";
+  const tail = card.slice(0, card.indexOf(M3) + M3.length);
+  assert.ok(tail.length > 1 && tail.indexOf('_gateDayLineHtml(_dwI)') > 0, 'the day line sits between the time line and the status line');
+  const code = tail.replace(/\/\/[^\n]*/g, '');
+  assert.match(code, /: ''\)\)\)\s*\+\s*\(function \(\) \{/, 'the time line is joined to the day line with +');
+  assert.match(code, /\}\)\(\)\s*\+\s*'<div class="v2-fi-mline3">'/, 'and the day line to the status line');
+  // A plain mline2, so the card's line fitter sizes it with the time above it.
+  const fitter = CORE.slice(CORE.indexOf("root.querySelectorAll('.gad-map-col-v2 .v2-rc-shelf-asleft .v2-fi-value')"));
+  assert.match(fitter.slice(0, 400), /val\.querySelectorAll\('\.v2-fi-mline1, \.v2-fi-mline2, \.v2-fi-mline3'\)/);
   // Each condition is the one that prints that time: the revised/scheduled
   // pair for an inbound still to come, _mcEvtStr once it is down.
   assert.match(CORE, /var _ibShownTs = _gateInboundShownTs\(\{\s*arrived: _stKey === 'arrived',\s*onStandAt: \(_mcOnStand && _ib && typeof _ib\._actualArrTime === 'number'\) \? _ib\._actualArrTime : 0,\s*sched: _ibArrTs, rev: _ibRevTs,\s*revShown: \(_stKey === 'arrived'\) \? !!_ibArrRevStr : !!\(_ibArrRevStr && _ibArrRevStr !== _ibArrSchedStr\)\s*\}\);/);
