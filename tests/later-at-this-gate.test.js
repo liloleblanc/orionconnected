@@ -99,7 +99,19 @@ function board({ now, dep, hist = {}, langs = ['en', 'fr'], ap = 'YQM', extra = 
   return new Function(...keys, 'localStorageRef', code)(...keys.map((k) => ctx[k]), store);
 }
 
-const text = (html) => String(html).replace(/<[^>]+>/g, '').replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+// The words a passenger reads in a piece of markup: everything outside the
+// tags, then the two entities fidsEscHtml writes ('&amp;' last). A scan, not a
+// one-pass tag regex, so nothing tag-like can survive by being nested.
+const text = (html) => {
+  let out = '';
+  let inTag = false;
+  for (const ch of String(html)) {
+    if (ch === '<') inTag = true;
+    else if (ch === '>') inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out.replace(/&#39;/g, "'").replace(/&amp;/g, '&');
+};
 
 // Moncton gate 4, Monday Oct 5 at 05:00, as the feed lists it.
 const G4 = () => [
