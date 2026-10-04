@@ -78,7 +78,8 @@ test('one band, the same height with or without an operator', () => {
 
 test('the model is twice its label, the operator mark never smaller than the text', () => {
   assert.match(ruleFor(CAP + ' .v2-rc-acb-actype'), /font-size: calc\(var\(--acb-h\) \* 0\.52\) !important;/, 'model');
-  assert.match(ruleFor(CAP + ' .v2-rc-opby-lline'), /font-size: calc\(var\(--acb-h\) \* 0\.24\) !important;/, 'label');
+  // v23962 — and never under the readable floor (--fx-floor)
+  assert.match(ruleFor(CAP + ' .v2-rc-opby-lline'), /font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--acb-h\) \* 0\.24\)\) !important;/, 'label');
   assert.match(ruleFor(CAP + ' .v2-rc-opby-logo'), /height: calc\(var\(--acb-h\) \* 0\.62\) !important;/, 'mark taller than the model text');
   // When the fitter brings the mark down with the model, it never goes under
   // the model's own type, and its height is rounded UP to the 1/64px layout

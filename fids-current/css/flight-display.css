@@ -866,10 +866,13 @@ then the decision was to restore Porter to its previous
   font-weight: 700;
   color: var(--fids-text);
   white-space: nowrap;
-  /* v218.16: explicit min-width so even with 3-digit temps the unit
-     has space; flex-shrink:0 prevents the temp span from being squeezed
-     when the cell is under pressure from neighbors. */
-  min-width: 70px;
+  /* v218.16: flex-shrink:0 prevents the temp span from being squeezed
+     when the cell is under pressure from neighbors.
+     v23962 — no 70px min-width: it was wider than the text, so on a
+     portrait board's narrow column the span's empty end ran past the cell
+     and the cell's ellipsis cut the temperature ('8°C…'). The shared fitter
+     (FIDS_FIT_RULES) sizes the temperature to the cell instead. */
+  min-width: 0;
   flex-shrink: 0;
   padding-right: 4px;
 }
@@ -2131,16 +2134,24 @@ body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
    vw terms and the maximums are UNTOUCHED, so a 1920 board — the stream —
    renders pixel-identical to before: every column there is on its max or its
    vw term, never its floor. */
+/* v23962 — THE DESTINATION IS THE COLUMN THAT HOLDS NAMES, AND IT WAS THE
+   NARROWEST. At 1280x720 these floors left it 175px — less than Revised,
+   which mostly holds a dash — and every city there ran to "…" ("Ottawa | Y…",
+   "Montréal · Tr…"). The floors for weather, the two times and status were
+   sized at the 1920 board's 28px type; the row's type is 1.7vw (21.8px at
+   1280), and a two-digit "10:00 PM" needs 110px of it, so their floors now
+   follow that type, and the shared fitter (FIDS_FIT_RULES) holds any of those
+   cells that runs long. The destination gains about 115px at 1280 and 12px
+   at 1680; at 1920 every column is on its vw term or its maximum, so the
+   stream's board is unchanged. */
 #fidsTable colgroup col.col-airline   { width: clamp(240px, 15.5vw, 292px) !important; }
 #fidsTable colgroup col.col-flight    { width: clamp(138px, 7vw, 150px) !important; }
-#fidsTable colgroup col.col-wx        { width: clamp(150px, 8.2vw, 150px) !important; }
+#fidsTable colgroup col.col-wx        { width: clamp(110px, 8.2vw, 150px) !important; }
 #fidsTable colgroup col.col-dest      { width: auto  !important; }
 #fidsTable colgroup col.col-gate      { width: clamp(84px, 7vw, 134px) !important; }
-/* 146 stays: measured, a 12-hour time with a two-digit hour ("10:00 PM")
-   needs 142px at this row's type, so a 134px floor clipped the meridiem. */
-#fidsTable colgroup col.col-time      { width: clamp(146px, 10vw, 178px) !important; }
-#fidsTable colgroup col.col-time-rev  { width: clamp(146px, 10vw, 178px) !important; }
-#fidsTable colgroup col.col-status    { width: clamp(196px, 13vw, 250px) !important; }
+#fidsTable colgroup col.col-time      { width: clamp(124px, 10vw, 178px) !important; }
+#fidsTable colgroup col.col-time-rev  { width: clamp(124px, 10vw, 178px) !important; }
+#fidsTable colgroup col.col-status    { width: clamp(166px, 13vw, 250px) !important; }
 
 /* Emblem-only mode: shrink airline column further */
 body[data-fids-airline-style="emblem"] #fidsTable colgroup col.col-airline {
@@ -3434,13 +3445,10 @@ body[data-fids-theme="green"] #fidsTable thead th { background: #14532d !importa
   font-weight: 700 !important;
   letter-spacing: 0.8px !important;
 }
-/* v219 — long destination names (e.g. "Santa Cruz De La Sierra") drop to a
-   smaller size so the full name shows instead of truncating with an ellipsis.
-   Set by fids-core.js, which adds .td-dest-long when the city name is long. */
-#fidsTable tbody tr td.td-dest.td-dest-long {
-  font-size: 24px !important;
-  letter-spacing: 0 !important;
-}
+/* v219's .td-dest-long (a fixed 24px for names of 18+ characters, which a
+   later clamp out-ranked on every desktop width) is gone: v23962's shared
+   fitter (fidsFitText, FIDS_FIT_RULES in fids-core.js) sizes every
+   destination cell to its own name. */
 /* Theme-specific tbody overrides (navy-board, cream) were setting 26px on
    tbody — explicitly lock them to 28px too so the unification holds. */
 body[data-fids-theme="navy-board"] #fidsTable tbody tr,

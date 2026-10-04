@@ -15284,18 +15284,26 @@ Centring them left a deep empty band above a short belt —
 .bidsv3 .b3-tile img, .bidsv3 .b3-tile > * { width: 100% !important; height: 100% !important; object-fit: contain; margin: 0 !important; }
 .bidsv3 .b3-flight { flex: 0 0 calc(205 * var(--b3u, 1px)); min-width: 0; display: flex; flex-direction: column; justify-content: center; }
 .bidsv3 .b3-wordmark { height: calc(22 * var(--b3u, 1px)); width: auto; align-self: flex-start; max-width: calc(200 * var(--b3u, 1px)); object-fit: contain; object-position: left center; }
-.bidsv3 .b3-airline-name { font-size: calc(16 * var(--b3u, 1px)); font-weight: 800; letter-spacing: calc(1.5 * var(--b3u, 1px)); color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,.45); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* v23962 — the typed airline name (no wordmark) is fitted, not ellipsised:
+   'AIR SAINT-PIERRE' was 'AIR SAINT-PIE…' at 1280 (FIDS_FIT_RULES). */
+.bidsv3 .b3-airline-name { font-size: max(var(--fx-floor, 12px), calc(16 * var(--b3u, 1px))); font-weight: 800; letter-spacing: calc(1.5 * var(--b3u, 1px)); color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,.45); white-space: nowrap; line-height: 1.1; }
 .bidsv3 .b3-num { font-size: calc(40 * var(--b3u, 1px)); font-weight: 850; line-height: 1.05; color: #ffffff; font-variant-numeric: tabular-nums; text-shadow: 0 2px 5px rgba(0,0,0,.45); white-space: nowrap; }
+/* v23962 — the From line is ONE line of text (city, then the code tied to
+   it), fitted by the shared fitter (fidsFitText, .b3-from in FIDS_FIT_RULES):
+   smaller, or onto the row's second line at a space or hyphen. It was a flex
+   row whose city span ended in an ellipsis ('Charlottetо…', 'Fort Lauderd…'). */
 .bidsv3 .b3-from {
   flex: 1 1 auto; min-width: 0;
-  display: flex; align-items: center; gap: calc(12 * var(--b3u, 1px));
+  display: block;
   font-size: calc(36 * var(--b3u, 1px)); font-weight: 800; color: #ffffff;
+  line-height: 1.12;
   text-shadow: 0 2px 5px rgba(0,0,0,.45);
   white-space: nowrap;
 }
-.bidsv3 .b3-city { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.bidsv3 .b3-sep  { flex-shrink: 0; color: rgba(255,255,255,.55); }
-.bidsv3 .b3-code { flex-shrink: 0; color: #cfe4ff; font-weight: 850; }
+.bidsv3 .b3-city { display: inline; }
+.bidsv3 .b3-tail { white-space: nowrap; }
+.bidsv3 .b3-sep  { color: rgba(255,255,255,.55); }
+.bidsv3 .b3-code { color: #cfe4ff; font-weight: 850; }
 .bidsv3 .b3-time {
   flex: 0 0 calc(175 * var(--b3u, 1px)); flex-shrink: 0; text-align: right;
   font-size: calc(34 * var(--b3u, 1px)); font-weight: 850; color: #ffffff;
@@ -15677,12 +15685,20 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
 Measured 12.9px inside a 26px-tall pill, the row's value
    below it running 37-67px. The pill has the height; the type never used it. */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title {
+  font-size: clamp(15px, 1.92vh, 26px) !important;
+  line-height: 1.16 !important;
+}
+/* v23962 — the words inside the title take ITS size (1em), so the title is
+   one thing to fit: gateAutofit and the shared fitter size the title, and
+   the words follow. Each word carried the clamp itself, so a title the
+   fitters shrank kept 26px words and was cut on a narrow column ("ination |
+   Destin" on a portrait gate). At rest the size is the same clamp. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-lbl-en,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-lbl-2,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-code,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap :is(.gad-aircraft-col, .g8-bir-shelves) .v2-fi-title .v2-fi-sep {
-  font-size: clamp(15px, 1.92vh, 26px) !important;
+  font-size: 1em !important;
   line-height: 1.16 !important;
 }
 /* Let the pill breathe with the bigger type instead of clipping it. */
@@ -22651,7 +22667,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-acb-cap .v2-rc-opby-lline,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus:has(.v2-rc-acb-opby) .v2-rc-acb-cap .v2-rc-acb-opby .v2-rc-opby-lline {
-  font-size: calc(var(--acb-h) * 0.24) !important;
+  /* v23962 — never under the readable floor (--fx-floor) */
+  font-size: max(var(--fx-floor, 12px), calc(var(--acb-h) * 0.24)) !important;
 }
 
 /* ══ v23909 — THE MAP CREDIT OPENSTREETMAP ASKS FOR ══════════════════════════
@@ -22700,6 +22717,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   top: 0;
   transform: translate(-50%, 10px);
   white-space: nowrap;
+  /* v23962 — fitted by the shared fitter (FIDS_FIT_RULES): each language a
+     whole phrase (.fx-unit), the pair stacked under each other when one line
+     will not fit the map, the bar dropped when they stack, and the label slid
+     sideways to stay inside the map. It ran off the edge of the small map in
+     every language ('From Îles-de-la-Madeleine · 4:23pm | De Îl…'). */
+  width: max-content;
+  text-align: center;
   padding: 3px 8px;
   border-radius: 4px;
   border: 1px solid rgba(255, 255, 255, 0.25);
@@ -22708,13 +22732,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: #fff;
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-weight: 700;
-  font-size: clamp(10px, min(1.25vh, 0.72vw), 14px);
+  font-size: clamp(var(--fx-floor, 12px), min(1.25vh, 0.72vw), max(14px, var(--fx-floor, 12px)));
   line-height: 1.25;
   letter-spacing: 0.02em;
   pointer-events: none;
 }
 #bigCraftMap .gate-map-note {
-  font-size: clamp(12px, min(1.7vh, 0.95vw), 18px);
+  font-size: clamp(var(--fx-floor, 12px), min(1.7vh, 0.95vw), 18px);
   padding: 4px 10px;
 }
 
@@ -23113,7 +23137,8 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gad-map-col-v2 .v2-rc-shelf-illus .v2-rc-acb-cap .v2-rc-opby-lline {
   display: block !important;
-  font-size: calc(var(--acb-h) * 0.24) !important;
+  /* v23962 — never under the readable floor (--fx-floor) */
+  font-size: max(var(--fx-floor, 12px), calc(var(--acb-h) * 0.24)) !important;
   line-height: 1.15 !important;
   font-weight: 700 !important;
   white-space: nowrap !important;
@@ -24608,3 +24633,23 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: #fff !important; white-space: nowrap !important; flex: 0 1 auto !important; min-width: 0 !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .gwc .gwc-name.gwc-wrap { white-space: normal !important; text-wrap: balance !important; overflow-wrap: break-word !important; }
+/* ══ v23962 — NO NAME IS CUT: THE SHARED FITTER'S STYLESHEET HALF ══════════
+   The fitter itself is fidsFitText / FIDS_FIT_RULES in fids-core.js: a name
+   too long for its box gets smaller down to the readable floor, or takes the
+   box's second line at a space or a hyphen, and is never ellipsised. What it
+   decides it writes inline with !important. This block holds the two things
+   the stylesheet has to say for it:
+   · --fx-floor, the readable floor, for type sized in CSS alone:
+     max(12px, 1.3% of the screen's short side) — the fitter's own rule
+     (13.65px at 1680x1050, 14.04px at 1920x1080 and portrait 1080x1920,
+     12px at 1280x720; the fitter rounds its copy up to a quarter pixel);
+   · the airport's name after a city (.ap-sub, _cityApHtml): a step smaller
+     than the city, one piece with its "·", and the "·" dropped when the name
+     has gone under the city on a second line. */
+:root { --fx-floor: max(12px, 1.3vmin); }
+.ap-sub { white-space: nowrap !important; font-size: max(0.8em, var(--fx-floor, 12px)); }
+.ap-sub .ap-name { font-size: inherit !important; }
+.fx-brk-off { display: none !important; }
+.fx-unit { white-space: nowrap; }
+.fx-loose .fx-unit { white-space: normal !important; }
+.dest-iata-tail { white-space: nowrap !important; }

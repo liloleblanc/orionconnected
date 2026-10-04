@@ -458,7 +458,8 @@ thead th { height: 50px; }
   text-transform: capitalize;
 }
 .status-msg .sub {
-  font-size: 12px;
+  /* v23962 — never under the readable floor (max(12px, 1.3vmin)) */
+  font-size: max(12px, 1.3vmin);
   font-weight: 500;
   letter-spacing: 2px;
   color: #71717a;

@@ -83,7 +83,7 @@
     font-weight:800;font-size:13px;color:var(--accent);letter-spacing:.3px;}
   .brand .logo img{width:100%;height:100%;object-fit:contain;padding:6px;}
   .brand .meta{display:flex;flex-direction:column;line-height:1.12;min-width:0;}
-  .brand .meta b{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:54vw;}
+  .brand .meta b{font-size:15px;font-weight:700;white-space:normal;overflow-wrap:normal;overflow:visible;text-overflow:clip;max-width:54vw;line-height:1.15;}
   .brand .meta span{font-size:11.5px;color:var(--muted);font-weight:500;display:flex;align-items:center;gap:5px;}
   .brand .meta .chev{width:13px;height:13px;color:var(--faint);}
   .brand select{position:absolute;inset:0;width:100%;height:100%;opacity:0;}
@@ -146,9 +146,11 @@
   .wm-d{display:none;}
   :root[data-theme="dark"] .wm-l{display:none;} :root[data-theme="dark"] .wm-d{display:block;}
   @media(prefers-color-scheme:dark){:root[data-theme="auto"] .wm-l{display:none;} :root[data-theme="auto"] .wm-d{display:block;}}
-  .wm-txt{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .fcard .alname{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  /* v23962 — a name is never cut: an airline name too long for the card's
+     line takes a second one at a space or hyphen ('Pacific Coastal…'). */
+  .wm-txt{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;line-height:1.15;
+    white-space:normal;overflow-wrap:normal;word-break:normal;overflow:visible;text-overflow:clip;}
+  .fcard .alname{font-weight:700;font-size:15px;color:var(--txt);letter-spacing:-0.01em;line-height:1.15;white-space:normal;overflow-wrap:normal;word-break:normal;overflow:visible;text-overflow:clip;}
   .st{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:12.5px;white-space:nowrap;}
   .st .d{width:7px;height:7px;border-radius:50%;background:currentColor;}
   .st.ontime{color:var(--green);} .st.delayed,.st.early{color:var(--amber);}
@@ -440,7 +442,7 @@ const AIRPORTS={
   YYT:{n:"St. John's",tz:'America/St_Johns',r:'CA'},
   YYZ:{n:'Toronto Pearson',tz:'America/Toronto',r:'CA'},
   YTZ:{n:'Toronto City (Billy Bishop)',tz:'America/Toronto',r:'CA'},
-  YHU:{n:'Montréal Saint-Hubert (MET)',tz:'America/Toronto',r:'CA'},
+  YHU:{n:'Montréal Métropolitain (MET)',tz:'America/Toronto',r:'CA'},
   YUL:{n:'Montréal–Trudeau',tz:'America/Toronto',r:'CA'},
   YOW:{n:'Ottawa',tz:'America/Toronto',r:'CA'},
   YQB:{n:'Québec City',tz:'America/Toronto',r:'CA'},
@@ -509,7 +511,9 @@ const AP_NAME={}; for(var _ak in AIRPORTS) AP_NAME[_ak]=AIRPORTS[_ak].n;
 // v23230 — the shared feed router (js/feed-router.js) reads the boards'
 // global `AP` map for airport timezones; publish ours in that shape.
 window.AP={}; for(var _tk in AIRPORTS) window.AP[_tk]={tz:AIRPORTS[_tk].tz};
-const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto',YTZ:'Toronto',YUL:'Montréal',YHU:'Montréal (St-Hubert)',YHZ:'Halifax',YYT:"St. John's",
+// v23962 — a city with two of our airports names the airport, as the boards
+// do (AIRPORT_SUBLINE in fids-core.js): which Toronto, which Montréal.
+const CITY={YXL:'Sioux Lookout',YQK:'Kenora',YYZ:'Toronto · Pearson',YTZ:'Toronto · Billy Bishop',YUL:'Montréal · Trudeau',YHU:'Montréal · Métropolitain',YHZ:'Halifax',YYT:"St. John's",
   YDF:'Deer Lake',YOW:'Ottawa',YQB:'Québec City',YWK:'Wabush',YYY:'Mont-Joli',YBG:'Bagotville',YFC:'Fredericton',
   YSJ:'Saint John',YQY:'Sydney',YZX:'Greenwood',YGP:'Gaspé',YGR:'Îles-de-la-Madeleine',YQM:'Moncton',
   YYC:'Calgary',YEG:'Edmonton',YVR:'Vancouver',YWG:'Winnipeg',YYJ:'Victoria',YXX:'Abbotsford',
