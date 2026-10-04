@@ -14,3 +14,6 @@ node_modules/
 probe.js
 # local test symlink to leaflet (prod serves /mapcdn from the worker)
 fids-current/mapcdn
+
+# the language pictures (node tests/render/languages.mjs)
+tests/render/out/
