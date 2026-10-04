@@ -260,7 +260,8 @@ test('status motion, white light and gentle motion are left alone', () => {
   assert.match(winning('.wxcard-wrap .wxc-mon-fx.wxc-fx-clear-night::before', ['animation', 'animation-name']).value, /^wxcFxTwinkle /);
   // the night-storm footage keeps its white lightning; v23937 took the takes
   // that flicker past three flashes a second out of the draw
-  // (tests/storm-night-flash-limit.test.js), and the one that passes stays
+  // (tests/storm-night-flash-limit.test.js), the one that passes stays and
+  // still opens the slot, and v23943 added re-cuts measured inside the limit
   assert.match(CORE, /'storm-night': \['wx-scene-storm-night-4846434'/);
   // rain over the photo still falls
   assert.match(winning('.wxcard-wrap .wxc-mon-fx.wxc-fx-rain-day::before', ['animation', 'animation-name']).value, /^wxcFxRain2 /);

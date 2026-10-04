@@ -93,21 +93,21 @@ test('clear keeps the two loops the card has always had as its first take', () =
 test('the drawn scenes are retired: every weather slot is real footage, several takes deep', () => {
   // v23841. The owner brought the footage; the shuffle is the point of having
   // it, and a shuffle of two is a coin toss. Three is the floor.
-  // v23937 — ONE EXCEPTION, AND IT IS A SAFETY ONE. Six of the seven
-  // night-storm takes flicker past the general-flash limit (more than three
-  // flashes in any second; tests/storm-night-flash-limit.test.js) and are out
-  // of the draw. A flash-safe slot of one beats a varied slot that strobes, so
-  // storm-night may hold a single take until a measured replacement is added.
-  const FLOOR = { 'storm-night': 1 };
+  // v23937 took storm-night down to a single take for safety (six takes
+  // flickered past the general-flash limit). v23943 brings it back over the
+  // floor with re-cuts measured inside the limit
+  // (tests/storm-night-flash-limit.test.js), so every slot holds three again.
+  // A re-cut of a source already on disk carries a letter after its source
+  // id (<slot>-<id>-a, -b, ...), so the licence is still found by its number.
   const { table } = makePicker();
   for (const kind of ['cloud', 'rain', 'snow', 'storm']) {
     for (const tod of ['day', 'night']) {
       const list = table[`${kind}-${tod}`].map(e => typeof e === 'object' ? e.f : e);
-      const floor = FLOOR[`${kind}-${tod}`] || 3;
-      assert.ok(list.length >= floor, `${kind}-${tod} holds ${list.length} takes; the shuffle needs at least ${floor}`);
+      const distinct = new Set(list).size;
+      assert.ok(distinct >= 3, `${kind}-${tod} holds ${distinct} different takes; the shuffle needs at least 3`);
       assert.ok(!list.includes(`wx-scene-${kind}-${tod}`), `${kind}-${tod} still lists the retired drawn loop`);
       for (const f of list) {
-        assert.match(f, new RegExp(`^wx-scene-${kind}-${tod}-\\d+$`),
+        assert.match(f, new RegExp(`^wx-scene-${kind}-${tod}-\\d+(-[a-z])?$`),
           `${f} must be named for its slot and its source id, so the licence file can always be found`);
       }
     }

@@ -26840,7 +26840,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23942';
+var FIDS_BUILD_TAG = 'v23943';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -48723,9 +48723,34 @@ var _WX_SCENE_TAKES = {
   // 85833526 flicker 8-10 transitions a second (lightning restrikes, 4-5
   // flashes); 4846434 has 1-2.
   // The files stay on disk (licensed footage, re-cuttable), only the draw
-  // changes. Lightning itself stays, white. One take is all that passes, so
-  // this slot does not shuffle until a replacement is measured and added.
-  'storm-night': ['wx-scene-storm-night-4846434']
+  // changes. Lightning itself stays, white.
+  // v23943 — THE NIGHT STORM SHUFFLES AGAIN, FROM RE-CUTS INSIDE THE LIMIT.
+  // The six sources were cut again (scripts/wx-scenes/takes.swift, same
+  // 1280x704 / 30 fps / H.264 / 1 s crossfade as every take) on windows that
+  // hold one strike, or calm sky between strikes, slowed where a restrike
+  // needed it. Each new file is <source id>-<letter>, the letters in source
+  // order, so the licence is still found by its number. Every take below was
+  // measured on the decoded file by both tools at 842x849 and at 903x496: at
+  // most 4 transitions in any 1 s (two flashes; the limit is three), the seam
+  // included (tests/storm-night-flash-limit.test.js holds the readings).
+  // A cut must also be free of rolling-shutter tears: a strike shorter than
+  // the camera's readout lights only part of a frame and leaves a hard
+  // horizontal edge, which reads as a glitch on the board, not as weather.
+  // That is why 82480163's one take is -c (source 8.1-12.6 s, half speed):
+  // -a (source 1.4 s) and -b (source 6.0 s) were inside the flash limit but
+  // each tore on a strike (-b at source 12.7 s), so neither ships.
+  // 85833526 tears on every strike; 5018766 tears on every strike and is
+  // near black between them. Both have cuts inside the flash limit, but
+  // neither has a usable window.
+  // Four of the cuts come from one source (4915798), so the four single-cut
+  // sources are listed twice, to keep that one look from coming round half
+  // the time. The original files stay on disk, out of the draw.
+  'storm-night': ['wx-scene-storm-night-4846434', 'wx-scene-storm-night-4846434',
+                  'wx-scene-storm-night-12821882-a', 'wx-scene-storm-night-12821882-a',
+                  'wx-scene-storm-night-2018910-a', 'wx-scene-storm-night-2018910-a',
+                  'wx-scene-storm-night-82480163-c', 'wx-scene-storm-night-82480163-c',
+                  'wx-scene-storm-night-4915798-a', 'wx-scene-storm-night-4915798-b',
+                  'wx-scene-storm-night-4915798-c', 'wx-scene-storm-night-4915798-d']
 };
 // The chosen file is part of the card's rebuild signature, so drawing again
 // inside a visit would change the markup, restart the clip, and take the rest
