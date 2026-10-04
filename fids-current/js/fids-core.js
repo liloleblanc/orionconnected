@@ -43769,7 +43769,12 @@ function buildGateAdHtml(ad) {
       // (min(720px,80vw)) — a % max-width resolves against this shrink-wrapped
       // flex child and collapses the logo to ~80px
       // object-fit keeps aspect.
-      + '<img src="' + ad.logo + '" alt="" '
+      // v23942 — class gad-ad-logo: the hook display-overrides.css has always
+      // written its Welcome-card rules against (the v23770 "tiles are never
+      // white-forced" block, and the Delta, Discover and Flair exemptions).
+      // No code ever set it, so the tile rule never matched and every tile
+      // emblem reached the card as a solid white square.
+      + '<img class="gad-ad-logo" src="' + ad.logo + '" alt="" '
       + 'style="height:100%;width:auto;max-width:min(720px,80vw);object-fit:contain;display:block;' + _stdLogoFilter + '" '
       + 'onerror="this.style.display=\'none\';">'
       + '</div>'
@@ -46243,7 +46248,12 @@ function _buildGateAdSlideList() {
         // white disc on the welcome card; the dot file is already the brand
         // green, so it must not be filtered — see the no-filter rule in CSS.
         'F8': '/logos/airlines/canadian/flair-dot.svg?v=2',
-        'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2'
+        'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2',
+        // v23942 — PAL. The orb's arrow (PB-arrow.svg) is drawn WHITE, to sit
+        // on the gold badge; on this card there is no badge, so it showed as
+        // a white arrow where PAL's arrow is gold. PB.svg is the same arrow
+        // on PAL's gold tile, the file SP (PAL express) already shows here.
+        'PB': '/logos/airline-tiles/PB.svg'
       };
       // v23942 — EMBLEMS SHOWN IN THEIR OWN COLOURS ON THE WELCOME CARD.
       //
@@ -46255,7 +46265,34 @@ function _buildGateAdSlideList() {
       // drawn. Each entry is checked against its card's ground first: the
       // virgule (#EB212B) measures 3.9:1 on Air France's #1A1A2E, so it
       // reads as itself and needs no other file.
-      var _FB_WELCOME_OWN_COLOURS = { 'AF':1 };
+      //
+      // v23942 — the rest, from an audit of every carrier that can reach this
+      // card (its emblem drawn on a canvas over the card's own ground, the
+      // share of the mark's ink clearing 3:1 counted):
+      //   square art with its own opaque ground, which the white-force
+      //   flattened to a solid white square: Aegean, Eurowings, Pegasus and
+      //   LEVEL's block mark (the /airline-tiles/ files are covered by the
+      //   folder rule in display-overrides.css, now that the class it keys on
+      //   is set);
+      //   colour marks that read on their card: Air Canada's rondelle (97%),
+      //   British Airways' stacked lockup (98%, whose red speedmarque is why
+      //   v23293 chose it) and the CityFlyer speedmarque (95%), Chair (98%),
+      //   LATAM (99%), Mokulele (92%), Caribbean (96%), Avelo (100%).
+      // Still white here: marks drawn white (Porter's p, the Delta Connection
+      // widget, Breeze's wordmark), where the filter changes nothing; and
+      // Jazz's J and Rouge's r, the letterforms the orb rules keep white.
+      // NOT SETTLED, and still whitened by this list: Frontier (0%),
+      // Icelandair (0%), Hawaiian (48%) and American's symbol (56%, also
+      // Piedmont, Envoy and PSA). Their colours disappear into their own card,
+      // so keeping the colours is not enough on its own; what they need is a
+      // different ground behind the mark, never a whitened mark.
+      var _FB_WELCOME_OWN_COLOURS = {
+        'AF':1,
+        'A3':1, 'EW':1, 'PC':1, 'LL':1,
+        'AC':1, 'AC1':1, 'ZX':1, '9M':1, '9L':1,
+        'BA':1, 'BAW':1, 'CJ':1,
+        'CS':1, '4C':1, 'JJ':1, 'LA':1, '9X':1, 'BW':1, 'XP':1
+      };
       // Welcome marks that ALREADY carry the carrier's name, so the sub line
       // below must stay empty or the card says it twice.
       var _FB_LOGO_HAS_NAME = { 'BA':1, 'BAW':1, 'MX':1 };

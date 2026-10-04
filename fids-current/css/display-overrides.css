@@ -19490,8 +19490,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    Rounded like the orb so it sits as a mark, not a swatch. ×14 over the ×12
    per-airline exemption that Flair carries. _FB_WELCOME_LOGO still wins for
    carriers that want something other than their tile there.
+
+   v23942 — the Welcome-card selector (img.gad-ad-logo) never matched: no
+   code set that class, so every tile still reached the card as a white
+   square. The renderer sets it now. PB-arrow is left out, as the orb leaves it out:
+   the one bare white arrow in the tiles folder, not a tile.
    ═══════════════════════════════════════════════════════════════════════ */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) img.gad-ad-logo[src*="/logos/airline-tiles/"],
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) img.gad-ad-logo[src*="/logos/airline-tiles/"]:not([src*="PB-arrow"]),
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .axr-logo img[src*="/logos/airline-tiles/"],
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) img.axr-hotel-svg[src*="/logos/airline-tiles/"] {
   filter: none !important;

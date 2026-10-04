@@ -107,3 +107,107 @@ test('every carrier named keeps an emblem that is not white to begin with', () =
     assert.ok(art.fills.some((f) => luminance(f) < 0.85), code + ': a white-only file needs no exemption');
   }
 });
+
+// ── v23942 — every other carrier that can reach the card ────────────────────
+
+const CSS = fs.readFileSync(path.join(PUB, 'css', 'display-overrides.css'), 'utf8');
+const TREATMENT = table('var LOGO_TREATMENT = {');
+
+// Every carrier must be accounted for: drawn white, a tile, named in
+// _FB_WELCOME_OWN_COLOURS, exempted elsewhere, or on one of the two lists
+// below. So a new colour emblem cannot be whitened by default unnoticed.
+//
+// The one recorded exception to "never whiten an emblem": single-colour
+// LETTERFORMS drawn to be inked white on their carrier's own ground (the orb
+// rules keep these white for the same reason).
+const LETTERFORMS_WHITE = {
+  QK: 'Jazz J',
+  RV: 'Rouge r; its burgundy also fails on the card',
+  ROU: 'Rouge r (ICAO form)'
+};
+
+// NOT A DECISION. Colour emblems this card still whitens, because their
+// colours disappear into their own card (share of ink at 3:1 or better).
+// Whitening them breaks the rule; the fix is a different ground behind the
+// mark. Listed so the set is visible and cannot grow, and pinned below so a
+// carrier leaves it only by being fixed.
+const STILL_WHITENED_OPEN = {
+  F9: 'Frontier green, 0% readable on its card',
+  FI: 'Icelandair navy fin, 0%',
+  HA: 'Hawaiian pualani, 48%',
+  AA: 'American flight symbol, 56% (American usually shows its own creative instead)',
+  PT: 'American flight symbol (Piedmont)',
+  MQ: 'American flight symbol (Envoy)',
+  OH: 'American flight symbol (PSA)'
+};
+
+function isWhiteOnly(file) {
+  if (!/\.svg$/i.test(file)) return false;
+  const text = fs.readFileSync(file, 'utf8');
+  const fills = (text.match(/fill(?:=")?:?\s*"?(#[0-9a-fA-F]{3,6}|rgb\([^)]*\)|currentColor|none)/g) || [])
+    .map((f) => f.replace(/^fill(=")?:?\s*"?/, '').toLowerCase());
+  return fills.length > 0 && fills.every((f) => ['#fff', '#ffffff', 'rgb(255,255,255)', 'none'].includes(f.replace(/\s/g, '')));
+}
+function cssExempt(url) {
+  const base = path.basename(url.split('?')[0]).replace(/\.[a-z]+$/i, '');
+  if (TREATMENT[base] === 'no_filter') return 'LOGO_TREATMENT no_filter';
+  if (CSS.includes('img[src*="' + base + '"]')) return 'display-overrides.css';
+  return '';
+}
+
+test('the renderer sets the class the Welcome-card CSS is written against', () => {
+  assert.match(SRC, /\+ '<img class="gad-ad-logo" src="' \+ ad\.logo \+ '" alt="" '/,
+    'without it the tile rule below never matches and tiles turn into white squares');
+  const at = CSS.indexOf('img.gad-ad-logo[src*="/logos/airline-tiles/"]:not([src*="PB-arrow"])');
+  assert.ok(at > 0, 'the tile rule keys on the folder, minus the one bare arrow in it');
+  const body = CSS.slice(at, CSS.indexOf('}', at));
+  assert.match(body, /filter: none !important;/);
+});
+
+test('every carrier that can reach the card is drawn white, a tile, in its own colours, a letterform, or on the open list', () => {
+  const codes = new Set([...Object.keys(EMBLEMS), ...Object.keys(WELCOME_LOGO)]);
+  const unexplained = [];
+  for (const code of codes) {
+    const url = WELCOME_LOGO[code] || EMBLEMS[code];
+    const file = path.join(PUB, url.split('?')[0]);
+    assert.ok(fs.existsSync(file), code + ': ' + url);
+    const tile = /\/logos\/airline-tiles\//.test(url) && !/PB-arrow/i.test(url);
+    const ok = tile || OWN[code] || isWhiteOnly(file) || cssExempt(url)
+      || LETTERFORMS_WHITE[code] || STILL_WHITENED_OPEN[code];
+    if (!ok) unexplained.push(code + ' ' + url);
+    if (OWN[code]) assert.ok(!tile, code + ': a tile is already covered by the folder rule');
+    if (LETTERFORMS_WHITE[code] || STILL_WHITENED_OPEN[code]) {
+      assert.ok(!OWN[code] && !tile, code + ': cannot be both whitened and kept in colour');
+    }
+  }
+  assert.deepEqual(unexplained, [], 'whitened on the Welcome card and on neither list');
+});
+
+test('the open list only shrinks', () => {
+  // A colour emblem that is still whitened is an open problem, not a choice.
+  // Nothing joins this list; a carrier leaves it when its card is fixed.
+  assert.deepEqual(Object.keys(STILL_WHITENED_OPEN).sort(),
+    ['AA', 'F9', 'FI', 'HA', 'MQ', 'OH', 'PT']);
+  for (const code of Object.keys(STILL_WHITENED_OPEN)) {
+    assert.ok(!isWhiteOnly(path.join(PUB, (WELCOME_LOGO[code] || EMBLEMS[code]).split('?')[0])),
+      code + ' is colour art, which is why it is open');
+  }
+});
+
+test('PAL shows its gold tile, not the white arrow drawn for the orb badge', () => {
+  assert.equal(WELCOME_LOGO.PB, '/logos/airline-tiles/PB.svg');
+  assert.equal(EMBLEMS.SP, '/logos/airline-tiles/PB.svg', 'the file PAL express already shows here');
+  assert.match(EMBLEMS.PB, /PB-arrow\.svg/, 'the orb keeps its arrow');
+});
+
+test('the colour marks named for the card read on it', () => {
+  // Measured on a canvas over each card's ground (share of ink at 3:1 or
+  // better); single-ink files are re-checked here from their fill.
+  for (const code of ['AC', 'AC1', 'ZX', '9M', '9L', '9X']) {
+    const art = welcomeArt(code);
+    assert.equal(art.fills.length, 1, code + ' is a single-ink mark');
+    for (const g of cardGround(code)) {
+      assert.ok(contrast(art.fills[0], g) >= 3, code + ' ' + art.fills[0] + ' on ' + g + ' = ' + contrast(art.fills[0], g).toFixed(2));
+    }
+  }
+});
