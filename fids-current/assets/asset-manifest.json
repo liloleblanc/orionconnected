@@ -2,11 +2,11 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2839,
+    "total": 2846,
     "by_category": {
       "ad": 12,
       "airline": 1444,
-      "background": 185,
+      "background": 192,
       "brand": 4,
       "hotel": 888,
       "livery": 96,
@@ -17947,12 +17947,34 @@
       "ext": "mp4"
     },
     {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-night-12821882-a.mp4",
+      "file": "wx-scene-storm-night-12821882-a.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm night 12821882 a",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
       "path": "/logos/Backgrounds/video/wx-scene-storm-night-12821882.mp4",
       "file": "wx-scene-storm-night-12821882.mp4",
       "category": "background",
       "subcategory": "airline-bg",
       "group": "Backgrounds (airline-themed)",
       "name": "wx scene storm night 12821882",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-night-2018910-a.mp4",
+      "file": "wx-scene-storm-night-2018910-a.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm night 2018910 a",
       "iata": "",
       "country": "",
       "ext": "mp4"
@@ -17980,6 +18002,50 @@
       "ext": "mp4"
     },
     {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-night-4915798-a.mp4",
+      "file": "wx-scene-storm-night-4915798-a.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm night 4915798 a",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-night-4915798-b.mp4",
+      "file": "wx-scene-storm-night-4915798-b.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm night 4915798 b",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-night-4915798-c.mp4",
+      "file": "wx-scene-storm-night-4915798-c.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm night 4915798 c",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-night-4915798-d.mp4",
+      "file": "wx-scene-storm-night-4915798-d.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm night 4915798 d",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
       "path": "/logos/Backgrounds/video/wx-scene-storm-night-4915798.mp4",
       "file": "wx-scene-storm-night-4915798.mp4",
       "category": "background",
@@ -17997,6 +18063,17 @@
       "subcategory": "airline-bg",
       "group": "Backgrounds (airline-themed)",
       "name": "wx scene storm night 5018766",
+      "iata": "",
+      "country": "",
+      "ext": "mp4"
+    },
+    {
+      "path": "/logos/Backgrounds/video/wx-scene-storm-night-82480163-c.mp4",
+      "file": "wx-scene-storm-night-82480163-c.mp4",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "wx scene storm night 82480163 c",
       "iata": "",
       "country": "",
       "ext": "mp4"
