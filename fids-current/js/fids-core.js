@@ -48481,8 +48481,10 @@ var _WX_SCENE_TAKES = {
   // every airport and the stream broadcasts them, so a take over the limit
   // is out of the rotation. Measured on the decoded files, the visible crop at
   // the size the card draws it (842x849, cover), every 1 s window including
-  // the loop seam: 12821882, 2018910, 4915798, 5018766, 82480163 and 85833526
-  // flicker 7-10 transitions a second (lightning restrikes); 4846434 has 1.
+  // the loop seam, by two independent methods (scripts/wx-scenes/flashcheck.swift
+  // and flashpairs.swift): 12821882, 2018910, 4915798, 5018766, 82480163 and
+  // 85833526 flicker 8-10 transitions a second (lightning restrikes, 4-5
+  // flashes); 4846434 has 1-2.
   // The files stay on disk (licensed footage, re-cuttable), only the draw
   // changes. Lightning itself stays, white. One take is all that passes, so
   // this slot does not shuffle until a replacement is measured and added.

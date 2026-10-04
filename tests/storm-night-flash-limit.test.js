@@ -12,13 +12,19 @@
 //
 // Measured on the DECODED files (AVFoundation), on the part the card shows
 // (cover-cropped into 842x849 at 1680x1050), every frame, every 1 s window
-// including the loop seam, by two methods that agree on the verdict:
+// including the loop seam, by two independent methods that agree on every
+// verdict:
 //   F  the mean luminance of every 10-degree field, through a 0.10 zig-zag
-//      (the verdict; zero false alarms on the 68 calm takes);
-//   C  per 8x8 cell, the concurrent area of cells in the same transition.
-// Max transitions in any 1 s (F / C):
-//   12821882  8 / 10   2018910  8 / 7    4915798  8 / 5    5018766  9 / 9
-//   82480163  9 / 5    85833526 10 / 8   4846434  1 / 2   (passes)
+//      (scripts/wx-scenes/flashcheck.swift, the F_field column);
+//   P  frame pairs: the longest alternating chain of transitions inside 1 s,
+//      each over >= 25% of a 10-degree field's cells, with the field's mean
+//      moving the same way (scripts/wx-scenes/flashpairs.swift).
+// Max transitions in any 1 s (F / P):
+//   12821882  8 / 10   2018910  8 / 8    4915798  8 / 8    5018766  9 / 8
+//   82480163  9 / 9    85833526 10 / 10  4846434  1 / 2   (passes)
+//   rain-night 74469118 0 / 0, 75453636 1 / 1, 77132356 3 / 3 (all pass)
+// The verdicts hold at the older 903x496 scene size too. No other take on
+// the card goes past 5 by P.
 // Lightning restrikes flicker at 7-10 Hz; that is what fails, not the colour.
 // Lightning stays white and allowed.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -47,7 +53,8 @@ const names = (list) => list.map((e) => (typeof e === 'object' ? e.f : e));
 
 // Max transitions in any 1 s, method F, at the card's drawn size. A take is
 // drawn only if it is listed here at 6 or fewer: a new take gets measured
-// before it can play (scripts/wx-scenes/flashcheck.swift, the F column).
+// before it can play (flashcheck.swift's F_field column, confirmed by
+// flashpairs.swift).
 const MEASURED = {
   'wx-scene-storm-night-4846434': 1,
   'wx-scene-rain-night-74469118': 0,

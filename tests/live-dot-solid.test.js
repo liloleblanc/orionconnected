@@ -72,3 +72,15 @@ test('the boards fetch the new stylesheets, not a cached blinking one', () => {
     }
   }
 });
+
+test('the companion app\'s "Live departures" dot holds still too', () => {
+  // The same light on the phone app (app.html .hint .live) pulsed a ring
+  // every 2.4 s. It is the same signal, so it follows the same rule.
+  const css = strip(read('app.html').match(/<style>([\s\S]*?)<\/style>/)[1]);
+  const rule = css.match(/\.hint \.live\s*\{([^}]*)\}/);
+  assert.ok(rule, 'app.html styles the Live departures dot');
+  const anim = rule[1].match(/animation(?:-name)?\s*:\s*([^;]+)/g) || [];
+  assert.ok(anim.length >= 1, 'it says animation: none outright');
+  for (const a of anim) assert.match(a, /:\s*none\s*$/, `app.html .hint .live: ${a}`);
+  assert.doesNotMatch(css, /@keyframes pulse\b/, 'the pulse keyframes are gone');
+});

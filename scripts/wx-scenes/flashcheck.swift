@@ -42,6 +42,9 @@ import CoreVideo
 //   the weather card draws its scene at 842 x 849 on a 1680x1050 board.
 // A take may join a night slot of _WX_SCENE_TAKES only at F <= 6, and goes
 // into MEASURED in tests/storm-night-flash-limit.test.js with its number.
+// Confirm with flashpairs.swift (frame pairs, the second method). C is kept
+// for diagnosis only: it folds overlapping runs together and can under-count
+// restrikes (4915798 and 82480163 read 5 by C, 8-9 by F and by flashpairs).
 
 let CELL = 8
 let TH = 0.10
