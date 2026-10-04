@@ -335,19 +335,345 @@ test('the accent pass applies the same rule to the code it paints', () => {
   assert.equal(run(false), 'rgb(122,255,148)', 'and is, as before, everywhere else');
 });
 
-test('an operator\'s mark with no half for a dark bar gets a white mount; the art is never recoloured', () => {
+// ── the operator's mark on the bar ──────────────────────────────────────────
+// The tables and the picker, as the board runs them.
+/** A top-level `var NAME = { ... };` table from fids-core.js, evaluated. */
+function varTable(name) {
+  const i = CORE.indexOf('var ' + name + ' = {');
+  assert.ok(i >= 0, name + ' must exist');
+  const j = CORE.indexOf('\n};', i);
+  return vm.runInNewContext('(' + CORE.slice(CORE.indexOf('{', i), j + 2) + ')');
+}
+const OP_WORDMARK = varTable('OPERATOR_WORDMARKS');
+const OP_LOGO = varTable('OPERATOR_LOGOS');
+const OP_PAIR = varTable('OPBY_WORDMARKS_THEMED');
+const ART_INK = varTable('OPBY_ART_INK');
+const PICK = vm.runInNewContext(RC2_SRC + '\nvar OPBY_ART_INK = ' + JSON.stringify(ART_INK) + ';\n' + fnSource('_opbyBarPick') + '\n_opbyBarPick;', { window: {} });
+const lumOf = (hex) => { const c = RC2._rc2Rgb(hex).map((v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+/** The board's luma cut (_opbyContrastFix's `dark` before the bar's ink speaks): luma under 140. */
+const lumaDarkOf = (hex) => { const [r, g, b] = RC2._rc2Rgb(hex); return 0.2126 * r + 0.7152 * g + 0.0722 * b < 140; };
+/** What the board puts on a carrier's bar for an operator: { bar, art, mount }. */
+function onBar(carrier, op) {
+  const p = RC2._rc2Pair(carrier, TABLES);
+  const dark = lumOf(p.ink) > lumOf(p.a);              // the bar's side, from its own ink
+  const r = PICK(OP_PAIR[op], OP_WORDMARK[op] || OP_LOGO[op], p.a, dark, lumaDarkOf(p.a));
+  return { bar: p.a, art: r.src, mount: r.mount };
+}
+// The two raster marks that reach a bar (GoJet and Envoy, no pair): their
+// opaque pixels' colours, commonest first, measured from the files. The hash
+// asks for a new measurement if a file changes.
+const RASTER_INK = {
+  '/logos/airlines/us-regional/Envoy.png': { sha256: 'c75f67e0eb8de39fe0f4e549f1ba7ca405e3b6f4fad2bc4d363d3a31ef65985d', ink: ['#282161', '#A41D30'] },
+  '/logos/airlines/us-regional/gojet.png': { sha256: '337b6d3850cfb7fb9dd8858e8178b3de5768d3298d9c1aaafa3f545b027fb874', ink: ['#1165B2', '#231F20'] },
+};
+/** The colours a file draws its mark in, against the ground: OPBY_ART_INK or RASTER_INK. */
+function inksOf(file) {
+  if (ART_INK[file]) return ART_INK[file];
+  if (RASTER_INK[file]) return RASTER_INK[file].ink;
+  return null;
+}
+/**
+ * Every colour an SVG file paints with, as #RRGGBB, resolved as a browser
+ * does: a shape's own fill (attribute, style or class) or else its nearest
+ * group's, and black when none says (Horizon's 'white' file draws its
+ * lettering that way); its stroke; a gradient fill counts every stop; a
+ * shape or group at opacity or fill-opacity 0 paints nothing; <defs> and the
+ * like paint nothing by themselves.
+ */
+function svgColours(file) {
+  const svg = fs.readFileSync(path.join(root, 'fids-current', file), 'utf8');
+  const six = (h) => {
+    h = String(h).trim().toLowerCase();
+    h = { white: '#ffffff', black: '#000000' }[h] || h;
+    if (!/^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/.test(h)) return null;
+    return '#' + (h.length === 4 ? h.slice(1).split('').map((c) => c + c).join('') : h.slice(1)).toUpperCase();
+  };
+  const cls = {};
+  for (const st of svg.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)) {
+    for (const r of st[1].matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+      for (const sel of r[1].split(',')) { const m = /\.([\w-]+)\s*$/.exec(sel.trim()); if (m) cls[m[1]] = (cls[m[1]] || '') + ';' + r[2]; }
+    }
+  }
+  const stops = {};
+  for (const g of svg.matchAll(/<(?:linear|radial)Gradient\b[^>]*\bid="([^"]+)"[^>]*>([\s\S]*?)<\/(?:linear|radial)Gradient>/gi)) {
+    stops[g[1]] = [...g[2].matchAll(/stop-color\s*[=:]\s*"?\s*(#[0-9a-f]{3,6}|white|black)/gi)].map((m) => six(m[1]));
+  }
+  const prop = (attrs, name) => {
+    const own = new RegExp('(?:^|\\s)' + name + '="([^"]*)"').exec(attrs);
+    const sty = new RegExp('(?:^|;)\\s*' + name + '\\s*:\\s*([^;]+)').exec((/style="([^"]*)"/.exec(attrs) || [])[1] || '');
+    let fromCls = null;
+    const c = /class="([^"]*)"/.exec(attrs);
+    if (c) for (const k of c[1].split(/\s+/)) { const m = new RegExp('(?:^|;)\\s*' + name + '\\s*:\\s*([^;]+)').exec(cls[k] || ''); if (m) fromCls = m[1]; }
+    return (sty && sty[1].trim()) || (fromCls && fromCls.trim()) || (own && own[1]) || null;
+  };
+  const SHAPE = /^(?:path|rect|circle|ellipse|polygon|polyline|line|text|tspan|use)$/i;
+  const NOPAINT = /^(?:defs|clipPath|mask|linearGradient|radialGradient|pattern|symbol|style|title|desc|metadata)$/i;
+  const out = new Set(), stack = [{ fill: '#000000', stroke: null, hidden: false, fillHidden: false }];
+  let skip = 0;
+  for (const m of svg.matchAll(/<(\/?)([a-zA-Z][\w:-]*)([^>]*?)(\/?)>/g)) {
+    const [, close, name, attrs, self] = m;
+    if (close) {
+      if (skip) { if (NOPAINT.test(name)) skip--; continue; }
+      if (stack.length > 1) stack.pop();
+      continue;
+    }
+    if (skip || NOPAINT.test(name)) { if (!self && NOPAINT.test(name)) skip++; continue; }
+    const top = stack[stack.length - 1];
+    const op = prop(attrs, 'opacity'), fop = prop(attrs, 'fill-opacity');
+    const node = {
+      fill: prop(attrs, 'fill') || top.fill, stroke: prop(attrs, 'stroke') || top.stroke,
+      hidden: top.hidden || (op !== null && Number(op) === 0), fillHidden: top.fillHidden || (fop !== null && Number(fop) === 0),
+    };
+    if (SHAPE.test(name) && !node.hidden) {
+      if (!node.fillHidden && node.fill !== 'none') {
+        const u = /url\(#([^)]+)\)/.exec(node.fill);
+        for (const h of (u ? (stops[u[1]] || []) : [six(node.fill)])) if (h) out.add(h);
+      }
+      if (node.stroke && node.stroke !== 'none' && six(node.stroke)) out.add(six(node.stroke));
+    }
+    if (!self) stack.push(node);
+  }
+  return out;
+}
+// Who flies for whom: the board's own table (_CS_REGIONAL_FAM: Jazz, Rouge
+// and PAL for Air Canada, Encore for WestJet, the US regionals for their
+// majors) and the contracts it lists under one carrier only (SkyWest flies
+// for all four US majors, Republic for three, GoJet for two), each operator
+// under its ICAO designator too, and Porter's affiliates.
+const FLIES_FOR = (() => {
+  const m = /var _CS_REGIONAL_FAM = (\{[^}]*\});/.exec(CORE);
+  assert.ok(m, '_CS_REGIONAL_FAM must exist');
+  const fam = vm.runInNewContext('(' + m[1] + ')');
+  const out = {};
+  const add = (carrier, op) => { (out[carrier] = out[carrier] || new Set()).add(op); };
+  for (const [op, carrier] of Object.entries(fam)) add(carrier, op);
+  [['DL', 'OO'], ['AA', 'OO'], ['AS', 'OO'], ['DL', 'YX'], ['AA', 'YX'], ['DL', 'G7'], ['PD', 'PTR']].forEach(([c, o]) => add(c, o));
+  const ICAO = { QK: 'JZA', RV: 'ROU', PB: 'PVL', WR: 'WEN', MQ: 'ENY', OH: 'PSA', PT: 'PDT', '9E': 'EDV', OO: 'SKW', YV: 'ASH', G7: 'GJS', YX: 'RPA', QX: 'QXE' };
+  for (const ops of Object.values(out)) for (const o of [...ops]) if (ICAO[o]) ops.add(ICAO[o]);
+  return out;
+})();
+
+test('the colours on file for each mark are the colours its file draws', () => {
+  // Every half of every pair is on file, and every art with no pair that
+  // reaches a bar (below).
+  for (const pr of Object.values(OP_PAIR)) for (const f of [pr.onDark, pr.onLight]) assert.ok(ART_INK[f], 'OPBY_ART_INK has ' + f);
+  // Drawn INSIDE a mark, never meeting the ground: the white sliver over the
+  // colour Encore leaf.
+  const INSIDE = { '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg': ['#FFFFFF'] };
+  for (const [file, inks] of Object.entries(ART_INK)) {
+    const drawn = svgColours(file);
+    for (const h of inks) {
+      assert.match(h, /^#[0-9A-F]{6}$/, file);
+      assert.ok(drawn.has(h), `${file} draws ${h}: ${[...drawn]}`);
+    }
+    for (const h of drawn) assert.ok(inks.includes(h) || (INSIDE[file] || []).includes(h), `${file} draws ${h}, which is not on file`);
+  }
+  // The white Encore file's teal copy of that sliver is drawn at fill-opacity 0: it paints nothing.
+  assert.deepEqual([...svgColours('/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg')], ['#FFFFFE']);
+  for (const [file, r] of Object.entries(RASTER_INK)) {
+    const sha = require('node:crypto').createHash('sha256').update(fs.readFileSync(path.join(root, 'fids-current', file))).digest('hex');
+    assert.equal(sha, r.sha256, file + ' changed: measure its colours again');
+  }
+});
+
+test('every operator that flies for a carrier reads on its bar: its half at 3:1, or on its white mount', () => {
+  let seen = 0, mounted = [];
+  for (const [carrier, ops] of Object.entries(FLIES_FOR)) {
+    for (const op of ops) {
+      if (!(OP_WORDMARK[op] || OP_LOGO[op])) continue;      // no mark on file: its name, in the bar's ink (4.5:1, above)
+      const r = onBar(carrier, op), at = `${op} for ${carrier} on ${r.bar}: ${r.art}${r.mount ? ' (mounted)' : ''}`;
+      const inks = inksOf(r.art);
+      assert.ok(inks, 'the colours of every mark that reaches a bar are on file: ' + at);
+      seen++;
+      if (!r.mount) {
+        for (const h of inks) assert.ok(RC2._rc2Contrast(h, r.bar) >= 3, `${h} at ${RC2._rc2Contrast(h, r.bar).toFixed(2)}:1 on the bar: ` + at);
+        continue;
+      }
+      mounted.push(op + '/' + carrier);
+      // On the mount: the art drawn for a light ground, on the white it was
+      // drawn for, its lettering at 3:1 or better.
+      const pair = OP_PAIR[op];
+      if (pair) assert.equal(r.art, pair.onLight, 'the half drawn for a light ground: ' + at);
+      else assert.doesNotMatch(r.art, /white|-light|monochrome/i, 'art drawn for a light ground: ' + at);
+      assert.ok(RC2._rc2Contrast(inks[0], '#FFFFFF') >= 3, `lettering ${inks[0]} at ${RC2._rc2Contrast(inks[0], '#FFFFFF').toFixed(2)}:1 on the mount: ` + at);
+    }
+  }
+  assert.ok(seen >= 40, `operators measured on their carriers' bars: ${seen}`);
+  // The mounted ones, exactly: Jazz on Air Canada's red, Encore on WestJet's
+  // teal, Porter's mark on PAL's blue, GoJet and Envoy on the US blues. Every
+  // other operator's half reads on its carrier's bar as it is.
+  assert.deepEqual(mounted.sort(), ['ENY/AA', 'G7/DL', 'G7/UA', 'GJS/DL', 'GJS/UA', 'JZA/AC', 'MQ/AA', 'QK/AC', 'SP/PB', 'WEN/WS', 'WR/WS']);
+});
+
+test('every paired operator, on every carrier\'s bar: its half at 3:1, or on its white mount', () => {
+  // Wider than who flies for whom today: every bar the board can paint, so a
+  // contract that changes never puts a half on a bar where it fails.
+  const codes = new Set([...Object.keys(TABLES.accent), ...Object.keys(TABLES.brand), ...Object.keys(TABLES.colors), ...Object.keys(RC2.RC2_PAIRS), '']);
+  for (const code of codes) {
+    for (const op of Object.keys(OP_PAIR)) {
+      const r = onBar(code, op), at = `${op} on ${code || '(none)'} ${r.bar}: ${r.art}`;
+      const inks = ART_INK[r.art];
+      if (r.mount) {
+        assert.equal(r.art, OP_PAIR[op].onLight, at);
+        assert.ok(RC2._rc2Contrast(inks[0], '#FFFFFF') >= 3, at);
+      } else {
+        for (const h of inks) assert.ok(RC2._rc2Contrast(h, r.bar) >= 3, `${h} ${RC2._rc2Contrast(h, r.bar).toFixed(2)}:1: ` + at);
+      }
+    }
+  }
+});
+
+test('every mark on file, on every bar: as v23940 put it, but on the five bars that change side and where a colour on file is under 3:1', () => {
+  // v23940's own decision, before the bar's ink gave the side: the luma cut;
+  // a pair's half for that side, never mounted; a mark with no pair mounted
+  // on a dark bar unless its file is drawn for one.
+  const v23940 = (bar, op) => {
+    const pair = OP_PAIR[op], src = OP_WORDMARK[op] || OP_LOGO[op], dark = lumaDarkOf(bar);
+    return { art: pair ? (dark ? pair.onDark : pair.onLight) : src, mount: !pair && dark && !/white|-light|monochrome/i.test(src) };
+  };
+  // The colours a file draws: on file, or measured from the SVG itself.
+  const drawn = (file) => inksOf(file) || (/\.svg$/i.test(file) ? [...svgColours(file)] : null);
+  const under3 = (file, bar) => (ART_INK[file] || []).some((h) => RC2._rc2Contrast(h, bar) < 3);
+  const codes = new Set([...Object.keys(TABLES.accent), ...Object.keys(TABLES.brand), ...Object.keys(TABLES.colors), ...Object.keys(RC2.RC2_PAIRS), 'WO', 'NK', 'Y9', 'SY', 'G4', 'ZZ', '']);
+  const bars = new Map();
+  for (const code of codes) { const p = RC2._rc2Pair(code, TABLES); if (!bars.has(p.a + p.ink)) bars.set(p.a + p.ink, { code, bar: p.a, ink: p.ink }); }
+  assert.ok(bars.size >= 50, `the bars the board can paint: ${bars.size}`);
+  // THE FIVE BARS THAT CHANGE SIDE: dark by the luma cut, light by their own
+  // ink (navy or slate words). None goes the other way.
+  const flips = [...bars.values()].filter((b) => lumaDarkOf(b.bar) !== (lumOf(b.ink) > lumOf(b.bar)));
+  for (const b of flips) assert.ok(lumaDarkOf(b.bar) && lumOf(b.ink) < lumOf(b.bar), 'dark to light only: ' + b.bar);
+  assert.deepEqual(flips.map((b) => b.bar).sort(), ['#008FD5', '#00A1DE', '#00A9CE', '#00B2A9', '#0EA5E9'],
+    "WestJet's teal, Canadian North's, JetBlue's and KLM's, Asiana's and Copa's");
+  const flipBars = new Set(flips.map((b) => b.bar));
+  const ops = [...new Set([...Object.keys(OP_WORDMARK), ...Object.keys(OP_LOGO), ...Object.keys(OP_PAIR)])];
+  let runs = 0, changed = 0;
+  for (const { code, bar } of bars.values()) {
+    for (const op of ops) {
+      const was = v23940(bar, op), now = onBar(code, op), pair = OP_PAIR[op];
+      const at = `${op} on ${code || '(none)'} ${bar}: ${was.art}${was.mount ? ' (mounted)' : ''} -> ${now.art}${now.mount ? ' (mounted)' : ''}`;
+      runs++;
+      if (!pair) {
+        // A mark with no pair keeps its art and v23940's mount, on every bar;
+        // one more mount only where a colour on file is under 3:1 there.
+        assert.equal(now.art, was.art, 'its art: ' + at);
+        assert.equal(now.mount, was.mount || under3(was.art, bar), 'its mount: ' + at);
+      } else {
+        // A pair's half changes side on the five bars only; the mount comes
+        // only where that half has a colour under 3:1, with the half drawn
+        // for a light ground on it.
+        const half = flipBars.has(bar) ? pair.onLight : was.art;
+        assert.equal(now.mount, under3(half, bar), 'its mount: ' + at);
+        assert.equal(now.art, now.mount ? pair.onLight : half, 'its half: ' + at);
+      }
+      if (now.art === was.art && now.mount === was.mount) continue;
+      changed++;
+      // Whatever changes reads, measured from the file that now reaches the bar.
+      const inks = drawn(now.art);
+      assert.ok(inks && inks.length, 'its colours: ' + at);
+      if (now.mount) {
+        assert.doesNotMatch(now.art, /white|-light/i, 'drawn for the white of the mount: ' + at);
+        assert.ok(RC2._rc2Contrast(inks[0], '#FFFFFF') >= 3, `lettering ${inks[0]} on the mount: ` + at);
+      } else {
+        for (const h of inks) assert.ok(RC2._rc2Contrast(h, bar) >= 3, `${h} ${RC2._rc2Contrast(h, bar).toFixed(2)}:1 on the bar: ` + at);
+      }
+    }
+  }
+  assert.ok(runs >= 2000, `marks on bars: ${runs}`);
+  assert.ok(changed > 0, 'the five bars and the 3:1 mounts change something');
+  // Why the luma side still mounts a mark with no pair: on the five bars these
+  // marks, whose colours are not on file, would sit bare at under 3:1 (GoJet,
+  // Envoy, Canadian North, First Air, Air North, Perimeter, Calm Air, Air
+  // Inuit, Pascan). v23940 mounted them there, and they stay mounted.
+  for (const b of flips) {
+    for (const op of ['G7', 'GJS', 'MQ', 'ENY', '5T', '7F', '4N', 'YP', 'PAG', 'MO', 'CAV', '3H', 'AIE', 'BQ', 'PSC']) {
+      const art = OP_WORDMARK[op] || OP_LOGO[op], bare = Math.min(...drawn(art).map((h) => RC2._rc2Contrast(h, b.bar)));
+      assert.ok(bare < 3, `${op} bare on ${b.bar}: ${bare.toFixed(2)}`);
+      assert.equal(onBar(b.code, op).mount, true, `${op} on ${b.code} ${b.bar} stays on its mount`);
+    }
+  }
+});
+
+test('Encore on WestJet\'s teal: neither half reads on the bar, so the colour half goes on its mount', () => {
+  const teal = RC2._rc2Pair('WS', TABLES).a;
+  const pr = OP_PAIR.WR;
+  // Why: the white half is 2.64:1 on the teal, and the colour half's teal
+  // lettering vanishes into it (its navy alone is 3.64:1).
+  assert.ok(RC2._rc2Contrast('#FFFFFE', teal) < 3, 'white on teal: ' + RC2._rc2Contrast('#FFFFFE', teal).toFixed(2));
+  assert.ok(RC2._rc2Contrast('#00AC9D', teal) < 1.1, 'teal on teal');
+  // The luma cut the rest of the board uses calls this teal dark (139.5 < 140);
+  // the bar's own ink, navy, says it is light.
+  const [r, g, b] = RC2._rc2Rgb(teal);
+  assert.ok(0.2126 * r + 0.7152 * g + 0.0722 * b < 140);
+  assert.ok(lumOf(RC2._rc2Pair('WS', TABLES).ink) < lumOf(teal));
+  for (const op of ['WR', 'WEN']) {
+    const got = onBar('WS', op);
+    assert.equal(got.mount, true, op);
+    assert.equal(got.art, pr.onLight, op + ': the colour half, drawn for white');
+  }
+  assert.ok(RC2._rc2Contrast('#00467F', '#FFFFFF') >= 9.5, 'its navy lettering on the mount: ' + RC2._rc2Contrast('#00467F', '#FFFFFF').toFixed(2));
+  // Unchanged where a half reads: Rouge and PAL white on Air Canada's red,
+  // the US regionals white on their majors' blues.
+  for (const [c, op] of [['AC', 'RV'], ['AC', 'PB'], ['DL', '9E'], ['UA', 'OO'], ['AA', 'PT'], ['AS', 'QX'], ['UA', 'YV']]) {
+    const got = onBar(c, op);
+    assert.equal(got.mount, false, op + ' on ' + c);
+    assert.equal(got.art, OP_PAIR[op].onDark, op + ' on ' + c);
+  }
+});
+
+test('the operator\'s mark takes the bar\'s side from the bar\'s own ink; the art is never recoloured', () => {
   const fix = fnSource('_opbyContrastFix');
-  assert.match(fix, /var _mount = !!\(_rcG2 && !pair && dark && !\/white\|-light\|monochrome\/i\.test\(im\.getAttribute\('src'\) \|\| ''\)\);/);
+  // The side, on the lower bar: the bar's ink against the bar.
+  assert.match(fix, /_rc2Rgb\(_csB\.getPropertyValue\('--rc2-a'\)\), _barK = _rc2Rgb\(_csB\.getPropertyValue\('--rc2-a-ink'\)\)/);
+  assert.match(fix, /if \(_barA && _barK && _barA\.join\(','\) === _rcG2\.join\(','\)\) \{/);
+  assert.match(fix, /dark = _Yb\(_barK\) > _Yb\(_barA\);/);
+  // The luma cut's side is kept before the ink overrides it, for the mount of a mark with no pair.
+  const keep = fix.indexOf('var _bar = null, _lumaDark = dark;');
+  assert.ok(keep > 0 && keep < fix.indexOf('dark = _Yb(_barK) > _Yb(_barA);'), 'the luma side is read before the ink side replaces it');
+  // The picker decides the art and the mount, on the lower panel only.
+  assert.match(fix, /var _pick = _bar \? _opbyBarPick\(pair, im\.getAttribute\('src'\), _bar, dark, _lumaDark\) : null;/);
+  assert.match(fix, /var _mount = !!\(_pick && _pick\.mount\);/);
   assert.match(fix, /im\.classList\.toggle\('v2-rc-opby-mount', _mount\)/);
+  assert.match(fix, /var want = _pick \? _pick\.src : \(dark \? pair\.onDark : pair\.onLight\);/);
   // Both branches still clear any filter: the art is drawn as published.
   assert.equal((fix.match(/im\.style\.setProperty\('filter', 'none', 'important'\);/g) || []).length, 2);
+  const pick = fnSource('_opbyBarPick');
+  assert.match(pick, /var mount = !pair && !!\(dark \|\| lumaDark\) && !\/white\|-light\|monochrome\/i\.test\(art\);/, 'v23940\'s rule for a mark with no pair stands, on the luma cut\'s dark side too');
+  assert.match(pick, /_rc2Contrast\(h, bar\) < 3/);
+  assert.match(pick, /if \(mount && pair\) art = pair\.onLight;/);
+  assert.doesNotMatch(pick + fix.slice(fix.indexOf('v23940 — ON THE LOWER PANEL'), fix.indexOf('v23332 — INLINE !important')), /brightness|invert\(|hue-rotate|grayscale/, 'no filter, no recolour');
+  // The mount: white, no filter.
   const mount = ruleFor('img.v2-rc-opby-logo.v2-rc-opby-mount');
   assert.match(mount, /background: #ffffff !important;/);
   assert.doesNotMatch(mount, /filter/);
-  // Jazz publishes no pair; PAL, Rouge and Encore do, and pick their half.
-  const themed = CORE.slice(CORE.indexOf('var OPBY_WORDMARKS_THEMED = {'), CORE.indexOf('function _opbyContrastFix'));
+  // Jazz publishes no pair; PAL, Rouge and Encore do.
+  const themed = CORE.slice(CORE.indexOf('var OPBY_WORDMARKS_THEMED = {'), CORE.indexOf('var OPBY_ART_INK = {'));
   assert.doesNotMatch(themed, /'QK':/);
   for (const op of ['PB', 'RV', 'WR']) assert.match(themed, new RegExp("'" + op + "':\\s*\\{ onDark:"));
+});
+
+test('the bars between the caption\'s words hold 3:1 on every bar, and stay lighter than the words', () => {
+  const body = ruleFor('.v2-rc-acb-cap :is(.v2-rc-acb-sep, .v2-rc-fi-sep)');
+  const m = /opacity: ([\d.]+) !important;/.exec(body);
+  assert.ok(m, 'the separators carry an opacity');
+  const op = Number(m[1]);
+  assert.ok(op < 1, 'lighter than the words, which are at full strength');
+  const codes = new Set([...Object.keys(TABLES.accent), ...Object.keys(TABLES.brand), ...Object.keys(TABLES.colors), ...Object.keys(RC2.RC2_PAIRS), 'WO', 'NK', 'Y9', 'SY', 'G4', 'ZZ', '']);
+  const hex = (c) => '#' + c.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('').toUpperCase();
+  let least = Infinity, at = '';
+  for (const code of codes) {
+    const p = RC2._rc2Pair(code, TABLES);
+    const ink = RC2._rc2Rgb(p.ink), bar = RC2._rc2Rgb(p.a);
+    const sep = hex(ink.map((v, i) => v * op + bar[i] * (1 - op)));
+    const cr = RC2._rc2Contrast(sep, p.a);
+    if (cr < least) { least = cr; at = `${code} ${p.a}`; }
+    assert.ok(cr >= 3, `${code}: the separator ${sep} on ${p.a} is ${cr.toFixed(2)}:1`);
+    assert.ok(cr < RC2._rc2Contrast(p.ink, p.a), code + ': quieter than the words');
+  }
+  assert.ok(least >= 3, `least ${least.toFixed(2)} on ${at}`);
+  // WestJet's teal, where 0.6 was 2.67:1.
+  const ws = RC2._rc2Pair('WS', TABLES);
+  const wsSep = hex(RC2._rc2Rgb(ws.ink).map((v, i) => v * op + RC2._rc2Rgb(ws.a)[i] * (1 - op)));
+  assert.ok(RC2._rc2Contrast(wsSep, ws.a) >= 3.8, 'WestJet: ' + RC2._rc2Contrast(wsSep, ws.a).toFixed(2));
 });
 
 test('the caption stays one row and writes its states as classes', () => {

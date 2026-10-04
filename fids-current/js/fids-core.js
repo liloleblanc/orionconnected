@@ -5552,6 +5552,69 @@ var OPBY_WORDMARKS_THEMED = {
   'WR':  { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' },
   'WEN': { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' }
 };
+// v23940 — THE COLOURS EACH MARK IS DRAWN IN, for the lower panel's
+// coloured caption bar (_rc2Pair's first colour). Every half above, and the
+// vector art with no pair of the operators that fly for a carrier with a bar
+// (Jazz, Porter's affiliates), as its file draws it against the ground: the
+// mark's own lettering first. A part drawn INSIDE the mark is left out,
+// because it never meets the bar: the white sliver in the colour Encore
+// leaf, and the white file's teal copy of it, which is drawn at fill-opacity
+// 0. Gradients count both their ends. GoJet's and Envoy's marks are bitmaps
+// with no pair; the dark-bar rule mounts them on the blues they fly under.
+// tests/gate-lower-two-colours.test.js reads every file (and measures the
+// two bitmaps) and holds this table to it.
+var OPBY_ART_INK = {
+  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg':  ['#FFFFFE'],
+  '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg': ['#00467F', '#00AC9D'],
+  '/logos/airlines/canadian/rouge-monochrome-white.svg':                  ['#FFFFFF'],
+  '/logos/airlines/canadian/rouge.svg':                                   ['#A21C37', '#EC1C2B'],
+  '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg':    ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg':    ['#1C3474'],
+  '/logos/airlines/canadian-regional/jazz-wordmark-color.svg':            ['#CE3728'],
+  '/logos/airlines/canadian/porter.svg':                                  ['#152C53'],
+  '/logos/airlines/us-regional/republic-wordmark-light.svg':              ['#FFFFFF'],
+  '/logos/airlines/us-regional/republic-wordmark-dark.svg':               ['#04243C'],
+  '/logos/airlines/us-regional/skywest-airlines-wordmark-light.svg':      ['#FFFFFF'],
+  '/logos/airlines/us-regional/skywest-airlines-wordmark-dark.svg':       ['#000000'],
+  '/logos/airlines/us-regional/piedmont-wordmark-light.svg':              ['#FFFFFF'],
+  '/logos/airlines/us-regional/piedmont-wordmark-dark.svg':               ['#000000'],
+  '/logos/airlines/us-regional/mesa-airlines.svg':                        ['#FFFFFF'],
+  '/logos/airlines/us-regional/mesa-airlines-monochrome-black.svg':       ['#000000'],
+  '/logos/airlines/us-regional/endeavor-air-monochrome-white.svg':        ['#FFFFFF'],
+  '/logos/airlines/us-regional/endeavor-air.svg':                         ['#002D52', '#D21C2D', '#AB1B2C'],
+  '/logos/airlines/us-regional/psa-airlines-monochrome-white.svg':        ['#FFFFFF'],
+  '/logos/airlines/us-regional/psa-airlines.svg':                         ['#1A4686', '#0AA5DE', '#D72027', '#981C1F', '#415364'],
+  // (the file named white draws its lettering in the default black: its only
+  // white is a background drawn at fill-opacity 0. On Alaska's blue that
+  // black is 4.2:1.)
+  '/logos/airlines/us-regional/horizon-air-monochrome-white.svg':         ['#000000'],
+  '/logos/airlines/us-regional/horizon-air-monochrome-black.svg':         ['#000000']
+};
+// v23940 — WHICH ART GOES ON THE LOWER PANEL'S BAR, AND WHETHER ON ITS MOUNT.
+// `bar` is the bar's colour, `dark` its side (the bar's own words are light),
+// `lumaDark` the side the board's luma cut (< 140) gives the same colour.
+// A published pair gives the half for that side, a mark with no pair keeps
+// its art. The art goes on its small white mount when it is drawn for a light
+// ground and the bar is dark (Jazz's red on Air Canada's red), or when any
+// colour it is drawn in is under 3:1 on the bar (OPBY_ART_INK): Encore on
+// WestJet's teal, where the white half is 2.64:1 and the colour half's teal
+// letters vanish. On the mount the art is the half drawn for a light ground,
+// on the white it was drawn for. Never a filter, never a recolour.
+// A mark with no pair keeps v23940's mount wherever EITHER side is dark. Five
+// bars are dark by the luma cut and light by their own ink (WestJet's teal
+// #00B2A9, Canadian North's #00A9CE, JetBlue's and KLM's #00A1DE, Asiana's
+// #008FD5, Copa's #0EA5E9): v23940 mounted marks with no pair there, and the
+// ones whose colours are not on file here (GoJet's, Envoy's, Canadian
+// North's, First Air's, Air North's...) would sit bare on them at 1.0 to
+// 2.8:1. Only a pair's half changes side on those five bars.
+function _opbyBarPick(pair, src, bar, dark, lumaDark) {
+  var art = pair ? (dark ? pair.onDark : pair.onLight) : String(src || '');
+  var mount = !pair && !!(dark || lumaDark) && !/white|-light|monochrome/i.test(art);
+  var inks = OPBY_ART_INK[art];
+  if (!mount && inks && inks.some(function (h) { return _rc2Contrast(h, bar) < 3; })) mount = true;
+  if (mount && pair) art = pair.onLight;
+  return { src: art, mount: mount };
+}
 function _opbyContrastFix(root) {
   try {
     var imgs = (root || document).querySelectorAll('img.v2-rc-opby-logo[data-op]');
@@ -5604,15 +5667,31 @@ function _opbyContrastFix(root) {
       var bg = 'rgb(' + Math.round(acc.r) + ',' + Math.round(acc.g) + ',' + Math.round(acc.b) + ')';
       var dark = layers.length ? ((0.2126 * acc.r + 0.7152 * acc.g + 0.0722 * acc.b) < 140) : false;
       var pair = OPBY_WORDMARKS_THEMED[op];
-      // v23940 — A MARK WITH NO HALF FOR THIS GROUND, ON THE LOWER PANEL'S
-      // COLOURED BAR. The caption bar is the carrier's first colour now
-      // (_rc2Pair), and an operator that publishes no light-ground/dark-ground
-      // pair keeps its art as drawn (below): Jazz's red lettering on Air
-      // Canada's red bar would vanish. The mark is never recoloured; it gets a
-      // small white mount instead (display-overrides.css, the v23940 block),
-      // only on a dark bar and only for art not drawn for one (a white or
-      // light file needs none).
-      var _mount = !!(_rcG2 && !pair && dark && !/white|-light|monochrome/i.test(im.getAttribute('src') || ''));
+      // v23940 — ON THE LOWER PANEL'S COLOURED BAR the bar's own words say
+      // which side it is on: their ink (--rc2-a-ink, from _rc2Pair) is light
+      // on a dark bar and dark on a light one. The luma cut above calls
+      // WestJet's teal (#00B2A9, luma 139.5) dark, and put Encore's white
+      // half on it at 2.64:1, where the bar's words are navy.
+      var _bar = null, _lumaDark = dark;
+      if (_rcG2 && typeof _rc2Rgb === 'function') {
+        var _csB = getComputedStyle(im);
+        var _barA = _rc2Rgb(_csB.getPropertyValue('--rc2-a')), _barK = _rc2Rgb(_csB.getPropertyValue('--rc2-a-ink'));
+        if (_barA && _barK && _barA.join(',') === _rcG2.join(',')) {
+          var _Yb = function (c) { return 0.2126 * _rc2Lin(c[0]) + 0.7152 * _rc2Lin(c[1]) + 0.0722 * _rc2Lin(c[2]); };
+          dark = _Yb(_barK) > _Yb(_barA);
+        }
+        _bar = '#' + _rcG2.map(function (v) { var h = Math.round(v).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
+      }
+      // v23940 — A MARK THAT DOES NOT READ ON THE BAR GOES ON A MOUNT. An
+      // operator that publishes no light-ground/dark-ground pair keeps its art
+      // as drawn (below), and Jazz's red lettering on Air Canada's red bar
+      // would vanish; a published half can fail too (Encore on WestJet's
+      // teal). The mark is never recoloured; it gets a small white mount
+      // instead (display-overrides.css, the v23940 block). _opbyBarPick
+      // decides, and names the art for the mount; a mark with no pair keeps
+      // its v23940 mount on the luma cut's dark side too (_lumaDark).
+      var _pick = _bar ? _opbyBarPick(pair, im.getAttribute('src'), _bar, dark, _lumaDark) : null;
+      var _mount = !!(_pick && _pick.mount);
       if (_mount !== im.classList.contains('v2-rc-opby-mount')) im.classList.toggle('v2-rc-opby-mount', _mount);
       // v23332 — INLINE !important, OR NOTHING THIS PASS DOES EVER APPLIES.
       // display-overrides.css carries the v23206 rule for the caption strip
@@ -5630,7 +5709,7 @@ function _opbyContrastFix(root) {
       // turns every opaque pixel white, exactly what a caption strip wants.
       // The light strip keeps v23206's colour art, filter none, as before.
       if (pair) {
-        var want = dark ? pair.onDark : pair.onLight;
+        var want = _pick ? _pick.src : (dark ? pair.onDark : pair.onLight);
         if (im.getAttribute('src') !== want) im.setAttribute('src', want);
         im.style.setProperty('filter', 'none', 'important');
       } else {
