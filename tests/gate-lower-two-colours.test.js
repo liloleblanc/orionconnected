@@ -2,7 +2,7 @@
 
 // WHY THIS EXISTS
 //
-// v23937: the gate screen's lower right panel (the aircraft picture, its
+// v23940: the gate screen's lower right panel (the aircraft picture, its
 // one-row caption and the Your Aircraft lines) in the airline's own two
 // colours, option 1 of the 2026-10-04 pick sheet. It replaces v23934's
 // banner-and-plates panel, which is taken out.
@@ -45,7 +45,7 @@ const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 // ── the block: its header to the end of its own last rule (the title's
 // separator), so a block appended after it is never swept into these guards.
-const AT = CSS.indexOf("v23937 — THE LOWER RIGHT PANEL IN THE AIRLINE'S OWN TWO COLOURS");
+const AT = CSS.indexOf("v23940 — THE LOWER RIGHT PANEL IN THE AIRLINE'S OWN TWO COLOURS");
 const START = AT >= 0 ? CSS.lastIndexOf('/*', AT) : -1;
 const LAST = AT >= 0 ? CSS.indexOf('.v2-fi-title:is(.v2-fi-title-warn, .v2-fi-title-good) .v2-fi-sep {', AT) : -1;
 const END = LAST >= 0 ? CSS.indexOf('\n}', LAST) + 2 : -1;
@@ -64,7 +64,7 @@ function rules(css) {
 /** Declarations of the block's rules with a selector ending in `tail`. */
 function ruleFor(tail) {
   const out = rules(RULES).filter((r) => r.sels.some((s) => s.endsWith(tail))).map((r) => r.body);
-  assert.ok(out.length, `no v23937 rule for ${tail}`);
+  assert.ok(out.length, `no v23940 rule for ${tail}`);
   return out.join('\n');
 }
 
@@ -106,7 +106,7 @@ const ALL_STATUS = [].concat(...Object.values(RC2.RC2_STATUS));
 const AC_FAMILY = ['AC', 'ACA', 'QK', 'JZA', 'RV', 'ROU'];
 
 test('the block is the house pattern: one booster on every selector, no :has(), nothing that moves', () => {
-  assert.ok(BLOCK.length > 0, 'the v23937 block exists');
+  assert.ok(BLOCK.length > 0, 'the v23940 block exists');
   assert.ok(AT > CSS.indexOf('v23926 — THE RIGHT COLUMN IS TWO PANELS'), 'after the v23926 panel it paints over');
   assert.ok(AT > CSS.indexOf('v23935 — THE DAY UNDER A GATE TIME'), 'and at the end of the file');
   const all = rules(RULES);

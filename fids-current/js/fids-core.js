@@ -2835,7 +2835,7 @@ function applyCodeAccents() {
       var bg = _caBgBehind(el);
       var ink = _caParse(getComputedStyle(el.parentElement || el).color) || null;
       var rgb = _caFit(accent, bg, ink);
-      // v23937 — on the lower right panel a code is never a status colour
+      // v23940 — on the lower right panel a code is never a status colour
       // (see _gateCodeInk, which applies the same rule to the colour it
       // lifts): Flair's lime is the On time green's family, Air Canada's red
       // the Cancelled red's. Such a code takes the area's white type.
@@ -5604,12 +5604,12 @@ function _opbyContrastFix(root) {
       var bg = 'rgb(' + Math.round(acc.r) + ',' + Math.round(acc.g) + ',' + Math.round(acc.b) + ')';
       var dark = layers.length ? ((0.2126 * acc.r + 0.7152 * acc.g + 0.0722 * acc.b) < 140) : false;
       var pair = OPBY_WORDMARKS_THEMED[op];
-      // v23937 — A MARK WITH NO HALF FOR THIS GROUND, ON THE LOWER PANEL'S
+      // v23940 — A MARK WITH NO HALF FOR THIS GROUND, ON THE LOWER PANEL'S
       // COLOURED BAR. The caption bar is the carrier's first colour now
       // (_rc2Pair), and an operator that publishes no light-ground/dark-ground
       // pair keeps its art as drawn (below): Jazz's red lettering on Air
       // Canada's red bar would vanish. The mark is never recoloured; it gets a
-      // small white mount instead (display-overrides.css, the v23937 block),
+      // small white mount instead (display-overrides.css, the v23940 block),
       // only on a dark bar and only for art not drawn for one (a white or
       // light file needs none).
       var _mount = !!(_rcG2 && !pair && dark && !/white|-light|monochrome/i.test(im.getAttribute('src') || ''));
@@ -11438,7 +11438,7 @@ function _buildV2MapCol(ctx, vars) {
         // an early revision before midnight is tonight's even when its
         // schedule is not. It is a plain mline2, so the card's line fitter
         // sizes it with the time above it; '' when there is no day.
-        // (v23937 — joined with +, as the card's other lines are: v23935 wrote
+        // (v23940 — joined with +, as the card's other lines are: v23935 wrote
         // it as an element of v23934's line list, and in this concatenation
         // a comma ended the card after its time line.)
         +         (function () {
@@ -12475,7 +12475,7 @@ function _buildV2MapCol(ctx, vars) {
       // it the pending words were laid over the operator's label and mark
       // (seen on YHZ gate 58, a PAL-operated Air Canada flight).
       var _capCls = 'v2-rc-acb-cap' + (_acKnown ? '' : ' is-pending') + (_opByVal ? ' has-op' : '')
-        // v23937 — and two more states the two-colour block lays out by: a
+        // v23940 — and two more states the two-colour block lays out by: a
         // registration beside the model (the separator is in the value), and
         // an operator whose wordmark is far wider than it is tall (PAL 6.2:1,
         // SkyWest 4.3:1, Encore 4.25:1), which takes its own row layout.
@@ -15762,7 +15762,7 @@ function uxgGateHtml(ctx) {
          })(_bannerSpec)
        // v23926 — what the lower right panel's type sits on (see above).
        + ';--rc-ground-ink:' + _gateLowerInkGround
-       // v23937 — the lower right panel's two colours (_rc2Pair): the caption
+       // v23940 — the lower right panel's two colours (_rc2Pair): the caption
        // bar, the type on it, and the Your Aircraft area under it.
        + (function () {
            var p = _rc2Pair(airlineCode);
@@ -17432,14 +17432,14 @@ function _rcLowerGround(el) {
     return [0, 2, 4].map(function (i) { return parseInt(m[1].slice(i, i + 2), 16); });
   } catch (e) { return null; }
 }
-// v23937 — THE LOWER RIGHT PANEL IN THE AIRLINE'S OWN TWO COLOURS.
+// v23940 — THE LOWER RIGHT PANEL IN THE AIRLINE'S OWN TWO COLOURS.
 // The gate screen's lower right panel (the aircraft picture, its one-row
 // caption, the Your Aircraft lines) is painted in two of the carrier's own
 // colours: the caption bar across the foot of the picture in the first (the
 // brighter one, `a`, with the ink `ink` for every word on it), and the area
 // under it, which holds the carrier's orb, the title and the inbound lines,
 // in the second (the darker one, `b`, white words and the status words in
-// their status colours). display-overrides.css (the v23937 block) paints
+// their status colours). display-overrides.css (the v23940 block) paints
 // them from the custom properties uxgGateHtml writes on .g8-wrap
 // (--rc2-a, --rc2-a-ink, --rc2-b), and publishes each one as the
 // --rc-ground-ink of the part it paints, so the ink passes (_opbyContrastFix
@@ -17666,7 +17666,7 @@ function _gateCodeInk(root) {
       // the sheet's lighter top edge; the hue is kept, as everywhere else.
       var _onSheet = !!(el.closest && el.closest('.gad-map-col-v2 > .v2-rc-shelf-fi'));
       var _floor = _onSheet ? 4.8 : FLOOR, _target = _onSheet ? 5 : TARGET;
-      // v23937 — ON THE LOWER PANEL A CODE IS NEVER A STATUS COLOUR. The code
+      // v23940 — ON THE LOWER PANEL A CODE IS NEVER A STATUS COLOUR. The code
       // ends the inbound's first line ('AC1984 from | de Toronto | YYZ'),
       // right over the status words, and the panel's second colour is the
       // carrier's own dark (_rc2Pair). In the carrier's accent, lifted for
@@ -17697,7 +17697,7 @@ function _gateCodeInk(root) {
       }
       var best = fg, bestCr = base;
       if (_safeFg !== fg) {
-        best = _safeFg;                                // v23937 — a status colour on the lower panel
+        best = _safeFg;                                // v23940 — a status colour on the lower panel
       } else {
         var hsl = _ocToHsl(fg[0], fg[1], fg[2]);
         var up = _ocLum(bg) < 0.5;                     // dark ground lift, light ground deepen
@@ -17709,7 +17709,7 @@ function _gateCodeInk(root) {
           if (cr >= _target) break;
         }
         if (bestCr <= base) continue;                  // nothing better available — keep the brand colour
-        best = _stSafe(best);                          // (v23937 — and lifted, still no status colour)
+        best = _stSafe(best);                          // (v23940 — and lifted, still no status colour)
       }
       var css = 'rgb(' + best[0] + ', ' + best[1] + ', ' + best[2] + ')';
       el.dataset.inkApplied = '1';

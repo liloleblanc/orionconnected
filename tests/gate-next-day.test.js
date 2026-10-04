@@ -107,7 +107,7 @@ test('the three rail times each carry their own day line, inside the value the f
 
 test('the Your Aircraft card dates the inbound by the time it prints first', () => {
   assert.match(CORE, /var _dwI = _gateDayWords\(_ibShownTs, vars\.tz, _frF\);\s*return _dwI \? '<div class="v2-fi-mline2">' \+ _gateDayLineHtml\(_dwI\) \+ '<\/div>' : '';\s*\}\)\(\)/);
-  // v23937 — the card is one string concatenation again (v23934's line list
+  // v23940 — the card is one string concatenation again (v23934's line list
   // is gone), so the day line is joined with '+' between the time line and
   // the status line. A comma there ends the card after its time line: the
   // assignment takes everything before it, and the status line and the

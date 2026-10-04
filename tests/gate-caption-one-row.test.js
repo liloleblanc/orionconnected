@@ -127,7 +127,7 @@ test('the row comes down as one before the model does, as far as v23904', () => 
 });
 
 test('the band says what it holds: the pending words never sit under the operator', () => {
-  // (v23937 adds two more states after these, has-reg and has-widemark;
+  // (v23940 adds two more states after these, has-reg and has-widemark;
   // tests/gate-lower-two-colours.test.js pins them.)
   assert.match(CORE, /var _capCls = 'v2-rc-acb-cap' \+ \(_acKnown \? '' : ' is-pending'\) \+ \(_opByVal \? ' has-op' : ''\)\s*(?:\/\/[^\n]*\s*)*\+ /);
   assert.match(CORE, /'<div class="' \+ _capCls \+ '">' \+ _typeCellHtml \+ '<\/div>'/);
