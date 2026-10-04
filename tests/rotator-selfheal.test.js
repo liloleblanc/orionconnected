@@ -45,7 +45,7 @@ test('checkSelf does not depend on headers the CDN omits', () => {
   assert.doesNotMatch(fn, /method:\s*'HEAD'/,
     'a HEAD gives no body to fall back on when /rotate carries no etag');
   assert.match(fn, /r\.text\(\)/, 'it must be able to signature the body');
-  // v23950 — the hashing moved into selfSigOf (see the Cloudflare tests below).
+  // v23965 — the hashing moved into selfSigOf (see the Cloudflare tests below).
   const sf = ROTATE.slice(ROTATE.indexOf('function selfSigOf('), at);
   assert.match(sf, /charCodeAt/, 'the body fallback must actually hash the bytes');
 });
@@ -70,7 +70,7 @@ test('the body hash changes when the page changes, and only then', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v23950 — CLOUDFLARE EDITS THE PAGE; THE SIGNATURE MUST NOT SEE ITS EDITS.
+// v23965 — CLOUDFLARE EDITS THE PAGE; THE SIGNATURE MUST NOT SEE ITS EDITS.
 //
 // Measured on production on 2026-10-04. /rotate is served with a script of
 // Cloudflare's own appended before </body> (its bot check), carrying a new

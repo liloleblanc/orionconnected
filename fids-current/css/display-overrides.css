@@ -2442,7 +2442,7 @@ html.fids-stream #fidsBoard {
 html.fids-stream .content-area { flex: 1 1 auto !important; overflow: hidden !important; }
 html.fids-stream .ticker { flex: 0 0 auto !important; }
 
-/* v23950 — THE STREAM SETS IN THE AIRPORT'S OWN FONT, LIKE THE BOARD.
+/* v23965 — THE STREAM SETS IN THE AIRPORT'S OWN FONT, LIKE THE BOARD.
    Two rules used to sit here that forced AC Nord on every element of every
    streamed board — `--font-primary` and a `font-family: … !important` sweep
    under html.fids-stream — whatever font the airport was assigned. They were
@@ -16495,7 +16495,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    drawn Regular rather than a synthesised thin. tabular-nums keeps the five
    tiles' digits on a common rhythm so the row does not jitter between two-
    and three-character temperatures.
-   v23950 — the family is the board's own (var(--font-primary)), no longer a
+   v23965 — the family is the board's own (var(--font-primary)), no longer a
    literal AC Nord: see "THE WEATHER CARD SETS IN THE BOARD'S OWN FACE". */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht {
@@ -16992,7 +16992,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    The Merriweather webfont fetched for the earlier pass is removed with this
    change; there is no point shipping 170KB of unused face to every board.
 
-   v23950 — THE BOARD'S FACE IS NOW THE AIRPORT'S, SO THE CARD FOLLOWS IT.
+   v23965 — THE BOARD'S FACE IS NOW THE AIRPORT'S, SO THE CARD FOLLOWS IT.
    The reasoning above was "match the board", and at the time the board was
    AC Nord everywhere. The face is now chosen per airport (Bricolage
    Grotesque unless Customize says otherwise), and a literal AC Nord here
@@ -18126,7 +18126,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    the end of the title ("Destination | YYC"). The code moves into the orb, and
    the title goes back to being a clean bilingual pair.
 
-   v23950 — set in the board's face (var(--font-primary)) like the rest of the
+   v23965 — set in the board's face (var(--font-primary)) like the rest of the
    rail, not a literal AC Nord.
 
    Sized with cqw-free arithmetic: 0.30 of the orb's own height, so it tracks

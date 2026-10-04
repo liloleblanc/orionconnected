@@ -1,6 +1,6 @@
 'use strict';
 
-// v23950 — PICKING "DEFAULT" IN THE FONT PICKER CLEARS THE AIRPORT'S FONT.
+// v23965 — PICKING "DEFAULT" IN THE FONT PICKER CLEARS THE AIRPORT'S FONT.
 //
 // cuApplyAndSave merges the form over what is stored, and _cuReadForm only
 // writes a font when one is picked. So choosing Default in Customize left the

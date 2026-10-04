@@ -2125,7 +2125,7 @@ function _cuReadForm() {
   return p;
 }
 
-// v23950 — what the font picker shows for a saved key. The ac-nord-* options
+// v23965 — what the font picker shows for a saved key. The ac-nord-* options
 // are gone (AC Nord is retired as a board face; fidsLiveFontKey in
 // fids-core.js resolves those keys to the board default), so setting the
 // select to one of them matched no option and left the box blank, and the
@@ -2226,7 +2226,7 @@ function cuSetPosition(pos) {
 function cuFontChanged() {
   var sel = document.getElementById('cuFontSelect');
   if (!sel) return;
-  _cuFontExplicitDefault = (sel.value === '');   // v23950 — see cuApplyAndSave
+  _cuFontExplicitDefault = (sel.value === '');   // v23965 — see cuApplyAndSave
   _cuApplyFont(sel.value);
   cuApplyAndSave();
 }
@@ -2282,7 +2282,7 @@ function _cuApplyFont(fontKey) {
     'ginto-nord-ultra':    "'ABC Ginto Nord Ultra', 'ABC Ginto Nord', sans-serif",
     'ginto-nord-hairline': "'ABC Ginto Nord Hairline', 'ABC Ginto Nord', sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
-    // v23950 — no ac-nord-* stacks: AC Nord is retired as a board face and
+    // v23965 — no ac-nord-* stacks: AC Nord is retired as a board face and
     // those keys resolve to 'bricolage' (fidsLiveFontKey in fids-core.js), so
     // the panel's preview shows what the board and the stream will show.
     'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
@@ -2519,7 +2519,7 @@ function _cuApplyDisplayMode(mode) {
 
 // Save form, then re-apply config to the live board
 var _cuThemeExplicitDefault = false;
-// v23950 — PICKING "DEFAULT" IN THE FONT PICKER CLEARS THE AIRPORT'S FONT.
+// v23965 — PICKING "DEFAULT" IN THE FONT PICKER CLEARS THE AIRPORT'S FONT.
 // The save below merges the form over what is stored, and _cuReadForm only
 // writes a font when one is picked, so choosing Default left the old pick in
 // place on this device and in the airport config: the picker said Default
@@ -2544,7 +2544,7 @@ function cuApplyAndSave() {
   if (form.theme && !form.themePresetId) delete prefs.themePresetId;
   // Explicitly choosing "Use airport default" is the ONE case that clears it.
   if (_cuThemeExplicitDefault) { prefs.theme = ''; delete prefs.themePresetId; _cuThemeExplicitDefault = false; }
-  // v23950 — and the font's explicit Default. An empty string, not a delete:
+  // v23965 — and the font's explicit Default. An empty string, not a delete:
   // _cuCloudPush only sends fields that are defined, and the airport config
   // has to be told the font is cleared or the boards keep reading the old one.
   if (_cuFontExplicitDefault) { prefs.font = ''; _cuFontExplicitDefault = false; }

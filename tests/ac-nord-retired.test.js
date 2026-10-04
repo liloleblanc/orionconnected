@@ -1,6 +1,6 @@
 'use strict';
 
-// v23950 — AC NORD IS RETIRED AS A BOARD FACE.
+// v23965 — AC NORD IS RETIRED AS A BOARD FACE.
 //
 // AC Nord is Accor's brand typeface. It was the face of every board until the
 // default moved to Bricolage Grotesque (v23870-72). On 2026-10-04, 36 of the
@@ -159,7 +159,7 @@ test('the boot loader sets in the board default, not AC Nord', () => {
 // shows an empty box, and the menu bar copies that blank value. This runs the
 // real _cuPaintForm against a select holding menu.html's real options.
 const PAINT = (() => {
-  const at = MENU_JS.indexOf('// v23950 — what the font picker shows for a saved key.');
+  const at = MENU_JS.indexOf('// v23965 — what the font picker shows for a saved key.');
   assert.ok(at >= 0, 'menu.js must carry _cuPickerFontKey');
   const fn = MENU_JS.indexOf('function _cuPaintForm(prefs) {', at);
   const end = MENU_JS.indexOf('\n}\n', fn) + 3;

@@ -260,7 +260,7 @@
       // the night, which is exactly the empty screen seen on the stream.
       // Touring is the safe default: a bare rotate.html now walks the working
       // airports, and a single airport still happens whenever ap= asks for one.
-      // v23950 — moved up from below the dry dock, so the dock applies to this
+      // v23965 — moved up from below the dry dock, so the dock applies to this
       // fallback too. It used to run after the dock filter, so a bare
       // rotate.html (or one aimed only at a dead airport) toured docked airports.
       if (aps.length === 0) aps = TOUR_DEFAULT.slice();
@@ -318,7 +318,7 @@
       // nothing below may start from an empty list.
       if (aps.length === 0) aps = TOUR_DEFAULT.slice();
 
-      // v23950 — A RESTART PICKS THE TOUR UP WHERE IT LEFT OFF.
+      // v23965 — A RESTART PICKS THE TOUR UP WHERE IT LEFT OFF.
       //
       // Every load of this page used to start the tour at aps[0] (Chicago).
       // A tour of 26 airports at 4–8 minutes each takes two to three and a
@@ -365,7 +365,7 @@
       // v23828 — what this run ended up showing, frozen for the poll to read.
       // The poll must never reference `aps`: advance() indexes it live, and a
       // reader today is a splicer tomorrow. This copy cannot affect it.
-      // v23950 — taken after the fallback and the resume above, so it is the
+      // v23965 — taken after the fallback and the resume above, so it is the
       // run as it will actually play (it was an empty list on a bare tour).
       try { window._runOnAir = aps.slice(); } catch (e) {}
       var isTour = aps.length > 1;
@@ -470,7 +470,7 @@
       }
 
       var apIdx = 0, idx = 0;
-      // v23950 — write down where a restart should pick the tour up: the
+      // v23965 — write down where a restart should pick the tour up: the
       // airport AFTER the one now on air (read back in the selection block).
       // Called when the run starts and every time a new airport comes up, so
       // a reload at any moment resumes one airport further on, never earlier.
@@ -497,11 +497,11 @@
       // whether the page around it is current. A rotator older than 23422
       // cannot reload itself when it is pinned to one airport, so the board
       // rescues it (see fids-core.js).
-      // v23950 — raised together with _OC_ROTATOR_MIN in fids-core.js, so the
+      // v23965 — raised together with _OC_ROTATOR_MIN in fids-core.js, so the
       // running boxes swap to this copy within minutes of the deploy: the copy
       // they run now reloads on Cloudflare's edits rather than on ours (see
       // selfSigOf below).
-      try { window.__ocRotatorVer = 23950; } catch (e) {}
+      try { window.__ocRotatorVer = 23965; } catch (e) {}
       var selfSig = null, reloadPending = false;
       // v23518 — THE SELF-REFRESH WAS INERT IN PRODUCTION. Measured on the live
       // site: https://fids.orionconnected.com/rotate answers 200 with
@@ -517,7 +517,7 @@
       // one request every 30 minutes, now a GET so there is a body to hash.
       // Headers are still preferred when present — cheaper and exact.
       //
-      // v23950 — THE SIGNATURE IS OF THE PAGE AS WE WROTE IT, NOT AS SERVED.
+      // v23965 — THE SIGNATURE IS OF THE PAGE AS WE WROTE IT, NOT AS SERVED.
       //
       // Measured on production on 2026-10-04: Cloudflare appends a script of its
       // own just before </body> (its bot check), and that script carries a new
@@ -621,7 +621,7 @@
                 location.reload();
                 return;
               }
-              // v23950 — A COLD PAGE WITH NOTHING DOCKED ON AIR HAS NOTHING TO
+              // v23965 — A COLD PAGE WITH NOTHING DOCKED ON AIR HAS NOTHING TO
               // APPLY. With no copy cached when this run was built, the run
               // was built with no dock at all; if none of the docked airports
               // is in it, it is already exactly the run the dock would give,
@@ -701,7 +701,7 @@
         slotStart = Date.now();          // the dwell starts when it is VISIBLE
         if (retire) {
           airportStart = Date.now();   // new airport is on screen
-          noteTourNext();              // v23950 — a restart from here resumes at the next one
+          noteTourNext();              // v23965 — a restart from here resumes at the next one
           // The previous airport is fully off screen: free its frames, and
           // finish loading the rest of this airport's pages behind the one
           // now showing.
@@ -713,7 +713,7 @@
         if (isTour && idx === seq.length - 1) ensureFrame(aps[(apIdx + 1) % aps.length], seq[0]);
       }
 
-      // v23950 — THE SKIP HAS ITS OWN CURSOR; apIdx STAYS ON THE AIRPORT ON AIR.
+      // v23965 — THE SKIP HAS ITS OWN CURSOR; apIdx STAYS ON THE AIRPORT ON AIR.
       //
       // The empty-airport skip below used to walk apIdx itself. Its first step
       // set apIdx to the airport it was skipping and picked that same airport
@@ -765,7 +765,7 @@
         // night everywhere still shows a board rather than stalling on black:
         // once every other airport has been passed over, the last one tried
         // is shown, empty or not.
-        // v23950 — the candidate moves (nextApIdx, held in skipAt across
+        // v23965 — the candidate moves (nextApIdx, held in skipAt across
         // beats); apIdx does not. See "THE SKIP HAS ITS OWN CURSOR" above.
         if (nextAp !== curAp && isTour && isReady(nxt) && !hasFlights(nxt)) {
           while (skipCount < aps.length - 2) {

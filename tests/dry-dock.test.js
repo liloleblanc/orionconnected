@@ -289,7 +289,7 @@ test('the on-air snapshot is a copy, never the live list', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v23950 — A COLD PAGE DOES NOT RELOAD FOR A DOCK THAT CHANGES NOTHING ON AIR.
+// v23965 — A COLD PAGE DOES NOT RELOAD FOR A DOCK THAT CHANGES NOTHING ON AIR.
 //
 // On a fresh profile the run is built before any copy of the dock is cached,
 // so the first poll always "sees a change". It used to raise reloadPending

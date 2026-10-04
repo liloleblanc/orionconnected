@@ -32,7 +32,7 @@ assert.ok(from >= 0 && to > from, 'rotate.html must still contain the airport-se
 const BLOCK = HTML.slice(from, to) + 'var isTour = aps.length > 1;';
 
 // A stand-in for the box's Local Storage. The selection block reads two keys
-// from it (the dry dock and, since v23950, where the tour should resume); a
+// from it (the dry dock and, since v23965, where the tour should resume); a
 // fresh one is an empty profile.
 function store(init) {
   const m = new Map(Object.entries(init || {}));
@@ -127,7 +127,7 @@ test('tour=1 still forces the tour, tour=0 still opts out, tour=LIST still works
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// v23950 — A RESTART PICKS THE TOUR UP WHERE IT LEFT OFF.
+// v23965 — A RESTART PICKS THE TOUR UP WHERE IT LEFT OFF.
 //
 // Ottawa was reported working on its own board and missing from the stream.
 // Its feed and its boards were fine on the tour; what kept it off the air was
@@ -226,7 +226,7 @@ test('the resume only chooses the start; nothing reorders the live list afterwar
     'and when the run starts, so a restart during the first airport moves on too');
 });
 
-// v23950 — the bare-tour fallback runs before the dry dock, so the dock
+// v23965 — the bare-tour fallback runs before the dry dock, so the dock
 // applies to it. It used to run after, so a bare rotate.html (and a stream
 // aimed only at a dead airport) toured docked airports.
 test('a bare tour, and a tour that replaced a dead airport, both leave docked airports out', () => {

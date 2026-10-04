@@ -1,6 +1,6 @@
 'use strict';
 
-// v23950 — THE STREAM SHOWS THE FONT THE AIRPORT IS ASSIGNED, LIKE THE BOARD.
+// v23965 — THE STREAM SHOWS THE FONT THE AIRPORT IS ASSIGNED, LIKE THE BOARD.
 //
 // Reported: the fonts on the stream were not the ones assigned on the live
 // boards; AC Nord showed on the stream where an airport's live board had

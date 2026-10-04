@@ -1427,7 +1427,7 @@ function changeFont(f) {
   //
   // Set on BODY and WITHOUT !important. (v23386 kept it non-important so it
   // would yield to a stream-only `html.fids-stream body { --font-primary:
-  // AC Nord … !important }` rule. v23950 removed that rule — it put AC Nord
+  // AC Nord … !important }` rule. v23965 removed that rule — it put AC Nord
   // on every streamed board whatever the airport was assigned — so a stream
   // and a wall board now resolve the font the same way. Non-important is
   // still right: it beats the :root default and nothing else needs beating.)
@@ -1527,7 +1527,7 @@ var FIDS_FONT_STACKS = {
   'system':        "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   'mono':          "'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace"
 };
-// ── v23950 — AC NORD IS RETIRED AS A BOARD FACE ────────────────────────────
+// ── v23965 — AC NORD IS RETIRED AS A BOARD FACE ────────────────────────────
 // AC Nord is Accor's brand typeface. It was the face of every board until the
 // default moved to Bricolage Grotesque (v23870-72, SIL OFL). Picks saved in
 // the airport config still name it (ac-nord-display-bold, -medium,
@@ -1592,7 +1592,7 @@ function restoreFontChoice(defaultFont) {
       if (_urlFont) {
         _stack = FIDS_FONT_STACKS[_urlFont];
       } else if (_cfg && _cfg.font) {
-        var _cfgFont = fidsLiveFontKey(_cfg.font);   // v23950 — retired AC Nord → default
+        var _cfgFont = fidsLiveFontKey(_cfg.font);   // v23965 — retired AC Nord → default
         if (FIDS_FONT_STACKS[_cfgFont]) {
           _stack = FIDS_FONT_STACKS[_cfgFont];
         } else if (String(_cfg.font).indexOf('custom:') === 0) {
@@ -1604,7 +1604,7 @@ function restoreFontChoice(defaultFont) {
       }
       if (_stack) {
         // v23386 made this non-important so it would yield to a stream-only
-        // AC Nord rule in display-overrides.css. v23950 removed that rule, so
+        // AC Nord rule in display-overrides.css. v23965 removed that rule, so
         // the stream now shows this same configured font; non-important still
         // beats the :root default, which is all it has to do.
         document.body.style.setProperty('--font-primary', _stack);
@@ -1618,7 +1618,7 @@ function restoreFontChoice(defaultFont) {
   } catch (e) {}
   var f = '';
   try { f = localStorage.getItem('fids_font_choice') || ''; } catch (e) {}
-  // v23950 — a device-saved AC Nord family is retired with the keys above.
+  // v23965 — a device-saved AC Nord family is retired with the keys above.
   if (/^'?ac nord/i.test(f)) f = '';
   changeFont(f || defaultFont || 'Bricolage Grotesque');  // the board default
 }
@@ -27204,7 +27204,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23955';
+var FIDS_BUILD_TAG = 'v23965';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27313,7 +27313,7 @@ var _BIDSV3_ON = true; //
     // once every 10 minutes. A current rotator publishes __ocRotatorVer and is
     // never touched, so this goes quiet for good the moment the stream is
     // running new code. Cross-origin access throws and is ignored.
-    var _OC_ROTATOR_MIN = 23950;   // must equal __ocRotatorVer in rotate.html (v23950: raised so the boxes drop the copy whose self-check misfired)
+    var _OC_ROTATOR_MIN = 23965;   // must equal __ocRotatorVer in rotate.html (v23965: raised so the boxes drop the copy whose self-check misfired)
     try {
       if (window.parent && window.parent !== window) {
         // v23426 — IDENTIFY THE ROTATOR BY ITS URL, NOT BY A JS MARKER.
@@ -33076,7 +33076,7 @@ function applyAirportConfigToBoard(iata) {
   try { _urlFontKey = String(new URLSearchParams(location.search).get('font') || '').toLowerCase(); } catch (eU) {}
   if (_urlFontKey && !(typeof FIDS_FONT_STACKS !== 'undefined' && FIDS_FONT_STACKS[_urlFontKey])) _urlFontKey = '';
   const _font = _urlFontKey || _pref('font');
-  // v23950 — a retired AC Nord pick resolves to the board default here too,
+  // v23965 — a retired AC Nord pick resolves to the board default here too,
   // through the same function restoreFontChoice uses (see fidsLiveFontKey).
   const _fontKey = (typeof fidsLiveFontKey === 'function') ? fidsLiveFontKey(_font) : _font;
   if (_fontKey) {
@@ -33129,7 +33129,7 @@ function applyAirportConfigToBoard(iata) {
       'abc-gravity-xx-compressed': "'ABC Gravity XX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
       'abc-gravity-xxxx-compressed': "'ABC Gravity XXXX Compressed', -apple-system, BlinkMacSystemFont, sans-serif",
     'tr-tahoma':     "'TR Tahoma', Tahoma, Geneva, Verdana, sans-serif",
-      // v23950 — no ac-nord-* stacks: those keys resolve to 'bricolage'
+      // v23965 — no ac-nord-* stacks: those keys resolve to 'bricolage'
       // before this table is read (fidsLiveFontKey).
       'geist':         "'Geist', -apple-system, BlinkMacSystemFont, sans-serif",
       'inter':         "'Inter', system-ui, -apple-system, sans-serif",
@@ -33143,7 +33143,7 @@ function applyAirportConfigToBoard(iata) {
     if (_fontStacks[_fontKey]) {
       var _stack = _fontStacks[_fontKey];
       // v23386 made this non-important so it would yield to a stream-only
-      // AC Nord rule in display-overrides.css. v23950 removed that rule, so
+      // AC Nord rule in display-overrides.css. v23965 removed that rule, so
       // a stream board shows the airport's font exactly as the wall board
       // does; non-important still beats the :root default.
       document.body.style.setProperty('--font-primary', _stack);
