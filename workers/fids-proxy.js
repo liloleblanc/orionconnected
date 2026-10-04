@@ -2202,14 +2202,27 @@ function acDisplayRegistration(s) {
   return null;
 }
 __name(acDisplayRegistration, "acDisplayRegistration");
-function acMemAddObservation(rec, type, now) {
+// v23944 — the same answer also names WHO flew it: the callsign (PVL7754 is
+// PAL, JZA8542 is Jazz) and the registration. Both are kept on TODAY's
+// observation only, as operator evidence for today's flight (opevLive, the
+// /opinfo route) — never shown, never read for another day, and dropped from
+// every older observation on the next write, so a day's tail outlives that
+// day only until this number flies again.
+function acMemAddObservation(rec, type, now, seen) {
   const t = String(type || "").toUpperCase().trim();
   if (!/^[A-Z0-9]{2,4}$/.test(t)) return null;
   const day = new Date(now).toISOString().slice(0, 10);
   const cutoff = new Date(now - ACMEM_TTL_S * 1000).toISOString().slice(0, 10);
   const obs = ((rec && Array.isArray(rec.obs)) ? rec.obs : [])
-    .filter((o) => o && typeof o.d === "string" && o.d >= cutoff && o.d !== day);
-  obs.push({ d: day, t });
+    .filter((o) => o && typeof o.d === "string" && o.d >= cutoff && o.d !== day)
+    .map((o) => ({ d: o.d, t: o.t }));
+  const cur = { d: day, t };
+  const cs = String((seen && seen.cs) || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const r = String((seen && seen.r) || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (/^[A-Z]{3}\d{1,4}[A-Z]?$/.test(cs)) cur.cs = cs;
+  if (/^[A-Z0-9]{3,7}$/.test(r)) cur.r = r;
+  if (cur.cs || cur.r) cur.ts = now;
+  obs.push(cur);
   return { obs: obs.slice(-ACMEM_MAX_OBS) };
 }
 __name(acMemAddObservation, "acMemAddObservation");
@@ -2224,7 +2237,7 @@ function acMemUsualType(rec, now) {
   return Object.keys(n).sort((a, b) => (n[b] - n[a]) || (last[b] - last[a]))[0];
 }
 __name(acMemUsualType, "acMemUsualType");
-async function acMemRemember(env, flightNo, type, now) {
+async function acMemRemember(env, flightNo, type, now, seen) {
   try {
     const f = String(flightNo || "").toUpperCase().replace(/\s+/g, "");
     if (!env || !env.FIDS_LIVE_FLIGHTS || !AC_FLIGHT_RE.test(f)) return;
@@ -2232,7 +2245,7 @@ async function acMemRemember(env, flightNo, type, now) {
     const rec = await env.FIDS_LIVE_FLIGHTS.get(key, { type: "json" });
     const day = new Date(now).toISOString().slice(0, 10);
     if (rec && Array.isArray(rec.obs) && rec.obs.some((o) => o && o.d === day)) return;   // one per day
-    const next = acMemAddObservation(rec, type, now);
+    const next = acMemAddObservation(rec, type, now, seen);
     if (next) await env.FIDS_LIVE_FLIGHTS.put(key, JSON.stringify(next), { expirationTtl: ACMEM_TTL_S });
   } catch (e) {}
 }
@@ -2263,6 +2276,302 @@ function acFeedPick(index, flightNo, ts) {
   return { model: best[2], reg: best[3] };
 }
 __name(acFeedPick, "acFeedPick");
+
+// ════════════════════════════════════════════════════════════════════
+// WHO OPERATES THE FLIGHT — EVIDENCE FROM RECORDS ALREADY READ (v23944)
+// ════════════════════════════════════════════════════════════════════
+// The boards rank this above any flight-number band (fids-core.js
+// fidsResolveOperator). All of it comes from records the worker already
+// fetches; none of it costs an FR24 credit.
+//
+//   - MONTRÉAL'S OWN RECORD. ADM prefixes every row's FlightId with a carrier
+//     code: "[1004JZA7932YULYQB". A prefix counts only when it is the flight's
+//     ONLY record. Every AC77xx row at Montréal has an ACA twin, and ADM's
+//     details call returns the JZA one as a cancelled leftover, while the
+//     independent evidence (PVL7754 and PVL7705 callsigns, St. John's listing
+//     PB numbers) says PAL flies that block. "ACA" never counts: it is the
+//     marketing code on every Air Canada row (Calgary's AirlineICAOCode is
+//     ACA on all 349 of them, Pearson marks Rouge ACA too).
+//   - THE FAR END'S ROW for the same flight: St. John's lists Moncton's AC7203
+//     as PB7203 (PAL's own number), a callsign, a registration, a feed's own
+//     operator field, or an aircraft only one partner flies for Air Canada
+//     (CRJ-900, E175: Jazz; PAL flies only Dash 8s).
+//   - TODAY'S FR24 ANSWER for the flight, which the screens already paid for:
+//     acMemRemember keeps its callsign and registration for the day.
+//
+// Designator → operator, for the Air Canada family only. These are operator
+// codes as Montréal's record and live callsigns carry them; CALLSIGN_ICAO in
+// fids-core.js is the board's own table and is not extended (the ICAO audit's
+// TIF lesson: an operator field, never a new row in that table).
+// fids-current/js/feed-router.js YUL_OPERATOR_CODES carries the same three;
+// tests/operated-by-evidence.test.js holds them equal.
+const OPEV_DESIGNATOR = { JZA: "QK", PVL: "PB", ROU: "RV" };
+// A far end that prints the flight under the operator's own number (PB7203
+// for our AC7203) names the operator outright.
+const OPEV_PARTNER_PREFIX = { QK: 1, PB: 1, RV: 1 };
+// Registration (no hyphen) → operator. scripts/operator-evidence/
+// build-tail-operators.js writes this block from Transport Canada's Canadian
+// Civil Aircraft Register bulk file. That file is published under the Open
+// Data Licence Agreement for Unrestricted Use of Canada's Data (a click-through
+// on the register's download page, not the Open Government Licence), which
+// asks for an attribution line, a notice on the product that uses the data and
+// a written agreement for distributions (clause 3.1(c)); the script carries
+// the terms. The fleet table is not built until that agreement is accepted.
+// Until then this holds only the six PAL Dash 8-400s fids-core.js already
+// named in the gate's PAL check, which moved here so the board and the gate
+// read one answer; every other tail says nothing and the ladder goes on.
+// TAIL_OPERATOR:BEGIN
+const TAIL_OPERATOR = {
+  CFPAL: "PB", CFPQI: "PB", CFPVJ: "PB", CGPAO: "PB", CGPFI: "PB", CGPIX: "PB"
+};
+// TAIL_OPERATOR:END
+// Air Canada's partners by fleet: only Jazz flies the CRJ-900 and the E175
+// for Air Canada (mainline flies neither; PAL flies only Dash 8s). A Dash
+// 8-400 is BOTH partners' and says nothing.
+const OPEV_JAZZ_ONLY_TYPE = /\b(CRJ|CR[279]|E75|E7W|E175|E-?175|ERJ.?175|EMBRAER.?175)\b/i;
+
+function opevDigits(number) {
+  const m = String(number || "").toUpperCase().replace(/\s+/g, "").match(/^(?:[A-Z]{2}|[A-Z]\d|\d[A-Z])(\d{1,4})[A-Z]?$/);
+  return m ? String(Number(m[1])) : "";
+}
+__name(opevDigits, "opevDigits");
+function opevPrefix(number) {
+  const m = String(number || "").toUpperCase().replace(/\s+/g, "").match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d/);
+  return m ? m[1] : "";
+}
+__name(opevPrefix, "opevPrefix");
+function opevTail(reg) {
+  const r = String(reg || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  return TAIL_OPERATOR[r] || null;
+}
+__name(opevTail, "opevTail");
+// A callsign's designator → operator, when it names someone other than the
+// marketing carrier. "ACA7754" says nothing.
+function opevCallsign(cs, marketing) {
+  const m = String(cs || "").toUpperCase().replace(/\s+/g, "").match(/^([A-Z]{3})\d/);
+  const op = m ? OPEV_DESIGNATOR[m[1]] : null;
+  return op && op !== marketing ? op : null;
+}
+__name(opevCallsign, "opevCallsign");
+
+// Montréal's rows, grouped the way ADM duplicates them: one group per flight
+// number, far airport, direction and scheduled time. Each group's evidence is
+// its prefix when that prefix is the only one, is not ACA, and is ours to
+// read. Returns [{ f, other, ad, ts, op, basis }] for every group (op null
+// when the group says nothing).
+function opevYulGroups(rows) {
+  const groups = new Map();
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    if (!r || !r.PublicDisplayFlightNumber || !r.ScheduledTime) continue;
+    const f = String(r.PublicDisplayFlightNumber).toUpperCase().replace(/\s+/g, "");
+    const other = String(r.AirportIataCode || "").toUpperCase();
+    const ad = String(r.ArrivalOrDeparture || "").toUpperCase() === "A" ? "A" : "D";
+    const key = `${f}|${other}|${ad}|${r.ScheduledTime}`;
+    const m = String(r.FlightId || "").match(/^[[A-Z]?\d{4}([A-Z]{3})\d/);
+    let g = groups.get(key);
+    if (!g) {
+      const st = localIsoObj("America/Toronto", String(r.ScheduledTime));
+      g = { f, other, ad, ts: st ? st.ts : NaN, codes: new Set() };
+      groups.set(key, g);
+    }
+    g.codes.add(m ? m[1] : "?");
+  }
+  const out = [];
+  for (const g of groups.values()) {
+    const codes = [...g.codes];
+    const only = codes.length === 1 ? codes[0] : null;
+    const op = only && only !== "ACA" ? (OPEV_DESIGNATOR[only] || null) : null;
+    out.push({ f: g.f, other: g.other, ad: g.ad, ts: g.ts, op: op && op !== opevPrefix(g.f) ? op : null,
+      basis: op ? `YUL ${only}` : (codes.length > 1 ? `YUL ${codes.sort().join("+")} twin` : `YUL ${codes[0]}`) });
+  }
+  return out;
+}
+__name(opevYulGroups, "opevYulGroups");
+
+// Evidence from one far-end authority row for our flight, best first: the
+// feed's own operator field, the operator's own flight number, a callsign, a
+// registration, a Jazz-only aircraft. `marketing` is our carrier ("AC").
+function opevFromRow(row, marketing) {
+  if (!row) return null;
+  const own = String(row._opCode || "").toUpperCase();
+  if (own && own !== marketing) return { op: own, basis: "operator field" };
+  const pre = opevPrefix(row.number);
+  if (pre && pre !== marketing && OPEV_PARTNER_PREFIX[pre]) return { op: pre, basis: String(row.number).toUpperCase() };
+  const cs = opevCallsign(row.callSign, marketing);
+  if (cs) return { op: cs, basis: String(row.callSign).toUpperCase() };
+  const reg = row.aircraft && row.aircraft.reg;
+  const tail = opevTail(reg);
+  if (tail && tail !== marketing) return { op: tail, basis: acDisplayRegistration(reg) || String(reg) };
+  const model = row.aircraft && row.aircraft.model;
+  if (marketing === "AC" && model && OPEV_JAZZ_ONLY_TYPE.test(String(model))) return { op: "QK", basis: String(model) };
+  return null;
+}
+__name(opevFromRow, "opevFromRow");
+
+// A far end's list, reduced to the rows that name an operator for an Air
+// Canada flight: [digits, far end's other airport, their scheduled ms, op,
+// basis]. Calgary's document is ~6.5 MB; this is a few hundred bytes, kept at
+// the edge so a lookup never re-parses the feed. A row with nothing to say is
+// left out: if the far end lists the flight twice (AC7203 and PB7203 for the
+// same departure), the one that names the operator is the one kept.
+function opevIndexRows(rows, theirDir) {
+  const out = [];
+  for (const r of (Array.isArray(rows) ? rows : [])) {
+    if (!r || !r.number) continue;
+    const pre = opevPrefix(r.number);
+    if (pre !== "AC" && !OPEV_PARTNER_PREFIX[pre]) continue;
+    const e = opevFromRow(r, "AC");
+    if (!e) continue;
+    const otherSide = theirDir === "arr" ? r.departure : r.arrival;
+    const oth = String((otherSide && otherSide.airport && otherSide.airport.iata) || "").toUpperCase();
+    if (!oth || !r._authTs) continue;
+    out.push([opevDigits(r.number), oth, Number(r._authTs), e.op, e.basis]);
+  }
+  return out;
+}
+__name(opevIndexRows, "opevIndexRows");
+// Our leg in that index: same digits, the far end's other airport is us, the
+// nearest scheduled time within 12 h (a daily flight's next instance is 24 h
+// away). → { op, basis } or null.
+function opevPickIndex(index, flight, ap, ts) {
+  const digits = opevDigits(flight);
+  let best = null, bestD = Infinity;
+  for (const e of (Array.isArray(index) ? index : [])) {
+    if (e[0] !== digits || e[1] !== ap) continue;
+    const d = Math.abs(e[2] - ts);
+    if (d < bestD) { best = e; bestD = d; }
+  }
+  return best && bestD <= 12 * 3600000 ? { op: best[3], basis: best[4] } : null;
+}
+__name(opevPickIndex, "opevPickIndex");
+
+// Today's FR24 answer for the flight (acMemRemember): callsign, then tail.
+// Only an observation made within 18 h of the leg's scheduled time counts.
+function opevLive(rec, flight, ts) {
+  const mkt = opevPrefix(flight);
+  const obs = (rec && Array.isArray(rec.obs)) ? rec.obs : [];
+  for (let i = obs.length - 1; i >= 0; i--) {
+    const o = obs[i];
+    if (!o || typeof o.ts !== "number" || Math.abs(o.ts - ts) > 18 * 3600000) continue;
+    const cs = opevCallsign(o.cs, mkt);
+    if (cs) return { op: cs, basis: `FR24 ${o.cs}` };
+    const tail = opevTail(o.r);
+    if (tail && tail !== mkt) return { op: tail, basis: `FR24 ${acDisplayRegistration(o.r) || o.r}` };
+  }
+  return null;
+}
+__name(opevLive, "opevLive");
+
+// "AC7203.YYT.a.1791122600" → { id, f, other, dir, ts }. dir is OUR direction
+// (d = we depart, the far end lists an arrival).
+function opevParseLeg(s) {
+  const m = String(s || "").toUpperCase().match(/^([A-Z0-9]{2}\d{1,4}[A-Z]?)\.([A-Z]{3}|-)\.([DA])\.(\d{9,11})$/);
+  if (!m || !AC_FLIGHT_RE.test(m[1])) return null;
+  return { id: `${m[1]}.${m[2]}.${m[3].toLowerCase()}.${m[4]}`, f: m[1], other: m[2] === "-" ? "" : m[2],
+    dir: m[3] === "D" ? "d" : "a", ts: Number(m[4]) * 1000 };
+}
+__name(opevParseLeg, "opevParseLeg");
+
+// Montréal's list, both pages, through the edge cache for two minutes: the
+// apex call is a POST, which the fetch cache never keeps.
+async function opevYulRows(page) {
+  const key = new Request(`https://opev-yul/v1/${page}`);
+  try {
+    const hit = await caches.default.match(key);
+    if (hit) return await hit.json();
+  } catch (e) {}
+  let rows = null;
+  try { rows = await yulApexRows(page); } catch (e) { rows = null; }
+  if (rows) {
+    try { await caches.default.put(key, new Response(JSON.stringify(rows), { headers: {
+      "Content-Type": "application/json", "Cache-Control": "public, max-age=120" } })); } catch (e) {}
+  }
+  return rows;
+}
+__name(opevYulRows, "opevYulRows");
+
+// The evidence for each leg, keyed by leg id. `deps` lets tests hand in the
+// far ends' rows and the FR24 memory instead of fetching them.
+async function opevForLegs(ap, legs, env, deps) {
+  const D = deps || {};
+  const out = {};
+  const want = (Array.isArray(legs) ? legs : []).filter(Boolean);
+  const listOf = new Map();
+  const farList = async (other, theirDir) => {
+    const k = `${other}|${theirDir}`;
+    if (listOf.has(k)) return listOf.get(k);
+    let v = null;
+    try {
+      if (D.farRows) v = await D.farRows(other, theirDir);
+      else if (other === "YUL") v = { yul: opevYulGroups(await opevYulRows(theirDir === "arr" ? "arrivals" : "departures")) };
+      else {
+        const h = AUTHORITY_HANDLERS[other.toLowerCase()];
+        if (h) {
+          const ixKey = new Request(`https://opev-index/v1/${other}/${theirDir}`);
+          let ix = null;
+          try { const hit = await caches.default.match(ixKey); if (hit) ix = await hit.json(); } catch (e) {}
+          if (!ix) {
+            ix = opevIndexRows(await h.list(theirDir, env), theirDir);
+            try { await caches.default.put(ixKey, new Response(JSON.stringify(ix), { headers: {
+              "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } })); } catch (e) {}
+          }
+          v = { index: ix };
+        }
+      }
+    } catch (e) { v = null; }
+    listOf.set(k, v);
+    return v;
+  };
+  // At most eight far ends per request: a board's Air Canada flying reaches a
+  // handful of airports, and each is one cached list.
+  const others = [...new Set(want.map((l) => l.other).filter(Boolean))].slice(0, 8);
+  for (const leg of want) {
+    const mkt = opevPrefix(leg.f);
+    let ev = null;
+    if (leg.other && others.includes(leg.other)) {
+      const theirDir = leg.dir === "d" ? "arr" : "dep";
+      const L = await farList(leg.other, theirDir);
+      if (L && L.yul) {
+        const ad = theirDir === "arr" ? "A" : "D";
+        let best = null, bestD = Infinity;
+        for (const g of L.yul) {
+          if (g.f !== leg.f || g.other !== ap || g.ad !== ad || !isFinite(g.ts)) continue;
+          const d = Math.abs(g.ts - leg.ts);
+          if (d < bestD) { best = g; bestD = d; }
+        }
+        if (best && bestD <= 12 * 3600000 && best.op) ev = { op: best.op, src: "far", basis: best.basis };
+      } else if (L && (L.index || L.rows)) {
+        const e = opevPickIndex(L.index || opevIndexRows(L.rows, theirDir), leg.f, ap, leg.ts);
+        if (e && e.op !== mkt) ev = { op: e.op, src: "far", basis: `${leg.other} ${e.basis}` };
+      }
+    }
+    if (!ev) {
+      try {
+        const rec = D.acmem ? await D.acmem(leg.f)
+          : (env && env.FIDS_LIVE_FLIGHTS ? await env.FIDS_LIVE_FLIGHTS.get(`acmem:v1:${leg.f}`, { type: "json" }) : null);
+        const e = opevLive(rec, leg.f, leg.ts);
+        if (e) ev = { op: e.op, src: "live", basis: e.basis };
+      } catch (e) {}
+    }
+    if (ev) out[leg.id] = ev;
+  }
+  return out;
+}
+__name(opevForLegs, "opevForLegs");
+
+// An authority feed's OWN row carrying a registration we can name (Calgary,
+// Kelowna and Yellowknife print tails). Returns a copy with _opEv, or the row.
+function opevAttachOwn(row) {
+  try {
+    if (!row || (row._opEv && row._opEv.op)) return row;
+    const mkt = String((row.departure && row.departure.airline && row.departure.airline.iata) || opevPrefix(row.number) || "").toUpperCase();
+    const reg = row.aircraft && row.aircraft.reg;
+    const op = opevTail(reg);
+    if (!op || op === mkt) return row;
+    return Object.assign({}, row, { _opEv: { op, src: "own", basis: acDisplayRegistration(reg) || String(reg) } });
+  } catch (e) { return row; }
+}
+__name(opevAttachOwn, "opevAttachOwn");
 
 // ── THE TRACK A FLIGHT HAS ACTUALLY FLOWN (v23906) ─────────────────────────
 // The maps drew the "flown" half of the route as a straight great-circle arc
@@ -4229,9 +4538,15 @@ function mwaaParseFeed(jsonText, dir, home, nowMs) {
     const revised = (rev && rev.ts !== sched.ts) ? settleRevised(rev, sched, "America/New_York") : null;
     const isDep = dir === "dep";
     const otherCode = isDep ? (r.arr_airport_code || "") : (r.dep_airport_code || "");
+    // v23944 — MWAA names the OPERATING carrier (reg_code: OH for a PSA-flown
+    // American Eagle flight). It is the airport's own record of who operates
+    // it, so it rides on the row as the operator field the boards rank first.
+    const info = isDep ? r.departureInfo : r.arrivalInfo;
+    const regCode = String((Array.isArray(info) && info[0] && info[0].reg_code) || "").toUpperCase();
     const fl = authorityFlight({
       dir, number: `${code}${String(r.flightnumber).trim()}`,
       status: mwaaStatus(r.mod_status || r.status || ""),
+      opCode: (/^[A-Z0-9]{2}$/.test(regCode) && regCode !== code) ? regCode : null,
       homeIata: home, homeIcao, homeName,
       gate: (r.mod_gate || r.gate || "").toString().trim() || null,
       otherIata: (otherCode && otherCode.toUpperCase() !== home) ? otherCode.toUpperCase() : (YHZ_CITY_IATA[String(r.city || "").toUpperCase()] || null),
@@ -7648,8 +7963,9 @@ async function maybeServeAuthorityWindow(adbPath, url, env, origin) {
     for (const dir of dirs) {
       const flights = await h.list(dir, env);
       if (!flights) return null;
+      // v23944 — a registration on our own row that names the operator.
       body[dir === "dep" ? "departures" : "arrivals"] =
-        flights.filter((f) => f._authTs >= fromTs && f._authTs < toTs);
+        flights.filter((f) => f._authTs >= fromTs && f._authTs < toTs).map(opevAttachOwn);
     }
     return new Response(JSON.stringify(body), { headers: {
       "Content-Type": "application/json",
@@ -8047,32 +8363,49 @@ const YUL_APEX_UA = "curl/8.5.0";
 const YUL_APEX_URL = "https://www.admtl.com/en-CA/webruntime/api/apex/execute?language=en-CA&asGuest=true&htmlEncode=false";
 const YUL_APEX_CLASS = "@udd/01pMm00000AWKuH";
 
-// GET /flights/yul?direction=dep|arr  (or Departure|Arrival)
-async function handleYulFids(request, env, origin, direction) {
-  const page = /^arr/i.test(direction || "") ? "arrivals" : "departures";
+// One page of ADM's list ("departures" | "arrivals"): yesterday, today and
+// tomorrow merged. Throws with the upstream status on a failed call, so the
+// route below can still say what went wrong. Also read by the operator
+// evidence (opevYulRows) — Montréal's prefixes name the far end's operator.
+async function yulApexRows(page) {
   const body = JSON.stringify({
     namespace: "", classname: YUL_APEX_CLASS, method: "getFlights",
     isContinuation: false, params: { language: "en-CA", page }, cacheable: false
   });
+  const r = await fetch(YUL_APEX_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Accept": "application/json", "User-Agent": YUL_APEX_UA },
+    body,
+    cf: { cacheTtl: 30, cacheEverything: true }
+  });
+  if (!r.ok) {
+    const e = new Error("YUL feed fetch failed");
+    e.status = r.status;
+    e.body = (await r.text().catch(() => "")).slice(0, 200);
+    throw e;
+  }
+  const j = await r.json().catch(() => null);
+  const rv = j && j.returnValue;
+  if (!rv) throw new Error("YUL feed shape unexpected");
+  // Yesterday catches red-eyes still on the board after midnight;
+  // tomorrow fills the bottom of the evening list — same day-merge idea
+  // as the YYZ route.
+  return [].concat(rv.flightsForYesterday || [], rv.flightsForToday || [], rv.flightsForTomorrow || []);
+}
+__name(yulApexRows, "yulApexRows");
+
+// GET /flights/yul?direction=dep|arr  (or Departure|Arrival)
+async function handleYulFids(request, env, origin, direction) {
+  const page = /^arr/i.test(direction || "") ? "arrivals" : "departures";
   try {
-    const r = await fetch(YUL_APEX_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Accept": "application/json", "User-Agent": YUL_APEX_UA },
-      body,
-      cf: { cacheTtl: 30, cacheEverything: true }
-    });
-    if (!r.ok) {
-      const t = (await r.text().catch(() => "")).slice(0, 200);
-      return jsonResponse({ error: "YUL feed fetch failed", status: r.status, body: t }, 502, origin);
+    let merged;
+    try {
+      merged = await yulApexRows(page);
+    } catch (e) {
+      if (e && e.status) return jsonResponse({ error: "YUL feed fetch failed", status: e.status, body: e.body || "" }, 502, origin);
+      if (e && /shape/.test(String(e.message))) return jsonResponse({ error: "YUL feed shape unexpected" }, 502, origin);
+      throw e;
     }
-    const j = await r.json().catch(() => null);
-    const rv = j && j.returnValue;
-    if (!rv) return jsonResponse({ error: "YUL feed shape unexpected" }, 502, origin);
-    // Yesterday catches red-eyes still on the board after midnight;
-    // tomorrow fills the bottom of the evening list — same day-merge idea
-    // as the YYZ route.
-    const merged = []
-      .concat(rv.flightsForYesterday || [], rv.flightsForToday || [], rv.flightsForTomorrow || []);
     // ── BELT ENRICHMENT (arrivals only). The list call carries no carousel,
     // but ADM's flight-details apex (getFlightHeroDetails' sibling) returns
  // Terminal_Belt__c per flight — proved on the website itself. One
@@ -9289,6 +9622,36 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           "Content-Type": "application/json", "Cache-Control": "public, max-age=45", "X-Track-Cache": "miss", ...corsHeaders(origin) } });
       }
     }
+    // ── /opinfo — WHO OPERATES THESE FLIGHTS, FROM RECORDS ALREADY READ (v23944)
+    // GET /opinfo?ap=YQM&legs=AC7203.YYT.a.1791122600,AC2037.YUL.d.1791140100
+    //   ap    our airport
+    //   legs  flight . far airport ('-' if unknown) . OUR direction (d|a) .
+    //         our scheduled time in epoch seconds; at most 60, sorted by the
+    //         board so every screen at an airport asks the same question
+    // Answers { ap, legs: { <leg>: { op, src: "far"|"live", basis } } } for the
+    // legs some record names an operator for (opevForLegs). Every screen at
+    // the airport — the departures board and each gate — reads the same
+    // answer, which is what keeps them agreeing. No FR24 call is made here.
+    if (path === "/opinfo") {
+      const ap = String(url.searchParams.get("ap") || "").toUpperCase();
+      const legs = String(url.searchParams.get("legs") || "").split(",").map(opevParseLeg).filter(Boolean).slice(0, 60);
+      if (!/^[A-Z]{3}$/.test(ap) || !legs.length) {
+        return jsonResponse({ error: "Use /opinfo?ap=YQM&legs=AC7203.YYT.a.<epoch s>,..." }, 400, origin);
+      }
+      const _opKey = new Request(`https://opinfo-cache/v1/${ap}/${legs.map((l) => l.id).join(",")}`);
+      try {
+        const hit = await caches.default.match(_opKey);
+        if (hit) return new Response(await hit.text(), { status: 200, headers: {
+          "Content-Type": "application/json", "Cache-Control": "public, max-age=300", "X-Opinfo-Cache": "hit", ...corsHeaders(origin) } });
+      } catch (e) {}
+      let found = {};
+      try { found = await opevForLegs(ap, legs, env); } catch (e) { found = {}; }
+      const _opBody = JSON.stringify({ ap, legs: found });
+      try { await caches.default.put(_opKey, new Response(_opBody, { headers: {
+        "Content-Type": "application/json", "Cache-Control": "public, max-age=300" } })); } catch (e) {}
+      return new Response(_opBody, { status: 200, headers: {
+        "Content-Type": "application/json", "Cache-Control": "public, max-age=300", "X-Opinfo-Cache": "miss", ...corsHeaders(origin) } });
+    }
     // ── /acinfo — THE AIRCRAFT FOR A FLIGHT BEFORE IT FLIES (v23901) ─────────
     // GET /acinfo?f=WS812&other=YYC&at=dep&ts=<our scheduled epoch ms>
     //   f      the flight number as the board shows it
@@ -9583,7 +9946,8 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
                 };
                 // v23901 — remember what this flight number flew (type only is
                 // ever shown from it). Same answer, no extra credit.
-                try { ctx.waitUntil(acMemRemember(env, _p.flight || (kind === "flight" ? subject : ""), _p.type, Date.now())); } catch (e) {}
+                // v23944 — with the callsign and tail, today's operator evidence.
+                try { ctx.waitUntil(acMemRemember(env, _p.flight || (kind === "flight" ? subject : ""), _p.type, Date.now(), { cs: _p.callsign, r: _p.reg })); } catch (e) {}
                 // v23906 — and add this position to the flight's flown track.
                 try { ctx.waitUntil(acTrackAppend(env, _p, Date.now())); } catch (e) {}
                 const _frBody = JSON.stringify({ ac: [_ac], _provider: "fr24" });
@@ -10826,6 +11190,20 @@ export {
   acMemUsualType,
   acFeedIndexRows,
   acFeedPick,
+  OPEV_DESIGNATOR,
+  TAIL_OPERATOR,
+  opevDigits,
+  opevPrefix,
+  opevCallsign,
+  opevYulGroups,
+  opevFromRow,
+  opevIndexRows,
+  opevPickIndex,
+  opevLive,
+  opevParseLeg,
+  opevForLegs,
+  opevAttachOwn,
+  yulApexRows,
   acTrackAddPoint,
   acTrackAppend,
   _authorityRosterHas

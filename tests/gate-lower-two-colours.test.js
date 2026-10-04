@@ -501,11 +501,12 @@ test('every operator that flies for a carrier reads on its bar: its half at 3:1,
   assert.ok(seen >= 40, `operators measured on their carriers' bars: ${seen}`);
   // The mounted ones, exactly: Encore on WestJet's teal (its white half is
   // 2.64:1 there), the SP mark on PAL's blue, GoJet and Envoy on the US blues
-  // (no published half that reads is on file for any of them). Every other
-  // operator's half reads on its carrier's bar as it is: since v23941 that
-  // includes Jazz, whose published white lettering is 7.50:1 on Air Canada's
-  // red, so it is no longer mounted there.
-  assert.deepEqual(mounted.sort(), ['ENY/AA', 'G7/DL', 'G7/UA', 'GJS/DL', 'GJS/UA', 'MQ/AA', 'SP/PB', 'WEN/WS', 'WR/WS']);
+  // (no published half that reads is on file for any of them), and (v23944)
+  // the Air Canada Express lockup, whose lettering is black with no published
+  // white version. Every other operator's half reads on its carrier's bar as
+  // it is: since v23941 that includes Jazz, whose published white lettering
+  // is 7.50:1 on Air Canada's red, so it is no longer mounted there.
+  assert.deepEqual(mounted.sort(), ['ACEX/AC', 'ENY/AA', 'G7/DL', 'G7/UA', 'GJS/DL', 'GJS/UA', 'MQ/AA', 'SP/PB', 'WEN/WS', 'WR/WS']);
 });
 
 test('every paired operator, on every carrier\'s bar: its half at 3:1, or on its white mount', () => {
@@ -764,7 +765,8 @@ test('the bars between the caption\'s words hold 3:1 on every bar, and stay ligh
 
 test('the caption stays one row and writes its states as classes', () => {
   assert.match(CORE, /\+ \(_acTypeVal && _acTypeVal\.indexOf\('v2-rc-acb-sep'\) !== -1 \? ' has-reg' : ''\)/);
-  assert.match(CORE, /\+ \(_opByVal && \/\^\(PB\|PVL\|SP\|OO\|SKW\|WR\|WEN\)\$\/\.test\(String\(_opCode \|\| ''\)\.toUpperCase\(\)\) \? ' has-widemark' : ''\);/);
+  // (v23944 — the Air Canada Express lockup, 5.2:1, is a wide mark too.)
+  assert.match(CORE, /\+ \(_opByVal && \/\^\(PB\|PVL\|SP\|OO\|SKW\|WR\|WEN\|ACEX\)\$\/\.test\(String\(_opCode \|\| ''\)\.toUpperCase\(\)\) \? ' has-widemark' : ''\);/);
   // The wide-mark layout keys on those classes.
   assert.match(ruleFor('.v2-rc-acb-cap.has-widemark:not(.is-pending) .v2-rc-opby-val'), /width: calc\(var\(--acb-h\) \* 2\.1\) !important;/);
   assert.match(ruleFor('.v2-rc-acb-cap.has-widemark.has-reg:not(.is-pending) .v2-rc-acb-actype'), /padding-block: calc\(var\(--acb-h\) \* 0\.02\) !important;/);
