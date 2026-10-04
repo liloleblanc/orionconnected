@@ -18726,6 +18726,130 @@ try {
 } catch (e) {}
 try { window.addEventListener('resize', function () { setTimeout(function () { boardAutofit(true); }, 120); }); } catch (e) {}
 
+/* ── v23955 — THE BAND MIRRORS ABOUT THE AIRPORT'S MARK ────────────────────
+   The silk band's colours were placed by fixed percentages chosen for one
+   title and one date: solid first colour to 11%, a fade to white at 39%, white
+   to 54%, the last colour solid from 68%. So the title's tail sat on the fade
+   toward the palette's lighter second colour, the clock on solid colour, and
+   neither knew where the other was — a longer title ('Retrait des bagages')
+   ran onto near-white, a longer date onto the fade.
+
+   Now the band is laid out from what sits on it, and laid out as a mirror:
+     - the words on each side are measured, and the nearer of the two sets one
+       distance from the centre; past it, both sides are solid colour;
+     - the mark (the logo, or the airport's name when there is none) is
+       measured, and white covers it, symmetric about the centre;
+     - the fades between are equal, each passing through the palette's middle
+       colour on its side, and fill the room between the mark and the words.
+   Where that room is short — 'Recolha de bagagem' ends 23px before the Ottawa
+   logo on the baggage screen, and the 100deg slant takes most of that back
+   corner to corner — the clear space around each gives way first, then the
+   fade narrows to a crisp edge, which at the last straddles the two boxes'
+   empty corners rather than crossing a letter of either.
+   Stops are measured on the gradient's own 100deg line, corner by corner, so
+   the slant of the colour edge is accounted for. Only the colour moves; the
+   words and the mark stay exactly where they are. The CSS keeps the old
+   percentages as its fallback, so a board that never runs this paints as
+   before. */
+var _FIDS_BAND_PAD = 12;    // px of solid colour (or white) kept clear around content
+var _FIDS_BAND_FADE = 8;    // px — the narrowest fade the band will draw
+function _fidsBandStops(g) {
+  try {
+    if (!g || !g.left || !g.right || !g.left.length || !g.right.length) return null;
+    var A = ((g.angle == null) ? 100 : g.angle) * Math.PI / 180;
+    var sx = Math.sin(A), sy = -Math.cos(A);
+    var L = Math.abs(g.W * sx) + Math.abs(g.H * sy);
+    if (!(L > 0)) return null;
+    var pad = (g.pad == null) ? _FIDS_BAND_PAD : g.pad;
+    var fade = ((g.fade == null) ? _FIDS_BAND_FADE : g.fade) / L;
+    var t = function (x, y) { return ((x - g.W / 2) * sx + (y - g.H / 2) * sy) / L + 0.5; };
+    var ext = function (rs, p, hi) {
+      var v = hi ? -1e9 : 1e9;
+      for (var i = 0; i < rs.length; i++) {
+        var r = rs[i], qs = [t(r.l - p, r.t), t(r.r + p, r.t), t(r.l - p, r.b), t(r.r + p, r.b)];
+        for (var j = 0; j < 4; j++) v = hi ? Math.max(v, qs[j]) : Math.min(v, qs[j]);
+      }
+      return v;
+    };
+    // the words come this close to the centre (the nearer side sets both) ...
+    var words = Math.min(0.5 - ext(g.left, 0, true), ext(g.right, 0, false) - 0.5);
+    // ... and the mark reaches this far from it (the farther side sets both)
+    var mark = (g.mark && g.mark.length) ? Math.max(0.5 - ext(g.mark, 0, false), ext(g.mark, 0, true) - 0.5) : 0.05;
+    if (!(words > fade)) return null;
+    mark = Math.min(mark, words);
+    var room = words - mark;
+    var p = Math.max(0, Math.min(pad / L, (room - fade) / 2));   // clearance gives way before the fade does
+    var dS = words - p, dW = mark + p;
+    if (dS - dW < fade) {                                        // no room left: a crisp edge between the two
+      var mid = (words + mark) / 2;
+      dS = mid + fade / 2; dW = Math.max(0, mid - fade / 2);
+    }
+    var pc = function (v) { return Math.round(v * 10000) / 100; };   // percent, to 0.17px
+    return {
+      s1: pc(0.5 - dS), m1: pc(0.5 - (dS + dW) / 2), w1: pc(0.5 - dW),
+      w2: pc(0.5 + dW), m2: pc(0.5 + (dS + dW) / 2), s2: pc(0.5 + dS)
+    };
+  } catch (e) { return null; }
+}
+function _fidsTextBoxes(root, rel) {
+  var out = [];
+  try {
+    if (!root) return out;
+    var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, rg = document.createRange();
+    while ((n = w.nextNode())) {
+      if (!String(n.nodeValue || '').trim()) continue;
+      rg.selectNodeContents(n);
+      var rs = rg.getClientRects();
+      for (var i = 0; i < rs.length; i++) {
+        if (rs[i].width < 1 || rs[i].height < 1) continue;
+        out.push({ l: rs[i].left - rel.left, r: rs[i].right - rel.left, t: rs[i].top - rel.top, b: rs[i].bottom - rel.top });
+      }
+    }
+  } catch (e) {}
+  return out;
+}
+var _fidsBandStopsKey = '';
+function _fidsBannerBand() {
+  try {
+    if (document.body.getAttribute('data-fids-banner') !== 'silk') return;
+    var bns = document.querySelectorAll('.fids-banner'), bn = null, br = null;
+    for (var i = 0; i < bns.length; i++) {
+      var q = bns[i].getBoundingClientRect();
+      if (q.width > 300 && q.height > 40) { bn = bns[i]; br = q; break; }
+    }
+    if (!bn) return;
+    var mark = [];
+    var img = bn.querySelector('.fids-airport-logo-img');
+    if (img && img.getClientRects().length) {
+      var ir = img.getBoundingClientRect();
+      if (ir.width > 2 && ir.height > 2) mark.push({ l: ir.left - br.left, r: ir.right - br.left, t: ir.top - br.top, b: ir.bottom - br.top });
+    }
+    if (!mark.length) mark = _fidsTextBoxes(bn.querySelector('.fids-airport-text'), br);
+    var s = _fidsBandStops({
+      W: br.width, H: br.height, mark: mark,
+      left: _fidsTextBoxes(bn.querySelector('.fids-board-label'), br),
+      right: _fidsTextBoxes(bn.querySelector('.fids-banner-time-block'), br)
+    });
+    if (!s) return;
+    var key = [s.s1, s.m1, s.w1, s.w2, s.m2, s.s2].join(',');
+    if (key === _fidsBandStopsKey) return;
+    _fidsBandStopsKey = key;
+    var st = document.body.style;
+    st.setProperty('--fids-band-s1', s.s1 + '%');
+    st.setProperty('--fids-band-m1', s.m1 + '%');
+    st.setProperty('--fids-band-w1', s.w1 + '%');
+    st.setProperty('--fids-band-w2', s.w2 + '%');
+    st.setProperty('--fids-band-m2', s.m2 + '%');
+    st.setProperty('--fids-band-s2', s.s2 + '%');
+  } catch (e) {}
+}
+try { _ocEvery(_fidsBannerBand, 2000); } catch (e) {}
+try {
+  document.addEventListener('load', function (e) {
+    if (e.target && e.target.classList && e.target.classList.contains('fids-airport-logo-img')) setTimeout(_fidsBannerBand, 50);
+  }, true);
+} catch (e) {}
+
 // ── Banner style registry (merged time+airport banner, changeable by
 // destination or screen, Acadian flag pinned for Moncton). Resolution:
 // localStorage override (fids_banner_style_<IATA>_<SCREEN>, then
@@ -19008,10 +19132,49 @@ function _extractLogoPalette(logoUrl, cb) {
     img.src = src;
   } catch (e) { cb(null); }
 }
+// v23955 — BOTH ENDS OF THE BAND ARE HELD TO ONE DEPTH. The words sit on the
+// first colour at the left and the last at the right, and both wear one white
+// ink, so both ends take the same test: deepened along their own hue — the
+// same move the tail guard above already makes — until white clears it once
+// the silk is over them. The extractor held only the tail, and its raster path
+// only to luminance 0.175, which the sheen then lifted past the floor.
+//
+// The test is on the PAINTED colour. Through the mirrored silk (overlay .80,
+// screen .18) a channel is lifted by up to 36 at black, tapering to nothing at
+// white — the upper edge of what was measured under the words' brightest
+// tenth on all 41 palette airports, never exceeded. Held at 5.6:1 for white
+// against that, the date's thin strokes (whose anti-aliased cores read about
+// 0.83 of the ink's full contrast) still clear 4.5:1 at their weakest tenth.
+// By luminance that is 0.07 to 0.11 depending on hue: blue and yellow ends go
+// deeper than red ones, because the sheen lifts them more.
+//
+// Applied here rather than at extraction so palettes already cached on a
+// screen are held too. The middle two colours only ever carry the fades beside
+// the mark, and keep their exact values.
+var _FIDS_BAND_END_CR = 5.6;
+var _FIDS_SILK_LIFT = 36;
+function _fidsSilkPainted(r, g, b) {
+  var f = function (c) { return c + _FIDS_SILK_LIFT * (1 - c / 255); };
+  return [f(r), f(g), f(b)];
+}
+function _fidsBandEnd(hex) {
+  try {
+    var m = /^#([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+    if (!m) return hex;
+    var r = parseInt(m[1].slice(0, 2), 16), g = parseInt(m[1].slice(2, 4), 16), b = parseInt(m[1].slice(4, 6), 16);
+    for (var k = 0; k < 80; k++) {
+      // judged on the colour as it will be written, after rounding
+      var p = _fidsSilkPainted(Math.round(r), Math.round(g), Math.round(b));
+      if (1.05 / (_relLum(p[0], p[1], p[2]) + 0.05) >= _FIDS_BAND_END_CR) break;
+      r *= 0.95; g *= 0.95; b *= 0.95;
+    }
+    return _hex(r, g, b);
+  } catch (e) { return hex; }
+}
 function _applyBandPalette(pal) {
   try {
     for (var i = 0; i < 4; i++) {
-      document.body.style.setProperty('--fids-band-' + (i + 1), pal[i]);
+      document.body.style.setProperty('--fids-band-' + (i + 1), (i === 0 || i === 3) ? _fidsBandEnd(pal[i]) : pal[i]);
     }
     document.body.dataset.fidsBandPalette = '1';
   } catch (e) {}
@@ -27019,7 +27182,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23944';
+var FIDS_BUILD_TAG = 'v23955';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

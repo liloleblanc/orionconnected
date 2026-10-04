@@ -2,11 +2,11 @@
   "_meta": {
     "description": "Unified, browsable catalog of all static assets. Regenerable data per docs/ARCHITECTURE.md — run python3 scripts/assets/build-manifest.py fids-current; never hand-edit.",
     "generator": "scripts/assets/build-manifest.py",
-    "total": 2846,
+    "total": 2847,
     "by_category": {
       "ad": 12,
       "airline": 1444,
-      "background": 192,
+      "background": 193,
       "brand": 4,
       "hotel": 888,
       "livery": 96,
@@ -16438,6 +16438,17 @@
       "iata": "",
       "country": "",
       "ext": "png"
+    },
+    {
+      "path": "/logos/Backgrounds/banner-silk-mirror.jpg",
+      "file": "banner-silk-mirror.jpg",
+      "category": "background",
+      "subcategory": "airline-bg",
+      "group": "Backgrounds (airline-themed)",
+      "name": "banner silk mirror",
+      "iata": "",
+      "country": "",
+      "ext": "jpg"
     },
     {
       "path": "/logos/Backgrounds/banner-silk.jpg",
