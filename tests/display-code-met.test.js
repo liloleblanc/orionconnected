@@ -214,6 +214,53 @@ test('the phone gate\'s title keeps a code a code: "Montreal | MET", not "Montre
   assert.match(mob, /TL\('from'\) \+ ' ' \+ _cityUnit\(_fromDisplay\)/);
 });
 
+test('tc() cases the city and keeps the code a code: "Montreal | MET", never "Montreal | Met"', () => {
+  // The phone gate's Next departure line read "PD2382 · Montreal | Met ·
+  // 17:20": tc() title-cased the stored 'MONTREAL | MET' whole. The same
+  // tc() feeds the phone gate's destination weather ('in ' + dest), the TV
+  // gate's next-departure footers and the welcome screen's line.
+  const win = hostWindow();
+  const upAt = JS.indexOf('const _UPPER_TOKENS');
+  const src = [
+    "var AIRPORT_DISPLAY_IATA = (typeof window !== 'undefined' && window.FIDS_DISPLAY_IATA) || {};",
+    JS.slice(upAt, JS.indexOf(']);', upAt) + 3),
+    blockOf('function _dispIata(code)'),
+    blockOf('function _realIata(code)'),
+    blockOf('function tc(s)'),
+    'return tc;'
+  ].join('\n');
+  const tc = new Function('window', src)(win);
+  const cases = {
+    'MONTREAL | MET': 'Montreal | MET',
+    'Montreal | Met': 'Montreal | MET',
+    'MONTREAL | YHU': 'Montreal | MET',
+    'montreal | yhu': 'Montreal | MET',
+    'Montreal (YHU)': 'Montreal (MET)',
+    'YHU': 'MET',
+    'MET': 'MET',
+    'OTTAWA | YOW': 'Ottawa | YOW',
+    'TORONTO | YTZ': 'Toronto | YTZ',
+    'TORONTO (yyz)': 'Toronto (YYZ)',
+    'NEW YORK NY | JFK': 'New York NY | JFK'
+  };
+  for (const [inp, want] of Object.entries(cases)) assert.equal(tc(inp), want, `tc(${JSON.stringify(inp)})`);
+  for (const inp of Object.keys(cases)) assert.doesNotMatch(tc(inp), /YHU|\bMet\b|\b[A-Z][a-z]{2}\)?$/, `tc(${JSON.stringify(inp)}) = ${tc(inp)}`);
+  // a city is still a city
+  assert.equal(tc('SYDNEY NS'), 'Sydney NS');
+  assert.equal(tc('GOOSE BAY'), 'Goose Bay');
+  assert.equal(tc("ST. JOHN'S"), "St. John's");
+  assert.equal(tc('MCALLEN'), 'McAllen');
+  assert.equal(tc('—'), '—');
+  assert.equal(tc(''), '');
+  // and the lines that showed it still go through tc()
+  const mob = blockOf('function renderMobileGateHtml(ctx)');
+  assert.match(mob, /let nLoc = tc\(nextFlight\.dest \|\| nextFlight\._locCity \|\| '—'\);/);
+  assert.match(mob, /const dest = tc\(loc \|\| currentFlight\.dest \|\| currentFlight\._locCity \|\| '—'\);/);
+  assert.match(JS, /var nLoc = tc\(nextFlight\.dest \|\| '—'\);/);
+  assert.match(JS, /const nLoc = tc\(nextFlight\.dest \|\| '—'\);/);
+  assert.match(JS, /var _nLoc = tc\(currentFlight\.dest \|\| currentFlight\._locCity \|\| ''\);/);
+});
+
 test('an airport logo\'s alt text names the display code too (screen readers read it out)', () => {
   assert.match(read('app.html'), /<img src="'\+u\+'" alt="'\+esc\(dispIata\(code\)\)\+'"/);
   assert.match(read('js/fids-v2.js'), /alt="' \+ \(\(window\.fidsDisplayIata \? window\.fidsDisplayIata\(iata\) : iata\) \|\| ''\) \+ '"/);

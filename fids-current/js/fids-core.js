@@ -25559,6 +25559,33 @@ const _UPPER_TOKENS = new Set([
 ]);
 function tc(s) {
   if (!s) return '';
+  s = String(s);
+  // v23939 — a code is a code, not a word. Our own labels end ' | CODE'
+  // (formatCityIata) and the feed's end ' (CODE)'; title-casing the whole
+  // string turned 'MONTREAL | MET' into 'Montreal | Met' on every line that
+  // cases a label (the phone gate's Next departure and destination weather,
+  // the TV gate's next-departure footers, the welcome screen). Lift the code
+  // off, case only the city, and put the code back upper case in the form
+  // passengers see (_dispIata: YHU reads MET). A label that is nothing but a
+  // code we display differently (a bare 'YHU' fallback) is that code too.
+  var _tcShown = function (code) {
+    var c = String(code).toUpperCase();
+    return (typeof _dispIata === 'function') ? String(_dispIata(c)) : c;
+  };
+  var _tcBare = s.trim().toUpperCase();
+  if (/^[A-Z]{3}$/.test(_tcBare) && typeof _dispIata === 'function'
+      && (String(_dispIata(_tcBare)) !== _tcBare
+          || (typeof _realIata === 'function' && String(_realIata(_tcBare)) !== _tcBare))) {
+    return _tcShown(_tcBare);
+  }
+  var _tcTail = '';
+  var _tcM = s.match(/\s*\|\s*([A-Za-z]{2,4})\s*$/);
+  if (_tcM) _tcTail = ' | ' + _tcShown(_tcM[1]);
+  else if ((_tcM = s.match(/\s*\(\s*([A-Za-z]{3})\s*\)\s*$/))) _tcTail = ' (' + _tcShown(_tcM[1]) + ')';
+  if (_tcM) {
+    var _tcHead = s.slice(0, _tcM.index);
+    return _tcHead.trim() ? (tc(_tcHead) + _tcTail) : _tcTail.replace(/^\s*\|\s*|^\s*\(|\)$/g, '');
+  }
   // Title case: capitalize after space, dash, slash, period
   var r = s.toLowerCase().replace(/(^|[\s\-\/\.])(\S)/g, (m,p,c) => p + c.toUpperCase());
   // Protect "St." / "Ste." — both English "Saint" and French "Sainte"
@@ -26593,7 +26620,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23938';
+var FIDS_BUILD_TAG = 'v23939';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
