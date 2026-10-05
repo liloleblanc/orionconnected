@@ -711,7 +711,11 @@ thead th { height: 50px; }
    FIDS table heights in flight-display.css. Regenerate, don't hand-edit. */
 .card-logo.card-wordmark[data-code="4Y"],
 .card-logo.card-wordmark[data-code="AV"],
+.card-logo.card-wordmark[data-code="3H"],
 .card-logo.card-wordmark[data-code="WS"] { height: 19px; }
+/* (3H: Air Inuit's two-line lockup, its files now cropped to the art, at
+   WestJet's height. It sat in Air Canada's group, a height for one line of
+   lettering. display-overrides.css has the reason.) */
 .card-logo.card-wordmark[data-code="HA"],
 .card-logo.card-wordmark[data-code="OO"],
 .card-logo.card-wordmark[data-code="P3"],
@@ -743,7 +747,6 @@ thead th { height: 50px; }
 .card-logo.card-wordmark[data-code="TP"] { height: 13px; }
 .card-logo.card-wordmark[data-code="AF"],
 .card-logo.card-wordmark[data-code="F9"] { height: 12px; }
-.card-logo.card-wordmark[data-code="3H"],
 .card-logo.card-wordmark[data-code="AC"],
 .card-logo.card-wordmark[data-code="PT"],
 .card-logo.card-wordmark[data-code="RV"] { height: 11px; }

@@ -565,7 +565,11 @@ body .bidsv2-col-status.bidsv2-status-early { color: #34d399 !important; }
 }
 .bidsv2-airline-wordmark[data-code="4Y"],
 .bidsv2-airline-wordmark[data-code="AV"],
+.bidsv2-airline-wordmark[data-code="3H"],
 .bidsv2-airline-wordmark[data-code="WS"] { height: 20px; }
+/* (3H: Air Inuit's two-line lockup, its files now cropped to the art, at
+   WestJet's height. It sat in Air Canada's group, a height for one line of
+   lettering. display-overrides.css has the reason.) */
 .bidsv2-airline-wordmark[data-code="HA"],
 .bidsv2-airline-wordmark[data-code="OO"],
 .bidsv2-airline-wordmark[data-code="P3"],
@@ -597,7 +601,6 @@ body .bidsv2-col-status.bidsv2-status-early { color: #34d399 !important; }
 .bidsv2-airline-wordmark[data-code="TP"] { height: 14px; }
 .bidsv2-airline-wordmark[data-code="AF"],
 .bidsv2-airline-wordmark[data-code="F9"] { height: 13px; }
-.bidsv2-airline-wordmark[data-code="3H"],
 .bidsv2-airline-wordmark[data-code="AC"],
 .bidsv2-airline-wordmark[data-code="PT"],
 .bidsv2-airline-wordmark[data-code="RV"] { height: 12px; }

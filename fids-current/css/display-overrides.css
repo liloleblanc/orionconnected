@@ -426,9 +426,14 @@ body[data-fids-logo-size] {
 #fidsTable .td-airline .fids-airline-wordmark[data-code="EZS"] { --wm-h: 24px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WT"] { --wm-h: 44px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="NSA"] { --wm-h: 50px; }
-/* Air Inuit is a stacked lockup too (syllabics over the word, 480x320
-   art box) — at the flat-mark 17px the lettering was unreadable. */
-#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"] { --wm-h: 40px; }
+/* Air Inuit is a stacked lockup too (syllabics over the word). Its files
+   used to sit on a 480x320 canvas with the art in the middle half, so 40px
+   here drew a lockup about 20px tall, and the row's ceiling (row height
+   minus 6px) cut that to a two-line mark smaller than one line of the other
+   carriers' lettering. The files are cropped to the art now (its letters
+   fill 98% x 96% of the box), so this is the lockup's own height: WestJet's
+   30px, the tallest the calibrated marks run. */
+#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"] { --wm-h: 30px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="4Y"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { --wm-h: 32px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { --wm-h: 30px; }

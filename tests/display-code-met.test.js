@@ -58,6 +58,7 @@ function helpers() {
     blockOf('function airportCityNameSafe_v21877(code, langOverride)'),
     blockOf('function _isRealApCode(code)'),
     blockOf('function normalizeDisplayCity(raw, iata)'),
+    blockOf('function _normCityKey(s)'),
     blockOf('function formatCityIata(raw, iata, langOverride)'),
     blockOf('function cityCode(iata, overrideCity, langOverride)'),
     'return { formatCityIata, normalizeDisplayCity, cityCode, _dispIata, _realIata, _dispCityLabel, _isRealApCode };'
@@ -192,10 +193,14 @@ test('the gate\'s inbound line prints the display code, on the phone view and th
 
 test('the phone gate\'s title keeps a code a code: "Montreal | MET", not "Montreal | Met"', () => {
   const win = hostWindow();
+  // (it cases the city with the board's shared casing, tc)
+  const upAt = JS.indexOf('const _UPPER_TOKENS');
   const src = [
     "var AIRPORT_DISPLAY_IATA = (typeof window !== 'undefined' && window.FIDS_DISPLAY_IATA) || {};",
+    JS.slice(upAt, JS.indexOf(']);', upAt) + 3),
     blockOf('function _dispIata(code)'),
-    blockOf('function _fidsTitleCase(s)'),
+    blockOf('function _realIata(code)'),
+    blockOf('function tc(s)'),
     blockOf('function _cleanCity(s)'),
     'return _cleanCity;'
   ].join('\n');
@@ -205,6 +210,10 @@ test('the phone gate\'s title keeps a code a code: "Montreal | MET", not "Montre
   assert.equal(cleanCity('MONTREAL | YHU'), 'Montreal | MET');
   assert.equal(cleanCity('Toronto | Ytz'), 'Toronto | YTZ');
   assert.equal(cleanCity('MONCTON'), 'Moncton');
+  // a place's small words stay small (a capital on every word read
+  // 'Îles-De-La-Madeleine')
+  assert.equal(cleanCity('ÎLES-DE-LA-MADELEINE'), 'Îles-de-la-Madeleine');
+  assert.equal(cleanCity("VAL-D'OR | YVO"), "Val-d'Or | YVO");
   assert.equal(cleanCity('Toronto (YYZ)'), 'Toronto', 'the feed\'s parenthesised code is still dropped');
   assert.equal(cleanCity('Saint_John,_NB'), 'Saint John');
   assert.equal(cleanCity(''), '');

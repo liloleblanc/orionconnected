@@ -10449,7 +10449,8 @@ function renderMobileBaggageHtml(ctx) {
   const flightCards = (arrFlights && arrFlights.length)
     ? arrFlights.map(f => {
         const stTxt = SL(f.status);
-        const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, lang) : normalizeDisplayCity(f.origin || '—', f._locIata);
+        // (a row with no code: formatCityIata as on the board's rows, see render())
+        const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, lang) : formatCityIata(f.origin || '—', '', lang);
         const _logoHtml = (mkLogo(f.airline, f._airlineName) || '').replace(/<img /g, '<img style="max-width:84px;max-height:34px;height:auto;width:auto;object-fit:contain;" ');
         return '<div style="background:' + T.card + ';border:1px solid ' + T.line + ';border-radius:12px;padding:14px 16px;margin-bottom:10px;">'
              +   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
@@ -10651,8 +10652,11 @@ function renderMobileGateHtml(ctx) {
     s = s.replace(/_/g, ' ').replace(/,.*$/, '').trim();  // "Saint_John,_NB" -> "Saint John"
     if (!s) return _ccCode ? _dispIata(_ccCode) : '';
     // Title-case if it's all-caps or all-lower
+    // (the board's shared casing, tc: a place's small words stay small,
+    // 'Îles-de-la-Madeleine', 'Val-d'Or', where a capital on every word read
+    // 'Îles-De-La-Madeleine')
     if (s === s.toUpperCase() || s === s.toLowerCase()) {
-      s = _fidsTitleCase(s.toLowerCase());
+      s = tc(s);
     }
     return _ccCode ? (s + ' | ' + _dispIata(_ccCode)) : s;
   }
@@ -23737,7 +23741,8 @@ const gView = document.getElementById('gateView');
               const isArr = _bStKey === 'arrived';
               const isDelayed = _bStKey === 'delayed';
               const isEarly = _bStKey === 'early';
-              const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, lang) : normalizeDisplayCity(f.origin || '—', f._locIata);
+              // (a row with no code: formatCityIata as on the board's rows, see render())
+              const cityDisplay = f._locIata ? formatCityIata(f.origin || f.dest || f._locIata, f._locIata, lang) : formatCityIata(f.origin || '—', '', lang);
               const airlineName = (f._airlineName || f.airline || '').toString().toUpperCase();
               const logoHtml = mkLogo(f.airline, f._airlineName);
               const statusClass = isArr ? 'bidsv2-status-arrived' : (isDelayed ? 'bidsv2-status-delayed' : (isEarly ? 'bidsv2-status-early' : 'bidsv2-status-other'));
@@ -24334,15 +24339,15 @@ const CITY = {
   YQB:'QUEBEC CITY',    YWG:'WINNIPEG',       YXE:'SASKATOON',    YYJ:'VICTORIA',    YXX:'ABBOTSFORD',
   YDF:'DEER LAKE',      YYR:'GOOSE BAY',      YQX:'GANDER',       YSJ:'SAINT JOHN',
   YYT:"ST. JOHN'S",     YZR:'SARNIA',         YQG:'WINDSOR',      YXU:'LONDON',
-  YYY:'MONT-JOLI',      YYG:'CHARLOTTETOWN',  YZV:'SEPT-ILES',    YFC:'FREDERICTON',
+  YYY:'MONT-JOLI',      YYG:'CHARLOTTETOWN',  YZV:'SEPT-ÎLES',    YFC:'FREDERICTON',
   YYN:'SWIFT CURRENT',  YQL:'LETHBRIDGE',     YQF:'RED DEER',     YXH:'MEDICINE HAT',
   YAM:'SAULT STE. MARIE',YSB:'SUDBURY',        YYB:'NORTH BAY',    YPQ:'PETERBOROUGH',
-  YBG:'BAGOTVILLE',     YGP:'GASPE',          YUY:'ROUYN-NORANDA',YMT:'CHIBOUGAMAU',
+  YBG:'BAGOTVILLE',     YGP:'GASPÉ',          YUY:'ROUYN-NORANDA',YMT:'CHIBOUGAMAU',
   YZT:'PORT HARDY',     YYF:'PENTICTON',      YXT:'TERRACE',      YPR:'PRINCE RUPERT',
   YYD:'SMITHERS',       YDQ:'DAWSON CREEK',   YXS:'PRINCE GEORGE',YKA:'KAMLOOPS',
   YLW:'KELOWNA',        YAZ:'TOFINO',         YCD:'NANAIMO',      YBL:'CAMPBELL RIVER',
   YZF:'YELLOWKNIFE',    YFS:'FORT SIMPSON',   YPY:'FORT CHIPEWYAN',YBK:'BAKER LAKE',
-  YHR:'CHEVERY',        YGR:'ÎLES-DE-LA-MADELEINE', YRI:'RIVIERE-DU-LOUP', YBC:'BAIE-COMEAU',
+  YHR:'CHEVERY',        YGR:'ÎLES-DE-LA-MADELEINE', YRI:'RIVIÈRE-DU-LOUP', YBC:'BAIE-COMEAU',
   YTZ:'TORONTO',    YHM:'HAMILTON',       YKF:'KITCHENER',    YTS:'TIMMINS',
   YVO:'VAL-D\'OR',      YQY:'SYDNEY',      YXY:'WHITEHORSE',   YZP:'SANDSPIT',
   YQR:'REGINA',         YMM:'FORT MCMURRAY',  YGK:'KINGSTON',     YTH:'THOMPSON',
@@ -28007,9 +28012,15 @@ const COLOR_WORDMARKS = {
 // brand PNGs — no public vector anywhere). Same variant semantics: 'light'
 // = white art for dark boards, 'dark' = colored art for light boards.
 const WORDMARK_RASTER = {
+  // EVERY AIR INUIT FILE IS CROPPED TO THE ART (viewBox 51.69 71.62
+  // 376.62 176.7). They sat on a 480x320 canvas with the lockup in its
+  // middle half, so each surface drew the two lines at about half the size it
+  // asked for: on a board row, a lockup smaller than one line of the other
+  // carriers' lettering. Light rows take the colour original, so the
+  // syllabics keep their vermilion. (The '-black' cut drew nothing at all:
+  // its luminance mask had been recoloured black with the letters. Its mask
+  // is white again.)
   'airinuit': { light: '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg',
-                // NB: the '-black' file on disk is actually white fill — use
-                // the colour original for light rows.
                 dark:  '/logos/airlines/canadian-regional/airinuit.svg' },
   'caribbean': { light: '/logos/airlines/asian-other/caribbean-wordmark-light.png',
                  dark:  '/logos/airlines/asian-other/caribbean-wordmark-color.png' },
@@ -28752,8 +28763,14 @@ var _CITY2IATA_ALIAS = {
   pensacola: 'PNS', syracuse: 'SYR',
   raleighdurham: 'RDU', raleighdurhamnc: 'RDU'
 };
+// Accents are folded before anything else is dropped. Without that, the
+// accented letter itself was dropped: our tables write 'ÎLES-DE-LA-MADELEINE',
+// 'SEPT-ÎLES' and 'MONTRÉAL', which keyed as 'lesdelamadeleine', 'septles',
+// 'montral', and no feed's spelling ('Iles de la Madeleine', 'Sept Iles')
+// ever met them, so those rows lost their code chip and the airport's own
+// spelling of its name.
 function _normCityKey(s) {
-  return String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
 }
 function _iataFromCityName(name) {
   var k = _normCityKey(name);
@@ -28840,6 +28857,23 @@ function formatCityIata(raw, iata, langOverride) {
   if (!code) {
     var _guess = _iataFromCityName(city);
     if (_guess) code = _guess;
+  }
+  // THE AIRPORT'S OWN SPELLING. Where the feed's words are our table's name
+  // for the airport with its accents, hyphens or capitals lost ('ILES-DE-LA-
+  // MADELEINE', 'Iles de la Madeleine', 'Sept Iles', 'Mont Joli'), the name
+  // is written as the table writes it, in the board's language:
+  // 'Îles-de-la-Madeleine | YGR'. Words a feed wrote with accents of its own
+  // are kept, as is any other wording it chose ('Raleigh/Durham').
+  if (code) {
+    var _feedCity = _stripCityCode(city) || city;
+    var _feedKey = _normCityKey(_feedCity);
+    if (_feedKey && _feedCity === _feedCity.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) {
+      var _own = airportCityNameSafe_v21877(code, langOverride);
+      var _ownEn = airportCityNameSafe_v21877(code, 'en');
+      if (_own && (_feedKey === _normCityKey(_own) || _feedKey === _normCityKey(_ownEn))) {
+        city = normalizeDisplayCity(_own, code);
+      }
+    }
   }
   // IDEMPOTENT. This runs on strings that have already been through it —
   // and the dedupe/strip checks above only recognise the PARENTHESISED shape
@@ -30869,7 +30903,12 @@ function render() {
   //     fidsWxIcon() helper in fids-v2.js
   const _newHtml = pageFlights.map(f => {
     const loc       = isDep ? f.dest : f.origin;
-    let cityDisp  = (f._locIata ? formatCityIata(loc || f.origin || f.dest || f._locIata, f._locIata, lang) : normalizeDisplayCity(loc, f._locIata)) || '—';
+    // A row with no code of its own goes through formatCityIata too, not the
+    // bare casing: it keeps a code already on the label ('Iles de la
+    // Madeleine | YGR' lost it), finds the airport from a name only one of
+    // ours has, and then writes that airport's own spelling with its code
+    // ('ILES-DE-LA-MADELEINE' read 'Iles-de-la-Madeleine' with no chip).
+    let cityDisp  = (f._locIata ? formatCityIata(loc || f.origin || f.dest || f._locIata, f._locIata, lang) : formatCityIata(loc, '', lang)) || '—';
     // v218.44 final guard: some APIs leak display strings like Toronto-YYZ
     // into loc/city fields. Normalize again directly before rendering rows.
     if (f._locIata && typeof normalizeDisplayCity === 'function') {
@@ -35345,6 +35384,13 @@ function mapADB(raw, mode, kept) {
           }
         }
       }
+      // The fold above keeps hyphens and spaces apart, so a feed's
+      // 'Iles de la Madeleine' never met our 'ÎLES-DE-LA-MADELEINE', nor
+      // 'Sept Iles' 'SEPT-ÎLES': the row had no code, so the board showed the
+      // feed's words as they came, with no chip and no weather. The board's
+      // name index (_iataFromCityName) reads past both, and still names no
+      // airport for a city that has two.
+      if (!locIata && typeof _iataFromCityName === 'function') locIata = _iataFromCityName(cityName) || '';
     }
     let locName=formatCityIata(CITY[locIata] || cityName || locIata || '—', locIata);
     // Multi-stop rows (TPA through-flights) carry a comma list of cities in
@@ -37814,7 +37860,8 @@ function renderMobile() {
 function _mobileBuildContext(f, isDep) {
   // Common fields used by both hero and compact renderers.
   const loc = isDep ? f.dest : f.origin;
-  const cityDisplay = f._locIata ? formatCityIata(loc || f.origin || f.dest || f._locIata, f._locIata, lang) : normalizeDisplayCity(loc, f._locIata);
+  // (a row with no code: formatCityIata as on the board's rows, see render())
+  const cityDisplay = f._locIata ? formatCityIata(loc || f.origin || f.dest || f._locIata, f._locIata, lang) : formatCityIata(loc, '', lang);
   const acc   = ACCCLS[f.status] || '';
   const cls   = PILLCLS[f.status] || 'p-scheduled';
   const _hasGate = (f.gate && f.gate !== '—');
@@ -43687,7 +43734,8 @@ function tryPlayDestinationVideo() {
   }
 
   var destCity = (typeof CITY !== 'undefined' && CITY[destIata]) || (cf.dest || destIata);
-  try { destCity = _fidsTitleCase(destCity.toLowerCase()); } catch(e){}
+  // the board's shared casing (tc), as the rows: 'Îles-de-la-Madeleine'
+  try { destCity = tc(destCity); } catch(e){}
 
   // Pick a random item from the combined pool
   var pickedEntry = pool[Math.floor(Math.random() * pool.length)];
@@ -46060,8 +46108,9 @@ function getGateAds() {
       });
       destCity = (typeof CITY !== 'undefined' && CITY[destIata]) || cf.dest || destIata;
     }
-    // Title case — handles all-caps names like "CHICAGO O'HARE"
-    destCity = _fidsTitleCase(destCity.toLowerCase());
+    // Title case — handles all-caps names like "CHICAGO O'HARE" — in the
+    // board's shared casing (tc), as the rows: 'Îles-de-la-Madeleine'
+    destCity = tc(destCity);
   } catch(e) {}
 
   // Trigger Accor hotel fetch for this destination (non-blocking, cached).
@@ -49592,10 +49641,12 @@ var WELCOME_CARD_NO_EMBLEM = {
 // carrier: IATA_TO_WORDMARK maps Rouge to Air Canada's lettering. This is
 // Rouge's own "rouge" lettering, the white cut of its lockup without the
 // roundel.
-// Air Inuit: the board's light cut sits on a padded 480x320 canvas, nearly
+// Air Inuit: the board's light cut sat on a padded 480x320 canvas, nearly
 // half of it empty, which left a band of empty card above and below its two
 // lines here. Its white lettering cropped to the letters (the cut the
 // "Operated by" line draws) sits on the card like every other carrier's.
+// (The board's own Air Inuit files are cropped to the same box now, so
+// this is the same lettering in the same box the board draws.)
 var WELCOME_CARD_WORDMARK = {
   'RV':  '/logos/airlines/canadian/rouge-wordmark-light.svg',
   'ROU': '/logos/airlines/canadian/rouge-wordmark-light.svg',
