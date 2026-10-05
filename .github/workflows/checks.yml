@@ -26,9 +26,7 @@ jobs:
       - run: npm test
       - run: npm run assets:check
       # main's own board-languages guard on this change, from a worktree of
-      # origin/main: never this checkout's copy of it. (The run that decides
-      # is .github/workflows/board-languages.yml, which GitHub takes from main,
-      # so a pull request cannot edit it.)
+      # origin/main: never this checkout's copy of it.
       - name: Board languages, as main enforces them
         if: github.event_name == 'pull_request'
         env:

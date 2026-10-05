@@ -257,13 +257,10 @@ that uses it follows once it is merged. Every new exception is printed in
 the CI summary, approved or not.
 
 **Main's guard decides.** A pull request carries its own copy of the guard,
-and the "Repository checks" workflow runs from the pull request too, so a
-change could loosen a check, make a script exit early or drop a step. The
-run that decides is `.github/workflows/board-languages.yml` (job
-"board-languages (main's guard)"). It runs on `pull_request_target`, so
-GitHub takes the workflow from **main**, never from the pull request. It
-checks out main and, beside it, the pull request merged into main, and runs
-**main's** `tests/i18n/as-main.js --change <the merge>`, which:
+so on its own a change could loosen a check or make a script exit early. The
+"Board languages, as main enforces them" step of `.github/workflows/checks.yml`
+therefore checks out a worktree of **origin/main** and runs **main's**
+`tests/i18n/as-main.js --change <this checkout>`, which:
 
 * runs main's board-languages tests on main itself, for a baseline count;
 * lays the change's `fids-current/`, `workers/`, `worker-entry.js`, ledger,
@@ -275,8 +272,13 @@ checks out main and, beside it, the pull request merged into main, and runs
 * fails on any failure, and on any static test file that runs fewer tests
   than it does on main (a file that stops early with `process.exit(0)`).
 
-`checks.yml` runs the same from a worktree of `origin/main`, and locally
-`node tests/i18n/as-main.js` runs main's copy on your checkout.
+Locally, `node tests/i18n/as-main.js` runs main's copy on your checkout.
+
+There is deliberately no `pull_request_target` workflow: on a public
+repository that would run a fork's code with the base repository's
+privileges. The guard exists to stop accidental gaps; a deliberate edit to
+`checks.yml` or to the guard itself shows plainly in the diff and is caught
+in review.
 `.github/CODEOWNERS` names the guard's files (`tests/i18n/`,
 `tests/render/`, `tests/board-languages*`, `.github/`, `package.json`, this
 page) for the code-owner review in section 7.
