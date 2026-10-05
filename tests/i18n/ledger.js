@@ -22,7 +22,7 @@ const DEBT = path.join(__dirname, 'debt.json');
 const FROZEN = path.join(__dirname, 'legacy-keys.json');
 
 // Checks that are never ledgered: they must simply pass.
-const NEVER_LEDGERED = new Set(['B4', 'B12', 'B14', 'B16', 'B17', 'C1', 'C2', 'C3', 'P1', 'P2', 'L1', 'W1']);
+const NEVER_LEDGERED = new Set(['B4', 'B12', 'B14', 'B16', 'B17', 'C1', 'C2', 'C3', 'C4', 'P1', 'P2', 'L1', 'W1']);
 
 function load(file) {
   const f = file || DEBT;

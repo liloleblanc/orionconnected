@@ -31,6 +31,7 @@ function listEntries(P) {
     const e = P.SAME_AS_ENGLISH[en];
     return (e.langs || e).map((l) => en + ' ' + l);
   }));
+  out.SAME_ACROSS = [].concat(...keys(P.SAME_ACROSS).map((en) => (P.SAME_ACROSS[en].langs || []).map((l) => en + ' ' + l)));
   out.UNIT_TERMS = (P.UNIT_TERMS || []).slice();
   out.SAME_JA_ZH = keys(P.SAME_JA_ZH);
   out.NATIVE_WORDS = perFile(P.NATIVE_WORDS);

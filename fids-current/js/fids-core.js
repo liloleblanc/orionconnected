@@ -14170,7 +14170,7 @@ function uxgGateHtml(ctx) {
     if (!m) return s;
     var h24 = parseInt(m[1], 10);
     var mm = m[2];
-    var period = h24 >= 12 ? 'PM' : 'AM';
+    var period = h24 >= 12 ? 'PM' : 'AM'; // i18n-ok: code (the gate passes it through BoardStrings.boardClockText at render)
     var h12 = h24 % 12;
     if (h12 === 0) h12 = 12;
     return h12 + ':' + mm + ' ' + period;
@@ -15935,7 +15935,8 @@ function uxgGateHtml(ctx) {
       + '<div class="g8-cd-body g8-cd-mock">'
       + (function () {
           var _cdL = ['', ''];
-          _gateLbl('boardSoon', _frF, function (w, i) { _cdL[i ? 1 : 0] = w; return ''; }, '');
+          // each headline carries its language (an Arabic one its direction)
+          _gateLbl('boardSoon', _frF, function (w, i, l) { _cdL[i ? 1 : 0] = BoardStrings.markHalf(w, l, 'boardSoon'); return ''; }, '');
           return '<div class="g8-cd-label">' + (_cdL[0] || TL('boardSoon')) + '</div>'
             + '<div class="g8-cd-line">' + (_cdRondelleHtml() || '') + '</div>'
             + (_cdL[1] ? '<div class="g8-cd-label g8-cd-label2">' + _cdL[1] + '</div>' : '');
@@ -26860,7 +26861,7 @@ const LS = {
   flightDur: { en:'flight',fr:'de vol',es:'de vuelo',de:'Flug',it:'di volo',pt:'de voo',ja:'飛行',zh:'飞行',ar:'الرحلة', $ctx: 'duration' },
   duration:  { en:'Duration',fr:'Durée',es:'Duración',de:'Dauer',it:'Durata',pt:'Duração',ja:'所要時間',zh:'飞行时间',ar:'المدة' },
   arrivesFrom:{en:'THIS FLIGHT ARRIVES FROM',fr:'CE VOL ARRIVE DE',es:'ESTE VUELO LLEGA DESDE',de:'DIESER FLUG KOMMT AUS',it:'QUESTO VOLO ARRIVA DA',pt:'ESTE VOO CHEGA DE',ja:'この便の出発地',zh:'此航班来自',ar:'هذه الرحلة قادمة من' },
-  schedAbbr: { en:'Sched.',fr:'Prév.',es:'Prog.',de:'Plan.',it:'Prev.',pt:'Prev.',ja:'予定',zh:'计划',ar:'مجدول' },
+  schedAbbr: { en:'Sched.',fr:'Prév.',es:'Prog.',de:'Plan.',it:'Prev.',pt:'Prog.',ja:'予定',zh:'计划',ar:'مجدول' },
   minutes:   { en:'MINUTES',fr:'MINUTES',es:'MINUTOS',de:'MINUTEN',it:'MINUTI',pt:'MINUTOS',ja:'分',zh:'分钟',ar:'دقيقة' },
   minute:    { en:'MINUTE',fr:'MINUTE',es:'MINUTO',de:'MINUTE',it:'MINUTO',pt:'MINUTO',ja:'分',zh:'分钟',ar:'دقيقة' },
   depTime: { en:'Departure',fr:'Départ',es:'Salida',de:'Abflug',it:'Partenza',pt:'Partida',ja:'出発',zh:'出发',ar:'المغادرة' },
@@ -26875,7 +26876,7 @@ const LS = {
   inboundArrived:{ en:'The incoming flight from',fr:'Le vol en provenance de',es:'El vuelo procedente de',de:'Der Flug aus',it:'Il volo da',pt:'O voo de',ja:'到着便',zh:'来自',ar:'الرحلة من' },
   hasArrivedAtGate:{ en:'has arrived at the gate',fr:'est arrivé à la porte',es:'ha llegado a la puerta',de:'ist am Gate angekommen',it:'è arrivato al gate',pt:'chegou ao portão',ja:'がゲートに到着しました',zh:'已到达登机口',ar:'وصلت إلى البوابة' },
   noFlights:{ en:'No Flights',fr:'Aucun vol',es:'Sin vuelos',de:'Keine Flüge',it:'Nessun volo',pt:'Sem voos',ja:'フライトなし',zh:'无航班',ar:'لا رحلات' },
-  noAssigned:{ en:'No Assigned Arrivals',fr:'Aucune arrivée assignée',es:'Sin llegadas asignadas',de:'Keine zugewiesenen Ankünfte',it:'Nessun arrivo assegnato',pt:'Sem chegadas atribuídas',ja:'到着便なし',zh:'无分配到达',ar:'لا وصولات مخصصة' },
+  noAssigned:{ en:'No Assigned Arrivals',fr:'Aucune arrivée assignée',es:'Sin llegadas asignadas',de:'Keine zugewiesenen Ankünfte',it:'Nessun arrivo assegnato',pt:'Sem chegadas atribuídas',ja:'到着便なし',zh:'暂无指定到达航班',ar:'لا وصولات مخصصة' },
   enterBoard:{ en:'Enter Board',fr:'Accéder au tableau',es:'Entrar al tablero',de:'Zur Anzeige',it:'Apri il tabellone',pt:'Abrir o painel',ja:'ボードを開く',zh:'进入显示屏',ar:'الدخول إلى اللوحة' },
   goLive:  { en:'⚡ Go Live',fr:'⚡ En direct',es:'⚡ En vivo',de:'⚡ Live schalten',it:'⚡ In diretta',pt:'⚡ Ao vivo',ja:'⚡ ライブ',zh:'⚡ 实时',ar:'⚡ مباشر' },
   addFlight:{ en:'✚ Add Flight',fr:'✚ Ajouter vol',es:'✚ Agregar vuelo',de:'✚ Flug hinzufügen',it:'✚ Aggiungi volo',pt:'✚ Adicionar voo',ja:'✚ 便を追加',zh:'✚ 添加航班',ar:'✚ إضافة رحلة' },
@@ -26987,9 +26988,9 @@ const LS = {
   attentionMsg:{ en:'ATTENTION',fr:'ATTENTION',es:'ATENCIÓN',de:'ACHTUNG',it:'ATTENZIONE',pt:'ATENÇÃO',ja:'お知らせ',zh:'请注意',ar:'تنبيه' },
 
   // ── INBOUND PANEL LABELS ── (used by TL(), not SL())
-  scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
+  scheduled:       { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدولة' },
   revised:         { en:'Revised',fr:'Révisé',es:'Revisado',de:'Geändert',it:'Rivisto',pt:'Revisado',ja:'変更',zh:'更新',ar:'الوقت المعدَّل' },
-  arrivingFrom:    { en:'Arriving from',fr:'Provenant de',es:'Procedente de',de:'Ankommend aus',it:'In arrivo da',pt:'Proveniente de',ja:'出発地',zh:'来自',ar:'قادمة من' },
+  arrivingFrom:    { en:'Arriving from',fr:'Provenant de',es:'Procedente de',de:'Ankommend aus',it:'In arrivo da',pt:'Proveniente de',ja:'到着予定・出発地',zh:'来自',ar:'قادمة من' },
   yourAircraftLbl: { en:'YOUR AIRCRAFT',fr:'Votre avion',es:'Su avión',de:'IHR FLUGZEUG',it:'Il tuo aereo',pt:'Seu avião',ja:'ご搭乗機',zh:'您的飞机',ar:'طائرتك' },
   willBoardIn:     { en:'Your flight will begin boarding in approximately',fr:'Votre vol commencera l\'embarquement dans environ',es:'Su vuelo iniciará el embarque en aproximadamente',de:'Ihr Flug beginnt mit dem Boarding in etwa',it:'L\'imbarco del vostro volo inizierà tra circa',pt:'O seu voo iniciará o embarque em aproximadamente',ja:'ご搭乗開始まで約',zh:'您的航班将在大约',ar:'سيبدأ صعود رحلتكم خلال حوالي' },
   arrivedAtGate:   { en:'Arrived at the gate',fr:'Arrivé à la porte',es:'Llegó a la puerta',de:'Am Gate angekommen',it:'Arrivato al gate',pt:'Chegou ao portão',ja:'ゲートに到着',zh:'已到达登机口',ar:'وصلت إلى البوابة' },
@@ -27016,7 +27017,7 @@ const SS = {
   cancelled: { en:'Cancelled',fr:'Annulé',es:'Cancelado',de:'Annulliert',it:'Cancellato',pt:'Cancelado',ja:'欠航',zh:'取消',ar:'ملغاة' },
   departed:  { en:'Departed',fr:'Parti',es:'Despegó',de:'Gestartet',it:'Partito',pt:'Partiu',ja:'出発済',zh:'已起飞',ar:'غادرت' },
   arrived:   { en:'Arrived',fr:'Arrivé',es:'Llegó',de:'Angekommen',it:'Arrivato',pt:'Chegou',ja:'到着済',zh:'已到达',ar:'وصلت' },
-  scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
+  scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدولة' },
   // v23968 — an airport feed's own "Expected" is the store's stExpected
   // (board-strings.js; SS is frozen): SL('expected') finds it there.
   final:     { en:'Final call',fr:'Dernier appel',es:'Última llamada',de:'Letzter Aufruf',it:'Ultima chiamata',pt:'Última chamada',ja:'最終案内',zh:'最后登机',ar:'النداء الأخير' },
@@ -27815,12 +27816,12 @@ var _GATE_LBL = {
   // v23257 — the inbound card's banner names the movement, airport-PA style
   //
   // The en-route and landed variants.
-  arrivingFrom: { en:'Arriving From', fr:'Provenant de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'出発地',   zh:'来自',    ar:'قادمة من' },
+  arrivingFrom: { en:'Arriving From', fr:'Provenant de', es:'Procedente de', de:'Ankommend aus', it:'In arrivo da', pt:'Proveniente de', ja:'到着予定・出発地',zh:'来自',    ar:'قادمة من' },
   // v23295 — _gateLbl() reads _GATE_LBL, NOT LS; a key added to LS resolves to
   // an empty string and the line silently vanishes, which is what happened on
   // the first two attempts at this card. It belongs here, beside arrivingFrom,
   // because the bottom-right panel pairs the two when no inbound is tracked.
-  arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已到达，来自', ar:'وصل من' },
+  arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'到着済み・出発地',zh:'已到达，来自', ar:'وصل من' },
   // v23925 — the neutral inbound label: the arrivals board has let the flight
   // go and nothing says it landed, so it is neither "Arriving" nor "Arrived"
   // (_gateInbCaptionKey). It names where the aeroplane comes from, no more.
@@ -27897,7 +27898,7 @@ var _GATE_LBL = {
   zones:     { en:'Zones',         fr:'Zones',          es:'Zonas',        de:'Zonen',       it:'Zone',        pt:'Zonas',      ja:'ゾーン',    zh:'区域',   ar:'مناطق' },
   // v23223 — the boarding sign says what is still to come
   // 
-  comingUp:  { en:'Coming up',     fr:'À venir',        es:'Próximas',     de:'Als Nächstes', it:'In arrivo',  pt:'A seguir',   ja:'次',        zh:'即将',   ar:'قادم' },
+  comingUp:  { en:'Coming up',     fr:'À venir',        es:'Próximas',     de:'Als Nächstes', it:'In arrivo',  pt:'A seguir',   ja:'次',        zh:'接下来',   ar:'قادم' },
   // v23224 — PAL Airlines boards OPEN-FLOW (their published process: no
   // zones, no rows — pre-boarding, then one general call).
   // v23538 — the inbound shelf's PERMANENT header.
@@ -41507,7 +41508,7 @@ var AC_VIDEO_PLAYLISTS = {
 };
 var AC_VIDEO_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes — must be longer than play interval to ensure variety
 // Kept for backward-compat / logs
-var AC_VIDEO_PLAYLIST_ID = AC_VIDEO_PLAYLISTS.fr;
+var AC_VIDEO_PLAYLIST_ID = AC_VIDEO_PLAYLISTS.fr; // i18n-ok: code (a playlist id, kept for the logs)
 var AC_VIDEO_DEST_MAP = {
   // ── Europe ──────────────────────────────────────────────────────────
   'CDG': ['Paris'],            'ORY': ['Paris'],

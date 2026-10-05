@@ -82,6 +82,15 @@ const NON_PASSENGER = {
   'fids-current/js/screen-capture.js': 'operator: screen capture tool',
   'fids-current/js/studio-schema.js': 'operator: the Studio document schema and editor labels',
   'fids-current/css/menu.css': 'operator: the operator menu',
+  // loaded only by the Studio editor (studio/index.html) and the board
+  // designer (designer.html), operator pages
+  'fids-current/js/studio.js': 'operator: the Studio editor',
+  'fids-current/js/studio-compat.js': 'operator: the Studio editor',
+  'fids-current/js/designer.js': 'operator: the board designer',
+  'fids-current/css/studio.css': 'operator: the Studio editor',
+  'fids-current/css/studio-pilot.css': 'operator: the Studio editor',
+  'fids-current/css/studio-sections.css': 'operator: the Studio editor',
+  'fids-current/css/designer.css': 'operator: the board designer',
   '/mapcdn/leaflet.js': 'code: map library (vendor)',
   '/mapcdn/leaflet-arc.js': 'code: map library (vendor)'
 };
@@ -326,6 +335,35 @@ const SAME_AS_ENGLISH = {
   'Montreal · DC-9 · 1966–2002': { langs: ['es', 'de', 'it', 'pt'], why: 'data: a city, a type and two years (Italian writes Montréal)' }
 };
 
+// Spanish, Italian and Portuguese share many words. A value two of them
+// write the same is fine where each already writes its words elsewhere in
+// the store (Programado, Zona, Neve); one new to a language is read as the
+// other's word pasted in ('Tramo' in the Portuguese, 'Domani' in the
+// Portuguese), unless it is listed here, keyed by the English, with the
+// languages that really write it so (B3).
+const SAME_ACROSS = {
+  'expected': { langs: ['es', 'pt'], why: 'code: prevista (hora prevista) in both' },
+  'Expected': { langs: ['es', 'pt'], why: 'code: Previsto, as Spanish and Brazilian airports write the status' },
+  'Club Class': { langs: ['it', 'pt'], why: 'code: Classe Club, the cabin name in both' },
+  'NEXT HOURS': { langs: ['es', 'pt'], why: 'code: PRÓXIMAS HORAS in both' },
+  'Bar & lounge': { langs: ['it', 'pt'], why: 'code: Bar e lounge in both' },
+  'Airside': { langs: ['es', 'pt'], why: 'code: Satélite in both' },
+  'Remaining': { langs: ['es', 'pt'], why: 'code: Restante in both' },
+  'Operator': { langs: ['es', 'pt'], why: 'code: Operador in both' },
+  'Manufacturer': { langs: ['es', 'pt'], why: 'code: Fabricante in both' },
+  'Range': { langs: ['it', 'pt'], why: 'code: Autonomia in both' },
+  'Estimated': { langs: ['es', 'pt'], why: 'code: Estimado in both' },
+  'King Bed': { langs: ['es', 'pt'], why: 'code: Cama King, as hotels in both write it' },
+  'Date': { langs: ['it', 'pt'], why: 'code: Data in both' },
+  'Sched.': { langs: ['es', 'pt'], why: 'code: Prog. (Programado) in both' },
+  'MINUTE': { langs: ['es', 'it', 'pt'], why: 'code: MINUTO in all three' },
+  'Restaurants': { langs: ['es', 'pt'], why: 'code: Restaurantes in both' },
+  'Ecocertified': { langs: ['es', 'pt'], why: 'code: Ecocertificado in both' },
+  'Language': { langs: ['es', 'pt'], why: 'code: Idioma in both' },
+  'Typical Temp': { langs: ['es', 'pt'], why: 'code: Temp. típica in both' },
+  'International': { langs: ['es', 'pt'], why: 'code: Internacional in both' }
+};
+
 // Japanese written with exactly the characters Chinese uses, keyed by the
 // English. Each was checked: both languages write the word this way (雨 is
 // rain in both). Any other ja value equal to the zh one fails B3, so a
@@ -346,12 +384,12 @@ const SAME_JA_ZH = {
 const NATIVE_WORDS = {
   es: { error: 'code: the Spanish word', general: 'code: the Spanish word (Embarque general)', taxi: 'code: the Spanish word', club: 'code: the cabin name as Spanish writes it (Clase Club)' },
   fr: {
-    restaurant: 'code: the French word', site: 'code: the French word (site web)', double: 'code: the French word (lit double)',
+    site: 'code: the French word (site web)', double: 'code: the French word (lit double)',
     programme: 'code: the French word', image: 'code: the French word', unique: 'code: the French word',
     dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word', centre: 'code: the French word (centre-ville)',
     taxi: 'code: the French word', club: 'code: the cabin name as French writes it (Classe Club)'
   },
-  de: { restaurant: 'code: the German word', taxi: 'code: the German word', 'check-in': 'code: the word German airports use' },
+  de: { taxi: 'code: the German word', 'check-in': 'code: the word German airports use' },
   it: { 'check-in': 'code: the word Italian airports use', king: 'code: the bed size as Italian hotels write it (king size)', taxi: 'code: the Italian word' },
   pt: {
     'check-in': 'code: the word Brazilian airports use', site: 'code: the Brazilian word for a website', king: 'code: the bed size as Brazilian hotels write it',
@@ -454,6 +492,6 @@ const NON_PASSENGER_PAGES = {
 
 module.exports = {
   REASONS, PASSENGER_PAGES, PASSENGER_SCRIPTS, PASSENGER_STYLES, NON_PASSENGER, STORE_FILE, LANGS, DATA_TABLES, DATA_KEYS, LANG_RECORD_TABLES,
-  LEGACY_STORES, KEY_HELPERS, KEY_HELPERS_BY_FILE, NONTEXT_TABLES, BRAND_TERMS, UNIT_TERMS, SAME_AS_ENGLISH, SAME_JA_ZH, NATIVE_WORDS, DECISION_FILES,
+  LEGACY_STORES, KEY_HELPERS, KEY_HELPERS_BY_FILE, NONTEXT_TABLES, BRAND_TERMS, UNIT_TERMS, SAME_AS_ENGLISH, SAME_ACROSS, SAME_JA_ZH, NATIVE_WORDS, DECISION_FILES,
   OPERATOR_FUNCTIONS, TEXT_REWRITERS, LANG_STORAGE_FUNCTIONS, LANG_POSITION_FUNCTIONS, NON_PASSENGER_PAGES, DATA_WRITERS
 };

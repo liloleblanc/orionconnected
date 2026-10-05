@@ -11,5 +11,8 @@ function renderGood(n, a, b) {
   var cls = 'g8-row ' + (n > 1 ? 'is-many' : 'is-one');
   console.log('Loading flights for the gate now');
   document.getElementById('liveLabel').textContent = 'LIVE'; // i18n-ok: operator
+  // a pragma on a line of its own excuses the line below it
+  // i18n-ok: operator
+  document.getElementById('modeLabel').textContent = 'DEMO MODE';
   return h + pair + t + cls;
 }

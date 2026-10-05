@@ -121,7 +121,20 @@ const STORE_ATTACKS = [
   ['B3', /simplified Chinese/, 'simplified-Chinese characters in the Japanese'],
   ['B3', /English word 'closes'/, "an English paraphrase in the German ('Gate closes shortly')"],
   ['B17', /'On time' and 'Scheduled'/, 'two statuses with one word (定刻)'],
-  ['B16', /STR/, 'the store rewriting itself at run time']
+  ['B16', /STR/, 'the store rewriting itself at run time'],
+  ['B3', /'XXX' is a placeholder/, "a placeholder ('XXX') in the German"],
+  ['B3', /'？？？' is a placeholder/, "a placeholder ('？？？') in the Japanese"],
+  ['B3', /'—' is a placeholder/, 'a dash where the German belongs'],
+  ['B3', /Persian word 'فردا'/, "the Persian 'فردا' for Arabic"],
+  ['B3', /Persian or Urdu letter/, "the Urdu 'کل' for Arabic"],
+  ['B3', /es and pt both read 'Tramo'/, "the Spanish 'Tramo' pasted into the Portuguese"],
+  ['B3', /it and pt both read 'Domani'/, "the Italian 'Domani' pasted into the Portuguese"],
+  ['B3', /English word 'Doors'|English word 'momentarily'/, "English the store's English never uses ('Doors shut momentarily')"],
+  ['B3', /U\+FF34|U\+FF54|a look-alike/, "fullwidth letters ('Ｔｏｍｏｒｒｏｗ')"],
+  ['B3', /U\+1D21/, "a small capital ('Tomorroᴡ')"],
+  ['B1', /U\+034F/, 'a combining grapheme joiner hiding a copied word'],
+  ['B3', /de item 1 .*English words? 'PLEASE'/, 'an English line in the German ticker'],
+  ['B3', /de item 2 'TODO' is a placeholder/, "a 'TODO' line in the German ticker"]
 ];
 for (const [check, re, what] of STORE_ATTACKS) {
   test(`self-test: ${check} catches ${what}`, () => {
@@ -169,6 +182,17 @@ test('self-test: a feed worker writing its own English into a row fails (W1)', (
 });
 test('self-test: C2 catches a script injected at run time', () => {
   assert.ok(F.some((f) => f.check === 'C2' && /injected\.js/.test(f.text)));
+});
+test('self-test: a pragma at the end of a line of code never reaches the line below', () => {
+  assert.ok(F.some((f) => f.fn === 'atk_R5_pragmaBelow' && /Gate closes in ten minutes/.test(f.text)), 'the label under an inline pragma was hidden');
+  assert.ok(!F.some((f) => f.file === FX + 'clean.js' && /DEMO MODE/.test(f.text)), 'a pragma on a line of its own excuses the line below');
+});
+test('self-test: CSS that draws text without content: is read (B9)', () => {
+  for (const what of ['quotes', 'list-style-type', 'symbols']) assert.ok(F.some((f) => f.check === 'B9' && f.file === FX + 'bad.css' && new RegExp(what).test(f.msg)), what + ' was not read');
+  assert.ok(F.some((f) => f.check === 'B9' && f.fn === 'atk_R5_inlineVar'), 'a style="--x:…" drawn by content: var(--x)');
+});
+test('self-test: every script and stylesheet is classified (C4)', () => {
+  assert.ok(F.some((f) => f.check === 'C4' && /injected\.js/.test(f.text)), 'an unclassified script file');
 });
 
 // The ratchet: a new exception of any kind is reported against main.

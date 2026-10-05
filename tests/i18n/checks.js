@@ -72,12 +72,15 @@ const LATIN_ALPHABET = {
 const S_CYR = '\\u0400-\\u04FF', S_GRK = '\\u0370-\\u03FF', S_ARB = '\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF',
   S_HEB = '\\u0590-\\u05FF', S_KANA = '\\u3040-\\u30FF\\uFF66-\\uFF9F', S_HAN = '\\u3400-\\u4DBF\\u4E00-\\u9FFF\\uF900-\\uFAFF',
   S_HANGUL = '\\u1100-\\u11FF\\uAC00-\\uD7AF', S_INDIC = '\\u0900-\\u0DFF\\u0E00-\\u0E7F';
-const notLatin = new RegExp('[' + S_CYR + S_GRK + S_ARB + S_HEB + S_KANA + S_HAN + S_HANGUL + S_INDIC + ']', 'u');
+// Letters that look like Latin ones and are not: fullwidth forms ('Ｔｏｍｏｒｒｏｗ'),
+// small capitals and phonetic letters ('Tomorroᴡ'), mathematical letters.
+const S_LOOKALIKE = '\\uFF01-\\uFF5E\\u1D00-\\u1DBF\\u0250-\\u02AF\\u2C60-\\u2C7F\\uA720-\\uA7FF\\u{1D400}-\\u{1D7FF}\\u{1F130}-\\u{1F189}';
+const notLatin = new RegExp('[' + S_CYR + S_GRK + S_ARB + S_HEB + S_KANA + S_HAN + S_HANGUL + S_INDIC + S_LOOKALIKE + ']', 'u');
 const FOREIGN_SCRIPT = {
   en: notLatin, fr: notLatin, es: notLatin, de: notLatin, it: notLatin, pt: notLatin,
   ja: new RegExp('[' + S_CYR + S_GRK + S_ARB + S_HEB + S_HANGUL + S_INDIC + ']', 'u'),
   zh: new RegExp('[' + S_CYR + S_GRK + S_ARB + S_HEB + S_HANGUL + S_INDIC + S_KANA + ']', 'u'),
-  ar: new RegExp('[' + S_CYR + S_GRK + S_HEB + S_KANA + S_HAN + S_HANGUL + S_INDIC + ']', 'u')
+  ar: new RegExp('[' + S_CYR + S_GRK + S_HEB + S_KANA + S_HAN + S_HANGUL + S_INDIC + S_LOOKALIKE + ']', 'u')
 };
 // Characters only simplified Chinese writes (Japanese has its own forms:
 // 门 is 門, 时 is 時, 东 is 東): one in a Japanese value is pasted Chinese.
@@ -92,7 +95,43 @@ const ENGLISH_COMMON = ('the to for of your our now next please this that and no
   + 'snow showers clear partly mostly wind temperature feels like high low lounge shops food drink coffee free passengers passenger seat '
   + 'seats group priority members member families children assistance economy business first class premium travel traveller traveler '
   + 'documents passport ready keep follow signs please only also every each other while when where which who what why how about over under '
-  + 'between during without within near far left right up down back away again still just very much many some most few less least').split(' ');
+  + 'between during without within near far left right up down back away again still just very much many some most few less least '
+  // More of everyday English, so a translation written in English words the
+  // store's own English never uses ('Doors shut momentarily' for German) is
+  // still seen. Words that are also words of fr/es/de/it/pt (die, also,
+  // main, fine, come, hall, will, kind, see, still, train…) are left out.
+  + 'about above across action add afternoon against ago ahead airline airport aisle allow allowed almost alone along already always among '
+  + 'amount another answer anyone anything appear apply arrive asked asking avoid awake baby bag bags bathroom beach beautiful became because '
+  + 'become bed been behind believe belonging belongings below beside best better beyond big bill bit black blue both bottom bought box boy break '
+  + 'breakfast bring brought brown build building built busy but buy cab call called came cannot careful carry cart catch caught checked checkpoint '
+  + 'child choose city class clean clearly close clothes cloud coat cold collect coming confiscated connect connecting could count counter country '
+  + 'couple cover cross crowd cup current customer customs cut daily dark day days deal dear decide desk did different dinner direct dirty does '
+  + 'dog doing done door doors downstairs drink drive driver drop earth east easy eat edge either else empty end enjoy enough enter entrance entry '
+  + 'evening ever everyone everything exactly exit expect explain eye family fare fee feel feet field fight fill find finish fire fit flew floor fly '
+  + 'flying friend friendly front full fun gave get gets getting girl give given glad glass goes going gone good got great green ground grow guest '
+  + 'guide half happen happy hard head hear heard heavy held hello help her him his hold holiday home hope hot house however hurry husband inside '
+  + 'instead item items itself job join journey keep kept key kid kids lady landing large later leave leaving led less let letter lift light line '
+  + 'listen little look looking lose lost lot loud love luggage lunch made mail make making may maybe meal mean meet meeting men might mind miss '
+  + 'missed momentarily money month morning mother move moving must myself nearly need never news night nobody noise north nothing notice number '
+  + 'off offer office often old once one opened order out outside own paid pair paper parent past pay people perhaps person phone pick picture '
+  + 'piece plane planned play pocket point police poor possible power pretty price print problem pull push put quick quickly quiet quite ran rather '
+  + 'reach read really reason receive remain remember return road room round row run rush safe said same sat saw say says school security seem seen '
+  + 'sell send sent seven several shall she ship shoe shop short should show shower shown shut side sign since sir sit sitting size sky sleep slow '
+  + 'slowly small smoke smoking someone something sometimes sorry sound south speak special spend spent stay step store story straight street '
+  + 'strong such sun sure suspicious take taken talk tall tax tell than thank them then there these they thing things think third those though thought '
+  + 'three through throw ticket tickets till tired together told too took touch toward towards towel town tray tree trip trolley true trust truth try '
+  + 'trying turn twice two unattended understand unless upon upstairs use used useful usual usually visit voice walk walking wall want wanted wash '
+  + 'watch water way wear week weight well went were west what wheel wheelchair whether white whole whose wide wife window wish woman women '
+  + 'wonder word work world worry would write wrong year yes yet young yours yourself activity monitors suspicious belongings watching').split(' ');
+// Placeholders left where a translation belongs: a value of punctuation or
+// a dash only, '???', 'N/A', 'TBD', 'TODO', 'FIXME', 'XXX', 'Lorem ipsum'.
+const RE_PLACEHOLDER = /^\s*(?:[?\uFF1F.\u2026\u00B7\u2022\-\u2010-\u2015_*#~=+]+(?:\s+[?\uFF1F.\u2026\u00B7\u2022\-\u2010-\u2015_*#~=+]+)*|[Nn]\s*\/\s*[Aa]|TBD|TBA|TODO|FIXME|XXX+|[Ll]orem(?:\s+ipsum)?\b.*|placeholder|untranslated|undefined)\s*$/;
+const RE_PLACEHOLDER_IN = /\b(?:TODO|FIXME|XXX|TBD|TBA)\b|\b[Nn]\/[Aa]\b|\b[Ll]orem ipsum\b|\?\?|\uFF1F\uFF1F/;
+// Letters Persian and Urdu write and Arabic does not (keheh, Farsi yeh,
+// gaf, pe, che, zhe, the Urdu letters, the Persian digits), and Persian
+// words written with Arabic's own letters ('فردا', tomorrow, for غدًا).
+const RE_PERSIAN_URDU = /[پچژکگیےٹڈڑںھہۃ۰-۹]/;
+const PERSIAN_WORDS = new Set(['فردا', 'امروز', 'است', 'شما', 'از', 'را', 'هست', 'نیست', 'برای', 'دیروز', 'پرواز']);
 // rel words of a value, as written (case kept)
 function rawWordsOf(s) {
   return (stripEntities(stripTags(String(s).replace(RE_INVISIBLE_G, ''))).replace(/\{[A-Za-z0-9_]+\}|%[a-z]\b/g, ' ').match(/\p{L}[\p{L}'\u2019-]*/gu) || [])
@@ -108,7 +147,7 @@ function stripTags(s) { return String(s).replace(/<[^>]*>/g, ' '); }
 function stripEntities(s) { return String(s).replace(/&(?:[a-z]+|#\d+|#x[0-9a-f]+);/gi, ' '); }
 // Characters that draw nothing: a zero-width space hides 'Tomor\u200Brow'
 // from a comparison with 'Tomorrow' and from a reader not at all.
-const RE_INVISIBLE = /[\u00AD\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/;
+const RE_INVISIBLE = /[\u00AD\u034F\u115F\u1160\u180E\u200B-\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\u3164\uFE00-\uFE0F\uFEFF\uFFA0]/;
 const RE_INVISIBLE_G = new RegExp(RE_INVISIBLE.source, 'g');
 function norm(s) {
   return stripEntities(stripTags(String(s).replace(RE_INVISIBLE_G, ''))).replace(/\{[A-Za-z0-9_]+\}|%[a-z]\b/g, ' ').replace(/[\s\u00A0\u202F:\u00B7\u2022|\u2026.,;!?'\u2019"\u00AB\u00BB()\[\]\-\u2013\u2014/]+/g, ' ').trim().toLowerCase();
@@ -138,14 +177,21 @@ function run(options) {
   const exists = options.exists || ((rel) => fs.existsSync(path.join(ROOT, rel)));
   const load = (rel) => scan.load(rel, options.read ? read(rel) : undefined);
   const findings = [];
-  const used = { brand: new Set(), same: new Set(), op: new Set(), rewriters: new Set(), nontext: new Set(), storage: new Set(), data: new Set(), records: new Set(), position: new Set(), pages: new Set(), jazh: new Set(), native: new Set(), writers: new Set(), statusSame: new Set() };
+  const used = { brand: new Set(), same: new Set(), op: new Set(), rewriters: new Set(), nontext: new Set(), storage: new Set(), data: new Set(), records: new Set(), position: new Set(), pages: new Set(), jazh: new Set(), native: new Set(), writers: new Set(), statusSame: new Set(), across: new Set() };
   const pragmaHits = new Map();        // "file:line" -> reason
+  const pragmaOwnLine = new Set();     // "file:line" of a pragma on a line of its own
   const pragmaUsed = new Set();
   const add = (f) => {
-    // a pragma on the finding's line (or the line above) suppresses it
+    // A pragma excuses the code on its own line. A pragma on a line of its
+    // own (nothing but the comment there) excuses the line below it instead.
+    // A pragma at the end of a line of code never reaches the next line: a
+    // label written just under `x = 'Fairmont'; // i18n-ok: data` is new
+    // code, and must not hide behind an old exception (the ratchet would see
+    // nothing new, since the pragma's own line has not changed).
     const key = f.file + ':' + f.line, key0 = f.file + ':' + (f.line - 1);
     for (const k of [key, key0]) {
-      if (pragmaHits.has(k) && f.check !== 'P1' && f.check !== 'P2' && f.check !== 'C1' && f.check !== 'B4' && f.check !== 'B14') {
+      if (k === key0 && !pragmaOwnLine.has(k)) continue;
+      if (pragmaHits.has(k) && !/^(P1|P2|C1|C3|C4|B4|B14)$/.test(f.check)) {
         pragmaUsed.add(k);
         return;
       }
@@ -165,6 +211,12 @@ function run(options) {
 
   // ── pragmas ──
   for (const { rel, unit } of jsUnits) {
+    // the lines that carry code (a multi-line literal covers every line it spans)
+    const codeLines = new Set();
+    for (const tk of unit.toks) {
+      codeLines.add(tk.line);
+      if ((tk.t === 'str' || tk.t === 'tpl') && /\n/.test(String(tk.v))) for (let k = 1, n = String(tk.v).split('\n').length; k < n; k++) codeLines.add(tk.line + k);
+    }
     for (const c of unit.comments) {
       const m = /i18n-ok:\s*([a-z]+)?/.exec(c.v);
       if (!m) continue;
@@ -173,6 +225,7 @@ function run(options) {
         continue;
       }
       pragmaHits.set(rel + ':' + c.line, m[1]);
+      if (!codeLines.has(c.line) && !(c.endLine && c.endLine !== c.line)) pragmaOwnLine.add(rel + ':' + c.line);
     }
   }
 
@@ -208,6 +261,17 @@ function run(options) {
       const known = P.PASSENGER_PAGES.includes(rel) || Object.prototype.hasOwnProperty.call(P.NON_PASSENGER_PAGES || {}, rel);
       if (!known) add({ check: 'C1', file: page, line: lineOf(html, r), fn: null, text: rel, msg: `${rel} is shown or opened by a passenger page and is in neither PASSENGER_PAGES nor NON_PASSENGER_PAGES (tests/i18n/policy.js)` });
     }
+  }
+
+  // ── C4: every script and stylesheet is classified ──
+  // A new .js or .css file is in PASSENGER_SCRIPTS/PASSENGER_STYLES (and
+  // scanned) or in the reviewed NON_PASSENGER, however it is loaded: a
+  // script whose src is built from parts at run time is still a file here.
+  {
+    const root = P.PAGE_ROOT || 'fids-current';
+    const files = options.listAssets ? options.listAssets(root) : listFiles(path.join(ROOT, root), /\.(m?js|css)$/i).map((f) => path.posix.join(root, f));
+    const known = new Set(P.PASSENGER_SCRIPTS.concat(P.PASSENGER_STYLES, Object.keys(P.NON_PASSENGER)));
+    for (const f of files) if (!known.has(f)) add({ check: 'C4', file: f, line: 1, fn: null, text: f, msg: `${f} is in neither PASSENGER_SCRIPTS/PASSENGER_STYLES nor NON_PASSENGER (tests/i18n/policy.js): a script or stylesheet a passenger can see is scanned like every other` });
   }
 
   // ── C3: every page is classified ──
@@ -481,6 +545,21 @@ function run(options) {
       }
     }
   }
+  // the ticker lists too: their English is English, each item of another
+  // language a translation (an item is its own "entry")
+  for (const li of listObjects) {
+    li.itemObjs = li.items.map((item, k) => ({ list: li, k }));
+    li.items.forEach((item, k) => {
+      for (const raw of rawWordsOf(item)) {
+        const w = raw.toLowerCase().replace(/['\u2019-]+$/, '');
+        if (li.lang === 'en') ENGLISH_WORDS.add(w);
+        else if (['fr', 'es', 'de', 'it', 'pt'].includes(li.lang)) {
+          if (!TRANSLATED_WORDS.has(w)) TRANSLATED_WORDS.set(w, new Set());
+          TRANSLATED_WORDS.get(w).add(li.itemObjs[k]);
+        }
+      }
+    });
+  }
   const sameJaZh = (en) => {
     if (Object.prototype.hasOwnProperty.call(P.SAME_JA_ZH || {}, en)) { used.jazh.add(en); return true; }
     return false;
@@ -644,7 +723,7 @@ function run(options) {
         // the file a helper belongs to when the name is shared
         const scoped = (P.KEY_HELPERS_BY_FILE || {})[rel] || {};
         const real = al.fns.get(name);
-        tbls = scoped[name] || helperTables[name] || (real ? (helperTables[real] || STORE_METHODS[real]) : null);
+        tbls = scoped[name] || helperTables[name] || (real ? (scoped[real] || helperTables[real] || STORE_METHODS[real]) : null);
       }
       if (!tbls) continue;
       for (const k of keyLiterals(unit, i + 1)) {
@@ -821,32 +900,134 @@ function run(options) {
   // kept from the entry's own English stays only when it is a name (a word
   // of the name tables: 'Air France') or a brand: 'Gate Closing Bald' keeps
   // nothing from 'Gate closing soon' that is a name.
+  // An English word: one the store's English or everyday English writes, a
+  // plural of one ('doors'), or an English adverb ('momentarily').
+  // (A plural is read as English only in German and Italian, whose own
+  // plurals do not end in -s: French 'archives', Portuguese 'extras' are
+  // their own words.)
+  const isEnglishWord = (w, l) => w.length >= 3 && (ENGLISH_WORDS.has(w)
+    || ((l === 'de' || l === 'it') && w.length >= 5 && /[^s]s$/.test(w) && ENGLISH_WORDS.has(w.slice(0, -1)))
+    || (/^[a-z]{3,}ly$/.test(w) && w.length >= 6));
+  // the English words in one translation `v` of language l (an entry `o`,
+  // or one ticker item), past names, brands, web addresses, words another
+  // translation also uses, and the language's own words (NATIVE_WORDS)
+  const englishWordsIn = (l, v, en, self) => {
+    const out = [];
+    const enNames = new Set();
+    if (en != null) for (const seg of String(en).split(/\s*[\u00B7|:;.!?()\u2014\u2013]\s*/)) {
+      rawWordsOf(seg).forEach((w, k) => { if (/^\p{Lu}/u.test(w) && (k > 0 || /\p{Lu}/u.test(w.slice(1)))) enNames.add(w); });
+    }
+    const ownEn = new Set(en != null ? rawWordsOf(en) : []);
+    // a brand is its whole phrase ('Priority Pass'): taken out first
+    let vb = String(v);
+    for (const b of Object.keys(P.BRAND_TERMS)) if (vb.includes(b)) { vb = vb.split(b).join(' '); used.brand.add(b); }
+    for (const raw of rawWordsOf(vb)) {
+      const w = raw.toLowerCase().replace(/['\u2019-]+$/, '');
+      if (!isEnglishWord(w, l)) continue;
+      if (/^\p{Lu}/u.test(raw) && ownEn.has(raw) && (enNames.has(raw) || NAME_WORDS.has(w) || brand(raw))) continue;   // a name kept as written
+      if (new RegExp('(^|[^\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.(com|ca|org|net)\\b', 'iu').test(v)) continue;   // a web address
+      const users = TRANSLATED_WORDS.get(w);
+      if (users && [...users].some((x) => x !== self)) continue;              // another entry's translation uses it
+      if (nativeWord(l, w)) continue;
+      out.push(raw);
+    }
+    return out;
+  };
   for (const o of allTextObjects) {
     const en = o.langs.en;
     if (en == null) continue;
-    // the names inside the English: a capitalised word that does not start
-    // its phrase (the store's English is in sentence case: 'Earn Honors
-    // points', 'MET Norway'), a word of the name tables, or a brand
-    const enNames = new Set();
-    for (const seg of String(en).split(/\s*[\u00B7|:;.!?()\u2014\u2013]\s*/)) {
-      rawWordsOf(seg).forEach((w, k) => { if (/^\p{Lu}/u.test(w) && (k > 0 || /\p{Lu}/u.test(w.slice(1)))) enNames.add(w); });
-    }
     for (const l of ['fr', 'es', 'de', 'it', 'pt']) {
       const v = o.langs[l];
       if (v == null || brand(v) || sameAllowed(en, l)) continue;
-      const ownEn = new Set(rawWordsOf(en));
-      // a brand is its whole phrase ('Priority Pass'): taken out first
-      let vb = String(v);
-      for (const b of Object.keys(P.BRAND_TERMS)) if (vb.includes(b)) { vb = vb.split(b).join(' '); used.brand.add(b); }
-      for (const raw of rawWordsOf(vb)) {
-        const w = raw.toLowerCase().replace(/['\u2019-]+$/, '');
-        if (w.length < 3 || !ENGLISH_WORDS.has(w)) continue;
-        if (/^\p{Lu}/u.test(raw) && ownEn.has(raw) && (enNames.has(raw) || NAME_WORDS.has(w) || brand(raw))) continue;   // a name kept as written
-        if (new RegExp('(^|[^\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.(com|ca|org|net)\\b', 'iu').test(v)) continue;   // a web address
-        const users = TRANSLATED_WORDS.get(w);
-        if (users && [...users].some((x) => x !== o)) continue;              // another entry's translation uses it
-        if (nativeWord(l, w)) continue;
+      for (const raw of englishWordsIn(l, v, en, o))
         add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ' + l, msg: `${l} '${shortText(v)}' has the English word '${raw}' \u2014 translate it; if it really is ${LANG_NAME[l]}, list it in NATIVE_WORDS (tests/i18n/policy.js)` });
+    }
+  }
+  // the ticker lists: an English line in another language's list, at its own
+  // place or any other ('PLEASE WATCH YOUR BELONGINGS' in the German)
+  for (const li of listObjects) {
+    if (!['fr', 'es', 'de', 'it', 'pt'].includes(li.lang)) continue;
+    li.items.forEach((item, k) => {
+      if (brand(item)) return;
+      const hits = englishWordsIn(li.lang, item, null, li.itemObjs[k]);
+      if (hits.length) add({ check: 'B3', file: li.file, line: li.line, fn: li.fn, text: li.key + ' ' + li.lang + ' ' + shortText(item), msg: `${li.lang} item ${k + 1} '${shortText(item)}' has the English word${hits.length > 1 ? 's' : ''} ${hits.map((h) => "'" + h + "'").join(', ')} \u2014 translate it` });
+    });
+  }
+
+  // ── B3: placeholders, Persian in the Arabic, another Romance language ──
+  // A placeholder where a translation belongs ('???', '—', 'TBD', 'TODO',
+  // 'N/A', 'Lorem ipsum'): it has no words, or it is not words at all.
+  {
+    // ('todo' is Spanish and Portuguese for 'all', and English writes TBD
+    // and N/A as words of its own)
+    const placeholderIn = (v, en, l) => {
+      const x = String(v).replace(/\{[A-Za-z0-9_]+\}/g, ' ');
+      const own = (tok) => (/^todo$/i.test(tok) && (l === 'es' || l === 'pt')) || (/^(TBD|TBA|N\/A)$/i.test(tok) && l === 'en')
+        || (en != null && String(en).includes(tok));
+      if (RE_PLACEHOLDER.test(x) && !own(x.trim())) return x.trim() || '(blank)';
+      for (const m of x.matchAll(new RegExp(RE_PLACEHOLDER_IN.source, 'g'))) if (!own(m[0])) return m[0];
+      return null;
+    };
+    for (const o of allTextObjects) {
+      for (const l of LANGS) {
+        const v = o.langs[l];
+        if (v == null) continue;
+        const ph = placeholderIn(v, l === 'en' ? null : o.langs.en, l);
+        if (ph != null) add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: (o.langs.en || o.key) + ' ' + l, msg: `${l} '${shortText(v)}' is a placeholder (${shortText(ph)}), not a translation \u2014 write the ${LANG_NAME[l]} words` });
+      }
+    }
+    for (const li of listObjects) li.items.forEach((item, k) => {
+      const ph = placeholderIn(item, null, li.lang);
+      if (ph != null) add({ check: 'B3', file: li.file, line: li.line, fn: li.fn, text: li.key + ' ' + li.lang + ' ' + shortText(item), msg: `${li.lang} item ${k + 1} '${shortText(item)}' is a placeholder, not a translation` });
+    });
+    // Persian or Urdu written for Arabic: their own letters, or a Persian
+    // word in Arabic's letters
+    const persianIn = (v) => {
+      const m = RE_PERSIAN_URDU.exec(String(v));
+      if (m) return `'${m[0]}' (U+${m[0].codePointAt(0).toString(16).toUpperCase().padStart(4, '0')}), a Persian or Urdu letter`;
+      const w = (String(v).match(/[\u0600-\u06FF]+/g) || []).map((x) => x.replace(/[\u064B-\u065F\u0670]/g, '')).find((x) => PERSIAN_WORDS.has(x));
+      return w ? `the Persian word '${w}'` : null;
+    };
+    for (const o of allTextObjects) {
+      if (o.langs.ar == null) continue;
+      const p = persianIn(o.langs.ar);
+      if (p) add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: (o.langs.en || o.key) + ' ar', msg: `ar '${shortText(o.langs.ar)}' has ${p} \u2014 Persian or Urdu, not Arabic` });
+    }
+    for (const li of listObjects) if (li.lang === 'ar') li.items.forEach((item, k) => {
+      const p = persianIn(item);
+      if (p) add({ check: 'B3', file: li.file, line: li.line, fn: li.fn, text: li.key + ' ar ' + shortText(item), msg: `ar item ${k + 1} has ${p} \u2014 Persian or Urdu, not Arabic` });
+    });
+
+    // Spanish, Italian or Portuguese pasted into another of the three. The
+    // three share many words (Programado, Zona, Neve), so a shared value is
+    // fine when each language already writes its words in another entry of
+    // the store. A value that is new to one of them and is the other's word
+    // ('Tramo' in the Portuguese as in the Spanish, 'Domani' in the
+    // Portuguese) is a paste, unless SAME_ACROSS (tests/i18n/policy.js) says
+    // both languages write it so.
+    const ROM = ['es', 'it', 'pt'];
+    const attested = Object.fromEntries(ROM.concat(['fr']).map((l) => [l, new Map()]));
+    const note = (l, w, who) => { const m = attested[l]; if (!m) return; if (!m.has(w)) m.set(w, new Set()); m.get(w).add(who); };
+    const romWords = (s) => rawWordsOf(String(s)).map((w) => w.toLowerCase()).filter((w) => w.length >= 3);
+    for (const o of allTextObjects) for (const l of Object.keys(attested)) if (o.langs[l] != null) for (const w of romWords(o.langs[l])) note(l, w, o);
+    for (const li of listObjects) if (attested[li.lang]) li.items.forEach((item, k) => { for (const w of romWords(item)) note(li.lang, w, li.itemObjs[k]); });
+    const elsewhere = (l, w, self) => [...(attested[l].get(w) || [])].some((x) => x !== self);
+    const sameAcross = (en, a, b) => {
+      const e = (P.SAME_ACROSS || {})[en];
+      if (e && (e.langs || []).includes(a) && (e.langs || []).includes(b)) { used.across.add(en); return true; }
+      return false;
+    };
+    for (const o of allTextObjects) {
+      const en = o.langs.en;
+      if (en == null) continue;
+      for (let a = 0; a < ROM.length; a++) for (let b = a + 1; b < ROM.length; b++) {
+        const la = ROM[a], lb = ROM[b], va = o.langs[la], vb = o.langs[lb];
+        if (va == null || vb == null) continue;
+        const nv = norm(va);
+        if (nv !== norm(vb) || nv === norm(en) || !romWords(va).length) continue;
+        const newTo = [la, lb].filter((l) => romWords(o.langs[l]).some((w) => !elsewhere(l, w, o) && !nativeWord(l, w)));
+        if (!newTo.length || sameAcross(en, la, lb)) continue;
+        add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ' + la + '=' + lb, msg: `${la} and ${lb} both read '${shortText(va)}', and ${newTo.map((l) => LANG_NAME[l]).join(' and ')} use${newTo.length > 1 ? '' : 's'} its words nowhere else in the store \u2014 one language's word pasted into the other? If both really write it so, list '${en}' in SAME_ACROSS (tests/i18n/policy.js)` });
       }
     }
   }
@@ -865,6 +1046,24 @@ function run(options) {
     for (const m of html.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)) cssTexts.push({ rel: page, css: m[1], offset: lineOf(html, m[0]) - 1 });
   }
   for (const { css } of cssTexts) for (const m of css.matchAll(/content\s*:\s*[^;]*attr\(\s*(data-[\w-]+)/g)) contentAttrs.add(m[1]);
+  // custom properties a stylesheet draws as text: content: var(--x)
+  const contentVars = new Set();
+  for (const { css } of cssTexts) for (const d of css.matchAll(/content\s*:\s*([^;{}]*)/g)) for (const m of d[1].matchAll(/var\(\s*(--[\w-]+)/g)) contentVars.add(m[1]);
+  // CSS text drawn on screen besides content: quotes (open-quote), a list
+  // marker string, a @counter-style's symbols, prefix and suffix, and a
+  // custom property drawn with content: var(--x)
+  const cssDrawnStrings = (text) => {
+    const out = [];
+    const clean = String(text).replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
+    for (const d of clean.matchAll(/(?:^|[;{\s"'])(quotes|list-style(?:-type)?|symbols|additive-symbols|prefix|suffix|negative|pad|(--[\w-]+))\s*:\s*([^;{}]*)/g)) {
+      if (d[2] && !contentVars.has(d[2])) continue;
+      for (const m of d[3].replace(/url\(\s*(["']?)[^)]*\1\s*\)/g, ' ').matchAll(/(["'])((?:\\.|(?!\1).)*)\1/g)) {
+        const v = m[2].replace(/\\[0-9a-fA-F]{1,6}\s?/g, ' ').replace(/\\(.)/g, '$1');
+        if (countsAsWords(v)) out.push({ v, prop: d[1], at: d.index });
+      }
+    }
+    return out;
+  };
 
   const opFns = P.OPERATOR_FUNCTIONS;
   // An operator function is named by its own name, or by its path when the
@@ -1058,6 +1257,7 @@ function run(options) {
           const v = m[2].replace(/\\[0-9a-fA-F]{1,6}\s?/g, ' ').replace(/\\(.)/g, '$1');
           if (countsAsWords(v)) add({ check: 'B9', file: rel, line: tk.line, fn, text: v, msg: `CSS content '${shortText(v)}' written from code is passenger text in one language \u2014 render it from the store as markup` });
         }
+        if (/(quotes|list-style|symbols|prefix|suffix|--[\w-]+)\s*:/.test(String(tk.v))) for (const x of cssDrawnStrings(tk.v)) add({ check: 'B9', file: rel, line: tk.line, fn, text: x.v, msg: `CSS ${x.prop} '${shortText(x.v)}' written from code is drawn on screen as text in one language \u2014 render it from the store` });
         const fr0 = unit.frameOf[i];
         if (fr0 >= 0 && t[fr0].v === '(' && t[fr0 - 1] && t[fr0 - 1].v === 'setProperty' && argIndex(t, i, unit) === 1) {
           const q = /^\s*(["'])(.*)\1\s*$/.exec(String(tk.v));
@@ -1101,17 +1301,24 @@ function run(options) {
           if (!(TEXT_ATTRS.has(a.name) || (a.name === 'value' && /^(input|button|option)$/i.test(a.tag || ''))) || !countsAsWords(a.value.trim())) continue;
           add({ check: 'B5', file: rel, line: tk.line, fn, text: a.name + '=' + a.value.trim(), msg: `'${shortText(a.value)}' is written into a ${a.name} attribute \u2014 render it from the store (bs(), or bsPair({ plain: true }))` });
         }
+        // a style="" that draws text: --x:'…' read by content: var(--x),
+        // quotes, a list marker string
+        for (const a of res.attrs) {
+          if (a.name !== 'style') continue;
+          const val = a.value.replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'");
+          for (const x of cssDrawnStrings(val)) add({ check: 'B9', file: rel, line: tk.line, fn, text: x.v, msg: `CSS ${x.prop} '${shortText(x.v)}' in a style attribute is drawn on screen as text in one language \u2014 render it from the store` });
+        }
         // a language half built by hand: <span lang="fr">…
         for (const a of res.attrs) {
           if (a.name === 'lang' && LSET.has(a.value.trim()) && !a.open)
             add({ check: 'B5', file: rel, line: tk.line, fn, text: 'lang="' + a.value.trim() + '"', msg: `a ${a.value.trim()} half built by hand; the store's helpers (bsPair, BoardStrings.half/markHalf with a key) mark halves, and choose their words` });
         }
         for (const r of runs) {
-          const rec = { check: 'B5', file: rel, line: tk.line, fn, text: r, msg: `'${shortText(r)}' is written into markup \u2014 add a key to BOARD_STR (board-strings.js) with all nine languages and render it with bs()/bsPair()` };
+          const rec = { check: 'B5', file: rel, line: tk.line, fn, text: r, msg: looksLikeName(r) ? `'${shortText(r)}' is written into markup \u2014 ${wordAdvice(r)}` : `'${shortText(r)}' is written into markup \u2014 add a key to BOARD_STR (board-strings.js) with all nine languages and render it with bs()/bsPair()` };
           if (f.tag || res.tag) add(rec);
           else {
             rec.sentence = ctx === 'plain' && isSentence(r) ? { check: 'B5', file: rel, line: tk.line, fn, text: r, msg: `'${shortText(r)}' is an English sentence in passenger code \u2014 it belongs in the store` } : null;
-            rec.label = !rec.sentence && ctx === 'plain' && isLabel(r) ? { check: 'B15', file: rel, line: tk.line, fn, text: r, msg: `'${shortText(r)}' is a passenger word kept outside the store \u2014 in a variable, a property, a list or a return value it reaches the screen all the same. Add it to BOARD_STR (board-strings.js) with all nine languages and render it with bs()/bsPair()` } : null;
+            rec.label = !rec.sentence && ctx === 'plain' && isLabel(r) ? { check: 'B15', file: rel, line: tk.line, fn, text: r, msg: `'${shortText(r)}' is a passenger word kept outside the store \u2014 in a variable, a property, a list or a return value it reaches the screen all the same. ${wordAdvice(r)}` } : null;
             f.pend.push(rec);
           }
         }
@@ -1298,7 +1505,7 @@ function run(options) {
       const v = t[i].v;
       const plain = stripEntities(stripTags(v)).trim();
       if (REPORTED.has(rel + ':' + t[i].line + ':' + plain)) return;
-      add({ check: 'B15', file: rel, line: t[i].line, fn: unit.fnAt[i], text: plain, msg: `'${shortText(plain)}' reaches the screen through ${why} — a word a passenger reads comes from the store: add it to BOARD_STR (board-strings.js) with all nine languages and render it with bs()/bsPair()` });
+      add({ check: 'B15', file: rel, line: t[i].line, fn: unit.fnAt[i], text: plain, msg: `'${shortText(plain)}' reaches the screen through ${why} \u2014 ${wordAdvice(plain)}` });
     };
     for (let i = 0; i < t.length; i++) {
       const tk = t[i];
@@ -1470,6 +1677,21 @@ function run(options) {
     if (words.length < 2) return false;
     if (words.length < x.split(/\s+/).length * 0.6) return false;
     return words.some((w) => FUNCTION_WORDS.has(w.replace(/[.,:!?\u2026]$/, '').toLowerCase()));
+  }
+
+  // A literal that reads as a name (every word capitalised, none a word the
+  // store or everyday English uses): 'Fiumicino', 'Daxing', 'Congonhas'.
+  // Names are data (decision D2: they stay as written), so their home is a
+  // name table, not the store.
+  function looksLikeName(x) {
+    const ws = rawWordsOf(String(x));
+    if (!ws.length || !ws.some((w) => w.length >= 3)) return false;
+    return ws.every((w) => /^\p{Lu}/u.test(w) && !LABEL_WORDS.has(w.toLowerCase()) && !ENGLISH_WORDS.has(w.toLowerCase()) && !VOCAB.has(w.toLowerCase()));
+  }
+  function wordAdvice(x) {
+    return looksLikeName(x)
+      ? `'${shortText(x)}' reads as a name. A name is data, kept as written (decision D2): it belongs in a name table listed in DATA_TABLES (tests/i18n/policy.js) \u2014 a new name table is an exception, approved on its own first. If it is a word a passenger reads, add it to BOARD_STR (board-strings.js) with all nine languages`
+      : 'Add it to BOARD_STR (board-strings.js) with all nine languages and render it with bs()/bsPair()';
   }
 
   function walkLanguageChoice(rel, unit) {
@@ -1664,6 +1886,148 @@ function run(options) {
           }
         }
       }
+      // text built so that no literal shows it: String.fromCharCode(71, 97…),
+      // atob('R2F0ZQ=='), ['G','a','t','e'].join(''), 'setag'.split('').reverse()
+      if (tk.t === 'id' && /^(fromCharCode|fromCodePoint)$/.test(tk.v) && t[i + 1] && t[i + 1].v === '(' && unit.closeOf[i + 1] != null && !inLogCall(unit, i)) {
+        const args = t.slice(i + 2, unit.closeOf[i + 1]).filter((x) => x.v !== ',');
+        if (args.length >= 2 && args.every((x) => x.t === 'num')) add({ check: 'B5', file: rel, line: tk.line, fn, text: String.fromCharCode(...args.map((x) => +x.v)), msg: 'text built from character codes — a word a passenger reads comes from the store, written as itself' });
+      }
+      if (tk.t === 'id' && tk.v === 'atob' && t[i + 1] && t[i + 1].v === '(' && t[i + 2] && t[i + 2].t === 'str' && t[i + 3] && t[i + 3].v === ')' && !inLogCall(unit, i)) {
+        let dec = ''; try { dec = Buffer.from(t[i + 2].v, 'base64').toString('utf8'); } catch (e) { dec = ''; }
+        add({ check: 'B5', file: rel, line: tk.line, fn, text: dec || t[i + 2].v, msg: 'text hidden in base64 (atob of a literal) — a word a passenger reads comes from the store, written as itself' });
+      }
+      if (tk.t === 'punc' && tk.v === '[' && unit.closeOf[i] != null && t[unit.closeOf[i] + 1] && t[unit.closeOf[i] + 1].v === '.' && t[unit.closeOf[i] + 2] && t[unit.closeOf[i] + 2].v === 'join'
+          && !(t[i - 1] && (t[i - 1].t === 'id' || t[i - 1].v === ')' || t[i - 1].v === ']'))) {
+        const items = t.slice(i + 1, unit.closeOf[i]).filter((x) => x.v !== ',');
+        if (items.length >= 3 && items.every((x) => x.t === 'str' && [...x.v].length <= 1) && /\p{L}{3}/u.test(items.map((x) => x.v).join('')))
+          add({ check: 'B5', file: rel, line: tk.line, fn, text: items.map((x) => x.v).join(''), msg: 'a word spelled out letter by letter and joined — a word a passenger reads comes from the store' });
+      }
+      if (tk.t === 'str' && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && t[i + 2].v === 'split' && t[i + 3] && t[i + 3].v === '(' && t[i + 4] && t[i + 4].t === 'str' && t[i + 4].v === ''
+          && t[i + 5] && t[i + 5].v === ')' && t[i + 6] && t[i + 6].v === '.' && t[i + 7] && t[i + 7].v === 'reverse' && /\p{L}{3}/u.test(tk.v))
+        add({ check: 'B5', file: rel, line: tk.line, fn, text: [...tk.v].reverse().join(''), msg: 'a word written backwards and reversed at run time — a word a passenger reads comes from the store' });
+      // JSON.parse of a literal: its strings are literals all the same
+      if (tk.t === 'id' && tk.v === 'parse' && t[i - 1] && t[i - 1].v === '.' && t[i - 2] && t[i - 2].v === 'JSON' && t[i + 1] && t[i + 1].v === '(' && t[i + 2] && t[i + 2].t === 'str' && t[i + 3] && t[i + 3].v === ')') {
+        let obj = null; try { obj = JSON.parse(t[i + 2].v); } catch (e) { obj = null; }
+        const strs = [];
+        (function walk(x) { if (typeof x === 'string') strs.push(x); else if (x && typeof x === 'object') for (const k of Object.keys(x)) { strs.push(k); walk(x[k]); } })(obj);
+        for (const v of strs) if (!codeShaped(v) && (isLabel(v) || isSentence(v)) && !fnIsOperator(rel, fn, unit.fnPathAt[i]))
+          add({ check: 'B15', file: rel, line: tk.line, fn, text: v, msg: `'${shortText(v)}' is a passenger word inside a JSON literal — add it to BOARD_STR (board-strings.js) with all nine languages` });
+      }
+      // a label kept as an object key and read back by Object.keys/entries
+      if (tk.t === 'id' && tk.v === 'Object' && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && /^(keys|entries|getOwnPropertyNames)$/.test(t[i + 2].v) && t[i + 3] && t[i + 3].v === '(' && t[i + 4] && t[i + 4].v === '{' && unit.isObj[i + 4]) {
+        const o = unit.objects.find((x) => x.open === i + 4);
+        for (const k of (o ? o.keys : [])) if (/[\s\p{Lu}]/u.test(k.k) && (isLabel(k.k) || isSentence(k.k)) && !fnIsOperator(rel, fn, unit.fnPathAt[i]))
+          add({ check: 'B15', file: rel, line: k.line, fn, text: k.k, msg: `'${shortText(k.k)}' is a passenger word kept as an object key and read back with Object.${t[i + 2].v} — add it to BOARD_STR (board-strings.js) with all nine languages` });
+      }
+      // ── a language fixed another way (round 5) ──
+      // a language held in a name: var L = 'fr'; bs(k, L) — also 'f' + 'r',
+      // { l: 'fr' }.l. Every value the name is given in its scope is a
+      // literal language code.
+      if (tk.t === 'punc' && tk.v === '(' && unit.closeOf[i] != null) {
+        const call = storeCallAt(unit, i, rel);
+        if (call) {
+          const close = unit.closeOf[i];
+          let a = i + 1;
+          while (a < close) {
+            let b = a, d = 0;
+            for (; b < close; b++) { const x = t[b]; if (x.v === '(' || x.v === '[' || x.v === '{' || x.v === '${') d++; else if (x.v === ')' || x.v === ']' || x.v === '}' || x.v === '}$') d--; else if (d === 0 && x.v === ',') break; }
+            const n0 = b - a;
+            const simple = t[a] && t[a].t === 'id' && !JS_WORDS.has(t[a].v) && (n0 === 1 || (n0 === 3 && (t[a + 1].v === '.' || t[a + 1].v === '?.') && t[a + 2].t === 'id')
+              || (n0 === 4 && t[a + 1].v === '[' && t[a + 2].t === 'str' && t[a + 3].v === ']'));
+            if (simple && !/^(BoardStrings|Strings|window|self|globalThis)$/.test(t[a].v)) {
+              const r = assignedValues(unit, a);
+              if (r.lits.length && !r.other && r.lits.every((v) => LSET.has(v)))
+                add({ check: 'B11', file: rel, line: t[a].line, fn, text: call.name + '(…' + t.slice(a, b).map((x) => x.v).join('') + "='" + r.lits[0] + "'…)", msg: `${call.name}() is given the language '${r.lits[0]}' through ${t.slice(a, b).map((x) => x.v).join('')} — the board's languages decide (bsPairLangs(langs, iata) for the pair, \`lang\` for the language on screen), never a fixed one` });
+            }
+            a = b + 1;
+          }
+        }
+      }
+      // the board's languages overwritten: lang = 'en', langs = ['en', 'fr'],
+      // langs.splice(0, langs.length, 'en', 'fr')
+      if (tk.t === 'id' && /^(lang|langs|_boardLangs|boardLangs)$/.test(tk.v) && !(t[i - 1] && /^(\.|\?\.|var|let|const)$/.test(t[i - 1].v))) {
+        const nx = t[i + 1];
+        let lit = null;
+        if (nx && nx.v === '=' && t[i + 2]) {
+          if (t[i + 2].t === 'str' && LSET.has(t[i + 2].v) && t[i + 3] && /^[;,)}]$/.test(t[i + 3].v)) lit = t[i + 2].v;
+          else if (t[i + 2].v === '[' && unit.closeOf[i + 2] != null) {
+            const c = unit.closeOf[i + 2], items = t.slice(i + 3, c).filter((x) => x.v !== ',');
+            if (items.length && items.every((x) => x.t === 'str' && LSET.has(x.v))) lit = '[' + items.map((x) => x.v).join(',') + ']';
+          }
+        } else if (nx && nx.v === '.' && t[i + 2] && /^(splice|push|unshift|fill)$/.test(t[i + 2].v) && t[i + 3] && t[i + 3].v === '(' && unit.closeOf[i + 3] != null) {
+          const c = unit.closeOf[i + 3];
+          const codes = t.slice(i + 4, c).filter((x) => unit.frameOf[t.indexOf(x)] === i + 3 && x.t === 'str' && LSET.has(x.v));
+          if (codes.length) lit = t[i + 2].v + '(' + codes.map((x) => x.v).join(',') + ')';
+        }
+        if (lit) add({ check: 'B11', file: rel, line: tk.line, fn, text: tk.v + ' = ' + lit, msg: `the board's languages overwritten with ${lit} — they are chosen by the resolver (bsResolveLangs) and toggleLang, never fixed in code` });
+      }
+      // a language picked by a literal out of a table: X.fr, X['fr'],
+      // BoardStrings.entry(k).fr (x.en has its own rule above). META holds
+      // settings, not words.
+      if (((tk.t === 'id' && LSET.has(tk.v) && tk.v !== 'en' && t[i - 1] && (t[i - 1].v === '.' || t[i - 1].v === '?.'))
+          || (tk.t === 'str' && LSET.has(tk.v) && t[i - 1] && t[i - 1].v === '[' && t[i + 1] && t[i + 1].v === ']'))
+          && t[i - 2] && ((t[i - 2].t === 'id' && !JS_WORDS.has(t[i - 2].v)) || t[i - 2].v === ')' || t[i - 2].v === ']') && t[i - 2].v !== 'META'
+          && !(t[i + (tk.t === 'str' ? 2 : 1)] && /^(=|\+=|\|\|=|\?\?=)$/.test(t[i + (tk.t === 'str' ? 2 : 1)].v))
+          && !(t[i + 1] && t[i + 1].v === '(')) {
+        const helperFns = new Set(['TL', 'TLF', 'SL', '_legacyPair', '_gateLbl', '_gateLbl1', '_gateLaneLbl', 'adTL', 'fidsT', 'T']);
+        const recv = t[i - 2].t === 'id' ? t[i - 2].v : '(…)';
+        const isMetaChain = t[i - 3] && t[i - 3].v === '.' && t[i - 4] && t[i - 4].v === 'META';
+        if (!isMetaChain && !(fn && helperFns.has(fn)) && !(tables[recv] && tables[recv].file === rel && ((P.LEGACY_STORES.find((x) => x.name === recv) || {}).helpers || []).includes(fn)))
+          add({ check: 'B11', file: rel, line: tk.line, fn, text: recv + '.' + tk.v, msg: `the ${LANG_NAME[tk.v]} picked by a literal (${recv}.${tk.v}) — read the language the board is showing through the store's helpers` });
+      }
+      // a language's settings picked by a literal: BoardStrings.META.en.intl
+      // as a locale is English whatever the board shows
+      if (tk.t === 'id' && tk.v === 'META' && t[i + 1] && ((t[i + 1].v === '.' && t[i + 2] && LSET.has(t[i + 2].v)) || (t[i + 1].v === '[' && t[i + 2] && t[i + 2].t === 'str' && LSET.has(t[i + 2].v)))) {
+        // (META[l] || META.en): the fallback after the board's own language
+        const pv = t[i - 1], pv2 = t[i - 2];
+        const fallback = (pv && pv.v === '||') || (pv && pv.v === '.' && pv2 && /^(BoardStrings|Strings|api)$/.test(pv2.v) && t[i - 3] && t[i - 3].v === '||');
+        if (!fallback) add({ check: 'B11', file: rel, line: tk.line, fn, text: 'META.' + (t[i + 2].v), msg: `the ${LANG_NAME[t[i + 2].v] || t[i + 2].v} settings picked by a literal (META.${t[i + 2].v}) — the board's language decides (BoardStrings.intl(lang), bsTime/bsDate)` });
+      }
+      // a store entry taken apart by its language keys: var { en } = STR.k
+      if (tk.t === 'id' && /^(var|let|const)$/.test(tk.v) && t[i + 1] && t[i + 1].v === '{' && unit.closeOf[i + 1] != null) {
+        const c = unit.closeOf[i + 1];
+        let hit = null;
+        for (let j = i + 2; j < c && !hit; j++) {
+          if (unit.frameOf[j] !== i + 1) continue;
+          const k = t[j];
+          if ((k.t === 'id' || k.t === 'str') && LSET.has(k.v) && (t[j - 1].v === '{' || t[j - 1].v === ',') && t[j + 1] && /^[,}:=]$/.test(t[j + 1].v)) hit = k.v;
+        }
+        if (hit && t[c + 1] && t[c + 1].v === '=') add({ check: 'B11', file: rel, line: tk.line, fn, text: '{ ' + hit + ' } =', msg: `a language taken out of an entry by name ({ ${hit} }) \u2014 read the language the board is showing through the store's helpers` });
+      }
+      // a language picked by position out of an entry or a pair:
+      // Object.values(entry)[0], BoardStrings.pairLangs(langs)[1]
+      if (tk.t === 'id' && ((tk.v === 'Object' && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && /^(values|entries)$/.test(t[i + 2].v) && t[i + 3] && t[i + 3].v === '(')
+          || (/^(pairLangs|bsPairLangs|frenchFirst)$/.test(tk.v) && t[i + 1] && t[i + 1].v === '('))) {
+        const open = tk.v === 'Object' ? i + 3 : i + 1, close = unit.closeOf[open];
+        // (the first of the pair is the language the board leads with: [0] is its own choice)
+        if (close != null && t[close + 1] && t[close + 1].v === '[' && t[close + 2] && t[close + 2].t === 'num' && !(tk.v !== 'Object' && t[close + 2].v === '0')) {
+          const owners = P.LANG_POSITION_FUNCTIONS && P.LANG_POSITION_FUNCTIONS[rel] || {};
+          if (fn && Object.prototype.hasOwnProperty.call(owners, fn)) used.position.add(rel + ':' + fn);
+          else add({ check: 'B11', file: rel, line: tk.line, fn, text: (tk.v === 'Object' ? 'Object.' + t[i + 2].v : tk.v) + '(…)[' + t[close + 2].v + ']', msg: 'a language picked by its position; the pair is bsPairLangs(langs, iata) (the Québec rule), the language on screen is `lang`' });
+        }
+      }
+      // a date or time written in English by the browser: toDateString(),
+      // toUTCString(), String(new Date()), new Date().toString(), and a
+      // locale call borrowed through .call/.apply
+      if (tk.t === 'id' && /^(toDateString|toUTCString|toGMTString|toTimeString)$/.test(tk.v) && t[i - 1] && t[i - 1].v === '.' && t[i + 1] && t[i + 1].v === '(' && !inLogCall(unit, i))
+        add({ check: 'B11', file: rel, line: tk.line, fn, text: tk.v + '()', msg: `${tk.v}() writes the date in English whatever the board shows — dates and times go through bsDate/bsWeekday/bsTime and BoardStrings.boardTime` });
+      if (tk.t === 'id' && tk.v === 'String' && t[i + 1] && t[i + 1].v === '(' && t[i + 2] && t[i + 2].v === 'new' && t[i + 3] && t[i + 3].v === 'Date' && !inLogCall(unit, i))
+        add({ check: 'B11', file: rel, line: tk.line, fn, text: 'String(new Date())', msg: 'a Date turned into text is English (Mon Oct 05 2026…) — dates and times go through bsDate/bsTime' });
+      if (tk.t === 'id' && tk.v === 'new' && t[i + 1] && t[i + 1].v === 'Date' && t[i + 2] && t[i + 2].v === '(' && unit.closeOf[i + 2] != null) {
+        const c = unit.closeOf[i + 2];
+        if (t[c + 1] && t[c + 1].v === '.' && t[c + 2] && t[c + 2].v === 'toString' && !inLogCall(unit, i))
+          add({ check: 'B11', file: rel, line: tk.line, fn, text: 'new Date().toString()', msg: 'a Date turned into text is English — dates and times go through bsDate/bsTime' });
+      }
+      if (tk.t === 'id' && LOCALE_CALLS.test(tk.v) && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && /^(call|apply)$/.test(t[i + 2].v) && !inLogCall(unit, i))
+        add({ check: 'B11', file: rel, line: tk.line, fn, text: tk.v + '.' + t[i + 2].v, msg: 'a locale call borrowed through .call/.apply, with a locale the store did not choose — times and dates go through bsTime/bsDate' });
+      // a 12-hour clock written by hand: h < 12 ? 'am' : 'pm'
+      if (tk.t === 'str' && /^\s*[AaPp]\.?\s?[Mm]\.?\s*$/.test(tk.v) && t[i - 1] && (t[i - 1].v === '?' || t[i - 1].v === ':')) {
+        let other = null;
+        if (t[i - 1].v === '?' && t[i + 1] && t[i + 1].v === ':' && t[i + 2] && t[i + 2].t === 'str') other = t[i + 2].v;
+        if (t[i - 1].v === ':' && t[i - 2] && t[i - 2].t === 'str' && t[i - 3] && t[i - 3].v === '?') other = t[i - 2].v;
+        if (other != null && /^\s*[AaPp]\.?\s?[Mm]\.?\s*$/.test(other) && t[i - 1].v === '?')
+          add({ check: 'B11', file: rel, line: tk.line, fn, text: "? '" + tk.v.trim() + "' : '" + other.trim() + "'", msg: "a 12-hour clock's am/pm written by hand — English's own words on every board; times go through BoardStrings.boardTime/boardClockText (a board reads the clock of the language it leads with)" });
+      }
       // B13: text rewritten on a timer or by a MutationObserver
       if (tk.t === 'id' && (tk.v === 'setInterval' || tk.v === '_ocEvery' || tk.v === 'MutationObserver') && t[i + 1] && t[i + 1].v === '(') {
         const names = new Set();
@@ -1708,9 +2072,22 @@ function run(options) {
       if (last && last.t === 'id' && before && before.v === '.' && STORE_LANG_METHODS.has(last.v) && end === i + 4) fns.set(t[i].v, last.v);
       else out.add(t[i].v);
     }
-    // b2 = bs  → a helper copied under another name
+    // b2 = bs, t = TL, T2 = T  → a helper copied under another name
+    const helperName = (v) => STORE_LANG_FUNCS.has(v) || Object.prototype.hasOwnProperty.call(P.KEY_HELPERS, v)
+      || Object.values(P.KEY_HELPERS_BY_FILE || {}).some((m) => Object.prototype.hasOwnProperty.call(m, v));
     for (let i = 0; i < t.length - 3; i++) {
-      if (t[i].t === 'id' && t[i + 1] && t[i + 1].v === '=' && t[i + 2] && t[i + 2].t === 'id' && STORE_LANG_FUNCS.has(t[i + 2].v) && t[i + 3] && /^[;,)]$/.test(t[i + 3].v)) fns.set(t[i].v, t[i + 2].v);
+      if (t[i].t === 'id' && t[i + 1] && t[i + 1].v === '=' && t[i + 2] && t[i + 2].t === 'id' && helperName(t[i + 2].v) && t[i + 3] && /^[;,)]$/.test(t[i + 3].v)) fns.set(t[i].v, t[i + 2].v);
+    }
+    // var { bs: f } = BoardStrings / var { bs } = BoardStrings
+    for (let i = 0; i < t.length - 3; i++) {
+      if (!(t[i].t === 'id' && /^(var|let|const)$/.test(t[i].v) && t[i + 1] && t[i + 1].v === '{')) continue;
+      const c = unit.closeOf[i + 1];
+      if (c == null || !t[c + 1] || t[c + 1].v !== '=' || !t[c + 2] || !(out.has(t[c + 2].v) || /^(window|self|globalThis)$/.test(t[c + 2].v))) continue;
+      for (let j = i + 2; j < c; j++) {
+        if (t[j].t !== 'id' || !(STORE_LANG_METHODS.has(t[j].v) || STORE_LANG_FUNCS.has(t[j].v))) continue;
+        if (t[j + 1] && t[j + 1].v === ':' && t[j + 2] && t[j + 2].t === 'id') fns.set(t[j + 2].v, t[j].v);
+        else if (t[j + 1] && /^[,}]$/.test(t[j + 1].v)) fns.set(t[j].v, t[j].v);
+      }
     }
     unit._storeAliases = { objects: out, fns };
     return unit._storeAliases;
@@ -1719,19 +2096,82 @@ function run(options) {
   // option object or array of one of them): { name, open } or null.
   function storeCallAround(unit, i, rel) {
     const t = unit.toks;
-    const al = storeAliases(unit);
     for (let k = unit.frameOf[i], hops = 0; k != null && k >= 0 && hops < 4; k = unit.frameOf[k], hops++) {
       if (t[k].v === '{' && !unit.isObj[k]) return null;            // a function body: its own code
       if (t[k].v !== '(') continue;
-      const c = t[k - 1];
-      if (!c || c.t !== 'id') return null;
-      const recv = t[k - 2] && t[k - 2].v === '.' ? t[k - 3] : null;
-      if (recv && recv.t === 'id' && (al.objects.has(recv.v) || (recv.v === 'window' && STORE_LANG_FUNCS.has(c.v))) && STORE_LANG_METHODS.has(c.v)) return { name: recv.v + '.' + c.v, open: k };
-      if (recv && STORE_DISTINCT_METHODS.has(c.v)) return { name: '.' + c.v, open: k };
-      if (!recv && (STORE_LANG_FUNCS.has(c.v) || al.fns.has(c.v) || Object.prototype.hasOwnProperty.call(P.KEY_HELPERS, c.v) || Object.prototype.hasOwnProperty.call((P.KEY_HELPERS_BY_FILE || {})[rel] || {}, c.v))) return { name: c.v, open: k };
-      return null;
+      return storeCallAt(unit, k, rel);
     }
     return null;
+  }
+  // The store call whose argument list opens at token k: bs(…), S.bs(…),
+  // window.bs(…), a copy of a helper, BoardStrings.bs?.(…),
+  // BoardStrings['bs'](…), bs.call(null, …) and bs.apply(null, […]).
+  function storeCallAt(unit, k, rel) {
+    const t = unit.toks;
+    const al = storeAliases(unit);
+    const isFn = (v) => STORE_LANG_FUNCS.has(v) || al.fns.has(v) || Object.prototype.hasOwnProperty.call(P.KEY_HELPERS, v) || Object.prototype.hasOwnProperty.call((P.KEY_HELPERS_BY_FILE || {})[rel] || {}, v);
+    let c = t[k - 1], at = k - 1;
+    if (c && c.v === '?.') { at = k - 2; c = t[at]; }                 // f?.(…)
+    if (!c) return null;
+    // X['bs'](…)
+    if (c.v === ']') {
+      let o = at, d = 0;
+      for (; o >= 0; o--) { if (t[o].v === ']') d++; else if (t[o].v === '[') { d--; if (d === 0) break; } }
+      const key = t[o + 1], recv = t[o - 1];
+      if (key && key.t === 'str' && o + 2 === at && recv && recv.t === 'id' && (al.objects.has(recv.v) || /^(window|self|globalThis)$/.test(recv.v)) && (STORE_LANG_METHODS.has(key.v) || STORE_LANG_FUNCS.has(key.v)))
+        return { name: recv.v + "['" + key.v + "']", open: k };
+      return null;
+    }
+    if (c.t !== 'id') return null;
+    const recv = t[at - 1] && (t[at - 1].v === '.' || t[at - 1].v === '?.') ? t[at - 2] : null;
+    // bs.call(null, k, 'fr'), BoardStrings.bs.apply(null, [k, 'fr'])
+    if ((c.v === 'call' || c.v === 'apply') && recv && recv.t === 'id') {
+      const r2 = t[at - 3] && t[at - 3].v === '.' ? t[at - 4] : null;
+      if (!r2 && isFn(recv.v)) return { name: recv.v + '.' + c.v, open: k };
+      if (r2 && r2.t === 'id' && (al.objects.has(r2.v) || /^(window|self|globalThis)$/.test(r2.v)) && (STORE_LANG_METHODS.has(recv.v) || STORE_LANG_FUNCS.has(recv.v))) return { name: r2.v + '.' + recv.v + '.' + c.v, open: k };
+      return null;
+    }
+    if (recv && recv.t === 'id' && (al.objects.has(recv.v) || (/^(window|self|globalThis)$/.test(recv.v) && STORE_LANG_FUNCS.has(c.v))) && STORE_LANG_METHODS.has(c.v)) return { name: recv.v + '.' + c.v, open: k };
+    if (recv && recv.t === 'id' && /^(window|self|globalThis)$/.test(recv.v) && isFn(c.v)) return { name: recv.v + '.' + c.v, open: k };
+    if (recv && STORE_DISTINCT_METHODS.has(c.v)) return { name: '.' + c.v, open: k };
+    if (!recv && isFn(c.v)) return { name: c.v, open: k };
+    return null;
+  }
+  // What a name is given in its scope: { lits: the literal values (x =
+  // 'fr', x = 'f' + 'r'; for x.l, the l of an object literal x is given),
+  // other: how many other values it is given }.
+  function assignedValues(unit, i) {
+    const t = unit.toks, nm = t[i].v, sc = scopeOf(unit, i, nm);
+    const prop = t[i + 1] && (t[i + 1].v === '.' || t[i + 1].v === '?.') && t[i + 2] && t[i + 2].t === 'id' ? t[i + 2].v
+      : (t[i + 1] && t[i + 1].v === '[' && t[i + 2] && t[i + 2].t === 'str' && t[i + 3] && t[i + 3].v === ']' ? t[i + 2].v : null);
+    const lits = [];
+    let other = 0;
+    if (!unit._idIndex) {
+      unit._idIndex = new Map();
+      for (let j = 0; j < t.length; j++) if (t[j].t === 'id') { if (!unit._idIndex.has(t[j].v)) unit._idIndex.set(t[j].v, []); unit._idIndex.get(t[j].v).push(j); }
+    }
+    for (const j of unit._idIndex.get(nm) || []) {
+      if (j >= t.length - 2 || (t[j - 1] && (t[j - 1].v === '.' || t[j - 1].v === '?.'))) continue;
+      if (scopeOf(unit, j, nm) !== sc) continue;
+      // a parameter, a for-of/for-in name, a destructured name: given at run time
+      if (!(t[j + 1] && t[j + 1].v === '=')) {
+        const fr = unit.frameOf[j];
+        if (t[j + 1] && /^(of|in)$/.test(t[j + 1].v)) other++;
+        else if (fr >= 0 && t[fr].v === '(' && t[fr - 1] && (t[fr - 1].t === 'id' || t[fr - 1].v === 'function') && t[unit.closeOf[fr] + 1] && t[unit.closeOf[fr] + 1].v === '{' && !(t[j - 1] && t[j - 1].v === '=')) other++;
+        else if (t[j + 1] && t[j + 1].v === '=>' ) other++;
+        continue;
+      }
+      if (prop == null) {
+        let k = j + 2, str = '', ok = false;
+        while (t[k] && t[k].t === 'str') { str += t[k].v; ok = true; if (t[k + 1] && t[k + 1].v === '+' && t[k + 2] && t[k + 2].t === 'str') k += 2; else break; }
+        if (ok && t[k + 1] && /^[;,)}]$/.test(t[k + 1].v)) lits.push(str); else other++;
+      } else if (t[j + 2] && t[j + 2].v === '{' && unit.isObj[j + 2]) {
+        const o = unit.objects.find((x) => x.open === j + 2);
+        const kk = o && o.keys.find((x) => x.k === prop);
+        if (kk && kk.simple && kk.str != null) lits.push(kk.str); else other++;
+      } else other++;
+    }
+    return { lits, other };
   }
   // 'en' as the fallback after a language variable: l || 'en',
   // isLang(l) ? l : 'en'
@@ -1780,6 +2220,15 @@ function run(options) {
         add({ check: 'B9', file: rel, line: (offset || 0) + lineOf(clean, d[0], d.index), fn: null, text: v, msg: `CSS content '${v}' is passenger text in one language \u2014 render it from the store` });
       }
     }
+    for (const x of cssDrawnStrings(css)) add({ check: 'B9', file: rel, line: (offset || 0) + lineOf(clean, '', x.at), fn: null, text: x.v, msg: `CSS ${x.prop} '${shortText(x.v)}' is drawn on screen as text in one language \u2014 render it from the store` });
+  }
+  // the same in a page's style="" attributes
+  for (const page of passengerPages) {
+    const html = read(page);
+    for (const m of html.matchAll(/\sstyle\s*=\s*(["'])([\s\S]*?)\1/gi)) {
+      const val = m[2].replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'");
+      for (const x of cssDrawnStrings(val)) add({ check: 'B9', file: page, line: lineOf(html, m[0], m.index), fn: null, text: x.v, msg: `CSS ${x.prop} '${shortText(x.v)}' in a style attribute is drawn on screen as text in one language \u2014 render it from the store` });
+    }
   }
 
   // ── B10: static page text ──
@@ -1809,6 +2258,33 @@ function run(options) {
     for (const n of P.NONTEXT_TABLES) if (n.name) DATA_ROOTS.add(n.name);
     for (const { rel, unit, isStore } of jsUnits) {
       const t = unit.toks;
+      // another name for a table (var c = CITY_FR; c.YUL = …): its writes
+      // are the table's writes
+      const ALIAS = new Map();
+      for (let i = 0; i < t.length - 3; i++) {
+        if (t[i].t === 'id' && t[i + 1] && t[i + 1].v === '=' && t[i + 2] && t[i + 2].t === 'id' && t[i + 3] && /^[;,)]$/.test(t[i + 3].v)
+            && (((P.DATA_TABLES || {})[rel] && Object.prototype.hasOwnProperty.call(P.DATA_TABLES[rel], t[i + 2].v)) || scan.findTable(unit, t[i + 2].v)
+              || /^(CITY_FR|CITY|AIRLINE_NAME|FIDS_SHARED_\w+|BOARD_STR)$/.test(t[i + 2].v) || (STORE_ROOTS.has(t[i + 2].v) && tables[t[i + 2].v] && tables[t[i + 2].v].file === rel))
+            && (DATA_ROOTS.has(t[i + 2].v) || STORE_ROOTS.has(t[i + 2].v)) && !(t[i - 1] && t[i - 1].v === '.'))
+          ALIAS.set(t[i].v, t[i + 2].v);
+      }
+      // a table reached by a name built at run time: globalThis['CITY_' + 'FR']
+      for (let i = 0; i < t.length - 2; i++) {
+        if (!(t[i].t === 'id' && /^(window|self|globalThis|root)$/.test(t[i].v) && t[i + 1] && t[i + 1].v === '[' && unit.closeOf[i + 1] != null)) continue;
+        if (t[i - 1] && t[i - 1].v === '.') continue;
+        const c = unit.closeOf[i + 1];
+        const inner = t.slice(i + 2, c);
+        const name = inner.length === 1 && inner[0].t === 'str' ? inner[0].v
+          : (inner.length && inner.every((x, k) => (k % 2 === 0 ? x.t === 'str' : x.v === '+')) ? inner.filter((x) => x.t === 'str').map((x) => x.v).join('') : null);
+        const nx = t[c + 1];
+        const writes = nx && (/^(=|\+=|\|\|=|\?\?=)$/.test(nx.v) || ((nx.v === '.' || nx.v === '[') && (() => {
+          let k = c + 1;
+          while (t[k] && ((t[k].v === '.' && t[k + 1] && t[k + 1].t === 'id') || (t[k].v === '[' && unit.closeOf[k] != null))) k = t[k].v === '.' ? k + 2 : unit.closeOf[k] + 1;
+          return t[k] && /^(=|\+=|\|\|=|\?\?=|\+\+|--)$/.test(t[k].v);
+        })()));
+        if (!writes) continue;
+        if (name != null && (DATA_ROOTS.has(name) || name === 'BOARD_STR' || (STORE_ROOTS.has(name) && tables[name]))) add({ check: 'B16', file: rel, line: t[i].line, fn: unit.fnAt[i], text: name + ' write', msg: `${name} is changed at run time through ${t[i].v}['${name}'] \u2014 the store's words are fixed where they are declared (the CITY_FR collapse)` });
+      }
       for (let i = 0; i < t.length; i++) {
         const tk = t[i];
         if (tk.t !== 'id') continue;
@@ -1818,6 +2294,7 @@ function run(options) {
         const ownTable = tables[tk.v] && tables[tk.v].file === rel;
         if ((STORE_ROOTS.has(tk.v) && (ownTable || tk.v === 'BOARD_STR' || viaGlobal)) || (isStore && STORE_PARTS.test(tk.v))) root = tk.v;
         else if (DATA_ROOTS.has(tk.v) && !dataWriterFor(rel, unit.fnAt[i], tk.v)) root = tk.v;
+        else if (ALIAS.has(tk.v) && !(t[i + 1] && t[i + 1].v === '=') && !dataWriterFor(rel, unit.fnAt[i], ALIAS.get(tk.v))) root = ALIAS.get(tk.v) + ' (as ' + tk.v + ')';
         else if (/^(BoardStrings|api|Strings)$/.test(tk.v) && t[i + 1] && t[i + 1].v === '.' && t[i + 2] && STORE_PARTS.test(t[i + 2].v)) { root = tk.v + '.' + t[i + 2].v; j = i + 2; }
         if (!root) continue;
         if (t[i - 1] && /^(var|let|const)$/.test(t[i - 1].v)) continue;          // its declaration
@@ -1848,7 +2325,7 @@ function run(options) {
         if (t[i].v !== 'Object' || !t[i + 1] || t[i + 1].v !== '.' || !t[i + 2] || !/^(assign|defineProperty|defineProperties|setPrototypeOf)$/.test(t[i + 2].v) || !t[i + 3] || t[i + 3].v !== '(') continue;
         const a = t[i + 4];
         const b = t[i + 6];
-        const hit = a && a.t === 'id' && ((STORE_ROOTS.has(a.v) && ((tables[a.v] && tables[a.v].file === rel) || a.v === 'BOARD_STR')) || (isStore && STORE_PARTS.test(a.v)) || DATA_ROOTS.has(a.v)
+        const hit = a && a.t === 'id' && ((STORE_ROOTS.has(a.v) && ((tables[a.v] && tables[a.v].file === rel) || a.v === 'BOARD_STR')) || (isStore && STORE_PARTS.test(a.v)) || DATA_ROOTS.has(a.v) || ALIAS.has(a.v)
           || (/^(BoardStrings|api|Strings)$/.test(a.v) && t[i + 5] && t[i + 5].v === '.' && b && STORE_PARTS.test(b.v)));
         if (hit) add({ check: 'B16', file: rel, line: t[i].line, fn: unit.fnAt[i], text: 'Object.' + t[i + 2].v + '(' + a.v + '…)', msg: `Object.${t[i + 2].v} writes into the store at run time \u2014 its words are fixed where they are declared` });
       }
@@ -1904,6 +2381,22 @@ function run(options) {
           if (!why) continue;
           add({ check: 'W1', file: rel, line: t[i].line, fn: unit.fnAt[i], text: stripTags(v).trim(), msg: `'${shortText(v)}' is written by a feed worker into ${why} \u2014 every board would show it in English. Send a code and let the board say it in its languages (the store)` });
         }
+        // the same words held in a name first: const GC = 'Gate closes soon';
+        // r.status = GC, or return { remark: rm }
+        for (let i = 0; i < t.length - 2; i++) {
+          if (t[i].t !== 'id' || JS_WORDS.has(t[i].v) || (t[i - 1] && (t[i - 1].v === '.' || t[i - 1].v === '?.'))) continue;
+          if (!(t[i + 1] && /^[;,})]$/.test(t[i + 1].v))) continue;
+          const p = t[i - 1], key = t[i - 2];
+          let why = null;
+          if (p && p.v === ':' && key && (key.t === 'id' || key.t === 'str') && TEXT_PROPS.test(String(key.v)) && t[i - 3] && (t[i - 3].v === '{' || t[i - 3].v === ',')) why = 'the row field ' + key.v;
+          else if (p && /^(=|\+=)$/.test(p.v) && key && key.t === 'id' && TEXT_PROPS.test(key.v) && t[i - 3] && t[i - 3].v === '.') why = 'the row field .' + key.v;
+          else if (p && p.v === 'return' && unit.fnAt[i] && TEXT_FN.test(unit.fnAt[i])) why = 'the return of ' + unit.fnAt[i] + '()';
+          if (!why) continue;
+          for (const v of assignedValues(unit, i).lits) {
+            if (!/[A-Za-z]{2,}/.test(v) || /^[a-z][a-z0-9_-]*$/.test(v.trim()) || codeShaped(v) || !(isLabel(v) || isSentence(v))) continue;
+            add({ check: 'W1', file: rel, line: t[i].line, fn: unit.fnAt[i], text: stripTags(v).trim(), msg: `'${shortText(v)}' is written by a feed worker into ${why} (through ${t[i].v}) \u2014 every board would show it in English. Send a code and let the board say it in its languages (the store)` });
+          }
+        }
       }
     }
   }
@@ -1925,7 +2418,12 @@ function run(options) {
       const t = unit.toks;
       for (let i = 0; i < t.length; i++) {
         if (t[i].t !== 'str' && t[i].t !== 'tpl') continue;
-        const m = /^\s*((?:\.{1,2}\/|\/)?(?:[\w.-]+\/)*[\w.-]+\.(js|css|html?))(?:[?#][^\s'"]*)?\s*$/i.exec(t[i].v);
+        // a URL built from literal parts: 'js/' + 'gate' + '-extra.js'
+        let v = t[i].v, k = i;
+        if (!(t[i - 1] && t[i - 1].v === '+' && t[i - 2] && t[i - 2].t === 'str')) {
+          while (t[k + 1] && t[k + 1].v === '+' && t[k + 2] && t[k + 2].t === 'str') { v += t[k + 2].v; k += 2; }
+        }
+        const m = /^\s*((?:\.{1,2}\/|\/)?(?:[\w.-]+\/)*[\w.-]+\.(js|css|html?|json))(?:[?#][^\s'"]*)?\s*$/i.exec(v);
         if (!m) continue;
         const cands = resolve(m[1], rel);
         if (!cands.length) continue;
@@ -1933,6 +2431,7 @@ function run(options) {
         const known = cands.some((c) => (isPage ? classifiedPages.has(c) : classified.has(c)));
         if (isPage) for (const c of cands) if (classifiedPages.has(c)) used.pages.add(c);
         if (known || !cands.some((c) => exists(c))) continue;
+        if (/^json$/i.test(m[2])) { add({ check: 'C2', file: rel, line: t[i].line, fn: unit.fnAt[i], text: m[1], msg: `${m[1]} is data a passenger script loads at run time and is not in NON_PASSENGER (tests/i18n/policy.js) \u2014 a word in it reaches the screen past every check: put the words in the store, or classify the file as data with its reason` }); continue; }
         add({ check: 'C2', file: rel, line: t[i].line, fn: unit.fnAt[i], text: m[1], msg: isPage
           ? `${m[1]} is opened by a passenger script and is in neither PASSENGER_PAGES nor NON_PASSENGER_PAGES (tests/i18n/policy.js)`
           : `${m[1]} is loaded at run time by a passenger script and is in neither PASSENGER_SCRIPTS/PASSENGER_STYLES nor NON_PASSENGER (tests/i18n/policy.js) \u2014 a script injected by code is still on the screen` });
@@ -1983,6 +2482,10 @@ function run(options) {
     if (!used.writers.has(rel + ':' + fn)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'DATA_WRITERS ' + rel + ' ' + fn, msg: `${fn} no longer writes a name table in ${rel} \u2014 remove it` });
     if (!P.REASONS.includes(String(list[fn].why).split(':')[0])) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'DATA_WRITERS reason ' + fn, msg: `'${list[fn].why}' does not start with a reason from: ${P.REASONS.join(', ')}` });
   }
+  for (const [k, e] of Object.entries(P.SAME_ACROSS || {})) {
+    if (!used.across.has(k)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'SAME_ACROSS ' + k, msg: `SAME_ACROSS '${k}' matches nothing \u2014 remove it` });
+    if (!P.REASONS.includes(String(e.why).split(':')[0])) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'SAME_ACROSS reason ' + k, msg: `'${e.why}' does not start with a reason from: ${P.REASONS.join(', ')}` });
+  }
   for (const k of Object.keys(P.SAME_JA_ZH || {})) if (!used.jazh.has(k)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'SAME_JA_ZH ' + k, msg: `SAME_JA_ZH '${k}' matches nothing \u2014 remove it` });
   for (const [l, list] of Object.entries(P.NATIVE_WORDS || {})) for (const w of Object.keys(list)) if (!used.native.has(l + ':' + w)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'NATIVE_WORDS ' + l + ' ' + w, msg: `NATIVE_WORDS ${l} '${w}' matches nothing \u2014 remove it` });
   for (const k of Object.keys(P.SAME_AS_ENGLISH)) if (!used.same.has(k)) add({ check: 'P1', file: 'tests/i18n/policy.js', line: 1, fn: null, text: 'SAME_AS_ENGLISH ' + k, msg: `SAME_AS_ENGLISH '${k}' matches nothing \u2014 remove it` });
@@ -2016,7 +2519,7 @@ function run(options) {
   }
   const pragmaCounts = {};
   for (const r of pragmaHits.values()) pragmaCounts[r] = (pragmaCounts[r] || 0) + 1;
-  return { findings, pragmaCounts, entries, tables, textObjects: allTextObjects, listObjects, dataVocab: [...DATA_VOCAB], dataPhrases: [...DATA_PHRASES] };
+  return { findings, pragmaCounts, entries, tables, textObjects: allTextObjects, listObjects, dataVocab: [...DATA_VOCAB], dataPhrases: [...DATA_PHRASES], englishWords: [...ENGLISH_WORDS] };
 }
 
 // ── markup lexing ─────────────────────────────────────────────────────────
@@ -2210,8 +2713,13 @@ function codeShaped(v) {
   if (/^\s*#[A-Za-z][\w-]*\s*$/.test(s)) return true;                           // #id
   // a selector: lower-case element or .class/#id start, then selector
   // punctuation with a name right after it, and no free-standing word
-  if (/^\s*([.#]?[a-z_][\w-]*|\*)((\s*[>+~]\s*|\s+|[.#:]{1,2}|\[)[a-z_*\-\[][\w\-="'()\]^$|*~:.]*)*\s*[{,]?\s*$/.test(s)
-      && /[.#\[>:]/.test(s) && !/[.:]\s*$/.test(s) && !/\p{Lu}/u.test(s.replace(/[.#][\w-]+/g, ''))) return true;
+  const SEL = /^\s*([.#]?[a-z_][\w-]*|\*)((\s*[>+~]\s*|\s+|[.#:]{1,2}|\[)[a-z_*\-\[][\w\-="'()\]^$|*~:.]*)*\s*[{,]?\s*$/;
+  if (SEL.test(s) && /[.#\[>:]/.test(s) && !/[.:]\s*$/.test(s) && !/\p{Lu}/u.test(s.replace(/[.#][\w-]+/g, ''))) return true;
+  // a selector list: '#fidsTable tbody td.td-time, #fidsTable tbody td.td-status'
+  if (/,/.test(s)) {
+    const parts = s.split(',').map((x) => x.trim()).filter(Boolean);
+    if (parts.length >= 2 && parts.every((x) => SEL.test(x) && !/\p{Lu}/u.test(x.replace(/[.#][\w-]+/g, ''))) && parts.some((x) => /[.#\[>:]/.test(x)) && !/[.:]\s*$/.test(s)) return true;
+  }
   // a CSS declaration: a real property (or a custom one) and a value
   const d = /^\s*(--[\w-]+|[a-z]+(?:-[a-z]+)*)\s*:\s*(.+?)\s*;?\s*$/.exec(s);
   if (d && (d[1].startsWith('--') || CSS_PROPERTY.test(d[1])) && !/\p{Lu}\p{Ll}{2,}\s+\p{Ll}{3,}/u.test(d[2])
@@ -2328,6 +2836,18 @@ function listWorkerFiles() {
   return out;
 }
 
+// every file under a directory whose name matches re, relative to it
+function listFiles(dir, re, sub) {
+  const out = [];
+  let ents = [];
+  try { ents = fs.readdirSync(path.join(dir, sub || ''), { withFileTypes: true }); } catch (e) { return out; }
+  for (const e of ents) {
+    const rel = sub ? sub + '/' + e.name : e.name;
+    if (e.isDirectory()) { if (!/^(node_modules|\.git|out)$/.test(e.name)) out.push(...listFiles(dir, re, rel)); }
+    else if (re.test(e.name)) out.push(rel);
+  }
+  return out;
+}
 // every .html file under a directory, relative to it
 function listHtml(dir, sub) {
   const out = [];
@@ -2382,7 +2902,9 @@ function staticText(html) {
     }
     if (VOID.has(name) || selfClose) continue;
     const marked = /\bdata-(i18n|operator)\b/.test(attrs);
-    const skip = skipTags.has(name);
+    // a script that is not code (type="text/template", text/html, text/x-…)
+    // is markup a page clones onto the screen: its text is page text
+    const skip = skipTags.has(name) && !(name === 'script' && /\btype\s*=\s*["']?text\/(?:template|html|x-[\w-]+)/i.test(attrs));
     stack.push({ name, marked, skip });
     if (skip) {
       // jump to the matching close tag
@@ -2425,4 +2947,4 @@ function nameTableWords(P, read) {
   return out;
 }
 
-module.exports = { run, id, norm, lexHtml, staticText, shortText, nameTableWords, LOOSENERS };
+module.exports = { run, id, norm, lexHtml, staticText, shortText, nameTableWords, LOOSENERS, RE_PLACEHOLDER, RE_PERSIAN_URDU, PERSIAN_WORDS };

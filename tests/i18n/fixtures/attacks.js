@@ -102,3 +102,52 @@ function atk_H6_localCopy() { var b2 = bs; return b2('gateClosesNew'); }
 // a helper falling back to the raw value, or to the English of a call
 function atk_R1_rawFallback(k) { return TL(k) || k.toUpperCase(); }
 function atk_R2_englishOfACall(k, lang) { return lbl(k)[lang] || lbl(k).en; }
+
+// ── round 5 (2026-10-05): shapes that passed round 4 ──
+// a label written just under a pragma at the end of a line of code
+function atk_R5_pragmaBelow() {
+  var hotel = 'Fairmont Pacific Rim'; // i18n-ok: data
+  document.body.insertAdjacentHTML('beforeend', '<div class="gc">Gate closes in ten minutes</div>');
+  return hotel;
+}
+// a language held in a name, or read out of a table, an entry or a pair
+function atk_R5_langInVar() { var L = 'fr'; return bs('gate', L); }
+function atk_R5_langConcat() { var L = 'f' + 'r'; return bs('gate', L); }
+function atk_R5_langProp() { var o = { l: 'fr' }; return bs('gate', o.l); }
+function atk_R5_tableBracket() { return BOARD_STR.gate['fr']; }
+function atk_R5_entryFr() { return BoardStrings.entry('gate').fr; }
+function atk_R5_destructure() { var { en } = BoardStrings.STR.gate; return en; }
+function atk_R5_valuesPick() { return Object.values(BoardStrings.entry('gate'))[0]; }
+function atk_R5_call() { return bs.call(null, 'gate', 'fr'); }
+function atk_R5_apply() { return bs.apply(null, ['gate', 'fr']); }
+function atk_R5_bracketHelper() { return BoardStrings['bs']('gate', 'fr'); }
+function atk_R5_pairLangsPick(langs) { return bs('gate', BoardStrings.pairLangs(langs)[1]); }
+// the board's languages overwritten
+function atk_R5_langAssign() { lang = 'en'; }
+function atk_R5_langsAssign() { langs = ['en', 'fr']; }
+function atk_R5_langsSplice() { langs.splice(0, langs.length, 'en', 'fr'); }
+// English dates and times
+function atk_R5_toDateString() { return '<span>' + new Date().toDateString() + '</span>'; }
+function atk_R5_stringDate() { return String(new Date()).slice(0, 10); }
+function atk_R5_toUTCString() { return new Date().toUTCString(); }
+function atk_R5_metaEn() { return new Date().toLocaleDateString(BoardStrings.META.en.intl); }
+function atk_R5_protoCall() { return Date.prototype.toLocaleTimeString.call(new Date(), 'en-US'); }
+function atk_R5_amPm() { var h = new Date().getHours(); return (h % 12 || 12) + (h < 12 ? 'am' : 'pm'); }
+// text built so no literal shows it
+function atk_R5_fromCharCode(el) { el.textContent = String.fromCharCode(71, 97, 116, 101, 32, 99, 108, 111, 115, 101, 115); }
+function atk_R5_atob(el) { el.innerHTML = atob('R2F0ZSBjbG9zZXM='); }
+function atk_R5_letters(el) { el.textContent = ['G', 'a', 't', 'e', ' ', 'c', 'l', 'o', 's', 'e', 's'].join(''); }
+function atk_R5_reversed(el) { el.textContent = 'sesolc etaG'.split('').reverse().join(''); }
+function atk_R5_jsonParse() { var j = JSON.parse('{"a":"Gate closes"}').a; return '<span>' + j + '</span>'; }
+function atk_R5_objectKeysLiteral() { var k = Object.keys({ 'Gate closes': 1 })[0]; return '<span>' + k + '</span>'; }
+// a helper copied under another name, with a key it does not have
+function atk_R5_helperCopyTL() { var t = TL; return t('gateClosesMissing'); }
+function atk_R5_destructuredHelper() { var { bs: f } = BoardStrings; return f('gateClosesMissing'); }
+// a name table written through another name
+function atk_R5_aliasWrite() { var c = FX_CITY; c.YUL = 'MONTREAL'; }
+function atk_R5_computedGlobal() { globalThis['FX_' + 'CITY'].YUL = 'MONTREAL'; }
+// CSS that draws text without content:
+function atk_R5_cssQuotes(el) { el.style.cssText = "quotes: 'Gate closes' ''"; }
+function atk_R5_inlineVar() { return '<span class="gcv" style="--gcv:&quot;Gate closes&quot;"></span>'; }
+// a script whose src is built from parts
+function atk_R5_scriptFromParts() { var s = document.createElement('script'); s.src = 'inj' + 'ected.js'; document.head.appendChild(s); }

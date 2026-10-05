@@ -98,10 +98,33 @@ for (const [k, e] of Object.entries(BS.STR)) for (const l of LANGS) for (const w
   // entries whose translations (any non-English language) use a word
   const translated = new Map();
   for (const l of LANGS) if (l !== 'en') for (const [w, ks] of COUNT[l]) { if (!translated.has(w)) translated.set(w, new Set()); for (const k of ks) translated.get(w).add(k); }
+  // (English is the store's English and everyday English too: 'Doors shut
+  // momentarily' in a German value uses no word of the store's English)
+  const EN_DICT = new Set(R.englishWords);
+  const english = (w, l) => VOCAB.en.has(w) || EN_DICT.has(w) || ((l === 'de' || l === 'it') && w.length >= 5 && /[^s]s$/.test(w) && EN_DICT.has(w.slice(0, -1)));
   for (const l of LANGS) {
     if (l === 'en') continue;
-    for (const w of [...VOCAB[l]]) if (VOCAB.en.has(w) && (translated.get(w) || new Set()).size < 2 && !own[l].has(w)) VOCAB[l].delete(w);
+    for (const w of [...VOCAB[l]]) if (english(w, l) && (translated.get(w) || new Set()).size < 2 && !own[l].has(w)) VOCAB[l].delete(w);
   }
+  // a placeholder is no language's word, whatever a value holds
+  for (const l of LANGS) for (const w of ['xxx', 'fixme', 'lorem', 'ipsum', 'tbd', 'tba']) VOCAB[l].delete(w);
+  for (const l of LANGS) if (l !== 'es' && l !== 'pt') VOCAB[l].delete('todo');
+}
+// A word of any language, or everyday English: a capitalised short word
+// that is one of these ('GATE', 'LATE', 'OPEN', 'NOW', 'TODO') is a word,
+// not a code, and is held to the board's languages like any other.
+const ANY_WORD = new Set(R.englishWords);
+for (const l of LANGS) for (const w of VOCAB[l]) ANY_WORD.add(w);
+for (const w of ['xxx', 'fixme', 'todo', 'tbd', 'tba', 'lorem']) ANY_WORD.add(w);
+// The codes a board shows as written: airports (IATA), airlines, ICAO codes,
+// from the boards' own tables. 'SEA' (Seattle) and 'MAN' (Manchester) are
+// codes even though they are words.
+const CODES = new Set();
+for (const f of ['js/airport-coords.js', 'js/fids-core.js', 'js/shared-names.js']) {
+  let src = '';
+  try { src = fs.readFileSync(path.join(ROOT, f), 'utf8'); } catch (e) { src = ''; }
+  for (const m of src.matchAll(/(?:^|[{,\s])'?([A-Z][A-Z0-9]{1,3})'?\s*:/gm)) CODES.add(m[1]);
+  for (const m of src.matchAll(/:\s*'([A-Z]{3,4})'/g)) CODES.add(m[1]);
 }
 // weekday and month names come from Intl in each language
 for (const l of LANGS) {
@@ -277,7 +300,7 @@ const RE_KANA = /[぀-ヿｦ-ﾟ]/;
 const RE_HAN = /[㐀-䶿一-鿿豈-﫿]/;
 
 // The findings for one reading of a screen showing the languages `set`.
-export function judge(texts, set) {
+export function judge(texts, set, ap) {
   const allowed = (w) => DATA.has(w) || set.some((l) => VOCAB[l].has(w));
   const problems = [];
   for (const x of texts) {
@@ -287,7 +310,7 @@ export function judge(texts, set) {
     const clock12 = /\d{1,2}:\d{2}(?:\s| | )?[AaPp]\.?\s?[Mm]\b\.?/g;
     // (A half marked English may keep English's own clock on a board that
     // leads in another language, as each half of the welcome strip does.)
-    const lead = BS.frenchFirst(set.slice(), 'YQM')[0];
+    const lead = BS.frenchFirst(set.slice(), ap || 'YQM')[0];
     const englishHalf = x.own && String(x.lang).toLowerCase().split('-')[0] === 'en';
     if (lead !== 'en' && !(set.includes('en') && englishHalf)) for (const m of x.t.match(clock12) || []) problems.push(`'${m}' (a 12-hour clock) on a ${set.join('+')} board: "${x.t.slice(0, 70)}" (${x.where})`);
     // words: every Latin word is one of the board's languages', or data
@@ -318,12 +341,19 @@ export function judge(texts, set) {
     for (const raw of latin) {
       const w = raw.replace(ELIDED, '').replace(/[^A-Za-zÀ-ɏ]+$/, '');
       if (w.length < 2) continue;
-      if (/^[A-Z0-9]{2,4}$/.test(w)) continue;              // codes: YQM, AC, CYQM, MAX
+      // codes: YQM, AC, CYQM, MAX — but a word in capitals is a word
+      if (/^[A-Z0-9]{2,4}$/.test(w) && (CODES.has(w) || /\d/.test(w) || !ANY_WORD.has(w.toLowerCase()))) continue;
       if (/^(?:[A-Z]\.){2,}[A-Z]?$/.test(raw.replace(/\.$/, '.')) || /^(?:[A-Z]\.)+[A-Z]$/.test(w)) continue;   // initials: F.I.D.S.
       if (/\d/.test(raw)) continue;
       if (allowed(w.toLowerCase())) continue;
       problems.push(`'${w}' is not a word of ${set.join('+')}: "${x.t.slice(0, 70)}" (${x.where})`);
     }
+    // a placeholder left on screen: '???', 'TODO', 'FIXME', 'XXX', 'Lorem ipsum'
+    if (/^\s*(?:\?{2,}|\uFF1F{2,}|TODO|FIXME|XXX+|[Ll]orem ipsum.*)\s*$/.test(x.t) || (!set.includes('en') && /^\s*(?:TBD|TBA|N\/A)\s*$/.test(x.t)))
+      problems.push(`a placeholder on screen: "${x.t.slice(0, 50)}" (${x.where})`);
+    // Persian or Urdu shown for Arabic
+    if (RE_AR.test(x.t) && (checks.RE_PERSIAN_URDU.test(x.t) || (x.t.match(/[\u0600-\u06FF]+/g) || []).some((w) => checks.PERSIAN_WORDS.has(w.replace(/[\u064B-\u065F\u0670]/g, '')))))
+      problems.push(`Persian or Urdu, not Arabic: "${x.t.slice(0, 50)}" (${x.where})`);
     // scripts: none from a language the board is not showing
     if (!x.all) {
       if (RE_AR.test(x.t) && !set.includes('ar')) problems.push(`Arabic on a ${set.join('+')} board: "${x.t.slice(0, 50)}" (${x.where})`);
@@ -382,7 +412,7 @@ const GATE_STATE = (st) => `(function (st) {
     if (!window.__wsOrig) window.__wsOrig = JSON.stringify(f);
     var o = JSON.parse(window.__wsOrig);
     Object.keys(o).forEach(function (k) { f[k] = o[k]; });
-    var tz = (AP.YQM || {}).tz;
+    var tz = (AP[(document.getElementById('apSel') || {}).value] || AP.YQM || {}).tz;
     var fmt = function (ts) { return new Date(ts).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
     var at = function (mins) { f._sortTs = Date.now() + mins * 60000; f.time = fmt(f._sortTs); f.upd = null; f._revTs = null; };
     try { setGateHistory({}); } catch (e) {}
@@ -423,6 +453,19 @@ export const SURFACES = {
   // the Studio player, one language at a time (?lang=), three families
   studio: { url: (port, set, fam) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM&doc=lang-check-${fam}&lang=${set[0]}`,
     seed: (port) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM`, families: ['fids', 'gids', 'bids'], ready: PLAYER_UP, sets: SINGLES, chunk: 2, perSet: true, alarm: 240 },
+  // the arrivals board (the departures board's other side)
+  arrivals: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}&langs=en,fr`, ready: BOARD_UP, setLangs: true, prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`,
+    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh'], ['it']], chunk: 6 },
+  // a Québec airport: French leads whenever it is chosen (BoardStrings.FR_FIRST)
+  'quebec-departures': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}&langs=fr,en`, ready: BOARD_UP, setLangs: true,
+    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja']], chunk: 4 },
+  'quebec-arrivals': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}&langs=fr,en`, ready: BOARD_UP, setLangs: true,
+    prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`, sets: [['en', 'fr'], ['es', 'zh']], chunk: 2 },
+  'quebec-gate': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YUL&mode=${MODE}&gate=72&langs=fr,en&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true,
+    sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['en']], chunk: 2, alarm: 220, parallel: 2 },
+  // the stream's rotation page: the boards it rotates, in its frames
+  rotate: { url: (port, set) => `http://127.0.0.1:${port}/rotate.html?ap=YQM&mode=${MODE}&rotate=fids,gids,bids&dwell=9&langs=${set.join(',')}`, ready: SETTLE(15000),
+    sets: [['de'], ['ar', 'ja'], ['fr', 'en']], perSet: true, waits: [0, 9000, 9000], chunk: 3, alarm: 200 },
   // the stream tour: its own card, and the boards in its frames
   tour: { url: (port, set) => `http://127.0.0.1:${port}/tour.html?ap=YQM&langs=${set.join(',')}`, ready: SETTLE(9000), sets: [['de'], ['ar'], ['ja'], ['en', 'fr']], chunk: 2, perSet: true }
 };
@@ -449,9 +492,9 @@ async function runChunk(port, name, spec, sets) {
     const read = async (label, tag) => {
       const r = JSON.parse(await evalv(READ));
       const out = [];
-      if (!spec.phone && spec.setLangs && String(r.langs) !== String(BS.frenchFirst(label.slice(), 'YQM'))) out.push(`the board shows ${r.langs}, not ${label.join(',')}`);
+      if (!spec.phone && spec.setLangs && String(r.langs) !== String(BS.frenchFirst(label.slice(), spec.ap || 'YQM'))) out.push(`the board shows ${r.langs}, not ${BS.frenchFirst(label.slice(), spec.ap || 'YQM').join(',')}`);
       if (spec.phone && r.langs && String(r.langs) !== String(label)) out.push(`the phone shows ${r.langs}, not ${label.join(',')}`);
-      out.push(...judge(r.texts, label).map((p) => (tag ? `[${tag}] ` : '') + p));
+      out.push(...judge(r.texts, label, spec.ap).map((p) => (tag ? `[${tag}] ` : '') + p));
       for (const m of r.misses || []) if (!seenMiss.has(m)) { seenMiss.add(m); out.push(`the store was asked for ${m}, which it does not have: it rendered blank`); }
       return out;
     };
@@ -481,10 +524,14 @@ async function runChunk(port, name, spec, sets) {
         for (const fam of (spec.families || [null])) {
           const up = await go(spec.url(port, set, fam));
           if (!up) { problems.push(`${fam || name} never came up`); continue; }
-          for (const wait of [800, 2500]) { await evalv(SETTLE(wait)); problems.push(...await read(set, fam)); }
+          for (const wait of (spec.waits || [800, 2500])) { await evalv(SETTLE(wait)); problems.push(...await read(set, fam)); }
         }
       } else if (spec.setLangs) {
         await evalv(`setBoardLangs(${JSON.stringify(set)})`);
+        if (spec.prep) {
+          await evalv(spec.prep);
+          if (/'arr'/.test(spec.prep) && (await evalv(`(function () { try { return mode; } catch (e) { return ''; } })()`)) !== 'arr') problems.push('the board did not turn to its arrivals');
+        }
       }
       if (!spec.perSet) {
         // two readings: the gate's panels and the board's paging move on
@@ -550,7 +597,8 @@ const INJECT = `(function () {
   host.id = '__wsInject';
   host.style.cssText = 'position:fixed;left:40px;top:300px;z-index:99999;background:#000;color:#fff;font:24px sans-serif;padding:8px';
   host.innerHTML = '<div>Flight status</div><div>Delay: 45 min</div><div style="text-transform:uppercase">delayed</div>'
-    + '<div class="__wsAfter">x</div><input placeholder="Search flights"><canvas width="300" height="40"></canvas>';
+    + '<div class="__wsAfter">x</div><input placeholder="Search flights"><canvas width="300" height="40"></canvas>'
+    + '<div>LATE</div><div>???</div><div>GATE 7</div>';
   document.body.appendChild(host);
   var st = document.createElement('style');
   st.textContent = '.__wsAfter::after { content: "Gate closes"; }';
@@ -560,7 +608,7 @@ const INJECT = `(function () {
   return 1;
 })()`;
 const MUST_SEE = [/'Flight' is not a word of de/, /'Delay' is not a word of de/, /'delayed' is not a word of de/, /'closes' is not a word of de/,
-  /'Search' is not a word of de/, /'pass' is not a word of de/, /selfTestNoSuchKey/];
+  /'Search' is not a word of de/, /'pass' is not a word of de/, /selfTestNoSuchKey/, /'LATE' is not a word of de/, /a placeholder on screen: "\?\?\?"/];
 async function selftest(port) {
   const b = await browser(150);
   try {

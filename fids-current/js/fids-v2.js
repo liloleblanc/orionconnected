@@ -30,7 +30,7 @@
     // v23968 — the gate's words for Scheduled (SS.scheduled), so the board and
     // the gate print the same one in every language: the board said
     // Planmäßig / Previsto / 预定 where the gate said Geplant / Programado / 计划.
-    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Geplant',          it:'Previsto',         pt:'Programado',       ja:'予定',     zh:'计划',     ar:'مجدول' },
+    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Geplant',          it:'Previsto',         pt:'Programado',       ja:'予定',     zh:'计划',     ar:'مجدولة' },
     // v23968 — an airport's own "Expected" is the store's stExpected
     // (board-strings.js; TX is frozen): T('st-expected') finds it there.
     'st-on-time':     { en:'On time',     fr:'À l\'heure',    es:'A tiempo',       de:'Pünktlich',        it:'In orario',        pt:'No horário',       ja:'定刻',     zh:'准点',     ar:'في الموعد' },
@@ -143,7 +143,7 @@
     let h = parseInt(m[1], 10);
     const mm = m[2];
     if (window.BoardStrings && BoardStrings.boardClock24()) return (h < 10 ? '0' : '') + h + ':' + mm;
-    const ampm = h >= 12 ? 'PM' : 'AM';
+    const ampm = h >= 12 ? 'PM' : 'AM'; // i18n-ok: code (only after boardClock24() said the board leads in English)
     h = h % 12; if (h === 0) h = 12;
     return h + ':' + mm + ' ' + ampm;
   }
@@ -320,13 +320,9 @@
     const boardLabel = T(mode, lang);
     const planeIcon  = mode === 'arrivals' ? PLANE_ICON_DOWN : PLANE_ICON_UP;
 
-    // Time formatted in 12-hour
-    const now = new Date();
-    let h = now.getHours();
-    const m = String(now.getMinutes()).padStart(2, '0');
-    const ampm = h >= 12 ? 'PM' : 'AM';
-    h = h % 12; if (h === 0) h = 12;
-    const timeStr = h + ':' + m + ' ' + ampm;
+    // The time in the board's own clock (BoardStrings.boardTime: 5:35 PM on
+    // a board led by English, 17:35 on any other)
+    const timeStr = BoardStrings.boardTime(new Date());
 
     // Airport pill — custom logo if configured, else IATA + city
     let pillContent;

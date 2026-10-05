@@ -39,7 +39,7 @@
     const hour = Number(match[1]);
     const minute = match[2];
     if (!Number.isFinite(hour)) return String(value || '');
-    return String((hour % 12) || 12) + ':' + minute + ' ' + (hour >= 12 ? 'PM' : 'AM');
+    return String((hour % 12) || 12) + ':' + minute + ' ' + (hour >= 12 ? 'PM' : 'AM'); // i18n-ok: code (studio-render reads it back as a 24-hour time)
   }
 
   function readableStatus(value) {
@@ -100,7 +100,7 @@
       async flights(direction) { return clone(direction === 'arrivals' ? PREVIEW_FLIGHTS.arrivals : PREVIEW_FLIGHTS.departures); },
       async weather() { return { temperature: 22, unit: 'C', condition: 'Clear', icon: '../logos/weather/animated/clear-day.svg' }; }, // i18n-ok: data
       async checkin() { return { counters: ['01', '02', '03', '04'], airline: 'Air Canada', state: 'Open' }; }, // i18n-ok: data
-      async baggage() { return { belt: '1', unloaded: 98, expected: 146, transfers: 12, priority: 4, health: 'Online' }; },
+      async baggage() { return { belt: '1', unloaded: 98, expected: 146, transfers: 12, priority: 4, health: 'Online' }; }, // i18n-ok: data
       async health() { return { ok: true, source: 'preview', checkedAt: new Date().toISOString() }; }
     };
   }

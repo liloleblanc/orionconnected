@@ -401,7 +401,7 @@
     stDelayed: { en: 'Delayed', fr: 'En retard', es: 'Retrasado', de: 'Verspätet', it: 'In ritardo', pt: 'Atrasado', ja: '遅延', zh: '延误', ar: 'متأخرة' },
     stCancelled: { en: 'Cancelled', fr: 'Annulé', es: 'Cancelado', de: 'Annulliert', it: 'Cancellato', pt: 'Cancelado', ja: '欠航', zh: '取消', ar: 'ملغاة' },
     stDiverted: { en: 'Diverted', fr: 'Dérouté', es: 'Desviado', de: 'Umgeleitet', it: 'Dirottato', pt: 'Desviado', ja: '目的地変更', zh: '备降', ar: 'محوّلة' },
-    stScheduled: { en: 'Scheduled', fr: 'Prévu', es: 'Programado', de: 'Geplant', it: 'Previsto', pt: 'Programado', ja: '予定', zh: '计划', ar: 'مجدول' },
+    stScheduled: { en: 'Scheduled', fr: 'Prévu', es: 'Programado', de: 'Geplant', it: 'Previsto', pt: 'Programado', ja: '予定', zh: '计划', ar: 'مجدولة' },
     // The Studio flight table's column heads, in the boards' words.
     colAirline: { en: 'Airline', fr: 'Compagnie', es: 'Aerolínea', de: 'Fluggesellschaft', it: 'Compagnia', pt: 'Companhia', ja: '航空会社', zh: '航空公司', ar: 'شركة الطيران' },
     colFrom: { en: 'From', fr: 'De', es: 'Desde', de: 'Von', it: 'Da', pt: 'De', ja: '出発地', zh: '出发地', ar: 'من' },
@@ -479,7 +479,7 @@
     // (fidsNeutralWord in feed-router.js) instead of folding it into
     // Scheduled. SL('expected') and fids-v2's T('st-expected') find it here;
     // $ctx keeps the status apart from the lower-case "expected" qualifier.
-    stExpected: { en: 'Expected', fr: 'Attendu', es: 'Esperado', de: 'Erwartet', it: 'Atteso', pt: 'Esperado', ja: '見込み', zh: '预计', ar: 'متوقع',
+    stExpected: { en: 'Expected', fr: 'Attendu', es: 'Previsto', de: 'Erwartet', it: 'Atteso', pt: 'Previsto', ja: '見込み', zh: '预计', ar: 'متوقعة',
       $ctx: 'status' },
     // ── v23968 — EACH AIRLINE'S GATE-CLOSE DEADLINE ──────────────────────────
     // The line at the foot of the gate's Boarding card before boarding starts
