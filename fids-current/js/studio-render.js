@@ -19,6 +19,16 @@
     return Strings && Strings.isLang(l) ? l : 'en';
   }
   function T(key, context) { return Strings ? Strings.bs(key, langOf(context)) : ''; }
+  // v23971 — the weather's condition in the canvas's language: the store's
+  // weather word (a key the data names, or the store entry whose English the
+  // data's condition is). An unknown condition shows nothing, never the
+  // feed's English ('Clear' on a French canvas).
+  function wxWord(weather, context) {
+    if (!weather || !Strings) return '';
+    if (weather.key && Strings.entry(weather.key)) return T(weather.key, context);
+    const k = Strings.keyForEnglish(weather.condition, 'wx');
+    return k ? T(k, context) : '';
+  }
   function TU(key, context) {
     const l = langOf(context);
     return T(key, context).toLocaleUpperCase(Strings ? Strings.META[l].intl : 'en');
@@ -98,7 +108,7 @@
       'arrival.time': displayTime(arrival[3], context),
       'arrival.status': statusText(arrival[4], context),
       'weather.temp': weather.temperature != null ? weather.temperature + '°' + (weather.unit || 'C') : '—',
-      'weather.condition': weather.condition || '—'
+      'weather.condition': wxWord(weather, context) || '—'
     };
   }
 
@@ -167,7 +177,8 @@
       '<div class="fx-brand' + (module.props.panel === 'dark' ? ' is-dark' : '') + '">' + brandLogo + '<b>' + airportName + '</b></div>' +
       '<div class="fx-headright"><div class="fx-clock">' + escapeHTML(context.clock.time) + '</div>' +
       '<div class="fx-title">' + title + '<span class="fx-plane">✈</span></div>' +
-      '<div class="fx-headmeta">' + escapeHTML(context.clock.date) + ' · ' + escapeHTML(context.dataBadge) + ' · ' + escapeHTML(String(context.language).toUpperCase()) + '</div></div></div>';
+      // the data badge (PREVIEW, READ-ONLY FLIGHTS) is the operator's, not a word for passengers
+      '<div class="fx-headmeta">' + escapeHTML(context.clock.date) + (context.dataBadge ? '<span class="fx-databadge" data-operator> · ' + escapeHTML(context.dataBadge) + '</span>' : '') + ' · ' + escapeHTML(String(context.language).toUpperCase()) + '</div></div></div>';
   }
 
   const TABLE_COLUMNS = Object.freeze([
@@ -247,7 +258,7 @@
     const ticker = module.props.ticker ? resolveTokens(module.props.ticker, context)
       : escapeHTML(T('greetBoard', context)) + ' · ' + resolveTokens('{airport.name}', context);
     const chip = context.nextLanguage ? escapeHTML(context.nextLanguage) : escapeHTML(String(context.language || 'EN').toUpperCase());
-    return '<div class="fx-footer"><span class="fx-temp">' + escapeHTML(temperature) + '<small>' + escapeHTML(weather.condition || '') + '</small></span>' +
+    return '<div class="fx-footer"><span class="fx-temp">' + escapeHTML(temperature) + '<small>' + escapeHTML(wxWord(weather, context)) + '</small></span>' +
       '<span class="fx-ticker">' + ticker + '</span>' +
       '<span class="fx-foot-right"><small>' + escapeHTML(context.editing ? (context.sceneLabel || '') : '') + '</small><span class="fx-chip">' + chip + '</span></span></div>';
   }
@@ -257,7 +268,7 @@
     const weather = context.weather || {};
     const temperature = weather.temperature != null ? weather.temperature + '°' + (weather.unit || 'C') : '—';
     const city = escapeHTML(String(departure[1]).split(' (')[0]);
-    return '<div class="preview-ad mod-fill"><small>' + escapeHTML(TU('weather', context)) + '</small><b>' + city + '<br>' + escapeHTML(temperature) + '</b><small>' + escapeHTML(weather.condition ? weather.condition : T('noData', context)) + '</small></div>';
+    return '<div class="preview-ad mod-fill"><small>' + escapeHTML(TU('weather', context)) + '</small><b>' + city + '<br>' + escapeHTML(temperature) + '</b><small>' + escapeHTML(wxWord(weather, context) || T('noData', context)) + '</small></div>';
   }
 
   function gateFlightContent(module, context) {

@@ -84,7 +84,7 @@ const TABLE = (() => {
 
 test('the roster carries every group Porter publishes', () => {
   const en = TABLE.en;
-  for (const group of ['disabilities', 'Unaccompanied minors', 'children 2 and under',
+  for (const group of ['disabilities', 'Unaccompanied minors', 'children age two and younger',
                        'VIPorter', 'PorterReserve']) {
     assert.ok(en.includes(group), `the published list includes "${group}"`);
   }
@@ -93,7 +93,8 @@ test('the roster carries every group Porter publishes', () => {
 test('every language the board can run carries the roster', () => {
   for (const lang of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
     assert.ok(TABLE[lang] && TABLE[lang].length > 20, `${lang} must have the roster`);
-    assert.ok(/VIPorter/.test(TABLE[lang]) && /PorterReserve/.test(TABLE[lang]),
+    // French writes the cabin PorterRéserve, as Porter does
+    assert.ok(/VIPorter/.test(TABLE[lang]) && (lang === 'fr' ? /PorterRéserve/ : /PorterReserve/).test(TABLE[lang]),
       `${lang} must keep the Porter brand names untranslated`);
   }
 });
@@ -104,14 +105,14 @@ test('while pre-boarding, the column is headed Pre-boarding and lists the groups
   assert.match(html, /\[priority\]/,
     'the HEADER stays Priority — v23522 put the phase in both and the value clipped');
   assert.ok(html.includes('Unaccompanied minors'), 'the published list must be on the sign');
-  assert.ok(html.includes('Families with children 2 and under'));
+  assert.ok(html.includes('Families traveling with children age two and younger'), 'Porter\'s own words');
   assert.doesNotMatch(html, />Porter Reserve</,
     'during pre-boarding the single Reserve headline is replaced by the full list');
 });
 
 test('once general boarding commences it returns to the Reserve priority queue', () => {
   const html = build(false, 'en');
-  assert.ok(html.includes('Porter Reserve'), 'lanes 1-2 are the Reserve queue from then on');
+  assert.ok(html.includes('PorterReserve'), 'lanes 1-2 are the Reserve queue from then on, by Porter\'s own name');
   assert.ok(!html.includes('Unaccompanied minors'),
     'the pre-boarding courtesy list must not linger through general boarding');
 });
@@ -126,7 +127,9 @@ test('the phase is driven by the real boarding window, not a magic number', () =
 test('the French sign says it in French', () => {
   const html = build(true, 'fr');
   assert.ok(html.includes('Mineurs non accompagn'));
-  assert.ok(html.includes('PorterReserve'), 'brand names stay as Porter writes them');
+  // Porter writes its cabin PorterRéserve in French (its own pre-boarding
+  // list, fr-ca): the brand stays as Porter writes it, in that language.
+  assert.ok(html.includes('PorterRéserve'), 'brand names stay as Porter writes them');
 });
 
 // ── v23746 — THE COLUMNS ARE HEADED BY THE CABIN, AND THE CABIN LOCALISES ───

@@ -247,7 +247,6 @@ const BRAND_TERMS = {
   'AvidTraveller': 'brand: Porter loyalty term (French is Grand Voyageur)',
   'VIPorter': 'brand: Porter loyalty programme',
   'Fly Porter': 'brand: Porter\'s own line',
-  'Porter Reserve': 'brand: Porter cabin, as Porter advertises it',
   'MileagePlus': 'brand: United loyalty programme',
   'United Club': 'brand: United lounge',
   'United App': 'brand: United app',
@@ -263,6 +262,7 @@ const BRAND_TERMS = {
   'HawaiianMiles': 'brand: Hawaiian loyalty programme',
   'Frequent Flyer': 'brand: Qantas Frequent Flyer, the programme\'s name',
   'OpenStreetMap': 'brand: the map data credit the licence requires',
+  'Priority Pass': 'brand: the lounge programme\'s name, the same in every language',
   'Hotels & Resorts': 'brand: the hotel brand line, as German brand copy writes it',
   'Canadian Partner': 'brand: Canadian Airlines\' feeder brand, as painted on the aircraft (heritage card)',
   'Green Key': 'brand: the eco-label (its Canadian programme is also Clé Verte)',
@@ -344,14 +344,15 @@ const SAME_JA_ZH = {
 // loanword its airports and hotels write ('check-in'). Any other English
 // word inside a translation fails B3 ('Gate closes shortly' in German).
 const NATIVE_WORDS = {
-  es: { error: 'code: the Spanish word', general: 'code: the Spanish word (Embarque general)' },
+  es: { error: 'code: the Spanish word', general: 'code: the Spanish word (Embarque general)', taxi: 'code: the Spanish word', club: 'code: the cabin name as Spanish writes it (Clase Club)' },
   fr: {
     restaurant: 'code: the French word', site: 'code: the French word (site web)', double: 'code: the French word (lit double)',
     programme: 'code: the French word', image: 'code: the French word', unique: 'code: the French word',
-    dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word', centre: 'code: the French word (centre-ville)'
+    dollars: 'code: the French word (dollars WestJet)', destinations: 'code: the French word', centre: 'code: the French word (centre-ville)',
+    taxi: 'code: the French word', club: 'code: the cabin name as French writes it (Classe Club)'
   },
-  de: { restaurant: 'code: the German word' },
-  it: { 'check-in': 'code: the word Italian airports use', king: 'code: the bed size as Italian hotels write it (king size)' },
+  de: { restaurant: 'code: the German word', taxi: 'code: the German word', 'check-in': 'code: the word German airports use' },
+  it: { 'check-in': 'code: the word Italian airports use', king: 'code: the bed size as Italian hotels write it (king size)', taxi: 'code: the Italian word' },
   pt: {
     'check-in': 'code: the word Brazilian airports use', site: 'code: the Brazilian word for a website', king: 'code: the bed size as Brazilian hotels write it',
     transfers: 'code: the word Brazilian airports use for airport transfers', resorts: 'code: the word Brazilian Portuguese uses'

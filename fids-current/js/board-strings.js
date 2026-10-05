@@ -212,15 +212,29 @@
     // PorterClassic / PorterClassique and AvidTraveller / Grand Voyageur are
     // its own names (flyporter.com, en-ca and fr-ca), kept as brand names in
     // the other seven languages.
-    preboard: { en: 'Pre-boarding', fr: 'Pré-embarquement', es: 'Preembarque', de: 'Vorab-Einstieg', it: 'Preimbarco', pt: 'Pré-embarque', ja: '優先搭乗', zh: '优先登机', ar: 'صعود مسبق',
-      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Porter's own words, in both languages it publishes (flyporter.com,
+    // Boarding process, en-ca and fr-ca, read 2026-10-04): "Pre-boarding" /
+    // « préembarquement », "general boarding" / « embarquement général ».
+    preboard: { en: 'Pre-boarding', fr: 'Préembarquement', es: 'Preembarque', de: 'Vorab-Einstieg', it: 'Preimbarco', pt: 'Pré-embarque', ja: '優先搭乗', zh: '优先登机', ar: 'صعود مسبق',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     genboard: { en: 'General boarding', fr: 'Embarquement général', es: 'Embarque general', de: 'Allgemeines Boarding', it: 'Imbarco generale', pt: 'Embarque geral', ja: '一般搭乗', zh: '普通登机', ar: 'صعود عام',
-      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     photoId: { en: 'Have your ID ready for presentation', fr: 'Veuillez avoir votre pièce d’identité prête', es: 'Tenga su identificación con foto lista', de: 'Halten Sie Ihren Lichtbildausweis bereit', it: 'Tenete pronto un documento con foto', pt: 'Tenha sua identificação com foto pronta', ja: '写真付き身分証明書をご用意ください', zh: '请准备好带照片的身份证件', ar: 'يرجى تجهيز بطاقة هوية تحمل صورة',
       $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
-    // Porter's own pre-boarding list, condensed for the sign.
-    preboardList: { en: 'Passengers with disabilities · Unaccompanied minors · Families with children 2 and under · Premium VIPorter · PorterReserve', fr: 'Passagers handicapés · Mineurs non accompagnés · Familles avec enfants de 2 ans et moins · VIPorter Premium · PorterReserve', es: 'Pasajeros con discapacidad · Menores no acompañados · Familias con niños de 2 años o menos · VIPorter Premium · PorterReserve', de: 'Passagiere mit Behinderung · Alleinreisende Kinder · Familien mit Kindern bis 2 Jahre · Premium VIPorter · PorterReserve', it: 'Passeggeri con disabilità · Minori non accompagnati · Famiglie con bambini fino a 2 anni · Premium VIPorter · PorterReserve', pt: 'Passageiros com deficiência · Menores desacompanhados · Famílias com crianças até 2 anos · Premium VIPorter · PorterReserve', ja: 'お手伝いが必要なお客様 · お子様のひとり旅 · 2歳以下のお子様連れ · プレミアムVIPorter · PorterReserve', zh: '需协助旅客 · 无人陪伴儿童 · 携2岁及以下儿童的家庭 · 高级VIPorter · PorterReserve', ar: 'الركاب ذوو الإعاقة · القاصرون غير المصحوبين · العائلات مع أطفال حتى سنتين · VIPorter بريميوم · PorterReserve',
-      $src: { en: 'house', fr: 'careful', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
+    // Porter's own pre-boarding list, as Porter publishes it in English and
+    // French (flyporter.com, Boarding process, "Boarding order" / « Ordre
+    // d'embarquement », read 2026-10-04); the other seven languages are
+    // careful translations of it. The French names the cabin PorterRéserve.
+    preboardList: { en: 'Passengers with disabilities · Unaccompanied minors · Families traveling with children age two and younger · Premium VIPorter members · PorterReserve passengers',
+      fr: 'Passagers ayant un handicap · Mineurs non accompagnés · Passagers voyageant avec des enfants de deux ans ou moins · Membres VIPorter premium · Passagers en catégorie PorterRéserve',
+      es: 'Pasajeros con discapacidad · Menores no acompañados · Familias que viajan con niños de dos años o menos · Miembros Premium de VIPorter · Pasajeros de PorterReserve',
+      de: 'Passagiere mit Behinderung · Alleinreisende Minderjährige · Familien mit Kindern bis zwei Jahre · Premium-Mitglieder von VIPorter · Passagiere der PorterReserve',
+      it: 'Passeggeri con disabilità · Minori non accompagnati · Famiglie con bambini fino a due anni · Membri Premium di VIPorter · Passeggeri PorterReserve',
+      pt: 'Passageiros com deficiência · Menores desacompanhados · Famílias com crianças de até dois anos · Membros Premium do VIPorter · Passageiros da PorterReserve',
+      ja: '障がいのあるお客様 · 同伴者のいない未成年のお客様 · 2歳以下のお子様連れのご家族 · VIPorterプレミアム会員 · PorterReserveのお客様',
+      zh: '残障旅客 · 无成人陪伴的未成年人 · 携带两岁及以下儿童的家庭 · VIPorter高级会员 · PorterReserve旅客',
+      ar: 'الركاب ذوو الإعاقة · القاصرون غير المصحوبين · العائلات المسافرة مع أطفال بعمر سنتين أو أقل · أعضاء VIPorter المميزون · ركاب PorterReserve',
+      $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     pdReserve: { en: 'PorterReserve', fr: 'PorterRéserve', es: 'PorterReserve', de: 'PorterReserve', it: 'PorterReserve', pt: 'PorterReserve', ja: 'PorterReserve', zh: 'PorterReserve', ar: 'PorterReserve',
       $src: { en: 'airline:PD', fr: 'airline:PD', es: 'careful', de: 'careful', it: 'careful', pt: 'careful', ja: 'careful', zh: 'careful', ar: 'careful' } },
     // The four VIPorter elite tiers, as Porter names them (flyporter.com en-ca
@@ -298,7 +312,7 @@
     wxSnow: { en: 'Snow', fr: 'Neige', es: 'Nieve', de: 'Schnee', it: 'Neve', pt: 'Neve', ja: '雪', zh: '雪', ar: 'ثلج' },
     wxHeavySnow: { en: 'Heavy Snow', fr: 'Neige forte', es: 'Nieve intensa', de: 'Starker Schneefall', it: 'Neve intensa', pt: 'Neve forte', ja: '大雪', zh: '大雪', ar: 'ثلوج كثيفة' },
     wxSnowGrains: { en: 'Snow Grains', fr: 'Grains de neige', es: 'Granos de nieve', de: 'Schneegriesel', it: 'Granelli di neve', pt: 'Grãos de neve', ja: '霧雪', zh: '米雪', ar: 'حبيبات ثلجية' },
-    wxFlurries: { en: 'Flurries', fr: 'Averses de neige', es: 'Nevadas débiles', de: 'Schneegestöber', it: 'Deboli nevicate', pt: 'Neve intermitente', ja: 'ちらつく雪', zh: '零星小雪', ar: 'زخات ثلج خفيفة' },
+    wxFlurries: { en: 'Flurries', fr: 'Faibles averses de neige', es: 'Nevadas débiles', de: 'Leichte Schneeschauer', it: 'Deboli nevicate', pt: 'Neve intermitente', ja: 'ちらつく雪', zh: '零星小雪', ar: 'زخات ثلج خفيفة' },
     wxLightShowers: { en: 'Light Showers', fr: 'Averses légères', es: 'Chubascos ligeros', de: 'Leichte Schauer', it: 'Rovesci leggeri', pt: 'Pancadas de chuva fracas', ja: '弱いにわか雨', zh: '小阵雨', ar: 'زخات خفيفة' },
     wxShowers: { en: 'Showers', fr: 'Averses', es: 'Chubascos', de: 'Schauer', it: 'Rovesci', pt: 'Pancadas de chuva', ja: 'にわか雨', zh: '阵雨', ar: 'زخات مطر' },
     wxHeavyShowers: { en: 'Heavy Showers', fr: 'Fortes averses', es: 'Chubascos fuertes', de: 'Starke Schauer', it: 'Forti rovesci', pt: 'Pancadas de chuva fortes', ja: '強いにわか雨', zh: '强阵雨', ar: 'زخات غزيرة' },
@@ -591,6 +605,20 @@
     });
   }
   function fmt(key, lang, fields, raw) { return fill(bs(key, lang), fields, raw); }
+  // The key whose English a feed's own word is ('Clear' -> wxClear), among
+  // the keys starting with `prefix`: how a word that arrives in English from
+  // data is said in the board's language. '' when the store has no such entry
+  // (the caller shows nothing then, never the English).
+  function keyForEnglish(text, prefix) {
+    var t = String(text == null ? '' : text).trim().toLowerCase();
+    if (!t) return '';
+    var keys = Object.keys(STR);
+    for (var i = 0; i < keys.length; i++) {
+      if (prefix && keys[i].indexOf(prefix) !== 0) continue;
+      if (String(STR[keys[i]].en).toLowerCase() === t) return keys[i];
+    }
+    return '';
+  }
   // An entry with its placeholders filled in every language, for the helpers
   // that take a whole language object (the weather card's _wxPair family).
   function filled(key, fields, raw) {
@@ -1003,6 +1031,7 @@
   api.isLang = isLang;
   api.bs = bs;
   api.fmt = fmt;
+  api.keyForEnglish = keyForEnglish;
   api.fill = fill;
   api.filled = filled;
   api.esc = esc;

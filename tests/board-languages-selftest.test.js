@@ -43,7 +43,7 @@ const policy = Object.assign({}, real, {
   LANG_STORAGE_FUNCTIONS: {},
   LANG_POSITION_FUNCTIONS: {}
 });
-const R = checks.run({ policy, frozen: { LS: ['dep', 'gate'] } });
+const R = checks.run({ policy, frozen: { LS: ['dep', 'gate'] }, workerFiles: [FX + 'worker.js'] });
 const F = R.findings;
 const has = (check, file, re) => F.some((f) => f.check === check && (f.file === FX + file || f.file === '*') && (!re || re.test(f.text) || re.test(f.msg)));
 
@@ -161,6 +161,11 @@ test('self-test: a pragma moved onto a new line is a new exception, whatever the
 test('self-test: approvals are main\'s, and well formed', () => {
   assert.deepEqual(ratchet.parseApprovals(null), [], 'no approvals file on main: nothing approved');
   assert.throws(() => ratchet.parseApprovals('[{ "list": "BRAND_TERMS", "entry": "x" }]'), /where it was approved/);
+});
+test('self-test: a feed worker writing its own English into a row fails (W1)', () => {
+  assert.ok(F.some((f) => f.check === 'W1' && /Gate closes in 10 minutes/.test(f.text)), 'a made-up status');
+  assert.ok(F.some((f) => f.check === 'W1' && /Proceed to the gate now/.test(f.text)), 'a made-up remark');
+  assert.ok(!F.some((f) => f.check === 'W1' && /gateclosing/.test(f.text)), 'a code is what a worker sends');
 });
 test('self-test: C2 catches a script injected at run time', () => {
   assert.ok(F.some((f) => f.check === 'C2' && /injected\.js/.test(f.text)));

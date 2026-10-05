@@ -14,5 +14,5 @@
 - [ ] Existing wording reused where the English already exists on a screen (the "one translation per phrase" check passes)
 - [ ] Pre-boarding / travel documents / loyalty / cabin wording: the airline's or government's own published words; careful translations listed here for review
 - [ ] Fit checked with German+Portuguese and Arabic+Japanese leading (pictures attached)
-- [ ] New `i18n-ok` pragmas or policy lines listed here with their reason, or "none"
+- [ ] New `i18n-ok` pragmas or policy lines listed here with their reason, or "none" — each approved on main beforehand, in its own pull request (`tests/i18n/approved-exceptions.json` only)
 - [ ] `FIDS_BUILD_TAG` and every `?v=` bumped

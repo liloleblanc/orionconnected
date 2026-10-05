@@ -3391,7 +3391,9 @@ function submitTestFlight() {
   const tz = (AP[iata] || {}).tz;
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true} // i18n-ok: operator
                    : {hour:'2-digit', minute:'2-digit', hour12:true}; // i18n-ok: operator
-  const timeStr = schedDate.toLocaleTimeString('en-CA', tOpt); // i18n-ok: operator
+  // the row's time in the feed's shape (24-hour HH:MM): en-CA's '10:07 p.m.'
+  // was read as 10:07 in the morning
+  const timeStr = schedDate.toLocaleTimeString('en-GB', Object.assign({}, tOpt, { hour12: undefined, hourCycle: 'h23' })); // i18n-ok: code
 
   const testFlight = {
     time: timeStr,
@@ -4584,6 +4586,27 @@ function _fidsNoStatusClip(tbl) {
       while (guard-- > 0 && td.scrollWidth > td.clientWidth + 1 && f > 9) {
         f -= 1;
         td.style.setProperty('font-size', f + 'px', 'important');
+      }
+    });
+  } catch (e) {}
+  // v23971 — NOR A FLIGHT NUMBER, A TIME OR A GATE. 'WS3340' measured 2px
+  // wider than its column ('W' is the widest capital) and read 'WS33…', and
+  // an English '12:07 PM' read '12:07 PM…'. These columns step down
+  // TOGETHER, one pixel at a time, until every cell fits, so the rows keep
+  // one size; a code or a time cut short is a wrong one.
+  try {
+    ['td-flight', 'td-time', 'td-time-rev', 'td-gate'].forEach(function (c) {
+      var tds = Array.prototype.slice.call(tbl.querySelectorAll('tbody td.' + c));
+      if (!tds.length) return;
+      var over = function () { return tds.some(function (td) { return td.scrollWidth > td.clientWidth + 1; }); };
+      var guard = 26;
+      while (guard-- > 0 && over()) {
+        var smaller = false;
+        tds.forEach(function (td) {
+          var f = parseFloat(getComputedStyle(td).fontSize) || 16;
+          if (f > 9) { td.style.setProperty('font-size', (f - 1) + 'px', 'important'); smaller = true; }
+        });
+        if (!smaller) break;
       }
     });
   } catch (e) {}
@@ -9197,7 +9220,7 @@ function renderMobileBaggageHtml(ctx) {
       }).join('')
     : '<div style="text-align:center;padding:48px 20px;color:' + T.muted + ';font-size:14px;letter-spacing:2px;">' + TL('noAssigned') + '</div>';
 
-  return '<div class="gids-m2" style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:Inter,system-ui,sans-serif;padding-bottom:110px;">'
+  return '<div class="gids-m2"' + _phoneLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
     // header: airport + belt
     + '<div style="background:' + T.header + ';padding:16px 18px 14px;border-bottom:1px solid ' + T.line + ';display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">'
     +   '<div style="flex:1;min-width:0;">'
@@ -9490,7 +9513,7 @@ function renderMobileGateHtml(ctx) {
     }
   } catch (e) { _inbBlock = ''; }
 
-  return '<div class="gids-m2" style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:Inter,system-ui,sans-serif;padding-bottom:110px;">'
+  return '<div class="gids-m2"' + _phoneLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
 
     // ── HEADER: compact, clears the gear icon, no dead space ──
     + '<div style="background:' + T.header + ';padding:54px 20px 18px;border-bottom:1px solid ' + T.line + ';">'
@@ -13974,6 +13997,11 @@ function uxgGateHtml(ctx) {
     // onto a second line. Lowercase, no space, no wrap.
     function _birMerid(html) {
       if (!html) return html;
+      // v23971 — the board's clock first: on a board led by a 24-hour
+      // language the time is 17:40, and there is no meridiem to wrap (the
+      // revised departure read '5:40pm' on a French or German gate, because
+      // the wrapping hid the time from the board-clock pass that runs later).
+      html = BoardStrings.boardClockText(String(html));
       // ONE pass — a second .replace() over the first's output re-matched the
       // 'am' it had just wrapped and nested the span inside itself.
       return String(html).replace(/\s*\b([AaPp])\.?\s*[Mm]\.?\b/g, function (_, p) {
@@ -14206,7 +14234,11 @@ function uxgGateHtml(ctx) {
     // panel and the paired form does not fit. The board already rotates its
     // language, so each pass shows it in one of them — the same reason the
     // roster below uses TL().
-    var _prioVal = preActive ? _gateLbl1('preboard', _frF) : 'Porter Reserve';
+    // v23971 — the cabin by Porter's own name in the sign's language
+    // (PorterReserve / PorterRéserve), never the spaced English 'Porter
+    // Reserve', which Porter writes nowhere and which read English on a
+    // French sign.
+    var _prioVal = preActive ? _gateLbl1('preboard', _frF) : _gateLbl1('pdReserve', _frF);
     // v23524 — the two product names in Porter's list get their marks.
     // sent the artwork; every file in it is DARK INK (porter_reserve_logo.svg
     // is #222223, the VIPorter tier marks are black or #153993) and this sign's
@@ -14417,15 +14449,18 @@ function uxgGateHtml(ctx) {
     // The mock writes 'PorterReserve | Réserve': when the second half repeats
     // the first half's brand prefix, it drops it, so a cabin pair holds one
     // line. Only asked for on cabin names; every other pair is left whole.
+    var cut = -1;
     if (short && halves.length === 2) {
       var m = /^([A-Z][a-z]+)(?=[A-Z])/.exec(halves[0]);
-      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) halves[1] = halves[1].slice(m[1].length);
+      if (m && halves[1].indexOf(m[1]) === 0 && halves[1].length > m[1].length) { halves[1] = halves[1].slice(m[1].length); cut = 1; }
     }
     // v23773 — each half carries its language, so the French half can be
     // coloured wherever it sits: second at most airports, FIRST at the
     // French-first ones (YUL, YQB…). Position says nothing about language.
+    // v23971 — a half cut from a brand ('Réserve' of PorterRéserve, 'Reserve'
+    // of PorterReserve) is the brand's own word, never translated: marked so.
     var html = halves.map(function (w, i) {
-      return BoardStrings.markHalf('<span class="g8-pair-h">' + w + '</span>', langsOf[i], key);
+      return BoardStrings.markHalf('<span class="g8-pair-h"' + (i === cut ? ' translate="no"' : '') + '>' + w + '</span>', langsOf[i], key);
     }).join('<span class="g8-pair-sep">|</span>');
     return html;
   }
@@ -18692,7 +18727,12 @@ function boardAutofit(full) {
 }
 // Standing refit — covers the BAGS render, destination flips changing text
 // lengths, and window resizes, same rhythm as the gate's fit heartbeat.
-try { _ocEvery(function () { boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); }, 5000); } catch (e) {}
+// v23971 — the no-cut pass rides the heartbeat too: with the fitter off
+// (BOARD_AUTOFIT_ENABLED) it ran only beside a row swap, which can land
+// before the board is laid out or its fonts have arrived; a board whose rows
+// do not change was then never measured again. It only ever shrinks a cell
+// that is cut, so on a board that fits it changes nothing.
+try { _ocEvery(function () { try { var _tb = document.getElementById('fidsTable'); if (_tb && _tb.offsetParent) _fidsNoStatusClip(_tb); } catch (eC) {} boardAutofit(false); _fidsAirportLogoFit(); _fidsRowInk(); }, 5000); } catch (e) {}
 // The logo's natural size is only known once it decodes, and the banner may
 // still be revealing — fit on load as well as on the heartbeat.
 try {
@@ -21084,9 +21124,11 @@ const gView = document.getElementById('gateView');
             var _crslW1 = String(TLin('bagClaim', _crslLs[0]));
             var _crslW2 = _crslLs.length > 1 ? String(TLin('bagClaim', _crslLs[1])) : '';
             if (_crslW2 && _crslW2.toLowerCase() === _crslW1.toLowerCase()) _crslW2 = '';
-            var _crslVars = _crslW2
-              ? "--crsl-l2:'" + (_bidsV3On ? _crslW2 : _crslW2.toUpperCase()).replace(/'/g, '') + "';"
-              : '--crsl-l2-disp:none;';
+            // v23971 — the second bar is an element of its own, marked with
+            // its language: drawn as the block's ::after (through --crsl-l2)
+            // it took the FIRST language's lang, so Chinese under a Spanish
+            // first bar was set with the Japanese glyph forms.
+            var _crslVars = _crslW2 ? '' : '--crsl-l2-disp:none;';
             // v23514 — NO EM-DASH IN THE NUMBER. When a hall has no belt to
             // show, subScreenVal is the '—' placeholder from updateSubScreens.
             // Painted through .bidsv2-carousel-number that glyph is ~44vh of
@@ -21130,13 +21172,14 @@ const gView = document.getElementById('gateView');
                 + '</g></svg>'
               : '';
             return '<div class="bidsv2-carousel-block" style="' + _crslVars + '">'
-              + '<div class="bidsv2-carousel-label">' + _crslW1 + '</div>'
+              + BoardStrings.markHalf('<div class="bidsv2-carousel-label">' + _crslW1 + '</div>', _crslLs[0], 'bagClaim')
               + _crslArt
               // subScreenVal is a belt key the feed supplied (updateSubScreens
               // builds the list from f._belt / f.gate / f.flight), and only the
               // ?belt= URL form passes through _fidsSafeSub — this one does not.
               + '<div class="bidsv2-carousel-number" data-len="' + String(_crslNum).length + '">' + fidsEscHtml(_crslNum) + '</div>'
               + (_mcoBagTerm ? '<div class="bidsv2-carousel-terminal">' + TL('termArr') + ' ' + _mcoBagTerm + '</div>' : '')
+              + (_crslW2 ? BoardStrings.markHalf('<div class="bidsv2-carousel-l2">' + fidsEscHtml(_bidsV3On ? _crslW2 : _crslW2.toLocaleUpperCase(BoardStrings.intl(_crslLs[1]))) + '</div>', _crslLs[1], 'bagClaim') : '')
               + '</div>';
           })()}
 
@@ -26354,6 +26397,14 @@ function _legacyPair(table, k) {
   return out.join(' · ');
 }
 const SLbi = k => _legacyPair(SS, k);
+// The phone's gate and baggage views are one language (the phone's): say
+// which, and its direction, so Japanese, Chinese and Arabic take their own
+// fonts and line breaking and Arabic reads right to left. v23971 — they sat
+// under the page's lang="en".
+function _phoneLangAttrs() {
+  var l = BoardStrings.isLang(lang) ? lang : 'en';
+  return ' lang="' + l + '"' + (BoardStrings.META[l].dir === 'rtl' ? ' dir="rtl"' : '');
+}
 // A status code as the board's word, in the language on screen. Feeds spell
 // a code several ways ('final-call', 'Final Call', 'gate_closed', 'en-route');
 // they are folded onto the status table's keys. v23971 — an unknown code
@@ -26617,7 +26668,7 @@ var _GATE_LBL = {
   // an empty string and the line silently vanishes, which is what happened on
   // the first two attempts at this card. It belongs here, beside arrivingFrom,
   // because the bottom-right panel pairs the two when no inbound is tracked.
-  arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已从…到达', ar:'وصل من' },
+  arrivedFrom:  { en:'Arrived From',  fr:'Arrivé de',        es:'Llegó de',      de:'Angekommen aus', it:'Arrivato da', pt:'Chegou de',     ja:'出発地',   zh:'已到达，来自', ar:'وصل من' },
   // v23925 — the neutral inbound label: the arrivals board has let the flight
   // go and nothing says it landed, so it is neither "Arriving" nor "Arrived"
   // (_gateInbCaptionKey). It names where the aeroplane comes from, no more.
@@ -28401,6 +28452,11 @@ function render() {
     try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e) {}
     // settle pass for late layout (web fonts, images shifting metrics)
     try { setTimeout(function () { boardAutofit(false); try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e2) {} }, 350); } catch (e) {}
+    // v23971 — and once the board's web fonts have loaded: the first render
+    // measured with the fallback face, narrower, so a cell that fit then
+    // was cut once Bricolage arrived ('WS33…') and nothing measured again
+    // until the rows changed.
+    try { if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e3) {} }); } catch (e) {}
   }
   // Phase 4: expose flight lists to the Search tab
   try {
@@ -29318,9 +29374,12 @@ function buildDemoFlights(iata) {
   if (!sched) return buildRandomFlights(iata);   // ← rich random generator for all others
   const now = Date.now();
   const tz  = (AP[iata] || {}).tz;
-  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true} // i18n-ok: data
-                  : {hour:'2-digit', minute:'2-digit', hour12:true}; // i18n-ok: data
-  const fmtTime = ts => new Date(ts).toLocaleTimeString('en-CA', tOpt); // i18n-ok: data
+  // v23971 — the feed's own shape, 24-hour HH:MM, which every board formats
+  // in its own clock. It was en-CA's '10:07 p.m.', which the boards read as
+  // 10:07 in the morning: every demo time was twelve hours out.
+  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hourCycle:'h23'} // i18n-ok: data
+                  : {hour:'2-digit', minute:'2-digit', hourCycle:'h23'}; // i18n-ok: data
+  const fmtTime = ts => new Date(ts).toLocaleTimeString('en-GB', tOpt); // i18n-ok: data
 
   const build = (list, isDep) => list.map(s => {
     const schedTs = now + s.m * 60000;
@@ -29481,8 +29540,9 @@ function rfgGate(terminal, seed) {
 function buildRandomFlights(iata) {
   const now = Date.now();
   const tz  = (AP[iata] || {}).tz;
-  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hour12:true} // i18n-ok: data
-                  : {hour:'2-digit', minute:'2-digit', hour12:true}; // i18n-ok: data
+  // v23971 — 24-hour HH:MM, the feed's own shape (see buildDemoFlights)
+  const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hourCycle:'h23'} // i18n-ok: data
+                  : {hour:'2-digit', minute:'2-digit', hourCycle:'h23'}; // i18n-ok: data
 
   // Determine airport "type" from its region pool mix
   const isCA  = /^Y/.test(iata);
@@ -29561,11 +29621,11 @@ function buildRandomFlights(iata) {
     const term = rfgPick(terminals, seed + i * 3);
     const gate = rfgGate(term, seed + i * 19);
     const schedTs = now + minsOffset * 60000;
-    const time = new Date(schedTs).toLocaleTimeString('en-CA', tOpt); // i18n-ok: data
+    const time = new Date(schedTs).toLocaleTimeString('en-GB', tOpt); // i18n-ok: data
     const hasDelay = (seed % 7 === 0) && minsOffset > 30;
     const delayMins = hasDelay ? 15 + (Math.abs(seed) % 45) : 0;
     const delayTs = hasDelay ? schedTs + delayMins * 60000 : null;
-    const upd = delayTs ? new Date(delayTs).toLocaleTimeString('en-CA', tOpt) : null; // i18n-ok: data
+    const upd = delayTs ? new Date(delayTs).toLocaleTimeString('en-GB', tOpt) : null; // i18n-ok: data
     const status = buildDemoStatus(minsOffset, isDep, hasDelay, delayMins);
     // Extract the numeric portion of the flight number for operator detection
     var _flNumForOp = parseInt((flight || '').replace(/\D/g, ''), 10) || 0;
@@ -32836,9 +32896,15 @@ function applyAirportConfigToBoard(iata) {
     var _cfgLangs = _pref('langs');
     var _savedSet = null;
     try { _savedSet = localStorage.getItem('fids_langs_' + String(iata || '').toUpperCase()); } catch (e2) {}
+    // v23971 — a phone keeps the one language its passenger picked
+    // (fids_mobile_lang, else the browser's): the airport's configured pair
+    // replaced it here at boot, so every phone read English.
+    var _phoneSaved = null;
+    try { _phoneSaved = localStorage.getItem('fids_mobile_lang'); } catch (e3) {}
     langs = BoardStrings.resolveLangs({
       iata: iata, search: window.location.search, saved: _savedSet,
-      configured: Array.isArray(_cfgLangs) ? _cfgLangs : null
+      configured: Array.isArray(_cfgLangs) ? _cfgLangs : null,
+      phone: (window.innerWidth || document.documentElement.clientWidth) < 700, phoneSaved: _phoneSaved
     }).langs;
     if (langIdx >= langs.length) langIdx = 0;
     lang = langs[langIdx] || langs[0] || 'en';
@@ -34583,7 +34649,9 @@ function mkCardLogo(code, airlineName) {
 
 function renderMobile() {
   // v23970 — a phone shows one language: the phone list is in it
-  try { var _mv = document.getElementById('mobileView'); if (_mv && BoardStrings.isLang(lang)) _mv.setAttribute('lang', lang); } catch (eL) {}
+  // v23971 — its language AND its direction: an Arabic phone reads right to
+  // left (it carried lang="ar" and ran left to right)
+  try { var _mv = document.getElementById('mobileView'); if (_mv && BoardStrings.isLang(lang)) BoardStrings.setLang(_mv, lang); } catch (eL) {}
   const nowTs   = Date.now();
   const isDep   = mobileMode === 'dep';
   const allRaw  = data[mobileMode] || [];
@@ -41238,7 +41306,7 @@ var GATE_ADS_BY_AIRLINE = {
   'PD': [
     { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'VIPorter', sub:'Earn points on every flight \u00b7 Free snacks & beverages on board', logo:'/logos/airlines/canadian/viporter.svg' },
     { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'Fly Porter', sub:'Elevated economy \u00b7 Complimentary snacks & beverages on board', logo:'/logos/airlines/canadian/porter.svg' },
-    { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'Porter Reserve', sub:'Extra legroom \u00b7 Priority services on select fares', logo:'/logos/airlines/canadian/porter.svg' },
+    { bgColor:'#173055', bgImage:'/logos/Backgrounds/PD/porter-pattern-panel.png', bgPosition:'center right', adLayout:'left-scrim', headline:'PorterReserve', sub:'Extra legroom \u00b7 Priority services on select fares', logo:'/logos/airlines/canadian/porter.svg' },
   ],
   'UA': [
     { bg:'linear-gradient(135deg,#00214e 0%,#003580 100%)', headline:'MileagePlus', sub:'Earn award miles \u00b7 Star Alliance', logo:'/logos/airlines/us-major/united-monochrome-white.svg' },
@@ -42649,6 +42717,9 @@ function _processAccorData(data, destIata, langKey) {
 // Falls back to the English string when no translation is present.
 // ─────────────────────────────────────────────────────────────────
 var AD_I18N = {
+  // ── Porter's cabin, by Porter's own name in each language it publishes
+  // (flyporter.com: PorterReserve, and PorterRéserve in French) ──
+  'PorterReserve':                    { fr:'PorterRéserve', es:'PorterReserve', de:'PorterReserve', it:'PorterReserve', pt:'PorterReserve', ja:'PorterReserve', zh:'PorterReserve', ar:'PorterReserve' },
   // ── AC headlines & subs ──
   'More to Travel':                   { fr:'Plus à voyager', es:'Más para viajar', de:'Mehr zum Reisen', it:'Più da viaggiare', pt:'Mais para viajar', ja:'もっと旅を', zh:'尽享旅行', ar:'المزيد من السفر' },
   'Discover expanded services and rewards with Aeroplan': { fr:'Découvrez les services et récompenses Aeroplan', es:'Descubra servicios y recompensas con Aeroplan', de:'Entdecken Sie Services und Prämien mit Aeroplan', it:'Scopri servizi e premi con Aeroplan', pt:'Descubra serviços e recompensas com Aeroplan', ja:'Aeroplanのサービスと特典を発見', zh:'探索 Aeroplan 服务与奖励', ar:'اكتشف خدمات ومكافآت Aeroplan' },
@@ -42668,7 +42739,7 @@ var AD_I18N = {
   // ── WS ──
   'Earn WestJet dollars on every flight': { fr:'Accumulez des dollars WestJet à chaque vol', es:'Gane dólares WestJet en cada vuelo', de:'WestJet-Dollars bei jedem Flug verdienen', it:'Guadagna dollari WestJet ad ogni volo', pt:'Ganhe dólares WestJet em cada voo', ja:'毎フライトでWestJetドル獲得', zh:'每次飞行赚取 WestJet 美元', ar:'اكسب دولارات WestJet مع كل رحلة' },
   'Free Starlink Wi-Fi':              { fr:'Wi-Fi Starlink gratuit', es:'Wi-Fi Starlink gratis', de:'Kostenloses Starlink-WLAN', it:'Wi-Fi Starlink gratuito', pt:'Wi-Fi Starlink grátis', ja:'無料Starlink Wi-Fi', zh:'免费 Starlink Wi-Fi', ar:'واي فاي Starlink مجاني' },
-  'Stream & browse \u00b7 Powered by Starlink': { fr:'Streaming et navigation · Propulsé par Starlink', es:'Streaming y navegación · Con Starlink', de:'Streamen & surfen · Mit Starlink', it:'Streaming e navigazione · Powered by Starlink', pt:'Streaming e navegação · Com Starlink', ja:'ストリーミング・ブラウジング · Starlink', zh:'流媒体与浏览 · Starlink 提供', ar:'البث والتصفح · بدعم من Starlink' },
+  'Stream & browse \u00b7 Powered by Starlink': { fr:'Streaming et navigation · Propulsé par Starlink', es:'Streaming y navegación · Con Starlink', de:'Streamen & surfen · Mit Starlink', it:'Streaming e navigazione · Con Starlink', pt:'Streaming e navegação · Com Starlink', ja:'ストリーミング・ブラウジング · Starlink', zh:'流媒体与浏览 · Starlink 提供', ar:'البث والتصفح · بدعم من Starlink' },
 
   // ── PD ──
   'Earn points on every flight \u00b7 Free snacks & beverages on board': { fr:'Points à chaque vol · Collations et boissons gratuites à bord', es:'Puntos en cada vuelo · Snacks y bebidas gratis a bordo', de:'Punkte bei jedem Flug · Snacks & Getränke gratis an Bord', it:'Punti ad ogni volo · Snack e bevande gratis a bordo', pt:'Pontos em cada voo · Snacks e bebidas grátis a bordo', ja:'毎フライトでポイント · 軽食と飲み物無料', zh:'每次飞行赚积分 · 机上免费小食与饮品', ar:'نقاط مع كل رحلة · وجبات ومشروبات مجانية على متن الطائرة' },
@@ -48575,9 +48646,16 @@ function _renderBigCraft(el, ctx) {
                 return (iC ? '<span class="bigcraft-cap-sep"> | </span>' : '') + '<span>' + w + '</span>';
               }, '');
               var _capEsc = function (v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
-              return '<div class="bigcraft-flightcap">' + _capLbl
-                + (_capFlt ? ' <span class="bigcraft-cap-flt">' + _capEsc(_capFlt) + '</span>' : '')
-                + (_capPlc ? ' <span class="bigcraft-cap-sep">\u00b7</span> ' + _capEsc(_capPlc) : '')
+              // v23971 — the caption reads in the direction of its lead
+              // language: on a board led by Arabic the whole line is right to
+              // left, so the Arabic label comes first (at the right) and the
+              // flight and the place follow it; each is isolated (<bdi>) so
+              // 'AC1960' and 'NEW YORK' keep their own order inside it.
+              var _capLead = BoardStrings.pairLangs(langs, false)[0];
+              var _capRtl = BoardStrings.META[_capLead] && BoardStrings.META[_capLead].dir === 'rtl';
+              return '<div class="bigcraft-flightcap"' + (_capRtl ? ' dir="rtl"' : '') + '>' + _capLbl
+                + (_capFlt ? ' <bdi class="bigcraft-cap-flt">' + _capEsc(_capFlt) + '</bdi>' : '')
+                + (_capPlc ? ' <span class="bigcraft-cap-sep">\u00b7</span> <bdi class="bigcraft-cap-plc">' + _capEsc(_capPlc) + '</bdi>' : '')
                 + '</div>';
             } catch (eCap) { return ''; }
           })()

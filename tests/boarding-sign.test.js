@@ -299,7 +299,8 @@ test("the picture: the words, the strip's reminder, the row, the blue half", () 
   assert.match(fc, /label: _g8SignPair\(_gkey\), value: _g8SignPair\('all'\)/, 'and the generic one');
   // Each half of a pair carries its language, so Porter blue lands on the
   // French half wherever the airport puts it (first at YUL/YQB).
-  assert.match(fn('_g8SignPair'), /BoardStrings\.markHalf\('<span class="g8-pair-h">' \+ w \+ '<\/span>', langsOf\[i\], key\)/, 'halves carry lang=');
+  // (a half cut from a brand also says it is a name, translate="no")
+  assert.match(fn('_g8SignPair'), /BoardStrings\.markHalf\('<span class="g8-pair-h"' \+ \(i === cut \? ' translate="no"' : ''\) \+ '>' \+ w \+ '<\/span>', langsOf\[i\], key\)/, 'halves carry lang=');
   assert.match(SRC, /BoardStrings\.markHalf\(wrap\(w, i, partLangs\[i\]\), partLangs\[i\], key\)/, '_gateLbl hands the language to wrap() and marks the half');
   // The fitter measures a row's word against the column less the number.
   const pairPass = SRC.slice(SRC.indexOf('function _fidsPairSeparators('), SRC.indexOf('\n}\n', SRC.indexOf('function _fidsPairSeparators(')));

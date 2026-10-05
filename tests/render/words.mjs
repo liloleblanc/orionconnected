@@ -17,6 +17,20 @@
 //   Chinese text is lang="zh" (so it takes the simplified-Chinese glyphs, not
 //   the Japanese forms the default stack would give it).
 //
+//   What is read: every visible text node, the text CSS draws (::before and
+//   ::after content), placeholders, text drawn on a canvas, and the boards
+//   inside same-origin iframes (the stream tour). Every key the store was
+//   asked for and does not have (BoardStrings.misses — a key held in a
+//   variable, a helper copied under another name) fails too: it rendered
+//   blank on that screen.
+//
+//   What is shown: the gate (its whole centre deck, and its departure
+//   delayed, cancelled, boarding, on final call, closed, at Porter's
+//   pre-boarding, and moved to another gate), the departures board, the
+//   baggage board, the phone layout of the gate and of the departures board
+//   in each language, the Studio player (a departures, a gate and a baggage
+//   document) in each language, and the stream tour.
+//
 // Exit code 1 on any finding. Runs in CI (npm test, through
 // tests/board-languages-render.test.js) on the boards' demonstration data, so
 // it needs no network and spends no credits:
@@ -57,21 +71,52 @@ const checks = require(path.join(REPO, 'tests', 'i18n', 'checks.js'));
 const policy = require(path.join(REPO, 'tests', 'i18n', 'policy.js'));
 const LANGS = BS.LANGS;
 const R = checks.run();
+// an elided article is its own word (d'information, l'heure, dell'aereo)
+const ELIDED = /^(?:d|l|qu|n|s|j|c|m|t|dell|nell|all|dall|sull)['’](?=\p{L})/iu;
 const wordsOf = (s) => (String(s).replace(/<[^>]*>/g, ' ').replace(/\{[A-Za-z0-9_]+\}/g, ' ').match(/\p{L}[\p{L}\p{M}'’.-]*/gu) || [])
-  .map((w) => w.replace(/[^\p{L}]+$/u, '').toLowerCase()).filter((w) => w.length >= 2);
+  .map((w) => w.replace(ELIDED, '').replace(/[^\p{L}]+$/u, '').toLowerCase()).filter((w) => w.length >= 2);
 const VOCAB = Object.fromEntries(LANGS.map((l) => [l, new Set()]));
-for (const o of R.textObjects) for (const l of LANGS) if (o.langs[l] != null) for (const w of wordsOf(o.langs[l])) VOCAB[l].add(w);
-for (const li of R.listObjects) for (const it of li.items) for (const w of wordsOf(it)) VOCAB[li.lang] && VOCAB[li.lang].add(w);
-for (const [k, e] of Object.entries(BS.STR)) for (const l of LANGS) for (const w of wordsOf(e[l] || '')) VOCAB[l].add(w);
+// how many entries use a word, by language: a word one entry alone gives a
+// language is not trusted as that language's on its own (below)
+const COUNT = Object.fromEntries(LANGS.map((l) => [l, new Map()]));
+const note = (l, w, k) => { VOCAB[l].add(w); const m = COUNT[l]; if (!m.has(w)) m.set(w, new Set()); m.get(w).add(k); };
+R.textObjects.forEach((o, i) => { for (const l of LANGS) if (o.langs[l] != null) for (const w of wordsOf(o.langs[l])) note(l, w, 'o' + i); });
+R.listObjects.forEach((li, i) => { for (const it of li.items) for (const w of wordsOf(it)) VOCAB[li.lang] && note(li.lang, w, 'l' + li.key); });
+for (const [k, e] of Object.entries(BS.STR)) for (const l of LANGS) for (const w of wordsOf(e[l] || '')) note(l, w, 's' + k);
+// A word of the store's English is a word of another language only when the
+// store's translations use it in two entries or more (the rule B3 holds the
+// store to), or a reviewed list says it is that language's own (German
+// 'Gate', French 'destinations').
+// So an English word slipped into one translation does not become, on
+// screen, a word of that language: the store is not trusted to vouch for
+// itself (the static guard's B3 reads every value too).
+{
+  const own = Object.fromEntries(LANGS.map((l) => [l, new Set()]));
+  for (const [en, e] of Object.entries(policy.SAME_AS_ENGLISH || {})) for (const l of (e.langs || [])) for (const w of wordsOf(en)) own[l].add(w);
+  for (const [l, list] of Object.entries(policy.NATIVE_WORDS || {})) for (const w of Object.keys(list)) own[l] && own[l].add(w);
+  // entries whose translations (any non-English language) use a word
+  const translated = new Map();
+  for (const l of LANGS) if (l !== 'en') for (const [w, ks] of COUNT[l]) { if (!translated.has(w)) translated.set(w, new Set()); for (const k of ks) translated.get(w).add(k); }
+  for (const l of LANGS) {
+    if (l === 'en') continue;
+    for (const w of [...VOCAB[l]]) if (VOCAB.en.has(w) && (translated.get(w) || new Set()).size < 2 && !own[l].has(w)) VOCAB[l].delete(w);
+  }
+}
 // weekday and month names come from Intl in each language
 for (const l of LANGS) {
   for (let d = 0; d < 7; d++) for (const st of ['short', 'long']) for (const w of wordsOf(BS.weekday(Date.UTC(2026, 9, 4 + d, 16), l, st, 'UTC'))) VOCAB[l].add(w);
   for (let m = 0; m < 12; m++) for (const st of ['short', 'long']) for (const w of wordsOf(BS.date(Date.UTC(2026, m, 15), l, { month: st }, 'UTC'))) VOCAB[l].add(w);
 }
 VOCAB.en.add('am'); VOCAB.en.add('pm');
+// Data: the words of the name tables only (cities, airports, airlines,
+// aircraft, hotel brands) — never a notes table, never a word the store's
+// English uses as a label (checks.js builds it the same way for B15) — and
+// a whole name, or a brand as its whole phrase.
 const DATA = new Set(R.dataVocab);
-for (const b of Object.keys(policy.BRAND_TERMS)) for (const w of wordsOf(b)) DATA.add(w);
+const DATA_PHRASES = new Set(R.dataPhrases);
 for (const u of policy.UNIT_TERMS) DATA.add(u.toLowerCase());
+const BRAND_RE = Object.keys(policy.BRAND_TERMS).sort((a, b) => b.length - a.length)
+  .map((b) => new RegExp('(^|[^\\p{L}])' + b.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?=$|[^\\p{L}])', 'giu'));
 
 // ── the server: this checkout's files; data from the live site only if LIVE=1
 const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascript', '.css': 'text/css', '.json': 'application/json',
@@ -101,7 +146,7 @@ function serve() {
 
 // ── the browser, driven over a pipe (no WebSocket needed on Node 20) ─────
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-async function browser() {
+async function browser(alarm) {
   // PROFILE_DIR: where the throwaway profile goes (default: the system's temp)
   const base = process.env.PROFILE_DIR || process.env.RUNNER_TEMP || require('node:os').tmpdir();
   fs.mkdirSync(base, { recursive: true });
@@ -114,7 +159,7 @@ async function browser() {
   if (!LIVE) args.push('--host-resolver-rules=MAP * ~NOTFOUND , EXCLUDE 127.0.0.1');
   // perl's alarm puts a hard ceiling on every browser even if this script dies
   // before it can kill it; each one serves a few language sets, well inside it
-  const chrome = spawn('perl', ['-e', 'alarm ' + (+process.env.CHROME_ALARM || 120) + '; exec @ARGV', CHROME, ...args, 'about:blank'], { stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe'] });
+  const chrome = spawn('perl', ['-e', 'alarm ' + (alarm || +process.env.CHROME_ALARM || 120) + '; exec @ARGV', CHROME, ...args, 'about:blank'], { stdio: ['ignore', 'ignore', 'ignore', 'pipe', 'pipe'] });
   const out = chrome.stdio[3], inp = chrome.stdio[4];
   let id = 0, buf = '';
   const pend = new Map();
@@ -142,41 +187,93 @@ async function browser() {
 }
 
 // ── what is read off the screen ──────────────────────────────────────────
+// Every visible text node; the text CSS draws (::before / ::after content,
+// an attr() resolved); a placeholder; text drawn on a canvas (recorded by
+// CANVAS_HOOK); and the same again inside every visible same-origin iframe.
 const READ = `(function () {
-  var vw = innerWidth, vh = innerHeight, out = [], seen = new Set();
-  function shown(el) {
-    for (var e = el; e && e.nodeType === 1; e = e.parentElement) {
-      var cs = getComputedStyle(e);
-      if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) return false;
-    }
-    return true;
-  }
+  var out = [];
   function where(el) {
     var p = [];
     for (var e = el; e && e.nodeType === 1 && p.length < 4; e = e.parentElement)
       p.unshift(e.tagName.toLowerCase() + (e.id ? '#' + e.id : '') + (typeof e.className === 'string' && e.className.trim() ? '.' + e.className.trim().split(/\\s+/).slice(0, 2).join('.') : ''));
     return p.join(' > ');
   }
-  var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
-  while ((n = tw.nextNode())) {
-    var t = n.nodeValue.replace(/\\s+/g, ' ').trim();
-    var el = n.parentElement;
-    if (!t || !el || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|OPTION)$/.test(el.tagName)) continue;
-    if (el.closest('[data-operator]')) continue;
-    var b = el.getBoundingClientRect();
-    if (b.width < 1 || b.height < 1 || b.bottom < 0 || b.top > vh || b.right < 0 || b.left > vw || !shown(el)) continue;
-    var le = el.closest('[lang]');
-    out.push({ t: t.slice(0, 2000), lang: le ? le.getAttribute('lang') : '', own: !!(le && le !== document.documentElement),
-      data: !!el.closest('[translate="no"]'), all: !!el.closest('[data-i18n-all]'), feed: !!el.closest('[data-i18n-feed]'),
-      dir: getComputedStyle(el).direction, where: where(el) });
+  function readDoc(doc, win, ox, oy, frameTag) {
+    var vw = win.innerWidth, vh = win.innerHeight;
+    function shown(el) {
+      for (var e = el; e && e.nodeType === 1; e = e.parentElement) {
+        var cs = win.getComputedStyle(e);
+        if (cs.display === 'none' || cs.visibility === 'hidden' || parseFloat(cs.opacity) < 0.05) return false;
+      }
+      return true;
+    }
+    function visible(el) {
+      var b = el.getBoundingClientRect();
+      return !(b.width < 1 || b.height < 1 || b.bottom < 0 || b.top > vh || b.right < 0 || b.left > vw) && shown(el);
+    }
+    function push(t, el, extra) {
+      var le = el.closest('[lang]');
+      var rec = { t: String(t).slice(0, 2000), lang: le ? le.getAttribute('lang') : '', own: !!(le && le !== doc.documentElement),
+        data: !!el.closest('[translate="no"]'), all: !!el.closest('[data-i18n-all]'), feed: !!el.closest('[data-i18n-feed]'),
+        dir: win.getComputedStyle(el).direction, where: frameTag + where(el) + (extra || '') };
+      out.push(rec);
+    }
+    if (!doc.body) return;
+    var tw = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT, null), n;
+    while ((n = tw.nextNode())) {
+      var t = n.nodeValue.replace(/\\s+/g, ' ').trim();
+      var el = n.parentElement;
+      if (!t || !el || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE|OPTION)$/.test(el.tagName)) continue;
+      if (el.closest('[data-operator]')) continue;
+      if (!visible(el)) continue;
+      push(t, el);
+    }
+    var all = doc.body.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+      var e2 = all[i];
+      if (/^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(e2.tagName) || e2.closest('[data-operator]')) continue;
+      for (var pe of ['::before', '::after']) {
+        var pcs = win.getComputedStyle(e2, pe), c = pcs.content;
+        if (!c || c === 'none' || c === 'normal' || pcs.display === 'none' || pcs.visibility === 'hidden' || parseFloat(pcs.opacity) < 0.05) continue;
+        var txt = '';
+        var re = /"((?:[^"\\\\]|\\\\.)*)"|attr\\(\\s*([\\w-]+)\\s*\\)/g, m;
+        while ((m = re.exec(c))) txt += m[1] != null ? m[1] : (e2.getAttribute(m[2]) || '');
+        if (/\\p{L}/u.test(txt) && visible(e2)) push(txt.replace(/\\s+/g, ' ').trim(), e2, pe);
+      }
+      if ((e2.tagName === 'INPUT' || e2.tagName === 'TEXTAREA') && e2.placeholder && !e2.value && visible(e2)) push(e2.placeholder, e2, '[placeholder]');
+      if (e2.tagName === 'IFRAME' && visible(e2)) {
+        try { var d2 = e2.contentDocument; if (d2 && d2.body) readDoc(d2, e2.contentWindow, 0, 0, frameTag + 'iframe(' + (e2.getAttribute('src') || '').split('?')[0] + ') > '); } catch (eF) {}
+      }
+    }
+    try { (win.__canvasText || []).splice(0).forEach(function (x) { if (/\\p{L}/u.test(x.t)) out.push({ t: x.t, lang: x.lang || '', own: !!x.lang, data: false, all: false, feed: false, dir: x.dir || 'ltr', where: frameTag + 'canvas' }); }); } catch (eC) {}
   }
+  readDoc(document, window, 0, 0, '');
   var L = null; try { L = langs.slice(); } catch (e) {}
-  return JSON.stringify({ langs: L, texts: out });
+  var M = []; try { M = (window.BoardStrings && BoardStrings.misses) ? BoardStrings.misses.slice() : []; } catch (e) {}
+  return JSON.stringify({ langs: L, texts: out, misses: M });
 })()`;
+
+// Text drawn on a canvas never reaches the DOM: record it as it is drawn.
+const CANVAS_HOOK = `(function () {
+  try {
+    var P = CanvasRenderingContext2D.prototype;
+    ['fillText', 'strokeText'].forEach(function (name) {
+      var orig = P[name];
+      P[name] = function (text) {
+        try {
+          var c = this.canvas, el = c && c.closest ? c.closest('[lang]') : null;
+          (window.__canvasText = window.__canvasText || []).push({ t: String(text), lang: el ? el.getAttribute('lang') : '' });
+          if (window.__canvasText.length > 400) window.__canvasText.splice(0, 200);
+        } catch (e) {}
+        return orig.apply(this, arguments);
+      };
+    });
+  } catch (e) {}
+})();`;
 
 const RE_AR = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
 const RE_KANA = /[぀-ヿｦ-ﾟ]/;
-const RE_HAN = /[㐀-䶿一-鿿豈-﫿]/;
+const RE_HAN = /[㐀-䶿一-鿿豈-﫿]/;
 
 // The findings for one reading of a screen showing the languages `set`.
 export function judge(texts, set) {
@@ -209,11 +306,19 @@ export function judge(texts, set) {
       if (!set.includes(fl)) problems.push(`feed text in ${fl || 'no language'} on a ${set.join('+')} board: "${x.t.slice(0, 70)}" (${x.where})`);
       else if (!BS.looksLike(x.t, fl)) problems.push(`feed text marked ${fl} is not ${fl}: "${x.t.slice(0, 70)}" (${x.where})`);
     }
-    const latin = (x.data || x.all || x.feed) ? [] : x.t.replace(clock12, ' ').match(/[A-Za-zÀ-ɏ][A-Za-zÀ-ɏ'’.-]*/g) || [];
+    // a whole name ('Air Canada Express') is data; a brand counts as its
+    // whole phrase, never word by word
+    let bare = x.t.replace(clock12, ' ');
+    // a whole name as one piece of a line ('Bienvenue · Greater Moncton
+    // Roméo LeBlanc International Airport'): that piece is data
+    bare = bare.split(/\s+[\u00B7|\u2022\u2013\u2014]\s+/).filter((seg) => !DATA_PHRASES.has(checks.norm(seg))).join(' · ');
+    for (const re of BRAND_RE) bare = bare.replace(re, '$1 ');
+    const latin = (x.data || x.all || x.feed) ? [] : bare.match(/[A-Za-zÀ-ɏ][A-Za-zÀ-ɏ'’.-]*/g) || [];
     for (const raw of latin) {
-      const w = raw.replace(/[^A-Za-zÀ-ɏ]+$/, '');
+      const w = raw.replace(ELIDED, '').replace(/[^A-Za-zÀ-ɏ]+$/, '');
       if (w.length < 2) continue;
       if (/^[A-Z0-9]{2,4}$/.test(w)) continue;              // codes: YQM, AC, CYQM, MAX
+      if (/^(?:[A-Z]\.){2,}[A-Z]?$/.test(raw.replace(/\.$/, '.')) || /^(?:[A-Z]\.)+[A-Z]$/.test(w)) continue;   // initials: F.I.D.S.
       if (/\d/.test(raw)) continue;
       if (allowed(w.toLowerCase())) continue;
       problems.push(`'${w}' is not a word of ${set.join('+')}: "${x.t.slice(0, 70)}" (${x.where})`);
@@ -237,19 +342,79 @@ export function judge(texts, set) {
 }
 
 // ── the run ──────────────────────────────────────────────────────────────
+const MODE = LIVE ? 'live' : 'demo';
+const SINGLES = LANGS.map((l) => [l]);
+export const SETS = SINGLES.concat([['en', 'fr'], ['fr', 'en'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh']]);
+const BOARD_UP = `new Promise(function (res) { var t0 = Date.now(); (function poll() {
+  try { if (typeof setBoardLangs === 'function' && data && (data.dep.length || data.arr.length) && Date.now() - t0 > 5000) return res(1); } catch (e) {}
+  if (Date.now() - t0 > 60000) return res(0); setTimeout(poll, 500); })(); })`;
+const PLAYER_UP = `new Promise(function (res) { var t0 = Date.now(); (function poll() {
+  try { var f = document.getElementById('playerFrame'); if (f && !f.hidden && f.textContent.trim().length > 40 && Date.now() - t0 > 3000) return res(1); } catch (e) {}
+  if (Date.now() - t0 > 45000) return res(0); setTimeout(poll, 500); })(); })`;
+const SETTLE = (ms) => `new Promise(function (res) { setTimeout(function () { res(1); }, ${ms}); })`;
+
+// The gate's departure, put through the states a passenger meets: each is
+// the flight row the gate is showing, changed and repainted.
+const GATE_STATES = ['delayed', 'cancelled', 'boarding', 'final', 'gateclosed', 'porter-preboarding', 'gate-change'];
+const GATE_STATE = (st) => `(function (st) {
+  try {
+    var f = window._gateCurrentFlight;
+    if (!f) return 'no flight on the gate';
+    if (!window.__wsOrig) window.__wsOrig = JSON.stringify(f);
+    var o = JSON.parse(window.__wsOrig);
+    Object.keys(o).forEach(function (k) { f[k] = o[k]; });
+    var tz = (AP.YQM || {}).tz;
+    var fmt = function (ts) { return new Date(ts).toLocaleTimeString('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }); };
+    var at = function (mins) { f._sortTs = Date.now() + mins * 60000; f.time = fmt(f._sortTs); f.upd = null; f._revTs = null; };
+    try { setGateHistory({}); } catch (e) {}
+    if (st === 'delayed') { at(70); f.status = 'delayed'; f._revTs = f._sortTs + 45 * 60000; f.upd = fmt(f._revTs); }
+    else if (st === 'cancelled') { at(50); f.status = 'cancelled'; }
+    else if (st === 'boarding') { at(24); f.status = 'boarding'; }
+    else if (st === 'final') { at(8); f.status = 'final'; }
+    else if (st === 'gateclosed') { at(3); f.status = 'gateclosed'; }
+    else if (st === 'porter-preboarding') { at(34); f.status = 'boarding'; f.airline = 'PD'; f.flight = 'PD2381'; f._flightKey = 'PD2381'; f._airlineName = 'PORTER'; }
+    else if (st === 'gate-change') { var h = {}; h[f.flight] = { previousGate: '4', currentGate: '7', changedAt: Date.now() - 60000 }; setGateHistory(h); }
+    renderDedicatedScreen();
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})(${JSON.stringify(st)})`;
+const GATE_RESET = `(function () { try { var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
+
+// The Studio player shows a published document: one per board family is
+// put in the airport's published store before it loads.
+const STUDIO_SEED = `(function () {
+  var S = window.OrionStudioSchema, A = window.OrionStudioAirports;
+  var ap = A.resolve(location.hostname, location.search);
+  var pub = {};
+  ['fids', 'gids', 'bids'].forEach(function (fam) {
+    var d = S.newDocument({ family: fam, airport: ap, id: 'lang-check-' + fam, name: 'language check ' + fam });
+    pub[d.id] = { version: 1, document: d };
+  });
+  localStorage.setItem(S.airportStorageKey('orion_studio_published:v1', ap), JSON.stringify(pub));
+  return Object.keys(pub).join(',');
+})()`;
+
 export const SURFACES = {
-  gate: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${LIVE ? 'live' : 'demo'}&gate=4&langs=en,fr&wxspeed=0.5`,
-  departures: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${LIVE ? 'live' : 'demo'}&langs=en,fr`,
-  baggage: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${LIVE ? 'live' : 'demo'}&langs=en,fr`
+  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&langs=en,fr&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, chunk: 2, alarm: 200, parallel: 2 },
+  departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}&langs=en,fr`, ready: BOARD_UP, setLangs: true, chunk: 5 },
+  baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}&langs=en,fr`, ready: BOARD_UP, setLangs: true, chunk: 5 },
+  // the phone: one language, the one the passenger picked (fids_mobile_lang)
+  'phone-gate': { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
+  'phone-departures': { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
+  // the Studio player, one language at a time (?lang=), three families
+  studio: { url: (port, set, fam) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM&doc=lang-check-${fam}&lang=${set[0]}`,
+    seed: (port) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM`, families: ['fids', 'gids', 'bids'], ready: PLAYER_UP, sets: SINGLES, chunk: 2, perSet: true, alarm: 240 },
+  // the stream tour: its own card, and the boards in its frames
+  tour: { url: (port, set) => `http://127.0.0.1:${port}/tour.html?ap=YQM&langs=${set.join(',')}`, ready: SETTLE(9000), sets: [['de'], ['ar'], ['ja'], ['en', 'fr']], chunk: 2, perSet: true }
 };
-export const SETS = LANGS.map((l) => [l]).concat([['en', 'fr'], ['fr', 'en'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh']]);
 
 // One browser for one surface and a few language sets, so no browser lives
 // near its alarm; the surfaces run side by side.
-async function runChunk(port, name, route, sets) {
-  const b = await browser();
+async function runChunk(port, name, spec, sets) {
+  const b = await browser(spec.alarm);
   const lines = [];
   let failed = 0;
+  const seenMiss = new Set();
   try {
     const { targetInfos } = await b.send('Target.getTargets');
     const page = targetInfos.find((t) => t.type === 'page');
@@ -257,52 +422,89 @@ async function runChunk(port, name, route, sets) {
     const { sessionId } = await b.send('Target.attachToTarget', { targetId: tid, flatten: true });
     const S = (m, p, ms) => b.send(m, p, sessionId, ms);
     const evalv = async (expression, ms) => { const r = await S('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, ms); return r && r.result && r.result.value; };
-    await S('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+    if (spec.phone) await S('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 2, mobile: true });
+    else await S('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
     await S('Emulation.setFocusEmulationEnabled', { enabled: true });
     await S('Page.enable'); await S('Runtime.enable');
-    await S('Page.navigate', { url: route(port) });
-    // the board is up: its functions exist and it has flights to show
-    const up = await evalv(`new Promise(function (res) { var t0 = Date.now(); (function poll() {
-      try { if (typeof setBoardLangs === 'function' && data && (data.dep.length || data.arr.length) && Date.now() - t0 > 5000) return res(1); } catch (e) {}
-      if (Date.now() - t0 > 60000) return res(0); setTimeout(poll, 500); })(); })`, 70000);
-    if (!up) { lines.push(`✖ ${name}: the board never came up`); return { lines, failed: 1 }; }
+    await S('Page.addScriptToEvaluateOnNewDocument', { source: CANVAS_HOOK });
+    const read = async (label, tag) => {
+      const r = JSON.parse(await evalv(READ));
+      const out = [];
+      if (!spec.phone && spec.setLangs && String(r.langs) !== String(BS.frenchFirst(label.slice(), 'YQM'))) out.push(`the board shows ${r.langs}, not ${label.join(',')}`);
+      if (spec.phone && r.langs && String(r.langs) !== String(label)) out.push(`the phone shows ${r.langs}, not ${label.join(',')}`);
+      out.push(...judge(r.texts, label).map((p) => (tag ? `[${tag}] ` : '') + p));
+      for (const m of r.misses || []) if (!seenMiss.has(m)) { seenMiss.add(m); out.push(`the store was asked for ${m}, which it does not have: it rendered blank`); }
+      return out;
+    };
+    // a page that does not come up is loaded once more before it counts
+    const go = async (url) => {
+      await S('Page.navigate', { url });
+      if (await evalv(spec.ready, 70000)) return 1;
+      await S('Page.navigate', { url });
+      return evalv(spec.ready, 70000);
+    };
+    if (spec.seed) { await go(spec.seed(port)).catch(() => 0); await evalv(SETTLE(1500)); await evalv(STUDIO_SEED); }
+    if (!spec.perSet && !spec.phone) {
+      const up = await go(spec.url(port));
+      if (!up) { lines.push(`✖ ${name}: the board never came up`); return { lines, failed: 1 }; }
+    }
+    let phoneScript = null;
     for (const set of sets) {
       const label = set.join(',');
-      await evalv(`setBoardLangs(${JSON.stringify(set)})`);
       const problems = [];
-      // two readings: the gate's panels and the board's paging move on
-      for (const wait of [1500, 3000]) {
-        await sleep(wait);
-        const r = JSON.parse(await evalv(READ));
-        if (String(r.langs) !== String(BS.frenchFirst(set.slice(), 'YQM'))) problems.push(`the board shows ${r.langs}, not ${label}`);
-        problems.push(...judge(r.texts, set));
+      if (spec.phone) {
+        if (phoneScript) await S('Page.removeScriptToEvaluateOnNewDocument', { identifier: phoneScript }).catch(() => {});
+        // (the board clears fids_mobile_lang once, on a browser's first visit,
+        // as a v27 recovery: mark that done, or the choice is wiped)
+        phoneScript = (await S('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('fids_lang_recovery_v27_done', '1'); localStorage.setItem('fids_mobile_lang', ${JSON.stringify(set[0])}); } catch (e) {}` })).identifier;
+        if (!(await go(spec.url(port, set)))) { problems.push('the phone never came up'); }
+      } else if (spec.perSet) {
+        for (const fam of (spec.families || [null])) {
+          const up = await go(spec.url(port, set, fam));
+          if (!up) { problems.push(`${fam || name} never came up`); continue; }
+          for (const wait of [800, 2500]) { await evalv(SETTLE(wait)); problems.push(...await read(set, fam)); }
+        }
+      } else if (spec.setLangs) {
+        await evalv(`setBoardLangs(${JSON.stringify(set)})`);
+      }
+      if (!spec.perSet) {
+        // two readings: the gate's panels and the board's paging move on
+        for (const wait of [1500, 3000]) { await evalv(SETTLE(wait)); problems.push(...await read(set)); }
       }
       // the gate's centre panel: every slide of its deck in turn — the
       // welcome, the airline ads, the hotel, the map takeover, and the
       // weather card through its three screens (?wxspeed=0.5 runs it at
       // twice its speed: ~18 s for all three)
-      if (name === 'gate') {
+      if (spec.deck) {
         const n = await evalv(`(function () { try { return _buildGateAdSlideList().length; } catch (e) { return 0; } })()`);
         for (let i = 0; i < Math.min(n || 0, 10); i++) {
           const type = await evalv(`(function () { try { var sl = _buildGateAdSlideList()[${i}]; _gateAdIndex = ${i}; window._gateAdAuthChange = true; renderGateAd(${i}); window._gateAdAuthChange = false; return (sl && sl.type) || ''; } catch (e) { window._gateAdAuthChange = false; return 'error ' + e.message; } })()`);
           if (/^error/.test(type)) { problems.push(`slide ${i} did not render: ${type}`); continue; }
           for (const wait of (type === 'wxcard' ? (process.env.WX_WAITS ? process.env.WX_WAITS.split(',').map(Number) : [2500, 3000, 1000, 1000, 1000, 1000, 1000]) : [1500])) {
-            await sleep(wait);
+            await evalv(SETTLE(wait));
             // a hotel card is three pages that take turns: each is read
             const pages = await evalv(`document.querySelectorAll('#gateAdCarousel .axr-page').length`);
             for (let pg = 0; pg < Math.max(1, Math.min(pages || 0, 4)); pg++) {
               if (pages) {
                 await evalv(`(function () { var ps = document.querySelectorAll('#gateAdCarousel .axr-page'); for (var k = 0; k < ps.length; k++) ps[k].classList.toggle('axr-page-on', k === ${pg}); })()`);
-                await sleep(400);
+                await evalv(SETTLE(400));
               }
-              const r = JSON.parse(await evalv(READ));
-              if (process.env.WORDS_DEBUG) lines.push(`    · ${label} slide ${i} ${type}${pages ? ' page ' + pg : ''}: ` + r.texts.filter((x) => /gateAdCarousel|wxc|axr|hcard|bigcraft/.test(x.where)).map((x) => x.t.slice(0, 40)).slice(0, 12).join(' / '));
-              problems.push(...judge(r.texts, set).map((p) => `[${type || 'slide'} ${i}${pages ? ' p' + pg : ''}] ` + p));
+              problems.push(...await read(set, `${type || 'slide'} ${i}${pages ? ' p' + pg : ''}`));
             }
           }
         }
       }
-      if (process.env.WORDS_DEBUG) for (const e of b.errors.splice(0)) if (/ACCOR|TypeError|ReferenceError|RangeError/.test(e)) lines.push(`    ! ${label} ${e.slice(0, 300)}`);
+      // the gate's departure, through every state a passenger meets
+      if (spec.states) {
+        for (const st of GATE_STATES) {
+          const r = await evalv(GATE_STATE(st));
+          if (r !== 'ok') { problems.push(`state ${st} did not render: ${r}`); continue; }
+          await evalv(SETTLE(1200));
+          problems.push(...await read(set, st));
+        }
+        await evalv(GATE_RESET);
+      }
+      if (process.env.WORDS_DEBUG) for (const e of b.errors.splice(0)) if (/TypeError|ReferenceError|RangeError/.test(e)) lines.push(`    ! ${label} ${e.slice(0, 300)}`);
       const uniq = [...new Set(problems)];
       lines.push(`${uniq.length ? '✖' : '✔'} ${name} ${label}${uniq.length ? ' — ' + uniq.length + ' problem' + (uniq.length > 1 ? 's' : '') : ''}`);
       for (const p of uniq.slice(0, 40)) lines.push('    ' + p);
@@ -318,24 +520,81 @@ async function runChunk(port, name, route, sets) {
   return { lines, failed };
 }
 
+// ── the check is itself checked ──────────────────────────────────────────
+// English put onto a German departures board in every way a page can show
+// words — a text node, a 'Word: ' label, capitals made by CSS, a ::after,
+// a placeholder, canvas text, a key the store does not have — must each be
+// reported. Run first, every time: a reader that stopped seeing would pass
+// every board.
+const INJECT = `(function () {
+  var host = document.createElement('div');
+  host.id = '__wsInject';
+  host.style.cssText = 'position:fixed;left:40px;top:300px;z-index:99999;background:#000;color:#fff;font:24px sans-serif;padding:8px';
+  host.innerHTML = '<div>Flight status</div><div>Delay: 45 min</div><div style="text-transform:uppercase">delayed</div>'
+    + '<div class="__wsAfter">x</div><input placeholder="Search flights"><canvas width="300" height="40"></canvas>';
+  document.body.appendChild(host);
+  var st = document.createElement('style');
+  st.textContent = '.__wsAfter::after { content: "Gate closes"; }';
+  document.head.appendChild(st);
+  var cv = host.querySelector('canvas').getContext('2d'); cv.font = '20px sans-serif'; cv.fillText('Boarding pass', 4, 24);
+  try { BoardStrings.bs('selfTestNoSuchKey', 'de'); } catch (e) {}
+  return 1;
+})()`;
+const MUST_SEE = [/'Flight' is not a word of de/, /'Delay' is not a word of de/, /'delayed' is not a word of de/, /'closes' is not a word of de/,
+  /'Search' is not a word of de/, /'pass' is not a word of de/, /selfTestNoSuchKey/];
+async function selftest(port) {
+  const b = await browser(150);
+  try {
+    const { targetInfos } = await b.send('Target.getTargets');
+    const page = targetInfos.find((t) => t.type === 'page');
+    const { sessionId } = await b.send('Target.attachToTarget', { targetId: page.targetId, flatten: true });
+    const S = (m, p, ms) => b.send(m, p, sessionId, ms);
+    const evalv = async (expression, ms) => { const r = await S('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, ms); return r && r.result && r.result.value; };
+    await S('Emulation.setDeviceMetricsOverride', { width: W, height: H, deviceScaleFactor: 1, mobile: false });
+    await S('Page.enable'); await S('Runtime.enable');
+    await S('Page.addScriptToEvaluateOnNewDocument', { source: CANVAS_HOOK });
+    await S('Page.navigate', { url: SURFACES.departures.url(port) });
+    if (!(await evalv(BOARD_UP, 70000))) return ['the departures board never came up'];
+    await evalv(`setBoardLangs(["de"])`);
+    await evalv(SETTLE(1500));
+    await evalv(INJECT);
+    await evalv(SETTLE(300));
+    const r = JSON.parse(await evalv(READ));
+    const got = judge(r.texts, ['de']).concat((r.misses || []).map((m) => 'miss ' + m));
+    return MUST_SEE.filter((re) => !got.some((p) => re.test(p))).map((re) => 'the check did not see ' + re);
+  } finally { b.close(); }
+}
+
 async function main() {
   if (!CHROME) { console.log('no Chrome found (set CHROME=)'); process.exit(2); }
+  if (!onlySurface || onlySurface === '--selftest') {
+    const server0 = await serve();
+    const blind = await selftest(server0.address().port).catch((e) => ['self-test failed: ' + e.message]);
+    server0.close();
+    if (blind.length) { for (const l of blind) console.log('✖ self-test: ' + l); process.exit(1); }
+    console.log('✔ self-test: injected English seen in every form (text, label, capitals, ::after, placeholder, canvas, a missing key)');
+    if (onlySurface === '--selftest') process.exit(0);
+  }
   const server = await serve();
   const port = server.address().port;
-  const sets = SETS.filter((s) => !onlySet || s.join(',') === onlySet);
-  // language sets per browser: the gate sweeps its whole deck for each, so it
-  // takes fewer, and no browser comes near its alarm
-  const CHUNKS = { gate: 2 };
   let failed = 0;
   try {
     const jobs = [];
-    for (const [name, route] of Object.entries(SURFACES)) {
+    for (const [name, spec] of Object.entries(SURFACES)) {
       if (onlySurface && onlySurface !== name) continue;
+      const sets = (spec.sets || SETS).filter((s) => !onlySet || s.join(',') === onlySet);
+      if (!sets.length) continue;
       const chunks = [];
-      const CHUNK = CHUNKS[name] || 5;
-      for (let i = 0; i < sets.length; i += CHUNK) chunks.push(sets.slice(i, i + CHUNK));
-      // a surface's chunks one after another; the surfaces side by side
-      jobs.push((async () => { const out = []; for (const c of chunks) out.push(await runChunk(port, name, route, c)); return out; })());
+      for (let i = 0; i < sets.length; i += spec.chunk || 5) chunks.push(sets.slice(i, i + (spec.chunk || 5)));
+      // a surface's chunks one after another (or `parallel` at a time); the
+      // surfaces side by side
+      jobs.push((async () => {
+        const out = new Array(chunks.length);
+        let next = 0;
+        const lane = async () => { while (next < chunks.length) { const k = next++; out[k] = await runChunk(port, name, spec, chunks[k]); } };
+        await Promise.all(Array.from({ length: Math.max(1, spec.parallel || 1) }, lane));
+        return out;
+      })());
     }
     for (const res of await Promise.all(jobs)) for (const r of res) { for (const l of r.lines) console.log(l); failed += r.failed; }
   } finally {
@@ -344,6 +603,6 @@ async function main() {
   process.exit(failed ? 1 : 0);
 }
 
-export { serve, browser, READ };
+export { serve, browser, READ, GATE_STATE, GATE_RESET };
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

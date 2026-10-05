@@ -167,6 +167,10 @@
     frame.hidden = false;
     $('#playerSetup').hidden = true;
     frame.dataset.direction = language.direction;
+    // v23971 — the canvas is in one language at a time: say which, and its
+    // direction, so Japanese, Chinese and Arabic take their own fonts and
+    // Arabic reads right to left (the frame sat under the page's lang="en")
+    try { BoardStrings.setLang(frame, language.code); } catch (eL) {}
     frame.style.aspectRatio = documentModel.canvas.width + ' / ' + documentModel.canvas.height;
     frame.style.width = 'min(100vw, calc(100vh * ' + ratio.toFixed(4) + '))';
     frame.innerHTML = Render.canvasHTML(documentModel, {

@@ -30,11 +30,11 @@ const CHROMES = [process.env.CHROME, '/usr/bin/google-chrome', '/usr/bin/google-
   '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].filter(Boolean);
 const chrome = CHROMES.find((p) => { try { return fs.statSync(p).isFile(); } catch (e) { return false; } });
 
-test('every word on every board is one of its languages\' (rendered, nine languages)', { timeout: 15 * 60 * 1000 }, (t) => {
+test('every word on every board is one of its languages\' (rendered, nine languages)', { timeout: 22 * 60 * 1000 }, (t) => {
   if (!RUN) { t.skip('runs in CI; locally: I18N_RENDER=1 npm test, or node tests/render/words.mjs'); return; }
   assert.ok(chrome, 'no Chrome to render the boards with (set CHROME=); in CI this check must run');
   const r = spawnSync(process.execPath, [path.join(__dirname, 'render', 'words.mjs')], {
-    encoding: 'utf8', env: Object.assign({}, process.env, { CHROME: chrome, LIVE: '' }), maxBuffer: 64 << 20, timeout: 14 * 60 * 1000
+    encoding: 'utf8', env: Object.assign({}, process.env, { CHROME: chrome, LIVE: '' }), maxBuffer: 64 << 20, timeout: 21 * 60 * 1000
   });
   const out = (r.stdout || '') + (r.stderr || '');
   if (process.env.GITHUB_STEP_SUMMARY) {

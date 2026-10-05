@@ -96,7 +96,8 @@ const ENGLISH_COMMON = ('the to for of your our now next please this that and no
 // rel words of a value, as written (case kept)
 function rawWordsOf(s) {
   return (stripEntities(stripTags(String(s).replace(RE_INVISIBLE_G, ''))).replace(/\{[A-Za-z0-9_]+\}|%[a-z]\b/g, ' ').match(/\p{L}[\p{L}'\u2019-]*/gu) || [])
-    .map((w) => w.replace(/[-'\u2019]+$/, ''));
+    // an elided article is its own word: d'information, l'heure, dell'aereo
+    .map((w) => w.replace(/^(?:d|l|qu|n|s|j|c|m|t|dell|nell|all|dall|sull)['\u2019](?=\p{L})/iu, '').replace(/[-'\u2019]+$/, ''));
 }
 let ENGLISH_WORDS = new Set(), TRANSLATED_WORDS = new Map();
 const LANG_NAME = { en: 'English', fr: 'French', es: 'Spanish', de: 'German', it: 'Italian', pt: 'Portuguese', ja: 'Japanese', zh: 'Chinese', ar: 'Arabic' };
@@ -554,26 +555,6 @@ function run(options) {
       else if (o.langs.zh != null && norm(o.langs.ja) === norm(o.langs.zh) && !/[\u3040-\u30ff]/.test(o.langs.ja) && RE_SCRIPT.zh.test(o.langs.ja) && !sameJaZh(en))
         add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ja', msg: `ja '${o.langs.ja}' is the Chinese, character for character \u2014 if Japanese really writes it the same, list '${en}' in SAME_JA_ZH (tests/i18n/policy.js)` });
     }
-    // English words inside a translation: 'Gate closes shortly' for German,
-    // 'Today' for German 'Morgen'. A word counts as English when the store's
-    // English or the common signage words use it and no other entry's
-    // translation (in any language) does; a capitalised name the English
-    // also carries ('Air France') stays as it is.
-    for (const l of ['fr', 'es', 'de', 'it', 'pt']) {
-      const v = o.langs[l];
-      if (v == null || brand(v)) continue;
-      const ownEn = new Set(rawWordsOf(en));
-      for (const raw of rawWordsOf(v)) {
-        const w = raw.toLowerCase().replace(/['\u2019-]+$/, '');
-        if (w.length < 3 || !ENGLISH_WORDS.has(w)) continue;
-        if (/^\p{Lu}/u.test(raw) && ownEn.has(raw)) continue;                  // a name kept as written
-        if (new RegExp('(^|[^\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.(com|ca|org|net)\\b', 'iu').test(v)) continue;   // a web address
-        const users = TRANSLATED_WORDS.get(w);
-        if (users && [...users].some((x) => x !== o)) continue;              // another entry's translation uses it
-        if (nativeWord(l, w)) continue;
-        add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ' + l, msg: `${l} '${shortText(v)}' has the English word '${raw}' \u2014 translate it; if it really is ${LANG_NAME[l]}, list it in NATIVE_WORDS (tests/i18n/policy.js)` });
-      }
-    }
   }
   // the ticker lists: the same per item
   for (const li of listObjects) {
@@ -753,12 +734,15 @@ function run(options) {
   // ── B17: two statuses never read the same ──
   // A board shows statuses side by side: 'On time' and 'Scheduled' both
   // reading 定刻 makes two flights look alike that are not. Within each
-  // status table (SS, the store's st* keys, fids-v2's st-* keys), two
-  // different English statuses have two different words in every language.
+  // status table (SS, the store's st* keys, fids-v2's st-* keys) and each
+  // weather table (the store's wx* keys, _WXLBL), two different English
+  // words have two different words in every language ('Flurries' and 'Snow
+  // Showers' both read 'Averses de neige').
   {
     const groups = new Map();
     for (const o of allTextObjects) {
-      const g = o.table === 'SS' ? 'SS' : (o.table === 'STR' && /^st[A-Z]/.test(o.key || '')) ? 'STR st*' : (o.table === 'TX' && /^st-/.test(o.key || '')) ? 'TX st-*' : null;
+      const g = o.table === 'SS' ? 'SS' : (o.table === 'STR' && /^st[A-Z]/.test(o.key || '')) ? 'STR st*' : (o.table === 'TX' && /^st-/.test(o.key || '')) ? 'TX st-*'
+        : (o.table === 'STR' && /^wx[A-Z]/.test(o.key || '')) ? 'STR wx*' : o.table === '_WXLBL' ? '_WXLBL' : null;
       if (!g || o.langs.en == null) continue;
       if (!groups.has(g)) groups.set(g, []);
       groups.get(g).push(o);
@@ -816,6 +800,7 @@ function run(options) {
     }
   }
   for (const k of Object.keys(P.BRAND_TERMS)) DATA_PHRASES.add(norm(k));
+  const NAME_WORDS = new Set(DATA_VOCAB);
   for (const k of (P.DATA_WORDS || [])) addData(k);
   // a label word: one the store's English writes in lower case somewhere
   // ('the hotel', 'your gate', 'boarding pass'). A name word (Air, Canada,
@@ -828,6 +813,43 @@ function run(options) {
   LABEL_WORDS = enLower;
   RENDERED = new Map();
   if (options.dataVocabBase) for (const w of [...DATA_VOCAB]) if (!options.dataVocabBase.has(w)) DATA_VOCAB.delete(w);
+
+  // ── B3 (after the data vocabulary): English words inside a translation ──
+  // 'Gate closes shortly' for German, 'Today' for German 'Morgen'. A word
+  // counts as English when the store's English or the common signage words
+  // use it and no other entry's translation (in any language) does. A word
+  // kept from the entry's own English stays only when it is a name (a word
+  // of the name tables: 'Air France') or a brand: 'Gate Closing Bald' keeps
+  // nothing from 'Gate closing soon' that is a name.
+  for (const o of allTextObjects) {
+    const en = o.langs.en;
+    if (en == null) continue;
+    // the names inside the English: a capitalised word that does not start
+    // its phrase (the store's English is in sentence case: 'Earn Honors
+    // points', 'MET Norway'), a word of the name tables, or a brand
+    const enNames = new Set();
+    for (const seg of String(en).split(/\s*[\u00B7|:;.!?()\u2014\u2013]\s*/)) {
+      rawWordsOf(seg).forEach((w, k) => { if (/^\p{Lu}/u.test(w) && (k > 0 || /\p{Lu}/u.test(w.slice(1)))) enNames.add(w); });
+    }
+    for (const l of ['fr', 'es', 'de', 'it', 'pt']) {
+      const v = o.langs[l];
+      if (v == null || brand(v) || sameAllowed(en, l)) continue;
+      const ownEn = new Set(rawWordsOf(en));
+      // a brand is its whole phrase ('Priority Pass'): taken out first
+      let vb = String(v);
+      for (const b of Object.keys(P.BRAND_TERMS)) if (vb.includes(b)) { vb = vb.split(b).join(' '); used.brand.add(b); }
+      for (const raw of rawWordsOf(vb)) {
+        const w = raw.toLowerCase().replace(/['\u2019-]+$/, '');
+        if (w.length < 3 || !ENGLISH_WORDS.has(w)) continue;
+        if (/^\p{Lu}/u.test(raw) && ownEn.has(raw) && (enNames.has(raw) || NAME_WORDS.has(w) || brand(raw))) continue;   // a name kept as written
+        if (new RegExp('(^|[^\\p{L}])' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\.(com|ca|org|net)\\b', 'iu').test(v)) continue;   // a web address
+        const users = TRANSLATED_WORDS.get(w);
+        if (users && [...users].some((x) => x !== o)) continue;              // another entry's translation uses it
+        if (nativeWord(l, w)) continue;
+        add({ check: 'B3', file: o.file, line: o.line, fn: o.fn, text: en + ' ' + l, msg: `${l} '${shortText(v)}' has the English word '${raw}' \u2014 translate it; if it really is ${LANG_NAME[l]}, list it in NATIVE_WORDS (tests/i18n/policy.js)` });
+      }
+    }
+  }
 
   // ── B5, B8, B9 (attr), B11, B13, B15: token walks ──
   const knownPhrases = new Map();      // norm(en) -> en, from the stores
@@ -1609,7 +1631,7 @@ function run(options) {
       // a literal locale or hour12
       if (tk.t === 'id' && /^(toLocaleTimeString|toLocaleDateString|toLocaleString|DateTimeFormat)$/.test(tk.v) && t[i + 1] && t[i + 1].v === '(' && t[i + 2] && t[i + 2].t === 'str' && /^[a-z]{2}(-[A-Z]{2})?$/.test(t[i + 2].v))
         add({ check: 'B11', file: rel, line: tk.line, fn, text: tk.v + "('" + t[i + 2].v + "')", msg: 'a locale chosen in place; times and dates go through bsTime/bsDate/bsWeekday (BoardStrings.META)' });
-      if (tk.t === 'id' && tk.v === 'hour12' && t[i + 1] && t[i + 1].v === ':' && t[i - 1] && (t[i - 1].v === '{' || t[i - 1].v === ','))
+      if (tk.t === 'id' && (tk.v === 'hour12' || tk.v === 'hourCycle') && t[i + 1] && t[i + 1].v === ':' && t[i - 1] && (t[i - 1].v === '{' || t[i - 1].v === ','))
         add({ check: 'B11', file: rel, line: tk.line, fn, text: 'hour12', msg: 'the 12/24-hour choice is BoardStrings.META[lang].clock24, read by bsTime' });
       // a private list of ≥3 language codes
       if (tk.t === 'punc' && tk.v === '[' && unit.closeOf[i]) {
@@ -1748,10 +1770,15 @@ function run(options) {
   // ── B9: CSS content text ──
   for (const { rel, css, offset } of cssTexts) {
     const clean = css.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' '));
-    for (const m of clean.matchAll(/content\s*:\s*(["'])((?:\\.|(?!\1).)*)\1/g)) {
-      const v = m[2].replace(/\\[0-9a-fA-F]{1,6}\s?/g, ' ').replace(/\\(.)/g, '$1');
-      if (!countsAsWords(v)) continue;
-      add({ check: 'B9', file: rel, line: (offset || 0) + lineOf(clean, m[0], m.index), fn: null, text: v, msg: `CSS content '${v}' is passenger text in one language \u2014 render it from the store` });
+    // every quoted string in a content value, a var() fallback included:
+    // content: var(--crsl-l2, 'CARROUSEL') drew French on every board that
+    // left the variable unset
+    for (const d of clean.matchAll(/(?:^|[;{\s])content\s*:\s*([^;{}]*)/g)) {
+      for (const m of d[1].replace(/url\(\s*(["']?)[^)]*\1\s*\)/g, ' ').matchAll(/(["'])((?:\\.|(?!\1).)*)\1/g)) {
+        const v = m[2].replace(/\\[0-9a-fA-F]{1,6}\s?/g, ' ').replace(/\\(.)/g, '$1');
+        if (!countsAsWords(v)) continue;
+        add({ check: 'B9', file: rel, line: (offset || 0) + lineOf(clean, d[0], d.index), fn: null, text: v, msg: `CSS content '${v}' is passenger text in one language \u2014 render it from the store` });
+      }
     }
   }
 
@@ -1836,6 +1863,49 @@ function run(options) {
     if (!w || !(w.tables || []).includes(name)) return false;
     used.writers.add(rel + ':' + (fn || '-'));
     return true;
+  }
+
+  // ── W1: a word made up in a feed worker ──
+  // The workers turn airports' feeds into the rows every board shows. A
+  // worker that writes its own English into a row ('Gate closes in 10
+  // minutes' as a status) puts it on every board in every language, past
+  // every check above. A worker sends codes; the board says them in its own
+  // languages. Every .js under workers/, and the site's worker-entry.js, is
+  // read for a label or sentence written into a row's text fields (status,
+  // remark, label, caption, word…) or returned by a function that makes one.
+  {
+    const files = options.workerFiles || listWorkerFiles();
+    const TEXT_PROPS = /^(status|statusText|status_text|statusWord|remark|remarks|label|caption|headline|word|words|gateNote|boardingNote|displayStatus|display)$/;
+    const TEXT_FN = /status|remark|label|caption|word|display/i;
+    for (const rel of files) {
+      let L;
+      try { L = load(rel); } catch (e) { add({ check: 'W1', file: rel, line: 1, fn: null, text: 'unreadable', msg: `${rel} could not be read by the guard: ${e.message}` }); continue; }
+      for (const unit of L.units) {
+        const t = unit.toks;
+        for (let i = 0; i < t.length; i++) {
+          if (t[i].t !== 'str' && t[i].t !== 'tpl') continue;
+          const v = String(t[i].v);
+          if (!/[A-Za-z]{2,}/.test(v) || /^[a-z][a-z0-9_-]*$/.test(v.trim()) || codeShaped(v)) continue;
+          if (!(isLabel(v) || isSentence(v))) continue;
+          // where the literal ends up: a text field of a row, or a text-making function's return
+          let k = i, why = null;
+          // through a ternary or a logical: x ? 'Words' : y
+          while (t[k - 1] && /^(\?|:|\|\||&&|\?\?|\()$/.test(t[k - 1].v) && !(t[k - 1].v === ':' && t[k - 2] && (t[k - 2].t === 'id' || t[k - 2].t === 'str') && t[k - 3] && (t[k - 3].v === '{' || t[k - 3].v === ','))) {
+            // walk back over the condition to the start of the expression
+            let j = k - 2, d = 0;
+            for (; j >= 0; j--) { const x = t[j]; if (x.v === ')' || x.v === ']' || x.v === '}') d++; else if (x.v === '(' || x.v === '[' || x.v === '{') { if (d === 0) break; d--; } else if (d === 0 && /^(=|return|:|,|;)$/.test(x.v)) break; }
+            k = j + 1;
+            if (k >= i) break;
+          }
+          const p = t[k - 1], key = t[k - 2];
+          if (p && p.v === ':' && key && (key.t === 'id' || key.t === 'str') && TEXT_PROPS.test(String(key.v)) && t[k - 3] && (t[k - 3].v === '{' || t[k - 3].v === ',')) why = 'the row field ' + key.v;
+          else if (p && /^(=|\+=)$/.test(p.v) && key && key.t === 'id' && TEXT_PROPS.test(key.v) && t[k - 3] && t[k - 3].v === '.') why = 'the row field .' + key.v;
+          else if (p && p.v === 'return' && unit.fnAt[i] && TEXT_FN.test(unit.fnAt[i])) why = 'the return of ' + unit.fnAt[i] + '()';
+          if (!why) continue;
+          add({ check: 'W1', file: rel, line: t[i].line, fn: unit.fnAt[i], text: stripTags(v).trim(), msg: `'${shortText(v)}' is written by a feed worker into ${why} \u2014 every board would show it in English. Send a code and let the board say it in its languages (the store)` });
+        }
+      }
+    }
   }
 
   // ── C2: what a passenger script loads at run time is classified too ──
@@ -2239,6 +2309,23 @@ function dataRange(unit, name) {
     if (t[j] && t[j].v === '[' && unit.closeOf[j] != null) return [j, unit.closeOf[j]];
   }
   return null;
+}
+
+// the feed workers: every .js under workers/, and the site's worker
+function listWorkerFiles() {
+  const out = [];
+  const walk = (dir) => {
+    let ents = [];
+    try { ents = fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }); } catch (e) { return; }
+    for (const e of ents) {
+      const rel = dir + '/' + e.name;
+      if (e.isDirectory()) { if (!/^(node_modules|\.git|\.wrangler)$/.test(e.name)) walk(rel); }
+      else if (/\.m?js$/.test(e.name)) out.push(rel);
+    }
+  };
+  walk('workers');
+  if (fs.existsSync(path.join(ROOT, 'worker-entry.js'))) out.push('worker-entry.js');
+  return out;
 }
 
 // every .html file under a directory, relative to it

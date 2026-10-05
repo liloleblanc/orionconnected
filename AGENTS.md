@@ -18,9 +18,16 @@ To add or change a word:
    wording for each language it publishes; mark the others `$src: 'careful'`.
 4. French leads at a Québec airport (`BoardStrings.FR_FIRST`) whenever French is selected; the helpers do this.
 5. `npm test` must pass. The board-languages guard fails on a missing or empty language, a duplicate key, a
-   value left in English, or a word hard-coded in markup. Fix the string. Do not add an exception to get
-   green: exceptions are only for operator-only text, brand names, units, codes, data and debug output,
-   with a reason (`tests/i18n/policy.js`, or `// i18n-ok: <reason>` on the line).
+   value left in English (or in another language's script), a word hard-coded in markup or kept in a
+   variable that reaches it, a language or locale chosen outside the store, and a word a feed worker makes
+   up. Fix the string. Do not add an exception to get green: exceptions are only for operator-only text,
+   brand names, units, codes, data and debug output, with a reason (`tests/i18n/policy.js`, or
+   `// i18n-ok: <reason>` on the line), and a new one needs an approval that is ALREADY ON MAIN: it lands
+   first, in a pull request that changes `tests/i18n/approved-exceptions.json` and nothing else. A change
+   never approves its own exception, and CI also runs main's copy of the guard over it
+   (`tests/i18n/as-main.js`), so loosening the guard in the same change does not help either.
+   `tests/render/words.mjs` then reads the screens themselves (gate states, phone, Studio player, stream
+   tour) in every language.
 6. Tick "All 9 board languages covered (the guard passes)" in the PR and attach the language pictures
    (`node tests/render/languages.mjs`).
 

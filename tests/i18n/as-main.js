@@ -19,8 +19,8 @@
 //
 // A change that improves the guard itself is checked by the guard it
 // replaces; a change that makes the guard stricter passes it trivially, and
-// one that reorganises the guard's own files needs the owner's review (and
-// merge) on its own.
+// one that reorganises the guard's own files is reviewed and merged on its
+// own, as a change to the guard.
 
 const fs = require('node:fs');
 const os = require('node:os');

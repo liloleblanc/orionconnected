@@ -38,7 +38,10 @@ const W = 1680, H = 1050;
 // French alone and French first too: 'Embarquement' was cut to
 // 'Embarqueme…' in the departures board's status column on a French-only
 // board and at Montréal (fr,en), and no picture ever put French first.
-const SETS = [['de', 'pt'], ['pt', 'de'], ['ar', 'ja'], ['ja', 'ar'], ['es', 'zh'], ['zh', 'es'], ['fr'], ['fr', 'en']];
+// English alone and English first too: the English 12-hour times ('12:07 PM')
+// and WestJet's flight numbers were cut on the departures board in every
+// language, and no picture ever led with English, so nothing reported it.
+const SETS = [['de', 'pt'], ['pt', 'de'], ['ar', 'ja'], ['ja', 'ar'], ['es', 'zh'], ['zh', 'es'], ['fr'], ['fr', 'en'], ['en'], ['en', 'fr']];
 const SURFACES = {
   gate: (l) => `/gids.html?ap=YQM&mode=live&gate=4&langs=${l}`,
   departures: (l) => `/fids.html?ap=YQM&mode=live&langs=${l}`,
@@ -102,7 +105,8 @@ const CHECK = `(async function () {
     var r = document.createRange(); r.selectNodeContents(n); var tb = r.getBoundingClientRect();
     for (var e = el, k = 0; e && e !== document.body && k < 6; e = e.parentElement, k++) {
       var cs = getComputedStyle(e);
-      if (k === 0 && cs.textOverflow === 'ellipsis' && e.scrollWidth > e.clientWidth + 1) { clipped.push(t.slice(0, 60) + ' [ellipsis]'); break; }
+      // any overflow at all under an ellipsis draws the '…' (a 2px overflow cut 'WS3340' to 'WS33…')
+      if (k === 0 && cs.textOverflow === 'ellipsis' && e.scrollWidth > e.clientWidth) { clipped.push(t.slice(0, 60) + ' [ellipsis]'); break; }
       if (/hidden|clip/.test(cs.overflowX) || /hidden|clip/.test(cs.overflow)) {
         var eb = e.getBoundingClientRect();
         if (tb.right > eb.right + 1 || tb.left < eb.left - 1) { clipped.push(t.slice(0, 60) + ' [cut at ' + Math.round(tb.right > eb.right + 1 ? eb.right : eb.left) + 'px]'); break; }
