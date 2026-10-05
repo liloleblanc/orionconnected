@@ -9800,6 +9800,9 @@ function _mobileNavHtml(T) {
 // full height. It NEVER says there are no other departures: a feed's
 // look-ahead ends somewhere, so the board cannot know that.
 //
+// None of it reaches the boarding takeover (countdown, boarding sign, Final
+// Call): that screen shows the boarding flight alone (v23988).
+//
 // A gate change is the airport feed's word only: trackGateChanges sees the
 // feed publish this gate for a departure and later another gate for the SAME
 // departure (flight and scheduled time, _gateRowKey). Nothing is inferred
@@ -10052,54 +10055,31 @@ function _gateLaterSlotHtml(x, m, frF) {
 }
 
 // The strip, drawn inside .gad-media-col (buildV2GateLayout). '' when there is
-// nothing later at this gate. titleKey/icon: the boarding takeover's band
-// (_gateLaterTakeoverHtml) draws the same strip under "Gate change".
-function _gateLaterStripHtml(m, titleKey, icon) {
+// nothing later at this gate.
+function _gateLaterStripHtml(m) {
   if (!m || !m.entries || !m.entries.length) return '';
   var frF = false;
   try { frF = !!frFirstAirport(m.ap); } catch (e) {}
   return '<div class="gl-strip" data-gl-n="' + m.entries.length + '">'
     + '<div class="gl-card">'
-    +   '<div class="gl-orb"><span class="ac-ico ac-ico-' + (icon || 'time') + '"></span></div>'
+    +   '<div class="gl-orb"><span class="ac-ico ac-ico-time"></span></div>'
     +   '<div class="gl-body">'
-    +     '<div class="gl-title">' + _gateLaterPairHtml(titleKey || 'laterAtGate', frF) + '</div>'
+    +     '<div class="gl-title">' + _gateLaterPairHtml('laterAtGate', frF) + '</div>'
     +     '<div class="gl-list">' + m.entries.map(function (x) { return _gateLaterSlotHtml(x, m, frF); }).join('') + '</div>'
     +   '</div>'
     + '</div>'
     + '</div>';
 }
 
-// (B) DURING THE BOARDING TAKEOVER. The strip lives in the three-column
-// layout, and while the gate's next flight has the whole screen (its
-// countdown, the boarding sign, Final Call: about forty minutes before it
-// leaves) there is no strip. A flight the feed moved away from this door is
-// still news there: its passengers are walking to the old door in exactly
-// those minutes (YQM gate 4: AC2037 at 6:35 moved to gate 2 while AC7753's
-// "Boarding Will Begin Shortly" fills the screen from 6:30). So the takeover
-// carries the moved flights alone, in the strip's own neutral glass under
-// "Gate change | Changement de porte", as a band at the foot of the screen,
-// for as long as the strip would carry them (until the flight leaves:
-// Departed, Cancelled, or its time plus the gate's grace). Later flights that
-// were not moved stay off the takeover, as in the approved design. '' when
-// nothing was moved (and on the phone layout, which has neither).
-function _gateLaterTakeoverHtml(iata) {
-  var m = null;
-  try {
-    if (((window.innerWidth || document.documentElement.clientWidth) || 0) < 700) return '';
-    m = _gateLaterModel(subScreenVal, Date.now(), iata);
-  } catch (e) { m = null; }
-  return _gateLaterTakeoverFrom(m);
-}
-function _gateLaterTakeoverFrom(m) {
-  if (!m) return '';
-  var mv = m.full ? [{ f: m.full.f, to: m.full.to }]
-    : (m.entries || []).filter(function (x) { return x && x.to; });
-  if (!mv.length) return '';
-  mv = mv.slice(0, GATE_LATER_MAX);
-  var strip = '';
-  try { strip = _gateLaterStripHtml({ entries: mv, ap: m.ap, tz: m.tz, sub: m.sub }, 'gateChange', 'depart'); } catch (e2) { strip = ''; }
-  return strip ? '<div class="gl-tk" style="--gl-n:' + mv.length + ';">' + strip + '</div>' : '';
-}
+// THE BOARDING TAKEOVER CARRIES NONE OF THIS (v23988). While the gate's next
+// flight has the whole screen (its countdown, the boarding sign, Final Call),
+// that flight is all the screen shows; the only other thing allowed on it is
+// an important safety message, in the takeover's own status bar. v23973 had
+// put the moved flights in a "Gate change" band at the takeover's foot (and
+// shrank the boarding sign to make room); v23988 removed the band, and the
+// sign is sized as it was before. The strip and the notice below belong to
+// the three-column layout and the empty gate alone: the takeover's markup
+// (uxgGateHtml) reads neither.
 
 // The airline's own colour for the new gate's pill on the notice: the gate's
 // banner accent when the moved flight is the same carrier, otherwise that
@@ -10341,60 +10321,10 @@ function _gateLaterAlign(doc) {
   return true;
 }
 
-// THE BOARDING SIGN UNDER THE BAND (display-overrides.css, the v23973 block,
-// 4b). The sign is sized by the screen, so with the moved flights' band at
-// the takeover's foot its panels are shorter than its type expects. --gl-ss
-// scales every screen-unit length of the sign; it steps down from 1 by 3%
-// only while a panel's words reach into its disc band (the panel's own
-// bottom padding, which the arrows and the Next line sit in) or under a disc,
-// to a floor of .6. Each step lets the sign's own pair pass
-// (_fidsPairSeparators: a pair shrinks before it stacks) measure afresh, so
-// the two agree. The countdown is sized by its panel and needs none of this.
-function _gateLaterSignFits(sign) {
-  var cols = sign.querySelectorAll('.g8-sign-col');
-  for (var i = 0; i < cols.length; i++) {
-    var col = cols[i];
-    if (col.scrollHeight > col.clientHeight + 1) return false;
-    var flowBottom = -Infinity, absTop = Infinity;
-    for (var j = 0; j < col.children.length; j++) {
-      var c = col.children[j];
-      var cs = getComputedStyle(c);
-      if (cs.display === 'none') continue;
-      var r = c.getBoundingClientRect();
-      if (!r.height) continue;
-      if (cs.position === 'absolute') absTop = Math.min(absTop, r.top);
-      else flowBottom = Math.max(flowBottom, r.bottom);
-    }
-    if (flowBottom > absTop - 2) return false;
-  }
-  return true;
-}
-function _gateLaterSignFit(doc) {
-  var wraps = doc.querySelectorAll('.g8-wrap');
-  for (var w = 0; w < wraps.length; w++) {
-    var wrap = wraps[w];
-    if (!wrap.classList.contains('gl-tk-on')) { wrap.style.removeProperty('--gl-ss'); continue; }
-    var sign = wrap.querySelector('.g8-sign');
-    var set = function (k) {
-      wrap.style.setProperty('--gl-ss', k.toFixed(2));
-      if (!sign) return;
-      // the pair pass keeps the size it measured; let it measure this one
-      var ps = sign.querySelectorAll('.g8-pair[data-g8-base]');
-      for (var i = 0; i < ps.length; i++) { ps[i].removeAttribute('data-g8-base'); ps[i].style.removeProperty('font-size'); }
-      try { if (typeof _fidsPairSeparators === 'function') _fidsPairSeparators(sign); } catch (eP) {}
-    };
-    if (!sign) { wrap.style.removeProperty('--gl-ss'); continue; }
-    var k = 1;
-    set(k);
-    while (!_gateLaterSignFits(sign) && k > 0.6) { k = Math.max(0.6, k - 0.03); set(k); }
-  }
-}
-
 function _gateLaterFit(root) {
   var doc = root || (typeof document !== 'undefined' ? document : null);
   if (!doc || !doc.querySelector) return;
   try { _gateLaterAlign(doc); } catch (eA) {}
-  try { _gateLaterSignFit(doc); } catch (eS) {}
   try {
     var sts = doc.querySelectorAll('.gl-strip');
     for (var si = 0; si < sts.length; si++) {
@@ -17146,11 +17076,6 @@ function uxgGateHtml(ctx) {
     return '#' + X.map(function (v) { var h = Math.max(0, Math.min(255, Math.round(v))).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
   })((_bannerSpec && _bannerSpec.r1 && String(_bannerSpec.r1).toUpperCase() !== '#FFFFFF') ? _bannerSpec.r1 : '#0c1119');
 
-  // v23973 — (B) the moved flights' band at the takeover's foot
-  // (_gateLaterTakeoverHtml); .gl-tk-on lets the boarding sign give up its
-  // height (display-overrides.css, the v23973 block, 4b).
-  var _glTk = '';
-  try { _glTk = (boardActive || finalActive || showCountdown) ? _gateLaterTakeoverHtml(iata) : ''; } catch (eTk) { _glTk = ''; }
   return '<div class="g8-wrap'
        // v23115 — the boarding takeovers move the clock OUT of the banner and
        // into the white strip. CSS can't reach up from the
@@ -17158,7 +17083,6 @@ function uxgGateHtml(ctx) {
        // hardware and cost us every light-board adaptation the last time it
        // was used here — so the state is marked on the wrap instead.
        + ((finalActive || boardActive || showCountdown) ? ' g8-takeover' : '')
-       + (_glTk ? ' gl-tk-on' : '')
        + (_bannerSpec && _bannerSpec.body ? ' g8-wrap-themed-body' : '')
        + ((function () {
            // light-banner = LUMINANCE, not the literal '#FFFFFF' — Porter's
@@ -17485,9 +17409,6 @@ function uxgGateHtml(ctx) {
       //
       // NOT between the banner and the info row. ═══
       ? '<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' + row4Html + '</div>'
-      // v23973 — (B) a flight the feed moved away from this door, at the
-      // takeover's foot (_gateLaterTakeoverHtml); above the status bar.
-      + _glTk
       + (r3Left ? '<div class="g8-r3 g8-r3-bottom" style="background:rgba(0,0,0,0.85);border-top:2px solid ' + (accent || '#eab308') + ';flex-shrink:0;">' + r3Left + '</div>' : '')
       // ═══ IDLE MODE ═══
       : (
@@ -28489,7 +28410,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23986';
+var FIDS_BUILD_TAG = 'v23988';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
