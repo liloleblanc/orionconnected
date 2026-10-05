@@ -5552,8 +5552,8 @@ var OPERATOR_LOGOS = {
   'RV':  '/logos/airlines/canadian/rouge.svg',                                 // Air Canada Rouge (rouge.png didn't exist → text fallback)
   // v23944 — the brand Jazz and PAL both fly as, for the Express block whose
   // records name both (fidsResolveOperator). Air Canada's own lockup, as
-  // drawn: no lettering-only file and no white version exist, so on a dark
-  // caption bar it sits on its white mount (_opbyBarPick), never recoloured.
+  // drawn. v23980: on a dark caption bar, its lettering in white
+  // (OPBY_WORDMARKS_THEMED), never this lockup on a white mount.
   'ACEX': '/logos/airlines/canadian-regional/aircanada-express.svg',
   'QK':  '/logos/airlines/canadian-regional/jazz.svg',                         // Jazz Aviation
   'ROU': '/logos/airlines/canadian/rouge.svg',                                 // Rouge ICAO
@@ -5565,8 +5565,10 @@ var OPERATOR_LOGOS = {
   'PAG': '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg',      // Perimeter ICAO
   '3H':  '/logos/airlines/canadian-regional/airinuit.svg',                     // Air Inuit
   'AIE': '/logos/airlines/canadian-regional/airinuit.svg',                     // Air Inuit ICAO
-  'BQ':  '/logos/airlines/canadian-regional/pascan.svg',                       // Pascan
-  'PSC': '/logos/airlines/canadian-regional/pascan.svg',                       // Pascan ICAO
+  // v23986 — pascan.svg carries a white square baked in behind its lettering
+  // (a white box on any ground but white); the same art without it.
+  'BQ':  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',        // Pascan
+  'PSC': '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',        // Pascan ICAO
   '5T':  '/logos/airlines/canadian-regional/canadian-north.svg',               // Canadian North
   '7F':  '/logos/airlines/canadian-regional/firstair.svg',                     // First Air
   '4N':  '/logos/airlines/canadian-regional/airnorth.svg',                     // Air North
@@ -5602,8 +5604,11 @@ var OPERATOR_LOGOS = {
   // Horizon Air (QX/QXE) — Alaska Horizon
   'QX':  '/logos/airlines/us-regional/horizon-air.svg',                           // Horizon Air
   'QXE': '/logos/airlines/us-regional/horizon-air.svg',                           // Horizon ICAO
+  // v23986 — SP is PAL, as every other table here has it (the board's name
+  // 'PAL AIRLINES', the PB tile, _CS_REGIONAL_FAM's SP→PB, the bar's SP→PB).
+  // It was the one place that drew Porter's lettering on a PAL flight.
+  'SP':  '/logos/airlines/canadian-regional/pal-square-badge.svg',              // PAL (SP), as PB
   // Porter affiliates
-  'SP':  '/logos/airlines/canadian/porter.svg',                                // Porter affiliates use Porter logo
   'PTR': '/logos/airlines/canadian/porter.svg',
   'P3':  '/logos/airlines/canadian/porter.svg'
 };
@@ -5634,8 +5639,9 @@ var OPERATOR_LOGOS_THEMED = {
   'PB':  { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
   'PVL': { light:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-black.svg',   dark:'/logos/airlines/canadian-regional/PAL-Airlines-monochrome-white.svg' },
   // v23944 — the Express lockup's lettering is black and no white version is
-  // published, so a dark ground gets the name in type instead (no art).
-  'ACEX': { light:'/logos/airlines/canadian-regional/aircanada-express.svg',            dark:null }
+  // published. v23980: a dark ground gets its lettering in white, drawn from
+  // the lockup's own letter paths (aircanada-express-wordmark-light.svg).
+  'ACEX': { light:'/logos/airlines/canadian-regional/aircanada-express.svg',            dark:'/logos/airlines/canadian-regional/aircanada-express-wordmark-light.svg' }
 };
 // v23208 — WORDMARK-ONLY art for the Operated-By caption
 // — this applies to all airlines).
@@ -5662,6 +5668,7 @@ var OPERATOR_WORDMARKS = {
   'JZA': '/logos/airlines/canadian-regional/jazz-wordmark-color.svg',
   'PB':  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
   'PVL': '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',
+  'SP':  '/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg',   // v23986 — PAL (SP), as PB
   // v23261 — the US regionals join the wordmark rule (a UA3513 screenshot:
   // 'Operated By:' rendered with nothing beside it — Republic's navy
   // lettering, and SkyWest's square colour logo, are invisible on United's
@@ -5723,8 +5730,12 @@ var OPBY_WORDMARKS_THEMED = {
   'EDV': { onDark:'/logos/airlines/us-regional/endeavor-air-monochrome-white.svg', onLight:'/logos/airlines/us-regional/endeavor-air.svg' },
   'OH':  { onDark:'/logos/airlines/us-regional/psa-airlines-monochrome-white.svg', onLight:'/logos/airlines/us-regional/psa-airlines.svg' },
   'PSA': { onDark:'/logos/airlines/us-regional/psa-airlines-monochrome-white.svg', onLight:'/logos/airlines/us-regional/psa-airlines.svg' },
-  'QX':  { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */,
-  'QXE': { onDark:'/logos/airlines/us-regional/horizon-air-monochrome-white.svg',  onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */,
+  // v23980 — Horizon's file named white draws its lettering in the default
+  // black (its only white is a clear square), so a dark bar got black
+  // lettering. horizon-air-wordmark-light.svg is the same three letter paths
+  // in white, on a canvas cropped to the lettering.
+  'QX':  { onDark:'/logos/airlines/us-regional/horizon-air-wordmark-light.svg',    onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */,
+  'QXE': { onDark:'/logos/airlines/us-regional/horizon-air-wordmark-light.svg',    onLight:'/logos/airlines/us-regional/horizon-air-monochrome-black.svg' }  /* v23332 — horizon-air.svg is all-white ink: invisible on the light strip */,
   // v23468 — EXACTLY the v23332 Horizon bug, still open for Encore.
   //
   // Operated-by is the one surface Encore reliably reaches: the banner and the
@@ -5741,8 +5752,53 @@ var OPBY_WORDMARKS_THEMED = {
   //
   // The supplied artwork provides both halves, so the strip no longer has to be
   // the thing that changes — the mark simply matches the ground it is on.
-  'WR':  { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' },
-  'WEN': { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg' }
+  //
+  // v23986 — AND A THIRD, FOR THE ONE BAR WHERE NEITHER HALF READS.
+  // WestJet's caption bar is its teal (#00B2A9), a light ground: every word
+  // on it is WestJet navy (#002B55). Encore's white lettering is 2.64:1
+  // there and its colour lockup's teal 'encore' 1.04:1, both under the 3:1
+  // a logo needs, so the lettering takes the bar's own ink, as every word
+  // beside it does: encore-wordmark-navy.svg, the white file's own letter
+  // paths filled #002B55 (5.38:1), the leaf left out as the caption's
+  // lettering-only rule (v23208) asks. inBarInk is keyed on the bar's ink;
+  // _opbyBarPick reaches it only when neither half reaches 3:1. Never a
+  // white box, never a filter.
+  'WR':  { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
+           inBarInk: { '#002B55': '/logos/airlines/canadian/encore-wordmark-navy.svg' } },
+  'WEN': { onDark:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg', onLight:'/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg',
+           inBarInk: { '#002B55': '/logos/airlines/canadian/encore-wordmark-navy.svg' } },
+  // v23980 — WHITE LETTERING ON A DARK GROUND, NEVER A WHITE BOX. Every other
+  // operator with a mark on file gets its pair, so no mark is left without
+  // white lettering for a dark bar (the small white mount these used to get
+  // is gone: a logo on a dark ground is shown in white lettering). The light
+  // half is the art the caption already drew; the dark half is the
+  // operator's published white file where one exists (Porter, Canadian
+  // North, Air North), otherwise the repo's own vector file with the same
+  // letter paths in white (Air Canada Express, Calm Air and First Air
+  // lettering without their emblems, as the caption's v23208 lettering-only
+  // rule asks; Pascan without the white square baked into its file; Air
+  // Inuit and Perimeter on canvases cropped to the lettering), and for the
+  // two bitmaps the same pixels in white at their own alpha (GoJet, Envoy).
+  'ACEX': { onDark:'/logos/airlines/canadian-regional/aircanada-express-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/aircanada-express.svg' },
+  'MO':  { onDark:'/logos/airlines/canadian-regional/calmair-wordmark-light.svg',  onLight:'/logos/airlines/canadian-regional/calmair.svg' },
+  'CAV': { onDark:'/logos/airlines/canadian-regional/calmair-wordmark-light.svg',  onLight:'/logos/airlines/canadian-regional/calmair.svg' },
+  'YP':  { onDark:'/logos/airlines/canadian-regional/perimeter-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg' },
+  'PAG': { onDark:'/logos/airlines/canadian-regional/perimeter-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg' },
+  '3H':  { onDark:'/logos/airlines/canadian-regional/airinuit-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/airinuit.svg' },
+  'AIE': { onDark:'/logos/airlines/canadian-regional/airinuit-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/airinuit.svg' },
+  'BQ':  { onDark:'/logos/airlines/canadian-regional/pascan-wordmark-light.svg',   onLight:'/logos/airlines/canadian-regional/pascan-wordmark-color.svg' },
+  'PSC': { onDark:'/logos/airlines/canadian-regional/pascan-wordmark-light.svg',   onLight:'/logos/airlines/canadian-regional/pascan-wordmark-color.svg' },
+  '5T':  { onDark:'/logos/airlines/canadian-regional/canadian-north-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/canadian-north.svg' },
+  '7F':  { onDark:'/logos/airlines/canadian-regional/firstair-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/firstair.svg' },
+  '4N':  { onDark:'/logos/airlines/canadian-regional/airnorth-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/airnorth.svg' },
+  'MQ':  { onDark:'/logos/airlines/us-regional/envoy-wordmark-light.png',          onLight:'/logos/airlines/us-regional/Envoy.png' },
+  'ENY': { onDark:'/logos/airlines/us-regional/envoy-wordmark-light.png',          onLight:'/logos/airlines/us-regional/Envoy.png' },
+  'G7':  { onDark:'/logos/airlines/us-regional/gojet-wordmark-light.png',          onLight:'/logos/airlines/us-regional/gojet.png' },
+  'GJS': { onDark:'/logos/airlines/us-regional/gojet-wordmark-light.png',          onLight:'/logos/airlines/us-regional/gojet.png' },
+  // v23986 — SP is PAL (see OPERATOR_LOGOS): PAL's own pair, not Porter's.
+  'SP':  { onDark:'/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg', onLight:'/logos/airlines/canadian-regional/pal-airlines-wordmark-color.svg' },
+  'PTR': { onDark:'/logos/airlines/canadian/porter-white.svg',                     onLight:'/logos/airlines/canadian/porter.svg' },
+  'P3':  { onDark:'/logos/airlines/canadian/porter-white.svg',                     onLight:'/logos/airlines/canadian/porter.svg' }
 };
 // v23940 — THE COLOURS EACH MARK IS DRAWN IN, for the lower panel's
 // coloured caption bar (_rc2Pair's first colour). Every half above, and the
@@ -5752,13 +5808,13 @@ var OPBY_WORDMARKS_THEMED = {
 // mark's own lettering first. A part drawn INSIDE the mark is left out,
 // because it never meets the bar: the white sliver in the colour Encore
 // leaf, and the white file's teal copy of it, which is drawn at fill-opacity
-// 0. Gradients count both their ends. GoJet's and Envoy's marks are bitmaps
-// with no pair; the dark-bar rule mounts them on the blues they fly under.
-// tests/gate-lower-two-colours.test.js reads every file (and measures the
-// two bitmaps) and holds this table to it.
+// 0. Gradients count every stop. GoJet's and Envoy's marks are bitmaps: their
+// opaque pixels' colours, measured. tests/gate-lower-two-colours.test.js
+// reads every file (and measures the bitmaps) and holds this table to it.
 var OPBY_ART_INK = {
   '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-white.svg':  ['#FFFFFE'],
   '/logos/airlines/canadian/westjet-2025/WestJet-Encore-logo-colour.svg': ['#00467F', '#00AC9D'],
+  '/logos/airlines/canadian/encore-wordmark-navy.svg':                    ['#002B55'],
   '/logos/airlines/canadian/rouge-monochrome-white.svg':                  ['#FFFFFF'],
   '/logos/airlines/canadian/rouge.svg':                                   ['#A21C37', '#EC1C2B'],
   '/logos/airlines/canadian-regional/pal-airlines-wordmark-light.svg':    ['#FFFFFF'],
@@ -5783,37 +5839,67 @@ var OPBY_ART_INK = {
   // white is a background drawn at fill-opacity 0. On Alaska's blue that
   // black is 4.2:1.)
   '/logos/airlines/us-regional/horizon-air-monochrome-white.svg':         ['#000000'],
-  '/logos/airlines/us-regional/horizon-air-monochrome-black.svg':         ['#000000']
+  '/logos/airlines/us-regional/horizon-air-monochrome-black.svg':         ['#000000'],
+  '/logos/airlines/us-regional/horizon-air-wordmark-light.svg':           ['#FFFFFF'],
+  // v23980 — every operator's pair (see OPBY_WORDMARKS_THEMED).
+  '/logos/airlines/canadian-regional/aircanada-express-wordmark-light.svg': ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/calmair-wordmark-light.svg':         ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/calmair.svg':                        ['#121E40', '#141E41', '#B38808', '#A9810C', '#8D6E16', '#5F5026', '#21273C', '#B18709', '#AA820B', '#9F7A0F', '#8E6F15', '#78601D', '#5C4E27', '#3D3932', '#18213F'],
+  '/logos/airlines/canadian-regional/perimeter-wordmark-light.svg':       ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/Perimeter_Aviation_Logo.svg':        ['#6F757D', '#FF8024'],
+  '/logos/airlines/canadian-regional/airinuit-wordmark-light.svg':        ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/airinuit.svg':                       ['#231F20', '#F1471D'],
+  '/logos/airlines/canadian-regional/pascan-wordmark-light.svg':          ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg':          ['#1F2225', '#31ADD1'],
+  '/logos/airlines/canadian-regional/canadian-north-wordmark-light.svg':  ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/canadian-north.svg':                 ['#CD163F', '#A1ABB2'],
+  '/logos/airlines/canadian-regional/firstair-wordmark-light.svg':        ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/firstair.svg':                       ['#C31B31', '#A1A7AA'],
+  '/logos/airlines/canadian-regional/airnorth-wordmark-light.svg':        ['#FFFFFF'],
+  '/logos/airlines/canadian-regional/airnorth.svg':                       ['#1268B2', '#F47B21'],
+  '/logos/airlines/canadian/porter-white.svg':                            ['#FFFFFF'],
+  '/logos/airlines/us-regional/envoy-wordmark-light.png':                 ['#FFFFFF'],
+  '/logos/airlines/us-regional/Envoy.png':                                ['#282161', '#A41D30'],
+  '/logos/airlines/us-regional/gojet-wordmark-light.png':                 ['#FFFFFF'],
+  '/logos/airlines/us-regional/gojet.png':                                ['#1165B2', '#231F20']
 };
-// v23940 — WHICH ART GOES ON THE LOWER PANEL'S BAR, AND WHETHER ON ITS MOUNT.
-// `bar` is the bar's colour, `dark` its side (the bar's own words are light),
-// `lumaDark` the side the board's luma cut (< 140) gives the same colour.
-// A published pair gives the half for that side, a mark with no pair keeps
-// its art. The art goes on its small white mount when it is drawn for a light
-// ground and the bar is dark (a mark with no pair: GoJet's and Envoy's on the
-// US blues), or when any
-// colour it is drawn in is under 3:1 on the bar (OPBY_ART_INK): Encore on
-// WestJet's teal, where the white half is 2.64:1 and the colour half's teal
-// letters vanish. On the mount the art is the half drawn for a light ground,
-// on the white it was drawn for. Never a filter, never a recolour.
-// v23941 — a published white half that reads on the bar (3:1) is preferred
-// to the mount: Jazz's white lettering on Air Canada's red (7.50:1) is a
-// pair now, so the mount is left for marks with no published half that
-// reads (Encore on the teal, GoJet, Envoy, the SP mark on PAL's blue).
-// A mark with no pair keeps v23940's mount wherever EITHER side is dark. Five
-// bars are dark by the luma cut and light by their own ink (WestJet's teal
-// #00B2A9, Canadian North's #00A9CE, JetBlue's and KLM's #00A1DE, Asiana's
-// #008FD5, Copa's #0EA5E9): v23940 mounted marks with no pair there, and the
-// ones whose colours are not on file here (GoJet's, Envoy's, Canadian
-// North's, First Air's, Air North's...) would sit bare on them at 1.0 to
-// 2.8:1. Only a pair's half changes side on those five bars.
-function _opbyBarPick(pair, src, bar, dark, lumaDark) {
-  var art = pair ? (dark ? pair.onDark : pair.onLight) : String(src || '');
-  var mount = !pair && !!(dark || lumaDark) && !/white|-light|monochrome/i.test(art);
-  var inks = OPBY_ART_INK[art];
-  if (!mount && inks && inks.some(function (h) { return _rc2Contrast(h, bar) < 3; })) mount = true;
-  if (mount && pair) art = pair.onLight;
-  return { src: art, mount: mount };
+// v23940 — WHICH ART GOES ON THE LOWER PANEL'S BAR.
+// `bar` is the bar's colour, `dark` its side (the bar's own words are light).
+// v23980 — NO WHITE MOUNT, EVER. A logo on a dark bar is shown in white
+// lettering, never in its colours on a small white box. v23940 put a mark
+// with no pair, or a half under 3:1, on a white mount (GoJet's and Envoy's on
+// the US blues, Encore on WestJet's teal, the Air Canada Express lockup on
+// Air Canada's red, the SP mark on PAL's blue): that is gone. Every operator
+// with a mark on file has a pair now (OPBY_WORDMARKS_THEMED), and the bar
+// gets the half for its side; where that half has a colour under 3:1 on the
+// bar (OPBY_ART_INK) and the other half reaches 3:1 there, the other half.
+// v23986 — A FLOOR OF 3:1. Where neither half reaches 3:1 (Encore on
+// WestJet's teal: white 2.64:1, its colour lockup's teal 1.04:1), the
+// lettering in the bar's own ink (`ink`, the colour every word on the bar
+// is in) where the pair has it on file (inBarInk); only where nothing on file
+// reaches 3:1 is the best of them drawn, and the guard holds every operator
+// on every carrier it flies for at 3:1. A mark with no pair keeps its art as
+// drawn. Never a filter, never a ground.
+function _opbyBarPick(pair, src, bar, dark, ink) {
+  if (!pair) return { src: String(src || '') };
+  var half = dark ? pair.onDark : pair.onLight, other = dark ? pair.onLight : pair.onDark;
+  var worst = function (f) {
+    var k = f && OPBY_ART_INK[f];
+    if (!k || !k.length) return null;
+    return Math.min.apply(null, k.map(function (h) { return _rc2Contrast(h, bar); }));
+  };
+  var a = worst(half);
+  if (a === null || a >= 3) return { src: half };
+  var inked = (pair.inBarInk && ink) ? pair.inBarInk[String(ink).trim().toUpperCase()] : null;
+  var best = half, bestC = a;
+  var cands = [other, inked];
+  for (var i = 0; i < cands.length; i++) {
+    var c = worst(cands[i]);
+    if (c === null) continue;
+    if (c >= 3) return { src: cands[i] };
+    if (c > bestC) { best = cands[i]; bestC = c; }
+  }
+  return { src: best };
 }
 function _opbyContrastFix(root) {
   try {
@@ -5871,29 +5957,29 @@ function _opbyContrastFix(root) {
       // which side it is on: their ink (--rc2-a-ink, from _rc2Pair) is light
       // on a dark bar and dark on a light one. The luma cut above calls
       // WestJet's teal (#00B2A9, luma 139.5) dark, and put Encore's white
-      // half on it at 2.64:1, where the bar's words are navy.
-      var _bar = null, _lumaDark = dark;
+      // half on it at 2.64:1, where the bar's words are navy. (v23986: the
+      // picker is handed the bar's ink too, and with neither half at 3:1 on
+      // the teal it gives Encore's lettering in that navy, 5.38:1, never the
+      // colour half on a white box.)
+      var _bar = null, _barInk = null;
       if (_rcG2 && typeof _rc2Rgb === 'function') {
         var _csB = getComputedStyle(im);
         var _barA = _rc2Rgb(_csB.getPropertyValue('--rc2-a')), _barK = _rc2Rgb(_csB.getPropertyValue('--rc2-a-ink'));
         if (_barA && _barK && _barA.join(',') === _rcG2.join(',')) {
           var _Yb = function (c) { return 0.2126 * _rc2Lin(c[0]) + 0.7152 * _rc2Lin(c[1]) + 0.0722 * _rc2Lin(c[2]); };
           dark = _Yb(_barK) > _Yb(_barA);
+          _barInk = '#' + _barK.map(function (v) { var h = Math.round(v).toString(16); return h.length < 2 ? '0' + h : h; }).join('').toUpperCase();
         }
         _bar = '#' + _rcG2.map(function (v) { var h = Math.round(v).toString(16); return h.length < 2 ? '0' + h : h; }).join('');
       }
-      // v23940 — A MARK THAT DOES NOT READ ON THE BAR GOES ON A MOUNT. An
-      // operator that publishes no light-ground/dark-ground pair keeps its art
-      // as drawn (below), and GoJet's blue lettering on United's blue bar
-      // would vanish (Jazz's red on Air Canada's red did, until v23941 gave it
-      // its published white half); a published half can fail too (Encore on WestJet's
-      // teal). The mark is never recoloured; it gets a small white mount
-      // instead (display-overrides.css, the v23940 block). _opbyBarPick
-      // decides, and names the art for the mount; a mark with no pair keeps
-      // its v23940 mount on the luma cut's dark side too (_lumaDark).
-      var _pick = _bar ? _opbyBarPick(pair, im.getAttribute('src'), _bar, dark, _lumaDark) : null;
-      var _mount = !!(_pick && _pick.mount);
-      if (_mount !== im.classList.contains('v2-rc-opby-mount')) im.classList.toggle('v2-rc-opby-mount', _mount);
+      // v23980 — ON THE BAR, THE HALF THAT READS THERE; NEVER A WHITE MOUNT.
+      // v23940 set a mark that did not read on the bar on a small white
+      // mount. A logo on a dark ground is shown in white lettering, never in
+      // its colours on a white box: _opbyBarPick names the half, and the
+      // mount (its class and its rule) is gone. The class is taken off an
+      // image that still carries it from an earlier render.
+      var _pick = _bar ? _opbyBarPick(pair, im.getAttribute('src'), _bar, dark, _barInk) : null;
+      if (im.classList.contains('v2-rc-opby-mount')) im.classList.remove('v2-rc-opby-mount');
       // v23332 — INLINE !important, OR NOTHING THIS PASS DOES EVER APPLIES.
       // display-overrides.css carries the v23206 rule for the caption strip
       // ('.v2-rc-acb-cap .v2-rc-opby-logo { filter: none !important }' — the
@@ -5929,17 +6015,44 @@ function _opbyContrastFix(root) {
     }
   } catch (e2) {}
 }
+// v23986 — OPERATOR ART THAT IS WHITE LETTERING AND NOTHING ELSE. On the
+// phone gate's light theme operatorLogoUrlThemed hands back the operator's
+// natural art, and for these two that art is all white: white lettering on
+// the white panel, about 1:1. They take their pair's light half instead (the
+// art the caption already draws on a light ground). The guard
+// (tests/logo-white-lettering-guard.test.js) reads every OPERATOR_LOGOS file
+// and fails if a white-only one is missing here, or a listed one is not.
+// (horizon-air.svg is not one: its lettering is drawn in the default black,
+// its only white a clear square at fill-opacity 0, so it reads on white.)
+var OPERATOR_LOGOS_WHITE_ONLY = {
+  '/logos/airlines/canadian/encore.png': 1,
+  '/logos/airlines/us-regional/mesa-airlines.svg': 1
+};
 function operatorLogoUrlThemed(opCode, isDark) {
   if (!opCode) return null;
   var c = String(opCode).trim().toUpperCase();
   // Dark (night) background → the white monochrome mark (good contrast).
   // Light (day) background → the operator's NATURAL COLOUR logo, never the
   // black monochrome one (per the ruling: white is fine, black is not).
+  // v23986 — except where the natural art is white and nothing else
+  // (OPERATOR_LOGOS_WHITE_ONLY): Encore takes its colour lockup; Mesa
+  // publishes no colour file, so its dark lettering, the art the caption's
+  // light bar already draws, rather than white on the white panel.
   if (isDark) {
     var v = OPERATOR_LOGOS_THEMED[c];
     if (v) return v.dark || null;
+    // v23980 — every other operator's white lettering (the caption's pairs),
+    // never its colour art on the dark ground.
+    var p2 = OPBY_WORDMARKS_THEMED[c];
+    if (p2 && p2.onDark) return p2.onDark;
+    return operatorLogoUrl(c);
   }
-  return operatorLogoUrl(c);
+  var u = operatorLogoUrl(c);
+  if (u && OPERATOR_LOGOS_WHITE_ONLY[u]) {
+    var p3 = OPBY_WORDMARKS_THEMED[c];
+    if (p3 && p3.onLight) return p3.onLight;
+  }
+  return u;
 }
 
 function gatePreferredBrandCode(marketingCode, opCode, flightObj) {
@@ -10925,9 +11038,18 @@ var GATE_TOP_ROUND_EMBLEM_FILES = {
 // The caption and the badge keep the brand's own lockup (OPERATOR_LOGOS).
 // A plain function declaration with no table outside it, so it answers the
 // same however early a caller reaches it (_gateOrbParts sits above it).
+// v23986 — American Eagle's three wholly-owned operators the same way. Envoy,
+// PSA and Piedmont fly in American's livery and have no emblem of their own:
+// the emblem table already hands them American's flight symbol. Resolving
+// them to AA here gives that symbol American's own treatment too (its
+// colours on the white disc, v23444), where by their own codes the symbol
+// was inked white on that white disc: the blank Your Aircraft orb on every
+// American gate they flew to.
 function _orbEmblemCarrier(code) {
   var c = String(code == null ? '' : code).trim().toUpperCase();
-  return c === 'ACEX' ? 'AC' : c;
+  if (c === 'ACEX') return 'AC';
+  if (c === 'MQ' || c === 'ENY' || c === 'OH' || c === 'PSA' || c === 'PT' || c === 'PDT') return 'AA';
+  return c;
 }
 function _airlineOrbEmblem(code) {
   var c = _orbEmblemCarrier(code);
@@ -16141,7 +16263,6 @@ function uxgGateHtml(ctx) {
   var _bannerUsedTile = false;
   var _bannerUsedWordmark = false;
   var _bannerWmFromBase = false;   // true only when the *-wordmark-*.svg file itself renders
-  var _bannerPlateForced = false;   // only genuine plate logos (BoA) get a white plate
   // Pick the wordmark variant from the ACTUAL banner colour (the data-file
   // override in window.AIRLINE_BRAND_COLORS wins). Light banner → dark wordmark;
   // dark banner → white wordmark. Hardcoding a "white-banner" list was wrong:
@@ -16224,7 +16345,11 @@ function uxgGateHtml(ctx) {
     // reports PAG as the MARKETING code would skip this table on the dark banner
     // and fall through to the external lockup at every airport, not just YQM.
     'PAG': '/logos/airlines/canadian-regional/perimeter-aviation-logo-monochrome-white.svg',
-    'BQ': '/logos/airlines/canadian-regional/pascan-monochrome-white.svg',
+    // v23986 — Pascan's 'monochrome-white' file is the white square baked into
+    // pascan.svg with the lettering drawn white on it: a solid white box. Its
+    // white lettering alone (the square taken out) is pascan-wordmark-light.
+    'BQ': '/logos/airlines/canadian-regional/pascan-wordmark-light.svg',
+    'PSC': '/logos/airlines/canadian-regional/pascan-wordmark-light.svg',
     '3H': '/logos/airlines/canadian-regional/airinuit-monochrome-white.svg',
     // v23468 — Encore's white lockup as a VECTOR. The supplied artwork, outlined,
     // replacing the raster encore.png the banner reached through LOCAL_LOGOS.
@@ -16290,7 +16415,24 @@ function uxgGateHtml(ctx) {
     // lockup and clips at the single-line 108x620 default — the same caveat
     // already recorded against the dark entry.
     'F8':  { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 },
-    'FLE': { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 }
+    'FLE': { src: '/logos/airlines/canadian/flair-mark-black.png', h: 100, w: 480 },
+    // v23986 — EVERY WHITE FILE IN THE DARK TABLE HAS ITS COLOUR TWIN HERE.
+    // Every banner is a light band (v23646), and this table runs first; a
+    // carrier missing from it falls through to BANNER_DARK_LOGO, whose files
+    // are white lettering, drawn white on the pale band: Air North's and
+    // Calm Air's lettering unreadable, Air Inuit's the same, Pascan's a white
+    // square. Each takes its own colour art, the same lockup as its white
+    // file, in the same box. BA's stacked lockup the same way: its white
+    // 'BRITISH AIRWAYS' vanished on the pale band, its own navy reads.
+    '4N':  '/logos/airlines/canadian-regional/airnorth.svg',
+    'MO':  '/logos/airlines/canadian-regional/calmair.svg',
+    'CAV': '/logos/airlines/canadian-regional/calmair.svg',
+    'BQ':  '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',
+    'PSC': '/logos/airlines/canadian-regional/pascan-wordmark-color.svg',
+    '3H':  '/logos/airlines/canadian-regional/airinuit.svg',
+    'AIE': '/logos/airlines/canadian-regional/airinuit.svg',
+    'BA':  { src: '/logos/airlines/european/british-airways-stacked.svg', h: 132, w: 340 },
+    'BAW': { src: '/logos/airlines/european/british-airways-stacked.svg', h: 132, w: 340 }
   };
   // v23760 — the heritage area is asked FIRST and answers only on a heritage
   // page. Everywhere else _heritageBannerMark returns null and this line reads
@@ -16334,17 +16476,22 @@ function uxgGateHtml(ctx) {
     };
   }
   // Per-carrier brand logo pinned for the gate header — the airline's own mark
-  // on file, shown on a clean white plate (full colour, CDN-independent).
+  // on file (full colour, CDN-independent).
+  // v23980 — NO WHITE PLATE. BoA's mark sat on a white rounded plate "so it
+  // reads on the dark header". A logo is never put on a white box to read:
+  // on a light band its own colours straight on the band (navy lettering),
+  // on a dark one its white lettering with the flame in its colours
+  // (boliviana-light.svg: the same paths, the BoA letters white).
   var BANNER_PLATE_LOGO = {
-    'OB': '/logos/airlines/asian-other/boliviana.svg'   // BoA — letters + corn-husk mark
+    'OB': { light: '/logos/airlines/asian-other/boliviana.svg',         // BoA — letters + corn-husk mark
+            dark:  '/logos/airlines/asian-other/boliviana-light.svg' }
   };
   var _plateLogo = BANNER_PLATE_LOGO[_bannerBrandCode] || BANNER_PLATE_LOGO[airlineCode];
   if (!_useOverrideFile && _plateLogo) {
-    r1LogoSrc = _plateLogo;
+    r1LogoSrc = _bannerIsLight ? _plateLogo.light : _plateLogo.dark;
     _useOverrideFile = true;          // real colours — no white filter
-    _sz = { h: 106, w: 300 };         // compact brand mark on the white plate
-    _bannerUsedWordmark = true;       // reuse the white-plate styling
-    _bannerPlateForced = true;        // BoA-style mark genuinely needs the plate
+    _sz = { h: 106, w: 300 };         // compact brand mark
+    _bannerUsedWordmark = true;
   }
   // Frontier
   // The banner (r1) is a lighter
@@ -16389,7 +16536,6 @@ function uxgGateHtml(ctx) {
   // Carriers without a curated lockup now fall
   // through to the external full-lockup logo, force-whitened by the CSS —
   // the airline's real wordmark, not a badge.
-  var _onPlate = _bannerUsedTile || _bannerPlateForced;
   // HARD CAP the logo height so it can NEVER exceed the banner band (which is
   // overflow:hidden and a fixed height). 76px in the 112px band leaves real
   // margins above and below — at the old 120px cap, wide all-caps marks
@@ -16483,10 +16629,7 @@ function uxgGateHtml(ctx) {
                      // anticipated exactly this ("the general light-banner
                      // rollout, where _apIsYQM is false and the inline filter
                      // would otherwise be ''"). It is that rollout.
-                     : 'filter:none !important;')
-                 // Logo sits on a clean white rounded plate so it reads on the
-                 // dark header and is never clipped by the banner band.
-                 + (_onPlate ? 'background:#fff !important;border-radius:14px !important;padding:' + (_bannerUsedWordmark ? '8px 16px' : '8px') + ' !important;box-sizing:border-box !important;' : '');
+                     : 'filter:none !important;');
   // Ruling (Jul 2026): the gate header shows the airline EMBLEM/tile BESIDE the
   // wordmark — many carriers rendered lettering alone up top. Only the
   // wordmark-file path needs the added icon; override lockups already carry
@@ -16543,7 +16686,7 @@ function uxgGateHtml(ctx) {
     // carrier's symbol again, so a single failed wordmark fetch put TWO
     // emblems in the banner. data-pairmode makes
     // g8LogoFail go straight to the text name instead.
-    r1LogoHtml = '<img class="g8-r1-logo' + (_onPlate ? ' g8-r1-logo-badge' : '') + '" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
+    r1LogoHtml = '<img class="g8-r1-logo" src="' + r1LogoSrc + '" alt="' + airlineName + '" style="' + _logoStyle + '" onerror="g8LogoFail(this)" data-fb="' + r1LogoFallback + '" data-name="' + airlineName + '" data-code="' + airlineCode + '"' + (_bannerEmblemHtml ? ' data-pairmode="1"' : '') + '>';
     if (_bannerEmblemHtml) {
       r1LogoHtml = '<span class="g8-r1-brandpair" style="display:inline-flex;align-items:center;gap:16px;">' + _bannerEmblemHtml + r1LogoHtml + '</span>';
     }
@@ -28683,11 +28826,11 @@ function setTheme(name, _noPersist) {
     .wx-temp { color: ${t.rowMuted} !important; }
     tbody td { border-bottom-color: ${t.lightRows ? '#e4e4e7' : t.border} !important; }
     ${!t.lightRows ? `
-      /* Logos on dark FIDS rows: transparent by default. Logos with [data-needs-invert="1"]
-         get inverted to white; full-color logos (AC/WS/AA etc.) keep native colors.  */
+      /* Logos on dark FIDS rows: transparent by default.
+         v23986 — the [data-needs-invert="1"] whitening is gone from here: a
+         .full-logo lockup carries its emblem, and an emblem is never
+         whitened (and no board renders .td-logo or .bag-logo-cell today). */
       .td-logo .full-logo { background: transparent !important; padding: 0 !important; border-radius: 0 !important; }
-      .td-logo .full-logo[data-needs-invert="1"] { filter: brightness(0) invert(1); }
-      .bag-logo-cell .full-logo[data-needs-invert="1"] { filter: brightness(0) invert(1); mix-blend-mode: normal !important; }
     ` : ''}
     .ticker { background: ${t.hdr} !important; border-top-color: ${t.accent} !important; }
     .ticker span { color: ${t.hdrMuted} !important; }
@@ -45265,9 +45408,21 @@ function buildGateAdHtml(ad) {
   // v23942 — the Welcome card names the carriers whose emblem keeps its own
   // colours (_FB_WELCOME_OWN_COLOURS); the white-force never reaches them.
   if (ad.logoOwnColours) _adKeepColour = true;
+  // v23986 — A TILE IS NEVER WHITE-FORCED HERE EITHER. The Welcome card's
+  // fallback logo is the carrier's emblem file, and for Canadian North and
+  // Air North that file is a TILE (/logos/airline-tiles/): an opaque square
+  // with the mark knocked out of it. The white-force flattens the whole
+  // square, so the dark card showed a solid white square above "Welcome
+  // aboard". v23770 wrote this rule for img.gad-ad-logo, a class this
+  // renderer never puts on its image, so it never applied. The folder is the
+  // treatment: a tile keeps its own artwork, rounded like the orb so it sits
+  // as a mark, never filtered.
+  var _adTile = /\/logos\/airline-tiles\//.test(String(ad.logo || ''));
+  if (_adTile) _adKeepColour = true;
   var _stdLogoFilter = (_adLightBg || _adKeepColour)
     ? (_adKeepColour ? 'filter:drop-shadow(0 1px 3px rgba(0,0,0,0.35));' : '')
     : 'filter:brightness(0) invert(1) drop-shadow(0 1px 3px rgba(0,0,0,0.35));';
+  if (_adTile) _stdLogoFilter += 'border-radius:16%;';
   var _stdLogoHtml = ad.logo
     ? '<div style="flex-shrink:0;width:100%;margin-bottom:clamp(20px,3vh,40px);height:clamp(120px,20vh,230px);display:flex;align-items:center;justify-content:center;">'
       // Height-driven: the logo fills the tall box. Width is a VIEWPORT cap

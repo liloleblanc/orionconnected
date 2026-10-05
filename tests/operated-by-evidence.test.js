@@ -428,11 +428,21 @@ test('Air Canada Express: Air Canada\'s own artwork, as drawn', () => {
   assert.match(fs.readFileSync(abs, 'utf8'), /\.cls-1\{fill:#f01428;\}/, 'the red roundel');
   const logos = CORE.slice(CORE.indexOf('var OPERATOR_LOGOS = {'), CORE.indexOf('\n};', CORE.indexOf('var OPERATOR_LOGOS = {')));
   assert.match(logos, /'ACEX': '\/logos\/airlines\/canadian-regional\/aircanada-express\.svg'/);
-  // No white version is published, so none is made: no pair, and the caption
-  // bar puts the lockup on its white mount (gate-lower-two-colours.test.js).
+  // v23980 — on a dark ground its lettering is white, never the lockup on a
+  // white mount. No white version is published, so the white lettering is
+  // drawn from this file's own letter paths (the same path, filled white; the
+  // roundel, an emblem, is left out, as the caption's lettering-only rule
+  // asks). The broken generic copy (aircanada-express-monochrome-white.svg,
+  // which whitened the roundel and left the letters black) is never used.
+  const LIGHT = '/logos/airlines/canadian-regional/aircanada-express-wordmark-light.svg';
   const pairs = CORE.slice(CORE.indexOf('var OPBY_WORDMARKS_THEMED = {'), CORE.indexOf('var OPBY_ART_INK = {'));
-  assert.doesNotMatch(pairs, /ACEX/);
-  assert.doesNotMatch(CORE, /aircanada-express-(?:monochrome-white|light|white)/);
+  assert.match(pairs, new RegExp("'ACEX': \\{ onDark:'" + LIGHT.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "', onLight:'" + file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + "' \\}"));
+  assert.doesNotMatch(CORE, /aircanada-express-(?:monochrome-white|light|white)\.svg/);
+  const src = fs.readFileSync(abs, 'utf8'), white = fs.readFileSync(path.join(root, 'fids-current', LIGHT), 'utf8');
+  const letters = (svg) => [...svg.matchAll(/<path(?![^>]*class="cls-1")[^>]*\bd="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(letters(white), letters(src), 'the lockup\'s own letter paths');
+  assert.doesNotMatch(white, /cls-1|#f01428/i, 'no roundel');
+  assert.deepEqual([...white.matchAll(/fill="([^"]+)"/g)].map((m) => m[1]), ['#FFFFFF'], 'filled white');
   // The orb keeps Air Canada's roundel: no emblem is registered for the brand.
   assert.doesNotMatch(CORE, /_AIRLINE_EMBLEM_FILES\[['"]ACEX/);
   // Its family is Air Canada's, so the gate never rebrands the row.
