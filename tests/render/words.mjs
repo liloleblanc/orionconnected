@@ -401,10 +401,24 @@ export function judge(texts, set, ap) {
 // ── the run ──────────────────────────────────────────────────────────────
 const MODE = LIVE ? 'live' : 'demo';
 const SINGLES = LANGS.map((l) => [l]);
+// A fixed word of this check's own (a mode, a screen state) written into page
+// code: only lowercase letters and hyphens, quoted. Anything else stops the
+// run (CodeQL js/bad-code-sanitization: JSON.stringify is not an escape for
+// code).
+const jsWord = (w) => {
+  if (!/^[a-z][a-z-]*$/.test(String(w))) throw new Error('not a plain word for page code: ' + w);
+  return "'" + w + "'";
+};
 // A language set goes into page code as its positions in the store's own
 // list (LANGS), never as text: nothing from the command line or a surface
 // spec is spliced into code that the page evaluates.
-const LANGS_JS = '[' + LANGS.map((l) => JSON.stringify(l)).join(',') + ']';
+// The list itself is written from the store's codes, each checked to be two
+// lowercase letters (CodeQL js/bad-code-sanitization: JSON.stringify is not
+// an escape for code); anything else stops the run.
+const LANGS_JS = '[' + LANGS.map((l) => {
+  if (!/^[a-z]{2}$/.test(l)) throw new Error('board-strings LANGS holds a code that is not two letters: ' + l);
+  return "'" + l + "'";
+}).join(',') + ']';
 const langsJs = (set) => `[${set.map((l) => LANGS.indexOf(l)).filter((i) => i >= 0).join(',')}].map(function (i) { return ${LANGS_JS}[i]; })`;
 export const SETS = SINGLES.concat([['en', 'fr'], ['fr', 'en'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh']]);
 // Offline (no LIVE), a board opened with ?mode=demo loads its demonstration
@@ -425,7 +439,7 @@ export const SETS = SINGLES.concat([['en', 'fr'], ['fr', 'en'], ['de', 'pt'], ['
 // every time: the same screens on every run. The feed-down screens
 // themselves are read on purpose below (FEED_STATES), each one in every
 // language set, after a change of languages mid-visit.
-const BOARD_UP = `new Promise(function (res) { var t0 = Date.now(), held = false, demo = ${JSON.stringify(MODE)} === 'demo'; (function poll() {
+const BOARD_UP = `new Promise(function (res) { var t0 = Date.now(), held = false, demo = ${jsWord(MODE)} === 'demo'; (function poll() {
   try {
     if (demo && !held && Date.now() - t0 > 4000 && typeof loadDemo === 'function' && data
         && (window._initialFetchDone === true || Date.now() - t0 > 50000)) { held = true; LIVE_MODE = false; loadDemo(); }
@@ -470,7 +484,7 @@ const GATE_STATE = (st) => `(function (st) {
     renderDedicatedScreen();
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
-})(${JSON.stringify(st)})`;
+})(${jsWord(st)})`;
 const GATE_RESET = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
 
 // When the airport's feed is down (v23996, fidsFeedStatus): 'unavailable' —
@@ -499,7 +513,7 @@ const FEED_ENTER = (st) => `(function (st) {
     render();
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
-})(${JSON.stringify(st)})`;
+})(${jsWord(st)})`;
 // What says it on this screen: the board's empty panel, the gate's or the
 // belt's own empty line, or the strip. With the last good list on screen the
 // strip says how old it is — unless this page's own list is empty (a belt
@@ -507,7 +521,7 @@ const FEED_ENTER = (st) => `(function (st) {
 // busy machine paints late), then '' and what the board's status was if
 // nothing ever says it.
 const FEED_SHOWN = (st) => `new Promise(function (res) { var t0 = Date.now(); (function poll() {
-  var st = ${JSON.stringify(st)};
+  var st = ${jsWord(st)};
   function vis(el) {
     if (!el) return false;
     var b = el.getBoundingClientRect();
