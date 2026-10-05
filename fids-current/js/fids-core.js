@@ -3549,6 +3549,8 @@ function _restoreApLangs() {
     lang = langs[0];
     if (typeof updateLangButtons === 'function') updateLangButtons();
     if (typeof updateTicker === 'function') updateTicker();
+    // v23995 — the boot loader and the static page words follow (BoardStrings.onLangs)
+    try { BoardStrings.langsChanged(); } catch (eL) {}
   } catch (e) {}
 }
 function changeScreenType(val) {
@@ -29350,8 +29352,9 @@ function _applyBoardLangs() {
   updateLangButtons();
   updateTicker();
   startLangRotation();
-  // v23970 — static page words (data-i18n) follow the new languages too
-  try { BoardStrings.applyStatic(); } catch (eS) {}
+  // v23970 — static page words (data-i18n) follow the new languages too;
+  // v23995 — and so does the boot loader, still up or fading (BoardStrings.onLangs)
+  try { BoardStrings.langsChanged(); } catch (eS) {}
   const testBtn = document.getElementById('testFlightBtn');
   if (testBtn) testBtn.textContent = TL('addFlight');
   // v22957 — the v22955 double-render workaround is WITHDRAWN. It forced two
@@ -35959,6 +35962,11 @@ function applyAirportConfigToBoard(iata) {
     }).langs;
     if (langIdx >= langs.length) langIdx = 0;
     lang = langs[langIdx] || langs[0] || 'en';
+    // v23995 — the config lands while the boot loader is still up (and on
+    // every airport switch): what was painted from the languages known at
+    // boot follows the board's (BoardStrings.onLangs). A Spanish gate's
+    // loader read 'GATE 4 · LOADING' and greeted in French as it faded.
+    try { BoardStrings.langsChanged(); } catch (eL) {}
   } catch (e) {}
 
   // Display name (pill sub-label)
@@ -38359,6 +38367,8 @@ try {
     langs = [_chosen];
     langIdx = 0;
     lang = _chosen;
+    // v23995 — the boot loader greets in that one language too
+    try { BoardStrings.langsChanged(); } catch (eL) {}
   } catch(e) {
     console.error('[FIDS Mobile Lang Lock] error:', e);
   }

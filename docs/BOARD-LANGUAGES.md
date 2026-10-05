@@ -91,6 +91,7 @@ a new key goes in `STR`, and their helpers (`TL`, `SL`, `_gateLbl`,
 | a font stack set from code | `BoardStrings.withScripts(stack)` |
 | a loader or status line | `BoardStrings.loaderLine('loading')` |
 | static page text | `<span data-i18n="key">` (`data-i18n-one`, `data-i18n-upper`), filled by `BoardStrings.applyStatic()` |
+| words painted once that must follow the board's languages (the boot loader) | `BoardStrings.onLangs(fn)`: `fn` runs whenever `fids-core.js` sets `langs` (it calls `BoardStrings.langsChanged()`, which also re-runs `applyStatic`) |
 
 Each half of a pair is a `<span class="bs-h" lang="…">`, with `dir="rtl"` on
 an Arabic half and bidi isolation on every half, so `من Calgary` reads right to
