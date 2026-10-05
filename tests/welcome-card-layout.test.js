@@ -13,8 +13,9 @@
 //   - the languages: the board's first two, picked by _gateLbl exactly as
 //     every other gate label picks them (French first at a Québec airport),
 //     never a third, from a table that carries all nine;
-//   - the sizes: the logo is never smaller than the text, the airline line
-//     never shrinks to suit the greeting, nothing is cut.
+//   - the sizes: the logo is never smaller than the text (its letters, not
+//     its picture's box), the airline line never shrinks to suit the
+//     greeting, it stays within the card's room, nothing is cut.
 // The emblem decisions are in welcome-emblem-own-colours.test.js.
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -177,6 +178,13 @@ test('Arabic is set right to left; every phrase carries its language', () => {
   assert.match(h, /<div class="gwc-ph gwc-ph-bottom" lang="ar" dir="rtl">/);
 });
 
+test('the lettering carries its letters\' share for the fitter', () => {
+  const h = html(Object.assign({}, AD, { code: '3H', emblem: '', emblemKind: 'none', name: 'Air Inuit',
+    wordmark: '/logos/airlines/canadian-regional/airinuit-wordmark-light.svg', letterHeight: 0.42 }));
+  assert.match(h, /<img class="gwc-wm" [^>]*data-letters="0\.42"/);
+  assert.doesNotMatch(html(AD), /data-letters/, 'none where the letters fill the art');
+});
+
 test('names and paths are escaped', () => {
   const h = html(Object.assign({}, AD, { name: 'A "B" <C>', wordmark: '' }));
   assert.match(h, /A &quot;B&quot; &lt;C&gt;/);
@@ -224,9 +232,9 @@ test('the deck builds the card, the renderer draws it, and every paint fits it',
 
 // ── the sizes ────────────────────────────────────────────────────────────────
 
+const SIZER = sandbox(['en', 'fr']);
 function sizes(o) {
-  const ctx = sandbox(['en', 'fr']);
-  return JSON.parse(JSON.stringify(vm.runInContext('_welcomeCardSizes(' + JSON.stringify(o) + ')', ctx)));
+  return JSON.parse(JSON.stringify(vm.runInContext('_welcomeCardSizes(' + JSON.stringify(o) + ')', SIZER)));
 }
 const AT1680 = { W: 770, base: 78, gap: 28 };
 
@@ -253,21 +261,98 @@ test('the logo is never smaller than the text, at any size and shape', () => {
       for (const emblem of [false, true]) {
         for (const ea of [0.6, 1, 2.2, 4]) {
           for (const a of [1.5, 2.3, 3, 5, 8, 11, 16]) {
-            const s = sizes({ W, base, gap: 0.36 * base, emblem, emblemAspect: ea, wordmarkAspect: a });
-            const tag = JSON.stringify({ W, base, emblem, ea, a, s });
-            assert.ok(s.phrase <= base, 'the greeting never grows: ' + tag);
-            assert.ok(0.72 * s.phrase <= s.wordmark + 1e-9, 'the lettering is never under the greeting\'s capital height: ' + tag);
-            if (emblem) {
-              assert.ok(s.emblem >= 1.25 * base - 1e-9 && s.emblem <= 1.8 * base + 1e-9, 'the emblem: ' + tag);
-              assert.ok(s.emblem > s.phrase, 'the emblem is bigger than the greeting: ' + tag);
+            for (const f of [1, 0.84, 0.58, 0.43, 0.22]) {
+              for (const room of [0, 1.1 * base, 2.4 * base, 6 * base]) {
+                const s = sizes({ W, base, gap: 0.36 * base, emblem, emblemAspect: ea, wordmarkAspect: a, letterHeight: f, room });
+                const tag = JSON.stringify({ W, base, emblem, ea, a, f, room, s });
+                assert.ok(s.phrase <= base, 'the greeting never grows: ' + tag);
+                assert.ok(Math.abs(s.letters - s.wordmark * f) < 1e-9, 'the letters are their share of the lettering: ' + tag);
+                assert.ok(0.72 * s.phrase <= s.letters + 1e-9, 'the letters are never under the greeting\'s capital height: ' + tag);
+                assert.ok(s.wordmark <= 3 * base + 1e-9, 'never past three times the greeting: ' + tag);
+                if (room > 0) assert.ok(s.wordmark <= Math.max(1.23 * base, room) + 1e-9, 'never taller than the room the card has: ' + tag);
+                if (emblem) {
+                  assert.ok(s.emblem >= 1.25 * base - 1e-9 && s.emblem <= 1.8 * base + 1e-9, 'the emblem: ' + tag);
+                  if (room > 0) assert.ok(s.emblem <= Math.max(1.25 * base, room) + 1e-9, 'the emblem fits the room: ' + tag);
+                  assert.ok(s.emblem > s.phrase, 'the emblem is bigger than the greeting: ' + tag);
+                }
+                const width = (emblem ? s.emblem * s.emblemAspect + 0.36 * base : 0) + s.wordmark * a;
+                assert.ok(width <= W + 0.5, 'the airline line fits on its one line: ' + tag);
+              }
             }
-            const width = (emblem ? s.emblem * s.emblemAspect + 0.36 * base : 0) + s.wordmark * a;
-            assert.ok(width <= W + 0.5, 'the airline line fits on its one line: ' + tag);
           }
         }
       }
     }
   }
+});
+
+test('letters, not pictures: lettering whose letters fill a fraction of it is drawn taller (Air Inuit, North Star)', () => {
+  // At 1680x1050 the card has about 760 px across and 400 px of height left
+  // for the airline line once its two phrases are set.
+  const room = 400;
+  // Air Inuit: syllabics over "Air Inuit". Before, its padded board cut was
+  // drawn 96 px tall and its letters came out 22 px against the greeting's
+  // 56 px capitals. Its cropped cut (aspect 2.13), letters 42% of it:
+  const before = sizes(Object.assign({}, AT1680, { emblem: false, wordmarkAspect: 1.5 }));
+  assert.ok(before.wordmark * 0.23 < 0.72 * 78, 'the old reading of Air Inuit: ' + before.wordmark);
+  const inuit = sizes(Object.assign({}, AT1680, { emblem: false, wordmarkAspect: 2.13, letterHeight: 0.42, room }));
+  assert.ok(Math.abs(inuit.letters - 0.8 * 78) < 0.01, 'its letters at 0.8 em: ' + JSON.stringify(inuit));
+  assert.equal(inuit.phrase, 78, 'and the greeting keeps its size');
+  // North Star: NORTHSTAR beside a roundel the full height of the art. Its
+  // letters would need the art 3.6 em tall; it stops at 3 em and the greeting
+  // comes down to its letters instead.
+  const ns = sizes(Object.assign({}, AT1680, { emblem: false, wordmarkAspect: 2.38, letterHeight: 0.22, room }));
+  assert.equal(ns.wordmark, 3 * 78, 'drawn at three times the greeting, its ceiling');
+  assert.ok(ns.letters >= 0.72 * ns.phrase - 1e-9 && ns.phrase >= 68 && ns.phrase < 78, JSON.stringify(ns));
+  assert.ok(ns.wordmark * 2.38 <= AT1680.W, 'on its one line');
+  // American Airlines' two lines, and Spirit's lower case, reach the target
+  // (0.8 em, a little over the greeting's 0.72 em capitals) with the greeting
+  // left at its size
+  for (const [a, f] of [[2.61, 0.43], [3.02, 0.47]]) {
+    const x = sizes(Object.assign({}, AT1680, { emblem: false, wordmarkAspect: a, letterHeight: f, room }));
+    assert.equal(x.phrase, 78, JSON.stringify(x));
+    assert.ok(Math.abs(x.letters - 0.8 * 78) < 0.01, JSON.stringify(x));
+  }
+  // a lettering whose letters fill it (Air Canada) is untouched by any of this
+  const ac = sizes(Object.assign({}, AT1680, { emblem: true, emblemAspect: 1.02, wordmarkAspect: 11, room }));
+  const acOld = sizes(Object.assign({}, AT1680, { emblem: true, emblemAspect: 1.02, wordmarkAspect: 11 }));
+  assert.deepEqual(ac, acOld);
+});
+
+test('the room the card has left caps the airline line, never below its usual size', () => {
+  const tight = sizes(Object.assign({}, AT1680, { emblem: true, emblemAspect: 1, wordmarkAspect: 1.5, letterHeight: 0.23, room: 110 }));
+  assert.equal(tight.wordmark, 110, 'as tall as the room allows');
+  assert.equal(tight.emblem, 110, 'the emblem too (1.8 em would be 140)');
+  assert.ok(0.72 * tight.phrase <= tight.letters + 1e-9, 'and the greeting comes down to its letters: ' + tight.phrase);
+  const none = sizes(Object.assign({}, AT1680, { emblem: false, wordmarkAspect: 2.28, wordmarkScale: 1.4, room: 40 }));
+  assert.equal(none.wordmark, 1.23 * 78, 'a card with almost no room keeps the usual size, as before');
+});
+
+test('how tall each lettering\'s letters are: measured, in range, and found under either code', () => {
+  const ctx = vm.createContext({});
+  vm.runInContext(varSource('var WELCOME_CARD_LETTER_HEIGHT = {') + varSource('var _FB_WM_ICAO = {')
+    + fnSource('_welcomeCardPick') + varSource('var WELCOME_CARD_LETTERING_SCALE = {'), ctx);
+  const T = JSON.parse(JSON.stringify(vm.runInContext('WELCOME_CARD_LETTER_HEIGHT', ctx)));
+  // the four the cross-check measured short, and the rest of the art whose
+  // letters fill less than three quarters of it
+  for (const c of ['3H', 'NSA', 'WT', 'VB', 'AA2', 'NK']) assert.ok(T[c] > 0, c + ' is measured');
+  for (const [c, f] of Object.entries(T)) assert.ok(f > 0.15 && f < 1, c + ': ' + f);
+  assert.ok(T.NSA < 0.3, 'North Star: letters a quarter of the art, beside the roundel');
+  assert.ok(T['3H'] < 0.5 && T.AA2 < 0.5, 'two lines of letters: under half the art each');
+  // the scale table's carriers are measured too, so rule 1 holds for them when space is short
+  for (const c of ['RV', 'QR', 'PD', 'QK']) assert.ok(T[c] > 0, c);
+  // an ICAO-coded feed finds its twin's entries
+  const pick = (t, c) => vm.runInContext('_welcomeCardPick(' + t + ', ' + JSON.stringify(c) + ')', ctx);
+  assert.equal(pick('WELCOME_CARD_LETTER_HEIGHT', 'JZA'), T.QK);
+  assert.equal(pick('WELCOME_CARD_LETTER_HEIGHT', 'POE'), T.PD);
+  assert.equal(pick('WELCOME_CARD_LETTER_HEIGHT', 'PCO'), T['8P']);
+  assert.equal(pick('WELCOME_CARD_LETTERING_SCALE', 'JZA'), 1.3, "Jazz's taller lettering under JZA too");
+  assert.equal(pick('WELCOME_CARD_LETTERING_SCALE', 'POE'), 1.3);
+  assert.equal(pick('WELCOME_CARD_LETTER_HEIGHT', 'AC'), undefined, 'letters that fill their art are not listed');
+  // and the card's data carries both
+  const data = fnSource('_welcomeCardData');
+  assert.match(data, /wordmarkScale: _welcomeCardPick\(WELCOME_CARD_LETTERING_SCALE, code\) \|\| 1/);
+  assert.match(data, /letterHeight: _welcomeCardPick\(WELCOME_CARD_LETTER_HEIGHT, code\) \|\| 1/);
 });
 
 test('the lettering may be drawn taller where its letters fill little of its height (Rouge)', () => {
@@ -282,6 +367,9 @@ test('the lettering may be drawn taller where its letters fill little of its hei
 test('the fitter: a typed name holds the same rule, and a phrase shrinks then wraps, never cut', () => {
   const one = fnSource('_welcomeCardFitOne');
   assert.match(one, /if \(nf < phrase\) phrase = Math\.floor\(nf \* 10\) \/ 10;/, 'a typed name smaller than the greeting brings the greeting down');
+  assert.match(one, /letterHeight: wm \? \(parseFloat\(wm\.getAttribute\('data-letters'\)\) \|\| 1\) : 1,/, 'the letters\' share comes from the markup');
+  assert.match(one, /var room = H - phs\.length \* \(1\.08 \+ 0\.42\) \* HB - 0\.1 \* HB;/, 'the room is the card less its phrases and their gaps');
+  assert.match(one, /room: room > 0 \? room : 0 \}\);/);
   assert.match(one, /var HB = parseFloat\(getComputedStyle\(first \|\| card\)\.fontSize\) \|\| 78;/, 'sized from the stylesheet\'s own greeting size');
   const ph = fnSource('_welcomeCardFitPhrases');
   assert.match(ph, /Math\.max\(size \* 0\.62, size \* W \/ w - 0\.5\)/, 'shrinks to 62% at most');

@@ -18,6 +18,9 @@
 //     square;
 //   - otherwise no emblem: the airline's white lettering alone
 //     (WELCOME_CARD_NO_EMBLEM). Nothing is put on a white disc to make it read.
+// A feed's ICAO code (ACA, AFR, JZA…) gets its IATA twin's decision. And the
+// lettering beside the emblem is white lettering for every carrier: Spirit's
+// light cut drew its name black on the navy card until it was repainted.
 // ═══════════════════════════════════════════════════════════════════════════
 
 const test = require('node:test');
@@ -62,14 +65,18 @@ const EMBLEMS = table('var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES =
 const CARD_EMBLEM = table('var WELCOME_CARD_EMBLEM = {');
 const NO_EMBLEM = table('var WELCOME_CARD_NO_EMBLEM = {');
 const BRAND = table('const AIRLINE_BRAND = {');
+const ICAO = table('var _FB_WM_ICAO = {');
 
 // The card's own resolver, as written.
 const R = vm.createContext({ AIRLINE_EMBLEM_FILES: EMBLEMS });
 vm.runInContext(varSource('var WELCOME_CARD_EMBLEM = {') + varSource('var WELCOME_CARD_NO_EMBLEM = {')
-  + fnSource('_welcomeCardEmblem'), R);
+  + varSource('var _FB_WM_ICAO = {') + fnSource('_welcomeCardEmblem'), R);
 const emblem = (code) => JSON.parse(JSON.stringify(vm.runInContext('_welcomeCardEmblem(' + JSON.stringify(code) + ')', R)));
-/** Every carrier code that can put art on the card. */
-const CODES = [...new Set([...Object.keys(EMBLEMS), ...Object.keys(CARD_EMBLEM), ...Object.keys(NO_EMBLEM)])].sort();
+/** Every carrier code that can put art on the card, ICAO forms included. */
+const CODES = [...new Set([...Object.keys(EMBLEMS), ...Object.keys(CARD_EMBLEM), ...Object.keys(NO_EMBLEM), ...Object.keys(ICAO)])].sort();
+/** Whether the card leaves a code's emblem out: its own entry on the list, or (with no art of its own) its IATA twin's. */
+const listedNone = (code) => !!NO_EMBLEM[code]
+  || (!CARD_EMBLEM[code] && !EMBLEMS[code] && !!ICAO[code] && !!NO_EMBLEM[ICAO[code]]);
 
 // ── colour ─────────────────────────────────────────────────────────────────
 const hex = (h) => { h = h.replace('#', ''); if (h.length === 3) h = [...h].map((c) => c + c).join(''); return [0, 2, 4].map((i) => parseInt(h.substr(i, 2), 16)); };
@@ -85,7 +92,7 @@ const ground = (code) => (BRAND[code] ? [BRAND[code].bg1, BRAND[code].bg2] : ['#
 
 /** The solid colours an SVG paints, in document order (fills and strokes; gradient stops; black where none is given). */
 function svgPaints(file) {
-  const text = fs.readFileSync(file, 'utf8');
+  const text = fs.readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, ''); // a comment can name a tag
   const cls = {};
   for (const st of text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)) {
     for (const r of st[1].matchAll(/([^{}]+)\{([^}]*)\}/g)) for (const sel of r[1].split(',')) { const m = /\.([\w-]+)\s*$/.exec(sel.trim()); if (m) cls[m[1]] = (cls[m[1]] || '') + ';' + r[2]; }
@@ -241,8 +248,13 @@ test('every carrier that can reach the card: its colour emblem, its own coloured
   const problems = [];
   for (const code of CODES) {
     const e = emblem(code);
-    if (NO_EMBLEM[code]) { if (e.kind !== 'none') problems.push(code + ': listed with no emblem, draws ' + e.src); continue; }
-    if (e.kind === 'none') { problems.push(code + ': no emblem and not on the list'); continue; }
+    if (listedNone(code)) { if (e.kind !== 'none') problems.push(code + ': listed with no emblem, draws ' + e.src); continue; }
+    if (e.kind === 'none') {
+      // an ICAO form whose twin has no emblem either has nothing to draw (TSC, SWA, DLH…)
+      const twin = ICAO[code];
+      if (twin && emblem(twin).kind === 'none') continue;
+      problems.push(code + ': no emblem and not on the list'); continue;
+    }
     const f = fileOf(e.src);
     if (!fs.existsSync(f)) { problems.push(code + ': ' + e.src + ' does not exist'); continue; }
     if (whiteOnly(e.src)) { problems.push(code + ': ' + e.src + ' is drawn white'); continue; }
@@ -273,7 +285,7 @@ test('every carrier that can reach the card: its colour emblem, its own coloured
 });
 
 test('the carriers shown with their white lettering alone, and why', () => {
-  assert.deepEqual(Object.keys(NO_EMBLEM).sort(), ['AA', 'EW', 'FI', 'MQ', 'NZ', 'OH', 'PD', 'PT', 'QR', 'QTR', 'ROU', 'RV']);
+  assert.deepEqual(Object.keys(NO_EMBLEM).sort(), ['A3', 'AA', 'EW', 'FI', 'MQ', 'NZ', 'OH', 'PD', 'PT', 'QR', 'QTR', 'ROU', 'RV']);
   for (const [code, why] of Object.entries(NO_EMBLEM)) assert.ok(why.length > 10, code + ' needs its reason');
   // what each would otherwise draw, and why that is not drawn
   assert.ok(whiteOnly(EMBLEMS.PD), "Porter's p is drawn white");
@@ -284,6 +296,14 @@ test('the carriers shown with their white lettering alone, and why', () => {
   assert.ok(chroma(tileGround('NZ-Emblem.svg')) < 0.25 && lum(...tileGround('NZ-Emblem.svg')) < 0.05, "Air New Zealand's tile is black, its koru white");
   assert.ok(chroma(svgPaints(fileOf(EMBLEMS.EW))[0]) < 0.25, "Eurowings' wings sit on a grey square");
   for (const g of ground('RV')) assert.ok(contrast(hex('#a21c37'), g) < 3, "Rouge's burgundy r on its card");
+  // Aegean, as Icelandair: its navy square, and the dark half of the bird in
+  // it, sink into the card; only the light half would show
+  const a3 = [...new Set(svgPaints(fileOf(EMBLEMS.A3)).map((c) => '#' + c.map((v) => v.toString(16).padStart(2, '0')).join('')))];
+  assert.deepEqual(a3, ['#0a2768', '#88a8d8', '#1c4093'], "Aegean's square, the light half and the dark half of its bird");
+  for (const g of ground('A3')) {
+    assert.ok(contrast(hex('#0a2768'), g) < 3, "Aegean's navy square on its card");
+    assert.ok(contrast(hex('#1c4093'), g) < 3, "the dark half of Aegean's bird on its card");
+  }
   // and every one of them still says who it is, in white lettering
   for (const code of Object.keys(NO_EMBLEM)) {
     assert.ok(EMBLEMS[code] || CARD_EMBLEM[code] || ['AA', 'FI', 'NZ', 'PD', 'QR'].includes(code), code);
@@ -327,4 +347,107 @@ test('the old Welcome-card tables and the white disc are gone', () => {
   assert.doesNotMatch(SRC, /_FB_WELCOME_LOGO|_FB_WELCOME_OWN_COLOURS|_FB_LOGO_HAS_NAME|logoOwnColours/);
   assert.doesNotMatch(SRC, /gad-ad-logo-disc|_FB_WELCOME_ON_DISC|logoDisc|gwc-disc/);
   assert.doesNotMatch(fnSource('_welcomeCardHtml').replace(/\/\/[^\n]*/g, ''), /disc/i);
+});
+
+test('a feed that sends the ICAO code gets the decision its IATA twin gets', () => {
+  // The lettering has always looked the ICAO form up through _FB_WM_ICAO; the
+  // emblem now does too, so ACA shows the roundel AC shows, not lettering alone.
+  const same = { ACA: 'AC', AFR: 'AF', JZA: 'QK', WJA: 'WS', WEN: 'WS', PVL: 'PB', MPE: '5T', UAL: 'UA', DLH: 'LH',
+    POE: 'PD', AAL: 'AA', TSC: 'TS', SWA: 'WN', JBU: 'B6', UAE: 'EK' };
+  for (const [icao, iata] of Object.entries(same)) {
+    assert.equal(ICAO[icao], iata, icao + ' is ' + iata + "'s ICAO form");
+    assert.deepEqual(emblem(icao), emblem(iata), icao + ' draws what ' + iata + ' draws');
+  }
+  assert.deepEqual(emblem('ACA'), { src: '/logos/airlines/canadian/AC.TO.svg', kind: 'own' });
+  assert.deepEqual(emblem('AFR'), { src: '/logos/airlines/european/air-france-emblem.svg?v=2', kind: 'own' });
+  assert.deepEqual(emblem('JZA'), { src: '/logos/airlines/canadian-regional/jazz-j.svg', kind: 'own' });
+  assert.deepEqual(emblem('PVL'), { src: '/logos/airline-tiles/PB.svg', kind: 'tile' }, "PAL's gold tile, not the orb's white arrow");
+  assert.equal(emblem('POE').kind, 'none', "Porter's white p stays off the card under either code");
+  assert.equal(emblem('AAL').kind, 'none');
+  // a code's own entry still wins over its twin's (Encore keeps its own line)
+  assert.equal(emblem('WR').src, CARD_EMBLEM.WR);
+});
+
+// ── the lettering is white ───────────────────────────────────────────────────
+
+const WORDMARK = table('const IATA_TO_WORDMARK = {');
+const WM_RASTER = table('const WORDMARK_RASTER = {');
+const CARD_WORDMARK = table('var WELCOME_CARD_WORDMARK = {');
+const LOGOS = path.join(PUB, 'logos');
+const ALL_LOGOS = [];
+(function walk(dir) {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    if (e.isDirectory()) walk(p); else ALL_LOGOS.push(p);
+  }
+})(LOGOS);
+/** The light cut wordmarkSrc(base, 'light') serves, as a file. */
+function lightCut(base) {
+  if (WM_RASTER[base]) return fileOf(WM_RASTER[base].light);
+  return ALL_LOGOS.find((p) => path.basename(p) === base + '-wordmark-light.svg') || null;
+}
+/**
+ * What a lettering file paints where it is seen: 'white' when its ink is white
+ * (accents of colour allowed), else a description of what it paints. Art in
+ * <defs>, <mask> and <clipPath> sets a shape, not a colour, and is skipped; a
+ * raster that is drawn is decoded and its pixels counted.
+ */
+function letteringInk(file) {
+  if (/\.png$/i.test(file)) {
+    const px = pngPixels(file);
+    const w = px.filter(isWhite).length / px.length;
+    return w >= 0.9 ? 'white' : 'a raster ' + (100 * w).toFixed(0) + '% white';
+  }
+  const text = fs.readFileSync(file, 'utf8');
+  const seen = text.replace(/<(defs|mask|clipPath)\b[\s\S]*?<\/\1>/gi, '');
+  const drawn = [...seen.matchAll(/<image\b[^>]*xlink:href="data:image\/png;base64,([^"]+)"/g)];
+  if (drawn.length) {
+    // a group that forces its art white (Flair's light cut)
+    if (/<filter\b[^>]*>\s*<feColorMatrix\b[^>]*values="0 0 0 0 1\s+0 0 0 0 1\s+0 0 0 0 1\s+0 0 0 1 0"/.test(text)
+      && /<g filter="url\(#fidsForceWhite\)">/.test(text)) return 'white';
+    const px = drawn.flatMap((m) => pngBufPixels(Buffer.from(m[1], 'base64'), file));
+    const w = px.filter(isWhite).length / px.length;
+    return w >= 0.9 ? 'white' : 'a raster ' + (100 * w).toFixed(0) + '% white';
+  }
+  const paints = svgPaints(file);
+  if (!paints.some(isWhite)) return 'no white in ' + JSON.stringify(paints.slice(0, 4));
+  const dark = paints.filter((c) => lum(...c) < 0.03);
+  return dark.length ? 'near-black ink ' + JSON.stringify(dark[0]) : 'white';
+}
+
+test('the lettering on the card is white lettering, for every carrier (Spirit drew black)', () => {
+  // The card forces the light cut: its ground is the airline's own dark
+  // gradient. Spirit's light cut was a copy of its dark one, a black raster
+  // under a mask, so its name came out black on navy.
+  const files = new Map();
+  for (const [code, base] of Object.entries(WORDMARK)) {
+    const f = lightCut(base);
+    assert.ok(f && fs.existsSync(f), code + ' -> ' + base + ': no light cut');
+    files.set(f, (files.get(f) || []).concat(code));
+  }
+  for (const [code, url] of Object.entries(CARD_WORDMARK)) {
+    const f = fileOf(url);
+    files.set(f, (files.get(f) || []).concat(code));
+  }
+  assert.ok(files.size >= 60, 'letterings checked: ' + files.size);
+  const bad = [];
+  for (const [f, codes] of files) {
+    const ink = letteringInk(f);
+    if (ink !== 'white') bad.push(codes.join('/') + ' ' + path.relative(PUB, f) + ': ' + ink);
+  }
+  assert.deepEqual(bad, []);
+  // Spirit's, in particular: its lettering painted white through its own mask
+  const spirit = fs.readFileSync(lightCut('spirit'), 'utf8');
+  assert.match(spirit, /<g mask="url\(#0e9c18ad77\)"><rect [^>]*fill="#FFFFFF"\/><\/g>/);
+  assert.equal((spirit.match(/<image\b/g) || []).length, 1, 'one raster left: the mask that shapes the letters');
+});
+
+test('no light cut in the tree is a copy of its dark cut', () => {
+  // the tell of Spirit's bug: one file for both grounds is wrong on one of them
+  const same = [];
+  for (const f of ALL_LOGOS.filter((p) => /-wordmark-light\.\w+$/.test(p))) {
+    const d = f.replace(/-wordmark-light\.(\w+)$/, '-wordmark-dark.$1');
+    if (fs.existsSync(d) && fs.readFileSync(d).equals(fs.readFileSync(f))) same.push(path.relative(PUB, f));
+  }
+  assert.deepEqual(same, []);
 });

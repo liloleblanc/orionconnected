@@ -194,15 +194,24 @@ test('the card goes through the shared resolver, not a private table', () => {
   assert.match(body, /IATA_TO_WORDMARK\[code\] \|\| IATA_TO_WORDMARK\[icao\]/, 'IATA first, then the ICAO form');
   assert.doesNotMatch(body, /\/logos\//,
     'a literal logo path here means the card has started keeping its own table again');
-  // The one exception, by name: Rouge, which the board's table maps to Air
-  // Canada's lettering. Its own lettering, white, and nothing else.
-  assert.deepEqual(Object.keys(OVERRIDE).sort(), ['ROU', 'RV']);
-  for (const url of Object.values(OVERRIDE)) {
+  // The exceptions, by name: Rouge, which the board's table maps to Air
+  // Canada's lettering (its own lettering, white, and nothing else), and Air
+  // Inuit, whose board cut sits on a padded canvas (the same white lettering,
+  // cropped to the letters).
+  assert.deepEqual(Object.keys(OVERRIDE).sort(), ['3H', 'ROU', 'RV']);
+  for (const [code, url] of Object.entries(OVERRIDE)) {
     const file = path.join(ROOT, 'fids-current', url.split('?')[0]);
     assert.ok(fs.existsSync(file), url);
     const svg = fs.readFileSync(file, 'utf8');
-    const fills = [...svg.matchAll(/fill="([^"]+)"/g)].map((m) => m[1].toUpperCase());
+    const fills = [...svg.matchAll(/fill="([^"]+)"/g)].map((m) => m[1].toUpperCase()).filter((f) => f !== 'NONE');
     assert.deepEqual([...new Set(fills)], ['#FFFFFF'], url + ' is white lettering');
-    assert.equal((svg.match(/<path\b/g) || []).length, 1, url + ': the "rouge" lettering alone, without the roundel');
+    if (code !== '3H') assert.equal((svg.match(/<path\b/g) || []).length, 1, url + ': the "rouge" lettering alone, without the roundel');
   }
+  // Air Inuit's: the board's own light cut, the same letters, cropped
+  const board = fs.readFileSync(path.join(LOGOS, 'airlines', 'canadian-regional', 'airinuit-monochrome-white.svg'), 'utf8');
+  const card = fs.readFileSync(path.join(ROOT, 'fids-current', OVERRIDE['3H']), 'utf8');
+  const shapes = (t) => [...t.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(shapes(card), shapes(board), 'the same lettering as the board draws');
+  assert.match(board, /viewBox="0 0 480 320"/);
+  assert.match(card, /viewBox="51\.69 71\.62 376\.62 176\.7"/, 'cropped to its letters');
 });

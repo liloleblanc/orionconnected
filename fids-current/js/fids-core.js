@@ -47964,6 +47964,8 @@ function _getGateAdDwellMs(slide) {
 // on its own dark card and it has no coloured tile of its own, the card shows
 // no emblem and the airline's white lettering alone (WELCOME_CARD_NO_EMBLEM).
 // Nothing is ever put on a white disc, box, pill or tile to make it read.
+// A feed that sends an ICAO code (ACA, AFR, JZA) gets its IATA twin's
+// decision through _FB_WM_ICAO, as the lettering always has.
 //
 // THE NAME is the airline's white lettering (the published light cut, through
 // the board's own wordmark table), or its name typed in the board font where
@@ -47974,8 +47976,12 @@ function _getGateAdDwellMs(slide) {
 // 1.23x; when a very wide wordmark (British Airways, CityFlyer) can only be
 // drawn short, the greeting comes down until its capital height (0.72 em)
 // matches the lettering. The airline line never shrinks to suit the greeting.
-// A phrase too wide for the card shrinks (to 62% at most) and then wraps
-// between words; no word is ever cut.
+// The comparison is between letters, not pictures: where a lettering's
+// letters fill only part of its art (Air Inuit's two lines, North Star's
+// roundel; WELCOME_CARD_LETTER_HEIGHT) it is drawn taller, within the room
+// the card has, and the greeting comes down to whatever height its letters
+// reach. A phrase too wide for the card shrinks (to 62% at most) and then
+// wraps between words; no word is ever cut.
 // ════════════════════════════════════════════════════════════════════════
 
 // What the card draws beside the name, where it differs from the gate orb's
@@ -48022,16 +48028,24 @@ var WELCOME_CARD_NO_EMBLEM = {
   'ROU': 'Rouge (ICAO form)',
   'QR':  "Qatar's oryx tile is a white square",
   'QTR': 'Qatar (ICAO form)',
-  'EW':  "Eurowings' wings sit on a grey square; on their own, their burgundy does not read on the card"
+  'EW':  "Eurowings' wings sit on a grey square; on their own, their burgundy does not read on the card",
+  // v23994 — as Icelandair: the navy square sinks into the card, and so does
+  // the dark-blue half of the bird inside it (#1c4093, 1.7:1 on the card).
+  'A3':  "Aegean's navy square and the dark half of its bird sink into the card"
 };
 
 // Lettering this card draws where the board's wordmark table names another
 // carrier: IATA_TO_WORDMARK maps Rouge to Air Canada's lettering. This is
 // Rouge's own "rouge" lettering, the white cut of its lockup without the
 // roundel.
+// Air Inuit: the board's light cut sits on a padded 480x320 canvas, nearly
+// half of it empty, which left a band of empty card above and below its two
+// lines here. Its white lettering cropped to the letters (the cut the
+// "Operated by" line draws) sits on the card like every other carrier's.
 var WELCOME_CARD_WORDMARK = {
   'RV':  '/logos/airlines/canadian/rouge-wordmark-light.svg',
-  'ROU': '/logos/airlines/canadian/rouge-wordmark-light.svg'
+  'ROU': '/logos/airlines/canadian/rouge-wordmark-light.svg',
+  '3H':  '/logos/airlines/canadian-regional/airinuit-wordmark-light.svg'
 };
 // Lettering drawn taller than the rest: lettering whose letters fill only
 // about half of its own height, so at the usual height they came out smaller
@@ -48039,6 +48053,32 @@ var WELCOME_CARD_WORDMARK = {
 // "porter" is lower case with a descender and an ascender, and Qatar's
 // lettering is QATAR over AIRWAYS.
 var WELCOME_CARD_LETTERING_SCALE = { 'RV': 1.4, 'ROU': 1.4, 'QR': 1.4, 'QTR': 1.4, 'PD': 1.3, 'QK': 1.3 };
+
+// v23994 — HOW TALL THE LETTERS ARE, as a share of the lettering's own
+// height. Rule 1 (the logo is never smaller than the text) is about letters,
+// and the card can only measure the picture's box: a two-line lockup, a
+// roundel beside the name, or a padded canvas puts letters a fraction of the
+// box's height tall. Measured from each light cut at 300 px: the main line's
+// capitals (or ascenders) to its baseline. A carrier not listed has letters
+// that fill its box. The ICAO form of a code finds its IATA twin's entry.
+var WELCOME_CARD_LETTER_HEIGHT = {
+  '3H':  0.42,  // Air Inuit: syllabics over "Air Inuit" (its cropped cut, WELCOME_CARD_WORDMARK)
+  'NSA': 0.22,  // North Star Air: NORTHSTAR, AIR inside a roundel the full height of the art
+  'AA2': 0.43,  // "American" over "Airlines"
+  'NK':  0.47,  // spirit: lower case, its ascenders to its baseline
+  '8P':  0.48,  // Pacific Coastal: the script over a small AIRLINES
+  'RV':  0.5,   // rouge: lower case with a long tail
+  '4Y':  0.52,  // "discover." over "airlines"
+  'WT':  0.55,  // Wasaya under its syllabics, with a descender
+  'AZ':  0.58,  // ITA over AIRWAYS
+  'WL':  0.58,  // World Atlantic over Airlines
+  'TP':  0.62,  // TAP Air Portugal, with a descender
+  'VB':  0.65,  // viva, with the mark above its a
+  '2L':  0.67,  // helvetic over airways
+  'QR':  0.67,  // QATAR over AIRWAYS
+  'PD':  0.72,  // porter: a descender below, an ascender above
+  'QK':  0.84   // Jazz: a script with a long tail
+};
 
 // v23762 — ICAO forms for the wordmark lookup.
 // `code` is whatever the feed published, and the feeds are not consistent:
@@ -48056,12 +48096,28 @@ var _FB_WM_ICAO = {
   'AC1':'AC', 'ROU':'RV', 'BAW':'BA', 'QTR':'QR', 'PCO':'8P', 'SWR':'LX'
 };
 
+/** A code's own entry in one of the card's tables, else its IATA twin's (an ICAO-coded feed). */
+function _welcomeCardPick(table, code) {
+  if (!table) return undefined;
+  if (table[code] !== undefined) return table[code];
+  var twin = _FB_WM_ICAO[code];
+  return twin ? table[twin] : undefined;
+}
+
 /** The emblem the card draws: { src, kind: 'own' | 'tile' | 'none' }. Never filtered. */
 function _welcomeCardEmblem(code) {
   code = String(code || '').toUpperCase();
+  var files = (typeof AIRLINE_EMBLEM_FILES !== 'undefined') ? AIRLINE_EMBLEM_FILES : null;
+  // The code's own decision first, then its IATA twin's: a feed that sends
+  // ACA, AFR or JZA gets the red roundel, the red virgule or the red J that
+  // AC, AF and QK get, and POE or AAL leave the emblem out as PD and AA do.
   if (WELCOME_CARD_NO_EMBLEM[code]) return { src: '', kind: 'none' };
-  var src = WELCOME_CARD_EMBLEM[code]
-    || (typeof AIRLINE_EMBLEM_FILES !== 'undefined' && AIRLINE_EMBLEM_FILES[code]) || '';
+  var src = WELCOME_CARD_EMBLEM[code] || (files && files[code]) || '';
+  var twin = _FB_WM_ICAO[code];
+  if (!src && twin) {
+    if (WELCOME_CARD_NO_EMBLEM[twin]) return { src: '', kind: 'none' };
+    src = WELCOME_CARD_EMBLEM[twin] || (files && files[twin]) || '';
+  }
   if (!src) return { src: '', kind: 'none' };
   // The folder is the treatment, as on the orb: a file from airline-tiles/
   // is an opaque square, drawn whole and rounded like the orb's.
@@ -48074,6 +48130,8 @@ function _welcomeCardName(code) {
   code = String(code || '').toUpperCase();
   var icao = _FB_WM_ICAO[code] || '';
   var wm = WELCOME_CARD_WORDMARK[code] || '';
+  // the build's cache token, as wordmarkSrc gives every lettering it builds
+  if (wm && typeof FIDS_BUILD_TAG !== 'undefined') wm += '?v=' + encodeURIComponent(FIDS_BUILD_TAG);
   try {
     if (!wm && typeof IATA_TO_WORDMARK !== 'undefined' && typeof wordmarkSrc === 'function') {
       var base = IATA_TO_WORDMARK[code] || IATA_TO_WORDMARK[icao];
@@ -48121,7 +48179,8 @@ function _welcomeCardData(code) {
     emblem: emb.src,
     emblemKind: emb.kind,
     wordmark: nm.wordmark,
-    wordmarkScale: WELCOME_CARD_LETTERING_SCALE[code] || 1,
+    wordmarkScale: _welcomeCardPick(WELCOME_CARD_LETTERING_SCALE, code) || 1,
+    letterHeight: _welcomeCardPick(WELCOME_CARD_LETTER_HEIGHT, code) || 1,
     name: nm.name
   };
 }
@@ -48150,7 +48209,9 @@ function _welcomeCardHtml(ad) {
       + '" alt="" onerror="_welcomeCardArtFail(this)"></span>';
   var name = ad.wordmark
     ? '<img class="gwc-wm" src="' + esc(ad.wordmark) + '" alt="' + esc(ad.name) + '" data-name="' + esc(ad.name)
-      + '"' + (ad.wordmarkScale > 1 ? ' data-scale="' + (+ad.wordmarkScale) + '"' : '') + ' onerror="_welcomeCardArtFail(this)">'
+      + '"' + (ad.wordmarkScale > 1 ? ' data-scale="' + (+ad.wordmarkScale) + '"' : '')
+      + (ad.letterHeight > 0 && ad.letterHeight < 1 ? ' data-letters="' + (+ad.letterHeight) + '"' : '')
+      + ' onerror="_welcomeCardArtFail(this)">'
     : (ad.name ? '<span class="gwc-name">' + esc(ad.name) + '</span>' : '');
   return '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;">'
     + '<div class="gwc gwc-pending" data-code="' + esc(ad.code) + '" data-emblem="' + kind + '" style="background:' + esc(ad.bg) + ';">'
@@ -48170,11 +48231,25 @@ function _welcomeCardHtml(ad) {
  *   o.emblemAspect    its width / height as laid out (1 for a tile; at most 2.2)
  *   o.wordmarkAspect  the lettering's width / height (0 when the name is typed)
  *   o.wordmarkScale   how much taller than usual the lettering may be (WELCOME_CARD_LETTERING_SCALE)
- * Returns { emblem, wordmark, phrase }: the emblem's and the lettering's
- * heights, and the greeting's size.
+ *   o.letterHeight    how much of the lettering's height its letters fill (WELCOME_CARD_LETTER_HEIGHT; 1 = all)
+ *   o.room            the height left for the airline line once the phrases are set (0 = not known)
+ * Returns { emblem, wordmark, phrase, emblemAspect, letters }: the emblem's
+ * and the lettering's heights, the greeting's size, and the height of the
+ * lettering's letters.
  */
 function _welcomeCardSizes(o) {
   var HB = o.base, EMIN = 1.25 * HB, EMAX = 1.8 * HB, WMAX = 1.23 * HB * (o.wordmarkScale > 1 ? o.wordmarkScale : 1);
+  var f = (o.letterHeight > 0 && o.letterHeight < 1) ? o.letterHeight : 1;
+  // Lettering whose letters fill only part of its height (a two-line lockup,
+  // a roundel beside the name) is drawn taller, until its letters stand a
+  // little over the greeting's capitals: 0.8 em against 0.72, at most 3 em.
+  if (f < 1) WMAX = Math.max(WMAX, Math.min(3 * HB, 0.8 * HB / f));
+  // Never taller than the room the card has left (and never made smaller
+  // than the usual size to fit it).
+  if (o.room > 0) {
+    WMAX = Math.min(WMAX, Math.max(1.23 * HB, o.room));
+    EMAX = Math.min(EMAX, Math.max(EMIN, o.room));
+  }
   var ea = o.emblem ? (o.emblemAspect > 0 ? Math.min(2.2, o.emblemAspect) : 1) : 0;
   var E = 0, h = 0, phrase = HB;
   if (o.wordmarkAspect > 0) {
@@ -48185,14 +48260,15 @@ function _welcomeCardSizes(o) {
       E = o.emblem ? Math.min(EMAX, Math.max(EMIN, 1.6 * h)) : 0;
       h = Math.max(0, Math.min(WMAX, (o.W - gap - E * ea) / o.wordmarkAspect));
     }
-    // RULE 1: the logo is never smaller than the text. A lettering that can
-    // only be drawn short (a very wide wordmark) keeps its size and the
-    // greeting comes down until its capital height matches it.
-    if (h < 0.72 * phrase) phrase = Math.floor(h / 0.72 * 10) / 10;
+    // RULE 1: the logo is never smaller than the text. Letters that can only
+    // be drawn short (a very wide wordmark, a lockup whose letters fill a
+    // fraction of it) keep their size and the greeting comes down until its
+    // capital height (0.72 em) matches them.
+    if (h * f < 0.72 * phrase) phrase = Math.floor(h * f / 0.72 * 10) / 10;
   } else if (o.emblem) {
     E = Math.min(EMAX, Math.max(EMIN, 1.6 * 0.72 * 1.03 * HB));
   }
-  return { emblem: E, wordmark: h, phrase: phrase, emblemAspect: ea };
+  return { emblem: E, wordmark: h, phrase: phrase, emblemAspect: ea, letters: h * f };
 }
 
 /** A phrase too wide for the card shrinks (to 62%), then wraps between words. Never cut. */
@@ -48245,9 +48321,16 @@ function _welcomeCardFitOne(card) {
   var gap = 0.36 * HB;
   var kind = emb ? emb.getAttribute('data-kind') : '';
   var ea = (eimg && kind === 'own') ? _welcomeCardAspect(eimg) : 1;
+  // the height left for the airline line: the card's, less each phrase at the
+  // stylesheet's size (line-height 1.08) and the 0.42 em the column sets
+  // between rows, with a tenth of an em to spare
+  var H = card.clientHeight - (parseFloat(cs.paddingTop) || 0) - (parseFloat(cs.paddingBottom) || 0);
+  var room = H - phs.length * (1.08 + 0.42) * HB - 0.1 * HB;
   var sz = _welcomeCardSizes({ W: W, base: HB, gap: gap, emblem: !!emb, emblemAspect: ea,
     wordmarkAspect: wm ? _welcomeCardAspect(wm) : 0,
-    wordmarkScale: wm ? (parseFloat(wm.getAttribute('data-scale')) || 1) : 1 });
+    wordmarkScale: wm ? (parseFloat(wm.getAttribute('data-scale')) || 1) : 1,
+    letterHeight: wm ? (parseFloat(wm.getAttribute('data-letters')) || 1) : 1,
+    room: room > 0 ? room : 0 });
   var phrase = sz.phrase;
   if (mid) mid.style.setProperty('gap', ((emb && (wm || nm)) ? gap : 0).toFixed(1) + 'px', 'important');
   if (emb) {
@@ -48275,7 +48358,7 @@ function _welcomeCardFitOne(card) {
   }
   card.style.setProperty('--gwc-phrase', phrase + 'px');
   _welcomeCardFitPhrases(card, W, phrase);
-  card.setAttribute('data-gwc-fit', [Math.round(W), HB, phrase, Math.round(sz.emblem), sz.wordmark.toFixed(1)].join(' '));
+  card.setAttribute('data-gwc-fit', [Math.round(W), HB, phrase, Math.round(sz.emblem), sz.wordmark.toFixed(1), sz.letters.toFixed(1), Math.round(room)].join(' '));
   card.classList.remove('gwc-pending');
   return true;
 }
