@@ -69,7 +69,9 @@ test('all display entry points load the date-context helper before core', () => 
 });
 
 test('gate rendering carries one status key and a next-day context', () => {
-  assert.match(core, /if \(stKey === 'scheduled' \|\| !stKey\) stKey = 'ontime'/);
+  // v23968 — one key, and it is the airport's word: Scheduled stays Scheduled.
+  assert.match(core, /if \(!stKey\) stKey = 'scheduled';/);
+  assert.doesNotMatch(core, /stKey === 'scheduled' \|\| !stKey\) stKey = 'ontime'/);
   // v23935 — the day lines under the rail times (tests/gate-next-day.test.js).
   assert.match(core, /stKey:\s*stKey,[\s\S]*dayBoard:\s*_dayBoard,\s*dayDepart:\s*_dayDepart,\s*dayArrive:\s*_dayArrive/);
 });

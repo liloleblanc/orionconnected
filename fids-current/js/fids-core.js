@@ -10854,7 +10854,7 @@ function _buildV2AircraftCol(ctx, vars) {
         var _a = _s.split('\u0001');
         return [_a[0] || '', _a[1] || ''];
       }
-      function _shelf(icon, en, second, val, valCls, rowCls, under) {
+      function _shelf(icon, en, second, val, valCls, rowCls, under, foot) {
         // v223 — the exact spec: two columns. Icon column (left) + text
         // column (left-aligned label, full-width gold line, big value).
         // Québec airports: French first on every pair.
@@ -10872,6 +10872,9 @@ function _buildV2AircraftCol(ctx, vars) {
           // value so the box fitter sizes the time and its day together.
           +   '<div class="v2-fi-value ' + (valCls || '') + '">' + val + (under || '') + '</div>'
           + '</div>'
+          // v23968 — `foot` is the gate-close line (_gateCloseLineHtml): a
+          // footer across the whole card, below the icon and the text.
+          + (foot || '')
           + '</div>';
       }
       // Destination city (was in the header; now the first shelf).
@@ -11021,10 +11024,11 @@ function _buildV2AircraftCol(ctx, vars) {
         // _gateDoor): the Status shelf reads Boarding beside NOW BOARDING.
         var _stk = String((vars && vars._doorWord) || (currentFlight && currentFlight.status) || '').toLowerCase().replace(/[\s_-]/g, '');
         if (_stk === 'ontime') _stk = 'ontime';
-        if (_delayedByRev && (_stk === 'scheduled' || _stk === 'ontime' || _stk === '')) _stk = 'delayed';
-        // A plain "scheduled" flight with no delay reads as ON TIME —
-        // "Scheduled" looked wrong on a flight that's tracking on schedule.
-        else if (_stk === 'scheduled' || _stk === '') _stk = 'ontime';
+        if (_delayedByRev && (_stk === 'scheduled' || _stk === 'ontime' || _stk === 'expected' || _stk === '')) _stk = 'delayed';
+        // v23968 — the airport's word. A "scheduled" flight used to read ON
+        // TIME here; the feed never said so. Scheduled reads Scheduled |
+        // Prévu, and On time shows only where the feed said "On Time".
+        else if (_stk === '') _stk = 'scheduled';
         var _ss = (typeof SS !== 'undefined' && SS[_stk]) ? SS[_stk] : null;
         if (_ss) {
           var _enTC = _fidsTitleCase(_ss.en); // Title Case the EN
@@ -11060,7 +11064,11 @@ function _buildV2AircraftCol(ctx, vars) {
         // selected from its sibling's class without :has(), which the kiosk
         // browsers drop silently.
         + _shelf(_badge(_svgStatus), _railPair('status')[0], _railPair('status')[1], _stBiling, 'v2-fi-status-val v2-fi-status' + _fiStCls, 'v2-fi-rowst-' + (_fiStCls || '').trim())
-        + _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd), _gateDayLineHtml(vars && vars.dayBoard))
+        + (function () {
+            // v23968 — the airline's gate-close line, a footer across the card.
+            var _gcl = _gateCloseLineHtml(vars && vars.gateClose, vars && vars.tz, _frF);
+            return _shelf(_badge(_svgBoarding), _railPair('boarding')[0], _railPair('boarding')[1], (_amPm(_stripScheduledStrike(_fiBrd)) || '—'), 'v2-fi-time', _revRowCls(_fiBrd) + (_gcl ? ' v2-fi-row-close' : ''), _gateDayLineHtml(vars && vars.dayBoard), _gcl);
+          })()
         + _shelf(_badge(_svgDepart), _railPair('departure')[0], _railPair('departure')[1], (_amPm(_depShow) || '—'), 'v2-fi-time', _revRowCls(_fiDep), _gateDayLineHtml(vars && vars.dayDepart))
         + (function () {
             // v23240 — the code rides once at the END, accent-coloured
@@ -11280,7 +11288,10 @@ function _buildV2MapCol(ctx, vars) {
         early:     { en:'Early', fr:'En avance', es:'Adelantado', de:'Früher', it:'In anticipo', pt:'Adiantado', ja:'早着', zh:'提前', ar:'مبكر' },
         cancelled: { en:'Cancelled', fr:'Annulé', es:'Cancelado', de:'Annulliert', it:'Cancellato', pt:'Cancelado', ja:'欠航', zh:'取消', ar:'ملغى' },
         arrived:   { en:'Arrived', fr:'Arrivé', es:'Aterrizado', de:'Angekommen', it:'Arrivato', pt:'Chegou', ja:'到着', zh:'已到达', ar:'وصل' },
-        ontime:    { en:'On time', fr:"À l'heure", es:'A tiempo', de:'Pünktlich', it:'In orario', pt:'No horário', ja:'定刻', zh:'准点', ar:'في الموعد' }
+        ontime:    { en:'On time', fr:"À l'heure", es:'A tiempo', de:'Pünktlich', it:'In orario', pt:'No horário', ja:'定刻', zh:'准点', ar:'في الموعد' },
+        // v23968 — the airport's own "Expected", kept by the adapters
+        // (fidsNeutralWord); the same words as SS.expected.
+        expected:  { en:'Expected', fr:'Attendu', es:'Esperado', de:'Erwartet', it:'Atteso', pt:'Esperado', ja:'見込み', zh:'预计', ar:'متوقع' }
       };
       var _stKey = '';
       if (_rawSt === 'active' || _rawSt === 'en-route' || _rawSt === 'enroute' || _rawSt === 'departed') _stKey = 'enroute';
@@ -11291,6 +11302,7 @@ function _buildV2MapCol(ctx, vars) {
       else if (_rawSt === 'cancelled') _stKey = 'cancelled';
       else if (_rawSt === 'landed' || _rawSt === 'arrived') _stKey = 'arrived';
       else if (_rawSt === 'ontime' || _rawSt === 'on-time') _stKey = 'ontime';
+      else if (_rawSt === 'expected') _stKey = 'expected';   // v23968 — the airport's own "Expected"
       else _stKey = 'scheduled';
       // Verified airborne (real altitude from live telemetry) → show the PHASE
       // 'En route' instead of the neutral word (Scheduled / On time) the feed
@@ -13395,7 +13407,7 @@ function uxgGateHtml(ctx) {
   // (_gateDepDisplayState does exactly this; the line stays as the guard
   // gate-stability.test.js pins.)
   stKey = _depState.stKey;
-  if (stKey === 'scheduled' || !stKey) stKey = 'ontime';
+  if (!stKey) stKey = 'scheduled';   // v23968 — the airport's word: Scheduled is never turned into On time
   var stLabel = SL(stKey) || stKey.toUpperCase();
   var airlineCode = (currentFlight.airline || '').trim().toUpperCase();
   // Hawaiian brand override: AS flights on ex-HA equipment or Hawaii routes still wear
@@ -13567,7 +13579,7 @@ function uxgGateHtml(ctx) {
   else if (stKey === 'boarding') stClass = ' boarding';
   else if (stKey === 'cancelled') stClass = ' cancelled';
   else if (stKey === 'landed' || stKey === 'arrived' || stKey === 'active' || stKey === 'en-route') stClass = ' ontime';
-  else if (stKey === 'scheduled') stClass = ' scheduled';
+  else if (stKey === 'scheduled' || stKey === 'expected') stClass = ' scheduled';   // v23968 — Expected wears Scheduled's plain ink
   else if (stKey === 'gateclosed' || stKey === 'gate-closed') stClass = ' cancelled';
   else if (stKey === 'final' || stKey === 'finalcall' || stKey === 'final-call') stClass = ' boarding';   // v23925 — 'final' fell through to on-time
   else stClass = ' ontime';
@@ -13615,6 +13627,15 @@ function uxgGateHtml(ctx) {
   var isGateClosedStatus = _gateSign.isGateClosedStatus;
   var isFinalCallStatus = _gateSign.isFinalCallStatus;
   var showCountdown = _gateSign.showCountdown;
+  // v23968 — the airline's gate-close time for the Boarding card
+  // (_gateCloseInfo): only in the idle layout before any sign, never while
+  // "Updated boarding time to follow" is up, counted back from the same
+  // departure the printed boarding time uses, and never at or before that
+  // printed boarding time (_bt.boardTs).
+  var _gateClose = null;
+  if (!showBoarding && !showCountdown && !isFinalCallStatus && !isGateClosedStatus && !inbDelayed && !_door.word) {
+    try { _gateClose = _gateCloseInfo(currentFlight, airlineCode, _bt.effDepForBoard, Date.now(), iata, _bt.boardTs); } catch (eGC) { _gateClose = null; }
+  }
   var _inbNoticeHtml = inbDelayed
     ? ('<span class="g8-msg-pair">' + _gateLbl('inbDelayed', _frF, function (w, i) { return '<span class="g8-msg-l g8-msg-l' + (i + 1) + '">' + w + '</span>'; }, '') + '</span>')
     : '';
@@ -13689,6 +13710,7 @@ function uxgGateHtml(ctx) {
     inboundFlight.status === 'delayed' ||
     inboundFlight.status === 'ontime' ||
     inboundFlight.status === 'scheduled' ||
+    inboundFlight.status === 'expected' ||
     inboundFlight.status === 'early' ||
     (inboundFlight._sortTs && (inboundFlight._sortTs - Date.now()) < 12*3600000)
   );
@@ -13761,7 +13783,7 @@ function uxgGateHtml(ctx) {
     if (inArrived) inStBadge = '<div class="g8-inb-status">' + SL('arrived') + '</div>';
     else if (inDelayed) inStBadge = '<div class="g8-inb-status delayed">' + SL('delayed') + '</div>';
     else if (inboundFlight.status === 'active' || inboundFlight.status === 'en-route' || inboundFlight.status === 'ontime' || inboundFlight.status === 'early') inStBadge = '<div class="g8-inb-status enroute">' + SL('active') + '</div>';
-    else if (inboundFlight.status === 'scheduled') inStBadge = '<div class="g8-inb-status scheduled">' + SL('scheduled') + '</div>';
+    else if (inboundFlight.status === 'scheduled' || inboundFlight.status === 'expected') inStBadge = '<div class="g8-inb-status scheduled">' + SL(inboundFlight.status) + '</div>';
     else inStBadge = '<div class="g8-inb-status">' + (inboundFlight.status || 'Scheduled').charAt(0).toUpperCase() + (inboundFlight.status || 'scheduled').slice(1) + '</div>';
 
     var _apNameInb = (AP[iata]||{}).name || iata;
@@ -14151,7 +14173,7 @@ function uxgGateHtml(ctx) {
       : /cancel/.test(_stK) ? ' g8-bir-st-cancelled'
       : /final|closed|depart/.test(_stK) ? ' g8-bir-st-final'
       : /board/.test(_stK) ? ' g8-bir-st-boarding'
-      : /ontime|early|scheduled/.test(_stK) ? ' g8-bir-st-ok' : '';
+      : /ontime|early|scheduled|expected/.test(_stK) ? ' g8-bir-st-ok' : '';
     // EN and FR each get their OWN line — free wrapping let 'Gate closed |
     // Porte fermée' break into four giant lines and balloon the whole row.
     // v22965 — the status VALUE follows the languages (an MCO screenshot: an
@@ -16609,7 +16631,9 @@ function uxgGateHtml(ctx) {
                 // v23935 — the day lines under the three rail times.
                 dayBoard: _dayBoard, dayDepart: _dayDepart, dayArrive: _dayArrive,
                 // v23946 — the destination's terminal and arrival gate.
-                arrPlace: _arrPlaceHtml
+                arrPlace: _arrPlaceHtml,
+                // v23968 — the airline's gate-close line under the boarding time.
+                gateClose: _gateClose
               });
             })()
       ) // end gate idle layout
@@ -17249,6 +17273,62 @@ function gateAutofit(root) {
         });
       }
     } catch (e) {}
+    // v23968 — THE GATE-CLOSE LINE, BEFORE THE RAIL'S VALUES. A footer across
+    // the whole Boarding card (_gateCloseLineHtml), sized by the same box
+    // fitter as every rail value: as large as its width allows, up to a
+    // height of 30% of one card, never below the fitter's 12px floor. Only if
+    // a language is still wider than the card at 12px does it wrap, at its
+    // words (never cut). The card then grows by exactly the footer's height
+    // (flex-basis; the other cards are flex-basis 0, so they share what is
+    // left equally), and the value fit below takes the footer off this card's
+    // budget, so the boarding time lands on the size every other time on the
+    // rail has, instead of shrinking under the line (the first draft squeezed
+    // it from 54 to 15px at 1280x720). The price: while the line is up, every
+    // card gives up an equal share of the footer's height, so every value on
+    // the rail is about a tenth smaller than without it.
+    root.querySelectorAll('.gad-aircraft-col .v2-flightinfo-block > .v2-fi-row-close').forEach(function (row) {
+      var foot = row.querySelector('.v2-fi-closefoot');
+      var line = foot && foot.querySelector('.v2-fi-closeline');
+      if (!line) return;
+      var blk = row.parentElement;
+      var nRows = blk ? blk.querySelectorAll(':scope > .v2-fi-row').length : 6;
+      var cardH = blk ? blk.clientHeight / Math.max(1, nRows) : row.clientHeight;
+      var _pf = _plateInset(row) || { t: 0, b: 0, l: 0, r: 0 };
+      foot.style.setProperty('padding', '2px ' + Math.round(_pf.r + 10) + 'px ' + Math.round(_pf.b + 3) + 'px ' + Math.round(_pf.l + 10) + 'px', 'important');
+      var colRf = Infinity;
+      var colF = row.closest('.gad-aircraft-col');
+      if (colF) colRf = colF.getBoundingClientRect().right - (parseFloat(window.getComputedStyle(colF).paddingRight) || 0);
+      var capH = Math.max(16, Math.round(cardH * 0.30));
+      var wasWrap = line.classList.contains('v2-fi-closeline-wrap');
+      line.classList.remove('v2-fi-closeline-wrap');
+      if (wasWrap) { line.style.removeProperty('font-size'); delete line.dataset.faKey; }
+      _boxAssign(line, line.clientWidth, capH, colRf);
+      // Still wider than the card at the floor: wrap at words, at the floor.
+      if (line.scrollWidth > line.clientWidth + 0.5) {
+        line.classList.add('v2-fi-closeline-wrap');
+        line.style.setProperty('font-size', '12px', 'important');
+      }
+      var fh = Math.ceil(foot.offsetHeight);
+      // And by its title's extra line, where it has one. On a narrow rail
+      // (1024x768) "Boarding | Embarquement" breaks onto two lines while
+      // "Departure | Départ" keeps one, and the boarding time was fitted
+      // under the taller title: 32px against the departure's 47 (42 before
+      // the footer). The card also takes the difference between its title
+      // and the shortest title on the rail's other times (Departure,
+      // Arrival), so its time gets the same room theirs do. Titles are fitted
+      // to their width only (above), so this never feeds back into them.
+      var _tSelf = row.querySelector('.v2-fi-title');
+      if (_tSelf && blk) {
+        var _tMin = Infinity;
+        blk.querySelectorAll(':scope > .v2-fi-row').forEach(function (r2) {
+          if (r2 === row || !r2.querySelector('.v2-fi-value.v2-fi-time')) return;
+          var t2 = r2.querySelector('.v2-fi-title');
+          if (t2 && t2.offsetHeight) _tMin = Math.min(_tMin, t2.offsetHeight);
+        });
+        if (isFinite(_tMin) && _tSelf.offsetHeight > _tMin) fh += Math.ceil(_tSelf.offsetHeight - _tMin);
+      }
+      if (Math.abs((parseFloat(row.style.flexBasis) || 0) - fh) > 0.5) row.style.setProperty('flex-basis', fh + 'px', 'important');
+    });
     // LEFT RAIL shelves.
     // Status value included since v22359 — its two stacked bilingual lines
     // are handled by the height check (offsetHeight measures both lines).
@@ -17261,6 +17341,10 @@ function gateAutofit(root) {
       var title = row.querySelector('.v2-fi-title');
       var _pi2 = _plateInset(row);
       var availH = row.clientHeight - (_pi2 ? (_pi2.t + _pi2.b) : 0) - (title ? title.offsetHeight : 0) - 6;
+      // v23968 — the gate-close footer is this card's extra height, not its
+      // value's: the time is fitted to what every other card's value gets.
+      var _cf = row.querySelector(':scope > .v2-fi-closefoot');
+      if (_cf) availH -= _cf.offsetHeight;
       var colR = Infinity;
       var col = el.closest('.gad-aircraft-col');
       if (col) {
@@ -18622,6 +18706,10 @@ function _fidsRowInk(root) {
         if (!el.firstChild || el.querySelector('*')) continue;
         if (!String(el.textContent || '').trim()) continue;
         if (el.classList.contains('dest-iata') || el.classList.contains('dest-iata-sep')) continue;
+        // v23968 — the "+1" next-day pill paints its own dark ground; judged
+        // against the row's ground (a yellow Delayed row) its white read as
+        // too faint and was repainted dark, onto its own dark pill.
+        if (el.closest && el.closest('.fids-dayplus')) continue;
         var bg = _ocGroundOf(el);
         if (!bg) continue;
         // Remember the palette's own colour once; never strip-and-restore on a
@@ -26227,6 +26315,11 @@ const SS = {
   departed:  { en:'Departed',fr:'Parti',es:'Despegó',de:'Gestartet',it:'Partito',pt:'Partiu',ja:'出発済',zh:'已起飞',ar:'غادر' },
   arrived:   { en:'Arrived',fr:'Arrivé',es:'Llegó',de:'Gelandet',it:'Arrivato',pt:'Chegou',ja:'到着済',zh:'已到达',ar:'وصل' },
   scheduled: { en:'Scheduled',fr:'Prévu',es:'Programado',de:'Geplant',it:'Previsto',pt:'Programado',ja:'予定',zh:'计划',ar:'مجدول' },
+  // v23968 — an airport feed's own "Expected", kept by the adapters
+  // (fidsNeutralWord in feed-router.js) and printed as itself on the gate, the
+  // departures board and the inbound cards. It used to be folded into
+  // Scheduled and then shown as On time by the clock.
+  expected:  { en:'Expected',fr:'Attendu',es:'Esperado',de:'Erwartet',it:'Atteso',pt:'Esperado',ja:'見込み',zh:'预计',ar:'متوقع' },
   final:     { en:'Final call',fr:'Dernier appel',es:'Última llamada',de:'Letzter Aufruf',it:'Ultima chiamata',pt:'Última chamada',ja:'最終案内',zh:'最后登机',ar:'النداء الأخير' },
   gateclosed:{ en:'Gate closed',fr:'Porte fermée',es:'Puerta cerrada',de:'Gate geschlossen',it:'Gate chiuso',pt:'Portão fechado',ja:'ゲート閉鎖',zh:'登机口关闭',ar:'البوابة مغلقة' },
   landed:    { en:'Landed',fr:'Atterri',es:'Aterrizó',de:'Gelandet',it:'Atterrato',pt:'Pousou',ja:'着陸',zh:'已着陆',ar:'هبط' },
@@ -26238,7 +26331,7 @@ const SS = {
 const PILLCLS = {
   ontime:'p-ontime', boarding:'p-boarding', delayed:'p-delayed',
   cancelled:'p-cancelled', departed:'p-departed', arrived:'p-arrived',
-  scheduled:'p-scheduled', final:'p-final', gateclosed:'p-gateclosed',
+  scheduled:'p-scheduled', expected:'p-scheduled', final:'p-final', gateclosed:'p-gateclosed',
   landed:'p-landed', diverted:'p-diverted', early:'p-early', atbelt:'p-arrived',
 };
 const ACCCLS = {
@@ -27168,7 +27261,33 @@ var _GATE_LBL = {
   // LS.inbDelayed, here so _gateLbl can show the board's two languages, each
   // a whole sentence on its own line, French first in Québec; TL() reads LS
   // and gives one language only.
-  inbDelayed: { en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est en retard. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' }
+  inbDelayed: { en:'The incoming aircraft has been delayed. Updated boarding time to follow.',fr:"L'appareil en approche est en retard. Heure d'embarquement mise à jour à suivre.",es:'La aeronave entrante ha sido retrasada. Hora de embarque actualizada a continuación.',de:'Das ankommende Flugzeug hat Verspätung. Aktualisierte Boarding-Zeit folgt.',it:"L'aereo in arrivo è in ritardo. Orario d'imbarco aggiornato a seguire.",pt:'A aeronave está atrasada. Horário de embarque atualizado a seguir.',ja:'到着機が遅延しています。搭乗時刻は更新されます。',zh:'来港飞机已延误，登机时间将另行通知。',ar:'تأخرت الطائرة القادمة. سيتم تحديث وقت الصعود.' },
+  // ── v23968 — EACH AIRLINE'S GATE-CLOSE DEADLINE ──────────────────────────
+  // The line at the foot of the gate's Boarding card before boarding starts
+  // (_gateCloseLineHtml): the airline's PUBLISHED minutes and the clock time
+  // they make before the airport's departure time. {MIN} is the minutes,
+  // {TIME} the clock in that language's own convention (_fidsClockForLang).
+  // One entry per kind of rule, in the airline's own word for it
+  // (GATE_CLOSE_POLICY):
+  //   gateCloses      its boarding gate closes (Air Canada, WestJet, Porter,
+  //                   Air Transat; AC's French page: « Fermeture de la porte
+  //                   d'embarquement »)
+  //   boardingCloses  its boarding closes (Flair)
+  //   boardingEnds    its boarding ends (American)
+  //   gateBeAt        only a deadline to be AT the gate, no close time (PAL,
+  //                   Delta, United), so the card never says "closes" for them
+  // English and French follow the airlines' own pages; the other seven are
+  // careful translations.
+  gateCloses:     { en:'Gate closes {MIN} min before departure · {TIME}', fr:'Fermeture de la porte {MIN} min avant le départ · {TIME}', es:'La puerta cierra {MIN} min antes de la salida · {TIME}', de:'Gate schließt {MIN} Min. vor Abflug · {TIME}', it:'Il gate chiude {MIN} min prima della partenza · {TIME}', pt:'O portão fecha {MIN} min antes da partida · {TIME}', ja:'搭乗口は出発{MIN}分前に締切 · {TIME}', zh:'登机口于起飞前{MIN}分钟关闭 · {TIME}', ar:'تُغلق البوابة قبل {MIN} دقيقة من المغادرة · {TIME}' },
+  boardingCloses: { en:'Boarding closes {MIN} min before departure · {TIME}', fr:'Fin de l’embarquement {MIN} min avant le départ · {TIME}', es:'El embarque cierra {MIN} min antes de la salida · {TIME}', de:'Boarding endet {MIN} Min. vor Abflug · {TIME}', it:'L’imbarco chiude {MIN} min prima della partenza · {TIME}', pt:'O embarque encerra {MIN} min antes da partida · {TIME}', ja:'搭乗は出発{MIN}分前に締切 · {TIME}', zh:'登机于起飞前{MIN}分钟截止 · {TIME}', ar:'ينتهي الصعود قبل {MIN} دقيقة من المغادرة · {TIME}' },
+  boardingEnds:   { en:'Boarding ends {MIN} min before departure · {TIME}', fr:'Fin de l’embarquement {MIN} min avant le départ · {TIME}', es:'El embarque termina {MIN} min antes de la salida · {TIME}', de:'Boarding endet {MIN} Min. vor Abflug · {TIME}', it:'L’imbarco termina {MIN} min prima della partenza · {TIME}', pt:'O embarque termina {MIN} min antes da partida · {TIME}', ja:'搭乗は出発{MIN}分前に終了 · {TIME}', zh:'登机于起飞前{MIN}分钟结束 · {TIME}', ar:'ينتهي الصعود قبل {MIN} دقيقة من المغادرة · {TIME}' },
+  gateBeAt:       { en:'Be at the gate {MIN} min before departure · {TIME}', fr:'Présentez-vous à la porte {MIN} min avant le départ · {TIME}', es:'Esté en la puerta {MIN} min antes de la salida · {TIME}', de:'{MIN} Min. vor Abflug am Gate sein · {TIME}', it:'Presentarsi al gate {MIN} min prima della partenza · {TIME}', pt:'Esteja no portão {MIN} min antes da partida · {TIME}', ja:'出発{MIN}分前までに搭乗口へ · {TIME}', zh:'请于起飞前{MIN}分钟到达登机口 · {TIME}', ar:'كونوا عند البوابة قبل {MIN} دقيقة من المغادرة · {TIME}' },
+  // The same rules as one ticker line, on a board showing one airline only
+  // (?airline=): {AIRLINE} is the airline's name (_tickerCloseLine).
+  tickerGateCloses:     { en:'{AIRLINE}: BOARDING GATE CLOSES {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FERMETURE DE LA PORTE D’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: LA PUERTA DE EMBARQUE CIERRA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS GATE SCHLIESST {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: IL GATE CHIUDE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O PORTÃO DE EMBARQUE FECHA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗口は出発{MIN}分前に締め切ります', zh:'{AIRLINE}：登机口于起飞前{MIN}分钟关闭', ar:'{AIRLINE}: تُغلق بوابة الصعود قبل {MIN} دقيقة من المغادرة' },
+  tickerBoardingCloses: { en:'{AIRLINE}: BOARDING CLOSES {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FIN DE L’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: EL EMBARQUE CIERRA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS BOARDING ENDET {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: L’IMBARCO CHIUDE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O EMBARQUE ENCERRA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗は出発{MIN}分前に締め切ります', zh:'{AIRLINE}：登机于起飞前{MIN}分钟截止', ar:'{AIRLINE}: ينتهي الصعود قبل {MIN} دقيقة من المغادرة' },
+  tickerBoardingEnds:   { en:'{AIRLINE}: BOARDING ENDS {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : FIN DE L’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: EL EMBARQUE TERMINA {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: DAS BOARDING ENDET {MIN} MINUTEN VOR ABFLUG', it:'{AIRLINE}: L’IMBARCO TERMINA {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: O EMBARQUE TERMINA {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：搭乗は出発{MIN}分前に終了します', zh:'{AIRLINE}：登机于起飞前{MIN}分钟结束', ar:'{AIRLINE}: ينتهي الصعود قبل {MIN} دقيقة من المغادرة' },
+  tickerGateBeAt:       { en:'{AIRLINE}: BE AT THE BOARDING GATE {MIN} MINUTES BEFORE DEPARTURE', fr:'{AIRLINE} : PRÉSENTEZ-VOUS À LA PORTE D’EMBARQUEMENT {MIN} MINUTES AVANT LE DÉPART', es:'{AIRLINE}: PRESÉNTESE EN LA PUERTA DE EMBARQUE {MIN} MINUTOS ANTES DE LA SALIDA', de:'{AIRLINE}: SEIEN SIE {MIN} MINUTEN VOR ABFLUG AM GATE', it:'{AIRLINE}: PRESENTARSI AL GATE {MIN} MINUTI PRIMA DELLA PARTENZA', pt:'{AIRLINE}: ESTEJA NO PORTÃO DE EMBARQUE {MIN} MINUTOS ANTES DA PARTIDA', ja:'{AIRLINE}：出発{MIN}分前までに搭乗口へお越しください', zh:'{AIRLINE}：请于起飞前{MIN}分钟到达登机口', ar:'{AIRLINE}: يرجى التواجد عند بوابة الصعود قبل {MIN} دقيقة من المغادرة' }
 };
 
 // Clock string in ONE language's own convention (v23115). English and the
@@ -27452,7 +27571,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23974';
+var FIDS_BUILD_TAG = 'v23975';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -27717,25 +27836,62 @@ const BAGS_TICKER_MSG = {
   es: ['MUCHAS MALETAS SON PARECIDAS — VERIFIQUE SU ETIQUETA','HAY CARRITOS DE EQUIPAJE CERCA DE LA SALIDA','REPORTE EQUIPAJE DAÑADO O FALTANTE A SU AEROLÍNEA','MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO','REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL','GRACIAS POR VOLAR CON NOSOTROS — BIENVENIDOS']
 };
 
+// v23968 — ONE DEADLINE LINE, NO AIRPORT-WIDE NUMBER. Lines 3 and 4 used to
+// say "PROCEED TO YOUR GATE 30 MINUTES BEFORE DEPARTURE" and "BOARDING GATES
+// CLOSE 15 MINUTES PRIOR TO DEPARTURE" for every airline. Each airline sets
+// its own (GATE_CLOSE_POLICY): WestJet wants passengers at the gate 40
+// minutes out, Air Canada 45 on international flights, Flair closes boarding
+// at 20 and Porter its gate at 10, so one number was wrong for someone on
+// every multi-airline board. They are one neutral line now (index 2,
+// TICKER_DEADLINE_LINE), and a board showing one airline's flights only
+// (?airline=) says that airline's own published rule in that line's place
+// (_tickerCloseLine). The gate screen shows no ticker: its Boarding card says
+// the airline's own rule for the flight at the gate.
 const TICKER_MSG = {
-  en: ['PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','UNATTENDED ITEMS WILL BE CONFISCATED BY SECURITY','PROCEED TO YOUR GATE 30 MINUTES BEFORE DEPARTURE','BOARDING GATES CLOSE 15 MINUTES PRIOR TO DEPARTURE','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','CHECK MONITORS FOR UPDATED GATE INFORMATION'],
-  fr: ["VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS","LES OBJETS SANS SURVEILLANCE SERONT CONFISQUÉS","PRÉSENTEZ-VOUS À LA PORTE 30 MINUTES AVANT LE DÉPART","FERMETURE DES PORTES 15 MINUTES AVANT LE DÉPART","SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL","CONSULTEZ LES ÉCRANS POUR TOUTE MISE À JOUR"],
-  es: ['MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO','ARTÍCULOS DESATENDIDOS SERÁN CONFISCADOS','DIRÍJASE A SU PUERTA 30 MINUTOS ANTES DEL VUELO','PUERTAS CIERRAN 15 MIN ANTES DE LA SALIDA','REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL','CONSULTE LOS MONITORES PARA INFORMACIÓN ACTUALIZADA'],
-  de: ['BEHALTEN SIE IHR GEPÄCK STETS BEI SICH','UNBEAUFSICHTIGTE GEGENSTÄNDE WERDEN KONFISZIERT','BEGEBEN SIE SICH 30 MIN VOR ABFLUG ZUM GATE','GATES SCHLIEßEN 15 MIN VOR ABFLUG','MELDEN SIE VERDÄCHTIGE AKTIVITÄTEN','PRÜFEN SIE DIE MONITORE FÜR AKTUELLE INFORMATIONEN'],
-  it: ["TENERE SEMPRE CON SÉ IL BAGAGLIO","OGGETTI INCUSTODITI SARANNO CONFISCATI","PRESENTARSI AL GATE 30 MINUTI PRIMA","I GATE CHIUDONO 15 MINUTI PRIMA DELLA PARTENZA","SEGNALARE ATTIVITÀ SOSPETTE AL PERSONALE","CONTROLLARE I MONITOR PER AGGIORNAMENTI"],
-  pt: ['MANTENHA SUA BAGAGEM CONSIGO EM TODOS OS MOMENTOS','ITENS ABANDONADOS SERÃO CONFISCADOS','DIRIJA-SE AO PORTÃO 30 MINUTOS ANTES','PORTÕES FECHAM 15 MINUTOS ANTES DA PARTIDA','REPORTE ATIVIDADE SUSPEITA AO PESSOAL','CONSULTE OS MONITORES PARA ATUALIZAÇÕES'],
-  ja: ['手荷物は常にお手元にお持ちください','放置された荷物は撤去されます','出発30分前にはゲートへお越しください','搭乗ゲートは出発15分前に閉鎖されます','不審な行動は職員にお知らせください','ゲート情報の更新はモニターをご確認ください'],
-  zh: ['请随时看管好您的行李','无人看管的物品将被没收','请在起飞前30分钟前往登机口','登机口在起飞前15分钟关闭','如发现可疑活动请报告工作人员','请查看显示屏获取最新登机口信息'],
-  ar: ['يرجى الاحتفاظ بأمتعتكم معكم في جميع الأوقات','سيتم مصادرة الأغراض المتروكة','توجهوا إلى البوابة قبل 30 دقيقة من الإقلاع','تغلق بوابات الصعود قبل 15 دقيقة من المغادرة','أبلغوا عن أي نشاط مشبوه لموظفي المطار','تحققوا من الشاشات للحصول على أحدث المعلومات'],
+  en: ['PLEASE KEEP YOUR BAGGAGE WITH YOU AT ALL TIMES','UNATTENDED ITEMS WILL BE CONFISCATED BY SECURITY','CHECK YOUR AIRLINE’S BOARDING GATE DEADLINE','REPORT SUSPICIOUS ACTIVITY TO AIRPORT STAFF','CHECK MONITORS FOR UPDATED GATE INFORMATION'],
+  fr: ["VEUILLEZ GARDER VOS BAGAGES AVEC VOUS EN TOUT TEMPS","LES OBJETS SANS SURVEILLANCE SERONT CONFISQUÉS","VÉRIFIEZ L’HEURE LIMITE À LA PORTE D’EMBARQUEMENT DE VOTRE TRANSPORTEUR","SIGNALEZ TOUTE ACTIVITÉ SUSPECTE AU PERSONNEL","CONSULTEZ LES ÉCRANS POUR TOUTE MISE À JOUR"],
+  es: ['MANTENGA SU EQUIPAJE CON USTED EN TODO MOMENTO','ARTÍCULOS DESATENDIDOS SERÁN CONFISCADOS','CONSULTE LA HORA LÍMITE EN LA PUERTA DE EMBARQUE DE SU AEROLÍNEA','REPORTE ACTIVIDAD SOSPECHOSA AL PERSONAL','CONSULTE LOS MONITORES PARA INFORMACIÓN ACTUALIZADA'],
+  de: ['BEHALTEN SIE IHR GEPÄCK STETS BEI SICH','UNBEAUFSICHTIGTE GEGENSTÄNDE WERDEN KONFISZIERT','BEACHTEN SIE DIE GATE-FRIST IHRER FLUGGESELLSCHAFT','MELDEN SIE VERDÄCHTIGE AKTIVITÄTEN','PRÜFEN SIE DIE MONITORE FÜR AKTUELLE INFORMATIONEN'],
+  it: ["TENERE SEMPRE CON SÉ IL BAGAGLIO","OGGETTI INCUSTODITI SARANNO CONFISCATI","VERIFICATE L’ORARIO LIMITE AL GATE DELLA VOSTRA COMPAGNIA AEREA","SEGNALARE ATTIVITÀ SOSPETTE AL PERSONALE","CONTROLLARE I MONITOR PER AGGIORNAMENTI"],
+  pt: ['MANTENHA SUA BAGAGEM CONSIGO EM TODOS OS MOMENTOS','ITENS ABANDONADOS SERÃO CONFISCADOS','VERIFIQUE O HORÁRIO LIMITE NO PORTÃO DE EMBARQUE DA SUA COMPANHIA AÉREA','REPORTE ATIVIDADE SUSPEITA AO PESSOAL','CONSULTE OS MONITORES PARA ATUALIZAÇÕES'],
+  ja: ['手荷物は常にお手元にお持ちください','放置された荷物は撤去されます','ご利用の航空会社の搭乗口締切時刻をご確認ください','不審な行動は職員にお知らせください','ゲート情報の更新はモニターをご確認ください'],
+  zh: ['请随时看管好您的行李','无人看管的物品将被没收','请确认您所乘航空公司的登机口截止时间','如发现可疑活动请报告工作人员','请查看显示屏获取最新登机口信息'],
+  ar: ['يرجى الاحتفاظ بأمتعتكم معكم في جميع الأوقات','سيتم مصادرة الأغراض المتروكة','يرجى التحقق من الموعد النهائي لبوابة الصعود لدى شركة الطيران','أبلغوا عن أي نشاط مشبوه لموظفي المطار','تحققوا من الشاشات للحصول على أحدث المعلومات']
 };
+const TICKER_DEADLINE_LINE = 2;
+// v23968 — THE DEPARTURES BOARD'S "+1" NEXT-DAY MARKER (render()'s time
+// cell): bold white in a dark pill with a white ring, 0.72em of the time (a
+// "+1" about 20px tall at 1680x1050, where the old superscript was a speck),
+// the same on every row and theme (dark rows, light rows, the yellow Delayed
+// row, a red cancelled row), and never amber, red or green: a day is not a
+// status. It is positioned, not laid out: the time sits in an inline-block
+// host (FIDS_DAYPLUS_HOST) and the marker hangs off the host's right edge, so
+// it takes no width in the line and the cell's text-overflow can never drop
+// it (a laid-out pill pushed "12:20 PM" past its 185px cell at 1680x1050 and
+// the ellipsis took the whole marker). Hanging, it ends inside the cell at
+// every board size: measured on Moncton, its right edge against the cell's
+// was 1237/1255 at 1680x1050, 1382/1422 at 1920x1080, 920/938 at 1280x720
+// and 734/761 at 1024x768. Inline !important so no row rule can repaint it,
+// and _fidsRowInk leaves it alone (its ground is its own pill, not the row).
+const FIDS_DAYPLUS_HOST = 'position:relative !important;display:inline-block !important;';
+const FIDS_DAYPLUS_STYLE = 'position:absolute !important;left:100% !important;top:0.08em !important;display:inline-block !important;'
+  + 'font-size:0.72em !important;line-height:1 !important;font-weight:900 !important;'
+  + 'color:#ffffff !important;-webkit-text-fill-color:#ffffff !important;background:rgba(10,16,30,0.9) !important;'
+  + 'border:0.1em solid #ffffff !important;border-radius:999px !important;padding:0.06em 0.22em 0.04em !important;'
+  + 'margin-left:0.18em !important;text-shadow:none !important;letter-spacing:0 !important;'
+  + 'opacity:1 !important;text-decoration:none !important;box-shadow:none !important;white-space:nowrap !important;';
 function updateTicker() {
   const ticker = document.querySelector('.ticker span');
   if (!ticker) return;
   let parts = [];
-  (TICKER_MSG[langs[0]] || TICKER_MSG.en).forEach((msg, i) => {
-    let combined = '✈  ' + msg;
+  const l0 = TICKER_MSG[langs[0]] ? langs[0] : 'en';
+  // v23968 — the deadline line (TICKER_DEADLINE_LINE) is the airline's own
+  // rule on a board showing one airline only, the neutral line elsewhere.
+  const line = (lg, i) => (i === TICKER_DEADLINE_LINE && _tickerCloseLine(lg)) || TICKER_MSG[lg][i];
+  TICKER_MSG[l0].forEach((msg, i) => {
+    let combined = '✈  ' + line(l0, i);
     if (langs[1] && TICKER_MSG[langs[1]]) {
-      combined += '  ·  ' + TICKER_MSG[langs[1]][i];
+      combined += '  ·  ' + line(langs[1], i);
     }
     parts.push(combined);
   });
@@ -28443,7 +28599,9 @@ function render() {
           // (#fbbf24), which on this board means delayed, and the alternate
           // rows' white-ink rule repainted it white anyway, so the same "+1"
           // read in two colours down one column. A day is not a status.
-          timeCellHtml = fmt12(f.time) + '<sup class="fids-dayplus" style="font-size:0.55em;color:inherit;font-weight:900;margin-left:3px;vertical-align:super;">+' + diffDays + '</sup>';
+          // v23968 — AND IT CAN BE SEEN: a small white pill on its own dark
+          // ground, on every row (FIDS_DAYPLUS_STYLE).
+          timeCellHtml = '<span class="fids-dayplus-host" style="' + FIDS_DAYPLUS_HOST + '">' + fmt12(f.time) + '<sup class="fids-dayplus" style="' + FIDS_DAYPLUS_STYLE + '">+' + diffDays + '</sup></span>';
         }
       }
     }
@@ -30392,6 +30550,18 @@ function _boardStripStatusKey(currentFlight, _stripState, minsToDep, kept) {
     else if (/delay/.test(_bwRaw) || (currentFlight && currentFlight.upd)) _bwStKey = 'delayed';
   } catch (e) {}
   if (_bwStKey === 'ontime' && typeof minsToDep === 'number' && minsToDep < 0) return '';
+  // v23968 — ON TIME ONLY WHERE THE AIRPORT SAID IT. The flank reads On
+  // time only while the row's own word is the airport's "On Time". A row
+  // that says Scheduled, Expected or nothing (the clock-made boarding at
+  // airports whose feed never says Boarding), or that has moved on to
+  // Boarding or Final call from a feed that never said On Time (MWAA, RDU,
+  // SLC go straight from Scheduled to Boarding), gets no flank: the sign says
+  // Boarding, and nobody said On time. Delayed, Early, Cancelled and Diverted
+  // keep theirs: those come from the airport's word or its revised time.
+  if (_bwStKey === 'ontime') {
+    var _bwOwn = String((currentFlight && currentFlight.status) || '').replace(/[\s_-]+/g, '').toLowerCase();
+    if (_bwOwn !== 'ontime') return '';
+  }
   return _bwStKey;
 }
 // v23925 — THE GATE'S SIGNS, FROM THE FLIGHT'S WORD. NOW BOARDING, FINAL
@@ -30433,6 +30603,183 @@ function _gateSignPhase(stKey, minsToDep, lead, cf, inbLate) {
     boardActive: showBoarding && !isGateClosedStatus && !isFinalCallStatus
   };
 }
+// v23968 — EACH AIRLINE'S OWN GATE-CLOSE TIME, ON THE GATE'S BOARDING CARD.
+//
+// Before boarding starts, the Boarding card says how many minutes before
+// departure the airline closes its boarding gate, and the clock time that
+// makes: "Gate closes 15 min before departure · 6:00pm | Fermeture de la porte
+// 15 min avant le départ · 18:00". The minutes are each airline's PUBLISHED
+// cut-off, counted back from the departure time the airport publishes (its
+// revised time when it has posted one: the same base the printed boarding time
+// uses, _gateBoardingTimes' effDepForBoard), so the line moves when the
+// airport posts a new time. It is a deadline worked out from two published
+// numbers, never the status "Gate closed" (that word is the airport's alone).
+//
+// The table is keyed on the MARKETING carrier the gate is branded for (an AC
+// Express flight flown by Jazz or PAL is AC's; Rouge is AC's). Every row was
+// read on the airline's own page on the date beside it; re-check them every
+// quarter. `kind` is the airline's own word for its rule, and the _GATE_LBL
+// key the card and the ticker print it with:
+//   gateCloses      its boarding gate closes;
+//   boardingCloses  its boarding closes (Flair's word);
+//   boardingEnds    its boarding ends (American's word);
+//   gateBeAt        it publishes only a deadline to BE AT the gate and no
+//                   close time, so the card says that instead of "Gate
+//                   closes" and never puts words in the airline's mouth.
+// An airline missing from the table shows nothing. Two rules cover some routes
+// only (`route`, _gateCloseRouteOk):
+//   'usDomestic'     Delta's 15 minutes is its U.S. domestic rule; its
+//                    international one (Canada included) is a 45-minute
+//                    recommendation, not a deadline, so nothing is said there.
+//   'notUsDomestic'  United's 30 minutes is its international rule (every
+//                    flight to or from Canada). Its U.S. domestic 15 applies
+//                    only to passengers whose whole trip is domestic (one
+//                    connecting abroad has the 30), so a domestic gate cannot
+//                    say one number for everybody, and says nothing.
+var GATE_CLOSE_POLICY = {
+  // "Boarding gate closes" 15 min, every route (be at the gate 30, or 45 international).
+  AC: { min: 15, kind: 'gateCloses', src: 'https://www.aircanada.com/ca/en/aco/home/plan/check-in-information/check-in-and-boarding-times.html', checked: '2026-10-04' },
+  // "Boarding cut-off: 15 minutes before departure" (arrive at the gate 40).
+  WS: { min: 15, kind: 'gateCloses', src: 'https://www.westjet.com/en-ca/manage/check-in', checked: '2026-10-04' },
+  // Conditions of Carriage, check-in table: "Boarding Gate Closes 10 minutes"
+  // for domestic, transborder and international alike, "prior to scheduled
+  // departure time" (its check-in times page refuses automated readers).
+  PD: { min: 10, kind: 'gateCloses', src: 'https://www.flyporter.com/Content/Documents/en/Conditions-of-Carriage.pdf', checked: '2026-10-04' },
+  // "Boarding closes 20 minutes before departure."
+  F8: { min: 20, kind: 'boardingCloses', src: 'https://www.flyflair.com/airport-info/deadlines', checked: '2026-10-04' },
+  // "Boarding Gate closure times – International and domestic flights: 15 minutes before departure."
+  TS: { min: 15, kind: 'gateCloses', src: 'https://www.airtransat.com/en-CA/travel-information/airports-and-check-in/airport-information/airport-check-in-times', checked: '2026-10-04' },
+  // "Boarding ends 15 minutes before departure."
+  AA: { min: 15, kind: 'boardingEnds', src: 'https://www.aa.com/i18n/travel-info/boarding-process.jsp', checked: '2026-10-04' },
+  // "All passengers must be available for boarding at the gate 20 minutes before departure." No close time published.
+  PB: { min: 20, kind: 'gateBeAt', src: 'https://palairlines.ca/travel-hub/travel-documents/', checked: '2026-10-04' },
+  // "All customers are required to be at the gate and ready to board 15 minutes before scheduled departure." U.S. domestic only.
+  DL: { min: 15, kind: 'gateBeAt', route: 'usDomestic', src: 'https://www.delta.com/us/en/check-in-security/check-in-time-requirements/domestic-check-in', checked: '2026-10-04' },
+  // Contract of Carriage, Rule 5: on "All non-stop International flights" passengers
+  // "must be at the loading gate for boarding at least 30 minutes prior to
+  // scheduled departure" (60 departing Micronesia, the Marshall Islands and
+  // Brussels, which no board serves: those say nothing). No close time published.
+  UA: { min: 30, kind: 'gateBeAt', route: 'notUsDomestic', notFrom: ['FM', 'MH', 'BE'], src: 'https://www.united.com/en/us/fly/contract-of-carriage.html', checked: '2026-10-04' }
+};
+// Whether a route-limited rule (`route`) covers this flight from this
+// airport. Both countries must be known: an unknown destination is never
+// guessed into a rule.
+function _gateCloseRouteOk(p, cf, homeIata) {
+  if (!p || !p.route) return true;
+  var loc = String((cf && cf._locIata) || '').toUpperCase();
+  if (!loc) {
+    var m = String((cf && (cf.dest || cf.origin)) || '').match(/\(([A-Z]{3})\)\s*$/);
+    if (m) loc = m[1];
+  }
+  var home = airportCountry(homeIata), dst = airportCountry(loc);
+  if (!home || !dst) return false;
+  var usDom = home === 'US' && dst === 'US';
+  if (p.route === 'usDomestic') return usDom;
+  if (p.route === 'notUsDomestic') return !usDom && !(p.notFrom && p.notFrom.indexOf(home) >= 0);
+  return false;
+}
+// Each kind's _GATE_LBL keys: the card's line and the one-airline ticker's line.
+var GATE_CLOSE_WORDS = {
+  gateCloses: { card: 'gateCloses', ticker: 'tickerGateCloses' },
+  boardingCloses: { card: 'boardingCloses', ticker: 'tickerBoardingCloses' },
+  boardingEnds: { card: 'boardingEnds', ticker: 'tickerBoardingEnds' },
+  gateBeAt: { card: 'gateBeAt', ticker: 'tickerGateBeAt' }
+};
+// The gate-close fact for this departure, or null when there is nothing to
+// say: an airline not in the table, a route its rule does not cover, no
+// departure time, a word that says the flight is boarding, closed, gone,
+// cancelled or diverted, a Delayed with no new time (its close time is not
+// known), or a close time already past. uxgGateHtml also leaves it off while
+// a sign is up (the countdown, NOW BOARDING, Final call, Gate closed) and
+// while "Updated boarding time to follow" is.
+// And never a close at or before the boarding time printed on the same card
+// (boardTs, _gateBoardingTimes' own): after a short turn the honesty floor
+// (_gateBoardingFloorTs) can hold boarding until the departure less 10
+// minutes, and a card reading "Boarding 6:05pm" over "Gate closes 15 min
+// before departure · 6:00pm" contradicts itself. Compared to the minute, as
+// both are printed: a turn under 35 minutes for a 15-minute airline, under
+// 40 for Flair, 30 or less for Porter (boarding then equals the close).
+// A be-at-the-gate deadline (gateBeAt) is not compared: being at the gate by
+// 11:05am for an 11:15am boarding is what such a deadline asks, and PAL's
+// short turns at Moncton (PB923: boarding 11:15am for 11:25am) lost the
+// line to that rule.
+function _gateCloseInfo(cf, carrier, effDepTs, nowMs, homeIata, boardTs) {
+  if (!cf) return null;
+  var code = String(carrier || cf.airline || '').trim().toUpperCase();
+  var p = Object.prototype.hasOwnProperty.call(GATE_CLOSE_POLICY, code) ? GATE_CLOSE_POLICY[code] : null;
+  if (!p || !GATE_CLOSE_WORDS[p.kind]) return null;
+  if (p.route) {
+    try { if (!_gateCloseRouteOk(p, cf, homeIata)) return null; } catch (e) { return null; }
+  }
+  var w = String(cf.status || '').replace(/[\s_-]+/g, '').toLowerCase();
+  if (/^(cancelled|canceled|diverted|departed|arrived|landed|active|enroute|boarding|final|finalcall|gateclosed)$/.test(w)) return null;
+  if (w === 'delayed') {
+    try { if (!_gateDelayHasTime(cf)) return null; } catch (e) { return null; }
+  }
+  var dep = Number(effDepTs) || 0;
+  if (!(dep > 0)) return null;
+  var ts = dep - p.min * 60000;
+  if (nowMs && nowMs >= ts) return null;
+  var brd = Number(boardTs) || 0;
+  if (p.kind !== 'gateBeAt' && brd > 0 && Math.floor(brd / 60000) >= Math.floor(ts / 60000)) return null;
+  return { carrier: code, min: p.min, kind: p.kind, ts: ts };
+}
+// The line itself: a footer across the whole Boarding card (_shelf's `foot`),
+// in the board's two languages (_gateLbl's pick: the board's own pair, French
+// first in Québec), one language per line and each an unbreakable unit, so the
+// only break is the one between the languages (the board's rule against a
+// severed phrase). The words are _GATE_LBL's, the clock each language's own
+// (_fidsClockForLang: 6:00pm in English, 18:00 in French and the 24-hour
+// languages, the same clocks the boarding sign's strip prints), in the
+// airport's own zone. Sized by the rail's box fitter (gateAutofit), which also
+// makes the card that much taller, so the boarding time keeps the size every
+// other time on the rail has.
+function _gateCloseLineHtml(info, tz, frF) {
+  if (!info || !info.ts || !GATE_CLOSE_WORDS[info.kind]) return '';
+  var key = GATE_CLOSE_WORDS[info.kind].card;
+  var when = new Date(info.ts);
+  var out = _gateLbl(key, !!frF, function (w, i, lg) {
+    var clock = _fidsClockForLang(when, tz, lg);
+    if (!clock) return '';
+    // Where a narrow card has to wrap a sentence (gateAutofit), the clock
+    // never wraps away from its words (" · 17:55" stays on the last line) and
+    // the minutes never leave their unit ("20 min").
+    var txt = String(w).split('{MIN}').join(String(info.min)).split('{TIME}').join(clock)
+      .replace(/ · /g, '\u00a0·\u00a0').replace(/(\d) /g, '$1\u00a0');
+    return '<span class="v2-fi-close-w" lang="' + (lg || 'en') + '"' + (lg === 'ar' ? ' dir="rtl"' : '') + '>' + txt + '</span>';
+  }, '');
+  if (!out) return '';
+  return '<div class="v2-fi-closefoot"><div class="v2-fi-closeline" data-close-kind="' + info.kind + '" data-close-min="' + info.min + '">' + out + '</div></div>';
+}
+// The one-airline ticker's deadline line (updateTicker): on a board filtered
+// to one airline (?airline=AC), that airline's own published rule in its own
+// word; '' everywhere else, where the line stays the neutral "Check your
+// airline's boarding gate deadline". A rule for some routes only is one
+// board-wide line only where it covers every flight the airline has there:
+// United's international one at an airport outside the U.S.; never Delta's
+// U.S. domestic one. The gate screen shows no ticker; its Boarding card
+// carries the airline's rule instead.
+function _tickerCloseLine(lg) {
+  try {
+    var code = String((typeof filterAirline !== 'undefined' && filterAirline) || '').trim().toUpperCase();
+    if (!/^[A-Z0-9]{2}$/.test(code)) return '';
+    var p = Object.prototype.hasOwnProperty.call(GATE_CLOSE_POLICY, code) ? GATE_CLOSE_POLICY[code] : null;
+    if (!p || !GATE_CLOSE_WORDS[p.kind]) return '';
+    if (p.route) {
+      var _ap = (typeof document !== 'undefined' && (document.getElementById('apSel') || {}).value) || '';
+      var _home = _ap && typeof airportCountry === 'function' ? airportCountry(_ap) : '';
+      if (!(p.route === 'notUsDomestic' && _home && _home !== 'US' && !(p.notFrom && p.notFrom.indexOf(_home) >= 0))) return '';
+    }
+    var t = _GATE_LBL[GATE_CLOSE_WORDS[p.kind].ticker];
+    var w = t && t[lg];
+    if (!w) return '';
+    var name = String((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code);
+    var up;
+    try { up = name.toLocaleUpperCase(lg || 'en'); } catch (e1) { up = name.toUpperCase(); }
+    return w.split('{AIRLINE}').join(up).split('{MIN}').join(String(p.min));
+  } catch (e) { return ''; }
+}
+try { if (typeof window !== 'undefined') { window._gateCloseInfo = _gateCloseInfo; window.GATE_CLOSE_POLICY = GATE_CLOSE_POLICY; window._tickerCloseLine = _tickerCloseLine; } } catch (e) {}
 // v23925 — THE DEPARTURE'S OWN STATUS AT THE GATE, FROM ITS OWN ROW ONLY.
 // uxgGateHtml's status key (the plate, the classes, the signs) and its
 // depDelayed flag (the struck-through times, the revised Departure, the
@@ -30442,12 +30789,13 @@ function _gateSignPhase(stKey, minsToDep, lead, cf, inbLate) {
 // into the shared row (the deleted _inbDelayCarryOver); the inbound has no
 // way in here. depDelayed needs a time the feed published (upd, or _revTs
 // later than scheduled) AND the word for it (delayed or early). A
-// "scheduled" row reads On time, as it always has.
+// v23968 — and the word is the airport's: a "scheduled" row (the feed said
+// "Scheduled", or nothing) reads Scheduled | Prévu, never On time; On time is
+// printed only where the feed said it ('ontime'), and "Expected" as itself.
 function _gateDepDisplayState(cf) {
   var st = (cf && cf.status) || 'scheduled';
   var revTsLater = !!(cf && cf._revTs && cf._sortTs && cf._revTs > cf._sortTs + 60000);
   var depDelayed = !!((cf && cf.upd) || revTsLater) && (st === 'delayed' || st === 'early');
-  if (st === 'scheduled' || !st) st = 'ontime';
   return { stKey: st, depDelayed: depDelayed, revTsLater: revTsLater };
 }
 // v23925 — THE HONESTY FLOOR ON THE PRINTED BOARDING TIME: boarding cannot be
@@ -30611,7 +30959,7 @@ function _fidsBoardEquip(f, iata) {
 function _schedBoardingOn(f, nowMs, iata, bt) {
   if (!f || _feedSaysGateWords(iata)) return false;
   var w = String(f.status || '').replace(/[\s_-]+/g, '').toLowerCase();
-  if (!(w === '' || w === 'scheduled' || w === 'ontime' || w === 'early'
+  if (!(w === '' || w === 'scheduled' || w === 'ontime' || w === 'expected' || w === 'early'
         || (w === 'delayed' && _gateDelayHasTime(f)))) return false;
   var now = nowMs || Date.now();
   try { if (_gateDepLeft(f, now)) return false; } catch (e) {}
@@ -32344,12 +32692,17 @@ function adbStatus(f, mode, schedTs, nowTs) {
   // has moved reads Delayed (or Early) until the airport itself says more.
   if(updateTs && updateTs > schedTs + 5*60000) return 'delayed';
   if(updateTs && updateTs < schedTs - 5*60000) return 'early';
-  const refTs = updateTs || schedTs;
-  if(!refTs) return 'scheduled';
-  // v23925 — the neutral word: Scheduled while the flight is well off (90 min for a
-  // departure, 60 for an arrival — the two thresholds the board always used),
-  // On time from then on, including once its time has passed unconfirmed.
-  return ((refTs - nowTs) / 60000) > (mode==='dep' ? 90 : 60) ? 'scheduled' : 'ontime';
+  // v23968 — THE NEUTRAL WORD IS THE AIRPORT'S, NOT THE CLOCK'S. This used to
+  // read Scheduled until 90 minutes before a departure (60 before an arrival)
+  // and On time from then on, whatever the feed said, so a gate whose feed
+  // said only "Scheduled", or nothing, printed "On Time | À l'heure". The
+  // adapters now keep the feed's word (fidsNeutralWord in feed-router.js,
+  // neutralStatus in the worker): "On Time" is 'ontime', "Expected" is
+  // 'expected', and "Scheduled", a blank or anything unknown is 'scheduled' —
+  // at every moment, before and after the time.
+  if(raw==='ontime')return 'ontime';
+  if(raw==='expected')return 'expected';
+  return 'scheduled';
 }
 // v23915 — WHICH OF adbStatus'S ANSWERS CAME FROM THE CLOCK. Past the list of
 // explicit statuses above, adbStatus does not read the feed at all: an arrival
@@ -32401,7 +32754,7 @@ function adbStatusInferred(f, st) {
 // 'final' (it used to be folded into 'boarding'), and at rank 0 a boarding
 // copy of the same departure would have won the de-dup over it.
 var _ROW_STATUS_RANK = {
-  scheduled: 0, ontime: 0, early: 1, delayed: 1, boarding: 2,
+  scheduled: 0, ontime: 0, expected: 0, early: 1, delayed: 1, boarding: 2,
   gateclosed: 3, finalcall: 3, final: 3, active: 4, departed: 5, arrived: 6,
   diverted: 7, cancelled: 8
 };
@@ -34783,7 +35136,7 @@ function applySearch(flights) {
     ontime:    ['ontime', 'early'],
     boarding:  ['boarding', 'final', 'gateclosed', 'lastcall'],
     delayed:   ['delayed'],
-    scheduled: ['scheduled']
+    scheduled: ['scheduled', 'expected']
   };
 
   // Text search (flight, city, airline name).
@@ -49065,7 +49418,7 @@ function _renderBigCraft(el, ctx) {
   // 'scheduled' — otherwise the big screen showed 'Scheduled' on a bumped
   // flight.
   var _bcDelayed = !!(inb._revTs && inb._sortTs && inb._revTs > inb._sortTs);
-  if (_bcDelayed && (stKey === 'scheduled' || stKey === 'ontime' || stKey === '')) stKey = 'delayed';
+  if (_bcDelayed && (stKey === 'scheduled' || stKey === 'ontime' || stKey === 'expected' || stKey === '')) stKey = 'delayed';
   var ss = (typeof SS !== 'undefined' && SS[stKey]) ? SS[stKey] : null;
   // Status follows the selected languages like the small card it mirrors —
   // this cell hard-coded 'ss.en | ss.fr' and kept reading English/French on

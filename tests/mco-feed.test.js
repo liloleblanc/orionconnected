@@ -101,7 +101,7 @@ test('mco arrivals: Eastern clock, later/earlier revisions, gate, belt, belt-der
     else assert.equal(x.arrival.terminal, Number(b) < 20 ? 'A' : 'B', `${x.number} belt ${b}`);
   }
   // Statuses stay inside the board's vocabulary.
-  const vocab = new Set(['scheduled', 'boarding', 'departed', 'delayed', 'arrived', 'cancelled', 'diverted']);
+  const vocab = new Set(['scheduled', 'ontime', 'boarding', 'departed', 'delayed', 'arrived', 'cancelled', 'diverted']);
   assert.ok(arr.every((x) => vocab.has(x.status)));
 });
 
@@ -139,7 +139,7 @@ test('mco departures: scheduled-with-revision, departed, cancelled, no belts, ai
   // F94726 to San Juan — status ON with a later estimate: scheduled + revisedTime, not "delayed".
   const f9 = dep.find((x) => x.number === 'F94726' && x._authTs === 1788664620000);
   assert.ok(f9, 'F94726 present');
-  assert.equal(f9.status, 'scheduled');
+  assert.equal(f9.status, 'ontime');
   assert.equal(f9.departure.scheduledTime.local, '2026-09-05 23:17:00-04:00');  // 1788664620
   assert.equal(f9.departure.scheduledTime.utc, '2026-09-06 03:17:00+00:00');
   assert.equal(f9.departure.revisedTime.local, '2026-09-06 06:00:00-04:00');    // lastKnown 1788688800

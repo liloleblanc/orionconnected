@@ -20,7 +20,7 @@ test('lhr: arrival with "On time" equal to schedule has no revision', () => {
   const wb = arr.find((x) => x.number === 'WB712');
   assert.ok(wb, 'WB712 present');
   assert.equal(wb.callSign, 'RWD712');
-  assert.equal(wb.status, 'scheduled');
+  assert.equal(wb.status, 'ontime');
   assert.ok(wb.arrival.scheduledTime.local.startsWith('2026-09-05 07:05'), wb.arrival.scheduledTime.local);
   assert.ok(wb.arrival.scheduledTime.local.endsWith('+01:00'), 'BST offset');
   assert.equal(wb.arrival.revisedTime, undefined, '"On time 07:05" is not a revision');
@@ -45,7 +45,7 @@ test('lhr: departures put home on the departure side with terminal', () => {
   assert.ok(ba, 'BA670 present');
   assert.equal(ba.departure.airport.iata, 'LHR');
   assert.equal(ba.departure.terminal, '5');
-  assert.equal(ba.status, 'scheduled');
+  assert.equal(ba.status, 'ontime');
   assert.equal(ba.departure.revisedTime, undefined, 'message clock equals schedule');
 });
 

@@ -23,7 +23,7 @@ test('ydf: arrivals table — counts, PB901 from St. Johns on NDT (-02:30)', () 
   assert.equal(pb.departure.airport.iata, 'YYT');          // "St. Johns"
   assert.equal(pb.departure.airport.name, 'St. Johns');
   assert.equal(pb.arrival.airline.iata, 'PB');             // "Provincial Airlines"
-  assert.equal(pb.status, 'scheduled');                    // "On Time"
+  assert.equal(pb.status, 'ontime');                    // "On Time"
   assert.equal(pb.arrival.revisedTime, undefined);         // Expected == Scheduled
   assert.equal(pb._authTs, Date.parse('2026-09-06T11:05:00-02:30'));
   // Other carriers on the board resolve too.
@@ -47,7 +47,7 @@ test('ydf: departures table — dated rows, AC1909 to Toronto', () => {
   assert.equal(ac.arrival.airport.iata, 'YYZ');
   assert.equal(ac.departure.airline.iata, 'AC');
   assert.equal(ac.departure.airline.name, 'Air Canada');
-  assert.equal(ac.status, 'scheduled');
+  assert.equal(ac.status, 'ontime');
   const first = dep[0];
   assert.equal(first.number, 'PB901');
   assert.equal(first.arrival.airport.iata, 'YYR');           // Goose Bay

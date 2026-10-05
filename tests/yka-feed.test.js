@@ -56,7 +56,7 @@ test('yka arrivals: 19 rows over Sep 5–7, Pacific offset, name→IATA, gate, a
   assert.equal(pc.departure.airport.iata, 'YYJ');
   assert.equal(pc.departure.airport.name, 'Victoria');
   assert.equal(pc.arrival.gate, '3');
-  assert.equal(pc.status, 'scheduled');                          // "On Time"
+  assert.equal(pc.status, 'ontime');                          // "On Time"
   assert.equal(pc.arrival.revisedTime, undefined);               // EstimatedTime == ScheduleTime
   // Edmonton resolves through the feed's own ViaAirportCode.
   const eg = arr.find((x) => x.number === 'WS3645');
@@ -75,7 +75,7 @@ test('yka departures: 17 rows, all On Time, gate on the home side, direction res
   const dep = parseYkaFeed(fx('yka-dep-sample.json'), 'dep', NOW);
   assert.equal(dep.length, 17, `parsed ${dep.length}`);          // 9 on Sep 6 + 8 on Sep 7
   assert.ok(dep.every((x) => x.departure.airport.iata === 'YKA'));
-  assert.ok(dep.every((x) => x.status === 'scheduled' && !x.departure.revisedTime), 'every row "On Time" with Estimated == Scheduled');
+  assert.ok(dep.every((x) => x.status === 'ontime' && !x.departure.revisedTime), 'every row "On Time" with Estimated == Scheduled');
   assert.ok(dep.every((x) => x.departure.gate), 'gate on every departure');
   const first = dep[0];
   assert.equal(first.number, 'WS3482');
@@ -125,7 +125,7 @@ test('yka: "Late at HH:MM" is delayed; EstimatedTime carries its own date across
   const mid = parseYkaFeed(row({ FlightNumber: '3487', AirlineCode: 'WestJet', ViaAirportCode: 'YYC', ViaAirportCity: 'Calgary',
     ScheduleTime: 'Sep 5 - 23:55', EstimatedTime: 'Sep 6 - 00:00' }), 'arr', NOW)[0];
   assert.equal(mid.number, 'WS3487');
-  assert.equal(mid.status, 'scheduled');
+  assert.equal(mid.status, 'ontime');
   assert.equal(mid.arrival.scheduledTime.local, '2026-09-05 23:55:00-07:00');
   assert.equal(mid.arrival.revisedTime.local, '2026-09-06 00:00:00-07:00');
   assert.ok(mid.arrival.revisedTime.utc > mid.arrival.scheduledTime.utc, 'a 5-minute delay, not a day back');

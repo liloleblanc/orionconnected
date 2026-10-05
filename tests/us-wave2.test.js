@@ -71,7 +71,7 @@ test('san: FLIGHT_DATE+TIME combine; claim "T2-1" splits into terminal+belt', ()
   assert.equal(as.arrival.terminal, '2');            // from T2-1
   assert.equal(as.arrival.baggageBelt, '1');
   assert.equal(as.departure.airport.iata, 'PHX');
-  assert.equal(as.status, 'scheduled');              // "On Time"
+  assert.equal(as.status, 'ontime');              // "On Time"
 });
 
 test('msy: actual_time wrong-day across midnight is settled to a small delay', () => {

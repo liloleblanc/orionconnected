@@ -24,7 +24,7 @@ test('jfk dep: 12h clock in New York, operator kept, codeshare rows dropped', ()
   assert.ok(tk, 'TK12 present');
   assert.equal(tk.departure.scheduledTime.local, '2026-09-06 00:25:00-04:00');   // "12:25 AM" is 00:25
   assert.equal(tk.departure.scheduledTime.utc, '2026-09-06 04:25:00+00:00');
-  assert.equal(tk.status, 'scheduled');                                          // "On Time"
+  assert.equal(tk.status, 'ontime');                                          // "On Time"
   assert.equal(tk.departure.terminal, '1');
   assert.equal(tk.departure.gate, '6');
   assert.equal(tk.arrival.airport.iata, 'IST');

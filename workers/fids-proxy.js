@@ -1430,7 +1430,7 @@ function mcoStatus(f) {
     case "DP": return "departed";    // Departed
     case "CX": return "cancelled";   // Canceled
     case "DL": return "delayed";     // Delayed
-    case "ON": return "scheduled";   // On time
+    case "ON": return "ontime";      // On time (v23968 — its own word)
   }
   if (f.isDelayed) return "delayed";
   // Fall back to the wordy status field if originalStatus is unfamiliar.
@@ -1439,7 +1439,7 @@ function mcoStatus(f) {
   if (s.includes("land") || s.includes("arriv")) return "arrived";
   if (s.includes("depart")) return "departed";
   if (s.includes("delay")) return "delayed";
-  return "scheduled";
+  return neutralStatus(s);   // v23968
 }
 __name(mcoStatus, "mcoStatus");
 
@@ -1615,13 +1615,38 @@ function yhzTimeObj(y, mo, d, hh, mm) {
   };
 }
 __name(yhzTimeObj, "yhzTimeObj");
+// v23968 — THE AIRPORT'S OWN NEUTRAL WORD, KEPT. The adapters below used to
+// fold "On Time", "Expected", "Scheduled" and a blank status into one
+// "scheduled", and the board then printed "On time" for it by the clock — so
+// a gate whose feed said only "Scheduled", or nothing, read "On Time | À
+// l'heure". The word now travels through: "On Time" (also "OnTime", "ON
+// TIME", "on-time") is "ontime", "Expected" is "expected", and "Scheduled",
+// "Early", a blank or anything novel stay "scheduled" (a revision still makes
+// Delayed or Early on the board). The same rule as fidsNeutralWord in
+// fids-current/js/feed-router.js. Pass it the feed's status TEXT, never a
+// class list: Thunder Bay's time cells are classed "expected".
+function neutralStatus(txt) {
+  const s = String(txt || "").toLowerCase().replace(/[\s_-]+/g, "");
+  if (s.includes("ontime")) return "ontime";
+  if (s.includes("expected")) return "expected";
+  return "scheduled";
+}
+__name(neutralStatus, "neutralStatus");
+// v23968 — one of the three neutral words neutralStatus keeps. A feed's
+// separate delay flag (DUB/CLT isDelayed, BOS Delayed) or its Remarks (ORD)
+// still upgrades any of them: they were all "scheduled" before, and an
+// "On Time" status beside a "Delayed" flag must still read Delayed.
+function isNeutralStatus(st) {
+  return st === "scheduled" || st === "ontime" || st === "expected";
+}
+__name(isNeutralStatus, "isNeutralStatus");
 function yhzStatus(txt) {
   const s = String(txt || "").toLowerCase();
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay")) return "delayed";
-  return "scheduled";   // ON TIME / EARLY / anything novel
+  return neutralStatus(s);   // v23968 — ON TIME / EXPECTED / SCHEDULED, EARLY or anything novel
 }
 __name(yhzStatus, "yhzStatus");
 // Parse one rendered board page into ADB-native flight objects. Exported
@@ -3412,7 +3437,7 @@ function dubParseRows(rows, dir) {
       if (!isNaN(et) && et !== schedTs) revised = localTimeObjFromTs("Europe/Dublin", et);
     }
     let status = yhzStatus(String(r.statusMessage || ""));
-    if (status === "scheduled" && r.isDelayed === true) status = "delayed";
+    if (isNeutralStatus(status) && r.isDelayed === true) status = "delayed";   // v23968 — any neutral word
     const fl = authorityFlight({
       dir, number: String(r.flightIdentity).trim(),
       status,
@@ -3508,7 +3533,7 @@ function bosParseFeed(jsonText, dir, nowMs) {
       if (rv.ts !== ts) revised = rv;
     }
     let status = yhzStatus(r.Remarks || "");
-    if (status === "scheduled" && String(r.Delayed) === "True") status = "delayed";
+    if (isNeutralStatus(status) && String(r.Delayed) === "True") status = "delayed";   // v23968 — any neutral word
     const isDep = dir === "dep";
     const fl = authorityFlight({
       dir, number: `${code}${num}`, status,
@@ -3614,7 +3639,13 @@ function ordParseFeed(jsonText, dir, nowMs) {
       : (r.ArrivalDateTimeActualGate || r.ArrivalDateTimeEstimatedGate));
     const revised = (!isNaN(estTs) && estTs !== schedTs) ? localTimeObjFromTs("America/Chicago", estTs) : null;
     let status = yhzStatus(r.Status || "");
-    if (status === "scheduled") status = yhzStatus(r.Remarks || "");
+    // v23968 — Remarks is read under any neutral Status: a Remarks word
+    // (Delayed, Cancelled, Boarding…) beats it, and a neutral Remarks word
+    // ("On Time") replaces only a plain Scheduled.
+    if (isNeutralStatus(status)) {
+      const rem = yhzStatus(r.Remarks || "");
+      if (!isNeutralStatus(rem) || (status === "scheduled" && rem !== "scheduled")) status = rem;
+    }
     const fl = authorityFlight({
       dir, number: String(r.AirlineCodeFlightNumber).trim(), status,
       homeIata: "ORD", homeIcao: "KORD", homeName: "Chicago",
@@ -4228,7 +4259,7 @@ __name(settleRevised, "settleRevised");
 // PDX Portland — Port of Portland's in-house ASP.NET feed, one GET for
 // both directions and a multi-day window. Cities[] carries the IATA
 // code; gates are space-padded; StatusCode is a two-letter enum.
-const PDX_STATUS = { ON: "scheduled", DP: "departed", AR: "arrived", CX: "cancelled", DL: "delayed", DV: "diverted" };
+const PDX_STATUS = { ON: "ontime", DP: "departed", AR: "arrived", CX: "cancelled", DL: "delayed", DV: "diverted" };
 function pdxParseFeed(jsonText, dir, nowMs) {
   const out = [];
   let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
@@ -4929,7 +4960,7 @@ function cltParseFeed(jsonText, dir, nowMs) {
     const revised = (typeof bt === "number" && bt !== r.scheduledTimestamp) ? localTimeObjFromTs("America/New_York", bt * 1000) : null;
     const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
     let status = yhzStatus(r.status || r.originalStatus || "");
-    if (status === "scheduled" && r.isDelayed === true) status = "delayed";
+    if (isNeutralStatus(status) && r.isDelayed === true) status = "delayed";   // v23968 — any neutral word
     const fl = authorityFlight({
       dir, number: num.toUpperCase(),
       status,
@@ -4951,7 +4982,7 @@ __name(cltParseFeed, "cltParseFeed");
 
 // MCI Kansas City — Azure Function JSON. adi A/D, IATA airlineCode and
 // cityCode, offset-less local ISO times, gate, claim, status enum.
-const MCI_STATUS = { CX: "cancelled", AR: "arrived", DP: "departed", DL: "delayed", ON: "scheduled", BO: "boarding" };
+const MCI_STATUS = { CX: "cancelled", AR: "arrived", DP: "departed", DL: "delayed", ON: "ontime", BO: "boarding" };
 function mciParseFeed(jsonText, dir, nowMs) {
   const out = [];
   let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
@@ -5169,7 +5200,7 @@ __name(ausParseFeed, "ausParseFeed");
 // digit + gate, or a bare "T1"/"T2" when no gate is posted yet. No
 // revised time and no belt anywhere on the page.
 const MSP_STATUS = {
-  "ON TIME": "scheduled", "GATE CHANGE": "scheduled", "BOARDING": "boarding",
+  "ON TIME": "ontime", "GATE CHANGE": "scheduled", "BOARDING": "boarding",
   "DEPARTED": "departed", "LANDED": "arrived", "ARRIVED AT GATE": "arrived",
   "ARRIVED": "arrived", "DELAYED": "delayed", "CANCELLED": "cancelled", "CANCELED": "cancelled"
 };
@@ -5290,7 +5321,7 @@ const SLC_AIRLINE_NAME = {
 // (AM793, a 09:30 departure, still read InGate at 20:00), so it only
 // means "arrived" on the arrivals side.
 const SLC_STATUS = {
-  SCHEDULED: "scheduled", ONTIME: "scheduled", DEPARTED: "departed", OUTGATE: "departed",
+  SCHEDULED: "scheduled", ONTIME: "ontime", DEPARTED: "departed", OUTGATE: "departed",
   ARRIVED: "arrived", LANDED: "arrived", INFLIGHT: "active", ENROUTE: "active", INAIR: "active",
   DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted",
   BOARDING: "boarding", GATECLOSED: "gateclosed"
@@ -5456,7 +5487,7 @@ function yxeStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(txt);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yxeStatus, "yxeStatus");
 // "05:05 AM" / "4:25 PM" on a given Saskatoon calendar day → time object.
@@ -5629,7 +5660,7 @@ function parseYqtStatus(text, cls) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("late") || s.includes("delay")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(text);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(parseYqtStatus, "parseYqtStatus");
 // One tab's rows → [{ cells, prefix, digits, name, ... }] without dates.
@@ -5990,7 +6021,7 @@ function yqxStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay") || s.includes("late")) return "delayed";
-  return "scheduled";   // OnTime / On Time / Early / anything novel
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yqxStatus, "yqxStatus");
 // "06 Sep" + "13:20" → time object on that Gander calendar day. The year
@@ -6115,7 +6146,7 @@ function yygStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay") || s.includes("late")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yygStatus, "yygStatus");
 // "Sep 6, 2026" (also "Sept 6, 2026", "6 Sep 2026") → { y, mo, d } or null.
@@ -6367,7 +6398,7 @@ function yxsStatus(txt, cls) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("late") || s.includes("delay")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yxsStatus, "yxsStatus");
 // One data-* attribute off a row's <button …> tag, entity-decoded.
@@ -6459,7 +6490,7 @@ __name(parseYxsPanels, "parseYxsPanels");
 // lowercased (the boards treat an unknown key as scheduled, and the raw
 // word stays visible in the JSON for the next person).
 const YMM_STATUS = {
-  "ON TIME": "scheduled", "EARLY": "scheduled", "SCHEDULED": "scheduled", "EXPECTED": "scheduled",
+  "ON TIME": "ontime", "EARLY": "scheduled", "SCHEDULED": "scheduled", "EXPECTED": "expected",
   "DELAYED": "delayed", "LATE": "delayed",
   "CANCELLED": "cancelled", "CANCELED": "cancelled",
   "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
@@ -6478,7 +6509,8 @@ function ymmStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay") || s.includes("late")) return "delayed";
-  if (s.includes("on time") || s.includes("early") || s.includes("sched") || s.includes("expect")) return "scheduled";
+  if (s.includes("on time") || s.includes("expect")) return neutralStatus(s);   // v23968 — its own word
+  if (s.includes("early") || s.includes("sched")) return "scheduled";
   return s;   // novel wording passes through as-is
 }
 __name(ymmStatus, "ymmStatus");
@@ -6603,7 +6635,7 @@ __name(ymmDays, "ymmDays");
 const PHX_TZ = "America/Phoenix";
 // ON/AR/DP/DL seen live; CX/DV are the PDX-style siblings the vendor is
 // likely to emit — unverified, so anything else falls back to the text.
-const PHX_STATUS = { ON: "scheduled", AR: "arrived", DP: "departed", CX: "cancelled", DL: "delayed", DV: "diverted" };
+const PHX_STATUS = { ON: "ontime", AR: "arrived", DP: "departed", CX: "cancelled", DL: "delayed", DV: "diverted" };
 // "9:56 PM" (today in Phoenix) or "September 6, 4:52 AM" (that day) → a
 // time object. Dateless clocks are settled toward the schedule so a clock
 // printed just before midnight and read just after it doesn't land a day
@@ -6750,7 +6782,7 @@ function yzfStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("late") || s.includes("delay")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yzfStatus, "yzfStatus");
 function yzfAirlineCode(name) {
@@ -7181,7 +7213,7 @@ function iahStatus(r) {
   if (s.includes("depart")) return "departed";
   if (s.includes("land") || s.includes("arriv")) return "arrived";
   if (r.isDelayed === true || o.includes("delay")) return "delayed";
-  return "scheduled";
+  return neutralStatus(r.status);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(iahStatus, "iahStatus");
 // jsonText → ADB-native flights for one direction. `home` defaults to
@@ -7259,7 +7291,7 @@ __name(parseIahFeed, "parseIahFeed");
 // Call, NT New Time, ON On Time (the default for every future flight).
 const MCO_AUTH_STATUS = {
   AR: "arrived", LD: "arrived", DP: "departed", CX: "cancelled", DL: "delayed",
-  DV: "diverted", BD: "boarding", LC: "boarding", ON: "scheduled"
+  DV: "diverted", BD: "boarding", LC: "boarding", ON: "ontime"   // v23968 — On Time is its own word
 };
 // flymco.com's own airline table (the flightsEnrichmentData block in its
 // page payload, read 2026-09-06): display name and the terminal the
@@ -7407,7 +7439,7 @@ const JFK_GQL_ARR = "query GetArrivingFlights(\n  $arrivalAirport: String!\n  $a
 // Site vocabulary (bundle enum: Scheduled / Delayed / Departed / In Flight /
 // Landed / Arrived / Cancelled; the list API says "On Time" and "En Route").
 const JFK_STATUS = {
-  "ON TIME": "scheduled", SCHEDULED: "scheduled", DELAYED: "delayed", DEPARTED: "departed",
+  "ON TIME": "ontime", SCHEDULED: "scheduled", DELAYED: "delayed", DEPARTED: "departed",
   "IN FLIGHT": "active", "EN ROUTE": "active", LANDED: "arrived", ARRIVED: "arrived",
   CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted"
 };
@@ -7604,7 +7636,7 @@ const SYD_TZ = "Australia/Sydney";
 // revision. Landed is on the ground short of the gate, which the boards
 // fold to arrived anyway; Gate Open and Final Call sit inside boarding.
 const SYD_STATUS = {
-  "ON TIME": "scheduled", "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
+  "ON TIME": "ontime", "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
   "CANCELLED": "cancelled", "DELAYED": "delayed", "DIVERTED": "diverted",
   "GATE OPEN": "boarding", "BOARDING": "boarding", "FINAL CALL": "boarding", "GATE CLOSED": "gateclosed"
 };
@@ -7623,7 +7655,7 @@ function sydStatus(text) {
   if (/\bnot\b/.test(s)) return "scheduled";
   if (/\bdeparted\b/.test(s)) return "departed";
   if (/\barrived\b|\blanded\b/.test(s)) return "arrived";
-  return "scheduled";
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(sydStatus, "sydStatus");
 // The three carriers whose airline field is "" in the feed.

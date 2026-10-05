@@ -57,7 +57,7 @@ test('yzf arrivals: 16 rows on MDT, WS685 fields, the overnight cancelled row ro
   assert.equal(ws.arrival.gate, '6');
   assert.equal(ws.aircraft.model, '7M8');
   assert.equal(ws.aircraft.reg, 'C-GIZG');                  // printed "CGIZG"
-  assert.equal(ws.status, 'scheduled');                     // "On Time"
+  assert.equal(ws.status, 'ontime');                     // "On Time"
   assert.equal(ws.arrival.revisedTime, undefined);          // Expected == Scheduled
   assert.equal(ws.arrival.baggageBelt, undefined);          // column always blank
   assert.equal(ws.arrival.terminal, undefined);
@@ -135,7 +135,7 @@ test('yzf late render: "Late" → delayed with Expected 00:34 settled to the nex
   assert.equal(ac.aircraft.model, 'CR9');
   assert.equal(ac.arrival.airline.iata, 'AC');
   assert.equal(ac.arrival.airline.name, 'Air Canada');
-  assert.ok(arr.every((x) => x.number !== 'AC8026' ? x.status === 'scheduled' : true), 'everything else On Time');
+  assert.ok(arr.every((x) => x.number !== 'AC8026' ? x.status === 'ontime' : true), 'everything else On Time');
   const dep = parseYzfPage(fx('yzf-page-late-sample.html'), 'dep', NOW_LATE);
   assert.equal(dep.length, 17, `parsed ${dep.length}`);
   const rt = dep.find((x) => x.number === '5T118');
@@ -196,12 +196,12 @@ test('yzf merge: flyyzf.ca wins for today, the mirror adds landed + tomorrow, sa
   // The cancelled row matched through its revised time (the mirror lists it
   // at 02:30 Sep 6); the mirror's Sep 8 5T675 is a different flight.
   const cn675 = m.filter((x) => x.number === '5T675');
-  assert.deepEqual(cn675.map((x) => `${day(x)} ${x.status}`), ['2026-09-05 cancelled', '2026-09-08 scheduled']);
+  assert.deepEqual(cn675.map((x) => `${day(x)} ${x.status}`), ['2026-09-05 cancelled', '2026-09-08 ontime']);
   assert.equal(cn675[0].arrival.scheduledTime.local, '2026-09-05 18:40:00-06:00');
   // Last night's AC8026 landed at 00:01 (mirror, 23h56m from tonight's —
   // not a duplicate), tonight's is flyyzf.ca's, tomorrow's is the mirror's.
   const ac = m.filter((x) => x.number === 'AC8026').map((x) => `${x.arrival.scheduledTime.local} ${x.status}`).sort();
-  assert.deepEqual(ac, ['2026-09-06 00:01:00-06:00 arrived', '2026-09-06 23:57:00-06:00 scheduled', '2026-09-07 23:57:00-06:00 scheduled']);
+  assert.deepEqual(ac, ['2026-09-06 00:01:00-06:00 arrived', '2026-09-06 23:57:00-06:00 ontime', '2026-09-07 23:57:00-06:00 ontime']);
   assert.ok(m.some((x) => x.number === 'WS3291' && x.status === 'arrived'), 'landed WS3291 from the mirror');
   assert.equal(m.filter((x) => x.arrival.scheduledTime.local.startsWith('2026-09-07')).length, 15, 'tomorrow from the mirror');
   const d = yzfMergeRows(parseYzfPage(fx('yzf-page-sample.html'), 'dep', NOW), parseYzfDotPage(fx('yzf-dot-sample.html'), 'dep', NOW));
@@ -240,7 +240,7 @@ test('yzf synthetic: winter offset, unknown city borrows the code flyyzf.ca prin
   // Statuses the terminal FIDS could emit beyond the three seen live.
   for (const [txt, want] of [['Cancelled', 'cancelled'], ['Late', 'delayed'], ['Delayed', 'delayed'], ['Arrived', 'arrived'],
     ['Landed', 'arrived'], ['Departed', 'departed'], ['Boarding', 'boarding'], ['Final Call', 'boarding'],
-    ['Gate Closed', 'gateclosed'], ['Diverted', 'diverted'], ['On Time', 'scheduled'], ['Early', 'scheduled'], ['', 'scheduled']]) {
+    ['Gate Closed', 'gateclosed'], ['Diverted', 'diverted'], ['On Time', 'ontime'], ['Expected', 'expected'], ['Early', 'scheduled'], ['Scheduled', 'scheduled']]) {
     assert.equal(parseYzfPage(page('arr', row({ status: txt })), 'arr', NOW)[0].status, want, txt);
   }
 });

@@ -94,7 +94,7 @@ test('aus departures: tomorrow rows carry CDT, gate present, no belt, direction 
   const dl = dep.find((x) => x.number === 'DL1344');
   assert.ok(dl, 'DL1344 present');
   assert.equal(dl.departure.scheduledTime.local, '2026-09-06 05:15:00-05:00');
-  assert.equal(dl.status, 'scheduled');                 // "On Time"
+  assert.equal(dl.status, 'ontime');                 // "On Time"
   assert.equal(dl.departure.revisedTime, undefined);    // ett == stt → no revised
   assert.equal(dl.departure.gate, '4');
   // Every departure row is DIR=D, so the arrivals read of it is empty and vice versa.

@@ -41,7 +41,11 @@
   function readableStatus(value) {
     const status = String(value || '').replace(/[\s_-]+/g, '').toLowerCase();
     const labels = {
-      scheduled: 'On time', expected: 'On time', active: 'En route', enroute: 'En route',
+      // v23968 — the airport's own neutral word, kept: "On Time" is On time,
+      // "Expected" is Expected, and "Scheduled" or nothing is Scheduled. Both
+      // used to read On time here, a claim the airport never made, and the
+      // feed's own 'ontime' fell through to the raw code.
+      ontime: 'On time', scheduled: 'Scheduled', expected: 'Expected', active: 'En route', enroute: 'En route', // i18n-ok: data
       // v23925 — the shared router passes a final call through as 'final'.
       boarding: 'Boarding', final: 'Final call', finalcall: 'Final call', gateclosed: 'Gate closed', departed: 'Departed',
       arrived: 'Arrived', landed: 'Arrived', delayed: 'Delayed', cancelled: 'Cancelled',
