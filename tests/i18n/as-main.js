@@ -86,13 +86,17 @@ function runAsGuard(change) {
   const RENDER = 'tests/board-languages-render.test.js';
   const env = Object.assign({}, process.env, { CI: 'true', I18N_AS_MAIN: '1' });
   const problems = [];
-  const show = (out) => process.stdout.write(out.split('\n').filter((l) => /^(✖|ℹ (tests|pass|fail|cancelled|skipped))|^\s+(B\d+|C\d|P\d|L1|W1) |AssertionError|no approval|may only shrink|is frozen|lost files|Board languages:/.test(l)).slice(0, 120).join('\n') + '\n');
+  const show = (out) => process.stdout.write(out.split('\n').filter((l) => /^(✖|not ok|(ℹ|#) (tests|pass|fail|cancelled|skipped))|^\s+(B\d+|C\d|P\d|L1|W1) |AssertionError|no approval|may only shrink|is frozen|lost files|Board languages:/.test(l)).slice(0, 120).join('\n') + '\n');
   const counts = (out) => {
-    const n = (k) => { const m = new RegExp('^ℹ ' + k + ' (\\d+)', 'm').exec(out); return m ? +m[1] : null; };
+    // the spec reporter's summary ('ℹ tests 12'), or TAP's ('# tests 12'), which
+    // is what node 20 writes when its output is not a terminal
+    const n = (k) => { const m = new RegExp('^(?:ℹ|#) ' + k + ' (\\d+)', 'm').exec(out); return m ? +m[1] : null; };
     return { tests: n('tests'), pass: n('pass'), fail: n('fail'), cancelled: n('cancelled'), skipped: n('skipped') };
   };
   const runTest = (file) => {
-    const r = spawnSync(process.execPath, ['--test', file], { cwd: wt, encoding: 'utf8', env, maxBuffer: 256 << 20 });
+    // one reporter on every node: CI runs node 20, whose default away from a
+    // terminal is TAP, and a summary that cannot be read counts as a failure
+    const r = spawnSync(process.execPath, ['--test', '--test-reporter=spec', file], { cwd: wt, encoding: 'utf8', env, maxBuffer: 256 << 20 });
     const out = (r.stdout || '') + (r.stderr || '');
     return { status: r.status, out, c: counts(out) };
   };
