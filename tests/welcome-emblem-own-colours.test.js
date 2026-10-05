@@ -90,9 +90,25 @@ const chroma = (c) => (Math.max(...c) - Math.min(...c)) / 255;
 /** The two ends of the card's gradient, exactly as _welcomeCardData builds it. */
 const ground = (code) => (BRAND[code] ? [BRAND[code].bg1, BRAND[code].bg2] : ['#14213d', '#0b1020']).map(hex);
 
+/**
+ * An SVG's text without its comments (a comment can name a tag). Scanned as
+ * an XML parser reads it: each comment runs from "<!--" to the first "-->".
+ */
+function withoutComments(s) {
+  let out = '', i = 0;
+  for (;;) {
+    const a = s.indexOf('<!--', i);
+    if (a < 0) return out + s.slice(i);
+    out += s.slice(i, a);
+    const b = s.indexOf('-->', a + 4);
+    if (b < 0) return out;
+    i = b + 3;
+  }
+}
+
 /** The solid colours an SVG paints, in document order (fills and strokes; gradient stops; black where none is given). */
 function svgPaints(file) {
-  const text = fs.readFileSync(file, 'utf8').replace(/<!--[\s\S]*?-->/g, ''); // a comment can name a tag
+  const text = withoutComments(fs.readFileSync(file, 'utf8'));
   const cls = {};
   for (const st of text.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)) {
     for (const r of st[1].matchAll(/([^{}]+)\{([^}]*)\}/g)) for (const sel of r[1].split(',')) { const m = /\.([\w-]+)\s*$/.exec(sel.trim()); if (m) cls[m[1]] = (cls[m[1]] || '') + ';' + r[2]; }
