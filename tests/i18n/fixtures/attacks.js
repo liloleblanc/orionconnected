@@ -151,3 +151,5 @@ function atk_R5_cssQuotes(el) { el.style.cssText = "quotes: 'Gate closes' ''"; }
 function atk_R5_inlineVar() { return '<span class="gcv" style="--gcv:&quot;Gate closes&quot;"></span>'; }
 // a script whose src is built from parts
 function atk_R5_scriptFromParts() { var s = document.createElement('script'); s.src = 'inj' + 'ected.js'; document.head.appendChild(s); }
+function atk_R5_tableByVar() { var L1 = 'fr'; return BOARD_STR.gate[L1]; }
+function atk_R5_computedLocale() { return new Date()['toLocale' + 'TimeString']('en-US'); }

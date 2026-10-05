@@ -1975,6 +1975,23 @@ function run(options) {
         if (!isMetaChain && !(fn && helperFns.has(fn)) && !(tables[recv] && tables[recv].file === rel && ((P.LEGACY_STORES.find((x) => x.name === recv) || {}).helpers || []).includes(fn)))
           add({ check: 'B11', file: rel, line: tk.line, fn, text: recv + '.' + tk.v, msg: `the ${LANG_NAME[tk.v]} picked by a literal (${recv}.${tk.v}) — read the language the board is showing through the store's helpers` });
       }
+      // … or by a name that only ever holds a literal code: var L = 'fr'; X.k[L]
+      if (tk.t === 'id' && t[i - 1] && t[i - 1].v === '[' && t[i + 1] && t[i + 1].v === ']' && !JS_WORDS.has(tk.v)
+          && t[i - 2] && ((t[i - 2].t === 'id' && !JS_WORDS.has(t[i - 2].v)) || t[i - 2].v === ')' || t[i - 2].v === ']') && t[i - 2].v !== 'META'
+          && !(t[i + 2] && /^(=|\+=|\|\|=|\?\?=|\()$/.test(t[i + 2].v))) {
+        const r = assignedValues(unit, i);
+        if (r.lits.length && !r.other && r.lits.every((v) => LSET.has(v)))
+          add({ check: 'B11', file: rel, line: tk.line, fn, text: (t[i - 2].t === 'id' ? t[i - 2].v : '(…)') + '[' + tk.v + "='" + r.lits[0] + "']", msg: `the ${LANG_NAME[r.lits[0]]} picked through ${tk.v}, which only ever holds '${r.lits[0]}' \u2014 read the language the board is showing through the store's helpers` });
+      }
+      // a locale method reached by a name built from literals: d['toLocale' + 'TimeString']
+      if (tk.t === 'punc' && tk.v === '[' && unit.closeOf[i] != null && t[i - 1] && (t[i - 1].t === 'id' || t[i - 1].v === ')' || t[i - 1].v === ']')) {
+        const inner = t.slice(i + 1, unit.closeOf[i]);
+        if (inner.length >= 3 && inner.every((x, k) => (k % 2 === 0 ? x.t === 'str' : x.v === '+'))) {
+          const nm = inner.filter((x) => x.t === 'str').map((x) => x.v).join('');
+          if (LOCALE_CALLS.test(nm) || /^(toDateString|toUTCString|toGMTString|toTimeString)$/.test(nm))
+            add({ check: 'B11', file: rel, line: tk.line, fn, text: "['" + nm + "']", msg: `${nm} reached by a name built from pieces \u2014 times and dates go through bsTime/bsDate` });
+        }
+      }
       // a language's settings picked by a literal: BoardStrings.META.en.intl
       // as a locale is English whatever the board shows
       if (tk.t === 'id' && tk.v === 'META' && t[i + 1] && ((t[i + 1].v === '.' && t[i + 2] && LSET.has(t[i + 2].v)) || (t[i + 1].v === '[' && t[i + 2] && t[i + 2].t === 'str' && LSET.has(t[i + 2].v)))) {
@@ -2352,7 +2369,8 @@ function run(options) {
   // remark, label, caption, word…) or returned by a function that makes one.
   {
     const files = options.workerFiles || listWorkerFiles();
-    const TEXT_PROPS = /^(status|statusText|status_text|statusWord|remark|remarks|label|caption|headline|word|words|gateNote|boardingNote|displayStatus|display)$/;
+    // (and a row field named for its text: statusLabel, gateText, delayNote…)
+    const TEXT_PROPS = /^(status|statusText|status_text|statusWord|remark|remarks|label|caption|headline|word|words|gateNote|boardingNote|displayStatus|display|(status|remark|gate|boarding|board|flight|delay|belt|bag|baggage|row|cancel|cancell?ation|diversion)_?(Label|Text|Note|Msg|Message|Word|Words|Caption|Display|Line|label|text|note|msg|message|word|words|caption|display|line))$/;
     const TEXT_FN = /status|remark|label|caption|word|display/i;
     for (const rel of files) {
       let L;

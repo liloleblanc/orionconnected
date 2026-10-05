@@ -179,6 +179,9 @@ test('self-test: a feed worker writing its own English into a row fails (W1)', (
   assert.ok(F.some((f) => f.check === 'W1' && /Gate closes in 10 minutes/.test(f.text)), 'a made-up status');
   assert.ok(F.some((f) => f.check === 'W1' && /Proceed to the gate now/.test(f.text)), 'a made-up remark');
   assert.ok(!F.some((f) => f.check === 'W1' && /gateclosing/.test(f.text)), 'a code is what a worker sends');
+  assert.ok(F.some((f) => f.check === 'W1' && f.text === 'Gate closes soon' && /through GC/.test(f.msg)), 'a status held in a const first');
+  assert.ok(F.some((f) => f.check === 'W1' && f.text === 'Proceed to your gate now'), 'a remark held in a variable first');
+  assert.ok(F.some((f) => f.check === 'W1' && f.text === 'Gate closing shortly') && F.some((f) => f.check === 'W1' && f.text === 'Proceed to the gate'), 'a row field named for its text');
 });
 test('self-test: C2 catches a script injected at run time', () => {
   assert.ok(F.some((f) => f.check === 'C2' && /injected\.js/.test(f.text)));
