@@ -140,11 +140,13 @@ test('every feed value in the BIDS template is escaped at the interpolation', ()
     assert.ok(tpl.includes(wrapped), `expected ${wrapped} in the BIDS template`);
   }
   // _cityApHtml escapes everything it is given, the city and the airport
-  const ap = CORE.slice(CORE.indexOf('function _cityApHtml(text, code) {'), CORE.indexOf('\n}\n', CORE.indexOf('function _cityApHtml(text, code) {')) + 3);
+  // (and the airport's code it may carry for the fitter, v23998)
+  const ap = CORE.slice(CORE.indexOf('function _cityApHtml(text, code, withCode) {'), CORE.indexOf('\n}\n', CORE.indexOf('function _cityApHtml(text, code, withCode) {')) + 3);
   assert.match(ap, /var esc = \(typeof fidsEscHtml === 'function'\) \? fidsEscHtml/);
   assert.match(ap, /if \(i <= 0 \|\| !_apSublineNames\(\)\[s\.slice\(i \+ 3\)\.trim\(\)\.toLowerCase\(\)\]\) return esc\(s\);/);
   assert.match(ap, /return esc\(s\.slice\(0, i\)\) \+/);
   assert.match(ap, /\+ esc\(s\.slice\(i \+ 3\)\.trim\(\)\) \+/);
+  assert.match(ap, /'<span class="ap-code">' \+ esc\(cd\) \+ '<\/span>'/);
 
   // The airport logo URL is operator input and sits inside src="…".
   assert.ok(tpl.includes("src=\"' + fidsEscHtml(_lg) + '\""),

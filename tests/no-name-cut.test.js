@@ -73,7 +73,8 @@ const PERSON = vm.runInNewContext(CORE.slice(CORE.indexOf('var AIRPORT_SUBLINE_P
 
 // The fitter's pure half, lifted out of the page.
 const _fxSearch = new Function('return (' + fnSource('_fxSearch') + ');')();
-const _fxPlan = new Function('_fxSearch', 'return (' + fnSource('_fxPlan') + ');')(_fxSearch);
+const _fxApMin = new Function('return (' + fnSource('_fxApMin') + ');')();
+const _fxPlan = new Function('_fxSearch', '_fxApMin', 'return (' + fnSource('_fxPlan') + ');')(_fxSearch, _fxApMin);
 const floorAt = (w, h) => new Function('window', 'return (' + fnSource('fidsFitFloor') + ')();')({ innerWidth: w, innerHeight: h });
 
 // The city helpers, with the tables they read.
@@ -257,6 +258,12 @@ test('the 20 longest names in our city tables and every airport under-name fit e
     for (const nm of NAMES) {
       const parts = partsFor(s.shape, nm);
       const fits = (px, wrap, loose, sub, under) => {
+        // v23998 — an airport that has given way is not drawn (-1); every
+        // surface modelled here carries its code already ('| YTZ')
+        if (sub < 0) return fitsParts(parts.filter((p) => !p.ap), px, wrap, loose, 0, false);
+        return fitsParts(parts, px, wrap, loose, sub, under);
+      };
+      const fitsParts = (parts, px, wrap, loose, sub, under) => {
         // v23997 — the airport forced under its city: the city's line, then
         // the airport's (with what follows it), each measured as one line
         if (under) {
@@ -278,38 +285,28 @@ test('the 20 longest names in our city tables and every airport under-name fit e
       };
       const r = _fxPlan(s.base, s.floor, s.lines, !!nm.sub, !!s.units, fits);
       checked++;
-      if (r.over || r.px < s.floor - 1e-9 || (r.sub && r.sub < s.floor - 1e-9) || !fits(r.px, r.wrap, r.loose, r.sub, r.under)) fails.push(`${s.surface} @${s.size}: "${nm.name}" (${r.over ? 'over at the floor' : r.px})`);
-      // the airport's name never costs its city its size where the airport,
-      // at the floor, has room beside the city or under it; only where even
-      // that does not fit does the city come down, and then no further than
-      // it must (a 1280 board's narrow destination column)
-      // v23997 — an airport that would sit at the floor beside its city goes
-      // under it instead, at its own step, where that keeps the city at 85%
-      // of its size beside and the airport reads at least 15% bigger: the
-      // checks below are for the layout it would otherwise have had
-      const beside = _fxPlan(s.base, s.floor, 1, !!nm.sub, !!s.units, fits);
-      const underInstead = nm.sub && r.under && !r.sub && !beside.over && (beside.sub || beside.px * 0.8) <= s.floor + 0.25
-        && r.px >= beside.px * 0.85 - 1e-9 && r.px * 0.8 >= (beside.sub || s.floor) * 1.15;
-      if (underInstead) continue;
+      if (r.over || r.px < s.floor - 1e-9 || (r.sub > 0 && r.sub < s.floor - 1e-9) || !fits(r.px, r.wrap, r.loose, r.sub, r.under)) fails.push(`${s.surface} @${s.size}: "${nm.name}" (${r.over ? 'over at the floor' : r.px})`);
       if (nm.sub) {
-        const room = fits(s.base, false, false, s.floor) || (s.lines > 1 && fits(s.base, true, false, s.floor));
-        const alone = { px: room ? s.base : 0 };
-        if (alone.px >= s.base - 1e-9 && r.px < s.base - 1e-9) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" (${r.px} against ${s.base})`);
-        // and where the city does come down, it is not for want of trying
-        // the airport at the floor first: the city is as big as it can be
-        // with its airport at the floor (v23986: the airport then takes back
-        // what that size leaves it, so it may sit above the floor)
-        if (!room && !r.over && r.px < s.base - 1e-9 && fits(r.px + 1, r.wrap, r.loose, s.floor)) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" city at ${r.px} could have been ${r.px + 1} with its airport at the floor`);
-        // and the airport is never left smaller than the room beside or
-        // under its city allows
-        if (!r.over && (r.sub || 0) && r.sub < r.px * 0.8 - 1 && fits(r.px, r.wrap, r.loose, r.sub + 1)) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" airport at ${r.sub} beside a ${r.px} city with room for more`);
+        // v23998 — THE CITY KEEPS ITS SIZE. Wherever the city alone fits its
+        // box at its size, it has that size with its airport's name or
+        // without it: the airport gives way, never the city.
+        const alone = fits(s.base, false, false, -1);
+        if (alone && r.px < s.base - 1e-9) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" city at ${r.px} against ${s.base}`);
+        // the airport is drawn at no less than its smallest (0.6 of its city,
+        // never under the floor) …
+        if (r.sub > 0 && r.sub < _fxApMin(r.px, s.floor) - 1e-9) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" airport at ${r.sub} beside a ${r.px} city`);
+        // … and gives way only where it has no room at that size, beside its
+        // city or under it
+        const min = _fxApMin(r.px, s.floor);
+        if (r.sub === -1 && !r.wrap && r.px >= s.base - 1e-9
+            && (fits(r.px, false, false, min) || (s.lines > 1 && fits(r.px, true, false, min, true)))) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" airport given way with room at ${min}`);
+        // and is never left smaller than the room beside its city allows
+        if (!r.over && r.sub > 0 && r.sub < r.px * 0.8 - 1 && !r.under && fits(r.px, r.wrap, r.loose, r.sub + 1)) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" airport at ${r.sub} beside a ${r.px} city with room for more`);
       }
     }
   }
   assert.ok(checked > 1000, `only ${checked} cases`);
   assert.deepEqual(fails, []);
-  // v23972 — a city keeps its full size beside its airport wherever the
-  // airport has room at the floor
   assert.deepEqual(shrunk, []);
 });
 
@@ -319,20 +316,34 @@ test('the decision: one line when it is close, two when they read bigger, the ai
   assert.deepEqual(_fxPlan(28, 14, 2, false, false, make(30, 30)), { px: 28, wrap: false });
   assert.equal(_fxPlan(28, 14, 2, false, false, make(24, 27)).wrap, false, '24px on one line beats 27px on two');
   assert.equal(_fxPlan(28, 14, 2, false, false, make(18, 27)).wrap, true, '18px on one line loses to 27px on two');
-  assert.equal(_fxPlan(28, 14, 2, true, false, make(26, 27)).wrap, true, 'a city keeps its size: its airport goes under it');
+  // v23998 — a city keeps its size: its airport goes under it, at the
+  // city's full size, where it has no room beside it
+  const two = (px, wrap, loose, sub, under) => px <= 28 && (wrap ? !!under : sub === -1);
+  const u2 = _fxPlan(28, 14, 2, true, false, two);
+  assert.ok(u2.px === 28 && u2.wrap && u2.under && u2.sub >= 22 && u2.sub <= 22.4, JSON.stringify(u2));
   // v23972 — the airport gives way before the city: on a row with no second
   // line, the city stays at its size and its airport's name comes down
   // (it was the city that shrank: 'Montréal · Métropolitain' at 23.5px
   // against 28px on the other rows)
   const subAt = (cityFits, subMax) => (px, wrap, loose, sub) => !wrap && px <= cityFits && (sub || px * 0.8) <= subMax;
-  const kept = _fxPlan(28, 14, 1, true, false, subAt(28, 16));
-  assert.ok(kept.px === 28 && !kept.wrap && kept.sub > 15.5 && kept.sub <= 16, JSON.stringify(kept));
-  assert.equal(_fxPlan(28, 14, 1, true, false, subAt(28, 10)).sub, 14, 'not under the floor: the city comes down instead');
-  assert.equal(_fxPlan(28, 14, 1, true, false, subAt(28, 10)).px < 28, true);
-  // with a second line, a name that would have to drop under 0.65 of its
-  // city goes under the city at its own step instead
+  const kept = _fxPlan(28, 14, 1, true, false, subAt(28, 18));
+  assert.ok(kept.px === 28 && !kept.wrap && kept.sub > 17.5 && kept.sub <= 18, JSON.stringify(kept));
+  // v23998 — and no smaller than its smallest (0.6 of the city: 16.8px of
+  // 28): under that it gives way whole and the city keeps its size. v23997
+  // brought the city down until the airport held the floor beside it.
+  assert.equal(_fxApMin(28, 14), 16.75 + 0.25);
+  assert.equal(_fxApMin(21.76, 12), 13.25);
+  assert.equal(_fxApMin(16, 13.75), 13.75, 'never under the floor');
+  assert.equal(_fxApMin(14, 13.75), 13.75, 'nor over its own step');
+  assert.deepEqual(_fxPlan(28, 14, 1, true, false, subAt(28, 16)), { px: 28, wrap: false, sub: -1 }, 'under its smallest: it gives way');
+  assert.deepEqual(_fxPlan(28, 14, 1, true, false, subAt(28, 10)), { px: 28, wrap: false, sub: -1 }, 'not under the floor: it gives way, the city keeps its size');
+  // to its code where its line has none of its own (the strip)
+  assert.equal(_fxPlan(28, 14, 1, true, false, subAt(28, 10), -2).sub, -2);
+  // with a second line, a name that has no room beside its city goes under
+  // the city at its own step
   const under = (px, wrap, loose, sub) => (wrap ? px <= 28 : (px <= 28 && (sub || px * 0.8) <= 15));
-  assert.deepEqual(_fxPlan(28, 14, 2, true, false, under), { px: 28, wrap: true });
+  const u3 = _fxPlan(28, 14, 2, true, false, under);
+  assert.ok(u3.px === 28 && u3.wrap && u3.under && u3.sub >= 22, JSON.stringify(u3));
   assert.equal(_fxPlan(28, 14, 2, false, false, make(10, 10)).over, true, 'nothing at the floor: reported');
   assert.equal(_fxPlan(10, 14, 1, false, false, make(30, 30)).px, 14, 'a designed size under the floor comes up to it');
   const r = _fxPlan(28, 14, 2, false, true, (px, wrap, loose) => !!loose && px <= 20);
@@ -619,7 +630,9 @@ test('the board\'s Destination takes what is left; the mark and the status keep 
   assert.match(FD, /#fidsTable thead th\.col-dest\s+\{ width: auto !important; \}/);
   assert.match(FD, /#fidsTable colgroup col\.col-term\s+\{ width: clamp\(68px, calc\(12\.25vw - 89px\), 120px\) !important; \}/);
   const dc = fnSource('_fidsDestColumn');
-  assert.match(dc, /tbl\.querySelectorAll\('colgroup col\.col-airline, colgroup col\.col-status'\)/);
+  // v23998 — the flight number keeps its width too ('EW97…' on the ZRH board)
+  assert.match(dc, /tbl\.querySelectorAll\('colgroup col\.col-airline, colgroup col\.col-flight, colgroup col\.col-status'\)/);
+  assert.match(rulesSrc(), /\{ sel: '#fidsTable tbody td\.td-flight', lines: 1 \}/);
   assert.match(dc, /var s = \(W \* \(term \? 0\.73 : 0\.8\)\) \/ sum;/);
   assert.match(dc, /if \(de\.classList\.contains\('fids-portrait'\) \|\| !\(W > 0\)\) return;/);
   assert.match(fnSource('fidsFitAll'), /_fidsDestColumn\(\);\s*_fxApRelang\(root\);/);
@@ -655,8 +668,10 @@ test('the gate\'s Destination is fitted alone; its airport takes what is left, o
   assert.match(box, /if \(_apSub\) _gateApSubPlace\(el, _apSub, _finPx, _cityTwo, availH, colR, skipH, _flo\);/);
   const place = fnSource('_gateApSubPlace');
   assert.match(place, /var top = Math\.max\(flo, Math\.floor\(cityPx \* 0\.8 \* 4\) \/ 4\);/);
-  assert.match(place, /var b1 = _fxSearch\(flo, top, function \(q\) \{ return fitsAt\(q, false\); \}\);/);
-  assert.match(place, /var b2 = _fxSearch\(flo, top, function \(q\) \{ return fitsAt\(q, true\); \}\);/);
+  // v23998 — no smaller than its smallest beside or under its city (_fxApMin)
+  assert.match(place, /var lo = _fxApMin\(cityPx, flo\);/);
+  assert.match(place, /var b1 = _fxSearch\(lo, top, function \(q\) \{ return fitsAt\(q, false\); \}\);/);
+  assert.match(place, /var b2 = _fxSearch\(lo, top, function \(q\) \{ return fitsAt\(q, true\); \}\);/);
   assert.match(place, /sub\.classList\.add\('ap-sub-off'\);/);
   assert.doesNotMatch(place, /el\.style\.setProperty\('font-size'/, 'the city\'s size is never touched');
   assert.match(OVR, /:root:not\(#_\) \.ap-sub\.ap-sub-off \{ display: none !important; \}/);
@@ -675,23 +690,24 @@ test('the decision: the bigger city, then the bigger airport, then one line', ()
   assert.deepEqual(_fxPlan(23.5, 12, 2, true, false, fits(18.8, true)), { px: 23.5, wrap: false });
   const hair = _fxPlan(23.5, 12, 2, true, false, fits(18.7, true));
   assert.ok(!hair.wrap && hair.px === 23.5 && hair.sub >= 18.5, 'a hair under its step: still beside ' + JSON.stringify(hair));
-  assert.deepEqual(_fxPlan(23.5, 12, 2, true, false, fits(15.5, true)), { px: 23.5, wrap: true });
+  const fifteen = _fxPlan(23.5, 12, 2, true, false, fits(15.5, true));
+  assert.ok(fifteen.px === 23.5 && fifteen.wrap && fifteen.under && fifteen.sub >= 18.5, JSON.stringify(fifteen));
   // a belt row (YQM PD2293, 1280x720) whose airport held 15.5px of 23.5 beside
   // its city in English and 15.2px in French took one layout in each
   // language; it takes the same one in both now
   const en = _fxPlan(23.5, 12, 2, true, false, fits(15.5, true)), fr = _fxPlan(23.5, 12, 2, true, false, fits(15.2, true));
   assert.deepEqual(en, fr);
-  // an airport that would sit at the floor beside its city goes under it
-  // (a forced second line), at its own step, when that keeps the city at 85%
-  // of its size beside and the airport reads at least 15% bigger; a 1280x720
-  // board's 36px row cannot (14.5px over 12px against 21.25px beside 12px)
+  // v23998 — an airport that would sit at the floor beside its city on a
+  // 1280x720 board's 36px row, with no room under a city kept at its size,
+  // gives way: 'London | LHR' at the size the row gives the city alone, not
+  // 'London' at 19.25px over 'Heathrow' (v23997 took 85% of the city for it)
   const row = (px, wrap, loose, sub) => (wrap ? px <= 19.25 : (px <= 21.25 && (sub || px * 0.8) <= 12));
   const lon = _fxPlan(21.76, 12, 2, true, false, row);
-  assert.ok(lon.wrap && lon.under && !lon.sub && lon.px >= 19 && lon.px <= 19.25, JSON.stringify(lon));
+  assert.ok(lon.px >= 21 && lon.px <= 21.25 && !lon.wrap && lon.sub === -1, JSON.stringify(lon));
   const tight = (px, wrap, loose, sub) => (wrap ? px <= 17 : (px <= 21.25 && (sub || px * 0.8) <= 12));
-  assert.equal(_fxPlan(21.76, 12, 2, true, false, tight).wrap, false, 'not at more than 15% of the city');
+  assert.equal(_fxPlan(21.76, 12, 2, true, false, tight).wrap, false, 'the city is not wrapped smaller for its airport');
   const small = (px, wrap, loose, sub) => (wrap ? px <= 15.5 : (px <= 16.25 && (sub || px * 0.8) <= 12));
-  assert.equal(_fxPlan(21.76, 12, 2, true, false, small).wrap, false, 'not for an airport hardly bigger under it');
+  assert.equal(_fxPlan(21.76, 12, 2, true, false, small).wrap, false, 'nor for an airport hardly bigger under it');
   // and every board language's words are tried in place, so all of them hold
   const v = fnSource('_fxApVariants');
   assert.match(v, /var code = sub && sub\.getAttribute\('data-ap'\);/);
@@ -737,11 +753,14 @@ test('twin cities from the live boards say which airport, in every board languag
 
 test('the weather screens\' title keeps one line, its airport giving way first; the day panels are never cut', () => {
   const t = fnSource('_wxFitTitle');
-  const steps = ['// 1. the airport, down to the floor', '// 2. the place, down to the words beside it',
-    '// 3. the airport left to its code', '// 4. the place, then the words, to the floor'].map((x) => t.indexOf(x));
+  // v23998 — the place keeps its size before the airport keeps its name
+  // ('MONTRÉAL · MÉTROPOLITAIN | MET' 15.1px against 20.7px on v23994)
+  const steps = ['// 1. the airport, down to its smallest beside the place', '// 2. the airport left to its code, the place at its size',
+    '// 3. the place, down to the words beside it', '// 4. the place, then the words, to the floor'].map((x) => t.indexOf(x));
   for (const i of steps) assert.ok(i > 0);
   assert.deepEqual(steps, [...steps].sort((a, b) => a - b), 'in that order');
-  assert.match(t, /sub\.classList\.add\('ap-sub-off'\);/);
+  assert.match(t, /var q1 = _fxSearch\(_fxApMin\(pPx, flo\), Math\.max\(flo, pPx \* 0\.8\), setSub\);/);
+  assert.match(t, /sub\.classList\.add\('ap-sub-off'\);\s*if \(_wxTitleOneLine\(t\)\) return done\(\);/);
   // a row of the title is told by where its pieces are laid out (the screens
   // slide in turned and scaled), not by where they are drawn
   assert.match(fnSource('_wxTitleOneLine'), /k\.offsetTop >= minTop \+ maxH \* 0\.6/);
@@ -758,13 +777,19 @@ test('the weather screens\' title keeps one line, its airport giving way first; 
 test('the Later-at-this-gate strip\'s words are the shared fitter\'s, never under the floor', () => {
   const r = rulesSrc();
   assert.match(r, /\{ sel: '\.gl-strip \.gl-title', lines: 1 \}/);
-  assert.match(r, /\{ sel: '\.gl-strip \.gl-sub', box: '\.gl-slot', lines: 2, group: '\.gl-list', h: function \(el\) \{ return _GL_FIT_SUB\.h\(el\); \} \}/);
-  // the clock row comes down while a slot's time and line are taller than
-  // the slot; the line then has the height the row leaves it
-  assert.match(fnSource('_gateLaterFit'), /_fxUnfit\(lns\[li\]\);\s*lns\[li\]\.style\.setProperty\('font-size', fidsFitFloor\(\) \+ 'px', 'important'\);\s*\}\s*_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\);/);
-  // its title and lines are sized by the screen, floored, not by the clock row's scale
-  assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), min\(1\.92vh, 1\.2vw\)\) !important;/);
-  assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--gl-v\) \* \.27\)\) !important;/);
+  // (its one line held by the scale, its second line by the room the clock
+  // row leaves: v23998, the one line held to its glyphs' height came down
+  // from 21.9px to 15.8px)
+  assert.match(r, /\{ sel: '\.gl-strip \.gl-sub', box: '\.gl-slot', lines: 2, hWrap: true, group: '\.gl-list', h: function \(el\) \{ return _GL_FIT_SUB\.h\(el\); \} \}/);
+  // v23998 — the clock rows and the lines on one scale, as v23976 had it, the
+  // lines measured in their smallest form (the city with its airport's code);
+  // then the shared fitter puts the airport's name in where it has room
+  assert.match(fnSource('_gateLaterFit'), /setForm\(false\);\s*if \(!_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\)\)/);
+  // its title and lines on that scale, floored
+  assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), calc\(min\(1\.92vh, 1\.2vw\) \* var\(--gl-k\)\)\) !important;/);
+  assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--gl-v\) \* \.27 \* var\(--gl-k\)\)\) !important;/);
+  // and an airport's name that has no room gives way to its code there
+  assert.match(OVR, /:root:not\(#_\) \.ap-sub\.ap-sub-code \.ap-code \{ display: inline !important; letter-spacing: \.02em !important; \}/);
   assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--gl-v\) \* \.2 \* var\(--gl-k\)\)\) !important;/);
   assert.match(OVR, /font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--gl-v\) \* \.22 \* var\(--gl-k\)\)\) !important;/);
   assert.doesNotMatch(OVR, /\.gl-strip\.gl-wrap/);

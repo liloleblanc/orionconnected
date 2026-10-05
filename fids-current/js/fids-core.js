@@ -2192,79 +2192,60 @@ function _fxNudge(el, box) {
     if (Math.abs(dx) > 0.5) el.style.setProperty('margin-left', (dx / (_fxInner(el).sx || 1)) + 'px', 'important');
   } catch (e) {}
 }
-// THE DECISION, apart from the page. at(px, wrap, loose, sub) answers
-// whether the text fits its box at that size, on one line or wrapped (loose:
-// its phrases opened at their spaces too; sub: the airport's name after a
-// city set at that many px instead of its own step, 0.8em). Kept free of the
-// DOM so the tests can run it against a model of every surface's box
-// (tests/no-name-cut.test.js).
+// THE DECISION, apart from the page. at(px, wrap, loose, sub, under)
+// answers whether the text fits its box at that size, on one line or wrapped
+// (loose: its phrases opened at their spaces too; sub: the airport's name
+// after a city set at that many px instead of its own step, 0.8em, or -1 for
+// not drawn, -2 for its code in its place; under: the airport's name forced
+// onto the line under its city). Kept free of the DOM so the tests can run it
+// against a model of every surface's box (tests/no-name-cut.test.js).
 //   · a designed size under the floor is brought up to the floor;
 //   · one line at the designed size, if it fits;
-//   · a city with an airport's name keeps its own size first: the airport's
-//     name gives way (smaller, down to the floor), or goes under the city
-//     on the box's second line, before the city is made any smaller;
+//   · a city with an airport's name keeps its own size, always: the airport
+//     gives way (_fxApPlan);
 //   · else the largest single line and the largest wrapped size are both
 //     found, down to the floor, and one line is kept when it is within 80%
-//     of the design or 90% of the wrapped size — except that a city with an
-//     airport's name takes the second line whenever that is bigger;
+//     of the design or 90% of the wrapped size;
 //   · phrases are opened only when nothing else fits;
 //   · nothing fits even at the floor: reported (over), never hidden.
-function _fxPlan(base, floor, lines, hasSub, units, at) {
+// v23998 — giveWay: what an airport's name that has no room becomes, -1 (not
+// drawn: the code is already on the line, '| YYZ') or -2 (its code in its
+// place, where the line has none: the Later-at-this-gate strip).
+function _fxPlan(base, floor, lines, hasSub, units, at, giveWay) {
   if (base < floor) base = floor;
   if (at(base, false)) return { px: base, wrap: false };
-  var sub = 0;
-  var atIn = at;
-  // v23997 — NOT AT THE FLOOR BESIDE ITS CITY, WHERE UNDER IT READS BIGGER.
-  // Where the airport's name would sit at the readable floor beside its
-  // city, it goes under the city (a real second line: the break in front of
-  // it is forced, .fx-brk-off), at its own step, the city as large as the
-  // two lines allow — as long as that keeps the city at least 85% of the
-  // size it has beside it and the airport reads at least 15% bigger. A
-  // 1280x720 board's 36px row cannot: its two lines hold a 14.5px 'London'
-  // over a 12px 'Heathrow | LHR', against 21.25px beside a 12px 'Heathrow',
-  // so it stays beside there; a taller box (a belt's row) takes it.
-  var underInstead = function (cityBeside, subBeside) {
-    if (!(lines > 1) || !(subBeside <= floor + 0.25)) return null;
-    var cU = _fxSearch(floor, base, function (p) { return atIn(p, true, false, 0, true); });
-    return (cU && cU >= cityBeside * 0.85 - 1e-9 && cU * 0.8 >= subBeside * 1.15) ? { px: cU, wrap: true, under: true } : null;
-  };
+  var off = 0, at0 = at;
   if (hasSub) {
-    // THE AIRPORT GIVES WAY, NOT THE CITY. Its own step is 0.8 of the city;
-    // on one line it may come down to the floor while the city keeps its
-    // size. Under the city, on the second line, it keeps its step.
-    // v23997 — ONE RULE: the bigger city, then the bigger airport, then one
-    // line. With the city at its size either way, the airport goes where it
-    // is bigger: beside the city at its own step, else under it at its own
-    // step, else wherever the search gives it more. (A threshold — beside
-    // while it held 0.65 of the city — split a belt row between phases:
-    // 'Billy Bishop' held 15.5px of 23.5 beside it in English, 'Billy-Bishop'
-    // 15.2px in French, and the row changed layout with the language.)
-    var subTop = base * 0.8;
-    var sOne = subTop > floor
-      ? _fxSearch(floor, subTop, function (q) { return at(base, false, false, q); })
-      : (at(base, false, false, floor) ? floor : 0);
-    if (sOne && sOne >= Math.max(floor, subTop - 0.5)) return { px: base, wrap: false, sub: sOne };
-    if (lines > 1 && at(base, true)) return { px: base, wrap: true };
-    if (lines > 1) {
-      var sTwo = subTop > floor
-        ? _fxSearch(floor, subTop, function (q) { return at(base, true, false, q); })
-        : (at(base, true, false, floor) ? floor : 0);
-      // v23986 — under the city when that reads bigger than beside it
-      if (sTwo && sTwo > sOne) return { px: base, wrap: true, sub: sTwo };
-    }
-    if (sOne) {
-      var uOne = underInstead(base, sOne);
-      return uOne || { px: base, wrap: false, sub: sOne };
-    }
-    // The city itself does not fit at its size: everything below runs with
-    // the airport at the floor, so the city keeps as much as it can.
-    sub = floor;
-    var at0 = at;
-    at = function (px, wrap, loose) { return at0(px, wrap, loose, Math.min(sub, px)); };
+    // v23998 — THE CITY KEEPS ITS SIZE; ITS AIRPORT GIVES WAY. The airport's
+    // name goes beside its city a step smaller (0.8 of the city), down to
+    // its smallest (_fxApMin: 0.6 of the city, never under the floor), or
+    // under the city on the box's second line with the city at its full
+    // size, whichever holds it bigger. Where neither does, it gives way
+    // whole: it is not drawn, and the code already on the line names the
+    // airport ('Toronto | YTZ'), or its code takes its place ('Montréal ·
+    // MET'). The city is never made smaller to make room for it: v23997
+    // brought the city down until the airport held the floor beside it
+    // ('Montréal · Métropolitain' 16.2px against 21.8px on main, a 1280x720
+    // board), and put an airport at the floor under a city at 85% of its
+    // size. Every board language's words are tried at each step
+    // (_fxApVariants), so every phase lands on the same layout.
+    var subTop = Math.max(floor, base * 0.8), subMin = _fxApMin(base, floor);
+    var sOne = _fxSearch(subMin, subTop, function (q) { return at(base, false, false, q); });
+    if (sOne && sOne >= subTop - 0.5) return { px: base, wrap: false, sub: sOne };
+    var sUnd = lines > 1 ? _fxSearch(subMin, subTop, function (q) { return at(base, true, false, q, true); }) : 0;
+    if (sUnd && sUnd > sOne + 0.25) return { px: base, wrap: true, sub: sUnd, under: true };
+    if (sOne) return { px: base, wrap: false, sub: sOne };
+    off = (giveWay === -2) ? -2 : -1;
+    if (at(base, false, false, off)) return { px: base, wrap: false, sub: off };
+    // The city itself does not fit at its size (a 36px board row is under
+    // the text's own height at 28px; a name longer than its box): it is
+    // fitted alone, as it would be with no airport, and the airport may come
+    // back after, in what that size leaves it (below).
+    at = function (px, wrap, loose) { return at0(px, wrap, loose, off); };
   }
   var s1 = _fxSearch(floor, base, function (p) { return at(p, false); });
   var s2 = lines > 1 ? _fxSearch(floor, base, function (p) { return at(p, true); }) : 0;
-  var keepOne = hasSub ? (s1 >= s2) : (s1 >= base * 0.8 || s1 >= s2 * 0.9);
+  var keepOne = s1 >= base * 0.8 || s1 >= s2 * 0.9;
   var res;
   if (s1 && (!s2 || keepOne)) res = { px: s1, wrap: false };
   else if (s2) res = { px: s2, wrap: true };
@@ -2272,25 +2253,27 @@ function _fxPlan(base, floor, lines, hasSub, units, at) {
     var s3 = _fxSearch(floor, base, function (p) { return at(p, true, true); });
     res = s3 ? { px: s3, wrap: true, loose: true } : { px: floor, wrap: true, loose: true, over: true };
   } else res = { px: floor, wrap: lines > 1, over: true };
-  if (sub) {
-    res.sub = Math.min(sub, res.px);
-    // v23986 — and once the city has the largest size it can have, its
-    // airport takes back whatever room that size leaves it, up to its own
-    // step. The city can come down for a reason that is not the airport's
-    // width (a 36px board row is under the text's own height at 28px): the
-    // airport was left at the floor beside it in a column with room to
-    // spare ('Rome · Fiumicino' at 13.75px beside 27.5px in a 469px cell).
-    if (!res.over) {
-      var top = res.px * 0.8;
-      var q = top > res.sub ? _fxSearch(res.sub, top, function (v) { return at0(res.px, res.wrap, res.loose, v); }) : 0;
-      if (q > res.sub) res.sub = q;
-      if (!res.wrap) {
-        var uRes = underInstead(res.px, res.sub);
-        if (uRes) res = uRes;
-      }
+  if (off) {
+    res.sub = off;
+    // v23986 — once the city has the largest size it can have, its airport
+    // takes back what room that size leaves it, beside it on its one line
+    // ('Rome · Fiumicino' in a 1680x1050 board's 469px cell, the city held
+    // to 27.5px by the row's height, not by the airport).
+    if (!res.over && !res.wrap) {
+      var q = _fxSearch(_fxApMin(res.px, floor), Math.max(floor, res.px * 0.8), function (v) { return at0(res.px, false, false, v); });
+      if (q) res.sub = q;
     }
   }
   return res;
+}
+// v23998 — the smallest an airport's name is drawn beside or under its city:
+// three quarters of its own step (0.6 of the city's size), and never under
+// the readable floor. Smaller than that it gives way. An airport at the 12px
+// floor beside a 21.8px city on a 1280x720 board read as a footnote ('London
+// · Heathrow', 'Toronto · Billy Bishop'); the code beside it says it better.
+function _fxApMin(cityPx, floor) {
+  var top = Math.max(floor, cityPx * 0.8);
+  return Math.min(top, Math.max(floor, Math.ceil(cityPx * 0.6 * 4) / 4));
 }
 // How much the element is scaled on screen (a card in its entrance, a
 // rotated board's frame). Its box against its own layout size; offsetHeight
@@ -2476,6 +2459,18 @@ function _fxApVariants(el, sub) {
     };
   } catch (e) { return null; }
 }
+// v23998 — an airport's name in the form the fitter chose: px > 0 at that
+// size, 0 at its own step (0.8em), -1 given way whole (not drawn; the code
+// already on its line names the airport), -2 given way to its code (shown
+// in its place, at its city's size: the strip's 'Montréal · MET').
+function _fxApForm(sub, px) {
+  try {
+    sub.classList.toggle('ap-sub-off', px === -1);
+    sub.classList.toggle('ap-sub-code', px === -2);
+    if (px > 0) sub.style.setProperty('font-size', px + 'px', 'important');
+    else sub.style.removeProperty('font-size');
+  } catch (e) {}
+}
 // Take back what the fitter wrote on an element, so its box can be measured
 // at its own size again; the next pass fits it afresh.
 function _fxUnfit(el) {
@@ -2485,7 +2480,7 @@ function _fxUnfit(el) {
     el.classList.remove('fx-wrap', 'fx-loose');
     el.removeAttribute('data-fx-over');
     var subs = el.querySelectorAll('.ap-sub');
-    for (var i = 0; i < subs.length; i++) { subs[i].style.removeProperty('font-size'); subs[i].classList.remove('ap-sub-off'); }
+    for (var i = 0; i < subs.length; i++) _fxApForm(subs[i], 0);
     _fxBrkClear(el);
     el.__fxKey = null;
   } catch (e) {}
@@ -2553,15 +2548,14 @@ function fidsFitText(el, o) {
     _fxBrkClear(el);
     // An airport's name after the city (.ap-sub, _cityApHtml) gives way
     // before the city does (_fxPlan): its size is set here, px or its own
-    // step (0.8em) when 0.
+    // step (0.8em) when 0; -1 gives way whole (not drawn: .ap-sub-off), -2
+    // to its code (.ap-sub-code, where the markup carries one: .ap-code).
     var subs = (el.querySelectorAll && el.querySelectorAll('.ap-sub')) || [];
     var setSub = function (px) {
-      for (var k = 0; k < subs.length; k++) {
-        if (px) subs[k].style.setProperty('font-size', px + 'px', 'important');
-        else subs[k].style.removeProperty('font-size');
-      }
+      for (var k = 0; k < subs.length; k++) _fxApForm(subs[k], px);
     };
     setSub(0);
+    var giveWay = (subs.length && subs[0].querySelector('.ap-code')) ? -2 : -1;
     var cs = getComputedStyle(el);
     var base = parseFloat(cs.fontSize) || 0;
     if (!base) return null;
@@ -2636,13 +2630,13 @@ function fidsFitText(el, o) {
     // ('Istanbul · Aeroporto de / Istambul | IST' in a 1280 board's Terminal
     // layout, where the Portuguese name is wider than the column at the floor)
     var units = !!o.units || hasSub;
-    var res = _fxPlan(base, floor, lines, hasSub, units, at);
+    var res = _fxPlan(base, floor, lines, hasSub, units, at, giveWay);
     // Nothing fits at the floor: the letters' extra tracking is given up
     // before the name is reported (a 1280 board's narrow Terminal column).
     if (res.over && (parseFloat(getComputedStyle(el).letterSpacing) || 0) > 0) {
       var lsKeep = st.getPropertyValue('letter-spacing'), lsPri = st.getPropertyPriority('letter-spacing');
       st.setProperty('letter-spacing', '0px', 'important');
-      var res2 = _fxPlan(base, floor, lines, hasSub, units, at);
+      var res2 = _fxPlan(base, floor, lines, hasSub, units, at, giveWay);
       if (!res2.over) { res = res2; el.__fxLs = true; }
       else if (lsKeep) st.setProperty('letter-spacing', lsKeep, lsPri); else st.removeProperty('letter-spacing');
     }
@@ -2696,6 +2690,8 @@ var FIDS_FIT_RULES = [
   // v23997 — and the gate: a four-letter gate in a 1280 board's 90px column
   // ended in an ellipsis (MCO 'NHGR', the same on main)
   { sel: '#fidsTable tbody td.td-gate', lines: 1 },
+  // v23998 — and the flight number: never an ellipsis, whatever its column
+  { sel: '#fidsTable tbody td.td-flight', lines: 1 },
   // the belts
   { sel: '.bidsv3 .b3-from', lines: 2, h: function (el) { var r = el.closest('.b3-row'); return r ? r.clientHeight * 0.86 : 0; } },
   // (the name may have the row's height less the flight number under it: a
@@ -2741,7 +2737,7 @@ var FIDS_FIT_RULES = [
   // the gate's Later-at-this-gate strip: its title, and each slot's
   // 'flight · city' line, the slots at one size (v23997; _GL_FIT_SUB)
   { sel: '.gl-strip .gl-title', lines: 1 },
-  { sel: '.gl-strip .gl-sub', box: '.gl-slot', lines: 2, group: '.gl-list', h: function (el) { return _GL_FIT_SUB.h(el); } },
+  { sel: '.gl-strip .gl-sub', box: '.gl-slot', lines: 2, hWrap: true, group: '.gl-list', h: function (el) { return _GL_FIT_SUB.h(el); } },
   // the destination's code in the left rail's round badge (YMM, MET)
   { sel: '.v2-fi-orbcode', box: '.v2-fi-icon-badge', lines: 1 },
   // ── guards: sized by their own fitters, held to the floor and never cut ──
@@ -2772,11 +2768,11 @@ var FIDS_FIT_RULES = [
 // v23986 — THE DEPARTURES / ARRIVALS BOARD'S DESTINATION TAKES WHAT IS LEFT.
 // The stylesheet unpins it (flight-display.css, v23986: it was held to 20%
 // of the table by its header cell, and every other column was stretched to
-// fill the rest). Of those stretched columns, the carrier's mark and the
-// status keep the widths they had — a wordmark is as wide as its column
-// lets it be, and a French status fills its column at 1680 — and the rest
-// (flight number, weather, gate, times, terminal) give their stretch to the
-// names. The stretch is the one the table applied: the 80% (73% beside a
+// fill the rest). Of those stretched columns, the carrier's mark, the flight
+// number and the status keep the widths they had — a wordmark is as wide as
+// its column lets it be, a flight number fills its column at 28px, and a
+// French status fills its column at 1680 — and the rest (weather, gate,
+// times, terminal) give their stretch to the names. The stretch is the one the table applied: the 80% (73% beside a
 // 7% Terminal column) left after Destination, over the columns' own widths.
 // Keyed on what decides the widths, so it runs once per board and size;
 // portrait boards are laid out by the stylesheet alone.
@@ -2792,7 +2788,11 @@ function _fidsDestColumn() {
       + '|' + de.className + '|' + (bd ? bd.className + '|' + (bd.getAttribute('data-fids-theme') || '') + '|' + (bd.getAttribute('data-fids-airline-style') || '') : '');
     if (tbl.__destColKey === key) return;
     tbl.__destColKey = key;
-    var held = tbl.querySelectorAll('colgroup col.col-airline, colgroup col.col-status');
+    // v23998 — and the flight number keeps its stretched width too: at the
+    // narrower width the rest give up, a six-character number at 28px ran
+    // past its cell and ended in an ellipsis on the ZRH board at 1920x1080
+    // and 1680x1050 ('EW97…', 'SM29…'; 160px on v23994, 138px here).
+    var held = tbl.querySelectorAll('colgroup col.col-airline, colgroup col.col-flight, colgroup col.col-status');
     for (var i = 0; i < held.length; i++) held[i].style.removeProperty('width');
     if (de.classList.contains('fids-portrait') || !(W > 0)) return;
     var sum = 0, term = false;
@@ -2888,12 +2888,18 @@ function fidsFitAll(root) {
 // the five day panels under it lost that line's height, and with the gate's
 // Later-at-this-gate strip up (1280x720) each panel's low and its weather
 // words were cut off at its foot. The title is held to one line, in this
-// order, each step only if the one before it is not enough: the airport's
-// name gives way first (a step under the city down to the readable floor),
-// then the place comes down to the size of the words beside it, then the
-// airport is left to its code (which the place already carries), then the
-// place and the words come down to the floor. If the line still will not
-// hold, it wraps — and the day panels give the line back (_wxDayRoom).
+// order, each step only if the one before it is not enough:
+//   1. the airport's name comes down, from a step under the place to its
+//      smallest (_fxApMin: 0.6 of the place, never under the floor);
+//   2. the airport is left to its code, which the place already carries
+//      ('TORONTO | YTZ'). v23998: the place came down first, to the size of
+//      the words beside it, and the airport stayed at the floor beside it
+//      ('MONTRÉAL · MÉTROPOLITAIN | MET' 15.1px against 20.7px on main at
+//      1280x720): the place keeps its size before the airport keeps its name;
+//   3. the place comes down to the size of the words beside it;
+//   4. the place and the words come down to the floor.
+// If the line still will not hold, it wraps — and the day panels give the
+// line back (_wxDayRoom).
 function _wxTitleOneLine(t) {
   var kids = t.children, minTop = Infinity, maxH = 0, i, k;
   for (i = 0; i < kids.length; i++) {
@@ -2929,29 +2935,19 @@ function _wxFitTitle(t) {
   var wPx = parts.length ? (parseFloat(getComputedStyle(parts[0]).fontSize) || 0) : flo;
   var setSub = function (q) { sub.style.setProperty('font-size', q + 'px', 'important'); return _wxTitleOneLine(t); };
   var setPlace = function (q) { place.style.setProperty('font-size', q + 'px', 'important'); return _wxTitleOneLine(t); };
-  // 1. the airport, down to the floor
+  // 1. the airport, down to its smallest beside the place
   if (sub) {
-    var q1 = _fxSearch(flo, Math.max(flo, pPx * 0.8), setSub);
+    var q1 = _fxSearch(_fxApMin(pPx, flo), Math.max(flo, pPx * 0.8), setSub);
     if (q1) { setSub(q1); return done(); }
-    setSub(flo);
-  }
-  // 2. the place, down to the words beside it (the airport at the floor,
-  // then taking back what that size leaves it)
-  var pLo = Math.max(flo, Math.min(pPx, wPx));
-  var q2 = _fxSearch(pLo, pPx, setPlace);
-  if (q2) {
-    setPlace(q2);
-    if (sub) { var q2s = _fxSearch(flo, Math.max(flo, q2 * 0.8), setSub); setSub(q2s || flo); }
-    return done();
-  }
-  // 3. the airport left to its code
-  if (sub) {
-    sub.classList.add('ap-sub-off');
+    // 2. the airport left to its code, the place at its size
     sub.style.removeProperty('font-size');
-    place.style.removeProperty('font-size');
-    var q3 = _fxSearch(pLo, pPx, setPlace);
-    if (q3) { setPlace(q3); return done(); }
+    sub.classList.add('ap-sub-off');
+    if (_wxTitleOneLine(t)) return done();
   }
+  // 3. the place, down to the words beside it
+  var pLo = Math.max(flo, Math.min(pPx, wPx));
+  var q3 = _fxSearch(pLo, pPx, setPlace);
+  if (q3) { setPlace(q3); return done(); }
   // 4. the place, then the words, to the floor
   var q4 = _fxSearch(flo, pLo, setPlace);
   if (q4) { setPlace(q4); return done(); }
@@ -10975,7 +10971,7 @@ function _gateLaterPlace(f) {
 }
 // The place as markup: the airport's name in its own span (_cityApHtml).
 function _gateLaterPlaceHtml(pl) {
-  if (typeof _cityApHtml === 'function') return _cityApHtml(pl.city, pl.ia);
+  if (typeof _cityApHtml === 'function') return _cityApHtml(pl.city, pl.ia, true);
   return fidsEscHtml(pl.city);
 }
 
@@ -11308,24 +11304,29 @@ function _gateLaterAlign(doc) {
 
 // The strip's words, as FIDS_FIT_RULES hands them to the shared fitter. The
 // title is one line in its band. A 'flight · city' line may take the slot's
-// second line (the flight over the place), and either form is held to the
-// height the clock row leaves the slot.
-var _GL_FIT_SUB = { box: '.gl-slot', lines: 2, h: function (el) {
+// second line (the flight over the place), held to the height the clock row
+// leaves the slot; on its one line it is held by the scale (_gateLaterFit),
+// which measures the slot by its laid-out boxes, not the glyphs' (taller
+// than the line box: v23997 held the one line to them and brought a 21.9px
+// 'PD2370 · Ottawa' down to 15.8px).
+var _GL_FIT_SUB = { box: '.gl-slot', lines: 2, hWrap: true, h: function (el) {
   var sl = el.closest('.gl-slot'); if (!sl) return 0;
   var tp = sl.querySelector('.gl-top');
   var mt = parseFloat(getComputedStyle(el).marginTop) || 0;
   return Math.max(0, sl.clientHeight - (tp ? tp.offsetHeight : 0) - mt);
 } };
-// A slot does not hold its clock row: the row's words run past its width,
-// or the row and the line under it are taller than the slot (by their
-// laid-out boxes: the slot centres its content, so a scroll height only
-// sees half of what runs out).
+// A slot does not hold its words: any of them runs past its width (the clock
+// row's or the line's, on the ink), or the clock row and the line under it
+// are taller than the slot by more than the 1px a side the slot's own
+// scroll measure let pass on v23976 (the slot centres its content, so its
+// scroll height only ever saw half of what ran out: the laid-out boxes are
+// summed instead, and the same tolerance kept, so the sizes are v23976's).
 function _gateLaterSlotOver(sl) {
+  if (_gateLaterInkOver(sl)) return true;
   var t = sl.querySelector('.gl-top'), u = sl.querySelector('.gl-sub');
-  if (t && _gateLaterInkOver(t)) return true;
   if (!t || !u) return false;
   var mt = parseFloat(getComputedStyle(u).marginTop) || 0;
-  return t.offsetHeight + mt + u.offsetHeight + 1 > sl.clientHeight;
+  return t.offsetHeight + mt + u.offsetHeight > sl.clientHeight + 2;
 }
 function _gateLaterFit(root) {
   var doc = root || (typeof document !== 'undefined' ? document : null);
@@ -11336,52 +11337,52 @@ function _gateLaterFit(root) {
     for (var si = 0; si < sts.length; si++) {
       var st = sts[si];
       if (!st.clientWidth) continue;
-      // v23997 — THE STRIP'S WORDS GO THROUGH THE SHARED FITTER. Its one
-      // scale (--gl-k) took everything down together for the longest name,
-      // the title too: 'Later at this gate | Plus tard à cette porte' was
-      // 11.3px at 1280x720 with a long city in a slot. The scale now holds
-      // only the clock row (the times, their day, a moved flight's arrow,
-      // words and pill: a set, each piece floored at the readable size in
-      // the stylesheet), and the title and each 'flight · city' line are
-      // fitted by fidsFitText (FIDS_FIT_RULES: the strip's two rules),
-      // as every other name is: smaller down to the floor, the airport's
-      // name giving way first, then a second line.
-      // The clock row's scale is found with each slot's line at the
-      // readable floor (the fitter's last answer taken back): the row comes
-      // down only while a slot's time and a floor-size line together are
-      // taller than the slot, to .72; the line then fits in the height the
-      // row leaves it (a short 1280x720 strip: 'PB924 · Santo Domingo' ran
-      // 5px out of its slot under a full-size time).
+      // v23998 — ONE SCALE FOR THE SLOTS, AS v23976 HAD IT; THE AIRPORT GIVES
+      // WAY IN IT. v23997 sized the clock row first, with a floor-size line
+      // under it, and gave the 'flight · city' lines what was left: 'PD2370 ·
+      // Ottawa' came down from 21.9px to 15.8px at 1920x1080 while the times
+      // grew, and at 1280x720 a 'Montréal · Métropolitain' line took the
+      // city, and as a group every other slot's city, down to the floor.
+      // Now:
+      //   1. each line is set in its smallest form, the city with its
+      //      airport's code where it has two of ours ('Montréal · MET', the
+      //      form v23976 measured), the fitter's last answer taken back;
+      //   2. the one scale (--gl-k) is found for the clock rows and those
+      //      lines together, as v23976 found it: down to .72 while a slot
+      //      does not hold them, then the lines' second line (the flight over
+      //      the place), down to .5. The title takes the scale too, as it
+      //      did, but never under the floor (the stylesheet), and its width
+      //      is the shared fitter's (FIDS_FIT_RULES): it no longer takes the
+      //      slots down with it ('Later at this gate | Plus tard à cette
+      //      porte' was 11.3px at 1280x720 with a long name in a slot);
+      //   3. the shared fitter sets each line at the size the scale gives it
+      //      and puts the airport's name in it where it has room, beside or
+      //      under its city, at no less than its smallest (_fxApMin); where
+      //      it has none, the name gives way to the code it was measured
+      //      with. The city keeps the scale's size either way.
       var slots = [].slice.call(st.querySelectorAll('.gl-slot'));
       var lns = st.querySelectorAll('.gl-sub');
-      for (var li = 0; li < lns.length; li++) {
-        _fxUnfit(lns[li]);
-        lns[li].style.setProperty('font-size', fidsFitFloor() + 'px', 'important');
+      var setForm = function (wrap) {
+        for (var li = 0; li < lns.length; li++) {
+          _fxUnfit(lns[li]);
+          var aps = lns[li].querySelectorAll('.ap-sub');
+          for (var ai = 0; ai < aps.length; ai++) _fxApForm(aps[ai], aps[ai].querySelector('.ap-code') ? -2 : -1);
+          lns[li].classList.toggle('fx-wrap', !!wrap);
+          if (wrap) lns[li].style.setProperty('white-space', 'normal', 'important');
+        }
+      };
+      // (the title rides on the scale as v23976 had it, never under the
+      // floor: its height is the slots' room, so a title held at full size
+      // took 3px from every slot at 1280x720 and the names came down for it)
+      var tts = st.querySelectorAll('.gl-title');
+      for (var ti = 0; ti < tts.length; ti++) _fxUnfit(tts[ti]);
+      setForm(false);
+      if (!_gateLaterFitBox(st, '--gl-k', slots, [], 0.72, _gateLaterSlotOver)) {
+        setForm(true);
+        _gateLaterFitBox(st, '--gl-k', slots, [], 0.5, _gateLaterSlotOver);
       }
-      _gateLaterFitBox(st, '--gl-k', slots, [], 0.72, _gateLaterSlotOver);
-      // (the slots' lines take one size, the smallest any of them needed,
-      // so the three still read as a set: the rule's group)
+      for (var lj = 0; lj < lns.length; lj++) _fxUnfit(lns[lj]);
       fidsFitAll(st);
-      // A line that does not hold even at the floor on the slot's two lines
-      // takes more of the slot from the clock row (to .5: the times stay far
-      // above the floor), and as the last step its airport's name gives way
-      // there (.ap-sub-off): the line is never cut.
-      var glOver = function () { return st.querySelectorAll('.gl-sub[data-fx-over]'); };
-      var gk = parseFloat(st.style.getPropertyValue('--gl-k')) || 1;
-      while (glOver().length && gk > 0.5) {
-        gk = Math.max(0.5, gk - 0.04);
-        st.style.setProperty('--gl-k', gk.toFixed(2));
-        for (var lj = 0; lj < lns.length; lj++) _fxUnfit(lns[lj]);
-        fidsFitAll(st);
-      }
-      var ovs = glOver();
-      for (var oi = 0; oi < ovs.length; oi++) {
-        var oa = ovs[oi].querySelector('.ap-sub');
-        if (!oa) continue;
-        _fxUnfit(ovs[oi]);
-        oa.classList.add('ap-sub-off');
-      }
-      if (ovs.length) fidsFitAll(st);
     }
     var gc = doc.querySelector('.gl-gc');
     if (gc && gc.clientWidth) {
@@ -18859,10 +18860,13 @@ function gateAutofit(root) {
       };
       sub.classList.remove('ap-sub-off');
       var best = 0, bestUnder = false;
+      // v23998 — no smaller than its smallest beside or under a city
+      // (_fxApMin, the shared fitter's rule): under that it gives way
+      var lo = _fxApMin(cityPx, flo);
       if (!cityTwo) {
-        var b1 = _fxSearch(flo, top, function (q) { return fitsAt(q, false); });
+        var b1 = _fxSearch(lo, top, function (q) { return fitsAt(q, false); });
         if (b1) { best = b1; bestUnder = false; }
-        var b2 = _fxSearch(flo, top, function (q) { return fitsAt(q, true); });
+        var b2 = _fxSearch(lo, top, function (q) { return fitsAt(q, true); });
         if (b2 > best + 0.25) { best = b2; bestUnder = true; }
       }
       if (!best) {
@@ -19561,7 +19565,8 @@ function gateAutofit(root) {
           vars.restore();
           return good;
         };
-        var q = _fxSearch(flo, top, ok);
+        // (no smaller than its smallest beside the line, _fxApMin; v23998)
+        var q = _fxSearch(_fxApMin(lpx, flo), top, ok);
         if (q) ok(q);
         else { sb.style.removeProperty('font-size'); sb.classList.add('ap-sub-off'); }
       });
@@ -29210,7 +29215,7 @@ function _cityAp(city, code, langOverride) {
 // try the name in every board language, so a row takes one layout that
 // holds in all of them (v23997 — a belt row was one line in English and two
 // in French, 'Billy Bishop' against 'Billy-Bishop').
-function _cityApHtml(text, code) {
+function _cityApHtml(text, code, withCode) {
   var s = String(text == null ? '' : text);
   var esc = (typeof fidsEscHtml === 'function') ? fidsEscHtml : function (v) { return String(v); };
   var i = s.lastIndexOf(' · ');
@@ -29218,8 +29223,15 @@ function _cityApHtml(text, code) {
   var c = '';
   try { c = code ? String(_realIata(String(code).toUpperCase().trim())) : ''; } catch (eC) { c = ''; }
   if (c && !Object.prototype.hasOwnProperty.call(AIRPORT_SUBLINE, c)) c = '';
+  // v23998 — withCode: a line with no code of its own (the Later-at-this-gate
+  // strip's 'flight · city') carries the airport's code too, hidden, for the
+  // fitter to show in the name's place when the name has no room
+  // (.ap-sub-code: 'Montréal · MET'); every other line already has its code
+  // ('| YTZ') and the name gives way to that.
+  var cd = '';
+  try { cd = (withCode && c && typeof _dispIata === 'function') ? String(_dispIata(c)) : ''; } catch (eD) { cd = ''; }
   return esc(s.slice(0, i)) + ' <span class="ap-sub"' + (c ? ' data-ap="' + esc(c) + '"' : '') + '><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">'
-    + esc(s.slice(i + 3).trim()) + '</span></span>';
+    + esc(s.slice(i + 3).trim()) + '</span>' + (cd ? '<span class="ap-code">' + esc(cd) + '</span>' : '') + '</span>';
 }
 try { if (typeof window !== 'undefined') { window._cityAp = _cityAp; window._cityApHtml = _cityApHtml; window._apSubline = _apSubline; } } catch (e) {}
 
@@ -30034,7 +30046,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23997';
+var FIDS_BUILD_TAG = 'v23998';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had

@@ -107,10 +107,13 @@ function board({ now, dep, hist = {}, langs = ['en', 'fr'], ap = 'YQM', extra = 
 
 // The words a passenger reads in a piece of markup: everything outside the
 // tags, then the two entities fidsEscHtml writes ('&amp;' last). A scan, not a
-// one-pass tag regex, so nothing tag-like can survive by being nested.
+// one-pass tag regex, so nothing tag-like can survive by being nested. An
+// airport's code carried for the fitter (.ap-code, v23998) is not drawn until
+// the fitter gives the name's place to it, so it is not read here.
 const text = (html) => {
   let out = '';
   let inTag = false;
+  html = String(html).replace(/<span class="ap-code">[A-Z0-9]{2,4}<\/span>/g, '');
   for (const ch of String(html)) {
     if (ch === '<') inTag = true;
     else if (ch === '>') inTag = false;
@@ -323,9 +326,12 @@ test('a city with two airports names the airport, in the same words as the rest 
   assert.deepEqual(p('YYZ'), { city: 'Toronto · Pearson', ia: 'YYZ' });
   assert.deepEqual(p('YTZ'), { city: 'Toronto · Billy Bishop', ia: 'YTZ' });
   assert.deepEqual(p('YOW'), { city: 'Ottawa', ia: 'YOW' });
-  // as markup: the airport's name in its own span, with its code for the fitter
+  // as markup: the airport's name in its own span, with its code for the
+  // fitter (data-ap), and the code passengers read (MET), hidden, for the
+  // fitter to put in the name's place when the name has no room (v23998)
   assert.equal(b._gateLaterPlaceHtml(p('YHU')),
-    'Montreal <span class="ap-sub" data-ap="YHU"><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">Métropolitain</span></span>');
+    'Montreal <span class="ap-sub" data-ap="YHU"><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">Métropolitain</span><span class="ap-code">MET</span></span>');
+  assert.match(fnSrc('_gateLaterPlaceHtml'), /return _cityApHtml\(pl\.city, pl\.ia, true\);/);
   // no test of its own, no code where a name is due
   assert.doesNotMatch(CORE, /_gateLaterTwinCity|_GATE_TWIN_CITY/);
   assert.match(fnSrc('_gateLaterPlace'), /city = _cityAp\(city, ia\);/);
@@ -403,9 +409,14 @@ test('no cut words: the type steps down to a floor, then the lines may wrap betw
   assert.equal(host.k, 0.72, 'never below the floor');
   // Without a measure of its own it reads the ink (_gateLaterInkOver).
   assert.match(fnSrc('_gateLaterFitBox'), /var ow = \(typeof overW === 'function'\) \? overW : _gateLaterInkOver;/);
-  // v23997 — the scale holds the clock row only; the words are the shared fitter's
+  // v23998 — one scale for the clock rows and the lines together, as v23976
+  // had it (the lines measured in their smallest form: the city with its
+  // airport's code), then the lines' second line down to .5; the shared
+  // fitter then sets each line at that size, its airport's name where it has
+  // room, else its code
   const fit = fnSrc('_gateLaterFit');
-  assert.match(fit, /_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\);\s*(?:\/\/[^\n]*\n\s*)*fidsFitAll\(st\);/);
+  assert.match(fit, /setForm\(false\);\s*if \(!_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\)\) \{\s*setForm\(true\);\s*_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.5, _gateLaterSlotOver\);\s*\}\s*for \(var lj = 0; lj < lns\.length; lj\+\+\) _fxUnfit\(lns\[lj\]\);\s*fidsFitAll\(st\);/);
+  assert.match(fit, /_fxApForm\(aps\[ai\], aps\[ai\]\.querySelector\('\.ap-code'\) \? -2 : -1\);/);
   assert.doesNotMatch(fit, /gl-wrap/);
   // The rail's title fitters leave the notice's headline alone.
   assert.equal((CORE.match(/\.g8-bir-shelves (?:\.v2-flightinfo-block )?\.v2-fi-title:not\(\.gl-gc-title\)/g) || []).length, 3);
@@ -458,9 +469,12 @@ test('no cut words, measured on the ink: a word in the slot\'s end padding does 
   const sp = slot(1200); sp.texts.push({ nodeValue: '   ', rects: [{ left: 0, right: 2000, width: 2000 }] });
   assert.equal(b._gateLaterInkOver(sp), false);
   assert.equal(b._gateLaterInkOver(slot(1200, { pills: [{ left: 1200, right: 1272 }] })), true);
-  // The strip's fitter uses it for the clock row.
-  assert.match(fnSrc('_gateLaterFit'), /_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\);/);
-  assert.match(fnSrc('_gateLaterSlotOver'), /if \(t && _gateLaterInkOver\(t\)\) return true;/);
+  // The strip's fitter uses it for each slot, its clock row and its line.
+  assert.match(fnSrc('_gateLaterFit'), /_gateLaterFitBox\(st, '--gl-k', slots, \[\], 0\.72, _gateLaterSlotOver\)/);
+  assert.match(fnSrc('_gateLaterSlotOver'), /if \(_gateLaterInkOver\(sl\)\) return true;/);
+  // and the slot's height by its laid-out boxes, with the 1px a side its
+  // scroll measure let pass (the sizes are v23976's)
+  assert.match(fnSrc('_gateLaterSlotOver'), /return t\.offsetHeight \+ mt \+ u\.offsetHeight > sl\.clientHeight \+ 2;/);
 });
 
 test('the strip and the glass are measured onto the rail\'s cards, so a 2px Delta frame lines up too', () => {

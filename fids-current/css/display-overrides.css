@@ -24264,11 +24264,13 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
        smaller (62% of the rail's value size, against the rail's 80-84px at
        1680x1050) and a step lighter (Bold, ink at 94%) than the left column's.
        Each slot: the time, with its day stacked beside it when it is not
-       today, over "flight · city" (and "· code" for a city with two
-       airports). A moved flight: an arrow, "now Gate / maintenant porte"
+       today, over "flight · city" (and "· airport" for a city with two of
+       ours, or its code where the name has no room: v23998). A moved
+       flight: an arrow, "now Gate / maintenant porte"
        stacked, and the new gate number on a silver pill.
-       --gl-k is _gateLaterFit's one scale for the whole strip (1 down to
-       .72, then wrapping between whole words down to .5): never a cut word.
+       --gl-k is _gateLaterFit's one scale for the slots and the title (1
+       down to .72, then the flight over the place down to .5; the title
+       never under the floor): never a cut word.
    (3) THE GATE-CHANGE NOTICE (C) covers the body of the screen below the
        banner: the window's field and glass across the whole body, and in it
        a card drawn by the left column's own plate and banner rules
@@ -24378,7 +24380,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   color: #26303c !important; text-shadow: 0 1px 0 rgba(255,255,255,.6) !important;
   font-family: "Cabinet Grotesk Extrabold", -apple-system, system-ui, sans-serif !important;
   font-weight: 800 !important; line-height: 1.12 !important; letter-spacing: 0 !important;
-  font-size: max(var(--fx-floor, 12px), min(1.92vh, 1.2vw)) !important;
+  font-size: max(var(--fx-floor, 12px), calc(min(1.92vh, 1.2vw) * var(--gl-k))) !important;
   white-space: nowrap !important; overflow: hidden !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gl-strip .gl-title .gl-sep { opacity: .55 !important; font-weight: 600 !important; margin: 0 .3em !important; }
@@ -24419,7 +24421,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(._):not(._):not(._):not(._):not(._):not(._) .g8-wrap .gl-strip .gl-sub {
   margin-top: calc(var(--gl-v) * .05 * var(--gl-k)) !important;
   font-family: "Cabinet Grotesk Bold", -apple-system, system-ui, sans-serif !important;
-  font-weight: 700 !important; font-size: max(var(--fx-floor, 12px), calc(var(--gl-v) * .27)) !important;
+  font-weight: 700 !important; font-size: max(var(--fx-floor, 12px), calc(var(--gl-v) * .27 * var(--gl-k))) !important;
   line-height: 1.15 !important; letter-spacing: 0 !important; white-space: nowrap !important;
   color: var(--gl-ink) !important; text-shadow: var(--gl-ink-sh) !important;
 }
@@ -24747,6 +24749,14 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      fitter gives it the slot's second line (.fx-wrap): the flight over the
      place, the "·" between them gone, the city and its airport one piece. */
 :root:not(#_) .ap-sub.ap-sub-off { display: none !important; }
+/* v23998 — or to its code, where its line has none of its own (the
+   Later-at-this-gate strip): the code takes the name's place at the city's
+   size, 'Montréal · MET' (.ap-sub-code, the fitter's choice). The code rides
+   in the markup hidden until then (.ap-code, _cityApHtml(…, true)). */
+:root:not(#_) .ap-sub .ap-code { display: none !important; }
+:root:not(#_) .ap-sub.ap-sub-code { font-size: inherit !important; }
+:root:not(#_) .ap-sub.ap-sub-code .ap-name { display: none !important; }
+:root:not(#_) .ap-sub.ap-sub-code .ap-code { display: inline !important; letter-spacing: .02em !important; }
 /* and an airport's name wider than its box at the floor opens at its own
    spaces, the last thing the fitter tries (.fx-loose), never inside a word */
 :root:not(#_) .fx-loose .ap-sub { white-space: normal !important; }
