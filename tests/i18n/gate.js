@@ -10,12 +10,15 @@
 // any finding of a check that is never ledgered, and on a ledger entry that
 // claims more than is there.
 //
-// It is what a deploy runs before it ships: the "Deploy display site"
-// workflow runs it inside `npm test`, and the Workers Builds build command
-// (Cloudflare dashboard → the fids Worker → Settings → Build) runs it as
-// `npm run guard`, so a merge that fails the guard never reaches the
-// screens. The comparisons with main (the ledger and the exceptions may only
-// shrink) need git history and run in the pull request's checks instead.
+// It is what a deploy should run before it ships. Today the manual "Deploy
+// display site" workflow runs it inside `npm test`. Workers Builds, which
+// ships every merge to main, does NOT run it yet: that needs its build
+// command set to `npm run guard` in the Cloudflare dashboard (the fids
+// Worker → Settings → Build), a setting outside this repository that is
+// not switched on (docs/BOARD-LANGUAGES.md, section 7). Until it is, a merge
+// that fails the guard still reaches the screens. The comparisons with main
+// (the ledger and the exceptions may only shrink) need git history and run
+// in the pull request's checks.
 
 const checks = require('./checks');
 const ledger = require('./ledger');
