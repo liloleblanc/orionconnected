@@ -97,8 +97,11 @@ test('the model is twice its label, the operator mark never smaller than the tex
 test('a long model steps down, then goes to two lines instead of being cut', () => {
   assert.match(CORE, /el\.classList\.add\('is-2line'\);/);
   // v23925 — the caption refits when its operator mark finishes loading (the
-  // mark takes no room until it does, so the first fit measured too wide).
-  assert.match(CORE, /gView\.querySelectorAll\('\.v2-rc-acb-cap img'\)\.forEach\(function \(im\) \{\s*if \(im\.complete\) return;\s*im\.addEventListener\('load', function \(\) \{\s*if \(window\._gateFitGeneration !== _fitGeneration\) return;/);
+  // mark takes no room until it does, so the first fit measured too wide) —
+  // in the frame the mark takes its size, before that frame is painted, not
+  // on its load event a frame later (tests/fit-no-subpixel-cut.test.js)
+  assert.match(CORE, /_fxRefitWhenArtLands\(gView\.querySelectorAll\('\.v2-rc-acb-cap img'\), function \(\) \{\s*if \(window\._gateFitGeneration !== _fitGeneration\) return;/);
+  assert.match(CORE, /function _fxRefitWhenArtLands\(imgs, refit\) \{[\s\S]*?if \(imgs\[i\] && !imgs\[i\]\.complete\) list\.push\(imgs\[i\]\);[\s\S]*?im\.addEventListener\('load', go, \{ once: true \}\);/);
   // v23925 — with no registration there is no second line to take: the model
   // keeps stepping down to the label's own size instead of being clipped at
   // the 1.25x floor ('Airbus A3' on a Rouge A321 at YQM gate 4).

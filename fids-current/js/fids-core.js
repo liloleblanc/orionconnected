@@ -2120,21 +2120,51 @@ function fidsFitFloor() {
 // The text's own line boxes, from its text nodes. A Range over an element
 // whose children are blocks reports the blocks' boxes — as wide as their
 // parent at any font size — so only the glyphs themselves are measured.
-function _fxRects(el) {
+// With `box`, each line box also carries the edges that cut it (cl, cr:
+// _fxClip, from its own element up to `box`).
+function _fxRects(el, box) {
   var out = [];
   try {
     var tw = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
-    var rg = document.createRange(), n;
+    var rg = document.createRange(), n, memo = box && typeof Map === 'function' ? new Map() : null;
     while ((n = tw.nextNode())) {
       if (!/\S/.test(n.nodeValue || '')) continue;
       rg.selectNodeContents(n);
-      var rs = rg.getClientRects();
+      var rs = rg.getClientRects(), c = null;
       for (var i = 0; i < rs.length; i++) {
-        if (rs[i].width > 0.5 && rs[i].height > 0.5) out.push(rs[i]);
+        if (!(rs[i].width > 0.5 && rs[i].height > 0.5)) continue;
+        if (!box) { out.push(rs[i]); continue; }
+        if (!c) c = _fxClip(n.parentElement, box, memo);
+        var q = rs[i];
+        out.push({ left: q.left, right: q.right, top: q.top, bottom: q.bottom, width: q.width, height: q.height, cl: c.l, cr: c.r });
       }
     }
   } catch (e) {}
   return out;
+}
+// The edges that cut a text: every element from the text's own up to the
+// box it is fitted in (inclusive) whose overflow is not visible (hidden,
+// clip, auto, scroll) cuts what runs past its padding edge. {l, r} in screen
+// px, -Infinity / Infinity where nothing cuts. A box that is only rounded
+// (its rectangle within a pixel of offsetWidth) is not read as scaled.
+function _fxClip(from, box, memo) {
+  var l = -Infinity, r = Infinity;
+  for (var a = from; a && a.nodeType === 1; a = a.parentElement) {
+    var c = memo ? memo.get(a) : undefined;
+    if (c === undefined) {
+      c = null;
+      var cs = getComputedStyle(a);
+      if (cs.overflowX && cs.overflowX !== 'visible') {
+        var br = a.getBoundingClientRect();
+        var s = (a.offsetWidth && Math.abs(br.width - a.offsetWidth) > 1) ? br.width / a.offsetWidth : 1;
+        c = { l: br.left + (parseFloat(cs.borderLeftWidth) || 0) * s, r: br.right - (parseFloat(cs.borderRightWidth) || 0) * s };
+      }
+      if (memo) memo.set(a, c);
+    }
+    if (c) { if (c.l > l) l = c.l; if (c.r < r) r = c.r; }
+    if (a === box) break;
+  }
+  return { l: l, r: r };
 }
 // The content box of `box` in screen pixels (its padding and borders off;
 // with `padOk`, its padding box: a header's text may use its cell's padding).
@@ -2148,6 +2178,13 @@ function _fxInner(box, padOk) {
   var pb = (parseFloat(cs.paddingBottom) || 0) + (parseFloat(cs.borderBottomWidth) || 0);
   return { l: r.left + pl * sx, r: r.right - pr * sx, t: r.top + pt * sy, b: r.bottom - pb * sy, sx: sx || 1, sy: sy || 1 };
 }
+// How far past an edge that cuts it a text's runs may measure and still be
+// whole: the noise of the measurement, nothing a screen can draw. The page is
+// laid out in 1/64px units and a border or padding is read back as the
+// stylesheet wrote it (6.76px laid out at 6.75), so a line that ends exactly
+// on an edge can measure up to 1/64px past it. A fiftieth of a pixel covers
+// that; one layout unit more is a cut.
+var _FX_EPS = 0.02;
 // Does the text sit inside the box: no glyph past either side, no more lines
 // than allowed, no taller than hMax (screen px; 0 = any height). `cap`
 // narrows the box ({l, r} in screen px): the part of it a logo beside the
@@ -2158,9 +2195,9 @@ function _fxMeasure(el, box, hMax, padOk, cap) {
     if (cap.l != null && cap.l > ib.l) ib.l = cap.l;
     if (cap.r != null && cap.r < ib.r) ib.r = cap.r;
   }
-  var rs = _fxRects(el);
+  var rs = _fxRects(el, box);
   if (!rs.length) return { ok: true, lines: 0, w: 0, h: 0 };
-  var L = Infinity, R = -Infinity, T = Infinity, B = -Infinity;
+  var L = Infinity, R = -Infinity, T = Infinity, B = -Infinity, cut = 0;
   var sorted = Array.prototype.slice.call(rs).sort(function (a, b) { return a.top - b.top; });
   var lines = 0, lineBottom = -Infinity;
   for (var i = 0; i < sorted.length; i++) {
@@ -2169,17 +2206,29 @@ function _fxMeasure(el, box, hMax, padOk, cap) {
     if (r.right > R) R = r.right;
     if (r.top < T) T = r.top;
     if (r.bottom > B) B = r.bottom;
+    if (r.right - r.cr > cut) cut = r.right - r.cr;
+    if (r.cl - r.left > cut) cut = r.cl - r.left;
     // a new line starts below the current one (a smaller span on the same
     // line, like an airport under-name, sits inside the line's box)
     if (r.top > lineBottom - r.height * 0.25) { lines++; lineBottom = r.bottom; }
     else if (r.bottom > lineBottom) lineBottom = r.bottom;
   }
-  var over = (R - ib.r) > 0.5 || (ib.l - L) > 0.5;
+  // The box's content edge keeps its half pixel of room: a line half a pixel
+  // into the box's padding is drawn whole. An edge that CUTS keeps none.
+  // Every element from the text up to the box whose overflow is not visible
+  // cuts at its padding edge (_fxClip), and a line that runs past one of
+  // those by even a fraction of a pixel does not fit: with only the half
+  // pixel on the content edge, a line 0.4px past a box with no padding was
+  // taken as fitting, and that box cut the last letter's edge. A line that
+  // ends exactly on the edge of a box sized by that line still fits (a test
+  // that wanted room to spare there pinned the gate number at the floor in
+  // v23753).
+  var over = (R - ib.r) > 0.5 || (ib.l - L) > 0.5 || cut > _FX_EPS;
   // a box that clips its own content: the integer test still catches a
   // spill the line boxes cannot see (a trailing space, an inline-block)
   if (!over && !padOk && box === el && el.scrollWidth > el.clientWidth + 1) over = true;
   var h = B - T;
-  return { ok: !over && (!hMax || h <= hMax + 0.5), lines: lines, w: R - L, h: h, room: ib.r - ib.l };
+  return { ok: !over && (!hMax || h <= hMax + 0.5), lines: lines, w: R - L, h: h, room: ib.r - ib.l, cut: cut };
 }
 function _fxSearch(lo, hi, test) {
   if (!(hi > lo)) return test(lo) ? lo : 0;
@@ -2560,6 +2609,45 @@ function _fxLangsKey(el) {
   } catch (e) {}
   return '';
 }
+// A PICTURE THAT LANDS AFTER THE FIT IS FITTED AROUND BEFORE IT IS PAINTED.
+// An <img> takes no room until its file arrives, so the words fitted beside
+// it before then were fitted to room they lose when it lands. Its load event
+// comes after the frame that first draws it at its size, and that frame then
+// stays on screen while the refit runs: the pending aircraft words beside the
+// Air Canada Express mark at YQM were drawn 100px past their box, 110 to 150
+// ms each time a gate showed that mark for the first time. A ResizeObserver's
+// callback runs after layout and before paint, so `refit` runs in the frame
+// the picture takes its size, once per picture. Its load and error events
+// stay as the fallback (a browser without ResizeObserver, a picture whose box
+// did not change); either way `refit` runs once per picture.
+function _fxRefitWhenArtLands(imgs, refit) {
+  var list = [];
+  for (var i = 0; imgs && i < imgs.length; i++) if (imgs[i] && !imgs[i].complete) list.push(imgs[i]);
+  list.forEach(function (im) {
+    var fired = false, ro = null;
+    var go = function () {
+      if (ro) { try { ro.disconnect(); } catch (e) {} ro = null; }
+      if (fired) return;
+      fired = true;
+      try { refit(); } catch (e) {}
+    };
+    var size = function () { return (im.offsetWidth || 0) + 'x' + (im.offsetHeight || 0); };
+    var was = size();
+    if (typeof ResizeObserver === 'function') {
+      try {
+        ro = new ResizeObserver(function () {
+          if (fired || !im.complete) return;   // its first report, or still on its way
+          if (size() !== was) go();
+          else if (ro) { try { ro.disconnect(); } catch (e) {} ro = null; }
+        });
+        ro.observe(im);
+      } catch (e) { ro = null; }
+    }
+    im.addEventListener('load', go, { once: true });
+    im.addEventListener('error', go, { once: true });
+  });
+}
+try { if (typeof window !== 'undefined') window._fxRefitWhenArtLands = _fxRefitWhenArtLands; } catch (e) {}
 // Fit one element. o: { box: element or selector of the ancestor that bounds
 // it (default: the element itself), lines: 1 or 2, h: max height in CSS px
 // (number or function(el, box)), min: a floor above the shared one, avoid: a
@@ -22571,15 +22659,15 @@ const gView = document.getElementById('gateView');
           // room and the model fits at full size; when it lands the model's
           // cell narrows and nothing measured it again ('Airbus A3' under a
           // Rouge mark at YQM gate 4, 1 Oct). Each caption image that is not
-          // loaded yet asks for one more fit when it is, same generation guard.
+          // loaded yet asks for one more fit when it is, same generation guard
+          // — in the frame it takes its size, before that frame is painted
+          // (_fxRefitWhenArtLands): its load event came a frame later, and
+          // that frame stayed on screen while the refit ran.
           try {
-            gView.querySelectorAll('.v2-rc-acb-cap img').forEach(function (im) {
-              if (im.complete) return;
-              im.addEventListener('load', function () {
-                if (window._gateFitGeneration !== _fitGeneration) return;
-                var _imgView = document.getElementById('gateView');
-                if (_imgView === gView && typeof gateAutofit === 'function') gateAutofit(_imgView);
-              }, { once: true });
+            _fxRefitWhenArtLands(gView.querySelectorAll('.v2-rc-acb-cap img'), function () {
+              if (window._gateFitGeneration !== _fitGeneration) return;
+              var _imgView = document.getElementById('gateView');
+              if (_imgView === gView && typeof gateAutofit === 'function') gateAutofit(_imgView);
             });
           } catch (eImg) {}
           // Observe the VIEWPORT, not gateView's content box. A content
@@ -22594,14 +22682,29 @@ const gView = document.getElementById('gateView');
                 + Math.round(window.innerHeight || 0);
               if (_viewportKey === window._gateFitViewportKey) return;
               window._gateFitViewportKey = _viewportKey;
-              if (window._gateFitResizeTimer) clearTimeout(window._gateFitResizeTimer);
-              window._gateFitResizeTimer = setTimeout(function () {
+              var _fitView = function () {
                 try {
                   var _resizeView = document.getElementById('gateView');
                   if (_resizeView && typeof screenType !== 'undefined' && screenType === 'gate'
                       && typeof gateAutofit === 'function') gateAutofit(_resizeView);
                 } catch (e2) {}
-              }, 80);
+              };
+              // FITTED BEFORE THE NEW SIZE IS PAINTED. The browser sends the
+              // resize event while it prepares the next frame, ahead of that
+              // frame's layout and paint, so a fit run here is on screen in
+              // the first frame at the new size. The fit used to wait 80 ms
+              // for a timer, and every frame in between was painted with the
+              // sizes chosen for the old screen: a YQM gate going from
+              // 1920x993 to 1920x1080 (a kiosk window going full screen, a
+              // board in a resized frame) drew 'Flugzeugdaten folge[n]' and
+              // 'Aeronave a confirma[r]' in the lower right panel for 155 to
+              // 200 ms, 3.4 and 7.2 px past the model's box, because the
+              // taller band sets the operator's labels larger and the pending
+              // words' box narrower. The timer stays, as a second pass once
+              // the screen has settled (a window dragged through many sizes).
+              _fitView();
+              if (window._gateFitResizeTimer) clearTimeout(window._gateFitResizeTimer);
+              window._gateFitResizeTimer = setTimeout(_fitView, 80);
             };
             window.addEventListener('resize', window._gateFitResizeHandler, { passive: true });
           }
