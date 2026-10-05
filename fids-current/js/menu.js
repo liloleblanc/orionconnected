@@ -70,6 +70,14 @@ function smSwitchTab(tabId) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 var _ddDocked = null;          // null until the first read answers
 var _ddBusy = false;
+// v23996 — the AUTOMATIC dock, read beside the manual one and never mixed into
+// it: `auto` is what the worker docked because the airport's own feed has been
+// blocked for 30 minutes or more (it undocks itself after two good answers),
+// `watch` is feeds failing now but not docked. Neither is ever part of a save:
+// every PUT below is built from _ddDocked, the admin's list alone.
+var _ddAuto = [];
+var _ddAutoInfo = {};
+var _ddWatch = {};
 
 function _ddApi() {
   try { if (typeof FIDS_API_BASE !== 'undefined') return FIDS_API_BASE; } catch (e) {}
@@ -82,17 +90,54 @@ function _ddSay(msg, bad) {
   el.style.color = bad ? '#f87171' : '#9ca3af';
 }
 
+// "12:20" in this browser's clock, from an ISO time; '' when unreadable.
+function _ddHhmm(iso) {
+  var t = Date.parse(iso || '');
+  if (isNaN(t)) return '';
+  try { return new Date(t).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false }); } catch (e) { return ''; }
+}
+function _ddCodeSafe(c) { return /^[A-Z0-9]{3,4}$/.test(String(c || '')) ? String(c) : ''; }
 function _ddRender() {
   var box = document.getElementById('ddList');
   if (!box) return;
   if (_ddDocked === null) { box.innerHTML = '<span style="font-size:11px;color:#6b7280;">loading…</span>'; return; }
-  if (!_ddDocked.length) { box.innerHTML = '<span style="font-size:11px;color:#6b7280;">nothing docked</span>'; return; }
-  box.innerHTML = _ddDocked.map(function (c) {
+  var html = _ddDocked.map(function (c) {
     return '<span style="display:inline-flex;align-items:center;gap:6px;background:#27272a;border:1px solid #52525b;'
          + 'border-radius:12px;padding:3px 6px 3px 10px;font-size:12px;color:#e5e7eb;letter-spacing:.5px;">' + c
          + '<button title="Undock ' + c + '" onclick="ddUndock(\'' + c + '\')" '
          + 'style="background:none;border:none;color:#9ca3af;cursor:pointer;font-size:14px;line-height:1;padding:0 4px;">×</button></span>';
   }).join('');
+  // Automatic entries: no × — the worker undocks them when the feed answers
+  // twice in a row, and a person cannot un-block an airport's firewall.
+  html += (_ddAuto || []).map(function (c) {
+    c = _ddCodeSafe(c);
+    if (!c) return '';
+    var info = (_ddAutoInfo || {})[c] || {};
+    // v23998 — the time it was DOCKED (dockedAt), not the time the block began
+    // (since), which is 30 minutes earlier; an older worker without dockedAt
+    // is read the same way.
+    var dockedIso = info.dockedAt
+      || (Date.parse(info.since || '') ? new Date(Date.parse(info.since) + 30 * 60000).toISOString() : '');
+    var since = _ddHhmm(dockedIso);
+    return '<span title="Docked automatically: this airport\'s own feed has been blocked for 30 minutes or more. '
+         + 'It is re-checked every 10 minutes and undocks itself after two good answers." '
+         + 'style="display:inline-flex;align-items:center;gap:6px;background:#1f2933;border:1px dashed #6b7280;'
+         + 'border-radius:12px;padding:3px 10px;font-size:12px;color:#e5e7eb;letter-spacing:.5px;">' + c
+         + '<span style="color:#9ca3af;letter-spacing:0;">auto-docked' + (since ? ' since ' + since : '') + ' — feed blocked</span></span>';
+  }).join('');
+  html += Object.keys(_ddWatch || {}).map(function (c) {
+    c = _ddCodeSafe(c);
+    if (!c) return '';
+    var w = _ddWatch[c] || {};
+    var since = _ddHhmm(w.since);
+    var what = w.state === 'blocked' ? 'feed blocked' : 'feed failing';
+    var tail = w.noAuto ? ' — not docked automatically (' + String(w.noAuto).replace(/[<>&"]/g, '') + ')'
+             : (w.state === 'blocked' ? ' — docks itself at 30 min' : ' — not docked (only a block docks)');
+    return '<span style="display:inline-flex;align-items:center;gap:6px;background:none;border:1px dotted #52525b;'
+         + 'border-radius:12px;padding:3px 10px;font-size:12px;color:#9ca3af;letter-spacing:.5px;">' + c
+         + '<span style="letter-spacing:0;">' + what + (since ? ' since ' + since : '') + tail + '</span></span>';
+  }).join('');
+  box.innerHTML = html || '<span style="font-size:11px;color:#6b7280;">nothing docked</span>';
 }
 
 async function ddLoad() {
@@ -109,6 +154,9 @@ async function ddLoad() {
       return;
     }
     _ddDocked = doc.docked.slice();
+    _ddAuto = Array.isArray(doc.auto) ? doc.auto.slice() : [];
+    _ddAutoInfo = (doc.autoInfo && typeof doc.autoInfo === 'object') ? doc.autoInfo : {};
+    _ddWatch = (doc.watch && typeof doc.watch === 'object') ? doc.watch : {};
     _ddRender();
     _ddSay(doc.seeded ? 'Showing the starting list — no admin has saved one yet.' : '');
   } catch (e) {

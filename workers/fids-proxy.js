@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 var __defProp = Object.defineProperty;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
 
@@ -1121,10 +1122,18 @@ __name(handleGetMediaAssignments, "handleGetMediaAssignments");
 // taken it out.
 const DRY_DOCK_DEFAULT = ["SYD"];
 
-async function handleGetDryDock(env, origin) {
+// v23996 — and the AUTOMATIC half, beside it and never inside it: `auto` lists
+// airports whose own feed has been blocked for 30 minutes or more (feed
+// health, see feedDockAuto), `autoInfo` says since when, and `watch` lists
+// feeds failing but not docked (not yet, or never automatically). Readers
+// treat docked ∪ auto as docked. Nothing automatic ever writes "dry-dock":
+// that document is the admin's alone.
+async function handleGetDryDock(env, origin, ctx) {
   const data = await env.FIDS_USERS.get("dry-dock");
-  if (!data) return jsonResponse({ v: 1, docked: DRY_DOCK_DEFAULT.slice(), updatedAt: null, seeded: true }, 200, origin);
-  try { return jsonResponse(JSON.parse(data), 200, origin); }
+  let auto = { auto: [], autoInfo: {}, watch: {} };
+  try { auto = await feedDockAuto(env, ctx); } catch (e) {}
+  if (!data) return jsonResponse({ v: 1, docked: DRY_DOCK_DEFAULT.slice(), updatedAt: null, seeded: true, ...auto }, 200, origin);
+  try { return jsonResponse({ ...JSON.parse(data), ...auto }, 200, origin); }
   catch (e) { return jsonResponse({ error: "Corrupt dry dock" }, 500, origin); }
 }
 __name(handleGetDryDock, "handleGetDryDock");
@@ -2028,23 +2037,30 @@ async function yhzFetchPage(kind) {
   const cache = caches.default;
   try {
     const hit = await cache.match(cacheKey);
-    if (hit) return hit.headers.get("X-Yhz-Neg") ? null : await hit.text();
+    if (hit) {
+      const neg = hit.headers.get("X-Yhz-Neg");
+      feedNote(neg ? (hit.headers.get("X-Yhz-Kind") === "blocked" ? "blocked" : "error") : "ok", neg ? "recent failure (cached)" : "");
+      return neg ? null : await hit.text();
+    }
   } catch (e) {}
-  let html = null;
+  let html = null, rk = "error";
   try {
-    const r = await fetch(YHZ_PAGES[kind], { headers: {
+    const r = await feedFetch(YHZ_PAGES[kind], { headers: {
       "User-Agent": "Mozilla/5.0 (compatible; OrionConnected-FIDS/1.0; +https://fids.orionconnected.com)",
       "Accept": "text/html"
-    } });
+    } }, "html");
+    rk = feedClassifyResponse(r, "html", YHZ_PAGES[kind]);
     if (r.ok) html = await r.text();
   } catch (e) {}
   const good = html && html.indexOf('class="table-row') !== -1;
+  const negKind = good ? "" : (html != null ? feedClassifyBody(html, "html") : rk);
+  if (!good && html != null) feedNote(negKind, "the page is not the board");
   // 75 s positive / 30 s negative: screens polling together cost Halifax
   // at most one page fetch a minute, and an outage is re-probed quickly.
   try {
     await cache.put(cacheKey, good
       ? new Response(html, { headers: { "Cache-Control": "public, max-age=75" } })
-      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Yhz-Neg": "1" } }));
+      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Yhz-Neg": "1", "X-Yhz-Kind": negKind || "error" } }));
   } catch (e) {}
   return good ? html : null;
 }
@@ -2053,7 +2069,18 @@ __name(yhzFetchPage, "yhzFetchPage");
 // or null to fall through to AeroDataBox untouched. The boards fetch two
 // 12-hour windows per direction and merge, so filtering to [from, to) is
 // what keeps a flight from appearing twice.
-async function maybeServeYhzAuthority(adbPath, url, origin) {
+// v23996 — Halifax's board through the feed protection: the page, parsed. A
+// page that carries the board's rows but parses to none is the parser broken,
+// not a quiet day, and is labelled an error.
+async function yhzGuardedList(kind) {
+  const html = await yhzFetchPage(kind);
+  if (!html) return null;
+  const flights = yhzParseBoard(html, kind === "dep", Date.now());
+  if (!flights.length) { feedNote("error", "the board parsed to no rows"); return null; }
+  return flights;
+}
+__name(yhzGuardedList, "yhzGuardedList");
+async function maybeServeYhzAuthority(adbPath, url, origin, env, ctx) {
   try {
     const m = String(adbPath || "").match(/^flights\/airports\/iata\/yhz\/([^/]+)\/([^/?]+)$/i);
     if (!m) return null;
@@ -2065,18 +2092,21 @@ async function maybeServeYhzAuthority(adbPath, url, origin) {
     if (!/^arr/i.test(dir)) sides.push("dep");
     if (!/^dep/i.test(dir)) sides.push("arr");
     const body = {};
+    let worst = null;
     for (const kind of sides) {
-      const html = await yhzFetchPage(kind);
-      if (!html) return null;
-      const flights = yhzParseBoard(html, kind === "dep", Date.now());
-      if (!flights.length) return null;   // parse broke → let ADB answer
+      const g = await feedGuard(env, ctx, "YHZ", kind, "win", () => yhzGuardedList(kind));
+      if (!g.payload) return feedDownResponse("YHZ", g, origin);
+      worst = feedWorst(worst, g);
       body[kind === "dep" ? "departures" : "arrivals"] =
-        flights.filter((f) => f._yhzTs >= fromTs && f._yhzTs < toTs);
+        g.payload.filter((f) => f._yhzTs >= fromTs && f._yhzTs < toTs);
     }
+    const now = Date.now();
+    if (worst) body._feed = feedMeta(worst, now);
     return new Response(JSON.stringify(body), { headers: {
       "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=60",
+      "Cache-Control": worst && worst.state !== "ok" ? "no-store" : "public, max-age=60",
       "X-Feed-Source": "yhz-authority",
+      ...(worst ? feedHeaders(worst, now) : {}),
       ...corsHeaders(origin)
     } });
   } catch (e) { return null; }
@@ -3091,13 +3121,21 @@ __name(farArrYtzRows, "farArrYtzRows");
 // once a minute however many screens and far ends read it. Their firewall
 // answers a plain client differently from a browser, so it asks the way a
 // browser asks. null when cyqm.ca answered nothing.
+function feedYqmRows(t) {
+  try {
+    const j = JSON.parse(t);
+    const a = Array.isArray(j) ? j : (j && Array.isArray(j.flights) ? j.flights : null);
+    return a ? a.length : 0;
+  } catch (e) { return 0; }
+}
+__name(feedYqmRows, "feedYqmRows");
 function yqmCyqmText(seg) {
   return fetchAuthorityText(
     "yqm/" + seg,
     "https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/" + seg,
     null,
     60,
-    { headers: {
+    { feedExpect: "json", headers: {
       "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
       "Accept": "application/json, text/plain, */*",
       "Accept-Language": "en-CA,en;q=0.9",
@@ -3364,31 +3402,816 @@ async function acTrackAppend(env, p, now) {
   } catch (e) {}
 }
 __name(acTrackAppend, "acTrackAppend");
+// ════════════════════════════════════════════════════════════════════════════
+// FEED PROTECTION (v23996) — HONEST FAILURE, LAST-GOOD, BACKOFF, AUTO-DOCK
+// ════════════════════════════════════════════════════════════════════════════
+// On 2026-10-04 Toronto Pearson's bot manager started answering this Worker
+// with a 302 to its challenge page. The route followed it, got HTML, parsed
+// nothing, and answered 200 {"list":[]}. Every Toronto board read "NO FLIGHTS
+// IN WINDOW" under a LIVE stamp, which reads as a quiet hour rather than an
+// outage, and nothing anywhere noticed. This block is the protection that was
+// assumed to exist, for every airport's own feed rather than for Toronto alone.
+//
+// 1. EVERY UPSTREAM ANSWER IS LABELLED ok / blocked / error (feedNote). A 3xx,
+//    a hop to another host, an HTML page where JSON was asked for, a non-JSON
+//    body, 401/403/407/429/451 or a Cloudflare challenge is "blocked"; a
+//    timeout, a 5xx or a page that lost its shape is "error". A valid answer
+//    with no rows is OK: small airports are legitimately empty at night.
+// 2. A FAILED FEED IS NEVER SERVED AS AN EMPTY LIST. The routes answer 503
+//    {error:"blocked"|"error"}, or, when this airport answered within the last
+//    3 hours, that answer, marked X-Feed-State: stale with its age.
+// 3. ONE SHARED COPY PER AIRPORT AND DIRECTION (KV, FIDS_LIVE_FLIGHTS
+//    "fg:v1:…"). Whichever colo fetches writes it; every other colo serves it
+//    until it is FEED_SHARE_S old (3 min, 5 for feeds that refresh slower), so
+//    an airport is asked every few minutes rather than every 30 s by every
+//    colo. It is written when the upstream is actually asked, so at most once
+//    per refresh interval, and kept 3 h for the last-good. Moncton keeps its
+//    own fast path (FEED_FAST): asked as before, and a refusal still answers
+//    503 so the board's own three tries run as before; only the board's last
+//    try (?lastgood=1) is given the copy.
+// 4. FEED HEALTH ("feed-health" in FIDS_USERS) IS WRITTEN ONLY WHEN A FEED'S
+//    STATE CHANGES. A failure must persist FEED_FAIL_CONFIRM_MS in one isolate,
+//    UNBROKEN, before it is written: a good answer anywhere (this isolate's,
+//    or another's seen as a newer shared copy) or a silence longer than
+//    FEED_FAIL_GAP_MS starts the run again, so two blips half an hour apart
+//    are two blips, not an outage, and one refused request (Moncton's firewall
+//    refuses about a third at random) costs nothing. GET /api/dry-dock adds
+//    auto: [codes blocked for 30 min or more]; the boards, the menu and the
+//    rotator treat the manual list plus auto as docked. While an airport is
+//    auto-docked, that same poll re-probes its feed at most every 10 minutes
+//    (the probe's time is its own small key, "fp:v1:<IATA>", never the health
+//    document), and two good answers in a row undock it. Automation never
+//    writes the admin's manual "dry-dock" document.
+// No cron: tests/provider-ban.test.js forbids one in this worker, and the
+// dock poll every board already makes is the clock.
+// ════════════════════════════════════════════════════════════════════════════
+const FEED_ALS = new AsyncLocalStorage();
+const FEED_LASTGOOD_MAX_MS = 3 * 3600 * 1000;
+const FEED_SHARE_DEFAULT_S = 180;
+// Feeds that publish slower than three minutes: asking them faster buys
+// nothing. Pearson's list refreshes every few minutes (lastUpdate 12:20 against
+// serverTime 12:22 on 2026-10-04); Deer Lake is a WP Engine page cached about
+// 10 minutes; Fort McMurray's own site polls every 15.
+const FEED_SHARE_S = { YYZ: 300, YDF: 300, YMM: 300 };
+// Fast paths kept exactly as they were: asked on every request as before; the
+// shared copy is only the last-good. Moncton is stream 1's airport.
+const FEED_FAST = { YQM: true };
+const FEED_FAST_WRITE_MIN_S = 120;      // a changed fast feed is copied at most every 2 min
+const FEED_FAST_REFRESH_S = 300;        // an unchanged one every 5 min
+const FEED_MEMO_OK_S = 60;              // per-isolate reuse of a good answer
+const FEED_BACKOFF_S = { error: 60, blocked: 120 };   // the least wait before asking a failing feed again (feedBackoffS)
+const FEED_FAIL_CONFIRM_MS = 3 * 60000;
+// The longest silence inside ONE run of failures. A board asks for its
+// airport every 5 minutes (fids-core.js fetchLive), and an airport with one or
+// two screens on it may be asked by nobody else, in an isolate that sees only
+// some of those polls. So a run survives a silence of two board polls and
+// some slack; a longer one starts the clock again. What ends a run early is
+// evidence, not time: a good answer seen anywhere (this isolate's own, or
+// another's seen as a newer shared copy). Two blips half an hour apart are
+// still two blips.
+const FEED_FAIL_GAP_MS = 12 * 60000;
+const FEED_AUTODOCK_MS = 30 * 60000;
+const FEED_PROBE_EVERY_MS = 10 * 60000;
+const FEED_UNDOCK_OKS = 2;
+const FEED_OK_SPACING_MS = 60000;       // two screens asking at once are not "two in a row"
+const FEED_HEALTH_KEY = "feed-health";
+const FEED_FAIL_PREFIX = "fx:v1:";      // FIDS_LIVE_FLIGHTS: the shared backoff, one small key per airport and direction
+// Airports a blocked feed does not take off the air by itself, with the reason.
+// Moncton has a second source (the webhook cache answers its window URL) and
+// stream 1 is pinned to it: docking it would turn that stream into a tour.
+// Its health is still recorded and shown; docking it stays a person's call.
+const FEED_NO_AUTODOCK = { YQM: "second source; stream 1 is pinned here" };
+const FEED_EXPOSE = "X-Feed-State, X-Feed-Stale, X-Feed-Age, X-Feed-As-Of, X-Feed-Source";
+const FEED_CHALLENGE_RE = /perfdrive|shieldsquare|rdwr|radware|captcha|cf-chl|cf_chl|challenge-platform|just a moment|attention required|access denied|request unsuccessful|incapsula|pardon our interruption|are you a robot|bot protection|wp remote firewall|blocked because|ddos-guard|sucuri/i;
+
+/** Record one upstream answer's label in the current guarded request, if any. */
+function feedNote(state, why, extra) {
+  try {
+    const s = FEED_ALS.getStore();
+    if (s && Array.isArray(s.notes)) s.notes.push({ state, why: String(why || "").slice(0, 120), ...(extra || {}) });
+  } catch (e) {}
+}
+__name(feedNote, "feedNote");
+
+/**
+ * A later step of the same fetch did the job the failed ones could not — the
+ * home page standing in for a moved sub-page (Deer Lake), a fresh nonce after
+ * a dead one (Victoria). Those failures were answered; they no longer say
+ * anything about the feed. Called by a producer only when that later step
+ * actually produced the feed.
+ */
+function feedSupersede() {
+  try {
+    const s = FEED_ALS.getStore();
+    if (s && Array.isArray(s.notes)) for (const n of s.notes) if (n && n.state !== "ok") n.superseded = true;
+  } catch (e) {}
+}
+__name(feedSupersede, "feedSupersede");
+
+/**
+ * v23998 — the end of a paginated list. A walk asks for the next page only
+ * when the one before was exactly full, so when the total is a multiple of the
+ * page size the next page is a page of the site with no list on it. That page
+ * (status 200, no challenge, just no rows: notFeed) is where the list ends,
+ * not a failure. A refusal, a challenge or an outage on a later page is still
+ * a failure, and still fails the whole answer (feedVerdict).
+ */
+function feedEndOfList() {
+  try {
+    const s = FEED_ALS.getStore();
+    const n = s && Array.isArray(s.notes) ? s.notes[s.notes.length - 1] : null;
+    if (n && n.state === "error" && n.notFeed) n.superseded = true;
+  } catch (e) {}
+}
+__name(feedEndOfList, "feedEndOfList");
+
+const FEED_HTML_START_RE = /^\s*(<!doctype html|<html|<head|<body|<script)/i;
+
+/**
+ * JSON, as the feeds send it: an object or a list, or — Calgary's way — a JSON
+ * string holding one (the body is "[{\"…\"}]"). Returns the parsed value, or
+ * undefined when the text is not that.
+ */
+function feedParseJson(text) {
+  let j;
+  const t = String(text == null ? "" : text);
+  try {
+    j = JSON.parse(t);
+  } catch (e) {
+    // PHP-built JSON (Charlo, yqyFeedRows) leaves a comma before a closing
+    // bracket on a row-less day. That is still the whole document; a body cut
+    // short or followed by an error page is not, and still fails here.
+    try { j = JSON.parse(t.replace(/,\s*([\]}])/g, "$1")); } catch (e2) { return undefined; }
+  }
+  try {
+    if (typeof j === "string" && /^\s*[[{]/.test(j)) j = JSON.parse(j);
+  } catch (e) { return undefined; }
+  return j && typeof j === "object" ? j : undefined;
+}
+__name(feedParseJson, "feedParseJson");
+
+/**
+ * v23998 — the body is the WHOLE document of its kind, not just a document
+ * that contains the feed's marker. A JSON body must parse: one cut off mid-row,
+ * or rows followed by a PHP "<b>Fatal error</b>", carries the marker and used
+ * to be labelled ok; the parser then found nothing, and the guard served that
+ * as a quiet night under LIVE and overwrote the three-hour shared copy with
+ * an empty list. An XML body must close the element it opened. An HTML board
+ * cannot be told whole from cut short this way, so the marker stays its proof.
+ */
+function feedXmlComplete(text) {
+  let t = String(text == null ? "" : text).trim();
+  // The prolog, comments, a doctype and processing instructions before the
+  // root, skipped one at a time: a scan, not a pattern that could backtrack
+  // (CodeQL js/redos on the trailing-comment pattern below).
+  for (;;) {
+    t = t.replace(/^\s+/, "");
+    let end = -1;
+    if (t.startsWith("<?")) { const i = t.indexOf("?>", 2); end = i < 0 ? -1 : i + 2; }
+    else if (t.startsWith("<!--")) { const i = t.indexOf("-->", 4); end = i < 0 ? -1 : i + 3; }
+    else if (/^<!DOCTYPE/i.test(t)) { const i = t.indexOf(">"); end = i < 0 ? -1 : i + 1; }
+    else break;
+    if (end < 0) return false;
+    t = t.slice(end);
+  }
+  const m = t.match(/^<([A-Za-z_][\w:.-]*)/);
+  if (!m) return false;
+  // Comments after the root, taken off from the end one at a time.
+  let tail = t.replace(/\s+$/, "");
+  while (tail.endsWith("-->")) {
+    const i = tail.lastIndexOf("<!--");
+    if (i < 0) break;
+    tail = tail.slice(0, i).replace(/\s+$/, "");
+  }
+  const root = m[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  if (new RegExp("^<" + root + "\\b[^>]*/>$").test(tail)) return true;
+  return new RegExp("</" + root + "\\s*>$").test(tail);
+}
+__name(feedXmlComplete, "feedXmlComplete");
+function feedBodyComplete(text, expect) {
+  if (expect === "json") return feedParseJson(text) !== undefined;
+  if (expect === "xml") return feedXmlComplete(text);
+  return true;
+}
+__name(feedBodyComplete, "feedBodyComplete");
+
+/**
+ * The body is the kind of document the feed sends: JSON that parses, or XML
+ * that is not an HTML page. Only the kind, not the feed's own shape — that is
+ * the marker's and the parser's job.
+ */
+function feedBodyIsKind(text, expect) {
+  const t = String(text == null ? "" : text);
+  if (expect === "json") return feedParseJson(t) !== undefined;
+  if (expect === "xml") {
+    const head = t.slice(0, 6000);
+    return !FEED_HTML_START_RE.test(head) && !FEED_CHALLENGE_RE.test(head)
+      && /^\s*(<\?xml\b|<[A-Za-z_][\w:.-]*[\s/>])/.test(head);
+  }
+  return true;
+}
+__name(feedBodyIsKind, "feedBodyIsKind");
+
+/**
+ * The label for an upstream Response from its status, redirect and type.
+ * expect: "json" | "xml" | "html" | null — what the feed sends when it works.
+ * body (optional): the text, when it has been read. A Content-Type of text/html
+ * on a JSON or XML feed is only a label: some upstreams send their JSON that
+ * way, and an empty night must not read as a block. So with the body in hand,
+ * a body that IS the expected kind wins over the header; without it, or when
+ * it is not, the header's "blocked" stands. Status and redirect are never
+ * overruled.
+ */
+function feedClassifyResponse(r, expect, srcUrl, body) {
+  if (!r || typeof r.status !== "number") return "error";
+  const st = r.status;
+  if (st >= 300 && st < 400) return "blocked";
+  if (st === 401 || st === 403 || st === 407 || st === 429 || st === 451) return "blocked";
+  let hdr = (n) => "";
+  try { if (r.headers && typeof r.headers.get === "function") hdr = (n) => String(r.headers.get(n) || ""); } catch (e) {}
+  if (/challenge/i.test(hdr("cf-mitigated"))) return "blocked";
+  if (st < 200 || st >= 300) return "error";
+  // Followed to another host: a challenge page, whatever it answers.
+  if (r.redirected && srcUrl) {
+    try { if (new URL(r.url).hostname !== new URL(srcUrl).hostname) return "blocked"; } catch (e) {}
+  }
+  if ((expect === "json" || expect === "xml") && /text\/html/i.test(hdr("content-type"))) {
+    return body != null && feedBodyIsKind(body, expect) ? "ok" : "blocked";
+  }
+  return "ok";
+}
+__name(feedClassifyResponse, "feedClassifyResponse");
+
+/** The label for a body that arrived with a good status but is not the feed. */
+function feedClassifyBody(text, expect) {
+  const t = String(text == null ? "" : text);
+  const head = t.slice(0, 6000);
+  if (FEED_CHALLENGE_RE.test(head)) return "blocked";
+  const html = FEED_HTML_START_RE.test(head);
+  // JSON that lost its shape (or was cut short) is an error; a page, plain
+  // words or nothing at all where JSON was asked for is a block. A JSON string
+  // holding the list (Calgary) is still JSON.
+  if (expect === "json") return (html || !(/^\s*"?\s*[[{]/.test(t) || feedParseJson(t) !== undefined)) ? "blocked" : "error";
+  if (expect === "xml") return html ? "blocked" : "error";
+  return "error";
+}
+__name(feedClassifyBody, "feedClassifyBody");
+
+/**
+ * A valid answer with nothing in it, from a JSON feed: it parses, it holds at
+ * least one list, and every list in it is empty — `[]`, {"flights":[]},
+ * {"departures":[],"arrivals":[]}. Such an answer has no row, so it never
+ * carries the field name a feed's marker looks for ("FlightNumber",
+ * "scheddate"…); without this, a small airport's empty night read as "the page
+ * is not the feed" — an error, 503, "Live data unavailable" and "feed failing"
+ * in the menu. An answer that says it failed ({"success":false}, an error
+ * field) is not empty, and neither is one with no list at all.
+ */
+function feedJsonEmpty(text) {
+  const j = feedParseJson(text);
+  if (j === undefined) return false;
+  const ERR = /^(error|errors|fault|exception)$/i;
+  if (!Array.isArray(j)) {
+    if (j.success === false || j.ok === false) return false;
+    for (const k of Object.keys(j)) {
+      if (ERR.test(k) && j[k] && !(Array.isArray(j[k]) && !j[k].length)) return false;
+    }
+  }
+  let lists = 0;
+  const allEmpty = (v, depth) => {
+    if (Array.isArray(v)) { lists++; return v.length === 0; }
+    if (!v || typeof v !== "object" || depth > 4) return true;
+    for (const k of Object.keys(v)) {
+      if (depth === 0 && ERR.test(k)) continue;
+      if (!allEmpty(v[k], depth + 1)) return false;
+    }
+    return true;
+  };
+  return allEmpty(j, 0) && lists > 0;
+}
+__name(feedJsonEmpty, "feedJsonEmpty");
+
+/** fetch() for a feed: labels the answer in the current guarded request. */
+async function feedFetch(url, init, expect) {
+  let r;
+  try { r = await fetch(url, init); }
+  catch (e) { feedNote("error", "network: " + ((e && e.message) || e)); throw e; }
+  let k = feedClassifyResponse(r, expect, String(url));
+  // Blocked by its Content-Type alone (status and host were fine): read a copy
+  // and let the body say what it is — Saint-Hubert's valid {"flightsByDate":{}}
+  // sent as text/html is an empty night, not a block. The caller still reads
+  // the original.
+  if (k === "blocked" && feedClassifyResponse(r, null, String(url)) === "ok") {
+    try { k = feedClassifyResponse(r, expect, String(url), await r.clone().text()); } catch (e) {}
+  }
+  feedNote(k, k === "ok" ? "" : `HTTP ${r.status}${r.redirected ? " via redirect" : ""}`);
+  return r;
+}
+__name(feedFetch, "feedFetch");
+
+/**
+ * What one guarded fetch means, from what it produced and what it saw.
+ * rows: the producer's row count (null when it produced nothing).
+ *
+ * v23998 — A PARTIAL ANSWER IS NOT LIVE. A feed asked in parts (today and
+ * tomorrow, pages, slices) is the board only when every part answered. Chicago
+ * with "Today" refused by a challenge page and "Tomorrow" answered used to be
+ * served live with tomorrow's rows alone: it became the shared copy and the
+ * last good list, and the board's current hours read as a quiet day. So a
+ * failed part fails the whole answer, whatever the other parts returned, and
+ * the protection shows the last good list instead, marked with its time. The
+ * only failures that do not count are the ones a later step answered
+ * (feedSupersede: a fallback page, a fresh nonce, a second source) and the
+ * page past the end of a list (feedEndOfList).
+ */
+function feedVerdict(rows, notes, threw) {
+  // A failure a later step answered (feedSupersede) is not evidence.
+  const has = (k) => (notes || []).some((n) => n && n.state === k && !n.superseded);
+  if (has("blocked")) return "blocked";
+  if (has("error") || threw) return "error";
+  if (rows != null) return "ok";              // a valid answer with nothing in it
+  // Nothing produced and nothing asked: no evidence it worked, so it did not.
+  return has("ok") ? "ok" : "error";
+}
+__name(feedVerdict, "feedVerdict");
+
+function feedHash(s) {
+  let h = 0x811c9dc5;
+  const t = String(s);
+  for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36) + ":" + t.length;
+}
+__name(feedHash, "feedHash");
+
+function feedShareS(code) { return FEED_SHARE_S[code] || FEED_SHARE_DEFAULT_S; }
+__name(feedShareS, "feedShareS");
+/**
+ * How long a failure stands before the airport is asked again, in seconds. A
+ * block is asked no more often than a healthy feed is (its share interval:
+ * a bot manager that refused us a minute ago will refuse us again); an error
+ * (a timeout, a 5xx) is asked again after a minute.
+ */
+function feedBackoffS(code, state) {
+  if (state === "blocked") return Math.max(FEED_BACKOFF_S.blocked, feedShareS(code));
+  return FEED_BACKOFF_S[state] || 60;
+}
+__name(feedBackoffS, "feedBackoffS");
+
+// Per isolate: answers reused for FEED_MEMO_OK_S, failures held for a backoff,
+// and the current run of failures of each airport — { since, last } — which
+// FEED_FAIL_CONFIRM_MS is measured against (feedHealthNote).
+const _feedMemo = new Map();
+const _feedFailSeen = new Map();
+const _feedProbeAt = new Map();
+/**
+ * This isolate saw the feed good as of `at`, by any road: its own answer, the
+ * memo, or the shared copy another isolate wrote. A run of failures that began
+ * before that is over. (Without this, an isolate that only ever served the
+ * shared copy between two blips half an hour apart counted them as one
+ * 35-minute outage, wrote the airport blocked since the first, and docked it.)
+ */
+function _feedSawGood(code, at) {
+  const s = _feedFailSeen.get(code);
+  if (s && typeof at === "number" && at >= s.since) _feedFailSeen.delete(code);
+}
+function _feedMemoGet(k, now) {
+  const m = _feedMemo.get(k);
+  if (!m) return null;
+  if (m.until <= now) { _feedMemo.delete(k); return null; }
+  return m.res;
+}
+function _feedMemoSet(k, res, ttlS, now) {
+  if (!(ttlS > 0)) return;
+  _feedMemo.delete(k);
+  _feedMemo.set(k, { res, until: now + ttlS * 1000 });
+  // Small on purpose: a big airport's day is half a megabyte of rows, and an
+  // isolate has 128 MB. A colo shows a handful of airports at once.
+  while (_feedMemo.size > 12) _feedMemo.delete(_feedMemo.keys().next().value);
+}
+/** Test hook: forget every per-isolate memory. */
+function _feedResetMemory() { _feedMemo.clear(); _feedFailSeen.clear(); _feedProbeAt.clear(); }
+__name(_feedResetMemory, "_feedResetMemory");
+
+/**
+ * Run one airport's feed through the protection.
+ *   code     airport (upper-case); slot names the payload shape ("win" for the
+ *            registry's normalised rows, "list" for a bespoke route's body)
+ *   producer async () => payload | null, run with its upstream answers labelled
+ *   opts.rows    payload => row count (default: array length)
+ *   opts.force   skip the memo and the shared copy (the dock probe)
+ * Returns { state: "ok"|"stale"|"blocked"|"error", failure, payload, rows, asOf, via }.
+ * payload is null only when there is nothing honest to show.
+ */
+async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
+  opts = opts || {};
+  code = String(code || "").toUpperCase();
+  const now = Date.now();
+  const key = `fg:v1:${code}:${slot}:${dir}`;
+  const fast = !!FEED_FAST[code];
+  const shareS = feedShareS(code);
+  const rowsOf = opts.rows || ((p) => (Array.isArray(p) ? p.length : 0));
+  if (!opts.force && !fast) {
+    const m = _feedMemoGet(key, now);
+    if (m) {
+      if (m.state === "ok") _feedSawGood(code, m.asOf);
+      // v23998 — a failure held here is still this isolate seeing the feed
+      // fail: it keeps the run of failures going (feedHealthNote writes only
+      // on a change), so a longer hold does not hide an outage from the health.
+      else if (m.failure) feedHealthNote(env, ctx, code, m.failure, now, [{ state: m.failure, why: "recent failure (held)" }], m.asOf || null);
+      return m;
+    }
+  }
+  const kv = env && env.FIDS_LIVE_FLIGHTS;
+  let doc = null;
+  try { doc = kv ? await kv.get(key, { type: "json", cacheTtl: 60 }) : null; } catch (e) { doc = null; }
+  if (!doc || typeof doc !== "object" || typeof doc.at !== "number" || !("p" in doc)) doc = null;
+  if (doc && !opts.force && !fast && now - doc.at < shareS * 1000) {
+    _feedSawGood(code, doc.at);
+    const res = { state: "ok", failure: null, payload: doc.p, rows: doc.n || 0, asOf: doc.at, via: "shared" };
+    _feedMemoSet(key, res, Math.min(FEED_MEMO_OK_S, shareS - Math.floor((now - doc.at) / 1000)), now);
+    return res;
+  }
+  // v23998 — THE BACKOFF IS SHARED TOO. A failure is written to its own small
+  // key (FEED_FAIL_PREFIX, one write per upstream ask that failed, gone by
+  // itself) and, once it is a second failure in a row, every colo honours it
+  // for feedBackoffS: an airport that keeps refusing us is asked about as
+  // often as a healthy one is, not once per isolate per two minutes. A single
+  // refusal is held only by the isolate that met it, so one blip does not keep
+  // every screen on the last good list for five minutes. A good answer newer
+  // than the failure (the shared copy) ends it. Never for the dock probe
+  // (force) or a fast path.
+  const failKey = `${FEED_FAIL_PREFIX}${code}:${slot}:${dir}`;
+  let lastFail = null;
+  if (kv && !opts.force && !fast) {
+    let f = null;
+    try { f = await kv.get(failKey, { type: "json", cacheTtl: 30 }); } catch (e) { f = null; }
+    const fl = f && (f.state === "blocked" || f.state === "error") && typeof f.at === "number"
+      && (!doc || doc.at < f.at) ? f : null;
+    lastFail = fl;
+    const holdMs = fl ? feedBackoffS(code, fl.state) * 1000 - (now - fl.at) : 0;
+    if (fl && (fl.n || 1) >= 2 && holdMs > 0) {
+      feedHealthNote(env, ctx, code, fl.state, now, [{ state: fl.state, why: fl.why || "recent failure (shared)" }], doc ? doc.at : null);
+      const res = feedFailedResult(doc, fl.state, now);
+      _feedMemoSet(key, res, Math.ceil(holdMs / 1000), now);
+      return res;
+    }
+  }
+  const store = { notes: [] };
+  let payload = null, threw = null;
+  try { payload = await FEED_ALS.run(store, producer); } catch (e) { threw = e; payload = null; }
+  const rows = payload == null ? null : rowsOf(payload);
+  const state = feedVerdict(rows, store.notes, threw);
+  if (state === "ok") {
+    if (payload == null) payload = opts.empty ? opts.empty() : [];
+    const n = rowsOf(payload);
+    let text = null;
+    try { text = JSON.stringify(payload); } catch (e) { text = null; }
+    if (kv && text != null) {
+      const h = feedHash(text);
+      const age = doc ? now - doc.at : Infinity;
+      const changed = !doc || doc.h !== h;
+      const due = fast
+        ? (changed ? age >= FEED_FAST_WRITE_MIN_S * 1000 : age >= FEED_FAST_REFRESH_S * 1000)
+        : (changed || age >= shareS * 1000);
+      if (due) {
+        const w = kv.put(key, `{"v":1,"at":${now},"h":${JSON.stringify(h)},"n":${n},"p":${text}}`,
+          { expirationTtl: Math.ceil(FEED_LASTGOOD_MAX_MS / 1000) + 600 }).catch(() => {});
+        if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(w); else await w;
+      }
+    }
+    feedHealthNote(env, ctx, code, "ok", now, null, null);
+    const res = { state: "ok", failure: null, payload, rows: n, asOf: now, via: "live" };
+    if (!fast) _feedMemoSet(key, res, Math.min(FEED_MEMO_OK_S, shareS), now);
+    return res;
+  }
+  // The shared copy's time is the latest good answer any isolate has had.
+  feedHealthNote(env, ctx, code, state, now, store.notes, doc ? doc.at : null);
+  const res = feedFailedResult(doc, state, now);
+  if (!fast && !opts.force) {
+    // The count of failures in a row, any colo's: a good answer since (a newer
+    // shared copy) or a long silence starts it again. A first failure is held
+    // here only as long as before (FEED_BACKOFF_S); a repeated one as long as
+    // every colo holds it (feedBackoffS).
+    const n = lastFail && now - lastFail.at <= FEED_FAIL_GAP_MS ? (lastFail.n || 1) + 1 : 1;
+    _feedMemoSet(key, res, n >= 2 ? feedBackoffS(code, state) : (FEED_BACKOFF_S[state] || 60), now);
+    if (kv) {
+      const why = (store.notes || []).filter((x) => x && x.state === state && !x.superseded).map((x) => x.why).filter(Boolean)[0] || "";
+      const w = kv.put(failKey, JSON.stringify({ v: 1, at: now, n: Math.min(n, 99), state, why: String(why).slice(0, 80) }),
+        { expirationTtl: Math.max(60, Math.ceil(FEED_FAIL_GAP_MS / 1000)) }).catch(() => {});
+      if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(w); else await w;
+    }
+  }
+  return res;
+}
+__name(feedGuard, "feedGuard");
+
+/** A failed guard's answer: the last good list (up to 3 h old), else nothing. */
+function feedFailedResult(doc, state, now) {
+  const lg = doc && now - doc.at <= FEED_LASTGOOD_MAX_MS ? doc : null;
+  return lg
+    ? { state: "stale", failure: state, payload: lg.p, rows: lg.n || 0, asOf: lg.at, via: "lastgood" }
+    : { state, failure: state, payload: null, rows: 0, asOf: null, via: "none" };
+}
+__name(feedFailedResult, "feedFailedResult");
+
+/** Headers that say what a guarded answer is. */
+function feedHeaders(g, now) {
+  const h = { "X-Feed-State": g.state === "ok" ? "live" : g.state, "Access-Control-Expose-Headers": FEED_EXPOSE };
+  if (g.asOf) {
+    h["X-Feed-As-Of"] = new Date(g.asOf).toISOString();
+    h["X-Feed-Age"] = String(Math.max(0, Math.round(((now || Date.now()) - g.asOf) / 1000)));
+  }
+  if (g.state === "stale") h["X-Feed-Stale"] = "1";
+  return h;
+}
+__name(feedHeaders, "feedHeaders");
+
+/** The same, in the body, for clients that cannot read the headers. */
+function feedMeta(g, now) {
+  return {
+    state: g.state === "ok" ? "live" : g.state,
+    failure: g.failure || null,
+    asOf: g.asOf ? new Date(g.asOf).toISOString() : null,
+    ageS: g.asOf ? Math.max(0, Math.round(((now || Date.now()) - g.asOf) / 1000)) : null
+  };
+}
+__name(feedMeta, "feedMeta");
+
+/** The worse of two guarded answers (both directions of one window). */
+function feedWorst(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const rank = { ok: 0, stale: 1, error: 2, blocked: 3 };
+  if ((rank[b.state] || 0) !== (rank[a.state] || 0)) return (rank[b.state] || 0) > (rank[a.state] || 0) ? b : a;
+  return (b.asOf || 0) < (a.asOf || 0) ? b : a;
+}
+__name(feedWorst, "feedWorst");
+
+/** 503: nothing honest to show. Never an empty list. */
+function feedDownResponse(code, g, origin) {
+  const kind = g.failure || g.state || "error";
+  return new Response(JSON.stringify({ error: kind, state: kind, airport: code, _feed: feedMeta(g) }), {
+    status: 503,
+    headers: { "Content-Type": "application/json", "Cache-Control": "no-store", ...feedHeaders(g), ...corsHeaders(origin) }
+  });
+}
+__name(feedDownResponse, "feedDownResponse");
+
+// ── FEED HEALTH ────────────────────────────────────────────────────────────
+// One KV document, { v:1, feeds: { YYZ: { state, since, oks, okAt, why } } },
+// holding only airports that are NOT healthy. Written only when an airport's
+// entry changes: it starts failing (after FEED_FAIL_CONFIRM_MS unbroken), a
+// failure turns into a block, a good answer is counted towards undocking it
+// (oks 0 → 1), a refusal breaks that count, or it is healthy again. Never on a
+// routine good answer, never on a failure that changes nothing, and never for
+// a dock probe: the probe's time lives in its own key (FEED_PROBE_PREFIX).
+//
+// KV has no compare-and-swap, so this is read, change one airport, write.
+// The uncached read just before the write narrows the window, and the rest is
+// self-healing: an entry another colo's write wiped is written again by the
+// next failure of that airport, dated from the same start (each isolate keeps
+// its run's start in _feedFailSeen), and an airport wrongly left docked is
+// probed and undocked by the next good answers.
+const FEED_PROBE_PREFIX = "fp:v1:";
+async function feedHealthRead(env, fresh) {
+  try {
+    const d = env && env.FIDS_USERS
+      ? await env.FIDS_USERS.get(FEED_HEALTH_KEY, fresh ? { type: "json" } : { type: "json", cacheTtl: 30 })
+      : null;
+    if (d && typeof d === "object" && d.feeds && typeof d.feeds === "object") return d;
+  } catch (e) {}
+  return { v: 1, feeds: {} };
+}
+__name(feedHealthRead, "feedHealthRead");
+
+/**
+ * The next health entry for one airport after one answer, or undefined when
+ * nothing changes. Pure, so the rules are tested without a KV.
+ *   cur   the stored entry, or null when the airport is healthy
+ *   kind  "ok" | "blocked" | "error"
+ *   seen  { since } — when this isolate's current, unbroken run of failures
+ *         began (feedHealthNote keeps it honest)
+ * Returns null to delete the entry (healthy again).
+ */
+function feedHealthNext(cur, kind, now, seen) {
+  if (kind === "ok") {
+    if (!cur) return undefined;
+    if (cur.okAt && now - cur.okAt < FEED_OK_SPACING_MS) return undefined;
+    const oks = (cur.oks || 0) + 1;
+    if (oks >= FEED_UNDOCK_OKS) return null;
+    return { ...cur, oks, okAt: now };
+  }
+  if (cur) {
+    // Already failing. A broken streak restarts the count; error never
+    // downgrades blocked (a timeout inside a block is still the block), and
+    // blocked upgrades error from now.
+    const next = { ...cur };
+    let changed = false;
+    if (cur.oks) { next.oks = 0; next.okAt = null; changed = true; }
+    if (kind === "blocked" && cur.state !== "blocked") { next.state = "blocked"; next.since = now; changed = true; }
+    return changed ? next : undefined;
+  }
+  if (!seen || now - seen.since < FEED_FAIL_CONFIRM_MS) return undefined;
+  return { state: kind, since: seen.since, oks: 0, okAt: null };
+}
+__name(feedHealthNext, "feedHealthNext");
+
+/**
+ * The run of failures this answer belongs to, in this isolate. A run is one
+ * outage only while it is unbroken: a good answer since it began — this
+ * isolate's own, or another isolate's, seen as a shared copy newer than the
+ * run (lastGoodAt) — or a silence longer than FEED_FAIL_GAP_MS ends it, and
+ * this failure starts a new one. Returns { since, last }.
+ */
+function feedFailRun(code, now, lastGoodAt) {
+  let seen = _feedFailSeen.get(code) || null;
+  if (seen && ((typeof lastGoodAt === "number" && lastGoodAt >= seen.since) || now - seen.last > FEED_FAIL_GAP_MS)) seen = null;
+  if (!seen) { seen = { since: now, last: now }; _feedFailSeen.set(code, seen); }
+  else seen.last = now;
+  return seen;
+}
+__name(feedFailRun, "feedFailRun");
+
+function feedHealthNote(env, ctx, code, kind, now, notes, lastGoodAt) {
+  let seen = null;
+  if (kind === "ok") _feedFailSeen.delete(code);
+  else seen = feedFailRun(code, now, lastGoodAt);
+  if (!env || !env.FIDS_USERS) return;
+  const work = (async () => {
+    try {
+      const doc = await feedHealthRead(env, false);
+      const cur = doc.feeds[code] || null;
+      if (feedHealthNext(cur, kind, now, seen) === undefined) return;
+      // Read again uncached right before writing, and change only this
+      // airport, so two colos noting two airports rarely undo each other.
+      const fresh = await feedHealthRead(env, true);
+      const next = feedHealthNext(fresh.feeds[code] || null, kind, now, seen);
+      if (next === undefined) return;
+      if (next === null) delete fresh.feeds[code];
+      else {
+        if (kind !== "ok" && notes && notes.length) {
+          const why = notes.filter((n) => n && n.state === kind && !n.superseded).map((n) => n.why).filter(Boolean)[0];
+          if (why) next.why = why;
+        }
+        fresh.feeds[code] = next;
+      }
+      fresh.v = 1;
+      fresh.updatedAt = now;
+      await env.FIDS_USERS.put(FEED_HEALTH_KEY, JSON.stringify(fresh));
+    } catch (e) {}
+  })();
+  if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(work);
+  return work;
+}
+__name(feedHealthNote, "feedHealthNote");
+
+/** Airports blocked for 30 minutes or more, from a health document. Pure. */
+function feedAutoDocked(doc, now) {
+  const out = [];
+  const info = {};
+  const watch = {};
+  const feeds = (doc && doc.feeds) || {};
+  for (const code of Object.keys(feeds).sort()) {
+    const e = feeds[code];
+    if (!e || typeof e.since !== "number") continue;
+    const entry = { state: e.state, since: new Date(e.since).toISOString() };
+    if (e.state === "blocked" && now - e.since >= FEED_AUTODOCK_MS && !FEED_NO_AUTODOCK[code]) {
+      out.push(code);
+      // v23998 — when it was docked, not only when the block began: the menu
+      // says "auto-docked since" the first, which is 30 minutes after the second.
+      entry.dockedAt = new Date(e.since + FEED_AUTODOCK_MS).toISOString();
+      info[code] = entry;
+    } else {
+      if (FEED_NO_AUTODOCK[code]) entry.noAuto = FEED_NO_AUTODOCK[code];
+      watch[code] = entry;
+    }
+  }
+  return { auto: out, autoInfo: info, watch };
+}
+__name(feedAutoDocked, "feedAutoDocked");
+
+/**
+ * The auto half of GET /api/dry-dock. Starts a re-probe (in the background) of
+ * each auto-docked airport not asked for 10 minutes. When it was last asked is
+ * shared through its own small key (FEED_PROBE_PREFIX + code, one write per
+ * probe), so every colo waits the same ten minutes and the health document is
+ * not rewritten for it.
+ */
+async function feedDockAuto(env, ctx, now) {
+  now = now || Date.now();
+  const doc = await feedHealthRead(env, false);
+  const res = feedAutoDocked(doc, now);
+  const kv = env && env.FIDS_LIVE_FLIGHTS;
+  for (const code of res.auto) {
+    const e = doc.feeds[code] || {};
+    let shared = 0;
+    try { shared = kv ? Number(await kv.get(FEED_PROBE_PREFIX + code, { cacheTtl: 30 })) || 0 : 0; } catch (x) { shared = 0; }
+    const last = Math.max(shared, _feedProbeAt.get(code) || 0, e.since || 0);
+    if (now - last < FEED_PROBE_EVERY_MS) continue;
+    _feedProbeAt.set(code, now);
+    const stamp = kv
+      ? kv.put(FEED_PROBE_PREFIX + code, String(now), { expirationTtl: Math.ceil(FEED_PROBE_EVERY_MS / 1000) * 3 }).catch(() => {})
+      : Promise.resolve();
+    const p = Promise.all([stamp, feedProbe(env, ctx, code).catch(() => {})]);
+    if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(p);
+  }
+  return res;
+}
+__name(feedDockAuto, "feedDockAuto");
+
+/** Ask one airport's feed directly, past the shared copy (the dock probe). */
+async function feedProbe(env, ctx, code) {
+  const p = feedProducerFor(env, code);
+  if (!p) return null;
+  return feedGuard(env, ctx, code, p.dir, p.slot, p.producer, { rows: p.rows, force: true });
+}
+__name(feedProbe, "feedProbe");
+
 // One cached page/payload fetch per source per TTL, however many screens
 // are polling. Negative results are cached briefly so an outage is
 // re-probed, not hammered.
+// v23996 — every answer is labelled for the feed protection (feedNote): the
+// marker is the proof a page is the feed, whatever its headers said; without
+// it, a challenge page or HTML where JSON was asked for is "blocked" and
+// anything else "error". The negative cache keeps the label (X-Auth-Kind), so a cached
+// failure still says which kind it was. fetchOpts.feedExpect ("json" | "xml"
+// | "html") overrides the guess from the marker, and a markerless JSON feed
+// (Moncton) must at least start like JSON.
+// v23996 (review) — the guess only knows a quoted marker ('"flights"') or a
+// JSON-only Accept. A JSON feed whose marker is a bare word (Calgary's string
+// of JSON, Kelowna, Abbotsford, Denver, Chicago, Detroit, Prince George,
+// Victoria's ajax) and the two XML feeds (Miami, Austin) say feedExpect
+// themselves; a test reads every call against the parser it feeds, so a new
+// one cannot be left out. With the kind known: HTML where JSON or XML was asked
+// for is "blocked" (a challenge page no vendor list knows), a text/html label
+// on a body that IS the kind is not (feedClassifyResponse with the body), and a
+// JSON answer with no rows in it is a good, empty answer (feedJsonEmpty) — it
+// has no row, so it cannot carry a row's field name.
+function feedExpectOf(marker, opts) {
+  if (opts && opts.feedExpect) return opts.feedExpect;
+  const m = String(marker || "");
+  if (m.charAt(0) === '"') return "json";
+  const acc = String(((opts && opts.headers) || {}).Accept || ((opts && opts.headers) || {}).accept || "");
+  if (/json/i.test(acc) && !/html/i.test(acc)) return "json";
+  return "html";
+}
+__name(feedExpectOf, "feedExpectOf");
 async function fetchAuthorityText(cachePath, srcUrl, marker, ttlS, fetchOpts) {
   const cacheKey = new Request(`https://authority-feeds/${cachePath}`);
   const cache = caches.default;
+  const expect = feedExpectOf(marker, fetchOpts);
   try {
     const hit = await cache.match(cacheKey);
-    if (hit) return hit.headers.get("X-Auth-Neg") ? null : await hit.text();
+    if (hit) {
+      if (hit.headers.get("X-Auth-Neg")) {
+        feedNote(hit.headers.get("X-Auth-Kind") === "blocked" ? "blocked" : "error", "recent failure (cached)",
+          hit.headers.get("X-Auth-Not-Feed") ? { notFeed: true } : null);
+        return null;
+      }
+      feedNote("ok");
+      return await hit.text();
+    }
   } catch (e) {}
-  let text = null;
+  let text = null, kind = "error", why = "network", notFeed = false;
   try {
-    const opts = fetchOpts || {};
+    const { feedExpect, ...opts } = fetchOpts || {};
+    void feedExpect;
     const r = await fetch(srcUrl, { ...opts, headers: {
       "User-Agent": "Mozilla/5.0 (compatible; OrionConnected-FIDS/1.0; +https://fids.orionconnected.com)",
       "Accept": "text/html,application/json",
       ...(opts.headers || {})
     } });
-    if (r.ok) text = await r.text();
+    why = `HTTP ${r.status}${r.redirected ? " via redirect" : ""}`;
+    kind = feedClassifyResponse(r, expect, srcUrl);
+    if (r.ok) {
+      text = await r.text();
+      kind = feedClassifyResponse(r, expect, srcUrl, text);
+    }
   } catch (e) {}
-  const good = text && (!marker || text.indexOf(marker) !== -1);
+  // v23998 — the marker is not proof enough: a JSON body must parse and an
+  // XML one must close its root (feedBodyComplete). A body cut off mid-row
+  // still carries the marker; so does a list followed by a PHP fatal error.
+  const broken = text != null && !feedBodyComplete(text, expect);
+  let good = !!text && !broken && (!marker || text.indexOf(marker) !== -1);
+  if (good && !marker && expect === "json" && !/^\s*[[{]/.test(text)) good = false;
+  // A valid JSON answer with no rows: no row, so no marker (feedJsonEmpty).
+  if (!good && !broken && text != null && kind === "ok" && expect === "json" && feedJsonEmpty(text)) good = true;
+  if (good) kind = "ok";
+  else if (text != null && kind === "ok") {
+    kind = feedClassifyBody(text, expect);
+    why = broken && kind === "error" ? "the answer is cut short or broken" : "the page is not the feed";
+    // A page of the site that is simply not a list (no challenge on it, a good
+    // status, the whole document): past the end of a paginated list, this is
+    // where the list ends (feedEndOfList), not a failure.
+    notFeed = !broken && kind === "error";
+  }
+  feedNote(kind, kind === "ok" ? "" : why, notFeed ? { notFeed: true } : null);
   try {
+    const neg = { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1", "X-Auth-Kind": kind === "ok" ? "error" : kind };
+    if (notFeed) neg["X-Auth-Not-Feed"] = "1";
     await cache.put(cacheKey, good
       ? new Response(text, { headers: { "Cache-Control": `public, max-age=${ttlS}` } })
-      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1" } }));
+      : new Response("", { headers: neg }));
   } catch (e) {}
   return good ? text : null;
 }
@@ -3833,25 +4656,42 @@ async function dubFetchAll(dir) {
   const cache = caches.default;
   try {
     const hit = await cache.match(cacheKey);
-    if (hit) return hit.headers.get("X-Auth-Neg") ? null : JSON.parse(await hit.text());
+    if (hit) {
+      const neg = hit.headers.get("X-Auth-Neg");
+      feedNote(neg ? (hit.headers.get("X-Auth-Kind") === "blocked" ? "blocked" : "error") : "ok", neg ? "recent failure (cached)" : "");
+      return neg ? null : JSON.parse(await hit.text());
+    }
   } catch (e) {}
   const kind = dir === "dep" ? "departures" : "arrivals";
   const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
   const gv = (t) => (dp.find((p) => p.type === t) || {}).value;
   const today = `${gv("year")}-${gv("month")}-${gv("day")}`;
   const rows = [];
+  // v23996 — a list that answered, empty, with nothing refused or broken on
+  // the way, is a quiet night: kept like a full one, not as a failure.
+  // v23998 — and a list with a page refused or broken on the way is not the
+  // list: today's pages then tomorrow's are one board, so the walk stops at
+  // the first failed page and nothing is kept or served (feedVerdict). It
+  // used to keep the pages before the failure, cache them as good for two
+  // minutes and serve them live.
+  let answered = false, failed = false, failKind = "error";
   try {
     // Today: walk up to 14 pages. Tomorrow: the first 6 cover the
     // board's overnight lookahead. 10 rows a page, tiny responses.
     for (const [date, maxPages] of [[today, 14], [new Date(Date.parse(today + "T12:00:00Z") + 864e5).toISOString().slice(0, 10), 6]]) {
+      if (failed) break;
       let after = "", afterId = "";
       for (let p = 0; p < maxPages; p++) {
         const q = after ? `&after=${encodeURIComponent(after)}&after-id=${encodeURIComponent(afterId)}` : "";
-        const r = await fetch(`https://api.dublinairport.com/dap/flight-listing/${kind}?date=${date}${q}`, {
+        const r = await feedFetch(`https://api.dublinairport.com/dap/flight-listing/${kind}?date=${date}${q}`, {
           headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (compatible; OrionConnected-FIDS/1.0)" }
-        });
-        if (!r.ok) break;
-        const j = await r.json().catch(() => null);
+        }, "json");
+        if (!r.ok) { failKind = feedClassifyResponse(r, "json", r.url || ""); failed = true; break; }
+        const txt = await r.text().catch(() => "");
+        const j = feedParseJson(txt) || null;
+        if (!j) { failKind = feedClassifyBody(txt, "json"); feedNote(failKind, "not JSON"); failed = true; break; }
+        else if (Array.isArray(j.content)) answered = true;
+        else { feedNote("error", "not the Dublin list"); failed = true; break; }
         const page = (j && Array.isArray(j.content)) ? j.content : [];
         if (!page.length) break;
         rows.push(...page);
@@ -3864,12 +4704,12 @@ async function dubFetchAll(dir) {
         if (!pg.hasNext || !after || !afterId) break;
       }
     }
-  } catch (e) {}
-  const good = rows.length > 0;
+  } catch (e) { failed = true; }
+  const good = !failed && (rows.length > 0 || answered);
   try {
     await cache.put(cacheKey, good
       ? new Response(JSON.stringify(rows), { headers: { "Cache-Control": "public, max-age=120", "Content-Type": "application/json" } })
-      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1" } }));
+      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1", "X-Auth-Kind": failKind === "blocked" ? "blocked" : "error" } }));
   } catch (e) {}
   return good ? rows : null;
 }
@@ -5439,7 +6279,14 @@ __name(manParseFeed, "manParseFeed");
 async function manFetch(dir) {
   const cacheKey = new Request(`https://authority-feeds/man/${dir}`);
   const cache = caches.default;
-  try { const hit = await cache.match(cacheKey); if (hit) return hit.headers.get("X-Auth-Neg") ? null : await hit.text(); } catch (e) {}
+  try {
+    const hit = await cache.match(cacheKey);
+    if (hit) {
+      const neg = hit.headers.get("X-Auth-Neg");
+      feedNote(neg ? "error" : "ok", neg ? "recent failure (cached)" : "");
+      return neg ? null : await hit.text();
+    }
+  } catch (e) {}
   const now = new Date();
   const startDate = new Date(now.getTime() - 6 * 3600e3).toISOString();
   const endDate = new Date(now.getTime() + 30 * 3600e3).toISOString();
@@ -5454,14 +6301,24 @@ async function manFetch(dir) {
   const query = `query S($airportCode: String!, $range: DateRange!) { ${op}( tenant: $airportCode query: { match: "" fields: ${matchFields} range: $range } size: 400 from: 0 ) { ${dtField} status flightNumber ${apField} { name cityName code } airline { name code } ${gateField} } }`;
   let text = null;
   try {
-    const r = await fetch("https://d3ebfrkw2baepa.cloudfront.net", {
+    const r = await feedFetch("https://d3ebfrkw2baepa.cloudfront.net", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
       body: JSON.stringify({ query, variables: { airportCode: "MAN", range: { startDate, endDate } } })
-    });
+    }, "json");
     if (r.ok) text = await r.text();
   } catch (e) {}
-  const good = text && text.indexOf("flightNumber") !== -1;
+  // v23996 — an empty answer has no row, so no "flightNumber" (feedJsonEmpty).
+  // v23998 — and the answer must parse (feedParseJson): one cut off mid-row
+  // carries the field name too. A GraphQL error with no data is not the list,
+  // whatever its message names.
+  const j = text != null ? feedParseJson(text) : undefined;
+  const good = !!text && j !== undefined && !(Array.isArray(j.errors) && j.errors.length && !j.data)
+    && (text.indexOf("flightNumber") !== -1 || feedJsonEmpty(text));
+  if (!good && text != null) {
+    const k = feedClassifyBody(text, "json");
+    feedNote(k, j === undefined && k === "error" ? "the answer is cut short or broken" : "the answer is not the feed");
+  }
   try {
     await cache.put(cacheKey, good
       ? new Response(text, { headers: { "Cache-Control": "public, max-age=90" } })
@@ -6227,6 +7084,7 @@ function yyjParseFeed(jsonText, dir, nowMs) {
 __name(yyjParseFeed, "yyjParseFeed");
 async function yyjFetchBoard() {
   const ajax = (nonce) => fetchAuthorityText(`yyj/flights/${nonce}`, YYJ_AJAX_URL, "flightsTable", 75, {
+    feedExpect: "json",
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", "Accept": "application/json, text/html", "Referer": YYJ_PAGE_URL },
     body: `action=yyj_get_flights&nonce=${encodeURIComponent(nonce)}&lang=en`
@@ -6240,6 +7098,10 @@ async function yyjFetchBoard() {
   const fresh = await fetchAuthorityText(`yyj/page/${Math.floor(Date.now() / 6e4)}`, YYJ_PAGE_URL, "flightsData", 60);
   const n2 = yyjParseNonce(fresh);
   if (n2 && n2 !== nonce) t = await ajax(n2);
+  // v23996 — the dead nonce's refusal (WordPress answers it 403) was answered
+  // by the fresh one: it says nothing about the feed (feedSupersede), so a
+  // quiet night here is an empty board, not a block.
+  if (t) feedSupersede();
   return t || null;
 }
 __name(yyjFetchBoard, "yyjFetchBoard");
@@ -8232,7 +9094,7 @@ const AUTHORITY_HANDLERS = {
     // Answers in ~0.5 s while polled; the first hit after ~10 min of nobody
     // asking took 16-18 s twice (a 2010 JSP waking up). Steady 60-s polling
     // keeps it warm, and the edge cache keeps thirty screens from feeling it.
-    const t = await fetchAuthorityText(`mia/${dir}`, `https://webvids.miami-airport.com/webfids/webfids?action=${dir === "dep" ? "updateDepartures" : "updateArrivals"}`, "<flightNumber>", 60);
+    const t = await fetchAuthorityText(`mia/${dir}`, `https://webvids.miami-airport.com/webfids/webfids?action=${dir === "dep" ? "updateDepartures" : "updateArrivals"}`, "<flightNumber>", 60, { feedExpect: "xml" });
     if (!t) return null;
     const f = miaParseFeed(t, dir, Date.now());
     return f.length ? f : null;
@@ -8251,6 +9113,10 @@ const AUTHORITY_HANDLERS = {
       fetchAuthorityText(`yzf/page/${bucket}`, `https://flyyzf.ca/passengers/flight-information?v=${bucket}`, 'id="departures-tab"', 90),
       fetchAuthorityText("yzf/dot", "https://www.dot.gov.nt.ca/Airports", "<h2>Departures</h2>", 90)
     ]);
+    // v23998 — two sources by design, each the board when the other is out
+    // (above): one of them answering answers the other's failure, so the
+    // whole-answer rule (feedVerdict) does not fail Yellowknife for it.
+    if (t || m) feedSupersede();
     const f = yzfMergeRows(t ? parseYzfPage(t, dir, Date.now()) : [], m ? parseYzfDotPage(m, dir, Date.now()) : []);
     return f.length ? f : null;
   } },
@@ -8356,7 +9222,7 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   dtw: { tz: "America/Detroit", source: "dtw-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText(`dtw/${dir}`, `https://proxy.metroairport.com/FlightStatusProxy.ashx?method=${dir === "dep" ? "Departure" : "Arrival"}&pastHours=6&futureHours=24`, "CombinedFlightNumber", 90);
+    const t = await fetchAuthorityText(`dtw/${dir}`, `https://proxy.metroairport.com/FlightStatusProxy.ashx?method=${dir === "dep" ? "Departure" : "Arrival"}&pastHours=6&futureHours=24`, "CombinedFlightNumber", 90, { feedExpect: "json" });
     if (!t) return null;
     // Codeshare-only groups need FR24 to name the parent flight. Cached for a
     // day and budget-guarded; null without FR24_KEY, which just leaves those
@@ -8380,13 +9246,13 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   ylw: { tz: "America/Vancouver", source: "ylw-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText(`ylw/${dir}`, `https://kelprodylwfast01.blob.core.windows.net/$web/ylw/flights/${dir === "dep" ? "departures" : "arrivals"}.json`, "FlightNumber", 90);
+    const t = await fetchAuthorityText(`ylw/${dir}`, `https://kelprodylwfast01.blob.core.windows.net/$web/ylw/flights/${dir === "dep" ? "departures" : "arrivals"}.json`, "FlightNumber", 90, { feedExpect: "json" });
     if (!t) return null;
     const f = ylwParseFeed(t, dir, Date.now());
     return f.length ? f : null;
   } },
   yxx: { tz: "America/Vancouver", source: "yxx-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText(`yxx/${dir}`, `https://www.abbotsfordairport.ca/flights/rest/${dir === "dep" ? "departures" : "arrivals"}`, "scheddate", 90);
+    const t = await fetchAuthorityText(`yxx/${dir}`, `https://www.abbotsfordairport.ca/flights/rest/${dir === "dep" ? "departures" : "arrivals"}`, "scheddate", 90, { feedExpect: "json" });
     if (!t) return null;
     const f = yxxParseFeed(t, dir, Date.now());
     return f.length ? f : null;
@@ -8414,7 +9280,7 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   yyc: { tz: "America/Edmonton", source: "yyc-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText("yyc/all", `https://www.yyc.com/desktopmodules/YYC.ModulesDnn.YYC.Flights.Controllers/API/Flights/getFlights?${Date.now()}`, "AirlineIATACode", 150);
+    const t = await fetchAuthorityText("yyc/all", `https://www.yyc.com/desktopmodules/YYC.ModulesDnn.YYC.Flights.Controllers/API/Flights/getFlights?${Date.now()}`, "AirlineIATACode", 150, { feedExpect: "json" });
     if (!t) return null;
     const f = yycParseFeed(t, dir, Date.now());
     return f.length ? f : null;
@@ -8453,7 +9319,7 @@ const AUTHORITY_HANDLERS = {
     return f.length ? f : null;
   } },
   den: { tz: "America/Denver", source: "den-authority", list: async (dir, env) => {
-    const t = await fetchAuthorityText(`den/${dir}`, `https://pages.fruitionqa.com/api/widgets/den/flight-search/data?direction=${dir === "dep" ? "departure" : "arrival"}`, "flightNumber", 90);
+    const t = await fetchAuthorityText(`den/${dir}`, `https://pages.fruitionqa.com/api/widgets/den/flight-search/data?direction=${dir === "dep" ? "departure" : "arrival"}`, "flightNumber", 90, { feedExpect: "json" });
     if (!t) return null;
     const f = denParseFeed(t, dir, Date.now());
     return f.length ? f : null;
@@ -8466,7 +9332,7 @@ const AUTHORITY_HANDLERS = {
     const kind = dir === "dep" ? "Departures" : "Arrivals";
     const parts = [];
     for (const day of ["Today", "Tomorrow"]) {
-      const t = await fetchAuthorityText(`ord/${dir}/${day}`, `https://prod-flightwarehousewebservice.flychicago.com/FlightWarehouseService.svc/getflightlist/${kind}/ord/${day}/1/24`, "AirlineCodeFlightNumber", 150);
+      const t = await fetchAuthorityText(`ord/${dir}/${day}`, `https://prod-flightwarehousewebservice.flychicago.com/FlightWarehouseService.svc/getflightlist/${kind}/ord/${day}/1/24`, "AirlineCodeFlightNumber", 150, { feedExpect: "json" });
       if (t) parts.push(...ordParseFeed(t, dir, Date.now()));
     }
     return parts.length ? parts : null;
@@ -8538,7 +9404,7 @@ const AUTHORITY_HANDLERS = {
   aus: { tz: "America/Chicago", source: "aus-authority", list: async (dir, env) => {
     // Plain http:// (the site has no TLS on :8080); the board's own XML
     // refresh feed, refreshed there every 60 s.
-    const t = await fetchAuthorityText(`aus/${dir}`, `http://content.abia.org:8080/webfids/webfids?action=${dir === "dep" ? "updateDepartures" : "updateArrivals"}`, "<flightNumber>", 60);
+    const t = await fetchAuthorityText(`aus/${dir}`, `http://content.abia.org:8080/webfids/webfids?action=${dir === "dep" ? "updateDepartures" : "updateArrivals"}`, "<flightNumber>", 60, { feedExpect: "xml" });
     if (!t) return null;
     const f = ausParseFeed(t, dir, Date.now());
     return f.length ? f : null;
@@ -8550,7 +9416,14 @@ const AUTHORITY_HANDLERS = {
     const all = [];
     for (let p = 0; p < 8; p++) {
       const t = await fetchAuthorityText(`msp/${dir}/${p}`, `https://www.mspairport.com/flights-and-airlines/flights?flight_type=${kind}&page=${p}`, 'headers="view-scheduled-time-table-column"', 120);
-      if (!t) break;
+      if (!t) {
+        // v23998 — a later page is asked only when the one before was full;
+        // when the total is a round hundred it is a page with no table on it,
+        // the end of the list (feedEndOfList). A refused or failed later page
+        // still fails the whole answer (feedVerdict).
+        if (p > 0) feedEndOfList();
+        break;
+      }
       all.push(...mspParsePage(t, dir, Date.now()));
       if (mspPageRowCount(t) < 100) break;
     }
@@ -8638,8 +9511,13 @@ const AUTHORITY_HANDLERS = {
     // renders the same two tables in its Arrivals/Departures tabs, so it
     // stands in if the sub-page's slug ever moves.
     const marker = '<table class="arrdeptables';
-    const t = await fetchAuthorityText("yyg/page", "https://flyyyg.com/passengers/flights/arrivals_departures/", marker, 90)
-      || await fetchAuthorityText("yyg/home", "https://flyyyg.com/", marker, 90);
+    let t = await fetchAuthorityText("yyg/page", "https://flyyyg.com/passengers/flights/arrivals_departures/", marker, 90);
+    if (!t) {
+      t = await fetchAuthorityText("yyg/home", "https://flyyyg.com/", marker, 90);
+      // v23996 — the home page stood in for the sub-page: the sub-page's
+      // failure was answered (feedSupersede), so an empty night stays empty.
+      if (t) feedSupersede();
+    }
     if (!t) return null;
     const f = parseYygPage(t, dir, Date.now());
     return f.length ? f : null;
@@ -8660,7 +9538,7 @@ const AUTHORITY_HANDLERS = {
     // turns over every ~2 min, so 90 s here is as fresh as it gets. The
     // marker is matched against the raw JSON (quotes escaped there), hence
     // the bare id. Never refresh=1 — see the quirks above.
-    const t = await fetchAuthorityText("yxs/panels", YXS_AJAX_URL, "panel-arrivals", 90);
+    const t = await fetchAuthorityText("yxs/panels", YXS_AJAX_URL, "panel-arrivals", 90, { feedExpect: "json" });
     if (!t) return null;
     const f = parseYxsPanels(t, dir, Date.now());
     return f.length ? f : null;
@@ -8689,8 +9567,8 @@ const AUTHORITY_HANDLERS = {
 };
 // One dispatcher for every airport served at the ADB window URL. YHZ and
 // YQM keep their bespoke handlers; everything else goes by registry.
-async function maybeServeAuthorityWindow(adbPath, url, env, origin) {
-  const yhz = await maybeServeYhzAuthority(adbPath, url, origin);
+async function maybeServeAuthorityWindow(adbPath, url, env, origin, ctx) {
+  const yhz = await maybeServeYhzAuthority(adbPath, url, origin, env, ctx);
   if (yhz) return yhz;
   const yqm = await maybeServeYqmCache(adbPath, url, env, origin);
   if (yqm) return yqm;
@@ -8706,18 +9584,28 @@ async function maybeServeAuthorityWindow(adbPath, url, env, origin) {
     const dirs = [];
     if (!/^arr/i.test(dirQ)) dirs.push("dep");
     if (!/^dep/i.test(dirQ)) dirs.push("arr");
+    const code = m[1].toUpperCase();
     const body = {};
+    let worst = null;
     for (const dir of dirs) {
-      const flights = await h.list(dir, env);
-      if (!flights) return null;
+      // v23996 — through the feed protection: one shared copy per airport and
+      // direction, the last good list (marked stale) when the feed fails, and
+      // a 503 saying "blocked" or "error" when there is nothing — never the
+      // fall-through to the dead provider, never an empty list for a failure.
+      const g = await feedGuard(env, ctx, code, dir, "win", () => h.list(dir, env));
+      if (!g.payload) return feedDownResponse(code, g, origin);
+      worst = feedWorst(worst, g);
       // v23944 — a registration on our own row that names the operator.
       body[dir === "dep" ? "departures" : "arrivals"] =
-        flights.filter((f) => f._authTs >= fromTs && f._authTs < toTs).map(opevAttachOwn);
+        g.payload.filter((f) => f._authTs >= fromTs && f._authTs < toTs).map(opevAttachOwn);
     }
+    const now = Date.now();
+    if (worst) body._feed = feedMeta(worst, now);
     return new Response(JSON.stringify(body), { headers: {
       "Content-Type": "application/json",
-      "Cache-Control": "public, max-age=60",
+      "Cache-Control": worst && worst.state !== "ok" ? "no-store" : "public, max-age=60",
       "X-Feed-Source": h.source,
+      ...(worst ? feedHeaders(worst, now) : {}),
       ...corsHeaders(origin)
     } });
   } catch (e) { return null; }
@@ -8991,12 +9879,14 @@ async function handleMcoFids(request, env, origin, direction) {
   const wantArrivals = /^arr/i.test(direction || "");
   let feed;
   try {
-    const r = await fetch(mcoFeedUrl(), { headers: MCO_FEED_HEADERS(env) });
+    const r = await feedFetch(mcoFeedUrl(), { headers: MCO_FEED_HEADERS(env) }, "json");
     if (!r.ok) {
       const body = await r.text().catch(() => "");
       return jsonResponse({ error: "MCO feed fetch failed", status: r.status, body: body.slice(0, 300) }, 502, origin);
     }
-    feed = await r.json();
+    const txt = await r.text();
+    try { feed = JSON.parse(txt); }
+    catch (e) { feedNote(feedClassifyBody(txt, "json"), "not GOAA's list"); throw e; }
   } catch (e) {
     return jsonResponse({ error: "MCO feed fetch error", details: e.message }, 502, origin);
   }
@@ -9065,20 +9955,43 @@ async function handleYyzFids(request, env, origin, direction) {
   const merged = [];
   let firstErr = null;
   for (const day of days) {
+    // v23998 — once a day has failed the answer has failed (below), so the
+    // next day is not asked: a refused "today" no longer costs a "tomorrow".
+    if (firstErr) break;
     const feedUrl = `${YYZ_FEED_BASE}?type=${seg}&day=${day}&useScheduleTimeOnly=false`;
     try {
-      const r = await fetch(feedUrl, { headers: YYZ_FEED_HEADERS, cf: { cacheTtl: 30, cacheEverything: true } });
+      // v23996 — feedFetch labels the answer. Pearson's bot manager answers a
+      // Worker with a 302 to its challenge page; followed, that is HTML from
+      // another host, which used to parse to nothing and be served as an
+      // empty list. It is "blocked" now, and the route says so.
+      const r = await feedFetch(feedUrl, { headers: YYZ_FEED_HEADERS, cf: { cacheTtl: 30, cacheEverything: true } }, "json");
       if (!r.ok) {
         if (!firstErr) firstErr = { day, status: r.status, body: (await r.text().catch(() => "")).slice(0, 200) };
         continue;
       }
-      const j = await r.json().catch(() => null);
+      const txt = await r.text().catch(() => "");
+      let j = null;
+      try { j = JSON.parse(txt); } catch (e) { j = null; }
       if (j && Array.isArray(j.list)) merged.push(...j.list);
+      else {
+        const k = feedClassifyBody(txt, "json");
+        feedNote(k, "not Pearson's list");
+        if (!firstErr) firstErr = { day, status: r.status, body: k === "blocked" ? "blocked (not the feed)" : "unreadable" };
+      }
     } catch (e) {
       if (!firstErr) firstErr = { day, error: e && e.message };
     }
   }
-  if (!merged.length && firstErr) {
+  // v23996 — TODAY IS THE BOARD. Tomorrow alone is not Toronto's list: with
+  // today refused (a bot manager can challenge one request and pass the
+  // next), the rows would be tomorrow's only, served as live, and the board
+  // would read as a quiet day. A failed today fails the whole answer, so the
+  // protection shows the last good list instead.
+  // v23998 — AND SO IS TOMORROW. The board's window runs 22 hours ahead, so
+  // late in the evening most of it is tomorrow: today's last hour alone,
+  // served live, reads as a quiet night just the same. Every airport asked in
+  // parts now follows one rule (feedVerdict): a failed part fails the answer.
+  if (firstErr) {
     return jsonResponse({ error: "YYZ feed fetch failed", ...firstErr }, 502, origin);
   }
   return new Response(JSON.stringify({ list: merged }), {
@@ -9119,21 +10032,26 @@ async function yulApexRows(page) {
     namespace: "", classname: YUL_APEX_CLASS, method: "getFlights",
     isContinuation: false, params: { language: "en-CA", page }, cacheable: false
   });
-  const r = await fetch(YUL_APEX_URL, {
+  const r = await feedFetch(YUL_APEX_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", "Accept": "application/json", "User-Agent": YUL_APEX_UA },
     body,
     cf: { cacheTtl: 30, cacheEverything: true }
-  });
+  }, "json");
   if (!r.ok) {
     const e = new Error("YUL feed fetch failed");
     e.status = r.status;
     e.body = (await r.text().catch(() => "")).slice(0, 200);
     throw e;
   }
-  const j = await r.json().catch(() => null);
+  const txt = await r.text().catch(() => "");
+  let j = null;
+  try { j = JSON.parse(txt); } catch (e) { j = null; }
   const rv = j && j.returnValue;
-  if (!rv) throw new Error("YUL feed shape unexpected");
+  if (!rv) {
+    feedNote(j ? "error" : feedClassifyBody(txt, "json"), "not ADM's list");
+    throw new Error("YUL feed shape unexpected");
+  }
   // Yesterday catches red-eyes still on the board after midnight;
   // tomorrow fills the bottom of the evening list — same day-merge idea
   // as the YYZ route.
@@ -9236,17 +10154,20 @@ const YHU_FEED_BASE = "https://metmtl.com/api/flights";
 async function handleYhuFids(request, env, origin, direction) {
   const seg = /^arr/i.test(direction || "") ? "arrival" : "departure";
   try {
-    const r = await fetch(`${YHU_FEED_BASE}/${seg}`, {
+    const r = await feedFetch(`${YHU_FEED_BASE}/${seg}`, {
       headers: { "Accept": "application/json" },
       cf: { cacheTtl: 30, cacheEverything: true }
-    });
+    }, "json");
     if (!r.ok) {
       const t = (await r.text().catch(() => "")).slice(0, 200);
       return jsonResponse({ error: "YHU feed fetch failed", status: r.status, body: t }, 502, origin);
     }
-    const j = await r.json().catch(() => null);
+    const txt = await r.text().catch(() => "");
+    let j = null;
+    try { j = JSON.parse(txt); } catch (e) { j = null; }
     const byDate = j && j.flightsByDate;
     if (!byDate || typeof byDate !== "object") {
+      feedNote(j ? "error" : feedClassifyBody(txt, "json"), "not the MET list");
       return jsonResponse({ error: "YHU feed shape unexpected" }, 502, origin);
     }
     const merged = [];
@@ -9363,10 +10284,10 @@ __name(synthGateFor, "synthGateFor");
 async function handleYtzFids(request, env, origin, direction) {
   const seg = /^arr/i.test(direction || "") ? "arr" : "dep";
   try {
-    const r = await fetch(YTZ_PAGE[seg], {
+    const r = await feedFetch(YTZ_PAGE[seg], {
       headers: { "Accept": "text/html", "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36" },
       cf: { cacheTtl: 30, cacheEverything: true }
-    });
+    }, "html");
     if (!r.ok) {
       const t = (await r.text().catch(() => "")).slice(0, 200);
       return jsonResponse({ error: "YTZ page fetch failed", status: r.status, body: t }, 502, origin);
@@ -9395,7 +10316,10 @@ async function handleYtzFids(request, env, origin, direction) {
         kind: seg
       });
     }
-    if (!list.length) return jsonResponse({ error: "YTZ page parsed to zero rows" }, 502, origin);
+    if (!list.length) {
+      feedNote(feedClassifyBody(html, "html"), "no rows on the page");
+      return jsonResponse({ error: "YTZ page parsed to zero rows" }, 502, origin);
+    }
     // ── GATE ENRICHMENT via FlightAware AeroAPI (departures only). Billy
     // Bishop's own board publishes no gates, but FlightAware carries them
     // Runs ONLY when the AEROAPI_KEY secret
@@ -9778,7 +10702,7 @@ async function handlePanynjFids(request, env, origin, ap, direction) {
       : { departureAirport: ap, departureDateTime: nyDate, limit: 500, after };
     const body = lzCompressToEncodedURIComponent(JSON.stringify({ operationName: opName, variables, query }));
     try {
-      const r = await fetch(`https://${host}/api/graphql`, {
+      const r = await feedFetch(`https://${host}/api/graphql`, {
         method: "POST",
         headers: {
           "Content-Type": "text/plain",
@@ -9788,13 +10712,20 @@ async function handlePanynjFids(request, env, origin, ap, direction) {
           "Referer": `https://${host}/flights`
         },
         body
-      });
+      }, "json");
       if (!r.ok) {
         if (!firstErr) firstErr = { page, status: r.status, body: (await r.text().catch(() => "")).slice(0, 200) };
         break;
       }
-      const j = await r.json().catch(() => null);
+      const txt = await r.text().catch(() => "");
+      let j = null;
+      try { j = JSON.parse(txt); } catch (e) { j = null; }
       const block = j && j.data && j.data[dataKey];
+      if (!block) {
+        feedNote(j ? "error" : feedClassifyBody(txt, "json"), "not the Port Authority list");
+        if (!firstErr) firstErr = { page, status: r.status, body: "unreadable" };
+        break;
+      }
       const rows = block && Array.isArray(block.data) ? block.data : [];
       merged.push(...rows);
       after = (block && block.paging && block.paging.next) || "";
@@ -9804,7 +10735,11 @@ async function handlePanynjFids(request, env, origin, ap, direction) {
       break;
     }
   }
-  if (!merged.length && firstErr) {
+  // v23998 — every page is the board. A page refused after the first used to
+  // keep the pages before it, cache them for a minute and serve them live as
+  // the whole day; now any failed page fails the answer (feedVerdict), and the
+  // protection shows the last good list instead.
+  if (firstErr) {
     return jsonResponse({ error: "PANYNJ feed fetch failed", ap, ...firstErr }, 502, origin);
   }
   const payload = JSON.stringify({ list: merged, ap, direction: isArr ? "arr" : "dep", date: nyDate });
@@ -9819,6 +10754,79 @@ async function handlePanynjFids(request, env, origin, ap, direction) {
   });
 }
 __name(handlePanynjFids, "handlePanynjFids");
+
+// ── FEED PROTECTION: THE ROUTES ─────────────────────────────────────────────
+// Rows in a bespoke route's body ({list}, or MCO's {departures}/{arrivals}).
+function feedListRows(p) {
+  if (!p || typeof p !== "object") return 0;
+  for (const k of ["list", "departures", "arrivals"]) if (Array.isArray(p[k])) return p[k].length;
+  return 0;
+}
+__name(feedListRows, "feedListRows");
+// A bespoke handler's Response as a guarded payload: its JSON body when it
+// answered 200, otherwise nothing (its upstream answers already say why).
+async function feedFromHandler(respPromise) {
+  const resp = await respPromise;
+  if (!resp || resp.status !== 200) return null;
+  const j = await resp.json().catch(() => null);
+  if (!j || typeof j !== "object") { feedNote("error", "unreadable answer"); return null; }
+  return j;
+}
+__name(feedFromHandler, "feedFromHandler");
+function feedDir(direction) { return /^arr/i.test(String(direction || "")) ? "arr" : "dep"; }
+__name(feedDir, "feedDir");
+// The airports with their own route, and how to ask each one. Shared by the
+// routes and by the dock probe, so a probe asks exactly what a board asks.
+const FEED_OWN_ROUTES = {
+  YYZ: (env, dir) => feedFromHandler(handleYyzFids(null, env, null, dir)),
+  YUL: (env, dir) => feedFromHandler(handleYulFids(null, env, null, dir)),
+  YHU: (env, dir) => feedFromHandler(handleYhuFids(null, env, null, dir)),
+  YTZ: (env, dir) => feedFromHandler(handleYtzFids(null, env, null, dir)),
+  LGA: (env, dir) => feedFromHandler(handlePanynjFids(null, env, null, "LGA", dir)),
+  JFK: (env, dir) => feedFromHandler(handlePanynjFids(null, env, null, "JFK", dir)),
+  EWR: (env, dir) => feedFromHandler(handlePanynjFids(null, env, null, "EWR", dir)),
+  MCO: (env, dir) => feedFromHandler(handleMcoFids(null, env, null, dir))
+};
+function feedEmptyFor(code, dir) {
+  if (code === "MCO") return dir === "arr" ? { arrivals: [] } : { departures: [] };
+  return { list: [] };
+}
+__name(feedEmptyFor, "feedEmptyFor");
+/** How to ask one airport (for the dock probe): its own route, else the registry. */
+function feedProducerFor(env, code) {
+  const c = String(code || "").toUpperCase();
+  if (FEED_OWN_ROUTES[c]) {
+    return { dir: "dep", slot: "list", rows: feedListRows, producer: () => FEED_OWN_ROUTES[c](env, "dep") };
+  }
+  if (c === "YHZ") return { dir: "dep", slot: "win", producer: () => yhzGuardedList("dep") };
+  if (c === "YQM") {
+    return { dir: "departures", slot: "cyqm", rows: feedYqmRows, producer: () => yqmCyqmText("departures") };
+  }
+  const h = AUTHORITY_HANDLERS[c.toLowerCase()];
+  if (h) return { dir: "dep", slot: "win", producer: () => h.list("dep", env) };
+  return null;
+}
+__name(feedProducerFor, "feedProducerFor");
+/** A bespoke {list} route, through the protection. */
+async function serveGuardedList(env, ctx, origin, code, direction, source) {
+  const dir = feedDir(direction);
+  const run = FEED_OWN_ROUTES[code];
+  const g = await feedGuard(env, ctx, code, dir, "list", () => run(env, dir),
+    { rows: feedListRows, empty: () => feedEmptyFor(code, dir) });
+  if (!g.payload) return feedDownResponse(code, g, origin);
+  const now = Date.now();
+  return new Response(JSON.stringify({ ...g.payload, _feed: feedMeta(g, now) }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": g.state === "ok" ? "public, max-age=30" : "no-store",
+      "X-Feed-Source": source,
+      ...feedHeaders(g, now),
+      ...corsHeaders(origin)
+    }
+  });
+}
+__name(serveGuardedList, "serveGuardedList");
 
 var fids_proxy_default = {
   async fetch(request, env, ctx) {
@@ -9865,7 +10873,7 @@ var fids_proxy_default = {
       // a token. Registering it below the gate instead would 401 the rotator
       // and silently put a docked airport back on air.
       if (path === "/api/dry-dock" && request.method === "GET") {
-        return handleGetDryDock(env, origin);
+        return handleGetDryDock(env, origin, ctx);
       }
       // A screen reads its OWN assignment with no credentials — it has never
       // had a token and never will. Only the single-screen form is public; the
@@ -9990,7 +10998,7 @@ var fids_proxy_default = {
     }
     if (path.startsWith("/proxy/")) {
       const adbPath = path.replace("/proxy/", "");
-      const _authResp = await maybeServeAuthorityWindow(adbPath, url, env, origin);
+      const _authResp = await maybeServeAuthorityWindow(adbPath, url, env, origin, ctx);
       if (_authResp) return _authResp;
       // v23450 — same dead-enrichment guard as the bare allowlist below. The
       // gate board reaches ML-ETA and flight-number lookups through THIS route
@@ -11346,7 +12354,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // passthrough below (otherwise "mco" would be proxied to AeroDataBox).
     if (path === "/flights/mco") {
       const direction = url.searchParams.get("direction") || "dep";
-      return handleMcoFids(request, env, origin, direction);
+      return serveGuardedList(env, ctx, origin, "MCO", direction, "mco-goaa");
     }
 
     // ── YYZ native feed CORS proxy ─────────────────────────────────────────
@@ -11356,7 +12364,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // ADB passthrough below.
     if (path === "/flights/yyz") {
       const direction = url.searchParams.get("direction") || "dep";
-      return handleYyzFids(request, env, origin, direction);
+      return serveGuardedList(env, ctx, origin, "YYZ", direction, "yyz-pearson");
     }
 
     // ── YUL native feed CORS proxy ─────────────────────────────────────────
@@ -11365,7 +12373,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // as { list:[...] }. Must precede the generic /flights/ ADB passthrough.
     if (path === "/flights/yul") {
       const direction = url.searchParams.get("direction") || "dep";
-      return handleYulFids(request, env, origin, direction);
+      return serveGuardedList(env, ctx, origin, "YUL", direction, "yul-adm");
     }
 
     // ── YHU native feed CORS proxy ─────────────────────────────────────────
@@ -11374,7 +12382,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // /flights/ ADB passthrough.
     if (path === "/flights/yhu") {
       const direction = url.searchParams.get("direction") || "dep";
-      return handleYhuFids(request, env, origin, direction);
+      return serveGuardedList(env, ctx, origin, "YHU", direction, "yhu-met");
     }
 
     // ── YTZ native board scrape ────────────────────────────────────────────
@@ -11416,7 +12424,19 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // through to that cache instead of caching an error as data.
     if (path === "/yqm/flights/departures" || path === "/yqm/flights/arrivals") {
       const _seg = path.endsWith("arrivals") ? "arrivals" : "departures";
-      const _txt = await yqmCyqmText(_seg);
+      // v23996 — Moncton's fast path is unchanged: cyqm.ca is asked on every
+      // request exactly as before (FEED_FAST), and a refusal still answers
+      // 503, because the board's own chain (feed-router.js) tries three times
+      // on a 503 and that clears nearly all of cyqm.ca's random refusals.
+      // Answering a refusal with the last good copy instead (200, stale) made
+      // the board stop at the first try and put "Live data unavailable" on
+      // Moncton's screen for a refusal its next try would have cleared. So
+      // the copy — kept 3 h — goes only to the board's LAST try, which asks
+      // for it (?lastgood=1); every answer still records Moncton's health.
+      const _wantLastGood = url.searchParams.get("lastgood") === "1";
+      const _g = await feedGuard(env, ctx, "YQM", _seg, "cyqm", () => yqmCyqmText(_seg),
+        { rows: feedYqmRows, empty: () => "[]" });
+      const _txt = (_g.state === "ok" && typeof _g.payload === "string") ? _g.payload : null;
       if (_txt) {
         // v23918 — the rows the feed has dropped but said landed / left come
         // back on the end of the answer, marked "remembered" (yqmWithMemory).
@@ -11428,12 +12448,26 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
           "Cache-Control": "public, max-age=30",
           "X-Feed-Source": "yqm-cyqm-proxy",
           "X-Feed-Remembered": String(_mem.added || 0),
+          ...feedHeaders(_g),
           ...corsHeaders(origin)
         } });
       }
-      return new Response(JSON.stringify({ error: "yqm-upstream-unavailable" }), {
+      if (_wantLastGood && _g.state === "stale" && typeof _g.payload === "string") {
+        return new Response(_g.payload, { headers: {
+          "Content-Type": "application/json",
+          "Cache-Control": "no-store",
+          "X-Feed-Source": "yqm-cyqm-lastgood",
+          ...feedHeaders(_g),
+          ...corsHeaders(origin)
+        } });
+      }
+      // The same 503 every guarded route gives, {error:"blocked"|"error"}; the
+      // old name rides along as `detail`.
+      const _fail = (_g.failure || _g.state) === "blocked" ? "blocked" : "error";
+      return new Response(JSON.stringify({ error: _fail, state: _fail, airport: "YQM", detail: "yqm-upstream-unavailable" }), {
         status: 503,
-        headers: { "Content-Type": "application/json", ...corsHeaders(origin) }
+        headers: { "Content-Type": "application/json", "Cache-Control": "no-store",
+          "X-Feed-State": _fail, "Access-Control-Expose-Headers": FEED_EXPOSE, ...corsHeaders(origin) }
       });
     }
 
@@ -11473,7 +12507,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
 
     if (path === "/flights/ytz") {
       const direction = url.searchParams.get("direction") || "dep";
-      return handleYtzFids(request, env, origin, direction);
+      return serveGuardedList(env, ctx, origin, "YTZ", direction, "ytz-page");
     }
 
     // GET /flights/panynj?ap=LGA|JFK|EWR&direction=dep|arr — Port Authority
@@ -11483,7 +12517,9 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     if (path === "/flights/panynj") {
       const ap = String(url.searchParams.get("ap") || "").toUpperCase();
       const direction = url.searchParams.get("direction") || "dep";
-      return handlePanynjFids(request, env, origin, ap, direction);
+      // An unknown airport is a bad request, not a feed: no health is noted.
+      if (!PANYNJ_HOSTS[ap]) return handlePanynjFids(request, env, origin, ap, direction);
+      return serveGuardedList(env, ctx, origin, ap, direction, "panynj");
     }
 
     // v23268 — /health/ joins the passthrough.
@@ -11499,7 +12535,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // reaches ADB through that one, it just needs a pageSize parameter.)
     if (path.startsWith("/airports/") || path.startsWith("/flights/")
         || path.startsWith("/aircrafts/") || path.startsWith("/health/")) {
-      const _authResp = await maybeServeAuthorityWindow(path.slice(1), url, env, origin);
+      const _authResp = await maybeServeAuthorityWindow(path.slice(1), url, env, origin, ctx);
       if (_authResp) return _authResp;
       // ── DEAD-ADB STORM GUARD (2026-09-05) ───────────────────────────
       // AeroDataBox is cancelled, so the passthrough below now 429s every
@@ -12020,5 +13056,21 @@ export {
   acTrackAddPoint,
   acTrackAppend,
   _authorityRosterHas,
-  BULK_FONT_KEYS as _bulkFontKeys
+  BULK_FONT_KEYS as _bulkFontKeys,
+  feedClassifyResponse,
+  feedClassifyBody,
+  feedJsonEmpty,
+  feedBodyComplete,
+  feedBackoffS,
+  feedVerdict,
+  feedGuard,
+  feedHealthNext,
+  feedAutoDocked,
+  feedDockAuto,
+  _feedResetMemory,
+  FEED_LASTGOOD_MAX_MS,
+  FEED_AUTODOCK_MS,
+  FEED_PROBE_EVERY_MS,
+  FEED_FAIL_CONFIRM_MS,
+  FEED_FAIL_PREFIX
 };

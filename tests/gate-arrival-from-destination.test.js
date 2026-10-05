@@ -628,7 +628,8 @@ test('Moncton is a far end: flights into YQM read cyqm.ca\'s own arrivals', asyn
   // The list /fararr reads is cyqm.ca's own, through the fetch the YQM boards
   // use (yqmCyqmText), not a new upstream.
   assert.match(fnSource(WORKER, 'farArrList'), /if \(k === "yqm"\) \{\n\s*const txt = await yqmCyqmText\("arrivals"\);/);
-  assert.match(WORKER, /const _txt = await yqmCyqmText\(_seg\);/, 'the /yqm/flights route shares it');
+  // v23996 — through the feed protection, which asks the very same function.
+  assert.match(WORKER, /feedGuard\(env, ctx, "YQM", _seg, "cyqm", \(\) => yqmCyqmText\(_seg\)/, 'the /yqm/flights route shares it');
 });
 
 // The worker with the network and the edge cache stood in for.

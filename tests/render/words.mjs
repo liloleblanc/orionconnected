@@ -30,7 +30,10 @@
 //   left), the departures board, the
 //   baggage board, the phone layout of the gate and of the departures board
 //   in each language, the Studio player (a departures, a gate and a baggage
-//   document) in each language, and the stream tour.
+//   document) in each language, and the stream tour. On the boards and the
+//   gate (YQM and YUL), the airport's feed down too — no list, the last
+//   update's time, the last good list with its age — each reached in other
+//   languages and then read after a change to the set's, mid-visit.
 //
 // Exit code 1 on any finding. Runs in CI (npm test, through
 // tests/board-languages-render.test.js) on the boards' demonstration data, so
@@ -398,23 +401,50 @@ export function judge(texts, set, ap) {
 // ── the run ──────────────────────────────────────────────────────────────
 const MODE = LIVE ? 'live' : 'demo';
 const SINGLES = LANGS.map((l) => [l]);
+// A fixed word of this check's own (a mode, a screen state) written into page
+// code: only lowercase letters and hyphens, quoted. Anything else stops the
+// run (CodeQL js/bad-code-sanitization: JSON.stringify is not an escape for
+// code).
+const jsWord = (w) => {
+  if (!/^[a-z][a-z-]*$/.test(String(w))) throw new Error('not a plain word for page code: ' + w);
+  return "'" + w + "'";
+};
 // A language set goes into page code as its positions in the store's own
 // list (LANGS), never as text: nothing from the command line or a surface
 // spec is spliced into code that the page evaluates.
-const LANGS_JS = '[' + LANGS.map((l) => JSON.stringify(l)).join(',') + ']';
+// The list itself is written from the store's codes, each checked to be two
+// lowercase letters (CodeQL js/bad-code-sanitization: JSON.stringify is not
+// an escape for code); anything else stops the run.
+const LANGS_JS = '[' + LANGS.map((l) => {
+  if (!/^[a-z]{2}$/.test(l)) throw new Error('board-strings LANGS holds a code that is not two letters: ' + l);
+  return "'" + l + "'";
+}).join(',') + ']';
 const langsJs = (set) => `[${set.map((l) => LANGS.indexOf(l)).filter((i) => i >= 0).join(',')}].map(function (i) { return ${LANGS_JS}[i]; })`;
 export const SETS = SINGLES.concat([['en', 'fr'], ['fr', 'en'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh']]);
 // Offline (no LIVE), a board opened with ?mode=demo loads its demonstration
 // flights, but LIVE_MODE starts true, so the board's own first airport pass
-// (onApChange, deferred to a frame) can run after that, clear the flights
-// and ask a feed this check cannot reach: the board came up empty on one
-// load in three. Here the board is held on its demonstration data instead.
-const BOARD_UP = `new Promise(function (res) { var t0 = Date.now(), held = false; (function poll() {
+// (onApChange, deferred to a frame) runs too and asks a feed this check
+// cannot reach (every host but this one is unresolvable here). Before
+// v23998 that pass threw and the board kept whatever it had; since feed
+// protection it is answered — the live data is unavailable (fidsFeedStatus),
+// and with no last good list the board shows that instead of its rows. For
+// Moncton the answer lands about ten seconds in (three tries at cyqm.ca and
+// three at the second source, each way), after the board has come up, so the
+// board went from its demonstration rows to "Live data unavailable" in the
+// middle of the first language set. A board opened in demonstration mode is
+// therefore held on its demonstration data only once that pass has answered
+// (_initialFetchDone; 50 s at most, inside the 60 s this waits) — also when
+// the pass cleared the board before loadDemo filled it, which used to be
+// held at once and then emptied by the same pass landing seconds later —
+// every time: the same screens on every run. The feed-down screens
+// themselves are read on purpose below (FEED_STATES), each one in every
+// language set, after a change of languages mid-visit.
+const BOARD_UP = `new Promise(function (res) { var t0 = Date.now(), held = false, demo = ${jsWord(MODE)} === 'demo'; (function poll() {
   try {
-    if (${JSON.stringify(MODE)} === 'demo' && !held && Date.now() - t0 > 4000 && typeof loadDemo === 'function'
-        && data && !data.dep.length && !data.arr.length) { held = true; LIVE_MODE = false; loadDemo(); }
+    if (demo && !held && Date.now() - t0 > 4000 && typeof loadDemo === 'function' && data
+        && (window._initialFetchDone === true || Date.now() - t0 > 50000)) { held = true; LIVE_MODE = false; loadDemo(); }
   } catch (e) {}
-  try { if (typeof setBoardLangs === 'function' && data && (data.dep.length || data.arr.length) && Date.now() - t0 > 5000) return res(1); } catch (e) {}
+  try { if (typeof setBoardLangs === 'function' && data && (data.dep.length || data.arr.length) && (held || !demo) && Date.now() - t0 > 5000) return res(1); } catch (e) {}
   if (Date.now() - t0 > 60000) return res(0); setTimeout(poll, 500); })(); })`;
 const PLAYER_UP = `new Promise(function (res) { var t0 = Date.now(); (function poll() {
   try { var f = document.getElementById('playerFrame'); if (f && !f.hidden && f.textContent.trim().length > 40 && Date.now() - t0 > 3000) return res(1); } catch (e) {}
@@ -454,8 +484,71 @@ const GATE_STATE = (st) => `(function (st) {
     renderDedicatedScreen();
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
-})(${JSON.stringify(st)})`;
+})(${jsWord(st)})`;
 const GATE_RESET = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
+
+// When the airport's feed is down (v23996, fidsFeedStatus): 'unavailable' —
+// no list at all ("Live data unavailable" in the board's empty panel, on the
+// empty gate and on the empty belt); 'lastupdate' — the last list had nothing
+// here (the same, with "Last update {TIME}"); 'stale' — the board keeps the
+// last good list, 40 minutes old, and says so on the strip. Each state is
+// reached in other languages (FEED_CONTRAST, none of the set's) and the
+// languages are then changed to the set's, mid-visit: a line or a header
+// painted once in the old languages fails here.
+const FEED_STATES = ['unavailable', 'lastupdate', 'stale'];
+const FEED_CONTRAST = [['ja', 'ar'], ['de', 'pt'], ['es', 'it']];
+const FEED_ENTER = (st) => `(function (st) {
+  try {
+    var ap = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
+    if (!window.__wsFeedOrig) window.__wsFeedOrig = { dep: data.dep, arr: data.arr, live: LIVE_MODE, done: window._initialFetchDone, status: JSON.stringify(window.__fidsFeedStatus || {}) };
+    var o = window.__wsFeedOrig;
+    var one = st === 'unavailable' ? { state: 'unavailable', asOf: null } : { state: 'stale', asOf: Date.now() - 40 * 60000 };
+    window.__fidsFeedStatus = window.__fidsFeedStatus || {};
+    window.__fidsFeedStatus[ap] = { dep: one, arr: one };
+    data.dep = st === 'stale' ? o.dep : [];
+    data.arr = st === 'stale' ? o.arr : [];
+    LIVE_MODE = true;
+    window._initialFetchDone = true;
+    try { dedicatedRenderKey = null; } catch (e) {}
+    render();
+    return 'ok';
+  } catch (e) { return 'error ' + e.message; }
+})(${jsWord(st)})`;
+// What says it on this screen: the board's empty panel, the gate's or the
+// belt's own empty line, or the strip. With the last good list on screen the
+// strip says how old it is — unless this page's own list is empty (a belt
+// with no arrivals), where the empty line says it. Waited for (up to 6 s: a
+// busy machine paints late), then '' and what the board's status was if
+// nothing ever says it.
+const FEED_SHOWN = (st) => `new Promise(function (res) { var t0 = Date.now(); (function poll() {
+  var st = ${jsWord(st)};
+  function vis(el) {
+    if (!el) return false;
+    var b = el.getBoundingClientRect();
+    if (b.width < 1 || b.height < 1 || b.bottom < 0 || b.top > innerHeight) return false;
+    for (var e = el; e && e.nodeType === 1; e = e.parentElement) { var cs = getComputedStyle(e); if (cs.display === 'none' || cs.visibility === 'hidden') return false; }
+    return true;
+  }
+  var sel = st === 'stale' ? ['#fidsFeedNotice', '#panelEmpty.fids-feed-down .sub', '#gateView .ffn-inview-sub', '#baggageView .ffn-inview-sub']
+    : st === 'lastupdate' ? ['#panelEmpty.fids-feed-down .sub', '#gateView .ffn-inview-sub', '#baggageView .ffn-inview-sub', '#fidsFeedNotice']
+    : ['#panelEmpty.fids-feed-down', '#gateView .ffn-inview', '#baggageView .ffn-inview', '#fidsFeedNotice'];
+  for (var i = 0; i < sel.length; i++) if (vis(document.querySelector(sel[i]))) return res(sel[i]);
+  if (Date.now() - t0 < 6000) return setTimeout(poll, 200);
+  var ap = String((document.getElementById('apSel') || {}).value || '').toUpperCase();
+  try { res('!' + JSON.stringify((window.__fidsFeedStatus || {})[ap] || null) + ' live=' + LIVE_MODE); } catch (e) { res('!'); }
+})(); })`;
+const FEED_RESET = `(function () {
+  try {
+    var o = window.__wsFeedOrig;
+    if (!o) return 0;
+    data.dep = o.dep; data.arr = o.arr; LIVE_MODE = o.live; window._initialFetchDone = o.done;
+    window.__fidsFeedStatus = JSON.parse(o.status);
+    window.__wsFeedOrig = null;
+    try { dedicatedRenderKey = null; } catch (e) {}
+    render();
+    return 1;
+  } catch (e) { return 0; }
+})()`;
 
 // The Studio player shows a published document: one per board family is
 // put in the airport's published store before it loads.
@@ -472,9 +565,9 @@ const STUDIO_SEED = `(function () {
 })()`;
 
 export const SURFACES = {
-  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, chunk: 2, alarm: 200, parallel: 2 },
-  departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, chunk: 5 },
-  baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, chunk: 5 },
+  gate: { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, feed: true, chunk: 2, alarm: 200, parallel: 2 },
+  departures: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 5 },
+  baggage: { url: (port) => `http://127.0.0.1:${port}/bids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, chunk: 5 },
   // the phone: one language, the one the passenger picked (fids_mobile_lang)
   'phone-gate': { url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YQM&mode=${MODE}&gate=4`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
   'phone-departures': { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, phone: true, sets: SINGLES, chunk: 3, alarm: 200 },
@@ -482,14 +575,14 @@ export const SURFACES = {
   studio: { url: (port, set, fam) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM&doc=lang-check-${fam}&lang=${set[0]}`,
     seed: (port) => `http://127.0.0.1:${port}/studio/player.html?ap=YQM`, families: ['fids', 'gids', 'bids'], ready: PLAYER_UP, sets: SINGLES, chunk: 2, perSet: true, alarm: 240 },
   // the arrivals board (the departures board's other side)
-  arrivals: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`,
+  arrivals: { url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YQM&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true, prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`,
     sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh'], ['it']], chunk: 6 },
   // a Québec airport: French leads whenever it is chosen (BoardStrings.FR_FIRST)
-  'quebec-departures': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}`, ready: BOARD_UP, setLangs: true,
+  'quebec-departures': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true,
     sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja']], chunk: 4 },
-  'quebec-arrivals': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}`, ready: BOARD_UP, setLangs: true,
+  'quebec-arrivals': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/fids.html?ap=YUL&mode=${MODE}`, ready: BOARD_UP, setLangs: true, feed: true,
     prep: `(function () { try { setViewMode('arr'); return 1; } catch (e) { return 0; } })()`, sets: [['en', 'fr'], ['es', 'zh']], chunk: 2 },
-  'quebec-gate': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YUL&mode=${MODE}&gate=72&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true,
+  'quebec-gate': { ap: 'YUL', url: (port) => `http://127.0.0.1:${port}/gids.html?ap=YUL&mode=${MODE}&gate=72&wxspeed=0.5`, ready: BOARD_UP, setLangs: true, deck: true, states: true, feed: true,
     sets: [['en', 'fr'], ['fr'], ['de', 'pt'], ['ar', 'ja'], ['en']], chunk: 2, alarm: 220, parallel: 2 },
   // the stream's rotation page: the boards it rotates, in its frames
   rotate: { url: (port, set) => `http://127.0.0.1:${port}/rotate.html?ap=YQM&mode=${MODE}&rotate=fids,gids,bids&dwell=9&langs=${set.join(',')}`, ready: SETTLE(15000),
@@ -600,6 +693,24 @@ async function runChunk(port, name, spec, sets) {
           problems.push(...await read(set, st));
         }
         await evalv(GATE_RESET);
+      }
+      // the airport's feed down, each state reached in other languages and
+      // the languages then changed to this set's, mid-visit (FEED_STATES)
+      if (spec.feed) {
+        const other = FEED_CONTRAST.find((c) => !c.some((l) => set.includes(l)));
+        for (const st of FEED_STATES) {
+          await evalv(`setBoardLangs(${langsJs(other)})`);
+          const r = await evalv(FEED_ENTER(st));
+          if (r !== 'ok') { problems.push(`feed ${st} did not render: ${r}`); continue; }
+          await evalv(SETTLE(400));
+          await evalv(`setBoardLangs(${langsJs(set)})`);
+          await evalv(SETTLE(800));
+          const shown = await evalv(FEED_SHOWN(st));
+          if (!shown || shown[0] === '!') problems.push(`feed ${st}: nothing on the screen says the live data is unavailable (status ${String(shown || '').slice(1)})`);
+          problems.push(...await read(set, 'feed ' + st));
+        }
+        await evalv(FEED_RESET);
+        await evalv(SETTLE(300));
       }
       if (process.env.WORDS_DEBUG) for (const e of b.errors.splice(0)) if (/TypeError|ReferenceError|RangeError/.test(e)) lines.push(`    ! ${label} ${e.slice(0, 300)}`);
       const uniq = [...new Set(problems)];

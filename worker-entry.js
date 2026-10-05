@@ -863,6 +863,15 @@ export default {
     // Deliberately NOT a general proxy, exactly like /logoimg: the upstream
     // is a fixed constant, not a caller-supplied URL. There is nothing here
     // for someone else to point at their own host.
+    //
+    // v23996 — and deliberately NOT through the feed protection
+    // (workers/fids-proxy.js, feedGuard). It already fails honestly: a
+    // refusal, a challenge page or a body that parses to no flights is a 502,
+    // never an empty list. On a 502 the board goes on to Miami's registry feed
+    // through the window URL, and THAT path is guarded: last good list, shared
+    // copy, feed health, automatic dock. A stale copy served here would stop
+    // the board at a stale list when the registry may be live, and health
+    // noted here would dock Miami while its second source works.
     if (path === '/miafids') {
       const dir = url.searchParams.get('direction') === 'arr' ? 'arr' : 'dep';
       const action = dir === 'dep' ? 'updateDepartures' : 'updateArrivals';

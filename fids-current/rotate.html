@@ -384,6 +384,11 @@
       q.delete('rotate'); q.delete('dwell'); q.delete('every');
       q.delete('fade'); q.delete('hold');   // rotator-only controls, v23166
       q.delete('tour'); q.delete('ap'); q.delete('apdwell');
+      // v23996 — screen= is this TOUR's (a registry screen waiting for its
+      // airport, see checkHome below), never a board's: a board that carried
+      // it would follow the screen's assignment out of its own frame.
+      var _homeScreen = (function (v) { return /^[A-HJ-NP-Z2-9]{6}$/.test(v || '') ? v : ''; })(q.get('screen'));
+      q.delete('screen');
       if (isTour) q.delete('langs');
       var childQ = q.toString();
       function childUrl(page, ap) {
@@ -589,13 +594,34 @@
             // docked" — and would put a docked airport back on air. Only a
             // correctly shaped document is allowed to replace the cached one.
             if (!doc || typeof doc !== 'object' || !Array.isArray(doc.docked)) return;
-            var next = JSON.stringify({ docked: doc.docked });
-            var prev = localStorage.getItem('oc_dry_dock');
+            // v23996 — the admin's list AND the airports docked automatically
+            // because their own feed has been blocked 30 minutes or more. One
+            // cached list, so the selection block reads it unchanged.
+            var _all = doc.docked.slice();
+            (Array.isArray(doc.auto) ? doc.auto : []).forEach(function (c) { if (_all.indexOf(c) === -1) _all.push(c); });
+            var next = JSON.stringify({ docked: _all });
+            var prev = null;
+            try { prev = localStorage.getItem('oc_dry_dock'); } catch (e) {}
             if (prev === next) return;
-            localStorage.setItem('oc_dry_dock', next);
+            // v23996 — a full storage must not drop the dock. The boards'
+            // last-good copies (fids_feed_lastgood_*) are the one thing here
+            // that can make room; if even that is not enough, nothing is
+            // reloaded, because a reload would rebuild from the old list.
+            var _stored = false;
+            try { localStorage.setItem('oc_dry_dock', next); _stored = true; } catch (eQ) {
+              try {
+                for (var _i = localStorage.length - 1; _i >= 0; _i--) {
+                  var _k = localStorage.key(_i);
+                  if (_k && _k.indexOf('fids_feed_lastgood_') === 0) localStorage.removeItem(_k);
+                }
+                localStorage.setItem('oc_dry_dock', next);
+                _stored = true;
+              } catch (eQ2) {}
+            }
+            if (!_stored) { try { console.warn('[DOCK] could not store the dock list (storage full)'); } catch (e) {} return; }
             // First sight of any list on a cold page is not a change worth a
             // reload if it docks nothing — that is the ordinary empty case.
-            if (prev !== null || doc.docked.length) {
+            if (prev !== null || _all.length) {
               // v23828 — A PINNED STREAM HAS NO NEXT SWITCH.
               //
               // reloadPending is picked up when the run advances, which is
@@ -616,7 +642,7 @@
               // never changes afterwards.
               var _hits = [];
               try {
-                _hits = (window._runOnAir || []).filter(function (c) { return doc.docked.indexOf(c) !== -1; });
+                _hits = (window._runOnAir || []).filter(function (c) { return _all.indexOf(c) !== -1; });
               } catch (e) {}
               if (_hits.length) {
                 try { console.warn('[DOCK] ' + _hits.join(', ') + ' docked and on air now — reloading'); } catch (e) {}
@@ -640,6 +666,45 @@
       }
       checkDock();
       setInterval(checkDock, 90000);
+
+      // ── A REGISTRY SCREEN GOES HOME WHEN ITS AIRPORT IS BACK (v23996) ──────
+      // fids-core.js sends a registry screen whose airport is docked to this
+      // tour, with its id (?screen=). Docking is no longer only a person's
+      // call — an airport whose feed has been blocked 30 minutes docks itself
+      // and undocks itself when the feed answers again — so the screen has to
+      // find its way back: every minute it reads its own assignment and the
+      // dock, and once the airport it is assigned is not docked (manual or
+      // automatic), it returns to that board. Reassigned meanwhile, it goes to
+      // the new assignment; forgotten, to the pairing page. Unreadable
+      // answers change nothing. A navigation of this page, never a change to
+      // the running list.
+      var SCREENS_URL = 'https://fids-proxy.n-leblanc1984.workers.dev/api/screens/';
+      function checkHome() {
+        if (!_homeScreen || window.self !== window.top) return;
+        try {
+          var get = function (u) {
+            return fetch(u + '?_oc=' + Date.now(), { cache: 'no-store' })
+              .then(function (r) { return r && r.ok ? r.json() : null; }, function () { return null; });
+          };
+          Promise.all([get(SCREENS_URL + _homeScreen), get(DOCK_URL)]).then(function (res) {
+            var doc = res[0], dock = res[1];
+            if (!doc || typeof doc !== 'object') return;
+            if (doc.claimed === false) { location.replace('/screen.html'); return; }
+            if (!doc.claimed || !doc.airport || !doc.board) return;
+            if (!dock || typeof dock !== 'object' || !Array.isArray(dock.docked)) return;
+            var ap = String(doc.airport).toUpperCase();
+            var off = dock.docked.concat(Array.isArray(dock.auto) ? dock.auto : [])
+              .map(function (c) { return String(c || '').toUpperCase(); });
+            if (off.indexOf(ap) !== -1) return;                 // still docked: keep touring
+            var page = doc.board === 'fids' ? 'fids.html' : doc.board === 'bids' ? 'bids.html' : 'gids.html';
+            var u = '/' + page + '?ap=' + encodeURIComponent(ap) + '&screen=' + encodeURIComponent(_homeScreen);
+            if (doc.gate) u += '&gate=' + encodeURIComponent(doc.gate);
+            try { console.log('[DOCK] ' + ap + ' is back — screen ' + _homeScreen + ' returns to its board'); } catch (e) {}
+            location.replace(u);
+          }, function () {});
+        } catch (e) {}
+      }
+      if (_homeScreen) setInterval(checkHome, 60000);
 
       // ── Timing ────────────────────────────────────────────────────────────
       // Every screen shows for at least `dwell`. A non-gate board (fids/bids)
