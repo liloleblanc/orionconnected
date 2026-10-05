@@ -325,8 +325,20 @@ function cdpConnect(wsUrl) {
 // gate history, exactly as a real gate move is recorded): one on a plain row,
 // one on the gate-closed row and one on each Diverted row, all of which the
 // gate history keeps for 15 min (it drops only departed and cancelled flights).
-function feed(direction) {
-  const now = Date.now();
+//
+// `now` is read ONCE per pass (boardPass) and every request is answered from
+// it, because a real feed gives a flight the same scheduled time on every
+// request. The board asks more than once as it boots: the page's own start-up
+// and the deferred first airport change each run fetchLive, about 350 ms apart,
+// and each asks for two windows. Built from the clock at each request, the
+// fixture moved every row one minute later whenever a minute turned between
+// those requests. The gate history is keyed by flight AND scheduled time
+// (v23973), so the later load found no record for any departure (the seeded
+// number-keyed records had already been carried over and dropped by the first
+// load), started each one afresh with no change, and every NEW GATE badge was
+// gone: the ready check below failed with all 16 rows drawn and no badge (seen
+// in CI on a change that did not touch the board).
+function feed(direction, now) {
   const offMin = (() => {
     const s = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Toronto', timeZoneName: 'longOffset' })
       .formatToParts(new Date(now)).find(p => p.type === 'timeZoneName').value;   // GMT-04:00
@@ -399,10 +411,10 @@ const airportConfig = (palette) => ({
   theme: 'custom', customColors: PALETTES[palette],
 });
 
-function fixtureFor(url, palette) {
+function fixtureFor(url, palette, now) {
   const u = new URL(url);
   if (/\/flights\/airports\/iata\/YOW\//.test(u.pathname)) {
-    return { status: 200, type: 'application/json', body: JSON.stringify(feed(u.searchParams.get('direction'))) };
+    return { status: 200, type: 'application/json', body: JSON.stringify(feed(u.searchParams.get('direction'), now)) };
   }
   if (/\/weather\/realtime/.test(u.pathname)) {
     return { status: 200, type: 'application/json', body: JSON.stringify({ data: { values: {
@@ -469,6 +481,8 @@ const HISTORY = ['row-departed', 'row-arrived', 'row-gate-closed'];
 const NAVY = 'rgb(16, 36, 55)', WHITE = 'rgb(255, 255, 255)', BLACK = 'rgb(0, 0, 0)';
 
 async function boardPass(t, chrome, palette) {
+  // One clock for every feed request in this pass (see feed()).
+  const feedNow = Date.now();
   const server = http.createServer((req, res) => {
     let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
     let f = path.join(ROOT, p);
@@ -518,7 +532,7 @@ async function boardPass(t, chrome, palette) {
       if (msg.method !== 'Fetch.requestPaused') return;
       const { requestId, request } = msg.params;
       if (request.url.startsWith(base)) { cdp.send('Fetch.continueRequest', { requestId }); return; }
-      const fx = fixtureFor(request.url, palette);
+      const fx = fixtureFor(request.url, palette, feedNow);
       cdp.send('Fetch.fulfillRequest', { requestId, responseCode: fx.status,
         responseHeaders: [{ name: 'Content-Type', value: fx.type }, { name: 'Access-Control-Allow-Origin', value: '*' }],
         body: Buffer.from(fx.body).toString('base64') });
