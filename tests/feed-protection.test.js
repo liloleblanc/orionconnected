@@ -23,7 +23,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import worker, {
-  feedClassifyResponse, feedClassifyBody, feedJsonEmpty, feedVerdict, feedHealthNext, feedAutoDocked,
+  feedClassifyResponse, feedClassifyBody, feedJsonEmpty, feedVerdict, feedPartial, feedHealthNext, feedAutoDocked,
   feedBodyComplete, feedBackoffS,
   _feedResetMemory, FEED_LASTGOOD_MAX_MS, FEED_AUTODOCK_MS, FEED_PROBE_EVERY_MS, FEED_FAIL_CONFIRM_MS, FEED_FAIL_PREFIX
 } from '../workers/fids-proxy.js';
@@ -88,7 +88,9 @@ function upstream(state) {
       }
       if (mood === 'empty') return Response.json({ list: [] });
       if (mood === 'timeout') return new Response('gateway timeout', { status: 504 });
-      return Response.json({ list: [0, 1, 2, 3].map((i) => pearsonRow(i, type)) });
+      // Tomorrow's rows are numbered apart from today's (ACA110…), so a list says which day it holds.
+      const base = u.searchParams.get('day') === 'tomorrow' ? 10 : 0;
+      return Response.json({ list: [0, 1, 2, 3].map((i) => pearsonRow(i + base, type)) });
     }
     // Deer Lake: the sub-page moved or refused; the home page carries both
     // tables, with no flights in them tonight.
@@ -196,6 +198,48 @@ test('what a fetch means: rows are OK, zero rows from a valid answer are OK, not
   assert.equal(feedVerdict(0, [{ state: 'error', superseded: true }, { state: 'ok' }], null), 'ok');
   assert.equal(feedVerdict(null, [{ state: 'blocked', superseded: true }, { state: 'blocked' }], null), 'blocked',
     'only the answered failure stops counting');
+});
+
+// v24002 — the partial-answer rule, as decided: when today answered and only a
+// LATER day (tomorrow, asked through feedLaterDay, its notes marked `later`)
+// failed, today's fresh rows are live. Everything else keeps the v23998 rule.
+test('a later day that failed leaves today live; a failed today, a failed page of today, or a block anywhere still fails', () => {
+  const T = { state: 'ok' }, TOMORROW_OK = { state: 'ok', later: true };
+  const TOMORROW_ERR = { state: 'error', later: true }, TOMORROW_BLOCKED = { state: 'blocked', later: true };
+  // today ok + tomorrow failed → live with today's rows
+  assert.equal(feedVerdict(40, [T, TOMORROW_ERR], null), 'ok', "today answered, tomorrow a 500: today's rows are live");
+  assert.equal(feedVerdict(40, [T, T, T, TOMORROW_OK, TOMORROW_ERR], null), 'ok', "today's three pages, tomorrow's second page lost");
+  assert.equal(feedPartial([T, TOMORROW_ERR]), true, 'and it is marked partial');
+  assert.equal(feedPartial([T, TOMORROW_OK]), false, 'a whole answer is not');
+  assert.equal(feedPartial([T, { state: 'error', later: true, superseded: true }]), false, 'nor one whose later failure was answered');
+  // …but only with rows from today: nothing fresh to show is no live answer.
+  assert.equal(feedVerdict(0, [T, TOMORROW_ERR], null), 'error', 'an empty today beside a failed tomorrow is not a quiet night');
+  assert.equal(feedVerdict(null, [T, TOMORROW_ERR], null), 'error', 'nor is a today that produced nothing');
+  // today failed + tomorrow ok → still fails (the Chicago case)
+  assert.equal(feedVerdict(40, [{ state: 'error' }, TOMORROW_OK], null), 'error', 'Chicago: tomorrow alone is not the board');
+  assert.equal(feedVerdict(40, [{ state: 'blocked' }, TOMORROW_OK], null), 'blocked', 'Chicago as it happened: "Today" behind a challenge');
+  // a failed page (or slice) of today → fails
+  assert.equal(feedVerdict(40, [T, { state: 'error' }, TOMORROW_OK], null), 'error', "today's second page lost");
+  assert.equal(feedVerdict(40, [T, { state: 'error' }, TOMORROW_ERR], null), 'error', 'a lost page of today is not forgiven by tomorrow failing too');
+  // yesterday is not a later day: its failure still fails the answer
+  assert.equal(feedVerdict(40, [{ state: 'error' }, T], null), 'error', "yesterday's file lost");
+  // blocked anywhere → blocked
+  assert.equal(feedVerdict(40, [T, TOMORROW_BLOCKED], null), 'blocked', 'tomorrow behind a challenge page is still a block');
+  assert.equal(feedVerdict(40, [T, TOMORROW_ERR, TOMORROW_BLOCKED], null), 'blocked');
+  // a producer that threw is an error, whatever the notes say
+  assert.equal(feedVerdict(40, [T, TOMORROW_ERR], new Error('x')), 'error');
+});
+
+test('feedLaterDay marks every answer inside it as a later day and says whether the day came back whole', async () => {
+  const { feedLaterDay, feedLocalDay } = await import('../workers/fids-proxy.js');
+  // Without a guard around it: nothing is recorded anywhere, and `whole` still tells.
+  const okDay = await feedLaterDay(async () => 'rows');
+  assert.deepEqual(okDay, { value: 'rows', whole: true });
+  const threw = await feedLaterDay(async () => { throw new Error('network'); });
+  assert.deepEqual(threw, { value: null, whole: false }, 'a throw is a failed day');
+  assert.equal(feedLocalDay('America/Chicago', Date.parse('2026-09-05T04:30:00Z')), '2026-09-04', "Chicago's calendar, not UTC's");
+  assert.equal(feedLocalDay('Australia/Sydney', Date.parse('2026-09-14T23:00:00Z'), 1), '2026-09-16');
+  assert.equal(feedLocalDay('Europe/Zurich', Date.parse('2026-12-31T23:30:00Z'), 1), '2027-01-02', 'already the new year in Zürich');
 });
 
 // ── 2. honest failure and last-good ─────────────────────────────────────────
@@ -587,7 +631,7 @@ test('while docked, the probes keep their own time: the health document changes 
   });
 });
 
-test('Toronto: today refused and tomorrow answered is not a live list of tomorrow only — nor today answered and tomorrow refused', async () => {
+test('Toronto: today refused and tomorrow answered is not a live list of tomorrow only — nor is tomorrow refused by the bot manager', async () => {
   await world(async (W) => {
     const { env } = makeEnv();
     const up = { yyz: 'ok' };
@@ -598,17 +642,75 @@ test('Toronto: today refused and tomorrow answered is not a live list of tomorro
     const r = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
     assert.equal(r.headers.get('X-Feed-State'), 'stale', 'the last good list, marked, instead');
     assert.deepEqual((await r.json()).list, good);
-    // v23998 — every day is the board: late in the evening most of the
-    // window is tomorrow, and today's last hour alone reads as a quiet night.
+    // v24002 — a later day that FAILED leaves today live (the next test); a
+    // later day behind the bot manager's challenge is still a block: the
+    // airport is refusing this Worker, and the next "today" meets it too.
     up.yyzDay = { today: 'ok', tomorrow: 'radware' };
     W.tick(6 * MIN); W.colo();
     const r2 = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
-    assert.equal(r2.headers.get('X-Feed-State'), 'stale', 'without tomorrow it is not the whole board either');
-    assert.deepEqual((await r2.json()).list, good);
+    assert.equal(r2.headers.get('X-Feed-State'), 'stale', 'a block anywhere is a block');
+    const b2 = await r2.json();
+    assert.equal(b2._feed.failure, 'blocked');
+    assert.deepEqual(b2.list, good);
     up.yyzDay = null;
     W.tick(6 * MIN); W.colo();
     const r3 = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
     assert.equal(r3.headers.get('X-Feed-State'), 'live', 'both days answered: live again');
+  });
+});
+
+// v24002 — the rule: if only tomorrow's part of a feed fails, keep showing
+// today's fresh flights, live.
+test("Toronto: today answered and tomorrow failed — today's fresh rows are live, the shared copy is today's, and nothing is counted as a failure", async () => {
+  await world(async (W) => {
+    const { env, writes } = makeEnv();
+    const up = { yyz: 'ok' };
+    globalThis.fetch = upstream(up);
+    const ids = (j) => j.list.map((r) => r.id);
+    const r1 = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    const good = ids(await r1.json());
+    assert.deepEqual(good, ['ACA100', 'ACA101', 'ACA102', 'ACA103', 'ACA110', 'ACA111', 'ACA112', 'ACA113'], 'today, then tomorrow');
+    assert.equal(r1.headers.get('X-Feed-Partial'), null);
+    up.yyzDay = { today: 'ok', tomorrow: 'timeout' };
+    W.tick(6 * MIN); W.colo();
+    const r2 = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    assert.equal(r2.status, 200);
+    assert.equal(r2.headers.get('X-Feed-State'), 'live', "today's rows are fresh: live, not the last good list");
+    assert.equal(r2.headers.get('X-Feed-Stale'), null);
+    assert.equal(r2.headers.get('X-Feed-Partial'), 'later-day', 'marked for anyone diagnosing it');
+    assert.match(r2.headers.get('Access-Control-Expose-Headers') || '', /X-Feed-Partial/);
+    assert.equal(Date.parse(r2.headers.get('X-Feed-As-Of')), W.now, 'as of now: every row on it is from this answer');
+    const b2 = await r2.json();
+    assert.equal(b2._feed.state, 'live');
+    assert.equal(b2._feed.partial, 'later-day');
+    assert.deepEqual(ids(b2), good.slice(0, 4), "today's four rows, and nothing of tomorrow's");
+    // The shared copy is today's (so no other colo asks Pearson for five
+    // minutes), and says it is partial; no failure is written or counted.
+    const doc = JSON.parse(env.FIDS_LIVE_FLIGHTS.m.get('fg:v1:YYZ:list:dep').v);
+    assert.equal(doc.n, 4);
+    assert.equal(doc.pt, 1);
+    assert.equal(doc.at, W.now);
+    assert.ok(!writes.some((w) => w.k === FEED_FAIL_PREFIX + 'YYZ:list:dep'), 'no backoff: the answer did not fail');
+    assert.ok(!writes.some((w) => w.k === 'feed-health'), 'and the airport is not failing');
+    W.colo();
+    const r3 = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    assert.equal(r3.headers.get('X-Feed-State'), 'live', 'another colo serves the same fresh copy');
+    assert.equal(r3.headers.get('X-Feed-Partial'), 'later-day');
+    assert.deepEqual(ids(await r3.json()), good.slice(0, 4));
+    // Tomorrow back: the whole list, no mark.
+    up.yyzDay = null;
+    W.tick(6 * MIN); W.colo();
+    const r4 = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    assert.equal(r4.headers.get('X-Feed-State'), 'live');
+    assert.equal(r4.headers.get('X-Feed-Partial'), null);
+    assert.deepEqual(ids(await r4.json()), good);
+    assert.equal(JSON.parse(env.FIDS_LIVE_FLIGHTS.m.get('fg:v1:YYZ:list:dep').v).pt, undefined);
+    // Today failed with tomorrow answering is still the Chicago case.
+    up.yyzDay = { today: 'timeout', tomorrow: 'ok' };
+    W.tick(6 * MIN); W.colo();
+    const r5 = await W.get(env, makeCtx(), '/flights/yyz?direction=dep');
+    assert.equal(r5.headers.get('X-Feed-State'), 'stale', 'the last good list, marked');
+    assert.deepEqual(ids(await r5.json()), good);
   });
 });
 
@@ -946,6 +1048,10 @@ function partsUpstream(bad) {
   const calls = [];
   const refuse = () => { bad.failed = (bad.failed || 0) + 1; return new Response(RADWARE_HTML, { status: 403, headers: { 'Content-Type': 'text/html' } }); };
   const dub = JSON.parse(fx('dub-sample.json')).arr;
+  // Dublin's tomorrow: the sample's arrivals a day later, under numbers of their own.
+  const dayLater = (t) => (t ? new Date(Date.parse(t) + 864e5).toISOString() : t);
+  const dubTmw = dub.map((r) => ({ ...r, flightIdentity: String(r.flightIdentity).replace(/\d+$/, (n) => String(+n + 1000)),
+    scheduledDateTime: dayLater(r.scheduledDateTime), estimatedDateTime: dayLater(r.estimatedDateTime) }));
   const f = async (url, init) => {
     const r = await answer(url, init);
     if (r.status === 200 && !/Radware/.test(await r.clone().text())) bad.answered = (bad.answered || 0) + 1;
@@ -959,6 +1065,7 @@ function partsUpstream(bad) {
     if (u.hostname === 'prod-flightwarehousewebservice.flychicago.com') {
       const day = /\/Today\//.test(u.pathname) ? 'today' : 'tomorrow';
       if (b === 'ord-' + day) return day === 'today' ? new Response(RADWARE_HTML, { status: 200, headers: { 'Content-Type': 'text/html' } }) : new Response('err', { status: 500 });
+      if (b === 'ord-tomorrow-blocked' && day === 'tomorrow') return refuse();
       return new Response(fx('ord-sample.json'), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
     if (u.hostname === 'api.dublinairport.com') {
@@ -968,7 +1075,13 @@ function partsUpstream(bad) {
       bad.dubToday = bad.dubToday || u.searchParams.get('date');
       const today = u.searchParams.get('date') === bad.dubToday;
       if (b === 'dub-page2' && today && page2) return refuse();
-      if (!today) return Response.json({ content: [], pagination: { hasNext: false } });
+      if (b === 'dub-page2-500' && today && page2) return new Response('err', { status: 500 });
+      if (b === 'dub-tomorrow' && !today) return refuse();
+      if (b === 'dub-tomorrow-500' && !today) return new Response('err', { status: 500 });
+      if (b === 'dub-tomorrow-page2-500' && !today && page2) return new Response('err', { status: 500 });
+      // Tomorrow: two pages of its own.
+      if (!today) return Response.json(page2 ? { content: dubTmw.slice(3), pagination: { hasNext: false } }
+        : { content: dubTmw.slice(0, 3), pagination: { hasNext: true, latestTimestamp: 't1', latestId: 't2' } });
       return Response.json(page2 ? { content: dub.slice(10, 20), pagination: { hasNext: false } }
         : { content: dub.slice(0, 10), pagination: { hasNext: true, latestTimestamp: 'c1', latestId: 'c2' } });
     }
@@ -977,7 +1090,10 @@ function partsUpstream(bad) {
       bad.slcToday = bad.slcToday || (u.searchParams.get('query_date1') || '').slice(0, 10);
       const today = (u.searchParams.get('query_date1') || '').slice(0, 10) === bad.slcToday;
       if (b === 'slc-tomorrow' && !today) return refuse();
-      return new Response(fx('slc-dep-sample.html'), { status: 200, headers: { 'Content-Type': 'text/html' } });
+      if (b === 'slc-tomorrow-500' && !today) return new Response('err', { status: 500 });
+      // Tomorrow's page: the same board, dated the next day.
+      const page = fx('slc-dep-sample.html');
+      return new Response(today ? page : page.replace('Sat, Sep 05', 'Sun, Sep 06'), { status: 200, headers: { 'Content-Type': 'text/html' } });
     }
     if (u.hostname === 'flightdata.flughafen-zuerich.ch') {
       if (b === 'zrh-tomorrow' && u.searchParams.get('date') === '2026-09-07') return new Response('', { status: 502 });
@@ -985,7 +1101,12 @@ function partsUpstream(bad) {
     }
     if (u.hostname === 'flyymm.com') {
       if (b === 'ymm-today' && u.searchParams.get('dt') === '2026-09-06') return refuse();
-      return new Response(fx('ymm-dep-sample.json'), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      if ((b === 'ymm-tomorrow-500' || b === 'ymm-evening') && u.searchParams.get('dt') === '2026-09-07') return new Response('err', { status: 500 });
+      if (b === 'ymm-evening') return new Response(fx('ymm-empty-sample.json'), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      // Tomorrow's file: the same day's flights, dated the next day.
+      const day = fx('ymm-dep-sample.json');
+      return new Response(u.searchParams.get('dt') === '2026-09-07' ? day.replaceAll('2026-09-06', '2026-09-07') : day,
+        { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
     if (u.hostname === 'www.laguardiaairport.com') {
       bad.lgaPage = (bad.lgaPage || 0) + 1;
@@ -1000,6 +1121,16 @@ function partsUpstream(bad) {
       if (b === 'msp-page1') return refuse();
       return new Response('<html><body><div class="view-empty">No flights match your search.</div></body></html>', { status: 200, headers: { 'Content-Type': 'text/html' } });
     }
+    if (u.hostname === 'www.sydneyairport.com.au') {
+      // Sydney's real captures: its "today" files for the first day asked,
+      // its "tomorrow" files for the next.
+      bad.sydToday = bad.sydToday || u.searchParams.get('date');
+      const today = u.searchParams.get('date') === bad.sydToday;
+      const tt = u.searchParams.get('terminalType');
+      if (b === 'syd-tomorrow-dom' && !today && tt === 'domestic') return new Response('<html>502 Bad Gateway</html>', { status: 502 });
+      if (b === 'syd-today-dom' && today && tt === 'domestic') return new Response('<html>502 Bad Gateway</html>', { status: 502 });
+      return new Response(fx(`syd-${u.searchParams.get('flightType')}-${tt}-${today ? 'today' : 'tomorrow'}.json`), { status: 200 });
+    }
     if (u.hostname === 'flyyzf.ca') return refuse();
     if (u.hostname === 'www.dot.gov.nt.ca') return new Response(fx('yzf-dot-sample.html'), { status: 200, headers: { 'Content-Type': 'text/html' } });
     throw new Error('test: no network for ' + u.hostname);
@@ -1009,13 +1140,18 @@ function partsUpstream(bad) {
 }
 
 test('a feed asked in parts is live only when every part answered: a refused part shows the last good list, marked, and never replaces it', async () => {
+  // v24002 — only a later day that FAILED is forgiven (the next test); these
+  // are the parts that still fail the whole answer.
   const cases = [
     ['ORD', 'arr', 'ord-today', 'Chicago: "Today" behind a challenge page, "Tomorrow" answered'],
-    ['ORD', 'arr', 'ord-tomorrow', 'Chicago: "Today" answered, "Tomorrow" a 500'],
+    ['ORD', 'arr', 'ord-tomorrow', 'Chicago: "Today" still yesterday\'s operational day (its rows dated yesterday), so "Tomorrow" is the calendar today — and a 500'],
     ['DUB', 'arr', 'dub-page2', "Dublin: today's second page refused"],
-    ['SLC', 'dep', 'slc-tomorrow', "Salt Lake City: tomorrow's page refused"],
-    ['ZRH', 'dep', 'zrh-tomorrow', "Zurich: tomorrow's day file a 502"],
-    ['YMM', 'dep', 'ymm-today', "Fort McMurray: today's file refused"]
+    ['DUB', 'arr', 'dub-page2-500', "Dublin: today's second page a 500 — a failed page of today"],
+    ['DUB', 'arr', 'dub-tomorrow', "Dublin: tomorrow refused by the bot manager — a block anywhere is a block"],
+    ['SLC', 'dep', 'slc-tomorrow', "Salt Lake City: tomorrow's page refused — a block anywhere is a block"],
+    ['YMM', 'dep', 'ymm-today', "Fort McMurray: today's file refused"],
+    ['YMM', 'dep', 'ymm-evening', "Fort McMurray late in the evening: today's file answered empty, tomorrow's a 500 — nothing fresh to show is not a quiet night"],
+    ['SYD', 'dep', 'syd-today-dom', "Sydney: today's domestic slice a 502 — a failed slice of today"]
   ];
   for (const [code, dir, part, what] of cases) {
     await world(async (W) => {
@@ -1041,7 +1177,79 @@ test('a feed asked in parts is live only when every part answered: a refused par
       const fresh = makeEnv().env;
       const r3 = await W.get(fresh, makeCtx(), wideWin(code, dir));
       assert.equal(r3.status, 503, what + ': 503 with no last good list');
-    }, code === 'ZRH' || code === 'YMM' ? Date.parse('2026-09-06T14:00:00Z') : Date.parse('2026-09-05T17:00:00Z'));
+    }, PARTS_CLOCK[code] || Date.parse('2026-09-05T17:00:00Z'));
+  }
+});
+
+// Each airport's clock for the parts tests: Zürich and Fort McMurray on their
+// captures' day, Sydney at 09:00 (tomorrow rides along from 06:00).
+const PARTS_CLOCK = { ZRH: Date.parse('2026-09-06T14:00:00Z'), YMM: Date.parse('2026-09-06T14:00:00Z'), SYD: Date.parse('2026-09-15T09:00:00+10:00') };
+
+// v24002 — the rule, airport by airport: today answered and only
+// a LATER day failed (a 500, a 502 — not a block) → today's fresh rows are
+// served LIVE, marked partial, and become the shared copy; tomorrow is left
+// out whole, never half of it; nothing is counted as a failure; and the next
+// whole answer puts tomorrow back.
+test("a feed asked in days: today answered and only tomorrow failed — today's fresh rows are live, tomorrow is left out whole", async () => {
+  // tz: the airport's clock, when tomorrow's fake rows are dated tomorrow;
+  // null when the fake answers tomorrow with today's own rows again (Chicago,
+  // Zürich), so tomorrow is exactly the second half of the whole list.
+  const cases = [
+    ['ORD', 'arr', 'ord-tomorrow', 'Chicago: "Today" (rolled onto the calendar day) answered, "Tomorrow" a 500', null, Date.parse('2026-09-04T10:00:00Z')],
+    ['DUB', 'arr', 'dub-tomorrow-500', "Dublin: tomorrow's first page a 500", 'Europe/Dublin'],
+    ['DUB', 'arr', 'dub-tomorrow-page2-500', "Dublin: tomorrow's second page a 500 — its first page is not kept either", 'Europe/Dublin'],
+    ['SLC', 'dep', 'slc-tomorrow-500', "Salt Lake City: tomorrow's page a 500", 'America/Denver'],
+    ['ZRH', 'dep', 'zrh-tomorrow', "Zurich: tomorrow's day file a 502", null],
+    ['YMM', 'dep', 'ymm-tomorrow-500', "Fort McMurray: tomorrow's file a 500", 'America/Edmonton'],
+    ['SYD', 'dep', 'syd-tomorrow-dom', "Sydney: tomorrow's domestic slice a 502 — its international slice is not kept either", 'Australia/Sydney']
+  ];
+  const { feedLocalDay } = await import('../workers/fids-proxy.js');
+  for (const [code, dir, part, what, tz, clock] of cases) {
+    await world(async (W) => {
+      const { env, writes } = makeEnv();
+      const bad = { v: null };
+      globalThis.fetch = partsUpstream(bad);
+      const key = `fg:v1:${code}:win:${dir}`;
+      // Today alone, as the airport answers it: tomorrow's part answering
+      // nothing new is told apart by asking once with tomorrow failed below.
+      const r1 = await W.get(env, makeCtx(), wideWin(code, dir));
+      assert.equal(r1.headers.get('X-Feed-State'), 'live', what + ': every part answered');
+      const full = listOf(await r1.json()).map((f) => f.number + '|' + f._authTs);
+      bad.v = part; bad.answered = 0; bad.failed = 0;
+      W.tick(10 * MIN); W.colo();
+      const r2 = await W.get(env, makeCtx(), wideWin(code, dir));
+      assert.ok(bad.answered > 0 && bad.failed > 0, `${what}: a real partial answer (${bad.answered} parts answered, ${bad.failed} failed)`);
+      assert.equal(r2.status, 200, what);
+      assert.equal(r2.headers.get('X-Feed-State'), 'live', what + ": today's rows are fresh — live");
+      assert.equal(r2.headers.get('X-Feed-Partial'), 'later-day', what + ': marked partial');
+      const b2 = await r2.json();
+      assert.equal(b2._feed.state, 'live', what);
+      const part2 = listOf(b2).map((f) => f.number + '|' + f._authTs);
+      assert.ok(part2.length > 0, what + ": today's rows are there");
+      assert.ok(part2.length < full.length, `${what}: tomorrow is left out (${part2.length} of ${full.length})`);
+      assert.deepEqual(part2, full.slice(0, part2.length), what + ": today's rows, as the whole answer had them");
+      // …and nothing of tomorrow, not even the half of it that answered.
+      if (tz) {
+        const today = feedLocalDay(tz, W.now);
+        const dayOf = (k) => feedLocalDay(tz, Number(k.split('|')[1]));
+        assert.ok(full.some((k) => dayOf(k) > today), what + ': the whole answer does hold tomorrow');
+        assert.deepEqual(part2, full.filter((k) => dayOf(k) <= today), what + ": exactly today's rows");
+      } else {
+        assert.equal(part2.length * 2, full.length, what + ": exactly today's rows");
+      }
+      const doc = JSON.parse(env.FIDS_LIVE_FLIGHTS.m.get(key).v);
+      assert.equal(doc.n, part2.length, what + ": the shared copy is today's fresh rows");
+      assert.equal(doc.pt, 1, what + ': and says it is partial');
+      assert.ok(!writes.some((w) => w.k.startsWith(FEED_FAIL_PREFIX)), what + ': no failure written');
+      assert.ok(!writes.some((w) => w.k === 'feed-health'), what + ': and the airport is not failing');
+      // Tomorrow answering again: the whole list, no mark.
+      bad.v = null;
+      W.tick(10 * MIN); W.colo();
+      const r3 = await W.get(env, makeCtx(), wideWin(code, dir));
+      assert.equal(r3.headers.get('X-Feed-State'), 'live', what);
+      assert.equal(r3.headers.get('X-Feed-Partial'), null, what);
+      assert.deepEqual(listOf(await r3.json()).map((f) => f.number + '|' + f._authTs), full, what + ': tomorrow is back');
+    }, clock || PARTS_CLOCK[code] || Date.parse('2026-09-05T17:00:00Z'));
   }
 });
 

@@ -3481,17 +3481,57 @@ const FEED_FAIL_PREFIX = "fx:v1:";      // FIDS_LIVE_FLIGHTS: the shared backoff
 // stream 1 is pinned to it: docking it would turn that stream into a tour.
 // Its health is still recorded and shown; docking it stays a person's call.
 const FEED_NO_AUTODOCK = { YQM: "second source; stream 1 is pinned here" };
-const FEED_EXPOSE = "X-Feed-State, X-Feed-Stale, X-Feed-Age, X-Feed-As-Of, X-Feed-Source";
+const FEED_EXPOSE = "X-Feed-State, X-Feed-Stale, X-Feed-Age, X-Feed-As-Of, X-Feed-Source, X-Feed-Partial";
 const FEED_CHALLENGE_RE = /perfdrive|shieldsquare|rdwr|radware|captcha|cf-chl|cf_chl|challenge-platform|just a moment|attention required|access denied|request unsuccessful|incapsula|pardon our interruption|are you a robot|bot protection|wp remote firewall|blocked because|ddos-guard|sucuri/i;
 
 /** Record one upstream answer's label in the current guarded request, if any. */
 function feedNote(state, why, extra) {
   try {
     const s = FEED_ALS.getStore();
-    if (s && Array.isArray(s.notes)) s.notes.push({ state, why: String(why || "").slice(0, 120), ...(extra || {}) });
+    if (s && Array.isArray(s.notes)) {
+      // Asked inside feedLaterDay: the answer is about a later day, not today.
+      const n = { state, why: String(why || "").slice(0, 120), ...(s.later ? { later: true } : {}), ...(extra || {}) };
+      s.notes.push(n);
+      if (Array.isArray(s.mine)) s.mine.push(n);
+    }
   } catch (e) {}
 }
 __name(feedNote, "feedNote");
+
+/**
+ * v24002 — ONE LATER DAY OF A FEED ASKED IN DAYS. Runs fn — the asks for one
+ * day after the airport's own today (tomorrow) — with every answer it gets
+ * marked `later`, and says whether that day came back whole.
+ * Returns { value, whole }. The caller keeps the day only when it is whole: a
+ * day is on the board whole or not at all, so half of tomorrow (its first
+ * page, its domestic slice) is never served as tomorrow. Today, yesterday, a
+ * page or a slice of today are never asked through here: their failure still
+ * fails the whole answer (feedVerdict). Works with or without a guard around
+ * it; without one, the marks go nowhere and `whole` still tells.
+ */
+async function feedLaterDay(fn) {
+  const outer = FEED_ALS.getStore();
+  const scope = { notes: outer && Array.isArray(outer.notes) ? outer.notes : [], later: true, mine: [] };
+  let value = null, threw = false;
+  try { value = await FEED_ALS.run(scope, fn); }
+  catch (e) {
+    threw = true;
+    // A throw with no answer labelled is still a failed day, and says so.
+    if (!scope.mine.some((n) => n && n.state !== "ok")) FEED_ALS.run(scope, () => feedNote("error", "the later day's ask threw"));
+  }
+  const whole = !threw && !scope.mine.some((n) => n && n.state !== "ok" && !n.superseded);
+  return { value: threw ? null : value, whole };
+}
+__name(feedLaterDay, "feedLaterDay");
+
+/** The airport's calendar day (YYYY-MM-DD) at nowMs, plus n days. */
+function feedLocalDay(tz, nowMs, n) {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(nowMs));
+  const g = (t) => (p.find((x) => x.type === t) || {}).value;
+  const today = `${g("year")}-${g("month")}-${g("day")}`;
+  return n ? new Date(Date.parse(today + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10) : today;
+}
+__name(feedLocalDay, "feedLocalDay");
 
 /**
  * A later step of the same fetch did the job the failed ones could not — the
@@ -3723,17 +3763,43 @@ __name(feedFetch, "feedFetch");
  * only failures that do not count are the ones a later step answered
  * (feedSupersede: a fallback page, a fresh nonce, a second source) and the
  * page past the end of a list (feedEndOfList).
+ *
+ * v24002 — EXCEPT A LATER DAY THAT FAILED. When today answered whole and only
+ * a later day's part (tomorrow, asked through feedLaterDay) failed, today's
+ * rows are fresh and are served LIVE: the board's current hours are true,
+ * which is what the Chicago case was about. Every other failure keeps the rule
+ * above: a failed today, a failed page or slice of today, and a failed
+ * yesterday fail the whole answer. A block ANYWHERE, a later day included,
+ * is still "blocked": a challenge page is the airport refusing this Worker,
+ * the next ask of today meets the same bot manager, and it is what the
+ * health and the dock count. And today must have brought rows: a later day
+ * failed beside an empty or missing today leaves nothing fresh to show, so
+ * the answer fails and the last good list is shown, marked.
+ * A partial-but-live answer is marked (feedPartial → X-Feed-Partial) for
+ * anyone diagnosing it; it needs no strip on the board, because every row on
+ * it is from this answer. The strip dates rows that are not current, and
+ * none here is: tomorrow's rows are absent, not old, and the next ask (three
+ * to five minutes) brings them back. At midnight the failing day becomes
+ * today and is no longer forgiven, so the gap cannot outlive the evening.
  */
 function feedVerdict(rows, notes, threw) {
   // A failure a later step answered (feedSupersede) is not evidence.
-  const has = (k) => (notes || []).some((n) => n && n.state === k && !n.superseded);
+  const live = (notes || []).filter((n) => n && !n.superseded);
+  const has = (k, later) => live.some((n) => n.state === k && (later === undefined || !!n.later === later));
   if (has("blocked")) return "blocked";
-  if (has("error") || threw) return "error";
+  if (has("error", false) || threw) return "error";
+  if (has("error", true)) return rows > 0 ? "ok" : "error";
   if (rows != null) return "ok";              // a valid answer with nothing in it
   // Nothing produced and nothing asked: no evidence it worked, so it did not.
   return has("ok") ? "ok" : "error";
 }
 __name(feedVerdict, "feedVerdict");
+
+/** v24002 — a live answer with a later day left out (feedVerdict). */
+function feedPartial(notes) {
+  return (notes || []).some((n) => n && n.later && n.state !== "ok" && !n.superseded);
+}
+__name(feedPartial, "feedPartial");
 
 function feedHash(s) {
   let h = 0x811c9dc5;
@@ -3827,7 +3893,7 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
   if (!doc || typeof doc !== "object" || typeof doc.at !== "number" || !("p" in doc)) doc = null;
   if (doc && !opts.force && !fast && now - doc.at < shareS * 1000) {
     _feedSawGood(code, doc.at);
-    const res = { state: "ok", failure: null, payload: doc.p, rows: doc.n || 0, asOf: doc.at, via: "shared" };
+    const res = { state: "ok", failure: null, payload: doc.p, rows: doc.n || 0, asOf: doc.at, via: "shared", ...(doc.pt ? { partial: true } : {}) };
     _feedMemoSet(key, res, Math.min(FEED_MEMO_OK_S, shareS - Math.floor((now - doc.at) / 1000)), now);
     return res;
   }
@@ -3864,23 +3930,38 @@ async function feedGuard(env, ctx, code, dir, slot, producer, opts) {
   if (state === "ok") {
     if (payload == null) payload = opts.empty ? opts.empty() : [];
     const n = rowsOf(payload);
+    // v24002 — today's rows with a later day left out (feedVerdict). This
+    // answer DOES refresh the shared copy, and so becomes the last good list:
+    //  - its rows are the newest the airport has given; served anywhere, they
+    //    are as fresh as they say (the copy carries its own time and "pt");
+    //  - the shared copy is what keeps every colo from asking the airport
+    //    itself. Left unwritten, a tomorrow that keeps failing would have the
+    //    airport asked by every isolate on every poll, with no backoff (the
+    //    answer is not a failure) — more load exactly when the airport is
+    //    already struggling.
+    // Tomorrow's rows from the previous full copy are NOT carried across:
+    // telling which rows of an older payload are tomorrow's needs each feed's
+    // own dates in three payload shapes, and they would be up to three hours
+    // old inside an answer stamped now — stale rows presented as fresh. They
+    // are left out, and come back with the first ask that gets tomorrow whole.
+    const partial = feedPartial(store.notes);
     let text = null;
     try { text = JSON.stringify(payload); } catch (e) { text = null; }
     if (kv && text != null) {
-      const h = feedHash(text);
+      const h = feedHash((partial ? "pt:" : "") + text);
       const age = doc ? now - doc.at : Infinity;
       const changed = !doc || doc.h !== h;
       const due = fast
         ? (changed ? age >= FEED_FAST_WRITE_MIN_S * 1000 : age >= FEED_FAST_REFRESH_S * 1000)
         : (changed || age >= shareS * 1000);
       if (due) {
-        const w = kv.put(key, `{"v":1,"at":${now},"h":${JSON.stringify(h)},"n":${n},"p":${text}}`,
+        const w = kv.put(key, `{"v":1,"at":${now},"h":${JSON.stringify(h)},"n":${n},${partial ? '"pt":1,' : ""}"p":${text}}`,
           { expirationTtl: Math.ceil(FEED_LASTGOOD_MAX_MS / 1000) + 600 }).catch(() => {});
         if (ctx && typeof ctx.waitUntil === "function") ctx.waitUntil(w); else await w;
       }
     }
     feedHealthNote(env, ctx, code, "ok", now, null, null);
-    const res = { state: "ok", failure: null, payload, rows: n, asOf: now, via: "live" };
+    const res = { state: "ok", failure: null, payload, rows: n, asOf: now, via: "live", ...(partial ? { partial: true } : {}) };
     if (!fast) _feedMemoSet(key, res, Math.min(FEED_MEMO_OK_S, shareS), now);
     return res;
   }
@@ -3909,7 +3990,7 @@ __name(feedGuard, "feedGuard");
 function feedFailedResult(doc, state, now) {
   const lg = doc && now - doc.at <= FEED_LASTGOOD_MAX_MS ? doc : null;
   return lg
-    ? { state: "stale", failure: state, payload: lg.p, rows: lg.n || 0, asOf: lg.at, via: "lastgood" }
+    ? { state: "stale", failure: state, payload: lg.p, rows: lg.n || 0, asOf: lg.at, via: "lastgood", ...(lg.pt ? { partial: true } : {}) }
     : { state, failure: state, payload: null, rows: 0, asOf: null, via: "none" };
 }
 __name(feedFailedResult, "feedFailedResult");
@@ -3922,6 +4003,8 @@ function feedHeaders(g, now) {
     h["X-Feed-Age"] = String(Math.max(0, Math.round(((now || Date.now()) - g.asOf) / 1000)));
   }
   if (g.state === "stale") h["X-Feed-Stale"] = "1";
+  // v24002 — today's rows with a later day left out (feedVerdict): still live.
+  if (g.partial) h["X-Feed-Partial"] = "later-day";
   return h;
 }
 __name(feedHeaders, "feedHeaders");
@@ -3932,7 +4015,8 @@ function feedMeta(g, now) {
     state: g.state === "ok" ? "live" : g.state,
     failure: g.failure || null,
     asOf: g.asOf ? new Date(g.asOf).toISOString() : null,
-    ageS: g.asOf ? Math.max(0, Math.round(((now || Date.now()) - g.asOf) / 1000)) : null
+    ageS: g.asOf ? Math.max(0, Math.round(((now || Date.now()) - g.asOf) / 1000)) : null,
+    ...(g.partial ? { partial: "later-day" } : {})
   };
 }
 __name(feedMeta, "feedMeta");
@@ -3942,8 +4026,11 @@ function feedWorst(a, b) {
   if (!a) return b;
   if (!b) return a;
   const rank = { ok: 0, stale: 1, error: 2, blocked: 3 };
-  if ((rank[b.state] || 0) !== (rank[a.state] || 0)) return (rank[b.state] || 0) > (rank[a.state] || 0) ? b : a;
-  return (b.asOf || 0) < (a.asOf || 0) ? b : a;
+  const w = (rank[b.state] || 0) !== (rank[a.state] || 0)
+    ? ((rank[b.state] || 0) > (rank[a.state] || 0) ? b : a)
+    : ((b.asOf || 0) < (a.asOf || 0) ? b : a);
+  // v24002 — a direction with a later day left out says so for the window.
+  return w.state === "ok" && (a.partial || b.partial) && !w.partial ? { ...w, partial: true } : w;
 }
 __name(feedWorst, "feedWorst");
 
@@ -4663,38 +4750,33 @@ async function dubFetchAll(dir) {
     }
   } catch (e) {}
   const kind = dir === "dep" ? "departures" : "arrivals";
-  const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Dublin", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
-  const gv = (t) => (dp.find((p) => p.type === t) || {}).value;
-  const today = `${gv("year")}-${gv("month")}-${gv("day")}`;
-  const rows = [];
+  const now = Date.now();
+  const today = feedLocalDay("Europe/Dublin", now);
   // v23996 — a list that answered, empty, with nothing refused or broken on
   // the way, is a quiet night: kept like a full one, not as a failure.
   // v23998 — and a list with a page refused or broken on the way is not the
-  // list: today's pages then tomorrow's are one board, so the walk stops at
-  // the first failed page and nothing is kept or served (feedVerdict). It
-  // used to keep the pages before the failure, cache them as good for two
-  // minutes and serve them live.
-  let answered = false, failed = false, failKind = "error";
-  try {
-    // Today: walk up to 14 pages. Tomorrow: the first 6 cover the
-    // board's overnight lookahead. 10 rows a page, tiny responses.
-    for (const [date, maxPages] of [[today, 14], [new Date(Date.parse(today + "T12:00:00Z") + 864e5).toISOString().slice(0, 10), 6]]) {
-      if (failed) break;
+  // list: the walk stops at the first failed page and nothing is kept or
+  // served (feedVerdict). It used to keep the pages before the failure, cache
+  // them as good for two minutes and serve them live.
+  // One day's walk: { rows, answered, failed, failKind }.
+  const walk = async (date, maxPages) => {
+    const out = { rows: [], answered: false, failed: false, failKind: "error" };
+    try {
       let after = "", afterId = "";
       for (let p = 0; p < maxPages; p++) {
         const q = after ? `&after=${encodeURIComponent(after)}&after-id=${encodeURIComponent(afterId)}` : "";
         const r = await feedFetch(`https://api.dublinairport.com/dap/flight-listing/${kind}?date=${date}${q}`, {
           headers: { "Accept": "application/json", "User-Agent": "Mozilla/5.0 (compatible; OrionConnected-FIDS/1.0)" }
         }, "json");
-        if (!r.ok) { failKind = feedClassifyResponse(r, "json", r.url || ""); failed = true; break; }
+        if (!r.ok) { out.failKind = feedClassifyResponse(r, "json", r.url || ""); out.failed = true; break; }
         const txt = await r.text().catch(() => "");
         const j = feedParseJson(txt) || null;
-        if (!j) { failKind = feedClassifyBody(txt, "json"); feedNote(failKind, "not JSON"); failed = true; break; }
-        else if (Array.isArray(j.content)) answered = true;
-        else { feedNote("error", "not the Dublin list"); failed = true; break; }
+        if (!j) { out.failKind = feedClassifyBody(txt, "json"); feedNote(out.failKind, "not JSON"); out.failed = true; break; }
+        else if (Array.isArray(j.content)) out.answered = true;
+        else { feedNote("error", "not the Dublin list"); out.failed = true; break; }
         const page = (j && Array.isArray(j.content)) ? j.content : [];
         if (!page.length) break;
-        rows.push(...page);
+        out.rows.push(...page);
         // The cursor lives in the response's OWN pagination object —
         // latestTimestamp/latestId are their opaque values, NOT the last
         // row's fields (verified live 2026-09-05: row-derived cursors
@@ -4703,13 +4785,30 @@ async function dubFetchAll(dir) {
         after = pg.latestTimestamp || ""; afterId = pg.latestId || "";
         if (!pg.hasNext || !after || !afterId) break;
       }
-    }
-  } catch (e) { failed = true; }
-  const good = !failed && (rows.length > 0 || answered);
+    } catch (e) { out.failed = true; }
+    return out;
+  };
+  // Today: walk up to 14 pages. Tomorrow: the first 6 cover the board's
+  // overnight lookahead. 10 rows a page, tiny responses.
+  const td = await walk(today, 14);
+  // v24002 — tomorrow is a LATER day (feedLaterDay): walked whole, it joins
+  // today; with a page of it failed, today's rows are served live without
+  // any of it (feedVerdict), and that partial walk is not cached here — the
+  // next ask tries tomorrow again. A failed page of TODAY still fails all.
+  let tm = null, whole = true;
+  if (!td.failed) {
+    const r = await feedLaterDay(() => walk(feedLocalDay("Europe/Dublin", now, 1), 6));
+    whole = r.whole && !!r.value && !r.value.failed;
+    if (whole) tm = r.value;
+  }
+  const rows = td.rows.concat(tm ? tm.rows : []);
+  const good = !td.failed && (rows.length > 0 || td.answered || !!(tm && tm.answered));
   try {
-    await cache.put(cacheKey, good
-      ? new Response(JSON.stringify(rows), { headers: { "Cache-Control": "public, max-age=120", "Content-Type": "application/json" } })
-      : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1", "X-Auth-Kind": failKind === "blocked" ? "blocked" : "error" } }));
+    if (!good || whole) {
+      await cache.put(cacheKey, good
+        ? new Response(JSON.stringify(rows), { headers: { "Cache-Control": "public, max-age=120", "Content-Type": "application/json" } })
+        : new Response("", { headers: { "Cache-Control": "public, max-age=30", "X-Auth-Neg": "1", "X-Auth-Kind": td.failKind === "blocked" ? "blocked" : "error" } }));
+    }
   } catch (e) {}
   return good ? rows : null;
 }
@@ -9023,6 +9122,7 @@ function sydSlices(dir, nowMs) {
   for (const day of sydFeedDays(nowMs)) {
     for (const terminalType of ["international", "domestic"]) {
       out.push({
+        day,
         key: `syd/${day}/${dir}/${terminalType}`,
         url: `https://www.sydneyairport.com.au/_a/flights?flightType=${flightType}&terminalType=${terminalType}&date=${day}`
       });
@@ -9081,10 +9181,21 @@ const AUTHORITY_HANDLERS = {
     // Never the dateless /flights (3.4 MB, five days). zrhFeedDays adds
     // yesterday for the first two hours and tomorrow from 06:00 so the
     // board's now-2h..now+22h window is always covered.
+    // v24002 — a day after Zürich's today (tomorrow) is a LATER day
+    // (feedLaterDay): its failure leaves today's fresh rows live
+    // (feedVerdict). Yesterday and today still fail the whole answer.
+    const now = Date.now();
+    const today = feedLocalDay("Europe/Zurich", now);
     const out = [];
-    for (const day of zrhFeedDays(Date.now())) {
-      const t = await fetchAuthorityText(`zrh/${day}`, `https://flightdata.flughafen-zuerich.ch/flights?date=${day}`, '"flightType"', 90);
-      if (t) out.push(...zrhParseFeed(t, dir, Date.now()));
+    for (const day of zrhFeedDays(now)) {
+      const ask = () => fetchAuthorityText(`zrh/${day}`, `https://flightdata.flughafen-zuerich.ch/flights?date=${day}`, '"flightType"', 90);
+      if (day > today) {
+        const tm = await feedLaterDay(ask);
+        if (tm.whole && tm.value) out.push(...zrhParseFeed(tm.value, dir, now));
+        continue;
+      }
+      const t = await ask();
+      if (t) out.push(...zrhParseFeed(t, dir, now));
     }
     return out.length ? out : null;
   } },
@@ -9141,21 +9252,45 @@ const AUTHORITY_HANDLERS = {
     // window is always covered: two or four ~8 KB GETs a direction. The
     // Worker inflates the gzip body before .text(); the marker survives
     // an empty day, which caches as an answer rather than an outage.
-    // A slice that does fail (5xx, egress, a CloudFront error page with
-    // no marker) fails the whole direction: half an airport served as a
-    // complete 200 would replace every warm board with the half, whereas
-    // null falls through to the 429 the client preserves last-good on,
-    // and the negative cache re-probes the slice in 30 s.
+    // A slice of yesterday or today that does fail (5xx, egress, a
+    // CloudFront error page with no marker) fails the whole direction: half
+    // an airport served as a complete 200 would replace every warm board
+    // with the half, whereas null falls through to the 429 the client
+    // preserves last-good on, and the negative cache re-probes the slice in
+    // 30 s. v24002 — tomorrow's two slices are a LATER day (feedLaterDay):
+    // both answered, they join; either failed, tomorrow is left out whole
+    // (never its domestic half alone) and today's fresh rows are served live
+    // (feedVerdict).
+    const now = Date.now();
+    const today = feedLocalDay(SYD_TZ, now);
     const out = [], seen = new Set();
-    for (const s of sydSlices(dir, Date.now())) {
-      const t = await fetchAuthorityText(s.key, s.url, '"flightData"', 90,
-        { headers: { "Accept": "application/json", "Accept-Encoding": "gzip" } });
-      if (!t) return null;
-      for (const f of sydParseFeed(t, dir, Date.now())) {
+    const ask = (s) => fetchAuthorityText(s.key, s.url, '"flightData"', 90,
+      { headers: { "Accept": "application/json", "Accept-Encoding": "gzip" } });
+    const add = (t) => {
+      for (const f of sydParseFeed(t, dir, now)) {
         const k = `${f.number}|${f._authTs}`;
         if (seen.has(k)) continue;
         seen.add(k); out.push(f);
       }
+    };
+    const slices = sydSlices(dir, now);
+    for (const s of slices.filter((x) => x.day <= today)) {
+      const t = await ask(s);
+      if (!t) return null;
+      add(t);
+    }
+    const later = slices.filter((x) => x.day > today);
+    if (later.length) {
+      const tm = await feedLaterDay(async () => {
+        const texts = [];
+        for (const s of later) {
+          const t = await ask(s);
+          if (!t) return null;
+          texts.push(t);
+        }
+        return texts;
+      });
+      if (tm.whole && tm.value) tm.value.forEach(add);
     }
     return out.length ? out : null;
   } },
@@ -9330,10 +9465,25 @@ const AUTHORITY_HANDLERS = {
     // 2026-09-05 ~03:00 CT). Today + Tomorrow together always cover the
     // board's window; /Tomorrow/ is a supported keyword (verified).
     const kind = dir === "dep" ? "Departures" : "Arrivals";
-    const parts = [];
-    for (const day of ["Today", "Tomorrow"]) {
-      const t = await fetchAuthorityText(`ord/${dir}/${day}`, `https://prod-flightwarehousewebservice.flychicago.com/FlightWarehouseService.svc/getflightlist/${kind}/ord/${day}/1/24`, "AirlineCodeFlightNumber", 150, { feedExpect: "json" });
-      if (t) parts.push(...ordParseFeed(t, dir, Date.now()));
+    const ask = (day) => fetchAuthorityText(`ord/${dir}/${day}`, `https://prod-flightwarehousewebservice.flychicago.com/FlightWarehouseService.svc/getflightlist/${kind}/ord/${day}/1/24`, "AirlineCodeFlightNumber", 150, { feedExpect: "json" });
+    const now = Date.now();
+    const t = await ask("Today");
+    const parts = t ? ordParseFeed(t, dir, now) : [];
+    // v24002 — "Tomorrow" is a LATER day (feedLaterDay: its failure leaves
+    // today's fresh rows live) only once their "Today" has rolled onto
+    // Chicago's calendar day — every row of it dated today or later. Before
+    // that (pre-dawn, while "Today" is still yesterday's operational day),
+    // "Tomorrow" IS the calendar today, the board's current hours; its
+    // failure fails the whole answer as before. A failed or empty "Today"
+    // proves nothing, so it takes the same path.
+    const cal = feedLocalDay("America/Chicago", now);
+    const rolled = parts.length > 0 && parts.every((f) => feedLocalDay("America/Chicago", f._authTs) >= cal);
+    if (rolled) {
+      const tm = await feedLaterDay(() => ask("Tomorrow"));
+      if (tm.whole && tm.value) parts.push(...ordParseFeed(tm.value, dir, now));
+    } else {
+      const t2 = await ask("Tomorrow");
+      if (t2) parts.push(...ordParseFeed(t2, dir, now));
     }
     return parts.length ? parts : null;
   } },
@@ -9432,20 +9582,26 @@ const AUTHORITY_HANDLERS = {
   slc: { tz: "America/Denver", source: "slc-authority", list: async (dir, env) => {
     // Today + tomorrow in Salt Lake's clock (the board's day boundary is
     // local midnight; the same wall-clock 00:00:00 bounds each request).
-    const dp = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Denver", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
-    const gv = (t) => (dp.find((p) => p.type === t) || {}).value;
-    const today = `${gv("year")}-${gv("month")}-${gv("day")}`;
+    const now = Date.now();
+    const today = feedLocalDay("America/Denver", now);
     const plus = (iso, n) => new Date(Date.parse(iso + "T12:00:00Z") + n * 864e5).toISOString().slice(0, 10);
     const out = [], seen = new Set();
-    for (const day of [today, plus(today, 1)]) {
-      for (const t of await slcFetchDay(dir, day, plus(day, 1))) {
-        for (const f of slcParsePage(t, dir, Date.now())) {
+    const add = (pages) => {
+      for (const t of pages) {
+        for (const f of slcParsePage(t, dir, now)) {
           const k = `${f.number}|${f._authTs}`;
           if (seen.has(k)) continue;
           seen.add(k); out.push(f);
         }
       }
-    }
+    };
+    add(await slcFetchDay(dir, today, plus(today, 1)));
+    // v24002 — tomorrow is a LATER day (feedLaterDay): every page of it, or
+    // none of it. Its failure leaves today's fresh rows live (feedVerdict);
+    // a failed page of today still fails the whole answer.
+    const tmw = plus(today, 1);
+    const tm = await feedLaterDay(() => slcFetchDay(dir, tmw, plus(tmw, 1)));
+    if (tm.whole && Array.isArray(tm.value)) add(tm.value);
     return out.length ? out : null;
   } },
   rdu: { tz: "America/New_York", source: "rdu-authority", list: async (dir, env) => {
@@ -9552,16 +9708,25 @@ const AUTHORITY_HANDLERS = {
     // caches as an answer rather than re-probing as an outage. The site
     // itself polls every 15 min; 120 s here keeps gate/status changes
     // fresh at a few requests a minute across every screen.
+    const now = Date.now();
     const out = [], seen = new Set();
-    for (const day of ymmDays(Date.now())) {
-      const t = await fetchAuthorityText(`ymm/${dir}/${day}`, `https://flyymm.com/wp-json/fmaa/v1/flights-info?type=${dir === "dep" ? "D" : "A"}&searchval=&dt=${day}`, '"all_flights"', 120);
-      if (!t) continue;
-      for (const f of ymmParseFeed(t, dir, Date.now())) {
+    const ask = (day) => fetchAuthorityText(`ymm/${dir}/${day}`, `https://flyymm.com/wp-json/fmaa/v1/flights-info?type=${dir === "dep" ? "D" : "A"}&searchval=&dt=${day}`, '"all_flights"', 120);
+    const add = (t) => {
+      for (const f of ymmParseFeed(t, dir, now)) {
         const k = `${f.number}|${f._authTs}`;
         if (seen.has(k)) continue;
         seen.add(k); out.push(f);
       }
-    }
+    };
+    const [today, tmw] = ymmDays(now);
+    const t = await ask(today);
+    if (t) add(t);
+    // v24002 — tomorrow is a LATER day (feedLaterDay): its failure leaves
+    // today's fresh rows live (feedVerdict). Late in the evening "today" is
+    // often empty, and then there is nothing fresh to show: the answer fails
+    // and the last good list is shown, marked, as before.
+    const tm = await feedLaterDay(() => ask(tmw));
+    if (tm.whole && tm.value) add(tm.value);
     return out.length ? out : null;
   } }
 };
@@ -9947,17 +10112,13 @@ const YYZ_FEED_HEADERS = {
 };
 
 // GET /flights/yyz?direction=dep|arr  (or Departure|Arrival)
-// Returns { list:[...] } (today + tomorrow merged) with CORS headers, or a
-// 502 with the upstream status/body so the board can log why and fall back.
+// Returns { list:[...] } (today + tomorrow merged; today alone when tomorrow
+// failed, v24002) with CORS headers, or a 502 with the upstream status/body
+// when today failed, so the board can log why and fall back.
 async function handleYyzFids(request, env, origin, direction) {
   const seg = /^arr/i.test(direction || "") ? "ARR" : "DEP";
-  const days = ["today", "tomorrow"];
-  const merged = [];
-  let firstErr = null;
-  for (const day of days) {
-    // v23998 — once a day has failed the answer has failed (below), so the
-    // next day is not asked: a refused "today" no longer costs a "tomorrow".
-    if (firstErr) break;
+  // One of Pearson's days: { list } or { err }.
+  const askDay = async (day) => {
     const feedUrl = `${YYZ_FEED_BASE}?type=${seg}&day=${day}&useScheduleTimeOnly=false`;
     try {
       // v23996 — feedFetch labels the answer. Pearson's bot manager answers a
@@ -9965,35 +10126,34 @@ async function handleYyzFids(request, env, origin, direction) {
       // another host, which used to parse to nothing and be served as an
       // empty list. It is "blocked" now, and the route says so.
       const r = await feedFetch(feedUrl, { headers: YYZ_FEED_HEADERS, cf: { cacheTtl: 30, cacheEverything: true } }, "json");
-      if (!r.ok) {
-        if (!firstErr) firstErr = { day, status: r.status, body: (await r.text().catch(() => "")).slice(0, 200) };
-        continue;
-      }
+      if (!r.ok) return { err: { day, status: r.status, body: (await r.text().catch(() => "")).slice(0, 200) } };
       const txt = await r.text().catch(() => "");
       let j = null;
       try { j = JSON.parse(txt); } catch (e) { j = null; }
-      if (j && Array.isArray(j.list)) merged.push(...j.list);
-      else {
-        const k = feedClassifyBody(txt, "json");
-        feedNote(k, "not Pearson's list");
-        if (!firstErr) firstErr = { day, status: r.status, body: k === "blocked" ? "blocked (not the feed)" : "unreadable" };
-      }
+      if (j && Array.isArray(j.list)) return { list: j.list };
+      const k = feedClassifyBody(txt, "json");
+      feedNote(k, "not Pearson's list");
+      return { err: { day, status: r.status, body: k === "blocked" ? "blocked (not the feed)" : "unreadable" } };
     } catch (e) {
-      if (!firstErr) firstErr = { day, error: e && e.message };
+      return { err: { day, error: e && e.message } };
     }
-  }
+  };
   // v23996 — TODAY IS THE BOARD. Tomorrow alone is not Toronto's list: with
   // today refused (a bot manager can challenge one request and pass the
   // next), the rows would be tomorrow's only, served as live, and the board
   // would read as a quiet day. A failed today fails the whole answer, so the
-  // protection shows the last good list instead.
-  // v23998 — AND SO IS TOMORROW. The board's window runs 22 hours ahead, so
-  // late in the evening most of it is tomorrow: today's last hour alone,
-  // served live, reads as a quiet night just the same. Every airport asked in
-  // parts now follows one rule (feedVerdict): a failed part fails the answer.
-  if (firstErr) {
-    return jsonResponse({ error: "YYZ feed fetch failed", ...firstErr }, 502, origin);
-  }
+  // protection shows the last good list instead — and, v23998, tomorrow is
+  // not asked: a refused "today" no longer costs a "tomorrow".
+  const today = await askDay("today");
+  if (today.err) return jsonResponse({ error: "YYZ feed fetch failed", ...today.err }, 502, origin);
+  const merged = [...today.list];
+  // v24002 — TOMORROW IS A LATER DAY (feedLaterDay). Answered, it is merged
+  // as before. Failed, today's fresh rows are still Toronto's board for the
+  // hours that are today, and are served live without it (feedVerdict) —
+  // unless tomorrow was refused by the bot manager, which is still a block.
+  // Tomorrow is merged whole or not at all.
+  const tmw = await feedLaterDay(() => askDay("tomorrow"));
+  if (tmw.whole && tmw.value && Array.isArray(tmw.value.list)) merged.push(...tmw.value.list);
   return new Response(JSON.stringify({ list: merged }), {
     status: 200,
     headers: {
@@ -13063,6 +13223,9 @@ export {
   feedBodyComplete,
   feedBackoffS,
   feedVerdict,
+  feedPartial,
+  feedLaterDay,
+  feedLocalDay,
   feedGuard,
   feedHealthNext,
   feedAutoDocked,
