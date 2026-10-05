@@ -382,7 +382,9 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
   flex-shrink: 0;
   width: 52px;
   height: 52px;
-  background: #ffffff;
+  /* v23980 — no white tile behind the mark on the dark belt row
+     (tests/logo-white-lettering-guard). */
+  background: transparent;
   border-radius: 4px;
   display: flex;
   align-items: center;
@@ -406,7 +408,7 @@ body[data-fids-logo-position="right"]  .bidsv2-banner-left { margin-left: auto; 
 .bidsv2-airline-block .logo-fallback {
   font-size: 12px;
   font-weight: 800;
-  color: var(--fids-bg, #050033);
+  color: #ffffff;
   text-align: center;
   letter-spacing: 0.5px;
 }

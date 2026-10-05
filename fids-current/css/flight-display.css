@@ -985,8 +985,10 @@ body[data-fids-theme="navy-board"] #fidsTable td.td-status * {
   text-transform: uppercase;
   font-size: 22px !important;
 }
+/* v23980 — no white tile behind the airline's mark on the navy rows: a logo
+   on a dark ground is never put on a white box (tests/logo-white-lettering-guard). */
 body[data-fids-theme="navy-board"] .fids-airline-logo {
-  background: #ffffff !important;
+  background: transparent !important;
   border-radius: 6px !important;
   padding: 4px !important;
 }
@@ -1660,11 +1662,12 @@ body[data-fids-theme="cream"] #fidsTable td.td-time-rev:empty::before {
 #fidsTable tbody tr.row-cancelled td.td-time-rev:empty::before {
   color: rgba(255,255,255,0.35);
 }
-/* Airline logo cell on cancelled row — keep white background so the logo
-   remains visible against the red. */
+/* Airline logo cell on cancelled row. v23980 — no white box behind the mark
+   on the red: the mark stands on the row as on every other row (a logo on a
+   dark ground is never put on a white box; tests/logo-white-lettering-guard). */
 #fidsTable tbody tr.row-cancelled .fids-airline-logo {
-  background: #ffffff !important;
-  border: 1px solid rgba(255,255,255,0.4) !important;
+  background: transparent !important;
+  border: none !important;
 }
 
 /* ── Delayed rows — amber wash, revised time emphasized ────────────────── */
