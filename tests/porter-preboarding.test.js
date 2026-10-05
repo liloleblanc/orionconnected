@@ -70,7 +70,7 @@ function build(preActive, lang) {
     lang === 'fr',
     // the sign's first language — the one its artwork follows (v23970)
     () => lang,
-    // v23986 — the same label as markup marked with its language
+    // v23995 — the same label as markup marked with its language
     (key) => STORE.markHalf('<span class="g8-lbl1">' + one(key) + '</span>', lang, key),
   );
   return fn('23–33', '12–22', preActive);

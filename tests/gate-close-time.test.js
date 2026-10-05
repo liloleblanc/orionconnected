@@ -97,7 +97,7 @@ function engine(langs) {
   ].join('\n'));
   const E = new Function('langs', 'window', 'BoardStrings', src)(langs || ['en', 'fr'], {}, BS);
   // the words: the frozen gate table, and the one store new words live in
-  // (v23986: the deadline lines moved there; _gateLbl falls through to it)
+  // (v23995: the deadline lines moved there; _gateLbl falls through to it)
   E._GATE_LBL = Object.assign({}, BS.STR, E._GATE_LBL);
   return E;
 }
@@ -396,7 +396,7 @@ test('(1) the ticker states no airport-wide number; a one-airline board says tha
   assert.match(span.textContent, /AIR CANADA: LA PUERTA DE EMBARQUE CIERRA 15 MINUTOS ANTES DE LA SALIDA  ·  AIR CANADA：搭乗口は出発15分前に締め切ります/);
   // No page paints an airport-wide number before the script runs: the
   // ticker's markup starts empty and is filled from the store in the board's
-  // own languages (v23986).
+  // own languages (v23995).
   for (const page of ['fids.html', 'gids.html', 'bids.html']) {
     const html = fs.readFileSync(path.join(root, 'fids-current', page), 'utf8');
     assert.doesNotMatch(html, /\d+ MINUTES BEFORE DEPARTURE|\d+ MINUTES PRIOR TO DEPARTURE|\d+ MINUTES AVANT LE DÉPART/, page);

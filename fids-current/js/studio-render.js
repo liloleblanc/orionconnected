@@ -19,7 +19,7 @@
     return Strings && Strings.isLang(l) ? l : 'en';
   }
   function T(key, context) { return Strings ? Strings.bs(key, langOf(context)) : ''; }
-  // v23986 — the weather's condition in the canvas's language: the store's
+  // v23995 — the weather's condition in the canvas's language: the store's
   // weather word (a key the data names, or the store entry whose English the
   // data's condition is). An unknown condition shows nothing, never the
   // feed's English ('Clear' on a French canvas).

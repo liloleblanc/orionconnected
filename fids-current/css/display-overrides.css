@@ -12950,7 +12950,7 @@ All three items are right-aligned to one
 
 /* Second-language label — same bar, hard against the bottom edge.
    v23247 — the word comes from the board's OWN second assigned language via
-   bidsv2 template. v23986 — it is an element of its own
+   bidsv2 template. v23995 — it is an element of its own
    (.bidsv2-carousel-l2, marked with its language), no longer the block's
    ::after drawn from --crsl-l2: a pseudo-element takes the block's lang, so
    Chinese under a Spanish first bar was set with Japanese glyph forms, and

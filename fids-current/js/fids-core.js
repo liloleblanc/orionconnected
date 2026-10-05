@@ -1943,9 +1943,58 @@ window.setDedicatedBgMode = setDedicatedBgMode;
 //
 // Cheap on purpose — two reads per pair, no writes unless the state changed,
 // and only over containers that actually hold a pair.
+// v23995 — THE NUMBER YIELDS FIRST. 'Zones | Zone  3 • 4 • 5 • 6' on the
+// final call: at its stylesheet size the number filled the column, the word
+// had no room left and was drawn under the 3 (in two languages, its halves
+// over each other; in English and French, 'Zones' alone under the 3). In a
+// sign row the number now comes down, to 55% of its size at most, until the
+// word fits beside it (a pair at 85% of its own); the pair pass then fits the
+// word into what is left. The stylesheet's size is kept in data-g8-vbase,
+// cleared on a resize like the pairs' data-g8-base.
+function _fidsSignRowFit(scope) {
+  var rows = scope.querySelectorAll('.g8-sign .g8-sign-row');
+  for (var i = 0; i < rows.length; i++) {
+    var row = rows[i], col = row.parentElement;
+    var lbl = row.querySelector('.g8-sign-label'), val = row.querySelector('.g8-sign-value');
+    if (!col || !lbl || !val || val.classList.contains('g8-grp-txt')) continue;
+    var vbase = parseFloat(val.getAttribute('data-g8-vbase')) || 0;
+    if (!vbase) {
+      val.style.removeProperty('font-size');
+      vbase = parseFloat(getComputedStyle(val).fontSize) || 0;
+      if (!vbase) continue;
+      val.setAttribute('data-g8-vbase', String(vbase));
+    }
+    var vcur = parseFloat(getComputedStyle(val).fontSize) || vbase;
+    var cs = getComputedStyle(col);
+    var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+    var gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+    // the word's own width at its stylesheet size, whatever it is squeezed to
+    var lbase = parseFloat(lbl.getAttribute('data-g8-base')) || parseFloat(getComputedStyle(lbl).fontSize) || 0;
+    var lcur = parseFloat(getComputedStyle(lbl).fontSize) || lbase;
+    // (measured by its text, not its box: a squeezed half's box is narrower
+    // than the words in it)
+    var lw = 0, kids = lbl.children, rg = document.createRange();
+    if (kids.length) {
+      for (var k = 0; k < kids.length; k++) {
+        var ks = getComputedStyle(kids[k]);
+        rg.selectNodeContents(kids[k]);
+        lw += Math.max(rg.getBoundingClientRect().width, kids[k].getBoundingClientRect().width) + (parseFloat(ks.marginLeft) || 0) + (parseFloat(ks.marginRight) || 0);
+      }
+    } else {
+      rg.selectNodeContents(lbl); lw = rg.getBoundingClientRect().width;
+    }
+    if (lcur && lbase) lw = lw * lbase / lcur;
+    var vw = val.getBoundingClientRect().width * (vbase / vcur);
+    // (a pair can still shrink in the pass below; a single word cannot)
+    var room = avail - gap - lw * (kids.length >= 2 ? 0.85 : 1);
+    var vt = vw > room ? Math.max(vbase * 0.55, vbase * room / vw * 0.985) : vbase;
+    if (Math.abs(vt - vcur) > 0.5) val.style.setProperty('font-size', vt + 'px', 'important');
+  }
+}
 function _fidsPairSeparators(root) {
   try {
     var scope = root || document;
+    try { _fidsSignRowFit(scope); } catch (eR) {}
     var SEL = '.v2-rc-fi-stline, .v2-fi-mlbl, .v2-rc-fi-tlbl, .wxc-title, .g8-pair';
     var nodes = scope.querySelectorAll(SEL);
     for (var i = 0; i < nodes.length; i++) {
@@ -1983,15 +2032,15 @@ function _fidsPairSeparators(root) {
           var cur = parseFloat(getComputedStyle(el).fontSize) || base;
           var cs = getComputedStyle(col);
           var avail = col.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
-          if (rowEl) {
-            var sib = rowEl.querySelector('.g8-sign-value');
-            if (sib && sib !== el) avail -= sib.getBoundingClientRect().width + (parseFloat(getComputedStyle(rowEl).columnGap) || 0);
-          }
           var need = 0, kids = el.children;
           for (var k = 0; k < kids.length; k++) {
             // the separator's room is its margins (0 .22em), which a rect leaves out
             var ks = getComputedStyle(kids[k]);
             need += kids[k].getBoundingClientRect().width + (parseFloat(ks.marginLeft) || 0) + (parseFloat(ks.marginRight) || 0);
+          }
+          if (rowEl) {
+            var sib = rowEl.querySelector('.g8-sign-value');
+            if (sib && sib !== el) avail -= sib.getBoundingClientRect().width + (parseFloat(getComputedStyle(rowEl).columnGap) || 0);
           }
           var ratio = need ? avail / (need * base / cur) : 1;
           var target = ratio >= 1 ? base : Math.max(base * 0.68, base * ratio * 0.985);
@@ -2039,6 +2088,8 @@ try {
       try {
         var _sp = document.querySelectorAll('.g8-sign .g8-pair[data-g8-base]');
         for (var _i = 0; _i < _sp.length; _i++) { _sp[_i].removeAttribute('data-g8-base'); _sp[_i].style.removeProperty('font-size'); }
+        var _sv = document.querySelectorAll('.g8-sign .g8-sign-value[data-g8-vbase]');
+        for (var _j = 0; _j < _sv.length; _j++) { _sv[_j].removeAttribute('data-g8-vbase'); _sv[_j].style.removeProperty('font-size'); }
       } catch (e) {}
       _fidsSchedulePairPass();
     });
@@ -4633,7 +4684,7 @@ function _fidsNoStatusClip(tbl) {
       }
     });
   } catch (e) {}
-  // v23986 — NOR A FLIGHT NUMBER, A TIME OR A GATE. 'WS3340' measured 2px
+  // v23995 — NOR A FLIGHT NUMBER, A TIME OR A GATE. 'WS3340' measured 2px
   // wider than its column ('W' is the widest capital) and read 'WS33…', and
   // an English '12:07 PM' read '12:07 PM…'. These columns step down
   // TOGETHER, one pixel at a time, until every cell fits, so the rows keep
@@ -5141,7 +5192,7 @@ function updateDedicatedTimeOnly() {
   const footer = document.getElementById('dedicatedFooterRight');
   if (footer) {
     footer.textContent = dateDisplay;
-    // v23986 — the date is in the language on screen; say which (and an
+    // v23995 — the date is in the language on screen; say which (and an
     // Arabic one's direction): the page itself is lang="en"
     try { if (BoardStrings.isLang(lang)) BoardStrings.setLang(footer, lang); } catch (eL) {}
   }
@@ -10077,7 +10128,7 @@ function _gateLaterSlotHtml(x, m, frF) {
       + sub + '</div>';
   }
   var dw = _gateLaterDayWords(f, m);
-  // v23986 — each day word carries its language (and an Arabic one its
+  // v23995 — each day word carries its language (and an Arabic one its
   // direction), as the gate's own day line does (_gateDayLineHtml): '明日'
   // under a Japanese board is lang="ja", 'غدًا' reads right to left.
   var _dl = (dw && dw.languages) || [];
@@ -10422,6 +10473,8 @@ function _gateLaterSignFit(doc) {
       // the pair pass keeps the size it measured; let it measure this one
       var ps = sign.querySelectorAll('.g8-pair[data-g8-base]');
       for (var i = 0; i < ps.length; i++) { ps[i].removeAttribute('data-g8-base'); ps[i].style.removeProperty('font-size'); }
+      var vs = sign.querySelectorAll('.g8-sign-value[data-g8-vbase]');
+      for (var j = 0; j < vs.length; j++) { vs[j].removeAttribute('data-g8-vbase'); vs[j].style.removeProperty('font-size'); }
       try { if (typeof _fidsPairSeparators === 'function') _fidsPairSeparators(sign); } catch (eP) {}
     };
     if (!sign) { wrap.style.removeProperty('--gl-ss'); continue; }
@@ -13921,7 +13974,7 @@ function _gateArrRevisedHtml(o) {
 function _gateArrPlaceHtml(term, gate, frF) {
   term = String(term || '').trim(); gate = String(gate || '').trim();
   if (!term && !gate) return '';
-  // v23986 — the board's pair through the one chooser (the Québec rule
+  // v23995 — the board's pair through the one chooser (the Québec rule
   // included), and each language's own words from the store: it sliced
   // `langs` itself and fell back to English ('Terminal', 'Gate').
   var picked = BoardStrings.pairLangs(langs, !!frF);
@@ -15049,7 +15102,7 @@ function uxgGateHtml(ctx) {
     // onto a second line. Lowercase, no space, no wrap.
     function _birMerid(html) {
       if (!html) return html;
-      // v23986 — the board's clock first: on a board led by a 24-hour
+      // v23995 — the board's clock first: on a board led by a 24-hour
       // language the time is 17:40, and there is no meridiem to wrap (the
       // revised departure read '5:40pm' on a French or German gate, because
       // the wrapping hid the time from the board-clock pass that runs later).
@@ -15286,7 +15339,7 @@ function uxgGateHtml(ctx) {
     // panel and the paired form does not fit. The board already rotates its
     // language, so each pass shows it in one of them — the same reason the
     // roster below uses TL().
-    // v23986 — the cabin by Porter's own name in the sign's language
+    // v23995 — the cabin by Porter's own name in the sign's language
     // (PorterReserve / PorterRéserve), never the spaced English 'Porter
     // Reserve', which Porter writes nowhere and which read English on a
     // French sign.
@@ -15509,7 +15562,7 @@ function uxgGateHtml(ctx) {
     // v23773 — each half carries its language, so the French half can be
     // coloured wherever it sits: second at most airports, FIRST at the
     // French-first ones (YUL, YQB…). Position says nothing about language.
-    // v23986 — a half cut from a brand ('Réserve' of PorterRéserve, 'Reserve'
+    // v23995 — a half cut from a brand ('Réserve' of PorterRéserve, 'Reserve'
     // of PorterReserve) is the brand's own word, never translated: marked so.
     var html = halves.map(function (w, i) {
       return BoardStrings.markHalf('<span class="g8-pair-h"' + (i === cut ? ' translate="no"' : '') + '>' + w + '</span>', langsOf[i], key);
@@ -15544,7 +15597,9 @@ function uxgGateHtml(ctx) {
     return (c && c[which]) ? _g8SignPair(c[which]) : '';
   }
   function _g8SignLines(key) {
-    return _gateLbl(key, _frF, function (w) { return '<span class="g8-sign-line">' + w + '</span>'; }, '');
+    // a list's ' · ' keeps its dot with the item before it (a no-break space
+    // in front), so a wrapped line never opens with '·'
+    return _gateLbl(key, _frF, function (w) { return '<span class="g8-sign-line">' + String(w).replace(/ \u00B7 /g, '\u00A0\u00B7 ') + '</span>'; }, '');
   }
   // 'Next: Rows 8-16' / 'Prochain : Rangées 8-16' — each language a whole
   // line, the group word in that language, French with its space before the
@@ -19273,13 +19328,26 @@ function _fitFlightCells() {
       // width with the same number, so a text+width key scored a hit and the
       // cell was never re-fitted — which is why 'F929…' and 'WN49…' were still
       // clipped on the delayed rows while every on-time row fitted fine.
+      // (the size this pass fitted earlier is put back when the memo says
+      // nothing changed: removing it to read the base size and then returning
+      // on the memo un-fitted every number on every pass)
+      var fitted = cell.style.getPropertyValue('font-size');
       cell.style.removeProperty('font-size');
       var base = parseFloat(getComputedStyle(cell).fontSize) || 28;
-      var key = t + '|' + Math.round(cell.clientWidth) + '|' + Math.round(base);
-      if (cell.dataset.fnFit === key) return;
+      // v23995 — and the fonts' state: a number fitted before the board's
+      // web font arrived was measured in the narrower fallback, memoised, and
+      // left 2px too wide once the real face drew it ('WS33…' on every board,
+      // in every language). Any overflow at all draws the ellipsis, so there
+      // is no slack either.
+      var fontsUp = (document.fonts && document.fonts.status === 'loaded') ? 'F' : 'f';
+      var key = t + '|' + Math.round(cell.clientWidth) + '|' + Math.round(base) + '|' + fontsUp;
+      if (cell.dataset.fnFit === key) {
+        if (fitted) cell.style.setProperty('font-size', fitted, 'important');
+        if (!(cell.scrollWidth > cell.clientWidth)) return;
+      }
       var size = base, guard = 16;
       var floorPx = Math.max(18, base * 0.68);
-      while (cell.scrollWidth > cell.clientWidth + 1 && size > floorPx && guard-- > 0) {
+      while (cell.scrollWidth > cell.clientWidth && size > floorPx && guard-- > 0) {
         size = Math.max(floorPx, size - 1);
         cell.style.setProperty('font-size', size + 'px', 'important');
       }
@@ -19287,6 +19355,8 @@ function _fitFlightCells() {
     });
   } catch (e) {}
 }
+// Re-fit once the fonts have loaded (the memo above keys on it as well).
+try { if (document.fonts && document.fonts.addEventListener) document.fonts.addEventListener('loadingdone', function () { _fitFlightCells(); }); } catch (eFF) {}
 // Re-fit the moment the board's rows change. A MutationObserver covers every
 // render path without having to find and patch each one.
 try {
@@ -19896,7 +19966,7 @@ function boardAutofit(full) {
 }
 // Standing refit — covers the BAGS render, destination flips changing text
 // lengths, and window resizes, same rhythm as the gate's fit heartbeat.
-// v23986 — the no-cut pass rides the heartbeat too: with the fitter off
+// v23995 — the no-cut pass rides the heartbeat too: with the fitter off
 // (BOARD_AUTOFIT_ENABLED) it ran only beside a row swap, which can land
 // before the board is laid out or its fonts have arrived; a board whose rows
 // do not change was then never measured again. It only ever shrinks a cell
@@ -20843,7 +20913,7 @@ const gView = document.getElementById('gateView');
         const inFlight = inboundFlight.flight || '';
         const inTime = inboundFlight.time || '';
         const inStatus = inboundFlight.status || 'scheduled';
-        // Status word in the language on screen (v23986: an unknown code
+        // Status word in the language on screen (v23995: an unknown code
         // shows nothing, never the feed's English upper-cased).
         const inStEn = _statusWord(inStatus);
         // Estimate minutes until arrival
@@ -22268,7 +22338,7 @@ const gView = document.getElementById('gateView');
             var _crslW1 = String(TLin('bagClaim', _crslLs[0]));
             var _crslW2 = _crslLs.length > 1 ? String(TLin('bagClaim', _crslLs[1])) : '';
             if (_crslW2 && _crslW2.toLowerCase() === _crslW1.toLowerCase()) _crslW2 = '';
-            // v23986 — the second bar is an element of its own, marked with
+            // v23995 — the second bar is an element of its own, marked with
             // its language: drawn as the block's ::after (through --crsl-l2)
             // it took the FIRST language's lang, so Chinese under a Spanish
             // first bar was set with the Japanese glyph forms.
@@ -27553,14 +27623,14 @@ const SLbi = k => _legacyPair(SS, k);
 // Markup in the one language on screen (the phone's gate and baggage views,
 // the empty gate's line and its date): say which, and its direction, so
 // Japanese, Chinese and Arabic take their own fonts and line breaking and
-// Arabic reads right to left. v23986 — they sat under the page's lang="en".
+// Arabic reads right to left. v23995 — they sat under the page's lang="en".
 function _screenLangAttrs() {
   var l = BoardStrings.isLang(lang) ? lang : 'en';
   return ' lang="' + l + '"' + (BoardStrings.META[l].dir === 'rtl' ? ' dir="rtl"' : '');
 }
 // A status code as the board's word, in the language on screen. Feeds spell
 // a code several ways ('final-call', 'Final Call', 'gate_closed', 'en-route');
-// they are folded onto the status table's keys. v23986 — an unknown code
+// they are folded onto the status table's keys. v23995 — an unknown code
 // shows nothing: the gate and the phone printed it upper-cased (the feed's
 // English, 'BOARDING CLOSED', on a board in any language).
 function _statusWord(k) {
@@ -27884,7 +27954,7 @@ var _GATE_LBL = {
   revised:   { en:'Revised',       fr:'Révisé',         es:'Revisado',     de:'Geändert',    it:'Rivisto',     pt:'Revisado',   ja:'変更',      zh:'更新',   ar:'الوقت المعدَّل' },
   gate:      { en:'Gate',          fr:'Porte',          es:'Puerta',       de:'Gate',        it:'Gate',        pt:'Portão',     ja:'ゲート',    zh:'登机口', ar:'البوابة' },
   yourAc:    { en:'Your Aircraft', fr:'Votre avion',    es:'Su avión',  de:'Ihr Flugzeug',it:'Il tuo aereo',pt:'Seu avião',ja:'ご搭乗機', zh:'您的飞机', ar:'طائرتك' },
-  acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Detalhes da aeronave pendentes', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
+  acPending: { en:'Aircraft details pending', fr:'Détails de l\u2019appareil à venir', es:'Datos del avión pendientes', de:'Flugzeugdaten folgen', it:'Dettagli dell\u2019aereo in arrivo', pt:'Aeronave a confirmar', ja:'機材情報は準備中', zh:'机型信息即将显示', ar:'تفاصيل الطائرة قريباً' },
   acImgPending:{ en:'Aircraft image pending', fr:'Image de l\u2019appareil à venir', es:'Imagen del avión pendiente', de:'Flugzeugbild folgt', it:'Immagine dell\u2019aereo in arrivo', pt:'Imagem da aeronave pendente', ja:'機体画像は準備中', zh:'机型图片即将显示', ar:'صورة الطائرة قريباً' },
   acUpdating:{ en:'Aircraft details updating', fr:'Mise à jour de l\u2019appareil', es:'Actualizando datos del avión', de:'Flugzeugdaten werden aktualisiert', it:'Aggiornamento dati dell\u2019aereo', pt:'Atualizando dados da aeronave', ja:'機材情報を更新中', zh:'正在更新机型信息', ar:'جارٍ تحديث تفاصيل الطائرة' },
   operatedBy:{ en:'Operated By',   fr:'Exploité par',   es:'Operado por',  de:'Durchgeführt von', it:'Operato da', pt:'Operado por', ja:'運航',  zh:'执飞',   ar:'تُشغّل بواسطة' },
@@ -28051,13 +28121,15 @@ function _gateLbl1Pick(key, frF) {
     return null;
   } catch (e) { return null; }
 }
-// v23986 — the same one-language label, as markup marked with its language
+// v23995 — the same one-language label, as markup marked with its language
 // (and an Arabic one with its direction). The gate's page is lang="en"; a
 // Japanese roster dropped in bare inherited it and drew with whatever glyphs
 // the stack found first, and an Arabic one ran left to right.
 function _gateLbl1Html(key, frF) {
   var p = _gateLbl1Pick(key, frF);
-  return p ? BoardStrings.markHalf('<span class="g8-lbl1">' + p.w + '</span>', p.l, key) : '';
+  // a list's ' · ' keeps its dot with the item before it (a no-break space in
+  // front), so a wrapped line never opens with '·' (Porter's pre-boarding list)
+  return p ? BoardStrings.markHalf('<span class="g8-lbl1">' + String(p.w).replace(/ \u00B7 /g, '\u00A0\u00B7 ') + '</span>', p.l, key) : '';
 }
 
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
@@ -28258,7 +28330,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23986';
+var FIDS_BUILD_TAG = 'v23995';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -29651,7 +29723,7 @@ function render() {
     try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e) {}
     // settle pass for late layout (web fonts, images shifting metrics)
     try { setTimeout(function () { boardAutofit(false); try { _fidsNoStatusClip(document.getElementById('fidsTable')); } catch (e2) {} }, 350); } catch (e) {}
-    // v23986 — and once the board's web fonts have loaded: the first render
+    // v23995 — and once the board's web fonts have loaded: the first render
     // measured with the fallback face, narrower, so a cell that fit then
     // was cut once Bricolage arrived ('WS33…') and nothing measured again
     // until the rows changed.
@@ -30573,7 +30645,7 @@ function buildDemoFlights(iata) {
   if (!sched) return buildRandomFlights(iata);   // ← rich random generator for all others
   const now = Date.now();
   const tz  = (AP[iata] || {}).tz;
-  // v23986 — the feed's own shape, 24-hour HH:MM, which every board formats
+  // v23995 — the feed's own shape, 24-hour HH:MM, which every board formats
   // in its own clock. It was en-CA's '10:07 p.m.', which the boards read as
   // 10:07 in the morning: every demo time was twelve hours out.
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hourCycle:'h23'} // i18n-ok: data
@@ -30739,7 +30811,7 @@ function rfgGate(terminal, seed) {
 function buildRandomFlights(iata) {
   const now = Date.now();
   const tz  = (AP[iata] || {}).tz;
-  // v23986 — 24-hour HH:MM, the feed's own shape (see buildDemoFlights)
+  // v23995 — 24-hour HH:MM, the feed's own shape (see buildDemoFlights)
   const tOpt = tz ? {timeZone:tz, hour:'2-digit', minute:'2-digit', hourCycle:'h23'} // i18n-ok: data
                   : {hour:'2-digit', minute:'2-digit', hourCycle:'h23'}; // i18n-ok: data
 
@@ -31127,7 +31199,7 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
 // Arabic-Indic digits would be a design change riding in on a bug fix.
 function _airportDateLine(now, tzOpts, l, timeStr) {
   var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
-  // v23986 — weekday, day, month and year from the AIRPORT's clock, in the
+  // v23995 — weekday, day, month and year from the AIRPORT's clock, in the
   // language's own order (BoardStrings.longDate): 'Friday  September 18,
   // 2026', 'Vendredi 18 septembre 2026', '2026年9月18日星期五'. The English
   // pattern it replaces put a Chinese weekday and month into 'Sunday October
@@ -34293,7 +34365,7 @@ function applyAirportConfigToBoard(iata) {
     var _cfgLangs = _pref('langs');
     var _savedSet = null;
     try { _savedSet = localStorage.getItem('fids_langs_' + String(iata || '').toUpperCase()); } catch (e2) {}
-    // v23986 — a phone keeps the one language its passenger picked
+    // v23995 — a phone keeps the one language its passenger picked
     // (fids_mobile_lang, else the browser's): the airport's configured pair
     // replaced it here at boot, so every phone read English.
     var _phoneSaved = null;
@@ -35126,7 +35198,7 @@ function _ocClockTime1(now, tz) {
   return BoardStrings.boardTime(now, tz).replace(/\s*([AP])\.?\s*M\.?/gi, function (_, p) { return p.toUpperCase() + 'M'; });
 }
 // Dual time '6:26PM | 18h 26' — PLAIN text (used in textContent contexts too).
-// v23986 — the board's own pair (BoardStrings.pairLangs), each half in its
+// v23995 — the board's own pair (BoardStrings.pairLangs), each half in its
 // language's clock: English 6:26PM, French 18h 26 (META.fr.hourMark), every
 // other 18:26. A board that does not lead in English reads its own clock
 // once. (It was always English | French, so an English-only board showed a
@@ -36060,7 +36132,7 @@ function mkCardLogo(code, airlineName) {
 
 function renderMobile() {
   // v23970 — a phone shows one language: the phone list is in it
-  // v23986 — its language AND its direction: an Arabic phone reads right to
+  // v23995 — its language AND its direction: an Arabic phone reads right to
   // left (it carried lang="ar" and ran left to right)
   try { var _mv = document.getElementById('mobileView'); if (_mv && BoardStrings.isLang(lang)) BoardStrings.setLang(_mv, lang); } catch (eL) {}
   const nowTs   = Date.now();
@@ -42962,7 +43034,7 @@ var ACCOR_BRAND_COLORS = {
 // v23046 — a second `var ACCOR_BRAND_NAMES = {…}` here once silently
 // REPLACED the fuller map declared earlier in the file ('Faena New York'
 // printed as 'Faena Faena'); it then became a run-time merge over it, which
-// is the same overwrite where no duplicate-key check can see it. v23986:
+// is the same overwrite where no duplicate-key check can see it. v23995:
 // its entries are in the one declaration above, with the values the merge
 // gave them (IBS 'ibis', EMB 'Emblème'), so a key is declared once.
 
@@ -45409,7 +45481,7 @@ function buildGateAdHtml(ad) {
   // v23942 — the Welcome card names the carriers whose emblem keeps its own
   // colours (_FB_WELCOME_OWN_COLOURS); the white-force never reaches them.
   if (ad.logoOwnColours) _adKeepColour = true;
-  // v23986 — A TILE IS NEVER WHITE-FORCED HERE EITHER. The Welcome card's
+  // v23995 — A TILE IS NEVER WHITE-FORCED HERE EITHER. The Welcome card's
   // fallback logo is the carrier's emblem file, and for Canadian North and
   // Air North that file is a TILE (/logos/airline-tiles/): an opaque square
   // with the mark knocked out of it. The white-force flattens the whole
@@ -50069,7 +50141,7 @@ function _renderBigCraft(el, ctx) {
                 return (iC ? '<span class="bigcraft-cap-sep"> | </span>' : '') + '<span>' + w + '</span>';
               }, '');
               var _capEsc = function (v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
-              // v23986 — the caption reads in the direction of its lead
+              // v23995 — the caption reads in the direction of its lead
               // language: on a board led by Arabic the whole line is right to
               // left, so the Arabic label comes first (at the right) and the
               // flight and the place follow it; each is isolated (<bdi>) so

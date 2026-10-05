@@ -10,7 +10,10 @@
 //   - checks that every Arabic half reads right to left,
 //   - checks that Japanese, Chinese and Arabic text is set in a stack that
 //     carries the board's script fonts (var(--fids-script-fonts)), so a host
-//     with no fonts of its own still draws it.
+//     with no fonts of its own still draws it,
+//   - checks that an operator's mark is never smaller than the words beside
+//     it (at least 1.2 times their size: the Rouge mark shrank to 22x12 px
+//     beside 12.5 px German and Portuguese labels).
 // Exit code 1 if anything fails. The pictures go in the pull request.
 //
 //   node tests/render/languages.mjs                 every surface, every set
@@ -131,10 +134,21 @@ const CHECK = `(async function () {
       if (!lz || !/^zh/.test(lz.getAttribute('lang'))) zhNotZh.push(t2.slice(0, 40));
     }
   }
+  // an operator's mark is never smaller than the words beside it
+  var logos = [];
+  document.querySelectorAll('img.v2-rc-opby-logo').forEach(function (im) {
+    var lb = im.getBoundingClientRect();
+    if (lb.width < 1 || lb.height < 1 || !shown(im)) return;
+    var box = im.closest('.v2-rc-acb-opby, .v2-rc-opby, .v2-rc-acb-cap');
+    var lab = box && box.querySelector('.v2-rc-opby-lline');
+    if (!lab) return;
+    var fs = parseFloat(getComputedStyle(lab).fontSize) || 0;
+    if (fs && lb.height < fs * 1.2) logos.push((im.getAttribute('alt') || 'a mark') + ' ' + Math.round(lb.width) + 'x' + Math.round(lb.height) + 'px beside ' + fs.toFixed(1) + 'px words');
+  });
   var fonts = {};
   document.fonts.forEach(function (f) { if (/Noto Sans (JP|SC|Arabic)/.test(f.family) && f.status === 'loaded') fonts[f.family.replace(/["']/g, '')] = 1; });
   var L = null; try { L = langs.slice(); } catch (e) {}
-  return JSON.stringify({ langs: L, clipped: clipped, notRtl: notRtl, zhNotZh: zhNotZh, script: script, scriptBare: scriptBare, fontsLoaded: Object.keys(fonts) });
+  return JSON.stringify({ langs: L, clipped: clipped, notRtl: notRtl, zhNotZh: zhNotZh, script: script, scriptBare: scriptBare, fontsLoaded: Object.keys(fonts), logos: logos });
 })()`;
 
 // ── the browser ───────────────────────────────────────────────────────────
@@ -208,6 +222,7 @@ try {
       for (const a of r.notRtl) problems.push('Arabic not right to left: ' + a);
       for (const z of r.zhNotZh) problems.push('Chinese not marked lang="zh" (drawn with Japanese glyph forms): ' + z);
       for (const s of r.scriptBare) problems.push('no script font in the stack: ' + s);
+      for (const g of (r.logos || [])) problems.push('a mark smaller than the words beside it: ' + g);
       const need = set.map((x) => ({ ja: 'Noto Sans JP', zh: 'Noto Sans SC', ar: 'Noto Sans Arabic' })[x]).filter(Boolean);
       for (const f of need) if (r.script && !r.fontsLoaded.includes(f)) problems.push(f + ' never loaded');
       console.log(`${problems.length ? '✖' : '✔'} ${name} ${l} → ${path.relative(process.cwd(), out)}`);

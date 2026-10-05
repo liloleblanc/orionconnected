@@ -233,7 +233,7 @@ test('(B) a flight moved away shows "now Gate 2 | maintenant porte 2", never a t
   const html = b._gateLaterStripHtml(m);
   const slot = html.split('<div class="gl-slot').slice(1)[1];
   assert.match(slot, /^ gl-moved" data-gl-to="2">/);
-  // each word marked with its language (v23986)
+  // each word marked with its language (v23995)
   assert.match(slot, /<span class="gl-arrow">→<\/span><span class="gl-now"><span class="gl-now-w" lang="en">now Gate<\/span><span class="gl-now-w" lang="fr">maintenant porte<\/span><\/span><span class="gl-pill">2<\/span>/);
   assert.doesNotMatch(slot, /gl-time/, 'a moved flight shows where it went, not when');
   assert.equal(text(slot.slice(slot.indexOf('<div class="gl-sub">'))), 'AC1987 · Toronto · YYZ');
@@ -302,7 +302,7 @@ test('a time that is not today carries its day; a delay with a new time shows th
   const b = board({ now: ADT(4, 18, 0), dep });
   const html = b._gateLaterStripHtml(b._gateLaterModel('4', ADT(4, 18, 0), 'YQM'));
   const slots = html.split('<div class="gl-slot').slice(1);
-  // each day word carries its language (v23986)
+  // each day word carries its language (v23995)
   assert.match(slots[0], /<span class="gl-time">5:25am<\/span><span class="gl-day" data-day-offset="1"><span class="gl-day-w" lang="en">Tomorrow<\/span><span class="gl-day-w" lang="fr">Demain<\/span><\/span>/);
   assert.match(slots[1], /<span class="gl-time">7:05am<\/span>/);
   assert.doesNotMatch(html, /delayed|retard/i, 'the strip carries no status, in words or colour');
@@ -344,7 +344,7 @@ test('only passenger airports make a city a twin: Atlanta and Denver read as the
 
 test('every new word ships in all nine board languages, French first in Québec', () => {
   const b = board({ now: ADT(5, 5, 0), dep: [] });
-  // v23986 — the strip's and the notice's words live in the one store
+  // v23995 — the strip's and the notice's words live in the one store
   // (board-strings.js): the gate's label table is frozen, and _gateLbl falls
   // through to the store.
   const LBL = Object.assign({}, require('../fids-current/js/board-strings.js').STR, new Function(src('var _GATE_LBL = {') + '\nreturn _GATE_LBL;')());
@@ -576,7 +576,7 @@ test('the heritage card keeps every word inside the shorter window: its picture 
 test('no label rewriter touches the strip\'s and the notice\'s day words', () => {
   // Measured on YQB gate 30: the V9 rewriter turned the strip's English
   // "Tomorrow" into the rotating language, so a French-first board read
-  // "Demain | Demain". It is gone (v23986): every word it repaired comes from
+  // "Demain | Demain". It is gone (v23995): every word it repaired comes from
   // the store in the board's own languages, and the board-languages guard
   // (B13) fails any timer that sweeps the page and rewrites its text.
   assert.equal(CORE.indexOf('function fixVisibleGateLabels()'), -1, 'the rewriter is gone');
