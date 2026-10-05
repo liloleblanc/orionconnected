@@ -28,9 +28,9 @@
 .fx-row:nth-child(even){background:#12293f}
 .fx-row:nth-child(odd){background:#0e2236}
 .fx-row>span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.fx-logo{width:2.5cqw;height:2.5cqw;border-radius:.35cqw;background:#fff;display:grid;place-items:center;overflow:hidden}
-.fx-logo img{width:86%;height:86%;object-fit:contain}
-.fx-logo i{display:none;font-style:normal;font-size:.95cqw;color:#0b1626;font-weight:900}
+.fx-logo{width:2.5cqw;height:2.5cqw;border-radius:.35cqw;background:transparent;display:grid;place-items:center;overflow:hidden}
+.fx-logo img{width:100%;height:100%;object-fit:contain}
+.fx-logo i{display:none;font-style:normal;font-size:.95cqw;color:#fff;font-weight:900}
 .fx-gate{color:#6cc7ff}
 .fx-row .status-good{color:#39d98f}
 .fx-row .status-warn{color:#f9c20b}
