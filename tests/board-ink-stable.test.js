@@ -449,7 +449,8 @@ const SNAP = `(function () {
       out[key] = { ink: cs.webkitTextFillColor || cs.color, ground: 'rgb(' + ground(el).slice(0, 3).join(', ') + ')',
                    row: tr.className.replace('fids-row-clickable', '').trim(), txt: el.textContent.trim().slice(0, 20),
                    op: Math.round(op * 1000) / 1000, rowOp: Math.round(rowOp * 1000) / 1000, even: even,
-                   sep: el.classList.contains('dest-iata-sep'), badge: el.classList.contains('gate-changed-badge') };
+                   sep: el.classList.contains('dest-iata-sep'), badge: el.classList.contains('gate-changed-badge'),
+                   pill: !!(el.closest && el.closest('.fids-dayplus')) };
     });
   });
   return out;
@@ -602,7 +603,13 @@ async function boardPass(t, chrome, palette) {
         if (seen[k] && seen[k].ink !== A.ink) problems.push(`${at} changed ${seen[k].ink} -> ${A.ink}`);
         if (!seen[k]) seen[k] = A;
         const row = A.row.split(' ')[0];
-        if (HISTORY.includes(row)) {
+        // The next-day "+1" (v23975) is white on its own dark pill on every row
+        // and theme, and the row-ink pass leaves it alone, so no row's ink rule
+        // applies to it; its contrast on the pill is still checked below. (It
+        // appears only while a fixture time crosses midnight in Ottawa.)
+        if (A.pill) {
+          if (A.ink !== WHITE) problems.push(`${at}: the +1 pill's ink is ${A.ink}, not white`);
+        } else if (HISTORY.includes(row)) {
           n.history++;
           if (A.rowOp !== 0.7) problems.push(`${at}: the history row fades to ${A.rowOp}, not 0.7`);
           if (A.badge) {
