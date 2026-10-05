@@ -55,7 +55,10 @@ const require = createRequire(import.meta.url);
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, '..', '..');
 const ROOT = path.join(REPO, 'fids-current');
-const LIVE = process.env.LIVE === '1' ? 'https://fids.orionconnected.com' : null;
+// LIVE=1 lets the boards read the live site's data; the site is fixed here
+// and is the only host a request for data is ever sent to.
+const LIVE = process.env.LIVE === '1';
+const LIVE_ORIGIN = 'https://fids.orionconnected.com';
 const W = 1680, H = 1050;
 const [onlySurface, onlySet] = process.argv.slice(2);
 
@@ -147,6 +150,20 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascr
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif',
   '.mp4': 'video/mp4', '.webm': 'video/webm', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.otf': 'font/otf' };
 const BLOCK = /\/(adsb|fr24)(\/|\b)|\/aircrafts\/|\/flights\/number\//i;
+// The live site's address for a request this server could not answer from
+// the checkout: the request's own path and query on the live site, and null
+// when the path is not a plain URL path (only the characters a path may hold
+// unescaped, and percent escapes). The host is never taken from the request:
+// the address is written with the site and its '/' first, so nothing in the
+// path or the query can move it, and it is checked again once built.
+const LIVE_PATH = /^\/[A-Za-z0-9\-._~%!$&'()*+,;=:@/]*$/;
+function liveUrl(reqUrl) {
+  let u;
+  try { u = new URL(reqUrl, 'http://127.0.0.1/'); } catch (e) { return null; }
+  if (!LIVE_PATH.test(u.pathname)) return null;
+  const target = new URL('https://fids.orionconnected.com/' + u.pathname.slice(1) + u.search);
+  return target.origin === LIVE_ORIGIN ? target : null;
+}
 function serve() {
   const server = http.createServer((req, res) => {
     const u = new URL(req.url, 'http://x');
@@ -160,7 +177,9 @@ function serve() {
       return fs.createReadStream(f).pipe(res);
     }
     if (!LIVE || req.method !== 'GET') { res.writeHead(404); return res.end(); }
-    https.get(LIVE + req.url, { headers: { 'User-Agent': 'orion-language-check' } }, (r) => {
+    const live = liveUrl(req.url);
+    if (!live) { res.writeHead(400); return res.end(); }
+    https.get(live, { headers: { 'User-Agent': 'orion-language-check' } }, (r) => {
       res.writeHead(r.statusCode || 502, { 'Content-Type': r.headers['content-type'] || 'application/octet-stream', 'Cache-Control': 'no-store' });
       r.pipe(res);
     }).on('error', () => { res.writeHead(502); res.end(); });
@@ -295,9 +314,13 @@ const CANVAS_HOOK = `(function () {
   } catch (e) {}
 })();`;
 
-const RE_AR = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
-const RE_KANA = /[぀-ヿｦ-ﾟ]/;
-const RE_HAN = /[㐀-䶿一-鿿豈-﫿]/;
+// The scripts, by code point. Written as escapes: a literal compatibility
+// ideograph (U+F900) is changed to its unified twin (U+8C48) by any tool that
+// normalises the file, and the Han range then ran from U+8C48 to U+FAFF,
+// across Hangul, Yi and the private-use icons.
+const RE_AR = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+const RE_KANA = /[\u3040-\u30FF\uFF66-\uFF9F]/;
+const RE_HAN = /[\u3400-\u4DBF\u4E00-\u9FFF\uF900-\uFAFF]/;
 
 // The findings for one reading of a screen showing the languages `set`.
 export function judge(texts, set, ap) {
@@ -343,7 +366,7 @@ export function judge(texts, set, ap) {
       if (w.length < 2) continue;
       // codes: YQM, AC, CYQM, MAX — but a word in capitals is a word
       if (/^[A-Z0-9]{2,4}$/.test(w) && (CODES.has(w) || /\d/.test(w) || !ANY_WORD.has(w.toLowerCase()))) continue;
-      if (/^(?:[A-Z]\.){2,}[A-Z]?$/.test(raw.replace(/\.$/, '.')) || /^(?:[A-Z]\.)+[A-Z]$/.test(w)) continue;   // initials: F.I.D.S.
+      if (/^(?:[A-Z]\.){2,}[A-Z]?$/.test(raw) || /^(?:[A-Z]\.)+[A-Z]$/.test(w)) continue;   // initials: F.I.D.S.
       if (/\d/.test(raw)) continue;
       if (allowed(w.toLowerCase())) continue;
       problems.push(`'${w}' is not a word of ${set.join('+')}: "${x.t.slice(0, 70)}" (${x.where})`);

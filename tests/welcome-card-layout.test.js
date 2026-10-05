@@ -30,6 +30,24 @@ const PUB = path.join(ROOT, 'fids-current');
 const SRC = fs.readFileSync(path.join(PUB, 'js', 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(PUB, 'css', 'display-overrides.css'), 'utf8');
 
+/**
+ * The text of a piece of markup: everything outside its tags. Scanned as a
+ * browser reads it, each tag running from '<' to the next '>', rather than
+ * by a pattern replace, which can leave a tag behind.
+ */
+function textOf(html) {
+  const s = String(html);
+  let out = '', i = 0;
+  for (;;) {
+    const a = s.indexOf('<', i);
+    if (a < 0) return out + s.slice(i);
+    out += s.slice(i, a);
+    const b = s.indexOf('>', a + 1);
+    if (b < 0) return out + s.slice(a);
+    i = b + 1;
+  }
+}
+
 /** The text of a brace block starting at `start` (strings and comments skipped). */
 function braceFrom(start, what) {
   assert.ok(start >= 0, what + ' must exist in fids-core.js');
@@ -131,7 +149,7 @@ test('the pick is _gateLbl\'s own, for every pair of board languages', () => {
         const ctx = sandbox([a, b]);
         // (_gateLbl marks each half it wraps with its language, markHalf: the
         // pick is the languages and the words, not that markup)
-        const viaLbl = vm.runInContext('_gateLbl("welcomeAboard", ' + fr + ', function (w, i, l) { return l + "=" + w; }, "|")', ctx).replace(/<[^>]*>/g, '');
+        const viaLbl = textOf(vm.runInContext('_gateLbl("welcomeAboard", ' + fr + ', function (w, i, l) { return l + "=" + w; }, "|")', ctx));
         const got = lines([a, b], fr).map(([l, t]) => l + '=' + t).join('|');
         assert.equal(got, viaLbl, a + ',' + b + (fr ? ' (Québec)' : ''));
       }

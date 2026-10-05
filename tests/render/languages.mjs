@@ -33,7 +33,8 @@ import { fileURLToPath } from 'node:url';
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '..', '..', 'fids-current');
 const OUT = path.join(HERE, 'out');
-const LIVE = 'https://fids.orionconnected.com';
+// The live site: the only host a request for data is ever sent to.
+const LIVE_ORIGIN = 'https://fids.orionconnected.com';
 const PORT = 8400 + Math.floor(Math.random() * 90);
 const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
 const W = 1680, H = 1050;
@@ -57,6 +58,21 @@ const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'application/javascr
   '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.gif': 'image/gif',
   '.mp4': 'video/mp4', '.webm': 'video/webm', '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf', '.otf': 'font/otf' };
 
+// The live site's address for a request this server could not answer from
+// the checkout: the request's own path and query on the live site, and null
+// when the path is not a plain URL path (only the characters a path may hold
+// unescaped, and percent escapes). The host is never taken from the request:
+// the address is written with the site and its '/' first, so nothing in the
+// path or the query can move it, and it is checked again once built.
+const LIVE_PATH = /^\/[A-Za-z0-9\-._~%!$&'()*+,;=:@/]*$/;
+function liveUrl(reqUrl) {
+  let u;
+  try { u = new URL(reqUrl, 'http://127.0.0.1/'); } catch (e) { return null; }
+  if (!LIVE_PATH.test(u.pathname)) return null;
+  const target = new URL('https://fids.orionconnected.com/' + u.pathname.slice(1) + u.search);
+  return target.origin === LIVE_ORIGIN ? target : null;
+}
+
 // ── the server: this checkout's files, the live site's data ──────────────
 const server = http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
@@ -70,7 +86,9 @@ const server = http.createServer((req, res) => {
     return fs.createReadStream(f).pipe(res);
   }
   if (req.method !== 'GET') { res.writeHead(405); return res.end(); }
-  https.get(LIVE + req.url, { headers: { 'User-Agent': 'orion-language-pictures' } }, (r) => {
+  const live = liveUrl(req.url);
+  if (!live) { res.writeHead(400); return res.end(); }
+  https.get(live, { headers: { 'User-Agent': 'orion-language-pictures' } }, (r) => {
     res.writeHead(r.statusCode || 502, { 'Content-Type': r.headers['content-type'] || 'application/octet-stream', 'Cache-Control': 'no-store' });
     r.pipe(res);
   }).on('error', () => { res.writeHead(502); res.end(); });

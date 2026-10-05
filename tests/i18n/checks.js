@@ -2732,8 +2732,14 @@ function codeShaped(v) {
   if (/^\s*\.{0,2}\/[\w.~%\-\/?=&#]*\s*$/.test(s)) return true;                 // a path
   if (/^\s*#[A-Za-z][\w-]*\s*$/.test(s)) return true;                           // #id
   // a selector: lower-case element or .class/#id start, then selector
-  // punctuation with a name right after it, and no free-standing word
-  const SEL = /^\s*([.#]?[a-z_][\w-]*|\*)((\s*[>+~]\s*|\s+|[.#:]{1,2}|\[)[a-z_*\-\[][\w\-="'()\]^$|*~:.]*)*\s*[{,]?\s*$/;
+  // punctuation with a name right after it, and no free-standing word.
+  // Each step is one separator, a name's first character, then the rest of
+  // the name. A separator that is itself a name character ('.', ':', '~')
+  // can only open the first step: after that the previous name has taken
+  // it, so every later step opens on a character no name holds (white
+  // space, '>', '+', '#', '['). One way to read any selector, so the match
+  // never backtracks through the ways a long one could be cut up.
+  const SEL = /^\s*([.#]?[a-z_][\w-]*|\*)(?:(?:[.:][.#:]?|~\s*)[a-z_*\-\[][\w\-="'()\]^$|*~:.]*)?(?:(?:\s*[>+]\s*|\s+(?:~\s*)?|#[.#:]?|\[)[a-z_*\-\[][\w\-="'()\]^$|*~:.]*)*\s*(?:[{,]\s*)?$/;
   if (SEL.test(s) && /[.#\[>:]/.test(s) && !/[.:]\s*$/.test(s) && !/\p{Lu}/u.test(s.replace(/[.#][\w-]+/g, ''))) return true;
   // a selector list: '#fidsTable tbody td.td-time, #fidsTable tbody td.td-status'
   if (/,/.test(s)) {
@@ -2749,7 +2755,12 @@ function codeShaped(v) {
 
 // Code, not words: font stacks, CSS declarations and values, SVG attribute
 // values, HTML attribute lists outside a tag, MIME types, units of CSS.
-const CODE_LIKE2 = /^\s*use strict\s*$|^\s*[#.][A-Za-z][\w-]*(\s*[>+~]?\s*[a-z][\w.:()-]*)*\s*[{,]?\s*$|\{\s*[a-z-]+\s*:|^\s*(normal|multiply|screen|overlay)(,\s*(normal|multiply|screen|overlay))*\s*$|color-mix\(|^\s*(left|right|center|top|bottom)(\s+(left|right|center|top|bottom|\d+%))?\s*$|\b(var|let|const)\s+\w+\s*=|\bthis\.\w+|\btypeof\s|\bfunction\s*\(|^\s*(zoom|zoomend|zoomstart|moveend|movestart|viewreset|resize|load|click|touchstart|touchend|mouseenter|mouseleave)(\s+(zoom|zoomend|zoomstart|moveend|movestart|viewreset|resize|load|click|touchstart|touchend|mouseenter|mouseleave))+\s*$|^\s*(Geist|Inter|Roboto|Arial|Helvetica)\s*$/i;
+// The selector shape ('#id name.x > name'): after the first name, either
+// nothing but name characters, or a '.', ':' or parenthesis once a letter
+// has come; then steps that each open on white space or a combinator. One
+// way to read any string, so the match never backtracks through the ways a
+// long one could be cut up.
+const CODE_LIKE2 = /^\s*use strict\s*$|^\s*[#.][A-Za-z](?:[\d_-]*[a-z][\w-]*[.:()][\w.:()-]*|[\w-]*)(?:(?:\s+|\s*[>+~]\s*)[a-z][\w.:()-]*)*\s*(?:[{,]\s*)?$|\{\s*[a-z-]+\s*:|^\s*(normal|multiply|screen|overlay)(,\s*(normal|multiply|screen|overlay))*\s*$|color-mix\(|^\s*(left|right|center|top|bottom)(\s+(left|right|center|top|bottom|\d+%))?\s*$|\b(var|let|const)\s+\w+\s*=|\bthis\.\w+|\btypeof\s|\bfunction\s*\(|^\s*(zoom|zoomend|zoomstart|moveend|movestart|viewreset|resize|load|click|touchstart|touchend|mouseenter|mouseleave)(\s+(zoom|zoomend|zoomstart|moveend|movestart|viewreset|resize|load|click|touchstart|touchend|mouseenter|mouseleave))+\s*$|^\s*(Geist|Inter|Roboto|Arial|Helvetica)\s*$/i;
 const CODE_LIKE = /,\s*(sans-serif|serif|monospace|system-ui|cursive)\b|-apple-system|BlinkMacSystemFont|!important|\b\d+(\.\d+)?(px|em|rem|vh|vw|ms|deg)\b|rgba?\(|hsla?\(|var\(--|drop-shadow\(|translate[XY]?\(|cubic-bezier|\b(xMinYMid|xMidYMid|xMaxYMid)\b|\b(autoplay|playsinline|muted|loop|preload)\b.*\b(autoplay|playsinline|muted|loop|preload)\b|^\s*(thead|tbody|tr|td|th|div|span|img|svg)\b[\s>.#]|\b(application|image|text|video|font)\/[a-z0-9.+-]+/i;
 const CSS_LIKE = /:(not|where|is|has)\(|^\s*[*.#\[][^\s]*\s*[{,]|\{[^}]*:[^}]*[;}]|^\s*['"]?\)?;?\s*--?[a-z0-9-]+\s*:|^\s*[a-z][\w-]*\s*\{|format\(|@font-face|url\(|^[^<>]*\)\s*;|^\s*\.(jpe?g|png|svg|webp|gif|mp4)\b/i;
 

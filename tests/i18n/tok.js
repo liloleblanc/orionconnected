@@ -187,10 +187,13 @@ function tokenize(src, opts) {
 }
 
 // Inline <script> blocks of an HTML page, with the line each starts on.
-// JSON and template scripts are not JavaScript and are skipped.
+// JSON and template scripts are not JavaScript and are skipped. A block ends
+// where a browser ends it: at the first "</script" (any case) that is followed
+// by white space, "/" or ">", and runs on to the next ">" ("</script >",
+// "</SCRIPT\n foo>").
 function htmlScripts(html) {
   const out = [];
-  const re = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi;
+  const re = /<script\b([^>]*)>([\s\S]*?)<\/script(?:[\s/][^>]*)?>/gi;
   let m;
   while ((m = re.exec(html))) {
     const attrs = m[1];

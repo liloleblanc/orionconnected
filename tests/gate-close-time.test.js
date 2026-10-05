@@ -48,6 +48,24 @@ const workerPath = path.join(root, 'workers', 'fids-proxy.js');
 const MIN = 60000;
 const LANGS = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
 
+/**
+ * The text of a piece of markup: everything outside its tags. Scanned as a
+ * browser reads it, each tag running from '<' to the next '>', rather than
+ * by a pattern replace, which can leave a tag behind.
+ */
+function textOf(html) {
+  const s = String(html);
+  let out = '', i = 0;
+  for (;;) {
+    const a = s.indexOf('<', i);
+    if (a < 0) return out + s.slice(i);
+    out += s.slice(i, a);
+    const b = s.indexOf('>', a + 1);
+    if (b < 0) return out + s.slice(a);
+    i = b + 1;
+  }
+}
+
 // From `start` to the brace that closes the first one opened after it.
 // Strings and comments are skipped so a brace inside either cannot end it.
 function braceFrom(SRC, start, what) {
@@ -361,7 +379,7 @@ test('(1) the ticker states no airport-wide number; a one-airline board says tha
     'return { _tickerCloseLine, updateTicker, TICKER_MSG: BoardStrings.LISTS.ticker, set: function (a) { filterAirline = a; } };'
   ].join('\n');
   // updateTicker writes markup (each line marked with its language): read its text
-  const span = { _h: '', set innerHTML(v) { this._h = v; }, get textContent() { return this._h.replace(/<[^>]*>/g, '').replace(/&amp;/g, '&'); } };
+  const span = { _h: '', set innerHTML(v) { this._h = v; }, get textContent() { return textOf(this._h).replace(/&amp;/g, '&'); } };
   let apNow = 'YQM';
   const doc = { querySelector: () => span, getElementById: () => ({ value: apNow }) };
   const mk = (langs) => new Function('langs', 'document', 'AIRLINE_NAME', 'window', 'BoardStrings', 'var filterAirline = "";\n' + src)(
