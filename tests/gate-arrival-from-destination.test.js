@@ -115,7 +115,7 @@ test('every Moncton departure of 2026-10-04 with a far-end list gets that airpor
   for (const [f, day, to, sched, gate, term] of want) {
     const d = yqmDep(f, day);
     assert.equal(d.to, to, f + ' flies to ' + to);
-    const a = m.farArrAnswer(f, to, 'YQM', m.farArrPick(ix[to], f, 'YQM', d.ts));
+    const a = m.farArrAnswer(f, to, 'YQM', m.farArrPick(ix[to], f, 'YQM', d.ts, to));
     assert.equal(a.found, true, `${f} Oct ${day} is found at ${to}`);
     assert.equal(a.sched, sched, `${f} Oct ${day}: ${to}'s own scheduled arrival`);
     assert.equal(a.gate, gate, `${f} Oct ${day}: ${to}'s arrival gate`);
@@ -168,6 +168,155 @@ test('the pick: same number, from our airport, the first arrival after we leave'
   assert.deepEqual([twin.sl, twin.g], ['2026-10-04 20:20', '25']);
   // A far end that names no origin (Billy Bishop) is matched on number and time.
   assert.equal(m.farArrPick(ix.YTZ, 'PD2294', 'YQM', yqmDep('PD2294', 5).ts).sl, '2026-10-05 07:45');
+});
+
+// THE WINDOW CLOSES AT THE ROUTE'S BLOCK TIME. On 2026-10-05 the live /fararr
+// answered AC7753, Moncton to Ottawa, asked about with a 13:10 departure,
+// with the NEXT day's 08:09 arrival: 19 h 59 min on, inside the 20 hours the
+// window allowed on every route, for the gate to print with Tomorrow. The
+// window now closes at 1.6 x the distance estimate (850 km/h + 25 min) plus
+// 90 minutes, never later than 20 hours, and keeps 20 hours where an airport
+// has no coordinates (farArrMaxMs).
+const H = 3600000, MIN = 60000;
+const farRow = (n, o, s) => ({ n, o, s, sl: 'x', r: null, rl: null, t: null, g: null, st: 'scheduled' });
+// The edge's arithmetic, written out once more so a change to it is seen.
+const edgeOf = (km) => Math.min(20 * H, Math.round((1.6 * (km / 850 * 60 + 25) + 90) * MIN));
+const BOARD_COORDS = (() => {
+  const w = {};
+  new Function('window', fs.readFileSync(path.join(root, 'fids-current', 'js', 'airport-coords.js'), 'utf8'))(w);
+  return w.AIRPORT_COORDS;
+})();
+const kmOf = (a, b) => {
+  const p = BOARD_COORDS[a], q = BOARD_COORDS[b], r = Math.PI / 180;
+  const h = Math.sin((q[0] - p[0]) * r / 2) ** 2 + Math.cos(p[0] * r) * Math.cos(q[0] * r) * Math.sin((q[1] - p[1]) * r / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.sqrt(h));
+};
+
+test('tomorrow\'s instance of a short hop is never this departure\'s arrival', async () => {
+  const ix = await indexes();
+  const { m } = ix;
+  // The live case, on the fixture's day: asked with 13:10, after Ottawa's
+  // 08:09 row for that day; the next day's 08:09 is 19 h 59 min on.
+  const late = Date.parse('2026-10-04T13:10:00-03:00');
+  assert.equal(m.farArrPick(ix.YOW, 'AC7753', 'YQM', late).sl, '2026-10-05 08:09', 'what the 20-hour window took');
+  assert.equal(m.farArrPick(ix.YOW, 'AC7753', 'YQM', late, 'YOW'), null, 'not tomorrow\'s 08:09');
+  assert.deepEqual(m.farArrAnswer('AC7753', 'YOW', 'YQM', m.farArrPick(ix.YOW, 'AC7753', 'YQM', late, 'YOW')),
+    { f: 'AC7753', to: 'YOW', from: 'YQM', found: false }, 'a dash, not a time from another day');
+  for (const t of ['12:55', '11:00']) assert.equal(m.farArrPick(ix.YOW, 'AC7753', 'YQM', Date.parse(`2026-10-04T${t}:00-03:00`), 'YOW'), null, t);
+  // The same for every Moncton departure that has a far-end list: asked
+  // after its own row has gone by, with only the next day's left, inside the
+  // old 20 hours.
+  for (const [f, to] of [['AC659', 'YUL'], ['AC2037', 'YUL'], ['PD2370', 'YOW'], ['PD2382', 'YHU'], ['PD2294', 'YTZ'], ['WS813', 'YYC'], ['PB924', 'YDF']]) {
+    const today = m.farArrPick(ix[to], f, 'YQM', yqmDep(f, 4).ts, to);
+    assert.ok(today, `${f} Oct 4 has its row at ${to}`);
+    const list = ix[to].concat([Object.assign({}, today, { s: today.s + 24 * H, sl: 'the next day' })]);
+    const asked = today.s + 4 * H;
+    assert.ok(m.farArrPick(list, f, 'YQM', asked), `${f}: the 20-hour window took the next day's`);
+    assert.equal(m.farArrPick(list, f, 'YQM', asked, to), null, `${f} to ${to}: not the next day's`);
+  }
+  // The edge for Moncton-Ottawa (857 km): 1.6 x (60.5 + 25) + 90 = 227 min.
+  const edge = m.farArrMaxMs('YQM', 'YOW');
+  assert.equal(Math.round(edge / MIN), 227);
+  assert.equal(edge, edgeOf(m.farArrKm('YQM', 'YOW')));
+  const dep = yqmDep('AC7753', 5).ts;
+  assert.ok(m.farArrPick([farRow('AC7753', 'YQM', dep + edge)], 'AC7753', 'YQM', dep, 'YOW'), 'at the edge: taken');
+  assert.equal(m.farArrPick([farRow('AC7753', 'YQM', dep + edge + MIN)], 'AC7753', 'YQM', dep, 'YOW'), null, 'a minute past it: not');
+  // The route asks with the far end: AC7754, Ottawa to Moncton, asked with
+  // 23:00 after Moncton's 18:38 row; the next day's is 18 h 38 min on.
+  const worker = (await load()).default;
+  const kv = { get: async () => null, put: async () => {}, list: async () => ({ keys: [] }), delete: async () => {} };
+  const env = new Proxy({}, { get: (t, k) => (k === 'then' ? undefined : kv) });
+  const yqm = JSON.stringify(fx('yqm-arr.json').list.filter((r) => !r.remembered));
+  const ask = async (q) => (await worker.fetch(new Request('https://fids-proxy.example/fararr?' + q, { headers: { Origin: 'https://fids.orionconnected.com' } }),
+    env, { waitUntil() {}, passThroughOnException() {} })).json();
+  await withNet(() => new Response(yqm, { status: 200 }), async () => {
+    assert.deepEqual(await ask('f=AC7754&to=YQM&from=YOW&dep=' + Date.parse('2026-10-04T23:00:00-04:00')),
+      { f: 'AC7754', to: 'YQM', from: 'YOW', found: false });
+    const today = await ask('f=AC7754&to=YQM&from=YOW&dep=' + Date.parse('2026-10-04T16:00:00-04:00'));
+    assert.deepEqual([today.found, today.sched], [true, '2026-10-04 18:38'], 'today\'s row is still found');
+  });
+});
+
+test('today\'s instance and every real block time are inside the edge', async () => {
+  const m = await load();
+  // Real scheduled block times, minutes. Moncton's own are 2026-10-04/05
+  // (its departures fixture against each far end's fixture); the rest are
+  // the airlines' published timetables.
+  // Halifax is the route's published 57 minutes (AC7200 is the flight
+  // Moncton listed there on 2026-10-03).
+  const real = [
+    ['YQM', 'YHZ', 57, 'AC7200'], ['YQM', 'YUL', 95, 'AC2037'], ['YQM', 'YDF', 100, 'PB924'],
+    ['YQM', 'YHU', 115, 'PD2382'], ['YQM', 'YOW', 119, 'AC7753'], ['YQM', 'YYZ', 142, 'AC1983'],
+    ['YQM', 'YYZ', 141, 'AC647'], ['YQM', 'YYZ', 140, 'F8671'], ['YQM', 'YTZ', 155, 'PD2294'],
+    ['YQM', 'MCO', 208, 'TS2328'], ['YQM', 'YYC', 325, 'WS813'], ['YHZ', 'LHR', 355, 'AC868'],
+    ['YYZ', 'LHR', 440, 'AC858'], ['YVR', 'SYD', 940, 'AC33']
+  ];
+  for (const [a, b, mins, f] of real) {
+    const edge = m.farArrMaxMs(a, b);
+    assert.ok(edge < 20 * H || b === 'SYD', `${a}-${b} has its own edge`);
+    assert.ok(mins * MIN + 90 * MIN <= edge, `${f} ${a}-${b}: ${mins} min is at least 90 min inside ${Math.round(edge / MIN)}`);
+    const t0 = Date.parse('2026-10-05T12:00:00Z');
+    assert.ok(m.farArrPick([farRow(f, a, t0 + mins * MIN)], f, a, t0, b), `${f} is taken`);
+    assert.equal(m.farArrPick([farRow(f, a, t0 + mins * MIN + 24 * H)], f, a, t0, b), null, `${f}: tomorrow's is not`);
+  }
+  // One stop under the same number still fits: St. John's-Deer Lake-Moncton
+  // (PB923), 200 min against 234.
+  assert.ok(m.farArrMaxMs('YYT', 'YQM') - 200 * MIN >= 30 * MIN);
+  // Moncton's other sun routes, by the same arithmetic on the board's own
+  // coordinates (neither airport has a list /fararr reads): Punta Cana TS626
+  // 275 min, Cancún TS682 325 min.
+  for (const [b, mins] of [['PUJ', 275], ['CUN', 325]]) assert.ok(mins * MIN + 90 * MIN <= edgeOf(kmOf('YQM', b)), b);
+  // Long-haul: the edge stops at the old 20 hours and still takes them.
+  assert.equal(m.farArrMaxMs('YVR', 'SYD'), 20 * H);
+  assert.equal(Math.round(m.farArrMaxMs('YHZ', 'LHR') / MIN), 648);
+  const ac33 = Date.parse('2026-10-05T22:55:00-07:00');
+  assert.ok(m.farArrPick([farRow('AC33', 'YVR', ac33 + 15 * H + 40 * MIN)], 'AC33', 'YVR', ac33, 'SYD'));
+  const ac868 = Date.parse('2026-10-05T11:05:00-03:00');
+  assert.ok(m.farArrPick([farRow('AC868', 'YHZ', ac868 + 5 * H + 55 * MIN)], 'AC868', 'YHZ', ac868, 'LHR'));
+  assert.equal(m.farArrPick([farRow('AC868', 'YHZ', ac868 + 11 * H)], 'AC868', 'YHZ', ac868, 'LHR'), null, 'eleven hours is not a Halifax-London block');
+  assert.ok(m.farArrPick([farRow('AC868', 'YHZ', ac868 + 11 * H)], 'AC868', 'YHZ', ac868), 'which the 20-hour window took');
+  // No edge anywhere is later than 20 hours or earlier than the 20-minute floor.
+  const codes = Object.keys(m._farArrCoords);
+  for (const a of codes) for (const b of codes) {
+    const e = m.farArrMaxMs(a, b);
+    assert.ok(e <= 20 * H && e > 20 * MIN, `${a}-${b}`);
+  }
+});
+
+test('every far end /fararr reads has coordinates, the board\'s own', async () => {
+  const m = await load();
+  const farEnds = Object.keys(m._authorityHandlers).map((k) => k.toUpperCase()).concat(['YHZ', 'YQM', 'YYZ', 'YUL', 'YHU', 'YTZ']);
+  assert.ok(farEnds.length > 50);
+  for (const c of farEnds) {
+    assert.ok(m.farArrHas(c), c + ' is a far end');
+    assert.ok(Array.isArray(m._farArrCoords[c]), c + ' has coordinates: add it to FARARR_COORDS with its far-end feed');
+  }
+  for (const c of ['EWR', 'LGA', 'TPA']) assert.ok(m._farArrCoords[c], c + ', a board airport, has coordinates');
+  for (const [c, v] of Object.entries(m._farArrCoords)) assert.deepEqual(v, BOARD_COORDS[c], c + ' is where the board puts it');
+  assert.equal(Math.round(m.farArrKm('YQM', 'YOW')), Math.round(kmOf('YQM', 'YOW')));
+});
+
+test('with no coordinates the window keeps the old 20 hours', async () => {
+  const m = await load();
+  // Narita and Dubai have no far-end list and no coordinates here; a board
+  // that sent no origin, or no far end, measures nothing either.
+  assert.equal(m.farArrMaxMs('YUL', 'NRT'), 20 * H);
+  assert.equal(m.farArrMaxMs('YYZ', 'DXB'), 20 * H);
+  assert.equal(m.farArrMaxMs('', 'YOW'), 20 * H, 'no origin');
+  assert.equal(m.farArrMaxMs('YQM', undefined), 20 * H, 'no far end');
+  assert.ok(Number.isNaN(m.farArrKm('YQM', 'NRT')));
+  // AC5 Montréal-Narita, 13 h 50 min, and EK242 Toronto-Dubai, 13 h 40 min,
+  // are taken; tomorrow's are not; the old edge holds at exactly 20 hours.
+  const dep = Date.parse('2026-10-05T12:45:00-04:00');
+  assert.ok(m.farArrPick([farRow('AC5', 'YUL', dep + 13 * H + 50 * MIN)], 'AC5', 'YUL', dep, 'NRT'));
+  assert.ok(m.farArrPick([farRow('EK242', 'YYZ', dep + 13 * H + 40 * MIN)], 'EK242', 'YYZ', dep, 'DXB'));
+  assert.equal(m.farArrPick([farRow('AC5', 'YUL', dep + 37 * H + 50 * MIN)], 'AC5', 'YUL', dep, 'NRT'), null);
+  assert.ok(m.farArrPick([farRow('AC5', 'YUL', dep + 20 * H)], 'AC5', 'YUL', dep, 'NRT'));
+  assert.equal(m.farArrPick([farRow('AC5', 'YUL', dep + 20 * H + MIN)], 'AC5', 'YUL', dep, 'NRT'), null);
+  // A request that names no origin keeps exactly the old window: no better
+  // than before, never worse.
+  const ix = m.farArrFromAdb(fx('yow-arr.json').arrivals);
+  assert.equal(m.farArrPick(ix, 'AC7753', '', Date.parse('2026-10-04T13:10:00-03:00'), 'YOW').sl, '2026-10-05 08:09');
 });
 
 test('each far end keeps its own clocks, its revisions and its words', async () => {
@@ -442,7 +591,7 @@ test('the worker route: public, pattern-checked, always an answer, no new upstre
   assert.match(WORKER, /if \(path === "\/fararr"\) \{/);
   const route = WORKER.slice(WORKER.indexOf('if (path === "/fararr") {'), WORKER.indexOf('// ── ADS-B LIVE POSITIONS'));
   assert.match(route, /!AC_FLIGHT_RE\.test\(f\) \|\| !\/\^\[a-z\]\{3\}\$\/\.test\(to\)/);
-  assert.match(route, /farArrPick\(index, f, from, dep\)/);
+  assert.match(route, /farArrPick\(index, f, from, dep, to\)/);
   assert.doesNotMatch(route, /fr24|adsb|aerodatabox|rapidapi|flightview|aeroapi/i, 'no FR24, no banned provider');
   const list = fnSource(WORKER, 'farArrList');
   assert.doesNotMatch(list, /fr24|adsb|fetch\(/i, 'only the feeds the boards already read');
@@ -462,18 +611,18 @@ test('Moncton is a far end: flights into YQM read cyqm.ca\'s own arrivals', asyn
   const rows = m.farArrYqmRows(fx('yqm-arr.json').list);
   assert.ok(rows.length > 20);
   // Montréal-Trudeau's gate: AC2040 to Moncton, due 21:38 at Moncton's gate 4.
-  const ac2040 = m.farArrAnswer('AC2040', 'YQM', 'YUL', m.farArrPick(rows, 'AC2040', 'YUL', Date.parse('2026-10-04T19:15:00-04:00')));
+  const ac2040 = m.farArrAnswer('AC2040', 'YQM', 'YUL', m.farArrPick(rows, 'AC2040', 'YUL', Date.parse('2026-10-04T19:15:00-04:00'), 'YQM'));
   assert.deepEqual([ac2040.found, ac2040.sched, ac2040.schedTs, ac2040.rev, ac2040.gate, ac2040.term],
     [true, '2026-10-04 21:38', Date.parse('2026-10-04T21:38:00-03:00'), null, '4', null]);
   // localTimestamp is Moncton's wall clock written as UTC: never shifted.
   assert.equal(rows.find((e) => e.n === 'PD2373' && e.sl === '2026-10-04 16:33').s, Date.parse('2026-10-04T16:33:00-03:00'));
   // "Early at 5:07 PM": the revised clock, with its word.
-  const ws812 = m.farArrAnswer('WS812', 'YQM', 'YYC', m.farArrPick(rows, 'WS812', 'YYC', Date.parse('2026-10-04T09:10:00-06:00')));
+  const ws812 = m.farArrAnswer('WS812', 'YQM', 'YYC', m.farArrPick(rows, 'WS812', 'YYC', Date.parse('2026-10-04T09:10:00-06:00'), 'YQM'));
   assert.deepEqual([ws812.sched, ws812.rev, ws812.status, ws812.gate], ['2026-10-04 17:20', '2026-10-04 17:07', 'early', '1']);
   const shown = farArrival(ws812, { effDepTs: Date.parse('2026-10-04T09:10:00-06:00') });
   assert.deepEqual([shown.shown, shown.sched, shown.revised, shown.early], ['17:07', '17:20', true, true]);
   // Pearson's gate the next evening takes the next day's row.
-  assert.equal(m.farArrPick(rows, 'AC1984', 'YYZ', Date.parse('2026-10-05T14:35:00-04:00')).sl, '2026-10-05 17:23');
+  assert.equal(m.farArrPick(rows, 'AC1984', 'YYZ', Date.parse('2026-10-05T14:35:00-04:00'), 'YQM').sl, '2026-10-05 17:23');
   // From another origin, not ours.
   assert.equal(m.farArrPick(rows, 'AC2040', 'YYZ', Date.parse('2026-10-04T19:15:00-04:00')), null);
   // The list /fararr reads is cyqm.ca's own, through the fetch the YQM boards

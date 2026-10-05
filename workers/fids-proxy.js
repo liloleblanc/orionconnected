@@ -3194,23 +3194,104 @@ async function farArrList(code, env) {
   return some(farArrFromAdb(await h.list("arr", env)));
 }
 __name(farArrList, "farArrList");
+// ── HOW LATE OUR DEPARTURE'S ARRIVAL CAN BE ────────────────────────────────
+// The pick's window used to close 20 hours after our scheduled departure on
+// every route. On 2026-10-05 /fararr was asked for Moncton's AC7753 to Ottawa
+// with a 13:10 departure; Ottawa's list had no row for it after 13:10 that
+// day, so the NEXT day's 08:09 arrival, 19 h 59 min on, fitted the window and
+// was answered as this departure's arrival, for the gate to print with
+// Tomorrow. A two-hour hop cannot arrive 20 hours later.
+//
+// The window now closes at the route's scheduled block time, generously:
+// the great-circle distance at 850 km/h plus 25 minutes (the arithmetic of the
+// board's old estimate), times 1.6, plus 90 minutes, and never later than the
+// old 20 hours. Both ends are epoch ms, so time zones do not enter it, and
+// both are SCHEDULED times (the board asks with our scheduled departure and
+// the window reads the far end's scheduled arrival), so a delay moves neither
+// and the edge can sit near the real block time.
+//
+// Real scheduled block times against the edge, in minutes (block / edge):
+//   YQM-YHZ   57 / 149    YQM-YUL   95 / 210    YQM-YDF  100 / 203
+//   YQM-YHU  115 / 207    YQM-YOW  119 / 227    YQM-YYZ  142 / 266
+//   YQM-YTZ  155 / 264    YQM-MCO  208 / 406    YQM-YYC  325 / 537
+//   YHZ-LHR  355 / 648    YYZ-LHR  440 / 775    YVR-SYD  940 / 1200
+// The closest of them is 92 minutes clear. Moncton's other sun routes clear
+// the same arithmetic (Punta Cana 275 / 478, Cancún 325 / 518), though neither
+// airport publishes a list we read. The slowest schedule found is 1.58
+// times the estimate, on a short hop, which the 90 minutes absorbs; the 90
+// also covers an hour's error in a far end's clock and one intermediate stop
+// under the same number (St. John's-Deer Lake-Moncton is scheduled 200
+// minutes against a 234-minute edge). The 20-hour ceiling still clears the
+// longest scheduled flight there is (New York-Singapore, 19 h 15 min).
+// Tomorrow's instance of a daily flight lands a day plus its block after
+// today's, far past any of these edges.
+//
+// FARARR_COORDS is where each airport is, [lat, lon] to two decimals, copied
+// from the board's own table (fids-current/js/airport-coords.js): every far end
+// farArrHas reads, plus EWR, LGA and TPA, board airports whose feeds the board
+// reads itself. A test keeps every far end listed and every value equal to the
+// board's. When either airport is not listed, or the board sent no origin,
+// there is no distance to measure and the window keeps the old 20 hours: the
+// fallback, never looser than before.
+const FARARR_COORDS = {
+  AUS: [30.2, -97.66], BOS: [42.36, -71.01], CLT: [35.21, -80.94], DCA: [38.85, -77.04],
+  DEN: [39.86, -104.67], DTW: [42.21, -83.35], DUB: [53.42, -6.27], EDI: [55.95, -3.37],
+  EWR: [40.69, -74.17], HBA: [-42.84, 147.51], IAD: [38.94, -77.46], IAH: [29.98, -95.34],
+  JFK: [40.64, -73.78], KEF: [63.99, -22.62], LAS: [36.08, -115.15], LGA: [40.77, -73.87],
+  LHR: [51.47, -0.46], MAN: [53.35, -2.27], MCI: [39.3, -94.71], MCO: [28.43, -81.31],
+  MIA: [25.79, -80.29], MSP: [44.88, -93.22], MSY: [29.99, -90.26], ORD: [41.97, -87.91],
+  PDX: [45.59, -122.6], PHL: [39.87, -75.24], PHX: [33.43, -112.01], RDU: [35.88, -78.79],
+  SAN: [32.73, -117.19], SEA: [47.45, -122.31], SFO: [37.62, -122.38], SLC: [40.79, -111.98],
+  SYD: [-33.95, 151.18], TPA: [27.98, -82.53], YDF: [49.21, -57.39], YEG: [53.31, -113.58],
+  YFC: [45.87, -66.54], YHM: [43.17, -79.93], YHU: [45.52, -73.42], YHZ: [44.88, -63.51],
+  YKA: [50.7, -120.44], YLW: [49.96, -119.38], YMM: [56.65, -111.22], YOW: [45.32, -75.67],
+  YQB: [46.79, -71.39], YQM: [46.11, -64.68], YQR: [50.43, -104.67], YQT: [48.37, -89.32],
+  YQX: [48.94, -54.57], YQY: [46.16, -60.05], YSJ: [45.32, -65.89], YTZ: [43.63, -79.4],
+  YUL: [45.47, -73.74], YVR: [49.19, -123.18], YXE: [52.17, -106.7], YXS: [53.89, -122.68],
+  YXX: [49.03, -122.36], YYC: [51.11, -114.02], YYG: [46.29, -63.12], YYJ: [48.65, -123.43],
+  YYT: [47.62, -52.75], YYZ: [43.68, -79.63], YZF: [62.46, -114.44], ZRH: [47.46, 8.55]
+};
+const FARARR_MAX_MS = 20 * 3600000;
+// Great-circle kilometres between two listed airports, NaN when either is not.
+function farArrKm(a, b) {
+  const p = FARARR_COORDS[String(a || "").toUpperCase()];
+  const q = FARARR_COORDS[String(b || "").toUpperCase()];
+  if (!p || !q) return NaN;
+  const r = Math.PI / 180;
+  const dLat = (q[0] - p[0]) * r, dLon = (q[1] - p[1]) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(p[0] * r) * Math.cos(q[0] * r) * Math.sin(dLon / 2) ** 2;
+  return 2 * 6371 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+__name(farArrKm, "farArrKm");
+// The latest scheduled arrival, in ms after our scheduled departure, that can
+// still be our departure's row: 1.6 x the estimate + 90 min, at most 20 hours;
+// 20 hours when either airport has no coordinates (see above).
+function farArrMaxMs(fromIata, toIata) {
+  const km = farArrKm(fromIata, toIata);
+  if (!Number.isFinite(km)) return FARARR_MAX_MS;
+  const estMin = km / 850 * 60 + 25;
+  return Math.min(FARARR_MAX_MS, Math.round((1.6 * estMin + 90) * 60000));
+}
+__name(farArrMaxMs, "farArrMaxMs");
 // The far end's row for our departure: the same number, from our airport (when
 // the far end names an origin), and the FIRST arrival at least 20 minutes after
-// our scheduled departure and within 20 hours of it. So a daily flight takes
-// today's instance, never yesterday's or tomorrow's, and no arrival that lands
-// before we take off can be ours. Montréal-Trudeau lists some flights twice
-// (an ACA and a JZA row); the row that publishes more wins a tie.
-function farArrPick(index, flightNo, fromIata, depTs) {
+// our scheduled departure and no later than the route allows (farArrMaxMs). So
+// a daily flight takes today's instance, never yesterday's or tomorrow's, and
+// no arrival that lands before we take off can be ours. Montréal-Trudeau lists
+// some flights twice (an ACA and a JZA row); the row that publishes more wins
+// a tie. `toIata` is the far end; without it the window is the old 20 hours.
+function farArrPick(index, flightNo, fromIata, depTs, toIata) {
   const f = farArrNorm(flightNo);
   const from = String(fromIata || "").toUpperCase();
   const dep = Number(depTs) || 0;
   if (!dep) return null;
+  const maxMs = farArrMaxMs(from, toIata);
   const score = (e) => (e.r ? 4 : 0) + (e.g ? 2 : 0) + (e.t ? 1 : 0);
   let best = null;
   for (const e of (Array.isArray(index) ? index : [])) {
     if (!e || e.n !== f) continue;
     if (from && e.o && e.o !== from) continue;
-    if (!(e.s >= dep + 20 * 60000) || e.s > dep + 20 * 3600000) continue;
+    if (!(e.s >= dep + 20 * 60000) || e.s > dep + maxMs) continue;
     if (!best || e.s < best.s || (e.s === best.s && score(e) > score(best))) best = e;
   }
   return best;
@@ -10426,7 +10507,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
             await _faCache.put(_ixKey, new Response(JSON.stringify(index), { headers: {
               "Content-Type": "application/json", "Cache-Control": `public, max-age=${index.length ? 150 : 60}` } })).catch(() => {});
           }
-          if (index.length) pick = farArrPick(index, f, from, dep);
+          if (index.length) pick = farArrPick(index, f, from, dep, to);
           else unavailable = true;
         } catch (e) { pick = null; unavailable = true; }
       }
@@ -11932,6 +12013,9 @@ export {
   farArrList,
   farArrHas,
   farArrPick,
+  farArrKm,
+  farArrMaxMs,
+  FARARR_COORDS as _farArrCoords,
   farArrAnswer,
   acTrackAddPoint,
   acTrackAppend,
