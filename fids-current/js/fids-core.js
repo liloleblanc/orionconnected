@@ -35098,7 +35098,9 @@ function _boardFilterChipHtml() {
     if (filterRegion) {
       String(filterRegion).toUpperCase().split(',').forEach(function (r) {
         var k = _BOARD_REGION_KEY[r.trim()];
-        if (k) parts.push(_tr(k, r.trim()));
+        // the untranslated fallback is the matched key itself (DOM, TRANS,
+        // INTL), escaped all the same so no URL text reaches markup raw
+        if (k) parts.push(_tr(k, fidsEscHtml(r.trim())));
       });
     }
     // An airline's own name is its brand — it is not translated on a board

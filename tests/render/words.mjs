@@ -398,6 +398,11 @@ export function judge(texts, set, ap) {
 // ── the run ──────────────────────────────────────────────────────────────
 const MODE = LIVE ? 'live' : 'demo';
 const SINGLES = LANGS.map((l) => [l]);
+// A language set goes into page code as its positions in the store's own
+// list (LANGS), never as text: nothing from the command line or a surface
+// spec is spliced into code that the page evaluates.
+const LANGS_JS = '[' + LANGS.map((l) => JSON.stringify(l)).join(',') + ']';
+const langsJs = (set) => `[${set.map((l) => LANGS.indexOf(l)).filter((i) => i >= 0).join(',')}].map(function (i) { return ${LANGS_JS}[i]; })`;
 export const SETS = SINGLES.concat([['en', 'fr'], ['fr', 'en'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh']]);
 // Offline (no LIVE), a board opened with ?mode=demo loads its demonstration
 // flights, but LIVE_MODE starts true, so the board's own first airport pass
@@ -541,7 +546,7 @@ async function runChunk(port, name, spec, sets) {
         if (phoneScript) await S('Page.removeScriptToEvaluateOnNewDocument', { identifier: phoneScript }).catch(() => {});
         // (the board clears fids_mobile_lang once, on a browser's first visit,
         // as a v27 recovery: mark that done, or the choice is wiped)
-        phoneScript = (await S('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('fids_lang_recovery_v27_done', '1'); localStorage.setItem('fids_mobile_lang', ${JSON.stringify(set[0])}); } catch (e) {}` })).identifier;
+        phoneScript = (await S('Page.addScriptToEvaluateOnNewDocument', { source: `try { localStorage.setItem('fids_lang_recovery_v27_done', '1'); localStorage.setItem('fids_mobile_lang', ${langsJs(set)}[0]); } catch (e) {}` })).identifier;
         if (!(await go(spec.url(port, set)))) { problems.push('the phone never came up'); }
       } else if (spec.perSet) {
         for (const fam of (spec.families || [null])) {
@@ -553,7 +558,7 @@ async function runChunk(port, name, spec, sets) {
         // the saved choice, as toggleLang writes it: the airport config is re-applied
         // every 10 s (refreshAirportConfig) and keeps a saved choice, but not one
         // that was only set in memory
-        await evalv(`(function () { try { var ap = ((document.getElementById('apSel') || {}).value || '').toUpperCase(); if (ap) localStorage.setItem('fids_langs_' + ap, ${JSON.stringify(set.join(','))}); } catch (e) {} setBoardLangs(${JSON.stringify(set)}); })()`);
+        await evalv(`(function () { var L = ${langsJs(set)}; try { var ap = ((document.getElementById('apSel') || {}).value || '').toUpperCase(); if (ap) localStorage.setItem('fids_langs_' + ap, L.join(',')); } catch (e) {} setBoardLangs(L); })()`);
         if (spec.prep) {
           await evalv(spec.prep);
           if (/'arr'/.test(spec.prep) && (await evalv(`(function () { try { return mode; } catch (e) { return ''; } })()`)) !== 'arr') problems.push('the board did not turn to its arrivals');
