@@ -94,7 +94,7 @@ function store() {
 
 // feed-router's own mapping of a cyqm row, and its split of the remembered rows.
 const router = new Function(
-  [fnSourceIn(ROUTER, 'yqmTimeObj'), fnSourceIn(ROUTER, 'yqmClockToMin'), fnSourceIn(ROUTER, 'yqmStatus'),
+  [fnSourceIn(ROUTER, 'fidsNeutralWord'), fnSourceIn(ROUTER, 'yqmTimeObj'), fnSourceIn(ROUTER, 'yqmClockToMin'), fnSourceIn(ROUTER, 'yqmStatus'),
    fnSourceIn(ROUTER, 'yqmToAdbFlight'), fnSourceIn(ROUTER, 'yqmSplitRemembered'),
    'return { yqmToAdbFlight, yqmSplitRemembered, yqmStatus };'].join('\n'))();
 

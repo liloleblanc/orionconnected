@@ -223,8 +223,19 @@ function constSource(name) {
   throw new Error('no const ' + name);
 }
 
+// a whole `function name(…) { … }` out of fids-core.js, braces matched
+function fnSourceOf(name) {
+  const at = core.src.indexOf('function ' + name + '(');
+  if (at < 0) throw new Error('no function ' + name);
+  let d = 0;
+  for (let i = core.src.indexOf('{', at); i < core.src.length; i++) {
+    if (core.src[i] === '{') d++;
+    else if (core.src[i] === '}' && --d === 0) return core.src.slice(at, i + 1) + '\n';
+  }
+  throw new Error('unterminated ' + name);
+}
 test('TL()/SL(): a key outside the legacy table comes from the store; a missing key renders nothing', () => {
-  const make = (lang) => new Function('lang', tableSource('LS') + tableSource('SS') + constSource('TL') + constSource('SL')
+  const make = (lang) => new Function('lang', tableSource('LS') + tableSource('SS') + constSource('TL') + constSource('SL') + fnSourceOf('_ssEntry')
     + 'return { TL: TL, SL: SL };')(lang);
   for (const l of LANGS) {
     const H = make(l);
@@ -232,6 +243,9 @@ test('TL()/SL(): a key outside the legacy table comes from the store; a missing 
     for (const key of Object.keys(BS.STR)) assert.equal(H.TL(key), BS.STR[key][l], `TL('${key}') in ${l}`);
     assert.equal(H.TL('greenKeyThatDoesNotExist'), '', 'never the key name');
     assert.equal(H.SL('noSuchStatus'), '');
+    // a status the frozen SS lacks is the store's status entry, not a word
+    // that shares its name ('expected', the lower-case qualifier)
+    assert.equal(H.SL('expected'), BS.STR.stExpected[l], `SL('expected') in ${l}`);
   }
 });
 

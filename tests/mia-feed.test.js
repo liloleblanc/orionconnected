@@ -84,7 +84,7 @@ test('mia arrivals: Eastern offset on every row, status clock as revised, gate/c
   assert.ok(arr.find((x) => x.number === 'AV2'), 'AV2 present');
   assert.ok(!arr.some((x) => x.number === 'AV002'), 'no zero-padded numbers');
   // No row is "On Time" with a stale estimate hanging off it.
-  assert.ok(arr.filter((x) => x.status === 'scheduled' && !x.arrival.revisedTime).length > 150, 'On Time rows carry no revisedTime');
+  assert.ok(arr.filter((x) => x.status === 'ontime' && !x.arrival.revisedTime).length > 150, 'On Time rows carry no revisedTime');
 });
 
 test('mia arrivals: a status clock past midnight settles to the next day; a dated <ett> wins when it agrees', () => {
@@ -189,7 +189,7 @@ test('mia departures: EDT, status clock, gate/terminal/check-in, no belt, cancel
   assert.equal(ly.departure.checkInDesk, '630-637');
   const mq = dep.find((x) => x.number === 'MQ3764');
   assert.ok(mq, 'MQ3764 present');
-  assert.equal(mq.status, 'scheduled');
+  assert.equal(mq.status, 'ontime');
   assert.equal(mq.departure.revisedTime, undefined);
   assert.equal(mq.departure.gate, 'D60');
   assert.equal(mq.departure.airline.name, 'American Eagle');

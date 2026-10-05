@@ -1,0 +1,313 @@
+{
+ "captured": "2026-10-04T16:41Z via fids-proxy /flights/yhu?direction=arr (48 rows; these kept)",
+ "list": [
+  {
+   "flightId": {
+    "flightKind": "Arrival",
+    "airlineDesignator": {
+     "iata": "PD",
+     "icao": "POE"
+    },
+    "flightNumber": 494,
+    "scheduledDate": "2026-10-03",
+    "airportCode": {
+     "iata": "YHU",
+     "icao": "CYHU"
+    }
+   },
+   "flightState": {
+    "scheduledTime": "2026-10-03T18:20:00",
+    "route": {
+     "stops": [
+      {
+       "iata": "YHZ",
+       "icao": "CYHZ"
+      }
+     ]
+    },
+    "properties": {
+     "flightUniqueID": "ARR_18038",
+     "status": "Early",
+     "qualifier": "J",
+     "seats": 132,
+     "estimatedTime": "2026-10-03T18:04:00",
+     "actualTime": "2026-10-03T18:06:00",
+     "mostConfidentTime": "2026-10-03T18:06:00",
+     "carousel": "2",
+     "mostConfidentPax": 132,
+     "remarkDescription": "Arrived"
+    }
+   },
+   "synthGate": "1",
+   "gateSynth": true
+  },
+  {
+   "flightId": {
+    "flightKind": "Arrival",
+    "airlineDesignator": {
+     "iata": "PD",
+     "icao": "POE"
+    },
+    "flightNumber": 414,
+    "scheduledDate": "2026-10-03",
+    "airportCode": {
+     "iata": "YHU",
+     "icao": "CYHU"
+    }
+   },
+   "flightState": {
+    "scheduledTime": "2026-10-03T18:00:00",
+    "route": {
+     "stops": [
+      {
+       "iata": "YYC",
+       "icao": "CYYC"
+      }
+     ]
+    },
+    "properties": {
+     "flightUniqueID": "ARR_17985",
+     "status": "Delayed",
+     "qualifier": "J",
+     "seats": 132,
+     "estimatedTime": "2026-10-03T18:08:00",
+     "actualTime": "2026-10-03T18:03:00",
+     "mostConfidentTime": "2026-10-03T18:03:00",
+     "carousel": "2",
+     "mostConfidentPax": 132,
+     "remarkDescription": "Arrived"
+    }
+   },
+   "synthGate": "1",
+   "gateSynth": true
+  },
+  {
+   "flightId": {
+    "flightKind": "Arrival",
+    "airlineDesignator": {
+     "iata": "PD",
+     "icao": "POE"
+    },
+    "flightNumber": 2382,
+    "scheduledDate": "2026-10-04",
+    "airportCode": {
+     "iata": "YHU",
+     "icao": "CYHU"
+    }
+   },
+   "flightState": {
+    "scheduledTime": "2026-10-04T18:15:00",
+    "route": {
+     "stops": [
+      {
+       "iata": "YQM",
+       "icao": "CYQM"
+      }
+     ]
+    },
+    "properties": {
+     "flightUniqueID": "ARR_17590",
+     "status": "On time",
+     "qualifier": "J",
+     "seats": 78,
+     "mostConfidentTime": "2026-10-04T18:15:00",
+     "carousel": "1",
+     "mostConfidentPax": 78,
+     "remarkDescription": "On time"
+    }
+   },
+   "synthGate": "2",
+   "gateSynth": true
+  },
+  {
+   "flightId": {
+    "flightKind": "Arrival",
+    "airlineDesignator": {
+     "iata": "PD",
+     "icao": "POE"
+    },
+    "flightNumber": 414,
+    "scheduledDate": "2026-10-04",
+    "airportCode": {
+     "iata": "YHU",
+     "icao": "CYHU"
+    }
+   },
+   "flightState": {
+    "scheduledTime": "2026-10-04T18:00:00",
+    "route": {
+     "stops": [
+      {
+       "iata": "YYC",
+       "icao": "CYYC"
+      }
+     ]
+    },
+    "properties": {
+     "flightUniqueID": "ARR_17984",
+     "status": "On time",
+     "qualifier": "J",
+     "seats": 132,
+     "mostConfidentTime": "2026-10-04T18:00:00",
+     "carousel": "2",
+     "mostConfidentPax": 132,
+     "remarkDescription": "On time"
+    }
+   },
+   "synthGate": "4",
+   "gateSynth": true
+  },
+  {
+   "flightId": {
+    "flightKind": "Arrival",
+    "airlineDesignator": {
+     "iata": "PD",
+     "icao": "POE"
+    },
+    "flightNumber": 494,
+    "scheduledDate": "2026-10-04",
+    "airportCode": {
+     "iata": "YHU",
+     "icao": "CYHU"
+    }
+   },
+   "flightState": {
+    "scheduledTime": "2026-10-04T18:20:00",
+    "route": {
+     "stops": [
+      {
+       "iata": "YHZ",
+       "icao": "CYHZ"
+      }
+     ]
+    },
+    "properties": {
+     "flightUniqueID": "ARR_18037",
+     "status": "On time",
+     "qualifier": "J",
+     "seats": 132,
+     "mostConfidentTime": "2026-10-04T18:20:00",
+     "carousel": "2",
+     "mostConfidentPax": 132,
+     "remarkDescription": "On time"
+    }
+   },
+   "synthGate": "4",
+   "gateSynth": true
+  },
+  {
+   "flightId": {
+    "flightKind": "Arrival",
+    "airlineDesignator": {
+     "iata": "PD",
+     "icao": "POE"
+    },
+    "flightNumber": 2382,
+    "scheduledDate": "2026-10-05",
+    "airportCode": {
+     "iata": "YHU",
+     "icao": "CYHU"
+    }
+   },
+   "flightState": {
+    "scheduledTime": "2026-10-05T18:15:00",
+    "route": {
+     "stops": [
+      {
+       "iata": "YQM",
+       "icao": "CYQM"
+      }
+     ]
+    },
+    "properties": {
+     "flightUniqueID": "ARR_17589",
+     "status": "On time",
+     "qualifier": "J",
+     "seats": 78,
+     "mostConfidentTime": "2026-10-05T18:15:00",
+     "carousel": "2",
+     "mostConfidentPax": 78,
+     "remarkDescription": "On time"
+    }
+   },
+   "synthGate": "1",
+   "gateSynth": true
+  },
+  {
+   "flightId": {
+    "flightKind": "Arrival",
+    "airlineDesignator": {
+     "iata": "PD",
+     "icao": "POE"
+    },
+    "flightNumber": 494,
+    "scheduledDate": "2026-10-05",
+    "airportCode": {
+     "iata": "YHU",
+     "icao": "CYHU"
+    }
+   },
+   "flightState": {
+    "scheduledTime": "2026-10-05T18:20:00",
+    "route": {
+     "stops": [
+      {
+       "iata": "YHZ",
+       "icao": "CYHZ"
+      }
+     ]
+    },
+    "properties": {
+     "flightUniqueID": "ARR_18036",
+     "status": "On time",
+     "qualifier": "J",
+     "seats": 132,
+     "mostConfidentTime": "2026-10-05T18:20:00",
+     "carousel": "2",
+     "mostConfidentPax": 132,
+     "remarkDescription": "On time"
+    }
+   },
+   "synthGate": "3",
+   "gateSynth": true
+  },
+  {
+   "flightId": {
+    "flightKind": "Arrival",
+    "airlineDesignator": {
+     "iata": "PD",
+     "icao": "POE"
+    },
+    "flightNumber": 414,
+    "scheduledDate": "2026-10-05",
+    "airportCode": {
+     "iata": "YHU",
+     "icao": "CYHU"
+    }
+   },
+   "flightState": {
+    "scheduledTime": "2026-10-05T18:00:00",
+    "route": {
+     "stops": [
+      {
+       "iata": "YYC",
+       "icao": "CYYC"
+      }
+     ]
+    },
+    "properties": {
+     "flightUniqueID": "ARR_17983",
+     "status": "On time",
+     "qualifier": "J",
+     "seats": 132,
+     "mostConfidentTime": "2026-10-05T18:00:00",
+     "carousel": "2",
+     "mostConfidentPax": 132,
+     "remarkDescription": "On time"
+    }
+   },
+   "synthGate": "3",
+   "gateSynth": true
+  }
+ ]
+}

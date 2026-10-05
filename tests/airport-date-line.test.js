@@ -46,7 +46,7 @@ function extract(name) {
 
 const SOURCE = extract('_airportDateLine');
 // eslint-disable-next-line no-new-func
-// v23971 — the line takes the board's LANGUAGE and formats with the store's
+// v23986 — the line takes the board's LANGUAGE and formats with the store's
 // locale for it (BoardStrings.intl), as every board date does.
 const BS_PATH = require('node:path').join(__dirname, '..', 'fids-current', 'js', 'board-strings.js');
 const airportDateLine = new Function('BoardStrings', SOURCE + '; return _airportDateLine;')(require(BS_PATH));

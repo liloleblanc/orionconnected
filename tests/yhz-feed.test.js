@@ -23,7 +23,7 @@ test('yhz: parses airline code, number, gate, destination', () => {
   assert.ok(ws14, 'WS14 present');
   assert.equal(ws14.departure.airline.iata, 'WS');
   assert.equal(ws14.departure.gate, '12');
-  assert.equal(ws14.status, 'scheduled');
+  assert.equal(ws14.status, 'ontime');
   assert.equal(ws14.arrival.airport.name, 'Madrid Barajas Apt');
   assert.equal(ws14.arrival.airport.iata, 'MAD');
   assert.equal(ws14.departure.airport.iata, 'YHZ');

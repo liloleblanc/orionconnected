@@ -75,7 +75,7 @@ test('yyj: arrivals — tomorrow rows included, midnight-crossing delay settled'
   assert.ok(as, 'AS2048 (tomorrow) present');
   assert.equal(arr.filter((x) => x.number === 'AS2048').length, 2, 'both days kept');
   assert.equal(as.arrival.scheduledTime.local, '2026-09-06 12:28:00-07:00');
-  assert.equal(as.status, 'scheduled');
+  assert.equal(as.status, 'ontime');
   assert.ok(as.arrival.revisedTime.local.startsWith('2026-09-06 12:27'));
   assert.equal(as.arrival.airline.iata, 'AS');
   assert.equal(as.departure.airport.iata, 'SEA');

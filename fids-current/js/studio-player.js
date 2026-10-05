@@ -167,7 +167,7 @@
     frame.hidden = false;
     $('#playerSetup').hidden = true;
     frame.dataset.direction = language.direction;
-    // v23971 — the canvas is in one language at a time: say which, and its
+    // v23986 — the canvas is in one language at a time: say which, and its
     // direction, so Japanese, Chinese and Arabic take their own fonts and
     // Arabic reads right to left (the frame sat under the page's lang="en")
     try { BoardStrings.setLang(frame, language.code); } catch (eL) {}
@@ -210,7 +210,7 @@
     window._yqmCacheAircraftMerge = window._yqmCacheAircraftMerge || async function () {};
     pilotRouterPromise = new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = '../js/feed-router.js?v=23970';
+      script.src = '../js/feed-router.js?v=23986';
       script.async = true;
       script.addEventListener('load', function () {
         if (typeof window.adbFetch === 'function') resolve(window.adbFetch);

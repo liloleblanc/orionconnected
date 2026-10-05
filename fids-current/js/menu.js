@@ -352,6 +352,585 @@ try {
 } catch (e) {}
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ONE FONT FOR MANY AIRPORTS (v23985)
+//
+// Picks a font from the Customize picker's own list and sets it at every live
+// airport, at a group, or at a hand-picked list: a preview of each airport's
+// current font and the new one, a confirm, a per-airport report, and an undo
+// of the last bulk change. The worker (/api/bulk-font) writes each airport
+// config's `font` field, the same field the per-airport picker writes, so
+// boards and streams follow on their 10-second config poll with no restart.
+//
+// Same posture as the dry dock: this panel is not the security boundary. The
+// worker refuses a non-admin with a 403; the panel reports that refusal and
+// then shows what the server still holds, never the change it asked for.
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+var _bf = {
+  loaded: false,   // the airports' fonts have been read from the server
+  fonts: {},       // CODE -> font saved in the airport config ('' = Default)
+  bad: {},         // CODE -> why its config cannot be changed (unreadable)
+  last: null,      // the last bulk change, as the server reports it
+  tour: null,      // TOUR_DEFAULT read from rotate.html; false when unreadable
+  groups: [],
+  labels: {},
+  mode: 'all',
+  picked: {},      // CODE -> true, for "Pick airports"
+  plan: null,      // the previewed change; Apply sends exactly this
+  busy: false,
+  undoAsk: false
+};
+var BF_DEFAULT_LABEL = 'Default (Bricolage Grotesque)';
+var BF_NONE = '__none';
+
+function _bfEsc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) {
+    return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+  });
+}
+function _bfSay(msg, bad) {
+  var el = document.getElementById('bfStatus');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.className = 'bf-sub' + (bad ? ' bf-bad' : '');
+}
+function _bfLabel(key) {
+  if (!key) return BF_DEFAULT_LABEL;
+  return (_bf.labels && _bf.labels[key]) || String(key);
+}
+function _bfWhen(ms) {
+  try {
+    return new Date(+ms).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return ''; }
+}
+function _bfLive() {
+  try {
+    var s = (typeof window !== 'undefined' && window.FIDS_LIVE_AIRPORTS) || null;
+    return s ? Array.from(s).map(String).sort() : [];
+  } catch (e) { return []; }
+}
+function _bfTz() {
+  var out = {};
+  try {
+    if (typeof AP !== 'undefined' && AP) {
+      Object.keys(AP).forEach(function (c) { if (AP[c] && AP[c].tz) out[c] = AP[c].tz; });
+    }
+  } catch (e) {}
+  return out;
+}
+
+// Families for "everyone on …, any weight": a key belongs to a family when it
+// is the family key or starts with it and a hyphen.
+var BF_FAMILIES = [
+  ['ac-nord', 'AC Nord'], ['ginto-nord', 'Ginto Nord'], ['bricolage', 'Bricolage Grotesque'],
+  ['cabinet', 'Cabinet Grotesk'], ['abc-areal', 'ABC Areal'],
+  ['abc-ginto-rounded', 'Ginto Rounded'], ['abc-gravity', 'Gravity']
+];
+
+// PURE. The groups a font can be aimed at, derived from data the boards
+// already carry: the live roster (FIDS_LIVE_AIRPORTS), each airport's time
+// zone (AP in fids-core), the stream tour (TOUR_DEFAULT in rotate.html) and
+// the font each airport has saved now. tests/bulk-font.test.js runs this
+// against the real roster.
+function bfBuildGroups(ctx) {
+  ctx = ctx || {};
+  var CODE = /^[A-Z0-9]{3,4}$/;
+  function uniq(list) {
+    var seen = {}, out = [];
+    (list || []).forEach(function (c) {
+      c = String(c || '').toUpperCase();
+      if (CODE.test(c) && !seen[c]) { seen[c] = 1; out.push(c); }
+    });
+    return out;
+  }
+  var live = uniq(ctx.live).sort();
+  var tz = ctx.tz || {};
+  var fonts = ctx.fonts || {};
+  var label = typeof ctx.label === 'function' ? ctx.label : function (k) { return k || 'Default'; };
+  function zone(c) { return String(tz[c] || ''); }
+  // Canadian IATA codes all start with Y (the same rule fids-core uses to
+  // derive an ICAO code); the time zone keeps Y-codes elsewhere out.
+  function canada(c) { return /^Y/.test(c) && /^America\//.test(zone(c)); }
+  var ATLANTIC = /^America\/(Halifax|Moncton|St_Johns|Goose_Bay|Glace_Bay)$/;
+  var US = /^(America\/(New_York|Chicago|Denver|Los_Angeles|Phoenix|Detroit|Anchorage|Boise|Juneau|Puerto_Rico|Indiana\/[A-Za-z_]+|Kentucky\/[A-Za-z_]+)|Pacific\/Honolulu)$/;
+  var EUROPE = /^(Europe\/[A-Za-z_]+|Atlantic\/(Reykjavik|Canary|Madeira|Azores|Faroe))$/;
+  var AUSPAC = /^(Australia\/[A-Za-z_]+|Pacific\/(?!Honolulu$)[A-Za-z_]+)$/;
+  var out = [];
+  function add(id, text, codes, kind) {
+    if (codes.length) out.push({ id: id, label: text, codes: codes, kind: kind });
+  }
+  add('region:canada', 'Canada', live.filter(canada), 'region');
+  add('region:atlantic', 'Atlantic Canada', live.filter(function (c) { return canada(c) && ATLANTIC.test(zone(c)); }), 'region');
+  add('region:us', 'United States', live.filter(function (c) { return !canada(c) && US.test(zone(c)); }), 'region');
+  add('region:europe', 'Europe', live.filter(function (c) { return EUROPE.test(zone(c)); }), 'region');
+  add('region:auspac', 'Australia / Pacific', live.filter(function (c) { return AUSPAC.test(zone(c)); }), 'region');
+  if (ctx.tour && ctx.tour.length) add('tour', 'Stream tour', uniq(ctx.tour), 'tour');
+  // By current font: every live airport, plus any airport that has a saved
+  // config without a live feed (its font is real even if nobody watches it).
+  var all = uniq(live.concat(Object.keys(fonts))).sort();
+  var byKey = {};
+  all.forEach(function (c) {
+    var k = fonts[c] ? String(fonts[c]) : '';
+    (byKey[k] = byKey[k] || []).push(c);
+  });
+  BF_FAMILIES.forEach(function (fam) {
+    var keys = Object.keys(byKey).filter(function (k) { return k === fam[0] || k.indexOf(fam[0] + '-') === 0; });
+    if (keys.length < 2) return;      // one key: its own group below says the same
+    var codes = [];
+    keys.forEach(function (k) { codes = codes.concat(byKey[k]); });
+    add('family:' + fam[0], 'Everyone on ' + fam[1] + ', any weight', codes.sort(), 'font');
+  });
+  Object.keys(byKey).filter(function (k) { return k; })
+    .sort(function (a, b) { return (byKey[b].length - byKey[a].length) || (a < b ? -1 : a > b ? 1 : 0); })
+    .forEach(function (k) { add('font:' + k, 'Everyone on ' + label(k), byKey[k].slice(), 'font'); });
+  if (byKey['']) add('font:', 'No font saved — ' + label(''), byKey[''].slice(), 'font');
+  return out;
+}
+
+// PURE. TOUR_DEFAULT out of rotate.html, comments stripped, or null. The
+// rotator is the only owner of the tour list; reading it here means the group
+// can never drift from what the stream actually plays.
+function bfParseTour(html) {
+  var m = /var TOUR_DEFAULT = \[([\s\S]*?)\];/.exec(String(html || ''));
+  if (!m) return null;
+  var body = m[1].replace(/\/\/[^\n]*/g, '');
+  var out = [], re = /'([A-Z0-9]{3,4})'/g, x;
+  while ((x = re.exec(body))) { if (out.indexOf(x[1]) < 0) out.push(x[1]); }
+  return out.length ? out : null;
+}
+
+// PURE. What Apply will send, split for the preview. Airports already on the
+// font are sent too: the write stamps their config newer than any copy a
+// screen saved for itself, so that screen switches as well.
+function bfPlan(codes, font, fonts) {
+  font = font ? String(font) : '';
+  var seen = {}, change = [], same = [];
+  (codes || []).forEach(function (c) {
+    c = String(c || '').toUpperCase();
+    if (!/^[A-Z0-9]{3,4}$/.test(c) || seen[c]) return;
+    seen[c] = 1;
+    var from = (fonts && fonts[c]) ? String(fonts[c]) : '';
+    (from === font ? same : change).push({ code: c, from: from, to: font });
+  });
+  return { font: font, change: change, same: same, codes: change.concat(same).map(function (r) { return r.code; }) };
+}
+
+function _bfFillFonts() {
+  var dst = document.getElementById('bfFont');
+  var src = document.getElementById('cuFontSelect');
+  if (!dst || !src) return false;
+  if (dst.options.length) return true;
+  var ph = document.createElement('option');
+  ph.value = BF_NONE; ph.textContent = 'Choose a font… · Choisir une police…'; ph.disabled = true; ph.selected = true;
+  dst.appendChild(ph);
+  Array.prototype.forEach.call(src.children, function (node) {
+    // Uploaded faces live in one browser's storage; no other screen has them.
+    if (node.id === 'cuFontCustomGroup') return;
+    if (node.tagName === 'OPTGROUP' || node.tagName === 'OPTION') dst.appendChild(node.cloneNode(true));
+  });
+  var labels = {};
+  Array.prototype.forEach.call(dst.options, function (o) {
+    if (o.value === '') o.textContent = BF_DEFAULT_LABEL + ' — clears the airport\'s font';
+    else if (o.value !== BF_NONE) labels[o.value] = o.textContent;
+  });
+  _bf.labels = labels;
+  dst.value = BF_NONE;
+  return true;
+}
+
+function _bfGroupOptions() {
+  var KIND = { region: 'Regions · Régions', tour: 'Streams · Diffusions', font: 'By current font · Selon la police actuelle' };
+  var html = '', kind = '';
+  _bf.groups.forEach(function (g) {
+    if (g.kind !== kind) {
+      if (kind) html += '</optgroup>';
+      html += '<optgroup label="' + _bfEsc(KIND[g.kind] || g.kind) + '">';
+      kind = g.kind;
+    }
+    html += '<option value="' + _bfEsc(g.id) + '">' + _bfEsc(g.label) + ' (' + g.codes.length + ')</option>';
+  });
+  if (kind) html += '</optgroup>';
+  if (_bf.tour === false) html += '<option value="" disabled>Stream tour — the tour list could not be read</option>';
+  return html;
+}
+function _bfGroup(id) {
+  for (var i = 0; i < _bf.groups.length; i++) if (_bf.groups[i].id === id) return _bf.groups[i];
+  return null;
+}
+
+function _bfTargets() {
+  if (_bf.mode === 'all') return _bfLive();
+  if (_bf.mode === 'group') {
+    var g = _bfGroup((document.getElementById('bfGroup') || {}).value || '');
+    return g ? g.codes.slice() : [];
+  }
+  return Object.keys(_bf.picked).filter(function (c) { return _bf.picked[c]; }).sort();
+}
+
+function _bfRender() {
+  _bf.groups = bfBuildGroups({ live: _bfLive(), tz: _bfTz(), tour: _bf.tour || null, fonts: _bf.fonts, label: _bfLabel });
+  var gs = document.getElementById('bfGroup');
+  if (gs) {
+    var keep = gs.value;
+    gs.innerHTML = _bfGroupOptions();
+    if (keep && _bfGroup(keep)) gs.value = keep;
+  }
+  var ca = document.getElementById('bfCustomAdd');
+  if (ca) ca.innerHTML = '<option value="">Add a group to the selection… · Ajouter un groupe…</option>' + _bfGroupOptions();
+  _bfRenderCustom();
+  _bfRenderTarget();
+  _bfRenderUndo();
+}
+
+function _bfRenderCustom() {
+  var box = document.getElementById('bfCustomList');
+  if (!box) return;
+  var live = _bfLive();
+  var all = live.concat(Object.keys(_bf.fonts).filter(function (c) { return live.indexOf(c) < 0; })).sort();
+  box.innerHTML = all.map(function (c) {
+    var on = !!_bf.picked[c];
+    var f = _bf.fonts[c] || '';
+    var sub = live.indexOf(c) < 0 ? 'not live' : (f ? _bfLabel(f) : 'Default');
+    return '<label class="bf-chip' + (on ? ' on' : '') + '" title="' + _bfEsc(c + ' — ' + _bfLabel(f)) + '">'
+      + '<input type="checkbox" data-code="' + _bfEsc(c) + '"' + (on ? ' checked' : '') + ' onchange="bfTogglePick(this)">'
+      + '<b>' + _bfEsc(c) + '</b><small>' + _bfEsc(sub) + '</small></label>';
+  }).join('');
+}
+
+function _bfRenderTarget() {
+  var el = document.getElementById('bfTargetNote');
+  if (!el) return;
+  var n = _bfTargets().length;
+  var what = _bf.mode === 'all' ? 'Every airport with a live feed'
+    : _bf.mode === 'group' ? 'This group'
+    : 'Your selection';
+  el.textContent = what + ': ' + n + ' airport' + (n === 1 ? '' : 's') + ' · ' + n + ' aéroport' + (n === 1 ? '' : 's');
+}
+
+function _bfClearPlan() {
+  _bf.plan = null;
+  var pb = document.getElementById('bfPreviewBox');
+  if (pb) { pb.style.display = 'none'; pb.innerHTML = ''; }
+}
+
+function _bfRow(code, left, right, cls) {
+  var live = _bfLive();
+  var mark = live.length && live.indexOf(code) < 0 ? '*' : '';
+  return '<div class="bf-row' + (cls ? ' ' + cls : '') + '"><span class="bf-c">' + _bfEsc(code) + mark + '</span>'
+    + '<span title="' + _bfEsc(left) + '">' + _bfEsc(left) + '</span><span class="bf-x">→</span>'
+    + '<span title="' + _bfEsc(right) + '">' + _bfEsc(right) + '</span></div>';
+}
+function _bfNote(code, text, cls) {
+  var live = _bfLive();
+  var mark = live.length && live.indexOf(code) < 0 ? '*' : '';
+  return '<div class="bf-row bf-wide"><span class="bf-c">' + _bfEsc(code) + mark + '</span>'
+    + '<span class="' + (cls || '') + '" title="' + _bfEsc(text) + '">' + _bfEsc(text) + '</span></div>';
+}
+function _bfFootnote(codes) {
+  var live = _bfLive();
+  var off = (codes || []).filter(function (c) { return live.length && live.indexOf(c) < 0; });
+  return off.length ? '<div class="bf-sub">* has a saved config but no live feed · configuration sans flux en direct</div>' : '';
+}
+
+function bfSetMode(mode) {
+  _bf.mode = (mode === 'group' || mode === 'custom') ? mode : 'all';
+  ['all', 'group', 'custom'].forEach(function (m) {
+    var b = document.getElementById('bfMode_' + m);
+    if (b) b.classList.toggle('active', m === _bf.mode);
+  });
+  var gw = document.getElementById('bfGroupWrap');
+  if (gw) gw.style.display = _bf.mode === 'group' ? '' : 'none';
+  var cw = document.getElementById('bfCustomWrap');
+  if (cw) cw.style.display = _bf.mode === 'custom' ? '' : 'none';
+  bfFormChanged();
+}
+function bfFormChanged() {
+  _bfClearPlan();
+  _bfRenderTarget();
+}
+function bfTogglePick(el) {
+  var c = el && el.getAttribute('data-code');
+  if (!c) return;
+  _bf.picked[c] = !!el.checked;
+  try { el.parentNode.classList.toggle('on', !!el.checked); } catch (e) {}
+  bfFormChanged();
+}
+function bfCustomAll(on) {
+  if (!on) _bf.picked = {};
+  _bfRenderCustom();
+  bfFormChanged();
+}
+function bfCustomAddGroup(id) {
+  var g = _bfGroup(id);
+  if (g) g.codes.forEach(function (c) { _bf.picked[c] = true; });
+  var ca = document.getElementById('bfCustomAdd');
+  if (ca) ca.value = '';
+  _bfRenderCustom();
+  bfFormChanged();
+}
+
+function bfPreview() {
+  _bfSay('');
+  if (!_bf.loaded) { _bfSay('Still reading the airports\' fonts — try again in a moment.', true); return; }
+  var font = (document.getElementById('bfFont') || {}).value;
+  if (font == null || font === BF_NONE) { _bfSay('Choose a font first. · Choisissez d\'abord une police.', true); return; }
+  var codes = _bfTargets();
+  if (!codes.length) { _bfSay('No airports selected. · Aucun aéroport choisi.', true); return; }
+  var plan = bfPlan(codes, font, _bf.fonts);
+  _bf.plan = plan;
+  var n = plan.codes.length;
+  var html = '<div class="bf-head">' + n + ' airport' + (n === 1 ? '' : 's') + ' will show ' + _bfEsc(_bfLabel(plan.font)) + '</div>'
+    + '<div class="bf-sub">' + plan.change.length + (plan.change.length === 1 ? ' changes font' : ' change font')
+    + (plan.same.length ? ' · ' + plan.same.length + (plan.same.length === 1 ? ' already uses it and is' : ' already use it and are')
+      + ' saved again, so a screen holding its own copy switches too' : '')
+    + ' · ' + n + (n === 1 ? ' aéroport affichera' : ' aéroports afficheront') + ' cette police</div>'
+    + '<div class="bf-rows">'
+    + plan.change.map(function (r) {
+        return _bf.bad[r.code] ? _bfNote(r.code, 'config unreadable — will be left alone', 'bf-warn')
+          : _bfRow(r.code, _bfLabel(r.from), _bfLabel(r.to));
+      }).join('')
+    + plan.same.map(function (r) {
+        return _bf.bad[r.code] ? _bfNote(r.code, 'config unreadable — will be left alone', 'bf-warn')
+          : _bfNote(r.code, 'already ' + _bfLabel(r.to), 'bf-sub');
+      }).join('')
+    + '</div>' + _bfFootnote(plan.codes)
+    + '<div class="bf-actions">'
+    + '<button class="sm-btn sm-btn-primary sm-btn-sm" id="bfApplyBtn" onclick="bfApply()">Apply to ' + n + ' airport' + (n === 1 ? '' : 's') + ' · Appliquer</button>'
+    + '<button class="sm-btn bf-btn2 sm-btn-sm" onclick="bfCancel()">Cancel · Annuler</button>'
+    + '</div>';
+  var pb = document.getElementById('bfPreviewBox');
+  if (pb) { pb.innerHTML = html; pb.style.display = ''; }
+  var rb = document.getElementById('bfResultBox');
+  if (rb) rb.style.display = 'none';
+}
+function bfCancel() { _bfClearPlan(); _bfSay(''); }
+
+function _bfRefusal(res, out, what) {
+  if (res.status === 403) return 'Refused: this account is not an admin. ' + what + ' · Refusé : ce compte n\'est pas administrateur.';
+  if (res.status === 401) return 'Refused: sign in again. ' + what + ' · Reconnectez-vous.';
+  return (out && out.error ? out.error : 'HTTP ' + res.status) + (out && out.bad ? ' (' + out.bad.join(', ') + ')' : '') + '. ' + what;
+}
+
+async function bfApply() {
+  if (_bf.busy || !_bf.plan) return;
+  var plan = _bf.plan;
+  _bf.busy = true;
+  var btn = document.getElementById('bfApplyBtn');
+  if (btn) btn.disabled = true;
+  _bfSay('Applying to ' + plan.codes.length + ' airports… · Application…');
+  try {
+    var res = await _acFetch(_ddApi() + '/api/bulk-font', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ font: plan.font, airports: plan.codes })
+    });
+    var out = await res.json().catch(function () { return null; });
+    if (!res.ok || !out || !Array.isArray(out.results)) {
+      // Refused before anything was written — the preview stays, so the
+      // operator can sign in and press Apply again.
+      _bfSay(res.ok ? 'The answer could not be read — reloading the list.' : _bfRefusal(res, out, 'Nothing was changed.'), true);
+      if (res.ok) await bfLoad(true);
+      return;
+    }
+    _bfClearPlan();
+    _bfShowApplied(out);
+    await bfLoad(true);
+    _bfSay(out.failed ? out.failed + ' airport' + (out.failed === 1 ? '' : 's') + ' could not be changed — see the list.' : '', !!out.failed);
+  } catch (e) {
+    _bfSay('No answer came back (' + e.message + ') — some airports may have changed. The list below is re-read from the server.', true);
+    try { await bfLoad(true); } catch (e2) {}
+  } finally {
+    _bf.busy = false;
+    var b2 = document.getElementById('bfApplyBtn');
+    if (b2) b2.disabled = false;
+  }
+}
+
+function _bfShowApplied(out) {
+  var rb = document.getElementById('bfResultBox');
+  if (!rb) return;
+  var ok = out.results.filter(function (r) { return r.ok; }).length;
+  var head = out.failed
+    ? '<div class="bf-head bf-warn">' + ok + ' changed, ' + out.failed + ' failed · ' + ok + ' modifiés, ' + out.failed + ' en échec</div>'
+    : '<div class="bf-head bf-ok">✓ Done: ' + ok + ' airport' + (ok === 1 ? '' : 's') + ' now on ' + _bfEsc(_bfLabel(out.font)) + ' · Terminé</div>';
+  rb.innerHTML = head
+    + '<div class="bf-sub">Screens and streams switch on their next config check (every 10 s), usually within a minute. · Les écrans suivent en moins d\'une minute.</div>'
+    + '<div class="bf-rows">' + out.results.map(function (r) {
+        return r.ok ? _bfRow(r.code, '✓ ' + _bfLabel(r.from), _bfLabel(r.to))
+          : _bfNote(r.code, '✗ ' + (r.error || 'failed'), 'bf-bad');
+      }).join('') + '</div>'
+    + _bfFootnote(out.results.map(function (r) { return r.code; }));
+  rb.style.display = '';
+}
+
+function _bfRenderUndo() {
+  var box = document.getElementById('bfUndoBox');
+  if (!box) return;
+  var L = _bf.last;
+  if (!L) { box.style.display = 'none'; box.innerHTML = ''; return; }
+  if (L.corrupt) {
+    box.innerHTML = '<div class="bf-sub bf-bad">The undo record could not be read, so the last bulk change cannot be undone from here.</div>';
+    box.style.display = '';
+    return;
+  }
+  var html = '<div class="bf-head">Last bulk change · Dernier changement groupé</div>'
+    + '<div class="bf-sub">' + _bfEsc(_bfLabel(L.font)) + ' at ' + L.count + ' airport' + (L.count === 1 ? '' : 's')
+    + ' · ' + _bfEsc(_bfWhen(L.at)) + (L.by ? ' · ' + _bfEsc(L.by) : '') + '</div>';
+  if (L.undone) {
+    html += '<div class="bf-sub" style="margin-top:4px;">Undone ' + _bfEsc(_bfWhen(L.undoneAt))
+      + (L.undoneBy ? ' by ' + _bfEsc(L.undoneBy) : '') + ' · Annulé</div>';
+  } else if (_bf.undoAsk) {
+    html += '<div style="margin-top:8px;">Put back the font each of these ' + L.count + ' airports had before? An airport whose font was changed since is left as it is. · Remettre la police précédente ?</div>'
+      + '<div class="bf-actions">'
+      + '<button class="sm-btn sm-btn-primary sm-btn-sm" id="bfUndoYes" onclick="bfUndo()">Yes, undo · Oui, annuler</button>'
+      + '<button class="sm-btn bf-btn2 sm-btn-sm" onclick="bfUndoAsk(false)">Keep it · Garder</button>'
+      + '</div>';
+  } else {
+    html += '<div class="bf-actions"><button class="sm-btn bf-btn2 sm-btn-sm" id="bfUndoBtn" onclick="bfUndoAsk(true)">Undo last bulk change · Annuler le dernier changement</button></div>';
+  }
+  box.innerHTML = html;
+  box.style.display = '';
+}
+function bfUndoAsk(on) { _bf.undoAsk = !!on; _bfRenderUndo(); }
+
+async function bfUndo() {
+  if (_bf.busy || !_bf.last || _bf.last.undone || _bf.last.corrupt) return;
+  _bf.busy = true;
+  var yes = document.getElementById('bfUndoYes');
+  if (yes) yes.disabled = true;
+  _bfSay('Undoing… · Annulation…');
+  try {
+    var res = await _acFetch(_ddApi() + '/api/bulk-font/undo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: _bf.last.id })
+    });
+    var out = await res.json().catch(function () { return null; });
+    _bf.undoAsk = false;
+    if (!res.ok || !out || !Array.isArray(out.results)) {
+      await bfLoad(true);
+      _bfSay(res.ok ? 'The answer could not be read — the list was re-read.' : _bfRefusal(res, out, 'Nothing was undone.'), true);
+      return;
+    }
+    _bfShowUndone(out);
+    await bfLoad(true);
+    _bfSay(out.failed ? out.failed + ' airport' + (out.failed === 1 ? '' : 's') + ' could not be restored — Undo stays available to retry them.' : '', !!out.failed);
+  } catch (e) {
+    _bfSay('No answer came back (' + e.message + ') — the list below is re-read from the server.', true);
+    try { await bfLoad(true); } catch (e2) {}
+  } finally { _bf.busy = false; }
+}
+
+function _bfShowUndone(out) {
+  var rb = document.getElementById('bfResultBox');
+  if (!rb) return;
+  _bfClearPlan();
+  var head = '<div class="bf-head ' + (out.failed ? 'bf-warn' : 'bf-ok') + '">↩ Undone: ' + out.restored + ' restored'
+    + (out.kept ? ' · ' + out.kept + ' changed since, left as they are' : '')
+    + (out.unchanged ? ' · ' + out.unchanged + ' unchanged' : '')
+    + (out.failed ? ' · ' + out.failed + ' failed' : '') + ' · Annulé</div>';
+  rb.innerHTML = head
+    + '<div class="bf-sub">Screens and streams switch back on their next config check, usually within a minute.</div>'
+    + '<div class="bf-rows">' + out.results.map(function (r) {
+        if (r.status === 'restored') return _bfRow(r.code, '↩ ' + _bfLabel(r.from), _bfLabel(r.to));
+        if (r.status === 'kept') return _bfNote(r.code, 'changed since — kept ' + _bfLabel(r.font), 'bf-warn');
+        if (r.status === 'unchanged') return _bfNote(r.code, 'unchanged — ' + _bfLabel(r.font), 'bf-sub');
+        return _bfNote(r.code, '✗ ' + (r.error || 'failed'), 'bf-bad');
+      }).join('') + '</div>';
+  rb.style.display = '';
+}
+
+async function bfLoad(keepStatus) {
+  if (!document.getElementById('bfPanel')) return;
+  _bfFillFonts();
+  if (!_acGetToken()) {
+    _bfSay('Sign in as an admin to set fonts across airports. · Connectez-vous en tant qu\'administrateur.', true);
+    return;
+  }
+  try {
+    var res = await _acFetch(_ddApi() + '/api/bulk-font?_oc=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) {
+      _bfSay(res.status === 403 ? 'Sign in as an admin to set fonts across airports. · Réservé aux administrateurs.'
+           : 'Could not read the airports\' fonts (HTTP ' + res.status + ').', true);
+      return;
+    }
+    var doc = await res.json();
+    // Only a correctly shaped answer becomes the list: an empty one would
+    // preview every airport as Default when it is not.
+    if (!doc || typeof doc !== 'object' || !doc.airports || typeof doc.airports !== 'object') {
+      _bfSay('The fonts came back in a shape this cannot read — not touching anything.', true);
+      return;
+    }
+    var fonts = {}, bad = {};
+    Object.keys(doc.airports).forEach(function (c) {
+      var a = doc.airports[c] || {};
+      if (a.error) bad[c] = a.error; else fonts[c] = a.font ? String(a.font) : '';
+    });
+    _bf.fonts = fonts; _bf.bad = bad; _bf.last = doc.last || null; _bf.loaded = true;
+  } catch (e) {
+    _bfSay('Could not read the airports\' fonts: ' + e.message, true);
+    return;
+  }
+  if (_bf.tour === null) {
+    try {
+      var r = await fetch('rotate.html?_oc=' + Date.now(), { cache: 'no-store' });
+      _bf.tour = r.ok ? (bfParseTour(await r.text()) || false) : false;
+    } catch (e) { _bf.tour = false; }
+  }
+  _bfRender();
+  if (!keepStatus) _bfSay('');
+}
+
+// The link under the Customize font picker. On the desktop menu bar each
+// console tab is its own dropdown, so open the Airport one; on the mobile
+// console, switch tabs. Either way, land on this section.
+function bfOpenFromCustomize(ev) {
+  try {
+    var titles = document.querySelectorAll('.mbar-title');
+    for (var i = 0; i < titles.length; i++) {
+      if (titles[i].textContent.replace('▾', '').trim() === 'Airport') {
+        if (!titles[i].parentNode.classList.contains('open')) titles[i].click();
+        break;
+      }
+    }
+  } catch (e) {}
+  try { if (typeof window.smSwitchTab === 'function') window.smSwitchTab('airport'); } catch (e) {}
+  setTimeout(function () {
+    var s = document.getElementById('bfSection');
+    if (s && s.scrollIntoView) s.scrollIntoView({ block: 'start' });
+  }, 80);
+}
+
+// Shown exactly when the Airport tab is (its own admin check decides that).
+function _bfSyncLink() {
+  try {
+    var link = document.getElementById('cuBulkFontLink');
+    if (!link) return;
+    var tab = document.getElementById('smTabAirport');
+    var vis = !!tab && tab.style.display !== 'none' && getComputedStyle(tab).display !== 'none';
+    link.style.display = vis ? '' : 'none';
+  } catch (e) {}
+}
+try { if (typeof window !== 'undefined') setInterval(_bfSyncLink, 3000); } catch (e) {}
+
+try {
+  if (typeof window !== 'undefined') {
+    window.bfSetMode = bfSetMode; window.bfFormChanged = bfFormChanged; window.bfTogglePick = bfTogglePick;
+    window.bfCustomAll = bfCustomAll; window.bfCustomAddGroup = bfCustomAddGroup; window.bfPreview = bfPreview;
+    window.bfCancel = bfCancel; window.bfApply = bfApply; window.bfUndoAsk = bfUndoAsk; window.bfUndo = bfUndo;
+    window.bfLoad = bfLoad; window.bfOpenFromCustomize = bfOpenFromCustomize;
+  }
+} catch (e) {}
+
+// Loaded with the Airport tab, beside the dock and the screens.
+try {
+  var _bfOrigSwitch = window.smSwitchTab;
+  window.smSwitchTab = function (tabId) {
+    if (typeof _bfOrigSwitch === 'function') _bfOrigSwitch(tabId);
+    if (tabId === 'airport') { try { bfLoad(); } catch (e) {} }
+  };
+} catch (e) {}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // THEME (v218.99.11)
 // Light is the default — it is the mode used during the day. Dark is a toggle
 // for nighttime. Auto-pick on first open based on local time (6am-7pm =

@@ -1,0 +1,101 @@
+{
+ "captured": "2026-10-04T16:41Z via fids-proxy /flights/ytz?direction=arr (144 rows; these kept)",
+ "list": [
+  {
+   "day": "Today",
+   "date": "2026-10-04",
+   "time": "07:45",
+   "flightNo": "PD2294",
+   "city": "Moncton, NB",
+   "status": "Arrived",
+   "operatorLogo": "PD",
+   "kind": "arr",
+   "gate": "04",
+   "gateSynth": true
+  },
+  {
+   "day": "Today",
+   "date": "2026-10-04",
+   "time": "07:45",
+   "flightNo": "TS7078",
+   "city": "Moncton, NB",
+   "status": "Arrived",
+   "operatorLogo": "PD",
+   "kind": "arr",
+   "gate": "08",
+   "gateSynth": true
+  },
+  {
+   "day": "Today",
+   "date": "2026-10-04",
+   "time": "10:55",
+   "flightNo": "AC7865",
+   "city": "Ottawa",
+   "status": "Cancelled",
+   "operatorLogo": "AC",
+   "kind": "arr",
+   "gate": "11",
+   "gateSynth": true
+  },
+  {
+   "day": "Today",
+   "date": "2026-10-04",
+   "time": "13:20",
+   "flightNo": "PD2942",
+   "city": "Boston, MA",
+   "status": "Delayed",
+   "operatorLogo": "PD",
+   "kind": "arr",
+   "gate": "07",
+   "gateSynth": true
+  },
+  {
+   "day": "Tomorrow",
+   "date": "2026-10-05",
+   "time": "07:45",
+   "flightNo": "PD2294",
+   "city": "Moncton, NB",
+   "status": "On Time",
+   "operatorLogo": "PD",
+   "kind": "arr",
+   "gate": "03",
+   "gateSynth": true
+  },
+  {
+   "day": "Tomorrow",
+   "date": "2026-10-05",
+   "time": "07:45",
+   "flightNo": "TS7078",
+   "city": "Moncton, NB",
+   "status": "On Time",
+   "operatorLogo": "PD",
+   "kind": "arr",
+   "gate": "07",
+   "gateSynth": true
+  },
+  {
+   "day": "Tomorrow",
+   "date": "2026-10-05",
+   "time": "10:55",
+   "flightNo": "AC7865",
+   "city": "Ottawa",
+   "status": "On Time",
+   "operatorLogo": "AC",
+   "kind": "arr",
+   "gate": "01",
+   "gateSynth": true
+  },
+  {
+   "day": "Tomorrow",
+   "date": "2026-10-05",
+   "time": "12:57",
+   "flightNo": "PD2942",
+   "city": "Boston, MA",
+   "status": "On Time",
+   "operatorLogo": "PD",
+   "kind": "arr",
+   "gate": "06",
+   "gateSynth": true
+  }
+ ]
+}

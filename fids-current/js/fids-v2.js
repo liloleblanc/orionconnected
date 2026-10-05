@@ -27,7 +27,12 @@
     departures: { en:'Departures', fr:'Départs',     es:'Salidas',   de:'Abflüge',          it:'Partenze',  pt:'Partidas',  ja:'出発',     zh:'出发',     ar:'المغادرات' },
     arrivals:   { en:'Arrivals',   fr:'Arrivées',    es:'Llegadas',  de:'Ankünfte',         it:'Arrivi',    pt:'Chegadas',  ja:'到着',     zh:'到达',     ar:'الوصول' },
     // Status words
-    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Geplant',        it:'Previsto',         pt:'Programado',         ja:'予定',     zh:'计划',     ar:'مجدول' },
+    // v23968 — the gate's words for Scheduled (SS.scheduled), so the board and
+    // the gate print the same one in every language: the board said
+    // Planmäßig / Previsto / 预定 where the gate said Geplant / Programado / 计划.
+    'st-scheduled':   { en:'Scheduled',   fr:'Prévu',         es:'Programado',     de:'Geplant',          it:'Previsto',         pt:'Programado',       ja:'予定',     zh:'计划',     ar:'مجدول' },
+    // v23968 — an airport's own "Expected" is the store's stExpected
+    // (board-strings.js; TX is frozen): T('st-expected') finds it there.
     'st-on-time':     { en:'On time',     fr:'À l\'heure',    es:'A tiempo',       de:'Pünktlich',        it:'In orario',        pt:'No horário',       ja:'定刻',     zh:'准点',     ar:'في الموعد' },
     'st-boarding':    { en:'Boarding',    fr:'Embarquement',  es:'Embarcando',     de:'Boarding',         it:'Imbarco',          pt:'Embarque',         ja:'搭乗中',   zh:'登机中',   ar:'الصعود', $ctx: 'status' },
     'st-final-call':  { en:'Final call',  fr:'Dernier appel', es:'Última llamada', de:'Letzter Aufruf',   it:'Ultima chiamata',  pt:'Última chamada',   ja:'最終案内', zh:'最后登机', ar:'النداء الأخير' },
@@ -57,8 +62,10 @@
   // T(key, lang) — the word in that language. A missing key or language
   // gives '' — never English, never the key's own name (every entry carries
   // all nine languages; tests/board-languages.test.js holds it to that).
+  // A key TX lacks falls through to the store, by its camel-case name
+  // ('st-expected' -> stExpected): TX is frozen, new words live there.
   function T(key, lang) {
-    const entry = TX[key];
+    const entry = TX[key] || (window.BoardStrings && BoardStrings.entry(String(key).replace(/-([a-z])/g, function (m, c) { return c.toUpperCase(); })));
     if (!entry) return '';
     return entry[lang || 'en'] || '';
   }
@@ -79,7 +86,11 @@
     if (s === 'final-call' || s === 'final' || s.includes('final call') || s.includes('last call')) return 'final-call';
     if (s === 'boarding' || s === 'gate-open' || s === 'now-boarding') return 'boarding';
     if (s === 'active' || s === 'en-route') return 'en-route';   // v23925 — see 'st-en-route'
-    if (s === 'departed' || s === 'expected' || s === 'enroute' || s === 'inair' || s === 'in-air') return 'departed';
+    // v23968 — 'expected' is an airport's own neutral "Expected", which the
+    // adapters now keep (fidsNeutralWord in feed-router.js); it is not a
+    // departure, and reads as itself, as on the gate.
+    if (s === 'expected') return 'expected';
+    if (s === 'departed' || s === 'enroute' || s === 'inair' || s === 'in-air') return 'departed';
     if (s === 'arrived' || s === 'landed' || s === 'at-gate' || s === 'gate') return 'arrived';
     if (s === 'delayed' || s === 'late') return 'delayed';
     if (s === 'early' || s === 'ahead-of-schedule') return 'early';
@@ -111,7 +122,8 @@
       // stays green, Scheduled reverts to the plain row ink, because a green
       // Prévu clashes with the early state.
       'on-time':     'fids-status-ontime',
-      'scheduled':   'fids-status-scheduled'
+      'scheduled':   'fids-status-scheduled',
+      'expected':    'fids-status-scheduled'   // v23968 — plain row ink, like Scheduled
     };
     return {
       html: T('st-' + st, lang),

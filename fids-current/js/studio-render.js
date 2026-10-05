@@ -19,7 +19,7 @@
     return Strings && Strings.isLang(l) ? l : 'en';
   }
   function T(key, context) { return Strings ? Strings.bs(key, langOf(context)) : ''; }
-  // v23971 — the weather's condition in the canvas's language: the store's
+  // v23986 — the weather's condition in the canvas's language: the store's
   // weather word (a key the data names, or the store entry whose English the
   // data's condition is). An unknown condition shows nothing, never the
   // feed's English ('Clear' on a French canvas).
@@ -134,7 +134,12 @@
 
   function statusClass(status) {
     if (status === 'Cancelled' || status === 'Diverted') return 'status-bad';
-    return status === 'Delayed' || status === 'Gate closed' ? 'status-warn' : 'status-good';
+    if (status === 'Delayed' || status === 'Gate closed') return 'status-warn';
+    // v23968 — Scheduled and Expected are the airport's neutral words: the
+    // row's own ink, as on the departures board (fids-v2.js), not the on-time
+    // green, which would say what the airport did not.
+    if (status === 'Scheduled' || status === 'Expected') return 'status-plain';
+    return 'status-good';
   }
 
   function timeToMinutes(value) {

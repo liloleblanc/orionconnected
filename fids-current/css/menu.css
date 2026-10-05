@@ -1042,3 +1042,41 @@ body:not(.sidebar-open) #fidsBoard {
 #overlayMenu label > input[type="checkbox"] ~ * {
   color: var(--console-text);
 }
+
+/* ─── ONE FONT FOR MANY AIRPORTS (v23985, Airport tab) ──────────────────
+   The tab is drawn in two places: the desktop menu bar's dropdown (#1b2230,
+   turned white with navy ink on a light board by menubar.js) and the mobile
+   console (#overlayMenu, console tokens). Light ink and translucent grounds
+   read on the dark dropdown and survive the light board's ink override; the
+   console gets its own tokens below. */
+.bf-step { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #cbd5e1; margin: 2px 0 5px; }
+.bf-step span { font-weight: 500; opacity: .7; text-transform: none; letter-spacing: 0; }
+.bf-sub { font-size: 11px; line-height: 1.45; color: #9ca3af; }
+.bf-box { margin-top: 10px; padding: 10px 12px; border-radius: 8px; background: rgba(127,127,127,.12); border: 1px solid rgba(127,127,127,.28); font-size: 12px; line-height: 1.45; color: #e5e7eb; }
+.bf-head { font-size: 13px; font-weight: 700; color: #f8fafc; margin-bottom: 2px; }
+.bf-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 4px; max-height: 236px; overflow: auto; padding: 2px; }
+.bf-chip { display: flex; align-items: center; gap: 6px; padding: 4px 6px; border-radius: 6px; border: 1px solid rgba(127,127,127,.28); font-size: 12px; color: #e5e7eb; cursor: pointer; min-width: 0; }
+.bf-chip input { margin: 0; flex: none; }
+.bf-chip b { letter-spacing: .5px; flex: none; }
+.bf-chip small { font-size: 10px; opacity: .65; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.bf-chip.on { border-color: #f0b429; background: rgba(240,180,41,.12); }
+.bf-rows { max-height: 260px; overflow: auto; margin: 8px 0 4px; border-top: 1px solid rgba(127,127,127,.25); }
+.bf-row { display: grid; grid-template-columns: 50px minmax(0,1fr) 14px minmax(0,1fr); gap: 6px; align-items: baseline; padding: 4px 0; border-bottom: 1px solid rgba(127,127,127,.16); }
+.bf-row > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bf-row .bf-c { font-weight: 700; letter-spacing: .5px; color: #f0b429; }
+.bf-row .bf-x { opacity: .55; text-align: center; }
+.bf-row.bf-wide { grid-template-columns: 50px minmax(0,1fr); }
+.bf-ok { color: #34d399; }
+.bf-bad { color: #f87171; }
+.bf-warn { color: #fbbf24; }
+.bf-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+/* The secondary button reads its ink from the console tokens, which follow the
+   console's own light/dark setting rather than the dark dropdown it sits in;
+   on the dropdown that ink can be slate on slate. These carry their own. */
+.bf-btn2 { background: rgba(127,127,127,.16); color: #e5e7eb; border-color: rgba(127,127,127,.42); }
+.bf-btn2:hover { background: rgba(127,127,127,.28); color: #fff; }
+#overlayMenu .bf-btn2 { background: var(--console-surface); color: var(--console-text); border-color: var(--console-border-hi); }
+#overlayMenu .bf-step { color: var(--console-text-2); }
+#overlayMenu .bf-sub { color: var(--console-text-3); }
+#overlayMenu .bf-box, #overlayMenu .bf-chip { color: var(--console-text); }
+#overlayMenu .bf-head { color: var(--console-text); }

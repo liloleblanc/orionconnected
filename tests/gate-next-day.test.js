@@ -82,11 +82,15 @@ test('the arrival is read in the zone it is printed in, against the board\'s tod
 });
 
 test('the three rail times each carry their own day line, inside the value the fitter sizes', () => {
-  assert.match(CORE, /function _shelf\(icon, en, second, val, valCls, rowCls, under\)/);
+  assert.match(CORE, /function _shelf\(icon, en, second, val, valCls, rowCls, under, foot\)/);
   assert.match(CORE, /'<div class="v2-fi-value ' \+ \(valCls \|\| ''\) \+ '">' \+ val \+ \(under \|\| ''\) \+ '<\/div>'/);
-  assert.match(CORE, /_shelf\(_badge\(_svgBoarding\)[^\n]*_gateDayLineHtml\(vars && vars\.dayBoard\)\)/);
+  // v23968 — the airline's gate-close line is the card's footer, outside the
+  // value (gate-close-time.test.js); the day line stays inside it.
+  assert.match(CORE, /_shelf\(_badge\(_svgBoarding\)[^\n]*_gateDayLineHtml\(vars && vars\.dayBoard\), _gcl\)/);
   assert.match(CORE, /_shelf\(_badge\(_svgDepart\)[^\n]*_gateDayLineHtml\(vars && vars\.dayDepart\)\)/);
-  assert.match(CORE, /_shelf\(_badge\(_svgArrive\)[^\n]*_gateDayLineHtml\(vars && vars\.dayArrive\)\)/);
+  // v23946 — the Arrival's day line is followed by the destination's terminal
+  // and arrival gate (tests/gate-arrival-from-destination.test.js).
+  assert.match(CORE, /_shelf\(_badge\(_svgArrive\)[^\n]*_gateDayLineHtml\(vars && vars\.dayArrive\) \+ \(\(vars && vars\.arrPlace\) \|\| ''\)\)/);
   const uxg = fnSource('uxgGateHtml');
   assert.match(uxg, /dayBoard: _dayBoard, dayDepart: _dayDepart, dayArrive: _dayArrive/);
   // Each is the time AS PRINTED: the boarding time, the airport's revised
@@ -94,8 +98,8 @@ test('the three rail times each carry their own day line, inside the value the f
   assert.match(uxg, /var _dayBoard = _gateDayWords\(\(typeof boardTs === 'number'\) \? boardTs : 0, tz, _frF\);/);
   assert.match(uxg, /var _dayDepart = _gateDayWords\(\(String\(depTimeHtml\)\.indexOf\('g8-r2-revised'\) !== -1 && currentFlight\._revTs\) \|\| currentFlight\._sortTs, tz, _frF\);/);
   assert.match(uxg, /var _dayArrive = _gateDayWords\(_arrShownTs, ctx\.arrTz \|\| tz, _frF, tz\);/);
-  // The printed arrival is moved by a delay once, in renderDedicatedScreen,
-  // and arrInstant is moved with it there (tests/gate-arrival-moved-once.test.js).
+  // The printed arrival is the destination airport's own time, worked out in
+  // renderDedicatedScreen with its instant (tests/gate-arrival-from-destination.test.js).
   assert.match(uxg, /var _arrShownTs = Number\(ctx\.arrInstant\) \|\| 0;/);
   assert.doesNotMatch(uxg, /_arrShownTs\s*\+=/, 'the arrival\'s day is the printed time\'s, moved once');
   // The arrival's instant comes from where its time is worked out, on both
@@ -227,10 +231,41 @@ test('no repair pass rewrites the day line — or anything else — after render
   assert.doesNotMatch(CORE, /\[\/\^Tomorrow\$\/i, \{en:'Tomorrow', fr:'Demain'\}\]/);
 });
 
-test('the departures board\'s "+1" day marker takes the row\'s ink, not the delayed amber', () => {
+test('the departures board\'s "+1" day marker is white and can be seen, never the delayed amber', () => {
   // A day is not a status. The marker was inline amber (#fbbf24), and the
   // alternate rows' white-ink rule repainted it, so one column showed it in
-  // two colours.
-  assert.match(CORE, /'<sup class="fids-dayplus" style="font-size:0\.55em;color:inherit;font-weight:900;margin-left:3px;vertical-align:super;">\+' \+ diffDays \+ '<\/sup>'/);
+  // two colours. v23935 gave it the row's ink at 55%, a speck beside the time;
+  // v23968 makes it a pill you can see: bold white on its own dark ground in a white ring,
+  // the same on every row and theme, inline !important so no row rule
+  // repaints it. It hangs off the time (absolutely positioned in an
+  // inline-block host), so it takes no width in the line and the cell's
+  // text-overflow can never drop it — the first draft's laid-out pill made "12:20 PM"
+  // overflow its 185px cell and the ellipsis took the marker.
+  assert.match(CORE, /'<span class="fids-dayplus-host" style="' \+ FIDS_DAYPLUS_HOST \+ '">' \+ fmt12\(f\.time\) \+ '<sup class="fids-dayplus" style="' \+ FIDS_DAYPLUS_STYLE \+ '">\+' \+ diffDays \+ '<\/sup><\/span>'/);
+  const h = CORE.match(/const FIDS_DAYPLUS_HOST = ('[^']*');/);
+  assert.ok(h, 'FIDS_DAYPLUS_HOST is declared');
+  assert.match(h[1], /position:relative !important;display:inline-block !important;/);
+  const m = CORE.match(/const FIDS_DAYPLUS_STYLE = ([^;]*(?:;[^;]*)*?);\n/);
+  assert.ok(m, 'FIDS_DAYPLUS_STYLE is declared');
+  const style = new Function('return ' + m[1])();
+  assert.match(style, /(^|;)color:#ffffff !important;/);
+  assert.match(style, /-webkit-text-fill-color:#ffffff !important;/);
+  assert.match(style, /border:[^;]*solid #ffffff !important;/);
+  assert.match(style, /background:rgba\(10,16,30,0\.9\) !important;/);
+  assert.match(style, /position:absolute !important;left:100% !important;/, 'hangs off the time: no width in the line');
+  // Big enough to read (0.72em of the time, the "+1" about 20px at 1680x1050)
+  // and small enough to stay inside the cell at every board size: measured on
+  // the Moncton board, the pill's right edge against the cell's was 1237/1255
+  // at 1680x1050, 1382/1422 at 1920x1080, 920/938 at 1280x720 and 734/761 at
+  // 1024x768, never clipped.
+  const fs = parseFloat(style.match(/font-size:([\d.]+)em/)[1]);
+  assert.ok(fs >= 0.7 && fs <= 0.75, 'font-size ' + fs + 'em');
+  // No status colour anywhere in it: not amber, red or green.
+  assert.doesNotMatch(style, /#fbbf24|#f59e0b|#b45309|#d82f2e|#dc2626|#d42341|#22c55e|#16a34a|#10b981|#2fd467/i);
+  for (const decl of style.split(';').filter(Boolean)) assert.match(decl, /!important$/, decl);
   assert.doesNotMatch(CORE, /<sup style="font-size:0\.55em;color:#fbbf24/);
+  // The row-ink pass judges a cell's ink against the row's ground; the pill
+  // has its own, so it is left alone (on a yellow Delayed row its white was
+  // repainted dark onto the dark pill).
+  assert.match(CORE, /if \(el\.closest && el\.closest\('\.fids-dayplus'\)\) continue;/);
 });

@@ -594,6 +594,296 @@ async function handleDeleteAirport(env, payload, origin, code) {
 }
 __name(handleDeleteAirport, "handleDeleteAirport");
 
+// ── ONE FONT FOR MANY AIRPORTS (v23985) ───────────────────────────────────
+// Sets the board font for a list of airports in one request. It writes the
+// SAME `font` field the Customize panel's per-airport PUT writes, so boards
+// and streams take it through the path they already use: the airport config
+// poll in fids-core (refreshAirportConfig, every 10 s), with no restart.
+//
+// What this code guarantees (tests/bulk-font.test.js runs each case):
+//  - ADMIN ONLY, decided HERE. The routes sit below the /api/ gate, and every
+//    handler refuses a non-admin itself. The gate only proves a token is
+//    valid, and every "is this an admin" check in the browser is forgeable.
+//  - MERGE, NEVER REPLACE. Each airport's document is read, its `font`
+//    changed, and written back with every other field as it was. A document
+//    that does not parse is reported and left alone, never overwritten.
+//  - NEWER THAN ANY DEVICE COPY. A board keeps a device-local Customize copy
+//    and lets it win while its savedAt is newer than the cloud's updatedAt
+//    (applyAirportConfigToBoard). Every write here stamps updatedAt with the
+//    server clock, and never below the document's previous stamp + 1, so a
+//    screen holding an older local copy drops it and shows this choice. That
+//    rule covers the whole look, so a theme a device saved while signed out
+//    is superseded at the same moment, exactly as any per-airport cloud save
+//    already does.
+//
+// Font keys are the Customize picker's list (menu.html #cuFontSelect). ""
+// is Default: it clears the airport's font, the same value the picker's
+// Default writes (v23950), and the board falls back to Bricolage Grotesque.
+// A device-uploaded "custom:" face is refused: its file lives in one
+// browser's storage, so no other screen could draw it.
+//
+// UNDO: the airports' previous fonts go into one KV document BEFORE any
+// airport is touched, so a run that dies half way can still be undone. Only
+// the last bulk change is kept. Undo restores an airport only while it still
+// shows the bulk font; one that was changed since is left alone and reported.
+const BULK_FONT_KEYS = new Set([
+  "possibility", "tr-tahoma", "ac-nord-display", "ac-nord-text",
+  "ac-nord-display-regular", "ac-nord-display-medium", "ac-nord-display-bold",
+  "ac-nord-display-heavy", "ac-nord-text-light", "ac-nord-text-regular",
+  "ac-nord-text-italic", "ac-nord-text-medium", "ac-nord-text-bold",
+  "ac-nord-text-heavy", "ginto-nord", "ginto-nord-thin", "ginto-nord-light",
+  "ginto-nord-regular", "ginto-nord-medium", "ginto-nord-bold",
+  "ginto-nord-black", "ginto-nord-ultra", "ginto-nord-hairline", "bricolage",
+  "bricolage-semicond", "bricolage-cond", "cabinet", "cabinet-light",
+  "cabinet-medium", "cabinet-bold", "cabinet-extrabold", "cabinet-black",
+  "abc-areal", "abc-areal-regular", "abc-areal-medium", "abc-areal-bold",
+  "abc-areal-semi-mono", "abc-areal-semi-mono-bold", "abc-areal-mono",
+  "abc-areal-mono-bold", "abc-ginto-rounded", "abc-ginto-rounded-bold",
+  "abc-ginto-rounded-black", "abc-ginto-rounded-ultra",
+  "abc-ginto-rounded-nord", "abc-ginto-rounded-nord-bold",
+  "abc-ginto-rounded-nord-black", "abc-ginto-rounded-nord-ultra",
+  "abc-ginto-rounded-nord-condensed", "abc-gravity", "abc-gravity-bold",
+  "abc-gravity-black", "abc-gravity-ultra", "abc-gravity-compressed",
+  "abc-gravity-condensed", "abc-gravity-expanded",
+  "abc-gravity-extra-condensed", "abc-gravity-wide",
+  "abc-gravity-xx-compressed", "abc-gravity-xxxx-compressed", "airport",
+  "airport-x"
+]);
+const BULK_FONT_MAX = 300;                  // the roster is ~65; this is a typo guard
+const BULK_FONT_UNDO_DOC = "font-bulk-last";
+const BULK_FONT_PARALLEL = 8;               // KV reads/writes in flight at once
+
+// Absent, null and "" all mean Default to a board (_pref + `if (_font)`).
+function _bfFont(v) { return (v === undefined || v === null) ? "" : String(v); }
+__name(_bfFont, "_bfFont");
+
+// The cloud stamp a bulk write leaves: the server clock, and never at or
+// below the stamp already there, so the board's "did updatedAt move" check
+// always sees it.
+function _bfStamp(prev, now) { return Math.max(now, (+prev || 0) + 1); }
+__name(_bfStamp, "_bfStamp");
+
+async function _bfEach(items, fn) {
+  const out = [];
+  for (let i = 0; i < items.length; i += BULK_FONT_PARALLEL) {
+    const part = await Promise.all(items.slice(i, i + BULK_FONT_PARALLEL).map(fn));
+    for (const r of part) out.push(r);
+  }
+  return out;
+}
+__name(_bfEach, "_bfEach");
+
+// One airport document, read for a merge. `error` means: do not write it.
+async function _bfReadAirport(env, code) {
+  let raw;
+  try { raw = await env.FIDS_USERS.get(`airport:${code}`); }
+  catch (e) { return { code, error: "Read failed: " + (e && e.message || e) }; }
+  if (!raw) return { code, cfg: {}, existed: false };
+  try {
+    const cfg = JSON.parse(raw);
+    if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) {
+      return { code, error: "Config is not an object — left alone" };
+    }
+    return { code, cfg, existed: true };
+  } catch (e) {
+    return { code, error: "Config unreadable — left alone" };
+  }
+}
+__name(_bfReadAirport, "_bfReadAirport");
+
+async function _bfReadUndo(env) {
+  const raw = await env.FIDS_USERS.get(BULK_FONT_UNDO_DOC);
+  if (!raw) return { doc: null };
+  try {
+    const doc = JSON.parse(raw);
+    if (!doc || typeof doc !== "object" || !Array.isArray(doc.changes)) return { corrupt: true };
+    return { doc };
+  } catch (e) { return { corrupt: true }; }
+}
+__name(_bfReadUndo, "_bfReadUndo");
+
+function _bfUndoSummary(doc) {
+  if (!doc) return null;
+  return {
+    id: doc.id, at: doc.at, by: doc.by, font: _bfFont(doc.font),
+    count: doc.changes.length,
+    changes: doc.changes.map((c) => ({ code: c.code, prev: _bfFont(c.prev) })),
+    undone: !!doc.undone, undoneAt: doc.undoneAt || null, undoneBy: doc.undoneBy || null
+  };
+}
+__name(_bfUndoSummary, "_bfUndoSummary");
+
+// ADMIN. Every configured airport's current font, and the last bulk change.
+async function handleGetBulkFont(env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const names = [];
+  let cursor;
+  do {
+    const page = await env.FIDS_USERS.list(cursor ? { prefix: "airport:", cursor } : { prefix: "airport:" });
+    for (const k of page.keys) names.push(k.name);
+    cursor = page.list_complete === false ? page.cursor : null;
+  } while (cursor);
+  const airports = {};
+  const rows = await _bfEach(names, (name) => _bfReadAirport(env, name.slice("airport:".length)));
+  for (const r of rows) {
+    airports[r.code] = r.error
+      ? { error: r.error }
+      : { font: _bfFont(r.cfg.font), updatedAt: r.cfg.updatedAt || null };
+  }
+  const u = await _bfReadUndo(env);
+  return jsonResponse({
+    v: 1,
+    airports,
+    fonts: Array.from(BULK_FONT_KEYS),
+    last: u.corrupt ? { corrupt: true } : _bfUndoSummary(u.doc)
+  }, 200, origin);
+}
+__name(handleGetBulkFont, "handleGetBulkFont");
+
+// ADMIN. { font: "<key>" | "", airports: ["YQM", …] }
+async function handlePostBulkFont(request, env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const body = await request.json().catch(() => null);
+  if (!body || typeof body !== "object") return jsonResponse({ error: "Body must be an object" }, 400, origin);
+  if (typeof body.font !== "string") {
+    return jsonResponse({ error: 'font must be a string ("" for Default)' }, 400, origin);
+  }
+  const font = body.font.trim();
+  if (font.indexOf("custom:") === 0) {
+    return jsonResponse({ error: "A custom font lives on one device and cannot be applied to other airports" }, 400, origin);
+  }
+  if (font !== "" && !BULK_FONT_KEYS.has(font)) {
+    return jsonResponse({ error: "Unknown font", font }, 400, origin);
+  }
+  if (!Array.isArray(body.airports) || !body.airports.length) {
+    return jsonResponse({ error: "airports must be a non-empty array of IATA codes" }, 400, origin);
+  }
+  if (body.airports.length > BULK_FONT_MAX) {
+    return jsonResponse({ error: `At most ${BULK_FONT_MAX} airports per change` }, 400, origin);
+  }
+  // Every code is checked before anything is written: a typo in the list
+  // refuses the whole change rather than applying the part that parsed.
+  const seen = Object.create(null);
+  const codes = [];
+  const bad = [];
+  for (const raw of body.airports) {
+    const c = String(raw == null ? "" : raw).trim().toUpperCase();
+    if (!/^[A-Z0-9]{3,4}$/.test(c)) { bad.push(String(raw)); continue; }
+    if (seen[c]) continue;
+    seen[c] = 1;
+    codes.push(c);
+  }
+  if (bad.length) return jsonResponse({ error: "Not airport codes — nothing was changed", bad }, 400, origin);
+
+  const reads = await _bfEach(codes, (code) => _bfReadAirport(env, code));
+  const writable = reads.filter((r) => !r.error);
+  const now = Date.now();
+  const id = now.toString(36) + "-" + crypto.randomUUID().slice(0, 8);
+  const by = payload.sub || "admin";
+  if (writable.length) {
+    const undo = {
+      v: 1, id, at: now, by, font, undone: false,
+      changes: writable.map((r) => {
+        const had = Object.prototype.hasOwnProperty.call(r.cfg, "font");
+        return { code: r.code, had, prev: had ? r.cfg.font : null, existed: r.existed };
+      })
+    };
+    // Written first: a change that cannot be undone is not started.
+    try { await env.FIDS_USERS.put(BULK_FONT_UNDO_DOC, JSON.stringify(undo)); }
+    catch (e) {
+      return jsonResponse({ error: "Could not record the undo — nothing was changed" }, 500, origin);
+    }
+  }
+  const results = await _bfEach(reads, async (r) => {
+    if (r.error) return { code: r.code, ok: false, error: r.error };
+    const cfg = r.cfg;
+    const from = _bfFont(cfg.font);
+    cfg.font = font;
+    cfg.updatedAt = _bfStamp(cfg.updatedAt, now);
+    cfg.updatedBy = by;
+    try {
+      await env.FIDS_USERS.put(`airport:${r.code}`, JSON.stringify(cfg));
+      return { code: r.code, ok: true, from, to: font, created: !r.existed, updatedAt: cfg.updatedAt };
+    } catch (e) {
+      return { code: r.code, ok: false, error: "Write failed: " + (e && e.message || e) };
+    }
+  });
+  const failed = results.filter((x) => !x.ok).length;
+  return jsonResponse({
+    success: failed === 0,
+    font,
+    changed: results.length - failed,
+    failed,
+    results,
+    undo: writable.length ? { id, at: now, count: writable.length } : null
+  }, 200, origin);
+}
+__name(handlePostBulkFont, "handlePostBulkFont");
+
+// ADMIN. { id } — the id of the change the operator is looking at, so an
+// undo never lands on a newer change someone else made in the meantime.
+async function handleUndoBulkFont(request, env, payload, origin) {
+  if (!isAdmin(payload)) return jsonResponse({ error: "Admin access required" }, 403, origin);
+  const body = await request.json().catch(() => ({})) || {};
+  const u = await _bfReadUndo(env);
+  if (u.corrupt) return jsonResponse({ error: "The undo record is unreadable — nothing was changed" }, 500, origin);
+  const doc = u.doc;
+  if (!doc) return jsonResponse({ error: "There is no bulk font change to undo" }, 404, origin);
+  if (body.id && body.id !== doc.id) {
+    return jsonResponse({ error: "A newer bulk change was made — reload before undoing", current: doc.id }, 409, origin);
+  }
+  if (doc.undone) return jsonResponse({ error: "That change was already undone" }, 409, origin);
+  const bulkFont = _bfFont(doc.font);
+  const now = Date.now();
+  const by = payload.sub || "admin";
+  const results = await _bfEach(doc.changes, async (ch) => {
+    const code = String(ch && ch.code || "").toUpperCase();
+    if (!/^[A-Z0-9]{3,4}$/.test(code)) return { code, ok: false, status: "failed", error: "Bad code in the undo record" };
+    const r = await _bfReadAirport(env, code);
+    if (r.error) return { code, ok: false, status: "failed", error: r.error };
+    const cur = _bfFont(r.cfg.font);
+    const prev = _bfFont(ch.prev);
+    if (cur === prev) return { code, ok: true, status: "unchanged", font: cur };
+    if (cur !== bulkFont) {
+      // Someone chose another font for this airport after the bulk change.
+      // Their choice is newer than both, so it stays.
+      return { code, ok: true, status: "kept", font: cur };
+    }
+    // Restored exactly: a font field that did not exist is removed again.
+    // The document itself stays even if the bulk change created it — a board
+    // keeps its cached config on a 404, so deleting it would leave every
+    // running screen on the bulk font.
+    if (ch.had) r.cfg.font = ch.prev; else delete r.cfg.font;
+    r.cfg.updatedAt = _bfStamp(r.cfg.updatedAt, now);
+    r.cfg.updatedBy = by;
+    try {
+      await env.FIDS_USERS.put(`airport:${code}`, JSON.stringify(r.cfg));
+      return { code, ok: true, status: "restored", from: cur, to: prev };
+    } catch (e) {
+      return { code, ok: false, status: "failed", error: "Write failed: " + (e && e.message || e) };
+    }
+  });
+  const failed = results.filter((x) => !x.ok).length;
+  // Only a complete undo closes the record; after a partial one the button
+  // stays, and running it again restores the rest (the done ones read back
+  // as unchanged).
+  if (!failed) {
+    doc.undone = true;
+    doc.undoneAt = now;
+    doc.undoneBy = by;
+    try { await env.FIDS_USERS.put(BULK_FONT_UNDO_DOC, JSON.stringify(doc)); } catch (e) {}
+  }
+  return jsonResponse({
+    success: failed === 0,
+    restored: results.filter((x) => x.status === "restored").length,
+    kept: results.filter((x) => x.status === "kept").length,
+    unchanged: results.filter((x) => x.status === "unchanged").length,
+    failed,
+    results
+  }, 200, origin);
+}
+__name(handleUndoBulkFont, "handleUndoBulkFont");
+
 // ── Media config: airline videos, ads, photos. Single global doc keyed by
 // "media-config". Schema: { airlines: {AC: {videos:[], adImages:[]}, ...},
 // global: {...}, updatedAt, updatedBy }. Public read (no auth), admin write.
@@ -1430,7 +1720,7 @@ function mcoStatus(f) {
     case "DP": return "departed";    // Departed
     case "CX": return "cancelled";   // Canceled
     case "DL": return "delayed";     // Delayed
-    case "ON": return "scheduled";   // On time
+    case "ON": return "ontime";      // On time (v23968 — its own word)
   }
   if (f.isDelayed) return "delayed";
   // Fall back to the wordy status field if originalStatus is unfamiliar.
@@ -1439,7 +1729,7 @@ function mcoStatus(f) {
   if (s.includes("land") || s.includes("arriv")) return "arrived";
   if (s.includes("depart")) return "departed";
   if (s.includes("delay")) return "delayed";
-  return "scheduled";
+  return neutralStatus(s);   // v23968
 }
 __name(mcoStatus, "mcoStatus");
 
@@ -1615,13 +1905,38 @@ function yhzTimeObj(y, mo, d, hh, mm) {
   };
 }
 __name(yhzTimeObj, "yhzTimeObj");
+// v23968 — THE AIRPORT'S OWN NEUTRAL WORD, KEPT. The adapters below used to
+// fold "On Time", "Expected", "Scheduled" and a blank status into one
+// "scheduled", and the board then printed "On time" for it by the clock — so
+// a gate whose feed said only "Scheduled", or nothing, read "On Time | À
+// l'heure". The word now travels through: "On Time" (also "OnTime", "ON
+// TIME", "on-time") is "ontime", "Expected" is "expected", and "Scheduled",
+// "Early", a blank or anything novel stay "scheduled" (a revision still makes
+// Delayed or Early on the board). The same rule as fidsNeutralWord in
+// fids-current/js/feed-router.js. Pass it the feed's status TEXT, never a
+// class list: Thunder Bay's time cells are classed "expected".
+function neutralStatus(txt) {
+  const s = String(txt || "").toLowerCase().replace(/[\s_-]+/g, "");
+  if (s.includes("ontime")) return "ontime";
+  if (s.includes("expected")) return "expected";
+  return "scheduled";
+}
+__name(neutralStatus, "neutralStatus");
+// v23968 — one of the three neutral words neutralStatus keeps. A feed's
+// separate delay flag (DUB/CLT isDelayed, BOS Delayed) or its Remarks (ORD)
+// still upgrades any of them: they were all "scheduled" before, and an
+// "On Time" status beside a "Delayed" flag must still read Delayed.
+function isNeutralStatus(st) {
+  return st === "scheduled" || st === "ontime" || st === "expected";
+}
+__name(isNeutralStatus, "isNeutralStatus");
 function yhzStatus(txt) {
   const s = String(txt || "").toLowerCase();
   if (s.includes("cancel")) return "cancelled";
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay")) return "delayed";
-  return "scheduled";   // ON TIME / EARLY / anything novel
+  return neutralStatus(s);   // v23968 — ON TIME / EXPECTED / SCHEDULED, EARLY or anything novel
 }
 __name(yhzStatus, "yhzStatus");
 // Parse one rendered board page into ADB-native flight objects. Exported
@@ -2579,6 +2894,344 @@ function opevAttachOwn(row) {
 }
 __name(opevAttachOwn, "opevAttachOwn");
 
+// ── THE ARRIVAL THE DESTINATION AIRPORT PUBLISHES (v23946) ─────────────────
+// The gate's Arrival card printed a distance guess (great-circle distance at
+// 850 km/h plus 25 minutes). On 2 October it was early on every Moncton
+// departure checked, by 19 to 42 minutes: AC1983 read 6:15 where Pearson
+// said 6:47, PD2382 5:33 PM where Montréal-Métropolitain said 6:15 PM. A time
+// no airport and no airline had published.
+//
+// Our departure is a row in the destination's own ARRIVALS list, and the
+// worker already reads that list for most of the places Moncton flies to.
+// /fararr answers with that row: the destination's scheduled time, its revised
+// time, and the terminal and arrival gate it publishes. No new upstream: each
+// far end is the same feed its own board reads, edge-cached.
+//
+// Every far end is reduced to one compact row per flight number:
+//   n   the flight number, normalised (farArrNorm)
+//   o   the origin the far end names (null when it names none)
+//   s   the scheduled arrival, epoch ms;  sl  its wall clock there, "YYYY-MM-DD HH:MM"
+//   r   the revised arrival, epoch ms;    rl  its wall clock (both null when none)
+//   t   the terminal, g  the arrival gate (null when not published, or when
+//       the gate is one this worker derived: Billy Bishop and Saint-Hubert
+//       publish none, and synthGateFor's stands are never shown as theirs)
+//   st  the far end's status, in the board's words
+const FARARR_NO_RE = /^([A-Z]{2}|[A-Z]\d|\d[A-Z])0*(\d{1,4}[A-Z]?)$/;
+// "AC0659" and "AC659" are one flight; a code that is not an IATA flight
+// number is kept as written, and matches nothing.
+function farArrNorm(no) {
+  const s = String(no || "").toUpperCase().replace(/\s+/g, "");
+  const m = s.match(FARARR_NO_RE);
+  return m ? m[1] + m[2] : s;
+}
+__name(farArrNorm, "farArrNorm");
+// The wall clock a feed printed, "YYYY-MM-DD HH:MM", from a local string with
+// or without its offset. Never re-derived through a time zone: it is the
+// clock the destination airport itself shows.
+function farArrWall(s) {
+  const m = String(s || "").match(/^(\d{4}-\d{2}-\d{2})[T ](\d{2}):(\d{2})/);
+  return m ? `${m[1]} ${m[2]}:${m[3]}` : null;
+}
+__name(farArrWall, "farArrWall");
+// An ADB-shape time object ({local, utc}) as epoch ms.
+function farArrTsOf(t) {
+  if (!t) return NaN;
+  const u = t.utc || t.local;
+  if (!u) return NaN;
+  return Date.parse(String(u).trim().replace(" ", "T"));
+}
+__name(farArrTsOf, "farArrTsOf");
+// "T1" is Terminal 1. A terminal that is only the first letter of the gate is
+// a pier, not a terminal (Calgary prints terminal "A" beside gate "A12"), so
+// it is left out rather than printed twice.
+function farArrTerminal(term, gate) {
+  let t = String(term || "").trim().toUpperCase();
+  if (!t) return null;
+  if (/^T\d+$/.test(t)) t = t.slice(1);
+  if (/^[A-Z]$/.test(t) && String(gate || "").trim().toUpperCase().charAt(0) === t) return null;
+  return t;
+}
+__name(farArrTerminal, "farArrTerminal");
+function farArrRow(n, o, sched, revised, term, gate, st) {
+  const s = sched && sched.ts;
+  const sl = sched && sched.wall;
+  if (!n || !Number.isFinite(s) || !sl) return null;
+  const r = revised && Number.isFinite(revised.ts) && revised.wall ? revised : null;
+  const g = String(gate || "").trim() || null;
+  return {
+    n: farArrNorm(n), o: String(o || "").trim().toUpperCase() || null,
+    s, sl, r: r ? r.ts : null, rl: r ? r.wall : null,
+    t: farArrTerminal(term, g), g, st: st || "scheduled"
+  };
+}
+__name(farArrRow, "farArrRow");
+// The registry feeds (AUTHORITY_HANDLERS) and Halifax already come back in the
+// ADB shape: the far end's own side is `arrival`, our side is `departure`.
+function farArrFromAdb(rows) {
+  const out = [];
+  for (const fl of (Array.isArray(rows) ? rows : [])) {
+    const a = fl && fl.arrival;
+    if (!a || !fl.number) continue;
+    const sT = a.scheduledTime || {};
+    const sTs = Number(fl._authTs || fl._yhzTs) || farArrTsOf(sT);
+    const rT = a.revisedTime || null;
+    const e = farArrRow(fl.number, fl.departure && fl.departure.airport && fl.departure.airport.iata,
+      { ts: sTs, wall: farArrWall(sT.local) },
+      rT ? { ts: farArrTsOf(rT), wall: farArrWall(rT.local) } : null,
+      a.terminal, a.gateSynth ? null : a.gate, fl.status);
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrFromAdb, "farArrFromAdb");
+// Toronto Pearson: ISO times with their offset; codeshares ride in ids[] on the
+// operating row, so each marketing number gets the operating row's times.
+const FARARR_YYZ_STATUS = { CAN: "cancelled", DIV: "diverted", DEL: "delayed", ARR: "arrived", LDD: "arrived", LND: "arrived", BAG: "arrived", ONB: "arrived" };
+function farArrYyzRows(list) {
+  const out = [];
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || String(f.type || "").toUpperCase() !== "ARR" || !f.schTime) continue;
+    const sched = { ts: Date.parse(f.schTime), wall: farArrWall(f.schTime) };
+    const revised = (f.latestTm && f.latestTm !== f.schTime) ? { ts: Date.parse(f.latestTm), wall: farArrWall(f.latestTm) } : null;
+    const routes = Array.isArray(f.routes) ? f.routes : [];
+    const origin = routes[0] && routes[0].code;
+    const st = FARARR_YYZ_STATUS[String(f.status || "").toUpperCase()] || "scheduled";
+    const nums = [f.id2 || f.id].concat((Array.isArray(f.ids) ? f.ids : []).map((x) => x && x.id2));
+    for (const n of nums) {
+      const e = n && farArrRow(n, origin, sched, revised, f.term, f.gate, st);
+      if (e) out.push(e);
+    }
+  }
+  return out;
+}
+__name(farArrYyzRows, "farArrYyzRows");
+function farArrWordStatus(s) {
+  const t = String(s || "").trim().toLowerCase();
+  if (t.includes("cancel")) return "cancelled";
+  if (t.includes("divert")) return "diverted";
+  if (t.includes("delay") || t.includes("late")) return "delayed";
+  if (t.includes("early")) return "early";
+  if (t.includes("arriv") || t.includes("land")) return "arrived";
+  return "scheduled";
+}
+__name(farArrWordStatus, "farArrWordStatus");
+// Montréal-Trudeau: Montréal wall clocks with no offset. The revised clock is
+// an HH:MM on the scheduled date (actual block, then the estimate the feed
+// spells "Formated", then its updated time); settleRevised moves it across
+// midnight when it lands more than 12 h from the schedule.
+function farArrYulRows(list) {
+  const out = [];
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || String(f.ArrivalOrDeparture || "").toUpperCase() !== "A" || !f.ScheduledTime) continue;
+    const so = localIsoObj("America/Toronto", f.ScheduledTime);
+    if (!so) continue;
+    let revised = null;
+    const revHm = String(f.FormattedActualBlockTime || f.FormatedEstimatedBlockTime || f.FormattedUpdatedTime || "").trim();
+    const schHm = String(f.FormattedScheduledTime || "").trim();
+    const hm = revHm.match(/^(\d{1,2}):(\d{2})$/);
+    if (hm && revHm !== schHm) {
+      const d = String(f.ScheduledTime).slice(0, 10).split("-").map(Number);
+      const ro = settleRevised(localTimeObjIn("America/Toronto", d[0], d[1], d[2], Number(hm[1]), Number(hm[2])), so, "America/Toronto");
+      if (ro) revised = { ts: ro.ts, wall: farArrWall(ro.local) };
+    }
+    const e = farArrRow(f.PublicDisplayFlightNumber, f.AirportIataCode,
+      { ts: so.ts, wall: farArrWall(so.local) }, revised, null, f.TerminalGate,
+      farArrWordStatus(f.OperationalStatusDescription));
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrYulRows, "farArrYulRows");
+// Montréal-Métropolitain: the terminal's own JSON. mostConfidentTime is its
+// pick of actual over estimate over schedule. MET publishes no gate; the stand
+// /flights/yhu carries is derived here (synthGateFor) and is never shown.
+function farArrYhuRows(list) {
+  const out = [];
+  for (const f of (Array.isArray(list) ? list : [])) {
+    const id = f && f.flightId, st = f && f.flightState;
+    if (!id || !st || String(id.flightKind || "").toLowerCase() !== "arrival" || !st.scheduledTime) continue;
+    const props = st.properties || {};
+    const so = localIsoObj("America/Toronto", st.scheduledTime);
+    if (!so) continue;
+    const mct = props.mostConfidentTime || props.actualTime || props.estimatedTime || null;
+    const ro = (mct && mct !== st.scheduledTime) ? localIsoObj("America/Toronto", mct) : null;
+    const stops = Array.isArray((st.route || {}).stops) ? st.route.stops : [];
+    const n = String((id.airlineDesignator || {}).iata || "") + String(id.flightNumber == null ? "" : id.flightNumber);
+    const e = farArrRow(n, stops[0] && stops[0].iata,
+      { ts: so.ts, wall: farArrWall(so.local) }, ro ? { ts: ro.ts, wall: farArrWall(ro.local) } : null,
+      null, f.gateSynth ? null : f.gate, farArrWordStatus(props.status || props.remarkDescription));
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrYhuRows, "farArrYhuRows");
+// Billy Bishop: the page's rows, a Toronto date and a scheduled HH:MM, city
+// names and no codes, no revised clock, no gates (the stand /flights/ytz
+// carries is derived and never shown). A row whose number disagrees with the
+// operator's logo is a codeshare mirror, dropped as the board drops it.
+function farArrYtzRows(list) {
+  const out = [];
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || String(f.kind || "") !== "arr" || !f.date) continue;
+    const hm = String(f.time || "").match(/^(\d{1,2}):(\d{2})$/);
+    const n = String(f.flightNo || "").trim().toUpperCase();
+    const al = (n.match(/^([A-Z]{2}|[A-Z]\d|\d[A-Z])\d/) || [])[1] || "";
+    if (!hm || !n || (f.operatorLogo && al && f.operatorLogo !== al)) continue;
+    const d = String(f.date).split("-").map(Number);
+    const so = localTimeObjIn("America/Toronto", d[0], d[1], d[2], Number(hm[1]), Number(hm[2]));
+    const e = farArrRow(n, null, { ts: so.ts, wall: farArrWall(so.local) }, null, null,
+      f.gateSynth ? null : f.gate, farArrWordStatus(f.status));
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrYtzRows, "farArrYtzRows");
+// cyqm.ca's list for one direction ("arrivals" | "departures"), edge-cached
+// 60 s: the one fetch /yqm/flights/* and /fararr share, so Moncton is asked
+// once a minute however many screens and far ends read it. Their firewall
+// answers a plain client differently from a browser, so it asks the way a
+// browser asks. null when cyqm.ca answered nothing.
+function yqmCyqmText(seg) {
+  return fetchAuthorityText(
+    "yqm/" + seg,
+    "https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/" + seg,
+    null,
+    60,
+    { headers: {
+      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+      "Accept": "application/json, text/plain, */*",
+      "Accept-Language": "en-CA,en;q=0.9",
+      "Referer": "https://www.cyqm.ca/"
+    } }
+  );
+}
+__name(yqmCyqmText, "yqmCyqmText");
+// Moncton: cyqm.ca's own list, the one Moncton's boards read through
+// /yqm/flights/arrivals (yqmCyqmText, the same fetch and edge cache).
+// localTimestamp is Moncton's WALL CLOCK written as a UTC epoch
+// (feed-router.js yqmTimeObj), so its UTC parts are the clock Moncton prints.
+// The revised clock is actualTime ("5:07 PM") when it differs from
+// scheduledTime, moved across midnight the way the board moves it. The gate
+// is Moncton's real arrival gate (Air Canada arrives at 4, leaves from 1).
+function farArrYqmRows(list) {
+  const out = [];
+  const tz = "America/Moncton";
+  const toMin = (t) => {
+    const m = String(t || "").match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+    if (!m) return null;
+    let h = Number(m[1]) % 12;
+    if (String(m[3] || "").toUpperCase() === "PM") h += 12;
+    else if (!m[3]) h = Number(m[1]);
+    return h * 60 + Number(m[2]);
+  };
+  const wallAt = (epochS) => {
+    const d = new Date(epochS * 1000);
+    if (isNaN(d.getTime())) return null;
+    return localTimeObjIn(tz, d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes());
+  };
+  for (const f of (Array.isArray(list) ? list : [])) {
+    if (!f || typeof f.localTimestamp !== "number") continue;
+    const so = wallAt(f.localTimestamp);
+    if (!so) continue;
+    let revised = null;
+    const sm = toMin(f.scheduledTime), am = toMin(f.actualTime);
+    if (sm != null && am != null && am !== sm) {
+      let delta = am - sm;
+      if (delta < -720) delta += 1440;
+      else if (delta > 720) delta -= 1440;
+      const ro = wallAt(f.localTimestamp + delta * 60);
+      if (ro) revised = { ts: ro.ts, wall: farArrWall(ro.local) };
+    }
+    const n = String(f.flightId || (String(f.airlineCode || "") + String(f.flightNumber || ""))).trim();
+    const e = farArrRow(n, f.airportCode, { ts: so.ts, wall: farArrWall(so.local) }, revised,
+      f.terminal, f.gate, farArrWordStatus(f.status));
+    if (e) out.push(e);
+  }
+  return out;
+}
+__name(farArrYqmRows, "farArrYqmRows");
+// The airports whose arrivals /fararr can read: every registry feed, Halifax,
+// Moncton, and the four that have their own /flights/ routes.
+const FARARR_OWN_ROUTES = ["yyz", "yul", "yhu", "ytz"];
+function farArrHas(code) {
+  const k = String(code || "").toLowerCase();
+  return k === "yhz" || k === "yqm" || FARARR_OWN_ROUTES.indexOf(k) !== -1 || Object.prototype.hasOwnProperty.call(AUTHORITY_HANDLERS, k);
+}
+__name(farArrHas, "farArrHas");
+// One far end's arrivals as compact rows, or null when its feed answered
+// nothing: a failed fetch, a challenge page, an error from its handler, or an
+// empty list. No airport we read publishes an empty arrivals list, so an
+// empty one is the far end being down, never "no such flight"; /fararr then
+// says so (unavailable) and the gate keeps the time it last printed.
+// The four own routes are read through their own handlers (same fetch, same
+// edge cache); Montréal-Trudeau without the per-flight belt calls its arrivals
+// board makes, which an arrival time does not need.
+async function farArrList(code, env) {
+  const k = String(code || "").toLowerCase();
+  const own = async (fn, ...rest) => {
+    const r = await fn(null, env, null, "arr", ...rest);
+    if (!r || !r.ok) return null;
+    const j = await r.json().catch(() => null);
+    return (j && Array.isArray(j.list)) ? j.list : null;
+  };
+  const some = (rows) => (Array.isArray(rows) && rows.length) ? rows : null;
+  if (k === "yyz") return some(farArrYyzRows(await own(handleYyzFids)));
+  if (k === "yul") return some(farArrYulRows(await own(handleYulFids, { noBelts: true })));
+  if (k === "yhu") return some(farArrYhuRows(await own(handleYhuFids)));
+  if (k === "ytz") return some(farArrYtzRows(await own(handleYtzFids)));
+  if (k === "yhz") {
+    const html = await yhzFetchPage("arr");
+    return html ? some(farArrFromAdb(yhzParseBoard(html, false, Date.now()))) : null;
+  }
+  if (k === "yqm") {
+    const txt = await yqmCyqmText("arrivals");
+    let rows = null;
+    try { rows = txt ? JSON.parse(txt) : null; } catch (e) { rows = null; }
+    return some(farArrYqmRows(rows));
+  }
+  const h = AUTHORITY_HANDLERS[k];
+  if (!h) return null;
+  return some(farArrFromAdb(await h.list("arr", env)));
+}
+__name(farArrList, "farArrList");
+// The far end's row for our departure: the same number, from our airport (when
+// the far end names an origin), and the FIRST arrival at least 20 minutes after
+// our scheduled departure and within 20 hours of it. So a daily flight takes
+// today's instance, never yesterday's or tomorrow's, and no arrival that lands
+// before we take off can be ours. Montréal-Trudeau lists some flights twice
+// (an ACA and a JZA row); the row that publishes more wins a tie.
+function farArrPick(index, flightNo, fromIata, depTs) {
+  const f = farArrNorm(flightNo);
+  const from = String(fromIata || "").toUpperCase();
+  const dep = Number(depTs) || 0;
+  if (!dep) return null;
+  const score = (e) => (e.r ? 4 : 0) + (e.g ? 2 : 0) + (e.t ? 1 : 0);
+  let best = null;
+  for (const e of (Array.isArray(index) ? index : [])) {
+    if (!e || e.n !== f) continue;
+    if (from && e.o && e.o !== from) continue;
+    if (!(e.s >= dep + 20 * 60000) || e.s > dep + 20 * 3600000) continue;
+    if (!best || e.s < best.s || (e.s === best.s && score(e) > score(best))) best = e;
+  }
+  return best;
+}
+__name(farArrPick, "farArrPick");
+// The answer /fararr sends for one pick (or none). `unavailable` says the far
+// end's list could not be read this time (farArrList answered null): not "no
+// such flight", so the gate keeps the time it last printed instead of a dash.
+function farArrAnswer(f, to, from, pick, unavailable) {
+  if (!pick) return unavailable ? { f, to, from, found: false, unavailable: true } : { f, to, from, found: false };
+  return {
+    f, to, from, found: true,
+    sched: pick.sl, schedTs: pick.s,
+    rev: pick.rl || null, revTs: pick.r || null,
+    term: pick.t || null, gate: pick.g || null,
+    status: pick.st || "scheduled",
+    cancelled: pick.st === "cancelled"
+  };
+}
+__name(farArrAnswer, "farArrAnswer");
+
 // ── THE TRACK A FLIGHT HAS ACTUALLY FLOWN (v23906) ─────────────────────────
 // The maps drew the "flown" half of the route as a straight great-circle arc
 // from the airport to the aeroplane, which no aeroplane flies: it leaves along
@@ -3074,7 +3727,7 @@ function dubParseRows(rows, dir) {
       if (!isNaN(et) && et !== schedTs) revised = localTimeObjFromTs("Europe/Dublin", et);
     }
     let status = yhzStatus(String(r.statusMessage || ""));
-    if (status === "scheduled" && r.isDelayed === true) status = "delayed";
+    if (isNeutralStatus(status) && r.isDelayed === true) status = "delayed";   // v23968 — any neutral word
     const fl = authorityFlight({
       dir, number: String(r.flightIdentity).trim(),
       status,
@@ -3170,7 +3823,7 @@ function bosParseFeed(jsonText, dir, nowMs) {
       if (rv.ts !== ts) revised = rv;
     }
     let status = yhzStatus(r.Remarks || "");
-    if (status === "scheduled" && String(r.Delayed) === "True") status = "delayed";
+    if (isNeutralStatus(status) && String(r.Delayed) === "True") status = "delayed";   // v23968 — any neutral word
     const isDep = dir === "dep";
     const fl = authorityFlight({
       dir, number: `${code}${num}`, status,
@@ -3276,7 +3929,13 @@ function ordParseFeed(jsonText, dir, nowMs) {
       : (r.ArrivalDateTimeActualGate || r.ArrivalDateTimeEstimatedGate));
     const revised = (!isNaN(estTs) && estTs !== schedTs) ? localTimeObjFromTs("America/Chicago", estTs) : null;
     let status = yhzStatus(r.Status || "");
-    if (status === "scheduled") status = yhzStatus(r.Remarks || "");
+    // v23968 — Remarks is read under any neutral Status: a Remarks word
+    // (Delayed, Cancelled, Boarding…) beats it, and a neutral Remarks word
+    // ("On Time") replaces only a plain Scheduled.
+    if (isNeutralStatus(status)) {
+      const rem = yhzStatus(r.Remarks || "");
+      if (!isNeutralStatus(rem) || (status === "scheduled" && rem !== "scheduled")) status = rem;
+    }
     const fl = authorityFlight({
       dir, number: String(r.AirlineCodeFlightNumber).trim(), status,
       homeIata: "ORD", homeIcao: "KORD", homeName: "Chicago",
@@ -3890,7 +4549,7 @@ __name(settleRevised, "settleRevised");
 // PDX Portland — Port of Portland's in-house ASP.NET feed, one GET for
 // both directions and a multi-day window. Cities[] carries the IATA
 // code; gates are space-padded; StatusCode is a two-letter enum.
-const PDX_STATUS = { ON: "scheduled", DP: "departed", AR: "arrived", CX: "cancelled", DL: "delayed", DV: "diverted" };
+const PDX_STATUS = { ON: "ontime", DP: "departed", AR: "arrived", CX: "cancelled", DL: "delayed", DV: "diverted" };
 function pdxParseFeed(jsonText, dir, nowMs) {
   const out = [];
   let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
@@ -4591,7 +5250,7 @@ function cltParseFeed(jsonText, dir, nowMs) {
     const revised = (typeof bt === "number" && bt !== r.scheduledTimestamp) ? localTimeObjFromTs("America/New_York", bt * 1000) : null;
     const belt = Array.isArray(r.baggageBelt) && r.baggageBelt.length ? r.baggageBelt.join(", ") : null;
     let status = yhzStatus(r.status || r.originalStatus || "");
-    if (status === "scheduled" && r.isDelayed === true) status = "delayed";
+    if (isNeutralStatus(status) && r.isDelayed === true) status = "delayed";   // v23968 — any neutral word
     const fl = authorityFlight({
       dir, number: num.toUpperCase(),
       status,
@@ -4613,7 +5272,7 @@ __name(cltParseFeed, "cltParseFeed");
 
 // MCI Kansas City — Azure Function JSON. adi A/D, IATA airlineCode and
 // cityCode, offset-less local ISO times, gate, claim, status enum.
-const MCI_STATUS = { CX: "cancelled", AR: "arrived", DP: "departed", DL: "delayed", ON: "scheduled", BO: "boarding" };
+const MCI_STATUS = { CX: "cancelled", AR: "arrived", DP: "departed", DL: "delayed", ON: "ontime", BO: "boarding" };
 function mciParseFeed(jsonText, dir, nowMs) {
   const out = [];
   let j; try { j = JSON.parse(jsonText); } catch (e) { return out; }
@@ -4831,7 +5490,7 @@ __name(ausParseFeed, "ausParseFeed");
 // digit + gate, or a bare "T1"/"T2" when no gate is posted yet. No
 // revised time and no belt anywhere on the page.
 const MSP_STATUS = {
-  "ON TIME": "scheduled", "GATE CHANGE": "scheduled", "BOARDING": "boarding",
+  "ON TIME": "ontime", "GATE CHANGE": "scheduled", "BOARDING": "boarding",
   "DEPARTED": "departed", "LANDED": "arrived", "ARRIVED AT GATE": "arrived",
   "ARRIVED": "arrived", "DELAYED": "delayed", "CANCELLED": "cancelled", "CANCELED": "cancelled"
 };
@@ -4952,7 +5611,7 @@ const SLC_AIRLINE_NAME = {
 // (AM793, a 09:30 departure, still read InGate at 20:00), so it only
 // means "arrived" on the arrivals side.
 const SLC_STATUS = {
-  SCHEDULED: "scheduled", ONTIME: "scheduled", DEPARTED: "departed", OUTGATE: "departed",
+  SCHEDULED: "scheduled", ONTIME: "ontime", DEPARTED: "departed", OUTGATE: "departed",
   ARRIVED: "arrived", LANDED: "arrived", INFLIGHT: "active", ENROUTE: "active", INAIR: "active",
   DELAYED: "delayed", CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted",
   BOARDING: "boarding", GATECLOSED: "gateclosed"
@@ -5118,7 +5777,7 @@ function yxeStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(txt);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yxeStatus, "yxeStatus");
 // "05:05 AM" / "4:25 PM" on a given Saskatoon calendar day → time object.
@@ -5291,7 +5950,7 @@ function parseYqtStatus(text, cls) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("late") || s.includes("delay")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(text);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(parseYqtStatus, "parseYqtStatus");
 // One tab's rows → [{ cells, prefix, digits, name, ... }] without dates.
@@ -5652,7 +6311,7 @@ function yqxStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay") || s.includes("late")) return "delayed";
-  return "scheduled";   // OnTime / On Time / Early / anything novel
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yqxStatus, "yqxStatus");
 // "06 Sep" + "13:20" → time object on that Gander calendar day. The year
@@ -5777,7 +6436,7 @@ function yygStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay") || s.includes("late")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yygStatus, "yygStatus");
 // "Sep 6, 2026" (also "Sept 6, 2026", "6 Sep 2026") → { y, mo, d } or null.
@@ -6029,7 +6688,7 @@ function yxsStatus(txt, cls) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("late") || s.includes("delay")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yxsStatus, "yxsStatus");
 // One data-* attribute off a row's <button …> tag, entity-decoded.
@@ -6121,7 +6780,7 @@ __name(parseYxsPanels, "parseYxsPanels");
 // lowercased (the boards treat an unknown key as scheduled, and the raw
 // word stays visible in the JSON for the next person).
 const YMM_STATUS = {
-  "ON TIME": "scheduled", "EARLY": "scheduled", "SCHEDULED": "scheduled", "EXPECTED": "scheduled",
+  "ON TIME": "ontime", "EARLY": "scheduled", "SCHEDULED": "scheduled", "EXPECTED": "expected",
   "DELAYED": "delayed", "LATE": "delayed",
   "CANCELLED": "cancelled", "CANCELED": "cancelled",
   "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
@@ -6140,7 +6799,8 @@ function ymmStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("delay") || s.includes("late")) return "delayed";
-  if (s.includes("on time") || s.includes("early") || s.includes("sched") || s.includes("expect")) return "scheduled";
+  if (s.includes("on time") || s.includes("expect")) return neutralStatus(s);   // v23968 — its own word
+  if (s.includes("early") || s.includes("sched")) return "scheduled";
   return s;   // novel wording passes through as-is
 }
 __name(ymmStatus, "ymmStatus");
@@ -6265,7 +6925,7 @@ __name(ymmDays, "ymmDays");
 const PHX_TZ = "America/Phoenix";
 // ON/AR/DP/DL seen live; CX/DV are the PDX-style siblings the vendor is
 // likely to emit — unverified, so anything else falls back to the text.
-const PHX_STATUS = { ON: "scheduled", AR: "arrived", DP: "departed", CX: "cancelled", DL: "delayed", DV: "diverted" };
+const PHX_STATUS = { ON: "ontime", AR: "arrived", DP: "departed", CX: "cancelled", DL: "delayed", DV: "diverted" };
 // "9:56 PM" (today in Phoenix) or "September 6, 4:52 AM" (that day) → a
 // time object. Dateless clocks are settled toward the schedule so a clock
 // printed just before midnight and read just after it doesn't land a day
@@ -6412,7 +7072,7 @@ function yzfStatus(txt) {
   if (s.includes("depart")) return "departed";
   if (s.includes("arriv") || s.includes("land")) return "arrived";
   if (s.includes("late") || s.includes("delay")) return "delayed";
-  return "scheduled";   // On Time / Early / anything novel
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(yzfStatus, "yzfStatus");
 function yzfAirlineCode(name) {
@@ -6843,7 +7503,7 @@ function iahStatus(r) {
   if (s.includes("depart")) return "departed";
   if (s.includes("land") || s.includes("arriv")) return "arrived";
   if (r.isDelayed === true || o.includes("delay")) return "delayed";
-  return "scheduled";
+  return neutralStatus(r.status);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(iahStatus, "iahStatus");
 // jsonText → ADB-native flights for one direction. `home` defaults to
@@ -6921,7 +7581,7 @@ __name(parseIahFeed, "parseIahFeed");
 // Call, NT New Time, ON On Time (the default for every future flight).
 const MCO_AUTH_STATUS = {
   AR: "arrived", LD: "arrived", DP: "departed", CX: "cancelled", DL: "delayed",
-  DV: "diverted", BD: "boarding", LC: "boarding", ON: "scheduled"
+  DV: "diverted", BD: "boarding", LC: "boarding", ON: "ontime"   // v23968 — On Time is its own word
 };
 // flymco.com's own airline table (the flightsEnrichmentData block in its
 // page payload, read 2026-09-06): display name and the terminal the
@@ -7069,7 +7729,7 @@ const JFK_GQL_ARR = "query GetArrivingFlights(\n  $arrivalAirport: String!\n  $a
 // Site vocabulary (bundle enum: Scheduled / Delayed / Departed / In Flight /
 // Landed / Arrived / Cancelled; the list API says "On Time" and "En Route").
 const JFK_STATUS = {
-  "ON TIME": "scheduled", SCHEDULED: "scheduled", DELAYED: "delayed", DEPARTED: "departed",
+  "ON TIME": "ontime", SCHEDULED: "scheduled", DELAYED: "delayed", DEPARTED: "departed",
   "IN FLIGHT": "active", "EN ROUTE": "active", LANDED: "arrived", ARRIVED: "arrived",
   CANCELLED: "cancelled", CANCELED: "cancelled", DIVERTED: "diverted"
 };
@@ -7266,7 +7926,7 @@ const SYD_TZ = "Australia/Sydney";
 // revision. Landed is on the ground short of the gate, which the boards
 // fold to arrived anyway; Gate Open and Final Call sit inside boarding.
 const SYD_STATUS = {
-  "ON TIME": "scheduled", "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
+  "ON TIME": "ontime", "DEPARTED": "departed", "ARRIVED": "arrived", "LANDED": "arrived",
   "CANCELLED": "cancelled", "DELAYED": "delayed", "DIVERTED": "diverted",
   "GATE OPEN": "boarding", "BOARDING": "boarding", "FINAL CALL": "boarding", "GATE CLOSED": "gateclosed"
 };
@@ -7285,7 +7945,7 @@ function sydStatus(text) {
   if (/\bnot\b/.test(s)) return "scheduled";
   if (/\bdeparted\b/.test(s)) return "departed";
   if (/\barrived\b|\blanded\b/.test(s)) return "arrived";
-  return "scheduled";
+  return neutralStatus(s);   // v23968 — the feed's own neutral word (On Time / Expected); Early or anything novel stays scheduled
 }
 __name(sydStatus, "sydStatus");
 // The three carriers whose airline field is "" in the feed.
@@ -8401,7 +9061,9 @@ async function yulApexRows(page) {
 __name(yulApexRows, "yulApexRows");
 
 // GET /flights/yul?direction=dep|arr  (or Departure|Arrival)
-async function handleYulFids(request, env, origin, direction) {
+// opts.noBelts skips the per-arrival belt calls below (/fararr reads only the
+// times and gates, so it never needs them).
+async function handleYulFids(request, env, origin, direction, opts) {
   const page = /^arr/i.test(direction || "") ? "arrivals" : "departures";
   try {
     let merged;
@@ -8419,7 +9081,7 @@ async function handleYulFids(request, env, origin, direction) {
     // baggage-hall window is enriched: arrivals scheduled within the last
     // 5h or next 3h (what a carousel screen actually shows), nearest first,
     // capped at 40 to stay under the Workers subrequest budget.
-    if (page === "arrivals" && merged.length) {
+    if (page === "arrivals" && merged.length && !(opts && opts.noBelts)) {
       const now = Date.now();
       const cand = merged
         .map((f) => {
@@ -9169,6 +9831,11 @@ var fids_proxy_default = {
       const apMatch = path.match(/^\/api\/airport-config\/([A-Za-z0-9]+)$/);
       if (apMatch && request.method === "PUT") return handlePutAirport(request, env, payload, origin, apMatch[1]);
       if (apMatch && request.method === "DELETE") return handleDeleteAirport(env, payload, origin, apMatch[1]);
+      // ── One font for many airports (v23985) — admin only, enforced in each
+      // handler; see handlePostBulkFont.
+      if (path === "/api/bulk-font" && request.method === "GET") return handleGetBulkFont(env, payload, origin);
+      if (path === "/api/bulk-font" && request.method === "POST") return handlePostBulkFont(request, env, payload, origin);
+      if (path === "/api/bulk-font/undo" && request.method === "POST") return handleUndoBulkFont(request, env, payload, origin);
 
       const apLogoMatch = path.match(/^\/api\/airport-config\/([A-Za-z0-9]+)\/logo$/);
       if (apLogoMatch && request.method === "POST") return handleUploadAirportLogo(request, env, payload, origin, apLogoMatch[1]);
@@ -9714,6 +10381,61 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
         "Content-Type": "application/json", "Cache-Control": `public, max-age=${_acAge}` } })); } catch (e) {}
       return new Response(_acBody, { status: 200, headers: {
         "Content-Type": "application/json", "Cache-Control": `public, max-age=${_acAge}`, "X-Acinfo-Cache": "miss", ...corsHeaders(origin) } });
+    }
+    // ── /fararr — THE ARRIVAL THE DESTINATION AIRPORT PUBLISHES (v23946) ─────
+    // GET /fararr?f=AC1983&to=YYZ&from=YQM&dep=<our scheduled departure, epoch ms>
+    // Answers { found:false } or { found:true, sched, schedTs, rev, revTs, term,
+    // gate, status, cancelled } from the destination's own arrivals list
+    // (farArrList / farArrPick). Always a 200: "no row" is an answer, and the
+    // gate then prints a dash, never a guess. Public like /acinfo,
+    // pattern-checked, no upstream beyond the feeds the boards already read.
+    // The index of a far end is edge-cached for 150 s, an answer for 120 s, so a
+    // revised time reaches the gate within a few minutes.
+    // When the far end's list could not be read (its fetch failed, or it came
+    // back empty) the answer is { found:false, unavailable:true }, cached 30 s
+    // and its index 60 s: the far end being down is not "no such flight", and
+    // the gate keeps the time it last printed (_farArrKick) instead of a dash.
+    if (path === "/fararr") {
+      const f = farArrNorm(url.searchParams.get("f"));
+      const to = String(url.searchParams.get("to") || "").toLowerCase();
+      const from = String(url.searchParams.get("from") || "").toUpperCase();
+      const dep = Number(url.searchParams.get("dep")) || 0;
+      if (!AC_FLIGHT_RE.test(f) || !/^[a-z]{3}$/.test(to) || (from && !/^[A-Z]{3}$/.test(from)) || !(dep > 0)) {
+        return jsonResponse({ error: "Use /fararr?f=AC1983&to=YYZ&from=YQM&dep=<ms>" }, 400, origin);
+      }
+      const _faCache = caches.default;
+      const _faKey = new Request(`https://fararr-cache/v1/${f}/${to}/${from || "-"}/${Math.floor(dep / 60000)}`);
+      try {
+        const hit = await _faCache.match(_faKey);
+        if (hit) {
+          const _hb = await hit.text();
+          const _ha = /"unavailable":true/.test(_hb) ? 30 : 120;
+          return new Response(_hb, { status: 200, headers: {
+            "Content-Type": "application/json", "Cache-Control": `public, max-age=${_ha}`, "X-Fararr-Cache": "hit", ...corsHeaders(origin) } });
+        }
+      } catch (e) {}
+      let pick = null, unavailable = false;
+      if (farArrHas(to)) {
+        try {
+          const _ixKey = new Request(`https://fararr-index/v1/${to}`);
+          let index = null;
+          const ih = await _faCache.match(_ixKey).catch(() => null);
+          if (ih) index = await ih.json().catch(() => null);
+          if (!Array.isArray(index)) {
+            index = (await farArrList(to, env)) || [];
+            await _faCache.put(_ixKey, new Response(JSON.stringify(index), { headers: {
+              "Content-Type": "application/json", "Cache-Control": `public, max-age=${index.length ? 150 : 60}` } })).catch(() => {});
+          }
+          if (index.length) pick = farArrPick(index, f, from, dep);
+          else unavailable = true;
+        } catch (e) { pick = null; unavailable = true; }
+      }
+      const _faBody = JSON.stringify(farArrAnswer(f, to.toUpperCase(), from || null, pick, unavailable));
+      const _faAge = unavailable ? 30 : 120;
+      try { await _faCache.put(_faKey, new Response(_faBody, { headers: {
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${_faAge}` } })); } catch (e) {}
+      return new Response(_faBody, { status: 200, headers: {
+        "Content-Type": "application/json", "Cache-Control": `public, max-age=${_faAge}`, "X-Fararr-Cache": "miss", ...corsHeaders(origin) } });
     }
     // ── ADS-B LIVE POSITIONS (proxied + cached) ───────────────────────────
     // GET /adsb/flight/{AC7754} | /adsb/callsign/{cs} | /adsb/reg/{tail} | /adsb/hex/{icao24}
@@ -10613,20 +11335,7 @@ return jsonResponse({ hotels: [], attractions: [], iata, city, lang, status: "un
     // through to that cache instead of caching an error as data.
     if (path === "/yqm/flights/departures" || path === "/yqm/flights/arrivals") {
       const _seg = path.endsWith("arrivals") ? "arrivals" : "departures";
-      const _txt = await fetchAuthorityText(
-        "yqm/" + _seg,
-        "https://www.cyqm.ca/wp-json/ch-flight-data/v1/flights/" + _seg,
-        null,
-        60,
-        { headers: {
-          // Their firewall answers a plain client differently from a browser,
-          // so ask the way a browser asks.
-          "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
-          "Accept": "application/json, text/plain, */*",
-          "Accept-Language": "en-CA,en;q=0.9",
-          "Referer": "https://www.cyqm.ca/"
-        } }
-      );
+      const _txt = await yqmCyqmText(_seg);
       if (_txt) {
         // v23918 — the rows the feed has dropped but said landed / left come
         // back on the end of the answer, marked "remembered" (yqmWithMemory).
@@ -11210,7 +11919,22 @@ export {
   opevForLegs,
   opevAttachOwn,
   yulApexRows,
+
+  farArrNorm,
+  farArrWall,
+  farArrTerminal,
+  farArrFromAdb,
+  farArrYyzRows,
+  farArrYulRows,
+  farArrYhuRows,
+  farArrYtzRows,
+  farArrYqmRows,
+  farArrList,
+  farArrHas,
+  farArrPick,
+  farArrAnswer,
   acTrackAddPoint,
   acTrackAppend,
-  _authorityRosterHas
+  _authorityRosterHas,
+  BULK_FONT_KEYS as _bulkFontKeys
 };

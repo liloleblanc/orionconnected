@@ -1,0 +1,225 @@
+{
+ "captured": "2026-10-04T16:41Z via fids-proxy /flights/airports/iata/YYC/...?direction=Arrival, X-Feed-Source yyc-authority (501 rows; these kept)",
+ "arrivals": [
+  {
+   "number": "WS813",
+   "callSign": null,
+   "status": "scheduled",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "73W",
+    "reg": "C-GCWJ"
+   },
+   "departure": {
+    "airport": {
+     "iata": "YQM",
+     "icao": null,
+     "name": "Moncton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 20:40:00-06:00",
+     "utc": "2026-10-05 02:40:00+00:00"
+    },
+    "airline": {
+     "iata": "WS",
+     "icao": null,
+     "name": "WestJet"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YYC",
+     "icao": "CYYC",
+     "name": "Calgary"
+    },
+    "gate": "A12",
+    "scheduledTime": {
+     "local": "2026-10-04 20:40:00-06:00",
+     "utc": "2026-10-05 02:40:00+00:00"
+    },
+    "airline": {
+     "iata": "WS",
+     "icao": null,
+     "name": "WestJet"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "A",
+    "baggageBelt": "1"
+   },
+   "_authTs": 1791168000000
+  },
+  {
+   "number": "WS813",
+   "callSign": null,
+   "status": "scheduled",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "73H",
+    "reg": "C-GWSZ"
+   },
+   "departure": {
+    "airport": {
+     "iata": "YQM",
+     "icao": null,
+     "name": "Moncton"
+    },
+    "scheduledTime": {
+     "local": "2026-10-05 20:40:00-06:00",
+     "utc": "2026-10-06 02:40:00+00:00"
+    },
+    "airline": {
+     "iata": "WS",
+     "icao": null,
+     "name": "WestJet"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YYC",
+     "icao": "CYYC",
+     "name": "Calgary"
+    },
+    "gate": "A15",
+    "scheduledTime": {
+     "local": "2026-10-05 20:40:00-06:00",
+     "utc": "2026-10-06 02:40:00+00:00"
+    },
+    "airline": {
+     "iata": "WS",
+     "icao": null,
+     "name": "WestJet"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "A",
+    "baggageBelt": "3"
+   },
+   "_authTs": 1791254400000
+  },
+  {
+   "number": "WS669",
+   "callSign": null,
+   "status": "delayed",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "7M8",
+    "reg": "C-GKWJ"
+   },
+   "departure": {
+    "airport": {
+     "iata": "YHZ",
+     "icao": null,
+     "name": "Halifax"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 10:20:00-06:00",
+     "utc": "2026-10-04 16:20:00+00:00"
+    },
+    "airline": {
+     "iata": "WS",
+     "icao": null,
+     "name": "WestJet"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YYC",
+     "icao": "CYYC",
+     "name": "Calgary"
+    },
+    "gate": "A22",
+    "scheduledTime": {
+     "local": "2026-10-04 10:20:00-06:00",
+     "utc": "2026-10-04 16:20:00+00:00"
+    },
+    "revisedTime": {
+     "local": "2026-10-04 11:06:00-06:00",
+     "utc": "2026-10-04 17:06:00+00:00"
+    },
+    "airline": {
+     "iata": "WS",
+     "icao": null,
+     "name": "WestJet"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "A",
+    "baggageBelt": "3"
+   },
+   "_authTs": 1791130800000
+  },
+  {
+   "number": "WS1593",
+   "callSign": null,
+   "status": "delayed",
+   "codeshareStatus": "IsOperator",
+   "isCargo": false,
+   "aircraft": {
+    "model": "73W",
+    "reg": "C-GWJO"
+   },
+   "departure": {
+    "airport": {
+     "iata": "ATL",
+     "icao": null,
+     "name": "Atlanta"
+    },
+    "scheduledTime": {
+     "local": "2026-10-04 11:00:00-06:00",
+     "utc": "2026-10-04 17:00:00+00:00"
+    },
+    "airline": {
+     "iata": "WS",
+     "icao": null,
+     "name": "WestJet"
+    },
+    "quality": [
+     "Live"
+    ]
+   },
+   "arrival": {
+    "airport": {
+     "iata": "YYC",
+     "icao": "CYYC",
+     "name": "Calgary"
+    },
+    "gate": "D94",
+    "scheduledTime": {
+     "local": "2026-10-04 11:00:00-06:00",
+     "utc": "2026-10-04 17:00:00+00:00"
+    },
+    "revisedTime": {
+     "local": "2026-10-04 11:10:00-06:00",
+     "utc": "2026-10-04 17:10:00+00:00"
+    },
+    "airline": {
+     "iata": "WS",
+     "icao": null,
+     "name": "WestJet"
+    },
+    "quality": [
+     "Live"
+    ],
+    "terminal": "D",
+    "baggageBelt": "400"
+   },
+   "_authTs": 1791133200000
+  }
+ ]
+}

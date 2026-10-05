@@ -146,7 +146,7 @@ function engine(opts) {
 const E0 = engine();
 
 const router = new Function([
-  fnIn(ROUTER, 'yqmTimeObj'), fnIn(ROUTER, 'yqmClockToMin'), fnIn(ROUTER, 'yqmStatus'),
+  fnIn(ROUTER, 'fidsNeutralWord'), fnIn(ROUTER, 'yqmTimeObj'), fnIn(ROUTER, 'yqmClockToMin'), fnIn(ROUTER, 'yqmStatus'),
   fnIn(ROUTER, 'yqmToAdbFlight'), fnIn(ROUTER, 'tpaStatus'), fnIn(ROUTER, 'yyzStatus'),
   'return { yqmToAdbFlight, yqmStatus, tpaStatus, yyzStatus };'].join('\n'))();
 
@@ -255,7 +255,9 @@ test('(A) Moncton\'s own words, at the moments the clock used to overrule them',
   const ac7753 = adb(YQM.dep28, 'Departure').find((f) => f.number === 'AC7753');
   const s7753 = T(9, 29, 7, 10);
   const at = (f, mode, sched, hh, mm, day) => E.adbStatus(f, mode, sched, T(9, day || 29, hh, mm));
-  assert.equal(at(ac7753, 'dep', s7753, 5, 30), 'scheduled');
+  // v23968 — and its "OnTime" is On time at every moment, not Scheduled until
+  // the clock reaches 90 minutes out: the word is the airport's.
+  assert.equal(at(ac7753, 'dep', s7753, 5, 30), 'ontime');
   for (const [hh, mm] of [[6, 50], [7, 5], [7, 12], [7, 20]]) {
     assert.equal(at(ac7753, 'dep', s7753, hh, mm), 'ontime', `AC7753 at ${hh}:${mm}`);
   }
@@ -697,10 +699,13 @@ test('(A)(B) the boarding, final call and gate closed signs open on the flight\'
 test('(B) a held boarding flight\'s sign never says "On time" once its departure time has passed', () => {
   const E = engine();
   const k = (cf, state, mins) => E._boardStripStatusKey(cf, state, mins);
-  // Before the departure time, with nothing from the airport: On time, as the
-  // sign has always read.
-  assert.equal(k({ status: 'boarding', time: '20:48' }, 'boarding', 12), 'ontime');
-  assert.equal(k({ status: 'boarding', time: '20:48' }, 'boarding', 0), 'ontime');
+  // Before the departure time, with nothing from the airport: no flank since
+  // v23968 (it read On time; nobody had said On Time — gate-close-time.test.js).
+  // The airport's own "On Time" keeps it until the departure time.
+  assert.equal(k({ status: 'boarding', time: '20:48' }, 'boarding', 12), '');
+  assert.equal(k({ status: 'ontime', time: '20:48' }, 'boarding', 12), 'ontime');
+  assert.equal(k({ status: 'ontime', time: '20:48' }, 'boarding', 0), 'ontime');
+  assert.equal(k({ status: 'ontime', time: '20:48' }, 'boarding', -1), '', 'past its time, On time is no longer true');
   // Held at +1, +30, +45: the flanks are empty, not On time and not a Delayed
   // nobody announced.
   for (const m of [-1, -30, -45]) assert.equal(k({ status: 'boarding', time: '20:48' }, 'boarding', m), '', `at ${-m} min past`);
@@ -742,7 +747,7 @@ test('(C) the gate writes no time and no status onto the shared flight row', () 
   // (v23925 — and the door word, _gateDoor: the schedule boarding, or a sign
   // kept through a delay; (D) below pins both.)
   assert.deepEqual(UXG.match(/\bstKey\s*=(?!=)[^\n;]*/g),
-    ["stKey = currentFlight.status || 'scheduled'", 'stKey = _depState.stKey', "stKey = 'ontime'", 'stKey = _door.word']);
+    ["stKey = currentFlight.status || 'scheduled'", 'stKey = _depState.stKey', "stKey = 'scheduled'", 'stKey = _door.word']);
   assert.deepEqual(UXG.match(/\bdepDelayed\s*=(?!=)[^\n;]*/g), ['depDelayed = _depState.depDelayed']);
   // The honesty floor is the pure helper, told whether the departure is
   // revised; v23925 — it runs inside _gateBoardingTimes, which the gate's
@@ -757,8 +762,10 @@ test('(C) the departure keeps the airline\'s own status: a late inbound cannot r
   const E = engine();
   const st = (cf) => E._gateDepDisplayState(cf);
   assert.deepEqual(st({ status: 'ontime', _sortTs: 1 }), { stKey: 'ontime', depDelayed: false, revTsLater: false });
-  assert.deepEqual(st({ status: 'scheduled', _sortTs: 1 }), { stKey: 'ontime', depDelayed: false, revTsLater: false });
-  assert.deepEqual(st({}), { stKey: 'ontime', depDelayed: false, revTsLater: false });
+  // v23968 — Scheduled (or nothing) stays Scheduled: On time is the feed's word only.
+  assert.deepEqual(st({ status: 'scheduled', _sortTs: 1 }), { stKey: 'scheduled', depDelayed: false, revTsLater: false });
+  assert.deepEqual(st({}), { stKey: 'scheduled', depDelayed: false, revTsLater: false });
+  assert.deepEqual(st({ status: 'expected', _sortTs: 1 }), { stKey: 'expected', depDelayed: false, revTsLater: false });
   // "Delayed" with no time: the word shows, nothing is struck through.
   assert.deepEqual(st({ status: 'delayed', _sortTs: 1 }), { stKey: 'delayed', depDelayed: false, revTsLater: false });
   // A time the feed published, with its word: struck through and revised.
@@ -1048,7 +1055,7 @@ test('(D) Orlando: the board reads /flights/mco, whose mapper turns Boarding and
   assert.match(branch, /\/flights\/mco\?direction=\$\{dir\}/);
   assert.match(fnIn(WORKER, 'handleMcoFids'), /const adb = mcoToAdbFlight\(f\);/);
   assert.match(fnIn(WORKER, 'mcoToAdbFlight'), /status: mcoStatus\(f\)/);
-  const mcoStatus = new Function(fnIn(WORKER, 'mcoStatus') + '\nreturn mcoStatus;')();
+  const mcoStatus = new Function(fnIn(WORKER, 'neutralStatus') + '\n' + fnIn(WORKER, 'mcoStatus') + '\nreturn mcoStatus;')();
   for (const row of [{ originalStatus: 'BD', status: 'Boarding' }, { originalStatus: 'LC', status: 'Last Call' },
     { originalStatus: 'BD' }, { originalStatus: 'LC' }, { status: 'Boarding' }, { status: 'Final Call' }, { status: 'Gate Closed' }]) {
     assert.ok(!/^(boarding|final|gateclosed)$/.test(mcoStatus(row)), JSON.stringify(row));
@@ -1296,7 +1303,8 @@ test('(D) Moncton AC1983 delayed while boarding: the sign keeps running, the dep
   const sign0 = g._gateSignPhase(r0.status, 25, d0.bt.lead, r0, false);
   assert.equal(sign0.showBoarding, true);
   assert.equal(hmAdt(d0.bt.boardTs), '04:50');
-  assert.equal(g._boardStripStatusKey(r0, 'boarding', 25), 'ontime');
+  // v23968 — cyqm.ca's word is Boarding, not On Time: no flank.
+  assert.equal(g._boardStripStatusKey(r0, 'boarding', 25), '');
 
   // 05:20 — "Delayed until 5:50 AM". A fresh map, as every feed refresh is.
   const delayed = said(YQM.dep28, 'AC1983', 29, 'Delayed until 5:50 AM', '5:50 AM');
@@ -1697,7 +1705,7 @@ test('(D) a Delayed flight holds its gate, and the board holds the next flight\'
   for (let t = H(5, 5, 0); t <= H(5, 6, 10); t += MIN) {
     const s = screensAt(E, rows, '16', t, 'YHZ');
     assert.equal(s.WS3401.board === 'boarding', s.WS3401.gate, hmAdt(t));
-    assert.equal(s.WS3401.board, 'ontime', hmAdt(t));
+    assert.equal(s.WS3401.board, 'scheduled', hmAdt(t));   // v23968 — the row's word is Scheduled, never the clock's On time
     assert.equal(s.AC2057.first, 'AC2057', hmAdt(t));
     assert.equal(s.AC2057.board, 'delayed', hmAdt(t));
   }
@@ -1713,7 +1721,7 @@ test('(D) a Delayed flight holds its gate, and the board holds the next flight\'
   }), 'WS3401', 5, 6, 0, 'YYZ');
   for (const [hh, mm] of [[5, 30], [5, 50]]) {
     const s = screensAt(E, later, '16', H(5, hh, mm), 'YHZ');
-    assert.equal(s.WS3401.board, 'ontime');
+    assert.equal(s.WS3401.board, 'scheduled');   // v23968 — its own word
     assert.equal(s.AC2057.first, 'AC2057');
   }
   const said16 = later.map((f) => (f.number === 'WS3401' ? Object.assign({}, f, { status: 'boarding' }) : f));

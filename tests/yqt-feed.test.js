@@ -22,7 +22,7 @@ test('yqt arrivals: today tab (2 left tonight) + tomorrow tab (16), Eastern offs
   assert.ok(pd, 'PD225 tonight present');
   assert.equal(pd.arrival.scheduledTime.local, '2026-09-05 22:33:00-04:00');
   assert.equal(pd.arrival.scheduledTime.utc, '2026-09-06 02:33:00+00:00');
-  assert.equal(pd.status, 'scheduled');
+  assert.equal(pd.status, 'ontime');
   assert.equal(pd.arrival.revisedTime, undefined);
   assert.equal(pd.departure.airport.iata, 'YYZ');
   assert.equal(pd.departure.airport.name, 'Toronto');

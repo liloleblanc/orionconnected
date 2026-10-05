@@ -77,7 +77,7 @@ test('syd departures: EK415 international — offset, _authTs, terminal 1, trimm
   assert.equal(ek.departure.scheduledTime.local, '2026-09-15 06:00:00+10:00');
   assert.equal(ek.departure.scheduledTime.utc, '2026-09-14 20:00:00+00:00');
   assert.equal(ek._authTs, 1789416000000);
-  assert.equal(ek.status, 'scheduled');                                   // "On Time"
+  assert.equal(ek.status, 'ontime');                                   // "On Time"
   assert.equal(ek.departure.revisedTime, undefined);                      // estimatedTime "-"
   assert.equal(ek.departure.terminal, '1');
   assert.equal(ek.arrival.airport.iata, 'DXB');
@@ -160,7 +160,7 @@ test('syd arrivals: QF654 with nine numbers, estimate as revision, T3; last stop
   assert.equal(qf.arrival.scheduledTime.local, '2026-09-15 06:05:00+10:00');
   assert.equal(qf.arrival.scheduledTime.utc, '2026-09-14 20:05:00+00:00');
   assert.equal(qf._authTs, 1789416300000);
-  assert.equal(qf.status, 'scheduled');                                   // "On Time" with a 30-min-late estimate: the board derives delayed
+  assert.equal(qf.status, 'ontime');                                   // "On Time" with a 30-min-late estimate: the board derives delayed
   assert.equal(qf.arrival.revisedTime.local, '2026-09-15 06:35:00+10:00');
   assert.equal(qf.arrival.revisedTime.utc, '2026-09-14 20:35:00+00:00');
   assert.equal(qf.arrival.terminal, '3');
@@ -173,7 +173,7 @@ test('syd arrivals: QF654 with nine numbers, estimate as revision, T3; last stop
   // JQ989 from Perth, T2, estimate 05:55 on a 06:15 schedule — an early revision, status untouched.
   const jq = byNum(arr, 'JQ989');
   assert.equal(jq.arrival.terminal, '2');
-  assert.equal(jq.status, 'scheduled');
+  assert.equal(jq.status, 'ontime');
   assert.equal(jq.arrival.revisedTime.local, '2026-09-15 05:55:00+10:00');
   assert.ok(jq.arrival.revisedTime.utc < jq.arrival.scheduledTime.utc);
   // The Rex loop coming home: ["Sydney","Merimbula","Moruya"] → Moruya, the last stop before Sydney.
@@ -256,7 +256,7 @@ test('syd yesterday: Arrived carries on-blocks, most Departed rows print "-"; an
 });
 
 test('syd: status vocabulary — the four live, the seven archived, whole-word sniffing, and scheduled for the rest', () => {
-  assert.equal(sydStatus('On Time'), 'scheduled');
+  assert.equal(sydStatus('On Time'), 'ontime');
   assert.equal(sydStatus('Departed'), 'departed');
   assert.equal(sydStatus('Arrived'), 'arrived');
   assert.equal(sydStatus('Cancelled'), 'cancelled');
@@ -268,7 +268,7 @@ test('syd: status vocabulary — the four live, the seven archived, whole-word s
   assert.equal(sydStatus('Gate Closed'), 'gateclosed');
   assert.equal(sydStatus('Diverted'), 'diverted');
   assert.equal(sydStatus(' gate  closed '), 'gateclosed');
-  assert.equal(sydStatus('Expected at 06:35'), 'scheduled');              // the detail endpoint's rewrite of On Time
+  assert.equal(sydStatus('Expected at 06:35'), 'expected');               // the detail endpoint's own word (v23968 — printed as itself)
   assert.equal(sydStatus('Cancelled - weather'), 'cancelled');
   assert.equal(sydStatus('Now Boarding'), 'boarding');
   assert.equal(sydStatus('Early'), 'scheduled');
