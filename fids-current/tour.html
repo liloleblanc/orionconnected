@@ -8,6 +8,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Orion Airport Tour</title>
   <link rel="stylesheet" href="css/airport-fonts.css">
+  <!-- The one store for passenger words and times (board-strings.js). -->
+  <script src="js/board-strings.js?v=23999"></script>
   <style>
     html, body { margin: 0; height: 100%; width: 100%; overflow: hidden;
                  background: #0b1a2b; cursor: none; }
@@ -104,7 +106,7 @@
 <body>
   <div id="tourCard" aria-live="polite">
     <div class="tc-inner">
-      <div class="tc-kicker"><span id="tcK1">Now Arriving</span><span class="tc-sep">|</span><span id="tcK2">Arrivée à</span></div>
+      <div class="tc-kicker"><span id="tcK1"></span><span class="tc-sep">|</span><span id="tcK2"></span></div>
       <div class="tc-code" id="tcCode">—</div>
       <div class="tc-name" id="tcName"></div>
       <div class="tc-meta"><span id="tcTime"></span><span class="tc-sep" id="tcMetaSep"></span><span id="tcTz"></span></div>
@@ -327,15 +329,15 @@
       // need it; read it here for the same reason.
       var cardLangs = null;
       try {
-        var _cl = String(q.get('langs') || q.get('lang') || '').toLowerCase()
-          .split(',').map(function (s) { return s.trim(); })
-          .filter(function (s) { return /^[a-z]{2}$/.test(s); });
-        if (_cl.length) cardLangs = _cl.slice(0, 2);
+        // v23970 — read by the boards' own resolver (board-strings.js), so the
+        // card and the board behind it accept exactly the same list.
+        var _cl = BoardStrings.resolveLangs({ search: String(location.search || '') });
+        if (_cl.source === 'url') cardLangs = _cl.langs;
       } catch (e) {}
       // Same borrow-from-an-iframe trick readAp() uses, and for the same reason:
       // one resolver in fids-core.js, never a second copy of the rule here.
       function langsFor(code) {
-        if (cardLangs) return cardLangs;
+        if (cardLangs) return BoardStrings.pairLangs(cardLangs, code);
         if (langCache[code]) return langCache[code];
         for (var p in frameFor) {
           try {
@@ -348,8 +350,7 @@
               // slow leak of one detached board per airport on a page that
               // runs for weeks.
               if (l && l.length) {
-                var own = [String(l[0])];
-                if (l[1]) own.push(String(l[1]));
+                var own = BoardStrings.pairLangs([].slice.call(l).map(String), code);
                 langCache[code] = own; return own;
               }
             }
@@ -374,7 +375,7 @@
         // there is no second half to show, so the divider goes too rather than
         // leaving "Now Arriving |" hanging with nothing after it.
         var pair = langsFor(code);
-        var l1 = CARD_LABELS[pair[0]] || CARD_LABELS.en;
+        var l1 = CARD_LABELS[pair[0]] || ['', ''];
         var l2 = (pair[1] && pair[1] !== pair[0]) ? CARD_LABELS[pair[1]] : null;
         elK1.textContent = l1[0];
         elK2.textContent = l2 ? l2[0] : '';
@@ -385,7 +386,8 @@
         if (tz) {
           var t = '';
           try {
-            t = new Date().toLocaleTimeString('en-US', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false });
+            // v23970 — the clock every board reads, in the card's first language
+            t = BoardStrings.time(new Date(), pair[0], tz);
           } catch (e) { t = ''; }
           elTime.textContent = t;
           elTz.textContent = t ? (l2 ? (l1[1] + ' | ' + l2[1]) : l1[1]) : '';

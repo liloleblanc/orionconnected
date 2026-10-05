@@ -615,8 +615,9 @@ function fnOf(name) {
 }
 const paint = (langsNow, frFirst) => {
   const linesSrc = JS.slice(JS.indexOf('var _WX_INTRO_LINES = ['), JS.indexOf('];', JS.indexOf('var _WX_INTRO_LINES = [')) + 2);
-  return new Function('langs', '_WX_INTRO_BACKDROP', '_WX_INTRO_CLIP',
-    linesSrc + '\nfunction _wxIntroHasGlyphs() { return true; }\n' + fnOf('_wxIntroBackdropHtml') + '\n' + fnOf('_wxIntroPaintHtml') + '\nreturn _wxIntroPaintHtml(' + (frFirst ? 'true' : 'false') + ');')(langsNow, 'paint', '/logos/Backgrounds/video/wx-title-globe-bg.mp4');
+  // the pair comes from the one store's chooser (BoardStrings.pairLangs)
+  return new Function('langs', '_WX_INTRO_BACKDROP', '_WX_INTRO_CLIP', 'BoardStrings',
+    linesSrc + '\nfunction _wxIntroHasGlyphs() { return true; }\n' + fnOf('_wxIntroBackdropHtml') + '\n' + fnOf('_wxIntroPaintHtml') + '\nreturn _wxIntroPaintHtml(' + (frFirst ? 'true' : 'false') + ');')(langsNow, 'paint', '/logos/Backgrounds/video/wx-title-globe-bg.mp4', require('../fids-current/js/board-strings.js'));
 };
 const heroOf = h => [...h.matchAll(/<div class="wxc-ph wxc-ph(\d)" lang="([a-z]{2})"[^>]*><span>([^<]*)<\/span>/g)].map(m => ({ n: +m[1], l: m[2], t: m[3] }));
 const rankOf = h => [...h.matchAll(/<span class="wxc-pr" lang="([a-z]{2})"[^>]*style="--wxc-i:(\d+)">([^<]*)<\/span>/g)].map(m => ({ l: m[1], i: +m[2], t: m[3] }));
@@ -641,7 +642,9 @@ test('paint mode is what is live, over the globe alone', () => {
   }
   assert.doesNotMatch(CODE, /_WX_INTRO_CLIP_FR|wxc-intro-film/, 'and so is film mode');
   const h = paint(['en', 'fr'], false);
-  assert.match(h, /^<div class="wxc-intro wxc-intro-paint" aria-hidden="true"><video class="wxc-intro-bg"[^>]*src="\/logos\/Backgrounds\/video\/wx-title-globe-bg\.mp4"><\/video><div class="wxc-paint">/,
+  // (data-i18n-all: the title shows every board language by design, each
+  // line marked with its own — tests/render/words.mjs reads it that way)
+  assert.match(h, /^<div class="wxc-intro wxc-intro-paint" data-i18n-all aria-hidden="true"><video class="wxc-intro-bg"[^>]*src="\/logos\/Backgrounds\/video\/wx-title-globe-bg\.mp4"><\/video><div class="wxc-paint">/,
     'the overlay is the backdrop and the lockup — no scrim, no panel, no sheen');
 });
 

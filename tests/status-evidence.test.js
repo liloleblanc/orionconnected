@@ -39,6 +39,10 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+// The gate's label helpers pick their languages through the one store
+// (board-strings.js), which every board page loads first; loading it here
+// puts BoardStrings on the global the lifted functions resolve against.
+require('../fids-current/js/board-strings.js');
 const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
@@ -885,8 +889,11 @@ test('(C) the notice reads in the board\'s two languages, French first in Québe
   assert.equal(lbl.en, 'The incoming aircraft has been delayed. Updated boarding time to follow.');
   const wrap = (w, i) => '<span class="g8-msg-l g8-msg-l' + (i + 1) + '">' + w + '</span>';
   const qc = E._gateLbl('inbDelayed', true, wrap, '');
-  assert.equal(qc, '<span class="g8-msg-l g8-msg-l1">' + lbl.fr + '</span><span class="g8-msg-l g8-msg-l2">' + lbl.en + '</span>');
-  assert.ok(E._gateLbl('inbDelayed', false, wrap, '').startsWith('<span class="g8-msg-l g8-msg-l1">' + lbl.en));
+  // each half carries its own language (BoardStrings.markHalf)
+  assert.equal(qc, '<span class="g8-msg-l g8-msg-l1" lang="fr">' + lbl.fr + '</span><span class="g8-msg-l g8-msg-l2" lang="en">' + lbl.en + '</span>');
+  assert.ok(E._gateLbl('inbDelayed', false, wrap, '').startsWith('<span class="g8-msg-l g8-msg-l1" lang="en">' + lbl.en));
+  const ar = engine({ langs: ['ar', 'en'] })._gateLbl('inbDelayed', false, wrap, '');
+  assert.ok(ar.startsWith('<span class="g8-msg-l g8-msg-l1" lang="ar" dir="rtl">' + lbl.ar), 'an Arabic half reads right to left');
   // Wired: the idle strip and the takeover bar both carry it, an operator's
   // message still wins, and a change in the inbound's lateness repaints.
   assert.match(UXG, /var inbDelayed = _gateInbLateNotice\(currentFlight, inboundFlight, stKey, effectiveDepTs, Date\.now\(\)\);/);
@@ -1328,7 +1335,7 @@ test('(D) Moncton AC1983 delayed while boarding: the sign keeps running, the dep
   // The Departure field moves to 05:50: it reads the real row.
   assert.deepEqual(g._gateDepDisplayState(r1), { stKey: 'delayed', depDelayed: true, revTsLater: true });
   assert.ok(UXG.indexOf('var depTimeHtml = _to12h(currentFlight.time)') < UXG.indexOf('var _door = _gateDoor('));
-  assert.match(UXG, /if \(_door\.word\) \{\s*stKey = _door\.word;\s*stLabel = SL\(stKey\) \|\| stKey\.toUpperCase\(\);\s*if \(_door\.kept\) \{\s*_signDepTs = _door\.basis\._revTs \|\| _door\.basis\._sortTs \|\| effectiveDepTs;\s*if \(_signDepTs\) minsToDep = Math\.round\(\(_signDepTs - Date\.now\(\)\) \/ 60000\);/);
+  assert.match(UXG, /if \(_door\.word\) \{\s*stKey = _door\.word;\s*stLabel = _statusWord\(stKey\);\s*if \(_door\.kept\) \{\s*_signDepTs = _door\.basis\._revTs \|\| _door\.basis\._sortTs \|\| effectiveDepTs;\s*if \(_signDepTs\) minsToDep = Math\.round\(\(_signDepTs - Date\.now\(\)\) \/ 60000\);/);
   assert.match(UXG, /\} else if \(depDelayed && !showBoarding\) \{/);
   // The departures board prints the airport's own Delayed and its new time.
   assert.equal(g._fidsShownRow(r1, t1, 'YQM'), r1);
@@ -1837,6 +1844,8 @@ test('(D) the phone-width gate and the Designer templates say what the TV gate a
   assert.match(TR, /if \(f && typeof window\.fidsShownRow === 'function'\) f = window\.fidsShownRow\(f\) \|\| f;/);
   for (const page of ['fids.html', 'gids.html', 'bids.html']) {
     const html = fs.readFileSync(path.join(root, 'fids-current', page), 'utf8');
-    assert.match(html, /js\/template-renderer\.js\?v=23925/, page + ' loads the changed renderer');
+    // v23925 or any later build of it
+    const v = /js\/template-renderer\.js\?v=(\d+)/.exec(html);
+    assert.ok(v && Number(v[1]) >= 23925, page + ' loads the changed renderer');
   }
 });

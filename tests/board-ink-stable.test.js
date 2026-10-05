@@ -626,7 +626,9 @@ async function boardPass(t, chrome, palette) {
           // Dark boards: the whole Delayed row is navy. Light boards keep their
           // own grammar (a deep brown status word and revised time); there
           // only stability and contrast are asserted.
-          if (!lightWanted && A.ink !== NAVY) problems.push(`${at}: Delayed cell is ${A.ink}, not the row's navy`);
+          // The next-day "+1" paints its own dark pill (v23975), so it keeps
+          // its white on every row; its contrast is still measured below.
+          if (!lightWanted && !A.pill && A.ink !== NAVY) problems.push(`${at}: Delayed cell is ${A.ink}, not the row's navy`);
         } else if (row === 'row-diverted') {
           n.diverted++;
         } else if (row === '' || row === 'row-early') {

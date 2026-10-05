@@ -473,7 +473,8 @@ test('the hours are eight consecutive readings and the days are five finite ones
 });
 
 test('a stacked pair keeps both languages the same size and weight', () => {
-  assert.match(SRC, /w\.push\('<span class="wxc-l' \+ \(w\.length \+ 1\) \+ '">' \+ t \+ '<\/span>'\);/);
+  // (each line marked with its language, BoardStrings.markHalf)
+  assert.match(SRC, /w\.push\(BoardStrings\.markHalf\('<span class="wxc-l' \+ \(w\.length \+ 1\) \+ '">' \+ t \+ '<\/span>', _wxLangs\[_wi\]\)\);/);
   assert.doesNotMatch(rule('.wxcard-wrap .wxc-l2'), /font-size|font-weight|opacity/, 'the second line may change colour, never size or weight');
 });
 

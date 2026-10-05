@@ -1160,7 +1160,9 @@ body, body.gids-page, body.gate-page{
    Prevents the column from looking like a broken empty rectangle.
    The JS appends a class to .gad-aircraft-col when content is bare. */
 .gad-aircraft-col.is-bare::after{
-  content:'AIRCRAFT DETAILS';
+  /* v23970 — the words come from the board's pair in data-baremsg (below);
+     the English-only default is gone, the filler box stays. */
+  content:'';
   flex:1 1 auto;
   margin-top:auto;
   display:flex;
@@ -2961,28 +2963,8 @@ body, body.gids-page, body.gate-page{
   align-self: stretch !important;
   margin: 0 !important;
 }
-/* Pre-row hint label */
-.gad-map-col-v2 .v2-rc-aircraft-type-top::before {
-  content: "Aircraft" !important;
-  display: block !important;
-  font-size: clamp(11px, 1.1vh, 14px) !important;
-  font-weight: 700 !important;
-  color: #6b7585 !important;
-  text-transform: none !important;
-  letter-spacing: 0.12em !important;
-  margin-bottom: 4px !important;
-}
-.gad-map-col-v2 .v2-rc-aircraft-reg-bot::before {
-  content: "Registration" !important;
-  display: block !important;
-  font-size: clamp(11px, 1.1vh, 14px) !important;
-  font-weight: 700 !important;
-  color: #6b7585 !important;
-  text-transform: none !important;
-  letter-spacing: 0.12em !important;
-  margin-bottom: 4px !important;
-  text-align: right !important;
-}
+/* v23970 — the "Aircraft" / "Registration" pseudo-labels that stood here were
+   English-only and already switched off below (content: none); removed. */
 
 /* v218.99.64 — Incoming Aircraft shelf at TOP of aircraft block (header).
    Announces "what's arriving" before showing the aircraft details. */

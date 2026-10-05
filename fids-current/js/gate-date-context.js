@@ -1,24 +1,19 @@
 /* Gate-flight calendar context. Dependency-free for browser and Node tests. */
 (function (root, factory) {
-  var api = factory();
+  // The words and the language rules come from the one store,
+  // board-strings.js, which every page loads first.
+  var strings = (root && root.BoardStrings) || (typeof require === 'function' ? require('./board-strings.js') : null);
+  var api = factory(strings);
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.FIDSGateDate = api;
-})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+})(typeof globalThis !== 'undefined' ? globalThis : this, function (Strings) {
   'use strict';
 
   var DAY_MS = 86400000;
-  var LOCALES = {
-    en: 'en-CA', fr: 'fr-CA', es: 'es', de: 'de', it: 'it', pt: 'pt',
-    ja: 'ja', zh: 'zh', ar: 'ar'
-  };
-  var TOMORROW = {
-    en: 'Tomorrow', fr: 'Demain', es: 'Mañana', de: 'Morgen', it: 'Domani',
-    pt: 'Amanhã', ja: '明日', zh: '明天', ar: 'غدًا'
-  };
 
   function validTimeZone(timeZone) {
     try {
-      new Intl.DateTimeFormat('en-CA', { timeZone: timeZone || 'UTC' }).format(0);
+      new Intl.DateTimeFormat('en-CA', { timeZone: timeZone || 'UTC' }).format(0); // i18n-ok: code
       return timeZone || 'UTC';
     } catch (e) {
       return 'UTC';
@@ -28,7 +23,7 @@
   function zonedDateOrdinal(timestamp, timeZone) {
     var value = Number(timestamp);
     if (!Number.isFinite(value)) return null;
-    var parts = new Intl.DateTimeFormat('en-CA', {
+    var parts = new Intl.DateTimeFormat('en-CA', { // i18n-ok: code
       timeZone: validTimeZone(timeZone),
       year: 'numeric', month: '2-digit', day: '2-digit'
     }).formatToParts(new Date(value));
@@ -47,22 +42,10 @@
     return flightDay - currentDay;
   }
 
+  // The pair a gate shows: BoardStrings.pairLangs, the one picker.
   function selectedLanguages(languages, frenchFirst) {
-    var picked = Array.isArray(languages) && languages.length ? languages.slice() : ['en', 'fr'];
-    if (frenchFirst) {
-      var frIndex = picked.indexOf('fr');
-      if (frIndex > 0) {
-        picked.splice(frIndex, 1);
-        picked.unshift('fr');
-      }
-    }
-    var seen = Object.create(null), result = [];
-    for (var i = 0; i < picked.length && result.length < 2; i++) {
-      var language = String(picked[i] || '').toLowerCase();
-      if (!LOCALES[language] || seen[language]) continue;
-      seen[language] = true;
-      result.push(language);
-    }
+    var list = Array.isArray(languages) && languages.length ? languages : ['en', 'fr'];
+    var result = Strings.pairLangs(list, !!frenchFirst);
     return result.length ? result : ['en'];
   }
 
@@ -109,12 +92,9 @@
     var zone = validTimeZone(options.timeZone);
     var now = options.nowTimestamp == null ? Date.now() : Number(options.nowTimestamp);
 
-    var time = new Intl.DateTimeFormat(options.locale || 'en-US', {
-      timeZone: zone,
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: options.hour12 === undefined ? true : !!options.hour12
-    }).format(new Date(instant));
+    // v23970 — the boards' one clock (board-strings.js): 5:20pm in English,
+    // 17:20 in every other language; options.lang picks it.
+    var time = Strings.time(instant, Strings.isLang(options.lang) ? options.lang : 'en', zone);
 
     // Offset against the AIRPORT's today, never the viewer's. A board in Sydney
     // showing Moncton must still say "tomorrow" by Moncton's calendar.
@@ -168,18 +148,19 @@
     var offset = flightDay - today;
     if (offset < 1) return { dayOffset: offset, words: [], text: '' };
     var zone = validTimeZone(options.timeZone);
-    var seen = Object.create(null), words = [];
+    var seen = Object.create(null), words = [], languages = [];
     selectedLanguages(options.languages, options.frenchFirst).forEach(function (language) {
       var word = offset === 1
-        ? (TOMORROW[language] || TOMORROW.en)
-        : new Intl.DateTimeFormat(LOCALES[language] || LOCALES.en, {
-            timeZone: zone, weekday: 'short', month: 'short', day: 'numeric'
-          }).format(new Date(ts));
+        ? Strings.bs('tomorrow', language)
+        : Strings.date(ts, language, { weekday: 'short', month: 'short', day: 'numeric' }, zone);
       if (!word || seen[word.toLowerCase()]) return;
       seen[word.toLowerCase()] = true;
       words.push(word);
+      languages.push(language);
     });
-    return { dayOffset: offset, words: words, text: words.join(' | ') };
+    // `languages[i]` is the language of `words[i]`, so the caller can mark
+    // each with it (an Arabic 'tomorrow' reads right to left)
+    return { dayOffset: offset, words: words, languages: languages, text: words.join(' | ') };
   }
 
   return {

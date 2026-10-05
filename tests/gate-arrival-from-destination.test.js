@@ -60,9 +60,14 @@ const lblRow = (key) => {
   assert.ok(m, '_GATE_LBL.' + key + ' must exist');
   return new Function('return ' + m[1])();
 };
-const GATE_LBL = { gate: lblRow('gate'), arrTerminal: lblRow('arrTerminal') };
-const placeHtml = (langs) => new Function('_GATE_LBL', 'fidsEscHtml', 'langs',
-  fnSource(CORE, '_gateArrPlaceHtml') + '\nreturn _gateArrPlaceHtml;')(GATE_LBL, esc, langs);
+// arrTerminal lives in the one store (board-strings.js); the gate's label
+// table is frozen. _gateArrPlaceHtml reads both through _lblEntry, and picks
+// and marks the languages through the store (pairLangs, markHalf).
+const BS = require('../fids-current/js/board-strings.js');
+const GATE_LBL = { gate: lblRow('gate') };
+const lblEntry = (k) => GATE_LBL[k] || BS.entry(k) || { en: '' };
+const placeHtml = (langs) => new Function('BoardStrings', '_lblEntry', 'fidsEscHtml', 'langs',
+  fnSource(CORE, '_gateArrPlaceHtml') + '\nreturn _gateArrPlaceHtml;')(BS, lblEntry, esc, langs);
 
 // Moncton's own departures list of 2026-10-04, read the way its row reads:
 // "Oct 4 - 5:20 PM" in Moncton (Atlantic daylight time, UTC-3).
@@ -239,23 +244,24 @@ test('the revised pair and the terminal-and-gate line', () => {
   assert.match(revisedHtml({ shown: '18:06', was: '18:15', revised: true, early: true, fmt: to12h }), /class="g8-r2-revised g8-rev-early"/);
   assert.equal(revisedHtml({ shown: '18:15', was: '18:15', revised: false, fmt: to12h }), '');
   assert.equal(revisedHtml({ shown: '18:40', was: '18:15', revised: false, fmt: to12h }), '');
-  // A line per language when the pair is long, each whole; French first in
-  // Québec. The terminal rides in its own span so the fitter can keep the gate
-  // alone (data-both); the bar is in the markup and shows only on one line.
+  // A line per language when the pair is long, each whole and marked with its
+  // language; French first in Québec. The terminal rides in its own span so
+  // the fitter can keep the gate alone (data-both); the bar is in the markup
+  // and shows only on one line.
   const en = placeHtml(['en', 'fr']);
   assert.equal(en('1', 'D53', false),
-    '<span class="v2-fi-arrplace" data-both="1"><span class="v2-fi-arrplace-w"><span class="v2-fi-arrplace-t">Terminal\u00a01 \u00b7 </span>Gate\u00a0D53</span>'
-    + '<span class="v2-fi-arrplace-sep"> | </span><span class="v2-fi-arrplace-w"><span class="v2-fi-arrplace-t">Aérogare\u00a01 \u00b7 </span>Porte\u00a0D53</span></span>');
+    '<span class="v2-fi-arrplace" data-both="1"><span class="v2-fi-arrplace-w" lang="en"><span class="v2-fi-arrplace-t">Terminal\u00a01 \u00b7 </span>Gate\u00a0D53</span>'
+    + '<span class="v2-fi-arrplace-sep"> | </span><span class="v2-fi-arrplace-w" lang="fr"><span class="v2-fi-arrplace-t">Aérogare\u00a01 \u00b7 </span>Porte\u00a0D53</span></span>');
   // A short pair starts on one line, the bar between the two whole units.
   assert.equal(en('', '15', true),
-    '<span class="v2-fi-arrplace v2-fi-arrplace-one"><span class="v2-fi-arrplace-w">Porte\u00a015</span><span class="v2-fi-arrplace-sep"> | </span><span class="v2-fi-arrplace-w">Gate\u00a015</span></span>');
+    '<span class="v2-fi-arrplace v2-fi-arrplace-one"><span class="v2-fi-arrplace-w" lang="fr">Porte\u00a015</span><span class="v2-fi-arrplace-sep"> | </span><span class="v2-fi-arrplace-w" lang="en">Gate\u00a015</span></span>');
   // A terminal with no gate: nothing to fall back to.
   assert.equal(en('3', '', false),
-    '<span class="v2-fi-arrplace"><span class="v2-fi-arrplace-w"><span class="v2-fi-arrplace-t">Terminal\u00a03</span></span><span class="v2-fi-arrplace-sep"> | </span><span class="v2-fi-arrplace-w"><span class="v2-fi-arrplace-t">Aérogare\u00a03</span></span></span>');
+    '<span class="v2-fi-arrplace"><span class="v2-fi-arrplace-w" lang="en"><span class="v2-fi-arrplace-t">Terminal\u00a03</span></span><span class="v2-fi-arrplace-sep"> | </span><span class="v2-fi-arrplace-w" lang="fr"><span class="v2-fi-arrplace-t">Aérogare\u00a03</span></span></span>');
   assert.equal(en('', '', false), '', 'nothing published, no line');
-  assert.match(placeHtml(['en', 'de'])('', 'A12', false), /^<span class="v2-fi-arrplace"><span class="v2-fi-arrplace-w">Gate\u00a0A12<\/span><\/span>$/, 'Gate | Gate prints once');
+  assert.match(placeHtml(['en', 'de'])('', 'A12', false), /^<span class="v2-fi-arrplace"><span class="v2-fi-arrplace-w" lang="en">Gate\u00a0A12<\/span><\/span>$/, 'Gate | Gate prints once');
   assert.doesNotMatch(en('<b>', 'x"', false), /<b>|x"/, 'feed text is escaped');
-  for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) assert.ok(GATE_LBL.arrTerminal[l], 'Terminal in ' + l);
+  for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) assert.ok(BS.entry('arrTerminal')[l], 'Terminal in ' + l);
 });
 
 test('no gate surface prints the guess any more', () => {

@@ -35,6 +35,8 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const CORE = fs.readFileSync(path.join(ROOT, 'fids-current', 'js', 'fids-core.js'), 'utf8');
+// the one language store: the label picks its pair and marks each half there
+const BS = require('../fids-current/js/board-strings.js');
 
 // Same slicing rule as feed-html-escaping.test.js: from the header to the first
 // closer at the same column. A brace counter walks off the end of this file's
@@ -73,7 +75,7 @@ const WORDS = {
  * real intake, then build the chip and the baggage label from what it set.
  */
 function boot(query, { names = REAL_AIRLINE_NAME, translate = true } = {}) {
-  const run = new Function('_initParams', 'AIRLINE_NAME', 'window', 'document', 'LS',
+  const run = new Function('_initParams', 'AIRLINE_NAME', 'window', 'document', 'LS', 'BoardStrings', 'TL',
     'let filterTerminal = "", filterAirline = "", filterRegion = "";\n'
     + 'let lang = "en", langs = ["en", "fr"];\n'
     + SRC.esc + '\n' + SRC.regionKeys + '\n' + SRC.chip + '\n' + SRC.label + '\n'
@@ -84,13 +86,17 @@ function boot(query, { names = REAL_AIRLINE_NAME, translate = true } = {}) {
     new URLSearchParams(query),
     names,
     translate ? { fidsT: (k) => WORDS[k] || k } : {},
-    { body: { classList: { toggle: (c, on) => classes.push([c, on]) } } },
+    { getElementById: () => ({ value: 'YQM' }), body: { classList: { toggle: (c, on) => classes.push([c, on]) } } },
     { bagClaim: { en: 'Baggage claim', fr: 'Retrait des bagages' } },
+    BS,
+    // the board's own word, as TL gives it before fids-v2.js has loaded
+    (k) => WORDS[k] || k,
   ), { classes });
 }
 
 // Everything the chip and label are allowed to emit as markup.
-const OWN_TAG = /<\/?span(?: class="(?:fids-board-filter|fbl-en|fbl-fr)")?>/g;
+// (each half of the label carries its language: lang="…", dir="rtl" for Arabic)
+const OWN_TAG = /<\/?span(?: class="(?:fids-board-filter|fbl-en|fbl-fr)"(?: lang="[a-z]{2}")?(?: dir="rtl")?)?>/g;
 
 function assertOnlyOwnMarkup(html, payload) {
   const text = html.replace(OWN_TAG, '');
@@ -182,7 +188,7 @@ test('real filters render byte-for-byte as before', () => {
   assert.equal(chipOf('?terminal=1&region=intl&airline=AC'),
     '<span class="fids-board-filter">Terminal 1 · International · AIR CANADA</span>');
   assert.equal(boot('?terminal=1').label,
-    '<span class="fbl-en">Baggage claim</span><span class="fbl-fr">Retrait des bagages</span>'
+    '<span class="fbl-en" lang="en">Baggage claim</span><span class="fbl-fr" lang="fr">Retrait des bagages</span>'
     + '<span class="fids-board-filter">Terminal 1</span>');
 });
 

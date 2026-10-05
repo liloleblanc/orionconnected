@@ -30,6 +30,24 @@ const PUB = path.join(ROOT, 'fids-current');
 const SRC = fs.readFileSync(path.join(PUB, 'js', 'fids-core.js'), 'utf8');
 const CSS = fs.readFileSync(path.join(PUB, 'css', 'display-overrides.css'), 'utf8');
 
+/**
+ * The text of a piece of markup: everything outside its tags. Scanned as a
+ * browser reads it, each tag running from '<' to the next '>', rather than
+ * by a pattern replace, which can leave a tag behind.
+ */
+function textOf(html) {
+  const s = String(html);
+  let out = '', i = 0;
+  for (;;) {
+    const a = s.indexOf('<', i);
+    if (a < 0) return out + s.slice(i);
+    out += s.slice(i, a);
+    const b = s.indexOf('>', a + 1);
+    if (b < 0) return out + s.slice(a);
+    i = b + 1;
+  }
+}
+
 /** The text of a brace block starting at `start` (strings and comments skipped). */
 function braceFrom(start, what) {
   assert.ok(start >= 0, what + ' must exist in fids-core.js');
@@ -55,9 +73,13 @@ const fnSource = (name) => {
 };
 const varSource = (decl) => braceFrom(SRC.indexOf(decl), decl) + ';\n';
 
+// The one store for passenger words (board-strings.js): _gateLbl reads
+// _GATE_LBL, which is frozen, and falls through to the store for a key it
+// does not hold, the greeting among them.
+const BS = require(path.join(PUB, 'js', 'board-strings.js'));
 /** A sandbox holding the card's own code, as written, with a board's languages. */
 function sandbox(langs, extra) {
-  const ctx = vm.createContext(Object.assign({ langs, window: {} }, extra || {}));
+  const ctx = vm.createContext(Object.assign({ langs, window: {}, BoardStrings: BS }, extra || {}));
   vm.runInContext(varSource('var _GATE_LBL = {') + fnSource('_gateLbl') + fnSource('frFirstAirport')
     + fnSource('_welcomeCardLines') + fnSource('_welcomeCardEsc') + fnSource('_welcomeCardHtml')
     + fnSource('_welcomeCardSizes'), ctx);
@@ -78,10 +100,11 @@ const WA = {
 
 // ── the phrases ──────────────────────────────────────────────────────────────
 
-test('the greeting is in the gate label table, in all nine board languages', () => {
+test('the greeting is in the store, in all nine board languages, and _gateLbl finds it there', () => {
   const ctx = sandbox(['en', 'fr']);
-  const row = JSON.parse(JSON.stringify(vm.runInContext('_GATE_LBL.welcomeAboard', ctx)));
+  const row = Object.fromEntries(Object.entries(BS.STR.welcomeAboard).filter(([k]) => !k.startsWith('$')));
   assert.deepEqual(row, WA, 'the same nine strings the card has always carried');
+  assert.equal(vm.runInContext('_GATE_LBL.welcomeAboard', ctx), undefined, '_GATE_LBL is frozen: the key lives in the store');
   // and the card no longer keeps a private copy of them
   assert.doesNotMatch(SRC, /var _WA = \{/);
 });
@@ -124,7 +147,9 @@ test('the pick is _gateLbl\'s own, for every pair of board languages', () => {
     for (const b of codes) {
       for (const fr of [false, true]) {
         const ctx = sandbox([a, b]);
-        const viaLbl = vm.runInContext('_gateLbl("welcomeAboard", ' + fr + ', function (w, i, l) { return l + "=" + w; }, "|")', ctx);
+        // (_gateLbl marks each half it wraps with its language, markHalf: the
+        // pick is the languages and the words, not that markup)
+        const viaLbl = textOf(vm.runInContext('_gateLbl("welcomeAboard", ' + fr + ', function (w, i, l) { return l + "=" + w; }, "|")', ctx));
         const got = lines([a, b], fr).map(([l, t]) => l + '=' + t).join('|');
         assert.equal(got, viaLbl, a + ',' + b + (fr ? ' (Québec)' : ''));
       }

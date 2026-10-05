@@ -31,9 +31,9 @@ function fmt12(d, tz) {
   // hours and the windowing breaks because "18:30" becomes "06:30".
   if (tz) {
     try {
-      const parts = new Intl.DateTimeFormat('en-US', {
+      const parts = new Intl.DateTimeFormat('en-US', { // i18n-ok: code
         timeZone: tz, year:'numeric', month:'2-digit', day:'2-digit',
-        hour:'2-digit', minute:'2-digit', hour12: false
+        hour:'2-digit', minute:'2-digit', hour12: false // i18n-ok: code
       }).formatToParts(d);
       const get = type => parts.find(p => p.type === type).value;
       const hh = get('hour') === '24' ? '00' : get('hour');
@@ -66,7 +66,7 @@ async function adbFetchWindow(iata, direction, fromStr, toStr) {
       }
       if (!r.ok) {
         let body = ''; try { body = await r.text(); } catch(e) {}
-        lastErr = `HTTP ${r.status} for ${iata} ${direction} [${fromStr} → ${toStr}]\n${body.slice(0,300)}`;
+        lastErr = `HTTP ${r.status} for ${iata} ${direction} [${fromStr} → ${toStr}]\n${body.slice(0,300)}`; // i18n-ok: debug
         console.error('[FIDS] ADB error:', lastErr);
         // Note: useProxy reference removed (no longer in scope; was throwing
         // ReferenceError in this error path and masking the actual API error).
@@ -121,7 +121,7 @@ function yqmTimeObj(tsSeconds) {
   const H = String(d.getUTCHours()).padStart(2, '0'), Mi = String(d.getUTCMinutes()).padStart(2, '0'), S = String(d.getUTCSeconds()).padStart(2, '0');
   let off = '-04:00';
   try {
-    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Moncton', timeZoneName: 'shortOffset' }).formatToParts(d);
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Moncton', timeZoneName: 'shortOffset' }).formatToParts(d); // i18n-ok: code
     const tz = (p.find((x) => x.type === 'timeZoneName') || {}).value || '';
     const m = tz.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
     if (m) off = `${m[1]}${m[2].padStart(2, '0')}:${(m[3] || '00')}`;
@@ -256,7 +256,7 @@ function tpaTimeObj(isoLocal) {
   const ref = new Date(`${Y}-${Mo}-${Da}T${H}:${Mi}:${S}Z`);
   let off = '-05:00';
   try {
-    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(ref);
+    const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', timeZoneName: 'shortOffset' }).formatToParts(ref); // i18n-ok: code
     const tz = (p.find((x) => x.type === 'timeZoneName') || {}).value || '';
     const mm = tz.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
     if (mm) off = `${mm[1]}${mm[2].padStart(2, '0')}:${(mm[3] || '00')}`;
@@ -1231,7 +1231,7 @@ async function adbFetch(iata, direction) {
         if (list.length) {
           // Same webhook aircraft merge as Moncton — no-ops until a KTPA
           // Flight-Alert subscription feeds the cache.
-          try { await _yqmCacheAircraftMerge(list, direction, 'KTPA'); } catch (e2) {}
+          try { await _yqmCacheAircraftMerge(list, direction, 'KTPA'); } catch (e2) {} // i18n-ok: code
           return wantDep ? { departures: list } : { arrivals: list };
         }
         console.warn('[FIDS] TPA feed empty — falling back to ADB scrape');
@@ -1293,7 +1293,7 @@ async function adbFetch(iata, direction) {
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
         const r = await fetch(yqmUrl, { headers: { 'Accept': 'application/json' } });
-        if (!r.ok) { _lastWhy = `HTTP ${r.status}`; }
+        if (!r.ok) { _lastWhy = `HTTP ${r.status}`; } // i18n-ok: debug
         else {
           const raw = await r.json();
           const rowsAll = Array.isArray(raw) ? raw : (Array.isArray(raw && raw.flights) ? raw.flights : []);
@@ -1450,7 +1450,7 @@ async function adbFetch(iata, direction) {
         // feeds the cache. MCO's window-scoped enrichment above is already
         // foreign-leg-proof (airport-scoped list, minute-keyed match); this
         // adds the push path for tails ADB's scrape misses.
-        try { await _yqmCacheAircraftMerge(list, direction, 'KMCO'); } catch (e3) {}
+        try { await _yqmCacheAircraftMerge(list, direction, 'KMCO'); } catch (e3) {} // i18n-ok: code
         console.log(`[FIDS] MCO feed ${iata} ${direction}: ${list.length} flights (deduped)`);
         // Cache this good GOAA result so a transient blip on the next poll
         // returns the last-known GOAA list instead of swapping the whole board

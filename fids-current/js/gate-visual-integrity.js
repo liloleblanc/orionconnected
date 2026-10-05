@@ -258,7 +258,13 @@
       var holder = img.closest('.v2-rc-aircraft-img');
       if (!holder) return;
       holder.className = 'v2-rc-aircraft-pending';
-      holder.innerHTML = 'Aircraft image pending <span>|</span> Image de l’appareil à venir';
+      // v23970 — the board's pair, from the gate's own label (it was English |
+      // French whatever the board spoke).
+      var ap = String(window._gateIata || (document.getElementById('apSel') || {}).value || '').toUpperCase();
+      var frF = typeof window.frFirstAirport === 'function' && window.frFirstAirport(ap);
+      holder.innerHTML = typeof window._gateLbl === 'function'
+        ? window._gateLbl('acImgPending', frF, function (w) { return w; }, ' <span>|</span> ')
+        : '';
     }, 0);
   }, true);
 })();

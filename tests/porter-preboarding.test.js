@@ -44,15 +44,19 @@ function build(preActive, lang) {
   // its status strip, the split lane row, and the base-tier mark on the general
   // side). They live beside it rather than inside it, so they have to be lifted
   // with it or the function throws on the first call.
-  const helpers = ['_pdCabinHdr', '_pdLaneRow', '_pdClassicMark'].map(lift).join('\n');
+  // v23970 — and the tier marks moved into two shared helpers (_pdMark,
+  // _pdMarksRow), so the sign and the lanes panel draw one row.
+  const helpers = ['_pdCabinHdr', '_pdLaneRow', '_pdClassicMark', '_pdMark', '_pdMarksRow'].map(lift).join('\n');
+  // v23530 — the sign reads ONE language from _GATE_LBL for the phase name
+  // and the roster; TL() reads a different table and returned the raw keys.
+  const one = (key) => (key === 'preboardList' ? TABLE[lang] : (key === 'preboard' ? 'Pre-boarding'
+    : (/^pdTier|^pdReserve$/.test(key) ? STORE.entry(key)[lang] : '[' + key + ']')));
   const fn = new Function(
-    '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF',
+    '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF', '_gateLang1', '_gateLbl1Html',
     helpers + '\n' + lift('_pdLanesBodyHtml') + '\nreturn _pdLanesBodyHtml;',
   )(
     (key) => '[' + key + ']',
-    // v23530 — the sign reads ONE language from _GATE_LBL for the phase name
-    // and the roster; TL() reads a different table and returned the raw keys.
-    (key) => (key === 'preboardList' ? TABLE[lang] : (key === 'preboard' ? 'Pre-boarding' : '[' + key + ']')),
+    one,
     () => '',
     (v) => v,
     (key) => '[' + key + ']',
@@ -64,21 +68,26 @@ function build(preActive, lang) {
     // artwork picks its language off THIS flag, so with it pinned no test could
     // ever have caught a mark stuck in the wrong language.
     lang === 'fr',
+    // the sign's first language — the one its artwork follows (v23970)
+    () => lang,
+    // v23995 — the same label as markup marked with its language
+    (key) => STORE.markHalf('<span class="g8-lbl1">' + one(key) + '</span>', lang, key),
   );
   return fn('23–33', '12–22', preActive);
 }
 
+const STORE = require('../fids-current/js/board-strings.js');
 // The roster as it actually ships, pulled from the translation table.
+// It lives in the one store (board-strings.js), with where its words come from.
 const TABLE = (() => {
-  const at = SRC.indexOf('preboardList: {');
-  assert.ok(at >= 0, 'the published pre-boarding roster must exist in the translation table');
-  const body = SRC.slice(at, SRC.indexOf('},', at) + 2);
-  return new Function('return {' + body + '}.preboardList;')();
+  const e = require('../fids-current/js/board-strings.js').entry('preboardList');
+  assert.ok(e, 'the published pre-boarding roster must exist in the store');
+  return e;
 })();
 
 test('the roster carries every group Porter publishes', () => {
   const en = TABLE.en;
-  for (const group of ['disabilities', 'Unaccompanied minors', 'children 2 and under',
+  for (const group of ['disabilities', 'Unaccompanied minors', 'children age two and younger',
                        'VIPorter', 'PorterReserve']) {
     assert.ok(en.includes(group), `the published list includes "${group}"`);
   }
@@ -87,7 +96,8 @@ test('the roster carries every group Porter publishes', () => {
 test('every language the board can run carries the roster', () => {
   for (const lang of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) {
     assert.ok(TABLE[lang] && TABLE[lang].length > 20, `${lang} must have the roster`);
-    assert.ok(/VIPorter/.test(TABLE[lang]) && /PorterReserve/.test(TABLE[lang]),
+    // French writes the cabin PorterRéserve, as Porter does
+    assert.ok(/VIPorter/.test(TABLE[lang]) && (lang === 'fr' ? /PorterRéserve/ : /PorterReserve/).test(TABLE[lang]),
       `${lang} must keep the Porter brand names untranslated`);
   }
 });
@@ -98,14 +108,14 @@ test('while pre-boarding, the column is headed Pre-boarding and lists the groups
   assert.match(html, /\[priority\]/,
     'the HEADER stays Priority — v23522 put the phase in both and the value clipped');
   assert.ok(html.includes('Unaccompanied minors'), 'the published list must be on the sign');
-  assert.ok(html.includes('Families with children 2 and under'));
+  assert.ok(html.includes('Families traveling with children age two and younger'), 'Porter\'s own words');
   assert.doesNotMatch(html, />Porter Reserve</,
     'during pre-boarding the single Reserve headline is replaced by the full list');
 });
 
 test('once general boarding commences it returns to the Reserve priority queue', () => {
   const html = build(false, 'en');
-  assert.ok(html.includes('Porter Reserve'), 'lanes 1-2 are the Reserve queue from then on');
+  assert.ok(html.includes('PorterReserve'), 'lanes 1-2 are the Reserve queue from then on, by Porter\'s own name');
   assert.ok(!html.includes('Unaccompanied minors'),
     'the pre-boarding courtesy list must not linger through general boarding');
 });
@@ -120,7 +130,9 @@ test('the phase is driven by the real boarding window, not a magic number', () =
 test('the French sign says it in French', () => {
   const html = build(true, 'fr');
   assert.ok(html.includes('Mineurs non accompagn'));
-  assert.ok(html.includes('PorterReserve'), 'brand names stay as Porter writes them');
+  // Porter writes its cabin PorterRéserve in French (its own pre-boarding
+  // list, fr-ca): the brand stays as Porter writes it, in that language.
+  assert.ok(html.includes('PorterRéserve'), 'brand names stay as Porter writes them');
 });
 
 // ── v23746 — THE COLUMNS ARE HEADED BY THE CABIN, AND THE CABIN LOCALISES ───
@@ -134,12 +146,17 @@ test('the French sign says it in French', () => {
 // pages, so a bilingual sign cannot print the English form twice. That is the
 // specific thing these tests hold.
 
+// They live in the one store (board-strings.js), marked as Porter's own
+// words in English and French.
 function cabinNames() {
-  const at = SRC.indexOf('  pdReserve: {');
-  assert.ok(at >= 0, 'fids-core.js must declare the pdReserve cabin label');
-  const end = SRC.indexOf('  photoId: {', at);
-  assert.ok(end > at, 'expected pdClassic and photoId to follow pdReserve');
-  return new Function('return {' + SRC.slice(at, end) + '};')();
+  const S = require('../fids-current/js/board-strings.js');
+  const n = { pdReserve: S.entry('pdReserve'), pdClassic: S.entry('pdClassic') };
+  assert.ok(n.pdReserve && n.pdClassic, 'the store must declare the Porter cabin labels');
+  for (const k of ['pdReserve', 'pdClassic']) {
+    assert.equal(n[k].$src.en, 'airline:PD');
+    assert.equal(n[k].$src.fr, 'airline:PD');
+  }
+  return n;
 }
 
 test('the cabin names are the closed-up forms Porter publishes', () => {
@@ -221,22 +238,25 @@ test('AvidTraveller labels the tier marks, which is where it is true', () => {
   // marks it now sits above, which until this change were unlabelled.
   const body = lift('_pdLanesBodyHtml');
   assert.match(body, /g8-pd-marks-hdr/, 'the marks row must be headed');
-  assert.match(body, /_gateLbl1\('avidTraveller'/,
+  assert.match(body, /_gateLbl1(?:Html)?\('avidTraveller'/,
     'the name is a LABEL, not a literal — the sign is bilingual');
-  // Above the marks, not floating elsewhere in the column.
-  const hdrAt = body.indexOf('g8-pd-marks-hdr');
-  const marksAt = body.indexOf('g8-pd-preboard-marks');
-  assert.ok(hdrAt > 0 && marksAt > hdrAt,
+  // Above the marks, not floating elsewhere in the column: the heading, then
+  // the one shared row of marks.
+  assert.match(body, /_prioMarksHdr \+ _pdMarksRow\(\)/,
     'the heading must be emitted immediately before the marks it names');
+  assert.match(lift('_pdMarksRow'), /g8-pd-preboard-marks/);
+  const html = build(true, 'en');
+  assert.ok(html.indexOf('g8-pd-marks-hdr') > 0 && html.indexOf('g8-pd-preboard-marks') > html.indexOf('g8-pd-marks-hdr'));
 });
 
 test('the tier collective name is renamed in French, not translated', () => {
   // Porter does not translate it, it renames it: "Grand Voyageur fait
   // référence aux niveaux d'adhésion Passeport, Horizon, Essor et Première".
   // Hardcoding the English would print it on the French half of the sign.
-  const at = SRC.indexOf('  avidTraveller: {');
-  assert.ok(at >= 0, 'fids-core.js must declare the avidTraveller label');
-  const lbl = new Function('return {' + SRC.slice(at, SRC.indexOf('},', at) + 2) + '}.avidTraveller;')();
+  const lbl = require('../fids-current/js/board-strings.js').entry('avidTraveller');
+  assert.ok(lbl, 'the store must declare the avidTraveller label');
+  assert.equal(lbl.$src.en, 'airline:PD', 'Porter\'s own name');
+  assert.equal(lbl.$src.fr, 'airline:PD', 'Porter\'s own French name');
   assert.equal(lbl.en, 'AvidTraveller');
   assert.equal(lbl.fr, 'Grand Voyageur');
   assert.notEqual(lbl.fr, lbl.en, 'the French side must not print the English brand');
@@ -254,7 +274,7 @@ test('all four elite tiers are named, Ascent included', () => {
   // lang + '.svg' — so a literal search finds none of them. Read the tier list
   // off the calls instead, the way the branding contract resolves constructed
   // tile paths rather than grepping for filenames that no longer appear.
-  const tiers = [...body.matchAll(/_pdMark\('(\w+)'/g)].map((m) => m[1]);
+  const tiers = [...lift('_pdMarksRow').matchAll(/_pdMark\('(\w+)'/g)].map((m) => m[1]);
   for (const tier of ['passport', 'venture', 'ascent', 'first']) {
     assert.ok(tiers.includes(tier), `the ${tier} tier must be on the priority marks`);
   }
@@ -268,11 +288,11 @@ test('every tier mark points at a file that exists', () => {
   // A missing mark fails silently — the img just does not draw, and the sign
   // looks fine with one fewer tier on it. That is how Ascent went unnoticed.
   const dir = path.resolve(__dirname, '..', 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
-  const body = lift('_pdLanesBodyHtml') + lift('_pdClassicMark');
+  const body = lift('_pdLanesBodyHtml') + lift('_pdClassicMark') + lift('_pdMarksRow');
   // Resolve what the renderer BUILDS, in every language it can build it in —
   // a constructed path that points at nothing draws nothing, and the tier just
   // vanishes from the sign with no error. That is how Ascent went unnoticed.
-  const fr = new Function('return ' + /_PD_MARK_FR = (\{[^}]*\})/.exec(body)[1] + ';')();
+  const fr = new Function('return ' + /FR_ART = (\{[^}]*\})/.exec(lift('_pdMark'))[1] + ';')();
   const refs = [];
   for (const m of body.matchAll(/_pdMark\('(\w+)'/g)) {
     refs.push(`viporter_${m[1]}_single_line_en.svg`);
@@ -292,13 +312,11 @@ test('every tier mark points at a file that exists', () => {
 // the function was written with, so renaming one local variable failed it while
 // the sign kept rendering perfectly — a test of the spelling, not the output.
 function mark(tier, label, fr) {
-  const src = lift('_pdLanesBodyHtml');
-  const decl = /var _PD_MARK_FR = \{[^}]*\};/.exec(src);
-  assert.ok(decl, 'the set of tiers with French art must be declared explicitly');
-  const at = src.indexOf('function _pdMark(');
-  assert.ok(at >= 0, '_pdMark must still exist');
-  const body = src.slice(at, src.indexOf('\n    }', at) + 6);
-  return new Function('_frF', decl[0] + '\n' + body + '\nreturn _pdMark;')(fr)(tier, label);
+  const src = lift('_pdMark');
+  assert.ok(/var FR_ART = \{[^}]*\};/.test(src), 'the set of tiers with French art must be declared explicitly');
+  const key = 'pdTier' + tier.charAt(0).toUpperCase() + tier.slice(1);
+  const l = fr ? 'fr' : 'en';
+  return new Function('_frF', '_gateLang1', '_gateLbl1', src + '\nreturn _pdMark;')(fr, () => l, (k) => STORE.entry(k)[l])(tier, key);
 }
 
 test('the tier marks follow the language where French art exists', () => {
@@ -351,8 +369,8 @@ test('a tier without French art falls back to English, never to nothing', () => 
   // This is the important half. A missing image draws nothing at all and the
   // tier silently vanishes from the sign — exactly how Ascent went unnoticed.
   // Wrong-language-but-present beats absent.
-  const src = lift('_pdLanesBodyHtml');
-  const frSet = new Function('return ' + /(_PD_MARK_FR = )(\{[^}]*\})/.exec(src)[2] + ';')();
+  const src = lift('_pdMark');
+  const frSet = new Function('return ' + /(FR_ART = )(\{[^}]*\})/.exec(src)[2] + ';')();
   const dir = path.resolve(__dirname, '..', 'fids-current', 'logos', 'airlines', 'canadian', 'porter');
   for (const tier of ['passport', 'venture', 'ascent', 'first']) {
     // Every tier must have English art — that is the fallback.

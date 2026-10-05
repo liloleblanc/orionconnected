@@ -34,7 +34,10 @@
   /* Typography — default to Geist (free Roc Grotesk twin).
      Switchable at runtime by overriding --font-primary on body.
      See css/font.css for the full set of named font stacks. */
-  --font-primary: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  /* The Japanese, Chinese and Arabic web fonts close every stack, so those
+     languages render on a host with no fonts of its own (the stream host).
+     BoardStrings.withScripts() adds the same tail to a stack set at run time. */
+  --font-primary: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Helvetica, Arial, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', 'Roboto Mono', Menlo, Consolas, monospace;
 
   /* Spacing */
@@ -318,3 +321,57 @@ html[data-boot-ground="1"] #fidsLoader {
   animation: ocLogoPulse 2.2s ease-in-out infinite;
 }
 @keyframes ocLogoPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+
+
+/* ═══ THE NINE BOARD LANGUAGES — scripts, direction, line breaking ═════════
+   v23970. Every half of a pair carries its language (lang="…"), and an Arabic
+   half its direction (dir="rtl", which the browser isolates), so these rules
+   reach exactly the words in that language. docs/BOARD-LANGUAGES.md.        */
+
+/* Japanese, Chinese, Arabic: every font stack ends in var(--fids-script-fonts)
+   (BoardStrings.withScripts adds it to a stack set at run time), so the
+   board's own font draws Latin and digits and the script's web font (Google
+   Fonts, loaded by each board page) draws the rest. The variable is resolved
+   on each element, so a Chinese half — or a whole board showing Chinese —
+   takes the simplified-Chinese forms of the characters it shares with
+   Japanese, and a Japanese one the Japanese forms. */
+:root { --fids-script-fonts: 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'; }
+[lang="ja"] { --fids-script-fonts: 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'; }
+[lang|="zh"] { --fids-script-fonts: 'Noto Sans SC', 'Noto Sans JP', 'Noto Sans Arabic'; }
+[lang="ar"] { --fids-script-fonts: 'Noto Sans Arabic', 'Noto Sans JP', 'Noto Sans SC'; }
+[lang="ja"]:not(html) {
+  word-break: auto-phrase;   /* break between phrases, never inside a word */
+  line-break: strict;
+}
+[lang|="zh"]:not(html) { line-break: strict; }
+/* Arabic letters join; tracking pulls them apart — on the Arabic element and
+   on everything inside it that is not marked as another language. */
+[lang="ar"]:not(html),
+[lang="ar"]:not(html) *:not([lang]) { letter-spacing: 0 !important; }
+/* Each half is isolated, so an Arabic half and a Latin half (or a Japanese
+   date and an Arabic one) can never reorder each other. */
+.bs-h, bdi[lang] { unicode-bidi: isolate; }
+/* A board that shows ONE language at a time carries it on its table or its
+   screen (lang="ar" on #fidsTable, on the baggage view). Its columns keep
+   their order, so the direction is set where the words are — each heading,
+   each status, each label — never on the table or the screen itself, which
+   would mirror the columns. */
+#fidsTable:lang(ar) th, #fidsTable:lang(ar) td.td-status,
+[lang="ar"] .b3-status, [lang="ar"] .bidsv2-carousel-label,
+[lang="ar"] .bidsv2-col-hdr, [lang="ar"] .bidsv2-status, [lang="ar"] .bidsv2-empty,
+#fidsTable:lang(ar) .fids-empty, [lang="ar"] .fids-empty-msg { direction: rtl; unicode-bidi: isolate; }
+
+/* ?i18n=provenance (localhost only): every careful translation — our words,
+   where the airline or government publishes none in that language — is
+   outlined, so the pictures show which words are ours. */
+html[data-i18n-provenance] [data-i18n-src="careful"] {
+  outline: 2px dashed #f5a623 !important;
+  outline-offset: 2px;
+}
+html[data-i18n-provenance] [data-i18n-src="careful"]::after {
+  content: '\2248';
+  color: #f5a623;
+  font-size: 0.6em;
+  vertical-align: super;
+  margin-inline-start: 0.15em;
+}

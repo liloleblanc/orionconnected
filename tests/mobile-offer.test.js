@@ -287,20 +287,30 @@ test('the hostname parse still has exactly one home', () => {
 
 // ── both languages, and the order of them ─────────────────────────────────
 
+// v23970 — the offer's words live in the one store (board-strings.js), in all
+// nine languages, and the airport's pair is picked by the boards' own
+// resolver; the page kept a private list of four Québec codes.
+const BS = require('../fids-current/js/board-strings.js');
+
 test('the offer is bilingual', () => {
-  for (const s of ['Use the mobile app', 'Stay on the regular site',
-                   'Utiliser l’application mobile', 'Rester sur le site normal']) {
-    assert.ok(INDEX.includes(s), `the offer is missing: ${s}`);
+  for (const k of ['mobileAsk', 'mobileYes', 'mobileNo', 'mobileNote']) {
+    for (const l of BS.LANGS) assert.ok(BS.STR[k] && BS.STR[k][l], `the offer is missing ${k}.${l}`);
   }
+  assert.equal(BS.STR.mobileYes.en, 'Use the mobile app');
+  assert.equal(BS.STR.mobileNo.en, 'Stay on the regular site');
+  assert.equal(BS.STR.mobileYes.fr, 'Utiliser l’application mobile');
+  assert.equal(BS.STR.mobileNo.fr, 'Rester sur le site normal');
+  assert.match(INDEX, /BoardStrings\.pair\(k, \{ langs: L, iata: ap, sep: '' \}\)/, 'each answer is the airport\'s pair');
+  const store = INDEX.indexOf('<script src="js/board-strings.js?v=');
+  assert.ok(store > 0 && store < INDEX.indexOf('id="ocOffer"'), 'the store loads before the offer is painted');
 });
 
 test('French leads at the Quebec airports', () => {
-  const m = INDEX.match(/var QC = \{([^}]*)\}/);
-  assert.ok(m, 'the offer must know which airports read French first');
-  for (const c of ['YUL', 'YQB', 'YHU']) {
-    assert.match(m[1], new RegExp(`\\b${c}\\b`), `${c} is in Quebec and must lead in French`);
-  }
-  assert.doesNotMatch(m[1], /\bYQM\b/,
+  assert.match(INDEX, /BoardStrings\.pairLangs\(BoardStrings\.resolveLangs\(\{ iata: ap \}\)\.langs, ap\)/,
+    'the offer must know which airports read French first — from the store');
+  const pick = (ap) => BS.pairLangs(BS.resolveLangs({ iata: ap }).langs, ap);
+  for (const c of ['YUL', 'YQB', 'YHU']) assert.equal(pick(c)[0], 'fr', `${c} is in Quebec and must lead in French`);
+  assert.deepEqual(pick('YQM'), ['en', 'fr'],
     'Moncton is in New Brunswick — bilingual, but not French-first under this rule');
 });
 

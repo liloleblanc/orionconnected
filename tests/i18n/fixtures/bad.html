@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- inside <body>, a comment that mentions the body tag -->
+  <script src="js/board-strings.js?v=100"></script>
+  <script src="unknown.js?v=1"></script>
+</head>
+<body>
+  <div id="loader">
+    <span>LOADING</span>
+    <span data-i18n="loading">LOADING</span>
+  </div>
+  <div class="ctrl" data-operator><button>SAVE OVERRIDE</button></div>
+  <svg width="200" height="20"><text x="0" y="15">Gate closes soon</text></svg>
+  <template id="gcTpl"><div class="gc">Gate closing now</div></template>
+  <noscript><div class="gc">Gate closed already</div></noscript>
+  <iframe src="unlisted.html" style="border:0"></iframe>
+  <script>
+    var GREET = [["EN","Now boarding"],["FR","Embarquement"]];
+    var m = '<span data-baremsg="Aircraft details pending">';
+  </script>
+  <script src="js/fids-core.js?v=101"></script>
+</body>
+</html>

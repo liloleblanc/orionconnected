@@ -34,6 +34,7 @@
 // worker is imported whole.
 
 const test = require('node:test');
+const BS = require('../fids-current/js/board-strings.js');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -46,6 +47,24 @@ const V2 = fs.readFileSync(path.join(root, 'fids-current', 'js', 'fids-v2.js'), 
 const workerPath = path.join(root, 'workers', 'fids-proxy.js');
 const MIN = 60000;
 const LANGS = ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar'];
+
+/**
+ * The text of a piece of markup: everything outside its tags. Scanned as a
+ * browser reads it, each tag running from '<' to the next '>', rather than
+ * by a pattern replace, which can leave a tag behind.
+ */
+function textOf(html) {
+  const s = String(html);
+  let out = '', i = 0;
+  for (;;) {
+    const a = s.indexOf('<', i);
+    if (a < 0) return out + s.slice(i);
+    out += s.slice(i, a);
+    const b = s.indexOf('>', a + 1);
+    if (b < 0) return out + s.slice(a);
+    i = b + 1;
+  }
+}
 
 // From `start` to the brace that closes the first one opened after it.
 // Strings and comments are skipped so a brace inside either cannot end it.
@@ -94,7 +113,11 @@ function engine(langs) {
     ...['_gateDelayHasTime', 'airportCountry', 'flightRegionKey', '_gateLbl', '_fidsClockForLang', '_gateCloseRouteOk', '_gateCloseInfo', '_gateCloseLineHtml'].map(fn),
     'return { GATE_CLOSE_POLICY, GATE_CLOSE_WORDS, _GATE_LBL, _gateCloseInfo, _gateCloseLineHtml };'
   ].join('\n'));
-  return new Function('langs', 'window', src)(langs || ['en', 'fr'], {});
+  const E = new Function('langs', 'window', 'BoardStrings', src)(langs || ['en', 'fr'], {}, BS);
+  // the words: the frozen gate table, and the one store new words live in
+  // (v23995: the deadline lines moved there; _gateLbl falls through to it)
+  E._GATE_LBL = Object.assign({}, BS.STR, E._GATE_LBL);
+  return E;
 }
 // 18:15 ADT on 2026-10-04 (21:15 UTC), Moncton.
 const DEP = Date.parse('2026-10-04T21:15:00Z');
@@ -349,16 +372,18 @@ test('(1) the ticker states no airport-wide number; a one-airline board says tha
     CORE.match(/^const _US_Y_IATA = [^;]+;/m)[0],
     fn('airportCountry'),
     fn('_tickerCloseLine'),
-    block('const TICKER_MSG = {'),
     CORE.match(/^const TICKER_DEADLINE_LINE = \d+;/m)[0],
+    fn('_tickerHtml'),
     fn('updateTicker'),
-    'return { _tickerCloseLine, updateTicker, TICKER_MSG, set: function (a) { filterAirline = a; } };'
+    // the ticker's lines live in the store (BoardStrings.LISTS.ticker)
+    'return { _tickerCloseLine, updateTicker, TICKER_MSG: BoardStrings.LISTS.ticker, set: function (a) { filterAirline = a; } };'
   ].join('\n');
-  const span = { textContent: '' };
+  // updateTicker writes markup (each line marked with its language): read its text
+  const span = { _h: '', set innerHTML(v) { this._h = v; }, get textContent() { return textOf(this._h).replace(/&amp;/g, '&'); } };
   let apNow = 'YQM';
   const doc = { querySelector: () => span, getElementById: () => ({ value: apNow }) };
-  const mk = (langs) => new Function('langs', 'document', 'AIRLINE_NAME', 'window', 'var filterAirline = "";\n' + src)(
-    langs, doc, { AC: 'Air Canada', WS: 'WestJet', PD: 'Porter', PB: 'PAL Airlines', DL: 'Delta Air Lines', F8: 'Flair Airlines', AA: 'American Airlines', UA: 'United Airlines' }, {});
+  const mk = (langs) => new Function('langs', 'document', 'AIRLINE_NAME', 'window', 'BoardStrings', 'var filterAirline = "";\n' + src)(
+    langs, doc, { AC: 'Air Canada', WS: 'WestJet', PD: 'Porter', PB: 'PAL Airlines', DL: 'Delta Air Lines', F8: 'Flair Airlines', AA: 'American Airlines', UA: 'United Airlines' }, {}, BS);
   const T = mk(['en', 'fr']);
   // All nine languages, the same lines in each, and no number of minutes in any.
   assert.deepEqual(LANGS.filter((l) => !Array.isArray(T.TICKER_MSG[l])), [], 'the ticker in all nine');
@@ -387,12 +412,16 @@ test('(1) the ticker states no airport-wide number; a one-airline board says tha
   // A one-airline board in Spanish and Japanese says it in those languages.
   const TS = mk(['es', 'ja']); TS.set('AC'); TS.updateTicker();
   assert.match(span.textContent, /AIR CANADA: LA PUERTA DE EMBARQUE CIERRA 15 MINUTOS ANTES DE LA SALIDA  ·  AIR CANADA：搭乗口は出発15分前に締め切ります/);
-  // No page paints an airport-wide number before the script runs.
+  // No page paints an airport-wide number before the script runs: the
+  // ticker's markup starts empty and is filled from the store in the board's
+  // own languages (v23995).
   for (const page of ['fids.html', 'gids.html', 'bids.html']) {
     const html = fs.readFileSync(path.join(root, 'fids-current', page), 'utf8');
     assert.doesNotMatch(html, /\d+ MINUTES BEFORE DEPARTURE|\d+ MINUTES PRIOR TO DEPARTURE|\d+ MINUTES AVANT LE DÉPART/, page);
-    assert.match(html, /CHECK YOUR AIRLINE’S BOARDING GATE DEADLINE  ·  VÉRIFIEZ L’HEURE LIMITE À LA PORTE D’EMBARQUEMENT DE VOTRE TRANSPORTEUR/, page + ' paints the neutral line');
+    assert.match(html, /<div class="ticker"><span><\/span><\/div>/, page + ' paints no ticker words of its own');
   }
+  assert.equal(BS.LISTS.ticker.en[2], 'CHECK YOUR AIRLINE’S BOARDING GATE DEADLINE');
+  assert.equal(BS.LISTS.ticker.fr[2], 'VÉRIFIEZ L’HEURE LIMITE À LA PORTE D’EMBARQUEMENT DE VOTRE TRANSPORTEUR');
 });
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -489,16 +518,20 @@ test('(2) the gate and the departures board print the same word: Scheduled | Pr�
   // The rail's Status card no longer converts it either.
   assert.match(CORE, /else if \(_stk === ''\) _stk = 'scheduled';/);
   assert.doesNotMatch(CORE, /else if \(_stk === 'scheduled' \|\| _stk === ''\) _stk = 'ontime';/);
-  // The gate's words: SS, Expected among them, in all nine languages.
+  // The gate's words: SS, and Expected in the one store (stExpected: SS is
+  // frozen; SL() and the gate's status word fall through to it), in all
+  // nine languages.
   const SS = new Function(block('const SS = {') + '\nreturn SS;')();
-  assert.deepEqual(LANGS.filter((l) => !(SS.expected || {})[l]), [], 'Expected in all nine');
-  assert.equal(SS.expected.en, 'Expected', 'the status, not a lowercase qualifier');
-  assert.equal(SS.expected.fr, 'Attendu');
-  for (const lg of LANGS) if (lg !== 'en') assert.notEqual(SS.expected[lg], SS.expected.en, lg);
-  const gate = (k) => SS[k];
+  const EXP = BS.entry('stExpected');
+  assert.deepEqual(LANGS.filter((l) => !(EXP || {})[l]), [], 'Expected in all nine');
+  assert.equal(EXP.en, 'Expected', 'the status, not a lowercase qualifier');
+  assert.equal(EXP.fr, 'Attendu');
+  for (const lg of LANGS) if (lg !== 'en') assert.notEqual(EXP[lg], EXP.en, lg);
+  assert.match(CORE, /function _ssEntry\(k\) \{\s*if \(SS\[k\]\) return SS\[k\];[\s\S]{0,120}BoardStrings\.entry\('st' \+ c\.charAt\(0\)\.toUpperCase\(\) \+ c\.slice\(1\)\)/, 'SL() finds a status the frozen SS lacks in the store');
+  const gate = (k) => (k === 'expected' ? EXP : SS[k]);
   // The board: fids-v2's word for each, in all nine languages, the same as the gate's.
   const win = {};
-  vm.runInNewContext(V2, { window: win, document: { addEventListener() {}, querySelectorAll: () => [] }, console });
+  vm.runInNewContext(V2, { window: Object.assign(win, { BoardStrings: BS }), BoardStrings: BS, document: { addEventListener() {}, querySelectorAll: () => [] }, console });
   const fmt = (s, lang) => win.fidsFormatStatus({ status: s }, lang);
   for (const lg of LANGS) {
     assert.equal(fmt('scheduled', lg).html, SS.scheduled[lg], 'Scheduled reads the same on the board and the gate in ' + lg);

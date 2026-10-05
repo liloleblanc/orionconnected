@@ -12950,13 +12950,15 @@ All three items are right-aligned to one
 
 /* Second-language label — same bar, hard against the bottom edge.
    v23247 — the word comes from the board's OWN second assigned language via
-   --crsl-l2 (stamped by the bidsv2 template); the literal 'CARROUSEL' is only
-   the fallback for un-stamped markup. A board with no distinct second
+   bidsv2 template. v23995 — it is an element of its own
+   (.bidsv2-carousel-l2, marked with its language), no longer the block's
+   ::after drawn from --crsl-l2: a pseudo-element takes the block's lang, so
+   Chinese under a Spanish first bar was set with Japanese glyph forms, and
+   its fallback 'CARROUSEL' was French on any markup left unstamped. A board with no distinct second
  language stamps --crsl-l2-disp:none and the bar disappears (the MIA
    shot: hardcoded French on an EN/ES airport — the dual language was not
    working properly). */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block::after {
-  content: var(--crsl-l2, 'CARROUSEL') !important;
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv2-carousel-block > .bidsv2-carousel-l2 {
   display: var(--crsl-l2-disp, block) !important;
   position: absolute !important;
   left: auto !important;
@@ -15196,7 +15198,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   margin: 0 !important; padding: 0 !important; letter-spacing: .5px !important;
   text-transform: none !important; width: auto !important; min-width: 0 !important;
 }
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::after {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block > .bidsv2-carousel-l2 {
   position: static !important;
   background: transparent !important;
   color: #ffffff !important;
@@ -15214,7 +15216,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
      unchanged. */
   --crsl-num-cap: 44vh;
   font-size: var(--crsl-num-cap) !important; line-height: .94 !important;
-  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif !important;
+  font-family: 'Segoe UI', system-ui, -apple-system, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important;
   font-weight: 900 !important;
   display: flex !important; align-items: center !important; justify-content: center !important;
   padding: 0 !important; margin: 0 !important;
@@ -16564,7 +16566,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
    and three-character temperatures. */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-ht {
-  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important;
   font-size: clamp(26px, 4.4vh, 56px) !important;
   font-weight: 400 !important;
   color: #ffffff !important;
@@ -16574,7 +16576,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   margin-top: clamp(1px, 0.3vh, 4px) !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-lo {
-  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important;
   font-size: clamp(15px, 2.5vh, 31px) !important;
   font-weight: 400 !important;
   color: rgba(255, 255, 255, 0.60) !important;
@@ -17069,7 +17071,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hero-2up .wxc-cond,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-title,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-kicker {
-  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important;
   font-style: normal !important;
 }
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .wxc-hi,
@@ -18193,7 +18195,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   justify-content: center !important;
   width: 100% !important;
   height: 100% !important;
-  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, sans-serif !important;
+  font-family: 'AC Nord Display', 'AC Nord Text', system-ui, var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif !important;
   font-size: clamp(15px, 3.0vh, 34px) !important;
   font-weight: 700 !important;
   letter-spacing: 0.5px !important;
@@ -19328,7 +19330,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 }
 
 /* The band, row 2: second language, from the board's own --crsl-l2 */
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::after {
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block > .bidsv2-carousel-l2 {
   grid-row: 2 !important;
   grid-column: 1 !important;
   display: var(--crsl-l2-disp, block) !important;
@@ -19386,7 +19388,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
 
 /* On a flat surface the type needs no armour */
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-label,
-html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block::after,
+html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-block > .bidsv2-carousel-l2,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-terminal,
 html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_) .bidsv3 .bidsv2-carousel-number {
   -webkit-text-stroke: 0 !important;
@@ -22716,7 +22718,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   border-radius: 3px;
   background: rgba(255, 255, 255, 0.62);
   color: rgba(20, 24, 32, 0.8);
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
   font-weight: 600;
   font-size: clamp(9px, min(1.1vh, 0.62vw), 13px);
   line-height: 1.25;
@@ -22756,7 +22758,7 @@ html body:not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_):not(#_
   background: rgba(0, 0, 0, 0.65);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   color: #fff;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-family: system-ui, -apple-system, 'Segoe UI', var(--fids-script-fonts, 'Noto Sans JP', 'Noto Sans SC', 'Noto Sans Arabic'), sans-serif;
   font-weight: 700;
   font-size: clamp(var(--fx-floor, 12px), min(1.25vh, 0.72vw), max(14px, var(--fx-floor, 12px)));
   line-height: 1.25;

@@ -48,7 +48,9 @@ test('disabled modules stay off the canvas', () => {
 
 test('tokens resolve from live context and never leak markup', () => {
   const resolved = Render.resolveTokens('{airport.iata} <b>{flight.flight}</b> to {flight.city} at {flight.time} — {weather.temp}', context());
-  assert.equal(resolved, 'YQM &lt;b&gt;AC 1983&lt;/b&gt; to Toronto (YYZ) at 5:30 AM — 22°C');
+  // the time is the boards' clock in the screen's language (board-strings.js)
+  assert.equal(resolved, 'YQM &lt;b&gt;AC 1983&lt;/b&gt; to Toronto (YYZ) at 5:30am — 22°C');
+  assert.equal(Render.resolveTokens('{flight.time} {flight.status}', context({ language: 'fr' })), '05:30 À l&#39;heure');
   assert.equal(Render.resolveTokens('{unknown.token}', context()), '{unknown.token}');
 });
 
@@ -66,7 +68,21 @@ test('the emergency state takes over every family without editing the modules', 
   const document = Schema.newDocument({ family: 'bids' });
   const html = Render.canvasHTML(document, context({ family: 'bids', scene: 'emergency' }));
   assert.ok(html.includes('cm-emergency'));
-  assert.ok(html.includes('EMERGENCY OVERRIDE'));
+  assert.ok(html.includes('EMERGENCY'));
+  assert.ok(html.includes('Follow staff instructions'));
+  // in the language on screen, never English on an Arabic screen
+  const ar = Render.canvasHTML(document, context({ family: 'bids', scene: 'emergency', language: 'ar', direction: 'rtl' }));
+  assert.ok(ar.includes('حالة طوارئ') && ar.includes('يرجى اتباع تعليمات الموظفين'));
+  assert.ok(!/Follow staff/.test(ar));
+});
+
+test('a Studio screen speaks the language it is showing: heads, statuses, the empty table', () => {
+  const document = Schema.newDocument({ family: 'fids' });
+  for (const [l, words] of [['de', ['Fluggesellschaft', 'Pünktlich']], ['ja', ['航空会社', '定刻']], ['ar', ['شركة الطيران', 'في الموعد']]]) {
+    const html = Render.canvasHTML(document, context({ language: l }));
+    for (const w of words) assert.ok(html.includes(w), `${l}: ${w}`);
+    assert.ok(!/>Airline<|>On time</.test(html), `${l}: no English head or status`);
+  }
 });
 
 test('scene emphasis reaches flight rows through data, not extra CSS files', () => {

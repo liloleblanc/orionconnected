@@ -1313,7 +1313,8 @@ function menuChangeFont(fontName) {
   if (typeof changeFont === 'function') {
     changeFont(fontName);
   } else {
-    document.body.style.fontFamily = fontName + ", 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    var _fam = fontName + ", 'Helvetica Neue', Helvetica, Arial, sans-serif";
+    document.body.style.fontFamily = (typeof BoardStrings !== 'undefined') ? BoardStrings.withScripts(_fam) : _fam;
   }
   try { localStorage.setItem('fids_font', fontName); } catch(e) {}
 }
@@ -2886,7 +2887,8 @@ function _cuApplyFont(fontKey) {
     if (delBtn) delBtn.style.display = (fontKey && fontKey.indexOf('custom:') === 0) ? '' : 'none';
   } catch (e) {}
   if (fontKey && stacks[fontKey]) {
-    var stack = stacks[fontKey];
+    // v23970 — with the Japanese, Chinese and Arabic web fonts (board-strings.js).
+    var stack = (typeof BoardStrings !== 'undefined') ? BoardStrings.withScripts(stacks[fontKey]) : stacks[fontKey];
     // 1) Set the token (clean approach for tokenized rules)
     st.setProperty('--font-primary', stack, 'important');
     document.body.dataset.fidsFont = fontKey;

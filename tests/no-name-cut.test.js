@@ -68,7 +68,13 @@ function tableSource(decl) {
 const table = (decl) => vm.runInNewContext('(' + tableSource(decl) + ')');
 const CITY = table('const CITY = {');
 const CITY_FR = table('const CITY_FR = {');
-const SUB = table('var AIRPORT_SUBLINE = {');
+// The airport under-names are data in the airport table (AP's `sub`, and
+// `subKey` for a name the store writes in each language); AIRPORT_SUBLINE is
+// the index built from them at load (_apSublineTable), here with the store.
+const BS = require('../fids-current/js/board-strings.js');
+const AP_SRC = tableSource('const AP = {');
+const SUB_SRC = '(' + fnSource('_apSublineTable') + ')(' + AP_SRC + ')';
+const SUB = new Function('BoardStrings', 'return ' + SUB_SRC + ';')(BS);
 const PERSON = vm.runInNewContext(CORE.slice(CORE.indexOf('var AIRPORT_SUBLINE_PERSON = ') + 'var AIRPORT_SUBLINE_PERSON = '.length, CORE.indexOf(';', CORE.indexOf('var AIRPORT_SUBLINE_PERSON = '))));
 
 // The fitter's pure half, lifted out of the page.
@@ -80,7 +86,7 @@ const floorAt = (w, h) => new Function('window', 'return (' + fnSource('fidsFitF
 // The city helpers, with the tables they read.
 function cityHelpers(langNow, frFirst) {
   const src = [
-    'var AIRPORT_SUBLINE = ' + tableSource('var AIRPORT_SUBLINE = {') + ';',
+    'var AIRPORT_SUBLINE = ' + SUB_SRC + ';',
     'var AIRPORT_SUBLINE_PERSON = ' + JSON.stringify(PERSON) + ';',
     'var _AP_SUB_ALL = null;',
     'var lang = ' + JSON.stringify(langNow || 'en') + ';',
@@ -95,7 +101,7 @@ function cityHelpers(langNow, frFirst) {
     fnSource('_apCitySpelling'), fnSource('_cityAp'), fnSource('_cityApHtml'), fnSource('tc'),
     'return { _cityAp, _cityApHtml, _apSubline, tc };'
   ].join('\n');
-  return new Function(src)();
+  return new Function('BoardStrings', src)(BS);
 }
 
 // ── 1. ONE FITTER ──────────────────────────────────────────────────────────
@@ -402,7 +408,9 @@ test('only cities with two or more of the airports we show are listed', () => {
   assert.equal(helpersFr._apSubline('ORD', 'fr'), "O'Hare");
   assert.equal(helpersFr._apSubline('DCA', 'fr'), 'Reagan National', 'not a person\'s full name: as written');
   // v23972 — an airport, never what reads as a second city or a bare word
-  assert.equal(SUB.PEK, 'Capital Intl');
+  // (written out in full: 'Intl' is no word of a name table, and an
+  // abbreviation is no board language's word either)
+  assert.equal(SUB.PEK, 'Capital International');
   // v23986 — Dallas/Fort Worth names its own city, as the airport writes it
   // ('Fort Worth Intl' after 'Dallas' still read as a second city); Love
   // Field is named beside it
@@ -591,8 +599,10 @@ test('the aircraft caption puts its operator under the aircraft before it opens 
 });
 
 test('the "expected" qualifier speaks the board\'s languages, all nine', () => {
-  const t = vm.runInNewContext('(' + CORE.slice(CORE.indexOf('acExpected:{') + 'acExpected:'.length, CORE.indexOf('},', CORE.indexOf('acExpected:{')) + 1) + ')');
-  for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) assert.ok(t[l] && t[l].trim(), 'acExpected.' + l);
+  // the store's word (board-strings.js), the one every surface reads
+  const t = BS.entry('expected');
+  for (const l of ['en', 'fr', 'es', 'de', 'it', 'pt', 'ja', 'zh', 'ar']) assert.ok(t[l] && t[l].trim(), 'expected.' + l);
+  assert.match(fnSource('_acExpectedHtml'), /BoardStrings\.pair\('expected'/);
   const code = CORE.split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
   assert.doesNotMatch(code, /expected <span class="v2-rc-fi-sep">\|<\/span> prévu|'expected \| prévu'|expected \| prévu<\/span>|\(expected \| prévu\)/);
   assert.ok((CORE.match(/_acExpectedHtml\(/g) || []).length >= 5);
@@ -761,7 +771,7 @@ test('twin cities from the live boards say which airport, in every board languag
   assert.equal(helpers._cityAp('Istanbul', 'SAW', 'en'), 'Istanbul · Sabiha Gökçen');
   assert.equal(helpers._cityAp('Belfast', 'BHD', 'en'), 'Belfast · City');
   // once, in the language asked for, from any language's form
-  assert.equal(helpers._cityAp('Istanbul · Istanbul Airport', 'IST', 'fr'), "Istanbul · Aéroport d'Istanbul");
+  assert.equal(helpers._cityAp('Istanbul · Istanbul Airport', 'IST', 'fr'), 'Istanbul · Aéroport d’Istanbul');
   assert.equal(helpers.tc('ISTANBUL · Flughafen Istanbul'), 'Istanbul · Flughafen Istanbul');
   // one city, one spelling: Dubaï for both of its airports in French
   assert.equal(CITY_FR.DWC, CITY_FR.DXB);

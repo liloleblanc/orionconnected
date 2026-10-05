@@ -46,7 +46,10 @@ function extract(name) {
 
 const SOURCE = extract('_airportDateLine');
 // eslint-disable-next-line no-new-func
-const airportDateLine = new Function(SOURCE + '; return _airportDateLine;')();
+// v23995 — the line takes the board's LANGUAGE and formats with the store's
+// locale for it (BoardStrings.intl), as every board date does.
+const BS_PATH = require('node:path').join(__dirname, '..', 'fids-current', 'js', 'board-strings.js');
+const airportDateLine = new Function('BoardStrings', SOURCE + '; return _airportDateLine;')(require(BS_PATH));
 
 // 2026-09-18T02:30Z — past midnight on the 18th in Moncton (23:30 ADT on the
 // 17th is BEFORE this; 02:30Z is 23:30 ADT… so pick a moment that is genuinely
@@ -56,7 +59,7 @@ const JUST_AFTER_MIDNIGHT_ADT = new Date(Date.parse('2026-09-18T03:30:00Z'));
 const MONCTON = { timeZone: 'America/Moncton' };
 
 test('the whole line comes from one clock — the airport\'s', () => {
-  const line = airportDateLine(JUST_AFTER_MIDNIGHT_ADT, MONCTON, 'en-CA', '12:30 AM');
+  const line = airportDateLine(JUST_AFTER_MIDNIGHT_ADT, MONCTON, 'en', '12:30 AM');
   assert.match(line, /Friday/, 'Sep 18 2026 is a Friday');
   assert.match(line, /September 18, 2026/, 'the day number must follow the airport, not the host');
 });
@@ -69,7 +72,7 @@ test('the weekday always matches the day number it is printed beside', () => {
                   'August','September','October','November','December'];
   for (let hour = 0; hour < 24; hour++) {
     const when = new Date(Date.UTC(2026, 8, 18, hour, 30, 0));
-    const line = airportDateLine(when, MONCTON, 'en-CA', 'x');
+    const line = airportDateLine(when, MONCTON, 'en', 'x');
     const m = line.match(/^(\w+)\s+(\w+)\s+(\d+),\s+(\d{4})/);
     assert.ok(m, 'unparseable line: ' + line);
     const [, weekday, monthName, day, year] = m;
@@ -82,9 +85,9 @@ test('the weekday always matches the day number it is printed beside', () => {
 
 test('it renders identically whatever zone the host is set to', () => {
   const script =
-    `${SOURCE}\n` +
+    `const BoardStrings = require(${JSON.stringify(BS_PATH)});\n${SOURCE}\n` +
     `process.stdout.write(_airportDateLine(new Date(${JUST_AFTER_MIDNIGHT_ADT.getTime()}),` +
-    `{timeZone:'America/Moncton'},'en-CA','12:30 AM'));`;
+    `{timeZone:'America/Moncton'},'en','12:30 AM'));`;
   const under = (tz) =>
     execFileSync(process.execPath, ['-e', script], { env: { ...process.env, TZ: tz } }).toString();
 
@@ -100,15 +103,25 @@ test('the year follows the airport across New Year too', () => {
   // 2027-01-01T02:30Z is 22:30 on 31 Dec in Moncton — still the old year at the
   // airport, already the new one in UTC. The bug printed the host's year.
   const nye = new Date(Date.parse('2027-01-01T02:30:00Z'));
-  const line = airportDateLine(nye, MONCTON, 'en-CA', '10:30 PM');
+  const line = airportDateLine(nye, MONCTON, 'en', '10:30 PM');
   assert.match(line, /December 31, 2026/, 'still 2026 at the airport');
+});
+
+test('every other language reads the date in its own order, from the airport\'s clock', () => {
+  const want = {
+    fr: 'Vendredi 18 septembre 2026', de: 'Freitag, 18. September 2026', es: 'Viernes, 18 de septiembre de 2026',
+    ja: '2026年9月18日金曜日', zh: '2026年9月18日星期五', ar: 'الجمعة، 18 سبتمبر 2026',
+  };
+  for (const [l, w] of Object.entries(want)) {
+    assert.equal(airportDateLine(JUST_AFTER_MIDNIGHT_ADT, MONCTON, l, '00:30'), w + '  00:30', l);
+  }
 });
 
 test('a missing zone does not silently become the host clock', () => {
   // tzOpts is {} when the airport has no tz row. That falls back to the host,
   // which is the same failure one layer down — so assert the shape at least
   // stays coherent rather than mixing two clocks.
-  const line = airportDateLine(JUST_AFTER_MIDNIGHT_ADT, {}, 'en-CA', 'x');
+  const line = airportDateLine(JUST_AFTER_MIDNIGHT_ADT, {}, 'en', 'x');
   assert.match(line, /^\w+\s+\w+\s+\d+,\s+\d{4}/, 'still a well-formed line');
 });
 
