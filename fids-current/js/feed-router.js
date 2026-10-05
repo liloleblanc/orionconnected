@@ -157,6 +157,11 @@ function _feedLgLoad(iata, dir, now) {
   return best;
 }
 function _feedSetStatus(iata, dir, state, asOf, why) {
+  // The airport code arrives from the page's URL (?ap=): only an IATA or ICAO
+  // code, and never an object's own machinery, becomes a key here (CodeQL
+  // js/prototype-polluting-assignment).
+  iata = String(iata || '').toUpperCase();
+  if (!/^[A-Z0-9]{3,4}$/.test(iata) || (dir !== 'dep' && dir !== 'arr')) return;
   try {
     var s = window.__fidsFeedStatus;
     s[iata] = s[iata] || {};

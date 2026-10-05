@@ -770,3 +770,19 @@ test('the empty gate and the empty belt say the live data is unavailable instead
   assert.match(block, /html body \.ffn-inview \{\n  animation: none !important;/);
   assert.match(block, /html body \.ffn-inview \.ffn-half \{\n  display: inline-block;\n  max-width: 100%;\n  white-space: nowrap;/, 'each language whole');
 });
+
+test('only an airport code becomes a key of the feed-status record (CodeQL js/prototype-polluting-assignment)', () => {
+  const B = board(() => json({}, 200));
+  const W = B.win;
+  assert.equal(typeof W._feedSetStatus, 'function');
+  W.__fidsFeedStatus = W.__fidsFeedStatus || {};
+  for (const bad of ['__proto__', 'constructor', 'prototype', 'yyz<x', '', 'TOOLONG']) {
+    W._feedSetStatus(bad, 'dep', 'unavailable', null, 'error');
+  }
+  W._feedSetStatus('YYZ', '__proto__', 'unavailable', null, 'error');
+  assert.equal(({}).state, undefined, 'Object.prototype untouched');
+  assert.equal(({}).dep, undefined, 'Object.prototype untouched');
+  assert.deepEqual(Object.keys(W.__fidsFeedStatus), [], 'nothing written for a key that is not an airport code');
+  W._feedSetStatus('yyz', 'dep', 'unavailable', null, 'error');
+  assert.equal(W.fidsFeedStatus('YYZ', 'dep').state, 'unavailable', 'a real code still records, under its capitals');
+});

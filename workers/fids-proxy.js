@@ -3561,11 +3561,28 @@ __name(feedParseJson, "feedParseJson");
  */
 function feedXmlComplete(text) {
   let t = String(text == null ? "" : text).trim();
-  // The prolog, comments, a doctype and processing instructions before the root.
-  t = t.replace(/^(?:\s*(?:<\?[\s\S]*?\?>|<!--[\s\S]*?-->|<!DOCTYPE[^>]*>))*\s*/i, "");
+  // The prolog, comments, a doctype and processing instructions before the
+  // root, skipped one at a time: a scan, not a pattern that could backtrack
+  // (CodeQL js/redos on the trailing-comment pattern below).
+  for (;;) {
+    t = t.replace(/^\s+/, "");
+    let end = -1;
+    if (t.startsWith("<?")) { const i = t.indexOf("?>", 2); end = i < 0 ? -1 : i + 2; }
+    else if (t.startsWith("<!--")) { const i = t.indexOf("-->", 4); end = i < 0 ? -1 : i + 3; }
+    else if (/^<!DOCTYPE/i.test(t)) { const i = t.indexOf(">"); end = i < 0 ? -1 : i + 1; }
+    else break;
+    if (end < 0) return false;
+    t = t.slice(end);
+  }
   const m = t.match(/^<([A-Za-z_][\w:.-]*)/);
   if (!m) return false;
-  const tail = t.replace(/(?:\s*<!--[\s\S]*?-->)*\s*$/, "");
+  // Comments after the root, taken off from the end one at a time.
+  let tail = t.replace(/\s+$/, "");
+  while (tail.endsWith("-->")) {
+    const i = tail.lastIndexOf("<!--");
+    if (i < 0) break;
+    tail = tail.slice(0, i).replace(/\s+$/, "");
+  }
   const root = m[1].replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   if (new RegExp("^<" + root + "\\b[^>]*/>$").test(tail)) return true;
   return new RegExp("</" + root + "\\s*>$").test(tail);
