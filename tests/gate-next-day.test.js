@@ -175,11 +175,13 @@ test('the empty-stand label says the day instead of the clock, never both', () =
     'return (' + fnSource('_gateMapNote') + ')')(
     { _gateIata: 'YQM', FIDSGateDate: gateDate }, langs, LBL, () => false, { YQM: { tz: 'America/Moncton' } },
     (d, tz, lg) => (lg === 'fr' ? '17:20' : '5:20pm'), () => 'Calgary', clockAt(nowMs))({ leg: 'in', other: 'YYC', at });
-  // each half is marked with its language, so an Arabic one reads right to left
-  const pairOf = (a, b) => '<span class="bs-h" lang="en">' + a + '</span> <span class="bs-sep">|</span> <span class="bs-h" lang="fr">' + b + '</span>';
+  // each half is marked with its language, so an Arabic one reads right to
+  // left, and is one whole phrase (fx-unit) with a bar the fitter drops when
+  // the pair stacks (fx-brk)
+  const pairOf = (a, b) => '<span class="bs-h fx-unit" lang="en">' + a + '</span> <span class="bs-sep fx-brk">|</span> <span class="bs-h fx-unit" lang="fr">' + b + '</span>';
   assert.equal(note(AT_1933, Date.parse('2026-10-03T20:20:00Z'), ['en', 'fr']), pairOf('From Calgary · Tomorrow', 'De Calgary · Demain'));
   assert.equal(note(AT_1933, Date.parse('2026-10-02T20:20:00Z'), ['en', 'fr']), pairOf('From Calgary · 5:20pm', 'De Calgary · 17:20'));
-  assert.match(note(AT_1933, Date.parse('2026-10-02T20:20:00Z'), ['ar']), /^<span class="bs-h" lang="ar" dir="rtl">/);
+  assert.match(note(AT_1933, Date.parse('2026-10-02T20:20:00Z'), ['ar']), /^<span class="bs-h fx-unit" lang="ar" dir="rtl">/);
 });
 
 test('at the airport\'s midnight a gate with a day line repaints once, and one without is left alone', () => {

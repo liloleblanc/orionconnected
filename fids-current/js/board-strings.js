@@ -180,6 +180,16 @@
     noResultsFor: { en: 'No results for “{Q}”', fr: 'Aucun résultat pour « {Q} »', es: 'Sin resultados para «{Q}»', de: 'Keine Ergebnisse für „{Q}“', it: 'Nessun risultato per «{Q}»', pt: 'Nenhum resultado para “{Q}”', ja: '「{Q}」に一致する結果はありません', zh: '没有与“{Q}”匹配的结果', ar: 'لا توجد نتائج لـ «{Q}»' },
     noData: { en: 'No data', fr: 'Aucune donnée', es: 'Sin datos', de: 'Keine Daten', it: 'Nessun dato', pt: 'Sem dados', ja: 'データなし', zh: '无数据', ar: 'لا توجد بيانات' },
 
+    // ── AIRPORTS NAMED BY A DESCRIPTION ───────────────────────────────────
+    // The name after a city with two of our airports (fids-core.js
+    // _apSubline, through AP's subKey) where the airport is named by what it
+    // is rather than by a person or a place: 'Belfast · International',
+    // 'Dubai · International', 'Istanbul · Istanbul Airport'. Each language
+    // names it its own way. A proper name (Pearson, Heathrow) is data, in AP.
+    apIntl: { en: 'International', fr: 'International', es: 'Internacional', de: 'International', it: 'Internazionale', pt: 'Internacional', ja: '国際', zh: '国际', ar: 'الدولي',
+      $ctx: 'airport' },
+    apIstanbul: { en: 'Istanbul Airport', fr: 'Aéroport d’Istanbul', es: 'Aeropuerto de Estambul', de: 'Flughafen Istanbul', it: 'Aeroporto di Istanbul', pt: 'Aeroporto de Istambul', ja: 'イスタンブール空港', zh: '伊斯坦布尔机场', ar: 'مطار إسطنبول' },
+
     // ── GATE ──────────────────────────────────────────────────────────────
     // The aircraft panel's qualifier for a registration or type taken from
     // the aircraft's usual rotation rather than confirmed: 'C-GWJO expected'.

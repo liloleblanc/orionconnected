@@ -146,8 +146,11 @@ test('every surface that prints a code asks the table', () => {
     /var _capPlc = _dispIata\(_dispCityLabel\(/,
     /_b3Code = _dispIata\(/,
     /<span class="dest-iata">' \+ fidsEscHtml\(_dispIata\(code\)\)/,
-    /<span class="dest-iata">' \+ _dispIata\(_tailCode\.toUpperCase\(\)\)/,
-    /<span class="dest-iata">' \+ _dispIata\(_iataUp\)/,
+    // v23962 — the board row's code tail is one helper (_tailHtml), used for
+    // the feed's code and for the one we append
+    /<span class="dest-iata">' \+ _dispIata\(c\) \+ '<\/span><\/span>'/,
+    /_tailHtml\(_tailCode\.toUpperCase\(\)\)/,
+    /_tailHtml\(_iataUp\)/,
     /<span class="v2-fi-code v2-rc-iata">' \+ _dispIata\(c\)/,
     /<span class="v2-fi-code v2-rc-iata">' \+ _dispIata\(_tail\)/,
     /<span class="octb-ap">' \+ _e\(String\(_dispIata\(iata\)\)/,
@@ -270,7 +273,8 @@ test('lookups keep YHU: coordinates, feeds, FR24 and the airport tables are unto
   assert.match(read('js/airport-coords.js'), /YHU:\[45\.52,-73\.42\]/);
   assert.match(read('js/feed-router.js'), /if \(iata === 'YHU'\) \{/);
   assert.match(read('js/feed-router.js'), /const home = \{ iata: 'YHU', icao: 'CYHU'/);
-  assert.match(CORE, /YHU:\{ name:'Montréal Saint-Hubert Airport \(MET\)'/);
+  // v23962 — the airport's current name (Montréal-Métropolitain); the key stays YHU
+  assert.match(CORE, /YHU:\{ name:'Montréal Metropolitan Airport \(MET\)'/);
   assert.match(CORE, /YHU:\[45\.52,-73\.42\]/);
   assert.doesNotMatch(CORE, /\bMET:\s*\[/, 'no coordinate is keyed MET');
   assert.match(fs.readFileSync(path.join(ROOT, 'workers', 'fids-proxy.js'), 'utf8'), /"MONTREAL-MET": "YHU"/);

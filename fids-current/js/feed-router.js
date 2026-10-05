@@ -616,7 +616,9 @@ function yhuToAdbFlight(f) {
   const other = otherR
     ? { iata: String(otherR.iata || '').toUpperCase() || null, icao: String(otherR.icao || '').toUpperCase() || null, name: null }
     : { iata: null, icao: null, name: null };
-  const home = { iata: 'YHU', icao: 'CYHU', name: 'Montréal Saint-Hubert' };
+  // v23962 — the airport's current name (Montréal-Métropolitain, MET);
+  // Saint-Hubert is the old one.
+  const home = { iata: 'YHU', icao: 'CYHU', name: 'Montréal Métropolitain' };
   const belt = (!isDep && props.carousel != null && props.carousel !== '') ? String(props.carousel) : '';
   const homeSide = {
     airport: home,

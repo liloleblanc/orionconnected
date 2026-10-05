@@ -132,11 +132,21 @@ test('every feed value in the BIDS template is escaped at the interpolation', ()
   }
   for (const wrapped of [
     '${fidsEscHtml(_flightDisp)}', '${fidsEscHtml(stTxt)}',
-    '${fidsEscHtml(_b3City)}', '${fidsEscHtml(_bidsTimeForLang(f.time))}',
+    // v23962 — the city goes through _cityApHtml, which escapes it (and an
+    // airport's name after it) itself: asserted below
+    '${_cityApHtml(_b3City, _b3Code, false, !!_b3Code)}', '${fidsEscHtml(_bidsTimeForLang(f.time))}',
     'fidsEscHtml(_crslNum)', 'fidsEscHtml(airlineName)',
   ]) {
     assert.ok(tpl.includes(wrapped), `expected ${wrapped} in the BIDS template`);
   }
+  // _cityApHtml escapes everything it is given, the city and the airport
+  // (and the airport's code it may carry for the fitter, v23998)
+  const ap = CORE.slice(CORE.indexOf('function _cityApHtml(text, code, withCode, tied) {'), CORE.indexOf('\n}\n', CORE.indexOf('function _cityApHtml(text, code, withCode, tied) {')) + 3);
+  assert.match(ap, /var esc = \(typeof fidsEscHtml === 'function'\) \? fidsEscHtml/);
+  assert.match(ap, /if \(i <= 0 \|\| !_apSublineNames\(\)\[s\.slice\(i \+ 3\)\.trim\(\)\.toLowerCase\(\)\]\) return esc\(s\);/);
+  assert.match(ap, /return esc\(s\.slice\(0, i\)\) \+/);
+  assert.match(ap, /\+ esc\(s\.slice\(i \+ 3\)\.trim\(\)\) \+/);
+  assert.match(ap, /'<span class="ap-code">' \+ esc\(cd\) \+ '<\/span>'/);
 
   // The airport logo URL is operator input and sits inside src="…".
   assert.ok(tpl.includes("src=\"' + fidsEscHtml(_lg) + '\""),

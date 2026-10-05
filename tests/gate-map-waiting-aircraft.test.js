@@ -236,7 +236,12 @@ test('an empty stand is our gate with no aeroplane: the route dashed from the st
     L, () => true, (m, a, b, opts) => { calls.arcs.push({ a, b, dash: opts.dashArray }); return 'arc'; }, gcNm,
     (spot, d) => { placed = [spot, d]; return { lat: 46.11618, lng: -64.68663, hdg: 240 }; });
   const stand = { lat: 46.11611, lng: -64.6868, zoom: 17, src: 'stand', ref: '1A', hdg: 240, kind: 'stop' };
-  const out = draw(map, stand, [43.68, -79.62], 'To Toronto · 5:25am | À Toronto · 05:25');
+  // the label as _gateMapNote writes it: each half marked with its language
+  // and one whole phrase (fx-unit), the bar between them dropped if the pair
+  // stacks (fx-brk)
+  const NOTE = '<span class="bs-h fx-unit" lang="en">To Toronto · 5:25am</span> <span class="bs-sep fx-brk">|</span> '
+    + '<span class="bs-h fx-unit" lang="fr">À Toronto · 05:25</span>';
+  const out = draw(map, stand, [43.68, -79.62], NOTE);
   assert.deepEqual(placed, [stand, [43.68, -79.62]]);
   assert.deepEqual(calls.setView, [[46.11618, -64.68663], 17], 'camera where the parked view puts it, at the parked view\'s zoom');
   assert.deepEqual(calls.arcs, [{ a: [46.11611, -64.6868], b: [43.68, -79.62], dash: '8,6' }], 'the route runs from the stand toward Toronto, dashed');
@@ -244,7 +249,9 @@ test('an empty stand is our gate with no aeroplane: the route dashed from the st
   assert.equal(calls.markers.length, 1);
   assert.equal(calls.markers[0].cls, 'gate-map-note-pin');
   assert.doesNotMatch(calls.markers[0].html, /map-plane-|<img/, 'no aircraft marker');
-  assert.match(calls.markers[0].html, /^<div class="gate-map-note">To Toronto · 5:25am \| À Toronto · 05:25<\/div>$/);
+  // v23962 — each language one whole phrase, the bar dropped if they stack;
+  // the label is drawn as _gateMapNote wrote it (escaped and marked there)
+  assert.equal(calls.markers[0].html, '<div class="gate-map-note">' + NOTE + '</div>');
   // v23919 — with the ring's own place, so the apron's framing keeps the ring and its label in view.
   assert.deepEqual(map._fidsParkView, { lat: 46.11618, lng: -64.68663, zoom: 17, src: 'stand', empty: true, ring: [46.11611, -64.6868] });
   assert.deepEqual(out, ['arc', 'ring', 'label']);

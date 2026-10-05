@@ -361,8 +361,7 @@ const SAME_ACROSS = {
   'Restaurants': { langs: ['es', 'pt'], why: 'code: Restaurantes in both' },
   'Ecocertified': { langs: ['es', 'pt'], why: 'code: Ecocertificado in both' },
   'Language': { langs: ['es', 'pt'], why: 'code: Idioma in both' },
-  'Typical Temp': { langs: ['es', 'pt'], why: 'code: Temp. típica in both' },
-  'International': { langs: ['es', 'pt'], why: 'code: Internacional in both' }
+  'Typical Temp': { langs: ['es', 'pt'], why: 'code: Temp. típica in both' }
 };
 
 // Japanese written with exactly the characters Chinese uses, keyed by the
