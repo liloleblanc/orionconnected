@@ -763,7 +763,11 @@ then the decision was to restore Porter to its previous
    is the blanket cap in display-overrides.css, which clamps ANY wordmark to the
    row height — a ceiling, not a rescaling. */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AV"] { height: 32px; }
+#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="WS"] { height: 30px; }
+/* (3H: Air Inuit's two-line lockup, its files now cropped to the art, at
+   WestJet's height. It sat in Air Canada's group, a height for one line of
+   lettering. display-overrides.css has the reason.) */
 #fidsTable .td-airline .fids-airline-wordmark[data-code="HA"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="P3"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PD"] { height: 28px; }
@@ -795,7 +799,6 @@ then the decision was to restore Porter to its previous
 #fidsTable .td-airline .fids-airline-wordmark[data-code="TP"] { height: 21px; }
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AF"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="F9"] { height: 20px; }
-#fidsTable .td-airline .fids-airline-wordmark[data-code="3H"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="AC"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="PT"],
 #fidsTable .td-airline .fids-airline-wordmark[data-code="RV"] { height: 18px; }
