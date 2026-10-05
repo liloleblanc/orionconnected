@@ -276,8 +276,13 @@ test('the 20 longest names in our city tables and every airport under-name fit e
         const alone = { px: room ? s.base : 0 };
         if (alone.px >= s.base - 1e-9 && r.px < s.base - 1e-9) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" (${r.px} against ${s.base})`);
         // and where the city does come down, it is not for want of trying
-        // the airport at the floor first
-        if (!room && r.px < s.base - 1e-9 && r.sub && r.sub > s.floor + 1e-9 && !r.wrap) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" airport at ${r.sub} over the floor while the city came down`);
+        // the airport at the floor first: the city is as big as it can be
+        // with its airport at the floor (v23986: the airport then takes back
+        // what that size leaves it, so it may sit above the floor)
+        if (!room && !r.over && r.px < s.base - 1e-9 && fits(r.px + 1, r.wrap, r.loose, s.floor)) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" city at ${r.px} could have been ${r.px + 1} with its airport at the floor`);
+        // and the airport is never left smaller than the room beside or
+        // under its city allows
+        if (!r.over && (r.sub || 0) && r.sub < r.px * 0.8 - 1 && fits(r.px, r.wrap, r.loose, r.sub + 1)) shrunk.push(`${s.surface} @${s.size}: "${nm.name}" airport at ${r.sub} beside a ${r.px} city with room for more`);
       }
     }
   }
@@ -354,6 +359,11 @@ test('only cities with two or more of the airports we show are listed', () => {
     assert.ok(CITY[code], code + ' is not in our city table');
     (byCity[fold(CITY[code])] = byCity[fold(CITY[code])] || []).push(code);
   }
+  // a city whose other airport names itself after it ('DALLAS/FORT WORTH')
+  for (const code of Object.keys(CITY)) {
+    const head = fold(CITY[code]).split('/')[0];
+    if (head !== fold(CITY[code]) && byCity[head] && !byCity[head].includes(code)) byCity[head].push(code);
+  }
   for (const [city, codes] of Object.entries(byCity)) assert.ok(codes.length >= 2, `${city} has only ${codes.join()}`);
   // the French form is the toponymy rule for a name that honours a person
   for (const code of PERSON) assert.ok(SUB[code] && / /.test(SUB[code]), code + ' is listed as a person\'s name');
@@ -361,8 +371,21 @@ test('only cities with two or more of the airports we show are listed', () => {
   assert.equal(helpersFr._apSubline('ORD', 'fr'), "O'Hare");
   assert.equal(helpersFr._apSubline('DCA', 'fr'), 'Reagan National', 'not a person\'s full name: as written');
   // v23972 — an airport, never what reads as a second city or a bare word
-  assert.equal(SUB.DFW, 'Fort Worth Intl');
   assert.equal(SUB.PEK, 'Capital Intl');
+  // v23986 — Dallas/Fort Worth names its own city, as the airport writes it
+  // ('Fort Worth Intl' after 'Dallas' still read as a second city); Love
+  // Field is named beside it
+  assert.ok(!('DFW' in SUB));
+  assert.equal(CITY.DFW, 'DALLAS/FORT WORTH');
+  assert.equal(CITY_FR.DFW, 'DALLAS/FORT WORTH');
+  assert.equal(SUB.DAL, 'Love Field');
+  assert.equal(helpers.tc(CITY.DFW), 'Dallas/Fort Worth');
+  // one city, one spelling: São Paulo for both of its airports
+  assert.equal(CITY.GRU, 'SÃO PAULO');
+  assert.equal(CITY.CGH, 'SÃO PAULO');
+  assert.equal(CITY_FR.GRU, 'SÃO PAULO');
+  assert.match(read('js/shared-names.js'), /GRU:'SÃO PAULO'/);
+  assert.equal(helpers._cityAp('Sao Paulo', 'GRU', 'en'), 'São Paulo · Guarulhos', 'a feed\'s unaccented spelling takes the table\'s');
   // the four that started it
   assert.deepEqual([SUB.YTZ, SUB.YYZ, SUB.YUL, SUB.YHU], ['Billy Bishop', 'Pearson', 'Trudeau', 'Métropolitain']);
 });
@@ -386,7 +409,11 @@ test('the board row, the gate, the belts, the inbound line, the map label and th
   assert.match(CORE, /var _destCityHtml = _destCityName \? _cityApHtml\(_destCityName\) : _destCityName;/);
   assert.match(CORE, /var _destValue = _dfCity \|\| _destCityHtml \|\| _destIataDisp;/);
   assert.match(OVR, /\.ap-sub \{ white-space: nowrap !important; font-size: max\(0\.8em, var\(--fx-floor, 12px\)\); \}/);
-  assert.match(OVR, /\.fx-brk-off \{ display: none !important; \}/);
+  // v23986 — a separator the line broke at goes, and its break stays: the
+  // next words start their line on a forced break, so the width it gave back
+  // cannot pull them up onto the city's line ('Toronto Pearson')
+  assert.match(OVR, /:root:not\(#_\) \.fx-brk\.fx-brk-off \{ display: none !important; \}/);
+  assert.match(OVR, /:root:not\(#_\) \.fx-brk\.fx-brk-off \+ :is\(\.ap-name, \.fx-unit\)::before \{ content: "\\A"; white-space: pre; \}/);
   const html = helpers._cityApHtml('Toronto · Billy Bishop');
   assert.equal(html, 'Toronto <span class="ap-sub"><span class="ap-sep fx-brk">·\u00a0</span><span class="ap-name">Billy Bishop</span></span>');
   assert.equal(helpers._cityApHtml('From <b> · 4:33pm'), 'From &lt;b&gt; · 4:33pm', 'not an airport: escaped, left alone');
@@ -527,4 +554,66 @@ test('the weather card\'s words: the amber dot stays with its word, a long one g
   assert.match(fnSource('_fxGuard'), /st\.setProperty\('letter-spacing', '0px', 'important'\);/);
   // and the plate's city may take its second line (the name was held nowrap)
   assert.match(OVR, /\.wxcard-wrap \.wxc-mon-city\.fx-wrap \.wxc-mon-name \{ white-space: normal !important; \}/);
+});
+
+// ── 5. THE THIRD PASS (v23986) ─────────────────────────────────────────────
+//
+// What the review of v23972 found, measured on the boards: the "·" dropped
+// while the airport stayed on its city's line ('Toronto Pearson', 'Chicago
+// O'Hare | ORD'), the airport name still costing its city the size on every
+// portrait board and at 1680 (the destination column was held to 20% of the
+// table), the airport at the floor beside a full-size city in a column with
+// room to spare, an operator's mark squeezed under its own label, and the
+// pending words under the floor.
+
+test('a separator dropped at a break keeps the break, and is measured at the size that is kept', () => {
+  // every fitter puts the separators back before it measures
+  assert.match(fnSource('fidsFitText'), /_fxBrkClear\(el\);\s*\/\/ An airport's name after the city/);
+  assert.match(fnSource('_fxGuard'), /_fxBrkClear\(el\);\s*var m0 = _fxMeasure\(el, box, hm\);/);
+  assert.match(fnSource('_fxGuard'), /_fxBreakSeps\(el, !!el\.__fxGuardWrap\);\s*el\.classList\.add\('fx-fit'\);/);
+  // the gate's Destination: wrapped only if it really is on two lines at the
+  // size it keeps, and its separators measured at that size, not at the
+  // search's last, larger probe
+  const box = CORE.slice(CORE.indexOf('function _boxAssign('), CORE.indexOf('function _plateInset('));
+  assert.match(box, /_fxBrkClear\(el\);\s*var _wrapOk = /);
+  assert.match(box, /&& _twoAt\(_wPx\)\) \{\s*_finPx = _wPx;\s*el\.style\.setProperty\('font-size', _finPx \+ 'px', 'important'\);\s*_fxBreakSeps\(el, true\);/);
+  assert.match(box, /el\.style\.setProperty\('font-size', _finPx \+ 'px', 'important'\);\s*_fxBreakSeps\(el, false\);/);
+});
+
+test('the decision: the airport takes back what its city\'s size leaves it, and goes under the city when that reads bigger', () => {
+  // a 36px board row: the city cannot have 28px whatever the airport's size
+  // (the text is taller than the row), and the column has room to spare
+  const tall = (px, wrap, loose, sub) => !wrap && px <= 27.5 && px * 5 + (sub || px * 0.8) * 6 <= 300;
+  const r = _fxPlan(28, 13.75, 2, true, false, tall);
+  assert.ok(r.px >= 27.25 && r.px <= 27.5 && !r.wrap, JSON.stringify(r));
+  assert.ok(r.sub >= r.px * 0.8 - 0.5, 'the airport at its own step, not the floor: ' + JSON.stringify(r));
+  // a plate with a second line: under the city at 20px beats beside it at 15
+  const plate = (px, wrap, loose, sub) => px <= 28 && (wrap ? (sub || px * 0.8) <= 20 : (sub || px * 0.8) <= 15);
+  const under = _fxPlan(28, 14, 2, true, false, plate);
+  assert.ok(under.px === 28 && under.wrap && under.sub > 19.5 && under.sub <= 20, JSON.stringify(under));
+  // a row with no second line keeps it beside the city
+  assert.equal(_fxPlan(28, 14, 1, true, false, plate).wrap, false);
+});
+
+test('the board\'s Destination takes what is left; the mark and the status keep the widths they had', () => {
+  assert.match(FD, /#fidsTable thead th\.col-dest\s+\{ width: auto !important; \}/);
+  assert.match(FD, /#fidsTable colgroup col\.col-term\s+\{ width: clamp\(68px, calc\(12\.25vw - 89px\), 120px\) !important; \}/);
+  const dc = fnSource('_fidsDestColumn');
+  assert.match(dc, /tbl\.querySelectorAll\('colgroup col\.col-airline, colgroup col\.col-status'\)/);
+  assert.match(dc, /var s = \(W \* \(term \? 0\.73 : 0\.8\)\) \/ sum;/);
+  assert.match(dc, /if \(de\.classList\.contains\('fids-portrait'\) \|\| !\(W > 0\)\) return;/);
+  assert.match(fnSource('fidsFitAll'), /_fidsDestColumn\(\);\s*_fxApRelang\(root\);/);
+  // one line is the row's own type; the row's height bounds the wrapped form
+  assert.match(rulesSrc(), /\{ sel: '#fidsTable tbody td\.td-dest', lines: 2, h: _fxBoardCellH, hWrap: true \}/);
+  assert.match(fnSource('fidsFitText'), /var m = _fxMeasure\(el, box, \(wrap \|\| !o\.hWrap\) \? hm : 0, !!o\.pad, cap\);/);
+  // portrait: the weather keeps what its temperature needs
+  assert.match(OVR, /:root\.fids-portrait:not\(#_\) #fidsTable colgroup col\.col-wx \{ width: 110px !important; min-width: 0 !important; \}/);
+});
+
+test('the pending words are never under the floor, and the big map names the airport in the phase showing', () => {
+  assert.equal((OVR.match(/font-size: max\(var\(--fx-floor, 12px\), calc\(var\(--acb-h\) \* 0\.28\)\) !important;/g) || []).length, 2);
+  assert.doesNotMatch(OVR, /font-size: calc\(var\(--acb-h\) \* 0\.28\) !important;/);
+  assert.match(CORE, /'<span class="bigcraft-cap-plc" data-ap-city="' \+ _capEsc\(_capCity\) \+ '" data-ap-code="' \+ _capEsc\(_capCode\) \+ '">' \+ _capEsc\(_fxApPlace\(_capCity, _capCode\)\) \+ '<\/span>'/);
+  assert.match(fnSource('_fxApPlace'), /c = _cityAp\(c, k\);/);
+  assert.match(fnSource('_fxApRelang'), /if \(els\[i\]\.textContent !== t\) els\[i\]\.textContent = t;/);
 });

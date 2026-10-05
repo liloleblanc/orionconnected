@@ -84,8 +84,13 @@ test('the model is twice its label, the operator mark never smaller than the tex
   // When the fitter brings the mark down with the model, it never goes under
   // the model's own type, and its height is rounded UP to the 1/64px layout
   // grid (a mark set equal to a 12.48px model measured 12.47).
-  assert.match(CORE, /if \(_k\) _setLh\(Math\.max\(px, Math\.min\(_lh, px \* _k\)\)\);/);
-  assert.match(CORE, /while \(_lh > _up64\(_fs\) && !_fits\(\)\) _setLh\(Math\.max\(_fs, _lh - 1\)\);/);
+  // v23986 — nor under its own 'Operated By:' label beside it (Rouge's mark
+  // was 10px beside 12px labels at 1280x720), and with no model yet it keeps
+  // its own height on the one row: the operator goes under the aircraft
+  assert.match(CORE, /if \(_k\) _setLh\(Math\.max\(_mk\(px\), Math\.min\(_lh, px \* _k\)\)\);/);
+  assert.match(CORE, /while \(_lh > _up64\(_mk\(_fs\)\) && !_fits\(\)\) _setLh\(Math\.max\(_mk\(_fs\), _lh - 1\)\);/);
+  assert.match(CORE, /var _mk = function \(px\) \{\s*var m = Math\.max\(px, _opLbl\(\)\);\s*return \(_capEl\.classList\.contains\('is-pending'\) && !_stacked\) \? Math\.max\(m, _lh0\) : m;/);
+  assert.doesNotMatch(CORE, /_setLh\(Math\.max\(_fs, /, 'every floor of the mark goes through _mk');
   assert.match(CORE, /var _up64 = function \(v\) \{ return Math\.ceil\(v \* 64 - 1e-6\) \/ 64; \};/);
 });
 

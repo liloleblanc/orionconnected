@@ -2141,7 +2141,19 @@ function _fxSearch(lo, hi, test) {
   return Math.max(lo, Math.floor(good * 4) / 4);
 }
 // Separators (.fx-brk) that a line break landed beside: at the end of a line
-// or at the start of the next. Marked .fx-brk-off, which hides them.
+// or at the start of the next. Marked .fx-brk-off, which draws nothing and
+// keeps the break in its place (display-overrides.css): v23986 — it was
+// display:none, and the width it gave back let the next words climb onto the
+// line it had left, so 'Toronto · Pearson' read 'Toronto Pearson'.
+// Measured AFTER the element has its final size: a break that exists only at
+// a larger size tried on the way must not drop a separator that is still
+// mid-line (the gate's Destination did that, at the last probe's size).
+function _fxBrkClear(el) {
+  try {
+    var seps = el.querySelectorAll('.fx-brk.fx-brk-off');
+    for (var i = 0; i < seps.length; i++) seps[i].classList.remove('fx-brk-off');
+  } catch (e) {}
+}
 function _fxBreakSeps(el, wrap) {
   try {
     var seps = el.querySelectorAll('.fx-brk');
@@ -2212,13 +2224,17 @@ function _fxPlan(base, floor, lines, hasSub, units, at) {
       ? _fxSearch(floor, subTop, function (q) { return at(base, false, false, q); })
       : (at(base, false, false, floor) ? floor : 0);
     var underOk = lines > 1 && at(base, true);
-    if (sOne && (sOne >= base * 0.65 || !underOk)) return { px: base, wrap: false, sub: sOne };
+    if (sOne && (sOne >= base * 0.65 || (!underOk && lines < 2))) return { px: base, wrap: false, sub: sOne };
     if (underOk) return { px: base, wrap: true };
     if (lines > 1) {
       var sTwo = subTop > floor
         ? _fxSearch(floor, subTop, function (q) { return at(base, true, false, q); })
         : (at(base, true, false, floor) ? floor : 0);
-      if (sTwo) return { px: base, wrap: true, sub: sTwo };
+      // v23986 — under the city when that reads bigger than beside it
+      // (it was kept beside the city, however small, whenever its own step
+      // did not fit under it)
+      if (sTwo && sTwo > sOne) return { px: base, wrap: true, sub: sTwo };
+      if (sOne) return { px: base, wrap: false, sub: sOne };
     }
     // The city itself does not fit at its size: everything below runs with
     // the airport at the floor, so the city keeps as much as it can.
@@ -2236,7 +2252,20 @@ function _fxPlan(base, floor, lines, hasSub, units, at) {
     var s3 = _fxSearch(floor, base, function (p) { return at(p, true, true); });
     res = s3 ? { px: s3, wrap: true, loose: true } : { px: floor, wrap: true, loose: true, over: true };
   } else res = { px: floor, wrap: lines > 1, over: true };
-  if (sub) res.sub = Math.min(sub, res.px);
+  if (sub) {
+    res.sub = Math.min(sub, res.px);
+    // v23986 — and once the city has the largest size it can have, its
+    // airport takes back whatever room that size leaves it, up to its own
+    // step. The city can come down for a reason that is not the airport's
+    // width (a 36px board row is under the text's own height at 28px): the
+    // airport was left at the floor beside it in a column with room to
+    // spare ('Rome · Fiumicino' at 13.75px beside 27.5px in a 469px cell).
+    if (!res.over) {
+      var top = res.px * 0.8;
+      var q = top > res.sub ? _fxSearch(res.sub, top, function (v) { return at0(res.px, res.wrap, res.loose, v); }) : 0;
+      if (q > res.sub) res.sub = q;
+    }
+  }
   return res;
 }
 // How much the element is scaled on screen (a card in its entrance, a
@@ -2298,8 +2327,10 @@ function _fxGuard(el, box, o, lines, hMax, key, txt) {
     return m.ok && m.lines <= (wrap ? lines : 1);
   };
   if (el.__fxLs) { st.removeProperty('letter-spacing'); el.__fxLs = false; }
-  // a report from an earlier pass is taken back before this one measures
+  // a report from an earlier pass is taken back before this one measures,
+  // and so are the separators an earlier pass dropped at its breaks
   if (el.hasAttribute('data-fx-over')) { el.removeAttribute('data-fx-over'); st.removeProperty('overflow'); }
+  _fxBrkClear(el);
   var m0 = _fxMeasure(el, box, hm);
   if (cur < floor - 0.05 || !(m0.ok && m0.lines <= (el.__fxGuardWrap ? lines : 1))) {
     var base = Math.max(cur, Math.ceil(floor * 4) / 4);
@@ -2319,8 +2350,8 @@ function _fxGuard(el, box, o, lines, hMax, key, txt) {
     el.__fxGuardWrap = !!res.wrap;
     st.setProperty('font-size', res.px + 'px', 'important');
     if (res.over) _fxReport(el, txt, floor);
-    _fxBreakSeps(el, res.wrap);
   }
+  _fxBreakSeps(el, !!el.__fxGuardWrap);
   el.classList.add('fx-fit');
   // keyed on the size this pass leaves, so the next pass is a no-op unless
   // the element's own fitter changes it again
@@ -2401,6 +2432,9 @@ function fidsFitText(el, o) {
     el.removeAttribute('data-fx-over');
     el.classList.add('fx-fit');
     el.classList.remove('fx-wrap');
+    // every separator is measured in place: one an earlier pass dropped at a
+    // break is put back before anything is tried (it held a forced break)
+    _fxBrkClear(el);
     // An airport's name after the city (.ap-sub, _cityApHtml) gives way
     // before the city does (_fxPlan): its size is set here, px or its own
     // step (0.8em) when 0.
@@ -2451,7 +2485,7 @@ function fidsFitText(el, o) {
       st.setProperty('font-size', px + 'px', 'important');
       if (subs.length) setSub(sub || 0);
       if (o.nudge) _fxNudge(el, box);
-      var m = _fxMeasure(el, box, hm, !!o.pad, cap);
+      var m = _fxMeasure(el, box, (wrap || !o.hWrap) ? hm : 0, !!o.pad, cap);
       if (m.ok && o.nudge) {
         var mo = _fxMeasure(el, el, 0, false);
         if (!mo.ok || el.scrollWidth > el.clientWidth + 1) return false;
@@ -2503,9 +2537,13 @@ function _fxBoardCellH(el) {
 // Every name on every surface, and the room its box has. A selector here is
 // fitted by fidsFitText and by nothing else.
 var FIDS_FIT_RULES = [
-  // departures / arrivals board: one fixed-height row per flight
-  { sel: '#fidsTable tbody td.td-dest', lines: 2, h: _fxBoardCellH },
-  { sel: '#fidsTable tbody td.td-status', lines: 2, h: _fxBoardCellH },
+  // departures / arrivals board: one fixed-height row per flight. The
+  // row's height bounds the wrapped form; one line is the row's own type,
+  // as in every other cell (v23986: held to the row less 2px, a 28px line
+  // in a taller airport face was brought down to 27.5px on every row of the
+  // JFK and YUL boards)
+  { sel: '#fidsTable tbody td.td-dest', lines: 2, h: _fxBoardCellH, hWrap: true },
+  { sel: '#fidsTable tbody td.td-status', lines: 2, h: _fxBoardCellH, hWrap: true },
   // (a header's words may use its cell's padding, across and down: a theme
   // with 10px of padding over a 35px header row left 15px, under the floor's
   // own line, and every header of a portrait YHZ or YUL board was reported)
@@ -2581,10 +2619,71 @@ var FIDS_FIT_RULES = [
   { sel: '.g8-bw-clk-lbl', lines: 2, guard: true },
   { sel: '.wxc-t-part, .wxc-mon-lbl, .wxc-mon-cond, .wxc-dchip, .wxc-fact-v, .wxc-l1, .wxc-l2, .wxc-facts-when b', lines: 2, guard: true }
 ];
+// v23986 — THE DEPARTURES / ARRIVALS BOARD'S DESTINATION TAKES WHAT IS LEFT.
+// The stylesheet unpins it (flight-display.css, v23986: it was held to 20%
+// of the table by its header cell, and every other column was stretched to
+// fill the rest). Of those stretched columns, the carrier's mark and the
+// status keep the widths they had — a wordmark is as wide as its column
+// lets it be, and a French status fills its column at 1680 — and the rest
+// (flight number, weather, gate, times, terminal) give their stretch to the
+// names. The stretch is the one the table applied: the 80% (73% beside a
+// 7% Terminal column) left after Destination, over the columns' own widths.
+// Keyed on what decides the widths, so it runs once per board and size;
+// portrait boards are laid out by the stylesheet alone.
+function _fidsDestColumn() {
+  try {
+    var tbl = document.getElementById('fidsTable');
+    if (!tbl || !tbl.offsetParent) return;
+    var cols = tbl.querySelectorAll('colgroup col');
+    if (!cols.length) return;
+    var W = tbl.clientWidth || 0;
+    var de = document.documentElement, bd = document.body;
+    var key = W + 'x' + (window.innerHeight || 0) + '|' + Array.prototype.map.call(cols, function (c) { return c.className; }).join(',')
+      + '|' + de.className + '|' + (bd ? bd.className + '|' + (bd.getAttribute('data-fids-theme') || '') + '|' + (bd.getAttribute('data-fids-airline-style') || '') : '');
+    if (tbl.__destColKey === key) return;
+    tbl.__destColKey = key;
+    var held = tbl.querySelectorAll('colgroup col.col-airline, colgroup col.col-status');
+    for (var i = 0; i < held.length; i++) held[i].style.removeProperty('width');
+    if (de.classList.contains('fids-portrait') || !(W > 0)) return;
+    var sum = 0, term = false;
+    for (var j = 0; j < cols.length; j++) {
+      var c = cols[j];
+      if (c.classList.contains('col-dest')) continue;
+      if (c.classList.contains('col-term')) { term = true; continue; }
+      sum += parseFloat(getComputedStyle(c).width) || 0;
+    }
+    if (!(sum > 0)) return;
+    var s = (W * (term ? 0.73 : 0.8)) / sum;
+    if (!(s > 1.005)) return;
+    var ws = [];
+    for (var k = 0; k < held.length; k++) ws.push((parseFloat(getComputedStyle(held[k]).width) || 0) * s);
+    for (var m = 0; m < held.length; m++) if (ws[m] > 0) held[m].style.setProperty('width', ws[m].toFixed(2) + 'px', 'important');
+  } catch (e) {}
+}
+// v23986 — a place written once beside a bilingual label (the big map's
+// caption) in the form of the language now showing: 'Toronto · Billy Bishop
+// | YTZ', 'Toronto · Billy-Bishop | YTZ' in the French phase. _cityAp drops
+// any airport name the city already carries, so the stored city may have one.
+function _fxApPlace(city, code) {
+  var c = String(city || ''), k = String(code || '').toUpperCase();
+  if (typeof _cityAp === 'function' && k) c = _cityAp(c, k);
+  return k ? c + ' | ' + _dispIata(k) : c;
+}
+function _fxApRelang(scope) {
+  try {
+    var els = (scope || document).querySelectorAll('[data-ap-city][data-ap-code]');
+    for (var i = 0; i < els.length; i++) {
+      var t = _fxApPlace(els[i].getAttribute('data-ap-city'), els[i].getAttribute('data-ap-code'));
+      if (els[i].textContent !== t) els[i].textContent = t;
+    }
+  } catch (e) {}
+}
 var _fxFontsEpoch = 0;
 function fidsFitAll(root) {
   // a rotated board that is not the one showing does no layout work
   try { if (window._ocIdle && window._ocIdle()) return; } catch (e) {}
+  _fidsDestColumn();
+  _fxApRelang(root);
   var scope = root || document;
   // an element two rules match is fitted by the first only, or the two
   // would refit it against each other's box on every pass
@@ -18471,6 +18570,7 @@ function gateAutofit(root) {
     // ('Toronto · Billy Bishop') puts the airport under the city first.
     var _flo = Math.ceil(fidsFitFloor());
     el.style.setProperty('text-overflow', 'clip', 'important');
+    _fxBrkClear(el);
     var _wrapOk = el.classList.contains('v2-fi-dest') && !_fitFlip;
     if (_wrapOk) { el.style.setProperty('white-space', 'nowrap', 'important'); el.style.removeProperty('line-height'); el.classList.remove('fx-wrap'); }
     var lo = _flo, hi = Math.min(140, Math.floor(availH));
@@ -18503,17 +18603,28 @@ function gateAutofit(root) {
       else { while (wlo < whi) { var wm = Math.ceil((wlo + whi) / 2); if (_wFits(wm)) wlo = wm; else whi = wm - 1; } }
       var _wPx = wlo ? Math.max(_flo, wlo - 1) : 0;
       // one line unless two give the name real size: half again as big, or
-      // any bigger at all when the second line is an airport's name
-      if (_wPx && (_hasSub ? _wPx > _finPx : _wPx > _finPx * 1.25)) {
+      // any bigger at all when the second line is an airport's name — and
+      // only if, at that size, it really is on two lines. v23986: a 1px gain
+      // (44px against 43) chose the wrapped form for text that sat on one
+      // line at 44px, and the separators were then measured at the search's
+      // last, larger probe, where the line did break: the "·" was dropped
+      // mid-line ('Toronto Pearson'). The size is set first; the separators
+      // are measured at it.
+      var _twoAt = function (px) {
+        el.style.setProperty('font-size', px + 'px', 'important');
+        return _fxMeasure(el, el, 0).lines >= 2;
+      };
+      if (_wPx && (_hasSub ? _wPx > _finPx : _wPx > _finPx * 1.25) && _twoAt(_wPx)) {
         _finPx = _wPx;
+        el.style.setProperty('font-size', _finPx + 'px', 'important');
         _fxBreakSeps(el, true);
       } else {
         el.style.setProperty('white-space', 'nowrap', 'important');
         el.style.removeProperty('line-height');
         el.classList.remove('fx-wrap');
+        el.style.setProperty('font-size', _finPx + 'px', 'important');
         _fxBreakSeps(el, false);
       }
-      el.style.setProperty('font-size', _finPx + 'px', 'important');
       return;
     }
     if (_curPx && Math.abs(_curPx - _finPx) <= 1) _finPx = _curPx;
@@ -19303,6 +19414,26 @@ function gateAutofit(root) {
               // set equal to the model's size can land a hair under it (12.47
               // beside 12.48): it is rounded UP to that grid, never down.
               var _up64 = function (v) { return Math.ceil(v * 64 - 1e-6) / 64; };
+              // v23986 — RULE 1: the mark is never smaller than the text
+              // beside it, and beside it stands its own 'Operated By:' label
+              // as well as the model. The labels came up to the readable
+              // floor in v23962 and the mark kept coming down to the model's
+              // size only: Rouge's mark ended 10px tall beside 12px labels at
+              // 1280x720 (pending, de+pt). Its floor is the larger of the two;
+              // a row that cannot hold it at that size puts the operator
+              // under the aircraft (7a), where the mark has the row's width.
+              // With no model yet (the pending words, two lines of label
+              // type) the mark is the only thing on the row that is not
+              // label-sized: there it keeps its own height on the one row
+              // and the operator goes under the aircraft instead (it came
+              // down from 28px to 16px at 1680x1050 to make room).
+              var _opLblEl = _capEl.querySelector('.v2-rc-acb-opby .v2-rc-opby-lline');
+              var _opLbl = function () { return _opLblEl ? (parseFloat(window.getComputedStyle(_opLblEl).fontSize) || 0) : 0; };
+              var _lh0 = _lh, _stacked = false;
+              var _mk = function (px) {
+                var m = Math.max(px, _opLbl());
+                return (_capEl.classList.contains('is-pending') && !_stacked) ? Math.max(m, _lh0) : m;
+              };
               var _setLh = function (px) {
                 _lh = _up64(px);
                 _logoEl.style.setProperty('height', _lh + 'px', 'important');
@@ -19310,7 +19441,7 @@ function gateAutofit(root) {
               };
               var _setFs = function (px) {
                 el.style.setProperty('font-size', px + 'px', 'important');
-                if (_k) _setLh(Math.max(px, Math.min(_lh, px * _k)));
+                if (_k) _setLh(Math.max(_mk(px), Math.min(_lh, px * _k)));
               };
               var _pending = _capEl.classList.contains('is-pending');
               // The model's floor beside a label of `lbl` px: 1.25x the label on
@@ -19332,7 +19463,7 @@ function gateAutofit(root) {
               }
               // 4. The mark alone, down to the model's own size and no further.
               if (_logoEl) {
-                while (_lh > _up64(_fs) && !_fits()) _setLh(Math.max(_fs, _lh - 1));
+                while (_lh > _up64(_mk(_fs)) && !_fits()) _setLh(Math.max(_mk(_fs), _lh - 1));
               }
               // The operator's name the same way: it starts under the model
               // (0.34 of the row against 0.52) and is never brought below the
@@ -19359,7 +19490,7 @@ function gateAutofit(root) {
                 _lblPx = parseFloat(window.getComputedStyle(_lblEl).fontSize) || (_u * 0.24);
                 _fs = Math.min(_fs, _mFloor(_lblPx));
                 el.style.setProperty('font-size', _fs + 'px', 'important');
-                if (_logoEl) _setLh(Math.min(_lh, Math.max(_fs, _lh - 1)));
+                if (_logoEl) _setLh(Math.min(_lh, Math.max(_mk(_fs), _lh - 1)));
                 if (_nameEl) {
                   _nm = Math.min(_nm, Math.max(_fs, _nm - 1));
                   _nameEl.style.setProperty('font-size', _nm + 'px', 'important');
@@ -19384,7 +19515,7 @@ function gateAutofit(root) {
                 while (_fs > _lblPx && !_fits()) {
                   _fs = Math.max(_lblPx, _fs - 0.5);
                   el.style.setProperty('font-size', _fs + 'px', 'important');
-                  if (_logoEl && _lh > _up64(_fs)) _setLh(Math.max(_fs, Math.min(_lh, _fs * (_k || 1))));
+                  if (_logoEl && _lh > _up64(_mk(_fs))) _setLh(Math.max(_mk(_fs), Math.min(_lh, _fs * (_k || 1))));
                   if (_nameEl && _nm > _fs) { _nm = _fs; _nameEl.style.setProperty('font-size', _nm + 'px', 'important'); }
                 }
               }
@@ -19411,6 +19542,7 @@ function gateAutofit(root) {
               };
               if (!_fits() && _capEl.classList.contains('has-op') && _capEl.querySelector('.v2-rc-acb-opby')) {
                 _capEl.classList.add('acb-stack');
+                _stacked = true;
                 _grow();
                 _capEl.style.removeProperty('--acb-h');
                 _u = _bandH;
@@ -19432,9 +19564,9 @@ function gateAutofit(root) {
                 while (_fs > _lblPx && !_fits()) {
                   _fs = Math.max(_lblPx, _fs - 0.5);
                   el.style.setProperty('font-size', _fs + 'px', 'important');
-                  if (_logoEl && _lh > _up64(_fs) && _k) _setLh(Math.max(_fs, Math.min(_lh, _fs * _k)));
+                  if (_logoEl && _lh > _up64(_mk(_fs)) && _k) _setLh(Math.max(_mk(_fs), Math.min(_lh, _fs * _k)));
                 }
-                if (_logoEl) { while (_lh > _up64(_fs) && !_fits()) _setLh(Math.max(_fs, _lh - 1)); }
+                if (_logoEl) { while (_lh > _up64(_mk(_fs)) && !_fits()) _setLh(Math.max(_mk(_fs), _lh - 1)); }
                 if (_nameEl) {
                   while (_nm > _lblPx && !_fits()) {
                     _nm = Math.max(_lblPx, _nm - 0.5);
@@ -23793,7 +23925,7 @@ const CITY = {
   PWM:'PORTLAND',       BGR:'BANGOR',         BTV:'BURLINGTON',
   JFK:'NEW YORK',   LGA:'NEW YORK',   EWR:'NEWARK',       BOS:'BOSTON',
   LAX:'LOS ANGELES',    ORD:'CHICAGO',    ATL:'ATLANTA',      MIA:'MIAMI',
-  DFW:'DALLAS',         DEN:'DENVER',         SEA:'SEATTLE',      LAS:'LAS VEGAS',
+  DFW:'DALLAS/FORT WORTH',         DEN:'DENVER',         SEA:'SEATTLE',      LAS:'LAS VEGAS',
   PHX:'PHOENIX',        SFO:'SAN FRANCISCO',  IAD:'WASHINGTON',  DCA:'WASHINGTON',
   DTW:'DETROIT',        MSP:'MINNEAPOLIS',    CLT:'CHARLOTTE',    IAH:'HOUSTON',
   MCO:'ORLANDO',        TPA:'TAMPA',          FLL:'FORT LAUDERDALE',PBI:'WEST PALM BEACH',
@@ -23827,7 +23959,7 @@ const CITY = {
   CMH:'COLUMBUS',
   MEX:'MEXICO CITY',    GDL:'GUADALAJARA',    SJD:'LOS CABOS',    PVR:'PUERTO VALLARTA',
   ZIH:'IXTAPA',         HUX:'HUATULCO',       MZT:'MAZATLAN',     MID:'MERIDA',
-  GRU:'SAO PAULO',      GIG:'RIO DE JANEIRO', EZE:'BUENOS AIRES', SCL:'SANTIAGO',
+  GRU:'SÃO PAULO',      GIG:'RIO DE JANEIRO', EZE:'BUENOS AIRES', SCL:'SANTIAGO',
   BOG:'BOGOTA',         LIM:'LIMA',           LPB:'LA PAZ',       UIO:'QUITO',        CCS:'CARACAS',
   MVD:'MONTEVIDEO',     ASU:'ASUNCION',       GYE:'GUAYAQUIL',    CTG:'CARTAGENA',
   MDE:'MEDELLIN',
@@ -24635,7 +24767,7 @@ const CITY_FR = {
   // ── ÉTATS-UNIS ─────────────────────────────────────────────────────────
   JFK:'NEW YORK',      LGA:'NEW YORK',       EWR:'NEWARK',
   BOS:'BOSTON',            LAX:'LOS ANGELES',        ORD:'CHICAGO',
-  ATL:'ATLANTA',           MIA:'MIAMI',              DFW:'DALLAS',
+  ATL:'ATLANTA',           MIA:'MIAMI',              DFW:'DALLAS/FORT WORTH',
   DEN:'DENVER',            SEA:'SEATTLE',            LAS:'LAS VEGAS',
   PHX:'PHOENIX',           SFO:'SAN FRANCISCO',      IAD:'WASHINGTON',
   DCA:'WASHINGTON',    DTW:'DÉTROIT',            MSP:'MINNEAPOLIS',
@@ -24666,7 +24798,7 @@ const CITY_FR = {
   SAP:'SAN PEDRO SULA',    SJO:'SAN JOSE',           LIR:'LIBERIA',
   BZE:'BELIZE',            PTY:'PANAMA CITY',
   // ── AMÉRIQUE DU SUD ────────────────────────────────────────────────────
-  GRU:'SAO PAULO',         GIG:'RIO DE JANEIRO',     EZE:'BUENOS AIRES',
+  GRU:'SÃO PAULO',         GIG:'RIO DE JANEIRO',     EZE:'BUENOS AIRES',
   SCL:'SANTIAGO',          BOG:'BOGOTA',             LIM:'LIMA',
   LPB:'LA PAZ',
   UIO:'QUITO',             MVD:'MONTEVIDEO',         CTG:'CARTHAGÈNE',
@@ -28533,7 +28665,10 @@ var AIRPORT_SUBLINE = {
   ORD: "O'Hare",             MDW: 'Midway',
   IAD: 'Dulles',             DCA: 'Reagan National',
   IAH: 'Intercontinental',   HOU: 'Hobby',
-  DFW: 'Fort Worth Intl',    DAL: 'Love Field',
+  // v23986 — Dallas/Fort Worth names its own city, the way the airport and
+  // its airlines write it, so it needs no airport after it: its 'Fort Worth
+  // Intl' read as a second city. Love Field is named beside it.
+  DAL: 'Love Field',
   // Europe
   LHR: 'Heathrow',           LGW: 'Gatwick',      STN: 'Stansted',
   LTN: 'Luton',              LCY: 'City',
@@ -51778,9 +51913,21 @@ function _renderBigCraft(el, ctx) {
                 return (iC ? '<span class="bigcraft-cap-sep"> | </span>' : '') + '<span>' + w + '</span>';
               }, '');
               var _capEsc = function (v) { return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+              // v23986 — the place follows the board's language phase, as
+              // the rail and the map's note beside it do: a name that honours
+              // a person is 'Billy-Bishop' in the French phase. The caption
+              // is built once per takeover, so the place carries its city and
+              // code (data-ap-city / data-ap-code) and _fxApRelang rewrites it
+              // on each fitting pass (every render and language change).
+              var _capCode = '', _capCity = '';
+              var _capM = String(_capPlc).match(_CITY_CODE_TAIL);
+              if (_capM) { _capCode = (_capM[1] || _capM[2] || '').toUpperCase(); _capCity = _stripCityCode(_capPlc); }
+              var _capPlcHtml = _capCode
+                ? '<span class="bigcraft-cap-plc" data-ap-city="' + _capEsc(_capCity) + '" data-ap-code="' + _capEsc(_capCode) + '">' + _capEsc(_fxApPlace(_capCity, _capCode)) + '</span>'
+                : _capEsc(_capPlc);
               return '<div class="bigcraft-flightcap">' + _capLbl
                 + (_capFlt ? ' <span class="bigcraft-cap-flt">' + _capEsc(_capFlt) + '</span>' : '')
-                + (_capPlc ? ' <span class="bigcraft-cap-sep">\u00b7</span> ' + _capEsc(_capPlc) : '')
+                + (_capPlc ? ' <span class="bigcraft-cap-sep">\u00b7</span> ' + _capPlcHtml : '')
                 + '</div>';
             } catch (eCap) { return ''; }
           })()
