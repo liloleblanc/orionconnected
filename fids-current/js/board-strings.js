@@ -54,6 +54,9 @@
   //         left out of both 24-hour lists, so an Arabic half printed 5:07pm
   //         beside a Japanese 17:07.
   // colon   the label-to-value colon in that language's typography
+  // weekdaySep  (optional) what sets the weekday off in a long date, where
+  //         the board's own style differs from Intl's: English boards print
+  //         'Friday  September 18, 2026'. Every other language takes Intl's.
   // script  the script a value must contain (the guard checks ja/zh/ar)
   // stop    a Latin-script language's short words, which give a sentence's
   //         language away (looksLike): a feed asked for one language often
@@ -63,7 +66,7 @@
   //         so a list of amenities with no small words in it is still told
   //         apart.
   var META = {
-    en: { dir: 'ltr', intl: 'en-CA', clock24: false, colon: ': ',  script: 'latin', name: 'English',
+    en: { dir: 'ltr', intl: 'en-CA', clock24: false, colon: ': ',  weekdaySep: '  ', script: 'latin', name: 'English',
       stop: 'the and of to with in for our your is are at from on by this that you we its it an as be has have will all each every just than '
       + 'center indoor outdoor pool free room rooms breakfast meeting meetings space located steps away walk minutes downtown near new home '
       + 'welcome luxury best heart city view views guest guests stay family friendly shopping nearby perfect ideal comfortable spacious world '
@@ -953,6 +956,25 @@
     if (tz) o.timeZone = tz;
     try { return new Intl.DateTimeFormat(META[l].intl, o).format(toDate(d)); } catch (e) { return ''; }
   }
+  // The long date a board prints whole (the gate's footer): weekday, day,
+  // month and year in the language's own order ('vendredi 18 septembre
+  // 2026', '2026年9月18日金曜日'), the weekday set off by META.weekdaySep
+  // where the language has one.
+  function longDate(d, lang, tz) {
+    var l = isLang(lang) ? lang : 'en';
+    var o = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    if (tz) o.timeZone = tz;
+    try {
+      var f = new Intl.DateTimeFormat(META[l].intl, o);
+      var sep = META[l].weekdaySep;
+      if (sep == null || typeof f.formatToParts !== 'function') return f.format(toDate(d));
+      var parts = f.formatToParts(toDate(d)), out = '';
+      for (var i = 0; i < parts.length; i++) {
+        out += (parts[i].type === 'literal' && i > 0 && parts[i - 1].type === 'weekday') ? sep : parts[i].value;
+      }
+      return out;
+    } catch (e) { return ''; }
+  }
   // Weekday names are never sliced: three letters of an Arabic weekday made
   // Sunday and Wednesday both read الأ. 'short' is Intl's own abbreviation;
   // Arabic has none, so it reads the full name.
@@ -1112,6 +1134,7 @@
   api.boardClockText = boardClockText;
   api.looksLike = looksLike;
   api.date = date;
+  api.longDate = longDate;
   api.intl = intl;
   api.num = num;
   api.weekday = weekday;

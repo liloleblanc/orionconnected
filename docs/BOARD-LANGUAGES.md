@@ -186,7 +186,8 @@ each of the nine languages alone and in the pairs that stress them, the
 gate's whole centre deck (welcome, airline and hotel ads page by page, the
 map takeover, the weather card's three screens), the gate's departure
 delayed, cancelled, boarding, on final call, closed, at Porter's
-pre-boarding and moved to another gate, the phone layout of the gate and
+pre-boarding and moved to another gate, the gate with no flight left, its
+"Later at this gate" strip, the phone layout of the gate and
 the departures board in each language, the Studio player (a departures, a
 gate and a baggage document) in each language, and the stream tour. It
 reads every visible text node, the text CSS draws (`::before`/`::after`),

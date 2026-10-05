@@ -302,7 +302,8 @@ test('a time that is not today carries its day; a delay with a new time shows th
   const b = board({ now: ADT(4, 18, 0), dep });
   const html = b._gateLaterStripHtml(b._gateLaterModel('4', ADT(4, 18, 0), 'YQM'));
   const slots = html.split('<div class="gl-slot').slice(1);
-  assert.match(slots[0], /<span class="gl-time">5:25am<\/span><span class="gl-day" data-day-offset="1"><span class="gl-day-w">Tomorrow<\/span><span class="gl-day-w">Demain<\/span><\/span>/);
+  // each day word carries its language (v23986)
+  assert.match(slots[0], /<span class="gl-time">5:25am<\/span><span class="gl-day" data-day-offset="1"><span class="gl-day-w" lang="en">Tomorrow<\/span><span class="gl-day-w" lang="fr">Demain<\/span><\/span>/);
   assert.match(slots[1], /<span class="gl-time">7:05am<\/span>/);
   assert.doesNotMatch(html, /delayed|retard/i, 'the strip carries no status, in words or colour');
 });

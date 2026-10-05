@@ -107,6 +107,16 @@ test('the year follows the airport across New Year too', () => {
   assert.match(line, /December 31, 2026/, 'still 2026 at the airport');
 });
 
+test('every other language reads the date in its own order, from the airport\'s clock', () => {
+  const want = {
+    fr: 'Vendredi 18 septembre 2026', de: 'Freitag, 18. September 2026', es: 'Viernes, 18 de septiembre de 2026',
+    ja: '2026年9月18日金曜日', zh: '2026年9月18日星期五', ar: 'الجمعة، 18 سبتمبر 2026',
+  };
+  for (const [l, w] of Object.entries(want)) {
+    assert.equal(airportDateLine(JUST_AFTER_MIDNIGHT_ADT, MONCTON, l, '00:30'), w + '  00:30', l);
+  }
+});
+
 test('a missing zone does not silently become the host clock', () => {
   // tzOpts is {} when the airport has no tz row. That falls back to the host,
   // which is the same failure one layer down — so assert the shape at least

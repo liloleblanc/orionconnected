@@ -210,7 +210,7 @@ test('what the review found, held so it stays fixed', () => {
   assert.doesNotMatch(assembly(), /_pdPrioMarksHtml\(|_pdClassicMark\(/, 'the marks are not rendered');
   // The roster is a list and wraps in its own slot; poured into a nowrap
   // line it lost three of its five groups.
-  assert.match(a, /roster: _pdPre \? \(_gateLbl1\('preboardList', _frF\) \|\| ''\) : ''/, 'the roster has its own slot');
+  assert.match(a, /roster: _pdPre \? \(_gateLbl1Html\('preboardList', _frF\) \|\| ''\) : ''/, 'the roster has its own slot, marked with its language');
   assert.match(col, /if \(S\.roster\) h \+= '<div class="g8-sign-roster">'/, 'which the column renders');
   // During pre-boarding the Classic panel says it is not being called yet.
   assert.match(a, /_R = _pdPre\s*\? \{[^}]*note: _g8SignLines\('boardSoon'\)/, "Porter's called panel says 'will begin shortly' during pre-boarding");

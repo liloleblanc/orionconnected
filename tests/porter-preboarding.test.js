@@ -47,15 +47,16 @@ function build(preActive, lang) {
   // v23970 — and the tier marks moved into two shared helpers (_pdMark,
   // _pdMarksRow), so the sign and the lanes panel draw one row.
   const helpers = ['_pdCabinHdr', '_pdLaneRow', '_pdClassicMark', '_pdMark', '_pdMarksRow'].map(lift).join('\n');
+  // v23530 — the sign reads ONE language from _GATE_LBL for the phase name
+  // and the roster; TL() reads a different table and returned the raw keys.
+  const one = (key) => (key === 'preboardList' ? TABLE[lang] : (key === 'preboard' ? 'Pre-boarding'
+    : (/^pdTier|^pdReserve$/.test(key) ? STORE.entry(key)[lang] : '[' + key + ']')));
   const fn = new Function(
-    '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF', '_gateLang1',
+    '_gateLbl', '_gateLbl1', '_birArrowSvg', '_gateLaneLbl', 'TL', '_comingLineHtml', '_g8GrpValCls', '_frF', '_gateLang1', '_gateLbl1Html',
     helpers + '\n' + lift('_pdLanesBodyHtml') + '\nreturn _pdLanesBodyHtml;',
   )(
     (key) => '[' + key + ']',
-    // v23530 — the sign reads ONE language from _GATE_LBL for the phase name
-    // and the roster; TL() reads a different table and returned the raw keys.
-    (key) => (key === 'preboardList' ? TABLE[lang] : (key === 'preboard' ? 'Pre-boarding'
-      : (/^pdTier|^pdReserve$/.test(key) ? STORE.entry(key)[lang] : '[' + key + ']'))),
+    one,
     () => '',
     (v) => v,
     (key) => '[' + key + ']',
@@ -69,6 +70,8 @@ function build(preActive, lang) {
     lang === 'fr',
     // the sign's first language — the one its artwork follows (v23970)
     () => lang,
+    // v23986 — the same label as markup marked with its language
+    (key) => STORE.markHalf('<span class="g8-lbl1">' + one(key) + '</span>', lang, key),
   );
   return fn('23–33', '12–22', preActive);
 }
@@ -235,7 +238,7 @@ test('AvidTraveller labels the tier marks, which is where it is true', () => {
   // marks it now sits above, which until this change were unlabelled.
   const body = lift('_pdLanesBodyHtml');
   assert.match(body, /g8-pd-marks-hdr/, 'the marks row must be headed');
-  assert.match(body, /_gateLbl1\('avidTraveller'/,
+  assert.match(body, /_gateLbl1(?:Html)?\('avidTraveller'/,
     'the name is a LABEL, not a literal — the sign is bilingual');
   // Above the marks, not floating elsewhere in the column: the heading, then
   // the one shared row of marks.

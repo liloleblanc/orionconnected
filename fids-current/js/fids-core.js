@@ -5139,7 +5139,12 @@ function updateDedicatedTimeOnly() {
   // language on screen (the store's locale for it).
   const dateDisplay = _airportDateLine(now, tzOpts, lang, timeStr);
   const footer = document.getElementById('dedicatedFooterRight');
-  if (footer) footer.textContent = dateDisplay;
+  if (footer) {
+    footer.textContent = dateDisplay;
+    // v23986 — the date is in the language on screen; say which (and an
+    // Arabic one's direction): the page itself is lang="en"
+    try { if (BoardStrings.isLang(lang)) BoardStrings.setLang(footer, lang); } catch (eL) {}
+  }
   const banClock = document.getElementById('dedicatedBannerClock');
   const bidsDate = document.getElementById('bidsBannerDate');
   if (screenType === 'baggage') {
@@ -9270,7 +9275,7 @@ function renderMobileBaggageHtml(ctx) {
       }).join('')
     : '<div style="text-align:center;padding:48px 20px;color:' + T.muted + ';font-size:14px;letter-spacing:2px;">' + TL('noAssigned') + '</div>';
 
-  return '<div class="gids-m2"' + _phoneLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
+  return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
     // header: airport + belt
     + '<div style="background:' + T.header + ';padding:16px 18px 14px;border-bottom:1px solid ' + T.line + ';display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">'
     +   '<div style="flex:1;min-width:0;">'
@@ -9563,7 +9568,7 @@ function renderMobileGateHtml(ctx) {
     }
   } catch (e) { _inbBlock = ''; }
 
-  return '<div class="gids-m2"' + _phoneLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
+  return '<div class="gids-m2"' + _screenLangAttrs() + ' style="width:100%;background:' + T.pageBg + ';color:' + T.ink + ';box-sizing:border-box;font-family:' + BoardStrings.withScripts('Inter,system-ui,sans-serif') + ';padding-bottom:110px;">'
 
     // ── HEADER: compact, clears the gear icon, no dead space ──
     + '<div style="background:' + T.header + ';padding:54px 20px 18px;border-bottom:1px solid ' + T.line + ';">'
@@ -9959,9 +9964,14 @@ function _gateLaterSlotHtml(x, m, frF) {
       + sub + '</div>';
   }
   var dw = _gateLaterDayWords(f, m);
+  // v23986 — each day word carries its language (and an Arabic one its
+  // direction), as the gate's own day line does (_gateDayLineHtml): '明日'
+  // under a Japanese board is lang="ja", 'غدًا' reads right to left.
+  var _dl = (dw && dw.languages) || [];
   var day = (dw && dw.words && dw.words.length)
-    ? '<span class="gl-day" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w) {
-        return '<span class="gl-day-w">' + fidsEscHtml(w) + '</span>';
+    ? '<span class="gl-day" data-day-offset="' + (Number(dw.dayOffset) || 0) + '">' + dw.words.map(function (w, i) {
+        var _w = '<span class="gl-day-w">' + fidsEscHtml(w) + '</span>';
+        return _dl[i] ? BoardStrings.markHalf(_w, _dl[i]) : _w;
       }).join('') + '</span>'
     : '';
   return '<div class="gl-slot">'
@@ -11168,7 +11178,7 @@ function _buildV2AircraftCol(ctx, vars) {
   if (_equipNm || _equipCd) {
     _eqBlock =
         '<div class="v2-eq-block">'
-      +   '<div class="v2-eq-lbl">' + _gateLbl('aircraft', _frF, null, ' | ') + '</div>'
+      +   '<div class="v2-eq-lbl">' + _gateLbl('aircraft', _frF, function (w) { return '<span>' + w + '</span>'; }, ' | ') + '</div>'
       +   '<div class="v2-eq-val">' + gateAircraftShortname(_equipNm || _equipCd) + '</div>'
       + '</div>';
   }
@@ -11354,7 +11364,7 @@ function _buildV2AircraftCol(ctx, vars) {
     if (_gateNum || _term) {
       _gateInfoBlock =
           '<div class="v2-gateinfo-block">'
-        +   '<div class="v2-gateinfo-lbl">' + _gateLbl('gate', _frF, null, ' | ') + '</div>'
+        +   '<div class="v2-gateinfo-lbl">' + _gateLbl('gate', _frF, function (w) { return '<span>' + w + '</span>'; }, ' | ') + '</div>'
         +   '<div class="v2-gateinfo-val">' + (_gateNum || '—') + (_term ? '<span class="v2-gateinfo-term"> · T' + _term + '</span>' : '') + '</div>'
         + '</div>';
     }
@@ -15107,7 +15117,7 @@ function uxgGateHtml(ctx) {
   // show for the whole boarding window, not five minutes of it.
   function _pdPrioMarksHtml() {
     var hdr = '<div class="g8-pd-marks-hdr">'
-      + _gateLbl1('avidTraveller', _frF) + '</div>';
+      + _gateLbl1Html('avidTraveller', _frF) + '</div>';
     return hdr + _pdMarksRow();
   }
   // One VIPorter tier as Porter's own artwork. The files key on the ENGLISH
@@ -15158,7 +15168,7 @@ function uxgGateHtml(ctx) {
     // (PorterReserve / PorterRéserve), never the spaced English 'Porter
     // Reserve', which Porter writes nowhere and which read English on a
     // French sign.
-    var _prioVal = preActive ? _gateLbl1('preboard', _frF) : _gateLbl1('pdReserve', _frF);
+    var _prioVal = preActive ? _gateLbl1Html('preboard', _frF) : _gateLbl1Html('pdReserve', _frF);
     // v23524 — the two product names in Porter's list get their marks.
     // sent the artwork; every file in it is DARK INK (porter_reserve_logo.svg
     // is #222223, the VIPorter tier marks are black or #153993) and this sign's
@@ -15211,7 +15221,7 @@ function uxgGateHtml(ctx) {
     // Passeport, Horizon, Essor et Première" — so a hardcoded 'AvidTraveller'
     // would print English on the French half of a bilingual sign.
     var _prioMarksHdr = '<div class="g8-pd-marks-hdr">'
-      + _gateLbl1('avidTraveller', _frF) + '</div>';
+      + _gateLbl1Html('avidTraveller', _frF) + '</div>';
     // v23749 — THE MARKS FOLLOW THE LANGUAGE.
     //
     // Porter does not translate the tier names, it RENAMES them, so the French
@@ -15222,7 +15232,7 @@ function uxgGateHtml(ctx) {
     var _prioMarks = _prioMarksHdr + _pdMarksRow();
     // The roster is pre-boarding only; the marks are not.
     var _prioSub = preActive
-      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1('preboardList', _frF) + '</span></div>' + _prioMarks
+      ? '<div class="g8-board-coming g8-pd-preboard-list"><span class="g8-board-coming-z">' + _gateLbl1Html('preboardList', _frF) + '</span></div>' + _prioMarks
       : _prioMarks;
     return '<div class="g8-board-body g8-lanes-pd">'
       + '<div class="g8-board-col now g8-pd-prio">'
@@ -15274,7 +15284,7 @@ function uxgGateHtml(ctx) {
   // PorterClassic reads "boarding will begin shortly" until general boarding
   // commences.
   function _pdCabinHdr(key, live) {
-    var name = _gateLbl1(key, _frF);
+    var name = _gateLbl1Html(key, _frF);
     var st = live
       ? _gateLbl('nowBoarding', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ')
       : _gateLbl('boardSoon', _frF, function (w) { return w; }, ' <span class="g8-bir-sep">|</span> ');
@@ -15661,7 +15671,7 @@ function uxgGateHtml(ctx) {
             // tier marks are off the sign — the reference picture has neither.
             _L = { title: _prioT, sub: _g8SignPair('pdReserve', false, true),
                    note: _pdPre ? _g8SignLines('preboard') : _g8SignLines('boardConv'),
-                   roster: _pdPre ? (_gateLbl1('preboardList', _frF) || '') : '',
+                   roster: _pdPre ? (_gateLbl1Html('preboardList', _frF) || '') : '',
                    lanes: _g8SignLanes('1 \u2022 2', true) };
             // During pre-boarding the Classic panel is not being called yet;
             // it says so. Once general boarding is on, the panel is titled
@@ -21774,7 +21784,7 @@ const gView = document.getElementById('gateView');
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;">
               <div style="background:rgba(0,0,0,0.4);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:0;padding:clamp(12px,2vw,20px) clamp(16px,3vw,28px);border:1px solid rgba(100,160,250,0.35);">
                 <div style="font-size:clamp(40px,10vw,80px);font-weight:900;color:#fff;line-height:1;">${subScreenVal || '—'}</div>
-                <div style="font-size:clamp(10px,1.5vw,13px);font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-top:4px;text-transform:uppercase;">${_gateLbl('gate', frFirstAirport(iata), null, ' | ')}</div>
+                <div style="font-size:clamp(10px,1.5vw,13px);font-weight:700;color:rgba(255,255,255,0.4);letter-spacing:3px;margin-top:4px;text-transform:uppercase;">${_gateLbl('gate', frFirstAirport(iata), function (w) { return '<span>' + w + '</span>'; }, ' | ')}</div>
               </div>
               <div style="text-align:right;">
                 <div style="font-size:clamp(28px,7vw,64px);font-weight:900;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,0.4);line-height:1;">${apCity}</div>
@@ -21788,14 +21798,14 @@ const gView = document.getElementById('gateView');
               </div>
               <div style="text-align:right;">
                 <div id="dedicatedEmptyTime" style="font-size:clamp(36px,9vw,72px);font-weight:900;color:#fff;font-variant-numeric:tabular-nums;line-height:1;text-shadow:0 4px 20px rgba(0,0,0,0.4);">${timeStr}</div>
-                <div style="font-size:clamp(12px,2vw,20px);font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:clamp(1px,0.3vw,3px);margin-top:8px;">${TL('awaitingNextFlight')}</div>
+                <div${_screenLangAttrs()} style="font-size:clamp(12px,2vw,20px);font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:clamp(1px,0.3vw,3px);margin-top:8px;">${TL('awaitingNextFlight')}</div>
               </div>
             </div>
           </div>
         </div>
         <div class="gate-footer">
           <div class="gate-footer-left"><span>${apName}</span></div>
-          <div class="gate-footer-right" id="dedicatedFooterRight">${dateDisplay}</div>
+          <div class="gate-footer-right" id="dedicatedFooterRight"${_screenLangAttrs()}>${dateDisplay}</div>
         </div>`;
 
       // Load airport's own city photo
@@ -27396,11 +27406,11 @@ function _legacyPair(table, k) {
   return out.join(' · ');
 }
 const SLbi = k => _legacyPair(SS, k);
-// The phone's gate and baggage views are one language (the phone's): say
-// which, and its direction, so Japanese, Chinese and Arabic take their own
-// fonts and line breaking and Arabic reads right to left. v23986 — they sat
-// under the page's lang="en".
-function _phoneLangAttrs() {
+// Markup in the one language on screen (the phone's gate and baggage views,
+// the empty gate's line and its date): say which, and its direction, so
+// Japanese, Chinese and Arabic take their own fonts and line breaking and
+// Arabic reads right to left. v23986 — they sat under the page's lang="en".
+function _screenLangAttrs() {
   var l = BoardStrings.isLang(lang) ? lang : 'en';
   return ' lang="' + l + '"' + (BoardStrings.META[l].dir === 'rtl' ? ' dir="rtl"' : '');
 }
@@ -27884,13 +27894,26 @@ function _gateLang1(frF) {
   try { return BoardStrings.pairLangs(langs, !!frF)[0] || 'en'; } catch (e) { return 'en'; }
 }
 function _gateLbl1(key, frF) {
+  var p = _gateLbl1Pick(key, frF);
+  return p ? p.w : '';
+}
+// The word and the language it is in (null when the label has none).
+function _gateLbl1Pick(key, frF) {
   try {
     var t = ((typeof _GATE_LBL !== 'undefined') && _GATE_LBL[key]) || BoardStrings.entry(key);
-    if (!t) return '';
+    if (!t) return null;
     var L = BoardStrings.pairLangs(langs, !!frF);
-    for (var i = 0; i < L.length; i++) { if (t[L[i]]) return t[L[i]]; }
-    return '';
-  } catch (e) { return ''; }
+    for (var i = 0; i < L.length; i++) { if (t[L[i]]) return { w: t[L[i]], l: L[i] }; }
+    return null;
+  } catch (e) { return null; }
+}
+// v23986 — the same one-language label, as markup marked with its language
+// (and an Arabic one with its direction). The gate's page is lang="en"; a
+// Japanese roster dropped in bare inherited it and drew with whatever glyphs
+// the stack found first, and an Arabic one ran left to right.
+function _gateLbl1Html(key, frF) {
+  var p = _gateLbl1Pick(key, frF);
+  return p ? BoardStrings.markHalf('<span class="g8-lbl1">' + p.w + '</span>', p.l, key) : '';
 }
 
 function _gateLbl(key, frFirst, wrap, sep, keepDup) {
@@ -30960,11 +30983,12 @@ async function _yqmCacheAircraftMerge(list, direction, icao) {
 // Arabic-Indic digits would be a design change riding in on a bug fix.
 function _airportDateLine(now, tzOpts, l, timeStr) {
   var cap = function (s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; };
-  var dayName = now.toLocaleDateString(BoardStrings.intl(l), Object.assign({}, tzOpts, { weekday: 'long' }));
-  var monthName = now.toLocaleDateString(BoardStrings.intl(l), Object.assign({}, tzOpts, { month: 'long' }));
-  var dayNum = now.toLocaleDateString('en-CA', Object.assign({}, tzOpts, { day: 'numeric' })); // i18n-ok: code
-  var yearNum = now.toLocaleDateString('en-CA', Object.assign({}, tzOpts, { year: 'numeric' })); // i18n-ok: code
-  return cap(dayName) + '  ' + cap(monthName) + ' ' + dayNum + ', ' + yearNum + '  ' + timeStr;
+  // v23986 — weekday, day, month and year from the AIRPORT's clock, in the
+  // language's own order (BoardStrings.longDate): 'Friday  September 18,
+  // 2026', 'Vendredi 18 septembre 2026', '2026年9月18日星期五'. The English
+  // pattern it replaces put a Chinese weekday and month into 'Sunday October
+  // 4, 2026'.
+  return cap(BoardStrings.longDate(now, l, tzOpts && tzOpts.timeZone)) + '  ' + timeStr;
 }
 if (typeof window !== 'undefined') window._airportDateLine = _airportDateLine;
 

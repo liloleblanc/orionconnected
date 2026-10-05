@@ -26,7 +26,8 @@
 //
 //   What is shown: the gate (its whole centre deck, and its departure
 //   delayed, cancelled, boarding, on final call, closed, at Porter's
-//   pre-boarding, and moved to another gate), the departures board, the
+//   pre-boarding, and moved to another gate; and the gate with no flight
+//   left), the departures board, the
 //   baggage board, the phone layout of the gate and of the departures board
 //   in each language, the Studio player (a departures, a gate and a baggage
 //   document) in each language, and the stream tour.
@@ -345,7 +346,16 @@ export function judge(texts, set) {
 const MODE = LIVE ? 'live' : 'demo';
 const SINGLES = LANGS.map((l) => [l]);
 export const SETS = SINGLES.concat([['en', 'fr'], ['fr', 'en'], ['de', 'pt'], ['ar', 'ja'], ['es', 'zh']]);
-const BOARD_UP = `new Promise(function (res) { var t0 = Date.now(); (function poll() {
+// Offline (no LIVE), a board opened with ?mode=demo loads its demonstration
+// flights, but LIVE_MODE starts true, so the board's own first airport pass
+// (onApChange, deferred to a frame) can run after that, clear the flights
+// and ask a feed this check cannot reach: the board came up empty on one
+// load in three. Here the board is held on its demonstration data instead.
+const BOARD_UP = `new Promise(function (res) { var t0 = Date.now(), held = false; (function poll() {
+  try {
+    if (${JSON.stringify(MODE)} === 'demo' && !held && Date.now() - t0 > 4000 && typeof loadDemo === 'function'
+        && data && !data.dep.length && !data.arr.length) { held = true; LIVE_MODE = false; loadDemo(); }
+  } catch (e) {}
   try { if (typeof setBoardLangs === 'function' && data && (data.dep.length || data.arr.length) && Date.now() - t0 > 5000) return res(1); } catch (e) {}
   if (Date.now() - t0 > 60000) return res(0); setTimeout(poll, 500); })(); })`;
 const PLAYER_UP = `new Promise(function (res) { var t0 = Date.now(); (function poll() {
@@ -355,9 +365,18 @@ const SETTLE = (ms) => `new Promise(function (res) { setTimeout(function () { re
 
 // The gate's departure, put through the states a passenger meets: each is
 // the flight row the gate is showing, changed and repainted.
-const GATE_STATES = ['delayed', 'cancelled', 'boarding', 'final', 'gateclosed', 'porter-preboarding', 'gate-change'];
+// 'empty' is the gate with no flight left: its own screen (the gate number,
+// "Awaiting next flight", the date).
+const GATE_STATES = ['delayed', 'cancelled', 'boarding', 'final', 'gateclosed', 'porter-preboarding', 'gate-change', 'empty'];
 const GATE_STATE = (st) => `(function (st) {
   try {
+    if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; }
+    if (st === 'empty') {
+      window.__gfaOrig = window._gateFlightsAt;
+      window._gateFlightsAt = function () { return []; };
+      renderDedicatedScreen();
+      return document.getElementById('dedicatedFooterRight') ? 'ok' : 'the empty gate screen did not come up';
+    }
     var f = window._gateCurrentFlight;
     if (!f) return 'no flight on the gate';
     if (!window.__wsOrig) window.__wsOrig = JSON.stringify(f);
@@ -378,7 +397,7 @@ const GATE_STATE = (st) => `(function (st) {
     return 'ok';
   } catch (e) { return 'error ' + e.message; }
 })(${JSON.stringify(st)})`;
-const GATE_RESET = `(function () { try { var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
+const GATE_RESET = `(function () { try { if (window.__gfaOrig) { window._gateFlightsAt = window.__gfaOrig; window.__gfaOrig = null; } var f = window._gateCurrentFlight; if (f && window.__wsOrig) { var o = JSON.parse(window.__wsOrig); Object.keys(o).forEach(function (k) { f[k] = o[k]; }); } setGateHistory({}); renderDedicatedScreen(); } catch (e) {} })()`;
 
 // The Studio player shows a published document: one per board family is
 // put in the airport's published store before it loads.

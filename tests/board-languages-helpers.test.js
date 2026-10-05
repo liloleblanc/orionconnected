@@ -174,8 +174,8 @@ function tableSource(name) {
   const o = scan.findTable(core.units[0], name);
   return 'var ' + name + ' = ' + core.src.slice(core.units[0].toks[o.open].s, core.units[0].toks[o.close].e) + ';';
 }
-const GATE = new Function('langs', tableSource('_GATE_LBL') + source('_gateLbl') + source('_gateLbl1')
-  + 'return { T: _GATE_LBL, lbl: _gateLbl, one: _gateLbl1 };');
+const GATE = new Function('langs', tableSource('_GATE_LBL') + source('_gateLbl') + source('_gateLbl1') + source('_gateLbl1Pick') + source('_gateLbl1Html')
+  + 'return { T: _GATE_LBL, lbl: _gateLbl, one: _gateLbl1, oneHtml: _gateLbl1Html };');
 
 test('_gateLbl(): every gate label key, every pair: only the selected languages', () => {
   const keys = Object.keys(GATE(['en']).T);
@@ -202,6 +202,12 @@ test('_gateLbl1(): French only when French is one of the board\'s languages (it 
       const w = G.one(key, true);
       const lang = BS.pairLangs(langs, true)[0];
       assert.equal(w, G.T[key][lang] || G.T[key].en, `${key} ${langs}`);
+      // as markup, the same word under its own language (and an Arabic one
+      // right to left): the gate's page is lang="en"
+      const h = G.oneHtml(key, true);
+      if (!w) { assert.equal(h, '', `${key} ${langs}`); continue; }
+      assert.ok(h.includes('>' + w + '<'), `${key} ${langs}: ${h}`);
+      assert.match(h, new RegExp('^<span class="g8-lbl1" lang="' + lang + '"' + (lang === 'ar' ? ' dir="rtl"' : '')), `${key} ${langs}: ${h}`);
     }
   }
 });
