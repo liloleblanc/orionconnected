@@ -10740,7 +10740,7 @@ var AIRLINE_EMBLEM_FILES = window._AIRLINE_EMBLEM_FILES = {
         // colour leaf, which also repainted the round rail orb;
         // This map feeds the orb, so it stays mono
         // white. The colour leaf is applied ONLY on the welcome card, via
-        // _FB_WELCOME_LOGO.
+        // WELCOME_CARD_EMBLEM.
         // v23404 — WestJet's leaf was BLACK on the aircraft hold panel; it
         // must render in colour there. symbols/airlines-mono/
         // WS.svg is painted fill="currentColor", and inside an <img> there is
@@ -27871,6 +27871,10 @@ var _GATE_LBL = {
   departure: { en:'Departure',     fr:'Départ',         es:'Salida',       de:'Abflug',      it:'Partenza',    pt:'Partida',    ja:'出発',      zh:'出发',   ar:'المغادرة' },
   arrival:   { en:'Arrival',       fr:'Arrivée',        es:'Llegada',      de:'Ankunft',     it:'Arrivo',      pt:'Chegada',    ja:'到着',      zh:'到达',   ar:'الوصول' },
   arrived:   { en:'Arrived',       fr:'Arrivé',         es:'Llegó',        de:'Angekommen',  it:'Arrivato',    pt:'Chegou',     ja:'到着済',    zh:'已到达', ar:'وصل' },
+  // v23994 — the middle screen's Welcome card: one phrase above the airline,
+  // one below, picked by _gateLbl like every other gate label. These are the
+  // nine strings the card's own table carried before (v22971), unchanged.
+  welcomeAboard: { en:'Welcome aboard', fr:'Bienvenue à bord', es:'Bienvenido a bordo', de:'Willkommen an Bord', it:'Benvenuti a bordo', pt:'Bem-vindo a bordo', ja:'ご搭乗ありがとうございます', zh:'欢迎登机', ar:'أهلاً بكم على متن الرحلة' },
   // v23257 — the inbound card's banner names the movement, airport-PA style
   //
   // The en-route and landed variants.
@@ -28410,7 +28414,7 @@ try { if (typeof window !== 'undefined') { window._gateLbl = _gateLbl; window._G
 
 // On-screen BUILD TAG (bottom-left, faint) — ends the 'which build am I
 // looking at' guessing during preview reviews. Bump with the cache token.
-var FIDS_BUILD_TAG = 'v23988';
+var FIDS_BUILD_TAG = 'v23994';
 // v23333 — THE SECOND STREAM MOVES TO THE AIRPORT TOUR. The stream box loads
 // rotate.html?ap=MIA&stream=2 once and keeps that page for weeks; only the
 // boards inside it reload on a build-tag change (this line). Miami has had
@@ -44605,6 +44609,8 @@ function buildGateAmenities() {
 }
 
 function buildGateAdHtml(ad) {
+  // v23994 — the Welcome card: phrase / emblem + airline / phrase.
+  if (ad && ad.adLayout === 'welcome-card') return _welcomeCardHtml(ad);
   // ── HELPER: render a logo using the per-brand treatment map ────────────
   // When `compact` is true, skip the white card wrapper. Used by layouts
   // that already provide their own backdrop (e.g. Accor hotel cards with
@@ -45575,18 +45581,13 @@ function buildGateAdHtml(ad) {
     var _lf = String(ad.logo || '').split('/').pop().replace(/\.[a-z0-9]+(\?.*)?$/i, '');
     _adKeepColour = (typeof LOGO_TREATMENT !== 'undefined' && LOGO_TREATMENT[_lf] === 'no_filter');
   } catch (e) {}
-  // v23942 — the Welcome card names the carriers whose emblem keeps its own
-  // colours (_FB_WELCOME_OWN_COLOURS); the white-force never reaches them.
-  if (ad.logoOwnColours) _adKeepColour = true;
-  // v23986 — A TILE IS NEVER WHITE-FORCED HERE EITHER. The Welcome card's
-  // fallback logo is the carrier's emblem file, and for Canadian North and
-  // Air North that file is a TILE (/logos/airline-tiles/): an opaque square
-  // with the mark knocked out of it. The white-force flattens the whole
-  // square, so the dark card showed a solid white square above "Welcome
-  // aboard". v23770 wrote this rule for img.gad-ad-logo, a class this
-  // renderer never puts on its image, so it never applied. The folder is the
-  // treatment: a tile keeps its own artwork, rounded like the orb so it sits
-  // as a mark, never filtered.
+  // v23986 — A TILE IS NEVER WHITE-FORCED HERE. A logo from
+  // /logos/airline-tiles/ is an opaque square with the mark knocked out of
+  // it; the white-force flattens the whole square into a solid white one.
+  // The folder is the treatment: a tile keeps its own artwork, rounded like
+  // the orb so it sits as a mark, never filtered. (v23994: the Welcome card,
+  // where this was found, has its own renderer now, _welcomeCardHtml, which
+  // never filters anything.)
   var _adTile = /\/logos\/airline-tiles\//.test(String(ad.logo || ''));
   if (_adTile) _adKeepColour = true;
   var _stdLogoFilter = (_adLightBg || _adKeepColour)
@@ -47506,6 +47507,8 @@ function renderGateAd(index) {
   // it was actually on — the jump on screen.
   try { if (typeof window._axrPageSync === 'function') window._axrPageSync(); } catch (e) {}
   try { if (typeof _axrFitBubbleNames === 'function') _axrFitBubbleNames(); } catch (e) {}
+  // v23994 — the Welcome card sizes its airline line from its art's shape.
+  try { if (typeof _welcomeCardFit === 'function') _welcomeCardFit(el); } catch (e) {}
 
   var logoEl = document.getElementById('gateAdLogo');
   if (logoEl) {
@@ -47938,6 +47941,400 @@ function _getGateAdDwellMs(slide) {
   return 15000;
 }
 
+// ════════════════════════════════════════════════════════════════════════
+// v23994 — THE WELCOME CARD, IN THREE LINES.
+//
+// The middle screen's fallback slide (a gate with no uploaded media and no
+// house ads) is laid out as three centred lines:
+//
+//      <first language>     Welcome aboard
+//      [emblem] <airline>   one line: the emblem beside the airline's name
+//      <second language>    Bienvenue à bord
+//
+// It replaces a single headline that joined both phrases with " · " above the
+// name; when that run wrapped, the "·" was left stranded at the end of the
+// first line.
+//
+// THE LANGUAGES are the board's first two, picked by _gateLbl exactly as every
+// other gate label picks them (French moved first at a Québec airport). There
+// is no rotation and no third line.
+//
+// THE EMBLEM keeps its own colours. This card applies no filter to it at all:
+// an emblem is never whitened. Where an airline's colour emblem does not read
+// on its own dark card and it has no coloured tile of its own, the card shows
+// no emblem and the airline's white lettering alone (WELCOME_CARD_NO_EMBLEM).
+// Nothing is ever put on a white disc, box, pill or tile to make it read.
+//
+// THE NAME is the airline's white lettering (the published light cut, through
+// the board's own wordmark table), or its name typed in the board font where
+// no lettering exists.
+//
+// SIZES (_welcomeCardSizes): the airline line is never smaller than the
+// greeting. The emblem is 1.25x to 1.8x the phrase size, the lettering up to
+// 1.23x; when a very wide wordmark (British Airways, CityFlyer) can only be
+// drawn short, the greeting comes down until its capital height (0.72 em)
+// matches the lettering. The airline line never shrinks to suit the greeting.
+// A phrase too wide for the card shrinks (to 62% at most) and then wraps
+// between words; no word is ever cut.
+// ════════════════════════════════════════════════════════════════════════
+
+// What the card draws beside the name, where it differs from the gate orb's
+// AIRLINE_EMBLEM_FILES. The orb sets its emblem on a disc of its own; this
+// card sets it straight on the airline's dark gradient, so a mark drawn white
+// for the orb's coloured badge needs the airline's colour art here instead.
+var WELCOME_CARD_EMBLEM = {
+  // colour emblems that read on their card
+  'WS':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  'WR':  '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
+  'DL':  '/logos/airlines/us-major/delta-emblem-colour.svg',
+  'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
+  '9E':  '/logos/airlines/us-major/delta-emblem-colour.svg',   // Delta Connection: Delta's own colour triangle, not the white widget
+  '4Y':  '/logos/airlines/european/discover-airlines-emblem.svg',
+  'OCN': '/logos/airlines/european/discover-airlines-emblem.svg',
+  'F8':  '/logos/airlines/canadian/flair-dot.svg?v=2',
+  'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2',
+  // British Airways: the speedmarque in its own colours, beside the wordmark
+  // on the same line (the stacked lockup it showed before sets the name
+  // under the mark, which this layout has no room for).
+  'BA':  '/logos/airlines/european/british-airways-speedmarque.svg',
+  'BAW': '/logos/airlines/european/british-airways-speedmarque.svg',
+  // Breeze: its blue check, the mark inside MXY.svg without the navy square
+  // that sinks into the card.
+  'MX':  '/logos/airlines/us-major/breeze-check.svg',
+  // the airline's own coloured tile
+  'PB':  '/logos/airline-tiles/PB.svg',   // PAL's gold tile; the orb's PB-arrow is the arrow drawn white for its gold badge
+  'F9':  '/logos/airline-tiles/FFT.svg',  // Frontier green
+  'HA':  '/logos/airline-tiles/HAL.svg'   // Hawaiian purple
+};
+
+// No emblem on the card: the airline's white lettering stands alone. Each of
+// these has colour art that does not read on its own dark card and no
+// coloured tile of its own (or only a white or black one).
+var WELCOME_CARD_NO_EMBLEM = {
+  'PD':  "Porter's p is drawn white; its navy tile sinks into the navy card",
+  'FI':  "Icelandair's navy fin, and its navy tile, sink into the card",
+  'AA':  "American's flight symbol does not read on the card; its tile is a light square",
+  'MQ':  "American's flight symbol (Envoy)",
+  'OH':  "American's flight symbol (PSA)",
+  'PT':  "American's flight symbol (Piedmont)",
+  'NZ':  "Air New Zealand's koru is white on a black tile; there is no colour koru",
+  'RV':  "Rouge's r does not read on the card, and its official roundel sets it on a white disc",
+  'ROU': 'Rouge (ICAO form)',
+  'QR':  "Qatar's oryx tile is a white square",
+  'QTR': 'Qatar (ICAO form)',
+  'EW':  "Eurowings' wings sit on a grey square; on their own, their burgundy does not read on the card"
+};
+
+// Lettering this card draws where the board's wordmark table names another
+// carrier: IATA_TO_WORDMARK maps Rouge to Air Canada's lettering. This is
+// Rouge's own "rouge" lettering, the white cut of its lockup without the
+// roundel.
+var WELCOME_CARD_WORDMARK = {
+  'RV':  '/logos/airlines/canadian/rouge-wordmark-light.svg',
+  'ROU': '/logos/airlines/canadian/rouge-wordmark-light.svg'
+};
+// Lettering drawn taller than the rest: lettering whose letters fill only
+// about half of its own height, so at the usual height they came out smaller
+// than the greeting's. "rouge" and "Jazz" are scripts with long tails,
+// "porter" is lower case with a descender and an ascender, and Qatar's
+// lettering is QATAR over AIRWAYS.
+var WELCOME_CARD_LETTERING_SCALE = { 'RV': 1.4, 'ROU': 1.4, 'QR': 1.4, 'QTR': 1.4, 'PD': 1.3, 'QK': 1.3 };
+
+// v23762 — ICAO forms for the wordmark lookup.
+// `code` is whatever the feed published, and the feeds are not consistent:
+// most carry IATA, some carry ICAO. IATA_TO_WORDMARK is keyed on IATA, so
+// without this an ICAO-coded feed would find no base and drop silently back
+// to the typed name.
+// WR is the odd one: Encore's own IATA code, not an ICAO form, mapped to
+// WestJet because Encore flies in WestJet's identity.
+var _FB_WM_ICAO = {
+  'MPE': '5T',   // v23770 — Canadian North
+  'ACA':'AC', 'WJA':'WS', 'WEN':'WS', 'WR':'WS', 'TSC':'TS', 'POE':'PD',
+  'PVL':'PB', 'JZA':'QK', 'AAL':'AA', 'DAL':'DL', 'UAL':'UA', 'SWA':'WN',
+  'JBU':'B6', 'FLE':'F8', 'DLH':'LH', 'AFR':'AF', 'UAE':'EK', 'OCN':'4Y',
+  // v23994 — the other non-IATA keys the emblem table already carries
+  'AC1':'AC', 'ROU':'RV', 'BAW':'BA', 'QTR':'QR', 'PCO':'8P', 'SWR':'LX'
+};
+
+/** The emblem the card draws: { src, kind: 'own' | 'tile' | 'none' }. Never filtered. */
+function _welcomeCardEmblem(code) {
+  code = String(code || '').toUpperCase();
+  if (WELCOME_CARD_NO_EMBLEM[code]) return { src: '', kind: 'none' };
+  var src = WELCOME_CARD_EMBLEM[code]
+    || (typeof AIRLINE_EMBLEM_FILES !== 'undefined' && AIRLINE_EMBLEM_FILES[code]) || '';
+  if (!src) return { src: '', kind: 'none' };
+  // The folder is the treatment, as on the orb: a file from airline-tiles/
+  // is an opaque square, drawn whole and rounded like the orb's.
+  var tile = /\/logos\/airline-tiles\//.test(src) && !/PB-arrow/i.test(src);
+  return { src: src, kind: tile ? 'tile' : 'own' };
+}
+
+/** The airline's name: its white lettering where it has some, else the name to type. */
+function _welcomeCardName(code) {
+  code = String(code || '').toUpperCase();
+  var icao = _FB_WM_ICAO[code] || '';
+  var wm = WELCOME_CARD_WORDMARK[code] || '';
+  try {
+    if (!wm && typeof IATA_TO_WORDMARK !== 'undefined' && typeof wordmarkSrc === 'function') {
+      var base = IATA_TO_WORDMARK[code] || IATA_TO_WORDMARK[icao];
+      // Forced light: this card's ground is the airline's own dark gradient,
+      // not the board's, so the white cut is always the right one here.
+      if (base) wm = wordmarkSrc(base, 'light');
+    }
+  } catch (e) { wm = ''; }
+  var nm = '';
+  try {
+    var b = (typeof AIRLINE_BRAND !== 'undefined') && (AIRLINE_BRAND[code] || AIRLINE_BRAND[icao]);
+    nm = (b && b.name) || '';
+    if (!nm && typeof AIRLINE_NAME !== 'undefined') nm = AIRLINE_NAME[code] || AIRLINE_NAME[icao] || '';
+  } catch (e) {}
+  return { wordmark: wm, name: nm };
+}
+
+/** The greeting, first language first: at most two [{ text, lang }], as _gateLbl picks them. */
+function _welcomeCardLines(frFirst) {
+  var out = [];
+  try {
+    _gateLbl('welcomeAboard', !!frFirst, function (w, i, lang) {
+      out.push({ text: w, lang: lang || '' });
+      return '';
+    });
+  } catch (e) {}
+  if (!out.length) out.push({ text: 'Welcome aboard', lang: 'en' });
+  return out.slice(0, 2);
+}
+
+/** The Welcome slide's data for a carrier code. */
+function _welcomeCardData(code) {
+  code = String(code || '').toUpperCase();
+  var fb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code]) || null;
+  var frF = false;
+  try { frF = (typeof frFirstAirport === 'function') && !!frFirstAirport(window._gateIata || ''); } catch (e) {}
+  var emb = _welcomeCardEmblem(code);
+  var nm = _welcomeCardName(code);
+  return {
+    adLayout: 'welcome-card',
+    code: code,
+    // the card's colours are unchanged: the airline's own gradient
+    bg: fb ? 'linear-gradient(135deg,' + fb.bg1 + ' 0%,' + fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
+    lines: _welcomeCardLines(frF),
+    emblem: emb.src,
+    emblemKind: emb.kind,
+    wordmark: nm.wordmark,
+    wordmarkScale: WELCOME_CARD_LETTERING_SCALE[code] || 1,
+    name: nm.name
+  };
+}
+
+function _welcomeCardEsc(s) {
+  return String(s == null ? '' : s).replace(/[&<>\x22\x27]/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+
+/** The card's markup. Sizes are set by _welcomeCardFit once the art has loaded. */
+function _welcomeCardHtml(ad) {
+  var esc = _welcomeCardEsc;
+  var lines = (ad && ad.lines) || [];
+  function phrase(l, pos) {
+    if (!l || !l.text) return '';
+    return '<div class="gwc-ph gwc-ph-' + pos + '"' + (l.lang ? ' lang="' + esc(l.lang) + '"' : '')
+      + (l.lang === 'ar' ? ' dir="rtl"' : '') + '>' + esc(l.text) + '</div>';
+  }
+  var kind = (ad.emblem && (ad.emblemKind === 'own' || ad.emblemKind === 'tile')) ? ad.emblemKind : 'none';
+  // gad-ad-logo is the hook display-overrides.css has always written its
+  // Welcome-card emblem rules against (tiles never filtered, Delta, Discover
+  // and Flair kept in colour); no renderer set it before.
+  var emb = kind === 'none' ? ''
+    : '<span class="gwc-emb" data-kind="' + kind + '"><img class="gwc-emb-img gad-ad-logo" src="' + esc(ad.emblem)
+      + '" alt="" onerror="_welcomeCardArtFail(this)"></span>';
+  var name = ad.wordmark
+    ? '<img class="gwc-wm" src="' + esc(ad.wordmark) + '" alt="' + esc(ad.name) + '" data-name="' + esc(ad.name)
+      + '"' + (ad.wordmarkScale > 1 ? ' data-scale="' + (+ad.wordmarkScale) + '"' : '') + ' onerror="_welcomeCardArtFail(this)">'
+    : (ad.name ? '<span class="gwc-name">' + esc(ad.name) + '</span>' : '');
+  return '<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden;box-sizing:border-box;">'
+    + '<div class="gwc gwc-pending" data-code="' + esc(ad.code) + '" data-emblem="' + kind + '" style="background:' + esc(ad.bg) + ';">'
+    + phrase(lines[0], 'top')
+    + ((emb || name) ? '<div class="gwc-mid">' + emb + name + '</div>' : '')
+    + phrase(lines[1], 'bottom')
+    + '</div></div>';
+}
+
+/**
+ * Sizes for the airline line and the greeting, in px. Pure, so it can be
+ * tested as written.
+ *   o.W               the card's inner width
+ *   o.base            the greeting's size from the stylesheet (78 px at 1680x1050)
+ *   o.gap             room between the emblem and the name
+ *   o.emblem          whether there is an emblem
+ *   o.emblemAspect    its width / height as laid out (1 for a tile; at most 2.2)
+ *   o.wordmarkAspect  the lettering's width / height (0 when the name is typed)
+ *   o.wordmarkScale   how much taller than usual the lettering may be (WELCOME_CARD_LETTERING_SCALE)
+ * Returns { emblem, wordmark, phrase }: the emblem's and the lettering's
+ * heights, and the greeting's size.
+ */
+function _welcomeCardSizes(o) {
+  var HB = o.base, EMIN = 1.25 * HB, EMAX = 1.8 * HB, WMAX = 1.23 * HB * (o.wordmarkScale > 1 ? o.wordmarkScale : 1);
+  var ea = o.emblem ? (o.emblemAspect > 0 ? Math.min(2.2, o.emblemAspect) : 1) : 0;
+  var E = 0, h = 0, phrase = HB;
+  if (o.wordmarkAspect > 0) {
+    var gap = o.emblem ? o.gap : 0;
+    h = WMAX;
+    // a fixed point: the emblem from the lettering, the lettering from what is left
+    for (var i = 0; i < 12; i++) {
+      E = o.emblem ? Math.min(EMAX, Math.max(EMIN, 1.6 * h)) : 0;
+      h = Math.max(0, Math.min(WMAX, (o.W - gap - E * ea) / o.wordmarkAspect));
+    }
+    // RULE 1: the logo is never smaller than the text. A lettering that can
+    // only be drawn short (a very wide wordmark) keeps its size and the
+    // greeting comes down until its capital height matches it.
+    if (h < 0.72 * phrase) phrase = Math.floor(h / 0.72 * 10) / 10;
+  } else if (o.emblem) {
+    E = Math.min(EMAX, Math.max(EMIN, 1.6 * 0.72 * 1.03 * HB));
+  }
+  return { emblem: E, wordmark: h, phrase: phrase, emblemAspect: ea };
+}
+
+/** A phrase too wide for the card shrinks (to 62%), then wraps between words. Never cut. */
+function _welcomeCardFitPhrases(card, W, size) {
+  var ps = card.querySelectorAll('.gwc-ph');
+  for (var i = 0; i < ps.length; i++) {
+    var p = ps[i];
+    p.classList.remove('gwc-wrap');
+    p.style.removeProperty('font-size');
+    var w = p.scrollWidth;
+    if (w > W + 0.5) {
+      var fs = Math.max(size * 0.62, size * W / w - 0.5);
+      p.style.setProperty('font-size', fs.toFixed(1) + 'px', 'important');
+      if (p.scrollWidth > W + 0.5) p.classList.add('gwc-wrap');
+    }
+  }
+}
+
+/** Width / height of an image as the layout draws it (an SVG's viewBox included). */
+function _welcomeCardAspect(img) {
+  var keep = img.getAttribute('style') || '';
+  img.style.setProperty('height', '100px', 'important');
+  img.style.setProperty('width', 'auto', 'important');
+  img.style.setProperty('max-width', 'none', 'important');
+  img.style.setProperty('flex', 'none', 'important');
+  var w = img.getBoundingClientRect().width;
+  img.setAttribute('style', keep);
+  if (w > 0) return w / 100;
+  return (img.naturalWidth && img.naturalHeight) ? img.naturalWidth / img.naturalHeight : 1;
+}
+
+/** Fit one card. true when done, 'wait' while its art loads, false when it is not laid out. */
+function _welcomeCardFitOne(card) {
+  if (!card || !card.isConnected) return false;
+  var cs = getComputedStyle(card);
+  var W = card.clientWidth - (parseFloat(cs.paddingLeft) || 0) - (parseFloat(cs.paddingRight) || 0);
+  if (!(W > 0)) return false;
+  var mid = card.querySelector('.gwc-mid');
+  var emb = mid ? mid.querySelector('.gwc-emb') : null;
+  var eimg = emb ? emb.querySelector('img') : null;
+  var wm = mid ? mid.querySelector('.gwc-wm') : null;
+  var nm = mid ? mid.querySelector('.gwc-name') : null;
+  if ((eimg && !eimg.complete) || (wm && !wm.complete)) return 'wait';
+  card.style.removeProperty('--gwc-phrase');
+  // the stylesheet's size, not an earlier fit's shrink of one phrase
+  var phs = card.querySelectorAll('.gwc-ph');
+  for (var pi = 0; pi < phs.length; pi++) { phs[pi].style.removeProperty('font-size'); phs[pi].classList.remove('gwc-wrap'); }
+  var first = phs[0];
+  var HB = parseFloat(getComputedStyle(first || card).fontSize) || 78;
+  var gap = 0.36 * HB;
+  var kind = emb ? emb.getAttribute('data-kind') : '';
+  var ea = (eimg && kind === 'own') ? _welcomeCardAspect(eimg) : 1;
+  var sz = _welcomeCardSizes({ W: W, base: HB, gap: gap, emblem: !!emb, emblemAspect: ea,
+    wordmarkAspect: wm ? _welcomeCardAspect(wm) : 0,
+    wordmarkScale: wm ? (parseFloat(wm.getAttribute('data-scale')) || 1) : 1 });
+  var phrase = sz.phrase;
+  if (mid) mid.style.setProperty('gap', ((emb && (wm || nm)) ? gap : 0).toFixed(1) + 'px', 'important');
+  if (emb) {
+    emb.style.setProperty('height', sz.emblem.toFixed(1) + 'px', 'important');
+    if (kind === 'own') eimg.style.setProperty('max-width', (sz.emblem * 2.2).toFixed(1) + 'px', 'important');
+  }
+  if (wm) wm.style.setProperty('height', sz.wordmark.toFixed(1) + 'px', 'important');
+  if (nm) {
+    // A typed name: as large as the lettering would be, smaller only to fit
+    // beside the emblem, wrapped between words past that.
+    nm.classList.remove('gwc-wrap');
+    nm.style.removeProperty('max-width');
+    var nf = 1.03 * HB;
+    nm.style.setProperty('font-size', nf.toFixed(1) + 'px', 'important');
+    var avail = W - (emb ? emb.getBoundingClientRect().width + gap : 0);
+    if (nm.scrollWidth > avail + 0.5) {
+      nf = Math.max(0.67 * HB, nf * avail / nm.scrollWidth - 0.5);
+      nm.style.setProperty('font-size', nf.toFixed(1) + 'px', 'important');
+      if (nm.scrollWidth > avail + 0.5) {
+        nm.classList.add('gwc-wrap');
+        nm.style.setProperty('max-width', avail.toFixed(1) + 'px', 'important');
+      }
+    }
+    if (nf < phrase) phrase = Math.floor(nf * 10) / 10;   // rule 1 for a typed name too
+  }
+  card.style.setProperty('--gwc-phrase', phrase + 'px');
+  _welcomeCardFitPhrases(card, W, phrase);
+  card.setAttribute('data-gwc-fit', [Math.round(W), HB, phrase, Math.round(sz.emblem), sz.wordmark.toFixed(1)].join(' '));
+  card.classList.remove('gwc-pending');
+  return true;
+}
+
+function _welcomeCardFitCard(card) {
+  var r = false;
+  try { r = _welcomeCardFitOne(card); } catch (e) { r = true; try { card.classList.remove('gwc-pending'); } catch (e2) {} }
+  if (r === true) return;
+  if (r === 'wait') {
+    if (card._gwcHooked) return;
+    card._gwcHooked = true;
+    var imgs = card.querySelectorAll('img');
+    for (var i = 0; i < imgs.length; i++) {
+      imgs[i].addEventListener('load', function () { _welcomeCardFitCard(card); });
+    }
+    return;
+  }
+  // not laid out yet (a gate rebuild lifts the carousel out of the page for a
+  // moment): try again shortly, a bounded number of times
+  card._gwcTries = (card._gwcTries || 0) + 1;
+  if (card._gwcTries < 40) setTimeout(function () { _welcomeCardFitCard(card); }, 250);
+  else card.classList.remove('gwc-pending');
+}
+
+/** Fit every Welcome card under root (the carousel after a paint, or the page on resize). */
+function _welcomeCardFit(root) {
+  var cards = (root || document).querySelectorAll('.gwc');
+  for (var i = 0; i < cards.length; i++) {
+    cards[i]._gwcTries = 0;
+    _welcomeCardFitCard(cards[i]);
+    // never left hidden: whatever happens to the art, the card shows within 3 s
+    (function (c) { setTimeout(function () { try { c.classList.remove('gwc-pending'); } catch (e) {} }, 3000); })(cards[i]);
+  }
+}
+
+/** Art that fails to load: lettering falls back to the typed name, an emblem is left out. */
+function _welcomeCardArtFail(img) {
+  try {
+    var card = img.closest('.gwc');
+    if (img.classList.contains('gwc-wm')) {
+      var s = document.createElement('span');
+      s.className = 'gwc-name';
+      s.textContent = img.getAttribute('data-name') || '';
+      if (s.textContent) img.parentNode.replaceChild(s, img); else img.parentNode.removeChild(img);
+    } else {
+      var e = img.closest('.gwc-emb');
+      if (e) e.parentNode.removeChild(e);
+    }
+    if (card) _welcomeCardFitCard(card);
+  } catch (e) {}
+}
+
+try {
+  window.addEventListener('resize', function () {
+    clearTimeout(window._gwcResizeT);
+    window._gwcResizeT = setTimeout(function () { try { _welcomeCardFit(document); } catch (e) {} }, 200);
+  });
+} catch (e) {}
+
 // Build the current slide list (mirrors the logic inside renderGateAd) so
 // the timer can look up the type of the slide it's about to leave.
 //
@@ -48037,149 +48434,9 @@ function _buildGateAdSlideList() {
     if (accorSlides.length) deck = [accorSlides[0]];          // at most ONE Accor
     else if (airlineAdSlides.length) deck = airlineAdSlides;  // airline ads
     else {
-      var _fb = (typeof AIRLINE_BRAND !== 'undefined' && AIRLINE_BRAND[code]) || null;
-      var _fbLogo = (window._AIRLINE_EMBLEM_FILES && window._AIRLINE_EMBLEM_FILES[code]) || null;
-      // Opaque full-colour TILE emblems become a solid white slab under the
-      // standard ad renderer's white-force filter (Breeze A17: giant
-      // white square over the Welcome slide). Those brands show their WHITE
-      // wordmark here instead — already white, so the filter is an identity.
-      // WestJet: the COLOUR leaf, not the mono white one
-      // The teal/navy leaf reads on the
-      // navy welcome card.
-      var _FB_WELCOME_LOGO = {
-        // v23293 — BA's mark was reaching the welcome card as a blank white
-        // silhouette: the speedmarque file is colour art, so the white-force
-        // filter flattened it.
-        // The stacked reversed lockup keeps the speedmarque's RED and takes
-        // only the blue to white, which is BA's own treatment on a dark
-        // ground — colour that actually reads on the navy card rather than
-        // colour that disappears into it.
-        'BA': '/logos/airlines/european/british-airways-stacked-white.svg',
-        'BAW': '/logos/airlines/european/british-airways-stacked-white.svg',
-        'MX': '/logos/airlines/us-major/breeze-airways-wordmark-light.svg',
-        'WS': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-        'WR': '/logos/airlines/canadian/westjet-2025/WestJet-leaf-colour.svg',
-        // v23123 —
-        // The colour widget, not the white-forced mono mark.
-        'DL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        'DAL': '/logos/airlines/us-major/delta-emblem-colour.svg',
-        // v23127 — Discover:
-        // the white-force turned their yellow+blue tail into a blank white
-        // silhouette. Native colours.
-        '4Y': '/logos/airlines/european/discover-airlines-emblem.svg',
-        'OCN': '/logos/airlines/european/discover-airlines-emblem.svg',
-        // v23132 — Flair's mark IS the green dot
-        // The white-force filter turned it into a blank
-        // white disc on the welcome card; the dot file is already the brand
-        // green, so it must not be filtered — see the no-filter rule in CSS.
-        'F8': '/logos/airlines/canadian/flair-dot.svg?v=2',
-        'FLE': '/logos/airlines/canadian/flair-dot.svg?v=2'
-      };
-      // v23942 — EMBLEMS SHOWN IN THEIR OWN COLOURS ON THE WELCOME CARD.
-      //
-      // The standard ad renderer white-forces its logo (brightness(0)
-      // invert(1)), which is right for a mark drawn to be inked white and
-      // wrong for an emblem whose colour IS the brand: Air France's red
-      // virgule came out as a white slash in the middle screen. An emblem is
-      // never whitened, so a carrier named here keeps the artwork exactly as
-      // drawn. Each entry is checked against its card's ground first: the
-      // virgule (#EB212B) measures 3.9:1 on Air France's #1A1A2E, so it
-      // reads as itself and needs no other file.
-      var _FB_WELCOME_OWN_COLOURS = { 'AF':1 };
-      // Welcome marks that ALREADY carry the carrier's name, so the sub line
-      // below must stay empty or the card says it twice.
-      var _FB_LOGO_HAS_NAME = { 'BA':1, 'BAW':1, 'MX':1 };
-      // v23762 — ICAO forms for the wordmark lookup below.
-      // `code` is whatever the feed published, and the feeds are not
-      // consistent: most carry IATA, some carry ICAO (the emblem table above
-      // already keeps both forms for the carriers it covers, which is why
-      // BAW, DAL, OCN and FLE sit in it beside their IATA twins).
-      // IATA_TO_WORDMARK is keyed on IATA, so without this an ICAO-coded feed
-      // would find no base and drop silently back to the typed name — the
-      // exact failure this change removes, reappearing on a subset of
-      // airports rather than everywhere.
-      // WR is the odd one: Encore's own IATA code, not an ICAO form, mapped
-      // to WestJet because Encore flies in WestJet's identity — the emblem
-      // table above hands it the same leaf for the same reason.
-      var _FB_WM_ICAO = {
-        'MPE': '5T',   // v23770 — Canadian North
-        'ACA':'AC', 'WJA':'WS', 'WEN':'WS', 'WR':'WS', 'TSC':'TS', 'POE':'PD',
-        'PVL':'PB', 'JZA':'QK', 'AAL':'AA', 'DAL':'DL', 'UAL':'UA', 'SWA':'WN',
-        'JBU':'B6', 'FLE':'F8', 'DLH':'LH', 'AFR':'AF', 'UAE':'EK', 'OCN':'4Y'
-      };
-      if (_FB_WELCOME_LOGO[code]) _fbLogo = _FB_WELCOME_LOGO[code];
-      deck = [{ type: 'ad', data: {
-        bg: _fb ? 'linear-gradient(135deg,' + _fb.bg1 + ' 0%,' + _fb.bg2 + ' 100%)' : 'linear-gradient(135deg,#14213d 0%,#0b1020 100%)',
-        // v22971 — the Welcome slide follows the selected languages (
-        // 'the Welcome' — it sat hardcoded EN/FR on any-language screens).
-        headline: (function () {
-          var _WA = { en:'Welcome aboard', fr:'Bienvenue à bord', es:'Bienvenido a bordo', de:'Willkommen an Bord', it:'Benvenuti a bordo', pt:'Bem-vindo a bordo', ja:'ご搭乗ありがとうございます', zh:'欢迎登机', ar:'أهلاً بكم على متن الرحلة' };
-          try {
-            var _ls = (Array.isArray(langs) && langs.length) ? langs.slice(0, 2) : ['en', 'fr'];
-            var _w = [], _seen = {};
-            for (var _wi2 = 0; _wi2 < _ls.length; _wi2++) {
-              var _t = _WA[_ls[_wi2]] || _WA.en;
-              if (!_t || _seen[_t]) continue; _seen[_t] = 1; _w.push(_t);
-            }
-            // v23768 — the halves and the separator are addressable, so the
-            // separator can be dropped when the pair stacks onto two rows.
-            return _w.map(function (t) { return '<span class="g8-pair-h">' + t + '</span>'; })
-                     .join('<span class="g8-pair-sep"> · </span>');
-          } catch (e) { return _WA.en + '<span class="g8-pair-sep"> · </span>' + _WA.fr; }
-        })(),
-        // v23412 — DON'T PRINT THE NAME TWICE.
-        // Most
-        // carriers put an EMBLEM here — a leaf, a widget, a tail — so the name
-        // underneath is what identifies it. But two entries above are not
-        // emblems at all: BA's welcome mark is the STACKED LOCKUP, which
-        // already sets 'BRITISH AIRWAYS' under the speedmarque, and Breeze's
-        // is its wordmark, which is nothing but the name.
-        sub: (_fb && _fb.name && !_FB_LOGO_HAS_NAME[code]) ? _fb.name : '',
-        // v23123 —
-        // v23762 — THE SUB LINE DRAWS THE CARRIER'S REAL WORDMARK.
-        //
-        // This slot used to hold a hand-kept table of four entries: Delta and
-        // Discover. Every other airline fell through to `sub` above and had
-        // its name TYPED OUT in the board font — the board's lettering
-        // standing in for the brand's own logotype. On a card whose whole job
-        // is to present the carrier, an approximation of its name sits beside
-        // its real emblem and reads as wrong, which is what got noticed on
-        // WestJet: the 2025 leaf above, and 'WestJet' set in board type below
-        // it, instead of the wordmark that belongs with that leaf.
-        //
-        // The board already keeps this centrally. IATA_TO_WORDMARK names each
-        // carrier's wordmark base, and wordmarkSrc() turns a base into a file
-        // — picking the light or dark cut, handling the raster-only carriers,
-        // and carrying the build token so a transient 404 can't poison a
-        // kiosk cache. Going through them rather than keeping a second table
-        // here means this card shows the same lettering as the banners and
-        // the rows, and a carrier added there needs no second edit to appear.
-        // It also covers 15 of the 17 carriers that can take one here, where
-        // the hand-kept table covered two. The two it misses have no logotype
-        // in the repo to draw — Pacific Coastal has no wordmark art at all,
-        // and Qatar's only file is a glossy badge, which is a lockup, not
-        // lettering. Those keep the typed name until real artwork arrives.
-        //
-        // The variant is FORCED to light rather than measured, because this
-        // card's ground is not the board's: it is the carrier's own dark
-        // brand gradient set just above. All 18 are dark — the palest is
-        // WestJet's #003366, where white still measures 12.6:1 — so the white
-        // cut is always the correct one here.
-        subLogo: (function () {
-          try {
-            if (typeof IATA_TO_WORDMARK === 'undefined'
-              || typeof wordmarkSrc !== 'function') return '';
-            // The emblem above already SETS the name for these, so a wordmark
-            // beneath it would print the name twice — the same rule that
-            // keeps the typed line empty for them.
-            if (_FB_LOGO_HAS_NAME[code]) return '';
-            var _base = IATA_TO_WORDMARK[code] || IATA_TO_WORDMARK[_FB_WM_ICAO[code] || ''];
-            return _base ? wordmarkSrc(_base, 'light') : '';
-          } catch (e) { return ''; }
-        })(),
-        logo: _fbLogo,
-        logoOwnColours: !!_FB_WELCOME_OWN_COLOURS[code]
-      } }];
+      // v23994 — the Welcome card: phrase / emblem + airline / phrase. Built
+      // by _welcomeCardData and drawn by _welcomeCardHtml (above).
+      deck = [{ type: 'ad', data: _welcomeCardData(code) }];
     }
   }
 

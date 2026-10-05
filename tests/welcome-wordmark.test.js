@@ -55,7 +55,18 @@ function table(decl) {
 
 const WORDMARK = table('const IATA_TO_WORDMARK = {');
 const ICAO = table('var _FB_WM_ICAO = {');
-const HAS_NAME = table('var _FB_LOGO_HAS_NAME = {');
+// v23994 — no carrier's emblem carries its name any more: British Airways'
+// stacked lockup and Breeze's wordmark-as-emblem gave way to the speedmarque
+// and the blue check, each beside its lettering on one line.
+const HAS_NAME = {};
+const OVERRIDE = table('var WELCOME_CARD_WORDMARK = {');
+
+/** The source of a top-level function. */
+function fnBody(name) {
+  const at = SRC.search(new RegExp('\\nfunction ' + name + '\\('));
+  assert.ok(at >= 0, name + ' must exist');
+  return SRC.slice(at, SRC.indexOf('\n}\n', at) + 2);
+}
 
 /** Every carrier that can reach the Welcome card, with its brand grounds. */
 function welcomeCarriers() {
@@ -169,21 +180,29 @@ test('the light cut is legible on every carrier ground the card paints', () => {
     'white lettering is forced here — a light ground needs the dark cut instead');
 });
 
-test('the carriers whose emblem already says the name get no wordmark', () => {
-  // Their welcome mark is a lockup or a logotype, so a wordmark beneath it
-  // would set the name a second time.
-  const at = SRC.indexOf('subLogo: (function () {');
-  assert.ok(at >= 0, 'the sub-logo resolver must exist');
-  assert.match(SRC.slice(at, at + 1400), /if \(_FB_LOGO_HAS_NAME\[code\]\) return '';/,
-    'the resolver must honour the same rule that empties the typed line');
+test('every carrier sets its lettering beside its emblem, British Airways and Breeze included', () => {
+  const body = fnBody('_welcomeCardName');
+  assert.doesNotMatch(body, /HAS_NAME|return \{ wordmark: '', name: '' \}/, 'no carrier is skipped');
+  assert.doesNotMatch(SRC, /_FB_LOGO_HAS_NAME/);
 });
 
 test('the card goes through the shared resolver, not a private table', () => {
   // A second hand-kept table is what this replaced: it drifted to two entries
   // while the board's own map grew past a hundred.
-  const at = SRC.indexOf('subLogo: (function () {');
-  const body = SRC.slice(at, at + 1400);
-  assert.match(body, /wordmarkSrc\(_base, 'light'\)/, 'it must call the shared resolver');
+  const body = fnBody('_welcomeCardName');
+  assert.match(body, /wordmarkSrc\(base, 'light'\)/, 'it must call the shared resolver');
+  assert.match(body, /IATA_TO_WORDMARK\[code\] \|\| IATA_TO_WORDMARK\[icao\]/, 'IATA first, then the ICAO form');
   assert.doesNotMatch(body, /\/logos\//,
     'a literal logo path here means the card has started keeping its own table again');
+  // The one exception, by name: Rouge, which the board's table maps to Air
+  // Canada's lettering. Its own lettering, white, and nothing else.
+  assert.deepEqual(Object.keys(OVERRIDE).sort(), ['ROU', 'RV']);
+  for (const url of Object.values(OVERRIDE)) {
+    const file = path.join(ROOT, 'fids-current', url.split('?')[0]);
+    assert.ok(fs.existsSync(file), url);
+    const svg = fs.readFileSync(file, 'utf8');
+    const fills = [...svg.matchAll(/fill="([^"]+)"/g)].map((m) => m[1].toUpperCase());
+    assert.deepEqual([...new Set(fills)], ['#FFFFFF'], url + ' is white lettering');
+    assert.equal((svg.match(/<path\b/g) || []).length, 1, url + ': the "rouge" lettering alone, without the roundel');
+  }
 });
