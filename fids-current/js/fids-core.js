@@ -36913,6 +36913,16 @@ function _boardLabelBilingual(key) {
 // hardcoded EN/FR pair, which also keeps it to a single line — the stacked
 // version was two extra lines in a banner sized for two.
 var _BOARD_REGION_KEY = { DOM: 'f-domestic', TRANS: 'f-transborder', INTL: 'f-international' };
+// v23999 — the terminal and airline values arrive verbatim from ?terminal= /
+// ?term= / ?airline= / ?al= (or the Screen Setup menu, which writes the same
+// URL back), and this string is set as innerHTML twice: the BIDS screen
+// template and the FIDS #hdrBoard header. Neither value is reduced to a
+// character class on the way in — ?terminal=<img src=x onerror=…> ran on both
+// boards (CodeQL js/xss #124). They are escaped here, at the one place they
+// become markup. A real terminal or carrier code has no &, <, >, " or ' in
+// it, so the chip reads exactly as before. The region words need nothing: a
+// region is only pushed when it is one of the three keys above, and what is
+// pushed is the board's own translation of it.
 function _boardFilterChipHtml() {
   try {
     var _tr = function (k, fb) {
@@ -36922,7 +36932,7 @@ function _boardFilterChipHtml() {
     var parts = [];
     if (filterTerminal) {
       parts.push(_tr('terminal', 'Terminal') + ' '
-               + String(filterTerminal).trim().toUpperCase().replace(/^T/, ''));
+               + fidsEscHtml(String(filterTerminal).trim().toUpperCase().replace(/^T/, '')));
     }
     if (filterRegion) {
       String(filterRegion).toUpperCase().split(',').forEach(function (r) {
@@ -36934,7 +36944,7 @@ function _boardFilterChipHtml() {
     // any more than 'Air Canada' becomes 'Canada Air' in French.
     if (filterAirline) {
       var code = String(filterAirline).trim().toUpperCase();
-      parts.push((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code);
+      parts.push(fidsEscHtml((typeof AIRLINE_NAME !== 'undefined' && AIRLINE_NAME[code]) || code));
     }
     try { document.body.classList.toggle('has-board-filter', parts.length > 0); } catch (e2) {}
     if (!parts.length) return '';

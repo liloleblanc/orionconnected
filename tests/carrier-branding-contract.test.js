@@ -50,7 +50,7 @@ const WORDMARKS = pairs('IATA_TO_WORDMARK');
 const SUBFOLDER = pairs('LOGO_SUBFOLDER');
 const ACCENTS = pairs('AIRLINE_ACCENT');
 
-const localPath = (webPath) => path.join(root, webPath.replace(/^\//, '').replace(/^logos\//, 'logos/').split('?')[0]);
+const localPath = (webPath) => path.join(root, webPath.replace(/^\//, '').split('?')[0]);
 const isTilePath = (p) => /\/logos\/airline-tiles\//.test(p) && !/PB-arrow/i.test(p);
 function deltaE(a, b) {
   const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
