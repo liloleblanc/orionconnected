@@ -12,7 +12,9 @@
 // that day, the whole body of the screen says so. A departure moved TO the
 // gate is simply one of its flights. With nothing later the strip is not
 // drawn and the window keeps its height: the board never claims there are no
-// other departures, because a feed's look-ahead ends somewhere.
+// other departures, because a feed's look-ahead ends somewhere. The boarding
+// takeover (countdown, boarding sign, Final Call) carries none of it: since
+// v23988 it shows the boarding flight alone.
 //
 // These tests run the model, the tracker and the markup builders out of
 // fids-core.js against stubs, and pin the stylesheet's geometry and rules.
@@ -89,7 +91,7 @@ function board({ now, dep, hist = {}, langs = ['en', 'fr'], ap = 'YQM', extra = 
     '_gateLaterClock', '_gateLaterTwinCity', '_gateLaterPlace', '_gateLaterDayWords', '_gateLaterKey',
     '_gateLaterPairHtml', '_gateLaterSlotHtml', '_gateLaterStripHtml', '_gateChangeAccent', '_gateChangeAccent3', '_gateChangeOrbHtml',
     '_gateChangeNoticeHtml', '_gateLaterFitBox', '_gateLaterScale', '_gateLaterInkOver', '_gateLaterAlign',
-    '_gateLaterTakeoverFrom', '_gateChangeSoloHtml'];
+    '_gateChangeSoloHtml'];
   const code = [CORE.match(/^var _GATE_HISTORY_KEY = .*;$/m)[0], CORE.match(/^var _CITY_CODE_TAIL = .*;$/m)[0], src('var _GATE_LBL = {'),
     'var GATE_LATER_MAX = 3; var _GATE_TWIN_CITY = null;']
     .concat(names.map(fnSrc)).join('\n')
@@ -483,32 +485,36 @@ test('the strip and the glass are measured onto the rail\'s cards, so a 2px Delt
   assert.match(fnSrc('_gateLaterFit'), /try \{ _gateLaterAlign\(doc\); \} catch \(eA\) \{\}/);
 });
 
-test('(B) in the boarding takeover: the moved flights alone, under "Gate change", at the takeover\'s foot', () => {
+test('the boarding takeover carries none of it: no band, no gate change, the boarding flight alone (v23988)', () => {
+  // v23973 put the moved flights in a "Gate change" band at the foot of the
+  // countdown, the boarding sign and Final Call; v23988 removed it. While the
+  // gate's next flight has the whole screen, that flight is all it shows (an
+  // important safety message in its own status bar aside).
   const dep = G4();
   const ac2037 = dep.find((f) => f.flight === 'AC2037'); ac2037.gate = '2';
   const b = board({ now: ADT(5, 6, 40), dep, hist: moved({}, ac2037, '4', '2', ADT(5, 5, 30)) });
-  // 6:40: AC7753 (7:10) has the whole screen; AC2037 (6:35) moved to gate 2
-  // and its passengers are still on their way to the old door.
+  // 6:40: AC7753 (7:10) has the whole screen; AC2037 (6:35) was moved to
+  // gate 2. The model still knows (the strip shows it once the gate is back
+  // in its three columns), but nothing on the takeover reads the model.
   const m = b._gateLaterModel('4', ADT(5, 6, 40), 'YQM');
   assert.equal(m.main.flight, 'AC7753');
   assert.deepEqual(m.entries.map((e) => e.f.flight + (e.to ? '>' + e.to : '')), ['AC2037>2', 'AC659', 'AC647']);
-  const html = b._gateLaterTakeoverFrom(m);
-  assert.match(html, /^<div class="gl-tk" style="--gl-n:1;"><div class="gl-strip" data-gl-n="1">/);
-  assert.match(html, /<span class="ac-ico ac-ico-depart"><\/span>/);
-  assert.equal(text(html.match(/<div class="gl-title">[\s\S]*?<\/div>/)[0]), 'Gate change | Changement de porte');
-  assert.match(html, /gl-moved" data-gl-to="2">/);
-  assert.doesNotMatch(html, /AC659|AC647/, 'flights that were not moved stay off the takeover');
-  // Nothing moved: nothing at the foot. A (C) move rides the band too.
-  assert.equal(b._gateLaterTakeoverFrom(board({ now: ADT(5, 6, 40), dep: G4() })._gateLaterModel('4', ADT(5, 6, 40), 'YQM')), '');
-  assert.match(b._gateLaterTakeoverFrom({ entries: [], full: { f: ac2037, to: '2' }, ap: 'YQM', tz: 'America/Moncton' }), /data-gl-to="2"/);
-  // Once it leaves, the band goes with it.
-  ac2037.status = 'departed';
-  assert.equal(b._gateLaterTakeoverFrom(b._gateLaterModel('4', ADT(5, 6, 40), 'YQM')), '');
-  // Drawn under the takeover's body, above its status bar; the wrap says so.
+  // The band's builders and the sign's shrink-to-fit are gone.
+  for (const fn of ['_gateLaterTakeoverHtml', '_gateLaterTakeoverFrom', '_gateLaterSignFit', '_gateLaterSignFits']) {
+    assert.ok(!CORE.includes('function ' + fn + '('), fn + ' is gone');
+  }
+  assert.doesNotMatch(fnSrc('_gateLaterFit'), /SignFit|--gl-ss|g8-sign/, 'the fitter leaves the boarding sign alone');
+  // The takeover's markup reads nothing of Later at this gate: its body goes
+  // straight to its status bar, and the wrap carries no band class.
   const g = fnSrc('uxgGateHtml');
-  assert.match(g, /_glTk = \(boardActive \|\| finalActive \|\| showCountdown\) \? _gateLaterTakeoverHtml\(iata\) : '';/);
-  assert.match(g, /\+ \(\(finalActive \|\| boardActive \|\| showCountdown\) \? ' g8-takeover' : ''\)\s*\+ \(_glTk \? ' gl-tk-on' : ''\)/);
-  assert.match(g, /row4Html \+ '<\/div>'\s*(?:\/\/[^\n]*\n\s*)*\+ _glTk\s*\+ \(r3Left \?/);
+  assert.doesNotMatch(g, /_gateLater|_gateChange|gl-tk|_glTk|--gl-ss/);
+  assert.match(g, /'<div class="g8-r4" style="flex:1;overflow:hidden;position:relative;z-index:2;">' \+ row4Html \+ '<\/div>'\s*\+ \(r3Left \?/);
+  assert.match(g, /\+ \(\(finalActive \|\| boardActive \|\| showCountdown\) \? ' g8-takeover' : ''\)\s*\+ \(_bannerSpec && _bannerSpec\.body \? ' g8-wrap-themed-body' : ''\)/);
+  // The strip has one title: Later at this gate, under its clock orb.
+  const html = b._gateLaterStripHtml(m);
+  assert.equal(text(html.match(/<div class="gl-title">[\s\S]*?<\/div>/)[0]), 'Later at this gate | Plus tard à cette porte');
+  assert.match(html, /<span class="ac-ico ac-ico-time"><\/span>/);
+  assert.equal(fnSrc('_gateLaterStripHtml').split('\n')[0], 'function _gateLaterStripHtml(m) {');
 });
 
 // ── the stylesheet ──────────────────────────────────────────────────────────
@@ -578,77 +584,21 @@ test('the old label rewriter leaves the strip\'s and the notice\'s day words alo
   assert.ok(body.indexOf("el.closest('.gl-strip, .gl-gc')") < body.indexOf('el.textContent = t('), 'skipped before it writes');
 });
 
-test('under the takeover band the boarding sign gives up height: every screen-unit length of it is mirrored, scaled by --gl-ss', () => {
-  // The sign (v23771, v23773) is sized by the screen (vh). Measured with the
-  // band up, at 1680x1050 its Zones panel overflowed by 22px and at 1280x720
-  // the lanes line ran under "Next: Zone 4". While the band is up every vh
-  // length of the sign is the same length times --gl-ss, rule for rule.
-  const before = CSS.slice(0, AT).replace(/\/\*[\s\S]*?\*\//g, (c) => ' '.repeat(c.length));
-  const W = 'html body' + ':not(#_)'.repeat(255) + ':not(._)'.repeat(6);
-  const splitTop = (str, sep) => { const out = []; let d = 0, cur = ''; for (const ch of str) { if (ch === '(') d++; else if (ch === ')') d--; if (ch === sep && d === 0) { out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out; };
-  const scale = (v) => splitTop(v.trim(), ' ').filter(Boolean).map((t) => (t.includes('vh') ? `calc(${t} * var(--gl-ss, 1))` : t)).join(' ');
-  let n = 0;
-  for (const m of before.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
-    const sel = m[1].split(/\s+/).join(' ').trim();
-    if (!sel.includes('.g8-sign') || sel.includes('@')) continue;
-    const decls = m[2].split(';').map((d) => d.trim()).filter((d) => d && d.includes('vh')).map((d) => {
-      const i = d.indexOf(':'); const imp = d.includes('!important');
-      return `${d.slice(0, i).trim()}: ${scale(d.slice(i + 1).replace('!important', ''))}${imp ? ' !important' : ''};`;
-    });
-    if (!decls.length) continue;
-    const parts = splitTop(sel, ',').map((p) => {
-      const mm = /^html body((?::not\(#_\))+) (.*)$/.exec(p.trim());
-      assert.ok(mm, 'a sign rule this test can read: ' + p.slice(0, 60));
-      const ids = mm[1].split(':not(#_)').length - 1;
-      return W + ' .g8-wrap.gl-tk-on' + (ids > 14 ? ':not(._)'.repeat(12 * (ids - 14)) : '') + ' ' + mm[2];
-    });
-    const rule = (parts.join(',\n') + ' { ' + decls.join(' ') + ' }')
-      .split('calc(calc(3% + min(11vh, 20cqw) + 1vh) * var(--gl-ss, 1))').join('calc(3% + (min(11vh, 20cqw) + 1vh) * var(--gl-ss, 1))');
-    assert.ok(BLOCK.includes(rule), 'mirrored: ' + rule.replace(/(:not\(#_\))+/g, '[N]').replace(/(:not\(\._\))+/g, '[n]').slice(0, 200));
-    n++;
-  }
-  assert.ok(n >= 30, 'the sign\'s rules were found: ' + n);
-  // A heavier (v23773) rule with no screen unit is shadowed by a lighter
-  // mirror that sets the same property on the same element, unless it is
-  // mirrored at its own weight too. Measured on Porter's boarding sign: the
-  // mirror of `.has-note .g8-sign-value { margin: .4vh 0 }` beat the ×16
-  // `.g8-sign-row .g8-sign-value { margin: 0 }`, and the "Rows | Rangées" row
-  // grew from 129.7 to 138.0 px. The element is told apart by the rule's last
-  // class (its subject), pseudo-classes aside.
-  const subject = (sel) => { const last = sel.trim().split(' ').pop().replace(/:not\([^)]*\)/g, ''); const c = /\.[\w-]+/.exec(last); return c ? c[0] : last; };
-  const light = {};
-  const heavy = [];
-  for (const m of before.matchAll(/([^{}]*)\{([^{}]*)\}/g)) {
-    const sel = m[1].split(/\s+/).join(' ').trim();
-    if (!sel.includes('.g8-sign') || sel.includes('@')) continue;
-    const decls = m[2].split(';').map((d) => d.trim()).filter(Boolean);
-    for (const p of splitTop(sel, ',')) {
-      const mm = /^html body((?::not\(#_\))+) (.*)$/.exec(p.trim());
-      if (!mm) continue;
-      const ids = mm[1].split(':not(#_)').length - 1;
-      for (const d of decls) {
-        const prop = d.slice(0, d.indexOf(':')).trim();
-        if (ids === 14 && d.includes('vh')) (light[subject(mm[2])] = light[subject(mm[2])] || new Set()).add(prop);
-        if (ids > 14 && !d.includes('vh')) heavy.push({ ids, sel: mm[2], prop, d });
-      }
-    }
-  }
-  let shadowed = 0;
-  for (const h of heavy) {
-    if (!(light[subject(h.sel)] || new Set()).has(h.prop)) continue;
-    const want = W + ' .g8-wrap.gl-tk-on' + ':not(._)'.repeat(12 * (h.ids - 14)) + ' ' + h.sel + ' { ' + h.d.replace(/\s*!important/, ' !important') + '; }';
-    assert.ok(BLOCK.includes(want), 'mirrored at its own weight: ' + h.sel + ' { ' + h.d + ' }');
-    shadowed++;
-  }
-  assert.ok(shadowed >= 1, 'the row value\'s margin 0 is among them');
-  assert.ok(BLOCK.includes(' .g8-sign .g8-sign-row .g8-sign-value { margin: 0 !important; }'));
-  // The scale steps down only as far as the panels need, to a floor.
-  const fit = fnSrc('_gateLaterSignFit');
-  assert.match(fit, /while \(!_gateLaterSignFits\(sign\) && k > 0\.6\) \{ k = Math\.max\(0\.6, k - 0\.03\); set\(k\); \}/);
-  assert.match(fit, /if \(!wrap\.classList\.contains\('gl-tk-on'\)\) \{ wrap\.style\.removeProperty\('--gl-ss'\); continue; \}/);
-  assert.match(fnSrc('_gateLaterSignFits'), /if \(col\.scrollHeight > col\.clientHeight \+ 1\) return false;/);
-  assert.match(fnSrc('_gateLaterFit'), /try \{ _gateLaterSignFit\(doc\); \} catch \(eS\) \{\}/);
-  // The band itself: the strip's glass, centred, a slot per moved flight, nothing that moves.
-  assert.match(BLOCK, /\.g8-wrap\.g8-takeover > \.gl-tk \{\n[^}]*height: clamp\(84px, min\(12\.6vh, 7\.9vw\), 170px\) !important;/);
-  assert.match(BLOCK, /\.gl-tk > \.gl-strip \.gl-slot \{ flex: 1 1 0 !important; \}/);
+test('the stylesheet has no takeover band and no scaled copy of the boarding sign (v23988)', () => {
+  // Gone with the band: .gl-tk, the .gl-tk-on mirrors of every screen-unit
+  // length of the boarding sign, and their --gl-ss scale. The sign is sized by
+  // its own rules (v23771, v23773) alone, as it was before v23973.
+  assert.doesNotMatch(CSS, /\.gl-tk\b|gl-tk-on|--gl-ss/);
+  // Nothing in the Later-at-this-gate block reaches into the takeover. The
+  // block is bounded by its own last rule (the last one naming a .gl- class),
+  // so a block appended to the file later is not read as this one.
+  const lines = BLOCK.split('\n');
+  let last = -1;
+  lines.forEach((l, i) => { if (/^html[^{]*\.gl-[\w-]/.test(l)) last = i; });
+  assert.ok(last > 0, 'the block\'s own rules were found');
+  let end = last;
+  while (end < lines.length && !/\}\s*$/.test(lines[end])) end++;
+  const own = lines.slice(0, end + 1).join('\n');
+  assert.ok(own.includes('.gl-strip') && own.includes('.gl-gc') && own.includes('.gl-solo'), 'strip, notice and solo screen are in it');
+  assert.doesNotMatch(own, /\.g8-takeover|\.g8-sign|\.g8-cd-/);
 });
