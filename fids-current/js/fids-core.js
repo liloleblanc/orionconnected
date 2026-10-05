@@ -36920,9 +36920,10 @@ var _BOARD_REGION_KEY = { DOM: 'f-domestic', TRANS: 'f-transborder', INTL: 'f-in
 // character class on the way in — ?terminal=<img src=x onerror=…> ran on both
 // boards (CodeQL js/xss #124). They are escaped here, at the one place they
 // become markup. A real terminal or carrier code has no &, <, >, " or ' in
-// it, so the chip reads exactly as before. The region words need nothing: a
-// region is only pushed when it is one of the three keys above, and what is
-// pushed is the board's own translation of it.
+// it, so the chip reads exactly as before. A region is only pushed when it is
+// one of the three keys above, as the board's own translation of it; its
+// untranslated fallback (the key) is escaped too, which changes nothing a
+// board shows and leaves no URL text that reaches markup unescaped.
 function _boardFilterChipHtml() {
   try {
     var _tr = function (k, fb) {
@@ -36937,7 +36938,9 @@ function _boardFilterChipHtml() {
     if (filterRegion) {
       String(filterRegion).toUpperCase().split(',').forEach(function (r) {
         var k = _BOARD_REGION_KEY[r.trim()];
-        if (k) parts.push(_tr(k, r.trim()));
+        // the untranslated fallback is the matched key itself (DOM, TRANS,
+        // INTL), escaped all the same so no URL text reaches markup raw
+        if (k) parts.push(_tr(k, fidsEscHtml(r.trim())));
       });
     }
     // An airline's own name is its brand — it is not translated on a board

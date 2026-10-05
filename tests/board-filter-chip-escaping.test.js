@@ -177,6 +177,8 @@ test('real filters render byte-for-byte as before', () => {
   assert.equal(chipOf('?airline=ZZ'), '<span class="fids-board-filter">ZZ</span>');
   assert.equal(chipOf('?region=dom,trans'),
     '<span class="fids-board-filter">Domestic · Transborder</span>');
+  assert.equal(chipOf('?region=dom,intl', { translate: false }),
+    '<span class="fids-board-filter">DOM · INTL</span>');
   assert.equal(chipOf('?terminal=1&region=intl&airline=AC'),
     '<span class="fids-board-filter">Terminal 1 · International · AIR CANADA</span>');
   assert.equal(boot('?terminal=1').label,
@@ -206,6 +208,8 @@ test('both user-supplied chip values pass through fidsEscHtml', () => {
     'the terminal value must be escaped where it joins the chip');
   assert.ok(/fidsEscHtml\(\(typeof AIRLINE_NAME[^)]*\)[^)]*\|\| code\)/.test(body),
     'the airline name-or-code must be escaped where it joins the chip');
+  assert.ok(/if \(k\) parts\.push\(_tr\(k, fidsEscHtml\(r\.trim\(\)\)\)\);/.test(body),
+    'the region fallback (the matched key) must be escaped where it joins the chip');
 });
 
 test('the filter values reach markup only through the chip', () => {
